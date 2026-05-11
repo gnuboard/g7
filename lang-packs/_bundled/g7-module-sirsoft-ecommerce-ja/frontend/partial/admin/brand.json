@@ -1,0 +1,72 @@
+{
+  "title": "ブランド管理",
+  "description": "商品ブランド情報を管理します",
+  "list": {
+    "title": "ブランド",
+    "add": "ブランド追加",
+    "search_placeholder": "ブランド名で検索...",
+    "sort": {
+      "name_asc": "名前順",
+      "name_desc": "名前逆順",
+      "created_desc": "最新順",
+      "created_asc": "古い順"
+    },
+    "products_count": "{{count}}個の商品",
+    "empty": "登録されたブランドがありません"
+  },
+  "info": {
+    "title": "ブランド情報",
+    "basic": "基本情報",
+    "additional": "追加情報",
+    "system": "システム情報",
+    "name": "ブランド名",
+    "slug": "スラッグ",
+    "website": "ウェブサイト",
+    "sort_order": "並べ替え順序",
+    "status": "ステータス",
+    "products_count": "登録商品数",
+    "statistics": "統計"
+  },
+  "form": {
+    "create_title": "ブランド追加",
+    "edit_title": "ブランド編集",
+    "name": "ブランド名",
+    "name_placeholder": "ブランド名を入力してください",
+    "slug": "スラッグ",
+    "slug_placeholder": "英小文字で開始（例：nike）",
+    "slug_hint": "URLに使用される一意の識別子です。英小文字、数字、ハイフン（-）のみ使用可能です。",
+    "website": "ブランド公式ウェブサイト",
+    "website_placeholder": "https://www.example.com",
+    "website_hint": "ブランド公式ウェブサイトURL（選択肢）",
+    "sort_order": "並べ替え順序",
+    "sort_order_hint": "数字が小さいほど先に表示されます（デフォルト：0）",
+    "is_active": "有効化"
+  },
+  "empty": {
+    "title": "ブランドを選択してください",
+    "description": "左側からブランドを選択するか、新しく追加してください"
+  },
+  "delete_modal": {
+    "title": "ブランド削除",
+    "message_suffix": "本当にこのブランドを削除しますか？",
+    "cannot_delete_title": "削除できません",
+    "has_products_cannot_delete": "接続されている商品が{count}個あります。先に商品のブランドを変更してください。",
+    "irreversible_warning": "この操作は取り消せません。本当に削除しますか？"
+  },
+  "messages": {
+    "created": "ブランドが正常に作成されました",
+    "updated": "ブランドが正常に編集されました",
+    "deleted": "ブランドが正常に削除されました",
+    "status_changed": "ブランドステータスが変更されました",
+    "status_change_failed": "ブランドステータスの変更に失敗しました"
+  },
+  "modal": {
+    "editing": {
+      "title": "編集中の内容があります",
+      "message": "保存していない変更があります。",
+      "confirm_message": "変更を保存せずに終了しますか？",
+      "discard": "変更を破棄",
+      "continue": "編集を続ける"
+    }
+  }
+}

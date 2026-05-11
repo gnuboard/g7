@@ -727,6 +727,9 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col gap-0.5"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -738,11 +741,13 @@
                                                 },
                                                 {
                                                     "type": "basic",
-                                                    "name": "Div",
+                                                    "name": "A",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "href": "/page/{{row.slug ?? ''}}",
+                                                        "target": "_blank",
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
                                                     },
-                                                    "text": "/page/{{row.slug}}"
+                                                    "text": "/page/{{row.slug ?? ''}}"
                                                 }
                                             ]
                                         }
@@ -755,11 +760,13 @@
                                     "cellChildren": [
                                         {
                                             "type": "basic",
-                                            "name": "Span",
+                                            "name": "A",
                                             "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-400 font-mono"
+                                                "href": "/page/{{row.slug ?? ''}}",
+                                                "target": "_blank",
+                                                "className": "text-sm text-gray-600 dark:text-gray-400 font-mono hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
                                             },
-                                            "text": "{{row.slug}}"
+                                            "text": "{{row.slug ?? ''}}"
                                         }
                                     ]
                                 },

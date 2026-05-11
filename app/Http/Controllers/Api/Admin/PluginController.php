@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Enums\LanguagePackScope;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
+use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
 use App\Http\Requests\Plugin\ActivatePluginRequest;
 use App\Http\Requests\Plugin\DeactivatePluginRequest;
 use App\Http\Requests\Plugin\IndexPluginRequest;
 use App\Http\Requests\Plugin\InstallPluginFromFileRequest;
+use App\Http\Requests\Plugin\PreviewPluginManifestRequest;
 use App\Http\Requests\Plugin\InstallPluginFromGithubRequest;
 use App\Http\Requests\Plugin\InstallPluginRequest;
 use App\Http\Requests\Plugin\PerformPluginUpdateRequest;
@@ -16,6 +20,7 @@ use App\Http\Requests\Plugin\UninstallPluginRequest;
 use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Resources\PluginCollection;
 use App\Http\Resources\PluginResource;
+use App\Services\Extension\ExtensionInstallPreviewBuilder;
 use App\Services\LicenseService;
 use App\Services\PluginService;
 use App\Services\TemplateService;
@@ -30,6 +35,9 @@ use Illuminate\Validation\ValidationException;
  */
 class PluginController extends AdminBaseController
 {
+    use InjectsExtensionLanguagePacks;
+    use OrchestratesCascadeInstall;
+
     public function __construct(
         private PluginService $pluginService,
         private TemplateService $templateService,
@@ -56,6 +64,7 @@ class PluginController extends AdminBaseController
                 'search' => $validated['search'] ?? null,
                 'filters' => $validated['filters'] ?? [],
                 'status' => $validated['status'] ?? null,
+                'include_hidden' => (bool) ($validated['include_hidden'] ?? false),
             ];
             $perPage = (int) ($validated['per_page'] ?? 12);
             $page = (int) ($validated['page'] ?? 1);
@@ -80,7 +89,7 @@ class PluginController extends AdminBaseController
                 ],
             ]);
         } catch (\Exception $e) {
-            return $this->error('plugins.list_failed', 500, $e->getMessage());
+            return $this->error('plugins.list_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -90,6 +99,7 @@ class PluginController extends AdminBaseController
      * @param  Request  $request  HTTP 요청 객체
      * @return JsonResponse 설치된 플러그인 목록을 포함한 JSON 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 목록 조회. PluginCollection::toArray($request)/with($request) 전달용
     public function installed(Request $request): JsonResponse
     {
         try {
@@ -102,17 +112,19 @@ class PluginController extends AdminBaseController
                 'meta' => $collection->with($request)['meta'],
             ]);
         } catch (\Exception $e) {
-            return $this->error('plugins.list_failed', 500, $e->getMessage());
+            return $this->error('plugins.list_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
     /**
      * 특정 플러그인의 상세 정보를 조회합니다.
      *
-     * @param  string  $pluginName  플러그인명
+     * @param  Request  $request  HTTP 요청 (attachLanguagePacks 의 Request 인자 전달용)
+     * @param  string  $pluginName  플러그인 식별자
      * @return JsonResponse 플러그인 정보를 포함한 JSON 응답
      */
-    public function show(string $pluginName): JsonResponse
+    // audit:allow controller-base-request-injection reason: GET 상세 조회. attachLanguagePacks($detail, scope, name, $request) 전달용
+    public function show(Request $request, string $pluginName): JsonResponse
     {
         try {
             $pluginInfo = $this->pluginService->getPluginInfo($pluginName);
@@ -121,12 +133,36 @@ class PluginController extends AdminBaseController
                 return $this->error('plugins.not_found', 404, null, ['plugin' => $pluginName]);
             }
 
-            // 상세 정보는 toDetailArray() 메서드 사용
+            // 상세 정보는 toDetailArray() 메서드 사용 + 지원 언어팩 주입
             $resource = new PluginResource($pluginInfo);
+            $detail = $this->attachLanguagePacks(
+                $resource->toDetailArray(),
+                LanguagePackScope::Plugin,
+                $pluginName,
+                $request,
+            );
 
-            return $this->success('plugins.fetch_success', $resource->toDetailArray());
+            return $this->success('plugins.fetch_success', $detail);
         } catch (\Exception $e) {
-            return $this->error('plugins.fetch_failed', 500, $e->getMessage());
+            return $this->error('plugins.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 플러그인 설치 cascade 프리뷰를 반환합니다 (의존 확장 + 동반 가능 번들 언어팩).
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @param  ExtensionInstallPreviewBuilder  $builder  프리뷰 빌더
+     * @return JsonResponse cascade 프리뷰 응답
+     */
+    public function installPreview(string $pluginName, ExtensionInstallPreviewBuilder $builder): JsonResponse
+    {
+        try {
+            $preview = $builder->build(LanguagePackScope::Plugin, $pluginName);
+
+            return $this->success('plugins.fetch_success', $preview);
+        } catch (\Exception $e) {
+            return $this->error('plugins.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -144,13 +180,20 @@ class PluginController extends AdminBaseController
             $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
                 $validated['vendor_mode'] ?? null
             );
+
+            // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
+            $this->installSelectedDependencies($validated['dependencies'] ?? []);
+
             $pluginInfo = $this->pluginService->installPlugin($pluginName, $vendorMode);
 
             if ($pluginInfo) {
-                return $this->successWithResource(
-                    'plugins.install_success',
-                    new PluginResource($pluginInfo)
-                );
+                // cascade 2단계: 동반 번들 언어팩 best-effort 설치
+                $lpFailures = $this->installSelectedLanguagePacks($validated['language_packs'] ?? []);
+
+                $payload = (new PluginResource($pluginInfo))->toArray($request);
+                $payload['language_pack_failures'] = $lpFailures;
+
+                return $this->success('plugins.install_success', $payload);
             } else {
                 return $this->error('plugins.install_failed');
             }
@@ -198,14 +241,20 @@ class PluginController extends AdminBaseController
             if ($result['success']) {
                 $pluginInfo = $result['plugin_info'] ?? null;
 
+                // PO #7: 재활성화 시 cascade 비활성화됐던 언어팩 목록 응답에 포함
+                $pendingLanguagePacks = app(\App\Services\LanguagePack\LanguagePackBundledRegistrar::class)
+                    ->getPendingForReactivation('plugin', $pluginName);
+
                 if ($pluginInfo) {
-                    return $this->successWithResource(
-                        'plugins.activate_success',
-                        new PluginResource($pluginInfo)
-                    );
+                    return $this->success('plugins.activate_success', [
+                        'plugin' => (new PluginResource($pluginInfo))->resolve(),
+                        'pending_language_packs' => $pendingLanguagePacks,
+                    ]);
                 }
 
-                return $this->success('plugins.activate_success', $result);
+                return $this->success('plugins.activate_success', array_merge($result, [
+                    'pending_language_packs' => $pendingLanguagePacks,
+                ]));
             } else {
                 return $this->error('plugins.activate_failed');
             }
@@ -292,12 +341,12 @@ class PluginController extends AdminBaseController
         try {
             $dependentTemplates = $this->templateService->getTemplatesDependingOnPlugin($identifier);
 
-            return $this->success('plugin.dependent_templates_success', [
+            return $this->success('plugins.dependent_templates_success', [
                 'data' => $dependentTemplates,
                 'total' => count($dependentTemplates),
             ]);
         } catch (\Exception $e) {
-            return $this->error('plugin.dependent_templates_failed', 500, $e->getMessage());
+            return $this->error('plugins.dependent_templates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -318,7 +367,7 @@ class PluginController extends AdminBaseController
 
             return $this->success('plugins.uninstall_info_success', $uninstallInfo);
         } catch (\Exception $e) {
-            return $this->error('plugins.uninstall_info_failed', 500, $e->getMessage());
+            return $this->error('plugins.uninstall_info_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -358,6 +407,23 @@ class PluginController extends AdminBaseController
     }
 
     /**
+     * 업로드된 ZIP 의 manifest 와 검증 결과만 추출합니다 (실제 설치 X).
+     *
+     * @param  PreviewPluginManifestRequest  $request  미리보기 요청
+     * @return JsonResponse manifest + validation 결과
+     */
+    public function manifestPreview(PreviewPluginManifestRequest $request): JsonResponse
+    {
+        try {
+            $result = $this->pluginService->previewManifest($request->file('file'));
+
+            return $this->success('plugins.preview_success', $result);
+        } catch (\Throwable $e) {
+            return $this->error('plugins.preview_failed', 422, null, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * ZIP 파일에서 플러그인을 설치합니다.
      *
      * @param  InstallPluginFromFileRequest  $request  파일 설치 요청 데이터
@@ -370,14 +436,14 @@ class PluginController extends AdminBaseController
             $plugin = $this->pluginService->installFromZipFile($file);
 
             return $this->successWithResource(
-                'plugin.install_success',
+                'plugins.install_success',
                 new PluginResource($plugin),
                 201
             );
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            return $this->error('plugin.install_failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('plugins.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
     }
 
@@ -394,14 +460,14 @@ class PluginController extends AdminBaseController
             $plugin = $this->pluginService->installFromGithub($githubUrl);
 
             return $this->successWithResource(
-                'plugin.install_success',
+                'plugins.install_success',
                 new PluginResource($plugin),
                 201
             );
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            return $this->error('plugin.install_failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('plugins.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
     }
 
@@ -419,7 +485,7 @@ class PluginController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('plugins.check_updates_failed', 422, $e->errors());
         } catch (\Exception $e) {
-            return $this->error('plugins.check_updates_failed', 500, $e->getMessage());
+            return $this->error('plugins.check_updates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -438,7 +504,7 @@ class PluginController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('plugins.check_modified_layouts_failed', 422, $e->errors());
         } catch (\Exception $e) {
-            return $this->error('plugins.check_modified_layouts_failed', 500, $e->getMessage());
+            return $this->error('plugins.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -461,7 +527,8 @@ class PluginController extends AdminBaseController
                 $validated['vendor_mode'] ?? null
             );
             $layoutStrategy = $validated['layout_strategy'] ?? 'overwrite';
-            $result = $this->pluginService->updatePlugin($pluginName, $vendorMode, $layoutStrategy);
+            $force = (bool) ($validated['force'] ?? false);
+            $result = $this->pluginService->updatePlugin($pluginName, $vendorMode, $layoutStrategy, $force);
 
             $pluginInfo = $result['plugin_info'] ?? null;
 
@@ -547,9 +614,9 @@ class PluginController extends AdminBaseController
                 $validated['to_version'] ?? null,
             );
 
-            return $this->success('plugin.fetch_success', ['changelog' => $changelog]);
+            return $this->success('plugins.fetch_success', ['changelog' => $changelog]);
         } catch (\Exception $e) {
-            return $this->error('plugin.fetch_failed', 500, $e->getMessage());
+            return $this->error('plugins.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 

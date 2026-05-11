@@ -305,7 +305,7 @@
       "props": {
         "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700"
       },
-      "if": "{{(item.attachments ?? []).length > 0}}",
+      "if": "{{item.has_attachment}}",
       "children": [
         {
           "id": "attachments_toggle",
@@ -343,7 +343,7 @@
                 {
                   "type": "basic",
                   "name": "Span",
-                  "text": "$t:sirsoft-board.admin.posts.detail.attachments|count={{(item.attachments ?? []).length}}"
+                  "text": "$t:sirsoft-board.admin.posts.detail.attachments|count={{item.attachment_count ?? 0}}"
                 }
               ]
             },

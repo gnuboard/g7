@@ -17,6 +17,9 @@ class TemplateLayoutVersionFactory extends Factory
      */
     public function definition(): array
     {
+        // 모델 cast 가 'array' 로 지정되어 있으므로 JSON 인코딩은 Laravel 이 자동 수행한다.
+        // Repository::buildChangesSummary 가 생성하는 스키마와 일치시킨다:
+        //   added/removed/modified = 배열(경로 문자열 목록), char_diff = 정수.
         return [
             'layout_id' => TemplateLayout::factory(),
             'version' => fake()->unique()->numberBetween(1, 1000),
@@ -25,12 +28,12 @@ class TemplateLayoutVersionFactory extends Factory
                 'layout_name' => fake()->word(),
                 'components' => [],
             ],
-            'changes_summary' => json_encode([
-                'added' => fake()->numberBetween(1, 20),
-                'removed' => fake()->numberBetween(0, 10),
-                'is_restored' => false,
-                'restored_from' => null,
-            ]),
+            'changes_summary' => [
+                'added' => [],
+                'removed' => [],
+                'modified' => [],
+                'char_diff' => fake()->numberBetween(-500, 500),
+            ],
         ];
     }
 }

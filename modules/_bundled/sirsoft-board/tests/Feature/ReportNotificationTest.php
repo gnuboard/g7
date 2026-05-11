@@ -43,6 +43,12 @@ class ReportNotificationTest extends ModuleTestCase
 
         config(['telescope.enabled' => false]);
 
+        // module.php::getNotificationDefinitions() 를 SSoT 로 알림 정의 동기화 +
+        // NotificationHookListener 동적 훅 등록 (테스트 환경에서는 부트 시점에 실행되지 않음 —
+        // 알림 정의 기반 훅 구독을 수동으로 활성화하여 actual notification flow 복원)
+        $this->syncBoardNotificationDefinitions();
+        app(\App\Listeners\NotificationHookListener::class)->registerDynamicHooks();
+
         // 테스트 잔여 데이터 정리
         DB::table('boards_reports')->delete();
         DB::table('users')->where('is_super', false)->delete();
@@ -299,7 +305,7 @@ class ReportNotificationTest extends ModuleTestCase
         $response->assertStatus(201);
 
         // reports.manage 권한 보유자(admin)에게 알림 발송 확인
-        // post_title과 reason_type 내용도 검증
+        // post_title과 reason_type 내용도 검증 (reason_type 은 번역된 라벨 'Spam/Advertising' — 대소문자 무관 매칭)
         Notification::assertSentTo(
             $this->admin,
             GenericNotification::class,
@@ -307,7 +313,7 @@ class ReportNotificationTest extends ModuleTestCase
                 $data = $notification->getData();
 
                 return ($data['post_title'] ?? '') === '테스트 게시글'
-                    && str_contains($data['reason_type'] ?? '', 'spam');
+                    && stripos($data['reason_type'] ?? '', 'spam') !== false;
             }
         );
     }
@@ -505,6 +511,17 @@ class ReportNotificationTest extends ModuleTestCase
      * @param bool $enabled 알림 발송 여부
      * @return void
      */
+    /**
+     * 알림 리스너의 중복 처리 키 초기화 (per_report/per_case 재발송 시나리오용).
+     *
+     * 현 설계에는 per-request 내부 dedup 상태가 존재하지 않으므로 no-op.
+     * 과거 어댑터에서 static 상태를 사용했을 때의 테스트 헬퍼 잔재로 호환성 보장용.
+     */
+    private function resetListenerProcessedKeys(): void
+    {
+        // no-op: NotificationHookListener 는 상태 없이 매 훅 호출마다 정의를 재평가함
+    }
+
     private function setReportPolicy(bool $enabled): void
     {
         config([
@@ -592,5 +609,31 @@ class ReportNotificationTest extends ModuleTestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    /**
+     * module.php::getNotificationDefinitions() 를 SSoT 로 게시판 알림 정의를 동기화합니다.
+     *
+     * declarative getter 패턴 도입(beta.4) 이후 별도 Seeder 가 없으므로 테스트 setUp
+     * 에서 직접 NotificationSyncHelper 를 호출해 알림 정의를 시드합니다.
+     */
+    private function syncBoardNotificationDefinitions(): void
+    {
+        $module = app(\App\Extension\ModuleManager::class)->getModule('sirsoft-board');
+        if (! $module) {
+            return;
+        }
+
+        $helper = app(\App\Extension\Helpers\NotificationSyncHelper::class);
+        foreach ($module->getNotificationDefinitions() as $data) {
+            $data['extension_type'] = 'module';
+            $data['extension_identifier'] = 'sirsoft-board';
+
+            $definition = $helper->syncDefinition($data);
+
+            foreach ($data['templates'] ?? [] as $template) {
+                $helper->syncTemplate($definition->id, $template);
+            }
+        }
     }
 }

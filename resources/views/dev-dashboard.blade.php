@@ -32,6 +32,10 @@ $modules = scanExtensions(base_path('modules'));
 $templates = scanExtensions(base_path('templates'));
 $plugins = scanExtensions(base_path('plugins'));
 
+// 언어팩은 활성 디렉토리(lang-packs/{identifier}) 와 번들(lang-packs/_bundled/{identifier})
+// 양쪽 모두 식별자 기반이므로 동일 헬퍼 사용 가능
+$languagePacks = scanExtensions(base_path('lang-packs'));
+
 // AJAX 요청 처리: GET 방식으로 처리
 if (isset($_GET['ajax_action'])) {
     header('Content-Type: application/json');
@@ -495,6 +499,14 @@ if (isset($_GET['ajax_action'])) {
                                         <span>Composer 설치</span>
                                         <span class="text-[10px] opacity-60">(composer-install)</span>
                                     </button>
+                                    <button onclick="runModuleCommand('vendor-bundle')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>Vendor 번들</span>
+                                        <span class="text-[10px] opacity-60">(vendor-bundle)</span>
+                                    </button>
+                                    <button onclick="runModuleCommand('vendor-verify')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-700 hover:bg-fuchsia-800 text-white text-xs font-medium rounded transition-colors">
+                                        <span>Vendor 검증</span>
+                                        <span class="text-[10px] opacity-60">(vendor-verify)</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -639,6 +651,72 @@ if (isset($_GET['ajax_action'])) {
                                         <span>Composer 설치</span>
                                         <span class="text-[10px] opacity-60">(composer-install)</span>
                                     </button>
+                                    <button onclick="runPluginCommand('vendor-bundle')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>Vendor 번들</span>
+                                        <span class="text-[10px] opacity-60">(vendor-bundle)</span>
+                                    </button>
+                                    <button onclick="runPluginCommand('vendor-verify')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-700 hover:bg-fuchsia-800 text-white text-xs font-medium rounded transition-colors">
+                                        <span>Vendor 검증</span>
+                                        <span class="text-[10px] opacity-60">(vendor-verify)</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 언어팩 관리 -->
+                        <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-lg">🌐</span>
+                                <span class="text-xs font-medium text-slate-200">언어팩 관리</span>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex gap-2">
+                                    <select id="languagePackSelect" class="flex-1 px-3 py-2 bg-slate-800 text-slate-200 text-sm rounded border border-slate-600 focus:border-emerald-500 outline-none">
+                                        <option value="">언어팩 선택</option>
+                                        @foreach ($languagePacks as $languagePack)
+                                        <option value="{{ $languagePack }}">{{ $languagePack }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="runCommand('language-pack:list')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>목록 조회</span>
+                                        <span class="text-[10px] opacity-60">(language-pack:list)</span>
+                                    </button>
+                                    <button onclick="runLanguagePackCommand('install')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>설치</span>
+                                        <span class="text-[10px] opacity-60">(install)</span>
+                                    </button>
+                                    <button onclick="runLanguagePackCommand('activate')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>활성화</span>
+                                        <span class="text-[10px] opacity-60">(activate)</span>
+                                    </button>
+                                    <button onclick="runLanguagePackCommand('deactivate')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>비활성화</span>
+                                        <span class="text-[10px] opacity-60">(deactivate)</span>
+                                    </button>
+                                    <button onclick="runLanguagePackCommand('uninstall')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>제거</span>
+                                        <span class="text-[10px] opacity-60">(uninstall)</span>
+                                    </button>
+                                    <button onclick="runCommand('language-pack:cache-clear')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>캐시 초기화</span>
+                                        <span class="text-[10px] opacity-60">(cache-clear)</span>
+                                    </button>
+                                </div>
+                                <div class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-700/20">
+                                    <button onclick="runCommand('language-pack:check-updates')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>업데이트 확인</span>
+                                        <span class="text-[10px] opacity-60">(check-updates)</span>
+                                    </button>
+                                    <button onclick="runLanguagePackCommand('update')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-medium rounded transition-colors">
+                                        <span>업데이트</span>
+                                        <span class="text-[10px] opacity-60">(update)</span>
+                                    </button>
+                                    <button onclick="runLanguagePackCommand('update', '--force')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-sky-700 hover:bg-sky-800 text-white text-xs font-medium rounded transition-colors">
+                                        <span>강제 업데이트</span>
+                                        <span class="text-[10px] opacity-60">(update --force)</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -713,6 +791,84 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('migrate:fresh --seed')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>DB 초기화</span>
                                     <span class="text-[10px] opacity-60">(migrate:fresh --seed)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 코어 업데이트 -->
+                        <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-lg">🔄</span>
+                                <span class="text-xs font-medium text-slate-200">코어 업데이트</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="runCommand('core:check-updates')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>업데이트 확인</span>
+                                    <span class="text-[10px] opacity-60">(core:check-updates)</span>
+                                </button>
+                                <button onclick="if(confirm('코어 업데이트는 DB 마이그레이션과 파일 갱신을 수반합니다. 백업 후 진행하셨나요?')) runCommand('core:update --force')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>코어 업데이트</span>
+                                    <span class="text-[10px] opacity-60">(core:update --force) ⚠️</span>
+                                </button>
+                                <button onclick="runCommand('core:vendor-verify')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>코어 Vendor 검증</span>
+                                    <span class="text-[10px] opacity-60">(core:vendor-verify)</span>
+                                </button>
+                                <button onclick="runCommand('vendor-bundle:verify-all')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-700 hover:bg-fuchsia-800 text-white text-xs font-medium rounded transition-colors">
+                                    <span>전체 Vendor 검증</span>
+                                    <span class="text-[10px] opacity-60">(vendor-bundle:verify-all)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SEO -->
+                        <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-lg">🔍</span>
+                                <span class="text-xs font-medium text-slate-200">SEO</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="runCommand('seo:warmup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>SEO 워밍업</span>
+                                    <span class="text-[10px] opacity-60">(seo:warmup)</span>
+                                </button>
+                                <button onclick="runCommand('seo:clear')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>SEO 캐시 삭제</span>
+                                    <span class="text-[10px] opacity-60">(seo:clear)</span>
+                                </button>
+                                <button onclick="runCommand('seo:stats')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>SEO 통계</span>
+                                    <span class="text-[10px] opacity-60">(seo:stats)</span>
+                                </button>
+                                <button onclick="runCommand('seo:generate-sitemap --sync')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>사이트맵 생성</span>
+                                    <span class="text-[10px] opacity-60">(seo:generate-sitemap)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 유지보수 -->
+                        <div class="bg-slate-900/40 rounded-xl p-4 border border-slate-700/30">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-lg">🛠️</span>
+                                <span class="text-xs font-medium text-slate-200">유지보수</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="runCommand('notification:cleanup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>알림 정리</span>
+                                    <span class="text-[10px] opacity-60">(notification:cleanup)</span>
+                                </button>
+                                <button onclick="runCommand('layout-previews:cleanup')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>레이아웃 미리보기 정리</span>
+                                    <span class="text-[10px] opacity-60">(layout-previews:cleanup)</span>
+                                </button>
+                                <button onclick="runCommand('geoip:update')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>GeoIP DB 갱신</span>
+                                    <span class="text-[10px] opacity-60">(geoip:update)</span>
+                                </button>
+                                <button onclick="runCommand('dashboard:broadcast-resources')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>대시보드 리소스 브로드캐스트</span>
+                                    <span class="text-[10px] opacity-60">(dashboard:broadcast-resources)</span>
                                 </button>
                             </div>
                         </div>
@@ -1815,6 +1971,22 @@ if (isset($_GET['ajax_action'])) {
             }
 
             const command = `${type}:${action} ${identifier}${flags ? ' ' + flags : ''}`;
+            await runCommand(command);
+        }
+
+        // ==========================================
+        // 언어팩 커맨드 실행 (드롭다운 선택)
+        // ==========================================
+        async function runLanguagePackCommand(action, flags = '') {
+            const select = document.getElementById('languagePackSelect');
+            const identifier = select.value;
+
+            if (!identifier) {
+                alert('언어팩을 선택해주세요.');
+                return;
+            }
+
+            const command = `language-pack:${action} ${identifier}${flags ? ' ' + flags : ''}`;
             await runCommand(command);
         }
     </script>

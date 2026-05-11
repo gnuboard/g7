@@ -362,6 +362,234 @@ class PageControllerTest extends FeatureTestCase
         $response->assertStatus(404);
     }
 
+    // ─── 수정 - 슬러그 변경 (Issue #280) ─────────────────
+
+    /**
+     * 슬러그를 새 값으로 변경하면 DB에 반영됨
+     */
+    public function test_admin_can_update_page_slug(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-slug-old',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-page/admin/pages/{$page->id}", [
+                'slug' => 'test-slug-new',
+                'title' => ['ko' => '제목', 'en' => 'Title'],
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('pages', ['id' => $page->id, 'slug' => 'test-slug-new']);
+        $this->assertDatabaseMissing('pages', ['slug' => 'test-slug-old', 'deleted_at' => null]);
+    }
+
+    /**
+     * 슬러그를 동일한 값으로 수정해도 통과 (자기 자신 ignore)
+     */
+    public function test_updating_page_slug_to_same_value_succeeds(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-slug-same',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-page/admin/pages/{$page->id}", [
+                'slug' => 'test-slug-same',
+                'title' => ['ko' => '제목', 'en' => 'Title'],
+            ]);
+
+        $response->assertStatus(200);
+    }
+
+    /**
+     * slug 키를 전송하지 않으면 기존 슬러그가 유지됨
+     */
+    public function test_updating_page_without_slug_keeps_existing_slug(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-slug-keep',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-page/admin/pages/{$page->id}", [
+                'title' => ['ko' => '제목만 변경', 'en' => 'Title only'],
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('pages', ['id' => $page->id, 'slug' => 'test-slug-keep']);
+    }
+
+    /**
+     * slug를 전송하지 않으면 기존 슬러그가 유지됨 (sometimes 동작)
+     */
+    public function test_updating_page_without_slug_field_keeps_existing_slug(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-slug-keep',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-page/admin/pages/{$page->id}", [
+                'title' => ['ko' => '제목', 'en' => 'Title'],
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('pages', ['id' => $page->id, 'slug' => 'test-slug-keep']);
+    }
+
+    /**
+     * slug 형식 위반(공백+특수문자) 시 422 반환
+     */
+    public function test_updating_page_with_space_and_special_chars_in_slug_returns_422(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-slug-valid',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-page/admin/pages/{$page->id}", [
+                'slug' => 'Invalid Slug!',
+                'title' => ['ko' => '제목', 'en' => 'Title'],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['slug']);
+    }
+
+    /**
+     * 다른 페이지의 슬러그로 변경 시 422 반환
+     */
+    public function test_updating_page_with_duplicate_slug_returns_422(): void
+    {
+        Page::factory()->create([
+            'slug' => 'test-slug-taken',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $page = Page::factory()->create([
+            'slug' => 'test-slug-mine',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-page/admin/pages/{$page->id}", [
+                'slug' => 'test-slug-taken',
+                'title' => ['ko' => '제목', 'en' => 'Title'],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['slug']);
+    }
+
+    /**
+     * 슬러그 형식 위반(대문자 포함) 시 422 반환
+     */
+    public function test_updating_page_with_invalid_slug_format_returns_422(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-slug-format',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-page/admin/pages/{$page->id}", [
+                'slug' => 'Invalid-Slug-WithUpper',
+                'title' => ['ko' => '제목', 'en' => 'Title'],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['slug']);
+    }
+
+    /**
+     * 슬러그 형식 위반(특수문자) 시 422 반환
+     */
+    public function test_updating_page_with_special_chars_in_slug_returns_422(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-slug-special',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-page/admin/pages/{$page->id}", [
+                'slug' => 'invalid slug!@#',
+                'title' => ['ko' => '제목', 'en' => 'Title'],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['slug']);
+    }
+
+    /**
+     * 슬러그 최대 길이(256자) 초과 시 422 반환
+     */
+    public function test_updating_page_with_slug_exceeding_max_length_returns_422(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-slug-maxlen',
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-page/admin/pages/{$page->id}", [
+                'slug' => str_repeat('a', 256),
+                'title' => ['ko' => '제목', 'en' => 'Title'],
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['slug']);
+    }
+
+    /**
+     * 슬러그 변경 시에도 버전 번호가 증가함
+     */
+    public function test_updating_slug_increments_version(): void
+    {
+        $page = Page::factory()->create([
+            'slug' => 'test-slug-v1',
+            'current_version' => 1,
+            'created_by' => $this->adminUser->id,
+            'updated_by' => $this->adminUser->id,
+        ]);
+
+        PageVersion::create([
+            'page_id' => $page->id,
+            'version' => 1,
+            'title' => $page->title,
+            'content' => $page->content,
+            'content_mode' => $page->content_mode,
+            'created_by' => $this->adminUser->id,
+        ]);
+
+        $response = $this->actingAs($this->adminUser)
+            ->putJson("/api/modules/sirsoft-page/admin/pages/{$page->id}", [
+                'slug' => 'test-slug-v2',
+                'title' => ['ko' => '제목', 'en' => 'Title'],
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.current_version', 2);
+
+        $this->assertDatabaseHas('page_versions', ['page_id' => $page->id, 'version' => 2]);
+    }
+
     // ─── 삭제 (destroy) ────────────────────────────────
 
     /**

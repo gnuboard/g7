@@ -3,6 +3,8 @@
 namespace Tests\Feature\Middleware;
 
 use App\Enums\ExtensionOwnerType;
+use App\Enums\PermissionType;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,6 +34,19 @@ class AdminMiddlewareTest extends TestCase
             'extension_identifier' => 'core',
             'is_active' => true,
         ]);
+
+        // 관리자 역할에 type=admin 권한을 하나 이상 attach.
+        // User::isAdmin() 은 role identifier 가 'admin' 인지가 아니라,
+        // 사용자의 role 중에 type='admin' 권한이 있는지로 판정한다.
+        $adminPermission = Permission::create([
+            'identifier' => 'core.admin.access',
+            'name' => ['ko' => '관리자 접근', 'en' => 'Admin Access'],
+            'description' => ['ko' => '관리자 페이지 접근 권한', 'en' => 'Admin page access permission'],
+            'extension_type' => ExtensionOwnerType::Core,
+            'extension_identifier' => 'core',
+            'type' => PermissionType::Admin->value,
+        ]);
+        $this->adminRole->permissions()->attach($adminPermission->id);
 
         // 관리자 사용자 생성
         $this->adminUser = User::factory()->create();

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -32,6 +33,9 @@ class Template extends Model
         'update_available',
         'type',
         'status',
+        'deactivated_reason',
+        'deactivated_at',
+        'incompatible_required_version',
         'description',
         'user_modified_at',
         'github_url',
@@ -54,6 +58,8 @@ class Template extends Model
             'metadata' => 'array',
             'user_modified_at' => 'datetime',
             'update_available' => 'boolean',
+            'deactivated_reason' => DeactivationReason::class,
+            'deactivated_at' => 'datetime',
         ];
     }
 

@@ -4,7 +4,6 @@ namespace Tests\Unit\Services;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
-use App\Exceptions\CannotDeleteAdminException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Models\Permission;
 use App\Models\Role;
@@ -67,15 +66,18 @@ class UserServiceTest extends TestCase
     }
 
     // ========================================================================
-    // deleteUser() - 관리자 삭제 방지 테스트
+    // deleteUser() - 관리자 삭제: 권한/스코프 기반 위임 (하드코딩 차단 제거)
     // ========================================================================
 
     /**
-     * 관리자 권한을 가진 사용자 삭제 시 CannotDeleteAdminException 발생 확인
+     * 관리자 권한을 가진 사용자(target=admin) 도 UserService::deleteUser 단독으로는 삭제 가능해야 한다.
+     *
+     * 회귀: "target.isAdmin() → CannotDeleteAdminException" 하드코딩이 G7 의 역할/퍼미션/스코프 시스템을
+     * 우회해 슈퍼관리자도 다른 관리자를 삭제하지 못하도록 막던 결함. 권한/스코프 검증은 미들웨어
+     * (PermissionMiddleware) 가 담당하고, 시스템 불변식인 슈퍼관리자 보호만 Service 가 보장한다.
      */
-    public function test_delete_admin_user_throws_cannot_delete_admin_exception(): void
+    public function test_delete_admin_user_succeeds_when_actor_authorized(): void
     {
-        // admin 타입 권한 생성
         $adminPermission = Permission::create([
             'identifier' => 'core.admin.test',
             'name' => ['ko' => '관리자 권한', 'en' => 'Admin Permission'],
@@ -84,50 +86,19 @@ class UserServiceTest extends TestCase
             'type' => PermissionType::Admin,
         ]);
 
-        // 역할 생성 및 권한 연결
         $role = Role::create([
             'identifier' => 'test-admin',
             'name' => ['ko' => '테스트 관리자', 'en' => 'Test Admin'],
         ]);
         $role->permissions()->attach($adminPermission->id);
 
-        // 관리자 사용자 생성 (is_super=false이지만 admin 권한 보유)
         $adminUser = User::factory()->create(['is_super' => false]);
         $adminUser->roles()->attach($role->id);
 
-        $this->expectException(CannotDeleteAdminException::class);
+        $result = $this->userService->deleteUser($adminUser);
 
-        $this->userService->deleteUser($adminUser);
-    }
-
-    /**
-     * 관리자 삭제 시 예외 메시지가 올바른지 확인
-     */
-    public function test_cannot_delete_admin_exception_has_correct_message(): void
-    {
-        $adminPermission = Permission::create([
-            'identifier' => 'core.admin.msg.test',
-            'name' => ['ko' => '관리자 권한', 'en' => 'Admin Permission'],
-            'extension_type' => ExtensionOwnerType::Core,
-            'extension_identifier' => 'core',
-            'type' => PermissionType::Admin,
-        ]);
-
-        $role = Role::create([
-            'identifier' => 'test-admin-msg',
-            'name' => ['ko' => '테스트 관리자', 'en' => 'Test Admin'],
-        ]);
-        $role->permissions()->attach($adminPermission->id);
-
-        $adminUser = User::factory()->create(['is_super' => false]);
-        $adminUser->roles()->attach($role->id);
-
-        try {
-            $this->userService->deleteUser($adminUser);
-            $this->fail('Expected CannotDeleteAdminException was not thrown');
-        } catch (CannotDeleteAdminException $e) {
-            $this->assertNotEmpty($e->getMessage());
-        }
+        $this->assertTrue($result);
+        $this->assertDatabaseMissing('users', ['id' => $adminUser->id]);
     }
 
     // ========================================================================

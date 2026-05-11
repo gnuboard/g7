@@ -170,20 +170,21 @@ class PostNavigationApiTest extends BoardTestCase
     }
 
     /**
-     * 존재하지 않는 게시글 ID로 조회 시 오류 응답
+     * 존재하지 않는 게시글 ID → 200 + 빈 prev/next (graceful degradation)
      *
-     * navigation()에서 getPost() 실패 시 일반 \Exception으로 잡혀 500 반환.
-     * (BoardNotFoundException만 re-throw, 나머지는 500 처리 — 컨트롤러 설계)
+     * 이슈 #269 이후 navigation 컨트롤러는 getAdjacent 실패를 모두 잡아 빈 응답으로 반환.
+     * 500 을 내지 않도록 한 회귀 방지 정책.
      */
-    public function test_navigation_with_nonexistent_post_returns_error(): void
+    public function test_navigation_with_nonexistent_post_returns_empty(): void
     {
         // When: 존재하지 않는 게시글 ID
         $response = $this->getJson(
             "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/99999999/navigation"
         );
 
-        // Then: 4xx 또는 5xx 오류 응답 (컨트롤러에서 \Exception → 500)
-        $this->assertGreaterThanOrEqual(400, $response->status());
+        // Then: 200 + prev/next null (graceful degradation)
+        $response->assertStatus(200);
+        $response->assertJson(['data' => ['prev' => null, 'next' => null]]);
     }
 
     /**

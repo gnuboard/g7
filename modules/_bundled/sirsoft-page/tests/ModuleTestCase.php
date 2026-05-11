@@ -38,6 +38,13 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
+     * HookManager static state 스냅샷 — tearDown 에서 복원하여 테스트 간 훅 격리 보장.
+     *
+     * @var array{hooks: array, filters: array, dispatching: array}|null
+     */
+    private ?array $hookSnapshot = null;
+
+    /**
      * 테스트 환경 설정
      */
     protected function setUp(): void
@@ -47,6 +54,10 @@ abstract class ModuleTestCase extends TestCase
         // 모듈 오토로드 등록 (테스트 환경)
         $this->registerModuleAutoload();
 
+        // ModuleManager 메모리에 모듈 인스턴스 등록
+        // (_bundled에서 직접 실행 시 활성 디렉토리가 없어 getModule()이 null 반환하는 문제 방지)
+        $this->registerModuleInManager();
+
         // 모듈 ServiceProvider 등록 (Repository 바인딩)
         $this->app->register(\Modules\Sirsoft\Page\Providers\PageServiceProvider::class);
 
@@ -55,6 +66,98 @@ abstract class ModuleTestCase extends TestCase
 
         // 기본 역할 생성
         $this->createDefaultRoles();
+
+        // _bundled 디렉토리 모듈은 ModuleManager::loadModules() 가 스캔하지 않아
+        // module.php 의 getHookListeners() 가 선언한 리스너들이 자동 등록되지 않는다.
+        // 테스트 환경에서 실제 부트 시점과 동일한 훅 흐름을 복원하기 위해 수동 등록.
+        $this->registerBundledModuleInstance();
+
+        // HookManager 상태 스냅샷 (tearDown 에서 복원)
+        $this->snapshotHookManager();
+    }
+
+    /**
+     * _bundled 디렉토리 모듈 인스턴스 + 훅 리스너 수동 등록.
+     *
+     * sirsoft-board ModuleTestCase 와 동일 패턴 — 자세한 설명은 board 측 주석 참조.
+     */
+    protected function registerBundledModuleInstance(): void
+    {
+        $moduleClass = \Modules\Sirsoft\Page\Module::class;
+
+        if (! class_exists($moduleClass)) {
+            require_once $this->getModuleBasePath() . '/module.php';
+        }
+
+        $module = new $moduleClass();
+
+        /** @var \App\Extension\ModuleManager $manager */
+        $manager = $this->app->make(\App\Extension\ModuleManager::class);
+
+        $reflection = new \ReflectionClass($manager);
+        $modulesProp = $reflection->getProperty('modules');
+        $modulesProp->setAccessible(true);
+        $current = $modulesProp->getValue($manager);
+        if (! isset($current['sirsoft-page'])) {
+            $current['sirsoft-page'] = $module;
+            $modulesProp->setValue($manager, $current);
+        }
+
+        if (method_exists($module, 'getHookListeners')) {
+            foreach ($module->getHookListeners() as $listenerClass) {
+                if (! class_exists($listenerClass)) {
+                    continue;
+                }
+                if (! in_array(\App\Contracts\Extension\HookListenerInterface::class, class_implements($listenerClass), true)) {
+                    continue;
+                }
+                try {
+                    \App\Extension\HookListenerRegistrar::register($listenerClass, 'sirsoft-page');
+                } catch (\Throwable $e) {
+                    // 중복 등록 등 무해한 예외는 무시
+                }
+            }
+        }
+    }
+
+    /**
+     * tearDown 에 HookManager 상태 복원.
+     */
+    protected function tearDown(): void
+    {
+        $this->restoreHookManager();
+
+        parent::tearDown();
+    }
+
+    /**
+     * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
+     */
+    private function snapshotHookManager(): void
+    {
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $this->hookSnapshot = [
+            'hooks' => $ref->getProperty('hooks')->getValue(),
+            'filters' => $ref->getProperty('filters')->getValue(),
+            'dispatching' => $ref->getProperty('dispatching')->getValue(),
+        ];
+    }
+
+    /**
+     * 스냅샷 시점으로 HookManager 복원.
+     */
+    private function restoreHookManager(): void
+    {
+        if ($this->hookSnapshot === null) {
+            return;
+        }
+
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
+        $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
+        $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
+
+        $this->hookSnapshot = null;
     }
 
     /**
@@ -68,27 +171,16 @@ abstract class ModuleTestCase extends TestCase
             return;
         }
 
-        // 코어 마이그레이션 먼저 실행 (users, roles, modules 등 의존 테이블 생성)
-        if (! Schema::hasTable('users') || ! Schema::hasTable('roles') || ! Schema::hasTable('modules')) {
-            $this->artisan('migrate');
-        }
+        // 매 PHP process 첫 setUp 시 DB 를 완전 초기화 후 코어+모듈 마이그레이션을 처음부터
+        // 실행한다 (page 도 board 와 동일하게 DatabaseTransactions 사용 — schema 자동 재구축 없음).
+        // 이전 process 잔재(컬럼/테이블은 있으나 migration record 누락) 로 인한 충돌을 차단한다.
+        $this->artisan('migrate:fresh');
 
         // 모듈 마이그레이션 실행 (코어 테이블 생성 후)
-        // pages 테이블이 없거나 스키마가 오래된 경우 재마이그레이션
-        if (! Schema::hasTable('pages') || ! Schema::hasColumn('pages', 'published')) {
-            if (Schema::hasTable('pages')) {
-                Schema::disableForeignKeyConstraints();
-                Schema::dropIfExists('page_attachments');
-                Schema::dropIfExists('page_versions');
-                Schema::dropIfExists('pages');
-                Schema::enableForeignKeyConstraints();
-            }
-
-            $this->artisan('migrate', [
-                '--path' => $this->getModuleBasePath().'/database/migrations',
-                '--realpath' => true,
-            ]);
-        }
+        $this->artisan('migrate', [
+            '--path' => $this->getModuleBasePath().'/database/migrations',
+            '--realpath' => true,
+        ]);
 
         static::$migrated = true;
     }
@@ -148,6 +240,41 @@ abstract class ModuleTestCase extends TestCase
                 require $file;
             }
         });
+    }
+
+    /**
+     * ModuleManager 메모리에 sirsoft-page 모듈 인스턴스를 수동 등록합니다.
+     *
+     * _bundled에서 직접 테스트 실행 시 활성 디렉토리가 없으므로
+     * ModuleManager::getModule()이 null을 반환합니다.
+     * PageServiceProvider의 storageServices 바인딩 클로저가 실행될 때
+     * 모듈 인스턴스가 등록되어 있어야 합니다.
+     *
+     * @return void
+     */
+    protected function registerModuleInManager(): void
+    {
+        $moduleClass = \Modules\Sirsoft\Page\Module::class;
+        if (! class_exists($moduleClass)) {
+            $moduleFile = $this->getModuleBasePath().'/src/Module.php';
+            if (file_exists($moduleFile)) {
+                require_once $moduleFile;
+            }
+        }
+
+        if (! class_exists($moduleClass)) {
+            return;
+        }
+
+        $module = new $moduleClass;
+        $manager = $this->app->make(\App\Extension\ModuleManager::class);
+
+        $reflection = new \ReflectionClass($manager);
+        $property = $reflection->getProperty('modules');
+        $property->setAccessible(true);
+        $modules = $property->getValue($manager);
+        $modules['sirsoft-page'] = $module;
+        $property->setValue($manager, $modules);
     }
 
     /**

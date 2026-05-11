@@ -1,6 +1,16 @@
 <?php
 
 return [
+    // Action labels (last segment).
+    // ActivityLog::getActionLabelAttribute resolves module-origin labels from the module's lang first.
+    'action' => [
+        'create' => 'Created',
+        'delete' => 'Deleted',
+        'restore' => 'Restored',
+        'update' => 'Updated',
+        'upload' => 'Uploaded',
+    ],
+
     'description' => [
         // Page management
         'page_index' => 'Page list viewed',

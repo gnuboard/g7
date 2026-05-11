@@ -1,0 +1,216 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_memo_form",
+    "permissions": [
+        "gnuboard7-hello_module.memos.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}"
+    },
+    "data_sources": [
+        {
+            "id": "memoData",
+            "type": "api",
+            "endpoint": "/api/modules/gnuboard7-hello_module/admin/memos/{{route?.id}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{route?.id}}",
+            "initLocal": "form",
+            "fallback": {
+                "data": null
+            }
+        }
+    ],
+    "init_actions": [
+        {
+            "comment": "생성 모드에서 폼 기본값 초기화",
+            "if": "{{!route?.id}}",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "form": {
+                    "title": "",
+                    "content": ""
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "memo_form_wrapper",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "memo_form_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "dataKey": "form",
+                        "props": {
+                            "className": "max-w-2xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow"
+                        },
+                        "children": [
+                            {
+                                "id": "memo_form_title",
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-2xl font-bold text-gray-900 dark:text-white mb-6"
+                                },
+                                "text": "{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}"
+                            },
+                            {
+                                "id": "memo_field_title",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        },
+                                        "text": "$t:gnuboard7-hello_module.admin.memos.form.fields.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "name_attr": "title",
+                                        "props": {
+                                            "type": "text",
+                                            "name": "title",
+                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "memo_field_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        },
+                                        "text": "$t:gnuboard7-hello_module.admin.memos.form.fields.content"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Textarea",
+                                        "props": {
+                                            "name": "content",
+                                            "rows": 6,
+                                            "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "memo_form_actions",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center justify-end gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "memo_cancel_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/memos"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:gnuboard7-hello_module.admin.memos.form.actions.cancel"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "memo_save_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "{{route?.id ? '/api/modules/gnuboard7-hello_module/admin/memos/' + route?.id : '/api/modules/gnuboard7-hello_module/admin/memos'}}",
+                                                "params": {
+                                                    "method": "{{route?.id ? 'PUT' : 'POST'}}",
+                                                    "body": "{{_local.form}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/memos"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? 'error'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:gnuboard7-hello_module.admin.memos.form.actions.save"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

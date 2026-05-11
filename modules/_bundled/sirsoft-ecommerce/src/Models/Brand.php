@@ -43,7 +43,9 @@ class Brand extends Model implements FulltextSearchable
     ];
 
     /**
-     * 생성자 관계
+     * 브랜드를 생성한 사용자 관계 (created_by FK).
+     *
+     * @return BelongsTo 생성자 사용자 관계
      */
     public function creator(): BelongsTo
     {
@@ -51,7 +53,9 @@ class Brand extends Model implements FulltextSearchable
     }
 
     /**
-     * 수정자 관계
+     * 브랜드를 마지막으로 수정한 사용자 관계 (updated_by FK).
+     *
+     * @return BelongsTo 수정자 사용자 관계
      */
     public function updater(): BelongsTo
     {
@@ -59,7 +63,9 @@ class Brand extends Model implements FulltextSearchable
     }
 
     /**
-     * 브랜드에 속한 상품들
+     * 이 브랜드에 속한 상품 목록 관계.
+     *
+     * @return HasMany 상품 관계 컬렉션
      */
     public function products(): HasMany
     {
@@ -67,9 +73,10 @@ class Brand extends Model implements FulltextSearchable
     }
 
     /**
-     * 현재 로케일의 브랜드명 반환
+     * 현재 로케일의 브랜드명을 반환합니다 (다국어 fallback chain 적용).
      *
-     * @param  string|null  $locale  로케일 (기본값: 현재 앱 로케일)
+     * @param  string|null  $locale  반환할 로케일. null 이면 현재 앱 로케일 사용
+     * @return string 로케일별 브랜드명, 누락 시 fallback 로케일/첫 번째 키 순으로 시도
      */
     public function getLocalizedName(?string $locale = null): string
     {
@@ -80,7 +87,7 @@ class Brand extends Model implements FulltextSearchable
             return '';
         }
 
-        return $name[$locale] ?? $name['ko'] ?? $name['en'] ?? $name[array_key_first($name)] ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**

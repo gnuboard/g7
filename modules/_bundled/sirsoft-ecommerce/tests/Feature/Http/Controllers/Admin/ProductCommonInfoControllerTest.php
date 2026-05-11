@@ -92,6 +92,9 @@ class ProductCommonInfoControllerTest extends ModuleTestCase
             'sort_order' => 2,
         ]);
 
+        // FULLTEXT 인덱스 cache 플러시 (MATCH * weight DOUBLE overflow 방지)
+        \Illuminate\Support\Facades\DB::statement('ALTER TABLE g7_ecommerce_product_common_infos ENGINE=InnoDB');
+
         // When: 검색으로 API 호출
         $response = $this->actingAs($this->adminUser)
             ->getJson('/api/modules/sirsoft-ecommerce/admin/product-common-infos?search=식품');

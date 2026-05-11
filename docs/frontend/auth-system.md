@@ -290,6 +290,94 @@ localStorage.removeItem('auth_token');  // 토큰 삭제 (로그아웃)
 
 ---
 
+## 인증 설정 커스터마이징 (`AuthManager.updateConfig`)
+
+템플릿이 코어 디폴트 로그인 경로(`/login`, `/admin/login`)와 다른 경로를 사용하는 경우, **템플릿 부트스트랩(`initTemplate`)**에서 `AuthManager.updateConfig` 를 호출해 사이트 단위로 오버라이드한다. IDV launcher 등록 패턴([template-idv-bootstrap.md](../extension/template-idv-bootstrap.md))과 동일한 "코어는 슬롯, 템플릿이 채움" 철학.
+
+### 시그니처
+
+```typescript
+AuthManager.getInstance().updateConfig(
+  type: 'user' | 'admin',
+  partial: Partial<AuthConfig>
+): void
+```
+
+`AuthConfig` 의 갱신 가능 필드: `loginPath`, `defaultPath`, `loginEndpoint`, `logoutEndpoint`, `refreshEndpoint`, `userEndpoint`, `unauthorizedRedirect`.
+
+### 호출 위치 — 템플릿 부트스트랩만
+
+```typescript
+// templates/_bundled/{template-id}/src/initTemplate.ts (예시)
+import { AuthManager } from '@core/auth/AuthManager';
+
+export function initTemplate() {
+  // 사이트 단위 로그인 경로 커스터마이징
+  AuthManager.getInstance().updateConfig('user', {
+    loginPath: '/account/signin',
+  });
+}
+```
+
+### 코드 예시 1 — 사용자 로그인 경로 커스터마이징
+
+```typescript
+AuthManager.getInstance().updateConfig('user', { loginPath: '/account/signin' });
+// → 401 자동 리다이렉트 시 /account/signin?redirect=...&reason=session_expired 로 이동
+```
+
+### 코드 예시 2 — 다국어 prefix 반영
+
+```typescript
+const locale = window.G7Core?.locale || 'ko';
+AuthManager.getInstance().updateConfig('user', { loginPath: `/${locale}/login` });
+```
+
+### 호출 금지 — 모듈/플러그인
+
+| ❌ 금지 | ✅ 올바른 사용 |
+| --- | --- |
+| 모듈/플러그인의 부트스트랩에서 `updateConfig` 호출 | 템플릿 부트스트랩에서만 호출 |
+| 다른 템플릿이 활성화된 사이트에 침범하여 부작용 발생 | 사이트 단위 결정은 템플릿 책임 |
+
+### 보안 가드 — open redirect 차단
+
+`loginPath` 는 **동일 origin path-only**(즉 `/`로 시작)만 허용하며, `//` 시작(protocol-relative URL) 도 차단한다. 외부 URL 을 지정하면 throw 된다 — open redirect 취약점을 런타임에서 차단.
+
+```typescript
+// ❌ throw — 외부 origin
+AuthManager.getInstance().updateConfig('user', { loginPath: 'https://evil.com/login' });
+
+// ❌ throw — protocol-relative URL
+AuthManager.getInstance().updateConfig('user', { loginPath: '//evil.com/login' });
+
+// ❌ throw — 상대 경로
+AuthManager.getInstance().updateConfig('user', { loginPath: './login' });
+
+// ✅ OK — path-only
+AuthManager.getInstance().updateConfig('user', { loginPath: '/account/signin' });
+```
+
+### 401 자동 리다이렉트 동작
+
+레이아웃 fetch 가 토큰 만료 등으로 401 재시도까지 실패하면, 코어 `TemplateApp.showRouteError` 가드가 자동으로 로그인 페이지로 리다이렉트한다 — `getLoginRedirectUrl(authType, returnUrl, 'session_expired')` 호출하여 `?reason=session_expired` 쿼리 포함. 로그인 레이아웃의 `init_actions` 에서 해당 reason 을 감지해 안내 토스트를 표시한다.
+
+```json
+// 로그인 레이아웃 init_actions 예시
+{
+  "if": "{{route?.query?.reason}} === 'session_expired'",
+  "handler": "toast",
+  "params": {
+    "type": "warning",
+    "message": "$t:auth.session_expired_toast"
+  }
+}
+```
+
+리다이렉트 동작 자체는 **코어가 강제**하며 레이아웃이 끌 수 없다. 경로만 `updateConfig` 로 사이트 단위 커스터마이즈 가능 ("여부는 강제, 경로는 커스터마이즈" 분리 설계).
+
+---
+
 ## 관련 문서
 
 - [데이터 소스](./data-sources.md) - API 호출 및 인증 헤더

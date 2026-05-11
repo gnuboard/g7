@@ -17,16 +17,27 @@
  * }
  */
 
-// 기본 설정
-header('Content-Type: application/json; charset=utf-8');
+// 라이브러리 모드 — 단위 테스트가 함수 정의만 로드할 때 메인 실행을 건너뛴다.
+// 테스트는 BASE_PATH 를 직접 정의한 뒤 SCAN_EXTENSIONS_LIBRARY=true 로 require.
+$scanExtensionsLibraryMode = defined('SCAN_EXTENSIONS_LIBRARY') && constant('SCAN_EXTENSIONS_LIBRARY');
 
-// 프로젝트 루트 경로
-define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3));
+if (! $scanExtensionsLibraryMode) {
+    // 기본 설정
+    header('Content-Type: application/json; charset=utf-8');
 
-// 세션 및 설정 포함 (Laravel autoload 없이 독립 실행)
-// 참고: 이 API는 Laravel 부팅 없이 디렉토리 스캔만 수행
-require_once dirname(__DIR__).'/includes/session.php';
-require_once dirname(__DIR__).'/includes/config.php';
+    // 프로젝트 루트 경로
+    if (! defined('BASE_PATH')) {
+        define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3));
+    }
+
+    // 세션 및 설정 포함 (Laravel autoload 없이 독립 실행)
+    // 참고: 이 API는 Laravel 부팅 없이 디렉토리 스캔만 수행
+    require_once dirname(__DIR__).'/includes/session.php';
+    require_once dirname(__DIR__).'/includes/config.php';
+
+    require_once __DIR__.'/_guard.php';
+    installer_guard_or_410();
+}
 
 /**
  * 템플릿 디렉토리 스캔
@@ -65,6 +76,11 @@ function scanTemplates(): array
 
         $data = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE || empty($data)) {
+            continue;
+        }
+
+        // hidden 매니페스트는 인스톨러에서 제외 (학습용 샘플 등)
+        if (! empty($data['hidden'])) {
             continue;
         }
 
@@ -156,6 +172,11 @@ function scanModules(): array
             continue;
         }
 
+        // hidden 매니페스트는 인스톨러에서 제외 (학습용 샘플 등)
+        if (! empty($data['hidden'])) {
+            continue;
+        }
+
         $dependencies = extractDependenciesFromJson($data);
         $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
 
@@ -228,6 +249,11 @@ function scanPlugins(): array
             continue;
         }
 
+        // hidden 매니페스트는 인스톨러에서 제외 (학습용 샘플 등)
+        if (! empty($data['hidden'])) {
+            continue;
+        }
+
         $dependencies = extractDependenciesFromJson($data);
         $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
 
@@ -240,6 +266,148 @@ function scanPlugins(): array
             'dependencies_detailed' => $dependenciesDetailed,
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
+        ];
+    }
+
+    return $result;
+}
+
+/**
+ * 번들 모듈/플러그인/템플릿 매니페스트에서 hidden=true 식별자 목록을 수집합니다.
+ *
+ * 학습용 샘플 등 hidden 처리된 호스트 확장의 식별자를 모아, 그 확장에 종속된 언어팩도
+ * 함께 인스톨러에서 제외할 수 있도록 합니다 (호스트 확장 hidden cascade).
+ *
+ * @return array<string> hidden 호스트 확장 식별자 목록
+ */
+function collectHiddenExtensionIdentifiers(): array
+{
+    $hidden = [];
+
+    $sources = [
+        'modules' => 'module.json',
+        'plugins' => 'plugin.json',
+        'templates' => 'template.json',
+    ];
+
+    foreach ($sources as $type => $manifestName) {
+        $bundleDir = BASE_PATH.'/'.$type.'/_bundled';
+        if (! is_dir($bundleDir)) {
+            continue;
+        }
+
+        $entries = scandir($bundleDir);
+        if ($entries === false) {
+            continue;
+        }
+
+        foreach ($entries as $sub) {
+            if ($sub === '.' || $sub === '..') {
+                continue;
+            }
+
+            $manifestPath = $bundleDir.'/'.$sub.'/'.$manifestName;
+            if (! file_exists($manifestPath)) {
+                continue;
+            }
+
+            $content = @file_get_contents($manifestPath);
+            if ($content === false) {
+                continue;
+            }
+
+            $data = json_decode($content, true);
+            if (json_last_error() !== JSON_ERROR_NONE || ! is_array($data)) {
+                continue;
+            }
+
+            if (! empty($data['hidden'])) {
+                $hidden[] = $data['identifier'] ?? $sub;
+            }
+        }
+    }
+
+    return $hidden;
+}
+
+/**
+ * 번들 언어팩 디렉토리 스캔
+ *
+ * `lang-packs/_bundled/*\/language-pack.json` 매니페스트를 직접 읽어 언어팩 목록을 수집합니다.
+ * Laravel 부팅 없이 동작하며, 매칭/정렬은 프론트엔드에서 결정합니다.
+ *
+ * hidden 처리:
+ *  - 매니페스트 자체에 hidden=true 가 있으면 제외 (직접 hidden)
+ *  - 종속된 호스트 확장이 hidden 이면 함께 제외 (cascade hidden — 학습용 샘플 모듈/템플릿용 언어팩 자동 제외)
+ *
+ * 응답 항목 shape:
+ *   identifier, directory, scope (core|module|plugin|template),
+ *   target_identifier (확장 식별자 또는 null),
+ *   locale, locale_name, locale_native_name, text_direction,
+ *   name, description (다국어 객체 또는 string),
+ *   version, author
+ *
+ * @return array 번들 언어팩 목록
+ */
+function scanLanguagePacks(): array
+{
+    $dir = BASE_PATH.'/lang-packs/_bundled';
+    $result = [];
+
+    if (! is_dir($dir)) {
+        return $result;
+    }
+
+    $entries = scandir($dir);
+    if ($entries === false) {
+        return $result;
+    }
+
+    $hiddenHostIdentifiers = collectHiddenExtensionIdentifiers();
+
+    foreach ($entries as $sub) {
+        if ($sub === '.' || $sub === '..') {
+            continue;
+        }
+
+        $manifestPath = $dir.'/'.$sub.'/language-pack.json';
+        if (! file_exists($manifestPath)) {
+            continue;
+        }
+
+        $content = @file_get_contents($manifestPath);
+        if ($content === false) {
+            continue;
+        }
+
+        $data = json_decode($content, true);
+        if (json_last_error() !== JSON_ERROR_NONE || empty($data)) {
+            continue;
+        }
+
+        // 직접 hidden 처리된 매니페스트 제외
+        if (! empty($data['hidden'])) {
+            continue;
+        }
+
+        // 종속 호스트 확장이 hidden 이면 cascade 제외 (학습용 샘플 모듈/템플릿용 언어팩 자동 제외)
+        $targetIdentifier = $data['target_identifier'] ?? null;
+        if (is_string($targetIdentifier) && $targetIdentifier !== '' && in_array($targetIdentifier, $hiddenHostIdentifiers, true)) {
+            continue;
+        }
+
+        $result[] = [
+            'identifier' => $data['identifier'] ?? $sub,
+            'directory' => $sub,
+            'scope' => $data['scope'] ?? 'core',
+            'target_identifier' => $data['target_identifier'] ?? null,
+            'locale' => $data['locale'] ?? '',
+            'locale_name' => $data['locale_name'] ?? '',
+            'locale_native_name' => $data['locale_native_name'] ?? ($data['locale_name'] ?? ($data['locale'] ?? '')),
+            'text_direction' => $data['text_direction'] ?? 'ltr',
+            'name' => $data['name'] ?? $sub,
+            'description' => $data['description'] ?? ['ko' => '', 'en' => ''],
+            'version' => $data['version'] ?? '1.0.0',
         ];
     }
 
@@ -330,6 +498,10 @@ function extractDependenciesDetailedFromJson(array $data): array
 }
 
 // ===== 메인 실행 =====
+// 라이브러리 모드(테스트) 에서는 메인 실행을 건너뛴다.
+if ($scanExtensionsLibraryMode) {
+    return;
+}
 
 try {
     // 템플릿 스캔
@@ -340,6 +512,9 @@ try {
 
     // 플러그인 스캔
     $plugins = scanPlugins();
+
+    // 번들 언어팩 스캔
+    $languagePacks = scanLanguagePacks();
 
     // Admin 템플릿 필수 검증
     if (empty($templates['admin'])) {
@@ -360,6 +535,7 @@ try {
             'user_templates' => $templates['user'],
             'modules' => $modules,
             'plugins' => $plugins,
+            'language_packs' => $languagePacks,
         ],
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 

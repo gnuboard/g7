@@ -37,7 +37,7 @@ class CoreActivityLogListenerTest extends TestCase
         // 관리자 경로 요청 설정 (resolveLogType()이 Admin 반환하도록)
         $this->app->instance('request', Request::create('/api/admin/users'));
 
-        $this->listener = new CoreActivityLogListener();
+        $this->listener = app(CoreActivityLogListener::class);
 
         // Mock Log::channel('activity') → $logChannel
         $this->logChannel = Mockery::mock(LoggerInterface::class);
@@ -129,12 +129,12 @@ class CoreActivityLogListenerTest extends TestCase
     // getSubscribedHooks 테스트
     // ═══════════════════════════════════════════
 
-    public function test_getSubscribedHooks_returns_all_61_hooks(): void
+    public function test_getSubscribedHooks_returns_all_hooks(): void
     {
         $hooks = CoreActivityLogListener::getSubscribedHooks();
 
-        // 59개 로깅(after_*) 훅 (mail_template 2개 제거됨, 스냅샷은 Service에서 캡처하여 인수로 전달)
-        $this->assertCount(59, $hooks);
+        // 64개 로깅(after_*) 훅 (mail_template 2개 제거됨, IDV/auth 후속 추가 분 포함, develop 머지 후 +2)
+        $this->assertCount(64, $hooks);
     }
 
     public function test_handle_does_nothing(): void
@@ -1163,7 +1163,7 @@ class CoreActivityLogListenerTest extends TestCase
                     && $context['description_params']['template_name'] === 'sirsoft-basic';
             });
 
-        $this->listener->handleTemplateAfterDeactivate(['identifier' => 'sirsoft-basic']);
+        $this->listener->handleTemplateAfterDeactivate('sirsoft-basic');
     }
 
     public function test_handleTemplateAfterUninstall_logs_activity(): void

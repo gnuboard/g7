@@ -60,6 +60,8 @@ class UserAddressService
      */
     public function createAddress(array $data): UserAddress
     {
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.before_create', $data);
+
         $userId = $data['user_id'];
 
         // 배송지명 중복 확인
@@ -88,7 +90,11 @@ class UserAddressService
             $this->addressRepository->setDefault($userId, 0); // 기존 기본 해제
         }
 
-        return $this->addressRepository->create($data);
+        $address = $this->addressRepository->create($data);
+
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.after_create', $address);
+
+        return $address;
     }
 
     /**
@@ -107,13 +113,19 @@ class UserAddressService
             return null;
         }
 
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.before_update', $address, $data);
+
         // 기본 배송지로 설정 요청 시 기존 기본 배송지 해제
         if (! empty($data['is_default']) && $data['is_default']) {
             $this->addressRepository->setDefault($userId, $addressId);
             unset($data['is_default']);
         }
 
-        return $this->addressRepository->update($address, $data);
+        $updated = $this->addressRepository->update($address, $data);
+
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.after_update', $updated);
+
+        return $updated;
     }
 
     /**
@@ -131,6 +143,8 @@ class UserAddressService
             return false;
         }
 
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.before_delete', $address);
+
         $wasDefault = $address->is_default;
 
         $result = $this->addressRepository->delete($address);
@@ -142,6 +156,8 @@ class UserAddressService
                 $this->addressRepository->setDefault($userId, $addresses->first()->id);
             }
         }
+
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.after_delete', $address->id);
 
         return $result;
     }
@@ -161,9 +177,15 @@ class UserAddressService
             return null;
         }
 
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.before_set_default', $address);
+
         $this->addressRepository->setDefault($userId, $addressId);
 
-        return $address->fresh();
+        $fresh = $address->fresh();
+
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.user_address.after_set_default', $fresh);
+
+        return $fresh;
     }
 
     /**

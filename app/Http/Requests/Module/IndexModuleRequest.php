@@ -63,6 +63,9 @@ class IndexModuleRequest extends FormRequest
             // 페이지네이션
             'per_page' => 'nullable|integer|min:1|max:100',
             'page' => 'nullable|integer|min:1',
+
+            // 숨김 항목 포함 여부 (manifest hidden=true 확장)
+            'include_hidden' => 'nullable|boolean',
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공

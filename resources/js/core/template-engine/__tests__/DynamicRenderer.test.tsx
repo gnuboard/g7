@@ -1299,7 +1299,7 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
 
   /**
    * Regression Tests
-   * @see .claude/docs/frontend/troubleshooting-state-closure.md
+   * @see docs/frontend/troubleshooting-state-closure.md
    */
   describe('Regression Tests - Stale Closure Prevention', () => {
     /**

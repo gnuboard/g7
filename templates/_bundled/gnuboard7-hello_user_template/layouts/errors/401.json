@@ -1,0 +1,70 @@
+{
+    "version": "1.0.0",
+    "layout_name": "401",
+    "extends": "_user_base",
+    "meta": {
+        "title": "$t:error.401.title",
+        "description": "$t:error.401.description"
+    },
+    "slots": {
+        "content": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "min-h-[50vh] flex items-center justify-center"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "text-center px-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "text-6xl font-bold text-gray-200 mb-4"
+                                },
+                                "text": "401"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-2xl font-bold text-gray-900 mb-2"
+                                },
+                                "text": "$t:error.401.title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-gray-600 mb-6"
+                                },
+                                "text": "$t:error.401.description"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "px-5 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": { "path": "/" }
+                                    }
+                                ],
+                                "text": "$t:error.back_to_home"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

@@ -33,7 +33,7 @@ class EcommerceUserActivityLogListenerTest extends TestCase
     {
         parent::setUp();
         $this->app->instance('request', Request::create('/api/shop/test'));
-        $this->listener = new EcommerceUserActivityLogListener();
+        $this->listener = app(EcommerceUserActivityLogListener::class);
         $this->logChannel = Mockery::mock(\Psr\Log\LoggerInterface::class);
         Log::shouldReceive('channel')
             ->with('activity')

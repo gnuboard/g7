@@ -2,11 +2,9 @@
 
 namespace Tests\Unit\Jobs;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Jobs\GenerateSitemapJob;
-use App\Seo\SitemapGenerator;
+use App\Seo\SitemapManager;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
@@ -14,7 +12,8 @@ use Tests\TestCase;
 /**
  * GenerateSitemapJob 유닛 테스트
  *
- * Sitemap 생성 잡의 큐 속성, 캐시 저장, 비활성화 분기, 실패 처리를 검증합니다.
+ * 잡의 큐 속성과 SitemapManager 위임 동작을 검증합니다.
+ * 실제 생성/캐시/last_updated_at 로직은 SitemapManager 단위 테스트에서 검증합니다.
  */
 class GenerateSitemapJobTest extends TestCase
 {
@@ -46,89 +45,78 @@ class GenerateSitemapJobTest extends TestCase
     }
 
     /**
-     * handle() 호출 시 Sitemap을 생성하고 캐시에 저장하는지 확인합니다.
+     * handle() 호출 시 SitemapManager::regenerate 에 위임하는지 확인합니다.
      */
-    public function test_handle_generates_and_caches_sitemap(): void
+    public function test_handle_delegates_to_sitemap_manager(): void
     {
-        Config::set('g7_settings.core.seo.sitemap_enabled', true);
-        Config::set('g7_settings.core.seo.sitemap_cache_ttl', 86400);
-
-        $xml = '<?xml version="1.0"?><urlset></urlset>';
-
-        $generator = Mockery::mock(SitemapGenerator::class);
-        $generator->shouldReceive('generate')
+        $manager = Mockery::mock(SitemapManager::class);
+        $manager->shouldReceive('regenerate')
             ->once()
-            ->andReturn($xml);
-
-        $cache = Mockery::mock(CacheInterface::class);
-        $cache->shouldReceive('put')
-            ->once()
-            ->with('seo.sitemap', $xml, 86400);
+            ->andReturn([
+                'success' => true,
+                'status' => 'updated',
+                'data' => [
+                    'last_updated_at' => '2026-04-29T10:00:00+00:00',
+                    'size_bytes' => 1234,
+                    'ttl' => 86400,
+                ],
+            ]);
 
         Log::shouldReceive('info')
             ->once()
-            ->with('[SEO] Sitemap generated and cached', Mockery::on(function ($context) use ($xml) {
-                return $context['size'] === strlen($xml) && $context['ttl'] === 86400;
+            ->with('[SEO] Sitemap generated and cached', Mockery::on(function ($context) {
+                return $context['size'] === 1234 && $context['ttl'] === 86400;
             }));
 
         $job = new GenerateSitemapJob();
-        $job->handle($generator, $cache);
+        $job->handle($manager);
 
         $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
     }
 
     /**
-     * sitemap_enabled=false일 때 생성을 건너뛰는지 확인합니다.
+     * disabled 상태이면 생성을 건너뛰고 예외를 던지지 않는지 확인합니다.
      */
-    public function test_handle_skips_when_sitemap_disabled(): void
+    public function test_handle_skips_when_disabled(): void
     {
-        Config::set('g7_settings.core.seo.sitemap_enabled', false);
-
-        $generator = Mockery::mock(SitemapGenerator::class);
-        $generator->shouldNotReceive('generate');
-        $cache = Mockery::mock(CacheInterface::class);
+        $manager = Mockery::mock(SitemapManager::class);
+        $manager->shouldReceive('regenerate')
+            ->once()
+            ->andReturn([
+                'success' => false,
+                'status' => 'disabled',
+                'message' => 'Sitemap 생성이 비활성화되어 있습니다.',
+            ]);
 
         Log::shouldReceive('info')
             ->once()
             ->with('[SEO] Sitemap generation skipped (disabled)');
 
         $job = new GenerateSitemapJob();
-        $job->handle($generator, $cache);
+        $job->handle($manager);
 
         $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
     }
 
     /**
-     * 설정된 커스텀 TTL이 cache->put에 전달되는지 확인합니다.
+     * 실패 응답 시 RuntimeException 을 던져 큐가 재시도하도록 합니다.
      */
-    public function test_handle_uses_configured_cache_ttl(): void
+    public function test_handle_throws_on_failure(): void
     {
-        Config::set('g7_settings.core.seo.sitemap_enabled', true);
-        Config::set('g7_settings.core.cache.seo_sitemap_ttl', 3600);
-        Config::set('g7_settings.core.seo.sitemap_cache_ttl', 3600);
-
-        $xml = '<urlset/>';
-
-        $generator = Mockery::mock(SitemapGenerator::class);
-        $generator->shouldReceive('generate')
+        $manager = Mockery::mock(SitemapManager::class);
+        $manager->shouldReceive('regenerate')
             ->once()
-            ->andReturn($xml);
+            ->andReturn([
+                'success' => false,
+                'status' => 'failed',
+                'message' => 'contributor crashed',
+            ]);
 
-        $cache = Mockery::mock(CacheInterface::class);
-        $cache->shouldReceive('put')
-            ->once()
-            ->with('seo.sitemap', $xml, 3600);
-
-        Log::shouldReceive('info')
-            ->once()
-            ->with('[SEO] Sitemap generated and cached', Mockery::on(function ($context) {
-                return $context['ttl'] === 3600;
-            }));
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('contributor crashed');
 
         $job = new GenerateSitemapJob();
-        $job->handle($generator, $cache);
-
-        $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
+        $job->handle($manager);
     }
 
     /**

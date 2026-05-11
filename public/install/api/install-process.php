@@ -15,6 +15,8 @@ require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/installer-state.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/_guard.php';
+installer_guard_or_410();
 
 // 다국어 로드
 $currentLang = getCurrentLanguage();
@@ -171,6 +173,10 @@ try {
     $state['config'] = $config;
     $state['error'] = null;
     $state['installation_mode'] = $installationMode;
+
+    // existing_db_action 변경 시 db_cleanup 재실행 보장 (이슈 #319 부수 발견)
+    // 이전 'skip' → 신규 'drop_tables' 케이스에서 cleanup 이 재호출되도록 마커 제거
+    $state = applyExistingDbActionStateGuard($state, $existingDbAction);
     $state['existing_db_action'] = $existingDbAction;
 
     /**
@@ -237,6 +243,18 @@ try {
             session_write_close();
         }
 
+        // 출력 버퍼 / 압축 비활성화 — install-worker.php(SSE) 와 동일.
+        // PHP 8.5 회귀: php.ini output_buffering 또는 zlib.output_compression 이 활성화된
+        // SAPI 환경에서 echo $responseJson 후 @flush() / fastcgi_finish_request() 만으로는
+        // wire body 가 즉시 송신되지 않아 브라우저 fetch 가 워커 종료 시점까지 hang.
+        // Content-Length 헤더와 압축 후 실제 바이트 수가 어긋나 chunked 전환되는 케이스도
+        // 동시에 차단. echo 이전에 모두 비활성화해야 한다.
+        @ini_set('output_buffering', 'off');
+        @ini_set('zlib.output_compression', false);
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', 1);
+        }
+
         // 기존 출력 버퍼 전부 비우기 (헤더 설정 전)
         while (ob_get_level() > 0) {
             @ob_end_clean();
@@ -249,6 +267,16 @@ try {
         header('Connection: close');
 
         echo $responseJson;
+
+        // mod_fcgid 64KB 출력 버퍼 강제 flush — Apache + mod_fcgid 환경에서 PHP 응답이
+        // FCGI 소켓 → mod_fcgid → Apache 경로로 전달되는데, mod_fcgid 의 default
+        // FcgidOutputBufferSize(64KB) 가 차거나 스크립트가 종료해야 Apache 로 송출.
+        // 워커가 인라인으로 10분간 실행되는 동안 응답이 client 까지 도달 못해
+        // PollingMonitor 시작 자체가 불가능했던 회귀 차단.
+        // 브라우저는 Content-Length 만큼만 읽고 fetch resolve — padding 은 무시됨.
+        // FcgidOutputBufferSize 0 환경 / mod_php / PHP-FPM 환경에서는 무해 (불필요한
+        // 64KB 1회 송출만 발생, 사용자 체감 영향 없음).
+        echo str_repeat(' ', 65536);
 
         // 출력 플러시 + PHP-FPM 지원 시 연결 종료
         @flush();
@@ -264,11 +292,24 @@ try {
         addLog('=== Install Worker Polling Started ===');
         addLog('Client IP: ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
 
+        // 클라이언트가 SSE 호환성 사전 체크 후 폴링 모드를 명시 선택한 흐름이다.
+        // SSE 워커가 동시 실행되지 않으므로 takeover 로직 불필요 — 일반 lock 획득.
+        $lockResult = acquireWorkerLock(15);
+        if (! $lockResult['acquired']) {
+            addLog('=== Polling Worker rejected — another worker is active ===');
+            exit;
+        }
+
+        $workerId = $lockResult['worker_id'];
+        addLog('Worker lock acquired: ' . $workerId . ' (reason: ' . $lockResult['reason'] . ')');
+
+        register_shutdown_function('releaseWorkerLock', $workerId);
+
         // 폴링 모드 — NullEmitter 등록 후 task runner 실행
         require_once __DIR__ . '/../includes/progress-emitter.php';
         require_once __DIR__ . '/../includes/task-runner.php';
 
-        setProgressEmitter(new NullEmitter());
+        setProgressEmitter(new NullEmitter($workerId));
         runInstallationTasks();
         exit;
     }

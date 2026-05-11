@@ -24,10 +24,11 @@ class NotificationControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // 사용자 알림 권한은 user-notifications 네임스페이스로 리팩토링됨
         $this->user = $this->createUserWithPermissions([], [
-            'core.notifications.read',
-            'core.notifications.update',
-            'core.notifications.delete',
+            'core.user-notifications.read',
+            'core.user-notifications.update',
+            'core.user-notifications.delete',
         ]);
         $this->token = $this->user->createToken('test-token')->plainTextToken;
     }

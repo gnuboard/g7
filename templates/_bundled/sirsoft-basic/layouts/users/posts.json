@@ -3,6 +3,17 @@
   "layout_name": "users/posts",
   "extends": "_user_base",
   "permissions": [],
+  "meta": {
+    "seo": {
+      "enabled": true,
+      "data_sources": ["userProfile"],
+      "priority": 0.3,
+      "changefreq": "weekly",
+      "og": {
+        "type": "profile"
+      }
+    }
+  },
   "data_sources": [
     {
       "id": "userProfile",
@@ -359,11 +370,11 @@
                                         "comment": "댓글 수",
                                         "type": "basic",
                                         "name": "Span",
-                                        "if": "{{post.comments_count > 0}}",
+                                        "if": "{{post.comment_count > 0}}",
                                         "props": {
                                           "className": "flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium"
                                         },
-                                        "text": "[{{post.comments_count}}]"
+                                        "text": "[{{post.comment_count}}]"
                                       }
                                     ]
                                   }

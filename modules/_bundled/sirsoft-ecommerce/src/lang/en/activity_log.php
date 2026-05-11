@@ -1,6 +1,48 @@
 <?php
 
 return [
+    // Action labels (last segment).
+    // ActivityLog::getActionLabelAttribute resolves module-origin labels from the module's
+    // own lang first (G7 area-separation consistency).
+    'action' => [
+        'add' => 'Added',
+        'bulk_create' => 'Bulk Created',
+        'bulk_delete' => 'Bulk Deleted',
+        'bulk_price_update' => 'Bulk Price Updated',
+        'bulk_shipping_update' => 'Bulk Shipping Updated',
+        'bulk_status' => 'Bulk Status Changed',
+        'bulk_status_change' => 'Bulk Status Changed',
+        'bulk_status_update' => 'Bulk Status Updated',
+        'bulk_stock_update' => 'Bulk Stock Updated',
+        'bulk_toggle_active' => 'Bulk Active Status Changed',
+        'bulk_update' => 'Bulk Updated',
+        'cancel' => 'Cancelled',
+        'change_option' => 'Option Changed',
+        'confirm' => 'Confirmed',
+        'copy' => 'Copied',
+        'create' => 'Created',
+        'delete' => 'Deleted',
+        'delete_all' => 'All Deleted',
+        'download' => 'Downloaded',
+        'earn' => 'Earned',
+        'partial_cancel' => 'Partially Cancelled',
+        'payment_complete' => 'Payment Completed',
+        'payment_failed' => 'Payment Failed',
+        'reorder' => 'Reordered',
+        'restore' => 'Restored',
+        'send_email' => 'Email Sent',
+        'set_default' => 'Set as Default',
+        'status_change' => 'Status Changed',
+        'stock_sync' => 'Stock Synchronized',
+        'toggle_active' => 'Active Status Changed',
+        'toggle_status' => 'Status Toggled',
+        'update' => 'Updated',
+        'update_quantity' => 'Quantity Updated',
+        'update_shipping_address' => 'Shipping Address Updated',
+        'upload' => 'Uploaded',
+        'use' => 'Used',
+    ],
+
     'description' => [
         // Product management (Admin)
         'product_index' => 'Product list viewed',

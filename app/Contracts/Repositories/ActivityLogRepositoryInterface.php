@@ -52,4 +52,14 @@ interface ActivityLogRepositoryInterface
      * @return Collection 활동 로그 컬렉션
      */
     public function getRecent(string $permission, int $limit = 5): Collection;
+
+    /**
+     * 사용자 삭제 시 해당 사용자의 모든 activity_logs.user_id 컬럼을 NULL 로 익명화합니다.
+     *
+     * 외래키가 제거된 파티셔닝 호환 스키마에서 직접 익명화 책임을 갖습니다.
+     *
+     * @param  int  $userId  익명화 대상 사용자 ID
+     * @return int 익명화된 row 수
+     */
+    public function anonymizeUserId(int $userId): int;
 }

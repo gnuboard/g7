@@ -44,6 +44,22 @@ class AdminProductInquiryControllerTest extends ModuleTestCase
         // inquiry board_slug 설정
         app(EcommerceSettingsService::class)->setSetting('inquiry.board_slug', 'test-inquiry-board');
 
+        // 다른 모듈(sirsoft-board 등) 의 ServiceProvider 가 등록한 inquiry.* 필터가
+        // ModuleTestCase snapshot 에 의해 잔존하여 test mock 과 충돌하는 cross-module
+        // contamination 을 차단. 본 테스트는 board 모듈 동작이 아닌 ecommerce 컨트롤러
+        // 자체 동작만 검증하므로, mock 의 단순 반환값으로 전체 chain 을 대체.
+        foreach ([
+            'sirsoft-ecommerce.inquiry.delete',
+            'sirsoft-ecommerce.inquiry.update_reply',
+            'sirsoft-ecommerce.inquiry.delete_reply',
+            'sirsoft-ecommerce.inquiry.create',
+            'sirsoft-ecommerce.inquiry.get_settings',
+            'sirsoft-ecommerce.inquiry.store_validation_rules',
+            'sirsoft-ecommerce.inquiry.update_validation_rules',
+        ] as $hook) {
+            HookManager::clearFilter($hook);
+        }
+
         // 게시판 훅 모킹
         HookManager::addFilter(
             'sirsoft-ecommerce.inquiry.delete',
@@ -107,7 +123,7 @@ class AdminProductInquiryControllerTest extends ModuleTestCase
     {
         $response = $this->postJson(
             "{$this->apiBase}/{$this->inquiry->id}/reply",
-            ['content' => '답변 내용']
+            ['content' => '답변 내용입니다 친절하게']
         );
 
         $response->assertUnauthorized();
@@ -135,7 +151,7 @@ class AdminProductInquiryControllerTest extends ModuleTestCase
         $response = $this->actingAs($this->adminUser)
             ->postJson(
                 "{$this->apiBase}/99999/reply",
-                ['content' => '답변 내용']
+                ['content' => '답변 내용입니다 친절하게']
             );
 
         $response->assertStatus(422);
@@ -174,7 +190,7 @@ class AdminProductInquiryControllerTest extends ModuleTestCase
         $response = $this->actingAs($normalUser)
             ->putJson(
                 "{$this->apiBase}/{$answeredInquiry->id}/reply",
-                ['content' => '수정 시도']
+                ['content' => '수정 시도 내용입니다 자세히']
             );
 
         $response->assertForbidden();

@@ -49,6 +49,7 @@ import {
   shallowObjectEqual,
 } from '../hooks/useControllableState';
 import { triggerModalParentUpdate } from './ParentContextProvider';
+import { IdentityGuardInterceptor, IDENTITY_REDIRECT_STASH_KEY } from '../identity/IdentityGuardInterceptor';
 
 const logger = createLogger('G7CoreGlobals');
 
@@ -2413,6 +2414,11 @@ function initLocaleAPI(G7Core: any, deps: G7CoreDependencies): void {
      * 지원하는 로케일 목록을 반환합니다.
      */
     supported: () => {
+      const templateApp = (window as any).__templateApp;
+      const systemLocales = templateApp?.globalState?.appConfig?.supportedLocales;
+      if (Array.isArray(systemLocales) && systemLocales.length > 0) {
+        return systemLocales;
+      }
       const state = deps.getState();
       return state.templateMetadata?.locales || ['ko', 'en'];
     },
@@ -3050,6 +3056,49 @@ function initWysiwygEditorAPI(G7Core: any): void {
 }
 
 /**
+ * G7Core.identity 인터페이스 초기화 (engine-v1.46.0+)
+ *
+ * 본인인증(IDV) 인터셉터를 템플릿/플러그인이 동일 인스턴스로 공유하기 위한 글로벌 진입점입니다.
+ * 템플릿 번들이 IIFE 로 빌드되면서 코어 모듈을 외부화하지 않으므로, 직접 import 대신
+ * 이 namespace 를 통해 코어의 단일 IdentityGuardInterceptor 정적 클래스에 접근해야 합니다.
+ *
+ * 노출되는 진입점:
+ * - `setLauncher(launcher)` — 템플릿 부트스트랩에서 모달 launcher 등록
+ * - `redirectExternally(payload)` — external_redirect 흐름 helper
+ * - `createDeferred()` / `resolveDeferred(result)` — launcher 가 모달 결과를 await 하기 위한 deferred
+ * - `hasLauncher()` / `reset()` — 진단/테스트용
+ * - `redirectStashKey` — sessionStorage stash 키 상수
+ *
+ * @param G7Core - window.G7Core 네임스페이스
+ */
+function initIdentityAPI(G7Core: any): void {
+  G7Core.identity = {
+    /** 모달 launcher 등록 (템플릿 부트스트랩에서 호출) */
+    setLauncher: IdentityGuardInterceptor.setLauncher.bind(IdentityGuardInterceptor),
+
+    /** 등록된 launcher 가 있는지 여부 */
+    hasLauncher: IdentityGuardInterceptor.hasLauncher.bind(IdentityGuardInterceptor),
+
+    /** external_redirect 흐름 — sessionStorage stash + window.location 이동 */
+    redirectExternally: IdentityGuardInterceptor.redirectExternally.bind(IdentityGuardInterceptor),
+
+    /** launcher 가 모달 결과를 await 하기 위한 deferred Promise 생성 */
+    createDeferred: IdentityGuardInterceptor.createDeferred.bind(IdentityGuardInterceptor),
+
+    /** 모달/풀페이지가 verify 결과를 deferred resolver 에 통보 (resolveIdentityChallenge 핸들러 내부에서 사용) */
+    resolveDeferred: IdentityGuardInterceptor.resolveDeferred.bind(IdentityGuardInterceptor),
+
+    /** 테스트/진단용 — launcher 와 deferred 슬롯 초기화 */
+    reset: IdentityGuardInterceptor.reset.bind(IdentityGuardInterceptor),
+
+    /** sessionStorage stash 키 상수 */
+    redirectStashKey: IDENTITY_REDIRECT_STASH_KEY,
+  };
+
+  logger.log('전역 객체 window.G7Core 본인인증(IDV) API에 노출됨 (identity)');
+}
+
+/**
  * G7Core 전역 객체를 초기화합니다.
  *
  * 템플릿 컴포넌트에서 사용할 수 있는 모든 전역 API를 window.G7Core에 노출합니다.
@@ -3089,6 +3138,7 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   initModuleAPI(G7Core);
   initSlotAPI(G7Core, deps);
   initWysiwygEditorAPI(G7Core);
+  initIdentityAPI(G7Core);
 
   logger.log('G7Core 전역 객체 초기화 완료');
 

@@ -1,0 +1,29 @@
+{
+  "report_status": {
+    "pending": "受け取り",
+    "review": "審査",
+    "rejected": "却下",
+    "suspended": "投稿停止",
+    "deleted": "永久削除"
+  },
+  "trigger_type": {
+    "report": "通報",
+    "admin": "管理者",
+    "system": "システム"
+  },
+  "report_type": {
+    "post": "投稿",
+    "comment": "コメント"
+  },
+  "report_reason_type": {
+    "abuse": "悪口/誹謗中傷",
+    "hate_speech": "ヘイトスピーチ",
+    "spam": "スパム/広告",
+    "copyright": "著作権侵害",
+    "privacy": "個人情報露出",
+    "misinformation": "虚偽情報/フェイクニュース",
+    "sexual": "性的コンテンツ",
+    "violence": "暴力的なコンテンツ",
+    "other": "その他"
+  }
+}

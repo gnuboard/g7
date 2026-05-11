@@ -28,6 +28,22 @@
 - **row 존재 여부**: config 기준으로 결정 (user_overrides 무관)
 - **필드 값 (유지 row)**: user_overrides 에 등록된 필드만 보존
 
+### 1.1. cleanup 가드 — declaration 빈 배열 안전 차단
+
+sync 메서드는 declaration getter (예: `Module::getIdentityPolicies()`) 의 결과를 받아 cleanup 단계로 들어가기 전에 다음 가드를 적용한다:
+
+```text
+declaration 빈 배열 + DB 에 기존 row 존재 → cleanup 차단 + warning 로그
+declaration 빈 배열 + DB 도 비어있음 → 정상 skip
+declaration 정상 채워짐 → 정상 cleanup (현재 선언과 일치하지 않는 row 삭제)
+```
+
+배경: declaration 메서드는 모듈/플러그인 코드 계약. 빈 배열 = "이 영역을 사용하지 않음" 의 의미라면 첫 install 시점부터 DB row 가 없을 것이라는 전제가 성립한다. **DB 에 기존 row 가 존재한다는 사실은 declaration 이 정상 채워진 상태가 있었음을 입증** — 따라서 빈 반환은 정상 의도가 아닌 환경 결함(spawn 자식 PSR-4 stale, fresh-load 의존성 누락, trait 부분 로드 등) 으로 인한 부분 결과일 가능성이 높다. silent 데이터 손실 차단을 위해 cleanup 호출 자체를 건너뛴다.
+
+운영자가 진짜 모듈 declaration 을 비웠다면 admin UI 의 명시적 삭제 경로를 사용한다 — silent declaration 흐름과 명시적 삭제는 의미가 다르다.
+
+신규 sync 메서드 작성 시 본 가드를 반드시 적용 (`hasExisting*` 체크 helper 패턴 참조: `ModuleManager::hasExistingIdentityPolicies` 등).
+
 ## 2. Helper 5종 개요
 
 | Helper | 역할 | 대상 테이블 | 주요 도메인 로직 |
@@ -131,28 +147,33 @@ public function cleanupStaleDefinitions(
 public function cleanupStaleTemplates(int $definitionId, array $currentChannels): int;
 ```
 
-### 사용 패턴 (Seeder)
+### 사용 패턴
+
+SSoT 위치(코어 config 또는 모듈/플러그인 getter)에서 정의 배열을 얻은 뒤 동일한 helper 흐름으로 동기화합니다.
 
 ```php
 $helper = app(NotificationSyncHelper::class);
 $definedTypes = [];
 
-foreach ($this->getDefaultDefinitions() as $data) {
+foreach ($definitions as $data) {
     $definition = $helper->syncDefinition($data);
     $definedTypes[] = $definition->type;
 
     $definedChannels = [];
-    foreach ($data['templates'] as $template) {
+    foreach ($data['templates'] ?? [] as $template) {
         $helper->syncTemplate($definition->id, $template);
         $definedChannels[] = $template['channel'];
     }
     $helper->cleanupStaleTemplates($definition->id, $definedChannels);
 }
 
-$helper->cleanupStaleDefinitions('core', 'core', $definedTypes);
+$helper->cleanupStaleDefinitions($extensionType, $extensionIdentifier, $definedTypes);
 ```
 
-**호출처**: `NotificationDefinitionSeeder` (코어), `BoardNotificationDefinitionSeeder`, `EcommerceNotificationDefinitionSeeder`.
+**호출처**:
+
+- 코어: `NotificationDefinitionSeeder` (`config('core.notification_definitions')` 직독)
+- 모듈/플러그인: `ModuleManager::syncModuleNotificationDefinitions()` / `PluginManager::syncPluginNotificationDefinitions()` (각 확장의 `getNotificationDefinitions()` getter 호출 — 별도 Seeder 작성 금지)
 
 ---
 

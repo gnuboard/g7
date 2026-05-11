@@ -54,6 +54,7 @@ $ARGUMENTS 경로의 파일을 읽습니다.
 - `**/lang/ko/*.php`, `**/lang/en/*.php` - 모듈 언어 파일
 - `**/resources/lang/*.json` - 프론트엔드 언어 파일
 - `templates/**/lang/*.json` - 템플릿 언어 파일
+- `lang-packs/_bundled/g7-*-{locale}/{backend,frontend,seed}/**` - 번들 언어팩 자산 (ja, zh-CN 등)
 
 ## 3단계: 규정 기반 자동 검증 (CRITICAL)
 
@@ -121,7 +122,29 @@ grep -rn "[금지 패턴]" [대상 파일/디렉토리]
 | `['ko', 'en']` 직접 나열            | `config('app.supported_locales')`                      |
 | `foreach (['ko', 'en'] as $locale)` | `foreach (config('app.supported_locales') as $locale)` |
 
-### 3.6 파일 유형별 규정 매핑
+### 3.6 번들 언어팩 정합성 검증
+
+ko/en 다국어 키 추가/수정/제거 시, 대응하는 번들 언어팩(`lang-packs/_bundled/g7-*-{locale}/`) 도 동기화해야 한다. 동기화하지 않으면 해당 locale 화면에서 미번역 fallback 이 노출되어 UX 손상.
+
+**검증 항목** (수동 비교):
+
+ko/en 언어 파일과 번들 locale 파일의 키를 직접 비교한다.
+
+- ❌ 누락 (ko/en 에 있으나 번들 locale 에 없음) → 해당 locale 에서 미번역 fallback 노출
+- ❌ 잉여 (번들 locale 에는 있으나 ko/en 에 없음) → ko 에서 제거된 키의 번들 잔류, 제거 필요
+- ❌ 번들 파일 자체 부재 → 디렉토리 구조 어긋남
+
+**파일 유형별 매칭 (코어/모듈/플러그인/템플릿 4 scope)**:
+
+- 코어 backend: `lang/{ko,en}/*.php` ⇔ `lang-packs/_bundled/g7-core-{locale}/backend/{locale}/*.php`
+- 모듈 backend: `modules/_bundled/{mod}/{src,resources}/lang/{ko,en}/*.php` (union) ⇔ `g7-module-{mod}-{locale}/backend/{locale}/*.php`
+- 모듈 frontend: `modules/_bundled/{mod}/resources/lang/partial/{ko,en}/*.json` ⇔ `g7-module-{mod}-{locale}/frontend/partial/*.json`
+- 플러그인: `plugins/_bundled/{pl}/lang/{ko,en}/*.php` ⇔ `g7-plugin-{pl}-{locale}/backend/{locale}/*.php`
+- 템플릿: `templates/_bundled/{tpl}/lang/{ko,en}.json` + `lang/partial/{ko,en}/*.json` ⇔ `g7-template-{tpl}-{locale}/frontend/{locale}.json` + `frontend/partial/*.json`
+
+상세: [docs/extension/language-packs.md](../../extension/language-packs.md) "기존 ko/en 변경 시 번들 ja 동기화 의무" 섹션.
+
+### 3.7 파일 유형별 규정 매핑
 
 검증 대상 파일의 유형에 따라 해당하는 규정 문서를 우선적으로 적용합니다:
 

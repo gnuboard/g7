@@ -50,6 +50,19 @@ class Permission extends Model
     ];
 
     /**
+     * 속성 기본값
+     *
+     * type 컬럼은 마이그레이션에서 NOT NULL 이지만 default 가 없어
+     * create 시 명시 제공 없을 경우 DB 레벨 에러 발생. 대다수 권한이 admin 이므로
+     * 모델 레벨 default 를 `admin` 으로 지정하여 호출부 누락을 방어.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'type' => 'admin',
+    ];
+
+    /**
      * 속성 캐스팅
      *
      * @return array<string, string>

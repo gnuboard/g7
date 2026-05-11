@@ -6,10 +6,12 @@
 
 ```text
 1. 모델에 `use HasUserOverrides;` + `protected array $trackableFields = [...]` 선언
-2. `user_overrides` (JSON/array) 컬럼 마이그레이션 필수
-3. 사용자가 trackable 필드를 수정 → user_overrides 자동 누적 기록
-4. 시더가 `syncOrCreateFromUpgrade()` 호출 → 기록된 필드 **보존**, 나머지는 갱신
-5. mass update `Model::where(...)->update(...)` 도 **투명하게 자동 추적**
+2. 다국어 JSON 컬럼은 `protected array $translatableTrackableFields = ['name']` 추가 — sub-key dot-path 단위 보존
+3. `user_overrides` (JSON/array) 컬럼 마이그레이션 필수
+4. 사용자가 trackable 필드를 수정 → user_overrides 자동 누적 기록 (다국어는 'name.ko' 형태)
+5. 시더가 `syncOrCreateFromUpgrade()` 호출 → 기록된 키만 보존, 나머지 locale 은 자동 동기화
+6. mass update `Model::where(...)->update(...)` 도 **투명하게 자동 추적**
+7. 언어팩 활성/비활성 시 `RunSeedersOnLanguagePackLifecycle` 가 entity 시더 자동 재실행 (scope 별 라우팅)
 ```
 
 ## 1. 기본 사용법
@@ -25,11 +27,23 @@ class ShippingType extends Model
     use HasUserOverrides;
 
     /**
-     * 사용자 수정 보존 대상 필드.
+     * 사용자 수정 보존 대상 필드 (전체 컬럼 단위).
      *
      * @var array<int, string>
      */
     protected array $trackableFields = ['name', 'category', 'is_active', 'sort_order'];
+
+    /**
+     * 다국어 JSON 컬럼 — sub-key dot-path 단위로 user_overrides 보존.
+     *
+     * 사용자가 ko 라벨만 수정 → user_overrides=['name.ko'] 로 기록되어
+     * 시더 재실행/언어팩 활성 시 ja/en 키는 자동 동기화 가능.
+     *
+     * 정책: trackableFields 의 부분집합. 일반 scalar 필드(category 등)는 등록 금지.
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableTrackableFields = ['name'];
 
     protected $fillable = [
         'code', 'name', 'category', 'is_active', 'sort_order',
@@ -44,6 +58,25 @@ class ShippingType extends Model
     ];
 }
 ```
+
+### 1.2 다국어 JSON 컬럼 정책 (translatableTrackableFields)
+
+7.0.0-beta.4 이후 다국어 JSON 컬럼은 sub-key dot-path 단위로 user_overrides 가 기록됩니다.
+
+| 시나리오 | user_overrides 기록 형식 |
+|---------|-------------------------|
+| 사용자가 `name.ko` 만 수정 | `['name.ko']` |
+| 사용자가 `name.ko, name.en` 동시 수정 | `['name.ko', 'name.en']` |
+| 사용자가 scalar 필드 `is_active` 수정 | `['is_active']` (컬럼명 단위) |
+| 혼재 수정 | `['name.ko', 'is_active']` |
+
+시더가 재실행될 때:
+
+| 상황 | 동작 |
+|------|------|
+| `user_overrides=['name.ko']` 인 row + 시더가 `{ko, en, ja}` 신규 데이터 제공 | ko 보존, en/ja 신규 값으로 갱신 |
+| `user_overrides=['is_active']` 인 row + 시더가 is_active=true 제공 | 갱신 SKIP (기존 동작) |
+| `user_overrides=['name']` legacy 컬럼명 형식 | 컬럼 전체 보존 (역호환 — beta.4 upgrade step 이 dot-path 로 자동 변환) |
 
 ### 1.2 마이그레이션
 

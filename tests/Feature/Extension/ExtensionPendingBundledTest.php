@@ -117,6 +117,7 @@ class ExtensionPendingBundledTest extends TestCase
         $this->layoutRepository = Mockery::mock(LayoutRepositoryInterface::class);
 
         $this->templateManager = new TemplateManager(
+            extensionManager: $this->extensionManager,
             templateRepository: $this->templateRepository,
             layoutRepository: $this->layoutRepository,
             moduleRepository: Mockery::mock(ModuleRepositoryInterface::class),

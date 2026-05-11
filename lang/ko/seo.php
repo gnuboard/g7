@@ -10,6 +10,11 @@ return [
     'warmup_started_layout' => ':layout 레이아웃의 SEO 캐시 워밍업을 시작합니다.',
     'warmup_dispatched' => 'SEO 캐시 워밍업이 시작되었습니다.',
 
+    // Sitemap 수동 재생성
+    'sitemap_regenerated' => 'Sitemap 재생성이 완료되었습니다.',
+    'sitemap_regenerate_failed' => 'Sitemap 재생성에 실패했습니다.',
+    'sitemap_disabled' => 'Sitemap 생성이 비활성화되어 있습니다.',
+
     // 캐시 통계
     'stats_period' => '최근 :days일간 SEO 캐시 통계',
     'stats_overall' => '전체 통계',

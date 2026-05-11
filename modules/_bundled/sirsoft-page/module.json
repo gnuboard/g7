@@ -5,7 +5,7 @@
         "ko": "페이지",
         "en": "Page"
     },
-    "version": "1.0.0-beta.2",
+    "version": "1.0.0-beta.3",
     "license": "MIT",
     "description": {
         "ko": "정적 페이지(정보/정책/안내) 관리 모듈",

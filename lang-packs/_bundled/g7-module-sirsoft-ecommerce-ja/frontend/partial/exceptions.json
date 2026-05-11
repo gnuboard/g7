@@ -1,0 +1,9 @@
+{
+  "unauthorized_preset_access": "プリセット ':preset_name' へのアクセス権限がありません。",
+  "stock_mismatch": "商品 ':product_name' の在庫が一致しません。予想: :expected、実際: :actual",
+  "currency_setting_locked": "通货 ':currency' の設定がロックされており、変更できません。理由: :reason",
+  "product_notice_template_not_found": "商品情報提供通知テンプレートが見つかりません。",
+  "product_notice_template_has_notices": ":count個の商品がこのテンプレートを使用しています。先に該当商品の商品情報提供通知を変更してください。",
+  "product_common_info_not_found": "共通情報が見つかりません。",
+  "order_cancel_not_allowed": "現在の注文ステータスでは決済キャンセルを記録できません。"
+}

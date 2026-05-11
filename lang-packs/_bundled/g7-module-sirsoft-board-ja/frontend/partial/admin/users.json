@@ -1,0 +1,13 @@
+{
+  "form": {
+    "sections": {
+      "notification_settings": "通知設定"
+    },
+    "notifications": {
+      "post_complete": "投稿完了通知",
+      "post_reply": "投稿回答通知",
+      "comment": "コメント通知",
+      "reply_comment": "回答通知"
+    }
+  }
+}

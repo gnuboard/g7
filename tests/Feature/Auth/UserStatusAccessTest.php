@@ -266,17 +266,19 @@ class UserStatusAccessTest extends TestCase
     }
 
     /**
-     * Guest(미인증)는 미들웨어를 통과한다 (optional.sanctum 환경).
+     * Guest(미인증)는 optional.sanctum + check.user_status 를 통과하되,
+     * permission 이 필요한 엔드포인트에서는 401 을 받는다.
+     *
+     * /api/user/notifications 는 permission:user,core.user-notifications.read 필요 → guest 401.
+     * CheckUserStatus 자체는 guest 를 차단하지 않음을 확인하기 위해
+     * permission 없는 엔드포인트(/api/user/auth/validate-reset-token 등)로 대체하거나
+     * 단순히 CheckUserStatus 에서 발생하는 403 이 아님을 검증한다.
      */
     public function test_guest_passes_middleware(): void
     {
-        // user 그룹은 optional.sanctum 적용 - 미인증 요청도 통과해야 함
         $response = $this->jsonRequest()->getJson('/api/user/notifications');
 
-        // guest이므로 미들웨어는 통과하지만, 인증 없이 접근 시 빈 결과 또는 200 반환
-        // (401이 아닌 것을 확인 — optional.sanctum이므로)
-        $this->assertNotEquals(401, $response->getStatusCode());
-        // 403이 아닌 것을 확인 — CheckUserStatus가 guest를 차단하지 않음
+        // CheckUserStatus 가 guest 를 403 으로 차단하지 않음 (permission 401 은 별개)
         $this->assertNotEquals(403, $response->getStatusCode());
     }
 

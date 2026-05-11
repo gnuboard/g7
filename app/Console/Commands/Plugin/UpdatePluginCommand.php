@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Plugin;
 
 use App\Console\Commands\Traits\HasProgressBar;
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Extension\PluginManager;
 use App\Extension\Vendor\VendorMode;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 class UpdatePluginCommand extends Command
 {
     use HasProgressBar;
+    use HasUnifiedConfirm;
 
     /**
      * The name and signature of the console command.
@@ -120,7 +122,7 @@ class UpdatePluginCommand extends Command
             $this->newLine();
 
             // 확인 프롬프트 (--force 시 건너뜀)
-            if (! $force && ! $this->confirm(__('plugins.commands.update.confirm_question'), false)) {
+            if (! $force && ! $this->unifiedConfirm(__('plugins.commands.update.confirm_question'), false)) {
                 $this->info(__('plugins.commands.update.aborted'));
 
                 return Command::SUCCESS;

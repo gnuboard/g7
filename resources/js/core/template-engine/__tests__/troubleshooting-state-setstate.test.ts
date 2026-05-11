@@ -3,7 +3,7 @@
  *
  * troubleshooting-state-setstate.md에 기록된 모든 사례의 회귀 테스트입니다.
  *
- * @see .claude/docs/frontend/troubleshooting-state-setstate.md
+ * @see docs/frontend/troubleshooting-state-setstate.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -1302,6 +1302,258 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       expect(result.newField).toBe('test'); // 새로 추가한 값
       // selectedProducts는 pendingState에 없으므로 미포함 (정상 동작)
       expect(result.selectedProducts).toBeUndefined();
+    });
+  });
+
+  // [사례 6] CKEditor render:false + Form 자동바인딩의 이중 저장소 동작 명세
+  //
+  // 배경:
+  // 본 사례는 "Form 자동바인딩 → localDynamicState (React state)" 와
+  // "G7Core.state.setLocal(render:false) → globalState._local (+ __g7PendingLocalState)"
+  // 두 저장소의 분리 구조 자체를 결함으로 보고 통합(SSOT)하려던 시도를 2회 진행했으나
+  // 모두 다른 회귀를 유발하여 원복됨 (2026-04-22 이력 문서 참조).
+  //
+  // 본 describe 는 PO 의 새 방향 (2026-04-26) — "두 저장소 분리를 인정한 상태의 동작 명세" —
+  // 에 따라 각 저장소가 단독/혼합 사용 시 보이는 현재 동작을 단언한다.
+  //
+  // 의도된 분리 책임:
+  // - localDynamicState (React useState):  렌더 트리거 책임. Form 자동바인딩 입력은 여기에 쓰여 React 가 즉시 반영.
+  // - globalState._local + __g7PendingLocalState: 직렬화 가능 상태. setLocal(render:false), G7Core API,
+  //   그리고 자동바인딩의 동기 캐시 미러로 사용.
+  //
+  // 알려진 한계 (이슈 #282 SSOT 재설계 대상):
+  // 자동바인딩의 performStateUpdate 가 __g7PendingLocalState 를 stale baseState 기반 update 전체로
+  // 덮어쓰므로, render:false 경로로 globalState 에 쓰여있던 값이 pending 에서 사라질 수 있음.
+  // 사용처(apiCall body 직렬화)에서 두 저장소를 통합 읽기로 보강하는 것이 현재 유일한 우회 방법.
+  describe('[사례 6] 이중 저장소 동작 명세 (이슈 #282 SSOT 재설계 대상)', () => {
+    let mockTemplateApp: any;
+    let globalState: Record<string, any>;
+
+    beforeEach(() => {
+      globalState = {
+        _local: {
+          form: { title: null, content: null, content_mode: 'text', category: null, is_notice: false },
+        },
+      };
+
+      mockTemplateApp = {
+        getGlobalState: vi.fn(() => globalState),
+        setGlobalState: vi.fn((updates) => {
+          if (updates._local) globalState._local = updates._local;
+        }),
+      };
+
+      (window as any).__templateApp = mockTemplateApp;
+      (window as any).__g7PendingLocalState = undefined;
+      (window as any).__g7ForcedLocalFields = undefined;
+    });
+
+    afterEach(() => {
+      (window as any).__templateApp = undefined;
+      (window as any).__g7PendingLocalState = undefined;
+      (window as any).__g7ForcedLocalFields = undefined;
+    });
+
+    // 헬퍼: setNestedValue / deepMerge — 실제 엔진 동작을 단순 모사
+    const setNestedValueLocal = (obj: Record<string, any>, path: string, value: any): Record<string, any> => {
+      const keys = path.split('.');
+      const result: Record<string, any> = { ...obj };
+      let cursor = result;
+      for (let i = 0; i < keys.length - 1; i++) {
+        cursor[keys[i]] = { ...(cursor[keys[i]] || {}) };
+        cursor = cursor[keys[i]];
+      }
+      cursor[keys[keys.length - 1]] = value;
+      return result;
+    };
+    const deepMerge = (target: Record<string, any>, source: Record<string, any>): Record<string, any> => {
+      const result: Record<string, any> = { ...target };
+      for (const [k, v] of Object.entries(source)) {
+        if (v !== null && typeof v === 'object' && !Array.isArray(v) && target[k] !== null && typeof target[k] === 'object' && !Array.isArray(target[k])) {
+          result[k] = deepMerge(target[k], v);
+        } else {
+          result[k] = v;
+        }
+      }
+      return result;
+    };
+
+    // [현재 동작] Form 자동바인딩 performStateUpdate (DynamicRenderer.tsx:3288-3305) —
+    // baseState 기반 전체 스냅샷으로 pending 을 덮어씀.
+    const performAutoBindingUpdate = (
+      baseState: Record<string, any>,
+      fullPath: string,
+      newValue: any,
+      trackChanges: boolean,
+    ): Record<string, any> => {
+      const update = setNestedValueLocal(baseState, fullPath, newValue);
+      if (trackChanges) update.hasChanges = true;
+      (window as any).__g7PendingLocalState = update;
+      return update;
+    };
+
+    // [현재 동작] G7Core.state.setLocal(updates, {render:false}) 경로 — globalState._local 갱신 +
+    // pending 에 deepMerge 로 병합 (G7CoreGlobals.ts:1614-1632 mergedPending 로직).
+    const performSetLocalRenderFalse = (updates: Record<string, any>): void => {
+      const pendingState = (window as any).__g7PendingLocalState;
+      const baseLocal = pendingState || globalState._local;
+      const mergedPending = deepMerge(baseLocal, updates);
+      globalState._local = mergedPending;
+      (window as any).__g7PendingLocalState = mergedPending;
+    };
+
+    // ─── 시나리오 A: 자동바인딩 단독 ─────────────────────────────────────
+
+    it('[A] 자동바인딩 단독 — pending 에 baseState 기반 전체 스냅샷이 저장됨', () => {
+      // 사용자가 title 입력 — parentFormContext.state(=React state)는 init 값
+      const baseAfterInit = { form: { title: null, content: null, category: null, is_notice: false } };
+      performAutoBindingUpdate(baseAfterInit, 'form.title', '제목값', true);
+
+      const pending = (window as any).__g7PendingLocalState;
+      expect(pending.form.title).toBe('제목값');
+      expect(pending.form.content).toBeNull(); // 초기값 그대로
+      expect(pending.hasChanges).toBe(true);
+    });
+
+    it('[A] 자동바인딩 연속 입력 — React 리렌더 후 pending 이 클리어되었어도 새 입력은 baseState 로부터 재구성됨', () => {
+      // 첫 입력
+      const baseAfterInit = { loginForm: { email: null, password: null } };
+      performAutoBindingUpdate(baseAfterInit, 'loginForm.email', 'a@b.c', false);
+
+      // React 리렌더 → useLayoutEffect 가 pending 클리어
+      (window as any).__g7PendingLocalState = null;
+
+      // 두 번째 입력 — parentFormContext.state 는 첫 입력값이 반영된 새 React state
+      const baseAfterRerender = { loginForm: { email: 'a@b.c', password: null } };
+      performAutoBindingUpdate(baseAfterRerender, 'loginForm.password', 'xxx', false);
+
+      // 검증: pending 에 두 입력 모두 반영
+      const pending = (window as any).__g7PendingLocalState;
+      expect(pending.loginForm.email).toBe('a@b.c');
+      expect(pending.loginForm.password).toBe('xxx');
+    });
+
+    // ─── 시나리오 B: setLocal(render:false) 단독 ──────────────────────────
+
+    it('[B] setLocal(render:false) 단독 — globalState._local 과 pending 에 deepMerge 로 병합됨', () => {
+      // CKEditor 가 content + content_mode 갱신
+      performSetLocalRenderFalse({ form: { content: '<p>CKEditor 내용</p>', content_mode: 'html' } });
+
+      const pending = (window as any).__g7PendingLocalState;
+      expect(pending.form.content).toBe('<p>CKEditor 내용</p>');
+      expect(pending.form.content_mode).toBe('html');
+      // 기존 키(title, category, is_notice) 보존
+      expect(pending.form.title).toBeNull();
+      expect(pending.form.category).toBeNull();
+      expect(pending.form.is_notice).toBe(false);
+
+      // globalState._local 도 동일하게 갱신
+      expect(globalState._local.form.content).toBe('<p>CKEditor 내용</p>');
+    });
+
+    it('[B] setLocal 연속 호출 — pending 이 누적 deepMerge 됨', () => {
+      performSetLocalRenderFalse({ form: { content: '<p>1차</p>' } });
+      performSetLocalRenderFalse({ form: { content_mode: 'html' } });
+
+      const pending = (window as any).__g7PendingLocalState;
+      expect(pending.form.content).toBe('<p>1차</p>');
+      expect(pending.form.content_mode).toBe('html');
+    });
+
+    // ─── 시나리오 C: 혼합 사용 (이중화의 비대칭성 노출) ───────────────────
+
+    it('[C] setLocal 후 자동바인딩 — pending 이 자동바인딩의 stale baseState 로 덮어써짐 (알려진 한계)', () => {
+      // 1) CKEditor 가 setLocal(render:false) 로 content 기록 — pending + globalState 에 저장
+      performSetLocalRenderFalse({ form: { content: '<p>CKEditor 내용</p>', content_mode: 'html' } });
+
+      // 2) render:false 이므로 React 는 리렌더되지 않음 → parentFormContext.state 는 stale
+      const staleBase = { form: { title: null, content: null, content_mode: 'text', category: null, is_notice: false } };
+
+      // 3) 사용자가 title 입력 → 자동바인딩이 stale base 로 update 생성 후 pending 을 덮어씀
+      performAutoBindingUpdate(staleBase, 'form.title', '제목값', true);
+
+      // 단언: pending 의 content 가 사라짐 — 이것이 사례 6 의 알려진 한계
+      const pending = (window as any).__g7PendingLocalState;
+      expect(pending.form.title).toBe('제목값');
+      expect(pending.form.content).toBeNull(); // ← 이중화의 비대칭성으로 손실됨
+      expect(pending.form.content_mode).toBe('text'); // ← stale base 의 값으로 회귀
+
+      // 그러나 globalState._local 에는 setLocal 결과가 남아있음
+      expect(globalState._local.form.content).toBe('<p>CKEditor 내용</p>');
+      expect(globalState._local.form.content_mode).toBe('html');
+    });
+
+    it('[C] 두 저장소 분리 검증 — pending 과 globalState 가 서로 다른 값을 보유함', () => {
+      // [C] 시나리오 후의 두 저장소 상태를 명확히 명세.
+      // 단순 deepMerge 로 합치면 pending 의 null 이 globalState 의 값을 덮어쓰므로,
+      // 향후 SSOT 재설계 전까지 사용처(apiCall body 빌더)는 두 저장소를
+      // "각 키마다 non-null 우선" 또는 "최신 변경 시점 우선" 등의 도메인 정책으로
+      // 통합해 읽어야 한다.
+      performSetLocalRenderFalse({ form: { content: '<p>CKEditor 내용</p>', content_mode: 'html' } });
+      const staleBase = { form: { title: null, content: null, content_mode: 'text', category: null, is_notice: false } };
+      performAutoBindingUpdate(staleBase, 'form.title', '제목값', true);
+
+      const pending = (window as any).__g7PendingLocalState;
+
+      // pending 에는 title 만 있고 content 가 없음 (자동바인딩 stale base 로 덮어씀)
+      expect(pending.form.title).toBe('제목값');
+      expect(pending.form.content).toBeNull();
+
+      // globalState 에는 content 가 있고 title 은 없음 (자동바인딩이 globalState 에 쓰지 않음)
+      expect(globalState._local.form.title).toBeNull();
+      expect(globalState._local.form.content).toBe('<p>CKEditor 내용</p>');
+
+      // → 어느 한 저장소만 읽어 직렬화하면 반드시 한 쪽이 누락됨.
+      //    이것이 사례 6 의 본질적 비대칭성이며 SSOT 재설계의 동기.
+    });
+
+    it('[C] non-null 우선 통합 패턴의 한계 — 두 저장소가 모두 non-null 인 충돌 키는 단순 정책으로 해결 불가', () => {
+      // 향후 사용처 통합 정책 후보로 가장 간단한 "non-null 우선" 을 시뮬레이션하되,
+      // 충돌 키(여기서는 content_mode)에 대해 잘못된 결과가 나옴을 명시 — 더 정교한
+      // 정책(예: 변경 시점 추적, dirty key 추적) 이 필요함을 검증한다.
+      performSetLocalRenderFalse({ form: { content: '<p>CKEditor 내용</p>', content_mode: 'html' } });
+      const staleBase = { form: { title: null, content: null, content_mode: 'text', category: null, is_notice: false } };
+      performAutoBindingUpdate(staleBase, 'form.title', '제목값', true);
+
+      // 정책: 각 leaf 키마다 a(우선) 가 non-null 이면 a, 아니면 b
+      const pickNonNull = (a: Record<string, any>, b: Record<string, any>): Record<string, any> => {
+        const result: Record<string, any> = {};
+        const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+        for (const k of keys) {
+          const av = a[k];
+          const bv = b[k];
+          if (av !== null && typeof av === 'object' && !Array.isArray(av) && bv !== null && typeof bv === 'object' && !Array.isArray(bv)) {
+            result[k] = pickNonNull(av, bv);
+          } else {
+            result[k] = av !== null && av !== undefined ? av : bv;
+          }
+        }
+        return result;
+      };
+
+      const pending = (window as any).__g7PendingLocalState ?? {};
+      const integrated = pickNonNull(pending, globalState._local);
+
+      // 자동바인딩이 입력한 title 은 pending 에서 정상 확보
+      expect(integrated.form.title).toBe('제목값');
+      // pending 에서 null 이지만 globalState 에는 값이 있는 content 도 정상 확보
+      expect(integrated.form.content).toBe('<p>CKEditor 내용</p>');
+      // 그러나 두 저장소가 모두 non-null 인 content_mode 는 pending 의 stale 'text' 가 우선되어 잘못됨
+      expect(integrated.form.content_mode).toBe('text'); // 알려진 한계 — globalState 의 'html' 이 손실됨
+    });
+
+    it('[C] 자동바인딩 후 setLocal — setLocal 이 pending 을 base 로 deepMerge 하므로 자동바인딩 값 보존됨', () => {
+      // 1) 자동바인딩이 title 기록 — pending 에 저장
+      const baseAfterInit = { form: { title: null, content: null, content_mode: 'text', category: null, is_notice: false } };
+      performAutoBindingUpdate(baseAfterInit, 'form.title', '제목값', true);
+
+      // 2) CKEditor 가 setLocal — pending 을 base 로 deepMerge → 양쪽 값 보존
+      performSetLocalRenderFalse({ form: { content: '<p>CKEditor 내용</p>', content_mode: 'html' } });
+
+      const pending = (window as any).__g7PendingLocalState;
+      expect(pending.form.title).toBe('제목값');
+      expect(pending.form.content).toBe('<p>CKEditor 내용</p>');
+      expect(pending.form.content_mode).toBe('html');
     });
   });
 });
@@ -4489,6 +4741,281 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       const newRegistry = (window as any).__g7AutoBindingPaths as Map<string, number>;
       expect(newRegistry.size).toBe(0); // 새 Map은 비영향
       expect(oldRegistry.size).toBe(0); // 이전 Map만 비워짐
+    });
+  });
+});
+
+/**
+ * [사례 36] _localInit useLayoutEffect 의 stale `__g7PendingLocalState` baseline 이
+ *           globalState 의 직전 setState 결과(예: init_actions tempKey)를 흡수하지 못해
+ *           setLocal mergedPending 시 손실 (engine-v1.49.2)
+ *
+ * 증상:
+ *  - 게시판 글쓰기 화면(board/form)에 직접 URL 진입 또는 강제 새로고침 시
+ *    init_actions setState 가 globalState._local 에 박은 tempKey 가 사라짐
+ *  - 목록 → 글쓰기 navigate 진입은 정상
+ *  - DevTools g7-state-hierarchy: Global _local.tempKey: undefined / DynamicState: 'temp_...'
+ *
+ * 근본 원인:
+ *  - setState_3 (init_actions tempKey) 가 globalStateUpdater 경로로 globalState._local 에 정상 적용
+ *  - 그 후 React 마운트 + useLayoutEffect 클리어 (DynamicRenderer.tsx:1054) 가 `__g7PendingLocalState = null`
+ *  - _localInit useLayoutEffect (DynamicRenderer.tsx:1078) 가 발화 시:
+ *    `currentPending = __g7PendingLocalState || {}` = {} (비어있음, stale)
+ *    pendingNext = `{...currentPending(=빈 객체), ...initData(form만), hasChanges:false}` → tempKey 미포함
+ *  - 후속 performStateUpdate → setLocal({render:false}) → mergedPending 계산:
+ *    `currentSnapshot = pendingState || baseLocal` 의 || 분기로 stale pendingState 우선
+ *    → mergedPending 에 tempKey 미포함 → setGlobalState({_local: mergedPending})
+ *    → globalState._local 통째 교체로 tempKey 영구 손실
+ *
+ * 해결:
+ *  - DynamicRenderer.tsx:1078 의 `currentPending` baseline 을
+ *    `{...freshGlobalLocal, ...(__g7PendingLocalState || {})}` 로 변경
+ *  - 빈 baseline 대신 fresh globalState 위에 pending 변경분 머지
+ *  - 도입 의도(useLayoutEffect 가 pending 을 API 데이터로 사전 동기화)를 보존하면서
+ *    baseline 이 진짜 fresh 되도록 강화
+ *
+ * @see DynamicRenderer.tsx:1070-1114 (_localInit useLayoutEffect)
+ * @see G7CoreGlobals.ts:1676 (setLocal mergedPending)
+ * @see 사례 12 (engine-v1.27.0 useLayoutEffect 사전 동기화 도입)
+ * @see 사례 32 (engine-v1.43.0 이중 저장소 동기화)
+ */
+describe('[사례 36] _localInit useLayoutEffect 의 stale pending baseline (engine-v1.49.2)', () => {
+  beforeEach(() => {
+    (window as any).__g7PendingLocalState = undefined;
+    (window as any).G7Core = undefined;
+  });
+
+  afterEach(() => {
+    (window as any).__g7PendingLocalState = undefined;
+    (window as any).G7Core = undefined;
+  });
+
+  // 헬퍼: setLocal mergedPending 계산 시뮬레이션 (G7CoreGlobals.ts:1676)
+  const computeMergedPendingShallow = (
+    converted: Record<string, any>
+  ): Record<string, any> => {
+    const pendingState = (window as any).__g7PendingLocalState;
+    const globalLocal = (window as any).G7Core?.state?.get?.()?._local || {};
+    const currentSnapshot = pendingState || globalLocal;
+    return { ...currentSnapshot, ...converted };
+  };
+
+  /**
+   * [수정 전 동작] _localInit useLayoutEffect (DynamicRenderer.tsx:1078)
+   * currentPending baseline 으로 `__g7PendingLocalState || {}` 만 사용
+   */
+  const syncLocalInitToPending_BEFORE = (
+    initData: Record<string, any>,
+    mergeStrategy: 'shallow' | 'deep' | 'replace' = 'shallow'
+  ): void => {
+    const currentPending = (window as any).__g7PendingLocalState || {};
+    if (mergeStrategy === 'replace') {
+      (window as any).__g7PendingLocalState = {
+        loadingActions: currentPending.loadingActions || {},
+        ...initData,
+        hasChanges: false,
+      };
+    } else if (mergeStrategy === 'deep') {
+      (window as any).__g7PendingLocalState = {
+        ...currentPending,
+        ...initData,
+        hasChanges: false,
+      };
+    } else {
+      (window as any).__g7PendingLocalState = {
+        ...currentPending,
+        ...initData,
+        hasChanges: false,
+      };
+    }
+  };
+
+  /**
+   * [수정 후 동작] _localInit useLayoutEffect (engine-v1.49.2 패치)
+   * currentPending baseline 으로 `{...freshGlobalLocal, ...(pending || {})}` 사용
+   * — fresh globalState 위에 pending 변경분 머지로 baseline 이 진짜 fresh 보장
+   */
+  const syncLocalInitToPending_AFTER = (
+    initData: Record<string, any>,
+    mergeStrategy: 'shallow' | 'deep' | 'replace' = 'shallow'
+  ): void => {
+    const G7Core = (window as any).G7Core;
+    const freshGlobalLocal = G7Core?.state?.get?.()?._local || {};
+    const pendingState = (window as any).__g7PendingLocalState || {};
+    const currentPending = { ...freshGlobalLocal, ...pendingState };
+
+    if (mergeStrategy === 'replace') {
+      (window as any).__g7PendingLocalState = {
+        loadingActions: currentPending.loadingActions || {},
+        ...initData,
+        hasChanges: false,
+      };
+    } else if (mergeStrategy === 'deep') {
+      (window as any).__g7PendingLocalState = {
+        ...currentPending,
+        ...initData,
+        hasChanges: false,
+      };
+    } else {
+      (window as any).__g7PendingLocalState = {
+        ...currentPending,
+        ...initData,
+        hasChanges: false,
+      };
+    }
+  };
+
+  describe('본 이슈: init_actions tempKey 손실', () => {
+    it('수정 전: stale pending baseline 으로 globalState 의 tempKey 가 pending 에 흡수되지 않음 (버그 재현)', () => {
+      // 시나리오:
+      // 1. init_actions setState_3 (tempKey) → globalState._local = {form, tempKey} 정상
+      (window as any).G7Core = {
+        state: {
+          get: () => ({ _local: { form: { title: null }, tempKey: 'temp_abc' } }),
+        },
+      };
+      // 2. React 마운트 후 useLayoutEffect 클리어로 pending = null
+      (window as any).__g7PendingLocalState = null;
+
+      // 3. _localInit useLayoutEffect 발화 (initData = form_data 응답)
+      const initData = { form: { title: null, content: null } };
+      syncLocalInitToPending_BEFORE(initData);
+
+      // 결과: pending 에 tempKey 미포함 (버그 재현)
+      const pending = (window as any).__g7PendingLocalState;
+      expect(pending.form).toEqual({ title: null, content: null });
+      expect(pending.tempKey).toBeUndefined(); // ← 버그
+      expect(pending.hasChanges).toBe(false);
+
+      // 후속 setLocal mergedPending 계산
+      const merged = computeMergedPendingShallow({ hasChanges: true });
+      expect(merged.tempKey).toBeUndefined(); // ← stale pending 우선 사용으로 손실
+    });
+
+    it('수정 후: fresh globalState baseline 으로 tempKey 가 pending 에 보존', () => {
+      (window as any).G7Core = {
+        state: {
+          get: () => ({ _local: { form: { title: null }, tempKey: 'temp_abc' } }),
+        },
+      };
+      (window as any).__g7PendingLocalState = null;
+
+      const initData = { form: { title: null, content: null } };
+      syncLocalInitToPending_AFTER(initData);
+
+      // 결과: pending 에 tempKey 보존 (globalState 에서 흡수)
+      const pending = (window as any).__g7PendingLocalState;
+      expect(pending.form).toEqual({ title: null, content: null });
+      expect(pending.tempKey).toBe('temp_abc'); // ← 보존
+      expect(pending.hasChanges).toBe(false);
+
+      // 후속 setLocal mergedPending 도 정상
+      const merged = computeMergedPendingShallow({ hasChanges: true });
+      expect(merged.tempKey).toBe('temp_abc'); // ← 보존
+    });
+  });
+
+  describe('사례 12 의도 보존 — useLayoutEffect 사전 동기화', () => {
+    it('수정 후: API 데이터(form) 가 pending 에 사전 동기화되어 자식 useEffect 의 ActionDispatcher base 정확', () => {
+      (window as any).G7Core = {
+        state: { get: () => ({ _local: { form: { id: 1 } } }) },
+      };
+      (window as any).__g7PendingLocalState = null;
+
+      const initData = { form: { id: 1, name: 'API data', items: [1, 2, 3] } };
+      syncLocalInitToPending_AFTER(initData);
+
+      const pending = (window as any).__g7PendingLocalState;
+      expect(pending.form).toEqual({ id: 1, name: 'API data', items: [1, 2, 3] });
+      expect(pending.hasChanges).toBe(false);
+    });
+  });
+
+  describe('정상 케이스 회귀 방지', () => {
+    it('수정 후: pending 이 이미 fresh 한 직전 setState 결과인 경우 보존', () => {
+      // 직전 setState 가 pending 에 박은 값
+      (window as any).__g7PendingLocalState = {
+        form: { title: '사용자 입력' },
+        otherField: 'set-by-prev-setState',
+      };
+      (window as any).G7Core = {
+        state: { get: () => ({ _local: { form: { title: null } } }) },
+      };
+
+      const initData = { form: { title: null, content: null } };
+      syncLocalInitToPending_AFTER(initData);
+
+      const pending = (window as any).__g7PendingLocalState;
+      // initData 의 form 이 우선 (의도된 갱신)
+      expect(pending.form).toEqual({ title: null, content: null });
+      // 직전 setState 의 다른 키는 보존 (otherField)
+      expect(pending.otherField).toBe('set-by-prev-setState');
+    });
+
+    it('수정 후: G7Core 미초기화 환경(테스트/SSR)에서 fallback 동작', () => {
+      (window as any).G7Core = undefined;
+      (window as any).__g7PendingLocalState = null;
+
+      const initData = { form: { title: null } };
+      syncLocalInitToPending_AFTER(initData);
+
+      const pending = (window as any).__g7PendingLocalState;
+      expect(pending.form).toEqual({ title: null });
+      expect(pending.hasChanges).toBe(false);
+    });
+
+    it('수정 후: 모든 mergeStrategy(shallow/deep/replace) 에서 정상 동작', () => {
+      const testStrategy = (strategy: 'shallow' | 'deep' | 'replace') => {
+        (window as any).G7Core = {
+          state: { get: () => ({ _local: { form: { x: 1 }, tempKey: 'temp_x' } }) },
+        };
+        (window as any).__g7PendingLocalState = null;
+
+        syncLocalInitToPending_AFTER({ form: { x: 1, y: 2 } }, strategy);
+        const pending = (window as any).__g7PendingLocalState;
+
+        if (strategy === 'replace') {
+          // replace 는 의도적으로 모든 키 교체 (loadingActions 제외)
+          expect(pending.form).toEqual({ x: 1, y: 2 });
+          expect(pending.tempKey).toBeUndefined(); // replace 는 명시적 의도
+        } else {
+          // shallow/deep 은 fresh baseline 의 tempKey 보존
+          expect(pending.tempKey).toBe('temp_x');
+        }
+      };
+
+      testStrategy('shallow');
+      testStrategy('deep');
+      testStrategy('replace');
+    });
+  });
+
+  describe('사례 32 의도 보존 — 이중 저장소 정합성 강화', () => {
+    it('수정 후: pending baseline 이 fresh 해서 이중 저장소(A/B) 동기화 정확도 향상', () => {
+      // 저장소 B (globalState._local) 에 init_actions 결과 + 자동바인딩 결과가 있는 상태
+      (window as any).G7Core = {
+        state: {
+          get: () => ({
+            _local: {
+              form: { title: '사용자 입력 후' },
+              tempKey: 'temp_abc',
+              hasChanges: true,
+            },
+          }),
+        },
+      };
+      (window as any).__g7PendingLocalState = null; // useLayoutEffect 클리어 후
+
+      // _localInit useLayoutEffect 가 다시 발화 (예: refetchOnMount)
+      const initData = { form: { title: '사용자 입력 후', content: null } };
+      syncLocalInitToPending_AFTER(initData);
+
+      const pending = (window as any).__g7PendingLocalState;
+      // 이중 저장소(B) 의 모든 키가 baseline 에 흡수되어 보존됨
+      expect(pending.tempKey).toBe('temp_abc');
+      // initData 가 form 갱신 + hasChanges 는 사전 동기화 의도로 false 로 reset
+      expect(pending.form).toEqual({ title: '사용자 입력 후', content: null });
+      expect(pending.hasChanges).toBe(false);
     });
   });
 });

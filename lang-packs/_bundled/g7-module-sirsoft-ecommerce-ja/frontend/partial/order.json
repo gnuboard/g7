@@ -1,0 +1,16 @@
+{
+  "default_shipping": "通常配送",
+  "order_number": "注文番号",
+  "order_date": "注文日",
+  "total_amount": "合計金額",
+  "status": "注文ステータス",
+  "statuses": {
+    "pending": "待機中",
+    "paid": "決済完了",
+    "preparing": "準備中",
+    "shipped": "配送中",
+    "delivered": "配送完了",
+    "cancelled": "キャンセル済み",
+    "refunded": "返金済み"
+  }
+}

@@ -130,22 +130,11 @@
                   "name": "MultilingualInput",
                   "props": {
                     "name": "editingCurrency.name",
-                    "value": "{{_local.editingCurrency?.name ?? {}}}",
+                    "value": "{{_local.editingCurrency?.name ?? {} }}",
                     "layout": "inline",
                     "inputType": "text",
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder",
-                    "availableLocales": [
-                      {
-                        "code": "ko",
-                        "name": "한국어",
-                        "nativeName": "한국어"
-                      },
-                      {
-                        "code": "en",
-                        "name": "English",
-                        "nativeName": "English"
-                      }
-                    ],
+                    "availableLocales": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}",
                     "defaultLocale": "ko",
                     "disabled": "{{_computed.isReadOnly}}"
                   }
@@ -690,22 +679,11 @@
                   "name": "MultilingualInput",
                   "props": {
                     "name": "newCurrency.name",
-                    "value": "{{_local.form?.newCurrency?.name ?? {}}}",
+                    "value": "{{_local.form?.newCurrency?.name ?? {} }}",
                     "layout": "inline",
                     "inputType": "text",
                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder",
-                    "availableLocales": [
-                      {
-                        "code": "ko",
-                        "name": "한국어",
-                        "nativeName": "한국어"
-                      },
-                      {
-                        "code": "en",
-                        "name": "English",
-                        "nativeName": "English"
-                      }
-                    ],
+                    "availableLocales": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}",
                     "defaultLocale": "ko",
                     "disabled": "{{_computed.isReadOnly}}"
                   }

@@ -129,16 +129,24 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
 
   // 드롭다운 열릴 때 검색 입력에 포커스
   useEffect(() => {
-    if (isOpen) {
-      // 약간의 딜레이 후 포커스 (렌더링 완료 후)
-      setTimeout(() => {
-        const input = document.getElementById(searchInputId) as HTMLInputElement;
-        input?.focus();
-      }, 50);
-    } else {
+    if (!isOpen) {
       // 닫힐 때 검색어 초기화
       setSearchTerm('');
+      return;
     }
+
+    // 약간의 딜레이 후 포커스 (렌더링 완료 후)
+    // unmount 또는 isOpen 변경 시 타이머 해제 — 그렇지 않으면 jsdom teardown
+    // 후에 document 참조로 ReferenceError 발생 (테스트 환경) 및 빠른 모달
+    // toggle 시 race condition 가능 (프로덕션).
+    const timerId = setTimeout(() => {
+      const input = document.getElementById(searchInputId) as HTMLInputElement;
+      input?.focus();
+    }, 50);
+
+    return () => {
+      clearTimeout(timerId);
+    };
   }, [isOpen, searchInputId]);
 
   const handleToggle = useCallback(() => {

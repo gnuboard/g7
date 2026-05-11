@@ -4,6 +4,7 @@ namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
 use App\Exceptions\UpgradeHandoffException;
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\ModuleManager;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 class CoreUpdateCommand extends Command
 {
     use BundledExtensionUpdatePrompt;
+    use HasUnifiedConfirm;
 
     protected $signature = 'core:update
         {--force : 버전 비교 없이 강제 업데이트}
@@ -180,7 +182,7 @@ class CoreUpdateCommand extends Command
             }
             $this->newLine();
 
-            if (! $this->confirm('코어를 업데이트하시겠습니까?')) {
+            if (! $this->unifiedConfirm('코어를 업데이트하시겠습니까?', false)) {
                 return Command::SUCCESS;
             }
 
@@ -285,6 +287,22 @@ class CoreUpdateCommand extends Command
                 $log('원본 소유권 스냅샷 수집: '.implode(',', array_keys($ownershipSnapshot)));
             }
 
+            // PHP-FPM 쓰기 영역의 항목별 정확 스냅샷 (owner/group/perms). Stage 4.
+            // sudo update 가 root 로 만들 수 있는 좁은 영역(storage/logs, storage/framework,
+            // storage/app/core_pending, bootstrap/cache) 의 모든 하위 항목을 재귀 stat 하여
+            // Step 11/12 의 restoreOwnership 이 항목별 정확 복원하도록 전달한다.
+            // 사용자 데이터 영역(storage/app/{modules,plugins,attachments,public,settings})
+            // 은 본 스냅샷 대상이 아니며 chown 자체가 빠지므로 시드/업로드 owner 가 보존된다.
+            $detailedOwnershipSnapshot = $service->snapshotOwnershipDetailed([
+                'storage/logs',
+                'storage/framework',
+                'storage/app/core_pending',
+                'bootstrap/cache',
+            ]);
+            if (! empty($detailedOwnershipSnapshot)) {
+                $log('항목별 정확 스냅샷 수집: '.count($detailedOwnershipSnapshot).'개 항목 (PHP-FPM 쓰기 영역)');
+            }
+
             // ── Step 6: _pending에서 Vendor 설치 (composer 또는 bundled) ──
             $vendorMode = VendorMode::fromStringOrAuto((string) $this->option('vendor-mode'));
             $composerSkipped = $vendorMode !== VendorMode::Bundled
@@ -337,13 +355,20 @@ class CoreUpdateCommand extends Command
             }
 
             // ── Step 9: Migration + 역할/메뉴 동기화 ──
+            //
+            // 동기화는 반드시 reloadCoreConfigAndResync() 로 호출한다. 본 메서드는 부모
+            // 프로세스가 부팅 시점에 캐시한 stale config 를 우회해 디스크의 fresh
+            // config/core.php 를 require → Config Repository 에 재주입한 뒤 syncCore* 를
+            // 호출한다. 디스크는 Step 7(applyUpdate) 에서 이미 신버전으로 교체되어 있다.
+            //
+            // syncCoreRolesAndPermissions / syncCoreMenus 직접 호출 금지 — 부모 메모리의
+            // 구버전 config 로 sync 가 돌면 신규 권한/메뉴가 누락된다 (#326 회귀).
             $bar->setMessage(__('settings.core_update.step_migration'));
             $bar->advance();
             $log('마이그레이션, 역할/메뉴 동기화 실행');
 
             $service->runMigrations();
-            $service->syncCoreRolesAndPermissions();
-            $service->syncCoreMenus();
+            $service->reloadCoreConfigAndResync();
             $log('마이그레이션, 역할/메뉴 동기화 완료');
 
             // ── Step 10: Upgrade Steps ──
@@ -395,8 +420,11 @@ class CoreUpdateCommand extends Command
             $service->clearAllCaches();
 
             // sudo 실행 시 composer 등 외부 프로세스가 root 로 생성한 파일의 소유권을
-            // 백업 직후 수집한 원본 스냅샷 기준으로 복원 (각 경로 고유 소유자 유지)
-            $service->restoreOwnership($ownershipSnapshot, $onProgress);
+            // 백업 직후 수집한 원본 스냅샷 기준으로 복원 (각 경로 고유 소유자 유지).
+            // detailedSnapshot 동시 전달 — PHP-FPM 쓰기 영역의 owner/group/perms 를 항목별
+            // 정확 복원하여 #282 (sudo update 후 traversal 비트 손실) 회귀 차단.
+            $service->restoreOwnership($ownershipSnapshot, $onProgress, $detailedOwnershipSnapshot);
+            $this->surfacePermissionWarnings($service, $log);
             $log('업데이트 경로 소유권 복원 완료');
 
             $service->cleanupPending($pendingPath);
@@ -438,10 +466,13 @@ class CoreUpdateCommand extends Command
             if (($promptResult['success'] ?? 0) > 0) {
                 $this->newLine();
                 $this->info('일괄 업데이트로 생성된 파일의 소유권을 복원하는 중...');
-                $service->restoreOwnership($ownershipSnapshot, $onProgress);
+                // 일괄 확장 update 가 sudo 컨텍스트에서 root 로 만들 수 있는 PHP-FPM 쓰기
+                // 영역의 owner/group/perms 를 항목별 정확 복원 (Stage 4).
+                $service->restoreOwnership($ownershipSnapshot, $onProgress, $detailedOwnershipSnapshot);
                 // restoreOwnership 의 진행 표시($onProgress → $bar->display())가
                 // 개행 없이 끝나므로 다음 셸 프롬프트가 같은 줄에 붙는 것을 방지.
                 $this->newLine(2);
+                $this->surfacePermissionWarnings($service, $log);
                 $log('일괄 확장 업데이트 후 소유권 재복원 완료');
             }
 
@@ -479,7 +510,9 @@ class CoreUpdateCommand extends Command
             try {
                 $service->updateVersionInEnv($toVersion);
                 $service->clearAllCaches();
-                $service->restoreOwnership($ownershipSnapshot, $onProgress);
+                // Stage 4 — handoff cleanup 도 detailed snapshot 으로 정확 복원
+                $service->restoreOwnership($ownershipSnapshot, $onProgress, $detailedOwnershipSnapshot);
+                $this->surfacePermissionWarnings($service, $log);
                 $log('핸드오프 cleanup 완료 (버전 toVersion 고정 + 캐시 clear + 소유권 복원)');
 
                 if (! empty($pendingPath)) {
@@ -821,5 +854,45 @@ class CoreUpdateCommand extends Command
             'owner_uid' => $ownerUid,
             'owner_user' => $ownerUser,
         ]);
+    }
+
+    /**
+     * `restoreOwnership()` 직후 누적된 권한 정상화 실패 경고를 콘솔/로그에 즉시 노출합니다.
+     *
+     * 운영자가 sudo 환경 결함(파일시스템 ACL, immutable 비트, NFS 권한 거부 등) 으로
+     * 일부 경로 chown / chmod 실패 시 그 경로와 운영자 수동 복구 명령을 즉시 보여준다.
+     * 본 메서드 호출 후 service 의 `lastPermissionWarnings` 가 다음 호출 시 초기화되므로
+     * 매 `restoreOwnership` 직후 1회 호출 패턴이 정합.
+     *
+     * @param  CoreUpdateService  $service
+     * @param  callable  $log  내부 로그 누적 콜백 (`saveUpdateLog` 입력용)
+     * @return void
+     */
+    private function surfacePermissionWarnings(CoreUpdateService $service, callable $log): void
+    {
+        $warnings = $service->getLastPermissionWarnings();
+        if (empty($warnings)) {
+            return;
+        }
+
+        $this->newLine();
+        $this->warn('⚠ 권한 정상화 실패 — 일부 경로의 소유권/그룹 쓰기 권한을 복원하지 못했습니다.');
+        foreach ($warnings as $w) {
+            $kind = $w['kind'] === 'chown' ? '소유권' : '그룹 쓰기';
+            $this->warn(sprintf('  - %s [%s]: %d 건 실패', $w['target'], $kind, $w['failed']));
+            foreach (array_slice($w['failed_paths'], 0, 5) as $p) {
+                $this->line("      · {$p}");
+            }
+            if (count($w['failed_paths']) > 5) {
+                $this->line(sprintf('      · … (총 %d건, 상위 5건만 표시)', $w['failed']));
+            }
+        }
+        $this->newLine();
+        $this->line('  복구 예시:');
+        $this->line('    sudo chown -R <owner>:<group> <path>');
+        $this->line('    sudo chmod -R g+w <path>');
+        $this->newLine();
+
+        $log(sprintf('권한 정상화 실패 %d 건 — 운영자 수동 복구 필요', count($warnings)));
     }
 }

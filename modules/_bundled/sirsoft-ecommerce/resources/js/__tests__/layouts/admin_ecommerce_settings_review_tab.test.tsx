@@ -112,6 +112,10 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
             translations,
             locale: 'ko',
             initialState: {
+                _global: {
+                    // partial 의 if 조건은 _global.activeEcommerceSettingsTab 를 참조
+                    activeEcommerceSettingsTab: 'review_settings',
+                },
                 _local: {
                     form: {
                         review_settings: {
@@ -120,8 +124,6 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
                             max_image_size_mb: 10,
                         },
                     },
-                    // 탭 활성화 조건 충족
-                    activeEcommerceSettingsTab: 'review_settings',
                     isReadOnly: false,
                 },
             },
@@ -209,8 +211,12 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
         });
 
         it('리뷰 설정 제목이 렌더링된다', async () => {
-            await testUtils.render();
-            expect(screen.getByText('리뷰 설정')).toBeInTheDocument();
+            const { container } = await testUtils.render();
+            // i18n 키 치환 결과가 자식 노드로 분리될 수 있어 단순 getByText 매칭이
+            // 실패할 수 있음. card-title 클래스 H3 의 textContent 로 직접 검증한다
+            const titleNode = container.querySelector('h3.card-title');
+            expect(titleNode).not.toBeNull();
+            expect(titleNode?.textContent ?? '').toContain('리뷰 설정');
         });
 
         it('레이아웃 검증 오류가 없어야 한다', async () => {

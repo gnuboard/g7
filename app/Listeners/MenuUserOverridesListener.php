@@ -47,21 +47,11 @@ class MenuUserOverridesListener implements HookListenerInterface
      */
     public function handleBeforeUpdate(Menu $menu, array $data): void
     {
-        $userOverrides = $menu->user_overrides ?? [];
-        $changed = false;
-        $trackableFields = ['name', 'icon', 'order', 'url'];
-
-        foreach ($trackableFields as $field) {
-            if (array_key_exists($field, $data) && $data[$field] !== $menu->{$field}) {
-                if (! in_array($field, $userOverrides, true)) {
-                    $userOverrides[] = $field;
-                    $changed = true;
-                }
-            }
-        }
-
-        if ($changed) {
-            $this->menuRepository->update($menu, ['user_overrides' => $userOverrides]);
+        // Trait 의 calculateUserOverridesFor 가 trackableFields + translatableTrackableFields 를
+        // 모두 인지하여 다국어 JSON 컬럼은 sub-key dot-path 단위로 user_overrides 를 누적함.
+        $newOverrides = $menu->calculateUserOverridesFor($data);
+        if ($newOverrides !== ($menu->user_overrides ?? [])) {
+            $this->menuRepository->update($menu, ['user_overrides' => $newOverrides]);
         }
     }
 

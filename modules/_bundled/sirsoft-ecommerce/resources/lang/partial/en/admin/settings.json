@@ -9,7 +9,8 @@
     "claim": "Claims",
     "shipping": "Shipping",
     "review_settings": "Review Settings",
-    "notification_definitions": "Notifications"
+    "notification_definitions": "Notifications",
+    "identity_policies": "Identity Policies"
   },
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
@@ -477,6 +478,43 @@
       "rendered_subject": "Rendered Subject",
       "rendered_body": "Rendered Body",
       "btn_close": "Close"
+    }
+  },
+  "identity": {
+    "intro_title": "Ecommerce Identity Verification Policies",
+    "intro": "Manage policies declared by the ecommerce module and policies added by operators. You can enable domain-specific policies such as identity verification before checkout.",
+    "purposes_section_title": "Identity Purposes Registered by This Module",
+    "purposes_section_description": "Purposes declared by the e-commerce module. Selectable in the policy \"Purpose\" column.",
+    "purposes_empty": "No identity purposes registered by this module.",
+    "allowed_channels": "Allowed channels:",
+    "list_title": "Policy List",
+    "add_policy": "Add Policy",
+    "empty": "No policies registered.",
+    "edit": "Edit",
+    "grace_minutes": "{minutes} min",
+    "enable_success": "Policy enabled.",
+    "disable_success": "Policy disabled.",
+    "toggle_failed": "Failed to update policy state.",
+    "col": {
+      "key": "Key",
+      "scope": "Scope",
+      "target": "Target",
+      "purpose": "Purpose",
+      "enabled": "Enabled",
+      "grace": "Grace",
+      "source": "Source",
+      "actions": "Actions"
+    },
+    "scope": {
+      "route": "Route",
+      "hook": "Hook",
+      "custom": "Custom"
+    },
+    "source": {
+      "core": "Core",
+      "module": "Module",
+      "plugin": "Plugin",
+      "admin": "Admin"
     }
   }
 }

@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             CoreAdminMenuSeeder::class,
             NotificationDefinitionSeeder::class,
+            IdentityPolicySeeder::class,
+            IdentityMessageDefinitionSeeder::class,
         ]);
 
         // 샘플 시더 (--sample 옵션 시에만 실행)
@@ -30,6 +32,7 @@ class DatabaseSeeder extends Seeder
             $this->call([
                 Sample\DummyUserSeeder::class,
                 Sample\NotificationLogSeeder::class,
+                Sample\IdentityVerificationLogSeeder::class,
                 Sample\TemplateSeeder::class,
                 Sample\TemplateLayoutVersionSeeder::class,
                 Sample\ActivityLogSampleSeeder::class,

@@ -367,4 +367,179 @@ class FilePermissionHelperTest extends TestCase
         $this->assertSame(0720, fileperms($file) & 0777, 'g+w 만 추가, 다른 비트 무변경');
         $this->assertSame(1, $changed);
     }
+
+    // ========================================================================
+    // chownRecursiveDetailed / syncGroupWritabilityDetailed — Stage 3
+    // 권한 정상화 실패 항목 누적 반환 검증
+    // ========================================================================
+
+    /**
+     * chownRecursiveDetailed — chown 미지원 환경 (Windows) 에서는 supported=false.
+     *
+     * @return void
+     */
+    public function test_chown_recursive_detailed_returns_supported_false_when_chown_missing(): void
+    {
+        if (function_exists('chown')) {
+            $this->markTestSkipped('chown 지원 환경 — supported=false 케이스 검증 불가');
+        }
+
+        $root = $this->createTempDir();
+        $report = FilePermissionHelper::chownRecursiveDetailed($root, 0, false);
+
+        $this->assertFalse($report['supported']);
+        $this->assertSame(0, $report['changed']);
+        $this->assertSame([], $report['failed_paths']);
+    }
+
+    /**
+     * chownRecursiveDetailed — POSIX 환경에서 자기 자신을 owner 로 호출 시 changed=0, failed=0.
+     *
+     * 자기 소유자와 일치하면 chown 호출 자체가 발생하지 않으므로 멱등.
+     *
+     * @return void
+     */
+    public function test_chown_recursive_detailed_idempotent_when_owner_matches(): void
+    {
+        $this->assertPosixOrSkip();
+
+        $root = $this->createTempDir();
+        $owner = fileowner($root);
+        $this->assertNotFalse($owner);
+
+        $report = FilePermissionHelper::chownRecursiveDetailed($root, $owner, false);
+
+        $this->assertTrue($report['supported']);
+        $this->assertSame(0, $report['changed']);
+        $this->assertSame(0, $report['failed']);
+        $this->assertSame([], $report['failed_paths']);
+    }
+
+    /**
+     * syncGroupWritabilityDetailed — 루트 g-w 환경은 skipped=true 로 보고.
+     *
+     * @return void
+     */
+    public function test_sync_group_writability_detailed_skipped_when_root_no_group_write(): void
+    {
+        $this->assertPosixOrSkip();
+
+        $root = $this->createTempDir();
+        chmod($root, 0755);
+
+        $report = FilePermissionHelper::syncGroupWritabilityDetailed($root);
+
+        $this->assertTrue($report['skipped']);
+        $this->assertSame(0, $report['changed']);
+        $this->assertSame(0, $report['failed']);
+    }
+
+    /**
+     * syncGroupWritabilityDetailed — 정상 승격 시 changed>0, failed=0, skipped=false.
+     *
+     * @return void
+     */
+    public function test_sync_group_writability_detailed_reports_changed(): void
+    {
+        $this->assertPosixOrSkip();
+
+        $root = $this->createTempDir();
+        chmod($root, 0775);
+
+        $child = $root.DIRECTORY_SEPARATOR.'sub';
+        mkdir($child, 0755);
+
+        $report = FilePermissionHelper::syncGroupWritabilityDetailed($root);
+
+        $this->assertFalse($report['skipped']);
+        $this->assertSame(1, $report['changed']);
+        $this->assertSame(0, $report['failed']);
+        $this->assertSame([], $report['failed_paths']);
+    }
+
+    // ========================================================================
+    // 트랙 2-A — `.preserve-ownership` 마커 + chownRecursiveDetailed 가드
+    // (코어 7.0.0-beta.4+)
+    //
+    // 사용자 데이터 디렉토리 (storage/app/{modules,plugins,attachments,...}) 가
+    // 마커 파일을 보유하면, sudo update 의 chownRecursive 가 그 서브트리 전체를
+    // 자동 skip 하여 시드 시점 owner/perms 보존. 미래 release transition 의
+    // 권한 회귀를 구조적으로 차단.
+    // ========================================================================
+
+    /**
+     * `chownRecursiveDetailed` 가 `respectPreservationMarker` 옵션을 지원해야 함.
+     *
+     * @return void
+     */
+    public function test_chown_recursive_detailed_supports_respect_preservation_marker_option(): void
+    {
+        $reflection = new \ReflectionMethod(FilePermissionHelper::class, 'chownRecursiveDetailed');
+        $params = $reflection->getParameters();
+        $names = array_map(fn ($p) => $p->getName(), $params);
+
+        $this->assertContains(
+            'respectPreservationMarker',
+            $names,
+            'chownRecursiveDetailed 가 respectPreservationMarker 옵션을 받아야 함 (마커 인식 가드)',
+        );
+    }
+
+    /**
+     * 마커가 있는 디렉토리 트리는 chownRecursiveDetailed 가 skip — 자기 자신/하위 모두 chown 안 함.
+     *
+     * @return void
+     */
+    public function test_chown_recursive_detailed_skips_subtree_when_preservation_marker_present(): void
+    {
+        $this->assertPosixOrSkip();
+
+        $root = $this->createTempDir();
+        $protectedDir = $root.DIRECTORY_SEPARATOR.'modules';
+        mkdir($protectedDir, 0755);
+        $imageDir = $protectedDir.DIRECTORY_SEPARATOR.'images';
+        mkdir($imageDir, 0700);
+        file_put_contents($imageDir.DIRECTORY_SEPARATOR.'test.jpg', 'data');
+
+        // 마커 파일 작성 → protectedDir 전체 chown 비대상
+        file_put_contents($protectedDir.DIRECTORY_SEPARATOR.'.preserve-ownership', '');
+
+        $ownerBefore = fileowner($protectedDir);
+        $imageDirOwnerBefore = fileowner($imageDir);
+
+        // 자기 자신 owner 로 호출 (실제 chown 시도 — 일반 user 권한 환경에서도 호출 가능)
+        // 그러나 마커 가드로 skip 되어야 함. owner 가 동일해도 changed 카운트가 마커 가드 분기 검증
+        $owner = $ownerBefore;
+        $report = FilePermissionHelper::chownRecursiveDetailed(
+            $root,
+            $owner,
+            false,
+            respectPreservationMarker: true,
+        );
+
+        $this->assertTrue($report['supported']);
+        $this->assertSame($ownerBefore, fileowner($protectedDir), '마커 디렉토리 owner 무변경');
+        $this->assertSame($imageDirOwnerBefore, fileowner($imageDir), '마커 하위 owner 무변경');
+        $this->assertArrayHasKey('skipped_subtrees', $report, 'skipped_subtrees 카운트 보고');
+        $this->assertGreaterThanOrEqual(1, $report['skipped_subtrees'], '최소 1개 서브트리 skip');
+    }
+
+    /**
+     * 마커 옵션이 false 이면 (기본값) — 기존 동작 그대로 (호환성 유지).
+     *
+     * @return void
+     */
+    public function test_chown_recursive_detailed_backward_compatible_without_marker_option(): void
+    {
+        $this->assertPosixOrSkip();
+
+        $root = $this->createTempDir();
+        $owner = fileowner($root);
+
+        // respectPreservationMarker 인자 없이 호출 → 기존 동작 (default false)
+        $report = FilePermissionHelper::chownRecursiveDetailed($root, $owner, false);
+
+        $this->assertTrue($report['supported']);
+        $this->assertSame(0, $report['failed']);
+    }
 }

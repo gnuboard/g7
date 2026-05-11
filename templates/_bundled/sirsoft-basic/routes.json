@@ -49,6 +49,14 @@
         "title": "$t:user.auth.reset_password_title"
       }
     },
+    {
+      "path": "/identity/challenge",
+      "layout": "auth/identity_challenge",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.identity.challenge.title"
+      }
+    },
 
     {
       "_comment": "=== 게시판 ===",

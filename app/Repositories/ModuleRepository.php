@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Models\Module;
 use Illuminate\Database\Eloquent\Collection;
@@ -325,5 +326,22 @@ class ModuleRepository implements ModuleRepositoryInterface
             // 해당 플러그인이 의존성에 포함되어 있는지 확인
             return in_array($pluginIdentifier, $pluginDependencies);
         })->values();
+    }
+
+    /**
+     * 코어 버전 비호환으로 자동 비활성화된 모듈을 조회합니다.
+     *
+     * @return Collection 자동 비활성화된 모듈 컬렉션
+     */
+    public function findAutoDeactivated(): Collection
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('modules', 'deactivated_reason')) {
+            return new Collection;
+        }
+
+        return Module::where('status', ExtensionStatus::Inactive->value)
+            ->where('deactivated_reason', DeactivationReason::IncompatibleCore->value)
+            ->orderByDesc('deactivated_at')
+            ->get();
     }
 }

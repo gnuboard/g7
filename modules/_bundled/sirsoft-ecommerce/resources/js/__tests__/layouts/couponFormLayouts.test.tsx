@@ -231,8 +231,8 @@ describe('couponFormLayouts', () => {
         it('Div 컴포넌트로 래핑 (카드 스타일링)', () => {
             expect(basicInfoPartial.name).toBe('Div');
             expect(basicInfoPartial.type).toBe('basic');
-            expect(basicInfoPartial.props.className).toContain('bg-white');
-            expect(basicInfoPartial.props.className).toContain('dark:bg-gray-800');
+            // 카드 스타일이 'card' 유틸리티 클래스로 통일됨
+            expect(basicInfoPartial.props.className).toContain('card');
         });
 
         it('적용대상 RadioGroup: 3가지 옵션 (product_amount, order_amount, shipping_fee)', () => {
@@ -298,23 +298,22 @@ describe('couponFormLayouts', () => {
             expect(radioGroup.props.options[0].value).toBe('manual');
         });
 
-        it('쿠폰명 필드: LocaleInput 사용', () => {
+        it('쿠폰명 필드: MultilingualInput 사용', () => {
             const field = findById(basicInfoPartial, 'field_coupon_name');
             expect(field).toBeDefined();
 
-            const localeInput = findByName(field, 'LocaleInput');
-            expect(localeInput).toBeDefined();
-            expect(localeInput.props.name).toBe('name');
+            const multilingualInput = findByName(field, 'MultilingualInput');
+            expect(multilingualInput).toBeDefined();
+            expect(multilingualInput.props.name).toBe('name');
         });
 
-        it('쿠폰설명 필드: LocaleTextarea 사용', () => {
+        it('쿠폰설명 필드: MultilingualInput 사용 (다국어 입력 컴포넌트로 통합)', () => {
             const field = findById(basicInfoPartial, 'field_coupon_description');
             expect(field).toBeDefined();
 
-            const localeTextarea = findByName(field, 'LocaleTextarea');
-            expect(localeTextarea).toBeDefined();
-            expect(localeTextarea.props.name).toBe('description');
-            expect(localeTextarea.props.rows).toBe(3);
+            const multilingualInput = findByName(field, 'MultilingualInput');
+            expect(multilingualInput).toBeDefined();
+            expect(multilingualInput.props.name).toBe('description');
         });
     });
 
@@ -324,8 +323,7 @@ describe('couponFormLayouts', () => {
         it('Div 컴포넌트로 래핑 (카드 스타일링)', () => {
             expect(benefitSettingsPartial.name).toBe('Div');
             expect(benefitSettingsPartial.type).toBe('basic');
-            expect(benefitSettingsPartial.props.className).toContain('bg-white');
-            expect(benefitSettingsPartial.props.className).toContain('dark:bg-gray-800');
+            expect(benefitSettingsPartial.props.className).toContain('card');
         });
 
         it('혜택금액 필드: Input + Select (fixed/rate) 같은 줄', () => {
@@ -398,15 +396,16 @@ describe('couponFormLayouts', () => {
             expect(values).toEqual(['period', 'days_from_issue']);
         });
 
-        it('period 시 DateRangePicker 표시', () => {
+        it('period 시 시작일/종료일 Input(datetime-local) 두 개 표시', () => {
             const div = findById(benefitSettingsPartial, 'valid_period_range');
             expect(div).toBeDefined();
             expect(div.if).toContain('period');
 
-            const picker = findByName(div, 'DateRangePicker');
-            expect(picker).toBeDefined();
-            expect(picker.props.startName).toBe('valid_from');
-            expect(picker.props.endName).toBe('valid_to');
+            // DateRangePicker 단일 컴포넌트 → 시작/종료 Input 두 개로 분리
+            const inputs = findAllByName(div, 'Input');
+            const inputNames = inputs.map((i: any) => i.props?.name);
+            expect(inputNames).toContain('valid_from');
+            expect(inputNames).toContain('valid_to');
         });
 
         it('days_from_issue 시 일수 입력 표시', () => {
@@ -426,8 +425,7 @@ describe('couponFormLayouts', () => {
         it('Div 컴포넌트로 래핑 (카드 스타일링)', () => {
             expect(issueSettingsPartial.name).toBe('Div');
             expect(issueSettingsPartial.type).toBe('basic');
-            expect(issueSettingsPartial.props.className).toContain('bg-white');
-            expect(issueSettingsPartial.props.className).toContain('dark:bg-gray-800');
+            expect(issueSettingsPartial.props.className).toContain('card');
         });
 
         it('발급수량: UI 전용 RadioGroup (value prop, name 없음)', () => {
@@ -475,16 +473,19 @@ describe('couponFormLayouts', () => {
             expect(radioGroup.props.value).toContain('issue_period_type');
         });
 
-        it('발급기간 제한 시 DateRangePicker 표시', () => {
+        it('발급기간 제한 시 시작일/종료일 Input(datetime-local) 두 개 표시', () => {
             const div = findById(issueSettingsPartial, 'issue_period_range');
             expect(div).toBeDefined();
             expect(div.if).toContain("limited");
 
-            const picker = findByName(div, 'DateRangePicker');
-            expect(picker).toBeDefined();
-            expect(picker.props.startName).toBe('issue_from');
-            expect(picker.props.endName).toBe('issue_to');
-            expect(picker.props.showTime).toBe(true);
+            const inputs = findAllByName(div, 'Input');
+            const inputNames = inputs.map((i: any) => i.props?.name);
+            expect(inputNames).toContain('issue_from');
+            expect(inputNames).toContain('issue_to');
+
+            // 시간까지 입력하므로 datetime-local 사용
+            const fromInput = inputs.find((i: any) => i.props?.name === 'issue_from');
+            expect(fromInput?.props?.type).toBe('datetime-local');
         });
 
         it('재발급: UI 전용 RadioGroup', () => {
@@ -511,8 +512,7 @@ describe('couponFormLayouts', () => {
         it('Div 컴포넌트로 래핑 (카드 스타일링)', () => {
             expect(usageConditionsPartial.name).toBe('Div');
             expect(usageConditionsPartial.type).toBe('basic');
-            expect(usageConditionsPartial.props.className).toContain('bg-white');
-            expect(usageConditionsPartial.props.className).toContain('dark:bg-gray-800');
+            expect(usageConditionsPartial.props.className).toContain('card');
         });
 
         it('쿠폰 중복 사용 RadioGroup: true/false', () => {
@@ -820,7 +820,8 @@ describe('couponFormLayouts', () => {
             expect(keys).toContain('sirsoft-ecommerce.admin.promotion_coupon.form.section.benefit_settings');
             expect(keys).toContain('sirsoft-ecommerce.admin.promotion_coupon.form.field.benefit_amount');
             expect(keys).toContain('sirsoft-ecommerce.admin.promotion_coupon.form.option.discount_type_fixed');
-            expect(keys).toContain('sirsoft-ecommerce.admin.promotion_coupon.form.option.valid_type_period');
+            // valid_type 옵션 라벨 키가 fixed_period 로 명시화됨
+            expect(keys).toContain('sirsoft-ecommerce.admin.promotion_coupon.form.option.valid_type_fixed_period');
             expect(keys).toContain('sirsoft-ecommerce.admin.promotion_coupon.form.hint.from_issue_date');
         });
 

@@ -1,0 +1,13 @@
+{
+  "drop_or_click": "ファイルをドラッグするか、クリックしてアップロード",
+  "upload_limit": "最大{{maxFiles}}個、各{{maxSize}}MB まで",
+  "delete_confirm_title": "添付ファイル削除",
+  "delete_confirm_message": "このファイルを削除してもよろしいですか？",
+  "deleting": "削除中...",
+  "attached_count": "{{count}}/{{max}}個添付されています",
+  "max_size": "最大{{size}}MB",
+  "reorder_failed": "ファイルの順序変更に失敗しました",
+  "drag_to_reorder": "ドラッグして順序を変更",
+  "primary_image": "代表画像",
+  "set_as_primary": "代表画像に設定"
+}

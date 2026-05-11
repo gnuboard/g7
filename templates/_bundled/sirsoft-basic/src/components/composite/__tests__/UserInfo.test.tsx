@@ -315,6 +315,9 @@ describe('UserInfo 컴포넌트', () => {
   });
 });
 
+// 현 구현: actualUserId = userId ?? author?.uuid (author.id 는 쓰지 않음)
+// 드롭다운 렌더링 조건: showDropdown && showMenu && finalMenuItems.length > 0
+// handleClick 은 actualIsGuest || !actualUserId 면 early-return → author.uuid 필수.
 describe('UserInfo 드롭다운 위치 (fixed 배치)', () => {
   beforeEach(() => {
     (window as any).G7Core = mockG7Core;
@@ -342,7 +345,7 @@ describe('UserInfo 드롭다운 위치 (fixed 배치)', () => {
   it('드롭다운이 fixed 포지션으로 렌더링되어야 함', async () => {
     render(
       <UserInfo
-        author={{ id: 1, name: '홍길동' }}
+        author={{ id: 1, uuid: 'user-uuid-1', name: '홍길동' }}
         showDropdown={true}
         stopPropagation={true}
       />
@@ -361,7 +364,7 @@ describe('UserInfo 드롭다운 위치 (fixed 배치)', () => {
   it('드롭다운 top이 버튼 bottom + 4px (viewport 기준)이어야 함', async () => {
     render(
       <UserInfo
-        author={{ id: 1, name: '홍길동' }}
+        author={{ id: 1, uuid: 'user-uuid-1', name: '홍길동' }}
         showDropdown={true}
         stopPropagation={true}
       />
@@ -380,7 +383,7 @@ describe('UserInfo 드롭다운 위치 (fixed 배치)', () => {
   it('드롭다운 left가 버튼 left (viewport 기준)이어야 함', async () => {
     render(
       <UserInfo
-        author={{ id: 1, name: '홍길동' }}
+        author={{ id: 1, uuid: 'user-uuid-1', name: '홍길동' }}
         showDropdown={true}
         stopPropagation={true}
       />
@@ -399,7 +402,7 @@ describe('UserInfo 드롭다운 위치 (fixed 배치)', () => {
   it('스크롤 시 드롭다운이 닫혀야 함', async () => {
     render(
       <UserInfo
-        author={{ id: 1, name: '홍길동' }}
+        author={{ id: 1, uuid: 'user-uuid-1', name: '홍길동' }}
         showDropdown={true}
         stopPropagation={true}
       />

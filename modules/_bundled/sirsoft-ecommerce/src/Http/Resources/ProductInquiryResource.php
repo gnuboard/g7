@@ -74,7 +74,7 @@ class ProductInquiryResource extends BaseApiResource
 
         $locale = app()->getLocale();
 
-        return $snapshot[$locale] ?? $snapshot['ko'] ?? array_values($snapshot)[0] ?? '';
+        return $snapshot[$locale] ?? $snapshot[config('app.fallback_locale', 'ko')] ?? array_values($snapshot)[0] ?? '';
     }
 
     /**

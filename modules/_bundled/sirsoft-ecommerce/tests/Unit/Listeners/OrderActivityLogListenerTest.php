@@ -30,7 +30,7 @@ class OrderActivityLogListenerTest extends ModuleTestCase
         parent::setUp();
         // 관리자 경로 요청 설정 (resolveLogType()이 Admin 반환하도록)
         $this->app->instance('request', Request::create('/api/admin/sirsoft-ecommerce/orders'));
-        $this->listener = new OrderActivityLogListener();
+        $this->listener = app(OrderActivityLogListener::class);
     }
 
     // ═══════════════════════════════════════════

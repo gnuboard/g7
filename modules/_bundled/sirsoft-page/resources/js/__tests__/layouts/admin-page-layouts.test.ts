@@ -201,6 +201,41 @@ describe('admin_page_list.json', () => {
         expect(ds.errorHandling).toBeDefined();
         expect(ds.errorHandling['403']).toBeDefined();
     });
+
+    // ─── Issue #280: 유저 페이지 이동 링크 ─────────────
+
+    it('title 컬럼의 제목이 Span 컴포넌트로 렌더링됨 (링크 없음)', () => {
+        const grids = findComponentsByName(adminPageList, 'DataGrid');
+        const titleColumn = grids[0].props.columns.find((c: any) => c.field === 'title');
+        const firstChild = titleColumn?.cellChildren?.[0]?.children?.[0];
+        expect(firstChild?.name).toBe('Span');
+    });
+
+    it('title 컬럼의 /page/{slug} 링크가 A 컴포넌트로 렌더링됨', () => {
+        const grids = findComponentsByName(adminPageList, 'DataGrid');
+        const titleColumn = grids[0].props.columns.find((c: any) => c.field === 'title');
+        const aComponent = titleColumn?.cellChildren?.[0]?.children?.[1];
+        expect(aComponent?.name).toBe('A');
+        expect(aComponent?.props?.href).toContain('/page/');
+        expect(aComponent?.props?.href).toContain('row.slug');
+    });
+
+    it('title 링크 A 컴포넌트가 새 탭(_blank)으로 열림', () => {
+        const grids = findComponentsByName(adminPageList, 'DataGrid');
+        const titleColumn = grids[0].props.columns.find((c: any) => c.field === 'title');
+        const aComponent = titleColumn?.cellChildren?.[0]?.children?.[1];
+        expect(aComponent?.props?.target).toBe('_blank');
+    });
+
+    it('slug 컬럼이 A 컴포넌트로 렌더링되고 /page/{slug}를 가리킴', () => {
+        const grids = findComponentsByName(adminPageList, 'DataGrid');
+        const slugColumn = grids[0].props.columns.find((c: any) => c.field === 'slug');
+        const aComponent = slugColumn?.cellChildren?.[0];
+        expect(aComponent?.name).toBe('A');
+        expect(aComponent?.props?.href).toContain('/page/');
+        expect(aComponent?.props?.href).toContain('row.slug');
+        expect(aComponent?.props?.target).toBe('_blank');
+    });
 });
 
 // ─────────────────────────────────────────────
@@ -324,6 +359,57 @@ describe('admin_page_form.json', () => {
         expect(ds).toBeDefined();
         expect(ds.errorHandling).toBeDefined();
         expect(ds.errorHandling['403']).toBeDefined();
+    });
+
+    // ─── Issue #280: 수정 모드 슬러그 편집 가능 ─────────
+
+    it('slug_input의 disabled 조건이 isReadOnly만 참조함 (route.id 제외)', () => {
+        const slugInput = findById(adminPageForm, 'slug_input');
+        expect(slugInput).not.toBeNull();
+        expect(slugInput.props.disabled).not.toContain('route?.id');
+        expect(slugInput.props.disabled).not.toContain('route.id');
+        expect(slugInput.props.disabled).toContain('isReadOnly');
+    });
+
+    it('slug_check_button이 isReadOnly만으로 조건부 표시됨 (route.id 제외)', () => {
+        const checkBtn = findById(adminPageForm, 'slug_check_button');
+        expect(checkBtn).not.toBeNull();
+        expect(checkBtn.if).not.toContain('route?.id');
+        expect(checkBtn.if).not.toContain('!route');
+        expect(checkBtn.if).toContain('isReadOnly');
+    });
+
+    it('저장 버튼의 slugChecked 차단 조건에 route.id가 포함되지 않음 (생성·수정 공통)', () => {
+        const saveBtn = findById(adminPageForm, 'header_save_button');
+        const clickAction = saveBtn?.actions?.find((a: any) => a.type === 'click');
+        const blockCondition = clickAction?.conditions?.[0];
+        expect(blockCondition).toBeDefined();
+        expect(blockCondition.if).toContain('slugChecked');
+        const hasOldPattern =
+            blockCondition.if.includes('route?.id && !_local.slugChecked') ||
+            blockCondition.if.includes('!route?.id && !_local.slugChecked');
+        expect(hasOldPattern).toBe(false);
+    });
+
+    it('check-slug API 호출 body에 exclude_id가 route.id를 전달함', () => {
+        const checkBtn = findById(adminPageForm, 'slug_check_button');
+        const btnStr = JSON.stringify(checkBtn);
+        expect(btnStr).toContain('exclude_id');
+        expect(btnStr).toContain('route?.id');
+    });
+
+    it('init_actions에 수정 모드 slugChecked 초기화 액션이 있음', () => {
+        const initActions = (adminPageForm as any).init_actions;
+        const initStr = JSON.stringify(initActions);
+        expect(initStr).toContain('slugChecked');
+        expect(initStr).toContain('slugAvailable');
+    });
+
+    it('slug_input의 change 액션이 slugChecked: false로 리셋함', () => {
+        const slugInput = findById(adminPageForm, 'slug_input');
+        const inputStr = JSON.stringify(slugInput);
+        expect(inputStr).toContain('slugChecked');
+        expect(inputStr).toContain('false');
     });
 });
 
@@ -464,5 +550,14 @@ describe('admin_page_detail.json', () => {
         expect(modal).toBeDefined();
         const modalStr = JSON.stringify(modal);
         expect(modalStr).toContain('can_update');
+    });
+
+    it("_local.lang fallback이 하드코딩 'ko' 가 아닌 $locale 을 사용함 (새로고침 시 탭/콘텐츠 locale 불일치 회귀 방지)", () => {
+        const layoutStr = JSON.stringify(adminPageDetail);
+        // 하드코딩 'ko' fallback 금지 — 새로고침 직후 _local.lang 이 undefined 인 동안
+        // 탭은 $locale 로 강조되지만 콘텐츠가 'ko' 로 표시되어 locale 불일치 발생
+        expect(layoutStr).not.toMatch(/_local\.lang \?\? 'ko'/);
+        // $locale 로 fallback 하는 표현식이 존재해야 함 (탭 + 콘텐츠 표현식)
+        expect(layoutStr).toMatch(/_local\.lang \?\? \$locale/);
     });
 });

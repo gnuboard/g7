@@ -1,0 +1,71 @@
+feature: IDV 라우트 권한 가드 + scope=self + 모달 cancel API 정합
+
+description: |
+  본인인증(IDV) 라우트 (challenge 발급/검증/취소) 에 permission 미들웨어 + scope=self 가드를
+  표준 메커니즘으로 적용. guest/user/admin 역할별 차등 접근 + 모달 취소 시 audit trail 정합.
+
+  핵심 동작:
+    - PermissionMiddleware 가 IDV 3개 라우트(request/verify/cancel)에 적용
+    - Route::model('challenge', IdentityVerificationLog::class) 으로 모델 자동 resolve
+    - resource_route_key='challenge' + owner_key='user_id' + permission_scopes 메타필드 표준
+    - guest 역할에 IDV 3종 권한 부여 (Mode B 가입 흐름) — scope 검사 자동 스킵
+    - user 역할에 IDV 3종 + scope=self (verify/cancel 본인 challenge 한정)
+    - admin 역할은 all_leaf + scope=null (다른 사용자 challenge 도 다룰 수 있음)
+    - 모달 취소 버튼 sequence 가 [apiCall(cancel), resolveIdentityChallenge, closeModal] 호출
+    - cancel apiCall 은 challenge_id 가용성 if 가드 + onError suppress
+
+axes:
+  actor_role: [guest, user_with_perm, user_without_perm, admin]
+  endpoint: [request, verify, cancel]
+  challenge_owner: [self, other, none]
+  challenge_status: [sent, verified, expired, cancelled, missing]
+  modal_trigger_state: [challenge_id_present, challenge_id_absent]
+
+exclusions:
+  - { challenge_owner: none, endpoint: verify, reason: "verify 는 challenge 모델 바인딩 필요 — none 시 404 (가드 통과 후 모델 미해석)" }
+  - { challenge_owner: none, endpoint: cancel, reason: "cancel 도 challenge 모델 바인딩 필요" }
+  - { actor_role: guest, challenge_owner: self, reason: "guest 는 user_id 미보유 — self 매칭 무의미" }
+  - { actor_role: guest, challenge_owner: other, reason: "guest 는 scope 검사 스킵으로 owner 무관" }
+  - { modal_trigger_state: challenge_id_absent, endpoint: cancel, reason: "모달 if 가드로 호출 자체 스킵 — endpoint 액션 미발생" }
+
+effects:
+  - guest_can_request_challenge
+  - guest_can_verify_any_challenge
+  - guest_can_cancel_any_challenge
+  - user_with_perm_can_request_challenge
+  - user_with_perm_can_verify_own_challenge
+  - user_with_perm_can_cancel_own_challenge
+  - user_with_perm_cannot_verify_others_challenge_403
+  - user_with_perm_cannot_cancel_others_challenge_403
+  - user_without_perm_gets_403_on_request
+  - user_without_perm_gets_403_on_verify
+  - user_without_perm_gets_403_on_cancel
+  - admin_can_cancel_any_challenge_via_scope_null
+  - admin_can_verify_any_challenge_via_scope_null
+  - missing_challenge_returns_404_after_guard_pass
+  - permission_middleware_resolves_challenge_via_route_model_binding
+  - role_permission_seeder_syncs_idv_permissions_with_owner_metadata
+  - role_permission_seeder_assigns_self_scope_to_user_role_idv_perms
+  - role_permission_seeder_grants_idv_perms_to_guest_without_scope
+  - guest_role_idv_permission_check_via_guest_role_cache
+  - modal_cancel_button_calls_server_cancel_api_first
+  - modal_cancel_apiCall_uses_global_identityChallenge_challenge_id
+  - modal_cancel_apiCall_skipped_when_challenge_id_absent
+  - modal_cancel_apiCall_failure_does_not_block_modal_close
+  - modal_cancel_sequence_order_is_apiCall_resolve_close
+  - cancel_endpoint_via_permission_middleware_does_not_require_legacy_auth_sanctum
+  - admin_basic_modal_cancel_flow_matches_basic_template
+  - request_challenge_route_validation_rules_extensible_via_hook_filter
+  - verify_challenge_route_validation_rules_extensible_via_hook_filter
+  - cancel_form_request_authorize_returns_true_letting_route_middleware_decide
+
+test_files:
+  - tests/Feature/Api/Identity/PermissionGuardTest.php
+  - tests/Feature/Api/Identity/IdentityChallengeFlowTest.php
+  - tests/Feature/Api/Identity/IdentityChallengeShowTest.php
+  - tests/Feature/Api/Identity/IdentityCallbackTest.php
+  - tests/Feature/Api/Auth/RegisterPolicyDrivenSignupTest.php
+  - tests/Feature/Api/Auth/ForgotPasswordViaIdentityTest.php
+  - tests/Feature/Identity/MailIdentityProviderDispatchTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/identity-challenge-modal.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-identity-challenge-modal.test.tsx

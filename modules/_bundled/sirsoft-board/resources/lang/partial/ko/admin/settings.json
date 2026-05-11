@@ -14,7 +14,8 @@
         "spam_security": "보안 설정",
         "mail_templates": "메일 템플릿",
         "notification_definitions": "알림 설정",
-        "seo": "SEO 설정"
+        "seo": "SEO 설정",
+        "identity_policies": "본인인증 정책"
     },
     "board_settings_tabs": {
         "basic": "기본",
@@ -113,6 +114,16 @@
         "notify_admin_on_report_scope": "알림 발송 범위",
         "notify_admin_on_report_scope_per_case": "게시글\/댓글당 최초 1회만",
         "notify_admin_on_report_scope_per_report": "신고가 접수될 때마다",
+        "notify_admin_on_report_channels": "알림 채널",
+        "notify_admin_on_report_channels_placeholder": "채널 선택",
+        "notify_admin_on_report_channels_help": "선택한 채널로 관리자 알림이 발송됩니다",
+        "notify_author_on_report_action_channels": "알림 채널",
+        "notify_author_on_report_action_channels_placeholder": "채널 선택",
+        "notify_author_on_report_action_channels_help": "선택한 채널로 작성자 알림이 발송됩니다",
+        "notification_channels": {
+            "mail": "이메일",
+            "database": "사이트 알림"
+        },
         "report_view_roles": "신고 조회 권한",
         "report_view_roles_description": "신고 목록과 상세 내용을 열람할 수 있는 권한입니다.",
         "report_manage_roles": "신고 처리 권한",
@@ -388,6 +399,42 @@
             "title": "알림 미리보기",
             "subject_label": "제목",
             "body_label": "본문"
+        }
+    },
+    "identity": {
+        "intro_title": "게시판 본인인증 정책",
+        "intro": "게시판 모듈이 선언한 정책과 운영자가 추가한 정책을 관리합니다. 모듈 기본 정책은 활성/유예시간 등 일부만 조정 가능하며, 운영자가 추가한 정책은 코어 환경설정에서 자유롭게 편집·삭제할 수 있습니다.",
+        "purposes_section_title": "이 모듈이 등록한 본인인증 목적",
+        "purposes_section_description": "게시판 모듈이 선언한 본인인증 목적입니다. 정책의 \"인증 목적\" 컬럼에서 선택할 수 있습니다.",
+        "purposes_empty": "이 모듈이 등록한 본인인증 목적이 없습니다.",
+        "list_title": "정책 목록",
+        "add_policy": "정책 추가",
+        "empty": "등록된 정책이 없습니다.",
+        "edit": "편집",
+        "grace_minutes": "{minutes}분",
+        "enable_success": "정책이 활성화되었습니다.",
+        "disable_success": "정책이 비활성화되었습니다.",
+        "toggle_failed": "정책 상태 변경에 실패했습니다.",
+        "col": {
+            "key": "정책 키",
+            "scope": "범위",
+            "target": "대상",
+            "purpose": "목적",
+            "enabled": "활성",
+            "grace": "유예",
+            "source": "출처",
+            "actions": "작업"
+        },
+        "scope": {
+            "route": "라우트",
+            "hook": "훅",
+            "custom": "커스텀"
+        },
+        "source": {
+            "core": "코어",
+            "module": "모듈",
+            "plugin": "플러그인",
+            "admin": "관리자"
         }
     }
 }

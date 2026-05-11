@@ -1,0 +1,520 @@
+{
+  "title": "ショッピングモール環境設定",
+  "description": "ショッピングモールの基本環境を設定します。",
+  "tabs": {
+    "basic_info": "基本情報",
+    "language_currency": "言語/通貨",
+    "seo": "SEO設定",
+    "order_settings": "注文設定",
+    "claim": "クレーム",
+    "shipping": "配送設定",
+    "review_settings": "レビュー設定",
+    "notification_definitions": "通知設定",
+    "identity_policies": "本人認証ポリシー"
+  },
+  "save_success": "設定が保存されました。",
+  "save_error": "設定の保存に失敗しました。",
+  "validation_error": "入力内容を確認してください。",
+  "basic_info": {
+    "shop_info": {
+      "title": "ショッピングモール情報",
+      "description": "ショッピングモールの基本情報を設定します。",
+      "shop_name": "ショッピングモール名",
+      "shop_name_placeholder": "ショッピングモール名を入力してください",
+      "route_path": "ルートパス",
+      "no_route": "ルートパスを使用しません。（ショッピングモールのみ単独運営する場合）"
+    },
+    "business_info": {
+      "title": "事業者情報",
+      "description": "事業者登録情報を入力します。",
+      "company_name": "商号（会社名）",
+      "company_name_placeholder": "会社名を入力してください",
+      "business_number": "事業者番号",
+      "ceo_name": "代表者名",
+      "ceo_name_placeholder": "代表者名を入力してください",
+      "business_type": "業態",
+      "business_type_placeholder": "例：卸売、小売",
+      "business_category": "種目",
+      "business_category_placeholder": "例：電子商取引",
+      "address": "事業場所住所",
+      "zipcode": "郵便番号",
+      "search_address": "住所検索",
+      "base_address": "基本住所",
+      "detail_address": "詳細住所",
+      "phone": "代表電話番号",
+      "fax": "代表ファックス番号",
+      "email": "代表メール",
+      "email_id_placeholder": "メールアドレス",
+      "email_domain_placeholder": "ドメイン",
+      "email_domain_direct": "直接入力",
+      "privacy_officer": "個人情報保護責任者",
+      "privacy_officer_placeholder": "個人情報保護責任者名",
+      "privacy_officer_email": "個人情報保護責任者メール",
+      "privacy_officer_email_placeholder": "privacy@example.com",
+      "mail_order_number": "通信販売業申告番号",
+      "mail_order_number_placeholder": "第2024-ソウル江南-12345号",
+      "telecom_number": "付加通信事業者番号",
+      "telecom_number_placeholder": "付加通信事業者番号",
+      "postcode_plugin_required": "Daum郵便番号プラグインがインストールされていないか無効化されています。管理者＞プラグインで有効化してください。"
+    },
+    "inquiry_settings": {
+      "title": "お問い合わせ掲示板設定",
+      "description": "商品お問い合わせ機能を設定します。",
+      "module_not_installed": "掲示板モジュール有効化後に利用できます。"
+    }
+  },
+  "language_currency": {
+    "language_settings": {
+      "title": "言語/通貨",
+      "description": "ショッピングモールの基本言語および通貨を設定します。",
+      "default_language": "基本言語",
+      "default_currency": "基本通貨",
+      "currency_change_warning": "最初の商品登録後は変更できません。"
+    },
+    "exchange_settings": {
+      "title": "為替/通貨設定",
+      "description": "KRW 1,000基準の為替レートおよび通貨別の切り捨て基準を設定します。",
+      "add_currency": "通貨追加",
+      "currency_code": "通貨コード",
+      "currency_name": "通貨名",
+      "exchange_rate": "為替レート",
+      "rounding_unit": "切り捨て単位",
+      "rounding_method": "切り捨て方式",
+      "decimal_places": "小数点以下の桁数",
+      "actions": "管理",
+      "delete": "削除",
+      "base_currency": "基本通貨",
+      "krw_base": "KRW 1,000 =",
+      "rounding_units": {
+        "1": "1（一の位）",
+        "10": "10（十の位）",
+        "100": "100（百の位）",
+        "0_1": "0.1（小数点第一位）",
+        "0_01": "0.01（小数点第二位）"
+      },
+      "rounding_methods": {
+        "floor": "切り捨て",
+        "round": "四捨五入",
+        "ceil": "切り上げ"
+      },
+      "default_label": "基本通貨",
+      "currencies": {
+        "KRW": "KRW（ウォン）",
+        "KRW_default": "KRW（ウォン）（デフォルト通貨）",
+        "USD": "USD（ドル）",
+        "JPY": "JPY（円）",
+        "CNY": "CNY（人民元）",
+        "EUR": "EUR（ユーロ）"
+      },
+      "new_currency": {
+        "title": "新しい通貨を追加",
+        "code_placeholder": "例：GBP",
+        "name_placeholder": "通貨名"
+      },
+      "edit_currency": {
+        "title": "通貨を編集"
+      },
+      "edit": "編集",
+      "duplicate_currency_error": "既に登録された通貨コードです。"
+    }
+  },
+  "order_settings": {
+    "default_pg_provider": {
+      "title": "デフォルトPG社設定",
+      "description": "決済処理に使用するデフォルトPG社を選択します。",
+      "not_installed": "PGプラグインをインストールすると選択できます。",
+      "select": "PG社を選択"
+    },
+    "payment_methods": {
+      "title": "決済方法設定",
+      "description": "使用する決済方法を設定し、優先順位を指定します。",
+      "timing_order_placed": "注文受付時",
+      "timing_payment_complete": "決済完了時",
+      "timing_none": "在庫を差し引かない",
+      "stock_deduction_timing": "在庫差し引き時点",
+      "min_order_amount": "最小注文金額",
+      "is_active": "使用有無",
+      "orphaned_badge": "プラグイン未インストール",
+      "remove_orphaned": "削除",
+      "pg_provider": "PG社",
+      "pg_use_default": "デフォルトPG",
+      "pg_not_required": "PG不要",
+      "pg_not_installed": "PG未インストール",
+      "pg_select_first": "PG社をまず選択してください"
+    },
+    "bank_accounts": {
+      "title": "無通帳口座番号設定",
+      "description": "無通帳振込に使用する口座情報を管理します。",
+      "manage_banks": "銀行管理",
+      "add_account": "口座を追加",
+      "bank": "銀行",
+      "account_number": "口座番号",
+      "account_number_placeholder": "口座番号を入力してください",
+      "account_holder": "口座名義人",
+      "account_holder_placeholder": "口座名義人を入力してください",
+      "is_default": "デフォルト",
+      "is_active": "使用",
+      "empty": "登録された口座がありません。"
+    },
+    "bank_management": {
+      "modal_title": "銀行管理",
+      "code": "銀行コード",
+      "code_placeholder": "例：004",
+      "name": "銀行名",
+      "name_placeholder": "銀行名を入力してください",
+      "name_ko": "日本語名",
+      "name_ko_placeholder": "例：国民銀行",
+      "name_en": "英文名",
+      "name_en_placeholder": "例：Kookmin Bank",
+      "add_bank": "銀行を追加",
+      "confirm": "確認",
+      "delete": "削除",
+      "empty": "登録された銀行がありません。",
+      "saving": "保存中...",
+      "validation_error": "入力内容を確認してください。"
+    },
+    "cancellable_statuses": {
+      "title": "キャンセル可能ステータス",
+      "description": "ユーザーおよび管理者が注文をキャンセルできる注文ステータスを設定します。",
+      "label": "キャンセル可能注文ステータス",
+      "hint": "選択したステータスの注文のみキャンセルできます。デフォルト値（注文待機、決済待機、決済完了）は常にキャンセル可能です。",
+      "placeholder": "キャンセル可能ステータスを選択してください"
+    },
+    "confirmable_statuses": {
+      "title": "購入確定可能ステータス",
+      "description": "ユーザーが購入を確定できる注文オプションステータスを設定します。",
+      "label": "購入確定可能注文ステータス",
+      "hint": "選択したステータスの注文オプションのみ購入を確定できます。",
+      "placeholder": "購入確定可能ステータスを選択してください"
+    },
+    "auto_cancel": {
+      "title": "注文自動キャンセル",
+      "description": "入金待機ステータス注文の自動キャンセルおよび入金期限を設定します。",
+      "toggle_label": "注文自動キャンセル",
+      "toggle_description": "入金待機ステータスの注文を指定期間後に自動的にキャンセルします。",
+      "toggle_hint": "無効化すると入金待機注文は自動キャンセルされません。",
+      "days_prefix": "入金待機ステータスの注文は注文日を含めて",
+      "days_suffix": "日後に自動キャンセルされます。",
+      "vbank_due_days_label": "仮想口座入金期限：",
+      "vbank_due_days_suffix": "日",
+      "dbank_due_days_label": "無通帳振込入金期限：",
+      "dbank_due_days_suffix": "日"
+    },
+    "cart_expiry": {
+      "title": "カート有効期間",
+      "description": "カートに入れられた商品の自動削除期間を設定します。",
+      "prefix": "カート内の商品は",
+      "suffix": "日後に自動削除されます。"
+    },
+    "stock_management": {
+      "title": "在庫管理",
+      "description": "在庫関連のグローバルポリシーを設定します。",
+      "restore_on_cancel": "注文キャンセル時の在庫復旧",
+      "restore_on_cancel_description": "注文がキャンセルされると、差し引かれた在庫を自動的に復旧します。",
+      "restore_on_cancel_hint": "返品·交換処理時にも適用されます。"
+    }
+  },
+  "claim": {
+    "title": "クレーム設定",
+    "refund_reasons": {
+      "section_title": "返金理由管理",
+      "add_button": "理由追加",
+      "empty": "登録された返金理由がありません。",
+      "columns": {
+        "code": "コード",
+        "name": "理由名",
+        "fault_type": "責任区分",
+        "is_user_selectable": "顧客選択",
+        "is_active": "有効",
+        "actions": "管理"
+      },
+      "form": {
+        "code": "理由コード",
+        "code_placeholder": "英小文字、アンダースコア（例：order_mistake）",
+        "name": "理由名",
+        "name_ko_placeholder": "日本語",
+        "name_en_placeholder": "English",
+        "fault_type": "責任区分",
+        "fault_types": {
+          "customer": "顧客責任",
+          "seller": "販売者責任",
+          "carrier": "配送業者責任"
+        },
+        "is_user_selectable": "顧客選択可能",
+        "cancel": "キャンセル",
+        "save": "追加"
+      },
+      "confirm_delete": "この返金理由を削除してよろしいですか？",
+      "validation": {
+        "code_required": "コードを入力してください",
+        "name_required": "理由名を入力してください"
+      }
+    }
+  },
+  "shipping": {
+    "title": "配送設定",
+    "description": "配送関連の設定を管理します。",
+    "basic": {
+      "title": "基本配送設定",
+      "description": "基本配送国および海外配送設定を管理します。",
+      "default_country": "基本国",
+      "default_country_hint": "新しい配送ポリシー登録時にデフォルトで追加される国",
+      "international_shipping": "海外配送使用",
+      "international_shipping_description": "海外配送機能を有効化します"
+    },
+    "countries": {
+      "title": "配送可能国",
+      "description": "配送可能な国を設定します。",
+      "add": "国追加",
+      "country_code": "国コード",
+      "country_code_placeholder": "例：KR",
+      "country_name": "国名",
+      "country_name_ko": "日本語名",
+      "name_ko_placeholder": "例：日本",
+      "country_name_en": "英文名",
+      "name_en_placeholder": "例：Japan",
+      "is_active": "使用",
+      "actions": "管理",
+      "delete": "削除",
+      "edit": "編集",
+      "empty": "登録された配送国がありません。",
+      "duplicate_error": "既に登録されている国コードです。",
+      "default_badge": "デフォルト"
+    },
+    "types": {
+      "section_title": "配送タイプ管理",
+      "add_button": "タイプ追加",
+      "empty": "登録された配送タイプがありません。",
+      "columns": {
+        "code": "コード",
+        "name": "タイプ名",
+        "category": "カテゴリー",
+        "is_active": "有効",
+        "actions": "管理"
+      },
+      "form": {
+        "code": "タイプコード",
+        "code_placeholder": "英小文字、アンダースコア（例：express_delivery）",
+        "name": "タイプ名",
+        "name_ko_placeholder": "日本語",
+        "name_en_placeholder": "English",
+        "category": "カテゴリー",
+        "cancel": "キャンセル",
+        "save": "追加"
+      },
+      "categories": {
+        "domestic": "国内配送",
+        "international": "海外配送",
+        "other": "その他"
+      },
+      "confirm_delete": "この配送タイプを削除してよろしいですか？",
+      "validation": {
+        "code_required": "コードを入力してください",
+        "name_required": "タイプ名を入力してください"
+      }
+    },
+    "carriers": {
+      "section_title": "配送業者管理",
+      "add_button": "配送業者追加",
+      "empty": "登録された配送業者がありません。",
+      "columns": {
+        "code": "コード",
+        "name": "配送業者名",
+        "type": "タイプ",
+        "tracking_url": "追跡URL",
+        "is_active": "有効化",
+        "actions": "管理"
+      },
+      "form": {
+        "code": "配送業者コード",
+        "code_placeholder": "英小文字、数字、ハイフン（例：cj、fedex）",
+        "name": "配送業者名",
+        "type": "タイプ",
+        "type_domestic": "国内",
+        "type_international": "国際",
+        "tracking_url": "追跡URL",
+        "tracking_url_placeholder": "https://example.com/track?no={tracking_number}",
+        "tracking_url_help": "{tracking_number}は送り状番号に置き換えられます。",
+        "cancel": "キャンセル",
+        "save": "保存",
+        "name_ko_placeholder": "日本語"
+      },
+      "created": "配送業者が登録されました。",
+      "updated": "配送業者が編集されました。",
+      "deleted": "配送業者が削除されました。",
+      "confirm_delete": "この配送業者を削除してもよろしいですか？",
+      "validation": {
+        "code_required": "コードを入力してください",
+        "name_required": "配送業者名を入力してください"
+      }
+    },
+    "remote_area": {
+      "title": "離島配送料金デフォルト設定",
+      "description": "離島地域の配送料金デフォルト値を設定します。",
+      "enable": "離島追加配送料の使用",
+      "remote_extra_fee": "離島追加配送料",
+      "island_extra_fee": "沖縄・離島追加配送料"
+    },
+    "modal": {
+      "disable_international": {
+        "title": "海外配送無効化の確認",
+        "message": "海外配送を無効化すると、デフォルト国以外のすべての国が無効になります。続行してもよろしいですか？",
+        "confirm": "確認",
+        "cancel": "キャンセル"
+      }
+    }
+  },
+  "seo": {
+    "meta_settings": {
+      "title": "メタタグ設定",
+      "description": "各ページのメタタグを設定します。変数を使用して動的に設定できます。",
+      "main_page": "メインページ",
+      "category_page": "カテゴリー",
+      "search_page": "検索結果",
+      "product_page": "商品詳細ページ",
+      "shop_index_page": "ショップメイン",
+      "meta_title": "Title",
+      "meta_description": "Description",
+      "available_variables": "使用可能な変数",
+      "main_description_placeholder": "メインページの説明",
+      "category_description_placeholder": "カテゴリーページの説明",
+      "search_description_placeholder": "検索結果ページの説明",
+      "product_description_placeholder": "商品詳細ページの説明",
+      "shop_index_description_placeholder": "ショップメインページの説明"
+    },
+    "seo_friendly": {
+      "title": "検索エンジン対応ページ設定",
+      "description": "検索エンジンに対応したページを提供します。",
+      "provide_pages": "検索エンジン対応ページを提供する項目",
+      "site_main": "サイトメイン",
+      "category": "カテゴリー",
+      "search_result": "検索結果",
+      "product_detail": "商品詳細ページ",
+      "shop_index": "ショップメイン",
+      "clearing_cache": "削除中...",
+      "clear_cache_confirm_title": "SEOキャッシュ削除",
+      "clear_cache_confirm": "SEOキャッシュをすべて削除してもよろしいですか？削除後、ボットが再度訪問するときにキャッシュが再生成されます。",
+      "clear_cache_success": "SEOキャッシュが正常に削除されました。",
+      "clear_cache_failed": "SEOキャッシュの削除に失敗しました。",
+      "user_agent_management": "検索エンジンUser-Agent管理",
+      "user_agent_description": "検索エンジン対応ページを提供するUser-Agentを管理します。",
+      "user_agent_placeholder": "User-Agentを入力（例：Googlebot）",
+      "cache_management": "検索エンジン対応ページキャッシュ管理",
+      "cache_description": "検索エンジン対応ページのキャッシュを管理します。",
+      "current_cache_size": "現在のキャッシュサイズ：",
+      "clear_cache": "キャッシュ削除"
+    }
+  },
+  "review_settings": {
+    "title": "レビュー設定",
+    "description": "商品レビュー関連の設定を管理します。",
+    "write_deadline_days_label": "レビュー作成可能期間",
+    "write_deadline_days_hint": "購入確定後、レビューを作成できる期間",
+    "days_unit": "日",
+    "max_images_label": "最大画像数",
+    "max_images_hint": "レビュー1件あたりの添付可能な画像数（0=画像不可）",
+    "images_unit": "枚",
+    "max_image_size_mb_label": "画像最大容量",
+    "max_image_size_mb_hint": "アップロード可能な画像ファイルの最大容量"
+  },
+  "notification_definitions": {
+    "title": "通知設定",
+    "description": "チャネル別のEコマース通知テンプレートを管理します。",
+    "channel_management": "通知チャネル管理",
+    "active": "有効化",
+    "inactive": "無効化",
+    "default_badge": "基本",
+    "btn_edit": "編集",
+    "btn_reset": "デフォルトに復元",
+    "btn_activate": "有効化",
+    "btn_deactivate": "無効化",
+    "toggle_success": "通知の有効状態が変更されました。",
+    "reset_success": "通知設定がデフォルトに復元されました。",
+    "reset_failed": "通知設定の復元に失敗しました。",
+    "reset_modal": {
+      "title": "デフォルトに復元",
+      "confirm_message": "この通知のすべてのチャネルテンプレートをデフォルトに復元します。",
+      "warning_message": "保存されたタイトル/本文/受信者設定がすべて削除され、復旧できません。",
+      "target_label": "復元対象:",
+      "btn_confirm": "復元",
+      "btn_confirming": "復元中..."
+    },
+    "no_template_for_channel": "このチャネルのテンプレートはありません。",
+    "body_preview": "本文プレビュー",
+    "save_success": "通知設定が保存されました。",
+    "save_error": "通知設定の保存に失敗しました。",
+    "types": {
+      "order_confirmed": "注文確認",
+      "order_shipped": "配送開始",
+      "order_completed": "購入確定",
+      "order_cancelled": "注文キャンセル",
+      "new_order_admin": "新規注文(管理者)",
+      "inquiry_received": "商品問い合わせ受け取り(管理者)",
+      "inquiry_replied": "商品問い合わせ回答"
+    },
+    "btn_search": "検索",
+    "btn_reset_filter": "初期化",
+    "search_placeholder": "検索キーワードを入力してください",
+    "search_type_all": "すべて",
+    "search_type_subject": "タイトル",
+    "search_type_body": "本文",
+    "total_count": "合計{{count}}件",
+    "per_page_label": "ページあたり",
+    "empty_message": "登録された通知設定がありません。",
+    "empty_no_results": "検索結果がありません。",
+    "edit_modal": {
+      "title": "通知テンプレート編集",
+      "type_label": "タイプ:",
+      "channel_label": "チャネル:",
+      "subject": "タイトル",
+      "body": "本文",
+      "variables_title": "使用可能な変数",
+      "btn_preview": "プレビュー",
+      "validation_error": "入力情報を確認してください。",
+      "is_active_label": "有効化"
+    },
+    "preview_modal": {
+      "title": "通知プレビュー",
+      "rendered_subject": "レンダリングされたタイトル",
+      "rendered_body": "レンダリングされた本文",
+      "btn_close": "閉じる"
+    }
+  },
+  "identity": {
+    "intro_title": "イコマース本人認証ポリシー",
+    "intro": "イコマースモジュールが宣言したポリシーと運営者が追加したポリシーを管理します。決済直前の本人確認などドメイン特化ポリシーを有効化できます。",
+    "purposes_section_title": "このモジュールが登録した本人認証目的",
+    "purposes_section_description": "イコマースモジュールが宣言した本人認証目的です。ポリシーの「認証目的」カラムで選択できます。",
+    "purposes_empty": "このモジュールが登録した本人認証目的がありません。",
+    "allowed_channels": "許可チャネル:",
+    "list_title": "ポリシーリスト",
+    "add_policy": "ポリシー追加",
+    "empty": "登録されたポリシーがありません。",
+    "edit": "編集",
+    "grace_minutes": "{minutes}分",
+    "enable_success": "ポリシーが有効化されました。",
+    "disable_success": "ポリシーが無効化されました。",
+    "toggle_failed": "ポリシー状態の変更に失敗しました。",
+    "col": {
+      "key": "ポリシーキー",
+      "scope": "範囲",
+      "target": "対象",
+      "purpose": "目的",
+      "enabled": "有効",
+      "grace": "猶予",
+      "source": "出典",
+      "actions": "操作"
+    },
+    "scope": {
+      "route": "ルート",
+      "hook": "フック",
+      "custom": "カスタム"
+    },
+    "source": {
+      "core": "コア",
+      "module": "モジュール",
+      "plugin": "プラグイン",
+      "admin": "管理者"
+    }
+  }
+}

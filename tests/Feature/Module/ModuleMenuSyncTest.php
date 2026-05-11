@@ -242,7 +242,10 @@ class ModuleMenuSyncTest extends TestCase
     }
 
     /**
-     * 제거 후 재설치 시 깨끗한 상태에서 메뉴가 올바르게 생성되는지 테스트
+     * 제거 후 재설치 시 메뉴가 올바르게 유지·복원되는지 테스트
+     *
+     * PO 정책(#716eef99d, 2026-04-20): deleteData=false 시 메뉴/권한/역할은 보존된다.
+     * 따라서 uninstall 후에도 메뉴는 DB 에 남아있고, 재설치는 idempotent (user_overrides 비어있음 유지).
      */
     public function test_reinstall_after_uninstall_creates_clean_menus(): void
     {
@@ -250,15 +253,18 @@ class ModuleMenuSyncTest extends TestCase
         $this->moduleManager->installModule('sirsoft-board');
         $this->assertTrue(Menu::where('extension_identifier', 'sirsoft-board')->exists());
 
-        // 제거 (spy가 활성 디렉토리 삭제 차단)
+        // 제거 (spy가 활성 디렉토리 삭제 차단) — deleteData=false 기본: 메뉴 보존
         $this->moduleManager->uninstallModule('sirsoft-board');
-        $this->assertFalse(Menu::where('extension_identifier', 'sirsoft-board')->exists());
+        $this->assertTrue(
+            Menu::where('extension_identifier', 'sirsoft-board')->exists(),
+            'deleteData=false 시 메뉴는 보존되어야 합니다 (재설치 시 사용자 역할 할당 복원 목적)'
+        );
 
         // 재설치 (활성 디렉토리가 보존되어 있으므로 재로드 가능)
         $this->moduleManager->loadModules();
         $this->moduleManager->installModule('sirsoft-board');
 
-        // 메뉴가 새로 생성되고 user_overrides 비어있음
+        // 메뉴가 재설치 후에도 user_overrides 비어있음 (idempotent 동기화)
         $parentMenu = Menu::where('slug', 'sirsoft-board')
             ->where('extension_type', ExtensionOwnerType::Module)
             ->first();
@@ -467,9 +473,10 @@ class ModuleMenuSyncTest extends TestCase
     }
 
     /**
-     * 모듈 제거 시 동적 메뉴를 포함한 모든 메뉴가 삭제되는지 테스트
+     * 모듈 제거 (deleteData=true) 시 동적 메뉴를 포함한 모든 메뉴가 삭제되는지 테스트
      *
-     * cleanup 자동 호출을 제거했지만, uninstall 시 deleteByExtension()은 정상 동작해야 함.
+     * PO 정책(#716eef99d, 2026-04-20): deleteData=true 경로에서만 메뉴/권한/역할 전수 삭제.
+     * deleteData=false (기본) 경로는 메뉴 보존 → test_module_uninstall_preserves_menus_by_default 참조.
      */
     public function test_module_uninstall_removes_all_menus_including_dynamic(): void
     {
@@ -491,13 +498,13 @@ class ModuleMenuSyncTest extends TestCase
         // 정적 + 동적 메뉴 존재 확인 (정적 4 + 동적 1 = 5)
         $this->assertEquals(5, Menu::where('extension_identifier', 'sirsoft-board')->count());
 
-        // 모듈 제거
-        $this->moduleManager->uninstallModule('sirsoft-board');
+        // 모듈 제거 — deleteData=true 로 메뉴/권한/역할 전수 삭제 경로 사용
+        $this->moduleManager->uninstallModule('sirsoft-board', deleteData: true);
 
         // 모든 메뉴 (정적 + 동적) 삭제 확인
         $this->assertFalse(
             Menu::where('extension_identifier', 'sirsoft-board')->exists(),
-            '모듈 제거 시 동적 메뉴를 포함한 모든 메뉴가 삭제되어야 합니다'
+            'deleteData=true 시 동적 메뉴를 포함한 모든 메뉴가 삭제되어야 합니다'
         );
     }
 }

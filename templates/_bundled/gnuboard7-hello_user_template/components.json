@@ -1,0 +1,130 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "templateId": "gnuboard7-hello_user_template",
+    "version": "0.1.0-beta.1",
+    "components": {
+        "basic": [
+            {
+                "name": "Div",
+                "type": "basic",
+                "description": "HTML div element wrapper",
+                "path": "src/components/basic/Div.tsx",
+                "props": {
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    }
+                }
+            },
+            {
+                "name": "Button",
+                "type": "basic",
+                "description": "HTML button element wrapper",
+                "path": "src/components/basic/Button.tsx",
+                "props": {
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    }
+                }
+            },
+            {
+                "name": "H1",
+                "type": "basic",
+                "description": "HTML h1 element wrapper",
+                "path": "src/components/basic/H1.tsx",
+                "props": {
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    }
+                }
+            },
+            {
+                "name": "H2",
+                "type": "basic",
+                "description": "HTML h2 element wrapper",
+                "path": "src/components/basic/H2.tsx",
+                "props": {
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    }
+                }
+            },
+            {
+                "name": "H3",
+                "type": "basic",
+                "description": "HTML h3 element wrapper",
+                "path": "src/components/basic/H3.tsx",
+                "props": {
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    }
+                }
+            },
+            {
+                "name": "A",
+                "type": "basic",
+                "description": "HTML a element wrapper",
+                "path": "src/components/basic/A.tsx",
+                "props": {
+                    "href": {
+                        "type": "string",
+                        "required": false,
+                        "description": "링크 URL"
+                    },
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    }
+                }
+            },
+            {
+                "name": "Span",
+                "type": "basic",
+                "description": "HTML span element wrapper",
+                "path": "src/components/basic/Span.tsx",
+                "props": {
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    }
+                }
+            },
+            {
+                "name": "Img",
+                "type": "basic",
+                "description": "HTML img element wrapper",
+                "path": "src/components/basic/Img.tsx",
+                "props": {
+                    "src": {
+                        "type": "string",
+                        "required": true,
+                        "description": "이미지 URL"
+                    },
+                    "alt": {
+                        "type": "string",
+                        "required": false,
+                        "description": "대체 텍스트"
+                    },
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    }
+                }
+            }
+        ],
+        "composite": [],
+        "layout": []
+    }
+}

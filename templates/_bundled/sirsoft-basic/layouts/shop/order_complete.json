@@ -486,8 +486,10 @@
                           {
                             "type": "click",
                             "handler": "apiCall",
+                            "target": "/api/modules/sirsoft-ecommerce/user/addresses",
+                            "auth_required": true,
                             "params": {
-                              "datasourceId": "saveShippingAddress",
+                              "method": "POST",
                               "body": {
                                 "recipient_name": "{{orderData?.data?.shipping_address?.recipient_name}}",
                                 "recipient_phone": "{{orderData?.data?.shipping_address?.recipient_phone}}",
@@ -498,14 +500,14 @@
                                 "city": "{{orderData?.data?.shipping_address?.city ?? ''}}",
                                 "state": "{{orderData?.data?.shipping_address?.state ?? ''}}",
                                 "is_default": false
-                              },
-                              "onSuccess": [
-                                { "handler": "toast", "params": { "type": "success", "message": "$t:shop.order_complete.address_saved" } }
-                              ],
-                              "onError": [
-                                { "handler": "toast", "params": { "type": "error", "message": "$t:shop.order_complete.address_save_failed" } }
-                              ]
-                            }
+                              }
+                            },
+                            "onSuccess": [
+                              { "handler": "toast", "params": { "type": "success", "message": "$t:shop.order_complete.address_saved" } }
+                            ],
+                            "onError": [
+                              { "handler": "toast", "params": { "type": "error", "message": "$t:shop.order_complete.address_save_failed" } }
+                            ]
                           }
                         ]
                       }

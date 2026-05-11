@@ -530,26 +530,23 @@ describe('배송정책 관리 목록 화면 레이아웃', () => {
     });
 
     it('데이터가 있을 때 DataGrid가 렌더링된다', async () => {
+      // 레이아웃이 shipping_policies?.data?.data 경로로 접근하므로
+      // directMock 경로의 wrap 없는 response 특성에 맞춰 한 단계 더 감싼다
       testUtils.mockApi('shipping_policies', {
-        response: mockShippingPolicies.data,
+        response: { data: mockShippingPolicies.data },
       });
 
       const { container } = await testUtils.render();
 
-      // 레지스트리에 등록된 컴포넌트 확인
       expect(registry.hasComponent('DataGrid')).toBe(true);
       expect(registry.hasComponent('Div')).toBe(true);
       expect(registry.hasComponent('Fragment')).toBe(true);
 
-      // 컨테이너에 뭔가 렌더링되었는지 확인
       expect(container.innerHTML.length).toBeGreaterThan(0);
 
-      // DataGrid 컴포넌트 확인 - text 또는 testid로 확인
-      // TestDataGrid는 "DataGrid: N건" 형태로 렌더링됨
       const datagridByText = screen.queryByText(/DataGrid:/);
       const datagridByTestId = screen.queryByTestId('datagrid');
 
-      // 둘 중 하나라도 있으면 성공
       expect(datagridByText || datagridByTestId).toBeTruthy();
     });
   });

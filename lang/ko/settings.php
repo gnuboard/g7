@@ -33,6 +33,40 @@ return [
     // 시스템 정보 관련
     'seconds' => '초',
 
+    // 드라이버 라벨 (DriverRegistryService 가 활성 언어팩 별로 조회)
+    'drivers' => [
+        'storage' => [
+            'local' => '로컬',
+            's3' => 'Amazon S3',
+        ],
+        'cache' => [
+            'file' => '파일',
+            'redis' => 'Redis',
+        ],
+        'session' => [
+            'file' => '파일',
+            'database' => '데이터베이스',
+            'redis' => 'Redis',
+        ],
+        'queue' => [
+            'sync' => '동기',
+            'database' => '데이터베이스',
+            'redis' => 'Redis',
+        ],
+        'log' => [
+            'single' => '단일 파일',
+            'daily' => '일별 파일',
+        ],
+        'websocket' => [
+            'reverb' => 'Laravel Reverb',
+        ],
+        'mail' => [
+            'smtp' => 'SMTP',
+            'mailgun' => 'Mailgun',
+            'ses' => 'SES (Amazon)',
+        ],
+    ],
+
     // 드라이버 연결 테스트 메시지
     'driver_test_success' => '모든 드라이버 연결 테스트가 성공했습니다.',
     'driver_test_partial' => '일부 드라이버 연결 테스트가 실패했습니다.',
@@ -138,5 +172,7 @@ return [
         'all_extract_methods_failed' => '모든 아카이브 추출 방법이 실패했습니다. --source 옵션으로 수동 업데이트를 시도하세요.',
         'unzip_command_failed' => 'unzip 명령어 실행 실패 (종료 코드: :code). :output',
         'zip_file_not_found' => '지정된 ZIP 파일을 찾을 수 없습니다: :path',
+        'source_vendor_missing' => '소스 디렉토리에 vendor가 없습니다. composer install이 실행되지 않았을 수 있습니다.',
+        'composer_failed_with_output' => 'composer install 실행에 실패했습니다.:output',
     ],
 ];

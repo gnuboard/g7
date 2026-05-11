@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'cache_cleared_all' => 'SEOキャッシュがすべて削除されました。',
+    'cache_cleared_layout' => ':layout レイアウトのSEOキャッシュ :count件が削除されました。',
+    'warmup_started' => 'SEOキャッシュウォーミングを開始します。',
+    'warmup_started_layout' => ':layout レイアウトのSEOキャッシュウォーミングを開始します。',
+    'warmup_dispatched' => 'SEOキャッシュウォーミングが開始されました。',
+    'sitemap_regenerated' => 'サイトマップの再生成が完了しました。',
+    'sitemap_regenerate_failed' => 'サイトマップの再生成に失敗しました。',
+    'sitemap_disabled' => 'サイトマップ生成が無効化されています。',
+    'stats_period' => '最近 :days 日間のSEOキャッシュ統計',
+    'stats_overall' => '全体統計',
+    'stats_metric' => '項目',
+    'stats_value' => '値',
+    'stats_total_entries' => '総キャッシュ項目',
+    'stats_hits' => 'キャッシュヒット',
+    'stats_misses' => 'キャッシュミス',
+    'stats_hit_rate' => 'ヒット率',
+    'stats_avg_response_time' => '平均応答時間',
+    'stats_by_layout' => 'レイアウト別統計',
+    'stats_layout_name' => 'レイアウト',
+    'stats_total' => '合計',
+    'stats_by_module' => 'モジュール別統計',
+    'stats_module_identifier' => 'モジュール',
+];

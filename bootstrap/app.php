@@ -78,6 +78,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\RefreshTokenExpiration::class,
         ]);
 
+        // IDV 정책 자동 매핑 — 모든 API 라우트에서 라우트 이름과 매칭되는 scope='route' 정책을 자동 enforce.
+        // 정책 DB 토글만으로 즉시 효과 (라우트 코드 수정 불필요). hook scope 정책의 동적 구독과 동일 모델.
+        // 캐시된 인덱스 lookup → 무매칭 라우트는 O(1) 통과.
+        $middleware->appendToGroup('api', [
+            \App\Http\Middleware\EnforceIdentityPolicy::class,
+        ]);
+
         // 권한 관련 미들웨어 등록
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
@@ -88,6 +95,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'optional.sanctum' => \App\Http\Middleware\OptionalSanctumMiddleware::class,
             'start.api.session' => \App\Http\Middleware\StartApiSession::class,
             'seo' => \App\Seo\SeoMiddleware::class,
+            'identity.policy' => \App\Http\Middleware\EnforceIdentityPolicy::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -96,6 +104,26 @@ $app = Application::configure(basePath: dirname(__DIR__))
             if ($request->expectsJson()) {
                 return response()->json(['message' => __('auth.unauthenticated')], 401)
                     ->withCookie(cookie()->forget(config('session.cookie')));
+            }
+        });
+
+        // IDV 정책 위반 → HTTP 428 (Precondition Required) + verification payload
+        $exceptions->render(function (\App\Exceptions\IdentityVerificationRequiredException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return \App\Helpers\ResponseHelper::identityRequired($e->getPayload());
+            }
+        });
+
+        // 확장 코어 버전 호환성 검사 실패 → HTTP 422 + error_code: 'core_version_mismatch'
+        // (extension update/activate/recovery 등 사전 검증 진입 지점에서 throw)
+        $exceptions->render(function (\App\Exceptions\CoreVersionMismatchException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'error_code' => 'core_version_mismatch',
+                    'data' => $e->getPayload(),
+                ], 422);
             }
         });
     })->create();

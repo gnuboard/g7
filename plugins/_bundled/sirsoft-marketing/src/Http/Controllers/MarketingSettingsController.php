@@ -71,7 +71,7 @@ class MarketingSettingsController extends PublicBaseController
             $slug        = $channel['page_slug'] ?? '';
             $labelRaw    = $channel['label'] ?? [];
             $labelString = is_array($labelRaw)
-                ? ($labelRaw[$locale] ?? $labelRaw['ko'] ?? $channel['key'])
+                ? ($labelRaw[$locale] ?? $labelRaw[config('app.fallback_locale', 'ko')] ?? $channel['key'])
                 : (string) $labelRaw;
 
             return [

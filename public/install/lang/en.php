@@ -141,6 +141,7 @@ return [
     // Step 5: Complete
     'installation_info' => 'Installation Information',
     'installation_complete_message' => 'Gnuboard7 has been successfully installed!',
+    'installed_version_label' => 'Installed version:',
     'site_url' => 'Site URL',
     'installed_at' => 'Installed At',
     'go_to_admin_login' => 'Admin Login',
@@ -258,6 +259,7 @@ return [
     'task_plugin_activate' => 'Activating Plugin',
     'task_user_template_install' => 'Installing User Template',
     'task_user_template_activate' => 'Activating User Template',
+    'task_language_pack_install' => 'Installing Language Pack',
     'task_cache_clear' => 'Cleaning Up Temporary Files',
     'task_create_settings_json' => 'Creating Settings Files',
     'task_complete_flag' => 'Finalizing Installation',
@@ -270,6 +272,7 @@ return [
     'task_group_modules' => 'Modules',
     'task_group_plugins' => 'Plugins',
     'task_group_user_templates' => 'User Templates',
+    'task_group_language_packs' => 'Language Packs',
     'task_group_finalize' => 'Finalize',
 
     // Group Status Labels
@@ -353,6 +356,11 @@ return [
     // Log Messages - Worker (User Template)
     'log_user_template_install_success' => 'User template installation completed',
     'log_user_template_activate_success' => 'User template activation completed',
+
+    // Error/Log Messages - Worker (Language Pack)
+    'error_language_pack_install_failed' => 'Language pack installation failed',
+    'log_language_pack_install_success' => 'Language pack installation completed',
+    'warning_language_pack_install_partial' => 'Language pack install partially failed: :identifier (continuing)',
 
     // Error Messages - Worker (Cache)
     'error_cache_clear_failed' => 'Cache clearing failed',
@@ -570,6 +578,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'installation_mode_polling_title' => 'Compatibility Mode (Polling)',
     'installation_mode_polling_desc' => 'Use this when SSE connection errors occur behind an Nginx proxy, shared hosting, etc. Status is polled every second.',
     'sse_fallback_confirm' => 'SSE connection failed.\n\nWould you like to retry in compatibility mode (polling)?',
+    'sse_probe_incompat_use_polling' => "SSE real-time connection is not available in this environment.\n\nProceed with installation in compatibility mode (polling)?\n\n[OK] Start installation in polling mode\n[Cancel] Return to start screen",
     'start_installation_button' => 'Start Installation',
 
     // Step 4 dependency warnings
@@ -620,11 +629,47 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'modules_description' => 'Select modules to install. Modules provide major features like boards and e-commerce.',
     'plugins' => 'Plugins',
     'plugins_description' => 'Select plugins to install. Plugins provide additional features like payments and notifications.',
+    'language_packs' => 'Language Packs',
+    'language_packs_description' => 'Select bundled language packs for additional language support. Each pack requires its target extension to be selected.',
     'optional' => 'Optional',
     'no_extensions_found' => 'No extensions available.',
     'no_user_templates' => 'No user templates available.',
     'no_modules' => 'No modules available.',
     'no_plugins' => 'No plugins available.',
+    'no_language_packs' => 'No bundled language packs available.',
+    'language_pack_disabled_by_extension' => 'Disabled — its target extension is not selected.',
+    'language_pack_scope_core' => 'Core',
+    'language_pack_scope_module' => 'Module',
+    'language_pack_scope_plugin' => 'Plugin',
+    'language_pack_scope_template' => 'Template',
+    'bulk_select_all_optional' => 'Select all available items',
+    'bulk_select_section' => 'Select all',
+
+    // Brand name
+    'brand_name' => 'Gnuboard7',
+
+    // Step 3 — Vendor installation mode
+    'vendor_mode_title' => 'Vendor Installation Mode',
+    'vendor_mode_description' => 'Choose how to install PHP package dependencies (vendor/).',
+    'vendor_mode_auto_title' => 'Auto',
+    'vendor_mode_auto_description' => 'Use Composer when available, fall back to bundled vendor when not.',
+    'vendor_mode_auto_status_ok' => 'Environment auto-detected',
+    'vendor_mode_composer_title' => 'Run Composer',
+    'vendor_mode_composer_description' => 'Install latest versions via composer install (requires internet + proc_open).',
+    'vendor_mode_composer_status_ok' => 'proc_open available',
+    'vendor_mode_composer_status_blocked' => 'proc_open() blocked — unavailable',
+    'vendor_mode_bundled_title' => 'Use Bundled Vendor',
+    'vendor_mode_bundled_description' => 'Extract vendor-bundle.zip (offline install, composer not required).',
+    'vendor_mode_bundled_status_ok' => 'vendor-bundle.zip found',
+    'vendor_mode_bundled_status_no_ziparchive' => 'ZipArchive extension missing — unavailable',
+    'vendor_mode_bundled_status_no_zip' => 'vendor-bundle.zip not found — unavailable',
+    'vendor_mode_badge_recommended' => 'Recommended',
+    'vendor_mode_badge_dev' => 'Development',
+    'vendor_mode_badge_shared' => 'Shared hosting',
+    'vendor_mode_change_later_html' => 'You can change this later via <code>php artisan core:update --vendor-mode=...</code>.',
+
+    // Installation stuck detection
+    'error_installation_stuck' => 'Installation has stopped responding. The server worker may be stuck running a command. Please refresh and retry. If the problem persists, check storage/logs/installation.log.',
     'extension_load_failed' => 'Failed to load extension list.',
     'no_admin_template_error' => 'Admin template is required but not found. Please ensure at least one admin template exists in the templates directory.',
     'selection_summary' => 'Selection Summary',
@@ -687,6 +732,8 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'rollback_seed_error' => 'Error during seed processing: :error',
     'rollback_env_flag_removed' => 'Removed INSTALLER_COMPLETED from .env.',
     'rollback_installed_flag_removed' => 'Deleted g7_installed file.',
+    'rollback_runtime_removed' => 'Cleaned up installer runtime config.',
+    'error_worker_busy' => 'Another install worker is in progress. Please retry shortly.',
     'rollback_complete_flag_removed' => 'Installation completion flags removed: :details',
     'rollback_complete_flag_error' => 'Error removing completion flag: :error',
     'rollback_no_current_task' => 'No current task to rollback. (current_task is null)',
@@ -723,6 +770,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
 
     // functions.php i18n keys
     'error_db_name_username_required' => 'Database name and username are required.',
+    'error_db_invalid_parameter' => 'Database :field contains characters that are not allowed.',
     'error_db_connection_failed' => 'Database connection failed: :error',
     'error_privilege_check_failed' => 'Error occurred during privilege check',
 
@@ -758,9 +806,10 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'dir_templates_pending' => 'Templates pending directory',
 
     // save-extensions.php i18n keys
-    'log_extensions_selected' => 'Extension selection complete: :admin admin template(s), :user user template(s), :modules module(s), :plugins plugin(s)',
+    'log_extensions_selected' => 'Extension selection complete: :admin admin template(s), :user user template(s), :modules module(s), :plugins plugin(s), :language_packs language pack(s)',
     'log_extensions_saved' => 'Extension selection has been saved.',
     'error_admin_template_required' => 'Please select at least one admin template.',
+    'error_invalid_extension_identifier' => 'Extension identifier ":identifier" is not in an allowed format (group: :group). Only letters, digits, and `._-` are accepted.',
 
     // Core update settings
     'core_update_settings' => 'Core Update Settings (Optional)',
@@ -779,6 +828,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'error_core_pending_not_writable' => 'Directory (:path) is not writable.',
     'error_core_pending_parent_not_writable' => 'Parent directory (:path) is not writable, cannot create automatically.',
     'error_path_required' => 'Please enter a path.',
+    'error_core_pending_path_invalid' => 'The path you entered is not a valid directory or is not in an allowed format.',
 
     // PHP CLI / Composer Settings
     'php_cli_settings' => 'PHP CLI Settings (Optional)',

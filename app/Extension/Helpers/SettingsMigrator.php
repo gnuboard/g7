@@ -342,7 +342,7 @@ class SettingsMigrator
     private function executeAddCategory(array $args): bool
     {
         if ($this->type === 'plugin') {
-            throw new \LogicException('addCategory는 모듈에서만 사용할 수 있습니다.');
+            throw new \LogicException(__('exceptions.settings.add_category_module_only'));
         }
 
         $category = $args['category'];
@@ -427,7 +427,10 @@ class SettingsMigrator
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \RuntimeException(
-                "JSON 파싱 실패: {$filePath} - ".json_last_error_msg()
+                __('exceptions.settings.json_parse_failed', [
+                    'path' => $filePath,
+                    'error' => json_last_error_msg(),
+                ])
             );
         }
 
@@ -437,6 +440,11 @@ class SettingsMigrator
     /**
      * 배열 데이터를 JSON 파일로 저장합니다.
      *
+     * sudo update 흐름에서 모듈/플러그인 upgrade step 이 root 로 실행될 때 root 소유로
+     * 파일이 만들어지지 않도록, 작성 직후 부모 디렉토리(예: storage/app/modules/{id}/settings/)
+     * 의 owner/group 을 상속한다. 부모 owner 가 PHP-FPM 이라면 후속 PHP-FPM 의 update 시도
+     * 가 쓰기 실패하지 않는다.
+     *
      * @param  string  $filePath  파일 절대 경로
      * @param  array  $data  저장할 데이터
      * @return void
@@ -445,6 +453,9 @@ class SettingsMigrator
     {
         $content = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         File::put($filePath, $content);
+
+        // sudo 컨텍스트 root → 부모 owner 정합화. 자기 자신 owner 면 멱등 (no-op).
+        FilePermissionHelper::inheritOwnershipFromParent($filePath);
     }
 
     /**

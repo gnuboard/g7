@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Plugin;
 
 use App\Console\Commands\Traits\HasProgressBar;
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\PluginManager;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 class UninstallPluginCommand extends Command
 {
     use HasProgressBar;
+    use HasUnifiedConfirm;
 
     /**
      * The name and signature of the console command.
@@ -79,7 +81,7 @@ class UninstallPluginCommand extends Command
                 }
                 $this->newLine();
 
-                if (! $this->confirm(__('plugins.commands.uninstall.confirm_question'), false)) {
+                if (! $this->unifiedConfirm(__('plugins.commands.uninstall.confirm_question'), false)) {
                     $this->info(__('plugins.commands.uninstall.aborted'));
 
                     return Command::SUCCESS;

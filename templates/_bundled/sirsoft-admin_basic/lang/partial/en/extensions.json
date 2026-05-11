@@ -1,0 +1,35 @@
+{
+  "types": {
+    "module": "Module",
+    "plugin": "Plugin",
+    "template": "Template"
+  },
+  "alerts": {
+    "incompatible_deactivated": "{{type}} \"{{name}}\" automatically deactivated",
+    "incompatible_message": "Required: {{required}}, Installed: {{installed}}",
+    "recovered_title": "{{type}} \"{{name}}\" is compatible again",
+    "recovered_body": "Compatible after core upgrade (previously required: {{previously_required}}). You can re-enable it.",
+    "recovered_success": "Extension has been re-activated.",
+    "dismissed": "Notification dismissed.",
+    "auto_deactivated_listed": "List of auto-deactivated extensions.",
+    "recover_action": "Re-activate",
+    "dismiss_action": "Dismiss"
+  },
+  "badges": {
+    "incompatible": "Core upgrade required",
+    "incompatible_tooltip": "Requires core {{required}} or higher (current: {{installed}})",
+    "incompatible_sr": "{{name}} requires core {{required}} or higher but currently {{installed}} is installed, so it cannot be updated."
+  },
+  "banner": {
+    "title": "Some extensions were automatically deactivated due to core compatibility issues",
+    "item_required": "Required: {{required}}",
+    "guide_link": "Core upgrade guide",
+    "dismiss": "Close"
+  },
+  "update_modal": {
+    "compat_warning_title": "Core version compatibility warning",
+    "compat_warning_message": "This {{type}} requires core {{required}} or higher. (current: {{installed}})",
+    "compat_guide_link": "View core upgrade guide",
+    "force_label": "Ignore warning and force update (not recommended)"
+  }
+}

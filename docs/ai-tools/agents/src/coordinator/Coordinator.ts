@@ -43,7 +43,7 @@ export class Coordinator {
       allowedTools: [
         'Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash', 'Task',
         // MCP 도구
-        'validate-code', 'validate-frontend', 'run-tests',
+        'validate-backend', 'validate-frontend', 'run-tests',
         'run-test-file', 'search-docs', 'read-doc', 'list-docs',
       ],
       agents: agentDefinitions,
@@ -115,7 +115,7 @@ export class Coordinator {
       tools: { type: 'preset', preset: 'claude_code' },
       allowedTools: [
         ...(agent.tools || []),
-        'validate-code', 'validate-frontend', 'run-tests',
+        'validate-backend', 'validate-frontend', 'run-tests',
         'search-docs', 'read-doc',
       ],
       mcpServers: {

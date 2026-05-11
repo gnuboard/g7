@@ -230,7 +230,7 @@ class BaseApiResource extends JsonResource
         if (is_array($value)) {
             $locale = App::getLocale();
 
-            return $value[$locale] ?? $value['ko'] ?? $value['en'] ?? reset($value) ?: null;
+            return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value) ?: null;
         }
 
         // Model의 getLocalizedName() 등의 메서드가 있으면 사용

@@ -224,10 +224,14 @@ class BoardUserAbilitiesTest extends BoardTestCase
     // ==========================================
 
     /**
-     * 게시글 목록 API가 각 항목에 abilities.can_write, abilities.can_read 반환
+     * 게시글 목록 API 가 컬렉션 레벨에서 abilities.can_* 형식을 반환
+     *
+     * 목록 성능 최적화로 per-post abilities 는 상세 페이지에서만 제공되고,
+     * 목록은 게시판 레벨 abilities 를 컬렉션 루트(data.abilities)에 한 번만 내려보낸다.
+     * (PostResource::toListArray — "게시판 권한은 PostCollection의 컬렉션 레벨 abilities로 제공됩니다")
      */
     #[Test]
-    public function post_list_returns_items_with_abilities_can_keys(): void
+    public function post_list_returns_collection_level_abilities_with_can_keys(): void
     {
         // Given: 게시글 생성
         $this->createTestPost([
@@ -240,25 +244,20 @@ class BoardUserAbilitiesTest extends BoardTestCase
         $response = $this->actingAs($this->regularUser, 'sanctum')
             ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts");
 
-        // Then: 각 게시글에 abilities 키가 can_* 형식으로 존재
+        // Then: 컬렉션 루트에 abilities 키가 can_* 형식으로 존재
         $response->assertStatus(200);
-        $posts = $response->json('data.data');
+        $abilities = $response->json('data.abilities');
 
-        $this->assertNotEmpty($posts, '게시글이 1개 이상 존재해야 합니다');
-
-        $firstPost = $posts[0];
-        $this->assertArrayHasKey('abilities', $firstPost, '게시글에 abilities 키가 존재해야 합니다');
-
-        $abilities = $firstPost['abilities'];
+        $this->assertIsArray($abilities, '컬렉션 레벨 abilities 가 존재해야 합니다');
         $this->assertArrayHasKey('can_read', $abilities);
         $this->assertArrayHasKey('can_write', $abilities);
     }
 
     /**
-     * 게시글 목록 항목에 이전 underscore 형식 키가 존재하지 않음
+     * 게시글 목록 컬렉션 abilities 에 이전 underscore 형식 키가 존재하지 않음
      */
     #[Test]
-    public function post_list_items_do_not_contain_old_underscore_keys(): void
+    public function post_list_collection_abilities_do_not_contain_old_underscore_keys(): void
     {
         // Given
         $this->createTestPost([
@@ -271,15 +270,14 @@ class BoardUserAbilitiesTest extends BoardTestCase
         $response = $this->actingAs($this->regularUser, 'sanctum')
             ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts");
 
-        // Then
+        // Then: 컬렉션 루트 abilities 확인
         $response->assertStatus(200);
-        $posts = $response->json('data.data');
-        $this->assertNotEmpty($posts);
+        $abilities = $response->json('data.abilities');
+        $this->assertIsArray($abilities);
 
-        $abilities = $posts[0]['abilities'];
         $oldKeys = ['posts_read', 'posts_write', 'comments_read', 'comments_write', 'manager'];
         foreach ($oldKeys as $oldKey) {
-            $this->assertArrayNotHasKey($oldKey, $abilities, "게시글 목록 abilities에 이전 형식 키 '{$oldKey}'가 존재하지 않아야 합니다");
+            $this->assertArrayNotHasKey($oldKey, $abilities, "게시글 목록 abilities 에 이전 형식 키 '{$oldKey}' 가 존재하지 않아야 합니다");
         }
     }
 

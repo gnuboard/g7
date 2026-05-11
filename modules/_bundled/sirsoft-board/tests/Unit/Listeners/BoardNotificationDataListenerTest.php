@@ -15,6 +15,7 @@ use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
 use Modules\Sirsoft\Board\Models\UserNotificationSetting;
+use App\Contracts\Repositories\RoleRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
@@ -38,6 +39,8 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     private CommentRepositoryInterface $commentRepository;
 
+    private RoleRepositoryInterface $roleRepository;
+
     /** @var \Mockery\MockInterface&UserNotificationSettingService */
     private $userNotificationSettingService;
 
@@ -53,6 +56,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->boardRepository = Mockery::mock(BoardRepositoryInterface::class);
         $this->postRepository = Mockery::mock(PostRepositoryInterface::class);
         $this->commentRepository = Mockery::mock(CommentRepositoryInterface::class);
+        $this->roleRepository = Mockery::mock(RoleRepositoryInterface::class);
         $this->userNotificationSettingService = Mockery::mock(UserNotificationSettingService::class);
 
         // 기본: 사용자 알림 설정이 모두 켜진 상태로 Mock (정상 추출 테스트용)
@@ -69,6 +73,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
             $this->postRepository,
             $this->commentRepository,
             $this->userNotificationSettingService,
+            $this->roleRepository,
         );
     }
 
@@ -746,6 +751,9 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $board = $this->createMockBoard('test-board', true, true); // notify_admin_on_post = true
 
         $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
+        $this->roleRepository->shouldReceive('findByIdentifier')
+            ->with('sirsoft-board.test-board.manager')
+            ->andReturn($role);
 
         $result = $this->listener->extractData([], 'new_post_admin', [$post, 'test-board']);
 
@@ -867,7 +875,9 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->assertNull($result['notifiable']);
         $this->assertNull($result['notifiables']);
         $this->assertEmpty($result['data']);
-        $this->assertEmpty($result['context']);
+        // emptyResult() 는 NotificationHookListener 에서 발송을 차단하기 위해
+        // context.skip=true 를 반환한다 (2026-04-24 sirsoft-board report_policy).
+        $this->assertTrue($result['context']['skip'] ?? false);
     }
 
     /**

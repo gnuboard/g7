@@ -59,6 +59,11 @@ class PaymentService
      */
     public function requestPayment(Order $order, array $paymentData): array
     {
+        // 훅: 결제 진입 전 (사용자 측 IDV 정책 가드 지점 — checkout_verification purpose)
+        // EnforceIdentityPolicyListener 가 'sirsoft-ecommerce.checkout.before_pay' 정책이
+        // 활성이고 grace 만료 시 IdentityVerificationRequiredException 을 throw → HTTP 428.
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.checkout.before_payment', $order, $paymentData);
+
         // TODO: PG 연동 시 구현
         return [];
     }
@@ -74,8 +79,15 @@ class PaymentService
      */
     public function approvePayment(Order $order, string $transactionId): OrderPayment
     {
+        // 훅: 결제 승인 전 (IDV 정책 가드 지점)
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.payment.before_approve', $order, $transactionId);
+
         // TODO: PG 연동 시 구현
-        return $order->payment;
+        $payment = $order->payment;
+
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.payment.after_approve', $payment);
+
+        return $payment;
     }
 
     /**
@@ -90,8 +102,15 @@ class PaymentService
      */
     public function cancelPayment(OrderPayment $payment, float $cancelAmount, string $reason): bool
     {
+        // 훅: 결제 취소 전 (IDV 정책 가드 지점)
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.payment.before_cancel', $payment, $cancelAmount, $reason);
+
         // TODO: PG 연동 시 구현
-        return false;
+        $result = false;
+
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.payment.after_cancel', $payment, $result);
+
+        return $result;
     }
 
     /**
@@ -121,6 +140,9 @@ class PaymentService
      */
     public function confirmManualDeposit(Order $order, float $amount, ?string $depositorName = null): bool
     {
+        // 훅: 무통장 입금 확인 전 (관리자 민감 작업 — IDV 정책 가드 지점)
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.payment.before_confirm_deposit', $order, $amount, $depositorName);
+
         // TODO: PG 연동 시 구현
         return false;
     }

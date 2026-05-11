@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\ValidateResetTokenRequest;
+use App\Exceptions\Auth\AccountLockedException;
 use App\Http\Resources\UserResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
@@ -50,6 +51,11 @@ class AuthController extends AuthBaseController
             $data['user'] = new UserResource($data['user']);
 
             return $this->success('auth.login_success', $data);
+        } catch (AccountLockedException $e) {
+            return $this->error('auth.account_locked', 423, [
+                'locked_until' => $e->lockedUntil->toIso8601String(),
+                'retry_after_seconds' => $e->remainingMinutes * 60,
+            ], ['minutes' => $e->remainingMinutes]);
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.login_failed');
         }

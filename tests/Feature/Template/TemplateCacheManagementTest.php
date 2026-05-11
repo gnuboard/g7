@@ -7,6 +7,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Contracts\Extension\CacheInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Tests\Helpers\ProtectsExtensionDirectories;
@@ -76,7 +77,7 @@ class TemplateCacheManagementTest extends TestCase
             if ($layoutExists) {
                 $cacheKey = "layout.sirsoft-admin_basic.{$layoutName}.v{$cacheVersion}";
                 $this->assertTrue(
-                    Cache::has($cacheKey),
+                    app(CacheInterface::class)->get($cacheKey) !== null,
                     "활성화 후 {$layoutName} 레이아웃 캐시가 생성되어야 합니다."
                 );
             }
@@ -86,7 +87,7 @@ class TemplateCacheManagementTest extends TestCase
         $routesFile = base_path('templates/sirsoft-admin_basic/routes.json');
         if (file_exists($routesFile)) {
             $this->assertTrue(
-                Cache::has("template.routes.sirsoft-admin_basic.v{$cacheVersion}"),
+                app(CacheInterface::class)->get("template.routes.sirsoft-admin_basic.v{$cacheVersion}") !== null,
                 '활성화 후 routes 캐시가 생성되어야 합니다.'
             );
         }
@@ -97,7 +98,7 @@ class TemplateCacheManagementTest extends TestCase
             $langFile = base_path("templates/sirsoft-admin_basic/lang/{$locale}.json");
             if (file_exists($langFile)) {
                 $this->assertTrue(
-                    Cache::has("template.language.sirsoft-admin_basic.{$locale}.v{$cacheVersion}"),
+                    app(CacheInterface::class)->get("template.language.sirsoft-admin_basic.{$locale}.v{$cacheVersion}") !== null,
                     "활성화 후 {$locale} 다국어 캐시가 생성되어야 합니다."
                 );
             }
@@ -119,7 +120,7 @@ class TemplateCacheManagementTest extends TestCase
 
         // 캐시가 존재하는지 확인 (버전 포함 키)
         $this->assertTrue(
-            Cache::has("template.routes.sirsoft-admin_basic.v{$activateVersion}"),
+            app(CacheInterface::class)->get("template.routes.sirsoft-admin_basic.v{$activateVersion}") !== null,
             '활성화 후 캐시가 존재해야 합니다.'
         );
 
@@ -151,7 +152,7 @@ class TemplateCacheManagementTest extends TestCase
 
         // 캐시가 존재하는지 확인 (버전 포함 키)
         $this->assertTrue(
-            Cache::has("template.routes.sirsoft-admin_basic.v{$firstVersion}"),
+            app(CacheInterface::class)->get("template.routes.sirsoft-admin_basic.v{$firstVersion}") !== null,
             '첫 번째 템플릿 활성화 후 캐시가 존재해야 합니다.'
         );
 
@@ -164,7 +165,7 @@ class TemplateCacheManagementTest extends TestCase
         // deactivate → activate 시 캐시 버전이 증가하므로 새 버전으로 확인
         $newVersion = ClearsTemplateCaches::getExtensionCacheVersion();
         $this->assertTrue(
-            Cache::has("template.routes.sirsoft-admin_basic.v{$newVersion}"),
+            app(CacheInterface::class)->get("template.routes.sirsoft-admin_basic.v{$newVersion}") !== null,
             '재활성화 후 캐시가 다시 생성되어야 합니다.'
         );
     }
@@ -184,7 +185,7 @@ class TemplateCacheManagementTest extends TestCase
 
         // 캐시가 존재하는지 확인 (버전 포함 키)
         $this->assertTrue(
-            Cache::has("template.routes.sirsoft-admin_basic.v{$activateVersion}"),
+            app(CacheInterface::class)->get("template.routes.sirsoft-admin_basic.v{$activateVersion}") !== null,
             '활성화 후 캐시가 존재해야 합니다.'
         );
 
@@ -222,14 +223,14 @@ class TemplateCacheManagementTest extends TestCase
 
         // 설치 시에는 캐시가 생성되지 않아야 함 (비활성 상태로 설치됨)
         $this->assertFalse(
-            Cache::has("template.routes.sirsoft-admin_basic.v{$cacheVersion}"),
+            app(CacheInterface::class)->get("template.routes.sirsoft-admin_basic.v{$cacheVersion}") !== null,
             '설치 시에는 routes 캐시가 생성되지 않아야 합니다 (비활성 상태).'
         );
 
         $supportedLocales = config('app.supported_locales', ['ko', 'en']);
         foreach ($supportedLocales as $locale) {
             $this->assertFalse(
-                Cache::has("template.language.sirsoft-admin_basic.{$locale}.v{$cacheVersion}"),
+                app(CacheInterface::class)->get("template.language.sirsoft-admin_basic.{$locale}.v{$cacheVersion}") !== null,
                 "설치 시에는 {$locale} 다국어 캐시가 생성되지 않아야 합니다."
             );
         }
@@ -262,7 +263,7 @@ class TemplateCacheManagementTest extends TestCase
         foreach ($layouts as $layout) {
             $cacheKey = "g7:core:template.{$template->id}.layout.{$layout->name}";
             $this->assertFalse(
-                Cache::has($cacheKey),
+                app(CacheInterface::class)->get($cacheKey) !== null,
                 "비활성화 후 {$layout->name} 내부 레이아웃 캐시가 삭제되어야 합니다."
             );
         }

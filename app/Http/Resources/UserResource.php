@@ -187,7 +187,9 @@ class UserResource extends BaseApiResource
     /**
      * 리소스별 권한을 해석합니다.
      *
-     * 슈퍼관리자 및 관리자 계정은 삭제할 수 없으므로 can_delete를 강제 false로 설정합니다.
+     * 슈퍼관리자 계정은 시스템 불변식상 삭제 불가하므로 can_delete=false 로 강제합니다.
+     * 그 외 사용자(관리자 포함)의 삭제 가능 여부는 G7 역할/퍼미션/스코프 시스템
+     * (PermissionHelper::checkScopeAccess) 이 평가합니다.
      *
      * @param  Request  $request  HTTP 요청 객체
      * @return array<string, bool> 권한 배열
@@ -196,7 +198,7 @@ class UserResource extends BaseApiResource
     {
         $abilities = parent::resolveAbilities($request);
 
-        if ($this->resource->isSuperAdmin() || $this->resource->isAdmin()) {
+        if ($this->resource->isSuperAdmin()) {
             $abilities['can_delete'] = false;
         }
 

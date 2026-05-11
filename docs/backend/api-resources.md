@@ -517,3 +517,4 @@ class UserResource extends BaseApiResource
 - [controllers.md](./controllers.md) - 컨트롤러에서 리소스 사용
 - [response-helper.md](./response-helper.md) - API 응답 규칙
 - [service-repository.md](./service-repository.md) - Eager Loading으로 N+1 방지
+- [dto.md](./dto.md) - Eloquent 모델이 아닌 값 묶음 (DTO) — ApiResource 와의 경계

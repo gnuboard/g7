@@ -220,4 +220,92 @@ class UserRepository implements UserRepositoryInterface
             ->pluck('count', 'language')
             ->toArray();
     }
+
+    /**
+     * UUID 목록으로 사용자들을 조회하고 UUID 키 맵으로 반환합니다.
+     *
+     * @param  array<int, string>  $uuids  사용자 UUID 목록
+     * @return Collection<string, User> uuid => User 매핑
+     */
+    public function findManyByUuidsKeyed(array $uuids): Collection
+    {
+        return User::whereIn('uuid', $uuids)->get()->keyBy('uuid');
+    }
+
+    /**
+     * 사용자의 연속 로그인 실패 카운터를 1 증가시킵니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @return int 증가 후 카운트
+     */
+    public function incrementFailedAttempts(User $user): int
+    {
+        $next = (int) ($user->failed_login_attempts ?? 0) + 1;
+
+        $user->forceFill([
+            'failed_login_attempts' => $next,
+            'last_failed_login_at' => now(),
+        ])->save();
+
+        return $next;
+    }
+
+    /**
+     * 사용자의 계정을 지정된 분만큼 잠급니다.
+     *
+     * @param  User  $user  잠글 사용자
+     * @param  int  $minutes  잠금 유지 시간(분)
+     * @return \Illuminate\Support\Carbon 잠금 해제 시각
+     */
+    public function lockAccount(User $user, int $minutes): \Illuminate\Support\Carbon
+    {
+        $lockedUntil = now()->addMinutes(max(1, $minutes));
+
+        $user->forceFill([
+            'locked_until' => $lockedUntil,
+            'failed_login_attempts' => 0,
+        ])->save();
+
+        return $lockedUntil;
+    }
+
+    /**
+     * 사용자의 모든 로그인 시도 추적 컬럼을 초기화합니다.
+     *
+     * 멱등 — 모든 컬럼이 이미 초기 상태면 UPDATE 를 발행하지 않습니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @return void
+     */
+    public function resetLoginAttempts(User $user): void
+    {
+        $needsReset = ($user->failed_login_attempts ?? 0) > 0
+            || $user->locked_until !== null
+            || $user->last_failed_login_at !== null;
+
+        if (! $needsReset) {
+            return;
+        }
+
+        $user->forceFill([
+            'failed_login_attempts' => 0,
+            'locked_until' => null,
+            'last_failed_login_at' => null,
+        ])->save();
+    }
+
+    /**
+     * 사용자의 계정이 현재 시점에 잠금 상태인지 판정합니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @return bool 잠금 여부
+     */
+    public function isLocked(User $user): bool
+    {
+        if ($user->locked_until === null) {
+            return false;
+        }
+
+        return $user->locked_until->isFuture();
+    }
 }

@@ -1,0 +1,111 @@
+{
+  "title": "商品情報提供通知の管理",
+  "description": "商品グループ別の情報提供通知テンプレートを管理します",
+  "list": {
+    "title": "商品グループ",
+    "count": "{{count}}個",
+    "add": "追加",
+    "search_placeholder": "商品グループを検索...",
+    "empty": "登録された商品グループがありません",
+    "fields_count": "{{count}}"
+  },
+  "info": {
+    "title": "商品グループ情報"
+  },
+  "fields": {
+    "order": "順番",
+    "name": "項目名",
+    "content": "内容"
+  },
+  "empty": {
+    "title": "商品グループを選択してください",
+    "description": "左側のリストから商品グループを選択するか、新しく追加してください"
+  },
+  "actions": {
+    "copy": "複製"
+  },
+  "view": {
+    "title": "商品グループ情報",
+    "fields_count": "{{count}}個の項目",
+    "status": {
+      "active": "有効",
+      "inactive": "無効"
+    },
+    "table": {
+      "order": "順番",
+      "name": "項目名",
+      "content": "内容"
+    },
+    "copy": "複製",
+    "edit": "編集",
+    "delete": "削除"
+  },
+  "form": {
+    "create_title": "商品グループを追加",
+    "edit_title": "商品グループを編集",
+    "name": "商品グループ名",
+    "name_label": "商品グループ名",
+    "name_placeholder": "例:電子書籍",
+    "name_required": "商品グループ名は必須です",
+    "status_title": "ステータス設定",
+    "is_active": "有効化",
+    "is_active_label": "有効化",
+    "fill_detail_ref": "すべての項目を「詳細説明参照」に変更",
+    "fill_all_detail_ref": "すべての項目を「詳細説明参照」に変更",
+    "detail_reference": "詳細説明参照",
+    "fields_title": "項目リスト",
+    "field_name_placeholder": "項目名を入力",
+    "field_content_placeholder": "内容を入力",
+    "empty_fields": "項目がありません。項目を追加してください。",
+    "field": {
+      "name_label": "項目名",
+      "name_placeholder": "項目名を入力",
+      "content_label": "内容",
+      "content_placeholder": "内容を入力"
+    },
+    "add_field": "項目を追加",
+    "cancel": "キャンセル",
+    "save": "保存"
+  },
+  "empty_selection": {
+    "title": "商品グループを選択してください",
+    "description": "左側のリストから商品グループを選択するか、新しく追加してください"
+  },
+  "messages": {
+    "created": "商品グループが作成されました",
+    "updated": "商品グループが編集されました",
+    "deleted": "商品グループが削除されました",
+    "copied": "商品グループが複製されました",
+    "create_error": "商品グループの作成に失敗しました",
+    "update_error": "商品グループの編集に失敗しました",
+    "delete_error": "商品グループの削除に失敗しました",
+    "no_fields_to_change": "変更する項目がありません。",
+    "all_fields_changed_to_detail_ref": "すべての項目が「詳細説明参照」に変更されました。"
+  },
+  "modals": {
+    "delete": {
+      "title": "商品グループを削除",
+      "message": "以下の商品グループを削除しますか?",
+      "message_suffix": ":attribute商品グループを本当に削除しますか?",
+      "warning": "この操作は戻すことができません。"
+    },
+    "editing": {
+      "title": "編集中です",
+      "message": "編集中の内容は保存されません。",
+      "confirm_message": "本当にキャンセルして別の項目を選択しますか?",
+      "continue": "編集を続ける",
+      "discard": "キャンセルして移動"
+    },
+    "bulk_change": {
+      "title": "すべての項目を一括変更",
+      "message": "現在のテンプレートのすべての項目の内容を「詳細説明参照」に変更しますか?",
+      "preview_label": "変更内容:",
+      "notice": "※現在選択されている言語の内容のみが変更されます。",
+      "confirm": "変更"
+    }
+  },
+  "language": {
+    "ko": "韓国語",
+    "en": "English"
+  }
+}

@@ -5,7 +5,7 @@
         "ko": "토스페이먼츠",
         "en": "TossPayments"
     },
-    "version": "1.0.0-beta.2",
+    "version": "1.0.0-beta.3",
     "license": "MIT",
     "description": {
         "ko": "토스페이먼츠 결제 게이트웨이 (통합결제창 연동)",
@@ -14,7 +14,7 @@
     "g7_version": ">=7.0.0-beta.2",
     "dependencies": {
         "modules": {
-            "sirsoft-ecommerce": ">=1.0.0-beta.2"
+            "sirsoft-ecommerce": ">=1.0.0-beta.3"
         },
         "plugins": {}
     },

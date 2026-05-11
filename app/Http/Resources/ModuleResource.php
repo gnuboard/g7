@@ -35,8 +35,28 @@ class ModuleResource extends BaseApiResource
             // pending/bundled 상태
             'is_pending' => $this->getValue('is_pending', false),
             'is_bundled' => $this->getValue('is_bundled', false),
+            // 비활성화 메타 (코어 버전 호환성)
+            'deactivated_reason' => $this->getDeactivatedReasonValue(),
+            'deactivated_at' => $this->getValue('deactivated_at'),
+            'incompatible_required_version' => $this->getValue('incompatible_required_version'),
             ...$this->resourceMeta($request),
         ];
+    }
+
+    /**
+     * deactivated_reason 을 항상 string|null 로 직렬화합니다.
+     *
+     * @return string|null
+     */
+    protected function getDeactivatedReasonValue(): ?string
+    {
+        $value = $this->getValue('deactivated_reason');
+
+        if ($value instanceof \BackedEnum) {
+            return $value->value;
+        }
+
+        return $value;
     }
 
     /**
@@ -88,6 +108,10 @@ class ModuleResource extends BaseApiResource
             // pending/bundled 상태
             'is_pending' => $this->getValue('is_pending', false),
             'is_bundled' => $this->getValue('is_bundled', false),
+            // 비활성화 메타 (코어 버전 호환성)
+            'deactivated_reason' => $this->getDeactivatedReasonValue(),
+            'deactivated_at' => $this->getValue('deactivated_at'),
+            'incompatible_required_version' => $this->getValue('incompatible_required_version'),
             // 타임스탬프
             'created_at' => $this->getValue('created_at')
                 ? TimezoneHelper::toUserDateTimeString(Carbon::parse($this->getValue('created_at')))

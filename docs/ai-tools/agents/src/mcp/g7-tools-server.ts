@@ -4,7 +4,7 @@
  */
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
-import { validateBackendCode } from './tools/validate-code.js';
+import { validateBackendCode } from './tools/validate-backend.js';
 import { validateFrontendCode } from './tools/validate-frontend.js';
 import { runTests, runTestFile } from './tools/run-tests.js';
 import { searchDocs, readDoc, listDocs } from './tools/search-docs.js';
@@ -19,7 +19,7 @@ export function createG7McpServer(projectRoot: string) {
     tools: [
       // 백엔드 코드 검증
       tool(
-        'validate-code',
+        'validate-backend',
         'Service, FormRequest, Repository, Listener, Controller 파일의 G7 규정 준수 여부를 검증합니다',
         {
           filePath: z.string().describe('검증할 파일 경로 (프로젝트 루트 기준 상대 경로)'),

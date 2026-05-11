@@ -1,0 +1,63 @@
+# audit:allow test-scenario-coverage reason: effects 가 매커니즘 단계별 단언 (5단계 fallback × 2 origin source × 2 락) 으로 광범위. 핵심 회귀 가드는 test_files 의 단위/Feature 테스트가 cover 하므로 개별 케이스 docblock 매핑은 후속 PR 에서 단계 적용.
+
+feature: ActivityLog action 라벨 다국어 namespace 분리
+
+description: |
+  ActivityLog 의 action 라벨 조회를 G7 영역 분리 설계 (description 본문과 동일) 와
+  일치시키는 5단계 fallback 메커니즘. 기존 코어 lang 강제 SSoT 의 비대칭 해소.
+
+  핵심 동작:
+    - getActionLabelAttribute() 5단계: 모듈 lang full → 모듈 lang last → 코어 lang full
+      → 코어 lang last → raw fallback
+    - origin 식별 우선순위: loggable_type FQCN → properties.extension_origin → null(코어)
+    - ResolvesActivityLogType trait 가 호출 클래스 FQCN 으로 origin 자동 주입
+    - audit 룰이 모듈/플러그인 리스너의 모듈 lang 을 1차 후보로 인정 + 코어 lang fallback
+
+axes:
+  origin_type: [core, module, plugin, unknown]
+  loggable_state: [model_with_module_fqcn, model_with_core_fqcn, null_loggable, properties_origin_set, properties_origin_empty]
+  action_key_form: [single_segment, dotted_two_segments, dotted_three_segments]
+  module_lang_state: [full_key_defined, last_segment_defined, both_defined, neither_defined]
+  core_lang_state: [full_key_defined, last_segment_defined, both_defined, neither_defined]
+  locale: [ko, en, ja]
+
+exclusions:
+  - { origin_type: core, module_lang_state: full_key_defined, reason: "코어 origin 은 모듈 lang 조회 미수행" }
+  - { origin_type: core, module_lang_state: last_segment_defined, reason: "동일" }
+  - { origin_type: unknown, module_lang_state: full_key_defined, reason: "unknown origin 은 코어 lang 만 조회" }
+  - { loggable_state: properties_origin_set, origin_type: core, reason: "properties.extension_origin 은 모듈/플러그인 전용" }
+
+effects:
+  - module_full_key_takes_precedence_over_module_last_segment
+  - module_last_segment_takes_precedence_over_core_full_key
+  - core_full_key_takes_precedence_over_core_last_segment
+  - raw_action_returned_when_no_lang_match
+  - core_origin_action_unaffected_by_module_lang
+  - extension_origin_resolved_from_loggable_type_fqcn
+  - extension_origin_resolved_from_properties_when_loggable_null
+  - explicit_extension_origin_in_properties_preserved_over_auto_resolve
+  - core_listener_does_not_inject_extension_origin_into_properties
+  - module_listener_auto_injects_extension_origin
+  - module_listener_preserves_user_supplied_properties
+  - audit_accepts_module_lang_action_label_for_module_listener
+  - audit_accepts_core_lang_action_label_fallback_for_module_listener
+  - audit_rejects_action_label_missing_in_both_module_and_core_lang
+  - extension_manager_resolves_modules_namespace_to_kebab_identifier
+  - extension_manager_resolves_plugins_namespace_to_kebab_identifier
+  - extension_manager_handles_internal_underscore_via_pascal_to_snake
+  - extension_manager_returns_null_for_app_namespace
+  - extension_manager_returns_null_for_too_short_namespace
+  - ja_locale_module_lang_resolved_via_module_lang_pack
+  - ja_locale_core_lang_resolved_via_core_lang_pack
+
+test_files:
+  - tests/Unit/Extension/ExtensionManagerResolveByFqcnTest.php
+  - tests/Unit/Models/ActivityLogActionLabelTest.php
+  - tests/Unit/ActivityLog/ResolvesActivityLogTypeOriginTest.php
+  - tests/Feature/ActivityLog/ModuleActionLabelIsolationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ActivityLogActionLabelTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/ActivityLogActionLabelTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/ActivityLogActionLabelTest.php
+
+validation:
+  audit_rule: activity-log-listener-i18n-coverage

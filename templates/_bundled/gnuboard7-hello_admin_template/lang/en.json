@@ -1,0 +1,43 @@
+{
+  "admin": {
+    "base_layout_title": "Hello Admin",
+    "sidebar": {
+      "title": "Hello Admin",
+      "dashboard": "Dashboard"
+    },
+    "header": {
+      "title": "Gnuboard7 Learning Admin Template"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "welcome_title": "Hello G7",
+      "welcome_message": "Welcome to the minimal Gnuboard7 admin template for learning."
+    }
+  },
+  "errors": {
+    "401": {
+      "title": "Authentication Required",
+      "message": "You need to sign in to view this page."
+    },
+    "403": {
+      "title": "Access Denied",
+      "message": "You do not have permission to access this page."
+    },
+    "404": {
+      "title": "Page Not Found",
+      "message": "The requested page could not be found."
+    },
+    "500": {
+      "title": "Server Error",
+      "message": "An error occurred while processing your request."
+    },
+    "503": {
+      "title": "Service Unavailable",
+      "message": "The service is temporarily unavailable."
+    },
+    "maintenance": {
+      "title": "Under Maintenance",
+      "message": "The system is under maintenance. Please try again later."
+    }
+  }
+}

@@ -296,11 +296,15 @@ describe('G7CoreGlobals - state API', () => {
     G7Core.state.set({ newKey: 'newValue' });
 
     // state.set()은 현재 상태와 깊은 병합(deepMerge)을 수행함
-    expect(mockTemplateApp.setGlobalState).toHaveBeenCalledWith({
-      user: 'test',
-      count: 5,
-      newKey: 'newValue',
-    });
+    // G7Core.state.set 내부 TemplateApp.setGlobalState 호출 시그니처: (state, { render })
+    expect(mockTemplateApp.setGlobalState).toHaveBeenCalledWith(
+      {
+        user: 'test',
+        count: 5,
+        newKey: 'newValue',
+      },
+      { render: undefined }
+    );
   });
 
   it('state.update()가 함수형 업데이트를 지원해야 함', () => {
@@ -1460,7 +1464,7 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
 
       G7Core.state.setIsolated('category-selector', { step: 2 });
 
-      expect(mockMergeState).toHaveBeenCalledWith({ step: 2 });
+      expect(mockMergeState).toHaveBeenCalledWith({ step: 2 }, 'deep');
     });
 
     it('should update isolated state via actionContext when scopeId is not provided', () => {
@@ -1474,7 +1478,7 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
 
       G7Core.state.setIsolated({ step: 3 });
 
-      expect(mockMergeState).toHaveBeenCalledWith({ step: 3 });
+      expect(mockMergeState).toHaveBeenCalledWith({ step: 3 }, 'deep');
     });
 
     it('should handle dot notation in updates', () => {
@@ -1489,9 +1493,12 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
       G7Core.state.setIsolated('form-scope', { 'form.email': 'test@example.com' });
 
       // dot notation이 중첩 객체로 변환되어야 함
-      expect(mockMergeState).toHaveBeenCalledWith({
-        form: { email: 'test@example.com' },
-      });
+      expect(mockMergeState).toHaveBeenCalledWith(
+        {
+          form: { email: 'test@example.com' },
+        },
+        'deep'
+      );
     });
 
     it('should log warning when scopeId does not exist', () => {

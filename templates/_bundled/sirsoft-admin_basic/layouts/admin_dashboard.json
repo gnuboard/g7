@@ -151,7 +151,7 @@
             "type": "api",
             "endpoint": "/api/admin/dashboard/alerts",
             "method": "GET",
-            "auto_fetch": false,
+            "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "background",
             "fallback": {
@@ -718,7 +718,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "bg-green-500 h-2 rounded-full",
+                                                            "className": "bg-green-500 dark:bg-green-400 h-2 rounded-full",
                                                             "style": {
                                                                 "width": "{{dashboard_resources?.data?.cpu?.percentage}}%"
                                                             }
@@ -777,7 +777,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "bg-blue-500 h-2 rounded-full",
+                                                            "className": "bg-blue-500 dark:bg-blue-400 h-2 rounded-full",
                                                             "style": {
                                                                 "width": "{{dashboard_resources?.data?.memory?.percentage}}%"
                                                             }
@@ -833,7 +833,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "bg-gray-500 h-2 rounded-full",
+                                                            "className": "bg-gray-500 dark:bg-gray-400 h-2 rounded-full",
                                                             "style": {
                                                                 "width": "{{dashboard_resources?.data?.disk?.percentage}}%"
                                                             }
@@ -938,7 +938,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "w-2 h-2 mt-2 rounded-full bg-blue-500 flex-shrink-0"
+                                                            "className": "w-2 h-2 mt-2 rounded-full bg-blue-500 dark:bg-blue-400 flex-shrink-0"
                                                         }
                                                     },
                                                     {
@@ -1450,7 +1450,7 @@
                         "children": [
                             {
                                 "id": "system_alerts_card",
-                                "if": "false",
+                                "if": "{{(dashboard_alerts?.data?.length ?? 0) > 0}}",
                                 "permissions": [
                                     "core.dashboard.alerts"
                                 ],
@@ -1505,19 +1505,20 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex items-start gap-3 p-3 rounded-lg {{alert.bg_class}}"
+                                                    "className": "{{alert.subtype === 'incompatible_core' ? 'flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : (alert.subtype === 'recovery_available' ? 'flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' : 'flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700')}}"
                                                 },
                                                 "iteration": {
-                                                    "source": "dashboard_alerts?.data",
+                                                    "source": "{{dashboard_alerts?.data ?? []}}",
                                                     "item_var": "alert"
                                                 },
                                                 "children": [
                                                     {
                                                         "id": "alert_icon",
                                                         "type": "basic",
-                                                        "name": "Div",
+                                                        "name": "Icon",
                                                         "props": {
-                                                            "className": "w-2 h-2 mt-2 rounded-full {{alert.dot_class}} flex-shrink-0"
+                                                            "name": "{{alert.icon ?? 'info-circle'}}",
+                                                            "className": "{{alert.subtype === 'incompatible_core' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.subtype === 'recovery_available' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
                                                         }
                                                     },
                                                     {
@@ -1525,7 +1526,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-1"
+                                                            "className": "flex-1 min-w-0"
                                                         },
                                                         "children": [
                                                             {
@@ -1535,16 +1536,142 @@
                                                                 "props": {
                                                                     "className": "text-sm font-medium text-gray-900 dark:text-white"
                                                                 },
-                                                                "text": "{{alert.title}}"
+                                                                "text": "{{alert.title ?? ''}}"
+                                                            },
+                                                            {
+                                                                "id": "alert_message",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{alert.message}}",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-600 dark:text-gray-400 mt-0.5"
+                                                                },
+                                                                "text": "{{alert.message ?? ''}}"
                                                             },
                                                             {
                                                                 "id": "alert_time",
                                                                 "type": "basic",
                                                                 "name": "P",
+                                                                "if": "{{alert.time}}",
                                                                 "props": {
                                                                     "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
                                                                 },
-                                                                "text": "{{alert.time_ago}}"
+                                                                "text": "{{alert.time ?? ''}}"
+                                                            },
+                                                            {
+                                                                "id": "alert_actions",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex items-center gap-2 mt-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "id": "alert_recover_button",
+                                                                        "type": "basic",
+                                                                        "name": "Button",
+                                                                        "if": "{{alert.subtype === 'recovery_available'}}",
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "click",
+                                                                                "handler": "apiCall",
+                                                                                "auth_required": true,
+                                                                                "target": "{{alert.recover_endpoint}}",
+                                                                                "params": {
+                                                                                    "method": "POST"
+                                                                                },
+                                                                                "onSuccess": [
+                                                                                    {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "success",
+                                                                                            "message": "$t:extensions.alerts.recovered_success"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "refetchDataSource",
+                                                                                        "params": {
+                                                                                            "dataSourceId": "dashboard_alerts"
+                                                                                        }
+                                                                                    }
+                                                                                ],
+                                                                                "onError": [
+                                                                                    {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "error",
+                                                                                            "message": "{{error.message}}"
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ],
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "check-circle",
+                                                                                    "size": "xs"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "text": "$t:extensions.alerts.recover_action"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "id": "alert_dismiss_button",
+                                                                        "type": "basic",
+                                                                        "name": "Button",
+                                                                        "if": "{{alert.extension_type && alert.identifier}}",
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded",
+                                                                            "aria-label": "$t:extensions.alerts.dismiss_action"
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "click",
+                                                                                "handler": "apiCall",
+                                                                                "auth_required": true,
+                                                                                "target": "/api/admin/extensions/{{alert.extension_type}}/{{alert.identifier}}/dismiss",
+                                                                                "params": {
+                                                                                    "method": "POST"
+                                                                                },
+                                                                                "onSuccess": [
+                                                                                    {
+                                                                                        "handler": "refetchDataSource",
+                                                                                        "params": {
+                                                                                            "dataSourceId": "dashboard_alerts"
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ],
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "times",
+                                                                                    "size": "xs"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "text": "$t:extensions.alerts.dismiss_action"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
                                                     }

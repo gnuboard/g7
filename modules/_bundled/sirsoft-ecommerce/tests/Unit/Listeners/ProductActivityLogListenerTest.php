@@ -20,7 +20,7 @@ class ProductActivityLogListenerTest extends ModuleTestCase
     {
         parent::setUp();
         $this->app->instance('request', \Illuminate\Http\Request::create('/api/admin/sirsoft-ecommerce/test'));
-        $this->listener = new ProductActivityLogListener();
+        $this->listener = app(ProductActivityLogListener::class);
     }
 
     // ========================================

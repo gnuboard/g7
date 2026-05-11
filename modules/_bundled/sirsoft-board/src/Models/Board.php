@@ -129,6 +129,10 @@ class Board extends Model
         // 기타 설정
         'blocked_keywords',
 
+        // 카운트 컬럼
+        'posts_count',
+        'comments_count',
+
         // 생성자/수정자
         'created_by',
         'updated_by',
@@ -159,6 +163,8 @@ class Board extends Model
             'order_direction' => OrderDirection::class,
             'max_comment_depth' => 'integer',
             'comment_order' => OrderDirection::class,
+            'posts_count' => 'integer',
+            'comments_count' => 'integer',
         ];
     }
 

@@ -9,9 +9,9 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 23개 | 정상 |
-| [프론트엔드](frontend/) | 49개 | 정상 |
-| [확장 시스템](extension/) | 26개 | 정상 |
+| [백엔드](backend/) | 32개 | 정상 |
+| [프론트엔드](frontend/) | 51개 | 정상 |
+| [확장 시스템](extension/) | 30개 | 정상 |
 | 공통 | 19개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
 
@@ -113,22 +113,29 @@
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (23개)
+### 백엔드 (32개)
 
 | 문서 | 제목 |
 |------|------|
 | [activity-log-hooks.md](backend/activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) |
 | [activity-log.md](backend/activity-log.md) | 활동 로그 시스템 (Activity Log System) |
+| [admin-settings-access.md](backend/admin-settings-access.md) | Admin 환경설정 값 접근 (`g7_core_settings` vs `config()`) |
 | [api-resources.md](backend/api-resources.md) | API 리소스 |
 | [authentication.md](backend/authentication.md) | 인증 및 세션 처리 |
 | [broadcasting.md](backend/broadcasting.md) | Broadcasting (실시간 이벤트) |
+| [console-confirm.md](backend/console-confirm.md) | 콘솔 yes/no 프롬프트 (ConsoleConfirm) |
 | [controllers.md](backend/controllers.md) | 컨트롤러 계층 구조 |
 | [core-config.md](backend/core-config.md) | 코어 설정 (config/core.php) |
 | [core-update-system.md](backend/core-update-system.md) | 코어 업데이트 시스템 (Core Update System) |
 | [data-sync-helpers.md](backend/data-sync-helpers.md) | 데이터 동기화 Helper (Data Sync Helpers) |
+| [dto.md](backend/dto.md) | DTO (Data Transfer Object) 사용 규칙 |
 | [enum.md](backend/enum.md) | Enum 사용 규칙 |
 | [exceptions.md](backend/exceptions.md) | Custom Exception 다국어 처리 |
 | [geoip.md](backend/geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) |
+| [identity-messages.md](backend/identity-messages.md) | 본인인증 메시지 템플릿 시스템 (Identity Messages) |
+| [identity-policies.md](backend/identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) |
+| [identity-providers.md](backend/identity-providers.md) | IDV Provider 작성 가이드 (Identity Verification Providers) |
+| [language-pack-service.md](backend/language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) |
 | [middleware.md](backend/middleware.md) | 미들웨어 등록 규칙 |
 | [notification-system.md](backend/notification-system.md) | 알림 시스템 (Notification System) |
 | [README.md](backend/README.md) | 백엔드 개발 가이드 |
@@ -138,10 +145,12 @@
 | [seo-system.md](backend/seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) |
 | [service-provider.md](backend/service-provider.md) | 서비스 프로바이더 안전성 |
 | [service-repository.md](backend/service-repository.md) | Service-Repository 패턴 |
+| [settings-multilingual-enrichment.md](backend/settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 |
+| [translatable-seeders.md](backend/translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) |
 | [user-overrides.md](backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) |
 | [validation.md](backend/validation.md) | 검증 (Validation) |
 
-### 프론트엔드 (49개)
+### 프론트엔드 (51개)
 
 | 문서 | 제목 |
 |------|------|
@@ -167,6 +176,8 @@
 | [g7core-api-advanced.md](frontend/g7core-api-advanced.md) | G7Core 전역 API 레퍼런스 - 고급 |
 | [g7core-api.md](frontend/g7core-api.md) | G7Core 전역 API 레퍼런스 |
 | [g7core-helpers.md](frontend/g7core-helpers.md) | G7Core 헬퍼 API |
+| [identity-guard-interceptor.md](frontend/identity-guard-interceptor.md) | IdentityGuardInterceptor — 코어 본인인증 인터셉터 레퍼런스 |
+| [identity-verification-ui.md](frontend/identity-verification-ui.md) | 본인인증(IDV) 공통 UI 가이드 |
 | [layout-json-components-loading.md](frontend/layout-json-components-loading.md) | 레이아웃 JSON - 데이터 로딩 및 생명주기 |
 | [layout-json-components-rendering.md](frontend/layout-json-components-rendering.md) | 레이아웃 JSON - 조건부/반복 렌더링 |
 | [layout-json-components-slots.md](frontend/layout-json-components-slots.md) | 레이아웃 JSON - 슬롯 시스템 |
@@ -195,7 +206,7 @@
 | [handlers.md](frontend/handlers.md) | sirsoft-basic 핸들러 |
 | [layouts.md](frontend/layouts.md) | sirsoft-basic 레이아웃 |
 
-### 확장 시스템 (26개)
+### 확장 시스템 (30개)
 
 | 문서 | 제목 |
 |------|------|
@@ -204,22 +215,26 @@
 | [extension-manager.md](extension/extension-manager.md) | ExtensionManager (확장 관리자) |
 | [extension-update-system.md](extension/extension-update-system.md) | 확장 업데이트 시스템 (Extension Update System) |
 | [hooks.md](extension/hooks.md) | 훅 시스템 (Hook System) |
+| [language-packs.md](extension/language-packs.md) | 언어팩 시스템 (Language Packs) |
 | [layout-extensions.md](extension/layout-extensions.md) | 레이아웃 확장 시스템 (Layout Extensions) |
 | [menus.md](extension/menus.md) | 메뉴 시스템 |
 | [module-assets.md](extension/module-assets.md) | 모듈 프론트엔드 에셋 시스템 |
 | [module-basics.md](extension/module-basics.md) | 모듈 개발 기초 |
 | [module-commands.md](extension/module-commands.md) | 모듈 Artisan 커맨드 |
 | [module-i18n.md](extension/module-i18n.md) | 모듈 다국어 시스템 |
+| [module-identity-settings.md](extension/module-identity-settings.md) | 모듈/플러그인 본인인증(IDV) 설정 통합 가이드 |
 | [module-layouts.md](extension/module-layouts.md) | 모듈 레이아웃 시스템 |
 | [module-routing.md](extension/module-routing.md) | 모듈 라우트 규칙 |
 | [module-settings.md](extension/module-settings.md) | 모듈 환경설정 시스템 개발 가이드 |
 | [permissions.md](extension/permissions.md) | 권한 시스템 |
 | [plugin-development.md](extension/plugin-development.md) | 플러그인 개발 가이드 |
 | [README.md](extension/README.md) | 그누보드7 확장 시스템 개발 가이드 |
+| [sample-extensions.md](extension/sample-extensions.md) | 학습용 샘플 확장 (Sample Extensions) |
 | [storage-driver.md](extension/storage-driver.md) | 스토리지 드라이버 시스템 (StorageInterface) |
 | [template-basics.md](extension/template-basics.md) | 템플릿 시스템 기초 |
 | [template-caching.md](extension/template-caching.md) | 템플릿 캐싱 전략 |
 | [template-commands.md](extension/template-commands.md) | 템플릿 Artisan 커맨드 |
+| [template-idv-bootstrap.md](extension/template-idv-bootstrap.md) | 템플릿 IDV launcher 등록 가이드 |
 | [template-routing.md](extension/template-routing.md) | 템플릿 라우트/언어 파일 규칙 |
 | [template-security.md](extension/template-security.md) | 템플릿 보안 정책 |
 | [template-workflow.md](extension/template-workflow.md) | 템플릿 개발 워크플로우 |
@@ -238,7 +253,7 @@
 | [create-template.md](ai-tools/skills/create-template.md) | 템플릿 스캐폴딩 (create-template) |
 | [extract-i18n-keys.md](ai-tools/skills/extract-i18n-keys.md) | 다국어 키 추출 (extract-i18n-keys) |
 | [run-tests.md](ai-tools/skills/run-tests.md) | 테스트 실행 (run-tests) |
-| [validate-code.md](ai-tools/skills/validate-code.md) | 코드 패턴 검증 (validate-code) |
+| [validate-backend.md](ai-tools/skills/validate-backend.md) | 백엔드 코드 패턴 검증 (validate-backend) |
 | [validate-frontend.md](ai-tools/skills/validate-frontend.md) | 프론트엔드 검증 (validate-frontend) |
 | [validate-hook.md](ai-tools/skills/validate-hook.md) | 훅 패턴 검증 (validate-hook) |
 | [validate-i18n.md](ai-tools/skills/validate-i18n.md) | 다국어 검증 (validate-i18n) |

@@ -1,0 +1,88 @@
+# audit:allow test-scenario-coverage reason: 도메인 axes 가 광범위 (page_type × override_source × hook stage × locale × bot UA) — 본 매니페스트는 신규 기능의 시나리오 매트릭스 SSoT 로 기록만 하고, 개별 케이스 docblock 마킹은 후속 PR 에서 단계적 적용 예정. 핵심 회귀 가드는 test_files 에 명시된 통과 테스트로 커버됨.
+
+feature: SEO OG / Twitter / Structured Data 확장성 + 도메인 ownership
+
+description: |
+  SEO 메타 (OG / Twitter Card / JSON-LD) 의 캐스케이드 + 분기별 확장 hook + 모듈 도메인 ownership 시나리오 매트릭스.
+
+  기존 회귀:
+    - 슬랙·페이스북 미리보기 이미지 미표시 (og:image:width / og:site_name / twitter:card 누락)
+    - og:title 선두 dash ("- 무선 마우스 #99") — 모듈 템플릿 변수 빈 값 시 separator 잔존
+
+  해결 축:
+    - 코어 설정 + 모듈 declaration + 레이아웃 override + hook 4-단계 캐스케이드
+    - 분기별 hook 3종 (filter_og_data / filter_twitter_data / filter_structured_data) + 통합 filter_meta
+    - 도메인 스키마(Product/Article) ownership 을 모듈로 이전 (seoOgDefaults / seoStructuredData)
+    - substituteVars 자동 separator cleanup + 옵셔널 그룹 [...] 신택스
+
+axes:
+  page_type: [product, post, category, shop_index, generic]
+  override_source: [core_settings, module_declaration, layout_override, hook_filter]
+  hook_stage: [filter_og_data, filter_twitter_data, filter_structured_data, filter_meta]
+  bot_ua: [facebookexternalhit, slackbot, kakaotalk_scrap, googlebot, twitterbot]
+  template_separator_state: [all_filled, leading_var_empty, trailing_var_empty, optional_group_filled, optional_group_empty]
+
+exclusions:
+  - { page_type: shop_index, hook_stage: filter_structured_data, reason: "shop_index 는 도메인 스키마 owner 없음" }
+  - { page_type: generic, override_source: module_declaration, reason: "generic 페이지는 모듈 컨텍스트 없음" }
+
+effects:
+  - og_site_name_emitted_from_core_setting
+  - og_image_width_height_emitted_from_core_default
+  - og_image_dimensions_overridden_by_module_declaration
+  - og_image_dimensions_overridden_by_layout
+  - og_image_dimensions_overridden_by_filter_hook
+  - og_extra_product_price_emitted
+  - twitter_card_summary_large_image_default
+  - twitter_image_falls_back_to_og_image
+  - structured_data_product_emitted_from_module
+  - structured_data_article_emitted_from_module
+  - structured_data_aggregaterating_only_when_reviews_exist
+  - structured_data_layout_override_replaces_module
+  - filter_og_data_invocation_passes_correct_payload
+  - filter_twitter_data_invocation_passes_correct_payload
+  - filter_structured_data_invocation_passes_correct_payload
+  - filter_meta_invocation_passes_unified_payload
+  - title_no_leading_dash_when_var_empty
+  - title_no_trailing_dash_when_var_empty
+  - title_optional_group_kept_when_filled
+  - title_optional_group_dropped_when_empty
+  - title_optional_group_dropped_when_any_var_empty
+  - facebook_external_hit_routed_to_seo_pipeline
+  - slackbot_routed_to_seo_pipeline
+  - kakaotalk_scrap_routed_to_seo_pipeline
+  - bot_html_includes_og_site_name
+  - bot_html_includes_og_image_dimensions
+  - bot_html_includes_twitter_card
+
+sub_flows:
+  - id: cascade_priority
+    description: 코어 < 모듈 declaration < 레이아웃 override < hook 우선순위
+    effects:
+      - og_image_dimensions_overridden_by_module_declaration
+      - og_image_dimensions_overridden_by_layout
+      - og_image_dimensions_overridden_by_filter_hook
+  - id: title_dash_regression
+    description: 모듈 템플릿 변수 빈 값 시 인접 separator 자동 제거 + 옵셔널 그룹
+    effects:
+      - title_no_leading_dash_when_var_empty
+      - title_optional_group_dropped_when_empty
+      - title_optional_group_kept_when_filled
+  - id: bot_unfurl_e2e
+    description: 봇 UA → SEO 파이프라인 진입 → og/twitter 보강 태그 출력
+    effects:
+      - facebook_external_hit_routed_to_seo_pipeline
+      - slackbot_routed_to_seo_pipeline
+      - bot_html_includes_og_site_name
+      - bot_html_includes_twitter_card
+
+test_files:
+  - tests/Unit/Seo/SeoMetaResolverTest.php
+  - tests/Unit/Seo/SeoRendererTest.php
+  - tests/Feature/Seo/SeoMiddlewareTest.php
+  - tests/Feature/Seo/SeoPageRenderingTest.php
+
+notes: |
+  본 매니페스트는 SSoT 로 작성되었으며, audit 룰 test-scenario-coverage 의 docblock 마킹 강제 적용은
+  follow-up PR 에서 단계적으로 진행. 핵심 회귀(facebook/slack UA pipeline, title dash regression,
+  module ownership) 는 test_files 의 통과 테스트로 이미 커버됨.

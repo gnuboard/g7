@@ -1075,7 +1075,15 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
         if (localInitPendingSyncRef.current !== syncKey) {
           localInitPendingSyncRef.current = syncKey;
           const mergeStrategy = initMergeMode || 'shallow';
-          const currentPending = (window as any).__g7PendingLocalState || {};
+          // engine-v1.49.2: pending baseline 으로 fresh globalState._local + 기존 pending 사용.
+          // useLayoutEffect 클리어 직후 발화 시 pending 이 null 이면 빈 baseline 이 되어
+          // globalState 의 직전 setState 결과가 흡수되지 않음. 이로 인해 후속 setLocal 의
+          // mergedPending 계산에서 stale pending 우선 사용으로 globalState._local 통째 교체 시
+          // 다른 키 손실. fresh globalState 위에 기존 pending 머지로 baseline 정합성 보장.
+          const G7Core = (window as any).G7Core;
+          const freshGlobalLocal = G7Core?.state?.get?.()?._local || {};
+          const pendingState = (window as any).__g7PendingLocalState || {};
+          const currentPending = { ...freshGlobalLocal, ...pendingState };
 
           if (mergeStrategy === 'replace') {
             (window as any).__g7PendingLocalState = {
@@ -2673,9 +2681,14 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
 
           // iteration 없이 현재 컴포넌트를 렌더링하기 위해 iteration을 제거한 복사본 생성
           // children이 있든 없든 현재 컴포넌트(wrapper)로 감싸서 렌더링
+          //
+          // responsive 도 함께 제거: 부모에서 이미 해당 breakpoint 매칭으로 effectiveComponentDef
+          // 가 머지된 상태이므로, 자식에서 다시 responsive 머지가 일어나면 iteration 이 부활하여
+          // 무한 재귀가 발생함 (responsive.{breakpoint}.iteration 오버라이드 케이스).
           const componentDefWithoutIteration = {
             ...effectiveComponentDef,
             iteration: undefined,
+            responsive: undefined,
           };
 
           // iteration 아이템의 경로: 부모경로.iteration.인덱스

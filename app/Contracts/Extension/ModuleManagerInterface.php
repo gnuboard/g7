@@ -2,6 +2,8 @@
 
 namespace App\Contracts\Extension;
 
+use App\Enums\DeactivationReason;
+
 interface ModuleManagerInterface
 {
     /**
@@ -40,9 +42,16 @@ interface ModuleManagerInterface
      *
      * @param  string  $moduleName  비활성화할 모듈명
      * @param  bool  $force  의존 템플릿이 있어도 강제 비활성화 여부
+     * @param  string  $reason  비활성화 사유 (DeactivationReason enum value: manual|incompatible_core)
+     * @param  string|null  $incompatibleRequiredVersion  incompatible_core 사유 시 요구된 코어 버전 제약
      * @return array{success: bool, layouts_deleted: int, warning?: bool, dependent_templates?: array, message?: string} 비활성화 결과 및 삭제된 레이아웃 개수
      */
-    public function deactivateModule(string $moduleName, bool $force = false): array;
+    public function deactivateModule(
+        string $moduleName,
+        bool $force = false,
+        string $reason = DeactivationReason::Manual->value,
+        ?string $incompatibleRequiredVersion = null,
+    ): array;
 
     /**
      * 지정된 모듈을 시스템에서 제거합니다.

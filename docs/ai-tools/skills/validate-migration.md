@@ -90,9 +90,9 @@ grep -rn "[금지 패턴]" [대상 파일]
 3. **down() 메서드**: 완전한 롤백 구현 여부
 4. **외래키**: `constrained()` 등 규정에 명시된 메서드 사용 여부
 
-### 3.4 CLAUDE.md CRITICAL RULES 검증 (MANDATORY)
+### 3.4 핵심 규칙 검증
 
-CLAUDE.md 및 규정 문서에 명시된 CRITICAL 규칙을 검증합니다.
+규정 문서에 명시된 절대 규칙을 검증합니다.
 
 #### 3.4.1 CASCADE 삭제 금지 검증
 

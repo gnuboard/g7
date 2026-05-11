@@ -40,6 +40,8 @@ return [
         'restore_failed' => 'Failed to restore settings.',
         'category_not_found' => 'Settings category not found: :category',
         'save_failed' => 'Failed to save settings: :category',
+        'json_parse_failed' => 'Failed to parse JSON file: :path (:error)',
+        'add_category_module_only' => 'addCategory is only available for modules.',
     ],
 
     // Core update related exceptions
@@ -71,5 +73,6 @@ return [
         'composer_json_not_found' => 'composer.json not found: :path',
         'no_composer_lock' => 'composer.lock is required. Run composer install first: :path',
         'vendor_dir_not_found' => 'vendor/ directory does not exist. Run composer install first: :path',
+        'composer_binary_not_found' => 'Composer binary not found. Set the COMPOSER_BINARY environment variable or add composer to your PATH.',
     ],
 ];

@@ -127,7 +127,7 @@ class TemplateServiceIntegrationTest extends TestCase
         // Assert: admin 템플릿 상태 확인 (파일 복사는 더 이상 수행하지 않음)
         // activateTemplate은 배열을 반환함
         $this->assertIsArray($activatedAdmin);
-        $this->assertEquals(ExtensionStatus::Active->value, $activatedAdmin['status']);
+        $this->assertEquals(ExtensionStatus::Active->value, $activatedAdmin['template_info']['status']);
         $this->assertDatabaseHas('templates', [
             'identifier' => 'sirsoft-admin_basic',
             'status' => ExtensionStatus::Active->value,
@@ -165,7 +165,7 @@ class TemplateServiceIntegrationTest extends TestCase
         // Assert: 첫 번째 템플릿이 활성화됨 (파일 복사는 더 이상 수행하지 않음)
         // activateTemplate은 배열을 반환함
         $this->assertIsArray($activatedTemplate1);
-        $this->assertEquals(ExtensionStatus::Active->value, $activatedTemplate1['status']);
+        $this->assertEquals(ExtensionStatus::Active->value, $activatedTemplate1['template_info']['status']);
         $this->assertDatabaseHas('templates', [
             'identifier' => 'sirsoft-admin_basic',
             'status' => ExtensionStatus::Active->value,

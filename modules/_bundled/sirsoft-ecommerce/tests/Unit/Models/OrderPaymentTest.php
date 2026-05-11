@@ -17,9 +17,11 @@ class OrderPaymentTest extends ModuleTestCase
 {
     public function test_order_payment_can_be_created(): void
     {
+        // paid_amount 컬럼은 paid_amount_local / paid_amount_base 로 분리됨 (다중 통화 지원)
         $order = OrderFactory::new()->create();
         $payment = OrderPaymentFactory::new()->forOrder($order)->create([
-            'paid_amount' => 50000,
+            'paid_amount_local' => 50000,
+            'paid_amount_base' => 50000,
         ]);
 
         $this->assertDatabaseHas('ecommerce_order_payments', [

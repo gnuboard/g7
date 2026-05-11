@@ -16,6 +16,7 @@ class OrderOptionTest extends ModuleTestCase
 {
     public function test_order_option_can_be_created(): void
     {
+        // product_name 은 다국어 JSON 컬럼 (array cast) — DB 저장값도 JSON 문자열
         $order = OrderFactory::new()->create();
         $option = OrderOptionFactory::new()->forOrder($order)->create([
             'product_name' => '테스트 상품',
@@ -24,7 +25,7 @@ class OrderOptionTest extends ModuleTestCase
 
         $this->assertDatabaseHas('ecommerce_order_options', [
             'id' => $option->id,
-            'product_name' => '테스트 상품',
+            'product_name' => json_encode('테스트 상품'),  // Laravel cast 는 \u escape 사용
             'sku' => 'TEST-SKU-001',
         ]);
     }

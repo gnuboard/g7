@@ -111,7 +111,7 @@ class ProductReviewResource extends BaseApiResource
         if (is_array($optionName)) {
             $locale = app()->getLocale();
 
-            return $optionName[$locale] ?? $optionName['ko'] ?? array_values($optionName)[0] ?? '';
+            return $optionName[$locale] ?? $optionName[config('app.fallback_locale', 'ko')] ?? array_values($optionName)[0] ?? '';
         }
 
         return (string) $optionName;

@@ -1,0 +1,222 @@
+{
+  "title_create": "掲示板を作成",
+  "title_edit": "掲示板を編集",
+  "description": "掲示板の設定を管理します",
+  "read_only_message": "閲覧権限のみがあります。編集が必要な場合は管理者にお問い合わせください。",
+  "validation_error": "入力情報を確認してください。",
+  "add_category": "分類を追加",
+  "tabs": {
+    "basic": "基本設定",
+    "permissions": "権限設定",
+    "list": "リスト設定",
+    "post": "投稿設定",
+    "notification": "通知設定"
+  },
+  "fields": {
+    "name": "掲示板名",
+    "slug": "スラッグ",
+    "description": "掲示板の説明",
+    "is_active": "有効化",
+    "type": "掲示板タイプ",
+    "categories": "分類",
+    "show_view_count": "閲覧数を表示",
+    "use_comment": "コメントを使用",
+    "use_reply": "返信投稿を使用",
+    "use_report": "通報を使用",
+    "secret_mode": "非公開投稿モード",
+    "order_by": {
+      "label": "並べ替え基準",
+      "options": {
+        "created_at": "最新投稿",
+        "view_count": "閲覧数",
+        "title": "タイトル",
+        "author": "投稿者"
+      }
+    },
+    "order_direction": {
+      "label": "並べ替え順序",
+      "options": {
+        "desc": "降順",
+        "asc": "昇順"
+      }
+    },
+    "per_page": {
+      "label": "1ページあたりのリスト数 (PC)",
+      "hint": "{{min}}～{{max}}の間の値を入力してください"
+    },
+    "per_page_mobile": {
+      "label": "1ページあたりのリスト数 (モバイル)",
+      "hint": "{{min}}～{{max}}の間の値を入力してください"
+    },
+    "min_title_length": {
+      "label": "最小タイトル文字数",
+      "hint": "{{min}}～{{max}}の間の値を入力してください"
+    },
+    "max_title_length": {
+      "label": "最大タイトル文字数",
+      "hint": "{{min}}～{{max}}の間の値を入力してください"
+    },
+    "min_content_length": {
+      "label": "最小投稿文字数",
+      "hint": "{{min}}～{{max}}の間の値を入力してください"
+    },
+    "max_content_length": {
+      "label": "最大投稿文字数",
+      "hint": "{{min}}～{{max}}の間の値を入力してください"
+    },
+    "min_comment_length": {
+      "label": "最小コメント文字数",
+      "hint": "{{min}}～{{max}}の間の値を入力してください"
+    },
+    "max_comment_length": {
+      "label": "最大コメント文字数",
+      "hint": "{{min}}～{{max}}の間の値を入力してください"
+    },
+    "blocked_keywords": {
+      "label": "制限キーワード",
+      "placeholder": "カンマで区切って入力してください (例: 暴言、誹謗中傷、広告)",
+      "description": "不適切な単語またはこの掲示板から除外されるキーワード"
+    },
+    "use_file_upload": {
+      "label": "ファイル添付設定",
+      "description": "投稿にファイルを添付できます。"
+    },
+    "max_file_count": {
+      "label": "最大ファイル個数",
+      "hint": "最大{{max}}個までアップロード可能です"
+    },
+    "max_file_size": {
+      "label": "最大ファイルサイズ (MB)",
+      "placeholder": "MB単位で入力",
+      "hint": "最大{{maxMB}}MBまでアップロード可能です"
+    },
+    "allowed_extensions": {
+      "label": "許可する拡張子",
+      "placeholder": "カンマで区切って入力してください (例: jpg, png, pdf)",
+      "description": "空の場合はすべての拡張子を許可します"
+    },
+    "comment_order": {
+      "label": "コメント並べ替え順序",
+      "options": {
+        "asc": "昇順 (古い順)",
+        "desc": "降順 (最新順)"
+      }
+    },
+    "new_display_hours": {
+      "label": "新規投稿表示期間",
+      "hint": "投稿後に[新着]バッジを表示する期間 (時間単位)"
+    },
+    "max_reply_depth": {
+      "label": "返信投稿の最大深さ",
+      "hint": "{{min}}～{{max}}の間の値を入力してください"
+    },
+    "max_comment_depth": {
+      "label": "返信の最大深さ",
+      "hint": "{{min}}～{{max}}の間の値を入力してください。0に設定すると返信機能が無効になります。"
+    },
+    "notify_author": {
+      "label": "投稿者メール通知",
+      "description": "コメント、返信、返信投稿、管理者処理時に投稿者にメール送信"
+    },
+    "notify_admin_on_post": {
+      "label": "管理者メール通知",
+      "description": "投稿が登録された場合に管理者にメール送信"
+    },
+    "notification_channels": {
+      "label": "通知チャネル",
+      "description": "掲示板の通知を受け取るチャネルを選択します",
+      "channels_label": "通知チャネル",
+      "channel_mail": "メール",
+      "channel_database": "サイト通知"
+    }
+  },
+  "placeholders": {
+    "name": "例: お知らせ",
+    "slug": "例: notice (英数字、ハイフンのみ使用可能)",
+    "description": "掲示板の用途を簡潔に説明してください",
+    "select_type": "掲示板タイプを選択してください"
+  },
+  "descriptions": {
+    "slug": "URLおよびテーブル名として使用されます（英文、数字、ハイフンのみ可能）",
+    "description": "掲示板リストでユーザーに表示される説明です",
+    "is_active": "無効化された掲示板はユーザーページに表示されません",
+    "categories": "投稿の分類を管理します",
+    "categories_notice": "分類を削除しても、該当分類の投稿は保持され、「未分類」フィルターで閲覧できます。",
+    "show_view_count": "投稿リストおよび詳細で閲覧数を表示します",
+    "use_comment": "有効化するとコメント関連の詳細設定（長さ、深さ、並べ替え）を指定できます。",
+    "use_reply": "有効化すると返信の最大深さを設定できます。",
+    "use_report": "不適切な投稿/コメント通報機能を有効化します",
+    "type": "掲示板タイプは環境設定 > 基本設定で管理できます。"
+  },
+  "options": {
+    "secret_mode": {
+      "disabled": "使用しない",
+      "enabled": "選択可能",
+      "always": "常に非公開"
+    }
+  },
+  "permissions": {
+    "managers_title": "掲示板管理者",
+    "managers_description": "掲示板のすべての権限を持つ管理者を指定します。",
+    "managers_select_button": "管理者を選択",
+    "manager_email_placeholder": "管理者のメールアドレスを入力",
+    "search_manager": "閲覧",
+    "confirm_add": "追加",
+    "select": "選択",
+    "change": "変更",
+    "users_found": "{{count}}名のユーザーが見つかりました",
+    "no_users_found_search": "ユーザーが見つかりません",
+    "user_search_failed": "ユーザー閲覧に失敗しました",
+    "users_found_with_limit": "{{count}}名のユーザーが見つかりました（最大20名まで表示）",
+    "user_added": "{{name}}が追加されました",
+    "no_search_results": "検索結果がありません",
+    "selected_managers": "選択された管理者",
+    "select_managers": "管理者を選択",
+    "admin_permissions_title": "管理者権限 (Admin)",
+    "admin_permissions_description": "管理者ページへのアクセス権限です。掲示板管理者およびシステム管理者に付与されます。",
+    "user_permissions_title": "ユーザー権限 (User)",
+    "user_permissions_description": "一般ユーザーの掲示板アクセス権限です。ロールを通じて詳細権限を制御します。",
+    "settings_title": "ロール別アクセス制御",
+    "settings_description": "各権限に割り当てるロールを選択してください。ロールが選択されていない場合は、すべてのユーザーに許可されます。",
+    "search_users": "名前またはメールアドレスで検索",
+    "no_users_found": "検索結果がありません",
+    "select_roles": "ロールを選択してください（必須）",
+    "mode_all": "すべて",
+    "mode_roles": "ロール",
+    "header_feature": "機能",
+    "header_access": "アクセス権限",
+    "header_all_access": "すべて許可",
+    "header_role_selection": "ロールを選択",
+    "all_access": "すべて許可",
+    "all_access_enabled": "すべてのユーザーがアクセスできます。",
+    "role_restricted": "ロール制限",
+    "select_roles_hint": "アクセスを許可するロールを選択してください。（必須）",
+    "admin_count": "{{count}}個の権限",
+    "user_count": "{{count}}個の権限",
+    "error_title": "権限設定エラー",
+    "error_description": "各権限に最低1つ以上のロールを選択してください。",
+    "error_roles_required": "ロールを選択してください。",
+    "select_manager": "管理者を選択",
+    "search_placeholder": "名前またはメールアドレスで検索（最大20名まで表示されるため、詳細に入力してください）",
+    "steps_title": "掲示板スタッフ",
+    "steps_description": "スタッフは掲示板管理権限を除くすべての権限を持ちます。",
+    "auto_role_notice": "掲示板管理者およびスタッフロールは作成時に各権限のデフォルト値として含まれており、以下で編集できます。",
+    "create_mode_permissions_notice": "ロール別アクセス制御は掲示板作成後の編集画面で設定できます。作成時にはデフォルト権限が自動的に適用されます。"
+  },
+  "modals": {
+    "category_remove": {
+      "title": "分類を削除",
+      "warning": "この操作は取り消すことができません",
+      "message": "「{{category}}」分類を削除してもよろしいですか？"
+    }
+  },
+  "menu": {
+    "manual_guide": "メニュー管理で以下のパスを入力して登録してください。",
+    "manual_admin_label": "管理者メニューパス",
+    "manual_user_label": "ユーザーメニューパス",
+    "example": "例",
+    "add_to_admin_menu": "管理者メニューに追加",
+    "menu_added_success": "管理者メニューに追加されました。",
+    "menu_add_failed": "メニュー追加に失敗しました。"
+  }
+}

@@ -1,0 +1,47 @@
+{
+    "version": "1.0.0",
+    "layout_name": "maintenance",
+    "extends": "_user_base",
+    "meta": {
+        "title": "$t:error.maintenance.title",
+        "description": "$t:error.maintenance.description"
+    },
+    "slots": {
+        "content": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "min-h-[50vh] flex items-center justify-center"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "text-center px-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-3xl font-bold text-gray-900 mb-3"
+                                },
+                                "text": "$t:error.maintenance.title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-gray-600"
+                                },
+                                "text": "$t:error.maintenance.description"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

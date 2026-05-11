@@ -19,6 +19,8 @@ class BroadcastNotificationListener implements HookListenerInterface
 {
     /**
      * 구독할 훅 목록.
+     *
+     * @return array<string, array<string, mixed>> 훅 매핑 배열
      */
     public static function getSubscribedHooks(): array
     {

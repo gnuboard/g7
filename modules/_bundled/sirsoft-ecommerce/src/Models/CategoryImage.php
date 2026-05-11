@@ -70,7 +70,9 @@ class CategoryImage extends Model
     ];
 
     /**
-     * 카테고리 관계
+     * 이 이미지가 속한 카테고리 관계 (category_id FK).
+     *
+     * @return BelongsTo 카테고리 관계
      */
     public function category(): BelongsTo
     {
@@ -78,7 +80,9 @@ class CategoryImage extends Model
     }
 
     /**
-     * 업로더 관계
+     * 이 이미지를 업로드한 사용자 관계 (created_by FK).
+     *
+     * @return BelongsTo 업로더 사용자 관계
      */
     public function creator(): BelongsTo
     {
@@ -86,9 +90,10 @@ class CategoryImage extends Model
     }
 
     /**
-     * 현재 로케일의 대체 텍스트 반환
+     * 현재 로케일의 대체 텍스트(alt)를 반환합니다 (다국어 fallback chain 적용).
      *
-     * @param  string|null  $locale  로케일
+     * @param  string|null  $locale  반환할 로케일. null 이면 현재 앱 로케일 사용
+     * @return string|null 로케일별 alt 텍스트, alt_text 가 비어있으면 null
      */
     public function getLocalizedAltText(?string $locale = null): ?string
     {
@@ -99,11 +104,13 @@ class CategoryImage extends Model
         $locale = $locale ?? app()->getLocale();
         $altText = $this->alt_text;
 
-        return $altText[$locale] ?? $altText['ko'] ?? null;
+        return $altText[$locale] ?? $altText[config('app.fallback_locale', 'ko')] ?? null;
     }
 
     /**
-     * 다운로드 URL 반환 (API 서빙 URL)
+     * `download_url` 가상 attribute — hash 기반 카테고리 이미지 서빙 API URL.
+     *
+     * @return string `/api/modules/sirsoft-ecommerce/category-image/{hash}` 형식 URL
      */
     public function getDownloadUrlAttribute(): string
     {

@@ -11,7 +11,7 @@
 
 import { describe, it, expect } from 'vitest';
 
-import showLayout from '../../../../../../templates/sirsoft-basic/layouts/shop/show.json';
+import showLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/shop/show.json';
 
 describe('상품 상세 페이지 init_actions 검증', () => {
     const initActions = showLayout.init_actions;

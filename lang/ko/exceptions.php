@@ -40,6 +40,8 @@ return [
         'restore_failed' => '설정 복원에 실패했습니다.',
         'category_not_found' => '설정 카테고리를 찾을 수 없습니다: :category',
         'save_failed' => '설정 저장에 실패했습니다: :category',
+        'json_parse_failed' => 'JSON 파일 파싱에 실패했습니다: :path (:error)',
+        'add_category_module_only' => 'addCategory는 모듈에서만 사용할 수 있습니다.',
     ],
 
     // 코어 업데이트 관련 예외
@@ -71,5 +73,6 @@ return [
         'composer_json_not_found' => 'composer.json 파일을 찾을 수 없습니다: :path',
         'no_composer_lock' => 'composer.lock 파일이 필요합니다. 먼저 composer install을 실행하세요: :path',
         'vendor_dir_not_found' => 'vendor/ 디렉토리가 존재하지 않습니다. 먼저 composer install을 실행하세요: :path',
+        'composer_binary_not_found' => 'Composer 바이너리를 찾을 수 없습니다. COMPOSER_BINARY 환경변수를 설정하거나 composer를 PATH에 추가하세요.',
     ],
 ];

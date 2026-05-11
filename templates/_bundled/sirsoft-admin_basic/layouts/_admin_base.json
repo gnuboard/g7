@@ -542,7 +542,7 @@
                     "profileText": "$t:admin.profile_settings",
                     "logoutText": "$t:admin.logout",
                     "languageText": "$t:admin.language",
-                    "availableLocales": "{{$locales}}",
+                    "availableLocales": "{{_global.appConfig.supportedLocales ?? $locales}}",
                     "className": "w-full"
                   },
                   "data_binding": {
@@ -930,6 +930,9 @@
     }
   ],
   "modals": [
+    {
+      "partial": "partials/_identity_challenge_modal.json"
+    },
     {
       "partial": "partials/_modal_license.json"
     },

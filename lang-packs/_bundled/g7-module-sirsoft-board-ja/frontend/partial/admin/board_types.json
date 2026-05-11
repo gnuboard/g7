@@ -1,0 +1,19 @@
+{
+  "manage": "管理",
+  "modal_title": "掲示板タイプ管理",
+  "slug": "スラッグ",
+  "name": "名前",
+  "actions": "操作",
+  "empty": "登録されたタイプがありません",
+  "delete_confirm": "このタイプを削除してもよろしいですか?",
+  "delete_success": "タイプが削除されました",
+  "edit_title": "タイプを編集",
+  "add_title": "タイプを追加",
+  "add": "タイプを追加",
+  "adding": "追加中...",
+  "name_placeholder": "例: 基本型",
+  "slug_hint": "小文字、数字、ハイフン(-)のみ使用可能で、小文字で始まる必要があります。(例: basic, gallery, photo-card)",
+  "update_success": "タイプが編集されました",
+  "create_success": "タイプが作成されました",
+  "usage_guide": "スラッグ(slug)は掲示板の表示タイプを区別する識別子です。テンプレートで該当するスラッグに合わせた専用レイアウトを追加および設定する必要があります。"
+}

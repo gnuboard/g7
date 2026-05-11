@@ -98,8 +98,14 @@ export class TranslationEngine {
   /** 싱글톤 인스턴스 */
   private static instance: TranslationEngine | null = null;
 
-  /** 번역 문법 패턴: $t:key 또는 $t:key|param=value (공백 포함 값 지원) */
-  private static readonly TRANSLATION_PATTERN = /\$t:([a-zA-Z0-9._-]+)(\|(?:(?!\$t:).)+)?/g;
+  /**
+   * 번역 문법 패턴: $t:key, $t:defer:key, 또는 $t:key|param=value (공백 포함 값 지원).
+   *
+   * `defer:` prefix 는 인라인 형태(`{{id}} — $t:defer:key|...`) 에서도 흡수되어야 하므로
+   * 키 그룹 앞에 옵셔널 매칭을 둔다 — 키 문자 클래스 [a-zA-Z0-9._-] 가 콜론을 미포함하여
+   * 과거 `$t:defer` 만 매칭되고 나머지가 raw 로 남던 회귀 차단 (이슈 #302).
+   */
+  private static readonly TRANSLATION_PATTERN = /\$t:(?:defer:)?([a-zA-Z0-9._-]+)(\|(?:(?!\$t:).)+)?/g;
 
   /**
    * 파라미터 값 내 중첩 $t: 토큰 패턴

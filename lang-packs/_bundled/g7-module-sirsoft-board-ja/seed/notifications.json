@@ -1,0 +1,114 @@
+{
+  "new_comment": {
+    "definition": {
+      "name": "新しいコメント通知",
+      "description": "投稿に新しいコメントが作成されると、投稿者に送信されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{board_name}] 投稿に新しいコメントが登録されました",
+        "body": "<h1>{name}様、こんにちは。</h1><p><strong>{board_name}</strong> 掲示板の投稿に <strong>{comment_author}</strong>様がコメントを残しました。</p><blockquote style=\"border-left: 3px solid #cbd5e0; padding-left: 12px; color: #718096;\">{comment_content}</blockquote><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{post_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">投稿を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "投稿に新しいコメントが付きました",
+        "body": "{comment_author}様が '{board_name}' の投稿 '{post_title}' にコメントを残しました。"
+      }
+    }
+  },
+  "reply_comment": {
+    "definition": {
+      "name": "返信通知",
+      "description": "コメントに返信が作成されると、コメント作成者に送信されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{board_name}] コメントに返信が登録されました",
+        "body": "<h1>{name}様、こんにちは。</h1><p><strong>{board_name}</strong> 掲示板で <strong>{comment_author}</strong>様がコメントに返信を残しました。</p><blockquote style=\"border-left: 3px solid #cbd5e0; padding-left: 12px; color: #718096;\">{comment_content}</blockquote><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{post_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">投稿を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "コメントに返信が付きました",
+        "body": "{comment_author}様が '{board_name}' のコメントに返信を残しました。"
+      }
+    }
+  },
+  "post_reply": {
+    "definition": {
+      "name": "回答通知",
+      "description": "投稿に回答が作成されると、元の投稿者に送信されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{board_name}] 投稿に回答が登録されました",
+        "body": "<h1>{name}様、こんにちは。</h1><p><strong>{board_name}</strong> 掲示板の投稿 \"<strong>{post_title}</strong>\" に回答が登録されました。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{post_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">投稿を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "投稿に回答が登録されました",
+        "body": "'{board_name}' の投稿 '{post_title}' に回答が登録されました。"
+      }
+    }
+  },
+  "post_action": {
+    "definition": {
+      "name": "投稿/コメント処理通知",
+      "description": "投稿/コメント非表示/削除/復元時に作成者に送信されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{board_name}] '{post_title}' {target_type}が {action_type} 処理されました",
+        "body": "<h1>{name}様、こんにちは。</h1><p><strong>{board_name}</strong> 掲示板の \"<strong>{post_title}</strong>\" {target_type}が管理者により <strong>{action_type}</strong> 処理されました。</p><p>ご質問がございましたら、管理者にお問い合わせください。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{post_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">投稿を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "{target_type}が処理されました",
+        "body": "'{board_name}' の '{post_title}' {target_type}が {action_type} 処理されました。"
+      }
+    }
+  },
+  "new_post_admin": {
+    "definition": {
+      "name": "新規投稿管理者通知",
+      "description": "新しい投稿が作成されると、管理者に送信されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{board_name}] 新しい投稿が登録されました",
+        "body": "<h1>{name}様、こんにちは。</h1><p><strong>{board_name}</strong> 掲示板に <strong>{post_author}</strong>様が新しい投稿を登録しました。</p><p>投稿タイトル: <strong>{post_title}</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{post_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">投稿を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "新しい投稿が登録されました",
+        "body": "{post_author}様が '{board_name}' に新しい投稿 '{post_title}' を登録しました。"
+      }
+    }
+  },
+  "report_received_admin": {
+    "definition": {
+      "name": "通報受付管理者通知",
+      "description": "通報受付時に管理者に送信されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{board_name}] \"{post_title}\" の通報が受け付けられました",
+        "body": "<h1>{name}様、こんにちは。</h1><p><strong>{board_name}</strong> 掲示板で <strong>{target_type}</strong> \"<strong>{post_title}</strong>\" に対する新しい通報が受け付けられました。</p><p>通報理由: <strong>{reason_type}</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{report_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">通報管理ページに移動</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "通報が受け付けられました",
+        "body": "'{board_name}' の {target_type} '{post_title}' に対する通報({reason_type})が受け付けられました。"
+      }
+    }
+  },
+  "report_action": {
+    "definition": {
+      "name": "通報処理結果通知",
+      "description": "通報処理完了時に投稿作成者に送信されます"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{board_name}] '{post_title}' {target_type}が {action_type} 処理されました",
+        "body": "<h1>{name}様、こんにちは。</h1><p><strong>{board_name}</strong> 掲示板の \"<strong>{post_title}</strong>\" {target_type}が通報処理により <strong>{action_type}</strong> 処理されました。</p><p>ご質問がございましたら、管理者にお問い合わせください。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{post_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">投稿を表示</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "通報処理結果案内",
+        "body": "'{board_name}' の '{post_title}' {target_type}が {action_type} 処理されました。"
+      }
+    }
+  }
+}

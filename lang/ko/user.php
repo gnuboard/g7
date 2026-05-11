@@ -26,7 +26,6 @@ return [
     'update_failed' => '사용자 정보 업데이트에 실패했습니다: :error',
     'delete_success' => '사용자가 성공적으로 삭제되었습니다.',
     'delete_failed' => '사용자 삭제에 실패했습니다: :error',
-    'delete_admin_forbidden' => '관리자 계정은 삭제할 수 없습니다.',
     'statistics_success' => '사용자 통계를 성공적으로 가져왔습니다.',
     'statistics_failed' => '사용자 통계를 가져오는데 실패했습니다.',
     'search_success' => '사용자 검색을 성공적으로 완료했습니다.',

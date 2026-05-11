@@ -1943,6 +1943,9 @@
     ],
     "modals": [
         {
+            "partial": "partials/_identity_challenge_modal.json"
+        },
+        {
             "partial": "partials/_modal_notification_delete_all_confirm.json"
         }
     ]

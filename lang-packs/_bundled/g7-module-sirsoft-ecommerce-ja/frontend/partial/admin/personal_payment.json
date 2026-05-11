@@ -1,0 +1,77 @@
+{
+  "title": "個人決済管理",
+  "description": "個人別決済リンクを生成して管理します",
+  "add": "追加",
+  "search": {
+    "field": {
+      "payment_number": "決済番号",
+      "member_name": "会員名",
+      "member_id": "会員 ID",
+      "product_name": "商品名"
+    },
+    "placeholder": "検索語を入力してください",
+    "reset": "初期化"
+  },
+  "filter": {
+    "status": "決済ステータス",
+    "payment_method": "決済方法",
+    "date_search": "日付検索",
+    "amount": "決済金額",
+    "all": "すべて",
+    "pending": "待機中",
+    "completed": "完了",
+    "expired": "期限切れ",
+    "card": "クレジットカード",
+    "bank_transfer": "銀行振込",
+    "kakao_pay": "Kakao Pay",
+    "naver_pay": "Naver Pay",
+    "created_at": "作成日",
+    "expired_at": "有効期限",
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "min_amount": "最小金額",
+    "max_amount": "最大金額"
+  },
+  "table": {
+    "total_count": "合計 {{count}}件",
+    "sort": {
+      "created_at_desc": "作成日（最新順）",
+      "created_at_asc": "作成日（古い順）",
+      "amount_desc": "金額（高い順）",
+      "amount_asc": "金額（低い順）"
+    },
+    "per_page": "{{count}}件ずつ表示",
+    "columns": {
+      "no": "序番",
+      "payment_number": "決済番号",
+      "status": "ステータス",
+      "member_info": "会員情報",
+      "product_name": "商品名",
+      "amount": "決済金額",
+      "order_number": "注文番号",
+      "created_at": "作成日時",
+      "expired_at": "有効期限日時",
+      "payment_method": "決済方法",
+      "paid_at": "決済日時",
+      "actions": "管理"
+    }
+  },
+  "dropdown": {
+    "search_by_member": "会員名で検索",
+    "view_member_info": "会員情報を表示",
+    "view_order_detail": "注文詳細を表示",
+    "view_detail": "詳細表示",
+    "edit": "編集",
+    "copy_link": "リンクをコピー",
+    "delete": "削除"
+  },
+  "status": {
+    "pending": "待機中",
+    "completed": "完了",
+    "expired": "期限切れ"
+  },
+  "mobile": {
+    "created_at": "作成日時",
+    "expired_at": "有効期限日時"
+  }
+}

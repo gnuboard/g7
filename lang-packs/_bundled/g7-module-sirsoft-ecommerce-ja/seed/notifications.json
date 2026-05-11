@@ -1,0 +1,114 @@
+{
+  "order_confirmed": {
+    "definition": {
+      "name": "注文確認",
+      "description": "注文確認時に顧客に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] ご注文が確認されました (注文番号: {order_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">注文確認</h2><p style=\"color:#555;line-height:1.6\">{name}様、ご注文ありがとうございます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>決済金額:</strong> {total_amount}</p></div><p style=\"color:#555;line-height:1.6\">ご注文の詳細については、下のボタンをクリックしてご確認いただけます。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文詳細を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されています。</p></div>"
+      },
+      "database": {
+        "subject": "ご注文が確認されました",
+        "body": "{name}様、注文番号{order_number}のご注文が確認されました。"
+      }
+    }
+  },
+  "order_shipped": {
+    "definition": {
+      "name": "配送開始",
+      "description": "配送開始時に顧客に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] ご注文の商品が発送されました (注文番号: {order_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">配送開始のお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、ご注文の商品が発送されました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>配送業者:</strong> {carrier_name}</p><p style=\"margin:5px 0\"><strong>送り状番号:</strong> {tracking_number}</p></div><p style=\"color:#555;line-height:1.6\">ご注文の詳細および配送状況は、下のボタンをクリックしてご確認いただけます。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文詳細を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されています。</p></div>"
+      },
+      "database": {
+        "subject": "商品が発送されました",
+        "body": "{name}様、注文番号{order_number}が{carrier_name}(送り状番号: {tracking_number})で発送されました。"
+      }
+    }
+  },
+  "order_completed": {
+    "definition": {
+      "name": "購入確定",
+      "description": "購入確定時に顧客に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] ご購入が確定されました (注文番号: {order_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">購入確定のお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、ご購入が確定されました。ご利用ありがとうございます。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>決済金額:</strong> {total_amount}</p></div><p style=\"color:#555;line-height:1.6\">ご注文内容は、下のボタンをクリックしてご確認いただけます。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文履歴を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されています。</p></div>"
+      },
+      "database": {
+        "subject": "ご購入が確定されました",
+        "body": "{name}様、注文番号{order_number}のご購入が確定されました。"
+      }
+    }
+  },
+  "order_cancelled": {
+    "definition": {
+      "name": "注文キャンセル",
+      "description": "注文キャンセル時に顧客に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] ご注文がキャンセルされました (注文番号: {order_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #DC2626;padding-bottom:10px\">注文キャンセルのお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、ご注文がキャンセルされました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>キャンセル理由:</strong> {cancel_reason}</p></div><p style=\"color:#555;line-height:1.6\">返金は、決済方法に応じて3～7営業日以内に処理されます。ご注文詳細は、下のボタンをクリックしてご確認いただけます。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文詳細を表示</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されています。</p></div>"
+      },
+      "database": {
+        "subject": "ご注文がキャンセルされました",
+        "body": "{name}様、注文番号{order_number}がキャンセルされました。理由: {cancel_reason}"
+      }
+    }
+  },
+  "new_order_admin": {
+    "definition": {
+      "name": "新規注文管理者通知",
+      "description": "新規注文受付時に管理者に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 新規注文が受付されました (注文番号: {order_number})",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">新規注文受付</h2><p style=\"color:#555;line-height:1.6\">{name}様、新しいご注文が受付されました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>注文番号:</strong> {order_number}</p><p style=\"margin:5px 0\"><strong>ご注文者:</strong> {customer_name}</p><p style=\"margin:5px 0\"><strong>決済金額:</strong> {total_amount}</p></div><p style=\"color:#555;line-height:1.6\">管理者ページでご注文詳細をご確認ください。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{order_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">注文管理へ移動</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されています。</p></div>"
+      },
+      "database": {
+        "subject": "新しいご注文が受付されました",
+        "body": "{customer_name}様が注文番号{order_number} (決済金額: {total_amount})を受付しました。"
+      }
+    }
+  },
+  "inquiry_received": {
+    "definition": {
+      "name": "商品問い合わせ受付",
+      "description": "商品問い合わせ受付時に管理者に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 新しい商品問い合わせが受付されました",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">新しい商品問い合わせ受付</h2><p style=\"color:#555;line-height:1.6\">{name}様、新しい商品問い合わせが受付されました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>商品名:</strong> {product_name}</p><p style=\"margin:5px 0\"><strong>お問い合わせ者:</strong> {customer_name}</p><p style=\"margin:5px 0\"><strong>問い合わせ内容:</strong> {inquiry_content}</p></div><p style=\"color:#555;line-height:1.6\">管理者ページで問い合わせ内容をご確認いただき、回答してください。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{inquiry_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">問い合わせを確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されています。</p></div>"
+      },
+      "database": {
+        "subject": "新しい商品問い合わせが受付されました",
+        "body": "{customer_name}様が\"{product_name}\"商品について問い合わせを送信しました。"
+      }
+    }
+  },
+  "inquiry_replied": {
+    "definition": {
+      "name": "問い合わせ回答完了",
+      "description": "問い合わせ回答時に顧客に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 商品問い合わせへの回答が登録されました",
+        "body": "<div style=\"font-family:'Malgun Gothic',sans-serif;max-width:600px;margin:0 auto;padding:20px\"><h2 style=\"color:#333;border-bottom:2px solid #4F46E5;padding-bottom:10px\">問い合わせ回答のお知らせ</h2><p style=\"color:#555;line-height:1.6\">{name}様、お問い合わせいただいた内容に回答が登録されました。</p><div style=\"background:#f8f9fa;padding:15px;border-radius:8px;margin:15px 0\"><p style=\"margin:5px 0\"><strong>商品名:</strong> {product_name}</p><p style=\"margin:5px 0\"><strong>問い合わせ内容:</strong> {inquiry_content}</p></div><p style=\"color:#555;line-height:1.6\">下のボタンをクリックして回答内容をご確認ください。</p><div style=\"text-align:center;margin:25px 0\"><a href=\"{inquiry_url}\" style=\"display:inline-block;padding:12px 30px;background-color:#4F46E5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold\">回答を確認</a></div><hr style=\"border:none;border-top:1px solid #eee;margin:20px 0\"><p style=\"color:#999;font-size:12px\">本メールは{app_name}から送信されています。</p></div>"
+      },
+      "database": {
+        "subject": "問い合わせ回答が登録されました",
+        "body": "{name}様、\"{product_name}\"商品の問い合わせに回答が登録されました。"
+      }
+    }
+  }
+}

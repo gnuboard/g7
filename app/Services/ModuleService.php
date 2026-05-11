@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ModuleOperationException;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionStatus;
@@ -172,12 +173,15 @@ class ModuleService
      * @param  string  $layoutStrategy  레이아웃 전략 (overwrite|keep)
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
+     * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
+     *
      * @throws ValidationException 업데이트 실패 시
      */
     public function updateModule(
         string $moduleName,
         \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
         string $layoutStrategy = 'overwrite',
+        bool $force = false,
     ): array {
         HookManager::doAction('core.modules.before_update', $moduleName);
 
@@ -185,7 +189,7 @@ class ModuleService
             $this->moduleManager->loadModules();
             $result = $this->moduleManager->updateModule(
                 $moduleName,
-                false,
+                $force,
                 null,
                 $vendorMode,
                 $layoutStrategy,
@@ -235,6 +239,7 @@ class ModuleService
      *
      * @param  string  $moduleName  설치할 모듈명
      * @param  \App\Extension\Vendor\VendorMode  $vendorMode  Vendor 설치 모드
+     * @param  bool  $force  Updating/Failed 등 진행 중 상태도 무시하고 강제 설치 여부
      * @return array|null 설치된 모듈 정보 또는 null
      *
      * @throws ValidationException 모듈 설치 실패 시
@@ -333,7 +338,8 @@ class ModuleService
             if ($result['success']) {
                 $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
-                HookManager::doAction('core.modules.after_deactivate', $moduleName, $moduleInfo);
+                // after_deactivate 훅은 ModuleManager 가 string identifier 시그니처로 이미 발화
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return array_merge($result, ['module_info' => $moduleInfo]);
             }
@@ -451,6 +457,7 @@ class ModuleService
             'search' => $validated['search'] ?? null,
             'filters' => $validated['filters'] ?? [],
             'status' => $validated['status'] ?? null,
+            'include_hidden' => (bool) ($validated['include_hidden'] ?? false),
         ];
         $perPage = (int) ($validated['per_page'] ?? 12);
         $page = (int) ($validated['page'] ?? 1);
@@ -496,6 +503,9 @@ class ModuleService
             array_values($uninstalledModules)
         );
 
+        // 숨김 필터 적용 (기본: 숨김 항목 제외)
+        $allModules = $this->applyHiddenFilter($allModules, (bool) ($filters['include_hidden'] ?? false));
+
         // 상태 필터 적용
         if (! empty($filters['status'])) {
             $allModules = $this->applyStatusFilter($allModules, $filters['status']);
@@ -524,6 +534,27 @@ class ModuleService
             'last_page' => (int) ceil($total / $perPage),
             'per_page' => $perPage,
         ];
+    }
+
+    /**
+     * 숨김 필터를 적용합니다.
+     *
+     * manifest 의 hidden=true 로 마킹된 모듈은 기본 제외되며,
+     * $includeHidden=true 인 경우 포함됩니다.
+     *
+     * @param  array  $modules  모듈 목록
+     * @param  bool  $includeHidden  숨김 항목 포함 여부
+     * @return array 필터링된 모듈 목록
+     */
+    private function applyHiddenFilter(array $modules, bool $includeHidden): array
+    {
+        if ($includeHidden) {
+            return $modules;
+        }
+
+        return array_filter($modules, function ($module) {
+            return empty($module['hidden']);
+        });
     }
 
     /**
@@ -645,7 +676,7 @@ class ModuleService
             // 현재 로케일 우선, 없으면 ko, 그 다음 en
             $locale = app()->getLocale();
 
-            return $value[$locale] ?? $value['ko'] ?? $value['en'] ?? reset($value) ?: null;
+            return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value) ?: null;
         }
 
         return (string) $value;
@@ -658,6 +689,60 @@ class ModuleService
      * @return array 설치된 모듈 정보
      *
      * @throws ValidationException 설치 실패 시
+     */
+    /**
+     * 업로드된 ZIP 의 manifest 와 검증 결과만 추출합니다 (실제 설치 X).
+     *
+     * 사용자가 모듈 설치 전 module.json 검증 실패 사유를 미리 확인할 수 있게 합니다.
+     * 언어팩의 `LanguagePackService::previewManifest` 와 동일 패턴.
+     *
+     * @param  UploadedFile  $file  업로드된 ZIP 파일
+     * @return array{manifest: ?array<string, mixed>, validation: array<string, mixed>} 미리보기 결과
+     */
+    public function previewManifest(UploadedFile $file): array
+    {
+        $tempPath = storage_path('app/temp/modules');
+        $extractPath = $tempPath.'/preview-'.uniqid('module_');
+        $manifest = null;
+        $errors = [];
+
+        try {
+            File::ensureDirectoryExists($tempPath);
+
+            $result = ZipInstallHelper::extractAndValidate(
+                $file->getRealPath(), $extractPath, 'module.json', 'modules'
+            );
+
+            $manifest = $result['config'];
+        } catch (\Throwable $e) {
+            $errors[] = $e->getMessage();
+        } finally {
+            if (File::exists($extractPath)) {
+                File::deleteDirectory($extractPath);
+            }
+        }
+
+        $existing = $manifest && ! empty($manifest['identifier'])
+            ? $this->moduleRepository->findByIdentifier($manifest['identifier'])
+            : null;
+
+        return [
+            'manifest' => $manifest,
+            'validation' => [
+                'errors' => $errors,
+                'is_valid' => $errors === [] && $manifest !== null,
+                'already_installed' => $existing !== null,
+                'existing_version' => $existing?->version,
+            ],
+        ];
+    }
+    /**
+     * 업로드된 ZIP 파일로부터 모듈을 추출/검증하고 _pending 으로 이동 후 설치합니다.
+     *
+     * `module.json` 검증 → identifier 충돌 검사 → _pending 이동 → 설치 파이프라인 진입.
+     *
+     * @param  UploadedFile  $file  사용자가 업로드한 모듈 ZIP 파일
+     * @return array 설치 결과 (identifier/version/installed_at 포함)
      */
     public function installFromZipFile(UploadedFile $file): array
     {
@@ -715,7 +800,7 @@ class ModuleService
             $token = config('app.update.github_token') ?? '';
 
             if (! GithubHelper::checkRepoExists($owner, $repo, $token)) {
-                throw new \RuntimeException(__('modules.errors.github_repo_not_found'));
+                throw new ModuleOperationException('modules.errors.github_repo_not_found');
             }
 
             $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath, $token);
@@ -764,7 +849,7 @@ class ModuleService
         $existingModule = $this->moduleManager->getModuleInfo($identifier);
 
         if ($existingModule && $existingModule['is_installed']) {
-            throw new \RuntimeException(__('modules.errors.already_installed'));
+            throw new ModuleOperationException('modules.errors.already_installed');
         }
     }
 
@@ -782,7 +867,7 @@ class ModuleService
         $result = $this->moduleManager->installModule($identifier);
 
         if (! $result) {
-            throw new \RuntimeException(__('modules.errors.install_failed'));
+            throw new ModuleOperationException('modules.errors.install_failed');
         }
 
         return $this->moduleManager->getModuleInfo($identifier);

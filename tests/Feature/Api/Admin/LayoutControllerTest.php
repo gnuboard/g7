@@ -33,9 +33,11 @@ class LayoutControllerTest extends TestCase
         parent::setUp();
 
         // 관리자 사용자 생성 (필요한 권한 포함)
+        // PUT layouts / POST restore 엔드포인트는 core.templates.layouts.edit 권한 필요
         $this->adminUser = $this->createAdminUser([
             'core.templates.read',
             'core.templates.activate',
+            'core.templates.layouts.edit',
         ]);
         $this->token = $this->adminUser->createToken('test-token')->plainTextToken;
 

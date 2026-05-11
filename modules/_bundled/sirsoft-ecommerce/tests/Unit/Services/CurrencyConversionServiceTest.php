@@ -81,6 +81,14 @@ class CurrencyConversionServiceTest extends ModuleTestCase
             json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
 
+        // g7_module_settings() 는 Config::get('g7_settings.modules.{id}') 를 조회함.
+        // CoreServiceProvider::loadModuleSettingsToConfig 는 활성 모듈에만 적용되므로
+        // (테스트 환경에서는 모듈이 활성화 상태로 시드되지 않음) Config 를 수동으로 주입한다.
+        \Illuminate\Support\Facades\Config::set(
+            'g7_settings.modules.sirsoft-ecommerce.language_currency',
+            $settings
+        );
+
         // 캐시 초기화
         $this->service->clearCache();
     }
@@ -289,9 +297,9 @@ class CurrencyConversionServiceTest extends ModuleTestCase
         // Given
         $basePrice = 100000;
 
-        // Then
+        // Then — 번역된 예외 메시지 (sirsoft-ecommerce::exceptions.unknown_currency)
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unknown currency: GBP');
+        $this->expectExceptionMessage('지원하지 않는 통화입니다: GBP');
 
         // When
         $this->service->convertToCurrency($basePrice, 'GBP');

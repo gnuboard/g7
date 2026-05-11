@@ -6,6 +6,7 @@ use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 
 /**
  * 상품 활동 로그 리스너
@@ -19,6 +20,13 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 class ProductActivityLogListener implements HookListenerInterface
 {
     use ResolvesActivityLogType;
+
+    /**
+     * @param  ProductRepositoryInterface  $productRepository  상품 bulk lookup
+     */
+    public function __construct(
+        protected ProductRepositoryInterface $productRepository,
+    ) {}
 
     /**
      * 구독할 훅 목록 반환
@@ -164,7 +172,7 @@ class ProductActivityLogListener implements HookListenerInterface
             return;
         }
 
-        $products = Product::whereIn('id', $ids)->get()->keyBy('id');
+        $products = $this->productRepository->findByIdsKeyed($ids);
 
         foreach ($ids as $productId) {
             $product = $products->get($productId);
@@ -194,7 +202,7 @@ class ProductActivityLogListener implements HookListenerInterface
      */
     public function handleProductAfterBulkPriceUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
-        $products = Product::whereIn('id', $ids)->get()->keyBy('id');
+        $products = $this->productRepository->findByIdsKeyed($ids);
 
         foreach ($ids as $productId) {
             $product = $products->get($productId);
@@ -224,7 +232,7 @@ class ProductActivityLogListener implements HookListenerInterface
      */
     public function handleProductAfterBulkStockUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
-        $products = Product::whereIn('id', $ids)->get()->keyBy('id');
+        $products = $this->productRepository->findByIdsKeyed($ids);
 
         foreach ($ids as $productId) {
             $product = $products->get($productId);

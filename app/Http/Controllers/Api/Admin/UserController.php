@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Exceptions\CannotDeleteAdminException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\User\BulkUpdateUserStatusRequest;
@@ -149,8 +148,6 @@ class UserController extends AdminBaseController
             }
         } catch (CannotDeleteSuperAdminException $e) {
             return $this->error('exceptions.cannot_delete_super_admin', 422);
-        } catch (CannotDeleteAdminException $e) {
-            return $this->error('user.delete_admin_forbidden', 422);
         } catch (ValidationException $e) {
             return $this->error('user.delete_failed', 422, $e->errors());
         } catch (Exception $e) {

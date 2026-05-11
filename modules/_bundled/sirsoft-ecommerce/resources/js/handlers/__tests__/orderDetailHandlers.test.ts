@@ -411,6 +411,7 @@ describe('orderDetailHandlers', () => {
                 mockContext
             );
 
+            // 구현: body 에 carrier_id / tracking_number 키로 직렬화 (carrier 아님)
             expect(mockApiPatch).toHaveBeenCalledWith(
                 '/api/modules/sirsoft-ecommerce/admin/orders/1/options/bulk-status',
                 expect.objectContaining({
@@ -419,7 +420,7 @@ describe('orderDetailHandlers', () => {
                         { option_id: 2, quantity: 2 },
                     ],
                     status: 'shipped',
-                    carrier: 'cj',
+                    carrier_id: 'cj',
                     tracking_number: '123456',
                 })
             );

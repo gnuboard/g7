@@ -157,4 +157,14 @@ interface PluginRepositoryInterface
      * @return array 활성화된 플러그인 identifier 배열
      */
     public function getActivePluginIdentifiers(): array;
+
+    /**
+     * 코어 버전 비호환으로 자동 비활성화된 플러그인을 조회합니다.
+     *
+     * `deactivated_reason = 'incompatible_core'` 인 레코드만 반환합니다.
+     * 알림 영속화 + 재호환 판정 + 상단 배너 데이터 소스로 사용됩니다.
+     *
+     * @return Collection 자동 비활성화된 플러그인 컬렉션
+     */
+    public function findAutoDeactivated(): Collection;
 }

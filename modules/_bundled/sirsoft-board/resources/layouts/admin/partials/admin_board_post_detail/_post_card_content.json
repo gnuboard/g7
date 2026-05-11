@@ -448,7 +448,7 @@
                 {
                   "type": "basic",
                   "name": "Span",
-                  "text": "$t:sirsoft-board.admin.posts.detail.comments_title|count={{(post?.data?.comments ?? []).length}}"
+                  "text": "$t:sirsoft-board.admin.posts.detail.comments_title|count={{post?.data?.comment_count ?? 0}}"
                 }
               ]
             },
@@ -472,7 +472,178 @@
       ]
     },
     {
-      "comment": "원글 정보 (답글인 경우에만 표시) - 인용 스타일, 작성자 정보 아래에 위치",
+      "id": "attachments_section",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+      },
+      "if": "{{post?.data?.has_attachment}}",
+      "children": [
+        {
+          "id": "attachments_toggle",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "showAttachments": "{{!_local.showAttachments}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "paperclip",
+                    "className": "w-4 h-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.posts.detail.attachments|count={{post?.data?.attachment_count ?? 0}}"
+                }
+              ]
+            },
+            {
+              "type": "composite",
+              "name": "Icon",
+              "props": {
+                "name": "{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}",
+                "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
+              }
+            }
+          ]
+        },
+        {
+          "id": "attachments_list",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-3 ml-4 space-y-2"
+          },
+          "if": "{{_local.showAttachments}}",
+          "iteration": {
+            "source": "post?.data?.attachments ?? []",
+            "item_var": "attachment",
+            "index_var": "index"
+          },
+          "children": [
+            {
+              "id": "attachment_card",
+              "type": "basic",
+              "name": "A",
+              "props": {
+                "href": "{{attachment?.download_url}}",
+                "className": "group flex items-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer no-underline"
+              },
+              "children": [
+                {
+                  "comment": "이미지 썸네일 (이미지 파일인 경우) - preview_url 사용",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{attachment?.is_image}}",
+                  "props": {
+                    "className": "flex-shrink-0 w-8 h-8 rounded overflow-hidden bg-white dark:bg-gray-700"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Img",
+                      "props": {
+                        "src": "{{attachment?.preview_url}}",
+                        "alt": "{{attachment?.original_filename}}",
+                        "className": "w-full h-full object-cover"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "comment": "파일 아이콘 (일반 파일인 경우)",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{!attachment?.is_image}}",
+                  "props": {
+                    "className": "flex-shrink-0 w-8 h-8 rounded bg-white dark:bg-gray-700 flex items-center justify-center"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "file",
+                        "className": "text-lg text-gray-400 dark:text-gray-500"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "comment": "파일 정보",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-1 min-w-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-xs font-medium text-gray-700 dark:text-gray-200 truncate"
+                      },
+                      "text": "{{attachment?.original_filename}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-[10px] text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "{{attachment?.size_formatted}}"
+                    }
+                  ]
+                },
+                {
+                  "comment": "다운로드 아이콘",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex-shrink-0"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "download",
+                        "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "원글 정보 (답글인 경우에만 표시) - 인용 스타일, 첨부파일 아래에 위치",
       "id": "parent_post_card",
       "if": "{{post?.data?.parent}}",
       "type": "basic",
@@ -756,177 +927,6 @@
                   "type": "basic",
                   "name": "Span",
                   "text": "{{_local?.parentPostExpanded ? '$t:sirsoft-board.board.show_less' : '$t:sirsoft-board.board.show_more'}}"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "attachments_section",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700"
-      },
-      "if": "{{(post?.data?.attachments ?? []).length > 0}}",
-      "children": [
-        {
-          "id": "attachments_toggle",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex items-center justify-between cursor-pointer"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "showAttachments": "{{!_local.showAttachments}}"
-              }
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Icon",
-                  "props": {
-                    "name": "paperclip",
-                    "className": "w-4 h-4"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-board.admin.posts.detail.attachments|count={{(post?.data?.attachments ?? []).length}}"
-                }
-              ]
-            },
-            {
-              "type": "composite",
-              "name": "Icon",
-              "props": {
-                "name": "{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}",
-                "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
-              }
-            }
-          ]
-        },
-        {
-          "id": "attachments_list",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-3 ml-4 space-y-2"
-          },
-          "if": "{{_local.showAttachments}}",
-          "iteration": {
-            "source": "post?.data?.attachments ?? []",
-            "item_var": "attachment",
-            "index_var": "index"
-          },
-          "children": [
-            {
-              "id": "attachment_card",
-              "type": "basic",
-              "name": "A",
-              "props": {
-                "href": "{{attachment?.download_url}}",
-                "className": "group flex items-center gap-2 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer no-underline"
-              },
-              "children": [
-                {
-                  "comment": "이미지 썸네일 (이미지 파일인 경우)",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{attachment?.is_image}}",
-                  "props": {
-                    "className": "flex-shrink-0 w-8 h-8 rounded overflow-hidden bg-white dark:bg-gray-700"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Img",
-                      "props": {
-                        "src": "{{attachment?.download_url}}",
-                        "alt": "{{attachment?.original_filename}}",
-                        "className": "w-full h-full object-cover"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "comment": "파일 아이콘 (일반 파일인 경우)",
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{!attachment?.is_image}}",
-                  "props": {
-                    "className": "flex-shrink-0 w-8 h-8 rounded bg-white dark:bg-gray-700 flex items-center justify-center"
-                  },
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "Icon",
-                      "props": {
-                        "name": "file",
-                        "className": "text-lg text-gray-400 dark:text-gray-500"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "comment": "파일 정보",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-1 min-w-0"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "text-xs font-medium text-gray-700 dark:text-gray-200 truncate"
-                      },
-                      "text": "{{attachment?.original_filename}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "text-[10px] text-gray-500 dark:text-gray-400"
-                      },
-                      "text": "{{attachment?.size_formatted}}"
-                    }
-                  ]
-                },
-                {
-                  "comment": "다운로드 아이콘",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-shrink-0"
-                  },
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "Icon",
-                      "props": {
-                        "name": "download",
-                        "className": "w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors"
-                      }
-                    }
-                  ]
                 }
               ]
             }

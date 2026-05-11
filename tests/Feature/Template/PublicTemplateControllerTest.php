@@ -141,15 +141,17 @@ class PublicTemplateControllerTest extends TestCase
             'description' => ['ko' => '기본 관리자 템플릿', 'en' => 'Basic Admin Template'],
         ]);
 
-        // 캐시 초기화
-        Cache::forget("template.routes.{$template->identifier}");
+        // 캐시 초기화 (CacheInterface 사용 — v{version} 접미사 포함, 기본 v=0)
+        $cache = app(\App\Contracts\Extension\CacheInterface::class);
+        $cacheKey = "template.routes.{$template->identifier}.v0";
+        $cache->forget($cacheKey);
 
         // Act: 첫 번째 요청 (캐시 생성)
         $response1 = $this->getJson("/api/templates/{$template->identifier}/routes.json");
         $response1->assertStatus(200);
 
         // 캐시가 생성되었는지 확인
-        $this->assertTrue(Cache::has("template.routes.{$template->identifier}"));
+        $this->assertNotNull($cache->get($cacheKey));
 
         // Act: 두 번째 요청 (캐시에서 조회)
         $response2 = $this->getJson("/api/templates/{$template->identifier}/routes.json");

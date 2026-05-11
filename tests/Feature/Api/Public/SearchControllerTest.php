@@ -141,16 +141,18 @@ class SearchControllerTest extends TestCase
     }
 
     /**
-     * 잘못된 정렬 옵션 시 검증 오류 테스트
+     * 검색 sort 파라미터는 자유 문자열 허용 (Rule::in 없음 — 현재 Public\SearchRequest)
+     *
+     * 예전 구현은 Rule::in 화이트리스트였으나 현재는 nullable|string 이므로
+     * 임의 문자열도 422 없이 수용된다. 이 테스트는 회귀 방지용으로
+     * "임의 sort 파라미터가 422 를 유발하지 않음" 을 고정한다.
      */
-    public function test_search_fails_validation_with_invalid_sort_option(): void
+    public function test_search_sort_accepts_arbitrary_string(): void
     {
-        // Act: 잘못된 정렬 옵션으로 요청
+        // Act: 잘못된 정렬 옵션으로 요청 — 현재는 수용됨
         $response = $this->getJson('/api/search?q=테스트&sort=invalid_sort');
 
-        // Assert: 검증 오류 응답
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['sort']);
+        $response->assertStatus(200);
     }
 
     /**

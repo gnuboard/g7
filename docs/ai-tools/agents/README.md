@@ -116,7 +116,7 @@ TDD 기반으로 버그를 수정합니다:
 
 | 도구 | 설명 |
 |------|------|
-| `validate-code` | 백엔드 코드 규정 검증 |
+| `validate-backend` | 백엔드 코드 규정 검증 |
 | `validate-frontend` | 프론트엔드/레이아웃 규정 검증 |
 | `run-tests` | 테스트 실행 (PHPUnit, Vitest) |
 | `search-docs` | 규정 문서 검색 |

@@ -136,6 +136,16 @@ Phase 6: 빌드 및 설치
 - `locales`: 지원 언어 배열
 - `error_config.layouts`: 404, 403, 500 매핑
 
+### 1.1.1 hidden 필드 (선택)
+
+`template.json` 에 `"hidden": true` 를 설정하면 관리자 UI 의 템플릿 목록에서 기본 제외됩니다. 학습용 샘플 템플릿, 내부 운영 전용 템플릿을 일반 사용자에게 감출 때 사용합니다.
+
+- 제외 대상: 관리자 UI (`GET /api/admin/templates` 기본 응답)
+- 제외 대상 아님: artisan CLI (`template:list`, `template:install`, `template:activate` 등), 설치/제거/업데이트 감지
+- 슈퍼관리자는 "숨김 포함" 토글로 일시 조회 가능 (`?include_hidden=1`)
+- artisan CLI 에서도 기본 목록에서는 숨기고, `php artisan template:list --hidden` 으로 숨김 포함 목록을 조회할 수 있습니다
+- 사용 사례: 학습용 샘플 템플릿(예: `gnuboard7-hello_admin_template`, `gnuboard7-hello_user_template`), 내부 시연용 템플릿
+
 ### 1.2 routes.json
 
 ```

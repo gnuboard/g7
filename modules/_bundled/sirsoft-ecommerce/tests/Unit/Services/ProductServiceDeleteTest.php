@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mockery;
@@ -28,6 +29,10 @@ class ProductServiceDeleteTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Hook listener job 차단 (실제 모델 삭제 후 deserialize 시 null TypeError 방지)
+        Queue::fake();
+
         $this->service = app(ProductService::class);
         Storage::fake('public');
     }
@@ -244,21 +249,28 @@ class ProductServiceDeleteTest extends ModuleTestCase
     public function test_delete_removes_image_files_from_storage(): void
     {
         // Given: 이미지 파일이 있는 상품
+        // 이커머스 모듈의 StorageInterface 는 'modules' 디스크에 `images/products/{product_code}/` 경로에 저장
+        // (ModuleStorageDriver + `images` category + CoreStorageDriver 가 삭제 대상).
+        Storage::fake('modules');
+
         $product = Product::factory()->create();
 
-        // 실제 이미지 파일 생성
-        Storage::disk('public')->put('products/image1.jpg', 'fake image content');
-        Storage::disk('public')->put('products/thumb1.jpg', 'fake thumb content');
+        // 실제 이미지 파일 생성 — ModuleStorageDriver 가 `{identifier}/{category}/{path}` 형태로 저장
+        // (sirsoft-ecommerce/images/products/{product_code}/)
+        $targetDir = "sirsoft-ecommerce/images/products/{$product->product_code}";
+        Storage::disk('modules')->put("{$targetDir}/image1.jpg", 'fake image content');
+        Storage::disk('modules')->put("{$targetDir}/thumb1.jpg", 'fake thumb content');
 
         $this->createProductImage($product, [
-            'path' => 'products/image1.jpg',
+            'path' => "products/{$product->product_code}/image1.jpg",
         ]);
 
         // When: 삭제 실행
         $this->service->delete($product);
 
-        // Then: 이미지 파일 삭제 확인
-        Storage::disk('public')->assertMissing('products/image1.jpg');
+        // Then: 이미지 디렉토리 전체 삭제 확인
+        Storage::disk('modules')->assertMissing("{$targetDir}/image1.jpg");
+        Storage::disk('modules')->assertMissing("{$targetDir}/thumb1.jpg");
     }
 
     /**

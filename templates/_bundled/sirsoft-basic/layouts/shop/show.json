@@ -23,26 +23,7 @@
             "og": {
                 "type": "product",
                 "title": "{{_seo.product.title ?? product.data.name ?? ''}}",
-                "description": "{{_seo.product.description ?? product.data.description ?? ''}}",
-                "image": "{{product.data.thumbnail_url ?? ''}}"
-            },
-            "structured_data": {
-                "@type": "Product",
-                "name": "{{_seo.product.title ?? product.data.name ?? ''}}",
-                "description": "{{_seo.product.description ?? product.data.description ?? ''}}",
-                "image": "{{product.data.thumbnail_url ?? ''}}",
-                "offers": {
-                    "@type": "Offer",
-                    "price": "{{product.data.selling_price ?? ''}}",
-                    "priceCurrency": "KRW"
-                },
-                "aggregateRating": {
-                    "@type": "AggregateRating",
-                    "ratingValue": "{{reviews.data.rating_stats.avg ?? ''}}",
-                    "reviewCount": "{{reviews.data.reviews.total ?? ''}}",
-                    "bestRating": "5",
-                    "worstRating": "1"
-                }
+                "description": "{{_seo.product.description ?? product.data.description ?? ''}}"
             }
         }
     },

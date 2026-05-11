@@ -186,7 +186,7 @@ class ProductNoticeTemplateControllerTest extends ModuleTestCase
 
         // Then: 검증 실패
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['name.ko', 'fields']);
+        $response->assertJsonValidationErrors(['name', 'fields']);
     }
 
     /**
@@ -210,7 +210,7 @@ class ProductNoticeTemplateControllerTest extends ModuleTestCase
 
         // Then: 항목명 필수 검증 실패
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['fields.0.name.ko']);
+        $response->assertJsonValidationErrors(['fields.0.name']);
     }
 
     /**
@@ -234,7 +234,7 @@ class ProductNoticeTemplateControllerTest extends ModuleTestCase
 
         // Then: 항목내용 필수 검증 실패
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['fields.0.content.ko']);
+        $response->assertJsonValidationErrors(['fields.0.content']);
     }
 
     /**
@@ -258,7 +258,7 @@ class ProductNoticeTemplateControllerTest extends ModuleTestCase
 
         // Then: 최대 길이 검증 실패
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['name.ko']);
+        $response->assertJsonValidationErrors(['name']);
     }
 
     /**
@@ -282,7 +282,7 @@ class ProductNoticeTemplateControllerTest extends ModuleTestCase
 
         // Then: 최대 길이 검증 실패
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['fields.0.name.ko']);
+        $response->assertJsonValidationErrors(['fields.0.name']);
     }
 
     /**
@@ -306,7 +306,7 @@ class ProductNoticeTemplateControllerTest extends ModuleTestCase
 
         // Then: 최대 길이 검증 실패
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['fields.0.content.ko']);
+        $response->assertJsonValidationErrors(['fields.0.content']);
     }
 
     /**
@@ -340,7 +340,7 @@ class ProductNoticeTemplateControllerTest extends ModuleTestCase
 
         // Then: 검증 실패
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['fields.0.name.ko', 'fields.0.content.ko']);
+        $response->assertJsonValidationErrors(['fields.0.name', 'fields.0.content']);
     }
 
     /**

@@ -1,0 +1,92 @@
+{
+  "base_layout_title": "Gnuboard7",
+  "base_layout_description": "Gnuboard7 コミュニティ",
+  "menu": "メニュー",
+  "search_placeholder": "検索ワードを入力してください",
+  "profile": {
+    "page_title": "ユーザープロフィール",
+    "posts_page_title": "作成投稿",
+    "user_not_found": "ユーザーが見つかりません",
+    "joined_at": "登録日:",
+    "posts_count": "投稿",
+    "comments_count": "コメント",
+    "recent_posts": "最近の投稿",
+    "posts_suffix": "さんの作成投稿",
+    "total_posts": "合計 {{count}}件",
+    "no_posts": "作成した投稿がありません",
+    "view_all": "すべて表示",
+    "back_to_profile": "プロフィール",
+    "post_board": "掲示板",
+    "post_title": "タイトル",
+    "post_views": "閲覧",
+    "post_date": "作成日",
+    "badge_blinded": "ブラインド"
+  },
+  "nav": {
+    "home": "ホーム",
+    "popular": "人気",
+    "boards": "掲示板",
+    "shop": "ショッピング",
+    "products": "商品",
+    "cart": "カート",
+    "mypage": "マイページ"
+  },
+  "footer": {
+    "info": "情報",
+    "about": "会社概要",
+    "faq": "よくある質問",
+    "contact": "お問い合わせ",
+    "policy": "ポリシー",
+    "terms": "利用規約",
+    "privacy": "プライバシーポリシー",
+    "refund": "キャンセル·返品·交換"
+  },
+  "page": {
+    "page_title": "ページ",
+    "not_found_title": "ページが見つかりません",
+    "not_found_description": "要求されたページが存在しないか、削除されました",
+    "back_to_home": "ホームに戻る",
+    "admin_edit": "編集",
+    "status_active": "実施中",
+    "published_at": "公開日",
+    "create_page": "ページ作成",
+    "attachments": "添付ファイル",
+    "download": "ダウンロード"
+  },
+  "mypage": {
+    "page_title": "マイページ",
+    "profile_title": "自分の情報",
+    "profile_edit_title": "自分の情報を編集",
+    "change_password_title": "パスワード変更",
+    "orders_title": "注文履歴",
+    "order_detail_title": "注文詳細",
+    "wishlist_title": "お気に入り一覧",
+    "addresses_title": "配送先管理",
+    "notifications_title": "通知",
+    "board_title": "掲示板アクティビティ",
+    "inquiries_title": "商品問い合わせ履歴"
+  },
+  "identity": {
+    "challenge": {
+      "title": "本人確認",
+      "code_title": "認証コード入力",
+      "code_subtitle": "送信された6桁のコードを入力してください",
+      "code_placeholder": "認証コード",
+      "verify": "確認",
+      "resend": "コード再送信",
+      "resend_cooldown": "再送信 ({{seconds}}秒後)",
+      "resend_success": "認証コードを再送信しました",
+      "remaining_time": "残り時間: {{minutes}}:{{seconds}}",
+      "remaining_attempts": "残り試行回数: {{count}}回",
+      "expired": "時間が経過しました。再送信を押してください",
+      "link_title": "メール確認が必要です",
+      "link_subtitle": "メールで送信されたリンクをクリックして本人確認を完了してください",
+      "resend_link": "メール再送信",
+      "check_spam": "メールが届かない場合はスパムフォルダを確認してください",
+      "external_title": "外部本人認証に移動中",
+      "external_subtitle": "しばらくしてから本人認証サービスに自動移動します",
+      "manual_redirect": "手動で移動する",
+      "error_generic": "認証に失敗しました。もう一度お試しください"
+    }
+  }
+}

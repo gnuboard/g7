@@ -40,7 +40,9 @@ class MenuFactory extends Factory
             'parent_id' => null,
             'order' => $this->faker->numberBetween(1, 100),
             'is_active' => true,
-            'module_id' => null,
+            // menus 스키마는 module_id 를 extension_type/extension_identifier 로 이행
+            'extension_type' => null,
+            'extension_identifier' => null,
             'created_by' => User::factory(),
         ];
     }
@@ -58,10 +60,11 @@ class MenuFactory extends Factory
     /**
      * 모듈 메뉴 상태
      */
-    public function moduleMenu(int $moduleId = 1): static
+    public function moduleMenu(string $moduleIdentifier = 'sirsoft-ecommerce'): static
     {
         return $this->state(fn (array $attributes) => [
-            'module_id' => $moduleId,
+            'extension_type' => 'module',
+            'extension_identifier' => $moduleIdentifier,
         ]);
     }
 
@@ -81,7 +84,8 @@ class MenuFactory extends Factory
     public function coreMenu(): static
     {
         return $this->state(fn (array $attributes) => [
-            'module_id' => null,
+            'extension_type' => 'core',
+            'extension_identifier' => 'core',
         ]);
     }
 }

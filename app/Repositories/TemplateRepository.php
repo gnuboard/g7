@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use Illuminate\Database\Eloquent\Collection;
@@ -11,6 +12,9 @@ class TemplateRepository implements TemplateRepositoryInterface
 {
     /**
      * 모든 템플릿 조회
+     *
+     * @param  string|null  $type  필터링할 템플릿 타입 (admin, user 등). null 이면 전체 반환
+     * @return Collection 템플릿 컬렉션 (created_at 내림차순)
      */
     public function getAll(?string $type = null): Collection
     {
@@ -26,6 +30,9 @@ class TemplateRepository implements TemplateRepositoryInterface
 
     /**
      * ID로 템플릿 조회
+     *
+     * @param  int  $id  템플릿 ID
+     * @return Template|null 매칭된 템플릿 또는 null
      */
     public function findById(int $id): ?Template
     {
@@ -34,6 +41,9 @@ class TemplateRepository implements TemplateRepositoryInterface
 
     /**
      * identifier로 템플릿 조회
+     *
+     * @param  string  $identifier  템플릿 식별자 (vendor-template 형식)
+     * @return Template|null 매칭된 템플릿 또는 null
      */
     public function findByIdentifier(string $identifier): ?Template
     {
@@ -42,6 +52,9 @@ class TemplateRepository implements TemplateRepositoryInterface
 
     /**
      * 타입별 활성화된 템플릿 조회
+     *
+     * @param  string  $type  템플릿 타입 (admin, user 등)
+     * @return Template|null 활성 상태인 템플릿 또는 null
      */
     public function findActiveByType(string $type): ?Template
     {
@@ -52,6 +65,10 @@ class TemplateRepository implements TemplateRepositoryInterface
 
     /**
      * 템플릿 업데이트
+     *
+     * @param  int  $id  템플릿 ID
+     * @param  array<string, mixed>  $data  업데이트할 컬럼 페이로드
+     * @return Template 갱신된 템플릿 (fresh() 재조회)
      */
     public function update(int $id, array $data): Template
     {
@@ -63,6 +80,9 @@ class TemplateRepository implements TemplateRepositoryInterface
 
     /**
      * 템플릿 삭제 (Soft Delete)
+     *
+     * @param  int  $id  템플릿 ID
+     * @return bool 삭제 성공 여부
      */
     public function delete(int $id): bool
     {
@@ -221,5 +241,22 @@ class TemplateRepository implements TemplateRepositoryInterface
             // 해당 플러그인이 의존성에 포함되어 있는지 확인
             return array_key_exists($pluginIdentifier, $pluginDependencies);
         })->values();
+    }
+
+    /**
+     * 코어 버전 비호환으로 자동 비활성화된 템플릿을 조회합니다.
+     *
+     * @return Collection 자동 비활성화된 템플릿 컬렉션
+     */
+    public function findAutoDeactivated(): Collection
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('templates', 'deactivated_reason')) {
+            return new Collection;
+        }
+
+        return Template::where('status', ExtensionStatus::Inactive->value)
+            ->where('deactivated_reason', DeactivationReason::IncompatibleCore->value)
+            ->orderByDesc('deactivated_at')
+            ->get();
     }
 }

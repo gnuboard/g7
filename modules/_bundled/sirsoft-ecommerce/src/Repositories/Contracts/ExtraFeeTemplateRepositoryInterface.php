@@ -114,4 +114,12 @@ interface ExtraFeeTemplateRepositoryInterface
      * @return array
      */
     public function getStatisticsByRegion(): array;
+
+    /**
+     * ID 목록으로 추가비용 템플릿을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
+     *
+     * @param  array<int, int>  $ids  템플릿 ID 목록
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection;
 }

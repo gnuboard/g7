@@ -87,6 +87,13 @@ class SnapshotRecalculationTest extends ModuleTestCase
             $settingsPath.'/language_currency.json',
             json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
+
+        // g7_module_settings() 는 Config::get('g7_settings.modules.{id}') 기반.
+        // 테스트 환경에서는 모듈 활성화가 안 돼 있어 CoreServiceProvider 가 Config 를 주입하지 않음.
+        \Illuminate\Support\Facades\Config::set(
+            'g7_settings.modules.sirsoft-ecommerce.language_currency',
+            $settings
+        );
     }
 
     protected function tearDown(): void

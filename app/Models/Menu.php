@@ -36,6 +36,13 @@ class Menu extends Model
      */
     protected array $trackableFields = ['name', 'icon', 'order', 'url'];
 
+    /**
+     * 다국어 JSON 컬럼 — sub-key dot-path 단위 user_overrides 보존.
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableTrackableFields = ['name'];
+
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
         'url' => ['label_key' => 'activity_log.fields.url', 'type' => 'text'],

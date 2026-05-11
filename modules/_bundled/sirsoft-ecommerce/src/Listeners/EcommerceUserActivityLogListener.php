@@ -5,11 +5,11 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
-use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
-use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 
 /**
  * 이커머스 사용자 활동 로그 리스너
@@ -23,6 +23,15 @@ use Modules\Sirsoft\Ecommerce\Models\Product;
 class EcommerceUserActivityLogListener implements HookListenerInterface
 {
     use ResolvesActivityLogType;
+
+    /**
+     * @param  ProductRepositoryInterface  $productRepository  상품 Repository (ID → 이름 변환)
+     * @param  CouponRepositoryInterface  $couponRepository  쿠폰 Repository (ID → 이름 변환)
+     */
+    public function __construct(
+        protected ProductRepositoryInterface $productRepository,
+        protected CouponRepositoryInterface $couponRepository,
+    ) {}
 
     /**
      * 구독할 훅과 메서드 매핑 반환
@@ -182,7 +191,7 @@ class EcommerceUserActivityLogListener implements HookListenerInterface
      */
     public function handleWishlistAfterToggle(int $userId, int $productId, bool $added): void
     {
-        $product = Product::find($productId);
+        $product = $this->productRepository->find($productId);
         $action = $added ? 'wishlist.add' : 'wishlist.remove';
         $descriptionKey = $added
             ? 'sirsoft-ecommerce::activity_log.description.wishlist_add'
@@ -213,7 +222,7 @@ class EcommerceUserActivityLogListener implements HookListenerInterface
      */
     public function handleUserCouponAfterDownload(CouponIssue $couponIssue, int $userId, int $couponId): void
     {
-        $coupon = Coupon::find($couponId);
+        $coupon = $this->couponRepository->findById($couponId);
 
         $this->logActivity('user_coupon.download', [
 

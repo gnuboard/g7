@@ -17,7 +17,7 @@ class MenuI18nIntegrationTest extends TestCase
     {
         parent::setUp();
 
-        // 관리자 역할 및 권한 생성
+        // 관리자 역할 및 권한 생성 (is_active=true 필수)
         $adminRole = \App\Models\Role::create([
             'identifier' => 'admin',
             'name' => [
@@ -28,6 +28,7 @@ class MenuI18nIntegrationTest extends TestCase
                 'ko' => '시스템 관리자',
                 'en' => 'System Administrator',
             ],
+            'is_active' => true,
         ]);
 
         // 메뉴 관련 권한들 생성 (core. 접두사 필요)
@@ -55,12 +56,17 @@ class MenuI18nIntegrationTest extends TestCase
         ];
 
         foreach ($permissions as $permData) {
-            $perm = \App\Models\Permission::create($permData);
+            // extension_type / extension_identifier 를 명시해야 현재 권한 시스템에서 확인됨
+            $perm = \App\Models\Permission::create(array_merge($permData, [
+                'extension_type' => 'core',
+                'extension_identifier' => 'core',
+                'type' => 'admin',
+            ]));
             $adminRole->permissions()->attach($perm->id);
         }
 
-        // 관리자 사용자 생성
-        $this->adminUser = User::factory()->create();
+        // 관리자 사용자 생성 (is_super=true 로 admin 미들웨어 + 모든 permission 통과)
+        $this->adminUser = User::factory()->create(['is_super' => true]);
         $this->adminUser->roles()->attach($adminRole->id);
     }
 
@@ -80,7 +86,7 @@ class MenuI18nIntegrationTest extends TestCase
             'order' => 1,
         ];
 
-        $response = $this->actingAs($this->adminUser)
+        $response = $this->actingAs($this->adminUser, "sanctum")
             ->postJson('/api/admin/menus', $menuData);
 
         $response->assertStatus(201)
@@ -114,7 +120,7 @@ class MenuI18nIntegrationTest extends TestCase
             ],
         ]);
 
-        $response = $this->actingAs($this->adminUser)
+        $response = $this->actingAs($this->adminUser, "sanctum")
             ->withHeader('Accept-Language', 'ko')
             ->getJson("/api/admin/menus/{$menu->id}");
 
@@ -145,7 +151,7 @@ class MenuI18nIntegrationTest extends TestCase
             ],
         ]);
 
-        $response = $this->actingAs($this->adminUser)
+        $response = $this->actingAs($this->adminUser, "sanctum")
             ->withHeader('Accept-Language', 'en')
             ->getJson("/api/admin/menus/{$menu->id}");
 
@@ -187,7 +193,7 @@ class MenuI18nIntegrationTest extends TestCase
             'url' => $menu->url,
         ];
 
-        $response = $this->actingAs($this->adminUser)
+        $response = $this->actingAs($this->adminUser, "sanctum")
             ->putJson("/api/admin/menus/{$menu->id}", $updateData);
 
         $response->assertStatus(200);
@@ -221,7 +227,7 @@ class MenuI18nIntegrationTest extends TestCase
             'order' => 1,
         ]);
 
-        $response = $this->actingAs($this->adminUser)
+        $response = $this->actingAs($this->adminUser, "sanctum")
             ->withHeader('Accept-Language', 'ko')
             ->getJson('/api/admin/menus/hierarchy');
 

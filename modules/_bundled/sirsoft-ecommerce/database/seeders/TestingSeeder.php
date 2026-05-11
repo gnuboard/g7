@@ -82,21 +82,25 @@ class TestingSeeder extends Seeder
      */
     private function createOrderSequence(): void
     {
-        $defaultConfig = SequenceType::ORDER->getDefaultConfig();
+        // ORDER, CANCEL, REFUND, PRODUCT 등 모든 시퀀스 타입 초기화
+        // (취소/환불 처리 등 일부 서비스가 다른 타입을 채번하므로 전체 생성)
+        foreach (SequenceType::cases() as $type) {
+            $defaultConfig = $type->getDefaultConfig();
 
-        Sequence::firstOrCreate(
-            ['type' => SequenceType::ORDER->value],
-            [
-                'algorithm' => $defaultConfig['algorithm']->value,
-                'prefix' => $defaultConfig['prefix'],
-                'current_value' => 0,
-                'increment' => 1,
-                'min_value' => 1,
-                'max_value' => $defaultConfig['max_value'],
-                'cycle' => false,
-                'pad_length' => $defaultConfig['pad_length'],
-            ]
-        );
+            Sequence::firstOrCreate(
+                ['type' => $type->value],
+                [
+                    'algorithm' => $defaultConfig['algorithm']->value,
+                    'prefix' => $defaultConfig['prefix'],
+                    'current_value' => 0,
+                    'increment' => 1,
+                    'min_value' => 1,
+                    'max_value' => $defaultConfig['max_value'],
+                    'cycle' => false,
+                    'pad_length' => $defaultConfig['pad_length'],
+                ]
+            );
+        }
     }
 
     /**

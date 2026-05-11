@@ -360,6 +360,23 @@
 { "code": "ko", "name": "Korean", "nativeName": "한국어" }
 ```
 
+### availableLocales 정책
+
+`availableLocales` prop 은 활성 코어 언어팩을 따라가도록 **동적 바인딩** 합니다. 정적 배열 (`[{code:"ko", ...}, {code:"en", ...}]`) 로 작성하면 ja 등 추가 언어팩이 활성화돼도 입력 탭이 노출되지 않아 데이터 입력이 거부됩니다.
+
+```json
+// ✅ DO: _global.appConfig.supportedLocales 기반 동적 매핑
+"availableLocales": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}"
+
+// ❌ DON'T: ko/en 정적 하드코딩 — 활성 언어팩 ja 미반영
+"availableLocales": [
+  { "code": "ko", "name": "한국어", "nativeName": "한국어" },
+  { "code": "en", "name": "English", "nativeName": "English" }
+]
+```
+
+prop 미지정 시 컴포넌트가 `G7Core.locale.supported()` 로 자동 폴백 — **prop 자체를 생략해도 무방** 합니다 (가장 권장).
+
 ### 사용 예시
 
 ```json

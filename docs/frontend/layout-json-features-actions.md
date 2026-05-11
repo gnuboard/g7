@@ -152,6 +152,46 @@ init_actions는 정적 바인딩을 지원합니다. route params, query, _globa
 
 **주의**: form 데이터나 이벤트 컨텍스트는 init_actions 시점에 존재하지 않습니다. 이런 데이터가 필요하면 컴포넌트의 `lifecycle.onMount`를 사용하세요.
 
+### init_actions vs lifecycle.onMount — 시점 가이드 (engine-v1.47.1 명문화)
+
+| 시점 | init_actions | lifecycle.onMount |
+|------|-------------|-------------------|
+| 실행 단계 | 컴포넌트 마운트 **전** (레이아웃 로드 직후) | 컴포넌트 마운트 **후** |
+| reactRoot 보장 | ❌ (`updateTemplateData` 가 reactRoot 미존재로 스킵) | ✅ |
+| 글로벌 호스트 컴포넌트 (Toast/ModalRoot) 마운트 보장 | ❌ | ✅ |
+| 적합한 액션 | 라우트 파라미터 기반 분기, 폼 초기 상태 setState, theme 초기화 | toast 발화, openModal, 글로벌 상태 변경의 화면 즉시 반영 |
+
+**toast / openModal 발화는 lifecycle.onMount 권장**:
+
+`toast` 핸들러는 `_global.toasts` 배열에 push 하며 화면 렌더는 Toast 호스트 컴포넌트가 담당. init_actions 시점에는 Toast 컴포넌트가 아직 마운트되지 않았거나 React 리렌더 사이클이 시작되지 않아 push 한 메시지가 화면에 반영되지 않을 수 있다 (silent failure 회귀). `lifecycle.onMount` 는 마운트 후 실행이 보장되어 안전.
+
+```json
+// ❌ 회귀 위험: init_actions 의 toast 발화
+{
+  "init_actions": [
+    { "if": "{{query?.reason === 'session_expired'}}", "handler": "toast", "params": {...} }
+  ]
+}
+
+// ✅ 권장: 레이아웃 root 컴포넌트의 lifecycle.onMount 로 이동
+{
+  "components": [
+    {
+      "id": "page_wrapper",
+      "name": "Div",
+      "lifecycle": {
+        "onMount": [
+          { "if": "{{query?.reason === 'session_expired'}}", "handler": "toast", "params": {...} }
+        ]
+      },
+      "children": [...]
+    }
+  ]
+}
+```
+
+> 단, 베이스 레이아웃을 `extends` 하는 자식 레이아웃은 init_actions 의 toast 도 정상 작동하는 경우가 있다 (베이스가 Toast 호스트를 먼저 마운트). 그러나 의존성이 베이스 구조에 묶이므로 모든 신규 layout 은 일관성을 위해 lifecycle.onMount 사용 권장.
+
 ### conditions 핸들러 사용 (engine-v1.24.7+)
 
 init_actions에서 `conditions` 핸들러를 사용하여 조건 분기를 실행할 수 있습니다.

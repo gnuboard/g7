@@ -32,6 +32,13 @@ class ShippingType extends Model
      */
     protected array $trackableFields = ['name', 'category', 'is_active', 'sort_order'];
 
+    /**
+     * 다국어 JSON 컬럼 — sub-key dot-path 단위 user_overrides 보존.
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableTrackableFields = ['name'];
+
     protected $table = 'ecommerce_shipping_types';
 
     protected $fillable = [
@@ -96,7 +103,7 @@ class ShippingType extends Model
             return '';
         }
 
-        return $name[$locale] ?? $name['ko'] ?? $name['en'] ?? $name[array_key_first($name)] ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**

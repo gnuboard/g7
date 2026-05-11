@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\DTO\Summary;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\TempOrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
 use Modules\Sirsoft\Ecommerce\Services\TempOrderService;
@@ -33,6 +34,8 @@ class TempOrderServiceTest extends ModuleTestCase
 
     protected $mockCouponIssueRepository;
 
+    protected $mockProductOptionRepository;
+
     protected $mockCalculationService;
 
     protected function setUp(): void
@@ -42,12 +45,14 @@ class TempOrderServiceTest extends ModuleTestCase
         $this->mockTempOrderRepository = Mockery::mock(TempOrderRepositoryInterface::class);
         $this->mockCartRepository = Mockery::mock(CartRepositoryInterface::class);
         $this->mockCouponIssueRepository = Mockery::mock(CouponIssueRepositoryInterface::class);
+        $this->mockProductOptionRepository = Mockery::mock(ProductOptionRepositoryInterface::class);
         $this->mockCalculationService = Mockery::mock(OrderCalculationService::class);
 
         $this->service = new TempOrderService(
             $this->mockTempOrderRepository,
             $this->mockCartRepository,
             $this->mockCouponIssueRepository,
+            $this->mockProductOptionRepository,
             $this->mockCalculationService
         );
     }
@@ -76,9 +81,9 @@ class TempOrderServiceTest extends ModuleTestCase
             items: [],
             summary: new Summary(
                 subtotal: 30000,
-                couponDiscount: 0,
+                productCouponDiscount: 0,
                 codeDiscount: 0,
-                orderDiscount: 0,
+                orderCouponDiscount: 0,
                 totalDiscount: 0,
                 baseShippingTotal: 3000,
                 extraShippingTotal: 0,
@@ -153,9 +158,9 @@ class TempOrderServiceTest extends ModuleTestCase
             items: [],
             summary: new Summary(
                 subtotal: 15000,
-                couponDiscount: 0,
+                productCouponDiscount: 0,
                 codeDiscount: 0,
-                orderDiscount: 0,
+                orderCouponDiscount: 0,
                 totalDiscount: 0,
                 baseShippingTotal: 3000,
                 extraShippingTotal: 0,
@@ -284,9 +289,9 @@ class TempOrderServiceTest extends ModuleTestCase
             items: [],
             summary: new Summary(
                 subtotal: 30000,
-                couponDiscount: 3000,
+                productCouponDiscount: 3000,
                 codeDiscount: 0,
-                orderDiscount: 0,
+                orderCouponDiscount: 0,
                 totalDiscount: 3000,
                 baseShippingTotal: 0,
                 extraShippingTotal: 0,
@@ -386,9 +391,9 @@ class TempOrderServiceTest extends ModuleTestCase
             items: [],
             summary: new Summary(
                 subtotal: 30000,
-                couponDiscount: 3000,
+                productCouponDiscount: 3000,
                 codeDiscount: 0,
-                orderDiscount: 0,
+                orderCouponDiscount: 0,
                 totalDiscount: 3000,
                 baseShippingTotal: 0,
                 extraShippingTotal: 0,
@@ -413,10 +418,14 @@ class TempOrderServiceTest extends ModuleTestCase
             })
             ->andReturn($newCalculationResult);
 
-        // 쿠폰 소유권 검증 mock (기존 쿠폰 재검증)
+        // 쿠폰 소유권 mock — item_coupons 의 9130 과 order_coupon 10375 를 사용자가 소유한 것으로
+        // 처리. validateSingleCoupon 은 isNotEmpty() 만 체크하므로 동일 mock 사용 가능.
+        $ownedCoupons = new Collection([
+            (new \Modules\Sirsoft\Ecommerce\Models\CouponIssue())->forceFill(['id' => 9130]),
+        ]);
         $this->mockCouponIssueRepository
             ->shouldReceive('findByIdsForUser')
-            ->andReturn(new Collection());
+            ->andReturn($ownedCoupons);
 
         $updatedTempOrder = clone $existingTempOrder;
         $updatedTempOrder->calculation_result = $newCalculationResult->toArray();
@@ -479,9 +488,9 @@ class TempOrderServiceTest extends ModuleTestCase
             items: [],
             summary: new Summary(
                 subtotal: 30000,
-                couponDiscount: 0,
+                productCouponDiscount: 0,
                 codeDiscount: 0,
-                orderDiscount: 0,
+                orderCouponDiscount: 0,
                 totalDiscount: 0,
                 baseShippingTotal: 0,
                 extraShippingTotal: 0,
@@ -572,9 +581,9 @@ class TempOrderServiceTest extends ModuleTestCase
             items: [],
             summary: new Summary(
                 subtotal: 20000,
-                couponDiscount: 0,
+                productCouponDiscount: 0,
                 codeDiscount: 0,
-                orderDiscount: 0,
+                orderCouponDiscount: 0,
                 totalDiscount: 0,
                 baseShippingTotal: 0,
                 extraShippingTotal: 0,
@@ -599,9 +608,14 @@ class TempOrderServiceTest extends ModuleTestCase
             })
             ->andReturn($newCalculationResult);
 
+        // order(10375)/shipping(200) 단일 쿠폰 검증은 `findByIdsForUser`->`isNotEmpty` 로 판단.
+        // item_coupons 는 빈 배열로 전달되므로 validateAndFilterItemCoupons 는 호출되지 않음.
+        // → 단일 쿠폰 검증 시마다 non-empty collection 반환하여 소유 판정 통과.
         $this->mockCouponIssueRepository
             ->shouldReceive('findByIdsForUser')
-            ->andReturn(new Collection());
+            ->andReturn(new Collection([
+                (new \Modules\Sirsoft\Ecommerce\Models\CouponIssue())->forceFill(['id' => 0]),
+            ]));
 
         $updatedTempOrder = clone $existingTempOrder;
         $updatedTempOrder->calculation_result = $newCalculationResult->toArray();

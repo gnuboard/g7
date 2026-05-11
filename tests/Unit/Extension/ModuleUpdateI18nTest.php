@@ -45,6 +45,7 @@ class ModuleUpdateI18nTest extends TestCase
             ['modules.errors.extracted_dir_not_found'],
             ['modules.errors.reload_failed'],
             ['modules.errors.delete_directory_failed'],
+            ['modules.errors.downgrade_blocked'],
         ];
     }
 

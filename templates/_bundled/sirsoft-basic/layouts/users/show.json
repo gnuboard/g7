@@ -24,7 +24,7 @@
       "endpoint": "/api/users/{{route.userId}}/profile",
       "method": "GET",
       "auto_fetch": true,
-      "auth_required": true,
+      "auth_required": false,
       "refetchOnMount": true,
       "loading_strategy": "progressive",
       "errorHandling": {
@@ -522,11 +522,11 @@
                                             "comment": "댓글 수",
                                             "type": "basic",
                                             "name": "Span",
-                                            "if": "{{post.comments_count > 0}}",
+                                            "if": "{{post.comment_count > 0}}",
                                             "props": {
                                               "className": "flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium"
                                             },
-                                            "text": "[{{post.comments_count}}]"
+                                            "text": "[{{post.comment_count}}]"
                                           }
                                         ]
                                       }

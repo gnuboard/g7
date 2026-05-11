@@ -21,6 +21,13 @@ class NotificationDefinition extends Model
     protected array $trackableFields = ['name', 'is_active'];
 
     /**
+     * 다국어 JSON 컬럼 — sub-key dot-path 단위 user_overrides 보존.
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableTrackableFields = ['name'];
+
+    /**
      * 모델 이벤트 등록 — 모든 변경 시 알림 정의 캐시 자동 삭제.
      */
     protected static function booted(): void
@@ -158,7 +165,7 @@ class NotificationDefinition extends Model
         $locale = $locale ?? app()->getLocale();
         $name = $this->name ?? [];
 
-        return $name[$locale] ?? $name['ko'] ?? $name['en'] ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? '';
     }
 
     /**
@@ -172,6 +179,6 @@ class NotificationDefinition extends Model
         $locale = $locale ?? app()->getLocale();
         $description = $this->description ?? [];
 
-        return $description[$locale] ?? $description['ko'] ?? $description['en'] ?? '';
+        return $description[$locale] ?? $description[config('app.fallback_locale', 'ko')] ?? '';
     }
 }

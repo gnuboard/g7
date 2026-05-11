@@ -480,7 +480,7 @@
               "name": "Select",
               "props": {
                 "name": "type",
-                "options": "{{boards?.data?.board_types?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
+                "options": "{{boards?.data?.board_types?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? $locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
                 "placeholder": "$t:sirsoft-board.admin.form.placeholders.select_type",
                 "disabled": "{{_computed.isReadOnly}}",
                 "className": "w-full"

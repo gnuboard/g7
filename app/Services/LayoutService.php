@@ -549,6 +549,13 @@ class LayoutService
         $result = [];
 
         foreach ($components as $component) {
+            // 텍스트 노드 등 비-배열 children 은 그대로 보존 (component 가정 불가)
+            if (! is_array($component)) {
+                $result[] = $component;
+
+                continue;
+            }
+
             // slot 속성이 있고 해당 slot 데이터가 존재하면 children에 삽입
             if (isset($component['slot']) && isset($slots[$component['slot']])) {
                 // 슬롯 래퍼 컴포넌트 복사 (id, name, props 등 유지)

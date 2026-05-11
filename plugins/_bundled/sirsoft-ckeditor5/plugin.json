@@ -5,7 +5,7 @@
         "ko": "CKEditor 5 WYSIWYG 에디터",
         "en": "CKEditor 5 WYSIWYG Editor"
     },
-    "version": "1.0.0-beta.2",
+    "version": "1.0.0-beta.3",
     "license": "MIT",
     "description": {
         "ko": "CKEditor 5를 이용한 WYSIWYG 에디터 플러그인입니다. 플러그인 설치만으로 기존 HtmlEditor가 교체됩니다.",

@@ -7,24 +7,25 @@ return [
     | 기본 채널 설정
     |--------------------------------------------------------------------------
     | 시스템에서 기본으로 사용 가능한 알림 채널 목록입니다.
+    | 라벨은 lang key 로 선언되어 활성 언어팩(ko/en/ja 등) 으로 자동 보강됩니다.
     | 플러그인에서 core.notification.filter_available_channels 훅으로 확장 가능합니다.
     */
     'default_channels' => [
         [
             'id' => 'mail',
-            'name' => ['ko' => '메일', 'en' => 'Email'],
+            'name_key' => 'notification.channels.mail.name',
             'icon' => 'fas fa-envelope',
-            'description' => ['ko' => '이메일로 알림 발송', 'en' => 'Send notification via email'],
+            'description_key' => 'notification.channels.mail.description',
             'source' => 'core',
-            'source_label' => ['ko' => '코어 기본 채널', 'en' => 'Core default channel'],
+            'source_label_key' => 'notification.channels.core_default',
         ],
         [
             'id' => 'database',
-            'name' => ['ko' => '사이트내 알림', 'en' => 'Site Notification'],
+            'name_key' => 'notification.channels.database.name',
             'icon' => 'fas fa-bell',
-            'description' => ['ko' => '사이트내 알림 센터에 표시', 'en' => 'Show in site notification center'],
+            'description_key' => 'notification.channels.database.description',
             'source' => 'core',
-            'source_label' => ['ko' => '코어 기본 채널', 'en' => 'Core default channel'],
+            'source_label_key' => 'notification.channels.core_default',
         ],
     ],
 

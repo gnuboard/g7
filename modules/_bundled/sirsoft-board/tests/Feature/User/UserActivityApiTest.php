@@ -755,12 +755,26 @@ class UserActivityApiTest extends BoardTestCase
      */
     private function createComment(string $slug, int $postId, array $attributes = []): Comment
     {
-        return Comment::create(array_merge([
+        $comment = Comment::create(array_merge([
             'board_id' => $this->board->id,
             'post_id' => $postId,
             'content' => 'Test Comment',
             'user_id' => $this->user->id,
             'status' => 'published',
         ], $attributes));
+
+        // 비즈니스 로직: 통계 쿼리는 board_posts.comments_count 컬럼 (SUM) 기반이므로
+        // CommentService 를 거치지 않는 직접 Comment::create 시에도 카운터 수동 동기화 필요.
+        // (Listener 는 Service 레벨 훅에만 반응하므로 테스트에서 Model::create 직접 사용 시 미반영)
+        \Illuminate\Support\Facades\DB::table('board_posts')
+            ->where('id', $postId)
+            ->update([
+                'comments_count' => \Illuminate\Support\Facades\DB::table('board_comments')
+                    ->where('post_id', $postId)
+                    ->whereNull('deleted_at')
+                    ->count(),
+            ]);
+
+        return $comment;
     }
 }

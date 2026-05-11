@@ -22,7 +22,7 @@ class BoardNotificationChannelListenerTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->listener = new BoardNotificationChannelListener();
+        $this->listener = app(BoardNotificationChannelListener::class);
     }
 
     // ── 훅 구독 등록 확인 ──

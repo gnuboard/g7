@@ -156,7 +156,15 @@ class ExpressionEvaluator
         // 표현식으로 재귀 해석
         return $this->resolvePath($fallback, $context);
     }
-
+    /**
+     * SEO 메타 표현식을 컨텍스트와 함께 평가하여 최종 문자열을 반환합니다.
+     *
+     * `$t:` 번역 키 prefix, `{{path | pipe(arg)}}` 바인딩, 파이프 체인을 모두 지원합니다.
+     *
+     * @param  string  $expression  평가 대상 표현식 (예: `'$t:seo.title'`, `'{{post.title | upper}}'`)
+     * @param  array<string, mixed>  $context  바인딩 컨텍스트 (route/post/locale 등)
+     * @return string 평가 결과 문자열 (해석 실패 시 원본 표현식 또는 빈 문자열)
+     */
     public function evaluate(string $expression, array $context): string
     {
         // $t: 번역 키 처리 (전체가 $t:로 시작하는 경우)
@@ -1984,7 +1992,7 @@ class ExpressionEvaluator
 
         $locale = app()->getLocale();
 
-        return $value[$locale] ?? $value['ko'] ?? ($value ? reset($value) : '');
+        return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? ($value ? reset($value) : '');
     }
 
     /**

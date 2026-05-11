@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 use App\Contracts\Extension\StorageInterface;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
@@ -43,6 +44,9 @@ class ProductReviewServiceTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Hook listener job 차단 (mock 모델 deserialize 시 null TypeError 방지)
+        Queue::fake();
 
         $this->repository = Mockery::mock(ProductReviewRepositoryInterface::class);
         $this->orderOptionRepository = Mockery::mock(OrderOptionRepositoryInterface::class);

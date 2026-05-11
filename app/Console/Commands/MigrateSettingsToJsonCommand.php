@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Models\SystemConfig;
 use App\Repositories\JsonConfigRepository;
 use Illuminate\Console\Command;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Schema;
  */
 class MigrateSettingsToJsonCommand extends Command
 {
+    use HasUnifiedConfirm;
+
     /**
      * 커맨드 시그니처
      *
@@ -122,8 +125,6 @@ class MigrateSettingsToJsonCommand extends Command
      * 커맨드를 실행합니다.
      *
      * DI 컨테이너 바인딩 시점 문제로 직접 인스턴스화합니다.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -133,7 +134,7 @@ class MigrateSettingsToJsonCommand extends Command
         if (! Schema::hasTable('system_configs')) {
             $this->warn('system_configs 테이블이 존재하지 않습니다. 기본값으로 초기화합니다.');
 
-            $configRepository = new JsonConfigRepository();
+            $configRepository = new JsonConfigRepository;
             $configRepository->initialize();
 
             $this->info('기본 설정 파일이 생성되었습니다.');
@@ -142,11 +143,11 @@ class MigrateSettingsToJsonCommand extends Command
         }
 
         // JsonConfigRepository 직접 인스턴스화 (DI 컨테이너 바인딩 전 실행 가능)
-        $configRepository = new JsonConfigRepository();
+        $configRepository = new JsonConfigRepository;
 
         // 기존 JSON 파일 존재 확인
         if (file_exists(storage_path('app/settings/general.json')) && ! $this->option('force')) {
-            if (! $this->confirm('기존 JSON 설정 파일이 존재합니다. 덮어쓰시겠습니까?')) {
+            if (! $this->unifiedConfirm('기존 JSON 설정 파일이 존재합니다. 덮어쓰시겠습니까?', false)) {
                 $this->info('마이그레이션이 취소되었습니다.');
 
                 return Command::SUCCESS;
@@ -196,10 +197,6 @@ class MigrateSettingsToJsonCommand extends Command
 
     /**
      * 문자열 값을 원래 타입으로 파싱합니다.
-     *
-     * @param string $value
-     * @param string $type
-     * @return mixed
      */
     private function parseValue(string $value, string $type): mixed
     {

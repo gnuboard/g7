@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\SeoCacheClearRequest;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SeoCacheStatsService;
+use App\Seo\SitemapManager;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 
@@ -18,7 +19,8 @@ class SeoCacheController extends AdminBaseController
 {
     public function __construct(
         private SeoCacheStatsService $statsService,
-        private SeoCacheManagerInterface $cacheManager
+        private SeoCacheManagerInterface $cacheManager,
+        private SitemapManager $sitemapManager
     ) {
         parent::__construct();
     }
@@ -92,6 +94,31 @@ class SeoCacheController extends AdminBaseController
         } catch (\Exception $e) {
             return $this->error('messages.error_occurred', 500, $e->getMessage());
         }
+    }
+
+    /**
+     * Sitemap XML 을 즉시 재생성합니다.
+     *
+     * 큐 드라이버와 무관하게 동기 실행되며, 생성 완료 후 last_updated_at 을 갱신합니다.
+     *
+     * @return JsonResponse 재생성 결과 JSON 응답
+     */
+    public function regenerateSitemap(): JsonResponse
+    {
+        $result = $this->sitemapManager->regenerate();
+
+        if ($result['success']) {
+            return $this->success('seo.sitemap_regenerated', $result['data'] ?? null);
+        }
+
+        $messageKey = match ($result['status']) {
+            'disabled' => 'seo.sitemap_disabled',
+            default => 'seo.sitemap_regenerate_failed',
+        };
+
+        $statusCode = $result['status'] === 'disabled' ? 400 : 500;
+
+        return $this->error($messageKey, $statusCode, $result['message'] ?? null);
     }
 
     /**

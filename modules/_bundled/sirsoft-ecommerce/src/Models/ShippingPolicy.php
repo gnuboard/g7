@@ -41,7 +41,9 @@ class ShippingPolicy extends Model
     ];
 
     /**
-     * 국가별 배송 설정
+     * 이 정책에 연결된 국가별 배송 설정 관계.
+     *
+     * @return HasMany ShippingPolicyCountrySetting 컬렉션 관계
      */
     public function countrySettings(): HasMany
     {
@@ -49,20 +51,25 @@ class ShippingPolicy extends Model
     }
 
     /**
-     * 현재 로케일의 정책명 반환
+     * 현재 로케일의 정책명을 반환합니다 (다국어 fallback chain 적용).
      *
-     * @param  string|null  $locale  로케일
+     * @param  string|null  $locale  반환할 로케일. null 이면 현재 앱 로케일 사용
+     * @return string 로케일별 정책명, 누락 시 fallback 로케일/첫 번째 키 순으로 시도
      */
     public function getLocalizedName(?string $locale = null): string
     {
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return $name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
-     * 배송비 요약 텍스트 반환 (국가별 설정 기반)
+     * 활성 국가별 설정을 종합하여 배송비 요약 텍스트를 생성합니다.
+     *
+     * 형식: `"KR: 3000원 | US: $20"` 처럼 country_code + 국가별 fee summary 를 ` | ` 로 join.
+     *
+     * @return string 국가별 배송비 요약 (활성 설정 없으면 빈 문자열)
      */
     public function getFeeSummary(): string
     {
@@ -82,7 +89,12 @@ class ShippingPolicy extends Model
     }
 
     /**
-     * 배송비 상세 정보 반환 (국가별 설정 기반)
+     * 활성 국가별 설정의 상세 배송비 정보를 배열로 반환합니다.
+     *
+     * 각 항목: `['country_code' => 'KR', ...국가별 상세 fee 필드...]`.
+     * Frontend 가 표 형태로 표시할 때 사용.
+     *
+     * @return array<int, array<string, mixed>> 국가별 상세 배송비 정보 배열
      */
     public function getDetailedFeeInfo(): array
     {
@@ -99,9 +111,12 @@ class ShippingPolicy extends Model
     }
 
     /**
-     * 배송국가 코드를 국기로 변환 (countrySettings 기반)
+     * 활성 국가 코드를 국기 이모지로 변환한 표시 문자열을 반환합니다.
      *
-     * @param  int  $limit  최대 표시 개수
+     * `$limit` 초과분은 `+N` 형태로 축약 (예: `🇰🇷🇺🇸🇨🇳 +2`).
+     *
+     * @param  int  $limit  국기로 표시할 최대 국가 개수 (초과분은 +N 표기)
+     * @return string 국기 이모지 + 잔여 카운트 문자열
      */
     public function getCountriesWithFlags(int $limit = 3): string
     {
@@ -131,9 +146,10 @@ class ShippingPolicy extends Model
     }
 
     /**
-     * 특정 국가의 설정을 조회합니다.
+     * 특정 국가의 배송 설정을 조회합니다.
      *
-     * @param  string  $countryCode  국가코드
+     * @param  string  $countryCode  ISO 국가 코드 (예: 'KR', 'US')
+     * @return ShippingPolicyCountrySetting|null 해당 국가 설정 또는 부재 시 null
      */
     public function getCountrySetting(string $countryCode): ?ShippingPolicyCountrySetting
     {
@@ -188,9 +204,10 @@ class ShippingPolicy extends Model
     }
 
     /**
-     * 배송방법 필터 스코프 (countrySettings 기반)
+     * countrySettings 의 shipping_method 가 주어진 값 중 하나 이상에 매치되는 정책만 반환하는 스코프.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  array<int, string>  $methods  필터링할 배송방법 코드 배열
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeWithShippingMethods($query, array $methods)
@@ -205,9 +222,10 @@ class ShippingPolicy extends Model
     }
 
     /**
-     * 부과정책 필터 스코프 (countrySettings 기반)
+     * countrySettings 의 charge_policy 가 주어진 값 중 하나 이상에 매치되는 정책만 반환하는 스코프.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  array<int, string>  $policies  필터링할 부과정책 코드 배열
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeWithChargePolicies($query, array $policies)
@@ -222,9 +240,10 @@ class ShippingPolicy extends Model
     }
 
     /**
-     * 정책명 검색 스코프
+     * 다국어 정책명(name JSON 컬럼) 의 모든 활성 locale 에서 검색어를 LIKE 매칭하는 스코프.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $search  검색 키워드 (빈 문자열이면 노필터)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSearchByName($query, string $search)
@@ -250,6 +269,9 @@ class ShippingPolicy extends Model
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
+      *
+      * @param  string  $sortBy  sort by
+      * @param  string  $sortOrder  sort order
      */
     public function scopeOrderByField($query, string $sortBy = 'created_at', string $sortOrder = 'desc')
     {

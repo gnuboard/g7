@@ -71,4 +71,17 @@ return [
         'delete_all_failed' => '전체 알림 삭제에 실패했습니다.',
         'not_found' => '알림을 찾을 수 없습니다.',
     ],
+
+    // 알림 채널 메타 (config/notification.php default_channels 참조)
+    'channels' => [
+        'core_default' => '코어 기본 채널',
+        'mail' => [
+            'name' => '메일',
+            'description' => '이메일로 알림 발송',
+        ],
+        'database' => [
+            'name' => '사이트내 알림',
+            'description' => '사이트내 알림 센터에 표시',
+        ],
+    ],
 ];

@@ -3,6 +3,7 @@
 namespace App\ActivityLog\Traits;
 
 use App\Enums\ActivityLogType;
+use App\Extension\ExtensionManager;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -39,6 +40,9 @@ trait ResolvesActivityLogType
      * 활동 로그를 기록합니다.
      *
      * context에 log_type이 명시되지 않으면 resolveLogType()으로 자동 결정합니다.
+     * 호출 클래스 FQCN 으로부터 모듈/플러그인 origin 을 추론하여
+     * properties.extension_origin 에 자동 주입합니다 (loggable 미지정 케이스의
+     * action 라벨 namespace fallback 용).
      *
      * @param string $action 액션명 (예: 'user.create')
      * @param array $context Monolog context 배열
@@ -46,6 +50,13 @@ trait ResolvesActivityLogType
     protected function logActivity(string $action, array $context): void
     {
         $context['log_type'] ??= $this->resolveLogType();
+
+        $origin = ExtensionManager::resolveExtensionByFqcn(static::class);
+        if ($origin !== null) {
+            $properties = $context['properties'] ?? [];
+            $properties['extension_origin'] ??= $origin;
+            $context['properties'] = $properties;
+        }
 
         try {
             Log::channel('activity')->info($action, $context);

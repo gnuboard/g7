@@ -1,0 +1,23 @@
+{
+  "order_mistake": {
+    "name": "注文ミス"
+  },
+  "changed_mind": {
+    "name": "単純な心変わり"
+  },
+  "reorder_other": {
+    "name": "別の商品で再注文"
+  },
+  "delayed_delivery": {
+    "name": "配送遅延"
+  },
+  "product_info_different": {
+    "name": "商品情報の相違"
+  },
+  "admin_cancel": {
+    "name": "管理者キャンセル"
+  },
+  "etc": {
+    "name": "その他"
+  }
+}

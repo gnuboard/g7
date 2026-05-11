@@ -47,6 +47,8 @@ class LayoutExtensionIntegrationTest extends TestCase
      */
     public function test_module_extension_registration_and_layout_application_flow(): void
     {
+        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
+
         // 1. 모듈이 Extension Point 등록
         $extensionPointData = [
             'extension_point' => 'sidebar-top',
@@ -137,6 +139,8 @@ class LayoutExtensionIntegrationTest extends TestCase
      */
     public function test_overlay_injection_into_existing_component(): void
     {
+        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
+
         // 1. Overlay 등록 (기존 컴포넌트에 자식 추가)
         $overlayData = [
             'target_layout' => 'admin/settings',
@@ -191,6 +195,8 @@ class LayoutExtensionIntegrationTest extends TestCase
      */
     public function test_template_override_has_higher_priority_than_module(): void
     {
+        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
+
         // 1. 모듈 Extension 등록
         $this->service->registerExtension(
             [
@@ -252,6 +258,11 @@ class LayoutExtensionIntegrationTest extends TestCase
      */
     public function test_multiple_module_extensions_sorted_by_priority(): void
     {
+        $this->mockActiveExtensions(
+            ['sirsoft-analytics', 'sirsoft-ecommerce'],
+            ['sirsoft-social']
+        );
+
         // 1. 여러 모듈의 Extension 등록 (다른 우선순위)
         $this->service->registerExtension(
             [
@@ -313,6 +324,8 @@ class LayoutExtensionIntegrationTest extends TestCase
      */
     public function test_data_sources_merged_from_extensions(): void
     {
+        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
+
         // 1. data_sources가 포함된 Extension 등록
         $this->service->registerExtension(
             [
@@ -358,6 +371,9 @@ class LayoutExtensionIntegrationTest extends TestCase
      */
     public function test_inactive_extensions_not_applied_to_layout(): void
     {
+        // sirsoft-active 만 활성 — sirsoft-inactive 는 activeModules 에 없음
+        $this->mockActiveExtensions(['sirsoft-active'], []);
+
         // 1. 활성 Extension 등록
         $this->service->registerExtension(
             [

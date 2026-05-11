@@ -603,10 +603,11 @@ class PluginControllerTest extends TestCase
         ]);
 
         // Assert
+        // 활성화 응답은 data.plugin 으로 PluginResource 를 래핑하고, pending_language_packs 를 동시에 노출
         $response->assertStatus(200)
-            ->assertJsonPath('data.assets.js', '/api/plugins/assets/test-plugin/dist/js/plugin.iife.js')
-            ->assertJsonPath('data.assets.css', '/api/plugins/assets/test-plugin/dist/css/plugin.css')
-            ->assertJsonPath('data.assets.priority', 100);
+            ->assertJsonPath('data.plugin.assets.js', '/api/plugins/assets/test-plugin/dist/js/plugin.iife.js')
+            ->assertJsonPath('data.plugin.assets.css', '/api/plugins/assets/test-plugin/dist/css/plugin.css')
+            ->assertJsonPath('data.plugin.assets.priority', 100);
     }
 
     /**

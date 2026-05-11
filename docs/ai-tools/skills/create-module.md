@@ -2,6 +2,16 @@
 
 새로운 모듈의 기본 구조를 생성합니다.
 
+## TL;DR (5초 요약)
+
+```text
+1. 명령: /create-module vendor-module
+2. 위치: modules/_bundled/vendor-module/
+3. 참조 샘플: modules/_bundled/gnuboard7-hello_module/ (학습용 최소 모듈, Memo CRUD)
+4. hidden 플래그: manifest.hidden=true 시 관리자 UI 제외 (CLI 정상)
+5. 생성 후: extension:update-autoload → module:install → module:activate
+```
+
 ## 사용법
 
 ```

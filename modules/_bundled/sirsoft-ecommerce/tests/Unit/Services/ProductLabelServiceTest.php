@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Models\ProductLabel;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
@@ -21,6 +22,9 @@ class ProductLabelServiceTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Hook listener job 차단 (mock 모델 deserialize 시 null TypeError 방지)
+        Queue::fake();
 
         $this->mockRepository = Mockery::mock(ProductLabelRepositoryInterface::class);
         $this->service = new ProductLabelService($this->mockRepository);
@@ -163,8 +167,11 @@ class ProductLabelServiceTest extends ModuleTestCase
             'sort_order' => 1,
         ];
 
-        $createdLabel = Mockery::mock(ProductLabel::class);
+        // makePartial 로 만들어 getKey 등 Eloquent 메서드는 실제 동작 (HookArgumentSerializer
+        // 가 hook 발행 시 model->getKey() 호출하므로 stub 만으로는 부족)
+        $createdLabel = Mockery::mock(ProductLabel::class)->makePartial();
         $createdLabel->shouldReceive('fresh')->andReturnSelf();
+        $createdLabel->id = 1;
 
         $this->mockRepository
             ->shouldReceive('create')
@@ -189,7 +196,8 @@ class ProductLabelServiceTest extends ModuleTestCase
         $user = $this->createAdminUser();
         $this->actingAs($user);
 
-        $existingLabel = new ProductLabel([
+        // id 는 $guarded 이므로 mass assignment 불가 → forceFill 로 주입
+        $existingLabel = (new ProductLabel())->forceFill([
             'id' => 1,
             'name' => ['ko' => '신상품'],
             'color' => '#FF5733',
@@ -197,8 +205,10 @@ class ProductLabelServiceTest extends ModuleTestCase
 
         $data = ['color' => '#00FF00'];
 
-        $updatedLabel = Mockery::mock(ProductLabel::class);
+        // makePartial: getKey 등 Eloquent 메서드 실제 동작 (HookArgumentSerializer 호환)
+        $updatedLabel = Mockery::mock(ProductLabel::class)->makePartial();
         $updatedLabel->shouldReceive('fresh')->andReturnSelf();
+        $updatedLabel->id = 1;
 
         $this->mockRepository
             ->shouldReceive('findById')
@@ -241,13 +251,15 @@ class ProductLabelServiceTest extends ModuleTestCase
 
     public function test_toggle_status_changes_label_status(): void
     {
-        // Given: 활성 라벨 존재
-        $existingLabel = new ProductLabel([
+        // Given: 활성 라벨 존재 (id 는 $guarded → forceFill)
+        $existingLabel = (new ProductLabel())->forceFill([
             'id' => 1,
             'is_active' => true,
         ]);
 
-        $toggledLabel = Mockery::mock(ProductLabel::class);
+        // 반환용 라벨은 real model partial mock 으로 — fresh() 만 mock 하고 나머지 속성은
+        // 실제 모델로 동작 (setAttribute 가 Mockery 를 우회하도록)
+        $toggledLabel = Mockery::mock(ProductLabel::class)->makePartial();
         $toggledLabel->shouldReceive('fresh')->andReturnSelf();
         $toggledLabel->is_active = false;
 
@@ -292,8 +304,8 @@ class ProductLabelServiceTest extends ModuleTestCase
 
     public function test_delete_label_deletes_and_returns_result(): void
     {
-        // Given: 라벨 존재 (연결된 상품 없음)
-        $existingLabel = new ProductLabel([
+        // Given: 라벨 존재 (연결된 상품 없음) — id 는 $guarded → forceFill
+        $existingLabel = (new ProductLabel())->forceFill([
             'id' => 1,
             'name' => ['ko' => '삭제할 라벨'],
         ]);
@@ -326,8 +338,8 @@ class ProductLabelServiceTest extends ModuleTestCase
 
     public function test_delete_label_throws_exception_when_has_products(): void
     {
-        // Given: 연결된 상품이 있는 라벨
-        $existingLabel = new ProductLabel([
+        // Given: 연결된 상품이 있는 라벨 — id 는 $guarded → forceFill
+        $existingLabel = (new ProductLabel())->forceFill([
             'id' => 1,
             'name' => ['ko' => '삭제할 라벨'],
         ]);

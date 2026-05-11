@@ -40,7 +40,7 @@
               "props": {
                 "className": "text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700"
               },
-              "text": "{{$parent._local.previewData?.subject ?? ''}}"
+              "text": "{{_global.ecommerce_notification_template_form_modal?.preview?.subject ?? ''}}"
             }
           ]
         },
@@ -63,7 +63,7 @@
               "type": "composite",
               "name": "HtmlContent",
               "props": {
-                "content": "{{$parent._local.previewData?.body ?? ''}}",
+                "content": "{{_global.ecommerce_notification_template_form_modal?.preview?.body ?? ''}}",
                 "isHtml": true,
                 "className": "prose dark:prose-invert prose-sm max-w-none bg-white dark:bg-gray-900 rounded-md p-4 border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto"
               }

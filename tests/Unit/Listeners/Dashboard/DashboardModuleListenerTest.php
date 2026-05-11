@@ -19,6 +19,11 @@ class DashboardModuleListenerTest extends TestCase
      */
     public function test_listener_broadcasts_stats_on_module_change(): void
     {
+        // HookManager::broadcast 는 broadcasting.default 가 null/log 이면 dispatch 스킵.
+        // 테스트에서 이벤트 발행 경로를 검증하려면 활성 드라이버 + host 설정 필요.
+        config(['broadcasting.default' => 'reverb']);
+        config(['broadcasting.connections.reverb.options.host' => 'localhost']);
+
         Event::fake([GenericBroadcastEvent::class]);
 
         $mockService = Mockery::mock(DashboardService::class);

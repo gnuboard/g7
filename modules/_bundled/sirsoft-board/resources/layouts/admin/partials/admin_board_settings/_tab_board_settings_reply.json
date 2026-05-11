@@ -51,16 +51,6 @@
                   "type": "basic",
                   "name": "Label",
                   "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_reply') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reply') : [...(_local.bulkApplyFields ?? []), 'use_reply']}}"
-                      }
-                    }
-                  ],
                   "children": [
                     {
                       "type": "basic",
@@ -69,7 +59,17 @@
                         "type": "checkbox",
                         "className": "checkbox flex-shrink-0 mt-0.5",
                         "checked": "{{(_local.bulkApplyFields ?? []).includes('use_reply')}}"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_reply') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_reply') : [...(_local.bulkApplyFields ?? []), 'use_reply']}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
@@ -116,16 +116,6 @@
                   "type": "basic",
                   "name": "Label",
                   "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_reply_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_reply_depth') : [...(_local.bulkApplyFields ?? []), 'max_reply_depth']}}"
-                      }
-                    }
-                  ],
                   "children": [
                     {
                       "type": "basic",
@@ -134,7 +124,17 @@
                         "type": "checkbox",
                         "className": "checkbox flex-shrink-0 mt-0.5",
                         "checked": "{{(_local.bulkApplyFields ?? []).includes('max_reply_depth')}}"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_reply_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_reply_depth') : [...(_local.bulkApplyFields ?? []), 'max_reply_depth']}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",

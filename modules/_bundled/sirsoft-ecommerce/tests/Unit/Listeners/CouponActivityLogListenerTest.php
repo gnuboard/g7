@@ -29,7 +29,7 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     {
         parent::setUp();
         $this->app->instance('request', Request::create('/api/admin/sirsoft-ecommerce/test'));
-        $this->listener = new CouponActivityLogListener();
+        $this->listener = app(CouponActivityLogListener::class);
         $this->logChannel = Mockery::mock(\Psr\Log\LoggerInterface::class);
         Log::shouldReceive('channel')
             ->with('activity')
@@ -70,7 +70,8 @@ class CouponActivityLogListenerTest extends ModuleTestCase
                     && $context['description_key'] === 'sirsoft-ecommerce::activity_log.description.coupon_create'
                     && $context['description_params']['coupon_id'] === 10
                     && isset($context['loggable'])
-                    && $context['properties']['name'] === 'Summer Sale';
+                    // Coupon.name 은 AsUnicodeJson cast — 다국어 배열
+                    && $context['properties']['name'] === ['ko' => 'Summer Sale', 'en' => 'Summer Sale'];
             });
 
         $this->listener->handleAfterCreate($coupon, ['name' => 'Summer Sale']);
@@ -224,7 +225,12 @@ class CouponActivityLogListenerTest extends ModuleTestCase
     private function createCouponMock(int $id, ?string $name = null): Coupon
     {
         $coupon = Mockery::mock(Coupon::class)->makePartial();
-        $coupon->forceFill(['id' => $id, 'name' => $name]);
+        // Coupon.name 은 AsUnicodeJson cast (다국어 JSON) — raw JSON 문자열로 세팅
+        $nameArray = $name !== null ? ['ko' => $name, 'en' => $name] : null;
+        $coupon->setRawAttributes([
+            'id' => $id,
+            'name' => $nameArray !== null ? json_encode($nameArray, JSON_UNESCAPED_UNICODE) : null,
+        ], false);
         $coupon->shouldReceive('getKey')->andReturn($id);
         $coupon->shouldReceive('getMorphClass')->andReturn('coupon');
 

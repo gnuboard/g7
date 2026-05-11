@@ -3,14 +3,21 @@
 namespace Modules\Sirsoft\Board\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Models\Comment;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 
 /**
  * 댓글 생성/삭제/복원 시 게시판의 comments_count를 재카운팅합니다.
  */
 class BoardCommentsCountSyncListener implements HookListenerInterface
 {
+    /**
+     * @param  BoardRepositoryInterface  $boardRepository  게시판 Repository
+     */
+    public function __construct(
+        protected BoardRepositoryInterface $boardRepository,
+    ) {}
+
     /**
      * 구독할 훅 목록을 반환합니다.
      *
@@ -33,19 +40,12 @@ class BoardCommentsCountSyncListener implements HookListenerInterface
     /**
      * 게시판의 comments_count를 재카운팅합니다.
      *
-     * @param Comment $comment 댓글 모델
-     * @param string $slug 게시판 slug
+     * @param  Comment  $comment  댓글 모델
+     * @param  string  $slug  게시판 slug
      * @return void
      */
     public function syncCommentsCount(Comment $comment, string $slug): void
     {
-        $count = DB::table('board_comments')
-            ->where('board_id', $comment->board_id)
-            ->whereNull('deleted_at')
-            ->count();
-
-        DB::table('boards')
-            ->where('id', $comment->board_id)
-            ->update(['comments_count' => $count]);
+        $this->boardRepository->recalculateCommentsCount((int) $comment->board_id);
     }
 }

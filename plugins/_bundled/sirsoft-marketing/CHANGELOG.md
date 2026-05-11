@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0-beta.3] - 2026-05-11
+
+### Changed
+
+- 기본 system 마케팅 동의 채널(이메일 수신) 라벨이 활성 언어팩으로 자동 보강되도록 변경
+- sirsoft-page 의존성 제약을 `>=1.0.0-beta.3` 로 정비 (번들 최신 버전과 동기화)
+
 ## [1.0.0-beta.2] - 2026-04-20
 
 ### Changed

@@ -21,6 +21,12 @@ class StoreEcommerceSettingsRequestCustomValidationTest extends TestCase
 
         // 한국어 로케일 설정
         App::setLocale('ko');
+
+        // sirsoft-ecommerce 모듈 번역은 단위 테스트 환경에서 자동 로드되지 않으므로 수동 등록
+        app('translator')->addLines([
+            'validation.custom.language_currency.currencies.name_required' => '통화명은 최소 하나의 언어로 입력해야 합니다.',
+            'validation.custom.language_currency.currencies.duplicate_code' => '중복된 통화 코드: :code',
+        ], 'ko', 'sirsoft-ecommerce');
     }
 
     /**

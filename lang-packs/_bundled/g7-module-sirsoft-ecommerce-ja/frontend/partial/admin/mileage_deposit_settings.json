@@ -1,0 +1,84 @@
+{
+  "title": "マイレージ/デポジット設定",
+  "description": "マイレージおよびデポジットポリシーを設定します。",
+  "view_mileage_history": "マイレージ履歴を表示",
+  "view_deposit_history": "デポジット履歴を表示",
+  "tabs": {
+    "mileage": "マイレージ",
+    "deposit": "デポジット"
+  },
+  "mileage": {
+    "basic_settings": {
+      "title": "基本設定",
+      "use_mileage": "マイレージ使用",
+      "use_mileage_description": "マイレージの積立および使用機能を有効化します。",
+      "default_earn_rate": "基本積立率",
+      "purchase_amount": "購入金額の",
+      "percent_earn": "% 積立",
+      "earn_rate_hint": "商品登録時にデフォルト値として設定されます。",
+      "earn_timing": "積立タイミング",
+      "earn_timing_delivery_complete": "配送完了",
+      "earn_timing_order_complete": "注文完了",
+      "after": "後",
+      "days_after_earn": "日経過時に積立"
+    },
+    "currency_usage": {
+      "title": "通貨別使用単位",
+      "add_currency": "通貨追加",
+      "currency": "通貨",
+      "point_value": "1ポイントあたりの金額",
+      "min_use_amount": "最小使用金額",
+      "use_unit": "使用単位",
+      "max_use_limit": "最大使用限度額",
+      "delete": "削除",
+      "default_currency": "基本通貨",
+      "point": "ポイント",
+      "total_payment_percent": "総決済金額の",
+      "max_amount": "最大金額",
+      "won": "円"
+    },
+    "validity": {
+      "title": "有効期限",
+      "validity_setting": "有効期限設定",
+      "days_expire": "日になる時点で消滅",
+      "expiry_notification": "消滅予定通知",
+      "days_before_expiry": "有効期限が満了する",
+      "days_before": "日前に対象者に通知メール送信"
+    },
+    "notification": {
+      "title": "消滅予定通知トーク",
+      "alimtalk_plugin": "通知トークプラグイン",
+      "expiry_notification": "消滅予定通知",
+      "days_before_expiry": "有効期限が満了する",
+      "days_before": "日前に対象者に通知トーク送信",
+      "template_management": "テンプレート管理"
+    }
+  },
+  "deposit": {
+    "basic_settings": {
+      "title": "基本設定",
+      "use_deposit": "デポジット使用",
+      "use_deposit_description": "デポジット機能を有効化します。",
+      "use_charge": "チャージ機能使用",
+      "use_charge_description": "ユーザーがマイページから決済方法を通じてデポジットをチャージする機能を許可するかどうかを決定します。",
+      "refund_to_deposit": "注文キャンセル/返金時にデポジットで返金",
+      "refund_to_deposit_description": "キャンセル/返金時に発生した返金金をデポジットとして自動積立できるようにユーザーが申請段階で選択できます。"
+    },
+    "charge_refund_settings": {
+      "title": "チャージ/返金設定",
+      "description": "顧客がデポジットをチャージして返金を受け取ることができる条件を設定します。",
+      "min_charge_amount": "最小チャージ金額",
+      "max_charge_amount": "最大チャージ金額",
+      "min_charge_hint": "1回でチャージできる最小金額",
+      "max_charge_hint": "1回でチャージできる最大金額",
+      "charge_bonus": "チャージ時にボーナス支給",
+      "charge_bonus_description": "チャージ金額に応じてボーナスデポジットを追加支給します。",
+      "bonus_threshold": "ボーナス支給基準金額",
+      "bonus_threshold_suffix": "以上",
+      "bonus_rate": "ボーナス支給率",
+      "bonus_rate_suffix": "% 追加支給",
+      "allow_refund": "返金申請許可",
+      "allow_refund_description": "デポジット残高に対する出金(返金)申請機能を許可します。"
+    }
+  }
+}

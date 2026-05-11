@@ -3,6 +3,7 @@
 namespace App\Extension;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Exceptions\CoreVersionMismatchException;
 use App\Extension\Cache\CoreCacheDriver;
 use Composer\Semver\Semver;
 use Exception;
@@ -49,6 +50,8 @@ class CoreVersionChecker
      *
      *   규정 예외: "env() 는 config 파일에서만 사용" 규칙의 본문 예외. 정당성은 버전 판정이
      *   config cache 우회를 요구하기 때문이다.
+     *
+     * @return string 코어 버전 문자열 (예: "7.0.0-beta.4")
      */
     public static function getCoreVersion(): string
     {
@@ -100,12 +103,12 @@ class CoreVersionChecker
         }
 
         if (! self::satisfies($requiredVersion)) {
-            throw new Exception(__('extensions.errors.core_version_mismatch', [
-                'extension' => $identifier,
-                'type' => __('extensions.types.'.$type),
-                'required' => $requiredVersion,
-                'installed' => self::getCoreVersion(),
-            ]));
+            throw new CoreVersionMismatchException(
+                $type,
+                $identifier,
+                $requiredVersion,
+                self::getCoreVersion(),
+            );
         }
 
         return true;

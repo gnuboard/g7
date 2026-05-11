@@ -772,7 +772,24 @@ export class LayoutLoader {
         if (response.status === 401 && !skipToken && token) {
           logger.log('Token invalid, removing and retrying without token');
           apiClient.removeToken();
-          return this.fetchLayout(templateId, layoutPath, true);
+          // hadToken 마킹: 재시도 또한 401 로 끝나면 가드(TemplateApp.showRouteError)가
+          // 토큰 보유 상태였음을 알 수 있어야 reason='session_expired' 를 부여할 수 있다.
+          // 가드 진입 시점에는 이미 apiClient.removeToken() 으로 토큰이 제거되어
+          // getToken() 만 보면 익명 진입과 구분이 불가능하므로 details 에 마킹.
+          try {
+            return await this.fetchLayout(templateId, layoutPath, true);
+          } catch (retryError) {
+            if (
+              retryError instanceof LayoutLoaderError &&
+              retryError.details?.status === 401
+            ) {
+              throw new LayoutLoaderError(retryError.message, retryError.code, {
+                ...retryError.details,
+                hadToken: true,
+              });
+            }
+            throw retryError;
+          }
         }
 
         // API 응답에서 에러 메시지 추출

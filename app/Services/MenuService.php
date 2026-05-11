@@ -42,6 +42,12 @@ class MenuService
         return $this->menuRepository->getTopLevelMenus();
     }
 
+    /**
+     * 메뉴 관리 화면용 최상위 메뉴 목록을 반환합니다 (활성 모듈/플러그인 식별자 기준 필터링).
+     *
+     * @param User|null $user 권한 평가 기준 사용자 (null 이면 권한 필터 미적용)
+     * @return Collection 메뉴 관리 화면용 최상위 메뉴 컬렉션
+     */
     public function getTopLevelMenusForManagement(?User $user = null): Collection
     {
         $activeModuleIdentifiers = $this->moduleService->getActiveModuleIdentifiers();
@@ -50,6 +56,13 @@ class MenuService
         return $this->menuRepository->getTopLevelMenusForManagement($activeModuleIdentifiers, $activePluginIdentifiers, $user);
     }
 
+    /**
+     * 검색/필터 조건이 적용된 메뉴 관리 화면용 최상위 메뉴 목록을 반환합니다.
+     *
+     * @param array $filters 검색 조건 (예: q, source 등)
+     * @param User|null $user 권한 평가 기준 사용자
+     * @return Collection 필터링된 최상위 메뉴 컬렉션
+     */
     public function getFilteredMenusForManagement(array $filters, ?User $user = null): Collection
     {
         $activeModuleIdentifiers = $this->moduleService->getActiveModuleIdentifiers();
@@ -191,6 +204,9 @@ class MenuService
      */
     public function updateMenuOrder(array $menuOrders): bool
     {
+        // 훅: 메뉴 순서 변경 전 (IDV 정책 가드 지점)
+        HookManager::doAction('core.menu.before_update_order', $menuOrders);
+
         $result = $this->menuRepository->updateOrder($menuOrders);
 
         // 훅: 메뉴 순서 변경 후

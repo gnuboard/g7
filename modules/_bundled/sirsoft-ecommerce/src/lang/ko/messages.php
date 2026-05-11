@@ -6,6 +6,9 @@
  * 컨트롤러 응답 메시지
  */
 return [
+    // 복사 작업 시 이름에 추가되는 locale 별 접미사 (ProductNoticeTemplateRepository 등에서 사용)
+    'copy_suffix' => ' (복사)',
+
     'categories' => [
         'list_retrieved' => '카테고리 목록을 조회했습니다.',
         'retrieved' => '카테고리 정보를 조회했습니다.',

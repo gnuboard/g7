@@ -8,7 +8,7 @@ import { flushSync } from 'react-dom';
 import { createRoot as createReactRoot } from 'react-dom/client';
 import { Router } from './routing/Router';
 import type { Route } from './routing/Router';
-import { LayoutLoader } from './template-engine/LayoutLoader';
+import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader';
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
 import { DataBindingEngine } from './template-engine/DataBindingEngine';
 import { evaluateRenderCondition } from './template-engine/helpers/RenderHelpers';
@@ -583,9 +583,16 @@ export class TemplateApp {
                 // 토큰 삭제
                 apiClient.removeToken();
 
-                // 로그인 페이지로 리다이렉트 (queryString 포함)
+                // onUnauthorized 콜백이 발동했다는 것은 토큰이 서버에서 거부되었다는 의미
+                // (apiClient 는 토큰 미보유 시 요청을 skip 하므로 콜백도 발동 안 함).
+                // 즉 사용자는 로그인된 상태였다가 세션이 만료된 케이스이므로
+                // reason='session_expired' 를 부여해 로그인 페이지에서 안내 토스트가 노출되도록 한다.
                 const returnUrl = window.location.pathname + window.location.search;
-                const loginUrl = authManager.getLoginRedirectUrl(authType as AuthType, returnUrl);
+                const loginUrl = authManager.getLoginRedirectUrl(
+                    authType as AuthType,
+                    returnUrl,
+                    'session_expired'
+                );
                 window.location.href = loginUrl;
             });
 
@@ -2508,6 +2515,36 @@ export class TemplateApp {
      * 라우트 에러 화면 표시
      */
     private showRouteError(error: Error): void {
+        // 레이아웃 fetch 401 가드: 토큰 만료 등으로 권한이 사라진 상태에서
+        // 레이아웃을 받지 못하면 코어가 로그인 페이지로 자동 리다이렉트한다.
+        // (Issue #301 — 사용자 인식 문제 해결: 시스템 장애 화면 대신 안내 토스트)
+        //
+        // hadToken 판정 (reason='session_expired' 부여 여부):
+        //   - 현재 apiClient 가 토큰을 보유했거나
+        //   - LayoutLoader 가 첫 401 시점에 토큰을 보유했었다는 마킹(details.hadToken)이 있으면
+        //     세션이 거부된 케이스로 간주 → reason 부여 (토스트 노출)
+        //   - 둘 다 false 면 익명 사용자의 인증 필요 페이지 진입 → reason 미부여
+        //
+        // LayoutLoader 는 401 응답 시 토큰을 자동 제거하고 재시도하므로 가드 진입
+        // 시점에 apiClient.getToken() 만 보면 항상 null 이다. 따라서 LayoutLoader 가
+        // details.hadToken=true 로 마킹하는 정보를 함께 사용해야 한다.
+        if (error instanceof LayoutLoaderError && error.details?.status === 401) {
+            const templateId = this.config.templateId || '';
+            const pathname = window.location.pathname;
+            const authType: AuthType =
+                templateId.includes('admin') || pathname.startsWith('/admin') ? 'admin' : 'user';
+            const returnUrl = pathname + window.location.search;
+            const hadToken =
+                !!getApiClient().getToken() || error.details?.hadToken === true;
+            const loginUrl = AuthManager.getInstance().getLoginRedirectUrl(
+                authType,
+                returnUrl,
+                hadToken ? 'session_expired' : undefined
+            );
+            window.location.href = loginUrl;
+            return;
+        }
+
         // Error를 TemplateEngineError로 변환
         const templateError = toTemplateEngineError(error);
 
@@ -2725,6 +2762,27 @@ export class TemplateApp {
             logger.log('reloadExtensionState: translations reloaded');
         } catch (error) {
             logger.error('reloadExtensionState: translations reload failed', error);
+        }
+
+        // 6. 활성 로케일 목록 갱신 — 언어팩 설치/활성화 직후
+        //    `_global.appConfig.supportedLocales` 가 즉시 반영되도록 한다.
+        //    이 값은 template-engine.ts:createGlobalVariables() 의 `$locales` 의 SSoT 로,
+        //    UserProfile 등 언어 셀렉터 컴포넌트가 새로고침 없이 재렌더링한다.
+        try {
+            const localesResponse = await fetch(`/api/locales/active?_=${Date.now()}`);
+            if (localesResponse.ok) {
+                const localesResult = await localesResponse.json();
+                const locales = localesResult?.data?.locales;
+                if (Array.isArray(locales) && locales.length > 0) {
+                    const currentAppConfig = this.globalState.appConfig ?? {};
+                    this.setGlobalState({
+                        appConfig: { ...currentAppConfig, supportedLocales: locales },
+                    });
+                    logger.log('reloadExtensionState: supportedLocales refreshed', locales);
+                }
+            }
+        } catch (error) {
+            logger.warn('reloadExtensionState: supportedLocales refresh failed', error);
         }
 
         logger.log('reloadExtensionState: done');

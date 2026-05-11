@@ -219,6 +219,7 @@ describe('마이페이지 주문 상세 - 취소 버튼 abilities 기반 권한 
 
 import addressListPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/mypage/addresses/_list.json';
 import orderShowLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/mypage/orders/show.json';
+import orderItemsPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json';
 
 /**
  * 재귀적으로 노드 트리에서 if 조건에 특정 패턴이 포함된 노드를 찾는다.
@@ -259,25 +260,22 @@ function findNodeByIfPattern(node: any, pattern: string): any {
 
 describe('실제 레이아웃 JSON - abilities 패턴 사용 검증', () => {
   it('_list.json 배송지 삭제 버튼이 abilities?.can_delete 조건을 사용한다', () => {
-    // _list.json의 iteration 하위에서 삭제 버튼 찾기
-    const addressListChildren = addressListPartial.children;
-
-    // 배송지 목록 컨테이너 (iteration 사용하는 Div)
-    const iterationDiv = addressListChildren.find(
-      (c: any) => c.iteration && c.iteration.item_var === 'address'
+    // iteration 노드는 partial 트리 깊은 곳에 있을 수 있음 → 전체 트리 검색으로 전환
+    const deleteButton = findNodeByIfPattern(
+      addressListPartial,
+      'address.abilities?.can_delete',
     );
-    expect(iterationDiv).toBeDefined();
-
-    const deleteButton = findNodeByIfPattern(iterationDiv, 'abilities?.can_delete');
     expect(deleteButton).not.toBeNull();
     expect(deleteButton.if).toBe('{{address.abilities?.can_delete === true}}');
-    // is_default 기반이 아닌 abilities 기반 조건 확인
     expect(deleteButton.if).not.toContain('is_default');
   });
 
-  it('show.json 주문 취소 버튼이 abilities?.can_cancel 조건을 사용한다', () => {
-    const cancelButton = findNodeByIfPattern(orderShowLayout, 'abilities?.can_cancel');
+  it('주문 취소 버튼이 abilities?.can_cancel 조건을 사용한다 (_items partial 로 이전)', () => {
+    // show.json 의 인라인 취소 버튼 → _items.json partial 로 이전됨
+    const cancelButton = findNodeByIfPattern(orderItemsPartial, 'abilities?.can_cancel');
     expect(cancelButton).not.toBeNull();
-    expect(cancelButton.if).toBe('{{order.data.abilities?.can_cancel === true}}');
+    expect(cancelButton.if).toContain('order.data.abilities?.can_cancel === true');
+    // show.json 자체에는 단순 모달 partial 만 등록되어 있음
+    void orderShowLayout;
   });
 });

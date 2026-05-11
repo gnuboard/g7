@@ -37,6 +37,13 @@ class ShippingCarrier extends Model
         'sort_order',
     ];
 
+    /**
+     * 다국어 JSON 컬럼 — sub-key dot-path 단위 user_overrides 보존.
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableTrackableFields = ['name'];
+
     protected $table = 'ecommerce_shipping_carriers';
 
     protected $fillable = [
@@ -61,7 +68,9 @@ class ShippingCarrier extends Model
     ];
 
     /**
-     * 생성자 관계
+     * 배송사 레코드를 생성한 사용자 관계 (created_by FK).
+     *
+     * @return BelongsTo 생성자 사용자 관계
      */
     public function creator(): BelongsTo
     {
@@ -69,7 +78,9 @@ class ShippingCarrier extends Model
     }
 
     /**
-     * 수정자 관계
+     * 배송사 레코드를 마지막으로 수정한 사용자 관계 (updated_by FK).
+     *
+     * @return BelongsTo 수정자 사용자 관계
      */
     public function updater(): BelongsTo
     {
@@ -77,9 +88,10 @@ class ShippingCarrier extends Model
     }
 
     /**
-     * 현재 로케일의 배송사명 반환
+     * 현재 로케일의 배송사명을 반환합니다 (다국어 fallback chain 적용).
      *
-     * @param  string|null  $locale  로케일 (기본값: 현재 앱 로케일)
+     * @param  string|null  $locale  반환할 로케일. null 이면 현재 앱 로케일 사용
+     * @return string 로케일별 배송사명, 누락 시 fallback 로케일/첫 번째 키 순으로 시도
      */
     public function getLocalizedName(?string $locale = null): string
     {
@@ -90,7 +102,7 @@ class ShippingCarrier extends Model
             return '';
         }
 
-        return $name[$locale] ?? $name['ko'] ?? $name['en'] ?? $name[array_key_first($name)] ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
@@ -109,7 +121,9 @@ class ShippingCarrier extends Model
     }
 
     /**
-     * 국내 배송사 여부
+     * 국내 배송사 여부 (type 이 'domestic' 인지) 를 반환합니다.
+     *
+     * @return bool 국내 배송사면 true
      */
     public function isDomestic(): bool
     {
@@ -117,7 +131,9 @@ class ShippingCarrier extends Model
     }
 
     /**
-     * 국제 배송사 여부
+     * 국제 배송사 여부 (type 이 'international' 인지) 를 반환합니다.
+     *
+     * @return bool 국제 배송사면 true
      */
     public function isInternational(): bool
     {

@@ -102,10 +102,11 @@ class ModuleRolePermissionTest extends TestCase
     {
         $this->moduleManager->installModule('sirsoft-board');
 
-        // 권한이 생성되었는지 확인 (계층형 구조: 모듈 1 + 카테고리 3 + 개별 권한 8 = 12개)
+        // 권한이 생성되었는지 확인 (계층형 구조: 모듈 1 + 카테고리 4 + 개별 권한 10 = 15개)
+        // 카테고리: boards, settings, identity.policies (beta.4 추가), reports
         $permissions = Permission::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-board')->get();
-        $this->assertCount(12, $permissions);
+        $this->assertCount(15, $permissions);
 
         $identifiers = $permissions->pluck('identifier')->toArray();
         // 1레벨: 모듈 노드
@@ -113,6 +114,7 @@ class ModuleRolePermissionTest extends TestCase
         // 2레벨: 카테고리 노드
         $this->assertContains('sirsoft-board.boards', $identifiers);
         $this->assertContains('sirsoft-board.settings', $identifiers);
+        $this->assertContains('sirsoft-board.identity.policies', $identifiers);
         $this->assertContains('sirsoft-board.reports', $identifiers);
         // 3레벨: 개별 권한 - boards
         $this->assertContains('sirsoft-board.boards.read', $identifiers);
@@ -122,6 +124,9 @@ class ModuleRolePermissionTest extends TestCase
         // 3레벨: 개별 권한 - settings
         $this->assertContains('sirsoft-board.settings.read', $identifiers);
         $this->assertContains('sirsoft-board.settings.update', $identifiers);
+        // 3레벨: 개별 권한 - identity.policies (beta.4)
+        $this->assertContains('sirsoft-board.identity.policies.read', $identifiers);
+        $this->assertContains('sirsoft-board.identity.policies.update', $identifiers);
         // 3레벨: 개별 권한 - reports
         $this->assertContains('sirsoft-board.reports.view', $identifiers);
         $this->assertContains('sirsoft-board.reports.manage', $identifiers);
@@ -134,10 +139,11 @@ class ModuleRolePermissionTest extends TestCase
     {
         $this->moduleManager->installModule('sirsoft-board');
 
-        // admin role에 모든 개별 권한(8개)이 할당되었는지 확인 (boards 4 + settings 2 + reports 2)
+        // admin role에 모든 개별 권한(10개)이 할당되었는지 확인
+        // (boards 4 + settings 2 + identity.policies 2 + reports 2 = 10, beta.4 부터)
         $adminRole = Role::where('identifier', 'admin')->first();
         $adminPermissions = $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->get();
-        $this->assertCount(8, $adminPermissions);
+        $this->assertCount(10, $adminPermissions);
 
         // manager role에 할당된 권한 확인 (boards: read, create, update + reports: view = 4개)
         $managerRole = Role::where('identifier', 'manager')->first();
@@ -180,7 +186,10 @@ class ModuleRolePermissionTest extends TestCase
     }
 
     /**
-     * 모듈 제거 시 권한이 role에서 분리되는지 테스트
+     * 모듈 제거 (deleteData=true) 시 권한이 role에서 분리되는지 테스트
+     *
+     * PO 정책(#716eef99d, 2026-04-20): deleteData=true 경로에서만 권한 detach + 삭제.
+     * deleteData=false 경로는 권한 보존 (재설치 시 사용자 역할 할당 복원 목적).
      */
     public function test_module_uninstallation_detaches_permissions_from_roles(): void
     {
@@ -190,8 +199,8 @@ class ModuleRolePermissionTest extends TestCase
         $adminRole = Role::where('identifier', 'admin')->first();
         $this->assertTrue($adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->exists());
 
-        // 모듈 제거
-        $this->moduleManager->uninstallModule('sirsoft-board');
+        // 모듈 제거 — deleteData=true 로 권한 detach + 삭제 경로 사용
+        $this->moduleManager->uninstallModule('sirsoft-board', deleteData: true);
 
         // 권한이 분리되었는지 확인
         $adminRole->refresh();
@@ -199,7 +208,7 @@ class ModuleRolePermissionTest extends TestCase
     }
 
     /**
-     * 모듈 제거 시 권한이 삭제되는지 테스트
+     * 모듈 제거 (deleteData=true) 시 권한이 삭제되는지 테스트
      */
     public function test_module_uninstallation_deletes_permissions(): void
     {
@@ -208,8 +217,8 @@ class ModuleRolePermissionTest extends TestCase
         // 권한이 존재하는지 확인
         $this->assertTrue(Permission::where('extension_identifier', 'sirsoft-board')->exists());
 
-        // 모듈 제거
-        $this->moduleManager->uninstallModule('sirsoft-board');
+        // 모듈 제거 — deleteData=true 로 권한 전수 삭제 경로 사용
+        $this->moduleManager->uninstallModule('sirsoft-board', deleteData: true);
 
         // 권한이 삭제되었는지 확인
         $this->assertFalse(Permission::where('extension_identifier', 'sirsoft-board')->exists());
@@ -284,16 +293,16 @@ class ModuleRolePermissionTest extends TestCase
         $this->moduleManager->installModule('sirsoft-board');
 
         // 계층형 구조에서 개별 권한(3레벨)만 role에 할당됨
-        // 모듈의 getPermissions()에서 정의된 개별 권한 8개만 할당되어야 함
+        // 모듈의 getPermissions()에서 정의된 개별 권한 10개만 할당되어야 함 (beta.4 부터)
         $adminRole = Role::where('identifier', 'admin')->first();
 
-        // admin role에 할당된 모듈 권한 개수 확인 (개별 권한 8개)
+        // admin role에 할당된 모듈 권한 개수 확인 (개별 권한 10개)
         $assignedPermissions = $adminRole->permissions()->where('extension_identifier', 'sirsoft-board')->count();
-        $this->assertEquals(8, $assignedPermissions);
+        $this->assertEquals(10, $assignedPermissions);
 
-        // 전체 모듈 권한 개수 확인 (모듈 1 + 카테고리 3 + 개별 8 = 12개)
+        // 전체 모듈 권한 개수 확인 (모듈 1 + 카테고리 4 + 개별 10 = 15개)
         $totalModulePermissions = Permission::where('extension_identifier', 'sirsoft-board')->count();
-        $this->assertEquals(12, $totalModulePermissions);
+        $this->assertEquals(15, $totalModulePermissions);
 
         // 개별 권한만 role에 할당되었는지 확인
         $assignedIdentifiers = $adminRole->permissions()

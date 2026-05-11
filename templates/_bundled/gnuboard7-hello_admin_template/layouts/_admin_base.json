@@ -1,0 +1,85 @@
+{
+  "version": "1.0.0",
+  "layout_name": "_admin_base",
+  "meta": {
+    "title": "$t:admin.base_layout_title",
+    "is_base": true
+  },
+  "slots": {
+    "content": [
+      {
+        "id": "admin_shell",
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "flex min-h-screen bg-gray-50"
+        },
+        "children": [
+          {
+            "id": "sidebar",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4"
+            },
+            "children": [
+              {
+                "id": "sidebar_title",
+                "type": "basic",
+                "name": "H2",
+                "props": {
+                  "className": "text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                },
+                "text": "$t:admin.sidebar.title"
+              },
+              {
+                "id": "nav_dashboard",
+                "type": "basic",
+                "name": "A",
+                "props": {
+                  "href": "/admin",
+                  "className": "block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                },
+                "text": "$t:admin.sidebar.dashboard"
+              }
+            ]
+          },
+          {
+            "id": "main_column",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "flex-1 flex flex-col"
+            },
+            "children": [
+              {
+                "id": "header",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                  "className": "h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center px-6"
+                },
+                "children": [
+                  {
+                    "id": "header_title",
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                      "className": "text-sm font-medium text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:admin.header.title"
+                  }
+                ]
+              },
+              {
+                "id": "content_slot",
+                "type": "slot",
+                "name": "content"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

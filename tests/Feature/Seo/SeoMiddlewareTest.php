@@ -169,8 +169,8 @@ class SeoMiddlewareTest extends TestCase
         $this->renderer->method('render')->willReturn($renderedHtml);
 
         $this->cacheManager->expects($this->once())
-            ->method('put')
-            ->with('/products', $this->anything(), $renderedHtml);
+            ->method('putWithLayout')
+            ->with('/products', $this->anything(), $renderedHtml, $this->anything());
 
         $this->middleware->handle($request, $this->spaNext());
     }
@@ -373,6 +373,110 @@ class SeoMiddlewareTest extends TestCase
         $this->assertEquals('ko', app()->getLocale());
     }
 
+    // ========================================
+    // jaybizzle 라이브러리 통합 — 실제 BotDetector 사용
+    // ========================================
+
+    /**
+     * kakaotalk-scrap UA(라이브러리 미커버 → G7 보강 패턴)도 SEO 렌더링 경로로 진입하는지 검증.
+     * BotDetector 를 mock 없이 실제로 사용하여 라이브러리 통합이 미들웨어 단에서 동작함을 확인.
+     */
+    public function test_kakaotalk_scrap_routed_to_seo_pipeline(): void
+    {
+        $request = $this->createRequest(
+            '/products',
+            'facebookexternalhit/1.1;kakaotalk-scrap/1.0;+https://devtalk.kakao.com/t/scrap/33984',
+        );
+        $renderedHtml = '<html><head><meta property="og:title" content="..."></head></html>';
+
+        config([
+            'g7_settings.core.seo.bot_detection_enabled' => true,
+            'g7_settings.core.seo.bot_detection_library_enabled' => true,
+            'g7_settings.core.seo.bot_user_agents' => [],
+        ]);
+
+        $this->cacheManager->method('get')->willReturn(null);
+        $this->renderer->method('render')->willReturn($renderedHtml);
+
+        // mock BotDetector 대신 컨테이너에서 실제 인스턴스를 꺼내 미들웨어 재구성.
+        $middleware = new SeoMiddleware(
+            app(BotDetector::class),
+            $this->cacheManager,
+            $this->renderer,
+        );
+
+        $response = $middleware->handle($request, $this->spaNext());
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals($renderedHtml, $response->getContent());
+        $this->assertStringContainsString('og:title', $response->getContent());
+    }
+
+    /**
+     * 회귀: facebookexternalhit/1.1 UA 가 봇으로 감지되어 SEO 렌더 파이프라인으로 진입.
+     *
+     * 기존 회귀: 라이브러리 통합 누락 시 페이스북이 SPA 응답을 받아 미리보기가 표시 안 됨.
+     */
+    public function test_facebook_external_hit_routed_to_seo_pipeline(): void
+    {
+        $request = $this->createRequest('/shop/products/99', 'facebookexternalhit/1.1');
+        $renderedHtml = '<meta property="og:image" content="https://example.com/p.jpg">';
+
+        config([
+            'g7_settings.core.seo.bot_detection_enabled' => true,
+            'g7_settings.core.seo.bot_detection_library_enabled' => true,
+            'g7_settings.core.seo.bot_user_agents' => [],
+        ]);
+
+        $this->cacheManager->method('get')->willReturn(null);
+        $this->renderer->method('render')->willReturn($renderedHtml);
+
+        $middleware = new SeoMiddleware(
+            app(BotDetector::class),
+            $this->cacheManager,
+            $this->renderer,
+        );
+
+        $response = $middleware->handle($request, $this->spaNext());
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals($renderedHtml, $response->getContent());
+    }
+
+    /**
+     * 회귀: Slackbot-LinkExpanding UA 가 봇으로 감지되어 SEO 렌더 파이프라인으로 진입.
+     *
+     * 기존 회귀: Slack unfurl 이 SPA 응답을 받아 미리보기 카드가 표시 안 됨.
+     */
+    public function test_slackbot_routed_to_seo_pipeline(): void
+    {
+        $request = $this->createRequest(
+            '/shop/products/99',
+            'Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)'
+        );
+        $renderedHtml = '<meta name="twitter:card" content="summary_large_image">';
+
+        config([
+            'g7_settings.core.seo.bot_detection_enabled' => true,
+            'g7_settings.core.seo.bot_detection_library_enabled' => true,
+            'g7_settings.core.seo.bot_user_agents' => [],
+        ]);
+
+        $this->cacheManager->method('get')->willReturn(null);
+        $this->renderer->method('render')->willReturn($renderedHtml);
+
+        $middleware = new SeoMiddleware(
+            app(BotDetector::class),
+            $this->cacheManager,
+            $this->renderer,
+        );
+
+        $response = $middleware->handle($request, $this->spaNext());
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals($renderedHtml, $response->getContent());
+    }
+
     /**
      * ?locale=en 시 캐시 키에 locale이 반영되는지 검증
      */
@@ -392,8 +496,8 @@ class SeoMiddlewareTest extends TestCase
         $this->renderer->method('render')->willReturn($renderedHtml);
 
         $this->cacheManager->expects($this->once())
-            ->method('put')
-            ->with('/products', 'en', $renderedHtml);
+            ->method('putWithLayout')
+            ->with('/products', 'en', $renderedHtml, $this->anything());
 
         $this->middleware->handle($request, $this->spaNext());
     }

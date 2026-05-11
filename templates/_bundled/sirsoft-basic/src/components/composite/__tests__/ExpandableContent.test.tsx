@@ -48,12 +48,13 @@ import { ExpandableContent } from '../ExpandableContent';
 
 describe('ExpandableContent', () => {
   beforeEach(() => {
-    // ResizeObserver mock
-    global.ResizeObserver = vi.fn().mockImplementation(() => ({
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: vi.fn(),
-    }));
+    // ResizeObserver mock — Vitest 4.x 에서 vi.fn().mockImplementation 은 new 연산자
+    // 적용 시 'is not a constructor' 에러 발생. class 문법으로 정의해야 함.
+    global.ResizeObserver = class MockResizeObserver {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    } as any;
   });
 
   it('children을 렌더링합니다', () => {

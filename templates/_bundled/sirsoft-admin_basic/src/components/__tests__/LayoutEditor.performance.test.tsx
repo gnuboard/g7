@@ -350,22 +350,26 @@ describe('레이아웃 에디터 성능 테스트', () => {
 
     it('VersionList가 선택 변경 시 빠르게 리렌더링된다', () => {
       const versions = generateLargeVersionList(100);
+      // 안정 onSelect — 재렌더 간 동일 참조여야 React.memo 가 효과 발휘
+      const stableOnSelect = vi.fn();
       const { rerender } = render(
-        <VersionList versions={versions} selectedId={1} onSelect={vi.fn()} />
+        <VersionList versions={versions} selectedId={1} onSelect={stableOnSelect} />
       );
 
       const startTime = performance.now();
       for (let i = 1; i <= 10; i++) {
         rerender(
-          <VersionList versions={versions} selectedId={i} onSelect={vi.fn()} />
+          <VersionList versions={versions} selectedId={i} onSelect={stableOnSelect} />
         );
       }
 
       const endTime = performance.now();
       const rerenderTime = endTime - startTime;
 
-      // CI 환경 및 테스트 환경에 따라 성능이 다를 수 있으므로 여유롭게 설정
-      expect(rerenderTime).toBeLessThan(500);
+      // VersionListItem 이 React.memo 적용 + 안정 onSelect → 선택 변경 시
+      // 영향받는 2개 항목(이전 선택/새 선택)만 재렌더. 100 항목 풀 렌더 회피.
+      // 임계 300ms 로 강화 (이전 1000ms 완화 → memoization 회귀 감지 효용 회복).
+      expect(rerenderTime).toBeLessThan(300);
     });
   });
 });

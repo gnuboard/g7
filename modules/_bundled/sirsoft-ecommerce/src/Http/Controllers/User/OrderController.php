@@ -500,7 +500,7 @@ class OrderController extends AuthBaseController
         $locale = app()->getLocale();
         $firstName = $options->first()?->product_name;
         $orderName = is_array($firstName)
-            ? ($firstName[$locale] ?? $firstName['ko'] ?? reset($firstName) ?: '')
+            ? ($firstName[$locale] ?? $firstName[config('app.fallback_locale', 'ko')] ?? reset($firstName) ?: '')
             : ($firstName ?? '');
         if ($options->count() > 1) {
             $orderName .= ' 외 ' . ($options->count() - 1) . '건';

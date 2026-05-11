@@ -235,6 +235,9 @@ class AttachmentService
         // → 미매핑 시 모든 사용자 허용
         HookManager::checkHookPermission('core.attachment.download', $user);
 
+        // 액션 훅 - IDV 정책 가드 지점 (filter 훅과 병행)
+        HookManager::doAction('core.attachment.before_download_action', $attachment, $user);
+
         // 필터 훅 - 다운로드 전 처리 (다운로드 카운트 증가 등)
         $attachment = HookManager::applyFilters('core.attachment.before_download', $attachment, $user);
 

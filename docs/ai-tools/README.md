@@ -13,7 +13,7 @@ AI 코딩 도구에서 사용하는 슬래시 커맨드 스킬입니다. 코드 
 | [create-module.md](skills/create-module.md) | 모듈 스캐폴딩 |
 | [extract-i18n-keys.md](skills/extract-i18n-keys.md) | 다국어 키 추출 |
 | [run-tests.md](skills/run-tests.md) | 테스트 실행 |
-| [validate-code.md](skills/validate-code.md) | 백엔드 코드 패턴 검증 |
+| [validate-backend.md](skills/validate-backend.md) | 백엔드 코드 패턴 검증 |
 | [validate-frontend.md](skills/validate-frontend.md) | 프론트엔드 레이아웃 검증 |
 | [validate-hook.md](skills/validate-hook.md) | 훅 패턴 검증 |
 | [validate-i18n.md](skills/validate-i18n.md) | 다국어 검증 |

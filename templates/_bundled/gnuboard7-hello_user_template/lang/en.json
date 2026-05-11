@@ -1,0 +1,52 @@
+{
+    "user": {
+        "base_layout_title": "Hello User Template",
+        "base_layout_description": "Gnuboard7 learning minimal sample user template",
+        "header": {
+            "home_link": "Hello",
+            "tagline": "Minimal learning sample"
+        },
+        "footer": {
+            "copyright": "© gnuboard7 Hello User Template"
+        },
+        "nav": {
+            "home": "Home"
+        },
+        "home": {
+            "page_title": "Home",
+            "page_description": "Hello user template home",
+            "welcome_title": "Welcome!",
+            "welcome_description": "This is the home page of the learning minimal sample user template.",
+            "memos_title": "Recent Memos",
+            "memos_empty": "No memos to display.",
+            "back_to_home": "Go Home"
+        }
+    },
+    "error": {
+        "back_to_home": "Back to Home",
+        "401": {
+            "title": "Sign in required",
+            "description": "Please sign in to continue."
+        },
+        "403": {
+            "title": "Access denied",
+            "description": "You don't have permission to access this page."
+        },
+        "404": {
+            "title": "Page not found",
+            "description": "The page you're looking for may have moved or no longer exists."
+        },
+        "500": {
+            "title": "Something went wrong",
+            "description": "Please try again in a moment."
+        },
+        "503": {
+            "title": "Temporarily unavailable",
+            "description": "We're updating the service. Please try again soon."
+        },
+        "maintenance": {
+            "title": "Under maintenance",
+            "description": "We're briefly updating things to improve your experience."
+        }
+    }
+}

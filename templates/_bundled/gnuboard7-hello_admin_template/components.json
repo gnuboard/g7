@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "components": {
+    "basic": {
+      "Div": {
+        "file": "src/components/basic/Div.tsx",
+        "description": "HTML div 래퍼"
+      },
+      "Button": {
+        "file": "src/components/basic/Button.tsx",
+        "description": "HTML button 래퍼 (기본 type=button)"
+      },
+      "H1": {
+        "file": "src/components/basic/H1.tsx",
+        "description": "HTML h1 래퍼"
+      },
+      "H2": {
+        "file": "src/components/basic/H2.tsx",
+        "description": "HTML h2 래퍼"
+      },
+      "H3": {
+        "file": "src/components/basic/H3.tsx",
+        "description": "HTML h3 래퍼"
+      },
+      "A": {
+        "file": "src/components/basic/A.tsx",
+        "description": "HTML a 래퍼"
+      },
+      "Span": {
+        "file": "src/components/basic/Span.tsx",
+        "description": "HTML span 래퍼"
+      },
+      "Img": {
+        "file": "src/components/basic/Img.tsx",
+        "description": "HTML img 래퍼"
+      }
+    }
+  }
+}

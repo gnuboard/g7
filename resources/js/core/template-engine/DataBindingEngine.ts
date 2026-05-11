@@ -1081,18 +1081,35 @@ export class DataBindingEngine {
 
       // $localized 헬퍼 함수 추가
       // 다국어 객체에서 현재 로케일에 해당하는 값을 반환
-      // 사용법: $localized(value) - 문자열이면 그대로 반환, 객체면 로케일 우선순위에 따라 반환
+      // 사용법:
+      //   $localized(value)            - 객체면 로케일 우선순위로 반환, 문자열이면 그대로
+      //   $localized(value, fallbackKey) - 활성 로케일 키 부재 시 $t(fallbackKey) 호출
+      //                                   (settings JSON 등 시스템 카탈로그의 lang pack 보강용)
       const locale = context.$locale || 'ko';
-      extendedContext.$localized = (value: any): string => {
-        if (value == null) {
+      extendedContext.$localized = (value: any, fallbackKey?: string): string => {
+        if (value == null && !fallbackKey) {
           return '';
         }
         if (typeof value === 'string') {
           return value;
         }
-        if (typeof value === 'object') {
-          // 로케일 우선순위: 현재 로케일 > ko > en > 첫 번째 값
-          return value[locale] || value.ko || value.en || Object.values(value)[0] || '';
+        // 1. 객체의 활성 로케일 키
+        if (value && typeof value === 'object' && value[locale]) {
+          return value[locale];
+        }
+        // 2. fallbackKey 가 있으면 $t() 로 lang pack 보강 시도
+        if (fallbackKey && typeof fallbackKey === 'string') {
+          const translated = extendedContext.$t ? extendedContext.$t(fallbackKey) : fallbackKey;
+          if (translated && translated !== fallbackKey) {
+            return translated;
+          }
+        }
+        // 3. 객체의 ko / en / 첫 번째 값
+        if (value && typeof value === 'object') {
+          return value.ko || value.en || Object.values(value)[0] || '';
+        }
+        if (value == null) {
+          return '';
         }
         return String(value);
       };

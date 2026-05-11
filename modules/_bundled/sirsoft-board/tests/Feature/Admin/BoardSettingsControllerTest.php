@@ -190,6 +190,71 @@ class BoardSettingsControllerTest extends ModuleTestCase
     }
 
     /**
+     * 신고 정책의 알림 채널 배열이 저장 시 보존되는지 확인
+     *
+     * 회귀 방지: StoreBoardSettingsRequest 에 채널 검증 규칙이 누락되면
+     * validatedSettings() 가 채널 키를 stripping 하여 사용자가 선택한 값이
+     * 사라지고 저장 후 응답에 기본값이 반환되던 버그 (2026-04-27 발견).
+     */
+    public function test_admin_can_save_report_policy_notification_channels(): void
+    {
+        $response = $this->actingAs($this->adminUser)
+            ->putJson('/api/modules/sirsoft-board/admin/settings', [
+                '_tab' => 'report_policy',
+                'report_policy' => [
+                    'notify_admin_on_report' => true,
+                    'notify_admin_on_report_scope' => 'per_case',
+                    'notify_admin_on_report_channels' => ['mail'], // 사용자가 mail 만 선택
+                    'notify_author_on_report_action' => true,
+                    'notify_author_on_report_action_channels' => ['database'], // 사용자가 database 만 선택
+                ],
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertTrue($response->json('success'));
+
+        // PUT 응답에서 사용자 선택값이 그대로 반영되는지 확인
+        $this->assertEquals(
+            ['mail'],
+            $response->json('data.report_policy.notify_admin_on_report_channels')
+        );
+        $this->assertEquals(
+            ['database'],
+            $response->json('data.report_policy.notify_author_on_report_action_channels')
+        );
+
+        // 후속 GET 요청에서도 영구 저장 확인
+        $followUp = $this->actingAs($this->adminUser)
+            ->getJson('/api/modules/sirsoft-board/admin/settings/report_policy');
+
+        $followUp->assertStatus(200);
+        $this->assertEquals(
+            ['mail'],
+            $followUp->json('data.settings.notify_admin_on_report_channels')
+        );
+        $this->assertEquals(
+            ['database'],
+            $followUp->json('data.settings.notify_author_on_report_action_channels')
+        );
+    }
+
+    /**
+     * 채널 검증 — 허용되지 않는 값은 거부되는지 확인
+     */
+    public function test_save_rejects_invalid_notification_channel(): void
+    {
+        $response = $this->actingAs($this->adminUser)
+            ->putJson('/api/modules/sirsoft-board/admin/settings', [
+                '_tab' => 'report_policy',
+                'report_policy' => [
+                    'notify_admin_on_report_channels' => ['mail', 'sms'], // sms 는 미허용
+                ],
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    /**
      * 유효하지 않은 카테고리는 무시되는지 확인
      */
     public function test_store_ignores_invalid_categories(): void

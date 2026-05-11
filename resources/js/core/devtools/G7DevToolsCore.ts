@@ -5413,7 +5413,7 @@ export class G7DevToolsCore {
                 description: '핸들러가 성공적으로 완료되었지만 상태나 데이터소스 변경이 없습니다. 의도한 동작인지 확인하세요.',
                 handlerName: detail.handlerName,
                 suggestion: '핸들러 내부 조건문을 확인하거나 DevTools의 "변경감지" 탭에서 exitLocation을 확인하세요.',
-                docLink: '.claude/docs/frontend/troubleshooting-state.md',
+                docLink: 'troubleshooting-state.md',
             });
         }
 
@@ -5510,7 +5510,7 @@ export class G7DevToolsCore {
                 handlerName: executionId ? this.executionDetails.get(executionId)?.handlerName || 'unknown' : 'unknown',
                 statePath: path,
                 suggestion: '불변성을 유지하여 새 객체를 생성하세요. 예: { ...oldObject, newField: value }',
-                docLink: '.claude/docs/frontend/troubleshooting-state.md#object-mutation',
+                docLink: 'troubleshooting-state.md#object-mutation',
             });
         }
     }
@@ -5607,7 +5607,7 @@ export class G7DevToolsCore {
                     handlerName: detail.handlerName,
                     statePath: expectedPath,
                     suggestion: '핸들러 내부 로직을 확인하세요. early return이나 조건부 분기로 인해 변경이 생략되었을 수 있습니다.',
-                    docLink: '.claude/docs/frontend/troubleshooting-state.md',
+                    docLink: 'troubleshooting-state.md',
                 });
             }
         }
@@ -5623,7 +5623,7 @@ export class G7DevToolsCore {
                     handlerName: detail.handlerName,
                     dataSourceId: expectedDs,
                     suggestion: 'refetchDataSource 호출이 실행되었는지 확인하세요.',
-                    docLink: '.claude/docs/frontend/data-sources.md',
+                    docLink: 'data-sources.md',
                 });
             }
         }

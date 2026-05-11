@@ -15,7 +15,9 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 class StoreShippingPolicyRequest extends FormRequest
 {
     /**
-     * 권한 확인
+     * 권한 검사는 라우트의 permission 미들웨어가 담당하므로 FormRequest 레벨은 통과시킵니다.
+     *
+     * @return bool 항상 true
      */
     public function authorize(): bool
     {
@@ -23,7 +25,9 @@ class StoreShippingPolicyRequest extends FormRequest
     }
 
     /**
-     * 유효성 검사 규칙
+     * 배송 정책 저장 요청의 유효성 검사 규칙을 반환합니다 (훅으로 동적 확장 가능).
+     *
+     * @return array<string, mixed> 필드별 validation rules
      */
     public function rules(): array
     {
@@ -79,7 +83,9 @@ class StoreShippingPolicyRequest extends FormRequest
     }
 
     /**
-     * 유효성 검사 메시지
+     * 유효성 검사 실패 시 표시할 다국어 메시지를 반환합니다.
+     *
+     * @return array<string, string> rule key → 번역된 메시지
      */
     public function messages(): array
     {
@@ -106,7 +112,13 @@ class StoreShippingPolicyRequest extends FormRequest
     }
 
     /**
-     * 추가 검증 (구간별 배송비 연속성, 비무료 정책 배송비 0원 금지 등)
+     * 단일 필드 rules 로 표현 불가한 cross-field 검증을 추가합니다.
+     *
+     * - 구간별 배송비 tiers 의 연속성 (시작=0, 마지막=무제한)
+     * - 비무료 정책의 base_fee 0 원 금지
+     * - shipping_method=custom 일 때 custom_shipping_name 다국어 필수
+     *
+     * @param  \Illuminate\Validation\Validator  $validator  Laravel validator 인스턴스
      */
     public function withValidator(\Illuminate\Validation\Validator $validator): void
     {
@@ -248,7 +260,7 @@ class StoreShippingPolicyRequest extends FormRequest
             }
 
             $customName = $cs['custom_shipping_name'] ?? [];
-            $localeName = is_array($customName) ? trim($customName[$locale] ?? $customName['ko'] ?? '') : '';
+            $localeName = is_array($customName) ? trim($customName[$locale] ?? $customName[config('app.fallback_locale', 'ko')] ?? '') : '';
 
             if ($localeName === '') {
                 $validator->errors()->add(

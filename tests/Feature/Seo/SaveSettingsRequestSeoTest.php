@@ -343,4 +343,46 @@ class SaveSettingsRequestSeoTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    // ========================================
+    // generator 메타 태그 검증 테스트
+    // ========================================
+
+    /**
+     * generator_enabled boolean 전송 시 유효성 검증 통과
+     */
+    public function test_generator_enabled_boolean_passes_validation(): void
+    {
+        $response = $this->postSeoSettings([
+            'generator_enabled' => false,
+        ]);
+
+        $response->assertStatus(200);
+    }
+
+    /**
+     * generator_content 200자 이내 전송 시 유효성 검증 통과
+     */
+    public function test_generator_content_within_limit_passes_validation(): void
+    {
+        $response = $this->postSeoSettings([
+            'generator_enabled' => true,
+            'generator_content' => 'GnuBoard7',
+        ]);
+
+        $response->assertStatus(200);
+    }
+
+    /**
+     * generator_content 200자 초과 전송 시 422 응답
+     */
+    public function test_generator_content_exceeding_limit_fails_validation(): void
+    {
+        $response = $this->postSeoSettings([
+            'generator_content' => str_repeat('a', 201),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['seo.generator_content']);
+    }
 }

@@ -240,57 +240,59 @@ class ExtensionScheduleRegistrationTest extends TestCase
         $schedule = new Schedule($this->app);
         $this->app->instance(Schedule::class, $schedule);
 
-        // routes/console.php의 확장 스케줄 등록 블록과 동일한 로직 실행
-        if (file_exists(base_path('.env'))) {
-            try {
-                $moduleManager = app(ModuleManager::class);
-                foreach ($moduleManager->getActiveModules() as $module) {
-                    foreach ($module->getSchedules() as $config) {
-                        if (empty($config['command']) || empty($config['schedule'])) {
-                            continue;
-                        }
+        // routes/console.php의 확장 스케줄 등록 블록과 동일한 로직 실행.
+        //
+        // 본 테스트는 등록 로직 자체를 검증하므로 production 의 `.env` 부트스트랩 가드는
+        // 그대로 옮기지 않는다 (.env 부재 시 등록을 스킵하는 가드는 통합 부팅 안전망일 뿐
+        // 단위 검증 대상이 아님).
+        try {
+            $moduleManager = app(ModuleManager::class);
+            foreach ($moduleManager->getActiveModules() as $module) {
+                foreach ($module->getSchedules() as $config) {
+                    if (empty($config['command']) || empty($config['schedule'])) {
+                        continue;
+                    }
 
-                        $cmd = $schedule->command($config['command']);
+                    $cmd = $schedule->command($config['command']);
 
-                        str_contains($config['schedule'], ' ')
-                            ? $cmd->cron($config['schedule'])
-                            : $cmd->{$config['schedule']}();
+                    str_contains($config['schedule'], ' ')
+                        ? $cmd->cron($config['schedule'])
+                        : $cmd->{$config['schedule']}();
 
-                        if (isset($config['description'])) {
-                            $cmd->description($config['description']);
-                        }
+                    if (isset($config['description'])) {
+                        $cmd->description($config['description']);
+                    }
 
-                        if (isset($config['enabled_config'])) {
-                            $cmd->when(fn () => config($config['enabled_config'], true));
-                        }
+                    if (isset($config['enabled_config'])) {
+                        $cmd->when(fn () => config($config['enabled_config'], true));
                     }
                 }
-
-                $pluginManager = app(PluginManager::class);
-                foreach ($pluginManager->getActivePlugins() as $plugin) {
-                    foreach ($plugin->getSchedules() as $config) {
-                        if (empty($config['command']) || empty($config['schedule'])) {
-                            continue;
-                        }
-
-                        $cmd = $schedule->command($config['command']);
-
-                        str_contains($config['schedule'], ' ')
-                            ? $cmd->cron($config['schedule'])
-                            : $cmd->{$config['schedule']}();
-
-                        if (isset($config['description'])) {
-                            $cmd->description($config['description']);
-                        }
-
-                        if (isset($config['enabled_config'])) {
-                            $cmd->when(fn () => config($config['enabled_config'], true));
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                Log::debug('확장 스케줄 등록 스킵', ['error' => $e->getMessage()]);
             }
+
+            $pluginManager = app(PluginManager::class);
+            foreach ($pluginManager->getActivePlugins() as $plugin) {
+                foreach ($plugin->getSchedules() as $config) {
+                    if (empty($config['command']) || empty($config['schedule'])) {
+                        continue;
+                    }
+
+                    $cmd = $schedule->command($config['command']);
+
+                    str_contains($config['schedule'], ' ')
+                        ? $cmd->cron($config['schedule'])
+                        : $cmd->{$config['schedule']}();
+
+                    if (isset($config['description'])) {
+                        $cmd->description($config['description']);
+                    }
+
+                    if (isset($config['enabled_config'])) {
+                        $cmd->when(fn () => config($config['enabled_config'], true));
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::debug('확장 스케줄 등록 스킵', ['error' => $e->getMessage()]);
         }
 
         return $schedule;

@@ -410,13 +410,13 @@ describe('TemplateEngine - updateTemplateData()', () => {
     );
   });
 
-  it('렌더링 없이 업데이트 시 에러를 던져야 함', async () => {
+  it('렌더링 없이 업데이트 시 예외 없이 pendingDataUpdates 큐에 저장되어야 함', async () => {
+    // engine 변경: 렌더링 전 updateTemplateData 호출은 throw 하지 않고
+    // pendingDataUpdates 큐에 저장하여 reactRoot 준비 후 자동 반영됨
     destroyTemplate();
     await initTemplateEngine({ templateId: 'test-template' });
 
-    expect(() => updateTemplateData({ a: 1 })).toThrow(
-      '렌더링된 템플릿이 없습니다'
-    );
+    expect(() => updateTemplateData({ a: 1 })).not.toThrow();
   });
 
   it('기존 데이터를 유지해야 함', () => {
@@ -774,11 +774,9 @@ describe('TemplateEngine - 에러 처리 시나리오', () => {
       '템플릿 엔진이 초기화되지 않았습니다'
     );
 
-    // updateTemplateData before render
+    // updateTemplateData before render → pending 큐에 저장 (예외 없음)
     await initTemplateEngine({ templateId: 'test' });
-    expect(() => updateTemplateData({ a: 1 })).toThrow(
-      '렌더링된 템플릿이 없습니다'
-    );
+    expect(() => updateTemplateData({ a: 1 })).not.toThrow();
   });
 
   // NOTE: ComponentRegistry.loadComponents()는 initTemplateEngine에서 호출되지 않음

@@ -7,12 +7,14 @@ use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\GithubHelper;
+use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
@@ -374,6 +376,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  설치할 템플릿명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  bool  $force  Updating/Failed 등 진행 중 상태도 무시하고 강제 설치 여부
      * @return bool 설치 성공 여부
      *
      * @throws \Exception 템플릿을 찾을 수 없거나 의존성 문제 시
@@ -495,6 +498,15 @@ class TemplateManager implements TemplateManagerInterface
             throw new \Exception(__('templates.errors.already_active'));
         }
 
+        // 코어 버전 호환성 사전 검증
+        if (! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
+            CoreVersionChecker::validateExtension(
+                $template['g7_version'] ?? null,
+                $templateName,
+                'template'
+            );
+        }
+
         // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
         $missingModules = [];
         $missingPlugins = [];
@@ -560,6 +572,9 @@ class TemplateManager implements TemplateManagerInterface
             // 데이터베이스 상태 업데이트
             $this->templateRepository->updateByIdentifier($templateName, [
                 'status' => ExtensionStatus::Active->value,
+                'deactivated_reason' => null,
+                'deactivated_at' => null,
+                'incompatible_required_version' => null,
                 'updated_at' => now(),
             ]);
 
@@ -617,10 +632,15 @@ class TemplateManager implements TemplateManagerInterface
      * 지정된 템플릿을 비활성화합니다.
      *
      * @param  string  $templateName  비활성화할 템플릿명 (identifier)
+     * @param  string  $reason  비활성화 사유 (DeactivationReason enum value: manual|incompatible_core)
+     * @param  string|null  $incompatibleRequiredVersion  incompatible_core 사유 시 요구된 코어 버전 제약
      * @return bool 비활성화 성공 여부
      */
-    public function deactivateTemplate(string $templateName): bool
-    {
+    public function deactivateTemplate(
+        string $templateName,
+        string $reason = DeactivationReason::Manual->value,
+        ?string $incompatibleRequiredVersion = null,
+    ): bool {
         $template = $this->getTemplate($templateName);
         if (! $template) {
             return false;
@@ -640,6 +660,9 @@ class TemplateManager implements TemplateManagerInterface
 
         $this->templateRepository->updateByIdentifier($templateName, [
             'status' => ExtensionStatus::Inactive->value,
+            'deactivated_reason' => $reason,
+            'deactivated_at' => now(),
+            'incompatible_required_version' => $incompatibleRequiredVersion,
             'updated_at' => now(),
         ]);
 
@@ -648,6 +671,9 @@ class TemplateManager implements TemplateManagerInterface
 
         // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
         $this->incrementExtensionCacheVersion();
+
+        // PO #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
+        HookManager::doAction('core.templates.after_deactivate', $templateName);
 
         Log::info(__('templates.messages.template_deactivated'), [
             'template' => $templateName,
@@ -790,6 +816,7 @@ class TemplateManager implements TemplateManagerInterface
                     'dependencies' => $template['dependencies'] ?? [],
                     'status' => 'uninstalled',
                     'source' => 'active',
+                    'hidden' => (bool) ($template['hidden'] ?? false),
                 ];
             }
         }
@@ -809,6 +836,7 @@ class TemplateManager implements TemplateManagerInterface
                     'dependencies' => $metadata['dependencies'] ?? [],
                     'status' => 'uninstalled',
                     'source' => 'pending',
+                    'hidden' => (bool) ($metadata['hidden'] ?? false),
                 ];
             }
         }
@@ -828,6 +856,7 @@ class TemplateManager implements TemplateManagerInterface
                     'dependencies' => $metadata['dependencies'] ?? [],
                     'status' => 'uninstalled',
                     'source' => 'bundled',
+                    'hidden' => (bool) ($metadata['hidden'] ?? false),
                 ];
             }
         }
@@ -882,6 +911,7 @@ class TemplateManager implements TemplateManagerInterface
                     'update_source' => $record->update_source ?? null,
                     'github_url' => $template['github_url'] ?? ($record->github_url ?? null),
                     'github_changelog_url' => $record->github_changelog_url ?? ($template['github_changelog_url'] ?? null),
+                    'hidden' => (bool) ($template['hidden'] ?? false),
                     'user_modified_at' => $record->user_modified_at,
                     'created_at' => $record->created_at,
                     'updated_at' => $record->updated_at,
@@ -891,7 +921,14 @@ class TemplateManager implements TemplateManagerInterface
 
         return $installedTemplates;
     }
-
+    /**
+     * 템플릿 식별자에 대한 메타데이터(다국어 치환 + 활성 상태 포함)를 조회합니다.
+     *
+     * 활성 디렉토리에 존재하지 않으면 pending/bundled 메타데이터로 폴백합니다.
+     *
+     * @param  string  $templateName  템플릿 식별자
+     * @return array<string, mixed>|null 템플릿 메타데이터 (이름·설명·버전·상태 등) 또는 부재 시 null
+     */
     public function getTemplateInfo(string $templateName): ?array
     {
         $template = $this->getTemplate($templateName);
@@ -913,15 +950,20 @@ class TemplateManager implements TemplateManagerInterface
         // 컴포넌트 정보 조회
         $components = $this->getTemplateComponents($templateName);
 
+        // 다국어 필드는 DB row(applyExtensionManifests 가 활성 언어팩 ja 등을 주입) 우선,
+        // 미설치 시 template.json 폴백.
+        $nameJson = $templateRecord?->name ?: $template['name'];
+        $descriptionJson = $templateRecord?->description ?: ($template['description'] ?? '');
+
         return [
             'identifier' => $template['identifier'],
             'vendor' => $template['vendor'],
-            'name' => $this->getLocalizedValue($template['name'], $locale),
+            'name' => $this->getLocalizedValue($nameJson, $locale),
             'version' => $template['version'],
             'latest_version' => $template['latest_version'] ?? null,
             'update_available' => $template['update_available'] ?? false,
             'type' => $template['type'],
-            'description' => $this->getLocalizedValue($template['description'] ?? '', $locale),
+            'description' => $this->getLocalizedValue($descriptionJson, $locale),
             'github_url' => $template['github_url'] ?? null,
             'github_changelog_url' => $template['github_changelog_url'] ?? null,
             'requires_core' => $template['g7_version'] ?? null,
@@ -1911,6 +1953,7 @@ class TemplateManager implements TemplateManagerInterface
      * DB에 저장된 레이아웃을 최신 파일 내용으로 갱신합니다.
      *
      * @param  string  $identifier  템플릿 식별자
+     * @param  bool  $preserveModified  운영자가 관리자 UI 에서 수정한 레이아웃은 덮어쓰지 않을지 여부 (true 면 user_overrides 보존)
      * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
      *
      * @throws \Exception 템플릿을 찾을 수 없거나 레이아웃 갱신 실패 시
@@ -2525,16 +2568,12 @@ class TemplateManager implements TemplateManagerInterface
     {
         $record = $this->templateRepository->findByIdentifier($identifier);
         if (! $record) {
-            return [
-                'update_available' => false,
-                'update_source' => null,
-                'latest_version' => null,
-                'current_version' => null,
-            ];
+            return $this->buildTemplateUpdateResponse(false, null, null, null, null);
         }
 
         $currentVersion = $record->version;
         $template = $this->getTemplate($identifier);
+        $activeRequiredCoreVersion = $template['g7_version'] ?? null;
 
         // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (조회 성공 시 GitHub만 신뢰)
         $githubUrl = $template['github_url'] ?? ($record->github_url ?? null);
@@ -2551,61 +2590,74 @@ class TemplateManager implements TemplateManagerInterface
             }
 
             if ($latestVersion !== null) {
-                // GitHub 조회 성공 → GitHub 결과만 신뢰 (bundled 폴백 없음)
                 if (version_compare($latestVersion, $currentVersion, '>')) {
-                    return [
-                        'update_available' => true,
-                        'update_source' => 'github',
-                        'latest_version' => $latestVersion,
-                        'current_version' => $currentVersion,
-                    ];
+                    return $this->buildTemplateUpdateResponse(
+                        true, 'github', $latestVersion, $currentVersion, $activeRequiredCoreVersion
+                    );
                 }
 
-                return [
-                    'update_available' => false,
-                    'update_source' => null,
-                    'latest_version' => $currentVersion,
-                    'current_version' => $currentVersion,
-                ];
+                return $this->buildTemplateUpdateResponse(
+                    false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion
+                );
             }
 
-            // GitHub 조회 실패 → _bundled 폴백 안내
             Log::info('템플릿 업데이트 확인: GitHub 조회 실패로 bundled 폴백', [
                 'template' => $identifier,
             ]);
         }
 
-        // 2. _bundled에서 업데이트 확인 (GitHub URL 없음 OR GitHub 조회 실패)
+        // 2. _bundled에서 업데이트 확인
         if (isset($this->bundledTemplates[$identifier])) {
             $bundledVersion = $this->bundledTemplates[$identifier]['version'] ?? null;
+            $bundledRequired = $this->bundledTemplates[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
             if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
-                return [
-                    'update_available' => true,
-                    'update_source' => 'bundled',
-                    'latest_version' => $bundledVersion,
-                    'current_version' => $currentVersion,
-                ];
+                return $this->buildTemplateUpdateResponse(
+                    true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
+                );
             }
         } else {
             $bundledMeta = ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json');
             if (isset($bundledMeta[$identifier])) {
                 $bundledVersion = $bundledMeta[$identifier]['version'] ?? null;
+                $bundledRequired = $bundledMeta[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
                 if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
-                    return [
-                        'update_available' => true,
-                        'update_source' => 'bundled',
-                        'latest_version' => $bundledVersion,
-                        'current_version' => $currentVersion,
-                    ];
+                    return $this->buildTemplateUpdateResponse(
+                        true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
+                    );
                 }
             }
         }
 
+        return $this->buildTemplateUpdateResponse(
+            false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion
+        );
+    }
+
+    /**
+     * checkTemplateUpdate 응답 페이로드 빌더 (호환성 메타 부착).
+     *
+     * @param  bool  $updateAvailable  업데이트 가용 여부
+     * @param  string|null  $updateSource  업데이트 소스 (github|bundled|null)
+     * @param  string|null  $latestVersion  최신 버전
+     * @param  string|null  $currentVersion  현재 설치된 버전
+     * @param  string|null  $requiredCoreVersion  요구 코어 버전 제약
+     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string}
+     */
+    protected function buildTemplateUpdateResponse(
+        bool $updateAvailable,
+        ?string $updateSource,
+        ?string $latestVersion,
+        ?string $currentVersion,
+        ?string $requiredCoreVersion,
+    ): array {
         return [
-            'update_available' => false,
-            'update_source' => null,
-            'latest_version' => $currentVersion,
+            'update_available' => $updateAvailable,
+            'update_source' => $updateSource,
+            'latest_version' => $latestVersion,
             'current_version' => $currentVersion,
+            'required_core_version' => $requiredCoreVersion,
+            'is_compatible' => CoreVersionChecker::isCompatible($requiredCoreVersion),
+            'current_core_version' => CoreVersionChecker::getCoreVersion(),
         ];
     }
 
@@ -2788,6 +2840,8 @@ class TemplateManager implements TemplateManagerInterface
      * @param  bool  $force  버전 비교 없이 강제 업데이트
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
+     * @param  string|null  $sourceOverride  소스 강제 지정 ('bundled' | 'github'). null 이면 자동 감지
+     * @param  string|null  $zipPath  사용자가 업로드한 ZIP 경로 (sourceOverride 가 'zip' 일 때 필수)
      * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
      *
      * @throws \RuntimeException 업데이트 실패 시
@@ -2869,6 +2923,16 @@ class TemplateManager implements TemplateManagerInterface
             $toVersion = $updateInfo['latest_version'];
             $updateSource = $updateInfo['update_source'];
         }
+
+        // 다운그레이드 차단 — fromVersion > toVersion 인 경우 force=false 면 차단.
+        // force=true 는 의도적 다운그레이드 (장애 롤백 등) 허용. lang pack/모듈/플러그인과 일관.
+        if ($fromVersion && version_compare($toVersion, $fromVersion, '<') && ! $force) {
+            throw new \RuntimeException(__('templates.errors.downgrade_blocked', [
+                'from' => $fromVersion,
+                'to' => $toVersion,
+            ]));
+        }
+
         $backupPath = null;
 
         try {
@@ -2899,6 +2963,16 @@ class TemplateManager implements TemplateManagerInterface
                 } elseif ($updateSource === 'zip') {
                     $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->templatesPath, $identifier);
                     ExtensionPendingHelper::stageForUpdate($zipExtractedDir, $stagingPath, $onProgress);
+                }
+
+                // 3.5. 코어 버전 호환성 사전 검증 (staging manifest 기준)
+                if ($stagingPath && ! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
+                    $stagedManifest = (new Vendor\VendorIntegrityChecker)->readManifest($stagingPath);
+                    CoreVersionChecker::validateExtension(
+                        $stagedManifest['g7_version'] ?? null,
+                        $identifier,
+                        'template'
+                    );
                 }
 
                 // 4. 원자적 적용 (스테이징 → 활성 디렉토리)

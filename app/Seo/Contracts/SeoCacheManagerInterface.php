@@ -23,6 +23,18 @@ interface SeoCacheManagerInterface
     public function put(string $url, string $locale, string $html): void;
 
     /**
+     * 레이아웃명과 함께 SEO 캐시에 렌더링된 HTML 을 저장합니다.
+     *
+     * `invalidateByLayout()` 동작을 위해 레이아웃명을 함께 저장합니다.
+     *
+     * @param  string  $url  URL
+     * @param  string  $locale  로케일
+     * @param  string  $html  렌더링된 HTML
+     * @param  string  $layoutName  레이아웃명 (빈 문자열 허용)
+     */
+    public function putWithLayout(string $url, string $locale, string $html, string $layoutName): void;
+
+    /**
      * 특정 URL 패턴의 SEO 캐시를 무효화합니다.
      *
      * @param  string  $urlPattern  URL 패턴 (와일드카드 지원)

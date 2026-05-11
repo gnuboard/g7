@@ -61,8 +61,11 @@ class RoleUserOverridesListenerTest extends TestCase
         $this->roleRepository->shouldReceive('update')
             ->once()
             ->with($role, Mockery::on(function ($arg) {
-                return in_array('name', $arg['user_overrides'], true)
-                    && ! in_array('description', $arg['user_overrides'], true);
+                // 다국어 JSON name/description 은 sub-key dot-path 단위 (7.0.0-beta.4+)
+                return in_array('name.ko', $arg['user_overrides'], true)
+                    && in_array('name.en', $arg['user_overrides'], true)
+                    && ! in_array('description.ko', $arg['user_overrides'], true)
+                    && ! in_array('description.en', $arg['user_overrides'], true);
             }))
             ->andReturn(true);
 
@@ -70,7 +73,7 @@ class RoleUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * description 변경 시 user_overrides에 "description" 기록
+     * description 변경 시 user_overrides에 sub-key dot-path 기록
      */
     public function test_description_change_records_user_override(): void
     {
@@ -84,8 +87,9 @@ class RoleUserOverridesListenerTest extends TestCase
         $this->roleRepository->shouldReceive('update')
             ->once()
             ->with($role, Mockery::on(function ($arg) {
-                return in_array('description', $arg['user_overrides'], true)
-                    && ! in_array('name', $arg['user_overrides'], true);
+                return in_array('description.ko', $arg['user_overrides'], true)
+                    && in_array('description.en', $arg['user_overrides'], true)
+                    && ! in_array('name.ko', $arg['user_overrides'], true);
             }))
             ->andReturn(true);
 
@@ -154,15 +158,15 @@ class RoleUserOverridesListenerTest extends TestCase
      */
     public function test_duplicate_override_not_added(): void
     {
-        // name이 이미 user_overrides에 있는 경우
+        // name.ko/name.en 가 이미 user_overrides 에 있는 경우 (sub-key dot-path 형식)
         $role = new Role();
         $role->name = ['ko' => '관리자', 'en' => 'Admin'];
         $role->description = ['ko' => '설명', 'en' => 'Description'];
-        $role->forceFill(['user_overrides' => ['name']]);
+        $role->forceFill(['user_overrides' => ['name.ko', 'name.en']]);
 
         $data = ['name' => ['ko' => '최고관리자', 'en' => 'Super Admin']];
 
-        // name이 이미 있으므로 update 호출 안 됨
+        // 모든 변경 sub-key 가 이미 있으므로 update 호출 안 됨
         $this->roleRepository->shouldNotReceive('update');
 
         $this->listener->handleBeforeUpdate($role, $data);

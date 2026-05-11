@@ -1,0 +1,26 @@
+{
+  "auth": {
+    "$partial": "partial/auth.json"
+  },
+  "nav": {
+    "$partial": "partial/nav.json"
+  },
+  "admin": {
+    "$partial": "partial/admin.json"
+  },
+  "common": {
+    "$partial": "partial/common.json"
+  },
+  "attachment": {
+    "$partial": "partial/attachment.json"
+  },
+  "errors": {
+    "$partial": "partial/errors.json"
+  },
+  "countries": {
+    "$partial": "partial/countries.json"
+  },
+  "extensions": {
+    "$partial": "partial/extensions.json"
+  }
+}

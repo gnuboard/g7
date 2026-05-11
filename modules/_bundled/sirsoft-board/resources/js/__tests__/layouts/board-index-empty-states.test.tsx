@@ -1,733 +1,174 @@
-// @vitest-environment jsdom
 /**
  * @file board-index-empty-states.test.tsx
- * @description 게시판 목록 - 빈 상태, 로딩/오류, 글쓰기 버튼 렌더링 테스트
+ * @description 게시판 목록 - 빈 상태 / 로딩 / 오류 / 글쓰기 버튼 레이아웃 JSON 구조 검증
  *
- * 검증 항목:
- * 1. 빈 상태 3종 (빈 페이지 / 게시글 없음 / 검색 결과 없음) 조건부 렌더링
- * 2. 로딩 스켈레톤 / 오류 페이지 조건부 렌더링
- * 3. 글쓰기 버튼 권한별 분기 (allowed / no_permission / not_logged_in)
+ * 검증 방식: 레이아웃 JSON 트리 구조 직접 분석 (DOM 렌더링 비의존).
+ * 빈 상태/로딩/오류 분기는 JSON 의 if 표현식과 컴포넌트 트리로 충분히 검증 가능.
+ * (testId 도입을 회피하고 RTL 권장 패턴인 구조 검증으로 통합 — issue #204 후속 결정)
  */
 
-import '@testing-library/jest-dom';
-import React from 'react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
-import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import { describe, it, expect } from 'vitest';
 
-// G7Core 전역 모킹
-(globalThis as any).window = globalThis.window || globalThis;
-(window as any).G7Core = (window as any).G7Core || {
-  createChangeEvent: vi.fn((data: { checked?: boolean; name?: string; value?: any }) => ({
-    target: {
-      checked: data.checked ?? false,
-      name: data.name ?? '',
-      value: data.value ?? (data.checked ? 'on' : 'off'),
-      type: 'checkbox',
-    },
-    currentTarget: {
-      checked: data.checked ?? false,
-      name: data.name ?? '',
-      value: data.value ?? (data.checked ? 'on' : 'off'),
-      type: 'checkbox',
-    },
-    preventDefault: vi.fn(),
-    stopPropagation: vi.fn(),
-  })),
-  state: {
-    get: vi.fn(),
-    set: vi.fn(),
-    update: vi.fn(),
-    subscribe: vi.fn(() => vi.fn()),
-  },
-  toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
-  modal: { open: vi.fn(), close: vi.fn() },
-  events: { emit: vi.fn(), on: vi.fn(() => vi.fn()), off: vi.fn() },
-  t: (key: string) => key,
-};
-
-// ============================================================
-// 테스트용 컴포넌트 정의
-// ============================================================
-
-const TestDiv: React.FC<{
-  className?: string;
-  children?: React.ReactNode;
-  'data-testid'?: string;
-}> = ({ className, children, 'data-testid': testId }) => (
-  <div className={className} data-testid={testId}>
-    {children}
-  </div>
-);
-
-const TestButton: React.FC<{
-  className?: string;
-  children?: React.ReactNode;
-  text?: string;
-  type?: string;
-  onClick?: () => void;
-  'data-testid'?: string;
-}> = ({ className, children, text, onClick, 'data-testid': testId }) => (
-  <button className={className} onClick={onClick} data-testid={testId}>
-    {children || text}
-  </button>
-);
-
-const TestSpan: React.FC<{
-  className?: string;
-  children?: React.ReactNode;
-  text?: string;
-}> = ({ className, children, text }) => (
-  <span className={className}>{children || text}</span>
-);
-
-const TestH1: React.FC<{
-  className?: string;
-  children?: React.ReactNode;
-  text?: string;
-}> = ({ className, children, text }) => (
-  <h1 className={className}>{children || text}</h1>
-);
-
-const TestH2: React.FC<{
-  className?: string;
-  children?: React.ReactNode;
-  text?: string;
-}> = ({ className, children, text }) => (
-  <h2 className={className}>{children || text}</h2>
-);
-
-const TestP: React.FC<{
-  className?: string;
-  children?: React.ReactNode;
-  text?: string;
-}> = ({ className, children, text }) => (
-  <p className={className}>{children || text}</p>
-);
-
-const TestIcon: React.FC<{
-  name?: string;
-  size?: string;
-  className?: string;
-}> = ({ name, size, className }) => (
-  <i className={className} data-icon={name} data-size={size} />
-);
-
-const TestContainer: React.FC<{
-  className?: string;
-  children?: React.ReactNode;
-}> = ({ className, children }) => (
-  <div className={className} data-testid="container">
-    {children}
-  </div>
-);
-
-const TestSearchBar: React.FC<{
-  name?: string;
-  placeholder?: string;
-  value?: string;
-  showButton?: boolean;
-  className?: string;
-  onSubmit?: (e: React.FormEvent) => void;
-}> = ({ name, placeholder, value, className, onSubmit }) => (
-  <form onSubmit={onSubmit} data-testid="search-bar">
-    <input name={name} placeholder={placeholder} defaultValue={value} />
-  </form>
-);
-
-const TestPagination: React.FC<{
-  currentPage?: number;
-  totalPages?: number;
-  className?: string;
-  onPageChange?: (page: number) => void;
-}> = ({ currentPage, totalPages, className }) => (
-  <nav className={className} data-testid="pagination">
-    <span>
-      Page {currentPage} of {totalPages}
-    </span>
-  </nav>
-);
-
-const TestSelect: React.FC<{
-  value?: string | number;
-  className?: string;
-  options?: Array<{ value: string | number; label: string }>;
-  onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-}> = ({ value, className, options, onChange }) => (
-  <select value={value} className={className} onChange={onChange}>
-    {options?.map((opt) => (
-      <option key={opt.value} value={opt.value}>
-        {opt.label}
-      </option>
-    ))}
-  </select>
-);
-
-// ============================================================
-// 컴포넌트 레지스트리 설정
-// ============================================================
-
-function setupTestRegistry(): ComponentRegistry {
-  const registry = ComponentRegistry.getInstance();
-
-  (registry as any).registry = {
-    Fragment: { component: ({ children }: any) => <>{children}</>, metadata: { name: 'Fragment', type: 'layout' } },
-    Div: { component: TestDiv, metadata: { name: 'Div', type: 'basic' } },
-    Button: { component: TestButton, metadata: { name: 'Button', type: 'basic' } },
-    Span: { component: TestSpan, metadata: { name: 'Span', type: 'basic' } },
-    H1: { component: TestH1, metadata: { name: 'H1', type: 'basic' } },
-    H2: { component: TestH2, metadata: { name: 'H2', type: 'basic' } },
-    P: { component: TestP, metadata: { name: 'P', type: 'basic' } },
-    Icon: { component: TestIcon, metadata: { name: 'Icon', type: 'basic' } },
-    Select: { component: TestSelect, metadata: { name: 'Select', type: 'basic' } },
-    Container: { component: TestContainer, metadata: { name: 'Container', type: 'layout' } },
-    SearchBar: { component: TestSearchBar, metadata: { name: 'SearchBar', type: 'composite' } },
-    Pagination: { component: TestPagination, metadata: { name: 'Pagination', type: 'composite' } },
-  };
-
-  return registry;
-}
-
-// ============================================================
-// 레이아웃 JSON (빈 상태 + 로딩/오류 + 글쓰기 버튼 검증용)
-// ============================================================
+// 게시판 목록의 빈 상태 / 로딩-오류 partial
+import emptyStatesPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/index/_empty_states.json';
+import loadingErrorPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/index/_loading_error.json';
+import writeButtonPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/index/_write_button.json';
 
 /**
- * 리팩토링된 index.json 구조의 핵심 부분을 재현
- * partial 분리된 내용을 인라인으로 포함 (테스트 편의)
+ * 컴포넌트 트리에서 if 표현식이 특정 패턴을 포함하는 첫 노드를 찾는다.
  */
-const boardIndexLayoutJson = {
-  version: '1.0.0',
-  layout_name: 'board_index_empty_states_test',
-  data_sources: [
-    {
-      id: 'posts',
-      type: 'api',
-      endpoint: '/api/modules/sirsoft-board/boards/test-board/posts',
-      method: 'GET',
-      params: {
-        page: '{{query.page ?? 1}}',
-        search: "{{query.search ?? ''}}",
-        category: "{{query.category ?? ''}}",
-      },
-      auto_fetch: true,
-      auth_required: true,
-    },
-  ],
-  components: [
-    {
-      comment: '로딩 스켈레톤 (오류 없을 때만)',
-      type: 'layout',
-      name: 'Container',
-      if: '{{!posts?.data?.board && !_global.hasError}}',
-      props: { 'data-testid': 'loading-skeleton' },
-      children: [
-        {
-          type: 'basic',
-          name: 'P',
-          text: '게시글을 불러오는 중입니다...',
-        },
-      ],
-    },
-    {
-      comment: '오류 페이지',
-      type: 'layout',
-      name: 'Container',
-      if: '{{_global.hasError}}',
-      props: { 'data-testid': 'error-page' },
-      children: [
-        {
-          type: 'basic',
-          name: 'H2',
-          props: { 'data-testid': 'error-title' },
-          text: '일시적인 오류가 발생했습니다',
-        },
-        {
-          type: 'basic',
-          name: 'Button',
-          props: { 'data-testid': 'reload-btn' },
-          text: '새로고침',
-          actions: [{ type: 'click', handler: 'refresh' }],
-        },
-      ],
-    },
-    {
-      comment: '메인 컨테이너 (데이터 로드 완료 시)',
-      type: 'layout',
-      name: 'Container',
-      if: '{{posts?.data?.board}}',
-      children: [
-        {
-          type: 'basic',
-          name: 'H1',
-          props: { 'data-testid': 'board-title' },
-          text: "{{posts?.data?.board?.name ?? ''}}",
-        },
-        {
-          comment: '글쓰기 버튼',
-          type: 'basic',
-          name: 'Button',
-          props: { 'data-testid': 'write-btn' },
-          actions: [
-            {
-              type: 'click',
-              handler: 'switch',
-              params: {
-                value:
-                  "{{posts?.data?.permissions?.posts_write ? 'allowed' : (_global.currentUser?.uuid ? 'no_permission' : 'not_logged_in')}}",
-              },
-              cases: {
-                allowed: {
-                  handler: 'navigate',
-                  params: { path: '/board/{{route.slug}}/write' },
-                },
-                no_permission: {
-                  handler: 'toast',
-                  params: { type: 'warning', message: '글쓰기 권한이 없습니다' },
-                },
-                not_logged_in: {
-                  handler: 'sequence',
-                  actions: [
-                    {
-                      handler: 'toast',
-                      params: { type: 'info', message: '글을 작성하려면 로그인이 필요합니다' },
-                    },
-                    {
-                      handler: 'navigate',
-                      params: {
-                        path: '/login',
-                        query: { redirect: '/board/{{route.slug}}/write' },
-                      },
-                    },
-                  ],
-                },
-              },
-            },
-          ],
-          children: [
-            { type: 'basic', name: 'Icon', props: { name: 'pencil', size: 'sm' } },
-            { type: 'basic', name: 'Span', text: '글쓰기' },
-          ],
-        },
-        {
-          comment: '빈 페이지 (page > 1 + 데이터 0건)',
-          type: 'basic',
-          name: 'Div',
-          if: '{{posts?.data?.board?.slug && query.page && Number(query.page) > 1 && posts?.data?.data?.length === 0}}',
-          props: {
-            className: 'flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl',
-            'data-testid': 'empty-page',
-          },
-          children: [
-            { type: 'basic', name: 'P', text: '해당 페이지에 게시글이 없습니다' },
-            {
-              type: 'basic',
-              name: 'Button',
-              text: '첫 페이지로 이동',
-              props: { 'data-testid': 'go-first-btn' },
-              actions: [
-                {
-                  type: 'click',
-                  handler: 'navigate',
-                  params: { path: '/board/{{route.slug}}' },
-                },
-              ],
-            },
-          ],
-        },
-        {
-          comment: '게시글 없음 (검색/카테고리 아닐 때)',
-          type: 'basic',
-          name: 'Div',
-          if: "{{posts?.data?.board?.slug && !query.search && !query.category && (!query.page || Number(query.page) <= 1) && posts?.data?.pagination?.total === 0}}",
-          props: {
-            className: 'flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl',
-            'data-testid': 'empty-no-posts',
-          },
-          children: [
-            { type: 'basic', name: 'P', text: '등록된 게시글이 없습니다' },
-          ],
-        },
-        {
-          comment: '검색 결과 없음',
-          type: 'basic',
-          name: 'Div',
-          if: '{{posts?.data?.board?.slug && (query.search || query.category) && posts?.data?.pagination?.total === 0}}',
-          props: {
-            className: 'flex flex-col items-center justify-center py-16 text-center bg-gray-100/70 dark:bg-gray-800/50 rounded-xl',
-            'data-testid': 'empty-search',
-          },
-          children: [
-            { type: 'basic', name: 'P', text: '검색 결과가 없습니다' },
-            {
-              type: 'basic',
-              name: 'Button',
-              text: '검색 초기화',
-              props: { 'data-testid': 'clear-search-btn' },
-              actions: [
-                {
-                  type: 'click',
-                  handler: 'navigate',
-                  params: { path: '/board/{{route.slug}}' },
-                },
-              ],
-            },
-          ],
-        },
-        {
-          comment: '페이지네이션',
-          type: 'composite',
-          name: 'Pagination',
-          props: {
-            currentPage: '{{posts?.data?.pagination?.current_page ?? 1}}',
-            totalPages: '{{posts?.data?.pagination?.last_page ?? 1}}',
-          },
-        },
-      ],
-    },
-  ],
-};
+function findByIfPattern(node: any, pattern: string): any | null {
+    if (!node) return null;
+    if (typeof node.if === 'string' && node.if.includes(pattern)) return node;
+    if (Array.isArray(node.children)) {
+        for (const child of node.children) {
+            const found = findByIfPattern(child, pattern);
+            if (found) return found;
+        }
+    }
+    return null;
+}
 
-// ============================================================
-// 테스트 데이터
-// ============================================================
+/**
+ * 컴포넌트 트리에서 text 가 특정 i18n 키를 포함하는 노드를 모두 찾는다.
+ */
+function findAllByText(node: any, textPattern: string): any[] {
+    const results: any[] = [];
+    if (!node) return results;
+    if (typeof node.text === 'string' && node.text.includes(textPattern)) results.push(node);
+    if (Array.isArray(node.children)) {
+        for (const child of node.children) {
+            results.push(...findAllByText(child, textPattern));
+        }
+    }
+    return results;
+}
 
-/** 게시글이 있는 기본 응답 */
-const boardWithPostsResponse = {
-  data: {
-    board: {
-      id: 1,
-      slug: 'test-board',
-      name: '테스트 게시판',
-      type: 'basic',
-      categories: [],
-    },
-    data: [
-      { id: 1, title: '첫 번째 글' },
-      { id: 2, title: '두 번째 글' },
-    ],
-    pagination: { current_page: 1, last_page: 2, total: 15 },
-    permissions: { posts_write: true },
-  },
-};
+/**
+ * 컴포넌트 트리에서 name 이 일치하는 첫 노드를 찾는다.
+ */
+function findByName(node: any, name: string): any | null {
+    if (!node) return null;
+    if (node.name === name) return node;
+    if (Array.isArray(node.children)) {
+        for (const child of node.children) {
+            const found = findByName(child, name);
+            if (found) return found;
+        }
+    }
+    return null;
+}
 
-/** 게시글이 없는 응답 (total=0) */
-const emptyBoardResponse = {
-  data: {
-    board: {
-      id: 1,
-      slug: 'test-board',
-      name: '테스트 게시판',
-      type: 'basic',
-      categories: [],
-    },
-    data: [],
-    pagination: { current_page: 1, last_page: 1, total: 0 },
-    permissions: { posts_write: true },
-  },
-};
+describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)', () => {
+    describe('빈 상태 3종 조건부 렌더링 (_empty_states.json)', () => {
+        it('빈 페이지 (page > 1 + total 0건) 분기가 정의되어 있다', () => {
+            const node = findByIfPattern(emptyStatesPartial, 'query.page');
+            expect(node).not.toBeNull();
+            expect(node.if).toContain('Number(query.page) > 1');
+            expect(node.if).toContain("posts?.data?.data?.length === 0");
+            // "처음으로" 이동 버튼이 함께 존재
+            const goFirstBtn = findByName(node, 'Button');
+            expect(goFirstBtn).not.toBeNull();
+            expect(goFirstBtn.text).toContain('go_to_first_page');
+            expect(goFirstBtn.actions[0].handler).toBe('navigate');
+            expect(goFirstBtn.actions[0].params.path).toContain('/board/');
+        });
 
-/** page > 1이면서 데이터 0건인 응답 */
-const emptyPageResponse = {
-  data: {
-    board: {
-      id: 1,
-      slug: 'test-board',
-      name: '테스트 게시판',
-      type: 'basic',
-      categories: [],
-    },
-    data: [],
-    pagination: { current_page: 5, last_page: 3, total: 25 },
-    permissions: { posts_write: true },
-  },
-};
+        it('게시글 없음 (검색/카테고리 없이 total === 0) 분기가 정의되어 있다', () => {
+            const node = findByIfPattern(emptyStatesPartial, '!query.search');
+            expect(node).not.toBeNull();
+            expect(node.if).toContain('!query.category');
+            expect(node.if).toContain('posts?.data?.pagination?.total === 0');
+            // "게시글 없음" 안내 텍스트
+            const noPostsTexts = findAllByText(node, 'no_posts');
+            expect(noPostsTexts.length).toBeGreaterThanOrEqual(1);
+        });
 
-/** 글쓰기 권한 없는 응답 (로그인 상태) */
-const boardNoWritePermResponse = {
-  data: {
-    board: {
-      id: 1,
-      slug: 'test-board',
-      name: '테스트 게시판',
-      type: 'basic',
-      categories: [],
-    },
-    data: [{ id: 1, title: '글1' }],
-    pagination: { current_page: 1, last_page: 1, total: 1 },
-    permissions: { posts_write: false },
-  },
-};
+        it('검색 결과 없음 (search 또는 category + total === 0) 분기가 정의되어 있다', () => {
+            const node = findByIfPattern(emptyStatesPartial, '(query.search || query.category)');
+            expect(node).not.toBeNull();
+            expect(node.if).toContain('posts?.data?.pagination?.total === 0');
+            // "검색 결과 없음" 안내 텍스트 + 검색 초기화 버튼
+            const noResultsTexts = findAllByText(node, 'no_search_results');
+            expect(noResultsTexts.length).toBeGreaterThanOrEqual(1);
+            const clearBtn = findByName(node, 'Button');
+            expect(clearBtn).not.toBeNull();
+            expect(clearBtn.text).toContain('clear_search');
+            expect(clearBtn.actions[0].handler).toBe('navigate');
+        });
 
-// ============================================================
-// 테스트
-// ============================================================
+        it('세 분기는 서로 배타적인 if 조건을 사용한다 (page>1 / 검색없음 / 검색있음)', () => {
+            const branches = emptyStatesPartial.children.filter((c: any) => typeof c.if === 'string');
+            expect(branches.length).toBe(3);
 
-describe('게시판 목록 - 빈 상태/로딩/오류/글쓰기 버튼', () => {
-  let registry: ComponentRegistry;
-
-  beforeEach(() => {
-    registry = setupTestRegistry();
-  });
-
-  describe('로딩 스켈레톤 표시 조건', () => {
-    it('데이터 로드 전 + 오류 없음: 로딩 스켈레톤 표시', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        initialData: {},
-        initGlobal: { hasError: false },
-      });
-
-      await testUtils.render();
-
-      expect(screen.queryByTestId('loading-skeleton')).toBeInTheDocument();
-      expect(screen.queryByTestId('error-page')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('board-title')).not.toBeInTheDocument();
-
-      testUtils.cleanup();
+            const conditions = branches.map((b: any) => b.if);
+            // 정확히 하나의 분기가 query.page > 1 을 포함
+            expect(conditions.filter((c: string) => c.includes('Number(query.page) > 1')).length).toBe(1);
+            // 정확히 하나의 분기가 검색/카테고리 없음
+            expect(conditions.filter((c: string) => c.includes('!query.search')).length).toBe(1);
+            // 정확히 하나의 분기가 검색/카테고리 있음
+            expect(conditions.filter((c: string) => c.includes('(query.search || query.category)')).length).toBe(1);
+        });
     });
 
-    it('데이터 로드 완료: 로딩 스켈레톤 미표시', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        initialData: { posts: boardWithPostsResponse },
-      });
+    describe('로딩 / 오류 표시 조건 (_loading_error.json)', () => {
+        it('로딩 분기가 !posts.data.board && !_global.hasError 조건으로 정의된다', () => {
+            const loading = findByIfPattern(loadingErrorPartial, '!posts?.data?.board');
+            expect(loading).not.toBeNull();
+            expect(loading.if).toContain('!_global.hasError');
+            // 로딩 분기에 '$t:board.loading_posts' 메시지 노출
+            const loadingTexts = findAllByText(loading, 'loading_posts');
+            expect(loadingTexts.length).toBeGreaterThanOrEqual(1);
+        });
 
-      await testUtils.render();
+        it('오류 분기가 _global.hasError 조건으로 정의되며 새로고침 버튼을 가진다', () => {
+            // 로딩 분기도 !_global.hasError 를 포함하므로, 부정 키워드(!) 없는
+            // 오류 전용 분기를 children 에서 직접 식별
+            const errorNode = loadingErrorPartial.children.find(
+                (c: any) => typeof c.if === 'string'
+                    && c.if.includes('_global.hasError')
+                    && !c.if.includes('!_global.hasError'),
+            );
+            expect(errorNode).toBeDefined();
+            // 오류 제목 + 설명 i18n 키
+            const titleTexts = findAllByText(errorNode, 'error_title');
+            expect(titleTexts.length).toBeGreaterThanOrEqual(1);
+            const descTexts = findAllByText(errorNode, 'error_description');
+            expect(descTexts.length).toBeGreaterThanOrEqual(1);
+            // 새로고침 버튼 (refresh handler)
+            const reloadBtn = findByName(errorNode, 'Button');
+            expect(reloadBtn).not.toBeNull();
+            expect(reloadBtn.actions[0].handler).toBe('refresh');
+        });
 
-      expect(screen.queryByTestId('loading-skeleton')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('board-title')).toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-  });
-
-  describe('오류 페이지 표시 조건', () => {
-    it('_global.hasError가 true: 오류 페이지 표시', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        initialData: {},
-        initGlobal: { hasError: true },
-      });
-
-      await testUtils.render();
-
-      expect(screen.queryByTestId('error-page')).toBeInTheDocument();
-      expect(screen.queryByTestId('error-title')).toBeInTheDocument();
-      expect(screen.queryByTestId('reload-btn')).toBeInTheDocument();
-      expect(screen.queryByTestId('loading-skeleton')).not.toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-  });
-
-  describe('빈 상태 3종 조건부 렌더링', () => {
-    it('게시글 없음 (검색/카테고리 없이 total=0): empty-no-posts 표시', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        initialData: { posts: emptyBoardResponse },
-      });
-
-      await testUtils.render();
-
-      expect(screen.queryByTestId('empty-no-posts')).toBeInTheDocument();
-      expect(screen.queryByTestId('empty-search')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('empty-page')).not.toBeInTheDocument();
-
-      testUtils.cleanup();
+        it('로딩과 오류 분기는 서로 배타적이다 (오류 시 로딩 미표시)', () => {
+            const branches = loadingErrorPartial.children.filter((c: any) => typeof c.if === 'string');
+            expect(branches.length).toBe(2);
+            const loadingBranch = branches.find((b: any) => b.if.includes('!_global.hasError'));
+            const errorBranch = branches.find((b: any) =>
+                b.if.includes('_global.hasError') && !b.if.includes('!_global.hasError')
+            );
+            expect(loadingBranch).toBeDefined();
+            expect(errorBranch).toBeDefined();
+        });
     });
 
-    it('검색 결과 없음 (query.search 있고 total=0): empty-search 표시', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        queryParams: { search: '존재하지않는검색어' },
-        initialData: { posts: emptyBoardResponse },
-      });
+    describe('글쓰기 버튼 권한 분기 (_write_button.json)', () => {
+        it('글쓰기 버튼이 정의되어 있고 i18n 텍스트와 아이콘을 포함한다', () => {
+            // _write_button.json 의 최상위 또는 children 어딘가에 Button + write 텍스트
+            const writeBtn = findByName(writeButtonPartial, 'Button');
+            expect(writeBtn).not.toBeNull();
+            // pencil 아이콘 또는 write 관련 i18n 텍스트 존재
+            const iconNode = findByName(writeBtn, 'Icon');
+            expect(iconNode).not.toBeNull();
+            expect(typeof iconNode.props?.name).toBe('string');
+        });
 
-      await testUtils.render();
-
-      expect(screen.queryByTestId('empty-search')).toBeInTheDocument();
-      expect(screen.queryByTestId('empty-no-posts')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('clear-search-btn')).toBeInTheDocument();
-
-      testUtils.cleanup();
+        it('글쓰기 권한이 없거나 비로그인 시 분기 노출 (if 표현식 존재)', () => {
+            // can_write 또는 currentUser 등 권한/인증 분기가 어딘가 있어야 함
+            const ifPatterns = JSON.stringify(writeButtonPartial);
+            const hasAuthBranch = /(can_write|currentUser|abilities)/.test(ifPatterns);
+            expect(hasAuthBranch).toBe(true);
+        });
     });
-
-    it('카테고리 필터 결과 없음 (query.category 있고 total=0): empty-search 표시', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        queryParams: { category: '존재하지않는카테고리' },
-        initialData: { posts: emptyBoardResponse },
-      });
-
-      await testUtils.render();
-
-      expect(screen.queryByTestId('empty-search')).toBeInTheDocument();
-      expect(screen.queryByTestId('empty-no-posts')).not.toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-
-    it('빈 페이지 (page > 1 + data 0건): empty-page 표시', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        queryParams: { page: '5' },
-        initialData: { posts: emptyPageResponse },
-      });
-
-      await testUtils.render();
-
-      expect(screen.queryByTestId('empty-page')).toBeInTheDocument();
-      expect(screen.queryByTestId('go-first-btn')).toBeInTheDocument();
-      expect(screen.queryByTestId('empty-no-posts')).not.toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-
-    it('게시글이 있을 때 빈 상태 모두 미표시', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        initialData: { posts: boardWithPostsResponse },
-      });
-
-      await testUtils.render();
-
-      expect(screen.queryByTestId('empty-no-posts')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('empty-search')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('empty-page')).not.toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-  });
-
-  describe('빈 상태 배경 스타일 일관성', () => {
-    it('모든 빈 상태 컴포넌트가 동일한 배경 클래스를 가진다', () => {
-      const expectedBgClass = 'bg-gray-100/70 dark:bg-gray-800/50 rounded-xl';
-      const mainContainer = boardIndexLayoutJson.components[2];
-      const children = mainContainer.children;
-
-      // 빈 페이지, 게시글 없음, 검색 결과 없음 3개 컴포넌트 확인
-      const emptyPageComp = children.find(
-        (c: any) => c.props?.['data-testid'] === 'empty-page'
-      );
-      const emptyNoPostsComp = children.find(
-        (c: any) => c.props?.['data-testid'] === 'empty-no-posts'
-      );
-      const emptySearchComp = children.find(
-        (c: any) => c.props?.['data-testid'] === 'empty-search'
-      );
-
-      expect(emptyPageComp?.props?.className).toContain(expectedBgClass);
-      expect(emptyNoPostsComp?.props?.className).toContain(expectedBgClass);
-      expect(emptySearchComp?.props?.className).toContain(expectedBgClass);
-    });
-  });
-
-  describe('글쓰기 버튼 switch 핸들러', () => {
-    it('글쓰기 권한 있을 때 switch value가 "allowed"', () => {
-      // 정적 구조 검증: switch value 표현식 확인
-      const mainContainer = boardIndexLayoutJson.components[2];
-      const writeBtn = mainContainer.children.find(
-        (c: any) => c.props?.['data-testid'] === 'write-btn'
-      );
-
-      expect(writeBtn).toBeDefined();
-      expect(writeBtn.actions[0].handler).toBe('switch');
-      expect(writeBtn.actions[0].cases).toHaveProperty('allowed');
-      expect(writeBtn.actions[0].cases).toHaveProperty('no_permission');
-      expect(writeBtn.actions[0].cases).toHaveProperty('not_logged_in');
-    });
-
-    it('allowed 케이스: navigate 핸들러로 글쓰기 페이지 이동', () => {
-      const mainContainer = boardIndexLayoutJson.components[2];
-      const writeBtn = mainContainer.children.find(
-        (c: any) => c.props?.['data-testid'] === 'write-btn'
-      );
-
-      const allowedCase = writeBtn.actions[0].cases.allowed;
-      expect(allowedCase.handler).toBe('navigate');
-      expect(allowedCase.params.path).toBe('/board/{{route.slug}}/write');
-    });
-
-    it('no_permission 케이스: toast warning 표시', () => {
-      const mainContainer = boardIndexLayoutJson.components[2];
-      const writeBtn = mainContainer.children.find(
-        (c: any) => c.props?.['data-testid'] === 'write-btn'
-      );
-
-      const noPermCase = writeBtn.actions[0].cases.no_permission;
-      expect(noPermCase.handler).toBe('toast');
-      expect(noPermCase.params.type).toBe('warning');
-    });
-
-    it('not_logged_in 케이스: sequence로 toast + navigate (로그인 페이지)', () => {
-      const mainContainer = boardIndexLayoutJson.components[2];
-      const writeBtn = mainContainer.children.find(
-        (c: any) => c.props?.['data-testid'] === 'write-btn'
-      );
-
-      const notLoggedInCase = writeBtn.actions[0].cases.not_logged_in;
-      expect(notLoggedInCase.handler).toBe('sequence');
-      expect(notLoggedInCase.actions).toHaveLength(2);
-      expect(notLoggedInCase.actions[0].handler).toBe('toast');
-      expect(notLoggedInCase.actions[1].handler).toBe('navigate');
-      expect(notLoggedInCase.actions[1].params.path).toBe('/login');
-      expect(notLoggedInCase.actions[1].params.query.redirect).toBe(
-        '/board/{{route.slug}}/write'
-      );
-    });
-
-    it('글쓰기 버튼에 pencil 아이콘과 텍스트가 있다', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        initialData: { posts: boardWithPostsResponse },
-      });
-
-      await testUtils.render();
-
-      const writeBtn = screen.queryByTestId('write-btn');
-      expect(writeBtn).toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-  });
-
-  describe('페이지네이션 항상 표시', () => {
-    it('게시글이 있을 때 페이지네이션 표시', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        initialData: { posts: boardWithPostsResponse },
-      });
-
-      await testUtils.render();
-
-      expect(screen.queryByTestId('pagination')).toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-
-    it('게시글이 없을 때도 페이지네이션 표시', async () => {
-      const testUtils = createLayoutTest(boardIndexLayoutJson, {
-        componentRegistry: registry,
-        routeParams: { slug: 'test-board' },
-        initialData: { posts: emptyBoardResponse },
-      });
-
-      await testUtils.render();
-
-      expect(screen.queryByTestId('pagination')).toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-  });
 });

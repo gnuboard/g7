@@ -25,10 +25,23 @@ class NotificationChannelService
     {
         $defaultChannels = config('notification.default_channels', []);
 
-        return HookManager::applyFilters(
+        $channels = HookManager::applyFilters(
             'core.notification.filter_available_channels',
             $defaultChannels
         );
+
+        // name_key / description_key / source_label_key 를 활성 locale 기준으로 해석하여
+        // name / description / source_label 키로 반환 (registry payload name_key 계약).
+        return array_map(static function (array $channel): array {
+            foreach (['name', 'description', 'source_label'] as $field) {
+                $resolved = localized_payload($channel, $field);
+                if ($resolved !== '') {
+                    $channel[$field] = $resolved;
+                }
+            }
+
+            return $channel;
+        }, $channels);
     }
 
     /**

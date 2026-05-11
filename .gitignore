@@ -75,11 +75,25 @@ templates/_bundled/*/node_modules/
 !plugins/_pending/
 !templates/_pending/
 
+# ===== 언어팩 시스템 =====
+
+# 활성 언어팩 디렉토리 (설치된 복사본 — Git 제외)
+lang-packs/*/
+!lang-packs/_bundled/
+
+# _pending 디렉토리 (외부 다운로드 임시 영역)
+lang-packs/_bundled/_pending/
+!lang-packs/_pending/
+
 # DevTools debug dump
 storage/debug-dump/
 
 # MaxMind GeoLite2 DB (재배포 금지 — 각 환경에서 직접 다운로드)
 storage/app/geoip/
+
+# 인스톨러 런타임 산출물 — 각 환경에서 자동 생성/소비
+storage/installer-state.json
+storage/installer/
 
 # 개발 전용 파일
 .api-test/
@@ -106,3 +120,5 @@ id_ed25519
 *.sql
 *.sqlite
 *.db
+
+.claude/tmp/

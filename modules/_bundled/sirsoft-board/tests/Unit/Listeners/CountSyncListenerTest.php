@@ -89,7 +89,7 @@ class CountSyncListenerTest extends ModuleTestCase
         $commentId = $this->createTestComment($postId);
 
         $comment = Comment::find($commentId);
-        $listener = new PostCountSyncListener();
+        $listener = app(PostCountSyncListener::class);
         $listener->syncCommentsCount($comment, $this->board->slug);
 
         $post = DB::table('board_posts')->where('id', $postId)->first();
@@ -106,7 +106,7 @@ class CountSyncListenerTest extends ModuleTestCase
         $commentId2 = $this->createTestComment($postId);
 
         // 초기 동기화
-        $listener = new PostCountSyncListener();
+        $listener = app(PostCountSyncListener::class);
         $listener->syncCommentsCount(Comment::find($commentId1), $this->board->slug);
         $this->assertEquals(2, DB::table('board_posts')->where('id', $postId)->value('comments_count'));
 
@@ -127,7 +127,7 @@ class CountSyncListenerTest extends ModuleTestCase
         $postId = $this->createTestPost();
         $post = Post::find($postId);
 
-        $listener = new BoardPostsCountSyncListener();
+        $listener = app(BoardPostsCountSyncListener::class);
         $listener->syncPostsCount($post, $this->board->slug);
 
         $storedCount = DB::table('boards')->where('id', $this->board->id)->value('posts_count');
@@ -145,7 +145,7 @@ class CountSyncListenerTest extends ModuleTestCase
         DB::table('board_posts')->where('id', $postId2)->update(['deleted_at' => now()]);
 
         $post = Post::withTrashed()->find($postId2);
-        $listener = new BoardPostsCountSyncListener();
+        $listener = app(BoardPostsCountSyncListener::class);
         $listener->syncPostsCount($post, $this->board->slug);
 
         $storedCount = DB::table('boards')->where('id', $this->board->id)->value('posts_count');
@@ -163,7 +163,7 @@ class CountSyncListenerTest extends ModuleTestCase
         $commentId = $this->createTestComment($postId);
         $comment = Comment::find($commentId);
 
-        $listener = new BoardCommentsCountSyncListener();
+        $listener = app(BoardCommentsCountSyncListener::class);
         $listener->syncCommentsCount($comment, $this->board->slug);
 
         $storedCount = DB::table('boards')->where('id', $this->board->id)->value('comments_count');
@@ -182,7 +182,7 @@ class CountSyncListenerTest extends ModuleTestCase
         DB::table('board_comments')->where('id', $c2)->update(['deleted_at' => now()]);
 
         $comment = Comment::withTrashed()->find($c2);
-        $listener = new BoardCommentsCountSyncListener();
+        $listener = app(BoardCommentsCountSyncListener::class);
         $listener->syncCommentsCount($comment, $this->board->slug);
 
         $storedCount = DB::table('boards')->where('id', $this->board->id)->value('comments_count');
@@ -217,7 +217,7 @@ class CountSyncListenerTest extends ModuleTestCase
         DB::table('board_posts')->where('id', $postId)->update(['attachments_count' => 0]);
 
         $attachment = Attachment::find($attachmentId);
-        $listener = new PostAttachmentCountSyncListener();
+        $listener = app(PostAttachmentCountSyncListener::class);
         $listener->syncAttachmentsCount($attachment);
 
         $storedCount = DB::table('board_posts')->where('id', $postId)->value('attachments_count');
@@ -236,7 +236,7 @@ class CountSyncListenerTest extends ModuleTestCase
         DB::table('board_attachments')->where('id', $a2)->update(['deleted_at' => now()]);
 
         $attachment = Attachment::withTrashed()->find($a2);
-        $listener = new PostAttachmentCountSyncListener();
+        $listener = app(PostAttachmentCountSyncListener::class);
         $listener->syncAttachmentsCount($attachment);
 
         $storedCount = DB::table('board_posts')->where('id', $postId)->value('attachments_count');
@@ -252,7 +252,7 @@ class CountSyncListenerTest extends ModuleTestCase
         $attachmentId = $this->createTestAttachment($postId);
 
         $attachment = Attachment::find($attachmentId);
-        $listener = new PostAttachmentCountSyncListener();
+        $listener = app(PostAttachmentCountSyncListener::class);
         $listener->syncAttachmentsCount($attachment);
 
         $post = DB::table('board_posts')->where('id', $postId)->first();
@@ -267,7 +267,7 @@ class CountSyncListenerTest extends ModuleTestCase
         $attachment = new Attachment();
         $attachment->post_id = null;
 
-        $listener = new PostAttachmentCountSyncListener();
+        $listener = app(PostAttachmentCountSyncListener::class);
         $listener->syncAttachmentsCount($attachment);
 
         // 예외 없이 정상 종료
@@ -297,7 +297,7 @@ class CountSyncListenerTest extends ModuleTestCase
         $replyId = $this->createTestPost(['title' => '답글', 'parent_id' => $parentId, 'depth' => 1]);
 
         $reply = Post::find($replyId);
-        $listener = new PostReplySyncListener();
+        $listener = app(PostReplySyncListener::class);
         $listener->syncRepliesCount($reply, $this->board->slug);
 
         $parent = DB::table('board_posts')->where('id', $parentId)->first();
@@ -312,7 +312,7 @@ class CountSyncListenerTest extends ModuleTestCase
         $postId = $this->createTestPost();
 
         $post = Post::find($postId);
-        $listener = new PostReplySyncListener();
+        $listener = app(PostReplySyncListener::class);
         $listener->syncRepliesCount($post, $this->board->slug);
 
         // 예외 없이 정상 종료
@@ -346,7 +346,7 @@ class CountSyncListenerTest extends ModuleTestCase
         ]);
 
         $replyComment = Comment::find($replyCommentId);
-        $listener = new CommentReplySyncListener();
+        $listener = app(CommentReplySyncListener::class);
         $listener->syncRepliesCount($replyComment, $this->board->slug);
 
         $parentComment = DB::table('board_comments')->where('id', $parentCommentId)->first();
@@ -362,7 +362,7 @@ class CountSyncListenerTest extends ModuleTestCase
         $commentId = $this->createTestComment($postId);
 
         $comment = Comment::find($commentId);
-        $listener = new CommentReplySyncListener();
+        $listener = app(CommentReplySyncListener::class);
         $listener->syncRepliesCount($comment, $this->board->slug);
 
         // 예외 없이 정상 종료

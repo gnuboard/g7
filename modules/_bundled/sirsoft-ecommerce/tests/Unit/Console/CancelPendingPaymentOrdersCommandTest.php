@@ -7,6 +7,7 @@ use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Models\User;
 use Carbon\Carbon;
+use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -60,6 +61,21 @@ class CancelPendingPaymentOrdersCommandTest extends ModuleTestCase
             ->willReturn($mockModule);
 
         $this->app->instance(ModuleManagerInterface::class, $mockModuleManager);
+
+        // ModuleSettingsService 는 ModuleManagerInterface 를 생성 시점에 주입받으므로
+        // instance 교체 후 기존 service 인스턴스를 forget 해 다음 resolve 에서 새 mock 사용
+        $this->app->forgetInstance(\App\Services\ModuleSettingsService::class);
+
+        // sirsoft-ecommerce 는 전용 EcommerceSettingsService 가 자동 discover 되어
+        // ModuleSettingsService::get 에서 먼저 위임됨. 이 서비스를 모듈 설정 mock 으로 교체.
+        $mockEcommerceSettings = Mockery::mock(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class)->makePartial();
+        $mockEcommerceSettings->shouldReceive('getSetting')
+            ->andReturnUsing(function (string $key, mixed $default = null) {
+                return array_key_exists($key, $this->moduleSettings)
+                    ? $this->moduleSettings[$key]
+                    : $default;
+            });
+        $this->app->instance(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class, $mockEcommerceSettings);
     }
 
     public function test_command_exists(): void

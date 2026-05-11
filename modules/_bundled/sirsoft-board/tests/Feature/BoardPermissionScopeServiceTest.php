@@ -156,7 +156,7 @@ class BoardPermissionScopeServiceTest extends ModuleTestCase
 
         $result = $this->postService->getPosts($this->board->slug, [], 15, false, 'user');
 
-        $this->assertSame(1, $result->total());
+        $this->assertSame(1, $result->count());
         $this->assertSame('내 게시글', $result->items()[0]->title);
     }
 
@@ -176,7 +176,7 @@ class BoardPermissionScopeServiceTest extends ModuleTestCase
 
         $result = $this->postService->getPosts($this->board->slug, [], 15, false, 'user');
 
-        $this->assertSame(2, $result->total());
+        $this->assertSame(2, $result->count());
     }
 
     /**
@@ -193,7 +193,7 @@ class BoardPermissionScopeServiceTest extends ModuleTestCase
 
         $result = $this->postService->getPosts($this->board->slug, [], 15, false, 'user');
 
-        $this->assertSame(2, $result->total());
+        $this->assertSame(2, $result->count());
     }
 
     // ========================================================================
@@ -276,7 +276,7 @@ class BoardPermissionScopeServiceTest extends ModuleTestCase
         $result = $this->postService->getPosts($this->board->slug, [], 15, false, 'user');
 
         // 비인증 사용자는 스코프 필터 미적용 → 전체 반환
-        $this->assertSame(2, $result->total());
+        $this->assertSame(2, $result->count());
     }
 
     // ========================================================================
@@ -327,7 +327,7 @@ class BoardPermissionScopeServiceTest extends ModuleTestCase
 
         $result = $this->postService->getPosts($this->board->slug, [], 15, false, 'admin');
 
-        $this->assertSame(1, $result->total());
+        $this->assertSame(1, $result->count());
     }
 
     // ========================================================================

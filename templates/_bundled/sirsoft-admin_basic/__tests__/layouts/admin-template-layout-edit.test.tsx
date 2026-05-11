@@ -4,15 +4,15 @@
  *
  * 테스트 대상:
  * - admin_template_layout_edit.json: 미리보기 버튼 액션 구조
- * - partials/admin_template_layout_edit/_modal_template_changelog.json: CHANGELOG 모달
+ * - partials/admin_template_layout_edit/_modal_version_history.json: 버전 히스토리 모달
  * - 어빌리티 기반 조건부 렌더링 (저장 버튼)
  *
  * 검증 항목:
  * - 미리보기 버튼이 sequence → apiCall → openWindow 패턴 사용
- * - CHANGELOG 버튼이 sequence → setState → openModal → apiCall 패턴 사용
- * - CHANGELOG 모달 JSON 구조 (로딩, 빈 상태, 데이터 표시)
+ * - 버전 히스토리 버튼이 sequence → refetchDataSource → openModal 패턴 사용
+ * - 버전 히스토리 모달 JSON 구조 (iteration, 복원 버튼)
  * - 저장 버튼에 can_update 어빌리티 조건 존재
- * - modals 섹션에 CHANGELOG 모달 partial 등록
+ * - modals 섹션에 버전 히스토리 모달 partial 등록
  */
 
 import { describe, it, expect } from 'vitest';
@@ -31,7 +31,7 @@ function loadLayout(relativePath: string): any {
 }
 
 const layoutEditJson = loadLayout('admin_template_layout_edit.json');
-const changelogModalJson = loadLayout('partials/admin_template_layout_edit/_modal_template_changelog.json');
+const versionHistoryModalJson = loadLayout('partials/admin_template_layout_edit/_modal_version_history.json');
 
 // ==============================
 // 헬퍼: JSON 구조 내 컴포넌트 검색
@@ -139,110 +139,81 @@ describe('미리보기 버튼', () => {
 });
 
 // ==============================
-// CHANGELOG 버튼 테스트
+// 버전 히스토리 버튼 테스트
 // ==============================
 
-describe('CHANGELOG 버튼', () => {
-  it('sequence → setState → openModal → apiCall 패턴을 사용한다', () => {
-    // CHANGELOG 버튼 찾기 (template_changelog_modal을 여는 버튼)
-    const changelogButton = findComponent(layoutEditJson, (n) => {
+describe('버전 히스토리 버튼', () => {
+  it('sequence → refetchDataSource → openModal 패턴을 사용한다', () => {
+    // 버전 히스토리 버튼 찾기 (version_history_modal 을 여는 버튼)
+    const versionHistoryButton = findComponent(layoutEditJson, (n) => {
       if (!n.actions) return false;
       return n.actions.some((a: any) =>
-        JSON.stringify(a).includes('template_changelog_modal')
+        JSON.stringify(a).includes('version_history_modal')
       );
     });
 
-    expect(changelogButton).not.toBeNull();
-    expect(changelogButton.name).toBe('Button');
+    expect(versionHistoryButton).not.toBeNull();
+    expect(versionHistoryButton.name).toBe('Button');
 
-    const sequenceAction = changelogButton.actions.find(
+    const sequenceAction = versionHistoryButton.actions.find(
       (a: any) => a.handler === 'sequence'
     );
     expect(sequenceAction).toBeDefined();
 
-    const actions = sequenceAction.params.actions;
+    // sequence 의 actions 는 sequenceAction.actions 또는 sequenceAction.params.actions 양쪽 형태 지원
+    const actions = sequenceAction.actions ?? sequenceAction.params?.actions ?? [];
 
-    // setState (loading 상태 설정)
-    const setStateAction = actions.find((a: any) => a.handler === 'setState');
-    expect(setStateAction).toBeDefined();
-    expect(setStateAction.params.loadingChangelog).toBe(true);
+    // refetchDataSource (layout_versions 갱신)
+    const refetchAction = actions.find((a: any) => a.handler === 'refetchDataSource');
+    expect(refetchAction).toBeDefined();
+    expect(refetchAction.params.dataSourceId).toBe('layout_versions');
 
     // openModal
     const openModalAction = actions.find((a: any) => a.handler === 'openModal');
     expect(openModalAction).toBeDefined();
-    expect(openModalAction.target).toBe('template_changelog_modal');
-
-    // apiCall (changelog 조회)
-    const apiCallAction = actions.find((a: any) => a.handler === 'apiCall');
-    expect(apiCallAction).toBeDefined();
-    expect(apiCallAction.params.method).toBe('GET');
-    expect(apiCallAction.target).toContain('/changelog');
-    expect(apiCallAction.auth_required).toBe(true);
-  });
-
-  it('apiCall onSuccess에서 templateChangelog와 loadingChangelog를 설정한다', () => {
-    const changelogButton = findComponent(layoutEditJson, (n) => {
-      if (!n.actions) return false;
-      return n.actions.some((a: any) =>
-        JSON.stringify(a).includes('template_changelog_modal')
-      );
-    });
-
-    const sequenceAction = changelogButton.actions.find(
-      (a: any) => a.handler === 'sequence'
-    );
-    const apiCallAction = sequenceAction.params.actions.find(
-      (a: any) => a.handler === 'apiCall'
-    );
-
-    const onSuccessSetState = apiCallAction.onSuccess.find(
-      (a: any) => a.handler === 'setState'
-    );
-    expect(onSuccessSetState).toBeDefined();
-    expect(onSuccessSetState.params).toHaveProperty('templateChangelog');
-    expect(onSuccessSetState.params.loadingChangelog).toBe(false);
+    expect(openModalAction.target).toBe('version_history_modal');
   });
 });
 
 // ==============================
-// CHANGELOG 모달 JSON 구조 테스트
+// 버전 히스토리 모달 JSON 구조 테스트
 // ==============================
 
-describe('CHANGELOG 모달 구조', () => {
+describe('버전 히스토리 모달 구조', () => {
   it('올바른 모달 ID와 구조를 가진다', () => {
-    expect(changelogModalJson.id).toBe('template_changelog_modal');
-    expect(changelogModalJson.type).toBe('composite');
-    expect(changelogModalJson.name).toBe('Modal');
-    expect(changelogModalJson.props.size).toBe('lg');
+    expect(versionHistoryModalJson.id).toBe('version_history_modal');
+    expect(versionHistoryModalJson.type).toBe('composite');
+    expect(versionHistoryModalJson.name).toBe('Modal');
+    expect(versionHistoryModalJson.props.size).toBe('medium');
   });
 
-  it('로딩 상태를 표시하는 조건부 영역이 있다', () => {
-    const loadingDiv = changelogModalJson.children.find(
-      (c: any) => c.if && c.if.includes('loadingChangelog') && !c.if.includes('!')
+  it('layout_versions 를 반복 렌더링하는 iteration 영역이 있다', () => {
+    const iterationNode = findComponent(versionHistoryModalJson, (n) =>
+      Boolean(n.iteration?.source?.includes('layout_versions'))
     );
-    expect(loadingDiv).toBeDefined();
+    expect(iterationNode).not.toBeNull();
+    expect(iterationNode.iteration.item_var).toBe('version');
   });
 
-  it('빈 상태를 표시하는 조건부 영역이 있다', () => {
-    const emptyDiv = changelogModalJson.children.find(
-      (c: any) => c.if && c.if.includes('templateChangelog.length === 0')
+  it('첫 번째 버전(idx === 0)에 최신 배지가 표시된다', () => {
+    const latestBadge = findComponent(versionHistoryModalJson, (n) =>
+      n.if === '{{idx === 0}}' &&
+      typeof n.text === 'string' &&
+      n.text.includes('latest')
     );
-    expect(emptyDiv).toBeDefined();
+    expect(latestBadge).not.toBeNull();
   });
 
-  it('changelog 목록을 반복 렌더링하는 영역이 있다', () => {
-    const listDiv = changelogModalJson.children.find(
-      (c: any) => c.if && c.if.includes('templateChangelog.length > 0')
+  it('첫 번째가 아닌 버전(idx !== 0)에 복원 버튼이 있다', () => {
+    const restoreButton = findComponent(versionHistoryModalJson, (n) =>
+      n.if === '{{idx !== 0}}' &&
+      n.name === 'Button' &&
+      Array.isArray(n.actions) &&
+      n.actions.some((a: any) =>
+        JSON.stringify(a).includes('/restore')
+      )
     );
-    expect(listDiv).toBeDefined();
-
-    // iteration이 존재하는 자식 확인
-    const iterationChild = findComponent(listDiv, (n) => n.iteration?.source?.includes('templateChangelog'));
-    expect(iterationChild).not.toBeNull();
-  });
-
-  it('is_partial 메타데이터가 설정되어 있다', () => {
-    expect(changelogModalJson.meta?.is_partial).toBe(true);
+    expect(restoreButton).not.toBeNull();
   });
 });
 
@@ -251,17 +222,10 @@ describe('CHANGELOG 모달 구조', () => {
 // ==============================
 
 describe('modals 섹션', () => {
-  it('template_changelog 모달 partial이 등록되어 있다', () => {
+  it('version_history 모달 partial 이 등록되어 있다', () => {
     expect(layoutEditJson.modals).toBeDefined();
     expect(Array.isArray(layoutEditJson.modals)).toBe(true);
 
-    const changelogModal = layoutEditJson.modals.find(
-      (m: any) => m.partial?.includes('_modal_template_changelog')
-    );
-    expect(changelogModal).toBeDefined();
-  });
-
-  it('version_history 모달 partial도 등록되어 있다', () => {
     const versionModal = layoutEditJson.modals.find(
       (m: any) => m.partial?.includes('_modal_version_history')
     );

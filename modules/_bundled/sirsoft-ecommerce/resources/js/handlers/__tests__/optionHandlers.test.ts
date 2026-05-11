@@ -2,7 +2,6 @@
  * optionHandlers 테스트
  *
  * 특히 다국어 필드(name) 처리 시 spread 연산자 타입 오류 케이스를 검증합니다.
- * 참고: .claude/history/20260122_1128_옵션일괄생성_타입검사_추가수정.md
  *
  * @vitest-environment jsdom
  */

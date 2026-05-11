@@ -242,7 +242,7 @@ class TemplateServiceInstallationTest extends TestCase
         $this->templateManager
             ->shouldReceive('installTemplate')
             ->once()
-            ->with($identifier)
+            ->with($identifier, null, false)
             ->andReturn(true);
 
         // installTemplate은 getTemplateInfo를 호출함
@@ -271,7 +271,7 @@ class TemplateServiceInstallationTest extends TestCase
         $this->templateManager
             ->shouldReceive('installTemplate')
             ->once()
-            ->with($identifier)
+            ->with($identifier, null, false)
             ->andThrow(new \Exception('Installation failed'));
 
         // Act & Assert

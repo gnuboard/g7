@@ -101,4 +101,14 @@ interface ScheduleRepositoryInterface
      * @return Schedule 복제된 스케줄
      */
     public function duplicate(Schedule $schedule): Schedule;
+
+    /**
+     * ID 목록으로 스케줄들을 조회하고 ID 키 맵으로 반환합니다.
+     *
+     * Bulk activity log 처리 시 N+1 회피용 단일 쿼리 진입점.
+     *
+     * @param  array<int, int>  $ids  스케줄 ID 목록
+     * @return Collection<int, Schedule> id => Schedule 매핑
+     */
+    public function findManyByIdsKeyed(array $ids): Collection;
 }

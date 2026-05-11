@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ActivityLogType;
+use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -155,29 +156,77 @@ class ActivityLog extends Model
     /**
      * 액션 라벨을 반환합니다.
      *
-     * 3단계 조회: 전체 키 → 마지막 세그먼트 → raw 문자열 fallback
+     * 5단계 조회: 모듈 lang 전체 키 → 모듈 lang 마지막 세그먼트
+     *           → 코어 lang 전체 키 → 코어 lang 마지막 세그먼트 → raw 문자열 fallback
+     *
+     * 모듈/플러그인 origin 라벨은 자체 lang 파일에서 우선 조회되어 G7 의 영역 분리
+     * 설계 의도와 일치합니다. 모듈 lang 미정의 시 코어 lang fallback (하위 호환).
+     *
+     * Origin 식별 우선순위:
+     *   1) loggable_type FQCN (가장 정확)
+     *   2) properties.extension_origin (loggable 없는 케이스 — 호출 시점 trait 자동 주입)
      *
      * @return string
      */
     public function getActionLabelAttribute(): string
     {
-        // 1단계: 전체 액션 키 (예: activity_log.action.user.create)
+        $namespace = $this->resolveOriginNamespace();
+        $lastSegment = last(explode('.', $this->action));
+
+        if ($namespace !== null) {
+            // 1단계: 모듈 lang 의 전체 액션 키
+            $moduleFullKey = "{$namespace}::activity_log.action.{$this->action}";
+            $translated = __($moduleFullKey);
+            if ($translated !== $moduleFullKey) {
+                return $translated;
+            }
+
+            // 2단계: 모듈 lang 의 마지막 세그먼트
+            $moduleSegmentKey = "{$namespace}::activity_log.action.{$lastSegment}";
+            $translated = __($moduleSegmentKey);
+            if ($translated !== $moduleSegmentKey) {
+                return $translated;
+            }
+        }
+
+        // 3단계: 코어 lang 의 전체 액션 키
         $fullKey = "activity_log.action.{$this->action}";
         $translated = __($fullKey);
         if ($translated !== $fullKey) {
             return $translated;
         }
 
-        // 2단계: 마지막 세그먼트만 (예: activity_log.action.create)
-        $lastSegment = last(explode('.', $this->action));
+        // 4단계: 코어 lang 의 마지막 세그먼트
         $segmentKey = "activity_log.action.{$lastSegment}";
         $translated = __($segmentKey);
         if ($translated !== $segmentKey) {
             return $translated;
         }
 
-        // 3단계: raw action 문자열 fallback
+        // 5단계: raw action 문자열 fallback
         return $this->action;
+    }
+
+    /**
+     * 본 활동 로그의 origin 모듈/플러그인 lang 네임스페이스를 추론합니다.
+     *
+     * @return string|null 모듈/플러그인 식별자 (네임스페이스), 코어 origin 또는 미해석 시 null
+     */
+    protected function resolveOriginNamespace(): ?string
+    {
+        if ($this->loggable_type !== null) {
+            $resolved = ExtensionManager::resolveExtensionByFqcn($this->loggable_type);
+            if ($resolved !== null) {
+                return $resolved;
+            }
+        }
+
+        $origin = $this->properties['extension_origin'] ?? null;
+        if (is_string($origin) && $origin !== '') {
+            return $origin;
+        }
+
+        return null;
     }
 
     /**

@@ -142,6 +142,15 @@ function executeSeedTruncate(array $config, bool $force = false, ?string $logPre
         return ['success' => true, 'message' => lang('rollback_seed_no_config')];
     }
 
+    // DSN 파라미터 주입 차단 — 정상 입력에는 ;/=/NUL/CRLF 가 들어갈 일이 없다.
+    foreach (['db_write_host', 'db_write_port', 'db_write_database'] as $field) {
+        $val = (string) ($config[$field] ?? '');
+        if ($val !== '' && preg_match('/[;=\0\r\n]/', $val)) {
+            addLog("{$logPrefix} " . lang('rollback_seed_no_config'));
+            return ['success' => true, 'message' => lang('rollback_seed_no_config')];
+        }
+    }
+
     $dsn = sprintf(
         'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
         $config['db_write_host'],
@@ -235,16 +244,30 @@ function forceRollbackDbSeed(array $state): array
 
 /**
  * complete_flag 작업 롤백: 설치 완료 플래그 제거
+ *
+ * runtime.php (설치 진행 중 마커), g7_installed (Step 5 완료 마커),
+ * .env 의 INSTALLER_COMPLETED (finalize 완료 마커) 셋 모두 정리한다.
+ * 어느 단계에서 실패했는지에 따라 일부만 존재할 수 있으므로 각각 독립적으로 처리.
  */
 function rollbackCompleteFlag(): array
 {
     try {
+        require_once __DIR__ . '/../includes/installer-runtime.php';
+
         $envPath = BASE_PATH . '/.env';
         $installedFlagPath = BASE_PATH . '/storage/app/g7_installed';
 
         $results = [];
 
-        // .env에서 INSTALLER_COMPLETED 제거
+        // runtime.php 삭제 (설치 진행 중 마커 — finalize 전에 롤백 시 존재)
+        if (is_file(INSTALLER_RUNTIME_PATH)) {
+            if (deleteInstallerRuntime()) {
+                addLog(lang('rollback_runtime_removed'));
+                $results[] = lang('rollback_runtime_removed');
+            }
+        }
+
+        // .env에서 INSTALLER_COMPLETED 제거 (finalize 후 롤백 시 존재)
         if (file_exists($envPath)) {
             $envContent = file_get_contents($envPath);
             $envContent = preg_replace('/^INSTALLER_COMPLETED=.*$/m', '', $envContent);

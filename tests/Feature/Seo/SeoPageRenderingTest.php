@@ -99,19 +99,9 @@ class SeoPageRenderingTest extends TestCase
         // SEO 활성화 확인
         $this->assertTrue($seo['enabled'], 'shop/show.json의 SEO는 활성화되어야 합니다');
 
-        // structured_data @type 확인 (Product)
-        $this->assertArrayHasKey('structured_data', $seo, 'shop/show.json seo에 structured_data 키가 존재해야 합니다');
-        $this->assertSame('Product', $seo['structured_data']['@type'], 'shop/show.json structured_data @type은 Product여야 합니다');
-
-        // Product structured_data 필수 필드 확인
-        $this->assertArrayHasKey('name', $seo['structured_data'], 'Product structured_data에 name이 존재해야 합니다');
-        $this->assertArrayHasKey('description', $seo['structured_data'], 'Product structured_data에 description이 존재해야 합니다');
-
-        // offers (Offer 타입) 확인
-        $this->assertArrayHasKey('offers', $seo['structured_data'], 'Product structured_data에 offers가 존재해야 합니다');
-        $this->assertSame('Offer', $seo['structured_data']['offers']['@type'], 'offers @type은 Offer여야 합니다');
-        $this->assertArrayHasKey('price', $seo['structured_data']['offers'], 'Offer에 price가 존재해야 합니다');
-        $this->assertArrayHasKey('priceCurrency', $seo['structured_data']['offers'], 'Offer에 priceCurrency가 존재해야 합니다');
+        // structured_data 는 모듈(EcommerceModule::seoStructuredData)이 owned —
+        // 레이아웃 JSON 직접 선언 금지. 모듈 메서드가 Product/Offer 스키마를 만든다.
+        $this->assertArrayNotHasKey('structured_data', $seo, 'shop/show.json 의 structured_data 는 EcommerceModule::seoStructuredData() 로 이전됨 (모듈 ownership)');
 
         // og 타입 확인
         $this->assertArrayHasKey('og', $seo, 'shop/show.json seo에 og 키가 존재해야 합니다');
@@ -138,14 +128,9 @@ class SeoPageRenderingTest extends TestCase
         // SEO 활성화 확인
         $this->assertTrue($seo['enabled'], 'board/show.json의 SEO는 활성화되어야 합니다');
 
-        // structured_data @type 확인 (Article)
-        $this->assertArrayHasKey('structured_data', $seo, 'board/show.json seo에 structured_data 키가 존재해야 합니다');
-        $this->assertSame('Article', $seo['structured_data']['@type'], 'board/show.json structured_data @type은 Article이어야 합니다');
-
-        // Article structured_data 필수 필드 확인
-        $this->assertArrayHasKey('headline', $seo['structured_data'], 'Article structured_data에 headline이 존재해야 합니다');
-        $this->assertArrayHasKey('datePublished', $seo['structured_data'], 'Article structured_data에 datePublished가 존재해야 합니다');
-        $this->assertArrayHasKey('dateModified', $seo['structured_data'], 'Article structured_data에 dateModified가 존재해야 합니다');
+        // structured_data 는 모듈(BoardModule::seoStructuredData)이 owned —
+        // 레이아웃 JSON 직접 선언 금지. 모듈 메서드가 Article 스키마를 만든다.
+        $this->assertArrayNotHasKey('structured_data', $seo, 'board/show.json 의 structured_data 는 BoardModule::seoStructuredData() 로 이전됨 (모듈 ownership)');
 
         // og 타입 확인
         $this->assertArrayHasKey('og', $seo, 'board/show.json seo에 og 키가 존재해야 합니다');
@@ -234,5 +219,63 @@ class SeoPageRenderingTest extends TestCase
                 );
             }
         }
+    }
+
+    /**
+     * 회귀: SEO 활성 레이아웃 × 다국어 JSON array 코어 설정 매트릭스.
+     *
+     * 모든 enabled=true 레이아웃 의 meta.seo 를 SeoMetaResolver.resolve() 에 통과시키되,
+     * 코어 설정값(site_name 등) 이 다국어 JSON 배열로 저장된 환경을 시뮬레이션 — 이전 회귀
+     * "Array to string conversion" 의 광범위 재발 방지.
+     */
+    public function test_all_enabled_layouts_resolve_without_throw_under_multilingual_settings(): void
+    {
+        // 코어 설정을 다국어 JSON array 로 시뮬레이션 (운영자가 MultilingualInput 사용 시)
+        \Illuminate\Support\Facades\Config::set('g7_settings.core.general.site_name', [
+            'ko' => '한글몰', 'en' => 'KoreanMall',
+        ]);
+        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.og_default_site_name', '');
+        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.og_image_default_width', 1200);
+        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.og_image_default_height', 630);
+        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.twitter_default_card', 'summary_large_image');
+        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.twitter_default_site', '');
+        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.meta_title_suffix', '');
+        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.meta_description', '');
+        \Illuminate\Support\Facades\Config::set('g7_settings.core.seo.meta_keywords', '');
+        app()->setLocale('ko');
+
+        $resolver = app(\App\Seo\SeoMetaResolver::class);
+        $rii = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->layoutBasePath));
+
+        $errors = [];
+        foreach ($rii as $file) {
+            if ($file->isDir() || $file->getExtension() !== 'json') {
+                continue;
+            }
+            $rel = str_replace('\\', '/', substr($file->getPathname(), strlen($this->layoutBasePath) + 1));
+            if (str_starts_with($rel, 'partials/') || str_starts_with($rel, 'modals/')
+                || str_starts_with($rel, 'errors/') || str_starts_with(basename($rel), '_')) {
+                continue;
+            }
+
+            $decoded = json_decode((string) file_get_contents($file->getPathname()), true);
+            $seoConfig = $decoded['meta']['seo'] ?? null;
+            if (! is_array($seoConfig) || ! ($seoConfig['enabled'] ?? false)) {
+                continue;
+            }
+
+            try {
+                // 빈 컨텍스트 — 표현식 평가에서 empty fallback 으로 처리
+                $resolver->resolve($seoConfig, [], null, null, []);
+            } catch (\Throwable $e) {
+                $errors[] = "{$rel}: ".$e->getMessage();
+            }
+        }
+
+        $this->assertEmpty(
+            $errors,
+            "다국어 array 코어 설정 환경에서 다음 레이아웃의 SEO resolve 가 throw 했습니다:\n  - "
+            .implode("\n  - ", $errors)
+        );
     }
 }

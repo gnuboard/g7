@@ -1,0 +1,1181 @@
+{
+  "title": "商品管理",
+  "add": "商品登録",
+  "preset": {
+    "label": "検索プリセット",
+    "out_of_stock": "品切れ商品",
+    "new_product": "新商品",
+    "display_stopped": "展示中止",
+    "applied": "'{{name}}' プリセットが適用されました。"
+  },
+  "search": {
+    "placeholder": "検索キーワードを入力してください...",
+    "field": {
+      "all": "すべて",
+      "product_name": "商品名",
+      "description": "商品説明",
+      "product_code": "商品コード",
+      "sku": "SKU",
+      "barcode": "バーコード"
+    },
+    "column_select": "カラム選択",
+    "detail_search": "詳細検索"
+  },
+  "filter": {
+    "detail_title": "詳細検索",
+    "category": "カテゴリ",
+    "no_category": "カテゴリ未登録",
+    "date": "日付",
+    "date_type": {
+      "created_at": "登録日",
+      "updated_at": "編集日"
+    },
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "date_quick": {
+      "today": "今日",
+      "3days": "3日間",
+      "week": "1週間",
+      "month": "1ヶ月",
+      "3months": "3ヶ月",
+      "all": "すべて"
+    },
+    "sales_status": "販売ステータス",
+    "sales_status_options": {
+      "all": "すべて",
+      "on_sale": "販売中",
+      "out_of_stock": "品切れ",
+      "restocking": "在庫確保中",
+      "stopped": "販売中止"
+    },
+    "display_status": "展示ステータス",
+    "display_status_options": {
+      "all": "すべて",
+      "displayed": "展示中",
+      "hidden": "展示中止"
+    },
+    "brand": "ブランド",
+    "no_brand": "ブランド未登録",
+    "tax_status": "課税対象",
+    "tax_status_options": {
+      "all": "すべて",
+      "taxable": "課税",
+      "tax_free": "非課税"
+    },
+    "price": "価格",
+    "price_type": {
+      "selling_price": "販売価格",
+      "supply_price": "仕入価格",
+      "original_price": "定価"
+    },
+    "min_price": "最小金額",
+    "max_price": "最大金額",
+    "min": "最小",
+    "max": "最大",
+    "stock": "在庫",
+    "stock_unit": "個",
+    "shipping_policy": "配送ポリシー",
+    "shipping_policy_options": {
+      "all": "すべて"
+    },
+    "detail_filter_label": "詳細検索フィルター"
+  },
+  "action": {
+    "edit": "編集",
+    "copy": "コピー",
+    "delete": "削除",
+    "edit_search": "検索編集",
+    "search": "検索",
+    "reset": "初期化",
+    "save_preset": "プリセット保存"
+  },
+  "bulk_apply": "一括適用",
+  "bulk_success": "選択された商品が一括変更されました。",
+  "bulk": {
+    "no_selection": "選択された項目がありません。",
+    "update_success": "商品 {{products}}個、オプション {{options}}個が編集されました。",
+    "update_error": "一括更新に失敗しました。",
+    "option_update_success": "{{count}}個のオプションが編集されました。",
+    "option_update_error": "オプション一括更新に失敗しました。"
+  },
+  "stock_options_hint": "オプションがある商品はオプション別に在庫を管理します",
+  "stock_mismatch_warning": "オプション在庫合計と一致しません",
+  "selected_count": "{count}個選択されました",
+  "total_count": "合計 {count}個",
+  "excel_download": "Excelダウンロード",
+  "sort": {
+    "latest": "最新順",
+    "oldest": "古い順",
+    "name_asc": "名前昇順",
+    "name_desc": "名前 降順",
+    "price_asc": "価格 安い順",
+    "price_desc": "価格 高い順",
+    "stock_asc": "在庫 少ない順",
+    "stock_desc": "在庫 多い順"
+  },
+  "table": {
+    "selected_count": "{{count}}個 選択されました",
+    "total_count": "合計 {{count}}個",
+    "bulk_action": {
+      "sales_status": "販売ステータス 変更",
+      "display_status": "表示ステータス 変更",
+      "price": "販売価格 変更",
+      "price_bulk": "販売価格 一括変更",
+      "stock_bulk": "在庫 一括変更",
+      "apply": "一括変更"
+    },
+    "sort": {
+      "label": "並べ替え",
+      "latest": "最新順",
+      "oldest": "古い順",
+      "name_asc": "名前 昇順",
+      "name_desc": "名前 降順",
+      "price_asc": "価格 安い順",
+      "price_desc": "価格 高い順"
+    },
+    "per_page": "{{count}}個",
+    "excel_download": "エクセル ダウンロード",
+    "column": {
+      "image": "画像",
+      "product_name": "商品名",
+      "original_price": "定価",
+      "selling_price": "販売価格",
+      "stock": "在庫",
+      "safety_stock": "安全在庫",
+      "sales_status": "販売ステータス",
+      "display_status": "表示ステータス",
+      "shipping_policy": "配送料金ポリシー",
+      "created_at": "登録日",
+      "updated_at": "修正日",
+      "actions": "操作",
+      "default": "基本",
+      "usd": "USD ($)",
+      "jpy": "JPY (¥)",
+      "cny": "CNY (¥)",
+      "sku": "SKU",
+      "use_status": "使用有無",
+      "color": "色",
+      "category": "カテゴリー",
+      "brand": "ブランド",
+      "min_purchase_qty": "最小数量",
+      "max_purchase_qty": "最大購入数量"
+    },
+    "status": {
+      "on_sale": "販売中",
+      "out_of_stock": "品切れ",
+      "restocking": "在庫 確保中",
+      "stopped": "販売 中止",
+      "discontinued": "販売中止",
+      "displayed": "表示中",
+      "hidden": "表示中止"
+    },
+    "options": {
+      "title": "オプション",
+      "color": "色",
+      "size": "サイズ",
+      "show_detail": "詳細オプション 表示",
+      "hide_detail": "詳細オプション 閉じる",
+      "column": {
+        "name": "オプション名",
+        "is_default": "基本",
+        "color": "色",
+        "size": "サイズ",
+        "list_price": "定価",
+        "selling_price": "販売価格",
+        "price": "価格",
+        "sku": "SKU",
+        "stock": "在庫",
+        "safe_stock": "安全在庫",
+        "active": "使用"
+      },
+      "no_options": "登録されたオプションがありません"
+    },
+    "shipping": {
+      "free": "送料無料",
+      "conditional_free": "条件付き送料無料",
+      "standard": "通常配送"
+    },
+    "pagination": {
+      "prev": "前へ",
+      "next": "次へ",
+      "showing": "全 {{total}}個 中 {{from}} - {{to}}"
+    },
+    "empty": {
+      "title": "登録された商品がありません",
+      "description": "新しい商品を追加してください"
+    },
+    "mobile": {
+      "price_label": "定価",
+      "selling_price_label": "販売価格",
+      "stock_label": "在庫",
+      "stock": "在庫:",
+      "safety_stock_label": "安全在庫",
+      "status_label": "ステータス",
+      "shipping_label": "配送ポリシー",
+      "created_at_label": "登録日",
+      "updated_at_label": "編集日",
+      "unit": "個",
+      "options": "オプションリスト"
+    },
+    "no_data": "登録された商品がありません"
+  },
+  "validation": {
+    "selling_price_exceeds_list_price": "販売価格は定価を超えることはできません"
+  },
+  "index": {
+    "title": "商品管理",
+    "description": "商品リストを管理します",
+    "add_product": "商品追加",
+    "empty_title": "登録された商品がありません",
+    "empty_description": "新しい商品を追加してください"
+  },
+  "create": {
+    "title": "商品登録",
+    "title_edit": "商品編集",
+    "description": {
+      "title": "詳細説明",
+      "placeholder": "詳細説明を入力してください",
+      "mode_text": "テキスト",
+      "mode_html": "HTML",
+      "languages": {
+        "ko": "韓国語",
+        "en": "English"
+      },
+      "add_language": "言語追加"
+    },
+    "description_edit": "商品情報を編集します",
+    "basic_info": {
+      "title": "基本情報",
+      "category": {
+        "title": "カテゴリー選択",
+        "required": "*",
+        "max_count": "(最大5個)",
+        "manage": "カテゴリー管理",
+        "selected": "選択されたカテゴリー",
+        "selected_count": "({{current}}/{{max}})",
+        "step": "{{n}}段階"
+      },
+      "brand": {
+        "title": "ブランド",
+        "manage": "ブランド管理"
+      },
+      "product_name": {
+        "title": "商品名",
+        "required": "*",
+        "placeholder": "商品名を入力してください"
+      },
+      "languages": {
+        "ko": "韓国語",
+        "en": "English"
+      }
+    },
+    "sales_info": {
+      "title": "販売情報",
+      "base_currency": "基本通貨",
+      "original_price": "定価",
+      "sale_price": "販売価格",
+      "sale_price_hint": "基本設定オプションの販売価格を基準として自動設定されます",
+      "stock": "在庫",
+      "stock_sync_hint": "最新在庫と一致しています",
+      "tax_status": "課税対象",
+      "tax_status_options": {
+        "taxable": "課税",
+        "tax_free": "非課税"
+      },
+      "sales_status": "販売ステータス",
+      "sales_status_options": {
+        "on_sale": "販売中",
+        "out_of_stock": "品切れ",
+        "stopped": "販売中止"
+      },
+      "display_status": "表示ステータス",
+      "display_status_options": {
+        "displayed": "表示中",
+        "hidden": "非表示"
+      }
+    },
+    "product_options": {
+      "title": "商品オプション",
+      "bulk_create": {
+        "title": "オプション一括生成(最大3個)",
+        "helper": "商品オプションを生成するための機能です。オプション名と項目を入力後、「オプション項目で生成」ボタンをクリックすると、組み合わされたオプションが生成されます。(デフォルト項目は初期化されます)",
+        "option_name_placeholder": "オプション名",
+        "add_option": "オプション追加",
+        "generate": "オプション項目で生成"
+      },
+      "table": {
+        "title": "商品オプション設定",
+        "multi_currency_auto": "多通貨価格自動入力",
+        "add_row": "+ 行を追加",
+        "columns": {
+          "default": "基本",
+          "size": "サイズ",
+          "color": "色",
+          "regular_price": "定価",
+          "sale_price": "販売価格 *",
+          "usd": "USD($)",
+          "jpy": "JPY(¥)",
+          "cny": "CNY(¥)",
+          "sku": "SKU",
+          "stock": "在庫 *",
+          "safety_stock": "安全在庫",
+          "weight": "重量(g)",
+          "volume": "体積(cm³)",
+          "mileage": "マイレージ",
+          "active": "使用",
+          "delete": "削除"
+        }
+      },
+      "additional": {
+        "title": "商品追加オプション",
+        "helper": "顧客が直接テキストを入力できる追加オプションです。最大5個まで追加可能です。(例:個人メッセージ、ギフトメッセージなど)",
+        "used": "使用",
+        "unused": "未使用",
+        "option_name": "オプション名",
+        "option_name_placeholder": "オプション名を入力",
+        "required": "必須",
+        "add_option": "追加オプション追加"
+      }
+    },
+    "image": {
+      "title": "画像",
+      "upload_title": "画像アップロード(最大10個)",
+      "upload_hint": "推奨:1000x1000px、最大5MB",
+      "drag_hint": "ドラッグして順序を変更(代表画像は常に最前列)",
+      "thumbnail_hint": "代表画像はサイズ別サムネイルが自動生成されます",
+      "main_badge": "代表",
+      "set_main_button": "代表"
+    },
+    "product_notice": {
+      "title": "商品情報提供告示",
+      "category_label": "商品群を選択",
+      "category_placeholder": "商品群を選択してください",
+      "manage_link": "商品情報提供告示管理に移動",
+      "languages": {
+        "ko": "日本語",
+        "en": "English",
+        "zh": "中文",
+        "ja": "日本語"
+      },
+      "items_header": "項目一覧",
+      "items_count": "{{count}}個",
+      "batch_change": "すべての項目を「詳細説明を参照」に変更",
+      "table": {
+        "order": "順番",
+        "name": "項目名",
+        "value": "内容"
+      },
+      "add_item": "項目を追加",
+      "category_options": {
+        "clothing": "衣類",
+        "food": "食品",
+        "electronics": "電子製品",
+        "cosmetics": "化粧品"
+      }
+    },
+    "shipping": {
+      "title": "配送料",
+      "policy_label": "配送料ポリシー",
+      "manage_link": "配送料管理",
+      "use_default": "デフォルト配送料を使用",
+      "policy_types": {
+        "default": "デフォルト",
+        "free_shipping": "送料無料ポリシー",
+        "conditional_free": "条件付き送料無料",
+        "collect_3000": "着払い 3000円",
+        "quantity_based": "数量別配送ポリシー"
+      },
+      "detail": {
+        "delivery_method": "配送方法",
+        "carrier": "配送業者",
+        "fee": "配送料",
+        "delivery_days": "配送期間",
+        "condition": "配送条件",
+        "return_exchange_fee": "返品·交換配送料",
+        "additional_info": "追加情報"
+      }
+    },
+    "common_info": {
+      "title": "商品共通情報",
+      "label": "商品共通情報",
+      "manage_link": "共通情報管理",
+      "use_default": "デフォルト商品共通情報を使用",
+      "types": {
+        "none": "未使用",
+        "general": "一般商品案内"
+      },
+      "badge_default": "デフォルト"
+    },
+    "other_info": {
+      "title": "その他の情報",
+      "product_label": {
+        "title": "商品ラベル",
+        "hit": "HIT",
+        "etc": "その他",
+        "best": "BEST",
+        "sale": "SALE",
+        "edit": "編集",
+        "remove": "削除"
+      },
+      "min_qty": {
+        "title": "最小購入数量",
+        "hint": "1個以上"
+      },
+      "max_qty": {
+        "title": "最大購入数量",
+        "hint": "0は制限なしとして処理されます"
+      },
+      "purchase_limit": {
+        "title": "購入対象の制限",
+        "no_limit": "制限なし",
+        "restricted": "購入対象の制限"
+      },
+      "allowed_roles": {
+        "title": "許可ロール"
+      }
+    },
+    "seo_settings": {
+      "title": "SEO設定",
+      "seo_tags": {
+        "label": "SEOタグ",
+        "placeholder": "タグを入力した後Enterキーを押してください"
+      }
+    },
+    "identification_codes": {
+      "title": "識別コード",
+      "product_code": {
+        "label": "商品コード(自社モール)",
+        "placeholder": "商品コードを入力"
+      },
+      "barcode": {
+        "label": "バーコード",
+        "placeholder": "バーコードを入力"
+      },
+      "hs_code": {
+        "label": "HSコード",
+        "placeholder": "HSコードを入力"
+      }
+    },
+    "shopping_integration": {
+      "title": "ショッピング連携",
+      "integration_status": "連携の有無",
+      "enabled": "連携",
+      "disabled": "連携しない",
+      "naver": {
+        "name": "ネイバーショッピング連携",
+        "plugin": "ネイバーショッピングプラグイン"
+      },
+      "daum": {
+        "name": "DAUMショッピング連携",
+        "plugin": "DAUMショッピングプラグイン"
+      },
+      "facebook": {
+        "name": "Facebookショッピング連携",
+        "plugin": "Facebookショッピングプラグイン"
+      },
+      "google": {
+        "name": "Googleショッピング連携",
+        "plugin": "Googleショッピングプラグイン"
+      }
+    },
+    "activity_log": {
+      "title": "処理ログ",
+      "sort": {
+        "label": "並べ替え:",
+        "latest": "処理日時 最新順",
+        "oldest": "処理日時 古い順"
+      },
+      "per_page": {
+        "label": "ページあたり:"
+      },
+      "columns": {
+        "datetime": "処理日時",
+        "actor": "処理者",
+        "event": "イベント"
+      }
+    },
+    "modal": {
+      "add_language": {
+        "title": "言語を追加",
+        "description": "追加する言語を選択してください。"
+      },
+      "label_period": {
+        "title": "ラベル期間設定",
+        "description": "ラベルの表示期間を設定します。",
+        "start_date": "開始日",
+        "end_date": "終了日（選択可）",
+        "labels": {
+          "featured": "企画",
+          "new": "新商品",
+          "best": "ベストセラー",
+          "sale": "セール"
+        }
+      },
+      "copy_product": {
+        "title": "商品複製",
+        "description": "選択した商品を複製して新しい商品を登録しますか？",
+        "note": "既存商品のすべての情報が複製され、編集後に保存できます。",
+        "copy": "複製する"
+      },
+      "confirm": {
+        "title": "オプション再生成確認",
+        "regenerate_options": "既存オプションが初期化されます。新しいオプション組み合わせで再生成しますか？",
+        "regenerate_options_note": "同一名のオプションは既存の価格・在庫情報が維持されます。"
+      }
+    }
+  },
+  "edit": {
+    "title": "商品編集"
+  },
+  "form": {
+    "title": "商品情報",
+    "description": "商品情報を入力します",
+    "placeholder": "商品フォームがここに表示されます"
+  },
+  "modal": {
+    "preset_manage": {
+      "title": "プリセット管理",
+      "description": "検索プリセットを管理します。",
+      "add_new": "新しいプリセットを追加",
+      "empty": "保存されたプリセットがありません。"
+    },
+    "preset_save": {
+      "title": "プリセット保存",
+      "description": "現在の検索条件をプリセットとして保存します。",
+      "placeholder": "プリセット名を入力してください",
+      "save": "保存"
+    },
+    "preset_edit": {
+      "title": "プリセット編集"
+    },
+    "preset_delete": {
+      "title": "プリセット削除",
+      "confirm": "「{{name}}」プリセットを削除しますか？"
+    },
+    "bulk_price": {
+      "title": "販売価格一括変更",
+      "description": "選択した{{count}}個の商品の販売価格を変更します。",
+      "method": "変更方式",
+      "method_increase": "値上げ",
+      "method_decrease": "値下げ",
+      "method_fixed": "に変更",
+      "value": "変更金額/比率",
+      "unit_won": "円",
+      "unit_percent": "%",
+      "preview_increase": "販売価格を{{value}}{{unit}}値上げします。",
+      "preview_decrease": "販売価格を{{value}}{{unit}}値下げします。",
+      "preview_fixed": "販売価格を{{value}}{{unit}}に変更します。"
+    },
+    "bulk_stock": {
+      "title": "在庫一括変更",
+      "description": "選択した{{count}}個の商品の在庫を変更します。",
+      "method": "変更方式",
+      "method_increase": "増加",
+      "method_decrease": "減少",
+      "method_set": "に変更",
+      "value": "変更数量",
+      "preview_increase": "在庫を{{value}}個増加させます。",
+      "preview_decrease": "在庫を{{value}}個減少させます。",
+      "preview_set": "在庫を{{value}}個に変更します。"
+    },
+    "bulk_confirm": {
+      "title": "一括変更確認",
+      "description": "次の項目を一括変更します。",
+      "bulk_changes_section": "一括変更条件",
+      "products_section": "変更される商品（{{count}}個）",
+      "options_section": "変更されるオプション（{{count}}個）",
+      "sales_status": "販売ステータスを{{value}}に変更します。",
+      "display_status": "表示ステータスを{{value}}に変更します。",
+      "price": "販売価格を{{value}}変更します。",
+      "stock": "在庫を{{value}}変更します。",
+      "price_change": "販売価格一括変更",
+      "stock_change": "在庫一括変更",
+      "no_changes": "変更する項目がありません。"
+    },
+    "bulk_placeholder": {
+      "sales_status": "販売ステータス選択",
+      "display_status": "表示ステータス選択"
+    },
+    "excel_download": {
+      "title": "エクセルダウンロード",
+      "description": "ダウンロードする注文書の範囲を選択してください。",
+      "option_search": "現在の検索条件でダウンロード",
+      "option_search_desc": "合計{{count}}個の商品がダウンロードされます。",
+      "option_selected": "選択した商品のみダウンロード",
+      "option_selected_desc": "{{count}}個の商品のみダウンロードされます。",
+      "download": "ダウンロード"
+    },
+    "common": {
+      "cancel": "キャンセル",
+      "change": "変更",
+      "apply": "適用",
+      "confirm": "確認"
+    },
+    "copy": {
+      "title": "商品複製",
+      "no_name": "(名前なし)",
+      "options_label": "複製オプション",
+      "option_images": "商品画像",
+      "option_product_options": "商品オプション",
+      "option_categories": "カテゴリー",
+      "option_sales_info": "販売情報",
+      "option_description": "商品説明",
+      "option_notice": "商品情報提供告示",
+      "option_common_info": "共通情報",
+      "option_other_info": "その他の情報",
+      "option_shipping": "配送ポリシー",
+      "option_seo": "SEO設定",
+      "option_identification": "識別コード",
+      "note": "選択したオプションのデータが商品登録ページに事前入力されます。",
+      "submit": "複製する"
+    },
+    "delete": {
+      "title": "商品削除",
+      "confirm_question": "本当にこの商品を削除しますか?",
+      "cannot_delete_title": "削除できません",
+      "related_data_notice": "次のデータが一緒に削除されます:",
+      "warning_message": "削除された商品は復旧できません。",
+      "permanent_warning": "この操作は取り消せません。商品に関連するすべてのデータ(画像、オプション、在庫など)が永久に削除されます。",
+      "confirm_button": "削除"
+    },
+    "mode_change": {
+      "title": "詳細説明モード変更",
+      "confirm_question": "詳細説明編集モードを変更しますか?",
+      "description": "モードを変更すると、現在作成中の内容の形式が変更される可能性があります。",
+      "current_mode": "現在のモード",
+      "new_mode": "変更するモード",
+      "warning_title": "注意",
+      "warning_message": "モード変更時に一部の書式が失われる可能性があります。変更前に内容を保存することをお勧めします。",
+      "confirm_button": "モード変更"
+    },
+    "save_template": {
+      "title": "告示情報テンプレート保存",
+      "description": "現在入力された告示情報をテンプレートとして保存します。保存されたテンプレートは他の商品で読み込んで使用できます。",
+      "template_name": "テンプレート名",
+      "template_name_placeholder": "例:衣類基本テンプレート",
+      "category": "カテゴリー",
+      "category_placeholder": "カテゴリー選択(選択可能)",
+      "set_as_default": "デフォルトテンプレートとして設定",
+      "preview": "保存される内容プレビュー",
+      "fields_count": "フィールド",
+      "more_fields": "個フィールドさらに表示",
+      "info": "テンプレートは告示情報入力時に素早く読み込んで使用できます。",
+      "save_button": "テンプレート保存"
+    }
+  },
+  "description": {
+    "mode_html": "HTML",
+    "mode_editor": "エディター",
+    "pc_tab": "PC用",
+    "mobile_tab": "モバイル用",
+    "pc_hint": "PCで表示される詳細説明です",
+    "mobile_hint": "モバイルで表示される詳細説明です",
+    "copy_from_pc": "PC内容をコピー",
+    "text_mode": "テキスト",
+    "html_mode": "HTML編集"
+  },
+  "messages": {
+    "deleted_success": "商品が削除されました。",
+    "deleted_error": "商品削除中にエラーが発生しました。",
+    "code_generate_error": "商品コード生成に失敗しました。",
+    "label_period_saved": "ラベル期間が保存されました。",
+    "label_period_removed": "ラベル期間が削除されました。",
+    "copy_code_required": "新しい商品コードを入力してください。",
+    "copy_source_not_found": "元の商品情報が見つかりません。",
+    "copy_success": "商品が複製されました。",
+    "copy_error": "商品複製中にエラーが発生しました。",
+    "copy_failed": "商品複製に失敗しました。",
+    "bulk_summary_sales_status": "販売ステータス:{status}",
+    "bulk_summary_display_status": "表示ステータス:{status}",
+    "bulk_summary_name_changed": "商品名編集",
+    "bulk_summary_list_price": "定価:{price}",
+    "bulk_summary_selling_price": "販売価格:{price}",
+    "bulk_summary_inline_modified": "インライン編集",
+    "bulk_summary_bulk_applied": "一括変更を適用",
+    "bulk_summary_price_adjustment": "調整価格:{method}{value}",
+    "bulk_summary_price_adjustment_inline": "調整価格:{value}",
+    "bulk_summary_stock": "在庫:{method}{value}",
+    "bulk_summary_stock_inline": "在庫:{value}",
+    "bulk_summary_option_name": "オプション名:{name}",
+    "bulk_summary_sku": "SKU: {sku}",
+    "bulk_summary_selected": "選択されました"
+  },
+  "buttons": {
+    "auto_generate": "自動生成",
+    "generate_code": "コード生成",
+    "manage_category": "カテゴリー管理",
+    "manage_brand": "ブランド管理",
+    "manage_labels": "ラベル管理",
+    "manage_shipping": "配送ポリシー管理",
+    "manage_common_info": "共通情報管理",
+    "manage_notice_template": "商品情報提供告示管理",
+    "create_shipping_policy": "配送ポリシー作成"
+  },
+  "image_delete_confirm": "この画像を削除しますか?",
+  "title_create": "商品登録",
+  "title_edit": "商品編集",
+  "description_create": "新しい商品を登録します",
+  "description_edit": "商品情報を編集します",
+  "uncategorized": "未分類",
+  "tabs": {
+    "basic": "基本情報",
+    "sales": "販売情報",
+    "options": "商品オプション",
+    "images": "画像",
+    "description": "詳細説明",
+    "notice": "商品告示情報",
+    "shipping": "配送",
+    "common_info": "共通情報",
+    "other": "その他情報",
+    "seo": "SEO",
+    "identification": "識別コード",
+    "additional_options": "追加オプション",
+    "shopping": "ショッピング連携",
+    "activity_log": "処理ログ"
+  },
+  "sections": {
+    "basic_info": "基本情報",
+    "sales_info": "販売情報",
+    "product_options": "商品オプション",
+    "images": "画像",
+    "description": "詳細説明",
+    "notice": "商品情報提供告示",
+    "shipping": "配送情報",
+    "common_info": "商品共通情報",
+    "other_info": "その他情報",
+    "seo": "SEO設定",
+    "identification": "識別コード",
+    "additional_options": "追加オプション",
+    "shopping_integration": "ショッピング連携",
+    "activity_log": "処理ログ",
+    "product_code_info": "商品コード情報"
+  },
+  "fields": {
+    "base_currency": "基本通貨",
+    "name": "商品名",
+    "alternative_name": "英文名",
+    "category": "カテゴリー",
+    "brand": "ブランド",
+    "price": "価格",
+    "stock": "在庫",
+    "sales_status": "販売ステータス",
+    "display_status": "表示ステータス",
+    "tax_status": "課税ステータス",
+    "product_code": "商品コード",
+    "sales_product_code": "販売商品コード",
+    "sku": "SKU",
+    "barcode": "バーコード",
+    "hs_code": "HSコード",
+    "description": "詳細説明",
+    "short_description": "簡略説明",
+    "short_description_hint": "商品一覧などに表示される短い説明です",
+    "summary_description": "要約説明",
+    "characteristics": "商品特性",
+    "labels": "商品ラベル",
+    "purchase_qty": "購入数量",
+    "min_purchase_qty": "最小購入数量",
+    "max_purchase_qty": "最大購入数量",
+    "purchase_restriction": "購入対象制限",
+    "purchase_start_limit": "購入開始制限",
+    "benefit_price_qty": "特典価格数量",
+    "allowed_roles": "許可ロール",
+    "shipping_policy": "配送ポリシー",
+    "notice_template": "商品告示テンプレート",
+    "common_info": "共通情報",
+    "meta_title": "SEOタイトル",
+    "meta_description": "SEO説明",
+    "meta_keywords": "SEOキーワード",
+    "use_main_image_for_og": "代表画像をOG画像として使用",
+    "created_at": "登録日",
+    "updated_at": "編集日"
+  },
+  "placeholders": {
+    "name": "商品名を入力してください",
+    "alternative_name": "英文商品名を入力してください",
+    "alternative_name_en": "Enter product name in English",
+    "brand": "ブランドを選択してください",
+    "product_code": "商品コードを入力してください",
+    "sku": "SKUを入力してください",
+    "barcode": "バーコードを入力してください",
+    "hs_code": "HSコードを入力してください",
+    "description": "詳細説明を入力してください",
+    "description_en": "Enter detailed description",
+    "description_mobile": "モバイル用詳細説明を入力してください",
+    "description_mobile_en": "Enter mobile description",
+    "short_description": "簡略説明を入力してください",
+    "summary_description": "要約説明を入力してください",
+    "common_info": "共通情報を選択してください",
+    "notice_template": "商品告示テンプレートを選択してください",
+    "meta_title": "SEOタイトルを入力してください",
+    "meta_description": "SEO説明を入力してください",
+    "meta_keywords": "SEOキーワードを入力してください",
+    "select_roles": "許可するロールを選択してください",
+    "search_roles": "ロール検索..."
+  },
+  "options": {
+    "use_options": "オプションを使用",
+    "required_notice": "商品登録時に最低1つのオプションが必須です。オプションを追加してください",
+    "option_table_title": "オプション一覧",
+    "add_option_group": "オプショングループを追加",
+    "add_row": "行を追加",
+    "generate_options": "オプション作成",
+    "bulk_create_title": "オプション一括作成",
+    "bulk_create_hint": "オプション名とオプション値を入力した後、「オプション作成」ボタンをクリックしてください",
+    "option_name_placeholder": "オプション名（例：色）",
+    "option_values_placeholder": "オプション値をカンマ（,）で区切って入力",
+    "additional_title": "商品追加オプション",
+    "additional_hint": "顧客が直接テキストを入力できる追加オプションです。最大5個まで追加可能です。（例：刻印文句、ギフトメッセージなど）",
+    "add_additional": "追加オプションを追加",
+    "additional_name_label": "オプション名",
+    "additional_name_placeholder": "刻印文句",
+    "no_additional": "登録された追加オプションはありません",
+    "auto_currency": "多通貨価格自動計算",
+    "items_count": "{{count}}個オプション",
+    "required": "必須",
+    "columns": {
+      "default": "デフォルト",
+      "option": "オプション",
+      "option_id": "オプションID",
+      "category": "分類",
+      "list_price": "定価",
+      "selling_price": "販売価格",
+      "price": "価格",
+      "price_type": "価格タイプ",
+      "sku": "SKU",
+      "stock": "在庫",
+      "safe_stock": "安全在庫",
+      "weight": "重量（g）",
+      "volume": "容積（cm³）",
+      "mileage": "マイレージ",
+      "shipping": "配送",
+      "active": "使用",
+      "required": "必須"
+    },
+    "mileage_type": {
+      "fixed": "円",
+      "percent": "%"
+    },
+    "option_count": "（{count}個オプション）",
+    "price_type": {
+      "fixed": "固定価格",
+      "additional": "追加金額"
+    },
+    "shipping": {
+      "available": "可能",
+      "unavailable": "不可"
+    },
+    "messages": {
+      "input_max_3": "最大3個まで追加できます",
+      "name_value_required": "オプション名とオプション値を入力してください",
+      "generated": "{count}個のオプションが作成されました",
+      "name_required": "オプション名を入力してください",
+      "add_tool_applied": "オプション追加ツールが適用されました",
+      "additional_max_5": "最大5個まで追加できます"
+    }
+  },
+  "notice": {
+    "tab_existing_template": "テンプレート選択",
+    "tab_new_registration": "直接入力",
+    "items_list": "項目一覧",
+    "items_count_suffix": "個項目",
+    "col_number": "順番",
+    "col_name": "項目名",
+    "col_value": "内容",
+    "add_item": "項目を追加",
+    "item_name_placeholder": "項目名を入力してください",
+    "input_placeholder": "内容を入力してください",
+    "bulk_input": "一括入力",
+    "preview": "プレビュー",
+    "save_as_template": "テンプレートとして保存",
+    "new_template_name": "新しいテンプレート名",
+    "template_name_ko_placeholder": "韓国語テンプレート名",
+    "template_name_en_placeholder": "英語テンプレート名",
+    "empty_message": "登録された項目がありません",
+    "empty_hint": "項目を追加するか、テンプレートを選択してください",
+    "fill_detail_ref": "すべての項目を「詳細説明参照」に変更",
+    "confirm_change_title": "テンプレート変更確認",
+    "confirm_change_warning": "既に入力された項目があります。",
+    "confirm_change_description": "テンプレートを変更すると、既存の項目が新しいテンプレートの項目に置き換えられます。同じ項目名の値は保持されます。",
+    "confirm_change_button": "変更する",
+    "modals": {
+      "bulk_change": {
+        "title": "すべての項目を一括変更",
+        "message": "すべての項目の内容を「詳細説明を参照」に変更してもよろしいですか？",
+        "preview_label": "変更後の内容",
+        "preview_value": "詳細説明を参照",
+        "notice": "この操作により、現在入力されているすべての値が上書きされます。",
+        "confirm": "変更"
+      }
+    },
+    "messages": {
+      "no_items_to_change": "変更する項目がありません。",
+      "all_items_changed_to_detail_ref": "すべての項目が「詳細説明を参照」に変更されました。",
+      "template_name_required": "テンプレート名を入力してください。",
+      "no_items": "保存する項目がありません。",
+      "template_saved": "テンプレートが保存されました。",
+      "template_save_error": "テンプレートの保存に失敗しました。",
+      "info_empty": "保存する告示情報がありません。",
+      "filled": "空の項目に一括入力されました。"
+    }
+  },
+  "shopping_integration": {
+    "description": "外部ショッピングモールとの商品連携設定です",
+    "naver": {
+      "title": "Naver ショッピング"
+    },
+    "google": {
+      "title": "Google ショッピング"
+    },
+    "facebook": {
+      "title": "Facebook ショッピング"
+    },
+    "sync_interval": "連携周期",
+    "intervals": {
+      "realtime": "リアルタイム",
+      "1h": "1時間",
+      "6h": "6時間",
+      "1d": "1日",
+      "manual": "手動"
+    },
+    "last_synced": "最後の連携",
+    "status": {
+      "enabled": "連携中",
+      "disabled": "連携しない"
+    },
+    "manage": "連携管理",
+    "note": "連携するには、該当するプラグインがインストールされている必要があります"
+  },
+  "activity_log": {
+    "columns": {
+      "datetime": "処理日時",
+      "actor": "処理者",
+      "action": "作業",
+      "description": "説明"
+    },
+    "sort_order": "並べ替え",
+    "sort": {
+      "latest": "最新順",
+      "oldest": "古い順"
+    },
+    "per_page": "表示件数",
+    "total_count": "合計 {{count}}件",
+    "empty": "処理履歴がありません",
+    "system": "システム",
+    "actor_action": {
+      "view_member": "会員情報を表示"
+    },
+    "changes": {
+      "title": "変更履歴",
+      "field": "項目",
+      "before": "変更前",
+      "after": "変更後",
+      "bulk_model_id": "ID: {{id}}"
+    }
+  },
+  "shipping": {
+    "use_default": "デフォルト配送ポリシーを使用",
+    "default_badge": "デフォルト",
+    "empty_message": "配送ポリシーがありません",
+    "detail": {
+      "shipping_method": "配送方法",
+      "carrier": "運送事業者",
+      "charge_policy": "課金ポリシー",
+      "fee": "配送料",
+      "countries": "配送国",
+      "currency": "基準通貨",
+      "extra_fee": "追加配送料",
+      "condition": "配送条件",
+      "return_exchange_fee": "返品·交換料"
+    }
+  },
+  "price": {
+    "base_currency": "デフォルト通貨",
+    "currency": "通貨",
+    "list_price": "定価",
+    "selling_price": "販売価格",
+    "selling_price_hint": "実際に販売される価格です",
+    "option_price_hint": "デフォルト設定オプションの販売価格を基準として自動設定されます",
+    "auto_calculate": "自動計算"
+  },
+  "stock": {
+    "current": "現在在庫",
+    "safe_stock": "安全在庫",
+    "from_options": "オプション在庫合計",
+    "from_options_hint": "オプション別在庫の合計です",
+    "total_option_stock": "オプション在庫合計",
+    "auto_calculated_hint": "オプション在庫から自動計算されます",
+    "option_total_hint": "オプション在庫の総合計"
+  },
+  "description_editor": {
+    "pc_tab": "PC用",
+    "mobile_tab": "モバイル用",
+    "pc_hint": "PCで表示される詳細説明です",
+    "mobile_hint": "モバイルで表示される詳細説明です",
+    "copy_from_pc": "PC内容をコピー",
+    "text_mode": "テキスト",
+    "html_mode": "HTML",
+    "messages": {
+      "default_locale_cannot_delete": "デフォルト言語は削除できません。",
+      "locale_removed": "{locale} 言語が削除されました。",
+      "locale_already_added": "既に追加された言語です。",
+      "locale_unsupported": "サポートされていない言語です。",
+      "locale_added": "{locale} 言語が追加されました。"
+    }
+  },
+  "common_info": {
+    "use_default": "デフォルト商品共通情報を使用",
+    "badge_default": "デフォルト",
+    "none": "使用なし",
+    "empty": "共通情報がありません",
+    "preview": "プレビュー",
+    "add_template": "テンプレート追加"
+  },
+  "seo": {
+    "title_hint": "検索エンジンに表示されるタイトルです",
+    "keywords_hint": "カンマで区切って入力してください",
+    "preview": "検索結果プレビュー",
+    "untitled": "タイトルなし",
+    "no_description": "説明がありません",
+    "sync_title": "商品名と同じに設定",
+    "sync_description": "商品内容と同じに設定"
+  },
+  "additional_options": {
+    "enable_label": "追加オプション使用",
+    "description": "顧客が注文時に直接入力するオプションです",
+    "add_option": "オプション追加",
+    "option_name": "オプション名",
+    "option_name_placeholder": "オプション名を入力してください",
+    "input_type": "入力タイプ",
+    "type_text": "テキスト",
+    "type_textarea": "複数行テキスト",
+    "type_number": "数値",
+    "type_date": "日付",
+    "required": "必須"
+  },
+  "images": {
+    "drag_hint": "ドラッグして順序を変更してください",
+    "thumbnail_hint": "最初の画像が代表画像になります",
+    "format_hint": "JPG、PNG、GIF形式に対応",
+    "upload_complete": "アップロード完了",
+    "deleted": "画像が削除されました。",
+    "messages": {
+      "max_count": "最大 {max} 件までしか追加できません。",
+      "unsupported_format": "{name}: サポートされていない形式です。",
+      "size_exceeded": "{name}: 10MBを超えています。",
+      "upload_failed": "{name}: アップロード失敗"
+    }
+  },
+  "category": {
+    "select_prev": "親カテゴリを先に選択してください",
+    "no_subcategory": "子カテゴリがありません",
+    "selected": "選択されたカテゴリ",
+    "max_count": "最大 {{count}} 個まで選択可能",
+    "max_5": "最大 5 個",
+    "add_selected": "選択したカテゴリ追加",
+    "step_1": "ステップ1",
+    "step_2": "ステップ2",
+    "step_3": "ステップ3",
+    "step_4": "ステップ4",
+    "messages": {
+      "max_5": "最大 5 個まで選択できます。",
+      "already_selected": "既に選択されたカテゴリです。"
+    }
+  },
+  "characteristics": {
+    "hint": "商品の特性を設定します",
+    "never_sold_out": "在庫なし",
+    "notify_on_restock": "再入荷通知",
+    "allow_guest_order": "非会員注文許可"
+  },
+  "purchase": {
+    "min": "最小",
+    "max": "最大",
+    "unit": "個",
+    "min_suffix": "個以上",
+    "unlimited_hint": "0は制限なしとして処理"
+  },
+  "restriction": {
+    "none": "制限なし",
+    "members": "会員のみ",
+    "roles": "特定ロール",
+    "restricted": "購入対象制限"
+  },
+  "sales_status": {
+    "on_sale": "販売中",
+    "sold_out": "品切れ",
+    "suspended": "販売中止",
+    "coming_soon": "発売予定"
+  },
+  "display_status": {
+    "visible": "表示中",
+    "hidden": "表示なし"
+  },
+  "tax": {
+    "taxable": "課税",
+    "tax_free": "非課税"
+  },
+  "labels": {
+    "title": "ラベル",
+    "no_available": "登録されたラベルがありません。",
+    "edit": "編集",
+    "remove": "削除",
+    "no_period": "期間未設定",
+    "modal_title": "ラベル設定",
+    "modal_description": "ラベルの名前、色、適用期間を設定します。",
+    "name": "ラベル名",
+    "color": "色",
+    "color_reset": "色をリセット",
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "end_date_hint": "空白の場合は無期限で適用されます",
+    "date_preset": "期間プリセット",
+    "preset_7d": "7日",
+    "preset_14d": "14日",
+    "preset_30d": "30日",
+    "preset_permanent": "永久",
+    "save_success": "ラベルが保存されました。",
+    "save_error": "ラベルの保存に失敗しました。",
+    "delete_success": "ラベルが削除されました。",
+    "delete_error": "ラベルの削除に失敗しました。",
+    "preview": "プレビュー",
+    "delete_modal": {
+      "title": "ラベルを削除",
+      "message": "を削除してもよろしいですか?",
+      "description": "削除されたラベルはすべての商品から削除されます。",
+      "deleting": "削除中..."
+    },
+    "uncheck_modal": {
+      "title": "ラベル解除の確認",
+      "message": "チェックを外すと、設定された開始日/終了日が削除されます。",
+      "confirm": "解除"
+    },
+    "inline_period": {
+      "preset_7d": "7日",
+      "preset_14d": "14日",
+      "preset_30d": "30日",
+      "preset_permanent": "永久"
+    }
+  },
+  "roles": {
+    "system": "システムロール",
+    "custom": "カスタムロール"
+  },
+  "copy_section": {
+    "title": "セクションをコピー",
+    "help": "別の商品からこのセクションの内容をコピーします"
+  },
+  "copy_mode": {
+    "title": "商品複製モード",
+    "view_original": "元の商品を表示"
+  },
+  "buttons_form": {
+    "generate_code": "コードを生成",
+    "manage_category": "カテゴリ管理",
+    "manage_brand": "ブランド管理",
+    "manage_labels": "ラベル管理",
+    "manage_shipping": "配送ポリシー管理",
+    "manage_common_info": "共通情報管理",
+    "manage_notice_template": "商品情報提供告示管理",
+    "create_shipping_policy": "配送ポリシーを作成"
+  }
+}

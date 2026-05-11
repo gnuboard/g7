@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Models\Plugin;
 use Illuminate\Database\Eloquent\Collection;
@@ -274,5 +275,24 @@ class PluginRepository implements PluginRepositoryInterface
             // 해당 플러그인이 의존성에 포함되어 있는지 확인
             return in_array($pluginIdentifier, $dependencies);
         })->values();
+    }
+
+    /**
+     * 코어 버전 비호환으로 자동 비활성화된 플러그인을 조회합니다.
+     *
+     * @return Collection 자동 비활성화된 플러그인 컬렉션
+     */
+    public function findAutoDeactivated(): Collection
+    {
+        // 마이그레이션이 아직 적용되지 않은 부팅 단계(예: migrate 직전 boot)에서는
+        // 컬럼 부재로 SQLSTATE 42S22 가 발생하므로 정적으로 가드한다.
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('plugins', 'deactivated_reason')) {
+            return new Collection;
+        }
+
+        return Plugin::where('status', ExtensionStatus::Inactive->value)
+            ->where('deactivated_reason', DeactivationReason::IncompatibleCore->value)
+            ->orderByDesc('deactivated_at')
+            ->get();
     }
 }

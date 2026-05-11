@@ -1,0 +1,77 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 권한 복원 인프라의 신규 기능 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+
+feature: 코어 업그레이드 권한 복원 정합화 (storage/app 사용자 데이터 보존)
+
+description: |
+  PO 운영 환경(7.0.0-beta.3 → 7.0.0-beta.4 업그레이드 후) 에서 모든 상품 이미지가
+  표시되지 않던 회귀의 근본 차단 + 업그레이드 전후 권한 100% 동일 복구 인프라.
+
+  배경:
+    - 기존 `CoreUpdateService::snapshotOwnership()` 은 target 의 루트 1개만 stat,
+      `restoreOwnership()` 은 트리 전체를 루트의 owner 로 일괄 chown.
+    - storage 가 통째로 `restore_ownership` 에 포함되어 storage/app/{modules,
+      plugins,attachments,...} 의 시드 시점 owner 가 영구 손실.
+    - PHP-FPM 이 owner 도 group 도 아닌 0700 디렉토리에 traversal 불가
+      → Storage::disk('modules')->exists() false → 404.
+
+  수정 인프라 (4 trade-off 없는 구성):
+    1. `restore_ownership` / `restore_ownership_group_writable` 기본값에서
+       `storage` → `storage/logs,storage/framework,storage/app/core_pending` 로
+       세분화 (PHP-FPM 쓰기 영역 한정). storage/app 사용자 데이터는 chown 비대상.
+    2. `snapshotOwnershipDetailed()` 신규 — 좁힌 영역의 항목별 재귀 스냅샷.
+    3. `restoreOwnership()` 시그니처 확장 — `$detailedSnapshot` 인자 (default 빈
+       배열) 로 항목별 정확 복원 (owner+group+perms). 기존 호출 호환성 유지.
+    4. `SettingsMigrator::writeJsonFile` 가 부모 owner/group 상속 — sudo update 시
+       root 가 만드는 *.json 의 ownership 정합화.
+    5. beta3 → beta4 한정 우회: spawn 자식이 storage/app 트리 직렬화 스냅샷 →
+       부모 Step 11/12 망가뜨림 후 첫 ServiceProvider boot 가 `PermissionRestoreHelper`
+       로 항목별 정확 복원.
+
+axes:
+  parent_code_version: [beta3, beta4_fix]   # 부모 프로세스의 CoreUpdateService 코드
+  ownership_topology: [symmetric, asymmetric]  # base_path owner == php-fpm vs ≠
+  storage_target: [logs, framework_cache, framework_sessions, app_modules, app_attachments, app_settings]
+  seed_perms: [0700, 0755, 0775]
+  sudo_simulation: [no_change, root_chown_subset, root_chown_all]
+
+exclusions:
+  - { parent_code_version: beta4_fix, sudo_simulation: root_chown_all, reason: "fix 된 부모는 storage/app 을 chown 자체 안 함 — sudo 시뮬레이션 의미 없음" }
+  - { storage_target: app_modules, parent_code_version: beta4_fix, reason: "fix 된 부모는 storage/app 비대상 — 스냅샷/복원 둘 다 트리거 안 됨" }
+  - { storage_target: app_attachments, parent_code_version: beta4_fix, reason: "동일 사유" }
+  - { storage_target: app_settings, parent_code_version: beta4_fix, reason: "동일 사유 — 단 SettingsMigrator inheritOwnershipFromParent 가 별도 보호" }
+
+effects:
+  - snapshot_ownership_detailed_collects_recursive_owner_group_perms
+  - snapshot_ownership_detailed_skips_missing_paths
+  - snapshot_ownership_detailed_caps_at_50000_items_with_warning
+  - snapshot_ownership_detailed_uses_lstat_for_symbolic_links
+  - restore_ownership_backward_compatible_with_two_arg_call
+  - restore_ownership_recovers_perms_to_snapshot_state_for_detailed_paths
+  - restore_ownership_does_not_touch_paths_outside_detailed_snapshot
+  - restore_ownership_records_failed_paths_in_last_permission_warnings
+  - restore_ownership_passes_respect_preservation_marker_to_chown_recursive
+  - settings_migrator_writes_json_with_parent_ownership_inherited
+  - upgrade_beta_4_normalize_storage_app_chmods_directories_to_0755
+  - upgrade_beta_4_normalize_storage_app_chmods_files_to_0644
+  - upgrade_beta_4_writes_preservation_markers_for_existing_extension_storage
+  - module_storage_driver_writes_preservation_marker_on_first_put
+  - module_storage_driver_marker_creation_is_idempotent
+  - plugin_storage_driver_writes_preservation_marker_on_first_put
+  - chown_recursive_detailed_supports_respect_preservation_marker_option
+  - chown_recursive_detailed_skips_subtree_when_preservation_marker_present
+  - chown_recursive_detailed_backward_compatible_without_marker_option
+  - audit_rule_no_storage_bulk_in_restore_ownership_detects_violation
+  - audit_rule_no_storage_bulk_in_restore_ownership_ignores_other_keys
+
+test_files:
+  - tests/Unit/Services/CoreUpdateServicePermissionPreservationTest.php
+  - tests/Unit/Helpers/SettingsMigratorOwnershipTest.php
+  - tests/Unit/Helpers/FilePermissionHelperTest.php
+  - tests/Unit/Extension/Storage/ModuleStorageDriverTest.php
+
+notes: |
+  - chown/chmod 동작 검증은 POSIX 환경 전용 (Windows 자동 skip).
+  - 일반 user 권한에서 다른 user 로 chown 시도 자체가 실패하므로 `자기 자신 owner`
+    조건에서 멱등성 검증 위주. owner 변경 자체는 root 환경에서만 의미 있음.
+  - beta3 → beta4 한정 우회 메커니즘은 자가 무력화 — beta4 → beta5+ 부터는 부모도
+    fix 된 코드라 마커 작성 자체가 트리거되지 않음.

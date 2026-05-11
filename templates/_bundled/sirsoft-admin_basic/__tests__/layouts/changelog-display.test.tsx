@@ -410,11 +410,16 @@ describe('Changelog - 업데이트 모달 인라인 changelog 구조', () => {
     });
 
     it('버전과 날짜 텍스트 바인딩이 올바르다', () => {
+      // 버전 노드: text 가 'v{{entry.version}}' 인 Span
       const versionText = findInTree(moduleUpdateModal.children, (node: any) =>
-        node.text?.includes('entry.version') && node.text?.includes('entry.date'),
+        node.text === 'v{{entry.version}}',
       );
       expect(versionText).toBeDefined();
-      expect(versionText.text).toContain("v{{entry.version}}");
+      // 날짜 노드: if 가 entry.date 이고 text 가 {{entry.date}} 인 Span
+      const dateText = findInTree(moduleUpdateModal.children, (node: any) =>
+        node.text === '{{entry.date}}' && node.if?.includes('entry.date'),
+      );
+      expect(dateText).toBeDefined();
     });
 
     it('blue 배경 스타일이 적용되어 있다', () => {
@@ -559,11 +564,14 @@ describe('Changelog - 상세 모달 changelog 섹션 구조', () => {
       const changelogSection = findInTree(moduleDetailModal.children, (node: any) =>
         node.id === 'changelog_section',
       );
-      const iterationDiv = findInTree(changelogSection.children, (node: any) =>
-        node.iteration?.source === '_global.moduleChangelog',
+      // 스크롤 컨테이너는 iteration Div 의 부모 wrapper (조건부 표시)
+      const scrollWrapper = findInTree(changelogSection.children, (node: any) =>
+        node.if?.includes('_global.moduleChangelog') &&
+        node.if?.includes('length > 0'),
       );
-      expect(iterationDiv.props.className).toContain('max-h-64');
-      expect(iterationDiv.props.className).toContain('overflow-y-auto');
+      expect(scrollWrapper).toBeDefined();
+      expect(scrollWrapper.props.className).toContain('max-h-64');
+      expect(scrollWrapper.props.className).toContain('overflow-y-auto');
     });
 
     it('3단 중첩 iteration 구조가 올바르다 (entry → categories → items)', () => {

@@ -5,6 +5,8 @@ namespace App\Seo;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Extension\HookManager;
+use App\Seo\Concerns\LocalizesSeoValues;
+use App\Seo\Concerns\SubstitutesSeoVariables;
 use App\Seo\Contracts\SeoRendererInterface;
 use App\Services\LayoutService;
 use App\Services\PluginSettingsService;
@@ -16,6 +18,9 @@ use Illuminate\Support\Facades\View;
 
 class SeoRenderer implements SeoRendererInterface
 {
+    use LocalizesSeoValues;
+    use SubstitutesSeoVariables;
+
     public function __construct(
         private readonly TemplateRouteResolver $routeResolver,
         private readonly LayoutService $layoutService,
@@ -32,7 +37,10 @@ class SeoRenderer implements SeoRendererInterface
     ) {}
 
     /**
-     * {@inheritdoc}
+     * 요청 URL에 매핑된 SEO HTML 을 렌더링합니다.
+     *
+     * @param  Request  $request  유입된 HTTP 요청
+     * @return string|null  렌더된 HTML, SEO 비활성/매핑 없음/예외 발생 시 null
      */
     public function render(Request $request): ?string
     {
@@ -217,18 +225,130 @@ class SeoRenderer implements SeoRendererInterface
         // 설정 템플릿(meta_{page_type}_title/description)에 적용한 결과를 _seo.{page_type}에 주입
         $this->resolveSeoContext($seoConfig, $context, $routeParams, $resolvedVars ?? []);
 
-        // 6. SeoMetaResolver로 3계층 캐스케이드 메타 해석
+        // 6. SeoMetaResolver로 3계층 캐스케이드 메타 해석 (배열 형태)
         $meta = $this->metaResolver->resolve($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams);
 
-        // 6.1. 훅: 확장이 메타 태그를 동적으로 수정할 수 있는 필터
-        // 유즈케이스: SEO 플러그인이 title suffix 변경, 리뷰 플러그인이 JSON-LD에 review 배열 주입
-        $meta = HookManager::applyFilters('core.seo.filter_meta', $meta, [
+        // 6.05. $meta 가 신구 양식 모두 처리 가능하도록 og/twitter/structured_data 키 정규화
+        // (구버전 Mock/Stub 호환 — 키 없으면 빈 배열로 보강)
+        $meta['og'] = is_array($meta['og'] ?? null) ? $meta['og'] : [];
+        $meta['twitter'] = is_array($meta['twitter'] ?? null) ? $meta['twitter'] : [];
+        $meta['structured_data'] = $meta['structured_data'] ?? null;
+
+        // 6.06. 모듈/플러그인 declaration 캐스케이드:
+        //   코어설정 < 모듈/플러그인 declaration < 레이아웃 override < hook
+        // resolveOgData 는 이미 (코어설정 + 레이아웃) 을 처리한 결과를 반환했으므로,
+        // 모듈 declaration 은 "레이아웃에서 비어있는 키" 만 채우는 fallback 으로 적용한다.
+        $pageType = $seoConfig['page_type'] ?? null;
+        $extensions = $seoConfig['extensions'] ?? [];
+        if ($pageType && ! empty($extensions)) {
+            $extOg = [];
+            $extTwitter = [];
+            $extStructured = null;
+
+            foreach ($extensions as $extDef) {
+                $extType = $extDef['type'] ?? null;
+                $extId = $extDef['id'] ?? null;
+                if (! $extType || ! $extId) {
+                    continue;
+                }
+                $extInstance = $this->getExtensionInstance($extType, $extId);
+                if (! $extInstance) {
+                    continue;
+                }
+
+                // 원천봉쇄: 한 모듈/플러그인의 declaration throw 가 전체 SEO 렌더를 망치지 않도록 격리.
+                // 다국어 JSON array 캐스팅 같은 모듈 내부 회귀가 SPA fallback 까지 가지 않고 부분 누락만 발생.
+                $extOg = $this->mergeOgData($extOg, $this->safeInvokeExtensionMethod(
+                    $extInstance, 'seoOgDefaults', [$pageType, $context, $routeParams], $extType, $extId
+                ));
+                $extTwitter = $this->mergeTwitterData($extTwitter, $this->safeInvokeExtensionMethod(
+                    $extInstance, 'seoTwitterDefaults', [$pageType, $context, $routeParams], $extType, $extId
+                ));
+
+                $declared = $this->safeInvokeExtensionMethod(
+                    $extInstance, 'seoStructuredData', [$pageType, $context, $routeParams], $extType, $extId
+                );
+                if (! empty($declared)) {
+                    $extStructured = $declared; // 마지막 확장이 우선 (배열 보유 시)
+                }
+            }
+
+            // 레이아웃 비어있는 og 필드만 모듈 declaration 으로 채움 (레이아웃 override 우선)
+            $cascadeChanged = false;
+            if (! empty($extOg)) {
+                $meta['og'] = $this->fillEmptyKeys($meta['og'], $extOg);
+                $cascadeChanged = true;
+            }
+            if (! empty($extTwitter)) {
+                $meta['twitter'] = $this->fillEmptyKeys($meta['twitter'], $extTwitter);
+                $cascadeChanged = true;
+            }
+            // structured_data: 레이아웃 미선언 시 모듈 declaration 사용
+            if ($meta['structured_data'] === null && $extStructured !== null) {
+                $meta['structured_data'] = $extStructured;
+                $cascadeChanged = true;
+            }
+
+            // 회귀: SeoMetaResolver.resolve() 가 layout-only og 로 미리 만든 ogTags/twitterTags/jsonLd 가
+            // 모듈 declaration cascade 결과를 반영 못해 og:image 등이 누락됨 → cascade 후 즉시 재렌더.
+            if ($cascadeChanged) {
+                $meta['ogTags'] = $this->metaResolver->renderOgHtml($meta['og']);
+                $meta['twitterTags'] = $this->metaResolver->renderTwitterHtml($meta['twitter']);
+                $meta['jsonLd'] = $this->metaResolver->renderStructuredJson($meta['structured_data']);
+            }
+        }
+
+        $hookCtx = [
             'layoutName' => $layoutName,
             'moduleIdentifier' => $moduleIdentifier,
             'pluginIdentifier' => $pluginIdentifier,
             'context' => $context,
             'locale' => $locale,
-        ]);
+            'pageType' => $pageType,
+        ];
+
+        // 6.1. 분기별 훅: og / twitter / structured_data 각각 가로채서 수정 가능
+        // 빈 배열/null 인 경우 hook 으로 청취자가 새 데이터 주입 가능하도록 호출은 항상 수행.
+        $ogBefore = $meta['og'];
+        $twitterBefore = $meta['twitter'];
+        $structuredBefore = $meta['structured_data'];
+
+        $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], $hookCtx);
+        $meta['twitter'] = HookManager::applyFilters('core.seo.filter_twitter_data', $meta['twitter'], $hookCtx);
+        $meta['structured_data'] = HookManager::applyFilters('core.seo.filter_structured_data', $meta['structured_data'], $hookCtx);
+
+        // 6.15. og/twitter/structured 가 hook 으로 변경되었거나 원본이 비어있지 않을 때만 재렌더.
+        // (mock 테스트 호환: 비어있고 hook 도 변경 안 했으면 기존 ogTags/jsonLd 문자열 유지)
+        if (! empty($meta['og']) && $meta['og'] !== $ogBefore) {
+            $meta['ogTags'] = $this->metaResolver->renderOgHtml($meta['og']);
+        } elseif (! empty($meta['og']) && ! isset($meta['ogTags'])) {
+            $meta['ogTags'] = $this->metaResolver->renderOgHtml($meta['og']);
+        }
+        if (! empty($meta['twitter']) && $meta['twitter'] !== $twitterBefore) {
+            $meta['twitterTags'] = $this->metaResolver->renderTwitterHtml($meta['twitter']);
+        } elseif (! empty($meta['twitter']) && ! isset($meta['twitterTags'])) {
+            $meta['twitterTags'] = $this->metaResolver->renderTwitterHtml($meta['twitter']);
+        }
+        if ($meta['structured_data'] !== null && $meta['structured_data'] !== $structuredBefore) {
+            $meta['jsonLd'] = $this->metaResolver->renderStructuredJson($meta['structured_data']);
+        } elseif ($meta['structured_data'] !== null && ! isset($meta['jsonLd'])) {
+            $meta['jsonLd'] = $this->metaResolver->renderStructuredJson($meta['structured_data']);
+        }
+
+        // 6.2. 통합 훅: 모든 분기 결합 후 최종 메타 수정
+        $metaBeforeFilter = $meta;
+        $meta = HookManager::applyFilters('core.seo.filter_meta', $meta, $hookCtx);
+
+        // 6.25. filter_meta 가 og/twitter/structured 배열을 수정했을 수 있으므로 변경된 것만 재렌더
+        if (is_array($meta['og'] ?? null) && ! empty($meta['og']) && $meta['og'] !== ($metaBeforeFilter['og'] ?? null)) {
+            $meta['ogTags'] = $this->metaResolver->renderOgHtml($meta['og']);
+        }
+        if (is_array($meta['twitter'] ?? null) && ! empty($meta['twitter']) && $meta['twitter'] !== ($metaBeforeFilter['twitter'] ?? null)) {
+            $meta['twitterTags'] = $this->metaResolver->renderTwitterHtml($meta['twitter']);
+        }
+        if (array_key_exists('structured_data', $meta) && $meta['structured_data'] !== ($metaBeforeFilter['structured_data'] ?? null)) {
+            $meta['jsonLd'] = $this->metaResolver->renderStructuredJson($meta['structured_data']);
+        }
 
         // 6.5. 레이아웃명을 request attribute로 저장 (SeoMiddleware에서 putWithLayout에 사용)
         $request->attributes->set('seo_layout_name', $layoutName);
@@ -273,6 +393,7 @@ class SeoRenderer implements SeoRendererInterface
             'canonicalUrl' => $canonicalUrl,
             'hreflangTags' => $hreflangTags,
             'ogTags' => $meta['ogTags'].'    '.$ogUrl,
+            'twitterTags' => $meta['twitterTags'] ?? '',
             'jsonLd' => $meta['jsonLd'],
             'bodyHtml' => $bodyHtml,
             'googleAnalyticsId' => $meta['googleAnalyticsId'],
@@ -282,6 +403,7 @@ class SeoRenderer implements SeoRendererInterface
             'stylesheets' => $allStylesheets,
             'extraHeadTags' => '',
             'extraBodyEnd' => '',
+            'generatorTag' => g7_meta_generator_tag(),
         ];
 
         // 8.1. 훅: 확장이 View 변수를 추가/수정할 수 있는 필터
@@ -315,11 +437,12 @@ class SeoRenderer implements SeoRendererInterface
         foreach ($varsDecl as $name => $expr) {
             $expr = (string) $expr;
 
+            // 설정값이 다국어 JSON 배열일 수 있으므로 resolveLocalizedValue 헬퍼 통과
             if (str_starts_with($expr, '$module_settings:')) {
                 $rest = substr($expr, strlen('$module_settings:'));
                 [$effectiveModuleId, $key] = $this->parseExtensionSettingsKey($rest, $moduleIdentifier);
                 if ($effectiveModuleId) {
-                    $resolved[$name] = (string) g7_module_settings($effectiveModuleId, $key, '');
+                    $resolved[$name] = $this->resolveLocalizedValue(g7_module_settings($effectiveModuleId, $key, ''));
                 } else {
                     $resolved[$name] = $this->evaluator->evaluate($expr, $context);
                 }
@@ -327,16 +450,16 @@ class SeoRenderer implements SeoRendererInterface
                 $rest = substr($expr, strlen('$plugin_settings:'));
                 [$effectivePluginId, $key] = $this->parseExtensionSettingsKey($rest, $pluginIdentifier);
                 if ($effectivePluginId) {
-                    $resolved[$name] = (string) g7_plugin_settings($effectivePluginId, $key, '');
+                    $resolved[$name] = $this->resolveLocalizedValue(g7_plugin_settings($effectivePluginId, $key, ''));
                 } else {
                     $resolved[$name] = $this->evaluator->evaluate($expr, $context);
                 }
             } elseif (str_starts_with($expr, '$core_settings:')) {
                 $key = substr($expr, strlen('$core_settings:'));
-                $resolved[$name] = (string) g7_core_settings($key, '');
+                $resolved[$name] = $this->resolveLocalizedValue(g7_core_settings($key, ''));
             } elseif (str_starts_with($expr, '$query:')) {
                 $key = substr($expr, strlen('$query:'));
-                $resolved[$name] = (string) request()->query($key, '');
+                $resolved[$name] = $this->resolveLocalizedValue(request()->query($key, ''));
             } else {
                 $resolved[$name] = $this->evaluator->evaluate($expr, $context);
             }
@@ -856,8 +979,8 @@ class SeoRenderer implements SeoRendererInterface
 
                 $resolved = match ($source) {
                     'setting' => $this->resolveSettingVar($extType, $extId, $key),
-                    'core_setting' => (string) g7_core_settings($key, ''),
-                    'query' => (string) request()->query($key, ''),
+                    'core_setting' => $this->resolveLocalizedValue(g7_core_settings($key, '')),
+                    'query' => $this->resolveLocalizedValue(request()->query($key, '')),
                     'route' => (string) ($routeParams[$key] ?? ''),
                     'data' => $resolvedVars[$varName] ?? '',
                     default => '',
@@ -891,8 +1014,9 @@ class SeoRenderer implements SeoRendererInterface
      */
     private function applySettingsTemplate(string $extType, string $extId, string $pageType, array $vars, array &$context): void
     {
-        $titleTemplate = (string) ($this->getExtensionSetting($extType, $extId, "seo.meta_{$pageType}_title") ?? '');
-        $descTemplate = (string) ($this->getExtensionSetting($extType, $extId, "seo.meta_{$pageType}_description") ?? '');
+        // 다국어 JSON array 설정값 안전 변환 — 다국어 입력 환경에서 회귀 방지
+        $titleTemplate = $this->resolveLocalizedValue($this->getExtensionSetting($extType, $extId, "seo.meta_{$pageType}_title"));
+        $descTemplate = $this->resolveLocalizedValue($this->getExtensionSetting($extType, $extId, "seo.meta_{$pageType}_description"));
 
         $title = $this->substituteVars($titleTemplate, $vars);
         $description = $this->substituteVars($descTemplate, $vars);
@@ -915,7 +1039,7 @@ class SeoRenderer implements SeoRendererInterface
      */
     private function resolveSettingVar(string $extType, string $extId, string $key): string
     {
-        return (string) $this->getExtensionSetting($extType, $extId, $key);
+        return $this->resolveLocalizedValue($this->getExtensionSetting($extType, $extId, $key));
     }
 
     /**
@@ -954,20 +1078,100 @@ class SeoRenderer implements SeoRendererInterface
     }
 
     /**
-     * 템플릿 문자열 내 {변수명} 플레이스홀더를 치환합니다.
+     * 두 OG 데이터 배열을 병합합니다 (확장 declaration 누적용).
      *
-     * @param  string  $template  템플릿 문자열 (예: "{commerce_name} - {product_name}")
-     * @param  array  $vars  변수 맵 (키 → 값)
-     * @return string 치환된 문자열
+     * 후속 데이터의 비어있지 않은 키만 덮어쓰기. extra 배열은 concat.
+     *
+     * @param  array  $base  기존 데이터
+     * @param  array  $additions  추가 데이터
+     * @return array 병합 결과
      */
-    private function substituteVars(string $template, array $vars): string
+    private function mergeOgData(array $base, array $additions): array
     {
-        if ($template === '') {
-            return '';
+        foreach ($additions as $key => $value) {
+            if ($key === 'extra' && is_array($value)) {
+                $base['extra'] = array_merge((array) ($base['extra'] ?? []), $value);
+                continue;
+            }
+            if ($value === null || $value === '') {
+                continue;
+            }
+            $base[$key] = $value;
         }
 
-        return (string) preg_replace_callback('/\{(\w+)\}/', function ($matches) use ($vars) {
-            return $vars[$matches[1]] ?? $matches[0];
-        }, $template);
+        return $base;
+    }
+
+    /**
+     * 두 Twitter 데이터 배열을 병합합니다.
+     */
+    private function mergeTwitterData(array $base, array $additions): array
+    {
+        return $this->mergeOgData($base, $additions);
+    }
+
+    /**
+     * target 배열의 비어있는 키를 source 값으로 채웁니다 (target 우선).
+     *
+     * 모듈 declaration 을 fallback 으로 적용할 때 사용 — 레이아웃 override 가 우선.
+     * 정수 0 / int 값은 비어있지 않은 것으로 간주.
+     *
+     * @param  array  $target  채울 대상 (레이아웃 결과)
+     * @param  array  $source  fallback 소스 (모듈 declaration)
+     * @return array
+     */
+    private function fillEmptyKeys(array $target, array $source): array
+    {
+        foreach ($source as $key => $value) {
+            if ($key === 'extra' && is_array($value)) {
+                $target['extra'] = array_merge($value, (array) ($target['extra'] ?? []));
+                continue;
+            }
+            $current = $target[$key] ?? null;
+            $isEmpty = ($current === null || $current === '' || $current === []);
+            if ($isEmpty && $value !== null && $value !== '' && $value !== []) {
+                $target[$key] = $value;
+            }
+        }
+
+        return $target;
+    }
+
+    /**
+     * 확장 declaration 메서드를 안전하게 호출.
+     *
+     * 모듈/플러그인의 seoOgDefaults / seoTwitterDefaults / seoStructuredData 가 throw 해도
+     * 전체 SEO 렌더 파이프라인을 죽이지 않도록 try/catch 로 격리.
+     * throw 시 빈 배열 반환 + 경고 로그 — 한 확장 회귀가 SPA fallback 으로 이어지는 회귀 차단.
+     *
+     * @param  object  $instance  확장 인스턴스 (Module/Plugin)
+     * @param  string  $method  메서드명
+     * @param  array  $args  메서드 인자
+     * @param  string  $extType  로깅용 확장 타입
+     * @param  string  $extId  로깅용 확장 식별자
+     * @return array 메서드 결과 또는 빈 배열
+     */
+    private function safeInvokeExtensionMethod(
+        object $instance,
+        string $method,
+        array $args,
+        string $extType,
+        string $extId,
+    ): array {
+        try {
+            $result = $instance->{$method}(...$args);
+
+            return is_array($result) ? $result : [];
+        } catch (\Throwable $e) {
+            Log::warning("[SEO] {$extType} {$extId}::{$method}() threw — declaration 무시, SEO 부분 누락", [
+                'extension' => $extId,
+                'method' => $method,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return [];
+        }
     }
 }

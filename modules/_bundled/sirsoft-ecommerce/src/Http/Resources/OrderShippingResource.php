@@ -84,7 +84,7 @@ class OrderShippingResource extends BaseApiResource
             if (is_array($name)) {
                 $locale = app()->getLocale();
 
-                return $name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? null;
+                return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? null;
             }
 
             return null;

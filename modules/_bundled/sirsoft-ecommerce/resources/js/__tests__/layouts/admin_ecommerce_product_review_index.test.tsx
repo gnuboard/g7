@@ -315,7 +315,8 @@ describe('관리자 상품 리뷰 목록 레이아웃 렌더링', () => {
             await testUtils.render();
             const datagrid = screen.queryByTestId('review-datagrid');
             if (datagrid) {
-                expect(datagrid.textContent).toContain('없음');
+                // 실제 emptyMessage 사본: "등록된 리뷰가 없습니다" (i18n 키 변환 결과)
+                expect(datagrid.textContent).toContain('등록된 리뷰가 없습니다');
             }
         });
     });

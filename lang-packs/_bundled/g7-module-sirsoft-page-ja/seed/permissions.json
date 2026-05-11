@@ -1,0 +1,26 @@
+{
+  "sirsoft-page": {
+    "name": "ページ",
+    "description": "ページモジュール権限"
+  },
+  "sirsoft-page.pages": {
+    "name": "ページ管理",
+    "description": "ページ管理権限"
+  },
+  "sirsoft-page.pages.read": {
+    "name": "ページ閲覧",
+    "description": "ページ一覧及び詳細閲覧"
+  },
+  "sirsoft-page.pages.create": {
+    "name": "ページ作成",
+    "description": "新規ページ作成"
+  },
+  "sirsoft-page.pages.update": {
+    "name": "ページ編集",
+    "description": "ページ内容編集"
+  },
+  "sirsoft-page.pages.delete": {
+    "name": "ページ削除",
+    "description": "ページ削除"
+  }
+}

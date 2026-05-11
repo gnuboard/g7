@@ -12,6 +12,7 @@ use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 
 /**
  * 게시판 모듈 활동 로그 리스너
@@ -25,6 +26,13 @@ use Modules\Sirsoft\Board\Models\Report;
 class BoardActivityLogListener implements HookListenerInterface
 {
     use ResolvesActivityLogType;
+
+    /**
+     * @param  ReportRepositoryInterface  $reportRepository  신고 bulk lookup
+     */
+    public function __construct(
+        protected ReportRepositoryInterface $reportRepository,
+    ) {}
 
     /**
      * 구독할 훅과 메서드 매핑 반환
@@ -548,7 +556,7 @@ class BoardActivityLogListener implements HookListenerInterface
      */
     public function handleReportAfterBulkUpdateStatus(array $ids, array $data, int $affectedRows, array $snapshots = []): void
     {
-        $reports = Report::whereIn('id', $ids)->get()->keyBy('id');
+        $reports = $this->reportRepository->findByIdsKeyed($ids);
 
         foreach ($ids as $reportId) {
             $report = $reports->get($reportId);

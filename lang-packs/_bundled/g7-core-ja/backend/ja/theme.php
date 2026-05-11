@@ -1,0 +1,26 @@
+<?php
+
+return [
+    'not_found' => 'アクティブなテーマが見つかりません。',
+    'retrieved' => 'テーマ情報を正常に取得しました。',
+    'list_retrieved' => 'テーマリストを正常に取得しました。',
+    'config_retrieved' => 'テーマ設定を正常に取得しました。',
+    'assets_retrieved' => 'テーマアセット情報を正常に取得しました。',
+    'assets_failed' => 'テーマアセット情報の取得に失敗しました。',
+    'asset_list_retrieved' => 'テーマアセットリストを正常に取得しました。',
+    'list_failed' => 'テーマリストの取得に失敗しました。',
+    'installed' => 'テーマが正常にインストールされました。',
+    'install_failed' => 'テーマのインストールに失敗しました。',
+    'install_error' => 'テーマのインストール中にエラーが発生しました。',
+    'activated' => 'テーマが正常に有効化されました。',
+    'activate_failed' => 'テーマの有効化に失敗しました。',
+    'activate_error' => 'テーマの有効化中にエラーが発生しました。',
+    'deactivated' => 'テーマが正常に無効化されました。',
+    'deactivate_failed' => 'テーマの無効化に失敗しました。',
+    'deactivate_error' => 'テーマの無効化中にエラーが発生しました。',
+    'uninstalled' => 'テーマが正常に削除されました。',
+    'uninstall_failed' => 'テーマの削除に失敗しました。',
+    'uninstall_error' => 'テーマの削除中にエラーが発生しました。',
+    'active_theme_retrieved' => '有効化されたテーマ情報を正常に取得しました。',
+    'active_theme_failed' => '有効化されたテーマ情報の取得に失敗しました。',
+];

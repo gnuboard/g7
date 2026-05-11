@@ -1,0 +1,18 @@
+{
+  "toolbar": {
+    "bold": "太字",
+    "italic": "斜体",
+    "underline": "下線",
+    "strike": "打消し線",
+    "code": "コード",
+    "bullet_list": "箇条書き",
+    "ordered_list": "番号付きリスト",
+    "blockquote": "引用",
+    "link": "リンク",
+    "code_view": "コード表示"
+  },
+  "link_modal": {
+    "title": "リンク挿入",
+    "insert": "挿入"
+  }
+}

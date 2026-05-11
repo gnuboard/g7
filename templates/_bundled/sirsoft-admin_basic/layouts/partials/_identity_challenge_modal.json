@@ -1,0 +1,391 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "본인인증 공통 모달 (admin) — 428 응답을 가로채는 IdentityGuardInterceptor launcher 가 사용. _global.identityChallenge 네임스페이스로 모든 상태를 관리하여 launcher → 모달 → resolveIdentityChallenge 핸들러 한 줄기로 흐름 통일."
+  },
+  "id": "identity-challenge-modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.identity.challenge.title",
+    "size": "small",
+    "showCloseButton": false,
+    "closeOnBackdropClick": false,
+    "closeOnEscape": false
+  },
+  "children": [
+    {
+      "comment": "render_hint = text_code (코어 기본 OTP UI). 외부 IDV 플러그인은 동일 슬롯을 override 하여 자기 SDK 를 주입할 수 있음.",
+      "type": "extension_point",
+      "id": "identity_provider_ui_text_code",
+      "name": "identity_provider_ui:text_code",
+      "if": "{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code'}}",
+      "default": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "space-y-4" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+              "text": "$t:admin.identity.challenge.code_subtitle"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.identityChallenge?.error}}",
+              "props": {
+                "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg",
+                "role": "alert"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-red-700 dark:text-red-300" },
+                  "text": "{{_global.identityChallenge?.error ?? ''}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "text",
+                "name": "code",
+                "value": "{{_global.identityChallenge?.code ?? ''}}",
+                "inputMode": "numeric",
+                "autoComplete": "one-time-code",
+                "placeholder": "$t:admin.identity.challenge.code_placeholder",
+                "maxLength": 10,
+                "className": "w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500"
+              },
+              "actions": [
+                {
+                  "event": "onChange",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "identityChallenge.code": "{{$event.target.value}}",
+                    "identityChallenge.error": null
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between text-xs",
+                "role": "status",
+                "aria-live": "polite"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{(_global.identityChallenge?.remainingSeconds ?? 0) > 0}}",
+                  "props": { "className": "text-gray-600 dark:text-gray-400" },
+                  "text": "$t:admin.identity.challenge.remaining_time|minutes={{Math.floor((_global.identityChallenge?.remainingSeconds ?? 0) / 60)}}|seconds={{String((_global.identityChallenge?.remainingSeconds ?? 0) % 60).padStart(2, '0')}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{(_global.identityChallenge?.remainingSeconds ?? 0) <= 0 && _global.identityChallenge?.expires_at}}",
+                  "props": { "className": "text-red-600 dark:text-red-400" },
+                  "text": "$t:admin.identity.challenge.expired"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-gray-500 dark:text-gray-400" },
+                  "text": "$t:admin.identity.challenge.remaining_attempts|count={{Math.max(0, (_global.identityChallenge?.maxAttempts ?? 5) - (_global.identityChallenge?.attempts ?? 0))}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "render_hint = link (메일 링크 안내)",
+      "type": "extension_point",
+      "id": "identity_provider_ui_link",
+      "name": "identity_provider_ui:link",
+      "if": "{{_global.identityChallenge?.render_hint === 'link'}}",
+      "default": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "space-y-4 text-center py-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "fas fa-envelope", "className": "text-2xl text-blue-600 dark:text-blue-400" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+              "text": "$t:admin.identity.challenge.link_subtitle"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+              "text": "$t:admin.identity.challenge.check_spam"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "Provider 별 커스텀 슬롯 — KCP/PortOne 등 외부 IDV 플러그인이 자기 SDK 를 주입하는 자리.",
+      "type": "extension_point",
+      "id": "identity_provider_ui_provider",
+      "name": "identity_provider_ui:provider",
+      "default": []
+    },
+    {
+      "comment": "공통 액션 영역 — 취소 / 재전송 / 확인",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center justify-between gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "comment": "서버 audit trail 정합 — challenge 발급된 경우에만 cancel API 호출, 실패해도 모달 닫기는 진행",
+                    "handler": "apiCall",
+                    "target": "/api/identity/challenges/{{_global.identityChallenge.challenge_id}}/cancel",
+                    "if": "{{_global.identityChallenge?.challenge_id}}",
+                    "params": { "method": "POST" },
+                    "onError": [{ "handler": "suppress" }]
+                  },
+                  {
+                    "handler": "resolveIdentityChallenge",
+                    "params": { "result": "cancelled" }
+                  },
+                  {
+                    "handler": "closeModal",
+                    "target": "identity-challenge-modal"
+                  }
+                ]
+              }
+            }
+          ],
+          "text": "$t:common.cancel"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "disabled": "{{(_global.identityChallenge?.resendCooldown ?? 0) > 0 || (_global.identityChallenge?.resending ?? false) || (_global.identityChallenge?.verifying ?? false)}}",
+                "className": "inline-flex items-center gap-1.5 px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "identityChallenge.resending": true,
+                          "identityChallenge.resendCooldown": 30,
+                          "identityChallenge.error": null,
+                          "identityChallenge.code": ""
+                        }
+                      },
+                      {
+                        "handler": "apiCall",
+                        "target": "/api/identity/challenges",
+                        "params": {
+                          "method": "POST",
+                          "body": {
+                            "purpose": "{{_global.identityChallenge?.purpose ?? 'sensitive_action'}}",
+                            "provider_id": "{{_global.identityChallenge?.provider_id ?? null}}",
+                            "target": "{{_global.identityChallenge?.target ?? null}}"
+                          }
+                        },
+                        "onSuccess": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "identityChallenge.resending": false,
+                              "identityChallenge.challenge_id": "{{response.data.id}}",
+                              "identityChallenge.expires_at": "{{response.data.expires_at}}",
+                              "identityChallenge.render_hint": "{{response.data.render_hint ?? _global.identityChallenge?.render_hint ?? 'text_code'}}",
+                              "identityChallenge.attempts": 0,
+                              "identityChallenge.code": ""
+                            }
+                          },
+                          {
+                            "handler": "toast",
+                            "params": {
+                              "type": "success",
+                              "message": "$t:admin.identity.challenge.resend_success"
+                            }
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "identityChallenge.resending": false,
+                              "identityChallenge.error": "{{error.message ?? '$t:admin.identity.challenge.error_generic'}}",
+                              "identityChallenge.resendCooldown": 0
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_global.identityChallenge?.resending ?? false}}",
+                  "props": { "name": "fas fa-spinner fa-spin", "className": "text-sm" }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_global.identityChallenge?.resending ?? false}}",
+                  "text": "$t:common.processing"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!(_global.identityChallenge?.resending ?? false) && (_global.identityChallenge?.resendCooldown ?? 0) > 0}}",
+                  "text": "$t:admin.identity.challenge.resend_cooldown|seconds={{_global.identityChallenge?.resendCooldown ?? 0}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{!(_global.identityChallenge?.resending ?? false) && (_global.identityChallenge?.resendCooldown ?? 0) <= 0}}",
+                  "text": "{{_global.identityChallenge?.render_hint === 'link' ? $t:admin.identity.challenge.resend_link : $t:admin.identity.challenge.resend}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "if": "{{(_global.identityChallenge?.render_hint ?? 'text_code') === 'text_code'}}",
+              "props": {
+                "type": "button",
+                "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors",
+                "disabled": "{{!_global.identityChallenge?.code || (_global.identityChallenge?.code ?? '').length < 4 || (_global.identityChallenge?.remainingSeconds ?? 0) <= 0 || (_global.identityChallenge?.attempts ?? 0) >= (_global.identityChallenge?.maxAttempts ?? 5) || (_global.identityChallenge?.verifying ?? false) || (_global.identityChallenge?.resending ?? false)}}"
+              },
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "identityChallenge.verifying": true,
+                          "identityChallenge.error": null
+                        }
+                      },
+                      {
+                        "handler": "apiCall",
+                        "target": "/api/identity/challenges/{{_global.identityChallenge?.challenge_id}}/verify",
+                        "params": {
+                          "method": "POST",
+                          "body": {
+                            "code": "{{_global.identityChallenge?.code ?? ''}}"
+                          }
+                        },
+                        "onSuccess": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "identityChallenge.verifying": false
+                            }
+                          },
+                          {
+                            "handler": "resolveIdentityChallenge",
+                            "params": {
+                              "result": "verified",
+                              "token": "{{response.data.verification_token}}"
+                            }
+                          },
+                          {
+                            "handler": "closeModal",
+                            "target": "identity-challenge-modal"
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "identityChallenge.verifying": false,
+                              "identityChallenge.error": "{{error.message ?? '$t:admin.identity.challenge.error_generic'}}",
+                              "identityChallenge.attempts": "{{(_global.identityChallenge?.attempts ?? 0) + 1}}"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_global.identityChallenge?.verifying ?? false}}",
+                  "props": { "name": "fas fa-spinner fa-spin", "className": "text-sm" }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{(_global.identityChallenge?.verifying ?? false) ? $t:common.processing : $t:admin.identity.challenge.verify}}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

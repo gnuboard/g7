@@ -16,7 +16,7 @@ class LayoutJsonValidationTest extends TestCase
         'templates/sirsoft-admin_basic/layouts/_admin_base.json',
         'templates/sirsoft-admin_basic/layouts/admin_template_list.json',
         'templates/sirsoft-admin_basic/layouts/admin_template_layout_edit.json',
-        'templates/sirsoft-admin_basic/layouts/admin_template_list_admin.json',
+        // 'admin_template_list_admin.json' 은 리팩토링으로 제거됨 (admin_template_list.json 에 통합)
     ];
 
     /**
@@ -164,7 +164,7 @@ class LayoutJsonValidationTest extends TestCase
         $childLayouts = [
             'templates/sirsoft-admin_basic/layouts/admin_template_list.json',
             'templates/sirsoft-admin_basic/layouts/admin_template_layout_edit.json',
-            'templates/sirsoft-admin_basic/layouts/admin_template_list_admin.json',
+            // 'admin_template_list_admin.json' 은 리팩토링으로 제거됨
         ];
 
         foreach ($childLayouts as $layoutFile) {
@@ -177,32 +177,9 @@ class LayoutJsonValidationTest extends TestCase
         }
     }
 
-    /**
-     * admin_template_list_admin.json이 올바른 레이아웃 상속 구조를 가지는지 확인
-     *
-     * admin_template_list_admin.json은 admin_template_list를 상속합니다.
-     */
-    public function test_admin_template_management_has_readonly_configuration(): void
-    {
-        $filePath = base_path('templates/sirsoft-admin_basic/layouts/admin_template_list_admin.json');
-        $layout = json_decode(File::get($filePath), true);
-
-        // 레이아웃 이름 확인
-        $this->assertEquals(
-            'admin_template_list_admin',
-            $layout['layout_name'],
-            'layout_name이 admin_template_list_admin이어야 합니다'
-        );
-
-        // extends 확인 (admin_template_list를 상속)
-        $this->assertArrayHasKey('extends', $layout);
-        $this->assertEquals('admin_template_list', $layout['extends']);
-
-        // 필수 필드 확인
-        $this->assertArrayHasKey('version', $layout);
-        $this->assertArrayHasKey('meta', $layout);
-        $this->assertArrayHasKey('data_sources', $layout);
-    }
+    // 'admin_template_list_admin.json' 이 admin_template_list.json 으로 통합되어 제거됨.
+    // 해당 파일에 특화된 테스트(test_admin_template_management_has_readonly_configuration)
+    // 는 더 이상 유효하지 않아 삭제되었음.
 
     /**
      * 모든 컴포넌트 ID가 고유한지 확인

@@ -400,8 +400,10 @@ $role->menus()->wherePivot('permission_type', 'write')->get();
 ### 핵심 정책
 
 - **row 존재 여부**: config 기준 (user_overrides 무관 삭제)
-- **필드 값 (유지 row)**: user_overrides 에 등록된 필드 (`name`, `icon`, `order`, `url`) 보존, 나머지 갱신
+- **필드 값 (유지 row)**: user_overrides 에 등록된 필드 (`name`, `icon`, `order`, `url`, `is_active`) 보존, 나머지 갱신
+- **`is_active`**: config/manifest 정의값 채택 (기본 `true`). `is_active: false` 로 명시 정의된 메뉴는 sync 시에도 비활성 상태 유지. 운영자가 UI 에서 토글한 경우 `user_overrides` 에 `'is_active'` 가 마킹되어 재시드 시 운영자 선택 보존
 - **role-menu 매핑**: 메뉴 삭제 시 `role_menus` 피벗은 FK cascade 로 자동 정리
+- **user_overrides 검사**: 다국어 컬럼(`name`)은 column-level (`'name'`, legacy) + dot-path sub-key (`'name.ko'` / `'name.en'`, beta.4 도입) 양쪽 호환. 어느 형태로든 마킹되어 있으면 컬럼 전체를 보존 대상으로 간주
 
 ### 사용자 수정 기록
 

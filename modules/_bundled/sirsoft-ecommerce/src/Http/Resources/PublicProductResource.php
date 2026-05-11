@@ -173,6 +173,6 @@ class PublicProductResource extends BaseApiResource
 
         $locale = app()->getLocale();
 
-        return $field[$locale] ?? $field['ko'] ?? $field[array_key_first($field)] ?? null;
+        return $field[$locale] ?? $field[config('app.fallback_locale', 'ko')] ?? $field[array_key_first($field)] ?? null;
     }
 }

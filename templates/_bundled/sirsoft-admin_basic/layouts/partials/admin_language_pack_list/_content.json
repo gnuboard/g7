@@ -1,0 +1,786 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "언어팩 관리 본문 SSoT — 카드형 UI (모듈/플러그인/템플릿 관리와 일관 수준). PageHeader + 모바일 액션 영역 + 검색/필터 + CardGrid + 페이지네이션. 확장 컨텍스트 wrapper(partials/admin_extension_language_packs/_content.json) 가 back 버튼/배너만 추가하여 재사용."
+    },
+    "id": "lang_pack_content",
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "id": "lp_page_header",
+            "type": "composite",
+            "name": "PageHeader",
+            "props": {
+                "title": "$t:admin.language_packs.title",
+                "description": "$t:admin.language_packs.description"
+            },
+            "children": [
+                {
+                    "id": "lp_btn_check_updates",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_check_updates}}",
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.isLanguagePackCheckingUpdates}}",
+                        "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "responsive": { "portable": { "props": { "className": "hidden" } } },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                { "handler": "setState", "params": { "target": "global", "isLanguagePackCheckingUpdates": true } },
+                                {
+                                    "handler": "apiCall",
+                                    "auth_required": true,
+                                    "target": "/api/admin/language-packs/check-updates",
+                                    "params": { "method": "POST" },
+                                    "onSuccess": [
+                                        { "handler": "setState", "params": { "target": "global", "isLanguagePackCheckingUpdates": false } },
+                                        { "handler": "toast", "params": { "type": "success", "message": "{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}" } },
+                                        { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } }
+                                    ],
+                                    "onError": [
+                                        { "handler": "setState", "params": { "target": "global", "isLanguagePackCheckingUpdates": false } },
+                                        { "handler": "toast", "params": { "type": "error", "message": "{{$error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}" } }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "if": "{{!_global.isLanguagePackCheckingUpdates}}", "props": { "name": "fas fa-sync-alt", "size": "sm" } },
+                        { "type": "basic", "name": "Icon", "if": "{{_global.isLanguagePackCheckingUpdates}}", "props": { "name": "fas fa-spinner", "size": "sm", "className": "animate-spin" } },
+                        { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.actions.check_updates" }
+                    ]
+                },
+                {
+                    "id": "lp_btn_refresh_cache",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_refresh_cache}}",
+                    "props": {
+                        "type": "button",
+                        "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "responsive": { "portable": { "props": { "className": "hidden" } } },
+                    "actions": [
+                        { "type": "click", "handler": "openModal", "target": "language_pack_refresh_cache_modal" }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "fas fa-broom", "size": "sm" } },
+                        { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.actions.refresh_cache" }
+                    ]
+                },
+                {
+                    "id": "lp_btn_install",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_install}}",
+                    "props": {
+                        "type": "button",
+                        "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                    },
+                    "responsive": { "portable": { "props": { "className": "hidden" } } },
+                    "actions": [
+                        { "type": "click", "handler": "openModal", "target": "language_pack_install_modal" }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "fas fa-plus", "size": "sm" } },
+                        { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.actions.install" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "lp_mobile_actions",
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "hidden" },
+            "responsive": { "portable": { "props": { "className": "flex items-center gap-2 -mt-4 mb-4 flex-wrap" } } },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_check_updates}}",
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.isLanguagePackCheckingUpdates}}",
+                        "className": "flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                { "handler": "setState", "params": { "target": "global", "isLanguagePackCheckingUpdates": true } },
+                                {
+                                    "handler": "apiCall",
+                                    "auth_required": true,
+                                    "target": "/api/admin/language-packs/check-updates",
+                                    "params": { "method": "POST" },
+                                    "onSuccess": [
+                                        { "handler": "setState", "params": { "target": "global", "isLanguagePackCheckingUpdates": false } },
+                                        { "handler": "toast", "params": { "type": "success", "message": "{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}" } },
+                                        { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } }
+                                    ],
+                                    "onError": [
+                                        { "handler": "setState", "params": { "target": "global", "isLanguagePackCheckingUpdates": false } },
+                                        { "handler": "toast", "params": { "type": "error", "message": "{{$error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}" } }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "if": "{{!_global.isLanguagePackCheckingUpdates}}", "props": { "name": "fas fa-sync-alt", "size": "sm" } },
+                        { "type": "basic", "name": "Icon", "if": "{{_global.isLanguagePackCheckingUpdates}}", "props": { "name": "fas fa-spinner", "size": "sm", "className": "animate-spin" } },
+                        { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.actions.check_updates" }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_refresh_cache}}",
+                    "props": {
+                        "type": "button",
+                        "className": "flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
+                    },
+                    "actions": [
+                        { "type": "click", "handler": "openModal", "target": "language_pack_refresh_cache_modal" }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "fas fa-broom", "size": "sm" } },
+                        { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.actions.refresh_cache" }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_install}}",
+                    "props": {
+                        "type": "button",
+                        "className": "flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm"
+                    },
+                    "actions": [
+                        { "type": "click", "handler": "openModal", "target": "language_pack_install_modal" }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "fas fa-plus", "size": "sm" } },
+                        { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.actions.install" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "lp_filter_bar",
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex justify-end items-center gap-3 mb-6 flex-wrap" },
+            "responsive": { "portable": { "props": { "className": "mb-6 flex flex-col gap-3" } } },
+            "children": [
+                {
+                    "id": "lp_filter_scope",
+                    "type": "basic",
+                    "name": "Select",
+                    "if": "{{!_local.scopeLocked}}",
+                    "props": {
+                        "value": "{{query.scope ?? ''}}",
+                        "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
+                        "options": [
+                            { "value": "", "label": "$t:admin.language_packs.filter.all_scopes" },
+                            { "value": "core", "label": "$t:admin.language_packs.scope.core" },
+                            { "value": "module", "label": "$t:admin.language_packs.scope.module" },
+                            { "value": "plugin", "label": "$t:admin.language_packs.scope.plugin" },
+                            { "value": "template", "label": "$t:admin.language_packs.scope.template" }
+                        ]
+                    },
+                    "actions": [
+                        { "event": "onChange", "handler": "setState", "params": { "target": "local", "filterScope": "{{$event.target.value}}" } },
+                        {
+                            "event": "onChange",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{route.path}}",
+                                "mergeQuery": true,
+                                "query": { "scope": "{{$event.target.value || undefined}}", "page": 1 }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "lp_filter_status",
+                    "type": "basic",
+                    "name": "Select",
+                    "props": {
+                        "value": "{{query.status ?? ''}}",
+                        "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
+                        "options": [
+                            { "value": "", "label": "$t:admin.language_packs.filter.all_statuses" },
+                            { "value": "active", "label": "$t:admin.language_packs.status.active" },
+                            { "value": "installed", "label": "$t:admin.language_packs.status.installed" },
+                            { "value": "inactive", "label": "$t:admin.language_packs.status.inactive" },
+                            { "value": "uninstalled", "label": "$t:admin.language_packs.status.uninstalled" },
+                            { "value": "error", "label": "$t:admin.language_packs.status.error" }
+                        ]
+                    },
+                    "actions": [
+                        { "event": "onChange", "handler": "setState", "params": { "target": "local", "filterStatus": "{{$event.target.value}}" } },
+                        {
+                            "event": "onChange",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{route.path}}",
+                                "mergeQuery": true,
+                                "query": { "status": "{{$event.target.value || undefined}}", "page": 1 }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "lp_filter_reset",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{(query.search ?? '') !== '' || (query.scope ?? '') !== '' || (query.status ?? '') !== '' || (query.locale ?? '') !== '' || query.exclude_protected === '0' || query.exclude_protected === 0 || query.exclude_protected === false}}",
+                    "props": {
+                        "type": "button",
+                        "title": "$t:admin.language_packs.filter.reset",
+                        "className": "inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200"
+                    },
+                    "actions": [
+                        {
+                            "event": "onClick",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "filterScope": "{{_local.scopeLocked ? _local.filterScope : ''}}",
+                                "filterStatus": "",
+                                "filterLocale": "",
+                                "filterSearch": ""
+                            }
+                        },
+                        {
+                            "event": "onClick",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{route.path}}",
+                                "mergeQuery": true,
+                                "query": { "search": null, "scope": null, "status": null, "locale": null, "exclude_protected": null, "page": 1 }
+                            }
+                        }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "fas fa-rotate-left", "size": "sm" } },
+                        { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.filter.reset" }
+                    ]
+                },
+                {
+                    "id": "lp_filter_exclude_protected",
+                    "type": "basic",
+                    "name": "Label",
+                    "props": { "className": "inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "checkbox",
+                                "checked": "{{query.exclude_protected === undefined || query.exclude_protected === null || query.exclude_protected === '1' || query.exclude_protected === 1 || query.exclude_protected === true}}",
+                                "className": "h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                            },
+                            "actions": [
+                                {
+                                    "event": "onChange",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{route.path}}",
+                                        "mergeQuery": true,
+                                        "query": { "exclude_protected": "{{$event.target.checked ? undefined : '0'}}", "page": 1 }
+                                    }
+                                }
+                            ]
+                        },
+                        { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.filter.exclude_protected" }
+                    ]
+                },
+                {
+                    "id": "lp_search",
+                    "type": "composite",
+                    "name": "SearchBar",
+                    "props": {
+                        "name": "search",
+                        "placeholder": "$t:admin.language_packs.search_placeholder",
+                        "value": "{{_local.filterSearch ?? query.search ?? ''}}",
+                        "showButton": true,
+                        "className": "w-72"
+                    },
+                    "responsive": { "portable": { "props": { "className": "w-full" } } },
+                    "actions": [
+                        { "type": "change", "handler": "setState", "params": { "target": "local", "filterSearch": "{{$event.target.value}}" } },
+                        {
+                            "type": "submit",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{route.path}}",
+                                "mergeQuery": true,
+                                "query": { "search": "{{_local.filterSearch || undefined}}", "page": 1 }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "lp_content_area",
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6" },
+            "children": [
+                {
+                    "id": "lp_empty",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(language_packs?.data?.data?.length ?? 0) === 0}}",
+                    "props": { "className": "p-8 text-center text-gray-500 dark:text-gray-400" },
+                    "text": "$t:admin.language_packs.messages.empty"
+                },
+                {
+                    "id": "lp_card_grid",
+                    "type": "composite",
+                    "name": "CardGrid",
+                    "if": "{{(language_packs?.data?.data?.length ?? 0) > 0}}",
+                    "props": {
+                        "data": "{{language_packs?.data?.data ?? []}}",
+                        "gridColumns": 1,
+                        "gap": 4,
+                        "idField": "identifier",
+                        "pagination": true,
+                        "alwaysShowPagination": true,
+                        "serverSidePagination": true,
+                        "serverCurrentPage": "{{language_packs?.data?.meta?.current_page ?? 1}}",
+                        "serverTotalPages": "{{language_packs?.data?.meta?.last_page ?? 1}}",
+                        "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
+                        "cardColumns": [
+                            {
+                                "id": "lp_card_body",
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": { "className": "flex items-start gap-4" },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": { "className": "flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center" },
+                                                "children": [
+                                                    { "type": "basic", "name": "Icon", "props": { "name": "fas fa-language", "className": "text-2xl text-gray-600 dark:text-gray-400" } }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": { "className": "flex-1 min-w-0 flex items-start justify-between gap-4" },
+                                                "responsive": { "portable": { "props": { "className": "flex-1 min-w-0 flex flex-col gap-3" } } },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": { "className": "flex-1 min-w-0" },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": { "className": "flex items-center gap-2 flex-wrap" },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": { "className": "font-semibold text-gray-900 dark:text-white" },
+                                                                        "text": "{{row.name ?? (row.locale_native_name ?? row.locale)}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": { "className": "px-2 py-0.5 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded" },
+                                                                        "text": "{{row.locale_native_name ?? row.locale}} · {{row.locale}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": { "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded" },
+                                                                        "text": "v{{row.version}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.status === 'active'}}",
+                                                                        "props": { "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded" },
+                                                                        "text": "$t:admin.language_packs.status.active"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.status === 'installed'}}",
+                                                                        "props": { "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded" },
+                                                                        "text": "$t:admin.language_packs.status.installed"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.status === 'inactive'}}",
+                                                                        "props": { "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded" },
+                                                                        "text": "$t:admin.language_packs.status.inactive"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.status === 'uninstalled'}}",
+                                                                        "props": { "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded" },
+                                                                        "text": "$t:admin.language_packs.status.uninstalled"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.status === 'error'}}",
+                                                                        "props": { "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded" },
+                                                                        "text": "$t:admin.language_packs.status.error"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.has_update === true && row.status !== 'uninstalled'}}",
+                                                                        "props": { "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded" },
+                                                                        "text": "$t:admin.language_packs.badge.update_available"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.has_update === true && row.latest_version && row.status !== 'uninstalled'}}",
+                                                                        "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                                                                        "text": "v{{row.latest_version}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.is_protected === true}}",
+                                                                        "props": { "className": "px-2 py-0.5 text-xs bg-yellow-50 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 rounded" },
+                                                                        "text": "$t:admin.language_packs.messages.protected_badge"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{row.description}}",
+                                                                "props": { "className": "mt-1 text-sm text-gray-600 dark:text-gray-400" },
+                                                                "text": "{{row.description}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{row.install_blocked_reason}}",
+                                                                "props": { "className": "mt-2 inline-flex items-start gap-2 px-2 py-1 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200" },
+                                                                "children": [
+                                                                    { "type": "basic", "name": "Icon", "props": { "name": "fas fa-triangle-exclamation", "size": "sm", "className": "mt-0.5" } },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.install_blocked_reason === 'core_locale_missing'}}",
+                                                                        "text": "$t:defer:admin.language_packs.modals.install_bundled_core_required|locale={{row.locale}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.install_blocked_reason === 'target_not_installed'}}",
+                                                                        "text": "$t:defer:admin.language_packs.modals.install_blocked_target_not_installed|scope={{row.scope}}|target={{row.target_identifier ?? ''}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.install_blocked_reason === 'target_inactive'}}",
+                                                                        "text": "$t:defer:admin.language_packs.modals.install_blocked_target_inactive|scope={{row.scope}}|target={{row.target_identifier ?? ''}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.install_blocked_reason === 'target_version_too_old'}}",
+                                                                        "text": "$t:defer:admin.language_packs.modals.install_blocked_target_version_too_old|scope={{row.scope}}|target={{row.target_identifier ?? ''}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": { "className": "mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500 flex-wrap" },
+                                                                "responsive": { "portable": { "props": { "className": "mt-2 flex flex-col items-start gap-1 text-xs text-gray-500 dark:text-gray-500" } } },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:defer:admin.language_packs.vendor_label|vendor={{row.vendor ?? '—'}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.source_type}}",
+                                                                        "text": "$t:defer:admin.language_packs.source_label|source={{row.source_type}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "if": "{{row.scope && row.scope !== 'core' && row.target_identifier}}",
+                                                                        "props": { "className": "inline-flex items-center gap-1" },
+                                                                        "children": [
+                                                                            { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.dependency_label" },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "if": "{{row.scope === 'module'}}",
+                                                                                "props": { "name": "cube", "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" }
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "if": "{{row.scope === 'plugin'}}",
+                                                                                "props": { "name": "puzzle-piece", "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" }
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "if": "{{row.scope === 'template'}}",
+                                                                                "props": { "name": "palette", "className": "w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" }
+                                                                            },
+                                                                            { "type": "basic", "name": "Span", "text": "{{row.target_name ?? row.target_identifier}}" }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": { "className": "flex items-center gap-3 shrink-0" },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "if": "{{row.status === 'uninstalled'}}",
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "disabled": "{{row.abilities?.can_install !== true}}",
+                                                                    "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                },
+                                                                "responsive": { "portable": { "props": { "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full" } } },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            { "handler": "setState", "params": { "target": "global", "selectedBundledLanguagePack": "{{row}}" } },
+                                                                            { "handler": "openModal", "target": "language_pack_install_bundled_modal" }
+                                                                        ]
+                                                                    }
+                                                                ],
+                                                                "children": [
+                                                                    { "type": "basic", "name": "Icon", "props": { "name": "fas fa-download", "size": "sm" } },
+                                                                    { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.actions.install" }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "if": "{{row.has_update === true && row.status !== 'uninstalled' && language_packs?.data?.abilities?.can_update}}",
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "title": "$t:admin.language_packs.actions.update",
+                                                                    "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                },
+                                                                "actions": [
+                                                                    { "event": "onClick", "handler": "setState", "params": { "target": "local", "updateId": "{{row.id}}", "updateCurrent": "{{row.version}}", "updateLatest": "{{row.latest_version}}" } },
+                                                                    { "event": "onClick", "handler": "openModal", "target": "language_pack_update_modal" }
+                                                                ],
+                                                                "children": [
+                                                                    { "type": "basic", "name": "Icon", "props": { "name": "fas fa-arrow-up", "size": "sm" } },
+                                                                    { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.actions.update" }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "Toggle",
+                                                                "if": "{{row.status !== 'uninstalled'}}",
+                                                                "props": {
+                                                                    "checked": "{{row.status === 'active'}}",
+                                                                    "disabled": "{{row.is_protected === true || (row.abilities?.can_activate !== true && row.abilities?.can_deactivate !== true)}}",
+                                                                    "title": "{{row.is_protected === true ? '$t:admin.language_packs.messages.protected_badge' : ''}}",
+                                                                    "size": "sm"
+                                                                },
+                                                                "responsive": { "portable": { "props": { "className": "absolute right-4 top-4" } } },
+                                                                "actions": [
+                                                                    {
+                                                                        "event": "onChange",
+                                                                        "handler": "apiCall",
+                                                                        "auth_required": true,
+                                                                        "target": "{{$event.target.checked ? '/api/admin/language-packs/' + row.id + '/activate' : '/api/admin/language-packs/' + row.id + '/deactivate'}}",
+                                                                        "params": { "method": "POST" },
+                                                                        "onSuccess": [
+                                                                            { "handler": "toast", "params": { "type": "success", "message": "{{$event.target.checked ? '$t:admin.language_packs.messages.activate_success' : '$t:admin.language_packs.messages.deactivate_success'}}" } },
+                                                                            { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } },
+                                                                            { "handler": "reloadExtensions" }
+                                                                        ],
+                                                                        "errorHandling": {
+                                                                            "409": {
+                                                                                "handler": "sequence",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "global",
+                                                                                            "slotConflictCurrent": "{{error.errors?.current ?? null}}",
+                                                                                            "slotConflictTarget": "{{error.errors?.target ?? null}}",
+                                                                                            "slotConflictTargetId": "{{row.id}}"
+                                                                                        }
+                                                                                    },
+                                                                                    { "handler": "openModal", "target": "language_pack_slot_conflict_modal" }
+                                                                                ]
+                                                                            }
+                                                                        },
+                                                                        "onError": [
+                                                                            { "handler": "toast", "params": { "type": "error", "message": "{{$error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}" } }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "responsive": { "portable": { "props": { "className": "absolute right-1 top-1" } } },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "composite",
+                                                                        "name": "ActionMenu",
+                                                                        "props": {
+                                                                            "triggerLabel": "",
+                                                                            "items": [
+                                                                                {
+                                                                                    "id": "view_detail",
+                                                                                    "label": "$t:admin.language_packs.actions.detail",
+                                                                                    "iconName": "info-circle"
+                                                                                },
+                                                                                {
+                                                                                    "id": "uninstall",
+                                                                                    "label": "$t:admin.language_packs.actions.uninstall",
+                                                                                    "iconName": "trash",
+                                                                                    "variant": "danger",
+                                                                                    "disabled": "{{row.is_protected === true || row.status === 'uninstalled' || row.abilities?.can_uninstall !== true}}"
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        "actions": [
+                                                                            {
+                                                                                "event": "onItemClick",
+                                                                                "type": "action",
+                                                                                "handler": "switch",
+                                                                                "cases": {
+                                                                                    "view_detail": {
+                                                                                        "handler": "sequence",
+                                                                                        "actions": [
+                                                                                            { "handler": "setState", "params": { "target": "local", "detailId": "{{row.id ?? row.bundled_identifier ?? row.identifier}}" } },
+                                                                                            { "handler": "refetchDataSource", "params": { "dataSourceId": "language_pack_detail" } },
+                                                                                            { "handler": "openModal", "target": "language_pack_detail_modal" }
+                                                                                        ]
+                                                                                    },
+                                                                                    "uninstall": {
+                                                                                        "handler": "sequence",
+                                                                                        "actions": [
+                                                                                            { "handler": "setState", "params": { "target": "local", "uninstallId": "{{row.id}}", "uninstallScope": "{{row.scope}}", "uninstallTarget": "{{row.target_identifier}}", "uninstallLocale": "{{row.locale}}" } },
+                                                                                            { "handler": "openModal", "target": "language_pack_uninstall_modal" }
+                                                                                        ]
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    "actions": [
+                        {
+                            "event": "onPageChange",
+                            "type": "change",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{route.path}}",
+                                "replace": true,
+                                "mergeQuery": true,
+                                "query": { "page": "{{$args[0]}}" }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "lp_pagination_info",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(language_packs?.data?.data?.length ?? 0) > 0}}",
+                    "props": { "className": "mt-4 flex items-center justify-between gap-4 text-sm text-gray-600 dark:text-gray-400" },
+                    "responsive": { "portable": { "props": { "className": "mt-4 flex flex-col items-stretch gap-3 text-sm text-gray-600 dark:text-gray-400" } } },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-center gap-2" },
+                            "children": [
+                                { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.pagination.per_page_label" },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "props": {
+                                        "value": "{{query.per_page || 10}}",
+                                        "className": "border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-2 py-1 text-sm",
+                                        "options": [
+                                            { "value": "10", "label": "10" },
+                                            { "value": "20", "label": "20" },
+                                            { "value": "50", "label": "50" },
+                                            { "value": "100", "label": "100" }
+                                        ]
+                                    },
+                                    "actions": [
+                                        {
+                                            "event": "onChange",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{route.path}}",
+                                                "replace": true,
+                                                "mergeQuery": true,
+                                                "query": { "per_page": "{{$event.target.value}}", "page": "1" }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.language_packs.pagination.summary|total={{language_packs?.data?.meta?.total ?? 0}}|from={{((language_packs?.data?.meta?.current_page ?? 1) - 1) * (language_packs?.data?.meta?.per_page ?? 10) + 1}}|to={{Math.min((language_packs?.data?.meta?.current_page ?? 1) * (language_packs?.data?.meta?.per_page ?? 10), language_packs?.data?.meta?.total ?? 0)}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

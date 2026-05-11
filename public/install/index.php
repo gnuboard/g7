@@ -10,6 +10,8 @@ require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/session.php';
 require_once __DIR__ . '/includes/installer-state.php';
 require_once __DIR__ . '/includes/request-handler.php';
+require_once __DIR__ . '/api/_guard.php';
+installer_guard_or_410();
 
 $currentLang = getCurrentLanguage();
 
@@ -110,7 +112,7 @@ $stepFile = __DIR__ . '/views/' . $currentStep . '-' . (STEP_FILE_MAP[$currentSt
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title><?= lang('welcome_title') ?> - 그누보드7</title>
+    <title><?= lang('welcome_title') ?> - <?= lang('brand_name') ?></title>
 
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -122,7 +124,7 @@ $stepFile = __DIR__ . '/views/' . $currentStep . '-' . (STEP_FILE_MAP[$currentSt
     <div class="installer-header-bar">
         <div class="installer-header-content">
             <div class="installer-header-left">
-                <span class="installer-logo">그누보드7</span>
+                <span class="installer-logo"><?= htmlspecialchars(lang('brand_name')) ?></span>
             </div>
             <div class="installer-header-right">
                 <span class="installer-step-indicator">

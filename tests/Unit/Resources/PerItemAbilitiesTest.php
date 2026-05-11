@@ -93,6 +93,10 @@ class PerItemAbilitiesTest extends TestCase
 
     /**
      * self 스코프에서 본인 행은 abilities가 true를 반환한다.
+     *
+     * UserResource 는 슈퍼관리자 계정만 can_delete 를 강제 false 로 설정한다.
+     * 일반 관리자 계정의 삭제 가능 여부는 G7 역할/퍼미션/스코프 시스템이 평가하므로,
+     * managerUser(is_super=false, self 스코프 보유) 는 본인 행에 대해 can_delete=true.
      */
     public function test_self_scope_allows_own_row(): void
     {
@@ -235,16 +239,16 @@ class PerItemAbilitiesTest extends TestCase
         $collection = new UserCollection($users);
         $result = $collection->withStatistics([]);
 
-        // 컬렉션 데이터에서 각 사용자의 abilities 확인
-        $dataById = collect($result['data'])->keyBy('id');
+        // UserResource 의 공개 식별자는 uuid (id 는 toArray 에 포함되지 않음)
+        $dataByUuid = collect($result['data'])->keyBy('uuid');
 
         // 본인(managerUser) — can_update: true
-        $ownRow = $dataById[$this->managerUser->id];
+        $ownRow = $dataByUuid[$this->managerUser->uuid];
         $this->assertTrue($ownRow['is_owner']);
         $this->assertTrue($ownRow['abilities']['can_update']);
 
         // 타인(otherUser) — can_update: false (self 스코프)
-        $otherRow = $dataById[$this->otherUser->id];
+        $otherRow = $dataByUuid[$this->otherUser->uuid];
         $this->assertFalse($otherRow['is_owner']);
         $this->assertFalse($otherRow['abilities']['can_update']);
     }

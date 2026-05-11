@@ -1,0 +1,30 @@
+{
+    "identifier": "g7-plugin-sirsoft-ckeditor5-ja",
+    "namespace": "g7",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "G7 플러그인 (sirsoft-ckeditor5) 일본어 언어팩",
+        "en": "G7 plugin (sirsoft-ckeditor5) Japanese language pack",
+        "ja": "G7 プラグイン (sirsoft-ckeditor5) 日本語 言語パック"
+    },
+    "description": {
+        "ko": "G7 플러그인 (sirsoft-ckeditor5) 일본어 언어팩 (번들)",
+        "en": "G7 plugin (sirsoft-ckeditor5) Japanese language pack (bundled)",
+        "ja": "G7 プラグイン (sirsoft-ckeditor5) 日本語 言語パック(バンドル)"
+    },
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "scope": "plugin",
+    "target_identifier": "sirsoft-ckeditor5",
+    "locale": "ja",
+    "locale_name": "Japanese",
+    "locale_native_name": "日本語",
+    "text_direction": "ltr",
+    "g7_version": ">=7.0.0-beta.4",
+    "requires": {
+        "target_version": null,
+        "depends_on_core_locale": true
+    },
+    "github_url": "",
+    "github_changelog_url": ""
+}

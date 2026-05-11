@@ -60,7 +60,14 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
     <!-- 완료 섹션 -->
     <?php
     $completionButtons = '<a href="../admin/login" class="btn btn-success">' . htmlspecialchars(lang('go_to_admin_login')) . '</a>';
-    echo renderInstallResultSection('completion', 'success', 'installation_completed', 'installation_complete_message', $completionButtons);
+
+    $coreVersion = getCoreAppVersion();
+    $completionExtra = '<p class="result-version">'
+        . htmlspecialchars(lang('installed_version_label')) . ' '
+        . '<strong>' . htmlspecialchars($coreVersion) . '</strong>'
+        . '</p>';
+
+    echo renderInstallResultSection('completion', 'success', 'installation_completed', 'installation_complete_message', $completionButtons, $completionExtra);
     ?>
 
     <!-- 중단 섹션 -->
@@ -159,6 +166,7 @@ $adminTemplates = $selectedExtensions['admin_templates'] ?? [];
 $userTemplates = $selectedExtensions['user_templates'] ?? [];
 $modules = $selectedExtensions['modules'] ?? [];
 $plugins = $selectedExtensions['plugins'] ?? [];
+$languagePacks = $selectedExtensions['language_packs'] ?? [];
 ?>
 
 <script>
@@ -226,6 +234,13 @@ window.INSTALLER_TASK_GROUPS = [
                 ['id' => 'user_template_activate', 'target' => $tpl]
             ];
         }, $userTemplates)) ?>
+    },
+    {
+        id: 'language_packs',
+        labelKey: 'task_group_language_packs',
+        tasks: <?= json_encode(array_map(function($pack) {
+            return ['id' => 'language_pack_install', 'target' => $pack];
+        }, $languagePacks)) ?>
     },
     {
         id: 'finalize',

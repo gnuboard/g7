@@ -1,0 +1,338 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Identity Logs DataGrid"
+    },
+    "id": "identity_log_datagrid",
+    "type": "composite",
+    "name": "DataGrid",
+    "props": {
+        "data": "{{identityLogs?.data?.data}}",
+        "pagination": true,
+        "serverSidePagination": true,
+        "serverCurrentPage": "{{identityLogs?.data?.pagination?.current_page ?? 1}}",
+        "serverTotalPages": "{{identityLogs?.data?.pagination?.last_page ?? 1}}",
+        "pageSize": "{{+(query.per_page || 20)}}",
+        "alwaysShowPagination": true,
+        "idField": "id",
+        "selectable": false,
+        "loading": "{{identityLogs?.loading}}",
+        "expandable": true,
+        "expandChildren": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-4 bg-gray-50 dark:bg-gray-900 space-y-3"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "grid grid-cols-1 md:grid-cols-2 gap-3"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                                        },
+                                        "text": "$t:admin.identity.logs.detail.expanded.target_hash_label"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "block text-xs font-mono text-gray-700 dark:text-gray-300 break-all mt-0.5"
+                                        },
+                                        "text": "{{row.target_hash ?? '-'}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                                        },
+                                        "text": "$t:admin.identity.logs.detail.expanded.origin_label"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "block text-sm text-gray-700 dark:text-gray-300 mt-0.5"
+                                        },
+                                        "text": "{{(row.origin_type ? $t('admin.identity.logs.origin_type.' + row.origin_type) : '-') + ' / ' + (row.origin_identifier ?? '-')}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{row.origin_policy_key}}",
+                                "props": {
+                                    "className": "md:col-span-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                                        },
+                                        "text": "$t:admin.identity.logs.detail.expanded.origin_policy_key_label"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "block text-sm font-mono text-gray-700 dark:text-gray-300 break-all mt-0.5"
+                                        },
+                                        "text": "{{row.origin_policy_key}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{row.properties}}",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"
+                                },
+                                "text": "$t:admin.identity.logs.detail.expanded.properties_label"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Pre",
+                                "props": {
+                                    "className": "p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto max-h-40"
+                                },
+                                "text": "{{JSON.stringify(row.properties ?? {}, null, 2)}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{row.metadata}}",
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"
+                                },
+                                "text": "$t:admin.identity.logs.detail.expanded.metadata_label"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Pre",
+                                "props": {
+                                    "className": "p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto max-h-40"
+                                },
+                                "text": "{{JSON.stringify(row.metadata ?? {}, null, 2)}}"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex justify-end"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "text": "$t:admin.identity.logs.detail_title",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "params": {
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_log_modal_data": "{{row}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "identity_log_detail_modal"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "columns": [
+            {
+                "field": "created_at",
+                "header": "$t:admin.identity.logs.col.created_at",
+                "sortable": true,
+                "width": "160px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                        },
+                        "text": "{{row.created_at ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "provider_id",
+                "header": "$t:admin.identity.logs.col.provider_id",
+                "width": "140px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300"
+                        },
+                        "text": "{{(identityProviders?.data ?? []).find(p => p.id === row.provider_id)?.label ?? row.provider_id ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "purpose",
+                "header": "$t:admin.identity.logs.col.purpose",
+                "width": "140px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                        },
+                        "text": "{{(identityPurposes?.data ?? []).find(p => p.id === row.purpose)?.label ?? row.purpose ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "channel",
+                "header": "$t:admin.identity.logs.col.channel",
+                "width": "100px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                        },
+                        "text": "{{row.channel ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "status",
+                "header": "$t:admin.identity.logs.col.status",
+                "sortable": false,
+                "width": "120px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "{{row.status === 'verified' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : (row.status === 'failed' || row.status === 'policy_violation_logged' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : (row.status === 'expired' || row.status === 'cancelled' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'))}}"
+                        },
+                        "text": "{{$t('admin.identity.logs.status.' + (row.status ?? 'requested'))}}"
+                    }
+                ]
+            },
+            {
+                "field": "user_id",
+                "header": "$t:admin.identity.logs.col.user_id",
+                "width": "100px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm font-mono text-gray-700 dark:text-gray-300"
+                        },
+                        "text": "{{row.user_id ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "ip_address",
+                "header": "$t:admin.identity.logs.col.ip_address",
+                "width": "130px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-xs font-mono text-gray-600 dark:text-gray-400"
+                        },
+                        "text": "{{row.ip_address ?? '-'}}"
+                    }
+                ]
+            },
+            {
+                "field": "attempts",
+                "header": "$t:admin.identity.logs.col.attempts",
+                "sortable": true,
+                "width": "100px",
+                "cellChildren": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "className": "text-sm text-gray-700 dark:text-gray-300 text-center block"
+                        },
+                        "text": "{{(row.attempts ?? 0) + ' / ' + (row.max_attempts ?? 5)}}"
+                    }
+                ]
+            }
+        ]
+    },
+    "actions": [
+        {
+            "event": "onPageChange",
+            "type": "change",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/identity/logs",
+                "replace": true,
+                "mergeQuery": true,
+                "query": {
+                    "page": "{{$args[0]}}"
+                },
+                "transition_overlay_target": "identity_log_datagrid__body"
+            }
+        }
+    ]
+}

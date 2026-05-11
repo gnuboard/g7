@@ -30,12 +30,4 @@ return [
     'activities' => [
         'user_registered' => ':name 님이 가입했습니다.',
     ],
-
-    // 시스템 알림
-    'alerts' => [
-        'system_update_available' => '시스템 업데이트 가능',
-        'system_update_message' => '새로운 버전의 그누보드7이 출시되었습니다. 업데이트를 확인해 주세요.',
-        'disk_space_low' => '디스크 공간 부족',
-        'disk_space_message' => '디스크 사용량이 90%를 초과했습니다. 불필요한 파일을 정리해 주세요.',
-    ],
 ];

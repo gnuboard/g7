@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Board\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use App\Models\Role;
+use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use BackedEnum;
@@ -32,6 +32,7 @@ class BoardNotificationDataListener implements HookListenerInterface
         private readonly PostRepositoryInterface $postRepository,
         private readonly CommentRepositoryInterface $commentRepository,
         private readonly UserNotificationSettingService $userNotificationSettingService,
+        private readonly RoleRepositoryInterface $roleRepository,
     ) {}
 
     /**
@@ -72,9 +73,22 @@ class BoardNotificationDataListener implements HookListenerInterface
      */
     public function contributeDefaultDefinitions(array $definitions, array $context = []): array
     {
-        $seeder = new \Modules\Sirsoft\Board\Database\Seeders\BoardNotificationDefinitionSeeder();
+        // module.php 의 getNotificationDefinitions() 가 SSoT — declarative getter 패턴
+        /** @var \Modules\Sirsoft\Board\Module $module */
+        $module = app(\App\Extension\ModuleManager::class)->getModule('sirsoft-board');
+        if (! $module) {
+            return $definitions;
+        }
 
-        return array_merge($definitions, $seeder->getDefaultDefinitions());
+        $contributed = [];
+        foreach ($module->getNotificationDefinitions() as $data) {
+            $contributed[] = array_merge($data, [
+                'extension_type' => 'module',
+                'extension_identifier' => $module->getIdentifier(),
+            ]);
+        }
+
+        return array_merge($definitions, $contributed);
     }
 
     /**
@@ -490,7 +504,7 @@ class BoardNotificationDataListener implements HookListenerInterface
         }
 
         // 게시판별 관리자 역할 조회, 없으면 superAdmin 폴백
-        $managerRole = Role::where('identifier', "sirsoft-board.{$slug}.manager")->first();
+        $managerRole = $this->roleRepository->findByIdentifier("sirsoft-board.{$slug}.manager");
         $managers = $managerRole ? $managerRole->users()->get() : collect();
 
         if ($managers->isEmpty()) {
@@ -687,6 +701,8 @@ class BoardNotificationDataListener implements HookListenerInterface
      */
     private function emptyResult(): array
     {
-        return ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []];
+        // context.skip=true 로 NotificationHookListener 가 발송 자체를 스킵하도록 지시.
+        // (template recipients 기반 해석이 Listener 의 정책 gate 를 우회하는 문제 대응)
+        return ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => ['skip' => true]];
     }
 }

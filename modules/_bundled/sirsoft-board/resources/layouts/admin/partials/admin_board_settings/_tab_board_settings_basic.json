@@ -106,16 +106,6 @@
                           "props": {
                             "className": "flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
                           },
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('type') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'type') : [...(_local.bulkApplyFields ?? []), 'type']}}"
-                              }
-                            }
-                          ],
                           "children": [
                             {
                               "type": "basic",
@@ -124,7 +114,17 @@
                                 "type": "checkbox",
                                 "className": "checkbox flex-shrink-0",
                                 "checked": "{{(_local.bulkApplyFields ?? []).includes('type')}}"
-                              }
+                              },
+                              "actions": [
+                                {
+                                  "type": "change",
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('type') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'type') : [...(_local.bulkApplyFields ?? []), 'type']}}"
+                                  }
+                                }
+                              ]
                             },
                             {
                               "type": "basic",
@@ -219,7 +219,7 @@
                   "name": "Select",
                   "props": {
                     "name": "basic_defaults.type",
-                    "options": "{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
+                    "options": "{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? $locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
                     "className": "w-48 flex-shrink-0 text-sm",
                     "disabled": "{{_computed.isReadOnly}}"
                   }
@@ -249,16 +249,6 @@
                   "props": {
                     "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer"
                   },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('secret_mode') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'secret_mode') : [...(_local.bulkApplyFields ?? []), 'secret_mode']}}"
-                      }
-                    }
-                  ],
                   "children": [
                     {
                       "type": "basic",
@@ -267,7 +257,17 @@
                         "type": "checkbox",
                         "className": "checkbox flex-shrink-0 mt-0.5",
                         "checked": "{{(_local.bulkApplyFields ?? []).includes('secret_mode')}}"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('secret_mode') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'secret_mode') : [...(_local.bulkApplyFields ?? []), 'secret_mode']}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
@@ -329,16 +329,6 @@
                   "props": {
                     "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer"
                   },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('show_view_count') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'show_view_count') : [...(_local.bulkApplyFields ?? []), 'show_view_count']}}"
-                      }
-                    }
-                  ],
                   "children": [
                     {
                       "type": "basic",
@@ -347,7 +337,17 @@
                         "type": "checkbox",
                         "className": "checkbox flex-shrink-0 mt-0.5",
                         "checked": "{{(_local.bulkApplyFields ?? []).includes('show_view_count')}}"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('show_view_count') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'show_view_count') : [...(_local.bulkApplyFields ?? []), 'show_view_count']}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
@@ -404,16 +404,6 @@
                   "props": {
                     "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer"
                   },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_report') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_report') : [...(_local.bulkApplyFields ?? []), 'use_report']}}"
-                      }
-                    }
-                  ],
                   "children": [
                     {
                       "type": "basic",
@@ -422,7 +412,17 @@
                         "type": "checkbox",
                         "className": "checkbox flex-shrink-0 mt-0.5",
                         "checked": "{{(_local.bulkApplyFields ?? []).includes('use_report')}}"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_report') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_report') : [...(_local.bulkApplyFields ?? []), 'use_report']}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",

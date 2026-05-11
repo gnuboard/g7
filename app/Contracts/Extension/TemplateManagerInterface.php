@@ -2,6 +2,8 @@
 
 namespace App\Contracts\Extension;
 
+use App\Enums\DeactivationReason;
+
 interface TemplateManagerInterface
 {
     /**
@@ -74,9 +76,15 @@ interface TemplateManagerInterface
      * 지정된 템플릿을 비활성화합니다.
      *
      * @param  string  $identifier  비활성화할 템플릿 식별자
+     * @param  string  $reason  비활성화 사유 (DeactivationReason enum value: manual|incompatible_core)
+     * @param  string|null  $incompatibleRequiredVersion  incompatible_core 사유 시 요구된 코어 버전 제약
      * @return bool 비활성화 성공 여부
      */
-    public function deactivateTemplate(string $identifier): bool;
+    public function deactivateTemplate(
+        string $identifier,
+        string $reason = DeactivationReason::Manual->value,
+        ?string $incompatibleRequiredVersion = null,
+    ): bool;
 
     /**
      * 템플릿의 의존성을 검증합니다.

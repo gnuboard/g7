@@ -4,7 +4,7 @@
  * 커스텀 핸들러가 G7Core.state.setLocal()로 상태를 변경한 후,
  * 후속 setState 액션이 해당 변경을 보존하는지 검증합니다.
  *
- * @see .claude/docs/frontend/troubleshooting-state-setstate.md
+ * @see docs/frontend/troubleshooting-state-setstate.md
  * @see resources/js/core/template-engine/ActionDispatcher.ts handleSequence
  */
 

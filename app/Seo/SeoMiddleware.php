@@ -72,9 +72,30 @@ class SeoMiddleware
         try {
             $html = $this->renderer->render($request);
         } catch (\Throwable $e) {
+            // 정확한 throw 지점 진단을 위한 상세 정보 — file/line/exception class/trace 첫 10프레임
+            $traceFrames = array_slice(
+                array_map(static function ($frame) {
+                    $file = $frame['file'] ?? '?';
+                    $line = $frame['line'] ?? '?';
+                    $class = $frame['class'] ?? '';
+                    $type = $frame['type'] ?? '';
+                    $function = $frame['function'] ?? '?';
+
+                    return $file.':'.$line.' '.$class.$type.$function;
+                }, $e->getTrace()),
+                0,
+                10
+            );
+
             Log::error('[SEO] Rendering failed, falling back to SPA', [
                 'url' => $cacheUrl,
                 'error' => $e->getMessage(),
+                'exception_class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_agent' => $request->userAgent(),
+                'locale' => $locale,
+                'trace' => $traceFrames,
             ]);
 
             return $next($request);

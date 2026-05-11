@@ -1,0 +1,223 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "환경설정 > 본인인증 탭 > 프로바이더 sub-tab — 목적별 프로바이더 매핑 + 등록된 프로바이더 상세"
+  },
+  "id": "identity_section_providers",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "space-y-6 scroll-mt-44"
+  },
+  "children": [
+    {
+      "id": "card_identity_purposes",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.identity.purposes.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.identity.purposes.desc"
+        },
+        {
+          "id": "purpose_rows",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "iteration": {
+            "source": "identityPurposes?.data ?? []",
+            "item_var": "purpose"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white block"
+                      },
+                      "text": "{{purpose.label ?? purpose.id}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "if": "{{purpose.description}}",
+                      "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "{{purpose.description ?? ''}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "identity.purpose_providers.{{purpose.id}}",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm",
+                    "options": "{{[{value: '', label: '$t:admin.settings.identity.purposes.use_default'}].concat((identityProviders?.data ?? []).map(function(p) { return { value: p.id, label: p.label }; }))}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(identityPurposes?.data ?? []).length === 0}}",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 py-4 text-center"
+          },
+          "text": "$t:admin.settings.identity.purposes.empty"
+        }
+      ]
+    },
+    {
+      "id": "card_identity_providers",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.identity.providers.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.identity.providers.desc"
+        },
+        {
+          "id": "provider_cards",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "iteration": {
+            "source": "identityProviders?.data ?? []",
+            "item_var": "provider"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between mb-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm font-semibold text-gray-900 dark:text-white block"
+                          },
+                          "text": "{{provider.label}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400 font-mono"
+                          },
+                          "text": "{{provider.id}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "{{provider.is_available ? 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200' : 'text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}"
+                      },
+                      "text": "{{provider.is_available ? '$t:admin.settings.identity.providers.available' : '$t:admin.settings.identity.providers.unavailable'}}"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex flex-wrap gap-2 mt-2"
+                  },
+                  "iteration": {
+                    "source": "provider.channels ?? []",
+                    "item_var": "channel"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200"
+                      },
+                      "text": "{{channel}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(identityProviders?.data ?? []).length === 0}}",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 py-4 text-center"
+          },
+          "text": "$t:admin.settings.identity.providers.empty"
+        }
+      ]
+    }
+  ]
+}

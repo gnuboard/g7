@@ -80,6 +80,42 @@ abstract class ModuleTestCase extends TestCase
      * 모듈/역할/권한 등록은 TestingSeeder에서 처리됩니다.
      * (트랜잭션 시작 전에 실행되어 락 충돌 방지)
      */
+    /**
+     * HookManager static state 스냅샷 — tearDown 에서 복원하여 테스트 간 훅 격리를 보장.
+     *
+     * 테스트 내에서 `HookManager::addFilter()` / `addAction()` 으로 등록한 훅이
+     * 다음 테스트로 누수되어 OrderAdjustmentService 등의 계산 경로에 영향을 주는
+     * cross-test state leak 을 차단한다.
+     *
+     * @var array{hooks: array, filters: array}|null
+     */
+    private ?array $hookSnapshot = null;
+
+    /**
+     * setUpTraits 단계에서 모듈 마이그레이션 부재를 검사해 RefreshDatabase 의 process-static
+     * `$migrated` 플래그를 리셋한다 — 그래야 곧이은 RefreshDatabase 초기화가 본 클래스의
+     * `migrateFreshUsing()` 으로 migrate:fresh 를 재실행한다.
+     *
+     * 다른 테스트 클래스(예: 코어 전용 Tests\TestCase 상속)가 같은 프로세스에서 먼저 실행되어
+     * 모듈 마이그레이션 없이 schema 를 만든 경우의 회귀 가드.
+     *
+     * setUp() 안에서 Artisan migrate 를 별도 호출하면 DDL 의 implicit commit 이
+     * 진행 중인 테스트 트랜잭션을 깨뜨려 첫 테스트가 transaction 외부에서 실행되는
+     * side-effect 가 발생하므로, 트랜잭션 시작 *전* 에 처리해야 한다.
+     */
+    protected function setUpTraits()
+    {
+        if (\Illuminate\Foundation\Testing\RefreshDatabaseState::$migrated) {
+            try {
+                if (! \Illuminate\Support\Facades\Schema::hasTable('ecommerce_shipping_types')) {
+                    \Illuminate\Foundation\Testing\RefreshDatabaseState::$migrated = false;
+                }
+            } catch (\Throwable $e) { /* DB 미초기화 / 연결 부재 — RefreshDatabase 가 처리 */ }
+        }
+
+        return parent::setUpTraits();
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -90,11 +126,106 @@ abstract class ModuleTestCase extends TestCase
         // 모듈 ServiceProvider 등록 (Repository 바인딩)
         $this->app->register(\Modules\Sirsoft\Ecommerce\Providers\EcommerceServiceProvider::class);
 
+        // 모듈 인스턴스를 ModuleManager 에 등록 (Storage/Cache 바인딩에 필수)
+        // BaseModuleServiceProvider::registerStorageBindings 가 런타임에
+        // ModuleManager->getModule($identifier)->getStorage() 를 호출하므로,
+        // _bundled 에서만 실행되는 테스트 환경에서는 ModuleManager.modules 에
+        // 수동으로 인스턴스를 등록해 둬야 한다 (loadModules() 는 modules/ 만 스캔).
+        $this->registerModuleInstance();
+
         // 모듈 예외 핸들러 등록 (테스트 환경)
         $this->registerModuleExceptionHandler();
 
         // 모듈 라우트를 수동으로 등록
         $this->registerModuleRoutes();
+
+        // HookManager 현재 상태 스냅샷 (tearDown 에서 복원)
+        $this->snapshotHookManager();
+
+        // 모델 static cache 초기화 (RefreshDatabase 의 트랜잭션 롤백과 static 상태 불일치 방지)
+        // - ShippingType::$codeCache: getCachedByCode() 가 첫 호출 시 self::all() 결과를 캐시하는데,
+        //   첫 테스트가 ShippingType 시드 전에 호출하면 empty cache 로 고정되어 이후 테스트에서
+        //   Resource::resolveShippingMethodLabel() 이 null 반환
+        if (method_exists(\Modules\Sirsoft\Ecommerce\Models\ShippingType::class, 'clearCodeCache')) {
+            \Modules\Sirsoft\Ecommerce\Models\ShippingType::clearCodeCache();
+        }
+    }
+
+    /**
+     * tearDown 에 HookManager 상태 복원.
+     */
+    protected function tearDown(): void
+    {
+        $this->restoreHookManager();
+
+        parent::tearDown();
+    }
+
+    /**
+     * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
+     */
+    private function snapshotHookManager(): void
+    {
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $hooks = $ref->getProperty('hooks');
+        $hooks->setAccessible(true);
+        $filters = $ref->getProperty('filters');
+        $filters->setAccessible(true);
+        $dispatching = $ref->getProperty('dispatching');
+        $dispatching->setAccessible(true);
+
+        $this->hookSnapshot = [
+            'hooks' => $hooks->getValue(),
+            'filters' => $filters->getValue(),
+            'dispatching' => $dispatching->getValue(),
+        ];
+    }
+
+    /**
+     * 스냅샷 시점으로 HookManager 복원 — 테스트 내 추가된 훅만 제거.
+     */
+    private function restoreHookManager(): void
+    {
+        if ($this->hookSnapshot === null) {
+            return;
+        }
+
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $hooks = $ref->getProperty('hooks');
+        $hooks->setAccessible(true);
+        $hooks->setValue(null, $this->hookSnapshot['hooks']);
+
+        $filters = $ref->getProperty('filters');
+        $filters->setAccessible(true);
+        $filters->setValue(null, $this->hookSnapshot['filters']);
+
+        $dispatching = $ref->getProperty('dispatching');
+        $dispatching->setAccessible(true);
+        $dispatching->setValue(null, $this->hookSnapshot['dispatching']);
+
+        $this->hookSnapshot = null;
+    }
+
+    /**
+     * 모듈 인스턴스를 ModuleManager 에 수동 등록합니다.
+     */
+    protected function registerModuleInstance(): void
+    {
+        $moduleClass = \Modules\Sirsoft\Ecommerce\Module::class;
+
+        if (! class_exists($moduleClass)) {
+            require_once $this->getModuleBasePath() . '/module.php';
+        }
+
+        /** @var \App\Extension\ModuleManager $manager */
+        $manager = $this->app->make(\App\Extension\ModuleManager::class);
+
+        $reflection = new \ReflectionClass($manager);
+        $modulesProp = $reflection->getProperty('modules');
+        $modulesProp->setAccessible(true);
+        $current = $modulesProp->getValue($manager);
+        $current['sirsoft-ecommerce'] = new $moduleClass();
+        $modulesProp->setValue($manager, $current);
     }
 
     /**

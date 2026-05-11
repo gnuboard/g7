@@ -198,10 +198,13 @@ class FilePermissionHelper
     /**
      * 부모 디렉토리의 소유자·그룹을 대상 경로에 상속합니다.
      *
-     * @param string $path 소유권을 상속받을 파일 또는 디렉토리
+     * sudo 컨텍스트에서 root 가 만든 파일을 부모(보통 PHP-FPM owner) 로 정합화하기 위해
+     * 외부 호출처(예: `SettingsMigrator::writeJsonFile`) 가 직접 호출 가능하도록 public.
+     *
+     * @param  string  $path  소유권을 상속받을 파일 또는 디렉토리
      * @return void
      */
-    protected static function inheritOwnershipFromParent(string $path): void
+    public static function inheritOwnershipFromParent(string $path): void
     {
         $parentDir = dirname($path);
         if (! File::isDirectory($parentDir)) {
@@ -289,14 +292,35 @@ class FilePermissionHelper
      */
     public static function chownRecursive(string $path, int $owner, int|false $group): int
     {
+        return self::chownRecursiveDetailed($path, $owner, $group)['changed'];
+    }
+
+    /**
+     * `chownRecursive` 의 상세 결과 변형. 실패 경로를 누적하여 반환한다.
+     *
+     * 코어/확장 업데이트 흐름이 운영자에게 권한 정상화 실패 경로를 노출할 수 있도록
+     * 누적 결과를 구조화 반환한다. 실패 경로 수가 많을 때 로그 폭주를 막기 위해
+     * `failed_paths` 는 최대 50개로 잘라낸다 (전체 카운트는 `failed` 에 보존).
+     *
+     * `$respectPreservationMarker = true` 일 때 (트랙 2-A): 트리 순회 중 디렉토리에
+     * `.preserve-ownership` 파일이 발견되면 해당 서브트리 전체를 chown 비대상으로 skip.
+     * `ModuleStorageDriver` / `PluginStorageDriver` 가 자동 작성하는 마커로 사용자 데이터
+     * (storage/app/{modules,plugins}/{id}/) 의 시드 시점 owner/perms 영구 보존.
+     *
+     * @param  string  $path  대상 경로
+     * @param  int  $owner  기준 소유자 UID
+     * @param  int|false  $group  기준 그룹 GID (false = 그룹 유지)
+     * @param  bool  $respectPreservationMarker  `.preserve-ownership` 마커가 있는 서브트리 skip 여부
+     * @return array{changed:int, failed:int, failed_paths:array<int,string>, supported:bool, skipped_subtrees:int}
+     */
+    public static function chownRecursiveDetailed(string $path, int $owner, int|false $group, bool $respectPreservationMarker = false): array
+    {
         if (! function_exists('chown')) {
-            return 0;
+            return ['changed' => 0, 'failed' => 0, 'failed_paths' => [], 'supported' => false, 'skipped_subtrees' => 0];
         }
 
-        // 재귀 전체 기간 동안 실패/성공을 집계하고 종료 시 요약 로그를 남긴다.
-        // 경로당 개별 로그는 재귀가 깊어지면 로그 폭주 유발 → 최초 실패 1건만 즉시 로깅.
-        $report = ['changed' => 0, 'failed' => 0, 'first_failure' => null];
-        self::chownRecursiveInternal($path, $owner, $group, $report);
+        $report = ['changed' => 0, 'failed' => 0, 'failed_paths' => [], 'first_failure' => null, 'skipped_subtrees' => 0];
+        self::chownRecursiveInternal($path, $owner, $group, $report, $respectPreservationMarker);
 
         if ($report['failed'] > 0) {
             Log::warning('chownRecursive: 부분 실패', [
@@ -309,7 +333,15 @@ class FilePermissionHelper
             ]);
         }
 
-        return $report['changed'];
+        // 마커 skip 카운트는 호출자(restoreOwnership 등) 의 종합 로그에 포함되므로 별도 info 미출력.
+
+        return [
+            'changed' => $report['changed'],
+            'failed' => $report['failed'],
+            'failed_paths' => array_slice($report['failed_paths'], 0, 50),
+            'supported' => true,
+            'skipped_subtrees' => $report['skipped_subtrees'],
+        ];
     }
 
     /**
@@ -333,21 +365,46 @@ class FilePermissionHelper
      */
     public static function syncGroupWritability(string $root): int
     {
+        return self::syncGroupWritabilityDetailed($root)['changed'];
+    }
+
+    /**
+     * `syncGroupWritability` 의 상세 결과 변형. 실패 경로를 누적하여 반환한다.
+     *
+     * `skipped` 는 루트가 g-w 정책 보존으로 no-op 되었거나 chmod 미지원 환경에서 true.
+     * 코어/확장 업데이트가 운영자에게 권한 정상화 실패 경로를 즉시 노출할 때 사용.
+     *
+     * `$force=true` 시 루트가 g-w 라도 강제로 g+w 부여 후 하위 정상화. sudo root 가 0755 로
+     * 신규 디렉토리를 생성한 케이스(권한 정상화가 가장 필요한 시나리오) 에서 운영자 정책 보존
+     * 분기로 silent no-op 되던 결함을 차단할 때 사용. 일반 호출은 force=false (기존 동작 유지).
+     *
+     * @param  string  $root  대상 루트
+     * @param  bool  $force  루트 g-w 정책 강제 우회
+     * @return array{changed:int, failed:int, failed_paths:array<int,string>, supported:bool, skipped:bool}
+     */
+    public static function syncGroupWritabilityDetailed(string $root, bool $force = false): array
+    {
         if (! function_exists('chmod') || ! is_dir($root)) {
-            return 0;
+            return ['changed' => 0, 'failed' => 0, 'failed_paths' => [], 'supported' => function_exists('chmod'), 'skipped' => true];
         }
 
         $rootPerms = @fileperms($root);
         if ($rootPerms === false) {
-            return 0;
+            return ['changed' => 0, 'failed' => 0, 'failed_paths' => [], 'supported' => true, 'skipped' => true];
         }
 
-        // 루트가 g+w 가 아니면 정책 보존 (no-op)
         if (($rootPerms & 0020) === 0) {
-            return 0;
+            if (! $force) {
+                return ['changed' => 0, 'failed' => 0, 'failed_paths' => [], 'supported' => true, 'skipped' => true];
+            }
+            // force 모드: 루트에 g+w 강제 부여 → 이후 하위 정상화로 진행. sudo root 가 0755 로
+            // 신규 디렉토리를 생성한 시나리오에서 운영자 정책 보존 분기로 silent no-op 되던 결함 차단.
+            if (! @chmod($root, $rootPerms | 0020)) {
+                return ['changed' => 0, 'failed' => 1, 'failed_paths' => [$root], 'supported' => true, 'skipped' => false];
+            }
         }
 
-        $report = ['changed' => 0];
+        $report = ['changed' => 0, 'failed' => 0, 'failed_paths' => []];
         self::syncGroupWritabilityInternal($root, $report, true);
 
         if ($report['changed'] > 0) {
@@ -356,8 +413,22 @@ class FilePermissionHelper
                 'changed' => $report['changed'],
             ]);
         }
+        if ($report['failed'] > 0) {
+            Log::warning('syncGroupWritability: 부분 실패', [
+                'root' => $root,
+                'changed' => $report['changed'],
+                'failed' => $report['failed'],
+                'first_failure' => $report['failed_paths'][0] ?? null,
+            ]);
+        }
 
-        return $report['changed'];
+        return [
+            'changed' => $report['changed'],
+            'failed' => $report['failed'],
+            'failed_paths' => array_slice($report['failed_paths'], 0, 50),
+            'supported' => true,
+            'skipped' => false,
+        ];
     }
 
     /**
@@ -380,6 +451,15 @@ class FilePermissionHelper
                 // g+w 만 추가, 다른 비트 무변경
                 if (@chmod($path, $perms | 0020)) {
                     $report['changed']++;
+                } else {
+                    if (! isset($report['failed'])) {
+                        $report['failed'] = 0;
+                        $report['failed_paths'] = [];
+                    }
+                    $report['failed']++;
+                    if (count($report['failed_paths']) < 50) {
+                        $report['failed_paths'][] = $path;
+                    }
                 }
             }
         }
@@ -400,10 +480,22 @@ class FilePermissionHelper
      * @param  string  $path  대상 경로
      * @param  int  $owner  기준 소유자 UID
      * @param  int|false  $group  기준 그룹 GID
-     * @param  array{changed:int, failed:int, first_failure:string|null}  $report  집계 구조 (참조)
+     * @param  array{changed:int, failed:int, first_failure:string|null, skipped_subtrees:int}  $report  집계 구조 (참조)
+     * @param  bool  $respectPreservationMarker  `.preserve-ownership` 마커가 있는 디렉토리 서브트리 skip 여부
      */
-    private static function chownRecursiveInternal(string $path, int $owner, int|false $group, array &$report): void
+    private static function chownRecursiveInternal(string $path, int $owner, int|false $group, array &$report, bool $respectPreservationMarker = false): void
     {
+        // 트랙 2-A — 디렉토리에 .preserve-ownership 마커가 있으면 서브트리 전체 skip (자기 자신 + 하위)
+        // ModuleStorageDriver / PluginStorageDriver 가 자동 작성하는 마커로 사용자 데이터 영구 보존.
+        if ($respectPreservationMarker && is_dir($path) && ! is_link($path)) {
+            $markerPath = $path.DIRECTORY_SEPARATOR.'.preserve-ownership';
+            if (@file_exists($markerPath)) {
+                $report['skipped_subtrees']++;
+
+                return; // 자기 자신 + 하위 모두 chown 비대상
+            }
+        }
+
         $currentOwner = @fileowner($path);
         if ($currentOwner !== false && $currentOwner !== $owner) {
             if (@chown($path, $owner)) {
@@ -414,8 +506,21 @@ class FilePermissionHelper
                     Log::warning('chown 최초 실패', ['path' => $path, 'owner' => $owner]);
                 }
                 $report['failed']++;
+                if (! isset($report['failed_paths'])) {
+                    $report['failed_paths'] = [];
+                }
+                if (count($report['failed_paths']) < 50) {
+                    $report['failed_paths'][] = $path;
+                }
             }
-            if ($group !== false && function_exists('chgrp')) {
+        }
+
+        // chgrp 는 owner 일치 여부와 무관하게 별도 판정 (이전: chown 분기 안에 있어 owner 일치 시 chgrp 도 스킵되던 결함).
+        // 운영자 환경에서 lang-packs 가 base_path owner 와 동일하지만 그룹은 root 등 다른 그룹으로 잔존하는 케이스에서
+        // 그룹 변경이 영구히 누락되던 silent fail 차단.
+        if ($group !== false && function_exists('chgrp')) {
+            $currentGroup = @filegroup($path);
+            if ($currentGroup !== false && $currentGroup !== $group) {
                 @chgrp($path, $group);
             }
         }
@@ -426,7 +531,7 @@ class FilePermissionHelper
 
         $items = new \FilesystemIterator($path, \FilesystemIterator::SKIP_DOTS);
         foreach ($items as $item) {
-            self::chownRecursiveInternal($item->getPathname(), $owner, $group, $report);
+            self::chownRecursiveInternal($item->getPathname(), $owner, $group, $report, $respectPreservationMarker);
         }
     }
 }

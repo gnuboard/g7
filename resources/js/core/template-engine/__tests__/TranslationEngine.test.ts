@@ -259,6 +259,30 @@ describe('TranslationEngine', () => {
       const result = engine.resolveTranslations('일반 텍스트', context);
       expect(result).toBe('일반 텍스트');
     });
+
+    /**
+     * 회귀: 인라인 $t:defer: prefix 가 다른 텍스트와 혼용될 때 (예:
+     * "{{id}} — $t:defer:key|param=value") TRANSLATION_PATTERN 의 키 문자
+     * 클래스 [a-zA-Z0-9._-] 이 콜론을 미포함하여 `$t:defer` 만 매칭되고
+     * 나머지 `:key|param=value` 가 raw 로 남던 문제 (이슈 #302).
+     *
+     * 정상 동작: 인라인 $t:defer:key 형태도 일반 $t:key 와 동등하게 처리되어야 함.
+     */
+    it('인라인 $t:defer: prefix 도 정상 번역 (#302)', () => {
+      const result = engine.resolveTranslations(
+        '머리글 — $t:defer:common.save',
+        context
+      );
+      expect(result).toBe('머리글 — 저장');
+    });
+
+    it('인라인 $t:defer: prefix + 파라미터도 정상 번역 (#302)', () => {
+      const result = engine.resolveTranslations(
+        'prefix: $t:defer:messages.greeting|name=홍길동',
+        context
+      );
+      expect(result).toBe('prefix: 안녕하세요, 홍길동님');
+    });
   });
 
   describe('캐싱', () => {

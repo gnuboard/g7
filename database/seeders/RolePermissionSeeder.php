@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
 use App\Enums\ScopeType;
+use App\Extension\HookManager;
+use App\Http\Middleware\PermissionMiddleware;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -33,6 +35,9 @@ class RolePermissionSeeder extends Seeder
             // 관리자 계정에 admin 역할 부여
             $this->assignAdminRole();
         });
+
+        // guest role 캐시 무효화 — 시드 직후 권한 변경 즉시 반영 (운영: 코어 업데이트/확장 install 후 정합, 테스트: RefreshDatabase 트랜잭션 stale id 회귀 방지)
+        PermissionMiddleware::clearGuestRoleCache();
 
         $this->command->info('기본 권한과 역할이 성공적으로 생성되었습니다.');
     }
@@ -66,6 +71,10 @@ class RolePermissionSeeder extends Seeder
     private function createHierarchicalPermissions(): void
     {
         $permConfig = config('core.permissions');
+
+        // 언어팩 시스템: 활성 코어 언어팩의 seed/permissions.json 으로 다국어 키 병합 (§9 필터 주입)
+        $permConfig = HookManager::applyFilters('core.permissions.config', $permConfig);
+
         $moduleConfig = $permConfig['module'];
 
         // 1레벨: 코어 모듈
@@ -155,6 +164,9 @@ class RolePermissionSeeder extends Seeder
     private function createRoles(): void
     {
         $roles = config('core.roles');
+
+        // 언어팩 시스템: 활성 코어 언어팩의 seed/roles.json 으로 다국어 키 병합 (§9 필터 주입)
+        $roles = HookManager::applyFilters('core.roles.config', $roles);
 
         foreach ($roles as $roleDef) {
             $role = Role::updateOrCreate(

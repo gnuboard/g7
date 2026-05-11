@@ -440,7 +440,7 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
-                                                    "text": "{{post.comments_count ?? 0}}$t:mypage.board_activities.meta.comments_unit"
+                                                    "text": "{{post.comment_count ?? 0}}$t:mypage.board_activities.meta.comments_unit"
                                                 }
                                             ]
                                         }

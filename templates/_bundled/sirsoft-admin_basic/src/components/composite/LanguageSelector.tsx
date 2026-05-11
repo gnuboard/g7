@@ -16,7 +16,12 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:LanguageSelector'))
  * 로케일 코드를 사람이 읽을 수 있는 이름으로 변환
  */
 const getLocaleName = (locale: string): string => {
-  const localeNames: Record<string, string> = {
+  // 활성 언어팩의 native_name 을 우선 사용 (LanguagePackServiceProvider 가 주입)
+  const fromAppConfig = (window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale];
+  if (fromAppConfig) {
+    return fromAppConfig;
+  }
+  const fallback: Record<string, string> = {
     ko: '한국어',
     en: 'English',
     ja: '日本語',
@@ -25,7 +30,7 @@ const getLocaleName = (locale: string): string => {
     fr: 'Français',
     de: 'Deutsch',
   };
-  return localeNames[locale] || locale;
+  return fallback[locale] || locale;
 };
 
 /**

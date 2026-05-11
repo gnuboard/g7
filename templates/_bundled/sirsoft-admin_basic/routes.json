@@ -82,6 +82,38 @@
       }
     },
     {
+      "path": "*/admin/settings/language-packs",
+      "redirect": "/admin/settings?tab=language_packs",
+      "auth_required": true,
+      "meta": {
+        "title": "언어팩 관리"
+      }
+    },
+    {
+      "path": "*/admin/modules/:identifier/language-packs",
+      "layout": "admin_module_language_packs",
+      "auth_required": true,
+      "meta": {
+        "title": "모듈 언어팩 관리"
+      }
+    },
+    {
+      "path": "*/admin/plugins/:identifier/language-packs",
+      "layout": "admin_plugin_language_packs",
+      "auth_required": true,
+      "meta": {
+        "title": "플러그인 언어팩 관리"
+      }
+    },
+    {
+      "path": "*/admin/templates/:identifier/language-packs",
+      "layout": "admin_template_language_packs",
+      "auth_required": true,
+      "meta": {
+        "title": "템플릿 언어팩 관리"
+      }
+    },
+    {
       "path": "*/admin/plugins",
       "layout": "admin_plugin_list",
       "auth_required": true,
@@ -190,6 +222,23 @@
       "meta": {
         "title": "$t:admin.schedules.page_title",
         "permission": "core.schedules.read"
+      }
+    },
+    {
+      "path": "*/admin/identity/logs",
+      "layout": "admin_identity_logs",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.identity.logs.page_title",
+        "permission": "core.admin.identity.logs.read"
+      }
+    },
+    {
+      "path": "*/admin/identity/challenge",
+      "layout": "auth/identity_challenge",
+      "auth_required": false,
+      "meta": {
+        "title": "$t:admin.identity.challenge.title"
       }
     }
   ]

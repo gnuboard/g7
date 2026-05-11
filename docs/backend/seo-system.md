@@ -6,11 +6,13 @@
 
 ```text
 1. SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → SeoRenderer가 정적 HTML 생성 (캐시 우선)
-2. 다국어 SEO: ?locale=en 쿼리 기반 + hreflang 태그 + 다국어 sitemap (supported_locales 2개 이상 시 자동)
-3. meta.seo: 레이아웃 JSON에서 SEO 렌더링 대상 선언 (enabled, og, structured_data, vars, page_type, toggle_setting)
-4. seo-config.json: 텍스트 추출(text_props), 속성 매핑(attr_map), 허용 속성(allowed_attrs), 컴포넌트→HTML 매핑 — 모두 템플릿 선언
-5. 훅 시스템: core.seo.filter_context/filter_meta/filter_view_data — 런타임 데이터 변환이 필요한 경우만 사용 (선언적 설정 우선)
-6. Artisan: seo:warmup, seo:clear, seo:stats, seo:generate-sitemap
+2. 봇 감지: jaybizzle/crawler-detect 라이브러리(약 1,000종) + G7 보강 패턴(미커버 3종) + 운영자 커스텀 패턴 + core.seo.resolve_is_bot 훅 — 4-레이어 체인
+3. 다국어 SEO: ?locale=en 쿼리 기반 + hreflang 태그 + 다국어 sitemap (supported_locales 2개 이상 시 자동)
+4. meta.seo: 레이아웃 JSON에서 SEO 렌더링 대상 선언 (enabled, og, structured_data, vars, page_type, toggle_setting)
+5. seo-config.json: 텍스트 추출(text_props), 속성 매핑(attr_map), 허용 속성(allowed_attrs), 컴포넌트→HTML 매핑 — 모두 템플릿 선언
+6. 훅 시스템: core.seo.filter_context/filter_og_data/filter_twitter_data/filter_structured_data/filter_meta/filter_view_data + 봇 감지 훅 core.seo.resolve_is_bot
+7. 도메인 ownership: 모듈/플러그인이 `seoOgDefaults`/`seoTwitterDefaults`/`seoStructuredData` 메서드로 자기 도메인 OG/Twitter/JSON-LD 를 owned (이커머스 Product, 게시판 Article 등)
+7. Artisan: seo:warmup, seo:clear, seo:stats, seo:generate-sitemap
 ```
 
 ## 아키텍처 개요
@@ -32,12 +34,16 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
                       3. DataSourceResolver (API 호출)
                      ─── 훅: core.seo.filter_context ───
                       4. ExpressionEvaluator (바인딩 평가)
-                      5. SeoMetaResolver (메타 해석)
-                     ─── 훅: core.seo.filter_meta ───
-                      6. ComponentHtmlMapper (컴포넌트→HTML)
+                      5. SeoMetaResolver.resolve (배열 형태 og/twitter/structured_data)
+                      6. 모듈/플러그인 declaration cascade
+                         (seoOgDefaults / seoTwitterDefaults / seoStructuredData)
+                     ─── 훅: core.seo.filter_og_data / filter_twitter_data / filter_structured_data ───
+                      7. HTML/JSON 재렌더 (renderOgHtml / renderTwitterHtml / renderStructuredJson)
+                     ─── 훅: core.seo.filter_meta (통합) ───
+                      8. ComponentHtmlMapper (컴포넌트→HTML)
                      ─── 훅: core.seo.filter_view_data ───
-                      7. seo.blade.php (최종 HTML)
-                      8. SeoCacheManager (결과 캐시)
+                      9. seo.blade.php (최종 HTML — og + twitter + jsonLd 슬롯)
+                     10. SeoCacheManager (결과 캐시)
 ```
 
 ## 코어 클래스 및 인터페이스
@@ -87,8 +93,63 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 | 등록 위치 | User catch-all 라우트 그룹에만 |
 | 금지 | 전역 등록 / Admin 라우트 부착 |
 
-- 봇 감지: `seo.bot_user_agents` 패턴 매칭 + `_escaped_fragment_` 쿼리 파라미터
+- 봇 감지: `BotDetector` 4-레이어 체인 (아래 "봇 감지 구조" 섹션 참조)
 - 렌더링 실패 시: SPA fallback (기존 응답 통과)
+
+## 봇 감지 구조
+
+`BotDetector::isBot()` 는 다음 체인을 순서대로 평가합니다 — 어느 레이어에서든 결정이 나면 즉시 반환:
+
+| # | 레이어 | 동작 | 비고 |
+| - | ----- | ---- | ---- |
+| 1 | `seo.bot_detection_enabled` | false 면 즉시 false | 전역 비활성 |
+| 2 | `_escaped_fragment_` 쿼리 | 존재하면 true | 구형 크롤러 호환 |
+| 3 | UA 빈 문자열 | false | UA 없는 요청 |
+| 4 | `core.seo.resolve_is_bot` 훅 | 결과가 non-null 이면 즉시 결정 | 확장 슬롯 |
+| 5 | `seo.bot_detection_library_enabled` (기본 true) | jaybizzle/crawler-detect + G7 보강 + 사용자 패턴을 단일 정규식으로 평가 | 주 경로 |
+| 6 | 라이브러리 비활성 시 | `seo.bot_user_agents` stripos 매칭만 | 레거시 모드 |
+
+### jaybizzle/crawler-detect 통합
+
+- 라이브러리: `jaybizzle/crawler-detect` ^1.3.9 — MIT, 약 1,000종의 검색·링크 미리보기·AI 봇 패턴 + 76종 정상 브라우저 Exclusions
+- 유지보수: `composer update`로 상류 패치 흡수 (월 단위 릴리스)
+- 확장 지점: `App\Seo\BotDetectorCustomProvider` 가 `CrawlerDetect` 를 서브클래싱하여 `Crawlers` fixture 의 `$data` 배열에 G7 보강 패턴(미커버 3종) + 사용자 입력 패턴(`preg_quote()` 리터럴 이스케이프)을 병합
+- G7 보강 패턴 (jaybizzle 미커버, 상류 PR 후 단계적 제거 예정):
+  - `kakaotalk-scrap` — 카카오톡 링크 미리보기
+  - `Meta-ExternalAgent` — Meta(Facebook) 학습 크롤러
+  - `ChatGPT-User` — ChatGPT 브라우징
+
+### `seo.bot_user_agents` 의 역할
+
+운영자가 "추가 봇 패턴" UI 에 입력하는 값. 라이브러리가 놓치는 조직별 봇만 등록. UA 부분 문자열로 처리되며, 라이브러리 정규식 배열에 `preg_quote()` 로 이스케이프 후 병합되므로 정규식 메타문자(`.`, `+`, `?` 등)는 리터럴로 취급.
+
+### 라이브러리 비활성화 (레거시)
+
+`seo.bot_detection_library_enabled = false` 설정 시 라이브러리 경로를 우회하고 `seo.bot_user_agents` stripos 매칭만 수행. 잘 알려진 봇이라도 사용자 목록에 없으면 감지하지 못함.
+
+### 확장 훅 `core.seo.resolve_is_bot`
+
+플러그인이 IP 범위 검증·역방향 DNS·Cloudflare 봇 점수 등을 주입할 수 있는 슬롯:
+
+```php
+HookManager::addFilter('core.seo.resolve_is_bot', function ($prev, array $ctx) {
+    /** @var \Illuminate\Http\Request $request */
+    $request = $ctx['request'];
+    $userAgent = $ctx['userAgent'];
+
+    if (ipInGoogleRange($request->ip())) {
+        return true;  // 즉시 봇 결정
+    }
+
+    return $prev;  // null 반환 시 다음 레이어로 fallthrough
+});
+```
+
+반환 규약:
+
+- `true` / `false` → 즉시 봇 결정 (체인 종료)
+- `null` → 다음 레이어로 진행 (jaybizzle 라이브러리 평가)
+- 여러 리스너가 등록되면 `applyFilters` 우선순위 순으로 평가, 마지막 non-null 값이 채택됨
 
 ## SeoRenderer `_global` 컨텍스트 주입
 
@@ -302,8 +363,18 @@ SEO 엔진은 특정 모듈/템플릿 지식을 갖지 않습니다. 모든 SEO 
 | 훅 이름 | 타입 | 필터 대상 | 위치 |
 |---------|------|----------|------|
 | `core.seo.filter_context` | Filter | 데이터 컨텍스트 전체 | DataSource 해석 후, 메타 해석 전 |
-| `core.seo.filter_meta` | Filter | 메타 태그 배열 | SeoMetaResolver 직후 |
+| `core.seo.filter_og_data` | Filter | OG 데이터 배열 (분기별) | resolveOgData + 모듈 declaration 후 |
+| `core.seo.filter_twitter_data` | Filter | Twitter 카드 배열 (분기별) | resolveTwitterData + 모듈 declaration 후 |
+| `core.seo.filter_structured_data` | Filter | JSON-LD 배열 (분기별) | resolveStructuredDataArray + 모듈 declaration 후 |
+| `core.seo.filter_meta` | Filter | 메타 태그 통합 배열 | 모든 분기 결합 후 |
 | `core.seo.filter_view_data` | Filter | View 변수 배열 | View::make() 직전 |
+
+**확장 변경 슬롯 선택 가이드**:
+
+- OG 만 손대고 싶다 → `filter_og_data`
+- Twitter 카드만 → `filter_twitter_data`
+- JSON-LD review 배열 추가 등 → `filter_structured_data`
+- 통합 결과를 한 번에 → `filter_meta` (마지막 단계)
 
 ### core.seo.filter_context
 
@@ -337,8 +408,62 @@ $meta = HookManager::applyFilters('core.seo.filter_meta', $meta, [
 ]);
 ```
 
-- **필터 대상**: `$meta` — `title`, `titleSuffix`, `description`, `keywords`, `ogTags`, `jsonLd`, `googleAnalyticsId` 등
+- **필터 대상**: `$meta` — `title`, `titleSuffix`, `description`, `keywords`, `og` (배열), `twitter` (배열), `structured_data` (배열|null), `ogTags`/`twitterTags`/`jsonLd` (HTML/JSON 직렬화 결과), `googleAnalyticsId` 등
 - **유즈케이스**: SEO 플러그인이 title suffix 변경, 리뷰 플러그인이 JSON-LD에 review 배열 주입
+- **재렌더 규칙**: 청취자가 `og`/`twitter`/`structured_data` 배열을 수정하면 SeoRenderer 가 `ogTags`/`twitterTags`/`jsonLd` 를 자동 재렌더 (수정한 키만 보면 됨)
+
+### core.seo.filter_og_data / filter_twitter_data / filter_structured_data
+
+**위치**: `SeoRenderer.render()` — 모듈/플러그인 `seoOgDefaults`/`seoTwitterDefaults`/`seoStructuredData` cascade 후, `filter_meta` 전
+
+```php
+$meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], [
+    'layoutName' => $layoutName,
+    'moduleIdentifier' => $moduleIdentifier,
+    'pluginIdentifier' => $pluginIdentifier,
+    'context' => $context,
+    'locale' => $locale,
+    'pageType' => $pageType,
+]);
+// 동일 페이로드 + ctx 로 filter_twitter_data, filter_structured_data 호출
+```
+
+**`$og` 배열 스키마**:
+
+| 키 | 타입 | 설명 |
+|----|-----|-----|
+| `type` | string | og:type (product/article/website 등) |
+| `title` / `description` | string | 텍스트 |
+| `image` | string (절대 URL) | og:image |
+| `image_secure_url` | string | og:image:secure_url (HTTPS) |
+| `image_width` / `image_height` | int\|null | 픽셀 크기 |
+| `image_type` | string | image/jpeg 등 MIME |
+| `image_alt` | string | og:image:alt |
+| `site_name` | string | og:site_name |
+| `locale` | string | og:locale |
+| `extra` | array<{property,content}> | 자유 og:* 메타태그 (예: product:price:amount) |
+
+**`$twitter` 배열 스키마**:
+
+| 키 | 타입 | 설명 |
+|----|-----|-----|
+| `card` | string | summary / summary_large_image / app / player |
+| `site` / `creator` | string | @핸들 |
+| `title` / `description` / `image` / `image_alt` | string | OG fallback |
+| `extra` | array<{name,content}> | 자유 twitter:* |
+
+**`$structured_data`**: Schema.org JSON-LD 배열 (`@type` 필수). 청취자가 자유롭게 키 추가/수정 가능. SeoRenderer 가 `@context: https://schema.org` 자동 prepend.
+
+**유즈케이스**:
+
+```php
+HookManager::addFilter('core.seo.filter_og_data', function (array $og, array $ctx) {
+    if ($ctx['pageType'] === 'product') {
+        $og['extra'][] = ['property' => 'product:availability', 'content' => 'in stock'];
+    }
+    return $og;
+}, 10, 2);
+```
 
 ### core.seo.filter_view_data
 
@@ -380,6 +505,60 @@ $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
 - **리스너 미등록**: HookManager는 등록된 리스너 없으면 즉시 원본 반환 (오버헤드 ~0)
 
 ## 모듈 SEO 기여 패턴
+
+### 도메인 스키마 ownership — seoOgDefaults / seoTwitterDefaults / seoStructuredData
+
+모듈/플러그인은 `AbstractModule` / `AbstractPlugin` 의 다음 메서드를 오버라이드하여 자기 도메인의 OG/Twitter/JSON-LD 를 owned 한다. 레이아웃 JSON 직접 선언은 페이지별 override 가 꼭 필요할 때만 사용 (도메인 스키마는 모듈로 이전 — `seo-domain-schema-in-layout` audit 룰이 자동 차단).
+
+```php
+class EcommerceModule extends AbstractModule
+{
+    public function seoOgDefaults(string $pageType, array $context, array $routeParams = []): array
+    {
+        if ($pageType === 'product') {
+            $product = data_get($context, 'product.data', []);
+            return [
+                'type' => 'product',
+                'image' => $product['thumbnail_url'] ?? '',
+                'image_width' => (int) ($product['thumbnail_width'] ?? 0) ?: null,
+                'image_height' => (int) ($product['thumbnail_height'] ?? 0) ?: null,
+                'image_alt' => $product['name'] ?? '',
+                'extra' => [
+                    ['property' => 'product:price:amount', 'content' => (string) $product['selling_price']],
+                    ['property' => 'product:price:currency', 'content' => 'KRW'],
+                ],
+            ];
+        }
+        return [];
+    }
+
+    public function seoStructuredData(string $pageType, array $context, array $routeParams = []): array
+    {
+        if ($pageType !== 'product') return [];
+        $product = data_get($context, 'product.data', []);
+        return [
+            '@type' => 'Product',
+            'name' => $product['name'] ?? '',
+            'image' => $product['thumbnail_url'] ?? '',
+            'offers' => [
+                '@type' => 'Offer',
+                'price' => (string) ($product['selling_price'] ?? ''),
+                'priceCurrency' => 'KRW',
+            ],
+        ];
+    }
+}
+```
+
+**캐스케이드 우선순위 (낮음 → 높음)**:
+
+1. 코어 설정 (`seo.og_default_site_name`, `og_image_default_width` 등)
+2. 모듈/플러그인 declaration (`seoOgDefaults` / `seoTwitterDefaults` / `seoStructuredData`)
+3. 레이아웃 `meta.seo.og` / `meta.seo.twitter` / `meta.seo.structured_data` (페이지별 override)
+4. `core.seo.filter_og_data` / `filter_twitter_data` / `filter_structured_data` 훅 (런타임)
+5. `core.seo.filter_meta` 훅 (통합 최종)
+
+**레이아웃 활성화 조건**: 모듈 declaration 이 호출되려면 레이아웃 `meta.seo.extensions` 에 `[{ "type": "module", "id": "sirsoft-ecommerce" }]` 선언 + `meta.seo.page_type` 명시 필요.
 
 ### SitemapContributorInterface 구현
 
@@ -448,6 +627,11 @@ php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
 | sitemap_cache_ttl | integer | 86400 | Sitemap 캐시 TTL (초) |
 | sitemap_schedule | string | "daily" | 생성 주기 (hourly/daily/weekly) |
 | sitemap_schedule_time | string | "02:00" | 생성 시각 |
+| og_default_site_name | string | "" | og:site_name 기본값. 비면 `general.site_name` fallback |
+| og_image_default_width | integer | 1200 | og:image:width 기본값 (픽셀) |
+| og_image_default_height | integer | 630 | og:image:height 기본값 (픽셀) |
+| twitter_default_card | string | "summary_large_image" | twitter:card 기본 (summary/summary_large_image/app/player) |
+| twitter_default_site | string | "" | twitter:site 핸들 (예: @gnuboard). 비면 출력 생략 |
 
 ## SEO Config 동적 확장 시스템
 

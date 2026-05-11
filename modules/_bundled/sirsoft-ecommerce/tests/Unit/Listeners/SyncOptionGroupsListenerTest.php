@@ -23,7 +23,7 @@ class SyncOptionGroupsListenerTest extends ModuleTestCase
     {
         parent::setUp();
         $this->productService = app(ProductService::class);
-        $this->listener = new SyncOptionGroupsListener($this->productService);
+        $this->listener = app(SyncOptionGroupsListener::class);
     }
 
     // ========================================

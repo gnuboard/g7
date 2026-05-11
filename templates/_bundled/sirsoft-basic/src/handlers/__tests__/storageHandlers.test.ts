@@ -153,68 +153,84 @@ describe('storageHandlers', () => {
     });
   });
 
+  // initCartKeyHandler 구현: localStorage 에 키 있으면 로드, 없으면 백엔드 API 로 발급.
+  // 로컬 UUID 생성이 아니라 /api/modules/sirsoft-ecommerce/cart/key 호출 방식.
   describe('initCartKey 핸들러', () => {
-    // #145: 비로그인 사용자 - 기존 cartKey 로드
-    it('#145 기존 cartKey가 있으면 로드한다', () => {
+    // #145: 기존 cartKey 로드 (로그인/비로그인 공통)
+    it('#145 기존 cartKey가 있으면 API 호출 없이 로드한다', async () => {
       // Given
       mockG7Config.user = null;
       mockLocalStorage.setItem('g7_cart_key', 'existing-cart-key');
+      const fetchSpy = vi.spyOn(global, 'fetch');
 
       // When
-      initCartKeyHandler();
+      await initCartKeyHandler();
 
       // Then
+      expect(fetchSpy).not.toHaveBeenCalled();
       expect(mockG7Core.state.set).toHaveBeenCalledWith({ cartKey: 'existing-cart-key' });
     });
 
-    // #146: 비로그인 사용자 - 새 cartKey 생성
-    it('#146 기존 cartKey가 없으면 새로 생성한다', () => {
+    // #146: 비로그인 — 기존 cartKey 없으면 백엔드 API 에서 발급
+    it('#146 기존 cartKey가 없으면 백엔드 API로 발급하여 저장한다', async () => {
       // Given
       mockG7Config.user = null;
-      // localStorage는 비어있음
+      const issuedKey = 'ck_issued_from_api';
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: { cart_key: issuedKey } }),
+      } as any);
 
       // When
-      initCartKeyHandler();
+      await initCartKeyHandler();
 
       // Then
-      // 새로운 UUID가 생성되어 저장됨
-      expect(mockLocalStorage.setItem).toHaveBeenCalled();
-      expect(mockG7Core.state.set).toHaveBeenCalledWith(expect.objectContaining({
-        cartKey: expect.any(String),
-      }));
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/api/modules/sirsoft-ecommerce/cart/key',
+        expect.objectContaining({ method: 'POST' })
+      );
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('g7_cart_key', issuedKey);
+      expect(mockG7Core.state.set).toHaveBeenCalledWith({ cartKey: issuedKey });
     });
 
-    // #147: 로그인 사용자도 cartKey 생성 (API 헤더에 포함 필요)
-    it('#147 로그인 사용자도 cartKey를 생성한다', () => {
+    // #147: 로그인 사용자도 cartKey 발급 경로는 동일 (API 헤더 포함 필요)
+    it('#147 로그인 사용자도 cartKey가 없으면 API로 발급한다', async () => {
       // Given
       mockG7Config.user = { id: 1, name: 'User' };
-      // localStorage는 비어있음
+      const issuedKey = 'ck_logged_in_key';
+      vi.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: { cart_key: issuedKey } }),
+      } as any);
 
       // When
-      initCartKeyHandler();
+      await initCartKeyHandler();
 
-      // Then: 새로운 cartKey가 생성됨 (ck_ + 32자 영숫자 형식)
-      expect(mockLocalStorage.setItem).toHaveBeenCalled();
-      expect(mockG7Core.state.set).toHaveBeenCalledWith(expect.objectContaining({
-        cartKey: expect.stringMatching(/^ck_[a-zA-Z0-9]{32}$/),
-      }));
+      // Then
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('g7_cart_key', issuedKey);
+      expect(mockG7Core.state.set).toHaveBeenCalledWith({ cartKey: issuedKey });
     });
 
-    // #148: regenerateCartKey - 새 키 생성
-    it('#148 regenerateCartKey가 새로운 키를 생성한다', () => {
+    // #148: regenerateCartKey — 비로그인 사용자는 API 로 새 키 발급
+    it('#148 regenerateCartKey가 비로그인 사용자에게 새로운 키를 발급한다', async () => {
       // Given
       mockG7Config.user = null;
       mockLocalStorage.setItem('g7_cart_key', 'old-key');
+      const newKey = 'ck_newly_issued';
+      vi.spyOn(global, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: { cart_key: newKey } }),
+      } as any);
 
       // When
-      regenerateCartKeyHandler();
+      await regenerateCartKeyHandler();
 
-      // Then
-      // 새로운 UUID가 생성되어 저장됨 (old-key와 다름)
-      expect(mockLocalStorage.setItem).toHaveBeenCalled();
-      const lastCallArgs = mockLocalStorage.setItem.mock.calls[mockLocalStorage.setItem.mock.calls.length - 1];
-      expect(lastCallArgs[0]).toBe('g7_cart_key');
-      expect(lastCallArgs[1]).not.toBe('old-key');
+      // Then: 새 키가 setItem 으로 저장됨 (old-key 와 다름)
+      const setItemCalls = mockLocalStorage.setItem.mock.calls;
+      const last = setItemCalls[setItemCalls.length - 1];
+      expect(last[0]).toBe('g7_cart_key');
+      expect(last[1]).toBe(newKey);
+      expect(last[1]).not.toBe('old-key');
       expect(mockG7Core.state.set).toHaveBeenCalledWith(expect.objectContaining({
         cartKey: expect.any(String),
       }));

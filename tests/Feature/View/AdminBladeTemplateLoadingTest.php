@@ -128,9 +128,15 @@ class AdminBladeTemplateLoadingTest extends TestCase
         // 기본 구조 확인
         $response->assertSee('<div id="app"', false);
 
-        // Fallback UI가 표시됨
+        // Fallback UI가 표시됨 (번역 키: templates.errors.no_active_template)
         $response->assertSee('error-container', false);
-        $response->assertSee('Template not found', false);
+        // 활성 템플릿 없음 문구 — 한국어 또는 영어 번역 문자열 중 하나
+        $content = $response->getContent();
+        $this->assertTrue(
+            str_contains($content, '활성화된 템플릿이 없습니다')
+                || str_contains($content, 'No active template found'),
+            'Fallback UI 에 no_active_template 번역 문자열이 포함되어야 함'
+        );
     }
 
     /**

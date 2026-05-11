@@ -1,0 +1,43 @@
+{
+  "admin": {
+    "base_layout_title": "Hello Admin",
+    "sidebar": {
+      "title": "Hello Admin",
+      "dashboard": "ダッシュボード"
+    },
+    "header": {
+      "title": "Gnuboard7 学習用 管理者テンプレート"
+    },
+    "dashboard": {
+      "title": "ダッシュボード",
+      "welcome_title": "Hello G7",
+      "welcome_message": "Gnuboard7 学習用 最小 管理者テンプレートへようこそ。"
+    }
+  },
+  "errors": {
+    "401": {
+      "title": "ログインが必要です",
+      "message": "このページを表示するにはログインが必要です。"
+    },
+    "403": {
+      "title": "アクセス権限がありません",
+      "message": "このページへのアクセス権限がありません。"
+    },
+    "404": {
+      "title": "ページが見つかりません",
+      "message": "リクエストされたページが見つかりません。"
+    },
+    "500": {
+      "title": "サーバーエラー",
+      "message": "サーバー処理中にエラーが発生しました。"
+    },
+    "503": {
+      "title": "サービスを利用できません",
+      "message": "一時的にサービスを利用できません。"
+    },
+    "maintenance": {
+      "title": "サービス点検中",
+      "message": "システム点検中です。しばらく後にご利用ください。"
+    }
+  }
+}

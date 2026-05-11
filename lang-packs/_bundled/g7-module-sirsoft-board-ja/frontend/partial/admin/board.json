@@ -1,0 +1,51 @@
+{
+  "index": {
+    "title": "掲示板管理",
+    "description": "掲示板一覧を管理します",
+    "search_placeholder": "掲示板を検索...",
+    "search": "検索",
+    "add_board": "掲示板を追加",
+    "post_count": "投稿:",
+    "created_at": "作成日:",
+    "categories_label": "分類:",
+    "empty_title": "掲示板がありません",
+    "empty_description": "登録された掲示板がありません。",
+    "filter_all_types": "すべてのタイプ",
+    "filter_type_basic": "基本形",
+    "filter_type_gallery": "ギャラリー形",
+    "filter_type_card": "カード形",
+    "status": "ステータス",
+    "active": "有効化",
+    "inactive": "無効化"
+  },
+  "create": {
+    "title": "掲示板を作成"
+  },
+  "edit": {
+    "title": "掲示板を編集"
+  },
+  "columns": {
+    "type": "タイプ",
+    "name": "掲示板名",
+    "slug": "スラッグ",
+    "posts_count": "投稿数",
+    "created_at": "作成日"
+  },
+  "actions": {
+    "edit": "編集",
+    "manage_posts": "投稿管理",
+    "copy": "コピー",
+    "delete": "削除"
+  },
+  "messages": {
+    "create_success": "掲示板が作成されました",
+    "update_success": "掲示板が編集されました",
+    "delete_success": "掲示板が削除されました",
+    "deleted": "掲示板が削除されました",
+    "copy_success": "掲示板がコピーされました",
+    "save_failed": "保存に失敗しました",
+    "table_not_found": "掲示板テーブルが存在しないため削除できません",
+    "activated": "掲示板が有効化されました",
+    "deactivated": "掲示板が無効化されました"
+  }
+}

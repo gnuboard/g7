@@ -455,4 +455,18 @@ class CommentRepository implements CommentRepositoryInterface
 
         return $paginator;
     }
+
+    /**
+     * 부모 댓글의 replies_count 컬럼을 활성 대댓글 수로 재계산해 갱신합니다.
+     *
+     * @param  int  $parentCommentId  부모 댓글 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculateRepliesCount(int $parentCommentId): int
+    {
+        $count = Comment::where('parent_id', $parentCommentId)->whereNull('deleted_at')->count();
+        Comment::where('id', $parentCommentId)->update(['replies_count' => $count]);
+
+        return $count;
+    }
 }

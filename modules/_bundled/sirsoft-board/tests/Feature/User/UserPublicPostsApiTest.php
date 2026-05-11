@@ -86,7 +86,7 @@ class UserPublicPostsApiTest extends BoardTestCase
         ]);
 
         // When: 비인증 사용자가 해당 사용자의 게시글을 조회하면
-        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->id}/posts");
+        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts");
 
         // Then: 성공 응답과 함께 게시글이 반환되어야 함
         $response->assertOk();
@@ -120,7 +120,7 @@ class UserPublicPostsApiTest extends BoardTestCase
         ]);
 
         // When: 사용자 게시글을 조회하면
-        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->id}/posts");
+        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts");
 
         // Then: 모든 게시글이 반환되며 is_secret 배지로 구분
         $response->assertOk();
@@ -150,7 +150,7 @@ class UserPublicPostsApiTest extends BoardTestCase
         ]);
 
         // When: 사용자 게시글을 조회하면
-        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->id}/posts");
+        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts");
 
         // Then: 모든 게시글이 반환되며 status 배지로 구분
         $response->assertOk();
@@ -184,7 +184,7 @@ class UserPublicPostsApiTest extends BoardTestCase
         ]);
 
         // When: 통계를 조회하면
-        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->id}/posts/stats");
+        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts/stats");
 
         // Then: 통계 데이터가 반환되어야 함
         $response->assertOk();
@@ -213,7 +213,7 @@ class UserPublicPostsApiTest extends BoardTestCase
         ]);
 
         // When: 통계를 조회하면
-        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->id}/posts/stats");
+        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts/stats");
 
         // Then: 발행된 게시글만 카운트되어야 함
         $response->assertOk();
@@ -237,7 +237,7 @@ class UserPublicPostsApiTest extends BoardTestCase
         }
 
         // When: 첫 페이지 조회
-        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->id}/posts?page=1");
+        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts?page=1");
 
         // Then: 20개의 항목과 페이지네이션 메타데이터가 있어야 함
         $response->assertOk();
@@ -263,7 +263,7 @@ class UserPublicPostsApiTest extends BoardTestCase
         }
 
         // When: per_page=5로 조회
-        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->id}/posts?per_page=5");
+        $response = $this->getJson("/api/modules/sirsoft-board/users/{$this->targetUser->uuid}/posts?per_page=5");
 
         // Then: 5개의 항목만 반환되어야 함
         $response->assertOk();
@@ -275,13 +275,13 @@ class UserPublicPostsApiTest extends BoardTestCase
      */
     public function test_returns_empty_for_non_existent_user(): void
     {
-        // When: 존재하지 않는 사용자 ID로 조회
-        $response = $this->getJson('/api/modules/sirsoft-board/users/999999/posts');
+        // When: 존재하지 않는 사용자 UUID 로 조회 (라우트는 {user:uuid} 바인딩)
+        $nonExistentUuid = '00000000-0000-0000-0000-000000000000';
+        $response = $this->getJson("/api/modules/sirsoft-board/users/{$nonExistentUuid}/posts");
 
-        // Then: 빈 배열이 반환되어야 함
-        $response->assertOk();
-        $data = $response->json('data.data');
-        $this->assertCount(0, $data);
+        // Then: 모델 바인딩 실패로 404 또는 빈 배열 (optional.sanctum 경로)
+        // UUID 형식은 유효하지만 실제 사용자가 없으므로 ImplicitRouteBinding 이 404 반환
+        $response->assertStatus(404);
     }
 
     /**

@@ -206,16 +206,27 @@ async function loadTemplateMetadata(templateId: string): Promise<TemplateMetadat
  *
  * 템플릿 엔진 기획서에 명시된 전역 변수를 생성합니다:
  * - $locale: 현재 언어 코드 (예: 'ko', 'en')
- * - $locales: 지원하는 언어 목록 (예: ['ko', 'en'])
+ * - $locales: 시스템 활성 언어 목록 (활성 언어팩 기반, 예: ['ko', 'en', 'ja'])
+ * - $templateLocales: 현재 템플릿이 자체 번역을 제공하는 언어 목록 (template.json `locales`)
  * - $user: 현재 로그인한 사용자 정보 (추후 구현)
  * - $auth: 인증 상태 (추후 구현)
  *
  * @returns 전역 변수 객체
  */
 function createGlobalVariables(): Record<string, any> {
+  // 시스템 활성 언어팩(_global.appConfig.supportedLocales) 을 우선 사용한다.
+  // 언어팩 설치/제거 시 즉시 사용자 선택 UI 에 반영되어야 하기 때문이다.
+  // 미초기화/누락 시에만 템플릿 정적 메타데이터로 폴백한다.
+  const templateApp = (typeof window !== 'undefined' ? (window as any).__templateApp : undefined);
+  const systemLocales = templateApp?.globalState?.appConfig?.supportedLocales;
+  const templateLocales = state.templateMetadata?.locales;
+
   return {
     $locale: state.locale,
-    $locales: state.templateMetadata?.locales || ['ko', 'en'],
+    $locales: (Array.isArray(systemLocales) && systemLocales.length > 0)
+      ? systemLocales
+      : (templateLocales || ['ko', 'en']),
+    $templateLocales: templateLocales || ['ko', 'en'],
     $templateId: state.templateId,
     // 추후 추가 예정:
     // $user: getCurrentUser(),

@@ -54,9 +54,22 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      */
     public function contributeDefaultDefinitions(array $definitions, array $context = []): array
     {
-        $seeder = new \Modules\Sirsoft\Ecommerce\Database\Seeders\EcommerceNotificationDefinitionSeeder();
+        // module.php 의 getNotificationDefinitions() 가 SSoT — declarative getter 패턴
+        /** @var \Modules\Sirsoft\Ecommerce\Module $module */
+        $module = app(\App\Extension\ModuleManager::class)->getModule('sirsoft-ecommerce');
+        if (! $module) {
+            return $definitions;
+        }
 
-        return array_merge($definitions, $seeder->getDefaultDefinitions());
+        $contributed = [];
+        foreach ($module->getNotificationDefinitions() as $data) {
+            $contributed[] = array_merge($data, [
+                'extension_type' => 'module',
+                'extension_identifier' => $module->getIdentifier(),
+            ]);
+        }
+
+        return array_merge($definitions, $contributed);
     }
 
     /**
@@ -166,6 +179,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
+        // audit:allow service-direct-data-access reason: OrderCancel 전용 Repository 미정의 — notification payload extract 한정 단일 사용처. 후속 OrderCancelRepository 도입 시 위임 (issue follow-up)
         $latestCancel = OrderCancel::where('order_id', $order->id)->latest('id')->first();
         $cancelReason = $latestCancel?->cancel_reason ?? '';
 

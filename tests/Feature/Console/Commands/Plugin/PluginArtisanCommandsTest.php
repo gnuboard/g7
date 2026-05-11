@@ -4,6 +4,7 @@ namespace Tests\Feature\Console\Commands\Plugin;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
+use App\Extension\PluginManager;
 use App\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -72,7 +73,7 @@ class PluginArtisanCommandsTest extends TestCase
         $this->setUpExtensionProtection();
 
         // 플러그인 매니저가 플러그인 디렉토리를 스캔하도록 초기화
-        $pluginManager = app(\App\Extension\PluginManager::class);
+        $pluginManager = app(PluginManager::class);
         $pluginManager->loadPlugins();
     }
 
@@ -339,7 +340,7 @@ class PluginArtisanCommandsTest extends TestCase
 
         // 삭제 확인에서 거절 → 플러그인 유지
         $this->artisan('plugin:uninstall', ['identifier' => $identifier])
-            ->expectsConfirmation(__('plugins.commands.uninstall.confirm_question'), 'no')
+            ->expectsQuestion(__('plugins.commands.uninstall.confirm_question').' (yes/no) [no]', 'no')
             ->expectsOutput(__('plugins.commands.uninstall.aborted'))
             ->assertExitCode(0);
 
@@ -349,7 +350,7 @@ class PluginArtisanCommandsTest extends TestCase
 
         // 삭제 확인에서 승인 → 플러그인 삭제
         $this->artisan('plugin:uninstall', ['identifier' => $identifier])
-            ->expectsConfirmation(__('plugins.commands.uninstall.confirm_question'), 'yes')
+            ->expectsQuestion(__('plugins.commands.uninstall.confirm_question').' (yes/no) [no]', 'yes')
             ->expectsOutput('✅ '.__('plugins.commands.uninstall.success', ['plugin' => $identifier]))
             ->assertExitCode(0);
 

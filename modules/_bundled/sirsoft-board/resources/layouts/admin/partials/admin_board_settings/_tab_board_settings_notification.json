@@ -51,16 +51,6 @@
                   "type": "basic",
                   "name": "Label",
                   "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_author') : [...(_local.bulkApplyFields ?? []), 'notify_author']}}"
-                      }
-                    }
-                  ],
                   "children": [
                     {
                       "type": "basic",
@@ -69,7 +59,17 @@
                         "type": "checkbox",
                         "className": "checkbox flex-shrink-0 mt-0.5",
                         "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_author')}}"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_author') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_author') : [...(_local.bulkApplyFields ?? []), 'notify_author']}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",
@@ -116,16 +116,6 @@
                   "type": "basic",
                   "name": "Label",
                   "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_admin_on_post') : [...(_local.bulkApplyFields ?? []), 'notify_admin_on_post']}}"
-                      }
-                    }
-                  ],
                   "children": [
                     {
                       "type": "basic",
@@ -134,7 +124,17 @@
                         "type": "checkbox",
                         "className": "checkbox flex-shrink-0 mt-0.5",
                         "checked": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post')}}"
-                      }
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('notify_admin_on_post') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'notify_admin_on_post') : [...(_local.bulkApplyFields ?? []), 'notify_admin_on_post']}}"
+                          }
+                        }
+                      ]
                     },
                     {
                       "type": "basic",

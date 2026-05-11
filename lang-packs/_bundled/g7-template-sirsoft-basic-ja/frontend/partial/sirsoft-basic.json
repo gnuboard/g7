@@ -1,0 +1,7 @@
+{
+  "address": {
+    "zonecode_placeholder": "郵便番号",
+    "address_placeholder": "住所を検索してください",
+    "detail_placeholder": "詳細住所を入力してください"
+  }
+}

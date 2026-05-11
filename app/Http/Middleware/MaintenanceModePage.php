@@ -31,6 +31,11 @@ class MaintenanceModePage
             return $next($request);
         }
 
+        // 로케일 감지 (SetLocale 미들웨어가 실행되지 않으므로 자체 감지)
+        // API/HTML 분기보다 먼저 적용해야 JSON 응답 메시지도 ja 등 활성 언어팩 로케일을 반영한다
+        $locale = $this->detectLocale($request);
+        app()->setLocale($locale);
+
         // API 요청은 JSON 응답
         if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json([
@@ -38,10 +43,6 @@ class MaintenanceModePage
                 'message' => __('maintenance.message'),
             ], 503);
         }
-
-        // 로케일 감지 (SetLocale 미들웨어가 실행되지 않으므로 자체 감지)
-        $locale = $this->detectLocale($request);
-        app()->setLocale($locale);
 
         // 정적 메인터넌스 페이지 렌더링 (DB/API/JS 무의존)
         return response()->view('maintenance', [], 503);

@@ -41,9 +41,18 @@ class ProductLabelAssignmentTest extends TestCase
             $this->markTestSkipped('sirsoft-ecommerce 모듈이 설치되어 있지 않습니다.');
         }
 
-        // 모듈 마이그레이션 실행
+        // 모듈 마이그레이션 실행 — 활성 디렉토리 우선, 부재 시 _bundled 로 폴백
+        $activeMigrationPath = base_path('modules/sirsoft-ecommerce/database/migrations');
+        $bundledMigrationPath = base_path('modules/_bundled/sirsoft-ecommerce/database/migrations');
+
+        $migrationPath = is_dir($activeMigrationPath) ? $activeMigrationPath : $bundledMigrationPath;
+
+        if (! is_dir($migrationPath)) {
+            $this->markTestSkipped('sirsoft-ecommerce 마이그레이션 디렉토리를 찾을 수 없습니다.');
+        }
+
         $this->artisan('migrate', [
-            '--path' => 'modules/sirsoft-ecommerce/database/migrations',
+            '--path' => $migrationPath,
             '--realpath' => true,
         ]);
     }

@@ -1,6 +1,16 @@
 <?php
 
 return [
+    // 액션 라벨 (마지막 세그먼트 기준).
+    // ActivityLog::getActionLabelAttribute 가 모듈 origin 라벨을 자체 lang 에서 우선 조회.
+    'action' => [
+        'create' => '생성',
+        'delete' => '삭제',
+        'restore' => '복원',
+        'update' => '수정',
+        'upload' => '업로드',
+    ],
+
     'description' => [
         // 페이지 관리
         'page_index' => '페이지 목록 조회',

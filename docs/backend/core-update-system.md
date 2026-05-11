@@ -181,10 +181,14 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 ### Step 7: 파일 적용
 
 ```text
-- _pending 소스에서 config('app.update.targets')에 해당하는 파일/디렉토리만 선택적 덮어쓰기
+- _pending 소스에서 config('app.update.targets') 에 해당하는 파일/디렉토리 선택적 덮어쓰기
+- 자동 발견 폴백: targets 에 미등재된 source 최상위 항목도 스캔하여 적용
+  (config('app.update.protected_paths') 와 config('app.update.excludes') 매치 시 스킵)
 - FilePermissionHelper::copyDirectory() 사용 → 원본 파일 권한 보존
 - ExtensionPendingHelper::copyToActive() 미사용 (권한 유실 방지)
 ```
+
+> **자동 발견 폴백의 배경 (engine-v / beta.4 이후)**: Step 7 은 부모 프로세스의 `config('app.update.targets')` 를 사용한다. 부모는 업그레이드 *직전* 의 코드/메모리 상태이므로 신버전이 도입한 신규 최상위 디렉토리(예: beta.4 의 `lang-packs/`) 가 부모의 stale targets 에서 누락된다. 폴백은 이 결함을 안전망으로 차단하며, `config/app.php` 의 `update.protected_paths` 가 런타임 데이터(`storage`)·로컬 환경(`.env*`)·별도 파이프라인 산출물(`vendor`)·개발 메타(`.git`/`.claude`/`.serena` 등) 의 의도치 않은 덮어쓰기를 방지한다.
 
 ### Step 9: 마이그레이션 + 동기화
 
@@ -208,6 +212,8 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 4. version_compare 자연 정렬 (오름차순)
 5. 각 스텝 순차 실행 (UpgradeContext 전달)
 ```
+
+> **spawn 자식 진입 시 PSR-4 autoload 갱신 (engine-v / beta.4 이후)**: `core:execute-upgrade-steps` (Step 10) 와 `core:execute-bundled-updates` (Step 12) 의 spawn 자식은 `handle()` 진입 직후 `app(ExtensionManager::class)->updateComposerAutoload()` 를 1회 호출한다. 부모 프로세스의 `bootstrap/cache/autoload-extensions.php` 가 stale 한 경우 자식이 그 매핑을 그대로 로드 → upgrade step 또는 bundled update 안에서 모듈/플러그인의 `Models`/`Services` 같은 다른 클래스를 lazy autoload 시 "Class not found" 발생. 진입 시점 1회 호출로 모든 후속 작업이 fresh autoload 환경에서 실행됨을 보장한다 (개별 step 마다 호출할 필요 없음). 본 진입점들은 자체가 spawn 자식 (별개 PHP 프로세스) 이라 디스크의 fresh `ExtensionManager` 클래스를 메모리에 로드한 상태 — 직접 메서드 호출도 stale 가능성 없음.
 
 ### Step 11: 마무리
 
@@ -236,11 +242,15 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 5. 동의 시:
    - 전역 레이아웃 전략 선택 (overwrite | keep)  ※ 섹션 10 참조
    - 예외 확장 지정 여부 확인, yes 이면 다중 선택으로 전략 오버라이드
-   - 각 확장을 순차 업데이트 (실패 시 해당 확장만 warn, 나머지 계속 진행)
+   - 매니페스트 JSON 직렬화 → `core:execute-bundled-updates` spawn 자식 실행
 6. 결과 요약 출력 (성공/실패 건수)
 
 --force 플래그가 코어 업데이트에 지정된 경우: 프롬프트 스킵 + 전역 overwrite 자동 적용 (CI 대응)
 ```
+
+> **spawn 위임의 배경 (beta.4 이후)**: 부모(`core:update`) 프로세스는 코어 업그레이드 *직전* 버전의 메모리 상태를 보유한다. 부모가 직접 `ModuleManager::updateModule()` 등을 호출하면 신버전 코어가 도입한 sync 메서드(예: `syncModuleIdentityPolicies` `@since beta.4`)가 메모리에 부재해 호출 자체가 누락된다. `executeBulkUpdate` 는 사용자 선택만 매니페스트로 직렬화한 뒤 `proc_open` 으로 `core:execute-bundled-updates` 를 spawn — 자식은 fresh PHP 프로세스라 디스크의 신버전 코어 코드를 메모리에 로드한 상태에서 update 메서드 호출. proc_open 미지원 환경에서는 in-process fallback 으로 안전 전환. 자식 stdout 은 부모 콘솔로 forwarding 하며, 종료 직전 `[BUNDLED-RESULT]` 표식 라인으로 결과 카운트를 회신한다.
+
+> **선언형 산출물 일괄 sync — `syncDeclarativeArtifacts`**: `ModuleManager::syncDeclarativeArtifacts(ModuleInterface)` / `PluginManager::syncDeclarativeArtifacts(PluginInterface)` 는 모듈/플러그인의 모든 declarative 데이터(역할·권한·메뉴·cleanup·IDV 정책·IDV 메시지·알림 정의) 를 한 묶음으로 동기화하는 public 진입점이다. `installModule` / `updateModule` 트랜잭션이 내부적으로 호출하며, 코어 업그레이드 사후 보정(`Upgrade_7_0_0_beta_4` 등) 도 활성 모듈/플러그인을 순회하며 이 메서드를 호출해 일회성 회복을 수행한다. 각 sync 메서드는 helper 의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출 무해 (멱등).
 
 ---
 

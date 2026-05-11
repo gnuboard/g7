@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "layout_name": "errors/500",
+  "extends": "_admin_base",
+  "meta": {
+    "title": "$t:errors.500.title",
+    "is_error_layout": true,
+    "error_code": 500
+  },
+  "slots": {
+    "content": [
+      {
+        "id": "error_container",
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "flex flex-col items-center justify-center min-h-[60vh] text-center p-8"
+        },
+        "children": [
+          {
+            "id": "error_code",
+            "type": "basic",
+            "name": "H1",
+            "props": {
+              "className": "text-6xl font-bold text-gray-900 dark:text-white mb-4"
+            },
+            "text": "500"
+          },
+          {
+            "id": "error_title",
+            "type": "basic",
+            "name": "H2",
+            "props": {
+              "className": "text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2"
+            },
+            "text": "$t:errors.500.title"
+          },
+          {
+            "id": "error_message",
+            "type": "basic",
+            "name": "Span",
+            "props": {
+              "className": "text-gray-500 dark:text-gray-400"
+            },
+            "text": "$t:errors.500.message"
+          }
+        ]
+      }
+    ]
+  }
+}

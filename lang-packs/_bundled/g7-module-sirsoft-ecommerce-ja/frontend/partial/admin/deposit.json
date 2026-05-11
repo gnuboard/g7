@@ -1,0 +1,124 @@
+{
+  "title": "入金管理",
+  "description": "ウェブフックで受信した入金内訳を管理し、注文とマッチングします",
+  "search": {
+    "field": {
+      "order_number": "注文番号",
+      "depositor_name": "入金者名",
+      "member_name": "会員名",
+      "member_id": "会員 ID"
+    },
+    "placeholder": "検索語を入力してください",
+    "reset": "初期化"
+  },
+  "filter": {
+    "matching_type": "マッチングタイプ",
+    "payment_method": "決済方法",
+    "deposit_date": "入金日期間",
+    "all": "すべて",
+    "unmatched": "未マッチング",
+    "auto_matched": "自動マッチング",
+    "manual_matched": "手動マッチング",
+    "bank_transfer": "銀行振込",
+    "virtual_account": "仮想口座",
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "1_day": "1日",
+    "1_week": "1週間",
+    "1_month": "1ヶ月",
+    "3_months": "3ヶ月"
+  },
+  "batch": {
+    "selected_count": "{{count}}個選択されました",
+    "batch_match": "一括マッチング"
+  },
+  "table": {
+    "total_count": "合計 {{count}}個",
+    "sort": {
+      "deposit_date_desc": "入金日 (最新順)",
+      "deposit_date_asc": "入金日 (古い順)",
+      "amount_desc": "金額 (高い順)",
+      "amount_asc": "金額 (低い順)"
+    },
+    "per_page": "{{count}}個ずつ表示",
+    "columns": {
+      "no": "番号",
+      "payment_method": "決済方法",
+      "bank_account": "銀行/口座",
+      "depositor_name": "入金者名",
+      "amount": "金額",
+      "deposit_time": "入金時間",
+      "order_number": "注文番号",
+      "member_info": "会員情報",
+      "matching_type": "マッチングタイプ",
+      "receive_status": "受信ステータス",
+      "actions": "管理"
+    }
+  },
+  "status": {
+    "virtual_account": "仮想口座",
+    "bank_transfer": "銀行振込",
+    "manual": "手動",
+    "auto": "自動",
+    "normal": "正常"
+  },
+  "actions": {
+    "match": "マッチングする",
+    "view_history": "履歴を表示"
+  },
+  "mobile": {
+    "select_all": "すべて選択",
+    "deposit_time": "入金時間",
+    "bank_account": "銀行/口座",
+    "member": "会員",
+    "order_number": "注文番号"
+  },
+  "modal": {
+    "manual_match": {
+      "title": "手動マッチング",
+      "description": "入金内訳と注文を手動で連結します",
+      "deposit_info": "入金情報",
+      "depositor_name": "入金者名",
+      "deposit_amount": "入金金額",
+      "deposit_bank": "入金銀行",
+      "search_label": "注文番号を検索 (入金待ち件のみ)",
+      "search_placeholder": "注文番号、会員名、商品名で検索",
+      "cancel": "キャンセル",
+      "match": "マッチングする"
+    },
+    "process_history": {
+      "title": "処理履歴",
+      "description": "入金処理履歴およびウェブフックログを確認します",
+      "order_number": "注文番号",
+      "timeline_title": "処理タイムライン",
+      "system_pg_webhook": "システム(PGウェブフック)",
+      "webhook_receive": "ウェブフック受信",
+      "match_complete": "マッチング完了",
+      "failed": "失敗",
+      "toggle_detail_open": "詳細情報を表示",
+      "toggle_detail_close": "詳細情報を閉じる",
+      "request_data": "Request Data",
+      "response_data": "Response Data"
+    },
+    "bulk_match": {
+      "title": "一括マッチング",
+      "description": "選択された{{count}}件の入金内訳を注文とマッチングします。",
+      "instruction_1": "• 注文番号を直接入力するか、注文番号/顧客名を入力すると、自動的に検索結果が表示されます。",
+      "instruction_2": "• 検索結果から希望する注文を選択すると、自動的に入力されます。 (例: ORD20251118-0001)",
+      "columns": {
+        "depositor_name": "入金者名",
+        "amount": "金額",
+        "bank_account": "銀行·口座",
+        "deposit_time": "入金時間",
+        "order_number": "注文番号"
+      },
+      "orderer": "注文者:",
+      "order_amount": "金額:",
+      "amount_mismatch": "金額不一致",
+      "amount_mismatch_full": "注文金額と入金金額が一致していません",
+      "order_number_placeholder": "注文番号または顧客名を入力",
+      "cancel": "キャンセル",
+      "save": "保存"
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exceptions\Auth\AccountLockedException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
@@ -43,6 +44,11 @@ class AuthController extends AdminBaseController
             $data['user'] = new UserResource($user);
 
             return $this->success('auth.admin_login_success', $data);
+        } catch (AccountLockedException $e) {
+            return $this->error('auth.account_locked', 423, [
+                'locked_until' => $e->lockedUntil->toIso8601String(),
+                'retry_after_seconds' => $e->remainingMinutes * 60,
+            ], ['minutes' => $e->remainingMinutes]);
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.login_failed');
         }

@@ -51,9 +51,8 @@
                   "type": "basic",
                   "name": "Label",
                   "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('min_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_title_length') : [...(_local.bulkApplyFields ?? []), 'min_title_length']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('min_title_length')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('min_title_length')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('min_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_title_length') : [...(_local.bulkApplyFields ?? []), 'min_title_length']}}" } }] },
                     {
                       "type": "basic", "name": "Div",
                       "children": [
@@ -91,9 +90,8 @@
                   "type": "basic",
                   "name": "Label",
                   "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_title_length') : [...(_local.bulkApplyFields ?? []), 'max_title_length']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('max_title_length')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('max_title_length')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_title_length') : [...(_local.bulkApplyFields ?? []), 'max_title_length']}}" } }] },
                     {
                       "type": "basic", "name": "Div",
                       "children": [
@@ -131,9 +129,8 @@
                   "type": "basic",
                   "name": "Label",
                   "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('min_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_content_length') : [...(_local.bulkApplyFields ?? []), 'min_content_length']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('min_content_length')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('min_content_length')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('min_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_content_length') : [...(_local.bulkApplyFields ?? []), 'min_content_length']}}" } }] },
                     {
                       "type": "basic", "name": "Div",
                       "children": [
@@ -171,9 +168,8 @@
                   "type": "basic",
                   "name": "Label",
                   "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_content_length') : [...(_local.bulkApplyFields ?? []), 'max_content_length']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('max_content_length')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('max_content_length')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_content_length') : [...(_local.bulkApplyFields ?? []), 'max_content_length']}}" } }] },
                     {
                       "type": "basic", "name": "Div",
                       "children": [
@@ -211,9 +207,8 @@
                   "type": "basic",
                   "name": "Label",
                   "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white cursor-pointer mb-2" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('blocked_keywords') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'blocked_keywords') : [...(_local.bulkApplyFields ?? []), 'blocked_keywords']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('blocked_keywords')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('blocked_keywords')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('blocked_keywords') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'blocked_keywords') : [...(_local.bulkApplyFields ?? []), 'blocked_keywords']}}" } }] },
                     {
                       "type": "basic", "name": "Div",
                       "children": [
@@ -255,9 +250,8 @@
                   "type": "basic",
                   "name": "Label",
                   "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('new_display_hours') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'new_display_hours') : [...(_local.bulkApplyFields ?? []), 'new_display_hours']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('new_display_hours')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('new_display_hours')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('new_display_hours') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'new_display_hours') : [...(_local.bulkApplyFields ?? []), 'new_display_hours']}}" } }] },
                     {
                       "type": "basic", "name": "Div",
                       "children": [

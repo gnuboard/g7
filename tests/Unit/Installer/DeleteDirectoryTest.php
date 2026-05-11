@@ -43,9 +43,9 @@ class DeleteDirectoryTest extends TestCase
             define('INSTALLER_BASE_URL', '/install');
         }
 
-        // 인스톨러 함수 로드
-        require_once base_path('public/install/includes/functions.php');
-        require_once base_path('public/install/api/rollback-functions.php');
+        // 인스톨러 함수 로드 (pure PHPUnit TestCase 라서 Laravel base_path() 사용 불가 — BASE_PATH 상수 사용)
+        require_once BASE_PATH . '/public/install/includes/functions.php';
+        require_once BASE_PATH . '/public/install/api/rollback-functions.php';
 
         // 임시 디렉토리 생성
         $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'g7_test_delete_' . uniqid();

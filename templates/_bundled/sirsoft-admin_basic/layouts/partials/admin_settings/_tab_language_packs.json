@@ -1,0 +1,20 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 > 언어팩 관리 탭 — 본문은 partials/admin_language_pack_list/_content.json 공유 (SSoT). 활성 탭 가드만 유지하고 본문은 모듈/플러그인/템플릿 페이지와 동일."
+    },
+    "id": "tab_content_language_packs",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'language_packs'}}",
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "partial": "partials/admin_language_pack_list/_content.json"
+        }
+    ]
+}

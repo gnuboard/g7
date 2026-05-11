@@ -1,0 +1,14 @@
+{
+    "name": "plugins/gnuboard7-hello_plugin",
+    "description": "Learning minimal sample plugin for Gnuboard7 platform (consumes Hello module hooks)",
+    "type": "library",
+    "version": "0.1.0-beta.1",
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Gnuboard7\\HelloPlugin\\": ["src/", "./"]
+        }
+    },
+    "require": {
+        "php": "^8.2"
+    }
+}

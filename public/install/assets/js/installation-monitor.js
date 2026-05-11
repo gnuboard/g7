@@ -164,12 +164,19 @@
             super(callbacks, options);
             this.stateUrl = options.stateUrl;
             this.intervalMs = options.intervalMs || 1000;
+            // stuck 판정 임계값 (기본 90 초). last_updated 가 이 시간 이상 갱신되지 않으면
+            // 워커가 명령 실행 중 deadlock/silent-crash 됐다고 판정해 onError 발화.
+            this.stuckThresholdMs = options.stuckThresholdMs || 90000;
             this.timer = null;
             this.lastLogOffset = 0;
             this.lastCompletedTasks = [];
             this.lastCurrentTask = null;
             this.lastStatus = null;
             this.terminated = false;
+            // stuck 감지용 — 마지막으로 last_updated 가 변한 시각(client clock 기준 ms)
+            this.lastUpdatedSeen = null;
+            this.lastUpdatedClientMs = Date.now();
+            this.stuckEmitted = false;
         }
 
         start() {
@@ -252,6 +259,32 @@
                     message: state.rollback_failure.message || null,
                     detail: state.rollback_failure.detail_key || null,
                 });
+            }
+
+            // 4-1. stuck 감지 — running 상태에서 last_updated 가 stuckThresholdMs 이상 갱신 안 되면 에러 처리
+            //      서버 측 워커가 exec() 중 deadlock 되거나 PHP 프로세스가 silent crash 된 케이스를 client 가 알림.
+            if (state.status === 'running' && !this.stuckEmitted) {
+                if (state.last_updated !== this.lastUpdatedSeen) {
+                    this.lastUpdatedSeen = state.last_updated;
+                    this.lastUpdatedClientMs = Date.now();
+                } else if (this.lastUpdatedSeen !== null) {
+                    const idleMs = Date.now() - this.lastUpdatedClientMs;
+                    if (idleMs >= this.stuckThresholdMs) {
+                        this.stuckEmitted = true;
+                        this.stop();
+                        this._invoke('onError', {
+                            message: null,
+                            message_key: 'error_installation_stuck',
+                            error: null,
+                            task: state.current_task || null,
+                            target: null,
+                            manual_commands: null,
+                            stuck: true,
+                            idle_seconds: Math.floor(idleMs / 1000),
+                        });
+                        return;
+                    }
+                }
             }
 
             // 5. status 전환 감지

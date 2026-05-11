@@ -1,0 +1,122 @@
+{
+    "version": "1.1.0",
+    "layout_name": "admin_language_pack_list",
+    "permissions": ["core.language_packs.read"],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.language_packs.page_title",
+        "description": "$t:admin.language_packs.page_description"
+    },
+    "state": {
+        "filterScope": "",
+        "filterLocale": "",
+        "filterStatus": "",
+        "filterTarget": "",
+        "filterSearch": "",
+        "scopeLocked": false,
+        "detailId": null,
+        "updateId": null,
+        "updateCurrent": null,
+        "updateLatest": null,
+        "uninstallId": null,
+        "uninstallScope": null,
+        "uninstallTarget": null,
+        "uninstallLocale": null,
+        "uninstallCascade": false,
+        "showInstallModal": false,
+        "installTab": "zip",
+        "installFile": null,
+        "githubUrl": "",
+        "downloadUrl": "",
+        "checksum": "",
+        "autoActivate": false,
+        "installingIdentifier": null
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "filterScope": "{{route.path && route.path.indexOf('/admin/modules/') === 0 ? 'module' : (route.path && route.path.indexOf('/admin/plugins/') === 0 ? 'plugin' : (route.path && route.path.indexOf('/admin/templates/') === 0 ? 'template' : (query.scope || '')))}}",
+                "filterTarget": "{{route.identifier ?? ''}}",
+                "scopeLocked": "{{route.identifier ? true : false}}",
+                "filterSearch": "{{query.search || ''}}",
+                "filterStatus": "{{query.status || ''}}",
+                "filterLocale": "{{query.locale || ''}}"
+            }
+        }
+    ],
+    "transition_overlay": { "wait_for": ["language_packs"] },
+    "data_sources": [
+        {
+            "id": "language_packs",
+            "type": "api",
+            "endpoint": "/api/admin/language-packs",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page}}",
+                "per_page": "{{query.per_page ?? 10}}",
+                "scope": "{{route.path && route.path.indexOf('/admin/modules/') === 0 ? 'module' : (route.path && route.path.indexOf('/admin/plugins/') === 0 ? 'plugin' : (route.path && route.path.indexOf('/admin/templates/') === 0 ? 'template' : query.scope))}}",
+                "target_identifier": "{{route.identifier || query.target_identifier}}",
+                "locale": "{{query.locale}}",
+                "status": "{{query.status}}",
+                "search": "{{query.search}}",
+                "exclude_protected": "{{query.exclude_protected ?? '1'}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "meta": { "total": 0, "active": 0, "installed": 0, "inactive": 0, "error": 0 },
+                    "abilities": {}
+                }
+            }
+        },
+        {
+            "id": "language_pack_detail",
+            "type": "api",
+            "endpoint": "/api/admin/language-packs/{{_local.detailId}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "depends_on": ["_local.detailId"]
+        },
+        {
+            "id": "language_pack_changelog",
+            "type": "api",
+            "endpoint": "/api/admin/language-packs/{{_local.detailId}}/changelog",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "depends_on": ["_local.detailId"]
+        }
+    ],
+    "modals": [
+        { "partial": "partials/admin_language_pack_list/_modal_install.json" },
+        { "partial": "partials/admin_language_pack_list/_modal_install_bundled.json" },
+        { "partial": "partials/admin_language_pack_list/_modal_detail.json" },
+        { "partial": "partials/admin_language_pack_list/_modal_update.json" },
+        { "partial": "partials/admin_language_pack_list/_modal_uninstall.json" },
+        { "partial": "partials/admin_language_pack_list/_modal_refresh_cache.json" },
+        { "partial": "partials/admin_language_pack_list/_modal_slot_conflict.json" },
+        { "partial": "partials/admin_language_pack_list/_drawer_manifest_preview.json" }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "lang_pack_page_wrapper",
+                "type": "basic",
+                "name": "Div",
+                "props": { "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900" },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "partial": "partials/admin_extension_language_packs/_content.json"
+                    }
+                ]
+            }
+        ]
+    }
+}

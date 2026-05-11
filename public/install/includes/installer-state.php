@@ -10,8 +10,12 @@ if (!defined('BASE_PATH')) {
     define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3)); // public/install/includes에서 프로젝트 루트로
 }
 
-define('STATE_PATH', BASE_PATH . '/storage/installer-state.json');
-define('INSTALLER_DIR', BASE_PATH . '/storage/installer');
+if (! defined('STATE_PATH')) {
+    define('STATE_PATH', BASE_PATH . '/storage/installer-state.json');
+}
+if (! defined('INSTALLER_DIR')) {
+    define('INSTALLER_DIR', BASE_PATH . '/storage/installer');
+}
 
 /**
  * 설치 상태 조회
@@ -200,6 +204,134 @@ function removeTaskCompleted(string $task): bool
 }
 
 /**
+ * existing_db_action='drop_tables' 시 DB 관련 task 마커 일괄 재설정 가드.
+ *
+ * 'drop_tables' 동의는 "기존 DB 다 지우고 처음부터 다시 설치" 의도이므로,
+ * 이전 시도에서 partial 진행된 db_cleanup / db_migrate / db_seed 의
+ * completed 마커를 모두 제거하여 처음부터 재실행되도록 한다.
+ *
+ * 적용 시나리오:
+ * - 첫 시도(skip) 실패 → 재시도(drop_tables): cleanup 마커 제거 → cleanup 재실행
+ * - SSE 시작(drop_tables, cleanup 성공 + migrate 일부) → SSE 끊김 → 폴링
+ *   재시도(drop_tables): cleanup + migrate 마커 모두 제거 → cleanup 다시 drop
+ *   (이전 SSE 가 일부 만든 테이블 포함) → migrate 처음부터 → 1050 에러 회피
+ *
+ * 'skip' 신청이거나 액션이 없는 경우 마커 보존 (이미 진행한 결과 무효화 방지).
+ *
+ * @param  array<string, mixed>  $state  현재 인스톨러 state
+ * @param  string  $newAction  요청에서 받은 신규 existing_db_action
+ * @return array<string, mixed> 가드 적용된 state (existing_db_action 은 호출자가 별도 설정)
+ */
+/**
+ * 워커 lock 획득 시도 (시나리오 B — 동시 실행 race 차단).
+ *
+ * SSE 워커가 backgroud 진행 중인 상태에서 폴링 워커가 진입하면 두 워커가
+ * 동일 인스톨러 state + DB 를 동시 조작하여 cleanup → migrate race 발생.
+ * state.active_worker_id + state.last_heartbeat 를 통해 동시 실행을 차단한다.
+ *
+ * 발동 조건:
+ * - last_heartbeat 가 staleSeconds 이내면 다른 워커가 활동 중 → 거부
+ * - staleSeconds 초과 또는 active_worker_id 부재 → takeover 또는 신규 획득
+ *
+ * @param  int  $staleSeconds  heartbeat 가 이 시간 이상 갱신 안 되면 stale 판정 (default 15초)
+ * @return array{acquired: bool, worker_id: string|null, reason: string}
+ *         reason: 'available' | 'takeover_stale' | 'busy'
+ */
+function acquireWorkerLock(int $staleSeconds = 15): array
+{
+    $state = getInstallationState();
+    $now = time();
+
+    $activeId = $state['active_worker_id'] ?? null;
+    $lastHeartbeat = $state['last_heartbeat'] ?? 0;
+
+    if ($activeId !== null && ($now - $lastHeartbeat) < $staleSeconds) {
+        return ['acquired' => false, 'worker_id' => null, 'reason' => 'busy'];
+    }
+
+    $reason = $activeId !== null ? 'takeover_stale' : 'available';
+    $newWorkerId = bin2hex(random_bytes(8));
+
+    $state['active_worker_id'] = $newWorkerId;
+    $state['last_heartbeat'] = $now;
+    saveInstallationState($state);
+
+    return ['acquired' => true, 'worker_id' => $newWorkerId, 'reason' => $reason];
+}
+
+/**
+ * 워커 heartbeat 갱신 — 자기 worker_id 만 갱신 가능.
+ *
+ * task 진행 중 주기적으로 호출하여 lock 점유 유지. 다른 worker_id 가 active 면
+ * 자기는 stale loser 이므로 false 반환 (호출자는 즉시 종료해야 함).
+ *
+ * @param  string  $workerId  자기 worker_id
+ * @return bool 갱신 성공 (자기가 owner) 또는 실패 (다른 워커가 takeover)
+ */
+function refreshWorkerHeartbeat(string $workerId): bool
+{
+    $state = getInstallationState();
+    $activeId = $state['active_worker_id'] ?? null;
+
+    if ($activeId !== $workerId) {
+        return false;
+    }
+
+    $state['last_heartbeat'] = time();
+    saveInstallationState($state);
+
+    return true;
+}
+
+/**
+ * 워커 lock 해제 — 자기 worker_id 가 active 일 때만.
+ *
+ * 정상 종료 시 호출. 다른 워커가 takeover 했으면 무시 (자기가 점유자가 아니므로).
+ *
+ * @param  string  $workerId  자기 worker_id
+ */
+function releaseWorkerLock(string $workerId): void
+{
+    $state = getInstallationState();
+
+    if (($state['active_worker_id'] ?? null) !== $workerId) {
+        return;
+    }
+
+    unset($state['active_worker_id'], $state['last_heartbeat']);
+    saveInstallationState($state);
+}
+
+function applyExistingDbActionStateGuard(array $state, string $newAction): array
+{
+    // 다른 워커가 활성 진행 중이면 state 변경 금지 — race 회피.
+    // 시나리오: SSE 워커가 db_* 완료 후 module/plugin 진행 중인데 클라이언트가
+    // 폴링 fallback 시도하면 install-process.php 가 다시 호출되어 본 가드를 통과.
+    // 그 시점에 db_* 마커를 제거하면 SSE 워커가 다음 markTaskCompleted 시 read/write
+    // 하면서 db_* 가 빠진 상태에 module_* 만 추가됨 → UI 에 DB pending 으로 잔존.
+    // worker 가 살아있을 때는 그 워커의 state 진행을 신뢰하고 가드를 skip 한다.
+    $activeId = $state['active_worker_id'] ?? null;
+    $lastHeartbeat = $state['last_heartbeat'] ?? 0;
+    $isOtherWorkerActive = $activeId !== null && (time() - (int) $lastHeartbeat) < 15;
+
+    if ($newAction === 'drop_tables' && ! $isOtherWorkerActive) {
+        // drop_tables 는 "처음부터 다시" — DB 관련 task 마커 일괄 제거.
+        // SSE 가 cleanup + migrate 일부 진행 후 끊긴 상태에서 폴링 재진입 케이스를
+        // 커버하려면 이전 액션이 drop_tables 였더라도 다시 reset 해야 한다.
+        $resetTasks = ['db_cleanup', 'db_migrate', 'db_seed'];
+        $state['completed_tasks'] = array_values(array_filter(
+            $state['completed_tasks'] ?? [],
+            fn($t) => !in_array($t, $resetTasks, true)
+        ));
+    } else {
+        // 키 정규화 — completed_tasks 가 부재인 경우 빈 배열 보장
+        $state['completed_tasks'] = $state['completed_tasks'] ?? [];
+    }
+
+    return $state;
+}
+
+/**
  * 현재 진행 중인 작업 업데이트
  *
  * @param string $task 작업 식별자
@@ -224,6 +356,74 @@ function updateCurrentTask(string $task): bool
  * @param string $message 로그 메시지
  * @return bool 저장 성공 여부
  */
+/**
+ * 다수의 로그 라인을 1회 fopen/flock/fwrite/fclose 로 일괄 기록합니다.
+ *
+ * artisan 명령 출력처럼 수백~수천 라인을 동시에 emit 해야 하는 경우 매 라인마다
+ * addLog 를 호출하면 매번 file lock 을 잡았다 풀어 Windows 환경에서 수 초의
+ * 지연이 발생하고, 이 지연 동안 polling 클라이언트의 fetch 가 connection_abort
+ * 되어 워커가 강제 종료되는 회귀가 발생함. batch write 로 lock 1회만 잡는다.
+ *
+ * @param  array<int, string>  $messages  로그 메시지 배열 (빈 라인은 호출자가 사전 필터링)
+ * @return bool 저장 성공 여부
+ */
+function addLogBatch(array $messages): bool
+{
+    if (empty($messages)) {
+        return true;
+    }
+
+    $logDir = BASE_PATH . '/storage/logs';
+    $logFile = $logDir . '/installation.log';
+
+    if (!is_dir($logDir)) {
+        $created = @mkdir($logDir, 0775, true);
+        if (!$created) {
+            error_log("Failed to create log directory: {$logDir}");
+            return false;
+        }
+    }
+
+    if (!is_writable($logDir)) {
+        error_log("Log directory is not writable: {$logDir}");
+        return false;
+    }
+
+    $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+    $entries = '';
+    foreach ($messages as $message) {
+        if ($isWindows) {
+            $encoding = mb_detect_encoding($message, ['UTF-8', 'EUC-KR', 'CP949'], true);
+            if ($encoding && $encoding !== 'UTF-8') {
+                $message = mb_convert_encoding($message, 'UTF-8', $encoding);
+            }
+        }
+        $microtime = microtime(true);
+        $ms = sprintf('%03d', (int) (($microtime - floor($microtime)) * 1000));
+        $timestamp = date('Y-m-d H:i:s', (int) $microtime).'.'.$ms;
+        $entries .= "[{$timestamp}] {$message}\n";
+    }
+
+    clearstatcache(true, $logFile);
+    $isNewFile = !file_exists($logFile) || filesize($logFile) === 0;
+    if ($isNewFile) {
+        $entries = "\xEF\xBB\xBF" . $entries;
+    }
+
+    $handle = @fopen($logFile, 'a');
+    if ($handle === false) {
+        error_log("Failed to open log file: {$logFile}");
+        return false;
+    }
+    flock($handle, LOCK_EX);
+    $result = fwrite($handle, $entries);
+    fflush($handle);
+    flock($handle, LOCK_UN);
+    fclose($handle);
+
+    return $result !== false;
+}
+
 function addLog(string $message): bool
 {
     $logDir = BASE_PATH . '/storage/logs';
@@ -252,8 +452,10 @@ function addLog(string $message): bool
         }
     }
 
-    // 타임스탬프와 함께 로그 작성
-    $timestamp = date('Y-m-d H:i:s');
+    // 타임스탬프와 함께 로그 작성 — millisecond 정밀도 (hang 진단 시 정확한 timing 필요)
+    $microtime = microtime(true);
+    $ms = sprintf('%03d', (int) (($microtime - floor($microtime)) * 1000));
+    $timestamp = date('Y-m-d H:i:s', (int) $microtime).'.'.$ms;
     $logEntry = "[{$timestamp}] {$message}\n";
 
     // 파일 캐시 초기화 (최신 상태 확인)

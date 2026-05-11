@@ -31,6 +31,8 @@ return [
     'account_inactive' => '비활성화된 계정입니다. 관리자에게 문의해주세요.',
     'account_blocked' => '차단된 계정입니다. 관리자에게 문의해주세요.',
     'account_withdrawn' => '탈퇴한 계정입니다.',
+    'account_pending_verification' => '본인인증이 완료되지 않은 계정입니다. 이메일 인증을 완료해주세요.',
+    'account_locked' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. :minutes분 후 다시 시도해주세요.',
 
     // 비밀번호 재설정
     'reset_token_invalid' => '유효하지 않은 비밀번호 재설정 토큰입니다.',

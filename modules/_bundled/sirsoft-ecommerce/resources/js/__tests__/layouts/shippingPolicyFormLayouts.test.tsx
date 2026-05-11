@@ -65,14 +65,15 @@ describe('shippingPolicyFormLayouts', () => {
         it('state에 country_settings 기반 폼 기본값', () => {
             const { state } = mainLayout;
             // 폼 필드: 정책 메타데이터만 (국가별 설정은 country_settings 배열)
-            expect(state.form.name).toEqual({});
+            // name 은 LocaleInput 의 빈 다국어 컨테이너 → [] 로 초기화 (엔진이 다국어 객체로 변환)
+            expect(state.form.name).toEqual([]);
             expect(state.form.is_active).toBe(true);
             expect(state.form.is_default).toBe(false);
             expect(state.form.country_settings).toEqual([]);
 
-            // 탭/에러 상태
+            // 탭/에러 상태 (rangeErrors 는 dot notation key 기반 → [] 빈 배열로 초기화)
             expect(state.activeCountryTab).toBe(0);
-            expect(state.rangeErrors).toEqual({});
+            expect(state.rangeErrors).toEqual([]);
 
             // flat 필드 제거 확인
             expect(state.form).not.toHaveProperty('shipping_method');
@@ -95,7 +96,8 @@ describe('shippingPolicyFormLayouts', () => {
                 region: '',
                 description: '',
             });
-            expect(state.templateFormErrors).toEqual({});
+            // templateFormErrors 는 동적 dot notation key 사용 → [] 빈 배열
+            expect(state.templateFormErrors).toEqual([]);
         });
 
         it('가시성 플래그 기본값 (fixed 기준)', () => {
@@ -187,12 +189,11 @@ describe('shippingPolicyFormLayouts', () => {
             expect(expr).toContain('c.code');
         });
 
-        it('computed: shippingMethodOptions에 7개 배송방법', () => {
+        it('computed: shippingMethodOptions이 ecommerce_settings 의 동적 types 기반이다', () => {
+            // 7개 hardcoded → ecommerce_settings.shipping.types 동적 매핑으로 변경
             const expr = mainLayout.computed.shippingMethodOptions;
-            const methods = ['parcel', 'freight', 'express', 'economy', 'ems', 'direct', 'pickup'];
-            methods.forEach(m => {
-                expect(expr).toContain(`value: '${m}'`);
-            });
+            expect(expr).toContain('ecommerce_settings?.data?.shipping?.types');
+            expect(expr).toContain('t.is_active');
         });
 
         it('computed: chargePolicyOptions에 14개 부과정책', () => {
@@ -970,10 +971,10 @@ describe('shippingPolicyFormLayouts', () => {
     // ===== i18n 키 경로 무결성 =====
 
     describe('i18n 키 경로 무결성', () => {
-        it('enum 키가 computed에서 admin.shipping_policy.enums.* 경로 사용', () => {
+        it('enum 키가 computed에서 admin.shipping_policy.enums.* 경로 사용 (charge_policy 만 hardcoded)', () => {
+            // shipping_method 는 ecommerce_settings 동적 → enums 키 미사용
+            // charge_policy 는 정적 옵션 → enums 키 유지
             const computedJson = JSON.stringify(mainLayout.computed);
-            // computed에서 올바른 경로 사용
-            expect(computedJson).toContain('admin.shipping_policy.enums.shipping_method');
             expect(computedJson).toContain('admin.shipping_policy.enums.charge_policy');
         });
 

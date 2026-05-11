@@ -119,6 +119,13 @@
 | [modal-usage.md](modal-usage.md) | Modal 컴포넌트 사용 가이드 |
 | [security.md](security.md) | 보안 및 검증 |
 
+### 기타
+
+| 문서 | 설명 |
+|------|------|
+| [identity-guard-interceptor.md](identity-guard-interceptor.md) | IdentityGuardInterceptor — 코어 본인인증 인터셉터 레퍼런스 |
+| [identity-verification-ui.md](identity-verification-ui.md) | 본인인증(IDV) 공통 UI 가이드 |
+
 
 <!-- AUTO-GENERATED-END: frontend-readme-docs -->
 

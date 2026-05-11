@@ -146,4 +146,14 @@ interface CommentRepositoryInterface
      * @return LengthAwarePaginator 댓글 목록
      */
     public function getUserComments(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * 부모 댓글의 replies_count 컬럼을 활성 대댓글 수로 재계산해 갱신합니다.
+     *
+     * Listener (CommentReplySyncListener) 가 호출하는 영속 단일 진입점.
+     *
+     * @param  int  $parentCommentId  부모 댓글 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculateRepliesCount(int $parentCommentId): int;
 }

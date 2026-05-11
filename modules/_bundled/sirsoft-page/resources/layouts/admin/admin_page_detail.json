@@ -397,7 +397,7 @@
                                     "props": {
                                         "className": "mt-1 text-sm font-medium text-gray-900 dark:text-white"
                                     },
-                                    "text": "{{_global.previewVersion?.title?.[ _local.lang ?? 'ko'] ?? '-'}}"
+                                    "text": "{{_global.previewVersion?.title?.[ _local.lang ?? $locale ?? 'ko'] ?? '-'}}"
                                 }
                             ]
                         },
@@ -425,7 +425,7 @@
                                             "type": "extension_point",
                                             "name": "html_content",
                                             "props": {
-                                                "content": "{{_global.previewVersion?.content?.[ _local.lang ?? 'ko'] ?? ''}}",
+                                                "content": "{{_global.previewVersion?.content?.[ _local.lang ?? $locale ?? 'ko'] ?? ''}}",
                                                 "isHtml": "{{(_global.previewVersion?.content_mode ?? 'html') === 'html'}}",
                                                 "className": "text-gray-900 dark:text-gray-100 text-sm"
                                             },
@@ -434,7 +434,7 @@
                                                     "type": "composite",
                                                     "name": "HtmlContent",
                                                     "props": {
-                                                        "content": "{{_global.previewVersion?.content?.[ _local.lang ?? 'ko'] ?? ''}}",
+                                                        "content": "{{_global.previewVersion?.content?.[ _local.lang ?? $locale ?? 'ko'] ?? ''}}",
                                                         "isHtml": "{{(_global.previewVersion?.content_mode ?? 'html') === 'html'}}",
                                                         "className": "text-gray-900 dark:text-gray-100 text-sm"
                                                     }
@@ -1015,7 +1015,7 @@
                                                 "props": {
                                                     "className": "text-xl font-bold text-gray-900 dark:text-white"
                                                 },
-                                                "text": "{{page?.data?.title?.[ _local.lang ?? 'ko'] ?? '-'}}"
+                                                "text": "{{page?.data?.title?.[ _local.lang ?? $locale ?? 'ko'] ?? '-'}}"
                                             },
                                             {
                                                 "type": "basic",
@@ -1222,7 +1222,7 @@
                                         "type": "extension_point",
                                         "name": "html_content",
                                         "props": {
-                                            "content": "{{page?.data?.content?.[ _local.lang ?? 'ko'] ?? ''}}",
+                                            "content": "{{page?.data?.content?.[ _local.lang ?? $locale ?? 'ko'] ?? ''}}",
                                             "isHtml": "{{(page?.data?.content_mode ?? 'html') === 'html'}}",
                                             "className": "text-gray-900 dark:text-gray-100"
                                         },
@@ -1231,7 +1231,7 @@
                                                 "type": "composite",
                                                 "name": "HtmlContent",
                                                 "props": {
-                                                    "content": "{{page?.data?.content?.[ _local.lang ?? 'ko'] ?? ''}}",
+                                                    "content": "{{page?.data?.content?.[ _local.lang ?? $locale ?? 'ko'] ?? ''}}",
                                                     "isHtml": "{{(page?.data?.content_mode ?? 'html') === 'html'}}",
                                                     "className": "text-gray-900 dark:text-gray-100"
                                                 }

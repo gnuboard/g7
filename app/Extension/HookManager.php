@@ -20,6 +20,14 @@ class HookManager implements HookManagerInterface
     private static array $dispatching = [];
 
     /**
+     * 현재 실행 중인 훅 이름 스택 — 정책 Listener 등 "어느 훅에서 호출되었는지" 알아야 하는
+     * 단일 핸들러 패턴에 사용됩니다. (내부 전용)
+     *
+     * @var array<int, string>
+     */
+    private static array $runningHookStack = [];
+
+    /**
      * Hook 이벤트를 발생시켜 등록된 콜백들을 실행합니다.
      *
      * @param  string  $hookName  Hook 이름
@@ -29,25 +37,42 @@ class HookManager implements HookManagerInterface
     {
         // 가드 플래그 설정 (addAction으로 등록된 콜백의 Event::listen 중복 실행 방지)
         self::$dispatching[$hookName] = true;
+        self::$runningHookStack[] = $hookName;
 
-        // 등록된 Hook이 있는지 확인
-        if (isset(self::$hooks[$hookName])) {
-            // Hook들을 우선순위에 따라 정렬
-            $hooks = self::$hooks[$hookName];
-            ksort($hooks);
+        try {
+            // 등록된 Hook이 있는지 확인
+            if (isset(self::$hooks[$hookName])) {
+                // Hook들을 우선순위에 따라 정렬
+                $hooks = self::$hooks[$hookName];
+                ksort($hooks);
 
-            // 각 Hook을 순차적으로 실행
-            foreach ($hooks as $priority => $callbacks) {
-                foreach ($callbacks as $callback) {
-                    call_user_func_array($callback, $args);
+                // 각 Hook을 순차적으로 실행
+                foreach ($hooks as $priority => $callbacks) {
+                    foreach ($callbacks as $callback) {
+                        call_user_func_array($callback, $args);
+                    }
                 }
             }
+
+            // Laravel 이벤트 시스템에도 전달 (직접 Event::listen으로 등록한 외부 리스너용)
+            Event::dispatch("hook.{$hookName}", $args);
+        } finally {
+            array_pop(self::$runningHookStack);
+            unset(self::$dispatching[$hookName]);
         }
+    }
 
-        // Laravel 이벤트 시스템에도 전달 (직접 Event::listen으로 등록한 외부 리스너용)
-        Event::dispatch("hook.{$hookName}", $args);
+    /**
+     * 현재 실행 중인 (가장 내부의) 훅 이름을 반환합니다.
+     * 단일 handler 메서드가 여러 훅에 구독되어 "어느 훅에서 호출되었는지" 구분이 필요할 때 사용.
+     *
+     * @return string|null 실행 중 훅 이름 또는 null (최상위 컨텍스트)
+     */
+    public static function getRunningHook(): ?string
+    {
+        $count = count(self::$runningHookStack);
 
-        unset(self::$dispatching[$hookName]);
+        return $count > 0 ? self::$runningHookStack[$count - 1] : null;
     }
 
     /**

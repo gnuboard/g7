@@ -5,6 +5,107 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.49.2] - 2026-05-07
+
+### Fixed
+
+- (engine-v1.49.2) `_localInit useLayoutEffect` 의 `currentPending` baseline 이 비어있을 때 globalState 의 직전 setState 결과(예: init_actions 가 박은 `tempKey`)를 흡수하지 못해 후속 setLocal mergedPending 의 `pendingState || baseLocal` 분기에서 stale pending 우선 사용 → globalState._local 통째 교체 시 손실 키 영구 누락되던 회귀 수정 (DynamicRenderer)
+  - 증상: 게시판 글쓰기 화면(board/form) 직접 URL 진입 또는 강제 새로고침 시 init_actions setState 가 globalState._local 에 박은 `tempKey` 가 사라져 첨부파일 업로드용 `temp_key` 빈 값 평가. 목록 → 글쓰기 navigate 진입은 정상. 3회 중 1회 빈도로 간헐 발생
+  - 원인: setState_3 (init_actions tempKey) → globalStateUpdater 경로 → `globalState._local = {form, tempKey}` 정상. 그러나 React 마운트 후 useLayoutEffect 클리어로 `__g7PendingLocalState = null` → _localInit useLayoutEffect 가 발화 시 `currentPending = null || {} = {}` (빈 baseline) → pendingNext = `{form, hasChanges:false}` (tempKey 미포함, stale). 이후 performStateUpdate → setLocal({render:false}) → mergedPending 의 `pendingState || baseLocal` 분기로 stale pending 우선 사용 → globalState._local 통째 교체 시 tempKey 손실
+  - 수정: `currentPending` baseline 을 `__g7PendingLocalState || {}` → `{...G7Core.state.get()._local, ...(__g7PendingLocalState || {})}` 로 변경. fresh globalState._local 위에 기존 pending 머지로 baseline 이 진짜 fresh 보장. engine-v1.27.0 의 useLayoutEffect 사전 동기화 의도 보존 + 강화
+  - 회귀 테스트: `troubleshooting-state-setstate.test.ts` `[사례 36]` (8개)
+
+## [engine-v1.49.1] - 2026-05-06
+
+### Fixed
+
+- 인라인 `$t:defer:key|...` 가 다른 텍스트와 혼용될 때 (예: `{{id}} — $t:defer:key|x=y`) 키 문자 클래스가 콜론을 미포함해 `$t:defer` 만 매칭되고 나머지가 raw 로 노출되던 회귀 수정 — `TRANSLATION_PATTERN` 에 옵셔널 `(?:defer:)?` 추가 (TranslationEngine)
+
+## [engine-v1.49.0] - 2026-05-05
+
+### Changed
+
+- `TemplateApp.reloadExtensionState()` 가 활성 로케일 목록(`_global.appConfig.supportedLocales`)도 `/api/locales/active` 응답으로 갱신하도록 확장 — 언어팩 설치/활성화/제거 시 `reloadExtensions` 핸들러 호출만으로 사용자 언어 셀렉터(UserProfile 등)가 새로고침 없이 즉시 반영. 기존 cache_version + routes + layout + translations 재로드 단계 뒤에 추가 (TemplateApp)
+- `refresh` 핸들러에 `params.delayMs` 옵션 추가 — 선행 토스트/모달 닫힘 애니메이션이 인지된 후 reload 되도록 지연 가능. 기본값 0 으로 기존 호출처 동작 동일 (ActionDispatcher)
+
+### Added
+
+- 신규 공개 API `GET /api/locales/active` — 활성 코어 언어팩 + `config('app.supported_locales')` 합집합 반환 (LocaleController, LanguagePackService::getActiveLocales)
+
+## [engine-v1.48.0] - 2026-04-30
+
+### Changed
+
+- `$locales` 전역 변수가 시스템 활성 언어팩(`_global.appConfig.supportedLocales`)을 우선 반영하도록 의미 변경 — 언어팩 설치/제거 시 사용자 정보 수정·헤더 언어 선택·다국어 입력 탭 등 모든 picker UI 가 즉시 반영. 미초기화 시에만 템플릿 정적 메타데이터(template.json `locales`)로 폴백. 백엔드 `Rule::in(config('app.supported_locales'))` 검증과 정합 (template-engine, G7CoreGlobals)
+
+### Added
+
+- `$templateLocales` 전역 변수 신설 — 현재 템플릿이 자체 번역을 제공하는 언어 목록(template.json `locales`). 템플릿 정적 메타데이터가 필요한 경우 사용 (template-engine)
+
+## [engine-v1.47.1] - 2026-04-30
+
+### Fixed
+
+- `TemplateApp.showRouteError` 의 401 가드가 토큰 보유 여부 판정에서 `apiClient.getToken()` 만 사용해 토큰 만료 사용자에게 안내 토스트가 노출되지 않던 문제 수정 — `LayoutLoader` 가 401 시 토큰을 자동 제거하고 재시도하므로 가드 진입 시점에는 항상 토큰이 null. `LayoutLoader` 가 첫 401 시 토큰 보유 상태였음을 `LayoutLoaderError.details.hadToken=true` 로 마킹해 가드로 전달. 가드는 (현재 토큰 보유 OR `details.hadToken === true`) 일 때 `reason='session_expired'` 부여. 익명 방문자 진입은 마킹이 없어 reason 미부여 (정책 유지: 한 번도 로그인하지 않은 사용자에게 "세션 만료" 안내 차단) (Issue #301 후속, LayoutLoader · TemplateApp)
+- `apiClient.setOnUnauthorized` 콜백이 데이터소스 401 시 로그인 페이지로 redirect 할 때 `reason` 인자를 전달하지 않아 안내 토스트 트리거가 누락되던 문제 수정 — 콜백 발동은 토큰이 서버에서 거부되었음을 의미하므로 항상 `reason='session_expired'` 부여. layout fetch 401 가드와 데이터소스 401 콜백 두 경로 모두 동일한 안내 흐름으로 통일 (Issue #301 후속, TemplateApp)
+
+### Notes
+
+- 본 패치 디버깅 과정에서 발견된 G7 표현식 컨텍스트 규약 명문화: URL query string 은 root 컨텍스트에 `query.xxx` / `query?.xxx` 로 **직접 노출**되며 `route.query` 경로는 존재하지 않음. `route.xxx` 는 path params 만 (예: `/users/:id` → `route.id`). docs/frontend/data-binding.md 에 회귀 차단 가이드 추가
+
+### Notes
+
+- 본 패치는 init_actions/액션의 `if` 표현식 작성 패턴을 명확히 하지는 않으나 관련 회귀 차단 회기에 함께 추가됨: `if` 값은 `ConditionEvaluator.evaluateStringCondition` 이 평가하며, `{{}}` 외부 텍스트는 보간되지 않고 그대로 문자열로 남아 `Boolean()` 판정 시 항상 truthy 가 된다. 비교/논리 연산이 포함된 식은 반드시 **전체를 `{{}}` 한 쌍으로 감싸야** 식으로 평가된다 (예: `"{{x === 'y'}}"`). 이는 docs/frontend/data-binding.md / layout-json-features.md 가이드에 명시되어 있으며, 본 릴리즈에서 문서 측 보강은 진행하지 않음 (audit 룰 후속 advisory)
+
+## [engine-v1.47.0] - 2026-04-29
+
+### Added
+
+- 레이아웃 fetch 401 재시도 실패 시 코어가 로그인 페이지로 자동 리다이렉트 (Issue #301) — 토큰 만료/권한 부족으로 레이아웃을 받지 못한 사용자가 "페이지 로딩 실패" 에러 화면 대신 로그인 화면으로 이동하고 `?reason=session_expired` 쿼리로 안내 토스트가 트리거됨. 인증 타입은 `templateId` 또는 pathname 의 `/admin` prefix 로 결정 (TemplateApp.showRouteError)
+- `AuthManager.getLoginRedirectUrl(type, returnUrl, reason?)` 세 번째 옵셔널 인자 — `reason='session_expired'` 등 사유를 쿼리 파라미터로 결합. 기존 호출처는 인자 미지정으로 하위호환 (AuthManager)
+- `AuthManager.updateConfig(type, partial)` public setter — 템플릿 부트스트랩에서 `loginPath` 등 인증 설정을 사이트 단위로 커스터마이즈 가능. 보안: `loginPath` 는 동일 origin path-only(`/`로 시작, `//` 금지)만 허용 (open redirect 차단 — 외부 origin/protocol-relative URL 은 throw). 모듈/플러그인 호출은 다른 템플릿 침범 위험으로 가이드 문서에서 금지 (AuthManager)
+
+## [engine-v1.46.1] - 2026-04-28
+
+### Fixed
+
+- (engine-v1.46.1) `IdentityGuardInterceptor.handle()` retry fetch 가 원 요청의 body/headers/credentials 를 보존하도록 수정 — 두 번째 인자 `originalRequest` 추가. 과거 retry 가 빈 body 로 호출되어 회원가입 등 모든 POST 흐름이 IDV verify 통과 후 422 (필수 필드 누락) 로 실패하던 회귀 차단. ActionDispatcher.handleApiCall 가 `options.body/headers/credentials` 를 그대로 전달 (IdentityGuardInterceptor, ActionDispatcher)
+
+## [engine-v1.46.0] - 2026-04-27
+
+### Added
+
+- IDV 공용 타입 모듈 `resources/js/core/identity/types.ts` — `VerificationPayload`, `IdentityResponse428`, `VerificationResult` (4-상태: `verified | pending | cancelled | failed`), `ModalLauncher`, `ResolveIdentityChallengeParams`, `IdentityRedirectStash`, `IDENTITY_REDIRECT_STASH_KEY` 정리. 외부 IDV provider 플러그인이 동일 타입을 import 해 사용
+- `resolveIdentityChallenge` 액션 핸들러 — 본인인증 모달 / 풀페이지 / 외부 SDK callback 이 launcher 의 deferred Promise 에 verify 결과를 통보하는 표준 진입점. params 의 `result` 가 `verified|pending|cancelled|failed` 4-상태이며 누락/오타는 안전한 기본값으로 강등 처리 (ActionDispatcher)
+- `IdentityGuardInterceptor.createDeferred()` / `resolveDeferred()` — launcher 가 모달 결과를 await 하기 위한 deferred resolver API. 두 launcher 가 동시 활성화되면 이전 resolver 는 자동으로 `cancelled` 처리 (IdentityGuardInterceptor)
+- `IdentityGuardInterceptor.redirectExternally()` 헬퍼 — `external_redirect` 흐름에서 sessionStorage 에 stash 후 `window.location.href` 로 이동. stash 키는 코어 상수 `IDENTITY_REDIRECT_STASH_KEY` 로 통일 (IdentityGuardInterceptor)
+- `defaultLauncher` — launcher 미등록 외부 템플릿용 폴백. 토스트 발행("본인 확인이 필요합니다") + `/identity/challenge?return=...` navigate. G7Core 미초기화 시 `console.error` + `failed/G7_NOT_READY` 로 강등 (IdentityGuardInterceptor)
+
+### Changed
+
+- `ModalLauncher` 반환 타입을 `Promise<VerificationResult>` 로 확장 (기존 `Promise<boolean>` → 4-상태 객체). PortOne/Stripe Identity 같은 외부 SDK 가 검증 데이터를 함께 돌려주는 케이스 + Stripe webhook 모델 같은 비동기 검증 인터페이스 예약 (IdentityGuardInterceptor)
+- `IdentityGuardInterceptor.handle()` 가 verify 성공 시 `return_request.url` 에 `verification_token` 을 query string 으로 자동 부착해 재실행. 회원가입 폼이 이미 사용 중인 `query.verification_token` 패턴과 호환 (IdentityGuardInterceptor)
+
+## [engine-v1.45.0] - 2026-04-24
+
+### Added
+
+- startInterval / stopInterval 액션 핸들러 — `params.id` 기반 setInterval 등록/중단. 카운트다운 타이머 등 주기적 UI 업데이트에 사용. 같은 id 재등록 시 기존 타이머 자동 정리, `stopAllIntervals()` 로 일괄 중단 가능 (ActionDispatcher)
+
+## [engine-v1.44.0] - 2026-04-24
+
+### Added
+
+- IdentityGuardInterceptor — HTTP 428 `identity_verification_required` 응답을 감지해 모달 launcher 호출 후 return_request 자동 재실행. launcher 는 S8 공통 모달 레이아웃이 제공. ActionDispatcher.handleApiCall 응답 후처리 한 곳에 정적 메서드로 직접 위임 — 별도 디스패처 인프라 없이 모든 apiCall 의 choke point 효과 (IdentityGuardInterceptor)
+
+<!-- ⚠️ 버전 재번호 부여 검토 필요 (PO 결정 대기): 아래 v1.43.1 은 시간상 v1.45.0/v1.44.0 보다 늦지만(2026-04-25), develop 브랜치에서 별도 발행되어 버전 번호 모순 발생. v1.45.1 또는 v1.46.0 으로 재번호 검토 필요. -->
+
+## [engine-v1.43.1] - 2026-04-25
+
+### Fixed
+
+- `responsive.{breakpoint}.iteration` 오버라이드 케이스에서 무한 재귀로 worker OOM 발생 — `renderIteration`이 자식 wrapper 렌더 시 `componentDefWithoutIteration` 에 `iteration: undefined` 만 적용하고 `responsive` 는 유지하여, 자식의 `effectiveComponentDef` 머지에서 `responsive.{bp}.iteration` 이 다시 적용되어 iteration 이 부활하는 무한 루프. `responsive: undefined` 도 함께 제거하여 머지 1회로 한정 (DynamicRenderer)
+
 ## [engine-v1.43.0] - 2026-04-22
 
 ### Fixed

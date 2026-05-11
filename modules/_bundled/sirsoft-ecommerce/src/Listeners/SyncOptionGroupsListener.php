@@ -5,7 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Product;
-use Modules\Sirsoft\Ecommerce\Models\ProductOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
 
 /**
@@ -16,8 +17,15 @@ use Modules\Sirsoft\Ecommerce\Services\ProductService;
  */
 class SyncOptionGroupsListener implements HookListenerInterface
 {
+    /**
+     * @param  ProductService  $productService  rebuildOptionGroups 비즈니스 로직 진입점
+     * @param  ProductRepositoryInterface  $productRepository  상품 ID → 모델 조회
+     * @param  ProductOptionRepositoryInterface  $productOptionRepository  옵션 ID → product_id 추출
+     */
     public function __construct(
-        protected ProductService $productService
+        protected ProductService $productService,
+        protected ProductRepositoryInterface $productRepository,
+        protected ProductOptionRepositoryInterface $productOptionRepository,
     ) {}
 
     /**
@@ -114,14 +122,11 @@ class SyncOptionGroupsListener implements HookListenerInterface
         if (! empty($data['product_ids'])) {
             $productIds = $data['product_ids'];
         } elseif (! empty($data['ids'])) {
-            $productIds = ProductOption::whereIn('id', $data['ids'])
-                ->pluck('product_id')
-                ->unique()
-                ->toArray();
+            $productIds = $this->productOptionRepository->pluckProductIds((array) $data['ids']);
         }
 
         foreach ($productIds as $productId) {
-            $product = Product::find($productId);
+            $product = $this->productRepository->find((int) $productId);
             if ($product) {
                 try {
                     $this->productService->rebuildOptionGroups($product);

@@ -226,37 +226,22 @@
             {
               "type": "basic",
               "name": "Button",
+              "iteration": {
+                "source": "$locales",
+                "item_var": "loc"
+              },
               "props": {
                 "type": "button",
-                "className": "{{_local.activeLanguageTab === 'ko' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+                "className": "{{(_local.activeLanguageTab ?? $locale) === loc ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
               },
-              "text": "$t:sirsoft-ecommerce.admin.common_info.language.ko",
+              "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}",
               "actions": [
                 {
                   "type": "click",
                   "handler": "setState",
                   "params": {
                     "target": "_local",
-                    "activeLanguageTab": "ko"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "{{_local.activeLanguageTab === 'en' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.common_info.language.en",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "_local",
-                    "activeLanguageTab": "en"
+                    "activeLanguageTab": "{{loc}}"
                   }
                 }
               ]

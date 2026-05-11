@@ -1,7 +1,7 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "알림 템플릿 편집 모달 — 단일 채널 template 편집"
+    "description": "알림 템플릿 편집 모달 — _global.notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장."
   },
   "id": "modal_notification_template_form",
   "type": "composite",
@@ -16,7 +16,7 @@
       "id": "template_form_container",
       "type": "basic",
       "name": "Div",
-      "blur_until_loaded": "{{$parent._local.isSaving}}",
+      "blur_until_loaded": "{{_global.notification_template_form_modal?.isSaving}}",
       "props": {
         "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
       },
@@ -32,7 +32,7 @@
               "id": "template_validation_error",
               "type": "basic",
               "name": "Div",
-              "if": "{{$parent._local.templateErrors}}",
+              "if": "{{_global.notification_template_form_modal?.errors}}",
               "props": {
                 "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
               },
@@ -68,12 +68,12 @@
                         {
                           "type": "basic",
                           "name": "Ul",
-                          "if": "{{typeof $parent._local.templateErrors === 'object' && Object.keys($parent._local.templateErrors).length > 0}}",
+                          "if": "{{typeof _global.notification_template_form_modal?.errors === 'object' && Object.keys(_global.notification_template_form_modal.errors).length > 0}}",
                           "props": {
                             "className": "mt-2 list-disc list-inside space-y-1"
                           },
                           "iteration": {
-                            "source": "Object.entries($parent._local.templateErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                            "source": "Object.entries(_global.notification_template_form_modal?.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                             "item_var": "errMsg"
                           },
                           "children": [
@@ -115,7 +115,7 @@
                   "props": {
                     "className": "text-sm font-semibold text-gray-900 dark:text-white"
                   },
-                  "text": "$t:admin.settings.notification_definitions.types.{{$parent._local.editingDefinition?.type ?? ''}}"
+                  "text": "$t:admin.settings.notification_definitions.types.{{_global.notification_template_form_modal?.definition?.type ?? ''}}"
                 },
                 {
                   "type": "basic",
@@ -123,7 +123,7 @@
                   "props": {
                     "className": "text-xs font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded"
                   },
-                  "text": "{{$parent._local.editingDefinition?.type ?? ''}}"
+                  "text": "{{_global.notification_template_form_modal?.definition?.type ?? ''}}"
                 },
                 {
                   "type": "basic",
@@ -147,7 +147,7 @@
                   "props": {
                     "className": "text-sm font-medium text-indigo-600 dark:text-indigo-400"
                   },
-                  "text": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === $parent._local.editingTemplate?.channel)?.name?.[$locale] ?? $parent._local.editingTemplate?.channel ?? ''}}"
+                  "text": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.notification_template_form_modal?.template?.channel)?.name ?? _global.notification_template_form_modal?.template?.channel ?? ''}}"
                 }
               ]
             },
@@ -178,7 +178,7 @@
                       "type": "basic",
                       "name": "Div",
                       "iteration": {
-                        "source": "{{$parent._local.editingRecipients ?? []}}",
+                        "source": "{{_global.notification_template_form_modal?.recipients ?? []}}",
                         "item_var": "rcpt",
                         "index_var": "rcptIdx"
                       },
@@ -220,8 +220,8 @@
                                   "type": "click",
                                   "handler": "setState",
                                   "params": {
-                                    "target": "$parent._local",
-                                    "editingRecipients": "{{($parent._local.editingRecipients ?? []).filter((_, i) => i !== rcptIdx)}}"
+                                    "target": "global",
+                                    "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).filter((_, i) => i !== rcptIdx)}}"
                                   }
                                 }
                               ]
@@ -264,8 +264,8 @@
                                       "type": "change",
                                       "handler": "setState",
                                       "params": {
-                                        "target": "$parent._local",
-                                        "editingRecipients": "{{($parent._local.editingRecipients ?? []).map((r, i) => i === rcptIdx ? {...r, type: $event.target.value} : r)}}"
+                                        "target": "global",
+                                        "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, type: $event.target.value} : r)}}"
                                       }
                                     }
                                   ]
@@ -311,7 +311,7 @@
                                   "name": "SearchableDropdown",
                                   "props": {
                                     "value": "{{rcpt.value ?? ''}}",
-                                    "options": "{{$parent._local.recipientRoleSearchResults ?? []}}",
+                                    "options": "{{_global.notification_template_form_modal?.roleSearchResults ?? []}}",
                                     "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
                                     "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
                                     "initialText": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
@@ -336,8 +336,8 @@
                                         {
                                           "handler": "setState",
                                           "params": {
-                                            "target": "$parent._local",
-                                            "recipientRoleSearchResults": "{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"
+                                            "target": "global",
+                                            "notification_template_form_modal.roleSearchResults": "{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"
                                           }
                                         }
                                       ],
@@ -345,8 +345,8 @@
                                         {
                                           "handler": "setState",
                                           "params": {
-                                            "target": "$parent._local",
-                                            "recipientRoleSearchResults": []
+                                            "target": "global",
+                                            "notification_template_form_modal.roleSearchResults": []
                                           }
                                         }
                                       ]
@@ -355,8 +355,8 @@
                                       "event": "onChange",
                                       "handler": "setState",
                                       "params": {
-                                        "target": "$parent._local",
-                                        "editingRecipients": "{{($parent._local.editingRecipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
+                                        "target": "global",
+                                        "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
                                       }
                                     }
                                   ]
@@ -382,7 +382,7 @@
                                   "props": {
                                     "multiple": true,
                                     "value": "{{rcpt.value ?? []}}",
-                                    "options": "{{$parent._local.recipientUserSearchResults ?? []}}",
+                                    "options": "{{_global.notification_template_form_modal?.userSearchResults ?? []}}",
                                     "searchPlaceholder": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
                                     "noResultsText": "$t:admin.settings.notification_definitions.recipients.users_no_options",
                                     "initialText": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
@@ -406,8 +406,8 @@
                                         {
                                           "handler": "setState",
                                           "params": {
-                                            "target": "$parent._local",
-                                            "recipientUserSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                                            "target": "global",
+                                            "notification_template_form_modal.userSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
                                           }
                                         }
                                       ],
@@ -415,8 +415,8 @@
                                         {
                                           "handler": "setState",
                                           "params": {
-                                            "target": "$parent._local",
-                                            "recipientUserSearchResults": []
+                                            "target": "global",
+                                            "notification_template_form_modal.userSearchResults": []
                                           }
                                         }
                                       ]
@@ -425,8 +425,8 @@
                                       "event": "onChange",
                                       "handler": "setState",
                                       "params": {
-                                        "target": "$parent._local",
-                                        "editingRecipients": "{{($parent._local.editingRecipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
+                                        "target": "global",
+                                        "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0]} : r)}}"
                                       }
                                     }
                                   ]
@@ -450,8 +450,8 @@
                                       "type": "change",
                                       "handler": "setState",
                                       "params": {
-                                        "target": "$parent._local",
-                                        "editingRecipients": "{{($parent._local.editingRecipients ?? []).map((r, i) => i === rcptIdx ? {...r, exclude_trigger_user: !(r.exclude_trigger_user ?? false)} : r)}}"
+                                        "target": "global",
+                                        "notification_template_form_modal.recipients": "{{(_global.notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, exclude_trigger_user: !(r.exclude_trigger_user ?? false)} : r)}}"
                                       }
                                     }
                                   ]
@@ -483,8 +483,8 @@
                       "type": "click",
                       "handler": "setState",
                       "params": {
-                        "target": "$parent._local",
-                        "editingRecipients": "{{[...($parent._local.editingRecipients ?? []), {type: 'trigger_user'}]}}"
+                        "target": "global",
+                        "notification_template_form_modal.recipients": "{{[...(_global.notification_template_form_modal?.recipients ?? []), {type: 'trigger_user'}]}}"
                       }
                     }
                   ]
@@ -508,7 +508,7 @@
                   },
                   "props": {
                     "type": "button",
-                    "className": "{{($parent._local.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                    "className": "{{(_global.notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
                   },
                   "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}",
                   "actions": [
@@ -516,8 +516,8 @@
                       "type": "click",
                       "handler": "setState",
                       "params": {
-                        "target": "$parent._local",
-                        "editLang": "{{loc}}"
+                        "target": "global",
+                        "notification_template_form_modal.editLang": "{{loc}}"
                       }
                     }
                   ]
@@ -557,16 +557,16 @@
                   "name": "Input",
                   "props": {
                     "type": "text",
-                    "value": "{{$parent._local.editingTemplate?.subject?.[$parent._local.editLang ?? $locale] ?? ''}}",
-                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    "value": "{{_global.notification_template_form_modal?.template?.subject?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400"
                   },
                   "actions": [
                     {
                       "type": "change",
                       "handler": "setState",
                       "params": {
-                        "target": "$parent._local",
-                        "editingTemplate": "{{Object.assign({}, $parent._local.editingTemplate, {subject: Object.assign({}, $parent._local.editingTemplate?.subject, {[$parent._local.editLang ?? $locale]: $event.target.value})})}}"
+                        "target": "global",
+                        "notification_template_form_modal.template.subject": "{{Object.assign({}, _global.notification_template_form_modal?.template?.subject, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
                       }
                     }
                   ]
@@ -605,7 +605,7 @@
                   "type": "composite",
                   "name": "HtmlEditor",
                   "props": {
-                    "content": "{{$parent._local.editingTemplate?.body?.[$parent._local.editLang ?? $locale] ?? ''}}",
+                    "content": "{{_global.notification_template_form_modal?.template?.body?.[_global.notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
                     "isHtml": true,
                     "showHtmlModeToggle": false,
                     "className": "min-h-[200px]"
@@ -615,8 +615,8 @@
                       "type": "change",
                       "handler": "setState",
                       "params": {
-                        "target": "$parent._local",
-                        "editingTemplate": "{{Object.assign({}, $parent._local.editingTemplate, {body: Object.assign({}, $parent._local.editingTemplate?.body, {[$parent._local.editLang ?? $locale]: $event.target.value})})}}"
+                        "target": "global",
+                        "notification_template_form_modal.template.body": "{{Object.assign({}, _global.notification_template_form_modal?.template?.body, {[_global.notification_template_form_modal?.editLang ?? $locale]: $event.target.value})}}"
                       }
                     }
                   ]
@@ -627,7 +627,7 @@
               "id": "template_click_url_input",
               "type": "basic",
               "name": "Div",
-              "if": "{{$parent._local.editingTemplate?.channel === 'database'}}",
+              "if": "{{_global.notification_template_form_modal?.template?.channel === 'database'}}",
               "props": {
                 "className": "space-y-1"
               },
@@ -645,17 +645,17 @@
                   "name": "Input",
                   "props": {
                     "type": "text",
-                    "value": "{{$parent._local.editingTemplate?.click_url ?? ''}}",
+                    "value": "{{_global.notification_template_form_modal?.template?.click_url ?? ''}}",
                     "placeholder": "/mypage/orders/{order_number}",
-                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400"
                   },
                   "actions": [
                     {
                       "type": "change",
                       "handler": "setState",
                       "params": {
-                        "target": "$parent._local",
-                        "editingTemplate": "{{Object.assign({}, $parent._local.editingTemplate, {click_url: $event.target.value || null})}}"
+                        "target": "global",
+                        "notification_template_form_modal.template.click_url": "{{$event.target.value || null}}"
                       }
                     }
                   ]
@@ -674,7 +674,7 @@
               "id": "template_variables_info",
               "type": "basic",
               "name": "Div",
-              "if": "{{($parent._local.editingDefinition?.variables ?? []).length > 0}}",
+              "if": "{{(_global.notification_template_form_modal?.definition?.variables ?? []).length > 0}}",
               "props": {
                 "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4"
               },
@@ -698,7 +698,7 @@
                       "type": "basic",
                       "name": "Span",
                       "iteration": {
-                        "source": "{{$parent._local.editingDefinition?.variables ?? []}}",
+                        "source": "{{_global.notification_template_form_modal?.definition?.variables ?? []}}",
                         "item_var": "v"
                       },
                       "props": {
@@ -754,7 +754,7 @@
                   "props": {
                     "type": "button",
                     "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
-                    "disabled": "{{$parent._local.isSaving ?? false}}"
+                    "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
                   },
                   "text": "$t:admin.settings.notification_definitions.edit_modal.btn_preview",
                   "actions": [
@@ -766,18 +766,18 @@
                       "params": {
                         "method": "POST",
                         "body": {
-                          "definition_id": "{{$parent._local.editingDefinition?.id}}",
-                          "subject": "{{$parent._local.editingTemplate?.subject}}",
-                          "body": "{{$parent._local.editingTemplate?.body}}",
-                          "locale": "{{$parent._local.editLang ?? $locale}}"
+                          "definition_id": "{{_global.notification_template_form_modal?.definition?.id}}",
+                          "subject": "{{_global.notification_template_form_modal?.template?.subject}}",
+                          "body": "{{_global.notification_template_form_modal?.template?.body}}",
+                          "locale": "{{_global.notification_template_form_modal?.editLang ?? $locale}}"
                         }
                       },
                       "onSuccess": [
                         {
                           "handler": "setState",
                           "params": {
-                            "target": "$parent._local",
-                            "previewData": "{{response.data}}"
+                            "target": "global",
+                            "notification_template_form_modal.preview": "{{response.data}}"
                           }
                         },
                         {
@@ -803,7 +803,7 @@
                   "props": {
                     "type": "button",
                     "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{$parent._local.isSaving ?? false}}"
+                    "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
                   },
                   "text": "$t:common.cancel",
                   "actions": [
@@ -820,19 +820,19 @@
                   "props": {
                     "type": "button",
                     "className": "flex items-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{$parent._local.isSaving ?? false}}"
+                    "disabled": "{{_global.notification_template_form_modal?.isSaving ?? false}}"
                   },
                   "children": [
                     {
                       "type": "basic",
                       "name": "Icon",
-                      "if": "{{$parent._local.isSaving}}",
+                      "if": "{{_global.notification_template_form_modal?.isSaving}}",
                       "props": { "name": "spinner", "className": "animate-spin", "size": "sm" }
                     },
                     {
                       "type": "basic",
                       "name": "Span",
-                      "text": "{{$parent._local.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                      "text": "{{_global.notification_template_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
                     }
                   ],
                   "actions": [
@@ -844,36 +844,25 @@
                           {
                             "handler": "setState",
                             "params": {
-                              "target": "$parent._local",
-                              "isSaving": true,
-                              "templateErrors": null
+                              "target": "global",
+                              "notification_template_form_modal.isSaving": true,
+                              "notification_template_form_modal.errors": null
                             }
                           },
                           {
                             "handler": "apiCall",
                             "auth_required": true,
-                            "target": "{{'/api/admin/notification-templates/' + $parent._local.editingTemplate?.id}}",
+                            "target": "{{'/api/admin/notification-templates/' + _global.notification_template_form_modal?.template?.id}}",
                             "params": {
                               "method": "PUT",
                               "body": {
-                                "subject": "{{$parent._local.editingTemplate?.subject}}",
-                                "body": "{{$parent._local.editingTemplate?.body}}",
-                                "click_url": "{{$parent._local.editingTemplate?.click_url ?? null}}",
-                                "recipients": "{{$parent._local.editingRecipients ?? []}}"
+                                "subject": "{{_global.notification_template_form_modal?.template?.subject}}",
+                                "body": "{{_global.notification_template_form_modal?.template?.body}}",
+                                "click_url": "{{_global.notification_template_form_modal?.template?.click_url ?? null}}",
+                                "recipients": "{{_global.notification_template_form_modal?.recipients ?? []}}"
                               }
                             },
                             "onSuccess": [
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "$parent._local",
-                                  "isSaving": false,
-                                  "templateErrors": null,
-                                  "editingTemplate": null,
-                                  "editingDefinition": null,
-                                  "editingRecipients": null
-                                }
-                              },
                               {
                                 "handler": "refetchDataSource",
                                 "params": {
@@ -890,26 +879,33 @@
                               {
                                 "handler": "closeModal",
                                 "target": "modal_notification_template_form"
+                              },
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "notification_template_form_modal": null
+                                }
                               }
                             ],
-                          "onError": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "$parent._local",
-                                "isSaving": false,
-                                "templateErrors": "{{error.errors}}"
+                            "onError": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "global",
+                                  "notification_template_form_modal.isSaving": false,
+                                  "notification_template_form_modal.errors": "{{error.errors}}"
+                                }
+                              },
+                              {
+                                "handler": "toast",
+                                "params": {
+                                  "message": "$t:admin.settings.notification_definitions.save_error",
+                                  "type": "error"
+                                }
                               }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "message": "$t:admin.settings.notification_definitions.save_error",
-                                "type": "error"
-                              }
-                            }
-                          ]
-                        }
+                            ]
+                          }
                         ]
                       }
                     }

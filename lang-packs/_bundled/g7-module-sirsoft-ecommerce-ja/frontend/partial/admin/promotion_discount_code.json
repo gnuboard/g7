@@ -1,0 +1,172 @@
+{
+  "title": "割引コード管理",
+  "description": "割引コードを作成および管理します。",
+  "actions": {
+    "create": "割引コード登録",
+    "edit_search": "検索編集",
+    "search": "検索",
+    "reset": "初期化",
+    "bulk_change": "一括変更"
+  },
+  "search": {
+    "field": {
+      "all": "すべて",
+      "discount_code_name": "割引コード名",
+      "discount_code": "コード"
+    },
+    "placeholder": "検索語を入力してください...",
+    "column_select": "列選択",
+    "detail_search": "検索編集"
+  },
+  "filter": {
+    "benefit_type": "特典区分",
+    "code_type": "コードタイプ",
+    "benefit_amount": "特典金額",
+    "created_at": "登録日",
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "min": "最小",
+    "max": "最大",
+    "amount_suffix": "円",
+    "date_quick": {
+      "today": "今日",
+      "3_days": "3日間",
+      "1_week": "1週間",
+      "1_month": "1ヶ月",
+      "3_months": "3ヶ月",
+      "all": "すべて"
+    }
+  },
+  "benefit_type": {
+    "all": "すべて",
+    "product": "商品",
+    "shipping_fee": "送料"
+  },
+  "code_type": {
+    "all": "すべて",
+    "public_code": "共通コード",
+    "one_time_code": "1回限りコード"
+  },
+  "benefit_category": {
+    "fixed": "定額",
+    "rate": "定率"
+  },
+  "status": {
+    "active": "有効",
+    "inactive": "無効"
+  },
+  "batch": {
+    "selected_count": "{{count}}個選択されました",
+    "status_change": "ステータス変更"
+  },
+  "table": {
+    "total_count": "合計{{count}}個",
+    "sort": {
+      "created_at_desc": "登録日時最新順",
+      "created_at_asc": "登録日時古い順",
+      "discount_code_name_asc": "割引コード名昇順",
+      "discount_code_name_desc": "割引コード名降順"
+    },
+    "per_page": "{{count}}個",
+    "columns": {
+      "checkbox": "選択",
+      "no": "番号",
+      "benefit_type": "特典区分",
+      "code_type": "コードタイプ",
+      "discount_code_name": "割引コード名",
+      "code_info": "コード情報",
+      "benefit": "特典",
+      "validity_period": "有効期間",
+      "history": "内訳",
+      "created_at": "登録日",
+      "status": "ステータス",
+      "actions": "操作"
+    },
+    "benefit_max": "最大{{amount}}円"
+  },
+  "mobile": {
+    "code_label": "コード",
+    "validity_period_label": "有効期間",
+    "history_label": "内訳",
+    "status_label": "ステータス",
+    "issued_count": "発行{{count}}件",
+    "used_count": "使用{{count}}件",
+    "view_history": "閲覧"
+  },
+  "modal": {
+    "status_change": {
+      "title": "ステータスを変更してよろしいですか？",
+      "description": "選択された{{count}}個の割引コードのステータスが{{status}}に変更されます。",
+      "cancel": "キャンセル",
+      "confirm": "確認"
+    },
+    "delete": {
+      "title": "割引コードを削除してよろしいですか？",
+      "description": "この操作は取り消せません。割引コードは永久に削除されます。",
+      "cancel": "キャンセル",
+      "confirm": "削除"
+    }
+  },
+  "create": {
+    "title": "割引コード登録",
+    "description": "新しい割引コードを登録します。",
+    "section": {
+      "status": "割引コード状況",
+      "basic_info": "基本情報",
+      "benefit_settings": "特典設定",
+      "code_issue": "割引コード発行",
+      "usage_limit": "割引コード使用制限"
+    },
+    "field": {
+      "issue_status": "発行状況",
+      "is_visible": "表示設定",
+      "benefit_type": "特典区分",
+      "code_type": "割引コードタイプ",
+      "discount_code_name": "割引コード名",
+      "discount_code_description": "割引コード説明",
+      "benefit": "特典",
+      "min_order_amount": "最小注文金額",
+      "validity_period": "有効期間",
+      "code_generation_method": "コード生成方法",
+      "discount_code": "割引コード",
+      "limit_type": "先着順制限",
+      "apply_target": "適用対象"
+    },
+    "option": {
+      "product": "商品",
+      "order": "注文",
+      "shipping_fee": "配送費",
+      "public_code": "公開コード",
+      "one_time_code": "使用回数制限コード",
+      "auto_generate": "自動生成",
+      "manual_generate": "手動生成",
+      "unlimited": "制限なし",
+      "limited": "人数",
+      "no_limit": "制限なし",
+      "specific_product": "特定商品",
+      "specific_category": "特定カテゴリー"
+    },
+    "placeholder": {
+      "discount_code_name": "割引コード名を入力してください",
+      "discount_code_description": "割引コード説明を入力してください",
+      "amount_input": "金額入力",
+      "min_order": "最小注文金額",
+      "max_discount": "最大金額",
+      "start_date": "開始日",
+      "end_date": "終了日",
+      "limit_count": "人数"
+    },
+    "hint": {
+      "issued_used": "発行{{issued}}件／使用{{used}}件",
+      "min_order_suffix": "円以上購入時に使用可能",
+      "max_discount_suffix": "円割引",
+      "code_length_suffix": "桁の割引コード1個生成",
+      "limit_suffix": "名まで使用可能"
+    },
+    "button": {
+      "view_history": "閲覧",
+      "select_product": "商品選択",
+      "select_category": "カテゴリー選択"
+    }
+  }
+}

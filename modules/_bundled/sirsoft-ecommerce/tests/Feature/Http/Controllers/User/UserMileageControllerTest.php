@@ -25,7 +25,7 @@ class UserMileageControllerTest extends ModuleTestCase
 
         // When: 마일리지 잔액 조회
         $response = $this->actingAs($user, 'sanctum')
-            ->getJson('/api/modules/sirsoft-ecommerce/user/mileage/balance');
+            ->getJson('/api/modules/sirsoft-ecommerce/user/mileage');
 
         // Then: 200 OK 및 마일리지 정보 반환
         $response->assertStatus(200);
@@ -53,7 +53,7 @@ class UserMileageControllerTest extends ModuleTestCase
         // Given: 비인증 상태
 
         // When: 마일리지 잔액 조회 시도
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/user/mileage/balance');
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/user/mileage');
 
         // Then: 401 Unauthorized
         $response->assertStatus(401);
@@ -69,7 +69,7 @@ class UserMileageControllerTest extends ModuleTestCase
 
         // When: 마일리지 잔액 조회
         $response = $this->actingAs($user, 'sanctum')
-            ->getJson('/api/modules/sirsoft-ecommerce/user/mileage/balance');
+            ->getJson('/api/modules/sirsoft-ecommerce/user/mileage');
 
         // Then: available이 0
         $response->assertStatus(200);

@@ -385,9 +385,9 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
         ?>
         <div class="requirement-card">
             <div class="requirement-card-header">
-                <h2 class="card-title">Vendor 설치 방식</h2>
+                <h2 class="card-title"><?= htmlspecialchars(lang('vendor_mode_title')) ?></h2>
                 <p class="card-description">
-                    PHP 패키지 의존성(vendor/) 을 어떤 방식으로 설치할지 선택합니다.
+                    <?= htmlspecialchars(lang('vendor_mode_description')) ?>
                 </p>
             </div>
             <div class="requirement-card-body">
@@ -399,16 +399,16 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                         <div class="vendor-mode-card-header">
                             <div class="vendor-mode-card-icon"><?= getSvgIcon('magic') ?: '✨' ?></div>
                             <div class="vendor-mode-card-title-wrapper">
-                                <h3 class="vendor-mode-card-title">자동</h3>
-                                <span class="vendor-mode-card-badge vendor-mode-card-badge-recommended">권장</span>
+                                <h3 class="vendor-mode-card-title"><?= htmlspecialchars(lang('vendor_mode_auto_title')) ?></h3>
+                                <span class="vendor-mode-card-badge vendor-mode-card-badge-recommended"><?= htmlspecialchars(lang('vendor_mode_badge_recommended')) ?></span>
                             </div>
                             <div class="vendor-mode-card-check"><?= getSvgIcon('check-circle') ?: '◉' ?></div>
                         </div>
                         <p class="vendor-mode-card-description">
-                            Composer 사용 가능 시 Composer, 불가 시 번들 vendor 사용
+                            <?= htmlspecialchars(lang('vendor_mode_auto_description')) ?>
                         </p>
                         <p class="vendor-mode-card-status vendor-mode-card-status-ok">
-                            <?= getSvgIcon('check') ?: '✓' ?> 환경 자동 감지
+                            <?= getSvgIcon('check') ?: '✓' ?> <?= htmlspecialchars(lang('vendor_mode_auto_status_ok')) ?>
                         </p>
                     </label>
 
@@ -420,21 +420,21 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                         <div class="vendor-mode-card-header">
                             <div class="vendor-mode-card-icon"><?= getSvgIcon('terminal') ?: '⚙' ?></div>
                             <div class="vendor-mode-card-title-wrapper">
-                                <h3 class="vendor-mode-card-title">Composer 실행</h3>
-                                <span class="vendor-mode-card-badge vendor-mode-card-badge-dev">개발 환경</span>
+                                <h3 class="vendor-mode-card-title"><?= htmlspecialchars(lang('vendor_mode_composer_title')) ?></h3>
+                                <span class="vendor-mode-card-badge vendor-mode-card-badge-dev"><?= htmlspecialchars(lang('vendor_mode_badge_dev')) ?></span>
                             </div>
                             <div class="vendor-mode-card-check"><?= getSvgIcon('check-circle') ?: '◉' ?></div>
                         </div>
                         <p class="vendor-mode-card-description">
-                            composer install 명령으로 최신 버전 설치 (인터넷 + proc_open 필수)
+                            <?= htmlspecialchars(lang('vendor_mode_composer_description')) ?>
                         </p>
                         <?php if (!$composerAvailable): ?>
                             <p class="vendor-mode-card-status vendor-mode-card-status-error">
-                                <?= getSvgIcon('warning') ?: '⚠' ?> proc_open() 차단됨 — 사용 불가
+                                <?= getSvgIcon('warning') ?: '⚠' ?> <?= htmlspecialchars(lang('vendor_mode_composer_status_blocked')) ?>
                             </p>
                         <?php else: ?>
                             <p class="vendor-mode-card-status vendor-mode-card-status-ok">
-                                <?= getSvgIcon('check') ?: '✓' ?> proc_open 사용 가능
+                                <?= getSvgIcon('check') ?: '✓' ?> <?= htmlspecialchars(lang('vendor_mode_composer_status_ok')) ?>
                             </p>
                         <?php endif; ?>
                     </label>
@@ -447,31 +447,31 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                         <div class="vendor-mode-card-header">
                             <div class="vendor-mode-card-icon"><?= getSvgIcon('package') ?: '📦' ?></div>
                             <div class="vendor-mode-card-title-wrapper">
-                                <h3 class="vendor-mode-card-title">번들 Vendor 사용</h3>
-                                <span class="vendor-mode-card-badge vendor-mode-card-badge-shared">공유 호스팅</span>
+                                <h3 class="vendor-mode-card-title"><?= htmlspecialchars(lang('vendor_mode_bundled_title')) ?></h3>
+                                <span class="vendor-mode-card-badge vendor-mode-card-badge-shared"><?= htmlspecialchars(lang('vendor_mode_badge_shared')) ?></span>
                             </div>
                             <div class="vendor-mode-card-check"><?= getSvgIcon('check-circle') ?: '◉' ?></div>
                         </div>
                         <p class="vendor-mode-card-description">
-                            vendor-bundle.zip 을 추출 (오프라인 설치, composer 불필요)
+                            <?= htmlspecialchars(lang('vendor_mode_bundled_description')) ?>
                         </p>
                         <?php if (!$zipArchiveAvailable): ?>
                             <p class="vendor-mode-card-status vendor-mode-card-status-error">
-                                <?= getSvgIcon('warning') ?: '⚠' ?> ZipArchive 확장 미설치 — 사용 불가
+                                <?= getSvgIcon('warning') ?: '⚠' ?> <?= htmlspecialchars(lang('vendor_mode_bundled_status_no_ziparchive')) ?>
                             </p>
                         <?php elseif (!$bundleZipExists): ?>
                             <p class="vendor-mode-card-status vendor-mode-card-status-error">
-                                <?= getSvgIcon('warning') ?: '⚠' ?> vendor-bundle.zip 파일 없음 — 사용 불가
+                                <?= getSvgIcon('warning') ?: '⚠' ?> <?= htmlspecialchars(lang('vendor_mode_bundled_status_no_zip')) ?>
                             </p>
                         <?php else: ?>
                             <p class="vendor-mode-card-status vendor-mode-card-status-ok">
-                                <?= getSvgIcon('check') ?: '✓' ?> vendor-bundle.zip 발견
+                                <?= getSvgIcon('check') ?: '✓' ?> <?= htmlspecialchars(lang('vendor_mode_bundled_status_ok')) ?>
                             </p>
                         <?php endif; ?>
                     </label>
                 </div>
                 <p class="form-help" style="margin-top: var(--spacing-md);">
-                    이 설정은 추후 <code>php artisan core:update --vendor-mode=...</code> 옵션으로 변경할 수 있습니다.
+                    <?= lang('vendor_mode_change_later_html') ?>
                 </p>
                 <script>
                     // Vendor 모드 카드 — 라디오 변경 시 .selected 클래스 동기화

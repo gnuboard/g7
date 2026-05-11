@@ -6,9 +6,12 @@ use App\Extension\HookManager;
 use App\Http\View\Composers\TemplateComposer;
 use App\Http\View\Composers\UserTemplateComposer;
 use App\Listeners\ExtensionCompatibilityAlertListener;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -81,6 +84,31 @@ class AppServiceProvider extends ServiceProvider
 
         // SQL 쿼리 로그 설정
         $this->configureSqlQueryLogging();
+
+        // 로그인 라우트 per-IP 백업 throttle — 보안 환경설정의 per-account 잠금과 2중 방어.
+        // 존재하지 않는 계정에 대한 brute-force / 동일 IP 의 다른 계정 시도까지 차단.
+        $this->configureLoginRateLimiter();
+    }
+
+    /**
+     * 로그인 엔드포인트(`/api/auth/login`, `/api/auth/admin/login`) 의 per-IP RateLimiter 를 등록합니다.
+     *
+     * 보안 환경설정 `security.max_login_attempts` 에 비례하여 분당 허용량을 산출하되
+     * 최소 30 회/분 을 보장 (정상 사용자 오타/타이핑 실수에 대비). 설정 조회 실패 시
+     * 기본값 60 회/분 으로 폴백 — 부팅 안전성 (마이그레이션 전 진입) 확보.
+     */
+    private function configureLoginRateLimiter(): void
+    {
+        RateLimiter::for('auth-login', function (Request $request) {
+            try {
+                $perAccount = (int) g7_core_settings('security.max_login_attempts', 5);
+                $maxPerMinute = max(30, $perAccount * 6);
+            } catch (\Throwable $e) {
+                $maxPerMinute = 60;
+            }
+
+            return Limit::perMinute($maxPerMinute)->by($request->ip());
+        });
     }
 
     /**

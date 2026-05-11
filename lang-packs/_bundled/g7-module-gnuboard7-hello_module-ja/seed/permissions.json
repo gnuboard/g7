@@ -1,0 +1,26 @@
+{
+  "gnuboard7-hello_module": {
+    "name": "Hello モジュール",
+    "description": "Hello モジュール 権限"
+  },
+  "gnuboard7-hello_module.memos": {
+    "name": "メモ管理",
+    "description": "メモ管理権限"
+  },
+  "gnuboard7-hello_module.memos.read": {
+    "name": "メモ閲覧",
+    "description": "メモリストおよび詳細閲覧"
+  },
+  "gnuboard7-hello_module.memos.create": {
+    "name": "メモ作成",
+    "description": "新規メモ作成"
+  },
+  "gnuboard7-hello_module.memos.update": {
+    "name": "メモ編集",
+    "description": "メモ内容編集"
+  },
+  "gnuboard7-hello_module.memos.delete": {
+    "name": "メモ削除",
+    "description": "メモ削除"
+  }
+}

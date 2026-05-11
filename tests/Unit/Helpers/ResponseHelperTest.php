@@ -3,6 +3,7 @@
 namespace Tests\Unit\Helpers;
 
 use App\Helpers\ResponseHelper;
+use Illuminate\Support\Facades\App;
 use Tests\TestCase;
 
 /**
@@ -257,5 +258,40 @@ class ResponseHelperTest extends TestCase
         }
 
         return $this->createDeepException($depth - 1);
+    }
+
+    /**
+     * 회귀: ResponseHelper::trans() 가 App::getLocale() 결과를 그대로 사용한다.
+     *
+     * 이전 구현은 자체 화이트리스트 ['ko', 'en'] 으로 ja 를 거부하고
+     * config('app.locale') fallback 으로 떨어뜨렸다. 이 회귀 테스트는
+     * SetLocale 미들웨어가 이미 set 한 App::getLocale() 결과(ja 등)가
+     * 다국어 응답에 반영됨을 보장한다.
+     */
+    public function test_trans_uses_current_app_locale_not_hardcoded_whitelist(): void
+    {
+        // 임시 키를 ko/ja 양쪽에 등록 (lang/ja/* 는 활성 언어팩이 폴백 등록)
+        App::setLocale('ja');
+        app('translator')->addLines(['testdomain.greet' => 'こんにちは'], 'ja');
+        app('translator')->addLines(['testdomain.greet' => '안녕'], 'ko');
+
+        $response = ResponseHelper::success('testdomain.greet');
+        $data = $response->getData(true);
+
+        $this->assertSame('こんにちは', $data['message']);
+    }
+
+    /**
+     * 회귀: App::getLocale() 가 빌트인 ko/en 외 로케일이어도 ResponseHelper 가 그 값을 신뢰한다.
+     */
+    public function test_trans_respects_non_builtin_locale_when_app_locale_set(): void
+    {
+        App::setLocale('zh-CN');
+        app('translator')->addLines(['testdomain.welcome' => '欢迎'], 'zh-CN');
+
+        $response = ResponseHelper::success('testdomain.welcome');
+        $data = $response->getData(true);
+
+        $this->assertSame('欢迎', $data['message']);
     }
 }

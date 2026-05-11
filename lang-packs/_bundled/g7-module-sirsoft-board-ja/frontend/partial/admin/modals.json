@@ -1,0 +1,26 @@
+{
+  "copy": {
+    "title": "掲示板の複製",
+    "message": "'{{name}}' 掲示板を複製してもよろしいですか?",
+    "info": "※ 掲示板の設定のみが複製され、投稿は複製されません。",
+    "new_slug_label": "新しいスラッグ",
+    "new_slug_placeholder": "例: notice-copy",
+    "confirm": "複製"
+  },
+  "delete": {
+    "title": "掲示板の削除",
+    "confirm": "'{{name}}' 掲示板を削除してもよろしいですか?",
+    "with_posts_info": "この掲示板には{{posts_count}}個の投稿とコメントがあります。",
+    "no_posts_info": "この掲示板には投稿がありません。",
+    "force_delete_label_with_posts": "完全削除 (投稿、コメント、添付ファイルをすべて削除)",
+    "force_delete_label_no_posts": "完全削除 (データベーステーブルも削除)",
+    "force_delete_warning_with_posts": "完全削除時にすべてのデータが復旧不可能に削除されます。削除前にデータをバックアップしてください。",
+    "force_delete_warning_no_posts": "この操作は取り消せません。掲示板に関連するすべてのデータが完全に削除されます。",
+    "backup_notice": "データ損失を防ぐため、削除前にデータベースをバックアップすることをお勧めします。"
+  },
+  "cancel_confirm": {
+    "title": "変更内容の確認",
+    "message": "保存していない変更があります。ページを離れてもよろしいですか?",
+    "confirm": "ページを離れる"
+  }
+}

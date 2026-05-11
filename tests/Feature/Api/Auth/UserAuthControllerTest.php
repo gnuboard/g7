@@ -23,6 +23,18 @@ class UserAuthControllerTest extends TestCase
     use RefreshDatabase;
 
     /**
+     * 알림 시스템은 notification_definitions 시드 + 동적 훅 재등록 필요
+     *
+     * 부팅 시점에 DB 가 비어있어 registerDynamicHooks 가 실행되었지만 아무것도 등록하지 못했으므로
+     * 테스트 시 시드 후 수동 재등록이 필요 (이 시점엔 중복 등록 없음).
+     */
+    private function seedNotificationDefinitions(): void
+    {
+        $this->artisan('db:seed', ['--class' => 'NotificationDefinitionSeeder']);
+        app(\App\Listeners\NotificationHookListener::class)->registerDynamicHooks();
+    }
+
+    /**
      * 권한이 부여된 사용자 생성 헬퍼
      */
     private function createUserWithPermissions(array $attributes = [], array $permissions = []): User
@@ -591,9 +603,14 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 회원가입 시 환영 알림이 발송되는지 확인
+     *
+     * 알림 시스템은 DB 기반 동적 훅 구독(NotificationHookListener::registerDynamicHooks)
+     * 이므로 notification_definitions + notification_templates 시딩 필수.
      */
     public function test_register_sends_welcome_notification(): void
     {
+        $this->seedNotificationDefinitions();
+
         Notification::fake();
 
         $response = $this->jsonRequest()->postJson('/api/auth/register', [
@@ -857,6 +874,7 @@ class UserAuthControllerTest extends TestCase
      */
     public function test_forgot_password_sends_email(): void
     {
+        $this->seedNotificationDefinitions();
         Notification::fake();
 
         $user = User::factory()->create([
@@ -910,6 +928,7 @@ class UserAuthControllerTest extends TestCase
      */
     public function test_forgot_password_updates_existing_token(): void
     {
+        $this->seedNotificationDefinitions();
         Notification::fake();
 
         $user = User::factory()->create([
@@ -937,8 +956,9 @@ class UserAuthControllerTest extends TestCase
         // 토큰이 갱신되었는지 확인 (created_at이 다름)
         $this->assertNotEquals($firstCreatedAt->timestamp, $secondToken->created_at->timestamp);
 
-        // 알림이 2번 발송됨 확인
-        Notification::assertSentToTimes($user, GenericNotification::class, 2);
+        // reset_password 정의는 ['mail', 'database'] 2채널 × 2회 요청 = 4회 발송
+        // (NotificationHookListener::dispatch 참조)
+        Notification::assertSentToTimes($user, GenericNotification::class, 4);
     }
 
     /**
@@ -946,6 +966,7 @@ class UserAuthControllerTest extends TestCase
      */
     public function test_forgot_password_accepts_redirect_prefix_admin(): void
     {
+        $this->seedNotificationDefinitions();
         Notification::fake();
 
         $user = User::factory()->create([
@@ -986,6 +1007,7 @@ class UserAuthControllerTest extends TestCase
      */
     public function test_forgot_password_works_without_redirect_prefix(): void
     {
+        $this->seedNotificationDefinitions();
         Notification::fake();
 
         $user = User::factory()->create([

@@ -223,4 +223,19 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
             'by_region' => $regionStats,
         ];
     }
+
+    /**
+     * ID 목록으로 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
+     *
+     * @param  array<int, int>  $ids  ID 목록
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection
+    {
+        if (empty($ids)) {
+            return new \Illuminate\Database\Eloquent\Collection();
+        }
+
+        return ExtraFeeTemplate::whereIn('id', $ids)->get()->keyBy('id');
+    }
 }

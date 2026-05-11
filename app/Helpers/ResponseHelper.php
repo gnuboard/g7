@@ -6,7 +6,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Auth;
 
 class ResponseHelper
 {
@@ -208,47 +207,19 @@ class ResponseHelper
     }
 
     /**
-     * 사용자의 언어 설정을 가져옵니다.
+     * 응답에 사용할 언어 코드를 반환합니다.
      *
-     * @return string 사용자 언어 코드 (ko, en)
+     * SetLocale 미들웨어가 이미 사용자 언어 우선순위
+     * (1) 인증 사용자의 users.language → (2) Accept-Language 헤더(localStorage.g7_locale 포함)
+     * → (3) config('app.locale') fallback
+     * 를 적용해 App::setLocale() 한 결과를 신뢰합니다. supported_locales 화이트리스트
+     * (활성 코어 언어팩 기반) 검증도 SetLocale 에서 처리되므로 본 메서드는 그 결과만 반환합니다.
+     *
+     * @return string 현재 요청에 적용된 언어 코드
      */
     private static function getUserLocale(): string
     {
-        // 인증된 사용자의 언어 설정 확인
-        if (Auth::check() && Auth::user()->language) {
-            return Auth::user()->language;
-        }
-
-        // 헤더에서 언어 설정 확인
-        $acceptLanguage = request()->header('Accept-Language');
-        if ($acceptLanguage) {
-            $locale = self::parseAcceptLanguage($acceptLanguage);
-            if (in_array($locale, ['ko', 'en'])) {
-                return $locale;
-            }
-        }
-
-        // 기본값 반환
-        return config('app.locale', 'ko');
-    }
-
-    /**
-     * Accept-Language HTTP 헤더를 파싱합니다.
-     *
-     * @param string $acceptLanguage Accept-Language 헤더 값
-     * @return string 파싱된 언어 코드
-     */
-    private static function parseAcceptLanguage(string $acceptLanguage): string
-    {
-        $languages = explode(',', $acceptLanguage);
-        $firstLanguage = trim($languages[0]);
-
-        // 언어-지역 형태에서 언어만 추출 (예: ko-KR -> ko)
-        if (strpos($firstLanguage, '-') !== false) {
-            return explode('-', $firstLanguage)[0];
-        }
-
-        return $firstLanguage;
+        return App::getLocale();
     }
 
     /**
@@ -454,5 +425,25 @@ class ResponseHelper
         }
 
         return response()->json($response);
+    }
+
+    /**
+     * 본인인증 요구 응답을 생성합니다 (HTTP 428 Precondition Required).
+     *
+     * IDV 정책 미들웨어/Listener 가 IdentityVerificationRequiredException 을 던지면
+     * Handler 가 이 메서드로 응답을 만듭니다. 프론트 ErrorHandlingResolver 가 이 payload 로
+     * Challenge 모달을 자동 오픈하고 verify 성공 시 return_request 를 재실행합니다.
+     *
+     * @param  array  $verification  policy_key/purpose/provider_id/render_hint/return_request 등
+     * @return JsonResponse 428 응답
+     */
+    public static function identityRequired(array $verification): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'error_code' => 'identity_verification_required',
+            'message' => self::trans('identity.errors.verification_required', [], 'core'),
+            'verification' => $verification,
+        ], 428);
     }
 }

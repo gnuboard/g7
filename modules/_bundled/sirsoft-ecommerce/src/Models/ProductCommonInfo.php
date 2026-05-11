@@ -59,7 +59,7 @@ class ProductCommonInfo extends Model implements FulltextSearchable
             return '';
         }
 
-        return $name[$locale] ?? $name['ko'] ?? $name['en'] ?? $name[array_key_first($name)] ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
@@ -77,7 +77,7 @@ class ProductCommonInfo extends Model implements FulltextSearchable
             return '';
         }
 
-        return $content[$locale] ?? $content['ko'] ?? $content['en'] ?? $content[array_key_first($content)] ?? '';
+        return $content[$locale] ?? $content[config('app.fallback_locale', 'ko')] ?? $content[array_key_first($content)] ?? '';
     }
 
     /**

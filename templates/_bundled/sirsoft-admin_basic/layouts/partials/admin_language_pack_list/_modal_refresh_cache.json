@@ -1,0 +1,60 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "언어팩 캐시 갱신 확인 모달 — registry / translator / template 캐시 무효화"
+    },
+    "id": "language_pack_refresh_cache_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.language_packs.modal.refresh_cache.title",
+        "size": "small"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+            "text": "$t:admin.language_packs.modal.refresh_cache.body"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex justify-end gap-2 mt-6" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": { "type": "button", "className": "px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md" },
+                    "text": "$t:admin.language_packs.actions.cancel",
+                    "actions": [
+                        { "event": "onClick", "handler": "closeModal", "target": "language_pack_refresh_cache_modal" }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": { "type": "button", "className": "px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md" },
+                    "text": "$t:admin.language_packs.actions.refresh_cache_now",
+                    "actions": [
+                        {
+                            "event": "onClick",
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "/api/admin/language-packs/refresh-cache",
+                            "params": { "method": "POST" },
+                            "onSuccess": [
+                                { "handler": "toast", "params": { "type": "success", "message": "$t:admin.language_packs.messages.refresh_cache_done" } },
+                                { "handler": "closeModal", "target": "language_pack_refresh_cache_modal" },
+                                { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } }
+                            ],
+                            "onError": [
+                                { "handler": "toast", "params": { "type": "error", "message": "{{$error.message ?? '$t:admin.language_packs.messages.refresh_cache_failed'}}" } }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -987,26 +987,22 @@ describe('입력 필드 스타일', () => {
 describe('도서산간 배송비 입력필드 (_tab_shipping.json)', () => {
     const allTabNodes = flattenAll(tabShipping);
 
-    it('산간지역 추가배송비 Input에 input 기본 클래스가 적용되어 있다', () => {
+    // 환경설정 탭의 전역 도서산간 배송비 (remote_area_extra_fee/island_extra_fee)
+    // 가 제거되고 배송정책 단위 surcharge 로 이전됨 (shippingPolicySettingsTab 참조)
+    it('산간지역 추가배송비 Input 이 환경설정 탭에서 제거되었다', () => {
         const inputs = findAllByName(allTabNodes, 'Input');
         const remoteInput = inputs.find(
-            (i: any) => i.props?.name === 'shipping.remote_area_extra_fee'
+            (i: any) => i.props?.name === 'shipping.remote_area_extra_fee',
         );
-        expect(remoteInput).toBeDefined();
-        expect(remoteInput.props?.className).toContain('input');
-        expect(remoteInput.props?.className).toContain('w-40');
-        expect(remoteInput.props?.size).toBeUndefined();
+        expect(remoteInput).toBeUndefined();
     });
 
-    it('도서지역 추가배송비 Input에 input 기본 클래스가 적용되어 있다', () => {
+    it('도서지역 추가배송비 Input 이 환경설정 탭에서 제거되었다', () => {
         const inputs = findAllByName(allTabNodes, 'Input');
         const islandInput = inputs.find(
-            (i: any) => i.props?.name === 'shipping.island_extra_fee'
+            (i: any) => i.props?.name === 'shipping.island_extra_fee',
         );
-        expect(islandInput).toBeDefined();
-        expect(islandInput.props?.className).toContain('input');
-        expect(islandInput.props?.className).toContain('w-40');
-        expect(islandInput.props?.size).toBeUndefined();
+        expect(islandInput).toBeUndefined();
     });
 });
 

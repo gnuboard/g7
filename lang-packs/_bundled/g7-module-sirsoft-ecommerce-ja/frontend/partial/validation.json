@@ -1,0 +1,238 @@
+{
+  "attributes": {
+    "name": "商品名",
+    "product_code": "商品コード",
+    "list_price": "正価",
+    "selling_price": "販売価格",
+    "stock": "在庫",
+    "cancel_code": "キャンセルコード",
+    "cancel_message": "キャンセル理由"
+  },
+  "settings": {
+    "key_required": "設定キーは必須です。",
+    "value_present": "設定値は必須です。"
+  },
+  "product": {
+    "name": {
+      "required": "商品名は必須です。"
+    },
+    "name_ko": {
+      "required": "韓国語の商品名は必須です。"
+    },
+    "product_code": {
+      "required": "商品コードは必須です。",
+      "unique": "すでに使用中の商品コードです。"
+    },
+    "list_price": {
+      "required": "正価は必須です。"
+    },
+    "selling_price": {
+      "required": "販売価格は必須です。"
+    },
+    "invalid_sales_status": "無効な販売ステータスです。",
+    "invalid_display_status": "無効な表示ステータスです。"
+  },
+  "preset": {
+    "name_required": "プリセット名は必須です。",
+    "name_exists": "すでに使用中のプリセット名です。",
+    "conditions_required": "検索条件は必須です。"
+  },
+  "bulk": {
+    "ids_required": "選択された商品がありません。",
+    "method_required": "変更方式は必須です。",
+    "value_required": "変更値は必須です。"
+  },
+  "bulk_option_price": {
+    "product_ids": {
+      "required": "選択された商品がありません。",
+      "min": "最低1つ以上の商品を選択する必要があります。"
+    },
+    "method": {
+      "required": "変更方式は必須です。",
+      "in": "無効な変更方式です。"
+    },
+    "value": {
+      "required": "変更値は必須です。",
+      "integer": "変更値は整数である必要があります。",
+      "min": "変更値は0以上である必要があります。"
+    },
+    "unit": {
+      "required": "単位は必須です。",
+      "in": "無効な単位です。"
+    }
+  },
+  "bulk_option_stock": {
+    "product_ids": {
+      "required": "選択された商品がありません。",
+      "min": "最低1つ以上の商品を選択する必要があります。"
+    },
+    "method": {
+      "required": "変更方式は必須です。",
+      "in": "無効な変更方式です。"
+    },
+    "value": {
+      "required": "変更数量は必須です。",
+      "integer": "変更数量は整数である必要があります。",
+      "min": "変更数量は0以上である必要があります。"
+    }
+  },
+  "custom": {
+    "language_currency": {
+      "currencies": {
+        "duplicate_code": "重複した通貨コードがあります。",
+        "name_required": "通貨名は必須です。"
+      }
+    },
+    "basic_info": {
+      "shop_name": {
+        "required": "ショッピングモール名は必須です。"
+      },
+      "route_path": {
+        "required": "ルートパスは必須です。"
+      },
+      "privacy_officer_email": {
+        "email": "有効なメール形式ではありません。"
+      }
+    }
+  },
+  "shipping_policy": {
+    "name": {
+      "required": "配送ポリシー名は必須です。"
+    },
+    "is_active": {
+      "required": "利用可否は必須です。"
+    },
+    "country_settings": {
+      "required": "国別設定が1つ以上必要です。",
+      "min": "国別設定が1つ以上必要です。",
+      "country_code": {
+        "required": "国を選択してください。",
+        "distinct": "重複した国があります。",
+        "max": "国コードは最大10文字です。"
+      },
+      "shipping_method": {
+        "required": "配送方法は必須です。",
+        "in": "無効な配送方法です。"
+      },
+      "carrier": {
+        "in": "無効な配送業者です。"
+      },
+      "currency_code": {
+        "required": "基準通貨は必須です。",
+        "max": "通貨コードは最大10文字です。"
+      },
+      "charge_policy": {
+        "required": "配送料金徴収ポリシーは必須です。",
+        "in": "無効な徴収ポリシーです。"
+      },
+      "base_fee": {
+        "numeric": "配送料金は数値である必要があります。",
+        "min": "配送料金は0以上である必要があります。"
+      },
+      "free_threshold": {
+        "numeric": "送料無料基準金額は数値である必要があります。",
+        "min": "送料無料基準金額は0以上である必要があります。"
+      },
+      "api_endpoint": {
+        "url": "有効なURLを入力してください。",
+        "max": "APIエンドポイントは最大500文字です。"
+      },
+      "extra_fee_enabled": {
+        "required": "離島追加配送料金の利用可否は必須です。"
+      },
+      "is_active": {
+        "required": "利用可否は必須です。"
+      }
+    },
+    "ranges": {
+      "first_min_zero": "最初の区間の開始値は0である必要があります。",
+      "last_max_unlimited": "最後の区間の終了値は空白である必要があります。",
+      "continuity": "区間が連続していません。",
+      "min_less_than_max": "開始値が終了値より小さい必要があります。",
+      "fee_non_negative": "配送料金は0以上である必要があります。"
+    }
+  },
+  "list": {
+    "search": {
+      "string": "検索語は文字列である必要があります。",
+      "max": "検索語は最大200文字です。"
+    },
+    "shipping_methods": {
+      "array": "配送方法は配列である必要があります。",
+      "string": "配送方法は文字列である必要があります。",
+      "in": "無効な配送方法です。"
+    },
+    "carriers": {
+      "array": "配送業者は配列である必要があります。",
+      "string": "配送業者は文字列である必要があります。",
+      "in": "無効な配送業者です。"
+    },
+    "charge_policies": {
+      "array": "徴収ポリシーは配列である必要があります。",
+      "string": "課金ポリシーは文字列である必要があります。",
+      "in": "無効な課金ポリシーです。"
+    },
+    "countries": {
+      "array": "配送国は配列である必要があります。",
+      "string": "国コードは文字列である必要があります。",
+      "max": "国コードは最大10文字です。"
+    },
+    "is_active": {
+      "in": "無効な使用状況の値です。"
+    },
+    "sort_by": {
+      "in": "無効なソート基準です。"
+    },
+    "sort_order": {
+      "in": "無効なソート順序です。"
+    },
+    "per_page": {
+      "integer": "ページあたりの件数は整数である必要があります。",
+      "min": "ページあたりは最小10件です。",
+      "max": "ページあたりは最大100件です。"
+    },
+    "page": {
+      "integer": "ページ番号は整数である必要があります。",
+      "min": "ページ番号は1以上である必要があります。"
+    }
+  },
+  "extra_fee_template": {
+    "zipcode_required": "郵便番号は必須です。",
+    "zipcode_unique": "既に登録されている郵便番号です。",
+    "zipcode_max": "郵便番号は最大20文字です。",
+    "zipcode_format": "郵便番号は数字とハイフン(-)のみ入力可能です。(例: 12345または12345-12399)",
+    "fee_required": "配送料は必須です。",
+    "fee_numeric": "配送料は数字である必要があります。",
+    "fee_min": "配送料は0以上である必要があります。",
+    "items_required": "登録する項目が必要です。",
+    "items_array": "項目形式が正しくありません。",
+    "items_min": "最低1つ以上の項目が必要です。",
+    "items_max": "一度に最大1,000個まで登録可能です。",
+    "item_zipcode_required": "郵便番号は必須です。",
+    "item_fee_required": "配送料は必須です。",
+    "ids_required": "選択された項目がありません。",
+    "ids_array": "項目形式が正しくありません。",
+    "ids_min": "最低1つ以上の項目を選択する必要があります。",
+    "id_not_found": "存在しない項目が含まれています。",
+    "is_active_required": "有効状態は必須です。",
+    "is_active_boolean": "有効状態はtrue/falseである必要があります。"
+  },
+  "product_notice_template": {
+    "name_required": "商品群名は必須です。",
+    "name_max": "商品群名は100文字を超えることはできません。",
+    "fields_required": "最低1つ以上の項目が必要です。",
+    "fields_min": "最低1つ以上の項目が必要です。",
+    "field_name_required": "項目名は必須です。",
+    "field_name_min": "項目名は1文字以上である必要があります。",
+    "field_name_max": "項目名は200文字を超えることはできません。",
+    "field_content_required": "項目内容は必須です。",
+    "field_content_min": "項目内容は1文字以上である必要があります。",
+    "field_content_max": "項目内容は2000文字を超えることはできません。"
+  },
+  "review_image": {
+    "image_required": "画像ファイルは必須です。",
+    "image_file": "正しいファイルをアップロードしてください。",
+    "image_image": "画像ファイルのみアップロード可能です。",
+    "image_max": "画像ファイルサイズは10MBを超えることはできません。"
+  }
+}

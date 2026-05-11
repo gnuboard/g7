@@ -109,9 +109,11 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
             return $params;
         }
 
-        // 2순위: DB에서 조회
+        // 2순위: DB에서 조회 — 동적 model class 매핑 (Brand/Category/Coupon 등 15+ 모델을 1 helper 가 관리)
+        // 모델별 Repository 분리는 description-resolver 계층의 단일 진입점 이점을 잃음 → 의도된 단일 예외
         $id = $params[$idKey] ?? null;
         if ($id) {
+            // audit:allow service-direct-data-access reason: dynamic modelClass dispatch for AL description rendering
             $entity = $modelClass::find($id);
             if ($entity && isset($entity->name)) {
                 $params[$paramKey] = $this->resolveI18nName($entity->name);
@@ -263,7 +265,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
         if (is_array($name)) {
             $locale = app()->getLocale();
 
-            return $name[$locale] ?? $name['ko'] ?? (array_values($name)[0] ?? '');
+            return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? (array_values($name)[0] ?? '');
         }
 
         return '';

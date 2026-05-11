@@ -390,6 +390,76 @@
             {
               "type": "basic",
               "name": "Div",
+              "if": "{{_global.pluginUninstallInfo.shared_records && _global.pluginUninstallInfo.shared_records.length > 0}}",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2 mb-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "share-nodes",
+                        "className": "w-4 h-4 text-gray-500"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                      },
+                      "text": "$t:admin.plugins.modals.shared_records_section"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "iteration": {
+                        "source": "_global.pluginUninstallInfo.shared_records",
+                        "item_var": "rec"
+                      },
+                      "props": {
+                        "className": "flex items-center justify-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-xs font-medium text-gray-700 dark:text-gray-300"
+                          },
+                          "text": "$t:admin.plugins.modals.shared.{{rec.label_key}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "$t:admin.plugins.modals.shared_records_count|count={{rec.count}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
               "children": [
                 {
                   "type": "basic",

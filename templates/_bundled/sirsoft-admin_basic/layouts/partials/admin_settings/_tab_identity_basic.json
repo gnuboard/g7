@@ -1,0 +1,202 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "환경설정 > 본인인증 탭 > 기본 sub-tab — provider 기술 파라미터 (default_provider, challenge_ttl, max_attempts)"
+  },
+  "id": "identity_section_basic",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "space-y-6 scroll-mt-44"
+  },
+  "children": [
+    {
+      "id": "card_identity_basic",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.identity.basic.title"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.identity.basic.desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_identity_default_provider",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "text": "$t:admin.settings.identity.basic.default_provider"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "identity.default_provider",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "{{_local.errors?.['identity.default_provider'] ? 'w-full md:w-72 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full md:w-72 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}",
+                    "options": "{{(identityProviders?.data ?? []).map(function(p) { return { value: p.id, label: p.label }; })}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['identity.default_provider']}}",
+                  "props": {
+                    "className": "text-red-500 text-xs mt-1 block"
+                  },
+                  "text": "{{_local.errors?.['identity.default_provider']?.[0] ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                  },
+                  "text": "$t:admin.settings.identity.basic.default_provider_desc"
+                }
+              ]
+            },
+            {
+              "id": "field_identity_ttl",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.identity.basic.challenge_ttl_minutes"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-red-500 ml-1" },
+                      "text": "*"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "identity.challenge_ttl_minutes",
+                    "placeholder": "15",
+                    "min": 1,
+                    "max": 1440,
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "{{_local.errors?.['identity.challenge_ttl_minutes'] ? 'w-full md:w-48 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full md:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['identity.challenge_ttl_minutes']}}",
+                  "props": { "className": "text-red-500 text-xs mt-1 block" },
+                  "text": "{{_local.errors?.['identity.challenge_ttl_minutes']?.[0] ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-1" },
+                  "text": "$t:admin.settings.identity.basic.challenge_ttl_desc"
+                }
+              ]
+            },
+            {
+              "id": "field_identity_max_attempts",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "py-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:admin.settings.identity.basic.max_attempts"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-red-500 ml-1" },
+                      "text": "*"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "number",
+                    "name": "identity.max_attempts",
+                    "placeholder": "5",
+                    "min": 1,
+                    "max": 20,
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "{{_local.errors?.['identity.max_attempts'] ? 'w-full md:w-48 px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full md:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{_local.errors?.['identity.max_attempts']}}",
+                  "props": { "className": "text-red-500 text-xs mt-1 block" },
+                  "text": "{{_local.errors?.['identity.max_attempts']?.[0] ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-1" },
+                  "text": "$t:admin.settings.identity.basic.max_attempts_desc"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

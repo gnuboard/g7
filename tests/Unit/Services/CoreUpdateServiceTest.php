@@ -395,58 +395,103 @@ MD;
 
     /**
      * .env 파일의 APP_VERSION 값을 올바르게 갱신하는지 검증합니다.
+     *
+     * 실제 프로젝트 루트의 `.env` 를 절대 건드리지 않기 위해 임시 디렉토리로
+     * `app()->setBasePath()` 를 일시적으로 전환한 뒤 검증합니다. 과거 본 테스트가
+     * `base_path('.env')` 를 직접 덮어쓰는 구조였고, 테스트 실행이 중단되면
+     * `finally` 의 복원 로직이 손상된 fixture 를 그대로 다시 기록해 영구 고착되는
+     * 자기 영속화 결함이 있어 회귀 차단을 위해 격리 기반으로 재작성됨.
      */
     public function test_update_version_in_env(): void
     {
-        // 임시 .env 파일 생성
         $tempEnvContent = "APP_NAME=G7\nAPP_VERSION=1.0.0\nAPP_ENV=testing\n";
-        $envPath = base_path('.env');
 
-        $originalContent = File::exists($envPath) ? File::get($envPath) : null;
-        File::put($envPath, $tempEnvContent);
+        $this->withIsolatedBasePath(function (string $tempBase) use ($tempEnvContent): void {
+            File::put($tempBase.DIRECTORY_SEPARATOR.'.env', $tempEnvContent);
 
-        try {
             $this->service->updateVersionInEnv('2.5.0');
 
-            $updatedContent = File::get($envPath);
+            $updatedContent = File::get($tempBase.DIRECTORY_SEPARATOR.'.env');
 
-            // APP_VERSION이 갱신되었는지 확인
+            // APP_VERSION 이 갱신되었는지 확인
             $this->assertStringContainsString('APP_VERSION=2.5.0', $updatedContent);
             $this->assertStringNotContainsString('APP_VERSION=1.0.0', $updatedContent);
 
             // 다른 설정은 유지되는지 확인
             $this->assertStringContainsString('APP_NAME=G7', $updatedContent);
             $this->assertStringContainsString('APP_ENV=testing', $updatedContent);
-        } finally {
-            // 원본 .env 복원
-            if ($originalContent !== null) {
-                File::put($envPath, $originalContent);
-            }
-        }
+        });
     }
 
     /**
-     * .env 파일에 APP_VERSION이 없을 때 새로 추가하는지 검증합니다.
+     * .env 파일에 APP_VERSION 이 없을 때 새로 추가하는지 검증합니다.
      */
     public function test_update_version_in_env_appends_when_missing(): void
     {
         $tempEnvContent = "APP_NAME=G7\nAPP_ENV=testing\n";
-        $envPath = base_path('.env');
 
-        $originalContent = File::exists($envPath) ? File::get($envPath) : null;
-        File::put($envPath, $tempEnvContent);
+        $this->withIsolatedBasePath(function (string $tempBase) use ($tempEnvContent): void {
+            File::put($tempBase.DIRECTORY_SEPARATOR.'.env', $tempEnvContent);
 
-        try {
             $this->service->updateVersionInEnv('1.5.0');
 
-            $updatedContent = File::get($envPath);
+            $updatedContent = File::get($tempBase.DIRECTORY_SEPARATOR.'.env');
 
-            // APP_VERSION이 추가되었는지 확인
+            // APP_VERSION 이 추가되었는지 확인
             $this->assertStringContainsString('APP_VERSION=1.5.0', $updatedContent);
+        });
+    }
+
+    /**
+     * 회귀 테스트 — `updateVersionInEnv` 가 실 프로젝트 루트의 `.env` 를
+     * 어떤 경우에도 수정하지 않는지 검증합니다.
+     *
+     * 본 테스트가 실행되어도 진짜 `.env` 의 mtime/내용 모두 불변이어야 합니다.
+     * 과거 회귀 (테스트 fixture 가 실 `.env` 를 덮어쓰고 finally 복원 실패 시
+     * 영구 고착) 의 재발을 차단합니다.
+     */
+    public function test_update_version_in_env_never_touches_real_env(): void
+    {
+        $realEnvPath = base_path('.env');
+
+        $existedBefore = File::exists($realEnvPath);
+        $contentBefore = $existedBefore ? File::get($realEnvPath) : null;
+        $mtimeBefore = $existedBefore ? File::lastModified($realEnvPath) : null;
+
+        $this->test_update_version_in_env();
+        $this->test_update_version_in_env_appends_when_missing();
+
+        $this->assertSame($existedBefore, File::exists($realEnvPath), '실 .env 존재 여부가 변경되었습니다');
+
+        if ($existedBefore) {
+            $this->assertSame($contentBefore, File::get($realEnvPath), '실 .env 내용이 변경되었습니다');
+            $this->assertSame($mtimeBefore, File::lastModified($realEnvPath), '실 .env mtime 이 변경되었습니다');
+        }
+    }
+
+    /**
+     * 임시 디렉토리로 application base path 를 격리한 채 콜백을 실행합니다.
+     *
+     * `setBasePath` 는 `path.base` 등 다수 컨테이너 바인딩을 재바인딩하지만,
+     * 본 테스트가 사용하는 helper (base_path) 만 새 경로를 따라가도록 충분합니다.
+     * finally 로 원본 base path 를 복원하고 임시 디렉토리는 tempDirs 에 등록되어
+     * tearDown 에서 일괄 정리됩니다.
+     *
+     * @param  \Closure(string $tempBase): void  $callback
+     */
+    private function withIsolatedBasePath(\Closure $callback): void
+    {
+        $tempBase = sys_get_temp_dir().DIRECTORY_SEPARATOR.'g7-core-update-test-'.uniqid('', true);
+        File::makeDirectory($tempBase, 0755, true);
+        $this->tempDirs[] = $tempBase;
+
+        $originalBase = $this->app->basePath();
+        $this->app->setBasePath($tempBase);
+
+        try {
+            $callback($tempBase);
         } finally {
-            if ($originalContent !== null) {
-                File::put($envPath, $originalContent);
-            }
+            $this->app->setBasePath($originalBase);
         }
     }
 
@@ -1063,5 +1108,121 @@ MD;
 
         // OrphanFile.php는 삭제됨
         $this->assertFalse(File::exists($tempDest.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'OrphanFile.php'));
+    }
+
+    // ========================================================================
+    // applyUpdate() — 신규 최상위 디렉토리 자동 발견 폴백 (회귀: lang-packs 누락)
+    // ========================================================================
+
+    /**
+     * 부모 프로세스의 stale `app.update.targets` 가 신버전 신규 최상위 디렉토리를 인식하지
+     * 못할 때, applyUpdate 가 source 디렉토리에서 자동 발견하여 복사하는지 검증합니다.
+     *
+     * 회귀 시나리오: beta.3 → beta.4 업그레이드에서 beta.3 의 targets 에 `lang-packs/_bundled`
+     * 가 없어 신버전 zip 의 lang-packs 가 활성 디렉토리로 복사되지 않은 결함.
+     */
+    public function test_apply_update_auto_discovers_new_top_level_directories(): void
+    {
+        $sourcePath = storage_path('test_apply_autodisc_src_'.uniqid());
+        $this->tempDirs[] = $sourcePath;
+        File::ensureDirectoryExists($sourcePath);
+
+        // 신버전 source 에 신규 최상위 디렉토리 + 보호 대상 디렉토리 + 파일 배치
+        File::ensureDirectoryExists($sourcePath.DIRECTORY_SEPARATOR.'lang-packs'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'g7-core-ja');
+        File::put(
+            $sourcePath.DIRECTORY_SEPARATOR.'lang-packs'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'g7-core-ja'.DIRECTORY_SEPARATOR.'language-pack.json',
+            '{"identifier":"g7-core-ja"}'
+        );
+        File::ensureDirectoryExists($sourcePath.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app');
+        File::put($sourcePath.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'leak.txt', 'should_not_copy');
+        File::put($sourcePath.DIRECTORY_SEPARATOR.'.env', 'APP_VERSION=hijacked');
+
+        // 격리된 base_path 시뮬레이션
+        $fakeBase = storage_path('test_apply_autodisc_base_'.uniqid());
+        $this->tempDirs[] = $fakeBase;
+        File::ensureDirectoryExists($fakeBase);
+
+        $originalBasePath = base_path();
+        app()->setBasePath($fakeBase);
+
+        // 활성 측에 보호 대상 dir 가 이미 존재하고 내용이 있는 상태 (덮어쓰면 안 됨)
+        File::ensureDirectoryExists($fakeBase.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app');
+        File::put($fakeBase.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'runtime.txt', 'KEEP_ME');
+        File::put($fakeBase.DIRECTORY_SEPARATOR.'.env', 'APP_VERSION=local');
+
+        try {
+            // stale targets 시뮬레이션 — beta.3 의 targets 에는 lang-packs 가 없음
+            config([
+                'app.update.targets' => ['app'],
+                'app.update.excludes' => [],
+                'app.update.protected_paths' => ['.env', 'storage', 'vendor', 'node_modules', '.git'],
+            ]);
+
+            // app 디렉토리도 source 에 있어야 targets 분기를 거침
+            File::ensureDirectoryExists($sourcePath.DIRECTORY_SEPARATOR.'app');
+            File::put($sourcePath.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Marker.php', '<?php // marker');
+
+            $this->service->applyUpdate($sourcePath);
+
+            // targets 명시 항목은 기존대로 적용
+            $this->assertFileExists($fakeBase.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'Marker.php');
+
+            // 자동 발견: lang-packs/_bundled 가 source 에서 활성으로 복사되어야 함
+            $this->assertFileExists(
+                $fakeBase.DIRECTORY_SEPARATOR.'lang-packs'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'g7-core-ja'.DIRECTORY_SEPARATOR.'language-pack.json',
+                'lang-packs/_bundled 가 source 에서 자동 발견되어 복사되어야 한다'
+            );
+
+            // PROTECTED 보호: storage/.env 는 자동 발견 폴백이 절대 덮지 않음
+            $this->assertSame('KEEP_ME', File::get($fakeBase.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'runtime.txt'));
+            $this->assertSame('APP_VERSION=local', File::get($fakeBase.DIRECTORY_SEPARATOR.'.env'));
+        } finally {
+            app()->setBasePath($originalBasePath);
+        }
+    }
+
+    /**
+     * 자동 발견 폴백이 protected_paths 와 user excludes 양쪽을 존중하는지 검증합니다.
+     */
+    public function test_apply_update_auto_discovery_respects_protected_paths_and_excludes(): void
+    {
+        $sourcePath = storage_path('test_apply_protected_src_'.uniqid());
+        $this->tempDirs[] = $sourcePath;
+        File::ensureDirectoryExists($sourcePath);
+
+        File::ensureDirectoryExists($sourcePath.DIRECTORY_SEPARATOR.'unknown-new-dir');
+        File::put($sourcePath.DIRECTORY_SEPARATOR.'unknown-new-dir'.DIRECTORY_SEPARATOR.'a.txt', 'x');
+        File::ensureDirectoryExists($sourcePath.DIRECTORY_SEPARATOR.'.claude');
+        File::put($sourcePath.DIRECTORY_SEPARATOR.'.claude'.DIRECTORY_SEPARATOR.'leak.txt', 'should_not_copy');
+        File::ensureDirectoryExists($sourcePath.DIRECTORY_SEPARATOR.'excluded-by-user');
+        File::put($sourcePath.DIRECTORY_SEPARATOR.'excluded-by-user'.DIRECTORY_SEPARATOR.'a.txt', 'x');
+
+        $fakeBase = storage_path('test_apply_protected_base_'.uniqid());
+        $this->tempDirs[] = $fakeBase;
+        File::ensureDirectoryExists($fakeBase);
+
+        $originalBasePath = base_path();
+        app()->setBasePath($fakeBase);
+
+        try {
+            config([
+                'app.update.targets' => [],
+                'app.update.excludes' => ['excluded-by-user'],
+                'app.update.protected_paths' => ['.claude', '.env', 'storage', 'vendor', 'node_modules', '.git'],
+            ]);
+
+            $this->service->applyUpdate($sourcePath);
+
+            // 자동 발견 통과
+            $this->assertFileExists($fakeBase.DIRECTORY_SEPARATOR.'unknown-new-dir'.DIRECTORY_SEPARATOR.'a.txt');
+
+            // protected_paths 차단
+            $this->assertDirectoryDoesNotExist($fakeBase.DIRECTORY_SEPARATOR.'.claude');
+
+            // user excludes 차단
+            $this->assertDirectoryDoesNotExist($fakeBase.DIRECTORY_SEPARATOR.'excluded-by-user');
+        } finally {
+            app()->setBasePath($originalBasePath);
+        }
     }
 }

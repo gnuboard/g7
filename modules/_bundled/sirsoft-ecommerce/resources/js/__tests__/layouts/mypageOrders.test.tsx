@@ -364,8 +364,9 @@ describe('주문 취소 모달 검증 (_modal_cancel.json)', () => {
     });
 
     describe('환불 예정금액 영역', () => {
-        it('환불 예정금액 제목이 있어야 함', () => {
-            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.refund_estimate_title');
+        it('비교(전/후) 표 제목이 있어야 함', () => {
+            // refund_estimate_title 단일 표 → 전/후 비교 표 (comparison_title) 로 재설계
+            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.comparison_title');
         });
 
         it('로딩 상태 표시가 있어야 함', () => {
@@ -373,19 +374,22 @@ describe('주문 취소 모달 검증 (_modal_cancel.json)', () => {
             expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.refund_loading');
         });
 
-        it('환불 금액 항목이 표시되어야 함', () => {
-            expect(cancelJsonStr).toContain('refundEstimate?.refund_amount');
-            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.refund_product_amount');
+        it('상품 금액 항목이 subtotal_amount 라벨로 표시되어야 함', () => {
+            // refund_product_amount → subtotal_amount 로 라벨 정규화
+            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.subtotal_amount');
         });
 
-        it('배송비 변동이 조건부로 표시되어야 함', () => {
-            expect(cancelJsonStr).toContain('refundEstimate?.shipping_difference');
-            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.refund_shipping_diff');
+        it('배송비 항목이 base_shipping/extra_shipping 으로 분리 표시되어야 함', () => {
+            // refund_shipping_diff 단일 항목 → 기본/추가 배송비로 분리
+            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.base_shipping');
+            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.extra_shipping');
         });
 
-        it('할인 조정이 조건부로 표시되어야 함', () => {
-            expect(cancelJsonStr).toContain('refundEstimate?.discount_difference');
-            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.refund_discount_diff');
+        it('할인 항목이 coupon/code_discount 로 분리 표시되어야 함', () => {
+            // refund_discount_diff → 상품/주문/코드 쿠폰 별도 라인
+            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.product_coupon_discount');
+            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.order_coupon_discount');
+            expect(cancelJsonStr).toContain('$t:mypage.order_detail.cancel_modal.code_discount');
         });
 
         it('최종 환불 예정액이 표시되어야 함', () => {
@@ -400,11 +404,11 @@ describe('주문 취소 모달 검증 (_modal_cancel.json)', () => {
             expect(radioMatches!.length).toBe(2);
         });
 
-        it('4가지 취소 사유 옵션이 Select에 있어야 함', () => {
-            expect(cancelJsonStr).toContain('"order_mistake"');
-            expect(cancelJsonStr).toContain('"changed_mind"');
-            expect(cancelJsonStr).toContain('"reorder_other"');
-            expect(cancelJsonStr).toContain('"etc"');
+        it('취소 사유 옵션이 refundReasons 데이터소스 iteration 으로 동적 렌더링되어야 함', () => {
+            // 4종 하드코딩 옵션 → refundReasons 데이터소스의 reason.code/localized_name iteration
+            expect(cancelJsonStr).toContain('"item_var":"reason"');
+            expect(cancelJsonStr).toContain('reason.code');
+            expect(cancelJsonStr).toContain('reason.localized_name');
         });
 
         it('사유 선택 시 cancelReason 상태가 변경되어야 함', () => {

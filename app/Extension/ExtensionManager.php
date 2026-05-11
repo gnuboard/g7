@@ -541,6 +541,91 @@ PHP;
     }
 
     /**
+     * FQCN 으로부터 등록된 확장(모듈/플러그인) 식별자를 추론합니다.
+     *
+     * `directoryToNamespace()` 의 역변환. PSR-4 prefix `Modules\` / `Plugins\` 의
+     * Vendor\Name 두 세그먼트를 kebab-case 식별자로 환원합니다.
+     *
+     * 예시:
+     *   - 'Modules\Sirsoft\Ecommerce\Models\Order' → 'sirsoft-ecommerce'
+     *   - 'Plugins\Sirsoft\Payment\Services\PaymentService' → 'sirsoft-payment'
+     *   - 'Modules\Sirsoft\DaumPostcode\Models\Address' → 'sirsoft-daum_postcode'
+     *   - 'App\Models\User' → null (코어)
+     *
+     * 등록 여부는 검증하지 않습니다 — 호출 측이 lang 파일 존재 여부로 fallback 처리합니다.
+     *
+     * @param  string  $fqcn  클래스 FQCN
+     * @return string|null 모듈/플러그인 identifier, 코어/미해석 시 null
+     */
+    public static function resolveExtensionByFqcn(string $fqcn): ?string
+    {
+        static $cache = [];
+
+        $key = ltrim($fqcn, '\\');
+        if (array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+
+        $cache[$key] = self::doResolveExtensionByFqcn($key);
+
+        return $cache[$key];
+    }
+
+    /**
+     * resolveExtensionByFqcn 의 캐시되지 않은 본 구현.
+     *
+     * @param  string  $fqcn  ltrim 된 FQCN
+     * @return string|null 식별자 또는 null
+     */
+    protected static function doResolveExtensionByFqcn(string $fqcn): ?string
+    {
+        if ($fqcn === '') {
+            return null;
+        }
+
+        if (str_starts_with($fqcn, 'Modules\\')) {
+            return self::namespaceTailToIdentifier(substr($fqcn, strlen('Modules\\')));
+        }
+
+        if (str_starts_with($fqcn, 'Plugins\\')) {
+            return self::namespaceTailToIdentifier(substr($fqcn, strlen('Plugins\\')));
+        }
+
+        return null;
+    }
+
+    /**
+     * `Vendor\Name\...` 꼬리에서 `vendor-name` 식별자를 추출합니다.
+     *
+     * @param  string  $tail  접두 (Modules\ / Plugins\) 제거 후의 FQCN 꼬리
+     * @return string|null 식별자 또는 null
+     */
+    protected static function namespaceTailToIdentifier(string $tail): ?string
+    {
+        $parts = explode('\\', $tail);
+        if (count($parts) < 2 || $parts[0] === '' || $parts[1] === '') {
+            return null;
+        }
+
+        return self::pascalToKebabSegment($parts[0]).'-'.self::pascalToKebabSegment($parts[1]);
+    }
+
+    /**
+     * 단일 PascalCase 세그먼트를 snake_case (단어 경계 `_` 사용) 로 변환합니다.
+     *
+     * `directoryToNamespace()` 의 역연산:
+     *   - 'Ecommerce' → 'ecommerce'
+     *   - 'DaumPostcode' → 'daum_postcode'
+     *
+     * @param  string  $pascal  PascalCase 단일 세그먼트
+     * @return string snake_case 단일 세그먼트
+     */
+    protected static function pascalToKebabSegment(string $pascal): string
+    {
+        return strtolower((string) preg_replace('/(?<!^)([A-Z])/', '_$1', $pascal));
+    }
+
+    /**
      * 확장 식별자의 형식을 검증합니다.
      *
      * ValidExtensionIdentifier Rule을 직접 호출하여 검증하고,
@@ -920,9 +1005,7 @@ PHP;
             return $pharPath;
         }
 
-        throw new \RuntimeException(
-            'Composer 바이너리를 찾을 수 없습니다. COMPOSER_BINARY 환경변수를 설정하거나 composer를 PATH에 추가하세요.'
-        );
+        throw new \RuntimeException(__('exceptions.extension.composer_binary_not_found'));
     }
 
     /**

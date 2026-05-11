@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Enums\LanguagePackScope;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
+use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
 use App\Http\Requests\Module\ActivateModuleRequest;
 use App\Http\Requests\Module\DeactivateModuleRequest;
 use App\Http\Requests\Module\IndexModuleRequest;
@@ -10,11 +13,13 @@ use App\Http\Requests\Module\InstallModuleFromFileRequest;
 use App\Http\Requests\Module\InstallModuleFromGithubRequest;
 use App\Http\Requests\Module\InstallModuleRequest;
 use App\Http\Requests\Module\PerformModuleUpdateRequest;
+use App\Http\Requests\Module\PreviewModuleManifestRequest;
 use App\Http\Requests\Module\RefreshModuleLayoutsRequest;
 use App\Http\Requests\Module\UninstallModuleRequest;
 use App\Http\Requests\Extension\ChangelogRequest;
 use App\Http\Resources\ModuleCollection;
 use App\Http\Resources\ModuleResource;
+use App\Services\Extension\ExtensionInstallPreviewBuilder;
 use App\Services\LicenseService;
 use App\Services\ModuleService;
 use App\Services\TemplateService;
@@ -29,6 +34,9 @@ use Illuminate\Validation\ValidationException;
  */
 class ModuleController extends AdminBaseController
 {
+    use InjectsExtensionLanguagePacks;
+    use OrchestratesCascadeInstall;
+
     public function __construct(
         private ModuleService $moduleService,
         private TemplateService $templateService,
@@ -66,7 +74,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('module.fetch_success', $responseData);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage());
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -76,6 +84,7 @@ class ModuleController extends AdminBaseController
      * @param  Request  $request  HTTP 요청 객체
      * @return JsonResponse 설치된 모듈 목록을 포함한 JSON 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 목록 조회. ModuleCollection::toArray($request)/with($request) 전달용
     public function installed(Request $request): JsonResponse
     {
         try {
@@ -88,7 +97,7 @@ class ModuleController extends AdminBaseController
                 'meta' => $collection->with($request)['meta'],
             ]);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage());
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -98,6 +107,7 @@ class ModuleController extends AdminBaseController
      * @param  Request  $request  HTTP 요청 객체
      * @return JsonResponse 미설치 모듈 목록을 포함한 JSON 응답
      */
+    // audit:allow controller-base-request-injection reason: GET 목록 조회. ModuleCollection::toArray($request)/with($request) 전달용
     public function uninstalled(Request $request): JsonResponse
     {
         try {
@@ -110,17 +120,19 @@ class ModuleController extends AdminBaseController
                 'meta' => $collection->with($request)['meta'],
             ]);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage());
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
     /**
      * 특정 모듈의 상세 정보를 조회합니다.
      *
-     * @param  string  $moduleName  모듈명
+     * @param  Request  $request  HTTP 요청 (attachLanguagePacks 의 Request 인자 전달용)
+     * @param  string  $moduleName  모듈 식별자
      * @return JsonResponse 모듈 정보를 포함한 JSON 응답
      */
-    public function show(string $moduleName): JsonResponse
+    // audit:allow controller-base-request-injection reason: GET 상세 조회. attachLanguagePacks($detail, scope, name, $request) 전달용
+    public function show(Request $request, string $moduleName): JsonResponse
     {
         try {
             $moduleInfo = $this->moduleService->getModuleInfo($moduleName);
@@ -129,12 +141,39 @@ class ModuleController extends AdminBaseController
                 return $this->error('module.not_found', 404, null, ['module' => $moduleName]);
             }
 
-            // 상세 정보는 toDetailArray() 메서드 사용
+            // 상세 정보는 toDetailArray() 메서드 사용 + 지원 언어팩 주입
             $resource = new ModuleResource($moduleInfo);
+            $detail = $this->attachLanguagePacks(
+                $resource->toDetailArray(),
+                LanguagePackScope::Module,
+                $moduleName,
+                $request,
+            );
 
-            return $this->success('module.fetch_success', $resource->toDetailArray());
+            return $this->success('module.fetch_success', $detail);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage());
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 모듈 설치 cascade 프리뷰를 반환합니다 (의존 확장 + 동반 가능 번들 언어팩).
+     *
+     * 인스톨 모달 오픈 시 호출되어 사용자가 선택할 cascade 후보 트리를 노출합니다.
+     * `manifest-preview` (POST + ZIP 업로드) 와는 다른 목적의 GET 식별자 기반 API.
+     *
+     * @param  string  $moduleName  모듈 식별자
+     * @param  ExtensionInstallPreviewBuilder  $builder  프리뷰 빌더
+     * @return JsonResponse cascade 프리뷰 응답
+     */
+    public function installPreview(string $moduleName, ExtensionInstallPreviewBuilder $builder): JsonResponse
+    {
+        try {
+            $preview = $builder->build(\App\Enums\LanguagePackScope::Module, $moduleName);
+
+            return $this->success('module.fetch_success', $preview);
+        } catch (\Exception $e) {
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -152,14 +191,20 @@ class ModuleController extends AdminBaseController
             $vendorMode = \App\Extension\Vendor\VendorMode::fromStringOrAuto(
                 $validated['vendor_mode'] ?? null
             );
+
+            // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
+            $this->installSelectedDependencies($validated['dependencies'] ?? []);
+
             $module = $this->moduleService->installModule($moduleName, $vendorMode);
 
             if ($module) {
-                return $this->successWithResource(
-                    'module.install_success',
-                    new ModuleResource($module),
-                    201
-                );
+                // cascade 2단계: 동반 번들 언어팩 best-effort 설치
+                $lpFailures = $this->installSelectedLanguagePacks($validated['language_packs'] ?? []);
+
+                $payload = (new ModuleResource($module))->toArray($request);
+                $payload['language_pack_failures'] = $lpFailures;
+
+                return $this->success('module.install_success', $payload, 201);
             } else {
                 return $this->error('module.install_failed');
             }
@@ -207,21 +252,27 @@ class ModuleController extends AdminBaseController
             if ($result['success']) {
                 $moduleInfo = $result['module_info'] ?? null;
 
+                // PO #7: 재활성화 시 cascade 비활성화됐던 언어팩 목록 응답에 포함 (PO #8: 빈 배열이면 모달 표시 안 함)
+                $pendingLanguagePacks = app(\App\Services\LanguagePack\LanguagePackBundledRegistrar::class)
+                    ->getPendingForReactivation('module', $moduleName);
+
                 if ($moduleInfo) {
-                    return $this->successWithResource(
-                        'module.activate_success',
-                        new ModuleResource($moduleInfo)
-                    );
+                    return $this->success('module.activate_success', [
+                        'module' => (new ModuleResource($moduleInfo))->resolve(),
+                        'pending_language_packs' => $pendingLanguagePacks,
+                    ]);
                 }
 
-                return $this->success('module.activate_success', $result);
+                return $this->success('module.activate_success', array_merge($result, [
+                    'pending_language_packs' => $pendingLanguagePacks,
+                ]));
             } else {
                 return $this->error('module.activate_failed');
             }
         } catch (ValidationException $e) {
             return $this->error('module.activate_failed', 422, $e->errors());
         } catch (\Exception $e) {
-            return $this->error('module.activate_failed', 500, $e->getMessage());
+            return $this->error('module.activate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -270,7 +321,7 @@ class ModuleController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('module.deactivate_failed', 422, $e->errors());
         } catch (\Exception $e) {
-            return $this->error('module.deactivate_failed', 500, $e->getMessage());
+            return $this->error('module.deactivate_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -290,7 +341,7 @@ class ModuleController extends AdminBaseController
                 'total' => count($dependentTemplates),
             ]);
         } catch (\Exception $e) {
-            return $this->error('module.dependent_templates_failed', 500, $e->getMessage());
+            return $this->error('module.dependent_templates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -311,7 +362,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('module.uninstall_info_success', $uninstallInfo);
         } catch (\Exception $e) {
-            return $this->error('module.uninstall_info_failed', 500, $e->getMessage());
+            return $this->error('module.uninstall_info_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -338,7 +389,26 @@ class ModuleController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('module.uninstall_failed', 422, $e->errors());
         } catch (\Exception $e) {
-            return $this->error('module.uninstall_failed', 500, $e->getMessage());
+            return $this->error('module.uninstall_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 업로드된 ZIP 의 manifest 와 검증 결과만 추출합니다 (실제 설치 X).
+     *
+     * 사용자가 모듈 설치 전 module.json 검증 실패 사유를 미리 확인할 수 있도록 합니다.
+     *
+     * @param  PreviewModuleManifestRequest  $request  미리보기 요청
+     * @return JsonResponse manifest + validation 결과
+     */
+    public function manifestPreview(PreviewModuleManifestRequest $request): JsonResponse
+    {
+        try {
+            $result = $this->moduleService->previewManifest($request->file('file'));
+
+            return $this->success('module.preview_success', $result);
+        } catch (\Throwable $e) {
+            return $this->error('module.preview_failed', 422, null, ['error' => $e->getMessage()]);
         }
     }
 
@@ -362,7 +432,7 @@ class ModuleController extends AdminBaseController
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            return $this->error('module.install_failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('module.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
     }
 
@@ -386,7 +456,7 @@ class ModuleController extends AdminBaseController
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            return $this->error('module.install_failed', 500, ['error' => $e->getMessage()]);
+            return $this->error('module.install_failed', 500, null, ['error' => $e->getMessage()]);
         }
     }
 
@@ -404,7 +474,7 @@ class ModuleController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('modules.check_updates_failed', 422, $e->errors());
         } catch (\Exception $e) {
-            return $this->error('modules.check_updates_failed', 500, $e->getMessage());
+            return $this->error('modules.check_updates_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -426,7 +496,7 @@ class ModuleController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('modules.check_modified_layouts_failed', 422, $e->errors());
         } catch (\Exception $e) {
-            return $this->error('modules.check_modified_layouts_failed', 500, $e->getMessage());
+            return $this->error('modules.check_modified_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -449,7 +519,8 @@ class ModuleController extends AdminBaseController
                 $validated['vendor_mode'] ?? null
             );
             $layoutStrategy = $validated['layout_strategy'] ?? 'overwrite';
-            $result = $this->moduleService->updateModule($moduleName, $vendorMode, $layoutStrategy);
+            $force = (bool) ($validated['force'] ?? false);
+            $result = $this->moduleService->updateModule($moduleName, $vendorMode, $layoutStrategy, $force);
 
             $moduleInfo = $result['module_info'] ?? null;
 
@@ -499,7 +570,7 @@ class ModuleController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->error('module.refresh_layouts_failed', 422, $e->errors());
         } catch (\Exception $e) {
-            return $this->error('module.refresh_layouts_failed', 500, $e->getMessage());
+            return $this->error('module.refresh_layouts_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 
@@ -523,7 +594,7 @@ class ModuleController extends AdminBaseController
 
             return $this->success('module.fetch_success', ['changelog' => $changelog]);
         } catch (\Exception $e) {
-            return $this->error('module.fetch_failed', 500, $e->getMessage());
+            return $this->error('module.fetch_failed', 500, $e->getMessage(), ['error' => $e->getMessage()]);
         }
     }
 

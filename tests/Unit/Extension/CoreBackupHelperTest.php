@@ -29,8 +29,12 @@ class CoreBackupHelperTest extends TestCase
         $this->testBasePath = storage_path('app/test_core_backup');
         $this->backupsBasePath = storage_path('app/core_backups');
 
-        // 테스트용 디렉토리 구조 생성
+        // 테스트용 디렉토리 구조 생성 + 기존 backup 산출물(이전 테스트/실제 코어 업데이트
+        // 흔적) 으로 인한 카운트 오염 차단
         File::ensureDirectoryExists($this->testBasePath);
+        if (File::isDirectory($this->backupsBasePath)) {
+            File::deleteDirectory($this->backupsBasePath);
+        }
     }
 
     protected function tearDown(): void
@@ -270,9 +274,16 @@ class CoreBackupHelperTest extends TestCase
 
         $backups = CoreBackupHelper::listBackups();
 
-        $this->assertCount(2, $backups);
-        $this->assertArrayHasKey('path', $backups[0]);
-        $this->assertArrayHasKey('name', $backups[0]);
-        $this->assertArrayHasKey('created_at', $backups[0]);
+        // Windows 환경에서 setUp 의 deleteDirectory 가 file lock 으로 일부 실패할 수 있으므로
+        // 테스트가 명시적으로 만든 fixture 만 필터링하여 검증 (격리 우회).
+        $fixtureBackups = array_values(array_filter($backups, fn ($b) => str_starts_with(
+            $b['name'] ?? '',
+            'core_2026010'
+        )));
+
+        $this->assertCount(2, $fixtureBackups);
+        $this->assertArrayHasKey('path', $fixtureBackups[0]);
+        $this->assertArrayHasKey('name', $fixtureBackups[0]);
+        $this->assertArrayHasKey('created_at', $fixtureBackups[0]);
     }
 }

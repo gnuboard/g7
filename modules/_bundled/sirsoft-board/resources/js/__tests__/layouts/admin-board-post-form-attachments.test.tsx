@@ -14,9 +14,8 @@ import { describe, it, expect } from 'vitest';
 import adminAttachments from '../../../layouts/admin/partials/admin_board_post_form/_attachments.json';
 import adminPostForm from '../../../layouts/admin/admin_board_post_form.json';
 
-// 사용자 폼은 templates 디렉토리에 있으므로 상대경로 사용
-// JSON 파일은 직접 import (vitest가 자동 파싱)
-import userPostForm from '../../../../../../templates/sirsoft-basic/layouts/partials/board/form/_post_form.json';
+// 사용자 폼은 _bundled 템플릿에서 import (활성 디렉토리는 .gitignore 대상이므로 원본 참조)
+import userPostForm from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/form/_post_form.json';
 
 /**
  * JSON 트리에서 특정 타입의 컴포넌트를 재귀적으로 찾습니다.

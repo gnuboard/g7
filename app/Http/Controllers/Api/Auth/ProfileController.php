@@ -100,7 +100,7 @@ class ProfileController extends AuthBaseController
                 return $this->unauthorized('auth.unauthenticated');
             }
 
-            if (! in_array($language, ['ko', 'en'])) {
+            if (! in_array($language, config('app.supported_locales', ['ko', 'en']), true)) {
                 return $this->error('user.invalid_language', 400);
             }
 
@@ -282,6 +282,8 @@ class ProfileController extends AuthBaseController
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'user.password_change_failed');
         } catch (\Exception $e) {
+            // 주의: IdentityVerificationRequiredException 은 \Error 자식이라 이 catch 에 잡히지 않음.
+            // 글로벌 핸들러가 자동으로 428 매핑 — 모든 컨트롤러 (코어/모듈/플러그인) 에 동일 보장.
             return $this->error('user.password_change_failed', 500, null, ['error' => $e->getMessage()]);
         }
     }

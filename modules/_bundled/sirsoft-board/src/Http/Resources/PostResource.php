@@ -177,6 +177,7 @@ class PostResource extends BaseApiResource
             'view_count' => $this->view_count,
             'comment_count' => (int) ($this->comments_count ?? 0),
             'reply_count' => (int) ($this->replies_count ?? 0),
+            'attachment_count' => (int) ($this->attachments_count ?? 0),
             'has_attachment' => ((int) ($this->attachments_count ?? 0)) > 0,
 
             // 썸네일 이미지 (첫 번째 이미지 첨부파일)

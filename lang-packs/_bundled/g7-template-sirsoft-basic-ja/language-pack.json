@@ -1,0 +1,30 @@
+{
+    "identifier": "g7-template-sirsoft-basic-ja",
+    "namespace": "g7",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "G7 템플릿 (sirsoft-basic) 일본어 언어팩",
+        "en": "G7 template (sirsoft-basic) Japanese language pack",
+        "ja": "G7 テンプレート (sirsoft-basic) 日本語 言語パック"
+    },
+    "description": {
+        "ko": "G7 템플릿 (sirsoft-basic) 일본어 언어팩 (번들)",
+        "en": "G7 template (sirsoft-basic) Japanese language pack (bundled)",
+        "ja": "G7 テンプレート (sirsoft-basic) 日本語 言語パック(バンドル)"
+    },
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "scope": "template",
+    "target_identifier": "sirsoft-basic",
+    "locale": "ja",
+    "locale_name": "Japanese",
+    "locale_native_name": "日本語",
+    "text_direction": "ltr",
+    "g7_version": ">=7.0.0-beta.4",
+    "requires": {
+        "target_version": null,
+        "depends_on_core_locale": true
+    },
+    "github_url": "",
+    "github_changelog_url": ""
+}

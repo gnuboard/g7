@@ -139,16 +139,21 @@ describe('submitReviewHandler', () => {
         // 총 3회 호출: 리뷰 1 + 이미지 2
         expect(mockG7Core.api.post).toHaveBeenCalledTimes(3);
 
-        // 이미지 업로드 호출 확인
+        // 이미지 업로드 호출 확인 — 3번째 인자로 multipart 헤더 옵션 전달됨
+        const expectedMultipartOpts = expect.objectContaining({
+            headers: expect.objectContaining({ 'Content-Type': 'multipart/form-data' }),
+        });
         expect(mockG7Core.api.post).toHaveBeenNthCalledWith(
             2,
             '/api/modules/sirsoft-ecommerce/user/reviews/100/images',
-            expect.any(FormData)
+            expect.any(FormData),
+            expectedMultipartOpts
         );
         expect(mockG7Core.api.post).toHaveBeenNthCalledWith(
             3,
             '/api/modules/sirsoft-ecommerce/user/reviews/100/images',
-            expect.any(FormData)
+            expect.any(FormData),
+            expectedMultipartOpts
         );
     });
 

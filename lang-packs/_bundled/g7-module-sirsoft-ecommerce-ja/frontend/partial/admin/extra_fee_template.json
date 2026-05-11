@@ -1,0 +1,119 @@
+{
+  "title": "追加配送料テンプレート管理",
+  "description": "離島地域の追加配送料テンプレートを管理します。",
+  "add": "テンプレート登録",
+  "import": "一括登録",
+  "search": {
+    "placeholder": "郵便番号または地域名で検索..."
+  },
+  "filter": {
+    "zipcode": "郵便番号",
+    "region": "地域名",
+    "is_active": "使用状態",
+    "all": "すべて",
+    "active": "使用",
+    "inactive": "未使用"
+  },
+  "table": {
+    "column": {
+      "zipcode": "郵便番号",
+      "fee": "追加配送料",
+      "region": "地域名",
+      "description": "説明",
+      "is_active": "使用状態",
+      "created_at": "登録日",
+      "actions": "操作"
+    }
+  },
+  "form": {
+    "zipcode": "郵便番号",
+    "zipcode_placeholder": "郵便番号を入力してください（例：63000）",
+    "fee": "追加配送料",
+    "fee_placeholder": "配送料を入力してください",
+    "region": "地域名",
+    "region_placeholder": "地域名を入力してください（例：沖縄県）",
+    "description": "説明",
+    "description_placeholder": "説明を入力してください（例：離島地域）",
+    "is_active": "使用状態"
+  },
+  "action": {
+    "edit": "編集",
+    "delete": "削除",
+    "search": "検索",
+    "reset": "初期化",
+    "bulk_delete": "選択削除",
+    "bulk_toggle": "使用状態変更",
+    "bulk_import": "CSVアップロード"
+  },
+  "bulk": {
+    "selected_count": "{{count}}個選択されました",
+    "toggle_active": "使用",
+    "toggle_inactive": "未使用"
+  },
+  "modal": {
+    "delete": {
+      "title": "テンプレート削除",
+      "message": "選択したテンプレートを削除してもよろしいですか？",
+      "warning": "削除されたテンプレートは復元できません。",
+      "confirm": "削除"
+    },
+    "bulk_delete": {
+      "title": "テンプレート一括削除",
+      "message": "選択した{{count}}個のテンプレートを削除してもよろしいですか？",
+      "warning": "削除されたテンプレートは復元できません。",
+      "confirm": "削除"
+    },
+    "bulk_toggle": {
+      "title": "使用状態一括変更",
+      "message": "選択した{{count}}個のテンプレートの使用状態を変更してもよろしいですか？",
+      "confirm": "変更"
+    },
+    "import": {
+      "title": "CSV一括登録",
+      "message": "CSVファイルをアップロードして追加配送料テンプレートを一括登録します。",
+      "format_info": "CSV形式：郵便番号、配送料、地域名、説明（ヘッダー含む）",
+      "confirm": "アップロード"
+    }
+  },
+  "empty": {
+    "title": "登録されたテンプレートがありません。",
+    "message": "追加配送料テンプレートを登録して離島地域の配送料を管理してください。",
+    "no_results": "検索結果がありません。",
+    "no_results_message": "別の検索語で試してみてください。"
+  },
+  "sort": {
+    "created_at_desc": "最新順",
+    "created_at_asc": "古い順",
+    "zipcode_asc": "郵便番号順",
+    "fee_desc": "配送料高い順",
+    "fee_asc": "配送料低い順",
+    "region_asc": "地域名順"
+  },
+  "validation": {
+    "zipcode_required": "郵便番号を入力してください。",
+    "zipcode_unique": "既に登録されている郵便番号です。",
+    "zipcode_max": "郵便番号は最大10文字まで入力可能です。",
+    "fee_required": "配送料を入力してください。",
+    "fee_numeric": "配送料は数字のみ入力可能です。",
+    "fee_min": "配送料は0以上である必要があります。",
+    "ids_required": "選択された項目がありません。",
+    "ids_array": "不正なリクエスト形式です。",
+    "ids_min": "最低1個以上選択する必要があります。",
+    "id_not_found": "存在しないテンプレートが含まれています。",
+    "is_active_required": "使用状態を選択してください。",
+    "is_active_boolean": "使用状態はtrueまたはfalse値である必要があります。",
+    "items_required": "登録する項目がありません。",
+    "items_array": "不正なリクエスト形式です。",
+    "items_min": "最低1個以上の項目が必要です。",
+    "items_max": "一度に最大1000個まで登録可能です。",
+    "item_zipcode_required": "郵便番号は必須項目です。",
+    "item_fee_required": "配送料は必須項目です。"
+  },
+  "statistics": {
+    "total": "すべて",
+    "active": "使用中",
+    "inactive": "未使用",
+    "regions": "地域",
+    "avg_fee": "平均配送料"
+  }
+}

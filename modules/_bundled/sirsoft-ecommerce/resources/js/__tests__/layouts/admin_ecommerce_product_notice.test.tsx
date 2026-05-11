@@ -411,22 +411,23 @@ describe('상품정보제공고시 목록 패널 (무한스크롤)', () => {
       });
 
       // mockApi 키 설명:
-      // - URL: /api/modules/sirsoft-ecommerce/admin/product-notice-templates
-      // - extractDataSourceId가 하이픈을 언더스코어로 변환: product_notice_templates
+      // - data_source.id = 'templates' → directMock 경로(layoutTestUtils)는
+      //   ds.id 로 mock 을 우선 조회하므로 'templates' 키로 등록
       // 응답 구조 설명:
-      // - response에 배열 직접 전달 → createMockResponse가 { success: true, data: [...] }로 래핑
-      // - processDataSources가 전체 응답 저장: templates = { success: true, data: [...] }
-      // - 레이아웃에서 templates?.data 참조 → 배열 반환
-      mockApi('product_notice_templates', {
-        response: [
-          { id: 1, name: { ko: '의류', en: 'Clothing' }, fields_count: 5 },
-          { id: 2, name: { ko: '가전', en: 'Electronics' }, fields_count: 3 },
-        ],
+      // - directMock 경로는 wrapping/unwrapping 없이 response 를 그대로
+      //   result[ds.id] 로 사용 → 레이아웃이 참조하는 templates.data 구조에 맞춰
+      //   { data: [...] } 형태로 응답 구성
+      mockApi('templates', {
+        response: {
+          data: [
+            { id: 1, name: { ko: '의류', en: 'Clothing' }, fields_count: 5 },
+            { id: 2, name: { ko: '가전', en: 'Electronics' }, fields_count: 3 },
+          ],
+        },
       });
 
       await render();
 
-      // 템플릿 이름이 표시됨
       expect(screen.getByText('의류')).toBeInTheDocument();
       expect(screen.getByText('가전')).toBeInTheDocument();
 

@@ -417,10 +417,21 @@ class TemplateServiceRoutesFilterTest extends TestCase
         $testPath = base_path("modules/{$testIdentifier}/resources/routes");
         File::ensureDirectoryExists($testPath);
 
-        // _bundled에서 라우트 파일만 복사 (전체 디렉토리 복사 아님)
+        // _bundled에서 라우트 파일만 복사 (user.json 은 현재 ecommerce 에 부재 — 테스트 전용으로 생성)
         $bundledRoutesPath = base_path('modules/_bundled/sirsoft-ecommerce/resources/routes');
         File::copy($bundledRoutesPath.'/admin.json', $testPath.'/admin.json');
-        File::copy($bundledRoutesPath.'/user.json', $testPath.'/user.json');
+
+        // user.json 은 fixture 로 직접 생성 (ecommerce 번들에 더 이상 존재하지 않음)
+        $userRoutes = [
+            'routes' => [
+                [
+                    'path' => '*/shop/terms',
+                    'layout' => 'user_ecommerce_terms',
+                    'meta' => ['title' => '쇼핑몰 이용약관'],
+                ],
+            ],
+        ];
+        File::put($testPath.'/user.json', json_encode($userRoutes, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
         return $testIdentifier;
     }

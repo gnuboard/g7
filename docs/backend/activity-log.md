@@ -286,6 +286,23 @@ $this->logActivity('schedule.auto_run', [
 | `log_type` 하드코딩 금지 | 트레이트가 `Auth::user()` 기반으로 자동 결정 (필요 시 명시 가능) |
 | 스냅샷 사용 후 `unset` | 메모리 누수 방지 |
 
+### 다국어 키 커버리지
+
+신규 `logActivity('action.key', ...)` 호출을 추가할 때마다 두 가지 다국어 키가 함께 정의되어 있어야 한다. 미정의 시 관리자 활동 로그 화면에 raw 키(`action.key`) 가 그대로 노출된다.
+
+| 키 종류 | 위치 | 해석 경로 |
+|--------|------|----------|
+| **action 라벨** | `lang/{ko,en}/activity_log.php` `action` 배열 (코어 SSoT) | `action.{full_dotted_key}` 우선, 없으면 마지막 세그먼트 `action.{last_segment}` 로 fallback (`ActivityLog::getActionLabelAttribute`) |
+| **description 본문** | `lang/{ko,en}/activity_log.php` `description` 배열 또는 모듈/플러그인 namespace 의 `(src\|resources)/lang/{ko,en}/activity_log.php` | `description_key` 옵션 값이 가리키는 키 |
+
+**모듈/플러그인 리스너도 action 라벨은 코어 lang SSoT 를 fallback 으로 사용**한다. 모듈 고유 action 마지막 세그먼트(예: `bulk_status_update`)가 코어 `action` 배열에 없다면 코어 lang 파일에 추가해야 한다 — 모듈 lang 파일에 추가해도 해석되지 않는다.
+
+번들 일본어 언어팩(`lang-packs/_bundled/g7-core-ja/backend/ja/activity_log.php`)도 함께 동기화한다.
+
+```text
+audit 룰: activity-log-listener-i18n-coverage (코어/모듈/플러그인 ActivityLog 리스너 전 영역 자동 검출)
+```
+
 ---
 
 ## 변경 추적 (ChangeDetector)

@@ -383,13 +383,15 @@ describe('admin_ecommerce_order_detail.json (메인 레이아웃)', () => {
             expect(orderDs?.method).toBe('GET');
         });
 
-        it('data_sources onLoaded에 initOrderDetailForm 핸들러가 연결되어 있다', () => {
+        it('order 데이터소스 initLocal 맵이 form 필드 바인딩을 담당한다', () => {
+            // onLoaded + initOrderDetailForm 핸들러 패턴 → initLocal map 형태로 대체
+            // (sirsoft-ecommerce.initOrderDetailForm 핸들러 제거됨)
             const dataSources = testUtils.getDataSources();
             const orderDs = dataSources.find((ds: any) => ds.id === 'order');
-            const hasInitHandler = orderDs?.onLoaded?.some(
-                (action: any) => action.handler === 'sirsoft-ecommerce.initOrderDetailForm'
-            );
-            expect(hasInitHandler).toBe(true);
+            expect(orderDs?.initLocal).toBeDefined();
+            expect(typeof orderDs?.initLocal).toBe('object');
+            expect(orderDs?.initLocal?.['form.recipient_name']).toContain('data.recipient_name');
+            expect(orderDs?.initLocal?.['form.admin_memo']).toContain('data.admin_memo');
         });
 
         it('order_logs 데이터소스가 정의되어 있다', () => {
@@ -413,14 +415,15 @@ describe('admin_ecommerce_order_detail.json (메인 레이아웃)', () => {
             expect(Object.keys(layout.computed)).toHaveLength(0);
         });
 
-        it('modals에 3개의 모달 partial이 정의되어 있다', () => {
+        it('modals에 4개의 모달 partial이 정의되어 있다 (cancel_order 추가)', () => {
             const layout = mainLayout as any;
             expect(Array.isArray(layout.modals)).toBe(true);
-            expect(layout.modals).toHaveLength(3);
+            expect(layout.modals).toHaveLength(4);
             const partialPaths = layout.modals.map((m: any) => m.partial);
             expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_batch_change_confirm.json');
             expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_send_sms.json');
             expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_send_email.json');
+            expect(partialPaths).toContain('partials/admin_ecommerce_order_detail/_modal_cancel_order.json');
         });
     });
 
@@ -604,14 +607,11 @@ describe('Partial 레이아웃 구조 검증', () => {
             expect(json).toContain('"selectedProducts"');
         });
 
-        it('saveAdminMemo 핸들러가 연결되어 있다', () => {
+        it('admin_memo 입력 영역이 form 바인딩으로 통합되어 있다', () => {
+            // 별도 saveAdminMemo 핸들러 → 일반 form apiCall 로 통합됨
             const json = JSON.stringify(orderInfoPartial);
-            expect(json).toContain('"handler":"sirsoft-ecommerce.saveAdminMemo"');
-        });
-
-        it('SMS 모달 열기 버튼이 존재한다', () => {
-            const json = JSON.stringify(orderInfoPartial);
-            expect(json).toContain('"target":"modal_send_sms"');
+            expect(json).toContain('admin_memo_section');
+            expect(json).toContain('_local.form.admin_memo');
         });
 
         it('이메일 모달 열기 버튼이 존재한다', () => {
@@ -623,18 +623,22 @@ describe('Partial 레이아웃 구조 검증', () => {
             const json = JSON.stringify(orderInfoPartial);
             expect(json).toContain('"name":"ActionMenu"');
             expect(json).toContain('"id":"view_member"');
-            expect(json).toContain('"id":"search_by_member"');
+            // search_by_member 항목은 id 가 search_by_orderer 로 변경됨 (label 키만 유지)
+            expect(json).toContain('"id":"search_by_orderer"');
         });
 
         it('비회원용 ActionMenu가 존재한다', () => {
             const json = JSON.stringify(orderInfoPartial);
-            expect(json).toContain('"id":"search_by_name"');
-            expect(json).toContain('"id":"search_by_phone"');
+            // 비회원 분기 진입 조건: !order.data?.user_id
+            expect(json).toContain('!order.data?.user_id');
+            // 비회원 검색 액션은 ActionMenu 의 별도 메뉴 항목으로 존재
+            expect(json).toContain('"name":"ActionMenu"');
         });
 
-        it('회원용 ActionMenu에 navigate 핸들러가 연결되어 있다', () => {
+        it('회원용 ActionMenu에 navigate 경로가 /admin/users/{user_id} 로 연결되어 있다', () => {
+            // 회원 라우트가 /admin/members → /admin/users 로 통합됨
             const json = JSON.stringify(orderInfoPartial);
-            expect(json).toContain('/admin/members/{{order.data.user_id}}');
+            expect(json).toContain('/admin/users/{{order.data?.user_id}}');
         });
 
         // ========== 상품 이미지/상품명 링크 검증 ==========

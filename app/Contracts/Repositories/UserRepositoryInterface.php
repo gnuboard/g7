@@ -93,4 +93,57 @@ interface UserRepositoryInterface
      * @return array 언어별 사용자 수 배열
      */
     public function getUsersByLanguage(): array;
+
+    /**
+     * UUID 목록으로 사용자들을 조회하고 UUID 키 맵으로 반환합니다.
+     *
+     * Bulk activity log 처리 시 N+1 회피용 단일 쿼리 진입점.
+     *
+     * @param  array<int, string>  $uuids  사용자 UUID 목록
+     * @return Collection<string, User> uuid => User 매핑
+     */
+    public function findManyByUuidsKeyed(array $uuids): Collection;
+
+    /**
+     * 사용자의 연속 로그인 실패 카운터를 1 증가시킵니다.
+     *
+     * `last_failed_login_at` 도 현재 시각으로 갱신하며 새 카운트를 반환합니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @return int 증가 후 카운트
+     */
+    public function incrementFailedAttempts(User $user): int;
+
+    /**
+     * 사용자의 계정을 지정된 분만큼 잠급니다.
+     *
+     * `locked_until` 을 현재 시각 + $minutes 로 설정하고 `failed_login_attempts` 를
+     * 0 으로 리셋합니다 (다음 잠금 윈도우 시작점). 잠금 해제 시각을 반환합니다.
+     *
+     * @param  User  $user  잠글 사용자
+     * @param  int  $minutes  잠금 유지 시간(분)
+     * @return \Illuminate\Support\Carbon 잠금 해제 시각
+     */
+    public function lockAccount(User $user, int $minutes): \Illuminate\Support\Carbon;
+
+    /**
+     * 사용자의 모든 로그인 시도 추적 컬럼을 초기화합니다.
+     *
+     * 정상 로그인 성공 시 호출됩니다 (`failed_login_attempts=0`,
+     * `locked_until=null`, `last_failed_login_at=null`).
+     *
+     * @param  User  $user  대상 사용자
+     * @return void
+     */
+    public function resetLoginAttempts(User $user): void;
+
+    /**
+     * 사용자의 계정이 현재 시점에 잠금 상태인지 판정합니다.
+     *
+     * `locked_until` 이 NULL 이거나 현재 시각보다 과거이면 false 를 반환합니다.
+     *
+     * @param  User  $user  대상 사용자
+     * @return bool 잠금 여부
+     */
+    public function isLocked(User $user): bool;
 }

@@ -75,7 +75,15 @@ class CheckoutDataService
             $response['has_status_issue'] = collect($unavailableItems)->contains('reason', 'status');
         }
 
-        return $response;
+        // 필터 훅: 체크아웃 응답 데이터 변환 (외부 확장이 본인인증 hint 등 추가 가능)
+        $response = \App\Extension\HookManager::applyFilters(
+            'sirsoft-ecommerce.checkout.filter_response_data',
+            $response,
+            $tempOrder,
+            $userId,
+        );
+
+        return is_array($response) ? $response : [];
     }
 
     /**

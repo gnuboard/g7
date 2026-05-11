@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Database\Factories\CartFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductFactory;
@@ -35,6 +36,11 @@ class CartServiceTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Unit 테스트는 Mock 모델(DB 미저장) 사용. Hook listener 가 큐 워커에서
+        // 모델을 deserialize 할 때 find($id) 가 null 을 반환하여 TypeError 발생.
+        // Queue::fake() 로 listener job 실행을 차단하여 Service 의 비즈니스 로직만 검증.
+        Queue::fake();
 
         $this->mockCartRepository = Mockery::mock(CartRepositoryInterface::class);
         $this->mockProductOptionRepository = Mockery::mock(ProductOptionRepositoryInterface::class);
@@ -216,9 +222,9 @@ class CartServiceTest extends ModuleTestCase
             items: [],
             summary: new Summary(
                 subtotal: 30000,
-                couponDiscount: 0,
+                productCouponDiscount: 0,
                 codeDiscount: 0,
-                orderDiscount: 0,
+                orderCouponDiscount: 0,
                 totalDiscount: 0,
                 baseShippingTotal: 3000,
                 extraShippingTotal: 0,
@@ -266,9 +272,9 @@ class CartServiceTest extends ModuleTestCase
             items: [],
             summary: new Summary(
                 subtotal: 15000,
-                couponDiscount: 0,
+                productCouponDiscount: 0,
                 codeDiscount: 0,
-                orderDiscount: 0,
+                orderCouponDiscount: 0,
                 totalDiscount: 0,
                 baseShippingTotal: 3000,
                 extraShippingTotal: 0,
@@ -312,9 +318,9 @@ class CartServiceTest extends ModuleTestCase
             items: [],
             summary: new Summary(
                 subtotal: 0,
-                couponDiscount: 0,
+                productCouponDiscount: 0,
                 codeDiscount: 0,
-                orderDiscount: 0,
+                orderCouponDiscount: 0,
                 totalDiscount: 0,
                 baseShippingTotal: 0,
                 extraShippingTotal: 0,
@@ -364,9 +370,9 @@ class CartServiceTest extends ModuleTestCase
             items: [],
             summary: new Summary(
                 subtotal: 30000,
-                couponDiscount: 5000,
+                productCouponDiscount: 5000,
                 codeDiscount: 0,
-                orderDiscount: 0,
+                orderCouponDiscount: 0,
                 totalDiscount: 5000,
                 baseShippingTotal: 0,
                 extraShippingTotal: 0,
@@ -394,7 +400,7 @@ class CartServiceTest extends ModuleTestCase
         $result = $this->service->getCartWithCalculation($user->id, null, $couponIds, $usePoints);
 
         // Then
-        $this->assertEquals(5000, $result->calculation->summary->couponDiscount);
+        $this->assertEquals(5000, $result->calculation->summary->productCouponDiscount);
         $this->assertEquals(1000, $result->calculation->summary->pointsUsed);
         $this->assertEquals(24000, $result->calculation->summary->finalAmount);
     }

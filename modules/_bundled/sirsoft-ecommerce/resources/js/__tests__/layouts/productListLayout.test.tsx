@@ -69,8 +69,8 @@ describe('상품 목록 레이아웃 검색 필드 검증', () => {
         const searchFieldSelect = selectNodes[0];
         const optionValues = searchFieldSelect.props.options.map((o: any) => o.value);
 
-        // 백엔드 허용 목록: all, name, product_code, sku, barcode
-        const allowedValues = ['all', 'name', 'product_code', 'sku', 'barcode'];
+        // 백엔드 허용 목록 (ProductRepository): all, name, description, product_code, sku, barcode
+        const allowedValues = ['all', 'name', 'description', 'product_code', 'sku', 'barcode'];
 
         for (const value of optionValues) {
             expect(allowedValues).toContain(value);

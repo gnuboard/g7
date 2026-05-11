@@ -17,6 +17,8 @@ class PerformModuleUpdateRequest extends FormRequest
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 항상 true (권한은 미들웨어 체인에서 검증)
      */
     public function authorize(): bool
     {
@@ -33,9 +35,11 @@ class PerformModuleUpdateRequest extends FormRequest
         $rules = [
             'layout_strategy' => ['nullable', 'string', 'in:overwrite,keep'],
             'vendor_mode' => ['nullable', 'string', 'in:auto,composer,bundled'],
+            // 코어 버전 비호환 강제 우회 플래그
+            'force' => ['nullable', 'boolean'],
         ];
 
-        return HookManager::applyFilters('core.module.perform_update_rules', $rules);
+        return HookManager::applyFilters('core.module.perform_update_validation_rules', $rules, $this);
     }
 
     /**

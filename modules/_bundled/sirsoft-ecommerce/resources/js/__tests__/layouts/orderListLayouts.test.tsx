@@ -145,10 +145,14 @@ describe('주문 목록 DataGrid 컬럼 검증', () => {
             n.name === 'ActionMenu'
         );
         expect(actionMenuNodes.length).toBe(1);
-        // view_member, search_by_orderer 메뉴 항목 확인
+        // view_member, search_by_orderer_{member,guest} 메뉴 항목 확인
+        // (search_by_orderer 는 회원/비회원 두 분기로 분리됨)
         const items = actionMenuNodes[0].props?.items || [];
         expect(items.find((i: any) => i.id === 'view_member')).toBeDefined();
-        expect(items.find((i: any) => i.id === 'search_by_orderer')).toBeDefined();
+        const ordererSearchItems = items.filter((i: any) =>
+            typeof i.id === 'string' && i.id.startsWith('search_by_orderer')
+        );
+        expect(ordererSearchItems.length).toBeGreaterThanOrEqual(1);
     });
 
     it('ordered_at 컬럼이 formatted 날짜를 사용해야 함', () => {

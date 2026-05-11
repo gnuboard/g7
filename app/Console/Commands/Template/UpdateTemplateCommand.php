@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Template;
 
 use App\Console\Commands\Traits\HasProgressBar;
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
 use Illuminate\Console\Command;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 class UpdateTemplateCommand extends Command
 {
     use HasProgressBar;
+    use HasUnifiedConfirm;
 
     /**
      * The name and signature of the console command.
@@ -140,7 +142,7 @@ class UpdateTemplateCommand extends Command
             $this->newLine();
 
             // 확인 프롬프트 (--force 시 건너뜀)
-            if (! $force && ! $this->confirm(__('templates.commands.update.confirm_question'), false)) {
+            if (! $force && ! $this->unifiedConfirm(__('templates.commands.update.confirm_question'), false)) {
                 $this->info(__('templates.commands.update.aborted'));
 
                 return Command::SUCCESS;

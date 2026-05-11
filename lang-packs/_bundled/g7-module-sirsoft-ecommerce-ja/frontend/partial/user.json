@@ -1,0 +1,35 @@
+{
+  "product": {
+    "index": {
+      "title": "商品一覧",
+      "description": "商品を閲覧してください",
+      "empty_title": "商品がありません",
+      "empty_description": "登録された商品がありません"
+    },
+    "detail": {
+      "title": "商品詳細",
+      "description": "商品詳細情報",
+      "placeholder": "商品詳細がここに表示されます"
+    }
+  },
+  "cart": {
+    "title": "カート",
+    "description": "カートに入った商品",
+    "empty_title": "カートが空です",
+    "empty_description": "商品をカートに入れてください"
+  },
+  "checkout": {
+    "title": "注文·決済",
+    "description": "注文および決済情報を入力します",
+    "placeholder": "注文·決済フォームがここに表示されます"
+  },
+  "review": {
+    "validation": {
+      "rating_required": "評価を選択してください",
+      "content_min": "レビュー内容を最低10文字以上入力してください"
+    },
+    "image_upload_partial_fail": "一部の画像アップロードに失敗しました",
+    "submit_success": "レビューが登録されました",
+    "submit_failed": "レビュー登録に失敗しました"
+  }
+}

@@ -291,12 +291,214 @@
       }
     }
   },
+  "language_packs": {
+    "page_title": "Language Pack Management",
+    "page_description": "Centrally manage core and extension language packs.",
+    "title": "Language Pack Management",
+    "description": "Install and remove language packs via ZIP upload or GitHub URL.",
+    "columns": {
+      "locale": "Locale",
+      "scope": "Scope",
+      "target": "Target",
+      "vendor": "Vendor",
+      "version": "Version",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "scope": {
+      "core": "Core",
+      "module": "Module",
+      "plugin": "Plugin",
+      "template": "Template"
+    },
+    "origin": {
+      "built_in": "Built-in",
+      "bundled": "Bundled",
+      "user_installed": "User-installed"
+    },
+    "status": {
+      "active": "Active",
+      "installed": "Installed",
+      "inactive": "Inactive",
+      "updating": "Updating",
+      "uninstalled": "Not installed (bundled)",
+      "error": "Error",
+      "bundled": "Bundled",
+      "version_mismatch": "Version mismatch"
+    },
+    "filter": {
+      "all_scopes": "All scopes",
+      "all_locales": "All locales",
+      "all_statuses": "All statuses",
+      "reset": "Reset",
+      "exclude_protected": "Exclude protected packs"
+    },
+    "actions": {
+      "install": "Install",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "uninstall": "Uninstall",
+      "manage": "Language management",
+      "check_updates": "Check for updates",
+      "refresh_cache": "Refresh cache",
+      "refresh_cache_now": "Refresh cache",
+      "update": "Update",
+      "update_now": "Update now",
+      "detail": "Details",
+      "cancel": "Cancel",
+      "close": "Close",
+      "preview_manifest": "Preview manifest"
+    },
+    "search_placeholder": "Search by identifier, vendor, or language",
+    "badge": {
+      "update_available": "Update available"
+    },
+    "banner": {
+      "scoped": "Showing language packs for {{scope}} \"{{target}}\" only.",
+      "see_all": "View all language packs",
+      "back_to_modules": "Back to Modules",
+      "back_to_plugins": "Back to Plugins",
+      "back_to_templates": "Back to Templates"
+    },
+    "pagination": {
+      "info": "Page {{current}} of {{last}} ({{total}} total)",
+      "prev": "Previous",
+      "next": "Next",
+      "per_page_label": "Per page",
+      "summary": "Total {{total}} · showing {{from}}-{{to}}"
+    },
+    "vendor_label": "Vendor: {{vendor}}",
+    "source_label": "Source: {{source}}",
+    "dependency_label": "Dependency:",
+    "modal": {
+      "detail": {
+        "title": "Language Pack Details",
+        "loading": "Loading...",
+        "built_in_title": "Built-in Translation",
+        "built_in_description": "This entry is a translation directly bundled into the core or a bundled extension. It has no separate language pack metadata. It is always active and cannot be modified or removed.",
+        "basic_info": "Basic Information",
+        "identifier": "Identifier",
+        "name": "Name",
+        "vendor": "Vendor",
+        "locale": "Locale",
+        "version": "Version",
+        "scope": "Scope / Target",
+        "github_url": "GitHub Repository",
+        "license": "License",
+        "text_direction": "Text Direction",
+        "description": "Description",
+        "status": "Status",
+        "protected": "Protected",
+        "compatibility": "Compatibility",
+        "target_version_constraint": "Target Version Constraint",
+        "core_version_constraint": "Core Version Requirement",
+        "depends_on_core_locale": "Depends on Core Locale",
+        "depends_on_core_locale_yes": "This pack requires the core language pack for the same locale to be active.",
+        "depends_on_core_locale_no": "This pack operates independently of the core language pack.",
+        "yes": "Yes",
+        "no": "No",
+        "target_version_mismatch_label": "Target Version Match",
+        "match": "Match",
+        "mismatch": "Mismatch",
+        "target_version_mismatch": "Target extension version does not match the compatibility constraint.",
+        "source": "Source",
+        "source_type": "Install Source",
+        "source_url": "Source URL/Path",
+        "installed_at": "Installed At",
+        "activated_at": "Activated At",
+        "changelog_title": "Changelog (CHANGELOG.md)",
+        "load_changelog": "Load changelog",
+        "no_changelog": "This language pack has no CHANGELOG.md file.",
+        "changelog_failed": "Failed to load changelog."
+      },
+      "update": {
+        "title": "Update Language Pack",
+        "body": "Update from {{current}} to {{latest}}.",
+        "user_overrides_notice": "User-edited translations will be preserved."
+      },
+      "uninstall": {
+        "title": "Remove Language Pack",
+        "body": "Remove {{scope}} / {{target}} / {{locale}} language pack. This cannot be undone.",
+        "cascade_label": "Also deactivate all sub-extension packs for this locale",
+        "warning": "This action cannot be undone. User-edited translations will also be removed.",
+        "cascade_hint": "Active dependent module/plugin/template language packs will also be deactivated."
+      },
+      "refresh_cache": {
+        "title": "Refresh Cache",
+        "body": "Invalidate translation, registry, and template language caches."
+      },
+      "preview": {
+        "title": "Manifest Preview",
+        "description": "Upload a ZIP to inspect the manifest and validation result before installing.",
+        "run": "Run preview",
+        "valid": "Manifest is valid — ready to install.",
+        "already_installed": "Already installed: current version {{version}}"
+      }
+    },
+    "install_modal": {
+      "title": "Install Language Pack",
+      "description": "Install a language pack via ZIP file upload or GitHub URL.",
+      "tabs": {
+        "zip": "ZIP file",
+        "github": "GitHub"
+      },
+      "file_label": "ZIP file",
+      "no_file_selected": "No file selected.",
+      "file_requirements": "The following manifest file must be at the ZIP root.",
+      "github_url_label": "GitHub URL",
+      "github_requirements": "Public repositories only. The following manifest file must be at the repository root."
+    },
+    "installing": "Installing...",
+    "messages": {
+      "install_success": "Language pack installed.",
+      "install_failed": "Failed to install language pack.",
+      "uninstall_success": "Language pack removed.",
+      "uninstall_failed": "Failed to remove language pack.",
+      "cascade_warning": "Removing the core language pack deactivates related sub-packs.",
+      "empty": "No language packs installed.",
+      "protected_badge": "🔒 Protected",
+      "check_updates_done": "Update check complete ({{count}} available).",
+      "check_updates_none": "All language packs are up to date.",
+      "check_updates_failed": "Failed to check for updates.",
+      "activate_success": "Language pack activated.",
+      "deactivate_success": "Language pack deactivated.",
+      "toggle_failed": "Failed to change active state.",
+      "update_success": "Language pack updated.",
+      "update_failed": "Failed to update language pack.",
+      "refresh_cache_done": "Language pack cache refreshed.",
+      "refresh_cache_failed": "Failed to refresh cache."
+    },
+    "modals": {
+      "install_bundled_title": "Install Language Pack",
+      "install_bundled_confirm": "Install bundled language pack \"{{identifier}}\"?",
+      "install_bundled_core_required": "The core language pack (locale={{locale}}) must be activated first.",
+      "install_blocked_target_not_installed": "Target {{scope}} \"{{target}}\" is not installed.",
+      "install_blocked_target_inactive": "Target {{scope}} \"{{target}}\" is inactive. Activate it first.",
+      "install_blocked_target_version_too_old": "Target {{scope}} \"{{target}}\" version does not satisfy the required constraint."
+    },
+    "slot_conflict_modal": {
+      "title": "Confirm Language Pack Replacement",
+      "description": "Another language pack is already active for this slot. Replacing it will deactivate the existing pack.",
+      "current_label": "Currently active",
+      "target_label": "Replacement",
+      "warning": "Frontend cache version will refresh after replacement, reloading translation data.",
+      "cancel": "Cancel",
+      "confirm": "Replace"
+    },
+    "uninstalling": "Removing...",
+    "updating": "Updating...",
+    "errors": {
+      "manifest_invalid": "language-pack.json validation failed.",
+      "core_locale_missing": "Core language pack must be active first."
+    }
+  },
   "modules": {
     "page_title": "Module Management",
     "page_description": "Manage installed modules and install new ones.",
     "title": "Module Management",
     "description": "Manage installed modules and install new ones.",
     "search_placeholder": "Search modules...",
+    "include_hidden": "Include hidden items",
     "search": "Search",
     "manual_install": "Manual Install",
     "marketplace": "Marketplace",
@@ -340,7 +542,18 @@
       "update": "Update",
       "check_updates": "Check Updates",
       "view_detail": "Details",
-      "refresh_layouts": "Refresh Layouts"
+      "refresh_layouts": "Refresh Layouts",
+      "preview_manifest": "Preview manifest"
+    },
+    "modal": {
+      "preview": {
+        "title": "Module Manifest Preview",
+        "description": "Upload a ZIP to inspect module.json and validation result before installing.",
+        "run": "Run preview",
+        "valid": "module.json is valid — ready to install.",
+        "already_installed": "Already installed: current version {{version}}",
+        "failed": "Failed to preview manifest."
+      }
     },
     "modals": {
       "detail_title": "Module Information",
@@ -377,6 +590,13 @@
       "layouts": "Layouts",
       "layouts_count": "{{count}} layout(s) will be registered.",
       "no_layouts": "No layouts to register.",
+      "supported_languages": "Supported Languages",
+      "no_supported_languages": "No supported language information.",
+      "cascade_dependencies_title": "Dependencies to install together",
+      "cascade_dependencies_hint": "Missing dependencies of this extension. Unchecked items will not be installed, and their dependent language packs are auto-disabled.",
+      "cascade_language_packs_title": "Language packs to install together",
+      "cascade_language_packs_hint": "Bundled language pack candidates. Only checked items will be installed together with this extension.",
+      "cascade_lp_depends_on": "Depends on: {{target}}",
       "install_title": "Install Module",
       "install_confirm": "Do you want to install {{name}} module?",
       "install_description": "After installation, you can activate the module to use its features.",
@@ -398,6 +618,15 @@
       "vendor_section": "Composer Dependencies",
       "extension_directory_title": "Extension Directory to be Deleted",
       "extension_directory_section": "Extension Directory",
+      "shared_records_section": "Shared Table Data",
+      "shared_records_count": "{{count}} records",
+      "shared": {
+        "permissions": "Permissions",
+        "menus": "Admin Menus",
+        "notification_definitions": "Notification Definitions",
+        "identity_policies": "Identity Policies",
+        "identity_message_definitions": "Identity Message Definitions"
+      },
       "no_tables": "No tables to delete.",
       "no_storage": "No storage to delete.",
       "size_unknown": "Unknown",
@@ -467,6 +696,7 @@
     "title": "Plugin Management",
     "description": "Manage installed plugins and install new plugins.",
     "search_placeholder": "Search plugins...",
+    "include_hidden": "Include hidden items",
     "search": "Search",
     "manual_install": "Manual Install",
     "marketplace": "Marketplace",
@@ -510,7 +740,18 @@
       "view_detail": "View Details",
       "settings": "Settings",
       "refresh_layouts": "Refresh Layouts",
-      "check_updates": "Check Updates"
+      "check_updates": "Check Updates",
+      "preview_manifest": "Preview manifest"
+    },
+    "modal": {
+      "preview": {
+        "title": "Plugin Manifest Preview",
+        "description": "Upload a ZIP to inspect plugin.json and validation result before installing.",
+        "run": "Run preview",
+        "valid": "plugin.json is valid — ready to install.",
+        "already_installed": "Already installed: current version {{version}}",
+        "failed": "Failed to preview manifest."
+      }
     },
     "settings": {
       "page_title": "Plugin Settings",
@@ -555,6 +796,13 @@
       "filters": "Filters",
       "filters_description": "List of filters used by this plugin.",
       "no_filters": "No filters used.",
+      "supported_languages": "Supported Languages",
+      "no_supported_languages": "No supported language information.",
+      "cascade_dependencies_title": "Dependencies to install together",
+      "cascade_dependencies_hint": "Missing dependencies of this extension. Unchecked items will not be installed, and their dependent language packs are auto-disabled.",
+      "cascade_language_packs_title": "Language packs to install together",
+      "cascade_language_packs_hint": "Bundled language pack candidates. Only checked items will be installed together with this extension.",
+      "cascade_lp_depends_on": "Depends on: {{target}}",
       "install_title": "Install Plugin",
       "install_confirm": "Do you want to install {{name}} plugin?",
       "install_description": "After installation, you can activate the plugin to use its features.",
@@ -576,6 +824,15 @@
       "vendor_section": "Composer Dependencies",
       "extension_directory_title": "Extension Directory to be Deleted",
       "extension_directory_section": "Extension Directory",
+      "shared_records_section": "Shared Table Data",
+      "shared_records_count": "{{count}} records",
+      "shared": {
+        "permissions": "Permissions",
+        "menus": "Admin Menus",
+        "notification_definitions": "Notification Definitions",
+        "identity_policies": "Identity Policies",
+        "identity_message_definitions": "Identity Message Definitions"
+      },
       "no_tables": "No tables to delete.",
       "no_storage": "No storage to delete.",
       "size_unknown": "Unknown",
@@ -984,6 +1241,8 @@
       "drivers": "Drivers",
       "advanced": "Advanced",
       "notification_definitions": "Notifications",
+      "language_packs": "Language Packs",
+      "identity": "Identity",
       "info": "Info"
     },
     "general": {
@@ -1063,6 +1322,23 @@
       "meta_description_hint": "Description shown in search results. Max 160 characters recommended.",
       "meta_keywords": "Meta Keywords",
       "meta_keywords_hint": "Enter keywords separated by commas.",
+      "generator_settings": "Generator Meta Tag",
+      "generator_settings_desc": "Generator meta tag for CMS identification. W3Techs and similar market-share trackers use this to classify the site as GnuBoard7.",
+      "generator_enabled": "Show Generator Tag",
+      "generator_enabled_desc": "When disabled, the meta tag is not emitted at all.",
+      "generator_content": "Generator Content",
+      "generator_content_hint": "Leave empty to auto-apply \"GnuBoard7 {version}\". Enter only \"GnuBoard7\" to hide the version.",
+      "og_twitter_settings": "OG / Twitter Card Defaults",
+      "og_twitter_settings_desc": "Default meta values used by Facebook, Slack, Twitter, etc. for link previews. Per-page values declared in layouts override these.",
+      "og_default_site_name": "OG Site Name",
+      "og_default_site_name_hint": "If empty, the site name from General settings is used. (og:site_name)",
+      "og_image_default_width": "OG Image Default Width (px)",
+      "og_image_default_height": "OG Image Default Height (px)",
+      "og_image_default_size_hint": "Default values when thumbnail size is unknown. Facebook recommends 1200×630, minimum 200×200.",
+      "twitter_default_card": "Twitter Card Default Type",
+      "twitter_default_card_hint": "Use summary_large_image for large image cards, summary for compact ones.",
+      "twitter_default_site": "Twitter Site Handle",
+      "twitter_default_site_hint": "The site's Twitter handle (e.g. @gnuboard). Output is omitted if empty.",
       "analytics_settings": "Analytics Settings",
       "analytics_settings_desc": "Integrate website analytics tools.",
       "google_analytics_id": "Google Analytics ID",
@@ -1075,8 +1351,12 @@
       "bot_settings_desc": "Configure search bot detection and SEO page generation.",
       "bot_detection_enabled": "Enable Bot Detection",
       "bot_detection_enabled_desc": "Detect search bots and serve SEO-optimized HTML.",
-      "bot_user_agents": "Bot User-Agent List",
-      "bot_user_agents_hint": "Add User-Agent strings to detect as search bots.",
+      "bot_detection_library_enabled": "Use Bot Detection Library",
+      "bot_detection_library_enabled_desc": "When disabled, only the \"Additional Bot Patterns\" list below is used to detect bots.",
+      "bot_library_notice_title": "Auto Bot Detection Enabled",
+      "bot_library_notice_body": "Automatically detects around 1,000 search engines, link-preview bots, and AI crawlers. Pasting links into Slack, KakaoTalk, Facebook, and similar services will instantly show the title, description, and image preview. Use the \"Additional Bot Patterns\" field below only when a bot is missing from the auto-detection list.",
+      "bot_user_agents": "Additional Bot Patterns",
+      "bot_user_agents_hint": "User-Agent substring (case-insensitive) — patterns to treat as bot on top of library defaults.",
       "bot_user_agents_placeholder": "Enter User-Agent and press Enter",
       "seo_cache_settings": "SEO Cache Settings",
       "seo_cache_settings_desc": "Configure SEO page caching.",
@@ -1095,7 +1375,12 @@
       "sitemap_schedule_time": "Generation Time",
       "sitemap_schedule_time_hint": "Enter in HH:mm format. (e.g., 02:00)",
       "sitemap_cache_ttl": "Sitemap Cache TTL (seconds)",
-      "sitemap_cache_ttl_hint": "Min 3600s (1 hour), max 604800s (7 days). Default: 86400s (24 hours)"
+      "sitemap_cache_ttl_hint": "Min 3600s (1 hour), max 604800s (7 days). Default: 86400s (24 hours)",
+      "sitemap_last_updated_at": "Last generated",
+      "sitemap_manual_update": "Generate now",
+      "sitemap_updating": "Generating...",
+      "sitemap_update_success": "Sitemap generation completed.",
+      "sitemap_update_failed": "Sitemap generation failed."
     },
     "security": {
       "title": "Security Settings",
@@ -1113,6 +1398,123 @@
       "current_app_key": "Current Key",
       "regenerate_key": "Regenerate Key",
       "app_key_warning": "Changing the key may make previously encrypted data inaccessible."
+    },
+    "identity": {
+      "sub_tabs": {
+        "basic": "Basic",
+        "providers": "Providers",
+        "policies": "Policies",
+        "messages": "Message Templates"
+      },
+      "messages": {
+        "title": "Identity Verification Message Templates",
+        "intro": "Edit the subject and body used for identity verification emails. Both Korean and English can be entered, and you can restore the default at any time. Admin-created policies can be paired with their own messages.",
+        "empty": "No message definitions registered.",
+        "edit": "Edit",
+        "btn_add_definition": "Add Definition",
+        "btn_reset": "Reset to Default",
+        "btn_delete": "Delete",
+        "status_active": "Active",
+        "status_inactive": "Inactive",
+        "default_badge": "Default",
+        "body_preview": "Body Preview",
+        "total_count": "Total {count}",
+        "per_page_label": "Per page",
+        "channels": {
+          "mail": "Mail"
+        },
+        "toggle_success": "Message definition active state has been changed.",
+        "toggle_failed": "Failed to update active state.",
+        "badges": {
+          "default": "Default",
+          "customized": "Customized"
+        },
+        "add_modal": {
+          "title": "Add Message Definition",
+          "errors_title": "Input errors",
+          "provider": "Provider",
+          "scope_type": "Scope type",
+          "policy_key": "Policy key",
+          "policy_key_placeholder": "Select an admin policy",
+          "policy_empty": "No admin policies registered. Please add a policy in the Policies tab first.",
+          "name": "Name",
+          "subject": "Subject",
+          "body": "Body",
+          "variables_title": "Available variables",
+          "save_success": "Message definition added successfully.",
+          "save_failed": "Failed to add message definition."
+        },
+        "delete_modal": {
+          "title": "Delete Message Definition",
+          "target_label": "Target",
+          "confirm_message": "Are you sure you want to delete this message definition?",
+          "warning_message": "All linked channel templates will be removed. This action cannot be undone.",
+          "btn_confirm": "Delete",
+          "btn_confirming": "Deleting...",
+          "delete_success": "Message definition deleted successfully.",
+          "delete_failed": "Failed to delete message definition."
+        },
+        "reset_modal": {
+          "title": "Reset to Default",
+          "target_label": "Target",
+          "confirm_message": "Reset all channel templates of this definition to seed defaults?",
+          "warning_message": "All admin edits will be lost. This action cannot be undone.",
+          "btn_confirm": "Reset",
+          "btn_confirming": "Resetting...",
+          "reset_success": "Message definition restored to defaults.",
+          "reset_failed": "Failed to reset to defaults."
+        },
+        "modal": {
+          "title": "Edit Message Template",
+          "errors_title": "Input errors",
+          "variables_title": "Available Variables",
+          "subject": "Subject",
+          "body": "Body",
+          "reset": "Restore Default",
+          "reset_confirm": "All operator edits will be replaced with the seeded default. Continue?",
+          "reset_success": "Restored to seeded default.",
+          "reset_failed": "Failed to restore default.",
+          "save_success": "Message template saved.",
+          "save_failed": "Failed to save.",
+          "preview": "Preview",
+          "preview_failed": "Failed to load preview.",
+          "subject_label": "Subject",
+          "body_label": "Body"
+        }
+      },
+      "basic": {
+        "title": "Basic Settings",
+        "desc": "Configure provider-level parameters. Activation and enforcement timing are managed under the Policies tab.",
+        "default_provider": "Default Provider",
+        "default_provider_desc": "Provider used when a purpose does not specify one.",
+        "challenge_ttl_minutes": "Challenge TTL (minutes)",
+        "challenge_ttl_desc": "Lifetime of issued verification codes/links.",
+        "max_attempts": "Max Attempts",
+        "max_attempts_desc": "Challenge is locked after this many consecutive failures. Re-send is required."
+      },
+      "purposes": {
+        "title": "Purpose-specific Providers",
+        "desc": "Assign a provider to each IDV purpose. Unassigned purposes use the default provider.",
+        "use_default": "(Use default provider)",
+        "empty": "No purposes registered."
+      },
+      "providers": {
+        "title": "Providers",
+        "desc": "Registered IDV providers. Additional providers can be added via plugins.",
+        "available": "Available",
+        "unavailable": "Unavailable",
+        "empty": "No providers registered."
+      },
+      "policy_link": {
+        "title": "Policy Management",
+        "desc": "Manage route/hook-level IDV enforcement policies.",
+        "button": "Open Policy Manager"
+      },
+      "logs_link": {
+        "title": "Verification Logs",
+        "desc": "View challenge request, verification, and expiry history.",
+        "button": "Open Logs"
+      }
     },
     "drivers": {
       "common": {
@@ -1459,6 +1861,7 @@
     "title": "Template Management",
     "description": "Manage templates and layouts to configure the design of your website.",
     "search_placeholder": "Search templates...",
+    "include_hidden": "Include hidden items",
     "search": "Search",
     "manual_install": "Manual Install",
     "marketplace": "Marketplace",
@@ -1531,7 +1934,18 @@
       "view_detail": "Details",
       "refresh_layouts": "Refresh Layouts",
       "edit_layouts": "Edit Layouts",
-      "wysiwyg_edit": "WYSIWYG Edit"
+      "wysiwyg_edit": "WYSIWYG Edit",
+      "preview_manifest": "Preview manifest"
+    },
+    "modal": {
+      "preview": {
+        "title": "Template Manifest Preview",
+        "description": "Upload a ZIP to inspect template.json and validation result before installing.",
+        "run": "Run preview",
+        "valid": "template.json is valid — ready to install.",
+        "already_installed": "Already installed: current version {{version}}",
+        "failed": "Failed to preview manifest."
+      }
     },
     "modals": {
       "detail_title": "Template Information",
@@ -1549,6 +1963,13 @@
       "composite_components": "Composite Components",
       "composite_components_description": "Complex UI components made by combining basic components.",
       "no_components": "No components available.",
+      "supported_languages": "Supported Languages",
+      "no_supported_languages": "No supported language information.",
+      "cascade_dependencies_title": "Dependencies to install together",
+      "cascade_dependencies_hint": "Missing dependencies of this extension. Unchecked items will not be installed, and their dependent language packs are auto-disabled.",
+      "cascade_language_packs_title": "Language packs to install together",
+      "cascade_language_packs_hint": "Bundled language pack candidates. Only checked items will be installed together with this extension.",
+      "cascade_lp_depends_on": "Depends on: {{target}}",
       "install_title": "Install Template",
       "install_confirm": "Do you want to install {{name}} template?",
       "install_description": "After installation, you can activate the template to change the admin interface design.",
@@ -1906,6 +2327,206 @@
       "bulk_confirm_title": "Bulk Delete Confirmation",
       "bulk_confirm_message": "Are you sure you want to delete all selected notification logs? This action cannot be undone.",
       "bulk_success": "Selected notification logs have been deleted."
+    }
+  },
+  "identity": {
+    "challenge": {
+      "title": "Identity Verification",
+      "code_title": "Enter Verification Code",
+      "code_subtitle": "Enter the 6-digit code we sent you.",
+      "code_placeholder": "Verification code",
+      "verify": "Verify",
+      "resend": "Resend code",
+      "resend_link": "Resend email",
+      "resend_cooldown": "Resend available in {{seconds}}s",
+      "resend_success": "Verification code has been resent.",
+      "remaining_time": "Time remaining: {{minutes}}:{{seconds}}",
+      "remaining_attempts": "Attempts remaining: {{count}}",
+      "expired": "The code has expired. Please resend.",
+      "link_title": "Email verification required",
+      "link_subtitle": "Click the link sent to your email to complete verification.",
+      "check_spam": "If you don't see the email, please check your spam folder.",
+      "external_title": "Redirecting to external verification",
+      "external_subtitle": "You will be redirected to the verification provider shortly.",
+      "manual_redirect": "Continue manually",
+      "error_generic": "Verification failed. Please try again."
+    },
+    "policies": {
+      "page_title": "Identity Verification Policies",
+      "page_description": "Decide when identity verification is enforced — for signup, password reset, or sensitive actions. Default policies provided by core/modules/plugins allow limited editing; policies you create can be edited and deleted freely.",
+      "purposes_section_title": "Core Identity Verification Purposes",
+      "purposes_section_description": "Built-in purposes provided by the core. Available in the policy \"Purpose\" column. Modules/plugins that declare additional purposes show them on their own settings page.",
+      "purposes_empty": "No core identity purposes registered.",
+      "all_scopes": "All triggers",
+      "all_sources": "All sources",
+      "search_placeholder": "Search by policy key or target",
+      "reset_filters": "Reset filters",
+      "empty": "No policies registered.",
+      "add_button": "+ Add Policy",
+      "create_title": "Create Policy",
+      "edit_title": "Edit Policy",
+      "save_success": "Policy saved.",
+      "delete_title": "Delete Policy",
+      "delete_confirm": "Delete this policy? (only admin-created policies can be deleted)",
+      "delete_success": "Policy deleted.",
+      "delete_failed": "Failed to delete policy.",
+      "enable_success": "Policy enabled.",
+      "disable_success": "Policy disabled.",
+      "toggle_failed": "Failed to update policy active state.",
+      "pagination_summary": "{{total}} total · page {{page}} / {{last}}",
+      "page_indicator": "{{page}} / {{last}}",
+      "col": {
+        "key": "Policy Key",
+        "scope": "Trigger",
+        "target": "Target",
+        "purpose": "Purpose",
+        "grace_minutes": "Re-prompt after (min)",
+        "enabled": "Active",
+        "source_type": "Source"
+      },
+      "scope": {
+        "route": "On API call",
+        "hook": "On internal event",
+        "custom": "Custom"
+      },
+      "scope_desc": {
+        "route": "Triggered when a user calls a specific API route (e.g. signup, password reset).",
+        "hook": "Triggered on internal events (e.g. just after signup, just before user update).",
+        "custom": "Custom trigger defined by a plugin."
+      },
+      "purpose": {
+        "signup": "Signup",
+        "password_reset": "Password reset",
+        "self_update": "Profile change",
+        "sensitive_action": "Sensitive action"
+      },
+      "source": {
+        "core": "Core",
+        "module": "Module",
+        "plugin": "Plugin",
+        "admin": "Admin"
+      },
+      "fail_mode": {
+        "block": "Block request",
+        "log_only": "Log only (let request pass)"
+      },
+      "applies_to": {
+        "self": "Self (excludes admins)",
+        "admin": "Admins only",
+        "both": "Everyone"
+      },
+      "form": {
+        "key": "Policy Key",
+        "scope": "Trigger",
+        "scope_help": "Choose which kind of request enforces identity verification.",
+        "target": "Target",
+        "target_help": "Depending on the trigger, enter the route name (e.g. api.auth.register) or the event name (e.g. core.auth.after_register).",
+        "purpose": "Purpose",
+        "purpose_help": "Pick what kind of identity verification this policy requires.",
+        "provider_id": "Verification method",
+        "use_default_provider": "(Use default method)",
+        "grace_minutes": "Re-prompt after (min) — 0: always required",
+        "grace_minutes_help": "If the user verified within this window, do not ask again. Set to 0 to always require verification.",
+        "applies_to": "Applies to",
+        "fail_mode": "On failure",
+        "enabled": "Activate this policy",
+        "conditions": "Extra conditions (JSON)",
+        "signup_stage": "Signup stage",
+        "signup_stage_unset": "(Unset)",
+        "signup_stage_before_submit": "Before submission — verification code must accompany the signup form",
+        "signup_stage_after_create": "After signup, before activation — verification message sent right after signup, account activates after verification",
+        "signup_stage_desc": "For signup policies, choose which stage requires verification.",
+        "declared_policy_notice": "This is a default policy provided by core/module/plugin. You can edit only Active, Re-prompt window, Verification method, and On-failure fields; your overrides are preserved across updates.",
+        "reset_to_default": "Reset to default",
+        "reset_success": "Restored to default."
+      }
+    },
+    "logs": {
+      "page_title": "Identity Verification Logs",
+      "page_description": "View challenge lifecycle history. Default retention: 180 days.",
+      "detail_title": "Verification Log Detail",
+      "search_placeholder": "Search by user ID or target identifier",
+      "all_providers": "All Methods",
+      "all_purposes": "All Purposes",
+      "all_statuses": "All Statuses",
+      "empty": "No logs found.",
+      "purge_button": "Purge Old Logs",
+      "purge_confirm": "Delete all logs older than 180 days. Continue?",
+      "purge_success": "Old logs purged.",
+      "tab_all": "All Methods",
+      "refresh": "Refresh",
+      "total_count": "Total: {{count}}",
+      "search_type": {
+        "auto": "Auto",
+        "user_id": "User ID",
+        "target_hash": "Target ID",
+        "ip_address": "IP address",
+        "policy_key": "Policy key"
+      },
+      "filter": {
+        "status_label": "Status",
+        "purpose_label": "Purpose",
+        "channel_label": "Channel",
+        "date_range_label": "Date range",
+        "origin_type_label": "Origin",
+        "source_type_label": "Source",
+        "source_type_any": "Any",
+        "source_identifier_label": "Source ID",
+        "source_identifier_placeholder": "e.g. sirsoft-ecommerce",
+        "advanced_search_toggle": "Advanced search",
+        "search_button": "Search",
+        "reset_button": "Reset",
+        "status_all": "All",
+        "purpose_all": "All"
+      },
+      "origin_type": {
+        "route": "Route",
+        "hook": "Hook",
+        "policy": "Policy",
+        "middleware": "Middleware",
+        "api": "Direct API call",
+        "custom": "Custom",
+        "system": "System"
+      },
+      "sort": {
+        "created_at_desc": "Newest",
+        "created_at_asc": "Oldest",
+        "attempts_desc": "Most Attempts"
+      },
+      "detail": {
+        "expanded": {
+          "target_hash_label": "Target ID",
+          "origin_label": "Source",
+          "origin_policy_key_label": "Policy Key",
+          "properties_label": "Properties",
+          "metadata_label": "Additional Info",
+          "no_properties": "No additional properties.",
+          "no_metadata": "No additional info."
+        }
+      },
+      "col": {
+        "created_at": "Created",
+        "provider_id": "Method",
+        "purpose": "Purpose",
+        "channel": "Channel",
+        "status": "Status",
+        "user_id": "User",
+        "ip_address": "IP",
+        "verified_at": "Verified",
+        "expires_at": "Expires",
+        "attempts": "Attempts",
+        "origin_type": "Source Type",
+        "origin_identifier": "Source Point"
+      },
+      "status": {
+        "requested": "Requested",
+        "sent": "Sent",
+        "verified": "Verified",
+        "failed": "Failed",
+        "expired": "Expired",
+        "cancelled": "Cancelled",
+        "policy_violation_logged": "Policy Violation"
+      }
     }
   }
 }

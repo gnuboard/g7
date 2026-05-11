@@ -1,0 +1,69 @@
+{
+  "title": "エクセルダウンロード管理",
+  "description": "生成されたエクセルファイルをダウンロードして管理します（ファイルは7日間保管されます）",
+  "search": {
+    "file_content": "ファイル内容",
+    "placeholder": "検索キーワードを入力してください",
+    "reset": "初期化"
+  },
+  "filter": {
+    "status": "ステータス",
+    "all": "すべて",
+    "category": "区分",
+    "date_search": "日付検索",
+    "request_date": "リクエスト日時",
+    "start_date": "開始日",
+    "end_date": "終了日"
+  },
+  "category_options": {
+    "all": "すべて",
+    "product": "商品管理",
+    "order": "注文管理",
+    "visit": "訪問統計",
+    "member": "会員登録統計"
+  },
+  "table": {
+    "total_count": "合計 {{count}}件",
+    "sort_by": "リクエスト日時（最新順）",
+    "per_page": "{{count}}件",
+    "columns": {
+      "no": "順番",
+      "category": "区分",
+      "file_content": "ファイル内容",
+      "status": "ステータス",
+      "request_date": "リクエスト日時",
+      "created_date": "生成日時",
+      "creator": "生成者",
+      "download": "ダウンロード",
+      "download_count": "ダウンロード回数",
+      "expire_date": "有効期限日時"
+    }
+  },
+  "actions": {
+    "download": "ダウンロード",
+    "view_member": "ユーザー情報を表示",
+    "search_by_creator": "生成者で検索"
+  },
+  "modal": {
+    "download_history": {
+      "title": "ダウンロード履歴",
+      "description": "ファイルのダウンロード記録を確認できます",
+      "file_content": "ファイル内容",
+      "category": "区分",
+      "status": "ステータス",
+      "created_date": "生成日時",
+      "expire_date": "有効期限日時",
+      "total_download": "合計ダウンロード",
+      "download_count": "{{count}}回",
+      "history_title": "ダウンロード記録",
+      "history_count": "{{count}}件",
+      "confirm": "確認"
+    }
+  },
+  "status": {
+    "completed": "完了",
+    "processing": "生成中",
+    "failed": "失敗",
+    "expired": "有効期限切れ"
+  }
+}

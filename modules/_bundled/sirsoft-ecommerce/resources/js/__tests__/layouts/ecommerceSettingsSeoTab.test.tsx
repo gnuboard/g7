@@ -252,10 +252,10 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       });
     });
 
-    it('meta_accordions에 3개의 아코디언이 있다', () => {
+    it('meta_accordions에 4개의 아코디언이 있다 (category/search/product/shop_index)', () => {
       const accordions = findById(tabSeo, 'meta_accordions');
       expect(accordions).not.toBeNull();
-      expect(accordions.children).toHaveLength(3);
+      expect(accordions.children).toHaveLength(4);
     });
   });
 
@@ -361,11 +361,11 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       }
     });
 
-    it('체크박스의 name도 seo. 접두사를 사용한다', () => {
+    it('체크박스의 name도 seo. 접두사를 사용한다 (4개: category/search/product/shop_index)', () => {
       const checkboxes = findAllByComponentName(tabSeo, 'Input')
         .filter((i: any) => i.props?.type === 'checkbox');
 
-      expect(checkboxes.length).toBe(3);
+      expect(checkboxes.length).toBe(4);
       for (const cb of checkboxes) {
         expect(cb.props.name).toMatch(/^seo\./);
       }
@@ -412,29 +412,29 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // 7. 폼 필드 완전성
   // ==============================
   describe('폼 필드 완전성', () => {
-    it('메타 설정 Input 6개 (title 3 + description 3)가 존재한다', () => {
+    it('메타 설정 Input 8개 (title 4 + description 4)가 존재한다', () => {
       const metaCard = findById(tabSeo, 'meta_settings_card');
       const inputs = findAllByComponentName(metaCard, 'Input');
       const textareas = findAllByComponentName(metaCard, 'Textarea');
 
-      expect(inputs).toHaveLength(3); // category_title, search_title, product_title
-      expect(textareas).toHaveLength(3); // category_desc, search_desc, product_desc
+      expect(inputs).toHaveLength(4); // category/search/product/shop_index 각 title
+      expect(textareas).toHaveLength(4); // 각 description
     });
 
-    it('SEO Friendly 체크박스 3개가 존재한다', () => {
+    it('SEO Friendly 체크박스 4개가 존재한다', () => {
       const friendlyCard = findById(tabSeo, 'seo_friendly_card');
       const checkboxes = findAllByComponentName(friendlyCard, 'Input')
         .filter((i: any) => i.props?.type === 'checkbox');
 
-      expect(checkboxes).toHaveLength(3);
+      expect(checkboxes).toHaveLength(4);
     });
 
-    it('에러 표시 Span이 6개 존재한다 (각 Input/Textarea마다)', () => {
+    it('에러 표시 Span이 8개 존재한다 (각 Input/Textarea마다)', () => {
       const metaCard = findById(tabSeo, 'meta_settings_card');
       const errorSpans = findAllByComponentName(metaCard, 'Span')
         .filter((s: any) => s.if && s.if.includes('_local.errors'));
 
-      expect(errorSpans).toHaveLength(6);
+      expect(errorSpans).toHaveLength(8);
     });
 
     it('힌트(form-hint) P 태그가 카테고리/검색/상품에 각각 존재한다', () => {

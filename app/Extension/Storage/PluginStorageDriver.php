@@ -54,11 +54,32 @@ class PluginStorageDriver implements StorageInterface
     }
 
     /**
+     * 플러그인 storage 루트에 `.preserve-ownership` 마커가 없으면 작성합니다 (멱등).
+     *
+     * 코어 update 의 `FilePermissionHelper::chownRecursiveDetailed` 가
+     * `respectPreservationMarker=true` 로 호출되면 본 마커가 있는 디렉토리 서브트리
+     * 전체를 chown 비대상으로 자동 skip → 시드 시점 owner/perms 영구 보존.
+     */
+    private function ensurePreservationMarker(): void
+    {
+        $markerPath = "{$this->identifier}/.preserve-ownership";
+        if (Storage::disk($this->disk)->exists($markerPath)) {
+            return;
+        }
+
+        Storage::disk($this->disk)->put(
+            $markerPath,
+            "# G7 preservation marker\n# 코어 update 의 chownRecursive 가 본 디렉토리 트리를 자동 skip 합니다.\n"
+        );
+    }
+
+    /**
      * {@inheritDoc}
      */
     public function put(string $category, string $path, mixed $content): bool
     {
         $fullPath = $this->resolvePath($category, $path);
+        $this->ensurePreservationMarker();
 
         return Storage::disk($this->disk)->put($fullPath, $content);
     }

@@ -36,6 +36,7 @@ class CheckUserStatus
                 UserStatus::Inactive->value => 'auth.account_inactive',
                 UserStatus::Blocked->value => 'auth.account_blocked',
                 UserStatus::Withdrawn->value => 'auth.account_withdrawn',
+                UserStatus::PendingVerification->value => 'auth.account_pending_verification',
                 default => 'auth.permission_denied',
             };
 

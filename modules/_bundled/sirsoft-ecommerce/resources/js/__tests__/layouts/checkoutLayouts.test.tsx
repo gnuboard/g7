@@ -8,8 +8,8 @@
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createLayoutTest } from '../../../../../../resources/js/core/template-engine/__tests__/utils/layoutTestUtils';
-import { ComponentRegistry } from '../../../../../../resources/js/core/template-engine/ComponentRegistry';
+import { createLayoutTest } from '../../../../../../../resources/js/core/template-engine/__tests__/utils/layoutTestUtils';
+import { ComponentRegistry } from '../../../../../../../resources/js/core/template-engine/ComponentRegistry';
 
 // ========== 테스트용 컴포넌트 정의 ==========
 

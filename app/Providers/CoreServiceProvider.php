@@ -3,13 +3,19 @@
 namespace App\Providers;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Enums\DeactivationReason;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
+use App\Contracts\Extension\IdentityVerificationInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
+use App\Contracts\Repositories\IdentityMessageDefinitionRepositoryInterface;
+use App\Contracts\Repositories\IdentityMessageTemplateRepositoryInterface;
+use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutPreviewRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
@@ -35,6 +41,8 @@ use App\Extension\CoreVersionChecker;
 use App\Extension\ExtensionManager;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
+use App\Extension\IdentityVerification\IdentityVerificationManager;
+use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Cache\CoreCacheDriver;
@@ -42,6 +50,10 @@ use App\Extension\Storage\CoreStorageDriver;
 use App\Extension\TemplateManager;
 use App\Repositories\ActivityLogRepository;
 use App\Repositories\AttachmentRepository;
+use App\Repositories\IdentityMessageDefinitionRepository;
+use App\Repositories\IdentityMessageTemplateRepository;
+use App\Repositories\IdentityPolicyRepository;
+use App\Repositories\IdentityVerificationLogRepository;
 use App\Repositories\JsonConfigRepository;
 use App\Repositories\LayoutExtensionRepository;
 use App\Repositories\LayoutPreviewRepository;
@@ -181,6 +193,20 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
         $this->app->bind(NotificationTemplateRepositoryInterface::class, NotificationTemplateRepository::class);
 
+        // IdentityVerification Repository 바인딩
+        $this->app->bind(IdentityVerificationLogRepositoryInterface::class, IdentityVerificationLogRepository::class);
+        $this->app->bind(IdentityPolicyRepositoryInterface::class, IdentityPolicyRepository::class);
+        $this->app->bind(IdentityMessageDefinitionRepositoryInterface::class, IdentityMessageDefinitionRepository::class);
+        $this->app->bind(IdentityMessageTemplateRepositoryInterface::class, IdentityMessageTemplateRepository::class);
+
+        // IdentityVerification Manager + 기본 MailProvider 등록
+        $this->app->singleton(IdentityVerificationManager::class, function ($app) {
+            $manager = new IdentityVerificationManager();
+            $manager->register($app->make(MailIdentityProvider::class));
+
+            return $manager;
+        });
+
         // UniqueIdService 바인딩
         $this->app->singleton(UniqueIdServiceInterface::class, UniqueIdService::class);
 
@@ -289,6 +315,8 @@ class CoreServiceProvider extends ServiceProvider
         $moduleManager = $this->app->make(ModuleManager::class);
         $moduleManager->loadModules();
         $this->validateAndDeactivateIncompatibleExtensions($moduleManager, 'modules');
+        // 코어 업그레이드 후 재호환된 모듈 감지 (자동 재활성화 없음, 알림만 저장)
+        $this->detectRecoveredExtensions('modules');
 
         // 모듈 환경설정 로딩 (활성화된 모듈만)
         $this->loadModuleSettingsToConfig($moduleManager);
@@ -297,6 +325,7 @@ class CoreServiceProvider extends ServiceProvider
         $pluginManager = $this->app->make(PluginManager::class);
         $pluginManager->loadPlugins();
         $this->validateAndDeactivateIncompatibleExtensions($pluginManager, 'plugins');
+        $this->detectRecoveredExtensions('plugins');
 
         // 플러그인 환경설정 로딩 (활성화된 플러그인만)
         $this->loadPluginSettingsToConfig($pluginManager);
@@ -309,10 +338,65 @@ class CoreServiceProvider extends ServiceProvider
             $templateManager = $this->app->make(TemplateManager::class);
             $templateManager->loadTemplates();
             $this->validateAndDeactivateIncompatibleTemplates($templateManager);
+            $this->detectRecoveredExtensions('templates');
         }
 
         // 동적 훅 리스너 일괄 실행 (registerDynamicHooks 메서드를 가진 리스너)
         $this->registerDeferredDynamicHooks();
+
+        // 활성 모듈/플러그인이 선언한 IDV purpose 를 Manager 레지스트리에 수집
+        // (DB 저장 없음 — 런타임 계약)
+        $this->collectDeclaredIdentityPurposes($moduleManager, $pluginManager);
+    }
+
+    /**
+     * 활성 모듈·플러그인이 `getIdentityPurposes()` 로 선언한 purpose 들을
+     * `IdentityVerificationManager` 에 일괄 등록합니다.
+     *
+     * DB 에 저장되지 않으며, 매 요청 부팅 시 수집됩니다 (코드 계약).
+     *
+     * @param  ModuleManager  $moduleManager
+     * @param  PluginManager  $pluginManager
+     */
+    private function collectDeclaredIdentityPurposes(ModuleManager $moduleManager, PluginManager $pluginManager): void
+    {
+        try {
+            $manager = $this->app->make(IdentityVerificationManager::class);
+        } catch (\Throwable) {
+            return;
+        }
+
+        // 코어 purpose 메타데이터: config/core.php 가 SSoT
+        $corePurposes = config('core.identity_purposes', []);
+        if (is_array($corePurposes) && ! empty($corePurposes)) {
+            $manager->registerDeclaredPurposes($corePurposes, 'core', 'core');
+        }
+
+        foreach ($moduleManager->getActiveModules() as $module) {
+            if (method_exists($module, 'getIdentityPurposes')) {
+                $purposes = $module->getIdentityPurposes();
+                if (is_array($purposes) && ! empty($purposes)) {
+                    $manager->registerDeclaredPurposes(
+                        $purposes,
+                        'module',
+                        method_exists($module, 'getIdentifier') ? $module->getIdentifier() : null,
+                    );
+                }
+            }
+        }
+
+        foreach ($pluginManager->getActivePlugins() as $plugin) {
+            if (method_exists($plugin, 'getIdentityPurposes')) {
+                $purposes = $plugin->getIdentityPurposes();
+                if (is_array($purposes) && ! empty($purposes)) {
+                    $manager->registerDeclaredPurposes(
+                        $purposes,
+                        'plugin',
+                        method_exists($plugin, 'getIdentifier') ? $plugin->getIdentifier() : null,
+                    );
+                }
+            }
+        }
     }
 
     /**
@@ -395,7 +479,14 @@ class CoreServiceProvider extends ServiceProvider
             $requiredVersion = $extension->getRequiredCoreVersion();
 
             if (! CoreVersionChecker::isCompatible($requiredVersion)) {
-                $manager->$deactivateMethod($identifier);
+                // 자동 비활성화: reason='incompatible_core' + 요구 버전 전달
+                // (수동 비활성화와 DB 레벨 구분 → UI 라벨링 / 알림 영속화 / 재호환 복구 판정)
+                $manager->$deactivateMethod(
+                    $identifier,
+                    false,
+                    DeactivationReason::IncompatibleCore->value,
+                    $requiredVersion
+                );
                 $deactivated[] = [
                     'identifier' => $identifier,
                     'required' => $requiredVersion,
@@ -416,6 +507,57 @@ class CoreServiceProvider extends ServiceProvider
         }
 
         $cache->put($cacheKey, true, CoreVersionChecker::getCacheTtl());
+    }
+
+    /**
+     * 코어 업그레이드 후 재호환된 자동 비활성화 확장을 감지합니다.
+     *
+     * 자동 재활성화는 수행하지 않습니다 — 사용자 명시적 복구 (recover 엔드포인트) 만 허용.
+     * 결과는 `ext.recovery_check.{type}.{coreVersion}` 캐시에 저장되어
+     * `ExtensionCompatibilityAlertListener` 가 대시보드 알림으로 표시합니다.
+     *
+     * @param  string  $type  확장 타입 (modules|plugins|templates)
+     */
+    protected function detectRecoveredExtensions(string $type): void
+    {
+        // 코어 업데이트 진행 중에는 스킵 (validateAndDeactivate 와 동일 정책)
+        if (self::isCoreUpdateInProgress()) {
+            return;
+        }
+
+        $cache = $this->app->make(CacheInterface::class);
+        $cacheKey = \App\Listeners\ExtensionCompatibilityAlertListener::RECOVERY_CACHE_PREFIX
+            .$type.'.'.CoreVersionChecker::getCoreVersion();
+
+        // 이미 감지된 결과가 있으면 재계산 스킵 (TTL 1시간 + 코어 버전 변경 시 키 자체가 바뀜)
+        if ($cache->has($cacheKey)) {
+            return;
+        }
+
+        $repo = match ($type) {
+            'modules' => $this->app->make(\App\Contracts\Repositories\ModuleRepositoryInterface::class),
+            'plugins' => $this->app->make(\App\Contracts\Repositories\PluginRepositoryInterface::class),
+            'templates' => $this->app->make(\App\Contracts\Repositories\TemplateRepositoryInterface::class),
+            default => null,
+        };
+
+        if (! $repo) {
+            return;
+        }
+
+        $recovered = [];
+        foreach ($repo->findAutoDeactivated() as $record) {
+            $required = $record->incompatible_required_version;
+            if ($required && CoreVersionChecker::isCompatible($required)) {
+                $recovered[] = [
+                    'identifier' => $record->identifier,
+                    'previously_required' => $required,
+                    'deactivated_at' => $record->deactivated_at,
+                ];
+            }
+        }
+
+        $cache->put($cacheKey, $recovered, CoreVersionChecker::getCacheTtl());
     }
 
     /**
@@ -478,7 +620,12 @@ class CoreServiceProvider extends ServiceProvider
             $requiredVersion = $template['g7_version'] ?? null;
 
             if (! CoreVersionChecker::isCompatible($requiredVersion)) {
-                $templateManager->deactivateTemplate($identifier);
+                // 자동 비활성화: reason='incompatible_core' + 요구 버전 전달
+                $templateManager->deactivateTemplate(
+                    $identifier,
+                    DeactivationReason::IncompatibleCore->value,
+                    $requiredVersion
+                );
                 $deactivated[] = [
                     'identifier' => $identifier,
                     'required' => $requiredVersion,

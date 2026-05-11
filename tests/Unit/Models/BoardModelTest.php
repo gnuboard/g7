@@ -82,8 +82,7 @@ class BoardModelTest extends TestCase
             'max_file_count' => 5,
             'allowed_extensions' => ['jpg', 'png', 'pdf'],
             'comment_order' => 'ASC',
-            'board_manager_id' => null,
-            'notify_author_on_comment' => false,
+            'notify_author' => false,
             'notify_admin_on_post' => false,
             'blocked_keywords' => ['금지어1', '금지어2'],
         ];
@@ -182,6 +181,8 @@ class BoardModelTest extends TestCase
 
     /**
      * boolean 필드가 정상적으로 캐스팅되는지 테스트
+     *
+     * 참고: `notify_author_on_comment` 은 `notify_author` 로 필드 리네임됨 (모듈 리팩토링)
      */
     public function test_boolean_fields_are_cast_correctly(): void
     {
@@ -194,7 +195,7 @@ class BoardModelTest extends TestCase
             'use_reply' => true,
             'use_report' => false,
             'use_file_upload' => true,
-            'notify_author_on_comment' => false,
+            'notify_author' => false,
             'notify_admin_on_post' => true,
         ]);
 
@@ -205,29 +206,13 @@ class BoardModelTest extends TestCase
         $this->assertTrue($board->use_reply);
         $this->assertFalse($board->use_report);
         $this->assertTrue($board->use_file_upload);
-        $this->assertFalse($board->notify_author_on_comment);
+        $this->assertFalse($board->notify_author);
         $this->assertTrue($board->notify_admin_on_post);
     }
 
-    /**
-     * boardManager 관계 테스트
-     */
-    public function test_belongs_to_board_manager(): void
-    {
-        // Arrange
-        $user = User::factory()->create();
-
-        // Act
-        $board = $this->createBoard([
-            'name' => ['ko' => '게시판'],
-            'slug' => 'test-board',
-            'board_manager_id' => $user->id,
-        ]);
-
-        // Assert
-        $this->assertInstanceOf(User::class, $board->boardManager);
-        $this->assertEquals($user->id, $board->boardManager->id);
-    }
+    // 참고: `board_manager_id` 컬럼 및 `boardManager()` 관계는
+    // 모듈 리팩토링으로 제거됨 (게시판 매니저는 Role/Permission 기반으로 이행).
+    // 따라서 `test_belongs_to_board_manager` 는 삭제됨.
 
     /**
      * creator 관계 테스트
@@ -360,20 +345,27 @@ class BoardModelTest extends TestCase
     }
 
     /**
-     * guarded 속성 테스트 (created_by, updated_by)
+     * created_by / updated_by 가 fillable 로 설정되어 명시 할당 시 저장된다.
+     *
+     * Board model 은 created_by/updated_by 를 $fillable 에 포함해
+     * 서비스 계층에서 명시적으로 제공할 수 있도록 설계됨.
+     * (auto-fill trait 은 부재 — 서비스에서 Auth::id() 등 책임 주입)
      */
-    public function test_created_by_and_updated_by_are_guarded(): void
+    public function test_created_by_and_updated_by_are_fillable(): void
     {
+        // Arrange: FK 제약 통과를 위해 실제 User 생성
+        $creator = \App\Models\User::factory()->create();
+
         // Act
         $board = $this->createBoard([
             'name' => ['ko' => '게시판'],
             'slug' => 'test-board',
-            'created_by' => 999, // guarded이므로 무시되어야 함
-            'updated_by' => 999, // guarded이므로 무시되어야 함
+            'created_by' => $creator->id,
+            'updated_by' => $creator->id,
         ]);
 
         // Assert
-        $this->assertNull($board->created_by);
-        $this->assertNull($board->updated_by);
+        $this->assertSame($creator->id, $board->created_by);
+        $this->assertSame($creator->id, $board->updated_by);
     }
 }

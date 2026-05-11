@@ -175,7 +175,7 @@
                           "props": {
                             "className": "px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
                           },
-                          "text": "{{btItem.name[_global.locale ?? 'ko'] ?? btItem.name.ko ?? btItem.slug}}"
+                          "text": "{{btItem.name[_global.locale ?? $locale ?? 'ko'] ?? btItem.name.ko ?? btItem.slug}}"
                         },
                         {
                           "id": "bt_td_actions",
@@ -212,7 +212,7 @@
                                         "btEditingItem": "{{btItem}}",
                                         "btFormMode": "edit",
                                         "btFormSlug": "{{btItem.slug}}",
-                                        "btFormName": "{{typeof btItem.name === 'object' ? btItem.name : {ko: btItem.name ?? '', en: ''}}}",
+                                        "btFormName": "{{typeof btItem.name === 'object' ? btItem.name : {ko: btItem.name ?? '', en: ''} }}",
                                         "btFormErrors": null
                                       }
                                     }
@@ -515,7 +515,7 @@
                       "type": "composite",
                       "name": "MultilingualInput",
                       "props": {
-                        "value": "{{_global.btFormName ?? {ko: '', en: ''}}}",
+                        "value": "{{_global.btFormName ?? {ko: '', en: ''} }}",
                         "layout": "tabs",
                         "name": "bt_form_name",
                         "placeholder": "$t:sirsoft-board.admin.board_types.name_placeholder",
@@ -588,7 +588,7 @@
                             "method": "{{_global.btFormMode === 'edit' ? 'PUT' : 'POST'}}",
                             "body": {
                               "slug": "{{_global.btFormSlug}}",
-                              "name": "{{_global.btFormName ?? {ko: '', en: ''}}}"
+                              "name": "{{_global.btFormName ?? {ko: '', en: ''} }}"
                             }
                           },
                           "onSuccess": [

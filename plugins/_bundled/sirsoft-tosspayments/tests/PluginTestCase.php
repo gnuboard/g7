@@ -42,17 +42,31 @@ abstract class PluginTestCase extends TestCase
      */
     protected function migrateFreshUsing(): array
     {
+        // RefreshDatabase 는 첫 테스트의 migrateFreshUsing 만 적용 — 모든 번들 확장
+        // migrations 를 포함시켜 Plugin suite 전체 실행 시에도 스키마 보장.
+        $paths = ['database/migrations'];
+        foreach (glob(base_path('modules/_bundled/*/database/migrations'), GLOB_ONLYDIR) as $p) {
+            $paths[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $p);
+        }
+        foreach (glob(base_path('plugins/_bundled/*/database/migrations'), GLOB_ONLYDIR) as $p) {
+            $paths[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $p);
+        }
+
         return [
             '--drop-views' => $this->shouldDropViews(),
             '--drop-types' => $this->shouldDropTypes(),
             '--seed' => $this->shouldSeed(),
             '--seeder' => $this->seeder(),
-            '--path' => [
-                'database/migrations',
-                'modules/sirsoft-ecommerce/database/migrations',
-            ],
+            '--path' => $paths,
         ];
     }
+
+    /**
+     * HookManager static state 스냅샷 — tearDown 에서 복원하여 테스트 간 훅 격리 보장.
+     *
+     * @var array{hooks: array, filters: array, dispatching: array}|null
+     */
+    private ?array $hookSnapshot = null;
 
     /**
      * 테스트 환경 설정
@@ -75,6 +89,49 @@ abstract class PluginTestCase extends TestCase
 
         // 플러그인 라우트를 수동으로 등록
         $this->registerPluginRoutes();
+
+        // HookManager 상태 스냅샷 (tearDown 에서 복원)
+        $this->snapshotHookManager();
+    }
+
+    /**
+     * tearDown 에 HookManager 상태 복원.
+     */
+    protected function tearDown(): void
+    {
+        $this->restoreHookManager();
+
+        parent::tearDown();
+    }
+
+    /**
+     * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
+     */
+    private function snapshotHookManager(): void
+    {
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $this->hookSnapshot = [
+            'hooks' => $ref->getProperty('hooks')->getValue(),
+            'filters' => $ref->getProperty('filters')->getValue(),
+            'dispatching' => $ref->getProperty('dispatching')->getValue(),
+        ];
+    }
+
+    /**
+     * 스냅샷 시점으로 HookManager 복원.
+     */
+    private function restoreHookManager(): void
+    {
+        if ($this->hookSnapshot === null) {
+            return;
+        }
+
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
+        $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
+        $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
+
+        $this->hookSnapshot = null;
     }
 
     /**

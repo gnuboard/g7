@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Template;
 
 use App\Console\Commands\Traits\HasProgressBar;
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
 use Illuminate\Console\Command;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 class UninstallTemplateCommand extends Command
 {
     use HasProgressBar;
+    use HasUnifiedConfirm;
 
     /**
      * The name and signature of the console command.
@@ -57,7 +59,7 @@ class UninstallTemplateCommand extends Command
             $this->warn(__('templates.commands.uninstall.confirm_details.layouts', ['count' => $template->layouts()->count()]));
             $this->warn(__('templates.commands.uninstall.confirm_details.versions'));
 
-            if (! $this->confirm(__('templates.commands.uninstall.confirm_question'), false)) {
+            if (! $this->unifiedConfirm(__('templates.commands.uninstall.confirm_question'), false)) {
                 $this->info(__('templates.commands.uninstall.aborted'));
 
                 return Command::SUCCESS;

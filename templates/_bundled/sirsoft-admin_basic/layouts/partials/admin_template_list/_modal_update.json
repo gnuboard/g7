@@ -14,6 +14,122 @@
     {
       "type": "basic",
       "name": "Div",
+      "if": "{{_global.selectedTemplate?.is_compatible === false}}",
+      "props": {
+        "className": "mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg",
+        "role": "alert"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-start gap-2"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "exclamation-triangle",
+                "className": "text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm font-medium text-amber-800 dark:text-amber-200"
+                  },
+                  "text": "$t:extensions.update_modal.compat_warning_title"
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-sm text-amber-700 dark:text-amber-300 mt-1"
+                  },
+                  "text": "$t:defer:extensions.update_modal.compat_warning_message|type=$t:extensions.types.template|required={{_global.selectedTemplate?.required_core_version ?? _global.selectedTemplate?.incompatible_required_version ?? ''}}|installed={{_global.selectedTemplate?.current_core_version ?? ''}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-200 hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer mt-2"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "openModal",
+                      "target": "core_update_guide_modal"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "external-link",
+                        "size": "xs"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:extensions.update_modal.compat_guide_link"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "flex items-center gap-2 mt-3 text-sm text-amber-800 dark:text-amber-200 cursor-pointer select-none"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "checkbox",
+                        "checked": "{{_global.templateForceUpdate === true}}",
+                        "className": "w-4 h-4 rounded border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400"
+                      },
+                      "actions": [
+                        {
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "global",
+                            "templateForceUpdate": "{{!_global.templateForceUpdate}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:extensions.update_modal.force_label"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
       "if": "{{_global.templateUpdateError}}",
       "props": {
         "className": "mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg"
@@ -479,7 +595,7 @@
                               "name": "Icon",
                               "props": {
                                 "name": "file-alt",
-                                "className": "text-amber-500 shrink-0"
+                                "className": "text-amber-500 dark:text-amber-400 shrink-0"
                               }
                             },
                             {
@@ -574,8 +690,8 @@
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isTemplateUpdating}}",
+            "className": "flex items-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isTemplateUpdating || (_global.selectedTemplate?.is_compatible === false && _global.templateForceUpdate !== true)}}",
             "type": "button"
           },
           "actions": [
@@ -598,7 +714,8 @@
                   "params": {
                     "method": "POST",
                     "body": {
-                      "layout_strategy": "{{_global.templateLayoutStrategy ?? 'overwrite'}}"
+                      "layout_strategy": "{{_global.templateLayoutStrategy ?? 'overwrite'}}",
+                      "force": "{{_global.templateForceUpdate === true}}"
                     }
                   },
                   "onSuccess": [

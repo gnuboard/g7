@@ -103,9 +103,9 @@ grep -rn "[금지 패턴]" [대상 파일/디렉토리]
 | `**/Listeners/**` | hooks.md |
 | `**/Services/**` | service-repository.md, hooks.md |
 
-### 3.5 CLAUDE.md CRITICAL RULES 검증 (MANDATORY)
+### 3.5 핵심 규칙 검증
 
-CLAUDE.md 및 규정 문서에 명시된 CRITICAL 규칙을 검증합니다.
+규정 문서에 명시된 절대 규칙을 검증합니다.
 
 #### 3.5.1 _bundled 디렉토리 작업 원칙
 

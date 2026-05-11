@@ -1,0 +1,70 @@
+{
+  "common": {
+    "system": "システム"
+  },
+  "boards": {
+    "menu_added_success": "管理者メニューに追加されました。",
+    "menu_add_failed": "メニュー追加に失敗しました。",
+    "menu_already_exists": "既に追加されたメニューです。",
+    "module_not_found": "掲示板モジュールが見つかりません。"
+  },
+  "post": {
+    "notice": "お知らせ",
+    "reply": "回答",
+    "action": {
+      "blind": "ブラインド処理",
+      "delete": "削除処理",
+      "restore": "復元処理"
+    },
+    "deleted_post_title": "削除された投稿です",
+    "deleted_post_content": "この投稿は削除されました。",
+    "blinded_post_title": "ブラインド処理された投稿です",
+    "blinded_post_content": "この投稿はブラインド処理されました。"
+  },
+  "comment": {
+    "create_success": "コメントが登録されました。",
+    "update_success": "コメントが編集されました。",
+    "delete_success": "コメントが削除されました。",
+    "blind_success": "コメントがブラインド処理されました。",
+    "restore_success": "コメントが復元されました。",
+    "not_found": "コメントが見つかりません。",
+    "not_guest_comment": "非会員コメントではありません。",
+    "invalid_password": "パスワードが一致しません。",
+    "password_verified": "パスワードが確認されました。",
+    "verify_password_failed": "パスワード確認に失敗しました。",
+    "deleted_comment_content": "削除されたコメントです",
+    "blinded_comment_content": "ブラインド処理されたコメントです",
+    "view_original": "元文を表示",
+    "hide_original": "元文を非表示",
+    "post_blinded": "ブラインド処理された投稿にはコメントを作成できません。",
+    "post_deleted": "削除された投稿にはコメントを作成できません。"
+  },
+  "reports": {
+    "create_success": "通報が受け付けられました。",
+    "create_failed": "通報受け付けに失敗しました。",
+    "duplicate_report": "既に通報した対象です。",
+    "report_disabled": "この掲示板では通報機能が無効化されています。",
+    "target_not_reportable": "通報できない対象です。"
+  },
+  "board_type": {
+    "list": "掲示板タイプの一覧を閲覧しました。",
+    "created": "掲示板タイプが作成されました。",
+    "updated": "掲示板タイプが編集されました。",
+    "deleted": "掲示板タイプが削除されました。",
+    "default_set": "デフォルト掲示板タイプが設定されました。",
+    "not_found": "掲示板タイプが見つかりません。",
+    "in_use": "使用中の掲示板タイプは削除できません。",
+    "delete_in_use": ":count個の掲示板で使用中のタイプは削除できません。"
+  },
+  "settings": {
+    "fetch_success": "設定を閲覧しました。",
+    "fetch_failed": "設定の閲覧に失敗しました。",
+    "save_success": "設定が保存されました。",
+    "save_failed": "設定の保存に失敗しました。",
+    "save_error": "設定の保存中にエラーが発生しました。",
+    "bulk_apply_success": ":count個の掲示板に設定が一括適用されました。",
+    "bulk_apply_failed": "設定の一括適用に失敗しました。",
+    "clear_cache_success": "設定キャッシュが初期化されました。",
+    "clear_cache_error": "設定キャッシュの初期化中にエラーが発生しました。"
+  }
+}

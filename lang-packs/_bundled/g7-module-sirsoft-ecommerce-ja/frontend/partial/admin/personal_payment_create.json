@@ -1,0 +1,61 @@
+{
+  "title": "個人決済の作成",
+  "description": "新しい個人決済を作成します",
+  "buyer_info": {
+    "title": "購入者情報",
+    "required_notice": "必須項目です",
+    "buyer_type": "決済対象",
+    "member_select": "会員選択",
+    "guest_input": "非会員入力",
+    "selected_member": "選択された会員",
+    "name": "氏名",
+    "name_placeholder": "例: 山田太郎",
+    "phone": "連絡先",
+    "phone_placeholder": "例: 090-1234-5678",
+    "phone_hint": "数字のみ入力すると、自動的に形式が適用されます",
+    "email": "メール",
+    "email_placeholder": "例: example@email.com"
+  },
+  "payment_detail": {
+    "title": "個人決済詳細",
+    "product_name": "商品名",
+    "product_name_placeholder": "例: プレミアムメンバーシップ 1年",
+    "amount": "決済金額",
+    "amount_placeholder": "例: 100,000",
+    "amount_hint": "数字のみ入力すると、自動的に形式が適用されます",
+    "expired_at": "有効期限",
+    "expired_at_hint": "デフォルト: 当日 + 7日",
+    "order_link": "注文番号連携",
+    "order_link_optional": "(オプション)",
+    "search_order": "注文検索および連携",
+    "search_order_hint": "既存注文と連携する場合は選択してください",
+    "linked_order": "連携された注文",
+    "linked_order_optional": "(オプション)",
+    "memo": "管理者メモ",
+    "memo_optional": "(オプション)",
+    "memo_placeholder": "例: 定期メンバーシップ決済 - VIP顧客特別割引適用\n顧客要望など、記録することができます"
+  },
+  "modal": {
+    "member_search": {
+      "title": "会員検索",
+      "description": "会員名、ID、メールアドレスで検索して選択してください",
+      "search_placeholder": "会員名、ID、メールアドレスで検索"
+    },
+    "order_search": {
+      "title": "注文検索および連携",
+      "description": "注文番号、顧客名、商品名で検索して選択してください",
+      "search_field": "検索フィールド",
+      "search_field_all": "すべて",
+      "search_field_order_number": "注文番号",
+      "search_field_member_name": "顧客名",
+      "search_field_product_name": "商品名",
+      "search_placeholder": "検索語を入力してください",
+      "order_date": "注文日",
+      "order_date_all": "すべて",
+      "order_date_last_7_days": "直近7日",
+      "order_date_last_30_days": "直近30日",
+      "order_date_last_90_days": "直近90日",
+      "result_count": "{{count}}件の注文が検索されました"
+    }
+  }
+}

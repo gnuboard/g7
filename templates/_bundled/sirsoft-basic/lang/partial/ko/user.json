@@ -65,5 +65,28 @@
     "notifications_title": "알림",
     "board_title": "게시판 활동",
     "inquiries_title": "상품 문의내역"
+  },
+  "identity": {
+    "challenge": {
+      "title": "본인 확인",
+      "code_title": "인증 코드 입력",
+      "code_subtitle": "전송된 6자리 코드를 입력해주세요.",
+      "code_placeholder": "인증 코드",
+      "verify": "확인",
+      "resend": "코드 재전송",
+      "resend_cooldown": "재전송 ({{seconds}}초 후)",
+      "resend_success": "인증 코드를 재전송했습니다.",
+      "remaining_time": "남은 시간: {{minutes}}:{{seconds}}",
+      "remaining_attempts": "남은 시도: {{count}}회",
+      "expired": "시간이 만료되었습니다. 재전송을 눌러주세요.",
+      "link_title": "이메일 확인이 필요합니다",
+      "link_subtitle": "메일로 전송된 링크를 클릭해 본인 확인을 완료해주세요.",
+      "resend_link": "이메일 재전송",
+      "check_spam": "메일이 도착하지 않으면 스팸함을 확인해주세요.",
+      "external_title": "외부 본인인증으로 이동 중",
+      "external_subtitle": "잠시 후 본인인증 서비스로 자동 이동됩니다.",
+      "manual_redirect": "수동으로 이동하기",
+      "error_generic": "인증에 실패했습니다. 다시 시도해주세요."
+    }
   }
 }

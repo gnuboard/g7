@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "layout_name": "admin_dashboard",
+  "extends": "_admin_base",
+  "meta": {
+    "title": "$t:admin.dashboard.title",
+    "auth_required": true
+  },
+  "slots": {
+    "content": [
+      {
+        "id": "dashboard_content",
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "p-8"
+        },
+        "children": [
+          {
+            "id": "welcome_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 max-w-2xl",
+              "data-testid": "welcome-card"
+            },
+            "children": [
+              {
+                "id": "welcome_title",
+                "type": "basic",
+                "name": "H1",
+                "props": {
+                  "className": "text-2xl font-bold text-gray-900 dark:text-white mb-2",
+                  "data-testid": "welcome-title"
+                },
+                "text": "$t:admin.dashboard.welcome_title"
+              },
+              {
+                "id": "welcome_message",
+                "type": "basic",
+                "name": "Span",
+                "props": {
+                  "className": "text-sm text-gray-600 dark:text-gray-400",
+                  "data-testid": "welcome-message"
+                },
+                "text": "$t:admin.dashboard.welcome_message"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

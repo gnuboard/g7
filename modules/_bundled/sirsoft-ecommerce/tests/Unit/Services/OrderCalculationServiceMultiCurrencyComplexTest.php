@@ -91,6 +91,13 @@ class OrderCalculationServiceMultiCurrencyComplexTest extends ModuleTestCase
             $settingsPath.'/language_currency.json',
             json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
+
+        // g7_module_settings() 는 Config::get('g7_settings.modules.{id}') 를 조회함.
+        // 테스트 환경에서는 모듈이 활성화되어 있지 않아 Config 가 비어있으므로 수동 주입.
+        \Illuminate\Support\Facades\Config::set(
+            'g7_settings.modules.sirsoft-ecommerce.language_currency',
+            $settings
+        );
     }
 
     protected function tearDown(): void

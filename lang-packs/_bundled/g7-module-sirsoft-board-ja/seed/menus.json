@@ -1,0 +1,14 @@
+{
+  "sirsoft-board": {
+    "name": "掲示板管理"
+  },
+  "sirsoft-board-settings": {
+    "name": "環境設定"
+  },
+  "sirsoft-board-list": {
+    "name": "掲示板一覧"
+  },
+  "sirsoft-board-reports": {
+    "name": "掲示板通報状況"
+  }
+}

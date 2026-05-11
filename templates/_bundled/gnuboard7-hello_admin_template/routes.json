@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "routes": [
+    {
+      "path": "*/admin",
+      "layout": "admin_dashboard",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.dashboard.title"
+      }
+    }
+  ]
+}

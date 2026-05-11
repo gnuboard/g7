@@ -1,0 +1,142 @@
+{
+  "no_content": "コンテンツがありません。",
+  "published_at": "公開日",
+  "status": {
+    "active": "現在適用中",
+    "outdated": "前のバージョン"
+  },
+  "back_to_home": "ホームに戻る",
+  "terms": {
+    "title": "利用規約"
+  },
+  "privacy": {
+    "title": "プライバシーポリシー",
+    "article1": {
+      "title": "第1条（収集する個人情報の項目）",
+      "required": "必須",
+      "optional": "選択",
+      "auto": "自動収集"
+    },
+    "article2": {
+      "title": "第2条（個人情報の収集及び利用目的）"
+    },
+    "article3": {
+      "title": "第3条（個人情報の保有及び利用期間）"
+    },
+    "article4": {
+      "title": "第4条（個人情報の破棄）"
+    }
+  },
+  "refund": {
+    "title": "キャンセル·返品·交換ポリシー",
+    "subtitle": "ショッピングモールのキャンセル、返品、交換に関するご案内です。",
+    "delivery": {
+      "title": "配送のご案内",
+      "item1": "ご注文後1～3日以内に発送いたします。（土日祝日除く）",
+      "item2": "沖縄・離島地域は追加送料が発生する場合があります。",
+      "item3_prefix": "配送追跡は",
+      "item3_link": "注文履歴",
+      "item3_suffix": "でご確認いただけます。"
+    },
+    "cancel": {
+      "title": "注文キャンセル",
+      "before_title": "配送前のキャンセル",
+      "before_item1": "決済完了後、商品準備前までキャンセル可能です。",
+      "before_item2_prefix": "マイページ＞",
+      "before_item2_link": "注文履歴",
+      "before_item2_suffix": "から直接キャンセルできます。",
+      "before_item3_highlight": "全額返金",
+      "before_item3_suffix": "されます。",
+      "after_title": "配送後のキャンセル",
+      "after_item1_prefix": "商品発送後はキャンセルが",
+      "after_item1_highlight": "不可",
+      "after_item1_suffix": "となり、返品として処理されます。",
+      "after_item2_prefix": "返品送料",
+      "after_item2_highlight": "5,000円",
+      "after_item2_suffix": "が差し引かれます。"
+    },
+    "return": {
+      "title": "返品のご案内",
+      "period_title": "返品可能期間",
+      "period_desc": "商品受領後7日以内に返品申請が可能です。",
+      "reject_title": "返品不可事由",
+      "reject_item1": "お客様の過失による商品の破損",
+      "reject_item2": "梱包を開封して使用した場合",
+      "reject_item3": "時間経過により再販売が困難な場合",
+      "fee_label": "返品送料：",
+      "fee_amount": "5,000円",
+      "fee_condition": "（単なる変心の場合）",
+      "fee_note": "※商品不良及び誤配送の場合は送料無料"
+    },
+    "exchange": {
+      "title": "交換のご案内",
+      "period_title": "交換可能期間",
+      "period_desc": "商品受領後7日以内に交換申請が可能です。",
+      "process_title": "交換手順",
+      "process_step1": "カスタマーセンターまたはマイページから交換申請",
+      "process_step2": "返品住所に商品を発送",
+      "process_step3": "商品確認後、交換商品を発送",
+      "fee_label": "交換送料：",
+      "fee_amount": "往復10,000円",
+      "fee_condition": "（単なる変心の場合）",
+      "fee_note": "※商品不良及び誤配送の場合は送料無料"
+    },
+    "contact": {
+      "title": "返品·交換のご案内",
+      "no_info": "連絡先情報が登録されていません。",
+      "customer_service": "カスタマーセンター：",
+      "return_address": "返品住所："
+    }
+  },
+  "contact": {
+    "title": "お問い合わせ",
+    "last_modified": "最後の更新",
+    "guide": {
+      "title": "お問い合わせのご案内",
+      "description": "サービスご利用中にご不明な点がございましたら、いつでもお気軽にお問い合わせください。"
+    },
+    "info": {
+      "title": "連絡先",
+      "email_label": "メール：",
+      "email": "minsup@sir.kr",
+      "hours_label": "営業時間：",
+      "hours": "平日09:00～18:00"
+    },
+    "faq": {
+      "title": "よくある質問",
+      "description": "ご質問の前によくある質問をご確認ください。",
+      "link": "よくある質問を見る"
+    }
+  },
+  "faq": {
+    "title": "よくある質問",
+    "last_modified": "最後の更新",
+    "subtitle": "よくある質問（FAQ）",
+    "q1": "会員登録はどのようにするのですか？",
+    "a1_prefix": "ホームページ右上の",
+    "a1_link": "「会員登録」",
+    "a1_suffix": "ボタンをクリックして会員登録できます。",
+    "q2": "パスワードを忘れました。",
+    "a2_prefix": "ログインページで",
+    "a2_link": "「パスワード再設定」",
+    "a2_suffix": "を通じて再設定できます。",
+    "q3": "投稿の作成方法は？",
+    "a3_prefix": "ログイン後、希望する掲示板で",
+    "a3_link": "「投稿する」",
+    "a3_suffix": "ボタンをクリックしてください。"
+  },
+  "about": {
+    "title": "G7 CMS について",
+    "last_modified": "最終更新",
+    "welcome_title": "G7 CMS へようこそ",
+    "welcome_description1": "G7 CMSはLaravelとReactベースのオープンソースCMSプラットフォームです。",
+    "welcome_description2": "モジュール、プラグイン、テンプレートシステムを通じてコア修正なしに、望む機能を自由に拡張できます。小規模なウェブサイトから大規模なサービスまで、G7 CMSと一緒に素早く、柔軟に構築してください。",
+    "why_title": "なぜG7 CMSなのか？",
+    "why_description1": "既存のCMSは機能を追加するにはコアを修正する必要がありました。アップデートするたびにカスタマイズが破壊され、保守が難しくなる悪循環が繰り返されます。",
+    "why_description2": "G7 CMSはこの問題を解決するために設計されました。フックシステムとモジュールアーキテクチャでコアはそのままに、望む機能だけを追加できます。",
+    "opensource_title": "一緒に作っていきます",
+    "opensource_description1": "G7 CMSは完全なオープンソースです。ソースコードを自由に使用、修正、配布でき、商用プロジェクトにも制限がありません。",
+    "opensource_description2": "バグ報告、機能提案、コード貢献をすべてお待ちしています。GitHubで開発状況を確認し、コミュニティに参加してください。",
+    "back_to_home": "ホームに戻る"
+  }
+}

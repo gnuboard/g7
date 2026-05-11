@@ -695,5 +695,94 @@ describe('LayoutLoader', () => {
       // fetch는 2회 호출
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
+
+    it('재시도 후에도 401이면 LayoutLoaderError.details.status === 401 이 포함되어야 한다 (Issue #301)', async () => {
+      // TemplateApp.showRouteError 가드가 details.status 로 분기하므로 이 계약은 회귀 방지 필수
+      mockGetToken
+        .mockReturnValueOnce('invalid-token')
+        .mockReturnValueOnce(null);
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ message: 'Invalid token.' }),
+      });
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ message: 'Authentication required.' }),
+      });
+
+      try {
+        await loader.loadLayout('sirsoft-admin_basic', 'admin_dashboard');
+        throw new Error('Expected LayoutLoaderError to be thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(LayoutLoaderError);
+        const llErr = error as LayoutLoaderError;
+        expect(llErr.details?.status).toBe(401);
+        expect(llErr.code).toBe('FETCH_FAILED');
+      }
+    });
+
+    it('토큰 보유 + 재시도 후 401 시 details.hadToken=true 가 마킹되어야 한다 (Issue #301 후속)', async () => {
+      // 가드(TemplateApp.showRouteError) 진입 시점에는 LayoutLoader 가 이미 토큰을
+      // 제거한 상태라 apiClient.getToken() 만으로 토큰 보유 여부를 알 수 없다.
+      // LayoutLoader 가 첫 401 시 토큰을 보유했음을 details.hadToken 으로 마킹해야
+      // 가드가 reason='session_expired' 를 부여할 수 있다.
+      mockGetToken
+        .mockReturnValueOnce('invalid-token')
+        .mockReturnValueOnce(null);
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ message: 'Invalid token.' }),
+      });
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ message: 'Authentication required.' }),
+      });
+
+      try {
+        await loader.loadLayout('sirsoft-admin_basic', 'admin_dashboard');
+        throw new Error('Expected LayoutLoaderError to be thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(LayoutLoaderError);
+        const llErr = error as LayoutLoaderError;
+        expect(llErr.details?.status).toBe(401);
+        expect(llErr.details?.hadToken).toBe(true);
+      }
+    });
+
+    it('토큰 미보유 (익명) + 401 시 details.hadToken 이 부재해야 한다 (정책: 익명 안내 토스트 미노출)', async () => {
+      // 익명 사용자가 인증 필요 페이지에 직접 진입한 경우, retry 분기 자체가
+      // 진입하지 않으므로 hadToken 마킹 없이 throw 되어야 한다. 가드는 이를
+      // 감지해 reason 미부여 → admin_login init_actions 의 if 가 false →
+      // 토스트 미노출. 익명 진입에는 "세션 만료" 안내가 의미상 부적절.
+      mockGetToken.mockReturnValue(null);
+
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ message: 'Authentication required.' }),
+      });
+
+      try {
+        await loader.loadLayout('sirsoft-admin_basic', 'admin_dashboard');
+        throw new Error('Expected LayoutLoaderError to be thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(LayoutLoaderError);
+        const llErr = error as LayoutLoaderError;
+        expect(llErr.details?.status).toBe(401);
+        expect(llErr.details?.hadToken).toBeUndefined();
+      }
+    });
   });
 });

@@ -1,0 +1,50 @@
+{
+  "welcome": {
+    "definition": {
+      "name": "会員登録 ウェルカム",
+      "description": "会員登録完了時に送信されるウェルカム通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 会員登録をお待ちしておりました",
+        "body": "<h1>{name}様、ようこそ!</h1><p>{app_name}にご登録いただきありがとうございます。</p><p>これで全てのサービスをご利用いただけます。以下のボタンをクリックしてログインしてください。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">ログインする</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "会員登録をお待ちしておりました",
+        "body": "{name}様、{app_name}にご登録いただきありがとうございます。"
+      }
+    }
+  },
+  "reset_password": {
+    "definition": {
+      "name": "パスワード再設定",
+      "description": "パスワード再設定要求時に送信される通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] パスワード再設定のご案内",
+        "body": "<h1>{name}様、こんにちは。</h1><p>パスワード再設定のご要望を承りました。以下のボタンをクリックしてパスワードを再設定してください。</p><p>このリンクは<strong>{expire_minutes}分</strong>後に期限切れになります。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">パスワード再設定</a></td></tr></table><p>パスワード再設定をご要望でなかった場合は、このメールを無視してください。</p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "パスワード再設定のご案内",
+        "body": "{name}様、パスワード再設定が要求されました。ご本人様による操作でない場合は、この通知を無視してください。"
+      }
+    }
+  },
+  "password_changed": {
+    "definition": {
+      "name": "パスワード変更",
+      "description": "パスワード変更完了時に送信される通知"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] パスワードが変更されました",
+        "body": "<h1>{name}様、こんにちは。</h1><p>アカウントのパスワードが正常に変更されました。</p><p><strong>ご本人様による操作でない場合は、直ちにカスタマーサポートまでお問い合わせください。</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">ログインする</a></td></tr></table><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      },
+      "database": {
+        "subject": "パスワードが変更されました",
+        "body": "{name}様、パスワードが変更されました。ご本人様による操作でない場合は、直ちにカスタマーサポートまでお問い合わせください。"
+      }
+    }
+  }
+}

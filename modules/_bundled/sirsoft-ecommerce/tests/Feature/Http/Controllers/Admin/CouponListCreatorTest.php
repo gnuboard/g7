@@ -82,8 +82,8 @@ class CouponListCreatorTest extends ModuleTestCase
         $this->assertArrayHasKey('created_by_name', $couponData);
         $this->assertArrayHasKey('created_by_email', $couponData);
 
-        // 값 검증
-        $this->assertEquals($this->adminUser->id, $couponData['created_by']);
+        // 값 검증 (CouponResource 는 creator->uuid 노출)
+        $this->assertEquals($this->adminUser->uuid, $couponData['created_by']);
         $this->assertEquals($this->adminUser->name, $couponData['created_by_name']);
         $this->assertEquals($this->adminUser->email, $couponData['created_by_email']);
     }
@@ -102,7 +102,7 @@ class CouponListCreatorTest extends ModuleTestCase
 
         $data = $response->json('data');
 
-        $this->assertEquals($this->adminUser->id, $data['created_by']);
+        $this->assertEquals($this->adminUser->uuid, $data['created_by']);
         $this->assertEquals($this->adminUser->name, $data['created_by_name']);
         $this->assertEquals($this->adminUser->email, $data['created_by_email']);
     }
@@ -255,10 +255,10 @@ class CouponListCreatorTest extends ModuleTestCase
             'created_by' => $otherUser->id,
         ]);
 
-        // created_by 파라미터로 필터
+        // created_by 파라미터로 필터 — CouponListRequest 는 UUID 필수
         $response = $this->actingAs($this->adminUser)
             ->getJson('/api/modules/sirsoft-ecommerce/admin/promotion-coupons?' . http_build_query([
-                'created_by' => $otherUser->id,
+                'created_by' => $otherUser->uuid,
             ]));
 
         $response->assertOk();

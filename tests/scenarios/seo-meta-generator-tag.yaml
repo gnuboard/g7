@@ -1,0 +1,61 @@
+# audit:allow test-scenario-coverage reason: 시나리오는 단순 (enabled × content_state × 출력 채널) 으로 9 케이스 cross-product. 핵심 회귀는 test_files 단위 테스트 6 케이스 + Feature 검증 3 케이스로 모두 커버.
+
+feature: 메타 generator 태그 (CMS 식별)
+
+description: |
+  W3Techs 등 CMS 시장 점유율 측정 도구가 사용하는 `<meta name="generator">` 태그를
+  코어 설정으로 노출/내용 제어. SEO 봇 페이지·SPA 셸·Admin 셸 3개 출력 채널 공통.
+
+  - 활성화 토글: `seo.generator_enabled` (default: true)
+  - 내용 입력: `seo.generator_content` (default: "")
+  - 빈 내용 + 활성 → "GnuBoard7 {config('app.version')}" 자동 폴백
+  - XSS: content 는 e() escape
+
+axes:
+  enabled_state: [true, false, missing_setting]
+  content_state: [empty_string, whitespace_only, custom_value, xss_payload]
+  output_channel: [seo_blade, app_blade, admin_blade]
+
+exclusions:
+  - { enabled_state: false, content_state: custom_value, reason: "비활성화 시 content 무관하게 빈 문자열" }
+  - { enabled_state: false, content_state: xss_payload, reason: "비활성화 시 출력 자체 없음" }
+
+effects:
+  - disabled_returns_empty_string
+  - missing_setting_falls_back_to_enabled_with_version
+  - empty_content_emits_gnuboard7_with_app_version
+  - whitespace_content_emits_gnuboard7_with_app_version
+  - custom_content_emits_custom_value_unchanged
+  - xss_payload_in_content_is_html_escaped
+  - admin_settings_form_persists_generator_enabled
+  - admin_settings_form_persists_generator_content
+  - validation_rejects_content_exceeding_200_chars
+  - validation_accepts_content_within_200_chars
+  - validation_accepts_boolean_for_generator_enabled
+
+sub_flows:
+  - id: helper_unit_matrix
+    description: g7_meta_generator_tag() 헬퍼의 enabled × content 매트릭스
+    effects:
+      - disabled_returns_empty_string
+      - missing_setting_falls_back_to_enabled_with_version
+      - empty_content_emits_gnuboard7_with_app_version
+      - whitespace_content_emits_gnuboard7_with_app_version
+      - custom_content_emits_custom_value_unchanged
+      - xss_payload_in_content_is_html_escaped
+  - id: admin_save_validation
+    description: SaveSettingsRequest seo.generator_* 검증 규칙
+    effects:
+      - validation_rejects_content_exceeding_200_chars
+      - validation_accepts_content_within_200_chars
+      - validation_accepts_boolean_for_generator_enabled
+      - admin_settings_form_persists_generator_enabled
+      - admin_settings_form_persists_generator_content
+
+test_files:
+  - tests/Unit/Helpers/MetaGeneratorTagTest.php
+  - tests/Feature/Seo/SaveSettingsRequestSeoTest.php
+
+notes: |
+  blade 출력 검증(seo_blade/app_blade/admin_blade)은 helper 단위 테스트로 충분히 커버
+  (3개 blade 모두 동일 헬퍼를 단일 호출). 채널별 통합은 수동 검증 단계에서 curl 로 확인.

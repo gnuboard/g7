@@ -1,0 +1,38 @@
+{
+  "welcome": {
+    "title": "いらっしゃいませ!",
+    "description": "그누보드7 コミュニティへようこそ。",
+    "login_prompt": "ログインしてコミュニティに参加してください。",
+    "greeting": "こんにちは、{{name}}さん!"
+  },
+  "welcome_suffix": "へようこそ",
+  "welcome_description": "一緒に成長するコミュニティでさまざまなお話を共有してください。",
+  "get_started": "始める",
+  "go_to_mypage": "マイページ",
+  "learn_more": "詳しく知る",
+  "stats": {
+    "total_members": "全会員",
+    "total_posts": "全投稿",
+    "today_posts": "本日の投稿",
+    "online_users": "ログイン中",
+    "members": "会員",
+    "posts": "投稿",
+    "comments": "コメント",
+    "boards": "掲示板"
+  },
+  "recent_posts": "最新投稿",
+  "no_posts": "まだ投稿がありません。",
+  "popular_boards": "人気掲示板",
+  "no_boards": "まだ人気掲示板がありません。",
+  "shop": "ショッピングモール",
+  "shop_description": "新鮮な商品を見てみる",
+  "community_guide": "コミュニティガイド",
+  "guide_rule_1": "相互に尊重する対話",
+  "guide_rule_2": "暴言、非難禁止",
+  "guide_rule_3": "広告/スパム禁止",
+  "shop_promo": {
+    "title": "ショッピングモール",
+    "description": "さまざまな商品をご紹介します",
+    "go_to_shop": "買い物に行く"
+  }
+}

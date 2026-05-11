@@ -64,6 +64,8 @@ class StockService
      */
     public function deductStock(Order $order): void
     {
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.stock.before_deduct', $order);
+
         DB::transaction(function () use ($order) {
             $productIds = [];
 
@@ -106,6 +108,8 @@ class StockService
                 $this->productRepository->syncStockFromOptions($productId);
             }
         });
+
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.stock.after_deduct', $order);
     }
 
     /**
@@ -116,6 +120,8 @@ class StockService
      */
     public function restoreStock(Order $order): void
     {
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.stock.before_restore', $order);
+
         DB::transaction(function () use ($order) {
             $productIds = [];
 
@@ -144,6 +150,8 @@ class StockService
                 $this->productRepository->syncStockFromOptions($productId);
             }
         });
+
+        \App\Extension\HookManager::doAction('sirsoft-ecommerce.stock.after_restore', $order);
     }
 
     /**

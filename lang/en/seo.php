@@ -10,6 +10,11 @@ return [
     'warmup_started_layout' => 'SEO cache warmup started for layout :layout.',
     'warmup_dispatched' => 'SEO cache warmup has been dispatched.',
 
+    // Sitemap manual regeneration
+    'sitemap_regenerated' => 'Sitemap regeneration completed.',
+    'sitemap_regenerate_failed' => 'Sitemap regeneration failed.',
+    'sitemap_disabled' => 'Sitemap generation is disabled.',
+
     // Cache stats
     'stats_period' => 'SEO cache statistics for the last :days days',
     'stats_overall' => 'Overall Statistics',

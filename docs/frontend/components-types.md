@@ -229,7 +229,7 @@ export const FileUploader = forwardRef((
 ) => { ... });
 ```
 
-> **트러블슈팅**: [사례 상세](../../.claude/docs/frontend/troubleshooting-state-advanced.md#사례-1-composite-컴포넌트의-불안정한-기본값으로-모달-닫기버튼-클릭-불가)
+> **트러블슈팅**: composite 컴포넌트가 매 렌더마다 새 객체/배열 기본값을 만들면 자식 모달이 닫기 직후 재마운트되어 닫기 버튼이 동작하지 않는 회귀가 발생한다. 모듈 스코프 상수로 안정화한다.
 
 ### 객체 값 이벤트의 `_changedKeys` 규칙 (engine-v1.28.0+)
 

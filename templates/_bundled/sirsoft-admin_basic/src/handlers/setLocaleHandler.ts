@@ -47,8 +47,11 @@ export async function setLocaleHandler(
     return;
   }
 
-  // 유효한 로케일 확인 (템플릿 메타데이터에서 가져오거나 기본값 사용)
-  const validLocales = ['ko', 'en']; // TODO: 템플릿 메타데이터에서 가져오기
+  // 유효한 로케일 확인 — 활성 언어팩(supported_locales)을 우선, 미초기화 시 ko/en 폴백
+  const G7Core = (window as any).G7Core;
+  const validLocales: string[] = G7Core?.config?.('app.supported_locales')
+    ?? G7Core?.state?.get?.('_global.appConfig.supportedLocales')
+    ?? ['ko', 'en'];
   if (!validLocales.includes(locale)) {
     logger.warn('Unsupported locale:', locale);
     return;

@@ -1,0 +1,59 @@
+{
+    "identifier": "gnuboard7-hello_user_template",
+    "vendor": "gnuboard7",
+    "name": {
+        "ko": "Hello 사용자 템플릿",
+        "en": "Hello User Template"
+    },
+    "version": "0.1.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "학습용 최소 샘플 사용자 템플릿 (Basic 8개 컴포넌트)",
+        "en": "Learning minimal sample user template (8 basic components)"
+    },
+    "type": "user",
+    "hidden": true,
+    "locales": ["ko", "en"],
+    "author": {
+        "name": "gnuboard7",
+        "email": "contact@gnuboard.com",
+        "url": "https://gnuboard.com"
+    },
+    "release_date": "2026-04-21",
+    "g7_version": ">=7.0.0-beta.4",
+    "dependencies": {
+        "modules": {
+            "gnuboard7-hello_module": ">=0.1.0-beta.1"
+        },
+        "plugins": {}
+    },
+    "assets": {
+        "css": ["dist/css/components.css"],
+        "js": ["dist/js/components.iife.js"],
+        "fonts": [],
+        "images": []
+    },
+    "components": {
+        "basic": [
+            "div", "button", "h1", "h2", "h3", "a", "span", "img"
+        ],
+        "composite": [],
+        "layout": []
+    },
+    "error_config": {
+        "layouts": {
+            "401": "errors/401",
+            "403": "errors/403",
+            "404": "errors/404",
+            "500": "errors/500",
+            "503": "errors/503",
+            "maintenance": "errors/maintenance"
+        }
+    },
+    "features": {
+        "dark_mode": false,
+        "responsive": false,
+        "multi_language": true,
+        "multi_currency": false
+    }
+}

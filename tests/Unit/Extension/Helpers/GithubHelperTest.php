@@ -346,8 +346,10 @@ class GithubHelperTest extends TestCase
     #[Test]
     public function resolveArchiveUrl_v접두사_태그_200이면_해당_URL을_반환합니다(): void
     {
+        // resolveArchiveUrl 은 git/refs/tags/{tag} 로 태그 존재 여부를 먼저 검증한 뒤
+        // zipball URL 을 반환 (codeload 404 불가시 실패 방지 — GithubHelper.php 참조)
         Http::fake([
-            'api.github.com/repos/owner/repo/zipball/v1.0.0' => Http::response('', 200),
+            'api.github.com/repos/owner/repo/git/refs/tags/v1.0.0' => Http::response('', 200),
         ]);
 
         $url = GithubHelper::resolveArchiveUrl('owner', 'repo', '1.0.0');
@@ -359,8 +361,8 @@ class GithubHelperTest extends TestCase
     public function resolveArchiveUrl_v접두사_404이면_순수버전으로_폴백합니다(): void
     {
         Http::fake([
-            'api.github.com/repos/owner/repo/zipball/v1.0.0' => Http::response('', 404),
-            'api.github.com/repos/owner/repo/zipball/1.0.0' => Http::response('', 200),
+            'api.github.com/repos/owner/repo/git/refs/tags/v1.0.0' => Http::response('', 404),
+            'api.github.com/repos/owner/repo/git/refs/tags/1.0.0' => Http::response('', 200),
         ]);
 
         $url = GithubHelper::resolveArchiveUrl('owner', 'repo', '1.0.0');
@@ -383,8 +385,10 @@ class GithubHelperTest extends TestCase
     #[Test]
     public function resolveArchiveUrl_302이면_해당_URL을_반환합니다(): void
     {
+        // 리디렉션 상황: 태그 존재 확인(GET git/refs/tags)만 성공하면 zipball URL 반환.
+        // zipball 실제 호출은 다운로드 시점에 발생 (resolveArchiveUrl 은 태그 검증 + URL 조립만 수행)
         Http::fake([
-            'api.github.com/repos/owner/repo/zipball/v1.0.0' => Http::response('', 302),
+            'api.github.com/repos/owner/repo/git/refs/tags/v1.0.0' => Http::response('', 200),
         ]);
 
         $url = GithubHelper::resolveArchiveUrl('owner', 'repo', '1.0.0');

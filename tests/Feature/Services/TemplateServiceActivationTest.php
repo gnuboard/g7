@@ -254,8 +254,8 @@ class TemplateServiceActivationTest extends TestCase
 
         // activateTemplate은 배열을 반환함
         $this->assertIsArray($result);
-        $this->assertEquals($template->identifier, $result['identifier']);
-        $this->assertEquals('active', $result['status']);
+        $this->assertEquals($template->identifier, $result['template_info']['identifier']);
+        $this->assertEquals('active', $result['template_info']['status']);
     }
 
     /**
@@ -283,8 +283,8 @@ class TemplateServiceActivationTest extends TestCase
 
         // activateTemplate은 배열을 반환함
         $this->assertIsArray($result);
-        $this->assertEquals($template->identifier, $result['identifier']);
-        $this->assertEquals('active', $result['status']);
+        $this->assertEquals($template->identifier, $result['template_info']['identifier']);
+        $this->assertEquals('active', $result['template_info']['status']);
     }
 
     /**
@@ -325,7 +325,7 @@ class TemplateServiceActivationTest extends TestCase
         $result = $this->templateService->deactivateTemplate($template->identifier);
 
         // Assert: 템플릿이 비활성화되었는지 확인
-        // deactivateTemplate은 배열을 반환함
+        // deactivateTemplate 은 templateInfo 배열을 직접 반환 (activateTemplate 과 달리 template_info 래핑 없음)
         $this->assertIsArray($result);
         $this->assertEquals('inactive', $result['status']);
         $this->assertDatabaseHas('templates', [
@@ -352,7 +352,7 @@ class TemplateServiceActivationTest extends TestCase
         $result = $this->templateService->deactivateTemplate($template->id);
 
         // Assert: 템플릿이 비활성화되었는지 확인
-        // deactivateTemplate은 배열을 반환함
+        // deactivateTemplate 은 templateInfo 배열을 직접 반환 (activateTemplate 과 달리 template_info 래핑 없음)
         $this->assertIsArray($result);
         $this->assertEquals('inactive', $result['status']);
         $this->assertDatabaseHas('templates', [

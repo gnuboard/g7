@@ -3,8 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\ModuleSettingsInterface;
-use App\Traits\NormalizesSettingsData;
 use App\Extension\HookManager;
+use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 
@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\File;
  * 이커머스 모듈 환경설정 서비스
  *
  * ModuleSettingsInterface를 구현하여 모듈별 설정을 관리합니다.
+ *
+ * 다국어 카탈로그(결제수단/배송 가능 국가/통화) 라벨은 카탈로그 빌드 시점에 활성 언어팩으로
+ * 자동 보강 — 단순 패턴: 빌드 메서드 안에서 `localize_catalog_field()` helper 직접 호출.
  */
 class EcommerceSettingsService implements ModuleSettingsInterface
 {
@@ -115,6 +118,30 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             $settings['order_settings']['payment_methods'] = $this->getMergedPaymentMethods(
                 $settings['order_settings']['payment_methods'] ?? []
             );
+        }
+
+        // 통화 라벨에 활성 언어팩 키 자동 보강
+        if (isset($settings['language_currency']['currencies']) && is_array($settings['language_currency']['currencies'])) {
+            foreach ($settings['language_currency']['currencies'] as $idx => $currency) {
+                if (! empty($currency['code']) && isset($currency['name']) && is_array($currency['name'])) {
+                    $settings['language_currency']['currencies'][$idx]['name'] = localize_catalog_field(
+                        $currency['name'],
+                        "sirsoft-ecommerce::settings.currencies.{$currency['code']}.name",
+                    );
+                }
+            }
+        }
+
+        // 배송 가능 국가 라벨에 활성 언어팩 키 자동 보강
+        if (isset($settings['shipping']['available_countries']) && is_array($settings['shipping']['available_countries'])) {
+            foreach ($settings['shipping']['available_countries'] as $idx => $country) {
+                if (! empty($country['code']) && isset($country['name']) && is_array($country['name'])) {
+                    $settings['shipping']['available_countries'][$idx]['name'] = localize_catalog_field(
+                        $country['name'],
+                        "sirsoft-ecommerce::settings.countries.{$country['code']}.name",
+                    );
+                }
+            }
         }
 
         $this->settings = $settings;
@@ -361,11 +388,19 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     /**
      * 모듈 경로 반환
      *
+     * 활성 디렉토리(modules/{identifier})가 존재하면 우선 사용하고,
+     * 존재하지 않는 경우 (pre-install / 테스트 환경) _bundled 원본을 fallback 으로 사용.
+     *
      * @return string 모듈 디렉토리 경로
      */
     private function getModulePath(): string
     {
-        return base_path('modules/'.self::MODULE_IDENTIFIER);
+        $active = base_path('modules/'.self::MODULE_IDENTIFIER);
+        if (is_dir($active)) {
+            return $active;
+        }
+
+        return base_path('modules/_bundled/'.self::MODULE_IDENTIFIER);
     }
 
     /**
@@ -528,10 +563,19 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         $methods = $defaults['defaults']['order_settings']['payment_methods'] ?? [];
 
         return array_map(function (array $method) {
+            $id = $method['id'];
+
             return [
-                'id' => $method['id'],
-                'name' => $method['_cached_name'] ?? ['ko' => $method['id'], 'en' => $method['id']],
-                'description' => $method['_cached_description'] ?? ['ko' => '', 'en' => ''],
+                'id' => $id,
+                // 활성 언어팩의 다국어 키 자동 보강 (ja 등 부재 locale 자동 채움, 운영자 편집 보존)
+                'name' => localize_catalog_field(
+                    $method['_cached_name'] ?? ['ko' => $id, 'en' => $id],
+                    "sirsoft-ecommerce::settings.payment_methods.{$id}.name",
+                ),
+                'description' => localize_catalog_field(
+                    $method['_cached_description'] ?? ['ko' => '', 'en' => ''],
+                    "sirsoft-ecommerce::settings.payment_methods.{$id}.description",
+                ),
                 'icon' => $method['_cached_icon'] ?? 'circle-question',
                 'source' => $method['_cached_source'] ?? 'builtin',
                 'defaults' => [

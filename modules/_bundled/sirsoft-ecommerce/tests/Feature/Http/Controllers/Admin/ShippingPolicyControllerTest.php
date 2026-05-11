@@ -27,6 +27,9 @@ class ShippingPolicyControllerTest extends ModuleTestCase
     {
         parent::setUp();
 
+        // ShippingPolicy validation 은 ShippingType DB rows (rules 의 Rule::in) 를 참조
+        $this->seed(\Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder::class);
+
         // 관리자 사용자 생성 (배송정책 권한 포함)
         $this->adminUser = $this->createAdminUser([
             'sirsoft-ecommerce.shipping-policies.read',

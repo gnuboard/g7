@@ -1,0 +1,16 @@
+{
+  "upload_success": "ファイルがアップロードされました。",
+  "upload_failed": "ファイルのアップロードに失敗しました。",
+  "deleted": "ファイルが削除されました。",
+  "delete_confirm_title": "ファイル削除",
+  "delete_confirm_message": "このファイルを削除しますか?",
+  "deleting": "削除中...",
+  "drop_or_click": "ファイルをドラッグするか、クリックしてアップロード",
+  "upload_limit": "最大{{maxFiles}}個、1個あたり{{maxSize}}MB",
+  "attached_count": "{{count}}/{{max}}個添付されました",
+  "max_size": "最大{{size}}MB",
+  "drag_to_reorder": "ドラッグして順序を変更",
+  "reorder_failed": "順序の変更に失敗しました。",
+  "primary_image": "メイン画像",
+  "set_as_primary": "メイン画像として設定"
+}

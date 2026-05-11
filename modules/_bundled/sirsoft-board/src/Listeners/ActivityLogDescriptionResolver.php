@@ -3,8 +3,7 @@
 namespace Modules\Sirsoft\Board\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use Modules\Sirsoft\Board\Models\Board;
-use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 
 /**
  * 게시판 활동 로그 description_params 해석 리스너
@@ -16,6 +15,13 @@ use Modules\Sirsoft\Board\Models\Post;
  */
 class ActivityLogDescriptionResolver implements HookListenerInterface
 {
+    /**
+     * @param  BoardRepositoryInterface  $boardRepository  게시판 Repository (ID/slug → 이름 변환)
+     */
+    public function __construct(
+        private readonly BoardRepositoryInterface $boardRepository,
+    ) {}
+
     /**
      * 구독할 훅과 메서드 매핑 반환
      *
@@ -98,7 +104,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
         // 2순위: properties.board_id로 DB 조회
         $boardId = $properties['board_id'] ?? null;
         if ($boardId) {
-            $board = Board::find($boardId);
+            $board = $this->boardRepository->find((int) $boardId);
             $params['board_name'] = $board?->name ?? "ID: {$boardId}";
         }
 
@@ -164,7 +170,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
 
         // slug로 board_name 조회 (fallback)
         if (empty($params['board_name']) && ! empty($properties['slug'])) {
-            $board = Board::where('slug', $properties['slug'])->first();
+            $board = $this->boardRepository->findBySlug((string) $properties['slug']);
             if ($board) {
                 $params['board_name'] = $board->name;
             }

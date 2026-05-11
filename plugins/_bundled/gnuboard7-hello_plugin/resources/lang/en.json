@@ -1,0 +1,14 @@
+{
+    "name": "Hello Plugin",
+    "description": "Learning minimal sample plugin (consumes Hello module hooks)",
+    "settings": {
+        "title": "Hello Plugin Settings",
+        "description": "A learning sample that subscribes to Hello module's memo creation hook and writes a log entry.",
+        "fields": {
+            "log_enabled": {
+                "label": "Enable log writing",
+                "hint": "When enabled, writes to hello-plugin.log on memo creation."
+            }
+        }
+    }
+}

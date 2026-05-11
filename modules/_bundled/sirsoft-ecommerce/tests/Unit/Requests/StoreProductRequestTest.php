@@ -55,8 +55,15 @@ class StoreProductRequestTest extends ModuleTestCase
             'options' => [
                 [
                     'option_code' => 'OPT-001',
-                    'option_name' => '기본 옵션',
-                    'option_values' => ['기본'],
+                    // LocaleRequiredTranslatable — primary locale 필수 배열
+                    'option_name' => ['ko' => '기본 옵션'],
+                    // option_values.*.key / value 는 각각 translatable 배열
+                    'option_values' => [
+                        [
+                            'key' => ['ko' => '기본'],
+                            'value' => ['ko' => '기본값'],
+                        ],
+                    ],
                     'list_price' => 10000,
                     'selling_price' => 8000,
                     'stock_quantity' => 100,
@@ -66,84 +73,65 @@ class StoreProductRequestTest extends ModuleTestCase
     }
 
     // ========================================
-    // 다국어 로케일 동적 처리 테스트
+    // 다국어 필드 Rule 클래스 배치 테스트
+    //
+    // 이전: rules() 가 동적으로 name.ko, name.en 같은 per-locale 키 생성
+    // 현재: LocaleRequiredTranslatable / TranslatableField Rule 클래스로 일원화 →
+    //       field 레벨에서 단일 Rule 인스턴스가 전체 locale 검증을 처리
     // ========================================
 
-    public function test_rules_generates_dynamic_locale_keys_for_name(): void
+    /**
+     * name 에 LocaleRequiredTranslatable Rule 이 부착되어 있는지 확인.
+     */
+    public function test_rules_name_uses_locale_required_translatable(): void
     {
         $request = new StoreProductRequest();
         $rules = $request->rules();
 
-        $locales = config('app.translatable_locales', ['ko', 'en']);
-        $primaryLocale = $locales[0];
+        $this->assertArrayHasKey('name', $rules);
+        $this->assertContains('required', $rules['name']);
+        $this->assertContains('array', $rules['name']);
 
-        // 기본 로케일은 required
-        $this->assertArrayHasKey("name.{$primaryLocale}", $rules);
-        $this->assertContains('required', $rules["name.{$primaryLocale}"]);
-
-        // 나머지 로케일은 nullable
-        foreach (array_slice($locales, 1) as $locale) {
-            $this->assertArrayHasKey("name.{$locale}", $rules);
-            $this->assertContains('nullable', $rules["name.{$locale}"]);
-            $this->assertNotContains('required', $rules["name.{$locale}"]);
-        }
-
-        // 하드코딩된 'name.ko' 키가 없어야 함 (동적으로 생성되므로 키 자체는 있을 수 있지만 하드코딩은 아님)
-        // 대신 name.* 와일드카드 존재 확인
-        $this->assertArrayHasKey('name.*', $rules);
+        $hasLocaleRule = collect($rules['name'])->contains(
+            fn ($rule) => $rule instanceof \App\Rules\LocaleRequiredTranslatable
+        );
+        $this->assertTrue($hasLocaleRule, 'name 규칙에 LocaleRequiredTranslatable 이 포함돼야 함');
     }
 
-    public function test_rules_generates_dynamic_locale_keys_for_description(): void
+    /**
+     * description 에 TranslatableField Rule 이 부착되어 있는지 확인.
+     */
+    public function test_rules_description_uses_translatable_field(): void
     {
         $request = new StoreProductRequest();
         $rules = $request->rules();
 
-        $locales = config('app.translatable_locales', ['ko', 'en']);
+        $this->assertArrayHasKey('description', $rules);
+        $this->assertContains('nullable', $rules['description']);
+        $this->assertContains('array', $rules['description']);
 
-        foreach ($locales as $locale) {
-            $this->assertArrayHasKey("description.{$locale}", $rules);
-            $this->assertContains('nullable', $rules["description.{$locale}"]);
-        }
+        $hasTranslatableRule = collect($rules['description'])->contains(
+            fn ($rule) => $rule instanceof \App\Rules\TranslatableField
+        );
+        $this->assertTrue($hasTranslatableRule, 'description 규칙에 TranslatableField 가 포함돼야 함');
     }
 
-    public function test_rules_generates_dynamic_locale_keys_for_additional_options_name(): void
+    /**
+     * additional_options.*.name 에 LocaleRequiredTranslatable Rule 이 부착되어 있는지 확인.
+     */
+    public function test_rules_additional_options_name_uses_locale_required_translatable(): void
     {
         $request = new StoreProductRequest();
         $rules = $request->rules();
 
-        $locales = config('app.translatable_locales', ['ko', 'en']);
-        $primaryLocale = $locales[0];
+        $this->assertArrayHasKey('additional_options.*.name', $rules);
+        $this->assertContains('required_with:additional_options', $rules['additional_options.*.name']);
+        $this->assertContains('array', $rules['additional_options.*.name']);
 
-        // 기본 로케일은 required_with
-        $this->assertArrayHasKey("additional_options.*.name.{$primaryLocale}", $rules);
-        $this->assertContains('required_with:additional_options', $rules["additional_options.*.name.{$primaryLocale}"]);
-
-        // 나머지 로케일은 nullable
-        foreach (array_slice($locales, 1) as $locale) {
-            $this->assertArrayHasKey("additional_options.*.name.{$locale}", $rules);
-            $this->assertContains('nullable', $rules["additional_options.*.name.{$locale}"]);
-        }
-    }
-
-    public function test_rules_all_locale_fields_have_string_and_max_constraints(): void
-    {
-        $request = new StoreProductRequest();
-        $rules = $request->rules();
-
-        $locales = config('app.translatable_locales', ['ko', 'en']);
-
-        foreach ($locales as $locale) {
-            // name: string, max:200
-            $this->assertContains('string', $rules["name.{$locale}"]);
-            $this->assertContains('max:200', $rules["name.{$locale}"]);
-
-            // description: string
-            $this->assertContains('string', $rules["description.{$locale}"]);
-
-            // additional_options.*.name: string, max:100
-            $this->assertContains('string', $rules["additional_options.*.name.{$locale}"]);
-            $this->assertContains('max:100', $rules["additional_options.*.name.{$locale}"]);
-        }
+        $hasLocaleRule = collect($rules['additional_options.*.name'])->contains(
+            fn ($rule) => $rule instanceof \App\Rules\LocaleRequiredTranslatable
+        );
+        $this->assertTrue($hasLocaleRule);
     }
 
     // ========================================
@@ -155,11 +143,10 @@ class StoreProductRequestTest extends ModuleTestCase
         $request = new StoreProductRequest();
         $messages = $request->messages();
 
-        $primaryLocale = config('app.translatable_locales', ['ko', 'en'])[0];
-
+        // LocaleRequiredTranslatable Rule 이 locale 레벨 메시지를 자체 처리하므로
+        // messages() 는 field 레벨 키만 보유
         $expectedKeys = [
             'name.required',
-            "name.{$primaryLocale}.required",
             'product_code.required',
             'product_code.unique',
             'list_price.required',
@@ -202,20 +189,19 @@ class StoreProductRequestTest extends ModuleTestCase
         $this->assertArrayNotHasKey('options.*.selling_price.lte', $messages);
     }
 
-    public function test_messages_use_dynamic_primary_locale(): void
+    public function test_messages_name_required_is_translated(): void
     {
         $request = new StoreProductRequest();
         $messages = $request->messages();
 
-        $primaryLocale = config('app.translatable_locales', ['ko', 'en'])[0];
-
-        // 동적 로케일 키가 존재해야 함
-        $this->assertArrayHasKey("name.{$primaryLocale}.required", $messages);
-
-        // 하드코딩된 'name.ko.required' 키가 아닌 동적 키 사용 확인
-        // (현재 primary가 ko이면 같은 키이지만, 메시지 값은 name_primary 키를 참조)
-        $messageValue = $messages["name.{$primaryLocale}.required"];
-        $this->assertNotEmpty($messageValue);
+        // name.required 메시지는 __('sirsoft-ecommerce::validation.product.name.required') 참조
+        $this->assertArrayHasKey('name.required', $messages);
+        $this->assertNotEmpty($messages['name.required']);
+        $this->assertStringNotContainsString(
+            'sirsoft-ecommerce::validation.',
+            $messages['name.required'],
+            '번역 키가 validation.php 에 정의되어 있어야 함'
+        );
     }
 
     // ========================================
@@ -262,14 +248,13 @@ class StoreProductRequestTest extends ModuleTestCase
 
     public function test_primary_locale_name_is_required(): void
     {
-        $primaryLocale = config('app.translatable_locales', ['ko', 'en'])[0];
-
         $data = $this->validProductData();
         $data['name'] = ['en' => 'Test Product']; // 기본 로케일 누락
         $validator = $this->validate($data);
 
+        // LocaleRequiredTranslatable 은 field 레벨에서 실패
         $this->assertTrue($validator->fails());
-        $this->assertArrayHasKey("name.{$primaryLocale}", $validator->errors()->toArray());
+        $this->assertArrayHasKey('name', $validator->errors()->toArray());
     }
 
     public function test_non_primary_locale_name_is_optional(): void
@@ -433,13 +418,15 @@ class StoreProductRequestTest extends ModuleTestCase
         $request = new StoreProductRequest();
         $rules = $request->rules();
 
-        // content 필드 규칙이 존재해야 함
+        // content 필드 규칙이 존재해야 함 (LocaleRequiredTranslatable 로 다국어 처리)
         $this->assertArrayHasKey('notice_items.*.content', $rules, 'notice_items.*.content 규칙이 존재해야 합니다.');
-        $this->assertArrayHasKey('notice_items.*.content.ko', $rules, 'notice_items.*.content.ko 규칙이 존재해야 합니다.');
+        $hasLocaleRule = collect($rules['notice_items.*.content'])->contains(
+            fn ($rule) => $rule instanceof \App\Rules\LocaleRequiredTranslatable
+        );
+        $this->assertTrue($hasLocaleRule, 'notice_items.*.content 에 LocaleRequiredTranslatable 이 있어야 함');
 
         // value 필드 규칙은 존재하면 안 됨
         $this->assertArrayNotHasKey('notice_items.*.value', $rules, 'notice_items.*.value 규칙은 존재하면 안 됩니다.');
-        $this->assertArrayNotHasKey('notice_items.*.value.ko', $rules, 'notice_items.*.value.ko 규칙은 존재하면 안 됩니다.');
     }
 
     public function test_notice_items_with_content_field_passes_validation(): void

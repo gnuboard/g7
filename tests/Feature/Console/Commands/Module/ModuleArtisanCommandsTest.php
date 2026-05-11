@@ -4,9 +4,11 @@ namespace Tests\Feature\Console\Commands\Module;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
+use App\Extension\ModuleManager;
 use App\Models\Module;
 use App\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Helpers\ProtectsExtensionDirectories;
 use Tests\TestCase;
 
 /**
@@ -49,15 +51,26 @@ use Tests\TestCase;
  */
 class ModuleArtisanCommandsTest extends TestCase
 {
+    use ProtectsExtensionDirectories;
     use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        // 활성 디렉토리 보호 — uninstall 등이 dev 환경 디렉토리를 삭제하는 것을 차단
+        $this->setUpExtensionProtection();
+
         // 모듈 매니저가 모듈 디렉토리를 스캔하도록 초기화
-        $moduleManager = app(\App\Extension\ModuleManager::class);
+        $moduleManager = app(ModuleManager::class);
         $moduleManager->loadModules();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->tearDownExtensionProtection();
+
+        parent::tearDown();
     }
 
     // ========================================================================
@@ -307,7 +320,7 @@ class ModuleArtisanCommandsTest extends TestCase
 
         // 삭제 확인에서 거절 → 모듈 유지
         $this->artisan('module:uninstall', ['identifier' => $identifier])
-            ->expectsConfirmation(__('modules.commands.uninstall.confirm_question'), 'no')
+            ->expectsQuestion(__('modules.commands.uninstall.confirm_question').' (yes/no) [no]', 'no')
             ->expectsOutput(__('modules.commands.uninstall.aborted'))
             ->assertExitCode(0);
 
@@ -317,7 +330,7 @@ class ModuleArtisanCommandsTest extends TestCase
 
         // 삭제 확인에서 승인 → 모듈 삭제
         $this->artisan('module:uninstall', ['identifier' => $identifier])
-            ->expectsConfirmation(__('modules.commands.uninstall.confirm_question'), 'yes')
+            ->expectsQuestion(__('modules.commands.uninstall.confirm_question').' (yes/no) [no]', 'yes')
             ->expectsOutput('✅ '.__('modules.commands.uninstall.success', ['module' => $identifier]))
             ->assertExitCode(0);
 
@@ -325,8 +338,9 @@ class ModuleArtisanCommandsTest extends TestCase
             'identifier' => $identifier,
         ]);
 
-        // 권한도 삭제되었는지 확인
-        $this->assertEquals(0, Permission::byExtension(ExtensionOwnerType::Module, $identifier)->count());
+        // 권한은 보존됨 — PO 정책: 권한/메뉴 삭제는 --delete-data 옵션 시에만.
+        // (재설치 시 기존 역할 할당/커스터마이징이 복원 가능하도록 보존)
+        $this->assertGreaterThan(0, Permission::byExtension(ExtensionOwnerType::Module, $identifier)->count());
 
         // =====================================================================
         // Part 5: check-updates / update 커맨드 테스트

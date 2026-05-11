@@ -76,29 +76,29 @@
           "children": [
             {
               "type": "basic",
-              "name": "Div",
+              "name": "Label",
               "props": {
                 "className": "flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 cursor-pointer select-none"
               },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "bulkApplyFields": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k)) ? (_local.bulkApplyFields ?? []).filter(k => !k.startsWith('admin.')) : (_local.bulkApplyFields ?? []).concat(Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.'))).filter((v, i, a) => a.indexOf(v) === i)}}"
-                  }
-                }
-              ],
               "children": [
                 {
                   "type": "basic",
                   "name": "Input",
                   "props": {
                     "type": "checkbox",
-                    "className": "checkbox flex-shrink-0 pointer-events-none",
+                    "className": "checkbox flex-shrink-0",
                     "checked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}"
-                  }
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k)) ? (_local.bulkApplyFields ?? []).filter(k => !k.startsWith('admin.')) : (_local.bulkApplyFields ?? []).concat(Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.'))).filter((v, i, a) => a.indexOf(v) === i)}}"
+                      }
+                    }
+                  ]
                 },
                 {
                   "type": "basic",
@@ -106,14 +106,14 @@
                   "props": {
                     "name": "shield",
                     "size": "sm",
-                    "className": "text-purple-500 dark:text-purple-400 pointer-events-none"
+                    "className": "text-purple-500 dark:text-purple-400"
                   }
                 },
                 {
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-base font-semibold text-gray-800 dark:text-gray-100 pointer-events-none"
+                    "className": "text-base font-semibold text-gray-800 dark:text-gray-100"
                   },
                   "text": "$t:sirsoft-board.admin.settings.permissions_table.admin_section"
                 }
@@ -134,24 +134,14 @@
                     "item_var": "perm"
                   },
                   "props": {
-                    "className": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? 'bg-purple-50 dark:bg-purple-900/20' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'}} flex flex-col gap-2 px-4 py-2.5 transition-colors cursor-pointer"
+                    "className": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? 'bg-purple-50 dark:bg-purple-900/20' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'}} flex flex-col gap-2 px-4 py-2.5 transition-colors"
                   },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? (_local.bulkApplyFields ?? []).filter(f => f !== perm?.[0]) : [...(_local.bulkApplyFields ?? []), perm?.[0]]}}"
-                      }
-                    }
-                  ],
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Div",
+                      "name": "Label",
                       "props": {
-                        "className": "flex items-start gap-2 pointer-events-none"
+                        "className": "flex items-start gap-2 cursor-pointer"
                       },
                       "children": [
                         {
@@ -161,7 +151,17 @@
                             "type": "checkbox",
                             "className": "checkbox flex-shrink-0 mt-0.5",
                             "checked": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0])}}"
-                          }
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? (_local.bulkApplyFields ?? []).filter(f => f !== perm?.[0]) : [...(_local.bulkApplyFields ?? []), perm?.[0]]}}"
+                              }
+                            }
+                          ]
                         },
                         {
                           "type": "basic",
@@ -172,7 +172,7 @@
                           "children": [
                             {
                               "type": "basic",
-                              "name": "Label",
+                              "name": "Span",
                               "props": {
                                 "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
                               },
@@ -239,29 +239,29 @@
           "children": [
             {
               "type": "basic",
-              "name": "Div",
+              "name": "Label",
               "props": {
                 "className": "flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 cursor-pointer select-none"
               },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "bulkApplyFields": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k)) ? (_local.bulkApplyFields ?? []).filter(k => k.startsWith('admin.')) : (_local.bulkApplyFields ?? []).concat(Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.'))).filter((v, i, a) => a.indexOf(v) === i)}}"
-                  }
-                }
-              ],
               "children": [
                 {
                   "type": "basic",
                   "name": "Input",
                   "props": {
                     "type": "checkbox",
-                    "className": "checkbox flex-shrink-0 pointer-events-none",
+                    "className": "checkbox flex-shrink-0",
                     "checked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}"
-                  }
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "bulkApplyFields": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k)) ? (_local.bulkApplyFields ?? []).filter(k => k.startsWith('admin.')) : (_local.bulkApplyFields ?? []).concat(Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.'))).filter((v, i, a) => a.indexOf(v) === i)}}"
+                      }
+                    }
+                  ]
                 },
                 {
                   "type": "basic",
@@ -269,14 +269,14 @@
                   "props": {
                     "name": "users",
                     "size": "sm",
-                    "className": "text-blue-500 dark:text-blue-400 pointer-events-none"
+                    "className": "text-blue-500 dark:text-blue-400"
                   }
                 },
                 {
                   "type": "basic",
                   "name": "Span",
                   "props": {
-                    "className": "text-base font-semibold text-gray-800 dark:text-gray-100 pointer-events-none"
+                    "className": "text-base font-semibold text-gray-800 dark:text-gray-100"
                   },
                   "text": "$t:sirsoft-board.admin.settings.permissions_table.user_section"
                 }
@@ -297,24 +297,14 @@
                     "item_var": "perm"
                   },
                   "props": {
-                    "className": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'}} flex flex-col gap-2 px-4 py-2.5 transition-colors cursor-pointer"
+                    "className": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'}} flex flex-col gap-2 px-4 py-2.5 transition-colors"
                   },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? (_local.bulkApplyFields ?? []).filter(f => f !== perm?.[0]) : [...(_local.bulkApplyFields ?? []), perm?.[0]]}}"
-                      }
-                    }
-                  ],
                   "children": [
                     {
                       "type": "basic",
-                      "name": "Div",
+                      "name": "Label",
                       "props": {
-                        "className": "flex items-start gap-2 pointer-events-none"
+                        "className": "flex items-start gap-2 cursor-pointer"
                       },
                       "children": [
                         {
@@ -324,7 +314,17 @@
                             "type": "checkbox",
                             "className": "checkbox flex-shrink-0 mt-0.5",
                             "checked": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0])}}"
-                          }
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "setState",
+                              "params": {
+                                "target": "local",
+                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0]) ? (_local.bulkApplyFields ?? []).filter(f => f !== perm?.[0]) : [...(_local.bulkApplyFields ?? []), perm?.[0]]}}"
+                              }
+                            }
+                          ]
                         },
                         {
                           "type": "basic",
@@ -335,7 +335,7 @@
                           "children": [
                             {
                               "type": "basic",
-                              "name": "Label",
+                              "name": "Span",
                               "props": {
                                 "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
                               },

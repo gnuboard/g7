@@ -4,8 +4,8 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Requests;
 
 use Illuminate\Support\Facades\Validator;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
+use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
 
 /**
  * 이커머스 설정 저장 요청 검증 테스트
@@ -13,8 +13,11 @@ use Tests\TestCase;
  * - _tab 필드 검증 (탭별 개별 저장 지원)
  * - validatedSettings()에서 _tab 제외 확인
  * - 탭별 부분 데이터 전송 시 검증 통과 확인
+ *
+ * 주의: attributes() 가 `sirsoft-ecommerce::validation.attributes` 번역을 조회하므로
+ * ModuleTestCase 상속 필수 (코어 TestCase 는 모듈 lang 경로 미등록).
  */
-class StoreEcommerceSettingsRequestTest extends TestCase
+class StoreEcommerceSettingsRequestTest extends ModuleTestCase
 {
     /**
      * 검증 수행
@@ -832,9 +835,10 @@ class StoreEcommerceSettingsRequestTest extends TestCase
             ],
         ]);
 
+        // LocaleRequiredTranslatable 은 field 레벨에서 실패 — ko 누락 시 shipping.carriers.0.name 에 에러
         $this->assertTrue(
-            $validator->errors()->has('shipping.carriers.0.name.ko'),
-            'carriers가 있으면 name.ko가 필수여야 합니다'
+            $validator->errors()->has('shipping.carriers.0.name'),
+            'carriers가 있으면 name(primary locale) 이 필수여야 합니다'
         );
     }
 
@@ -866,9 +870,10 @@ class StoreEcommerceSettingsRequestTest extends TestCase
             ],
         ]);
 
+        // LocaleRequiredTranslatable(maxLength:100) — 초과 시 field 레벨 에러
         $this->assertTrue(
-            $validator->errors()->has('shipping.carriers.0.name.ko'),
-            'name.ko 최대 100자 초과 시 실패해야 합니다'
+            $validator->errors()->has('shipping.carriers.0.name'),
+            'name 최대 100자 초과 시 실패해야 합니다'
         );
     }
 
@@ -1091,11 +1096,11 @@ class StoreEcommerceSettingsRequestTest extends TestCase
         $request = new StoreEcommerceSettingsRequest();
         $messages = $request->messages();
 
+        // LocaleRequiredTranslatable 은 field 레벨에서 보고 — name.ko 분리 키 미사용
         $requiredKeys = [
             'shipping.carriers.*.code.required_with',
             'shipping.carriers.*.code.regex',
             'shipping.carriers.*.name.required_with',
-            'shipping.carriers.*.name.ko.required_with',
             'shipping.carriers.*.type.required_with',
             'shipping.carriers.*.type.in',
             'shipping.carriers.*.tracking_url.max',

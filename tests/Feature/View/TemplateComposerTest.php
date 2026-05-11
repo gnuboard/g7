@@ -33,10 +33,13 @@ class TemplateComposerTest extends TestCase
         ]);
 
         // Act: View Composer 실행
+        // TemplateComposer 는 activeAdminTemplate 외에도 frontendSettings 를 전달함
         $view = $this->mock(View::class);
         $view->shouldReceive('with')
             ->once()
             ->with('activeAdminTemplate', 'sirsoft-admin_basic');
+        // 나머지 with() 호출은 임의 인자 허용 (frontendSettings, pluginSettings, moduleSettings 등 다수)
+        $view->shouldReceive('with')->withAnyArgs();
 
         $composer = app(TemplateComposer::class);
         $composer->compose($view);
@@ -62,6 +65,8 @@ class TemplateComposerTest extends TestCase
         $view->shouldReceive('with')
             ->once()
             ->with('activeAdminTemplate', null); // 활성화된 템플릿이 없으면 null
+        // 나머지 with() 호출은 임의 인자 허용 (frontendSettings, pluginSettings, moduleSettings 등 다수)
+        $view->shouldReceive('with')->withAnyArgs();
 
         $composer = app(TemplateComposer::class);
         $composer->compose($view);

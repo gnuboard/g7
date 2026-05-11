@@ -1,0 +1,62 @@
+{
+  "sirsoft-board": {
+    "name": "掲示板",
+    "description": "掲示板モジュール権限"
+  },
+  "sirsoft-board.boards": {
+    "name": "掲示板管理",
+    "description": "掲示板管理権限"
+  },
+  "sirsoft-board.boards.read": {
+    "name": "掲示板閲覧",
+    "description": "掲示板一覧および詳細閲覧"
+  },
+  "sirsoft-board.boards.create": {
+    "name": "掲示板作成",
+    "description": "新規掲示板作成"
+  },
+  "sirsoft-board.boards.update": {
+    "name": "掲示板編集",
+    "description": "掲示板設定編集"
+  },
+  "sirsoft-board.boards.delete": {
+    "name": "掲示板削除",
+    "description": "掲示板削除"
+  },
+  "sirsoft-board.settings": {
+    "name": "環境設定",
+    "description": "掲示板環境設定権限"
+  },
+  "sirsoft-board.settings.read": {
+    "name": "環境設定閲覧",
+    "description": "掲示板環境設定閲覧"
+  },
+  "sirsoft-board.settings.update": {
+    "name": "環境設定編集",
+    "description": "掲示板環境設定編集"
+  },
+  "sirsoft-board.identity.policies": {
+    "name": "掲示板本人認証ポリシー",
+    "description": "掲示板コンテキストの本人認証ポリシー管理権限"
+  },
+  "sirsoft-board.identity.policies.read": {
+    "name": "本人認証ポリシー閲覧",
+    "description": "掲示板本人認証ポリシー閲覧"
+  },
+  "sirsoft-board.identity.policies.update": {
+    "name": "本人認証ポリシー編集",
+    "description": "掲示板本人認証ポリシー編集/追加/削除"
+  },
+  "sirsoft-board.reports": {
+    "name": "掲示板通報管理",
+    "description": "掲示板通報管理権限"
+  },
+  "sirsoft-board.reports.view": {
+    "name": "通報閲覧",
+    "description": "通報一覧および詳細閲覧"
+  },
+  "sirsoft-board.reports.manage": {
+    "name": "通報処理",
+    "description": "通報ステータス変更および処理"
+  }
+}

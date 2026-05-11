@@ -164,7 +164,7 @@
                         "id": "replies_section",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{(post?.data?.replies ?? []).length > 0}}",
+                        "if": "{{(post?.data?.reply_count ?? 0) > 0}}",
                         "children": [
                             {
                                 "id": "replies_header",
@@ -188,7 +188,7 @@
                                         "props": {
                                             "className": "text-lg font-semibold text-gray-900 dark:text-white"
                                         },
-                                        "text": "$t:sirsoft-board.admin.posts.detail.replies_title|count={{(post?.data?.replies ?? []).length}}"
+                                        "text": "$t:sirsoft-board.admin.posts.detail.replies_title|count={{post?.data?.reply_count ?? 0}}"
                                     }
                                 ]
                             },

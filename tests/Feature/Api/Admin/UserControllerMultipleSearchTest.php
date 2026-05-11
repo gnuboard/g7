@@ -134,7 +134,8 @@ class UserControllerMultipleSearchTest extends TestCase
             'success',
             'data' => [
                 'data' => [
-                    '*' => ['id', 'name', 'email'],
+                    // UserResource 는 공개 식별자로 uuid 만 노출 (id 제외)
+                    '*' => ['uuid', 'name', 'email'],
                 ],
             ],
         ]);

@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0-beta.3] - 2026-05-11
+
+### Added
+
+- 결제 취소 전후에 외부 확장이 본인인증 등 추가 로직을 붙일 수 있는 확장점 제공
+
+### Changed
+
+- sirsoft-ecommerce 의존성을 `>=1.0.0-beta.3` 으로 정비
+
 ## [1.0.0-beta.2] - 2026-04-20
 
 ### Changed

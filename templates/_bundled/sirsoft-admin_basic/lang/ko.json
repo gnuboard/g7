@@ -19,5 +19,8 @@
   },
   "countries": {
     "$partial": "partial/ko/countries.json"
+  },
+  "extensions": {
+    "$partial": "partial/ko/extensions.json"
   }
 }

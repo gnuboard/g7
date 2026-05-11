@@ -27,7 +27,7 @@ class SyncProductFromOptionListenerTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->listener = new SyncProductFromOptionListener();
+        $this->listener = app(SyncProductFromOptionListener::class);
         $this->firedHooks = [];
 
         // product.after_stock_sync 훅 발행을 캡처

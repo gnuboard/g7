@@ -1,0 +1,376 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "언어팩 상세 정보 모달 — 모듈 detail 모달 패턴(섹션별 구조) 적용"
+    },
+    "id": "language_pack_detail_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.language_packs.modal.detail.title",
+        "size": "medium"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex flex-col max-h-[70vh]" },
+            "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex-1 overflow-y-auto min-h-0 pr-2" },
+            "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!language_pack_detail?.data}}",
+            "props": { "className": "p-8 text-center text-gray-500 dark:text-gray-400" },
+            "text": "$t:admin.language_packs.modal.detail.loading"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{language_pack_detail?.data}}",
+            "props": { "className": "space-y-6" },
+            "children": [
+                {
+                    "id": "built_in_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{language_pack_detail?.data?.source_type === 'built_in'}}",
+                    "props": { "className": "flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg" },
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "fas fa-info-circle", "className": "w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" } },
+                        {
+                            "type": "basic", "name": "Div",
+                            "children": [
+                                { "type": "basic", "name": "P", "props": { "className": "text-sm font-medium text-blue-800 dark:text-blue-200" }, "text": "$t:admin.language_packs.modal.detail.built_in_title" },
+                                { "type": "basic", "name": "P", "props": { "className": "text-xs text-blue-700 dark:text-blue-300 mt-1" }, "text": "$t:admin.language_packs.modal.detail.built_in_description" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "basic_info_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-center gap-2 mb-4" },
+                            "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "fas fa-cog", "className": "w-5 h-5 text-gray-500" } },
+                                { "type": "basic", "name": "Span", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "$t:admin.language_packs.modal.detail.basic_info" }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "grid grid-cols-2 gap-4" },
+                            "children": [
+                                {
+                                    "type": "basic", "name": "Div", "props": { "className": "col-span-2" },
+                                    "if": "{{language_pack_detail?.data?.name}}",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.name" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "{{language_pack_detail?.data?.name}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.identifier" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-mono text-sm font-medium text-gray-900 dark:text-white break-all" }, "text": "{{language_pack_detail?.data?.identifier}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.version" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "v{{language_pack_detail?.data?.version}}{{language_pack_detail?.data?.has_update ? ' → v' + language_pack_detail?.data?.source_meta?.latest_version : ''}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.locale" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "{{language_pack_detail?.data?.locale}} · {{language_pack_detail?.data?.locale_native_name}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.scope" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-medium text-gray-900 dark:text-white uppercase" }, "text": "{{language_pack_detail?.data?.scope}}{{language_pack_detail?.data?.target_identifier ? ' / ' + language_pack_detail?.data?.target_identifier : ''}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.vendor" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "{{language_pack_detail?.data?.vendor}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.license" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "{{language_pack_detail?.data?.license ?? '—'}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.text_direction" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-medium text-gray-900 dark:text-white uppercase" }, "text": "{{language_pack_detail?.data?.text_direction ?? 'ltr'}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div", "props": { "className": "col-span-2" },
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.description" },
+                                        { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "{{language_pack_detail?.data?.description ?? '—'}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div", "props": { "className": "col-span-2" },
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.status" },
+                                        {
+                                            "type": "basic", "name": "Div", "props": { "className": "flex items-center gap-2 mt-1" },
+                                            "children": [
+                                                { "type": "basic", "name": "Span", "if": "{{language_pack_detail?.data?.status === 'active'}}", "props": { "className": "px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" }, "text": "$t:admin.language_packs.status.active" },
+                                                { "type": "basic", "name": "Span", "if": "{{language_pack_detail?.data?.status === 'installed'}}", "props": { "className": "px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" }, "text": "$t:admin.language_packs.status.installed" },
+                                                { "type": "basic", "name": "Span", "if": "{{language_pack_detail?.data?.status === 'inactive'}}", "props": { "className": "px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" }, "text": "$t:admin.language_packs.status.inactive" },
+                                                { "type": "basic", "name": "Span", "if": "{{language_pack_detail?.data?.status === 'error'}}", "props": { "className": "px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300" }, "text": "$t:admin.language_packs.status.error" },
+                                                { "type": "basic", "name": "Span", "if": "{{language_pack_detail?.data?.is_protected === true}}", "props": { "className": "px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" }, "text": "$t:admin.language_packs.modal.detail.protected" }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "compatibility_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-center gap-2 mb-3" },
+                            "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "fas fa-link", "className": "w-5 h-5 text-gray-500" } },
+                                { "type": "basic", "name": "Span", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "$t:admin.language_packs.modal.detail.compatibility" }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-center gap-2 text-sm mb-2" },
+                            "children": [
+                                { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "$t:admin.language_packs.modal.detail.core_version_constraint" },
+                                { "type": "basic", "name": "Code", "props": { "className": "px-2 py-0.5 text-xs font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded" }, "text": "{{language_pack_detail?.data?.manifest?.g7_version ?? '—'}}" }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{language_pack_detail?.data?.target_version_constraint}}",
+                            "props": { "className": "flex items-center gap-2 text-sm mb-2" },
+                            "children": [
+                                { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "$t:admin.language_packs.modal.detail.target_version_constraint" },
+                                { "type": "basic", "name": "Code", "props": { "className": "px-2 py-0.5 text-xs font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded" }, "text": "{{language_pack_detail?.data?.target_version_constraint}}" },
+                                { "type": "basic", "name": "Span", "if": "{{language_pack_detail?.data?.target_version_mismatch}}", "props": { "className": "px-2 py-0.5 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 rounded" }, "text": "$t:admin.language_packs.modal.detail.mismatch" }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+                            "text": "{{language_pack_detail?.data?.validation_summary?.depends_on_core_locale === false ? '$t:admin.language_packs.modal.detail.depends_on_core_locale_no' : '$t:admin.language_packs.modal.detail.depends_on_core_locale_yes'}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{language_pack_detail?.data?.target_version_mismatch}}",
+                            "props": { "className": "mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-sm text-amber-800 dark:text-amber-200" },
+                            "text": "$t:admin.language_packs.modal.detail.target_version_mismatch"
+                        }
+                    ]
+                },
+                {
+                    "id": "source_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-center gap-2 mb-4" },
+                            "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "fas fa-folder-open", "className": "w-5 h-5 text-gray-500" } },
+                                { "type": "basic", "name": "Span", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "$t:admin.language_packs.modal.detail.source" }
+                            ]
+                        },
+                        {
+                            "type": "basic", "name": "Div", "props": { "className": "grid grid-cols-2 gap-4" },
+                            "children": [
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.source_type" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-mono text-sm text-gray-900 dark:text-white uppercase" }, "text": "{{language_pack_detail?.data?.source_type}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.installed_at" },
+                                        { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-900 dark:text-white" }, "text": "{{language_pack_detail?.data?.installed_at ?? '—'}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div", "props": { "className": "col-span-2" },
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.source_url" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-mono text-xs text-gray-700 dark:text-gray-300 break-all" }, "text": "{{language_pack_detail?.data?.source_url ?? '—'}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "if": "{{language_pack_detail?.data?.activated_at}}",
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.activated_at" },
+                                        { "type": "basic", "name": "P", "props": { "className": "font-medium text-gray-900 dark:text-white" }, "text": "{{language_pack_detail?.data?.activated_at}}" }
+                                    ]
+                                },
+                                {
+                                    "type": "basic", "name": "Div",
+                                    "if": "{{language_pack_detail?.data?.github_url}}",
+                                    "props": { "className": "col-span-2" },
+                                    "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "block text-sm text-gray-500 dark:text-gray-400" }, "text": "$t:admin.language_packs.modal.detail.github_url" },
+                                        {
+                                            "type": "basic", "name": "P", "props": { "className": "font-medium" },
+                                            "children": [
+                                                { "type": "basic", "name": "A", "props": { "href": "{{language_pack_detail?.data?.github_url}}", "target": "_blank", "className": "text-indigo-600 dark:text-indigo-400 hover:underline break-all" }, "text": "{{language_pack_detail?.data?.github_url}}" }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "changelog_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-center gap-2 mb-3" },
+                            "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "fas fa-clock-rotate-left", "className": "w-5 h-5 text-gray-500" } },
+                                { "type": "basic", "name": "Span", "props": { "className": "font-semibold text-gray-900 dark:text-white" }, "text": "$t:admin.language_packs.modal.detail.changelog_title" }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!language_pack_detail?.data?.changelog_entries || language_pack_detail?.data?.changelog_entries?.length === 0}}",
+                            "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                            "text": "$t:admin.language_packs.modal.detail.no_changelog"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{language_pack_detail?.data?.changelog_entries && language_pack_detail?.data?.changelog_entries?.length > 0}}",
+                            "props": { "className": "max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "language_pack_detail?.data?.changelog_entries",
+                                        "item_var": "entry",
+                                        "index_var": "entryIdx"
+                                    },
+                                    "props": { "className": "pb-3 mb-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0 last:mb-0 last:pb-0" },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": { "className": "text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1" },
+                                            "text": "v{{entry.version}}{{entry.date ? ' (' + entry.date + ')' : ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": { "className": "space-y-1" },
+                                            "iteration": {
+                                                "source": "entry.categories",
+                                                "item_var": "category",
+                                                "index_var": "catIdx"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        { "type": "basic", "name": "Span", "props": { "className": "text-xs font-medium text-gray-600 dark:text-gray-400" }, "text": "{{category.name}}" },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": { "className": "ml-3 space-y-0.5" },
+                                                            "iteration": {
+                                                                "source": "category.items",
+                                                                "item_var": "changeItem",
+                                                                "index_var": "itemIdx"
+                                                            },
+                                                            "children": [
+                                                                { "type": "basic", "name": "Div", "props": { "className": "text-xs text-gray-600 dark:text-gray-400" }, "text": "• {{changeItem}}" }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": { "type": "button", "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100" },
+                    "actions": [
+                        { "type": "click", "handler": "closeModal" }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Span", "text": "$t:common.close" }
+                    ]
+                }
+            ]
+        }
+            ]
+        }
+    ]
+}

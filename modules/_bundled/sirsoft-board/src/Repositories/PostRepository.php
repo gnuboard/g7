@@ -11,6 +11,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
@@ -879,10 +880,9 @@ class PostRepository implements PostRepositoryInterface
         $totalPosts = $postsQuery->count();
 
         // 쿼리 2: SUM(comments_count) + SUM(view_count) — idx_board_posts_user_board_stats 커버링
-        // withTrashed: deleted_at 조건 제거로 커버링 인덱스(Using index) 활용 → 테이블 접근 없음
-        // comments_count는 PostCountSyncListener가 정확히 동기화하므로 SUM으로 대체 (JOIN 제거)
-        // 삭제 게시글 포함해도 실질적 차이 미미 (33건/5,632건)
-        $statsQuery = Post::withTrashed()->where('user_id', $userId);
+        // comments_count 는 PostCountSyncListener 가 정확히 동기화하므로 SUM 으로 대체 (JOIN 제거)
+        // 소프트 삭제된 게시글은 통계에서 제외 (이슈 #104 요구사항) — withTrashed 미사용
+        $statsQuery = Post::where('user_id', $userId);
         if (! empty($inactiveBoardIds)) {
             $statsQuery->whereNotIn('board_id', $inactiveBoardIds);
         }
@@ -1038,7 +1038,7 @@ class PostRepository implements PostRepositoryInterface
                 'is_secret' => (bool) $post->is_secret,
                 'status' => $post->status?->value,
                 'view_count' => $post->view_count,
-                'comments_count' => (int) ($post->comments_count ?? 0),
+                'comment_count' => (int) ($post->comments_count ?? 0),
                 'created_at' => $this->formatCreatedAt($post->created_at),
                 'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
                 'content_plain' => ($post->content_mode ?? 'text') === 'html'
@@ -1101,7 +1101,8 @@ class PostRepository implements PostRepositoryInterface
             ->select([
                 'board_posts.*',
                 DB::raw('COUNT(DISTINCT uc.id) as activity_count'),
-                'board_posts.comments_count',
+                // board_posts.* 에 이미 comments_count 가 포함되므로 중복 지정 금지
+                // (pagination count 쿼리가 subquery 로 감싸질 때 SQLSTATE[42S21] 유발)
                 'lc.content as comment_content',
                 'lc.created_at as comment_created_at',
             ])
@@ -1136,7 +1137,7 @@ class PostRepository implements PostRepositoryInterface
                 'is_secret' => (bool) $post->is_secret,
                 'status' => $post->status?->value,
                 'view_count' => $post->view_count,
-                'comments_count' => (int) ($post->comments_count ?? 0),
+                'comment_count' => (int) ($post->comments_count ?? 0),
                 'created_at' => $this->formatCreatedAt($post->created_at),
                 'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
                 'content_plain' => ($post->content_mode ?? 'text') === 'html'
@@ -1444,5 +1445,47 @@ class PostRepository implements PostRepositoryInterface
     private function getInactiveBoardIds(): array
     {
         return Board::where('is_active', false)->pluck('id')->all();
+    }
+
+    /**
+     * 게시글의 comments_count 컬럼을 활성 댓글 수로 재계산해 갱신합니다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculateCommentsCount(int $postId): int
+    {
+        $count = Comment::where('post_id', $postId)->whereNull('deleted_at')->count();
+        Post::where('id', $postId)->update(['comments_count' => $count]);
+
+        return $count;
+    }
+
+    /**
+     * 게시글의 attachments_count 컬럼을 활성 첨부파일 수로 재계산해 갱신합니다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculateAttachmentsCount(int $postId): int
+    {
+        $count = Attachment::where('post_id', $postId)->whereNull('deleted_at')->count();
+        Post::where('id', $postId)->update(['attachments_count' => $count]);
+
+        return $count;
+    }
+
+    /**
+     * 부모 게시글의 replies_count 컬럼을 활성 답글 수로 재계산해 갱신합니다.
+     *
+     * @param  int  $parentPostId  부모 게시글 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculateRepliesCount(int $parentPostId): int
+    {
+        $count = Post::where('parent_id', $parentPostId)->whereNull('deleted_at')->count();
+        Post::where('id', $parentPostId)->update(['replies_count' => $count]);
+
+        return $count;
     }
 }

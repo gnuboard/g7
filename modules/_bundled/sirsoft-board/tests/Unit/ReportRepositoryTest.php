@@ -208,6 +208,12 @@ class ReportRepositoryTest extends ModuleTestCase
             'author_id' => $this->user->id,
         ]);
 
+        // MySQL InnoDB FULLTEXT 내부 cache 강제 플러시 — Fresh 삽입 직후 ngram 토큰이
+        // 아직 인덱싱되지 않아 LIKE 가 아닌 FULLTEXT 검색은 0 건 반환. ALTER TABLE ENGINE=InnoDB 로
+        // flush 강제 (이커머스 ProductSearchIntegrationTest 와 동일한 회피책).
+        $boardsTable = DB::connection()->getTablePrefix().(new Board)->getTable();
+        DB::statement("ALTER TABLE `{$boardsTable}` ENGINE=InnoDB");
+
         // When
         $result = $this->repository->paginate([
             'search_field' => 'board_name',

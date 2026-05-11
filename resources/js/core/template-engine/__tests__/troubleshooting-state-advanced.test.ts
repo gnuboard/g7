@@ -3,7 +3,7 @@
  *
  * troubleshooting-state-advanced.md에 기록된 모든 사례의 회귀 테스트입니다.
  *
- * @see .claude/docs/frontend/troubleshooting-state-advanced.md
+ * @see docs/frontend/troubleshooting-state-advanced.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

@@ -1,0 +1,10 @@
+{
+  "spam": "スパム・広告",
+  "abuse": "暴言・誹謗中傷",
+  "obscenity": "ポルノコンテンツ",
+  "illegal": "違法情報",
+  "hate_speech": "ヘイトスピーチ",
+  "privacy": "個人情報の露出",
+  "copyright": "著作権侵害",
+  "other": "その他"
+}

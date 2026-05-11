@@ -57,8 +57,11 @@ export function removeDescriptionLocaleHandler(
         return;
     }
 
-    // 기본 언어(ko)는 삭제 불가
-    if (locale === 'ko') {
+    // 기본 언어 삭제 불가 — 사이트 설정의 기본 언어 또는 fallback 'ko' 사용
+    const defaultLocale: string = G7Core?.state?.get?.('_global.settings.general.language')
+        ?? G7Core?.config?.('app.fallback_locale')
+        ?? 'ko';
+    if (locale === defaultLocale) {
         G7Core.toast?.error?.(
             G7Core.t?.('sirsoft-ecommerce.admin.product.description_editor.messages.default_locale_cannot_delete')
             ?? 'Default language cannot be deleted.'

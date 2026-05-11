@@ -2,6 +2,8 @@
 
 프론트엔드 레이아웃 JSON, 컴포넌트, **작업계획서 내 코드 블록**이 그누보드7 규정을 준수하는지 검증합니다.
 
+> **단일 영역 검증 금지**: 한 작업 단위에서 백엔드와 프론트가 함께 변경되었다면 본 스킬만 실행하고 검증 완료를 선언하지 않는다. `/validate-backend` 도 함께 실행하거나 통합 메타 스킬 `/validate-branch` 를 사용한다.
+
 ## 0단계: 검증 대상 유형 판별 (CRITICAL)
 
 ```text
@@ -50,10 +52,7 @@
   - `components-types.md` - 기본/집합/레이아웃 컴포넌트
   - `components-patterns.md` - 순환 의존성, 다국어, skipBindingKeys
   - `components-advanced.md` - 이벤트 통신, 아이콘, 개발 체크리스트
-- `.claude/docs/frontend/fontawesome-free-icons.md` (인덱스) - Font Awesome Free 아이콘 목록
-  - `fontawesome-icons-solid.md` - Solid 아이콘 (1,390개)
-  - `fontawesome-icons-regular.md` - Regular 아이콘 (163개)
-  - `fontawesome-icons-brands.md` - Brands 아이콘 (472개)
+- Font Awesome Free 6.4.x 아이콘 (Solid / Regular / Brands)
 - `docs/frontend/layout-json.md` - 레이아웃 JSON 스키마
 - `docs/frontend/layout-json-inheritance.md` - 레이아웃 상속
 - `docs/frontend/data-binding.md` - 데이터 바인딩
@@ -180,9 +179,9 @@ grep -rn "[금지 패턴]" [대상 파일/디렉토리]
 | 데이터 바인딩 | `data-binding.md` | {{expression}}, $t:key, $event, $args |
 | 데이터 소스 | `data-sources.md` | id, endpoint, method, params, loading_strategy 등 |
 
-### 3.6 CLAUDE.md CRITICAL RULES 검증 (MANDATORY)
+### 3.6 빈번 실수 패턴 검증
 
-CLAUDE.md의 "CRITICAL RULES - 절대 금지 패턴" 및 MEMORY.md의 학습된 규칙을 검증합니다.
+레이아웃 작성 시 자주 발생하는 절대 금지 패턴을 검증합니다.
 
 ```text
 ⚠️ CRITICAL: 아래 항목은 빈번한 실수이므로 반드시 검증
@@ -255,7 +254,7 @@ CLAUDE.md의 "CRITICAL RULES - 절대 금지 패턴" 및 MEMORY.md의 학습된 
 
 레이아웃 JSON 및 TSX 파일에서 사용된 아이콘이 **Font Awesome Free 버전**에 포함되어 있는지 검증합니다.
 
-**검증 기준 문서**: `.claude/docs/frontend/fontawesome-free-icons.md`
+**검증 기준**: Font Awesome Free 6.4.x 공식 아이콘 목록 (Pro 라이선스 미사용)
 
 #### 아이콘 추출 패턴
 

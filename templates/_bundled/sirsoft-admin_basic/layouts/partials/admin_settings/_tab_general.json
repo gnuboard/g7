@@ -396,10 +396,7 @@
                     "className": "w-full",
                     "disabled": "{{_computed.isReadOnly}}",
                     "placeholder": "$t:admin.settings.general.select_language",
-                    "options": [
-                      { "label": "한국어", "value": "ko" },
-                      { "label": "English", "value": "en" }
-                    ],
+                    "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
                     "error": "{{_local.errors?.['general.language']?.[0] ?? ''}}"
                   }
                 },

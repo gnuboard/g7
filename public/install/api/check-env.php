@@ -12,6 +12,8 @@
 // 필수 파일 include
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/_guard.php';
+installer_guard_or_410();
 
 // JSON 응답 헤더
 header('Content-Type: application/json; charset=utf-8');

@@ -434,7 +434,7 @@ const Header: React.FC<HeaderProps> = ({
                               }`}
                             >
                               <Icon name="globe" className="inline w-4 h-4 mr-2" />
-                              {locale === 'ko' ? '한국어' : locale === 'en' ? 'English' : locale.toUpperCase()}
+                              {(window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale] ?? (locale === 'ko' ? '한국어' : locale === 'en' ? 'English' : locale === 'ja' ? '日本語' : locale === 'zh' ? '中文' : locale === 'es' ? 'Español' : locale === 'fr' ? 'Français' : locale === 'de' ? 'Deutsch' : locale.toUpperCase())}
                             </Button>
                           ))}
                         </Div>

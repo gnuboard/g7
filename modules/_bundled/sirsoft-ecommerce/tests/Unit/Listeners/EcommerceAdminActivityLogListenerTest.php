@@ -41,7 +41,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     {
         parent::setUp();
         $this->app->instance('request', Request::create('/api/admin/sirsoft-ecommerce/test'));
-        $this->listener = new EcommerceAdminActivityLogListener();
+        $this->listener = app(EcommerceAdminActivityLogListener::class);
         $this->logChannel = Mockery::mock(\Psr\Log\LoggerInterface::class);
         Log::shouldReceive('channel')
             ->with('activity')
@@ -148,7 +148,8 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
                     && $context['description_key'] === 'sirsoft-ecommerce::activity_log.description.brand_create'
                     && $context['description_params']['brand_id'] === 1
                     && isset($context['loggable'])
-                    && $context['properties']['name'] === 'Nike';
+                    // Brand.name 은 AsUnicodeJson cast — 다국어 배열
+                    && $context['properties']['name'] === ['ko' => 'Nike', 'en' => 'Nike'];
             });
 
         $this->listener->handleBrandAfterCreate($brand, ['name' => 'Nike']);
@@ -319,7 +320,8 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
                     && $context['description_key'] === 'sirsoft-ecommerce::activity_log.description.product_common_info_create'
                     && $context['description_params']['common_info_id'] === 1
                     && isset($context['loggable'])
-                    && $context['properties']['name'] === 'Default Info';
+                    // ProductCommonInfo.name 은 AsUnicodeJson cast — 다국어 배열
+                    && $context['properties']['name'] === ['ko' => 'Default Info', 'en' => 'Default Info'];
             });
 
         $this->listener->handleCommonInfoAfterCreate($info, ['name' => 'Default Info']);
@@ -610,7 +612,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         }
         $ids = array_map(fn ($t) => $t->id, $templates);
 
-        $this->listener = new EcommerceAdminActivityLogListener();
+        $this->listener = app(EcommerceAdminActivityLogListener::class);
         $this->listener->handleExtraFeeAfterBulkToggleActive($ids, true, 3);
 
         $logs = ActivityLog::where('action', 'extra_fee_template.bulk_toggle_active')->get();
@@ -749,7 +751,7 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
         }
         $ids = array_map(fn ($p) => $p->id, $policies);
 
-        $this->listener = new EcommerceAdminActivityLogListener();
+        $this->listener = app(EcommerceAdminActivityLogListener::class);
         $this->listener->handleShippingPolicyAfterBulkToggleActive($ids, false, 3);
 
         $logs = ActivityLog::where('action', 'shipping_policy.bulk_toggle_active')->get();
@@ -1168,11 +1170,25 @@ class EcommerceAdminActivityLogListenerTest extends ModuleTestCase
     private function createModelMock(string $class, int $id, ?string $name = null)
     {
         $model = Mockery::mock($class)->makePartial();
-        $fillData = ['id' => $id];
-        if ($name !== null) {
-            $fillData['name'] = $name;
+
+        // name cast 유형 확인: AsUnicodeJson 이면 다국어 배열로 저장, 'array' 는 스칼라도 허용
+        $casts = $model->getCasts();
+        $nameCast = $casts['name'] ?? null;
+        $useMultilingual = $nameCast !== null && str_contains((string) $nameCast, 'AsUnicodeJson');
+
+        if ($name === null) {
+            $model->setRawAttributes(['id' => $id, 'name' => null], false);
+        } elseif ($useMultilingual) {
+            $nameArray = ['ko' => $name, 'en' => $name];
+            $model->setRawAttributes([
+                'id' => $id,
+                'name' => json_encode($nameArray, JSON_UNESCAPED_UNICODE),
+            ], false);
+        } else {
+            // 'array' cast 또는 cast 없음 — 기존 동작 유지
+            $model->forceFill(['id' => $id, 'name' => $name]);
         }
-        $model->forceFill($fillData);
+
         $model->shouldReceive('getKey')->andReturn($id);
         $model->shouldReceive('getMorphClass')->andReturn(class_basename($class));
 

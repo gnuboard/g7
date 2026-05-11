@@ -34,7 +34,11 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
  * 로케일 코드를 사람이 읽을 수 있는 이름으로 변환
  */
 function getLocaleName(locale: string): string {
-  const localeNames: Record<string, string> = {
+  const fromAppConfig = (window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale];
+  if (fromAppConfig) {
+    return fromAppConfig;
+  }
+  const fallback: Record<string, string> = {
     ko: '한국어',
     en: 'English',
     ja: '日本語',
@@ -43,8 +47,7 @@ function getLocaleName(locale: string): string {
     fr: 'Français',
     de: 'Deutsch',
   };
-
-  return localeNames[locale] || locale;
+  return fallback[locale] || locale;
 }
 
 /**

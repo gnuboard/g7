@@ -290,6 +290,35 @@ function deleteVendorBundleDirectory(string $dir): bool
 }
 
 /**
+ * Laravel 부트 시 재생성되는 컴파일 캐시(packages.php / services.php / config.php)를 제거합니다.
+ *
+ * 인스톨러는 vendor 를 교체하기 때문에 이전 환경(특히 dev) 에서 생성된 캐시가 남아있으면
+ * 제거된 패키지의 ServiceProvider 를 참조하다가 "Class ... not found" 오류가 발생한다.
+ * 본 함수는 Laravel\Foundation\ComposerScripts::clearCompiled() 와 동일한 3개 파일을 정리한다.
+ *
+ * @param  string  $basePath  프로젝트 루트 (bootstrap/cache 의 상위 디렉토리)
+ * @return array<string>  실제로 삭제된 파일명 목록 (basename)
+ */
+function clearLaravelCompiledCache(string $basePath): array
+{
+    $cacheDir = $basePath.DIRECTORY_SEPARATOR.'bootstrap'.DIRECTORY_SEPARATOR.'cache';
+
+    if (! is_dir($cacheDir)) {
+        return [];
+    }
+
+    $cleared = [];
+    foreach (['packages.php', 'services.php', 'config.php'] as $filename) {
+        $path = $cacheDir.DIRECTORY_SEPARATOR.$filename;
+        if (is_file($path) && @unlink($path)) {
+            $cleared[] = $filename;
+        }
+    }
+
+    return $cleared;
+}
+
+/**
  * Composer 실행이 현재 환경에서 가능한지 검사합니다.
  *
  * proc_open() 사용 가능 여부 + composer 바이너리 발견 여부를 종합 판단.

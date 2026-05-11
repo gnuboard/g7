@@ -47,6 +47,14 @@ git clone https://github.com/gnuboard/g7.git
 </VirtualHost>
 ```
 
+**Apache + mod_fcgid 환경 추가 설정** (PHP 8.5 NTS Windows 등 mod_php 미제공 빌드):
+
+`fcgid.conf` 에 다음 1줄을 추가 후 Apache 재시작. 미설정 시 mod_fcgid 의 default 64KB 출력 버퍼가 인스톨러 SSE 스트림과 폴링 응답을 스크립트 종료 시점까지 보관하여 설치 진행 상황이 화면에 실시간 반영되지 않는다.
+
+```apache
+FcgidOutputBufferSize 0
+```
+
 **Nginx 예시**:
 
 ```nginx
@@ -238,7 +246,7 @@ unzip g7-release.zip
 
 # 압축 해제 결과 확인 — 루트 디렉토리가 g7이 아니면 이름 변경
 ls -la
-# (필요 시) mv g7-7.0.0-beta.3 g7
+# (필요 시) mv g7-7.0.0-beta.4 g7
 
 # ZIP 파일 정리 (선택)
 rm g7-release.zip

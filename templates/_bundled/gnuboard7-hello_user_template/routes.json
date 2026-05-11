@@ -1,0 +1,15 @@
+{
+    "version": "1.0.0",
+    "description": "gnuboard7-hello_user_template 사용자 템플릿 라우트 정의 (학습용 최소 샘플)",
+    "routes": [
+        {
+            "_comment": "=== 홈 (유일한 일반 라우트) ===",
+            "path": "/",
+            "layout": "home",
+            "auth_required": false,
+            "meta": {
+                "title": "$t:user.home.page_title"
+            }
+        }
+    ]
+}

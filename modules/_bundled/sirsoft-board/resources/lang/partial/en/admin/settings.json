@@ -14,7 +14,8 @@
     "spam_security": "Security",
     "seo": "SEO Settings",
     "mail_templates": "Mail Templates",
-    "notification_definitions": "Notification Settings"
+    "notification_definitions": "Notification Settings",
+    "identity_policies": "Identity Policies"
   },
   "board_settings_tabs": {
     "basic": "Basic",
@@ -113,6 +114,16 @@
     "notify_admin_on_report_scope": "Notification Scope",
     "notify_admin_on_report_scope_per_case": "First report only (per post/comment)",
     "notify_admin_on_report_scope_per_report": "Every time a report is submitted",
+    "notify_admin_on_report_channels": "Notification Channels",
+    "notify_admin_on_report_channels_placeholder": "Select channels",
+    "notify_admin_on_report_channels_help": "Admin notifications will be sent through the selected channels",
+    "notify_author_on_report_action_channels": "Notification Channels",
+    "notify_author_on_report_action_channels_placeholder": "Select channels",
+    "notify_author_on_report_action_channels_help": "Author notifications will be sent through the selected channels",
+    "notification_channels": {
+        "mail": "Email",
+        "database": "Site Notification"
+    },
     "report_view_roles": "View Reports Permission",
     "report_view_roles_description": "Permission to view the report list and report details.",
     "report_manage_roles": "Process Reports Permission",
@@ -388,6 +399,42 @@
       "title": "Notification Preview",
       "subject_label": "Subject",
       "body_label": "Body"
+    }
+  },
+  "identity": {
+    "intro_title": "Board Identity Verification Policies",
+    "intro": "Manage policies declared by the board module and policies added by operators. Module default policies allow only enabled/grace adjustments; operator-defined policies can be freely edited or removed in core settings.",
+    "purposes_section_title": "Identity Purposes Registered by This Module",
+    "purposes_section_description": "Purposes declared by the board module. Selectable in the policy \"Purpose\" column.",
+    "purposes_empty": "No identity purposes registered by this module.",
+    "list_title": "Policy List",
+    "add_policy": "Add Policy",
+    "empty": "No policies registered.",
+    "edit": "Edit",
+    "grace_minutes": "{minutes} min",
+    "enable_success": "Policy enabled.",
+    "disable_success": "Policy disabled.",
+    "toggle_failed": "Failed to update policy state.",
+    "col": {
+      "key": "Key",
+      "scope": "Scope",
+      "target": "Target",
+      "purpose": "Purpose",
+      "enabled": "Enabled",
+      "grace": "Grace",
+      "source": "Source",
+      "actions": "Actions"
+    },
+    "scope": {
+      "route": "Route",
+      "hook": "Hook",
+      "custom": "Custom"
+    },
+    "source": {
+      "core": "Core",
+      "module": "Module",
+      "plugin": "Plugin",
+      "admin": "Admin"
     }
   }
 }

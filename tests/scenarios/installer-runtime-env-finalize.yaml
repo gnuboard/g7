@@ -1,0 +1,127 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 인스톨러 .env 분리 흐름의 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트 + Manual 시나리오 검증으로 커버.
+
+feature: 인스톨러 .env 분리 흐름 (storage/installer/runtime.php → finalize-env.php)
+
+description: |
+  설치 진행 중 동적 설정(DB 자격증명, APP_KEY) 을 .env 가 아닌
+  storage/installer/runtime.php 에 기록하여 php artisan serve 의 .env mtime
+  워처가 SSE/폴링 진행 중 워커를 재시작하지 않도록 한다. 설치 완료 UI 노출
+  직후 브라우저가 finalize-env.php 를 fire-and-forget 으로 호출하면 그 시점
+  에 .env 1회 머지 + INSTALLER_COMPLETED 추가가 일어난다.
+
+  배경:
+    - php artisan serve 의 ServeCommand 가 .env mtime 을 폴링 → 변경 시 워커 재시작.
+    - 기존 인스톨러는 Step 5 SSE 진행 중 .env 를 3회 변경 (env_update / key:generate / complete_flag)
+      하여 사용자에게 "Environment modified. Restarting server..." 와 함께 SSE 끊김이 보였다.
+    - 동적 설정을 .env 와 물리적으로 분리하고, .env 갱신은 완료 UI 노출 후로 미루는 설계.
+
+axes:
+  installation_mode: [sse, polling]
+  runtime_state: [absent, present_with_db_only, present_with_db_and_key, present_corrupted]
+  env_state: [example_only, partially_filled, fully_finalized]
+  finalize_call: [success, browser_aborted, retry_after_failure]
+  rollback_trigger: [none, mid_install, post_finalize]
+
+exclusions:
+  - { runtime_state: absent, env_state: example_only, finalize_call: success, reason: "runtime 부재 시 finalize 는 멱등적 no-op" }
+  - { runtime_state: present_corrupted, finalize_call: success, reason: "손상된 runtime 은 머지 미수행, runtime 보존" }
+  - { rollback_trigger: post_finalize, runtime_state: present_with_db_and_key, reason: "finalize 후 rollback 시점에는 runtime.php 가 이미 삭제된 상태" }
+
+effects:
+  - install_step5_sse_does_not_modify_env_file
+  - install_step5_polling_does_not_modify_env_file
+  - env_update_task_writes_runtime_php_with_db_credentials
+  - key_generate_task_writes_app_key_to_runtime_php_via_pure_php
+  - key_generate_task_does_not_invoke_artisan_subprocess
+  - complete_flag_task_does_not_modify_env_file
+  - complete_flag_task_creates_g7_installed_marker_file
+  - retry_run_preserves_existing_app_key_in_runtime_php
+  - boot_with_runtime_php_injects_db_credentials_into_config
+  - boot_with_runtime_php_injects_app_key_into_config
+  - boot_without_runtime_php_is_silent_noop
+  - boot_with_corrupted_runtime_php_silently_skips
+  - encrypter_lazy_resolve_picks_up_injected_app_key
+  - finalize_endpoint_returns_202_immediately_via_flush
+  - finalize_endpoint_uses_fastcgi_finish_request_when_available
+  - finalize_endpoint_falls_back_to_ob_end_flush_on_cli_server
+  - finalize_writes_env_via_single_file_put_contents_with_lock_ex_for_one_mtime_change
+  - finalize_replaces_app_key_line_in_env_when_present
+  - finalize_appends_app_key_line_when_absent_from_template
+  - finalize_appends_installer_completed_true_with_status_comment
+  - finalize_does_not_duplicate_installer_completed_on_retry
+  - finalize_skips_app_key_when_runtime_value_lacks_base64_prefix
+  - finalize_replaces_db_write_credentials_with_runtime_values
+  - finalize_replaces_db_read_credentials_with_runtime_values_or_syncs_with_write
+  - finalize_replaces_db_prefix_with_runtime_value
+  - finalize_appends_db_lines_when_absent_from_template
+  - finalize_preserves_db_lines_when_runtime_has_no_db_block
+  - finalize_escapes_db_password_special_characters_via_escapeEnvValue
+  - finalize_completes_env_even_when_state_json_is_missing
+  - finalize_deletes_runtime_php_after_successful_merge
+  - finalize_deletes_state_json_after_successful_merge_when_DELETE_INSTALLER_AFTER_COMPLETE_set
+  - finalize_preserves_runtime_php_on_exception_for_retry
+  - finalize_no_op_when_runtime_php_absent_idempotent
+  - complete_flag_task_does_not_delete_state_json_so_finalize_can_read_state_config
+  - existing_db_action_drop_tables_resets_db_cleanup_db_migrate_db_seed_markers_unconditionally
+  - existing_db_action_drop_tables_preserves_non_db_task_markers_like_composer_check_env_update
+  - existing_db_action_skip_preserves_all_completed_task_markers
+  - retry_after_skip_failed_migration_with_drop_tables_consent_actually_drops_tables_before_remigration
+  - sse_to_polling_handoff_with_drop_tables_consent_drops_partially_created_tables_then_remigrates_from_scratch
+  - sse_completed_with_drop_tables_drops_existing_tables_then_migrates_normally
+  - polling_only_with_drop_tables_drops_existing_tables_then_migrates_normally
+  - sse_worker_exits_immediately_on_client_disconnect_via_connection_status_check
+  - sse_worker_does_not_continue_in_background_after_polling_worker_takeover_to_avoid_db_race
+  - install_worker_php_sets_ignore_user_abort_false_explicitly
+  - install_worker_php_enables_ob_implicit_flush_for_fast_disconnect_detection
+  - acquire_worker_lock_succeeds_when_no_active_worker_or_heartbeat_stale
+  - acquire_worker_lock_rejects_new_worker_when_active_heartbeat_within_stale_window
+  - acquire_worker_lock_takes_over_when_previous_heartbeat_exceeded_stale_seconds
+  - sse_emitter_refreshes_worker_heartbeat_on_each_emit_call
+  - polling_emitter_refreshes_worker_heartbeat_on_each_emit_call
+  - emitter_exits_immediately_when_another_worker_took_over_lock
+  - install_worker_releases_lock_on_normal_termination_via_register_shutdown_function
+  - install_process_polling_releases_lock_on_normal_termination
+  - install_worker_rejected_response_uses_aborted_event_with_busy_reason
+  - polling_rejected_logs_to_installation_log_and_exits_silently
+  - rollback_complete_flag_removes_runtime_php_when_present
+  - rollback_complete_flag_removes_installer_completed_from_env_when_present
+  - rollback_complete_flag_removes_g7_installed_marker_when_present
+  - artisan_serve_workers_restart_at_most_once_after_completion_ui_shown
+  - non_serve_environments_observe_zero_extra_restart
+
+test_files:
+  - tests/Unit/Providers/InstallerRuntimeServiceProviderTest.php
+  - tests/Unit/Installer/InstallerRuntimeHelperTest.php
+
+manual_verification:
+  - scenario: A_artisan_serve
+    description: |
+      php artisan serve 환경에서 Step 1~5 진행 중 "Environment modified" 메시지
+      0회 + Step 6 완료 화면 노출 직후 1회 재시작 + 재시작 후 .env 에 DB 자격증명
+      + APP_KEY + INSTALLER_COMPLETED=true 모두 존재 + storage/installer/ 비어있음
+  - scenario: B_php_S_or_apache
+    description: |
+      워처 없는 환경에서 동일 흐름 실행 시 동작 차이 없음 (재시작 미발생, finalize
+      이후 .env 가 동일하게 머지됨)
+  - scenario: C_polling_mode
+    description: |
+      installer.js 가 폴링 모드로 강제 진입한 경우 state-management.php → completed
+      → finalize 트리거 → .env 머지 동일하게 동작
+  - scenario: D_tab_close
+    description: |
+      Step 6 완료 직후 탭을 닫는 경우 runtime.php 가 보존되어 다음 부팅에서도
+      ServiceProvider 가 config 주입 → 앱 정상 동작 (관리자 재호출 또는 admin
+      알림 경로로 재시도 가능)
+  - scenario: E_rollback
+    description: |
+      Step 5 진행 중 의도된 실패 (DB 권한 오류 등) 발생 시 rollbackCompleteFlag
+      가 runtime.php / g7_installed / .env 의 INSTALLER_COMPLETED 모두 정리하여
+      인스톨러 재진입 가능
+
+rules_layer_coverage:
+  - rule: service-provider-db-safety
+    coverage: InstallerRuntimeServiceProvider 는 runtime.php 부재 시 즉시 return, DB 미접근, Schema::hasTable 무사용
+  - rule: service-direct-data-access
+    coverage: Provider 는 Config::set 만 호출 (Eloquent/DB facade 미사용)
+  - rule: i18n-throw-hardcoded-korean
+    coverage: rollback_runtime_removed lang key 를 ko/en 양쪽 등록 (public/install/lang)

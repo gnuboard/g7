@@ -105,7 +105,7 @@ class ShippingPolicyCollection extends BaseApiCollection
             if ($method === 'custom') {
                 $name = $countrySetting->custom_shipping_name;
                 $locale = app()->getLocale();
-                $methodLabel = is_array($name) ? ($name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? null) : null;
+                $methodLabel = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? null) : null;
             } else {
                 $methodLabel = $method
                     ? \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($method)?->getLocalizedName()

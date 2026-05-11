@@ -33,6 +33,13 @@ class BoardType extends Model
      */
     protected array $trackableFields = ['name'];
 
+    /**
+     * 다국어 JSON 컬럼 — sub-key dot-path 단위 user_overrides 보존.
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableTrackableFields = ['name'];
+
     protected $table = 'board_types';
 
     protected $fillable = [

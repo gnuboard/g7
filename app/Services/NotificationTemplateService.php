@@ -164,8 +164,16 @@ class NotificationTemplateService
      */
     public function getDefaultTemplateData(string $type, string $channel): array
     {
-        $seeder = new \Database\Seeders\NotificationDefinitionSeeder();
-        $definitions = $seeder->getDefaultDefinitions();
+        // config/core.php 의 notification_definitions 블록을 SSoT 로 읽어 type/extension_* 정규화
+        $coreDefinitions = config('core.notification_definitions', []);
+        $definitions = [];
+        foreach ($coreDefinitions as $coreType => $data) {
+            $definitions[] = array_merge($data, [
+                'type' => $coreType,
+                'extension_type' => 'core',
+                'extension_identifier' => 'core',
+            ]);
+        }
 
         // 확장(모듈/플러그인)이 자신의 기본 정의를 추가할 수 있도록 필터 훅 노출
         $definitions = HookManager::applyFilters(

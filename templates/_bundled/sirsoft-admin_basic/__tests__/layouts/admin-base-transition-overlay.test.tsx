@@ -235,11 +235,11 @@ describe('admin_settings 탭 콘텐츠 영역 spinner (이슈 #245)', () => {
         expect(tabContent, 'settings_tab_content wrapper 미존재').toBeDefined();
     });
 
-    it('settings_tab_content 안에 9개 탭 partial 이 모두 들어 있어야 한다', () => {
+    it('settings_tab_content 안에 10개 탭 partial 이 모두 들어 있어야 한다', () => {
         const settingsContent = findById((adminSettings as any).slots?.content ?? [], 'settings_content');
         const tabContent = findById(settingsContent!.children, 'settings_tab_content');
         const partials = (tabContent!.children ?? []).filter((c: any) => c.partial?.includes('partials/admin_settings/_tab_'));
-        expect(partials.length).toBe(9);
+        expect(partials.length).toBe(10);
     });
 });
 

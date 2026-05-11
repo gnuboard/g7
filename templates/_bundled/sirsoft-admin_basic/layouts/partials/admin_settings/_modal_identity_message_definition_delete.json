@@ -1,0 +1,177 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "IDV 메시지 정의 삭제 확인 모달 — 운영자 추가 정의(scope_type=policy)만 표시"
+  },
+  "id": "modal_identity_message_definition_delete",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.settings.identity.messages.delete_modal.title",
+    "size": "small"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "P",
+      "props": {
+        "className": "text-gray-700 dark:text-gray-300"
+      },
+      "text": "$t:admin.settings.identity.messages.delete_modal.confirm_message"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 block mb-1" },
+          "text": "$t:admin.settings.identity.messages.delete_modal.target_label"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "font-medium text-gray-900 dark:text-white" },
+          "text": "{{_global.deleteIdentityMessageTargetName ?? ''}}"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-red-700 dark:text-red-300"
+          },
+          "text": "$t:admin.settings.identity.messages.delete_modal.warning_message"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isDeletingIdentityMessage}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal",
+              "target": "modal_identity_message_definition_delete"
+            }
+          ],
+          "text": "$t:common.cancel"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isDeletingIdentityMessage}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "params": {
+                "actions": [
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "global",
+                      "isDeletingIdentityMessage": true
+                    }
+                  },
+                  {
+                    "handler": "apiCall",
+                    "auth_required": true,
+                    "target": "/api/admin/identity/messages/definitions/{{_global.deleteIdentityMessageTargetId}}",
+                    "params": { "method": "DELETE" },
+                    "onSuccess": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "isDeletingIdentityMessage": false,
+                          "deleteIdentityMessageTargetId": null,
+                          "deleteIdentityMessageTargetName": ""
+                        }
+                      },
+                      {
+                        "handler": "refetchDataSource",
+                        "params": { "dataSourceId": "identityMessages" }
+                      },
+                      {
+                        "handler": "toast",
+                        "params": {
+                          "type": "success",
+                          "message": "$t:admin.settings.identity.messages.delete_modal.delete_success"
+                        }
+                      },
+                      {
+                        "handler": "closeModal",
+                        "target": "modal_identity_message_definition_delete"
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "isDeletingIdentityMessage": false
+                        }
+                      },
+                      {
+                        "handler": "toast",
+                        "params": {
+                          "type": "error",
+                          "message": "{{error.message ?? '$t:admin.settings.identity.messages.delete_modal.delete_failed'}}"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isDeletingIdentityMessage}}",
+              "props": {
+                "name": "spinner",
+                "className": "w-4 h-4 animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isDeletingIdentityMessage ? '$t:admin.settings.identity.messages.delete_modal.btn_confirming' : '$t:admin.settings.identity.messages.delete_modal.btn_confirm'}}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

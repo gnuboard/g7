@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Database\Seeders;
 
+use App\Concerns\Seeder\HasTranslatableSeeder;
+use App\Contracts\Seeder\TranslatableSeederInterface;
 use App\Extension\Helpers\GenericEntitySyncHelper;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
@@ -10,56 +12,31 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
  * 배송사 초기 데이터 시더.
  *
  * GenericEntitySyncHelper 기반 upsert + stale cleanup 패턴.
- * 사용자가 관리자 UI 에서 수정한 필드(user_overrides)는 보존하고,
- * 시더 정의에서 제거된 배송사만 정리한다.
+ * 활성 언어팩의 seed/shipping_carriers.json 다국어 키는 trait 가 자동 머지.
  */
-class ShippingCarrierSeeder extends Seeder
+class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterface
 {
-    public function run(): void
+    use HasTranslatableSeeder;
+
+    public function getExtensionIdentifier(): string
     {
-        $this->command->info('배송사 초기 데이터 동기화를 시작합니다.');
+        return 'sirsoft-ecommerce';
+    }
 
-        $helper = app(GenericEntitySyncHelper::class);
-        $created = 0;
-        $synced = 0;
-        $codes = [];
+    public function getTranslatableEntity(): string
+    {
+        return 'shipping_carriers';
+    }
 
-        foreach ($this->getDefaultCarriers() as $carrier) {
-            $existing = ShippingCarrier::where('code', $carrier['code'])->exists();
-
-            $helper->sync(
-                ShippingCarrier::class,
-                ['code' => $carrier['code']],
-                $carrier,
-            );
-            $codes[] = $carrier['code'];
-
-            if ($existing) {
-                $synced++;
-            } else {
-                $created++;
-                $this->command->line("  - 배송사 생성: {$carrier['name']['ko']} ({$carrier['code']})");
-            }
-        }
-
-        // 완전 동기화: 시더 정의에서 제거된 배송사 정리 (user_overrides 무관)
-        $deleted = $helper->cleanupStale(
-            ShippingCarrier::class,
-            [],
-            'code',
-            $codes,
-        );
-
-        $total = ShippingCarrier::count();
-        $this->command->info("배송사 동기화 완료: {$created}건 생성, {$synced}건 동기화, stale {$deleted}건 삭제 (전체 {$total}건)");
+    public function getMatchKey(): string
+    {
+        return 'code';
     }
 
     /**
-     * 기본 배송사 목록을 반환합니다.
-     *
      * @return array<int, array<string, mixed>>
      */
-    private function getDefaultCarriers(): array
+    public function getDefaults(): array
     {
         return [
             // 국내 배송사
@@ -164,5 +141,43 @@ class ShippingCarrierSeeder extends Seeder
                 'sort_order' => 99,
             ],
         ];
+    }
+
+    public function run(): void
+    {
+        $this->command->info('배송사 초기 데이터 동기화를 시작합니다.');
+
+        $helper = app(GenericEntitySyncHelper::class);
+        $created = 0;
+        $synced = 0;
+        $codes = [];
+
+        foreach ($this->resolveTranslatedDefaults() as $carrier) {
+            $existing = ShippingCarrier::where('code', $carrier['code'])->exists();
+
+            $helper->sync(
+                ShippingCarrier::class,
+                ['code' => $carrier['code']],
+                $carrier,
+            );
+            $codes[] = $carrier['code'];
+
+            if ($existing) {
+                $synced++;
+            } else {
+                $created++;
+                $this->command->line("  - 배송사 생성: {$carrier['name']['ko']} ({$carrier['code']})");
+            }
+        }
+
+        $deleted = $helper->cleanupStale(
+            ShippingCarrier::class,
+            [],
+            'code',
+            $codes,
+        );
+
+        $total = ShippingCarrier::count();
+        $this->command->info("배송사 동기화 완료: {$created}건 생성, {$synced}건 동기화, stale {$deleted}건 삭제 (전체 {$total}건)");
     }
 }

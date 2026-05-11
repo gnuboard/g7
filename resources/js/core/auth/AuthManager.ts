@@ -448,17 +448,50 @@ export class AuthManager {
    *
    * @param type - 인증 타입
    * @param returnUrl - 로그인 후 돌아갈 URL
+   * @param reason - 리다이렉트 사유 (예: 'session_expired') — 로그인 페이지 안내 분기용
    * @returns 로그인 페이지 URL (redirect 파라미터 포함)
    */
-  getLoginRedirectUrl(type: AuthType, returnUrl: string): string {
+  getLoginRedirectUrl(type: AuthType, returnUrl: string, reason?: string): string {
     const config = this.config.get(type);
     if (!config) {
       return '/login';
     }
 
-    // URL 파라미터로 redirect 경로 추가
     const encodedReturnUrl = encodeURIComponent(returnUrl);
-    return `${config.loginPath}?redirect=${encodedReturnUrl}`;
+    let url = `${config.loginPath}?redirect=${encodedReturnUrl}`;
+    if (reason) {
+      url += `&reason=${encodeURIComponent(reason)}`;
+    }
+    return url;
+  }
+
+  /**
+   * 인증 설정 부분 갱신 (템플릿 부트스트랩에서 호출)
+   *
+   * 템플릿이 자체 로그인 경로를 사용하는 경우 `initTemplate` 단계에서 호출하여
+   * 코어 디폴트(`/login`, `/admin/login`)를 오버라이드한다. 모듈/플러그인에서
+   * 호출하면 다른 템플릿에 침범하므로 금지 — 가이드 문서 참조.
+   *
+   * 보안: `loginPath` 는 동일 origin path-only(`/`로 시작, `//` 금지)만 허용한다.
+   * 외부 origin URL 또는 protocol-relative URL 을 허용하면 open redirect 취약점이 된다.
+   *
+   * @param type - 인증 타입
+   * @param partial - 갱신할 설정 (loginPath, defaultPath 등)
+   * @throws Error loginPath 가 path-only 형식이 아닐 때
+   */
+  updateConfig(type: AuthType, partial: Partial<AuthConfig>): void {
+    if (partial.loginPath !== undefined) {
+      const path = partial.loginPath;
+      if (!path.startsWith('/') || path.startsWith('//')) {
+        throw new Error(
+          `AuthManager.updateConfig: loginPath must be a same-origin path starting with '/' (got: ${path})`
+        );
+      }
+    }
+    const current = this.config.get(type);
+    if (current) {
+      this.config.set(type, { ...current, ...partial });
+    }
   }
 
   /**

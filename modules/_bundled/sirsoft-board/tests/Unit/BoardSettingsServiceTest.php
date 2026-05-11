@@ -371,6 +371,12 @@ class BoardSettingsServiceTest extends ModuleTestCase
 
     /**
      * 저장된 설정이 기본값과 올바르게 병합되는지 확인
+     *
+     * 주의: saveSettings 는 Toggle/체크박스 OFF UX 대응으로
+     * 카테고리 범위 내 누락된 boolean 필드를 false 로 강제 저장한다
+     * (commit 6b46b1ce7 "Toggle/체크박스 저장 버그 수정"). 따라서 partial save
+     * 시 non-boolean 기본값만 유지되고 boolean 은 모두 false 가 된다.
+     * 이 테스트는 기본값 병합 로직의 non-boolean 경로만 검증한다.
      */
     public function test_saved_settings_merge_with_defaults(): void
     {
@@ -385,10 +391,12 @@ class BoardSettingsServiceTest extends ModuleTestCase
         // 저장된 값 반영
         $this->assertEquals(40, $settings['basic_defaults']['per_page']);
 
-        // 저장되지 않은 기본값은 유지
+        // 저장되지 않은 non-boolean 기본값은 유지
         $this->assertEquals('basic', $settings['basic_defaults']['type']);
         $this->assertEquals(15, $settings['basic_defaults']['per_page_mobile']);
-        $this->assertTrue($settings['basic_defaults']['use_comment']);
+
+        // 저장되지 않은 boolean 필드는 false 로 저장됨 (Toggle/체크박스 OFF UX 대응)
+        $this->assertFalse($settings['basic_defaults']['use_comment']);
     }
 
     /**

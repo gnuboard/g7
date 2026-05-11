@@ -28,11 +28,33 @@
   ],
   "components": [
     {
+      "id": "global_toast",
+      "type": "composite",
+      "name": "Toast",
+      "props": {
+        "toasts": "{{_global.toasts}}",
+        "position": "bottom-center",
+        "duration": 5000
+      }
+    },
+    {
       "id": "login_page_wrapper",
       "type": "basic",
       "name": "Div",
       "props": {
         "className": "min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8"
+      },
+      "lifecycle": {
+        "onMount": [
+          {
+            "if": "{{query?.reason === 'session_expired'}}",
+            "handler": "toast",
+            "params": {
+              "type": "warning",
+              "message": "$t:auth.session_expired_toast"
+            }
+          }
+        ]
       },
       "children": [
         {

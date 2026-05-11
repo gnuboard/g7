@@ -4,7 +4,7 @@
  * troubleshooting-state-setstate.md에 기록된 사례들의 회귀 테스트입니다.
  * 각 테스트는 해당 사례가 재발하지 않도록 검증합니다.
  *
- * @see .claude/docs/frontend/troubleshooting-state-setstate.md
+ * @see docs/frontend/troubleshooting-state-setstate.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

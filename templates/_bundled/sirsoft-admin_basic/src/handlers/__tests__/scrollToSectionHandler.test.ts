@@ -160,7 +160,24 @@ describe('scrollToSectionHandler', () => {
   });
 
   describe('delay 처리', () => {
-    it('기본 delay (100ms) 후 스크롤해야 함', async () => {
+    // useFakeTimers: 실제 setTimeout 대기 없이 결정론적으로 검증.
+    // 이전에는 Date.now() 차이 측정으로 환경 오버헤드(jsdom/Windows)에 따라
+    // flaky 발생 → 임계 완화로 우회했으나, 근본 해결은 가짜 타이머 도입.
+    //
+    // 핸들러 내부 구조 (findElementWithRetry):
+    //   1. initial delay (params.delay, 기본 100ms) setTimeout
+    //   2. getElementById 로 발견되면 추가 50ms post-found setTimeout
+    //   3. 그 후 performScroll 실행
+    // → scrollTo 호출까지 총 (initial + 50)ms 가짜 타이머 진행 필요.
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('기본 delay (100ms) 전에는 스크롤하지 않고, initial+postFound 진행 후 스크롤해야 함', async () => {
       const mockElement = document.createElement('div');
       mockElement.id = 'test-section';
       document.body.appendChild(mockElement);
@@ -169,16 +186,23 @@ describe('scrollToSectionHandler', () => {
         params: { targetId: 'test-section' },
       };
 
-      const startTime = Date.now();
-      await scrollToSectionHandler(action);
-      const endTime = Date.now();
+      const promise = scrollToSectionHandler(action);
 
-      // delay가 있으므로 최소 100ms 경과해야 함
-      expect(endTime - startTime).toBeGreaterThanOrEqual(90); // 약간의 여유
+      // initial 100ms 직전 — 아직 호출 X
+      await vi.advanceTimersByTimeAsync(99);
+      expect(scrollToSpy).not.toHaveBeenCalled();
+
+      // 100ms 경과 후 element 발견 + 추가 50ms post-found 대기 중 — 여전히 호출 X
+      await vi.advanceTimersByTimeAsync(50);
+      expect(scrollToSpy).not.toHaveBeenCalled();
+
+      // 150ms 도달 — 호출 발생
+      await vi.advanceTimersByTimeAsync(1);
+      await promise;
       expect(scrollToSpy).toHaveBeenCalled();
     });
 
-    it('사용자 정의 delay가 적용되어야 함', async () => {
+    it('사용자 정의 delay (50ms) 가 정확히 적용되어야 함', async () => {
       const mockElement = document.createElement('div');
       mockElement.id = 'test-section';
       document.body.appendChild(mockElement);
@@ -187,12 +211,19 @@ describe('scrollToSectionHandler', () => {
         params: { targetId: 'test-section', delay: 50 },
       };
 
-      const startTime = Date.now();
-      await scrollToSectionHandler(action);
-      const endTime = Date.now();
+      const promise = scrollToSectionHandler(action);
 
-      expect(endTime - startTime).toBeGreaterThanOrEqual(40); // 약간의 여유
-      expect(endTime - startTime).toBeLessThan(150); // 100ms보다 확실히 짧아야 함
+      // initial 50ms 직전
+      await vi.advanceTimersByTimeAsync(49);
+      expect(scrollToSpy).not.toHaveBeenCalled();
+
+      // 50ms 경과 후 element 발견 + post-found 50ms 대기
+      await vi.advanceTimersByTimeAsync(50);
+      expect(scrollToSpy).not.toHaveBeenCalled();
+
+      // 총 100ms 도달 — 호출 발생
+      await vi.advanceTimersByTimeAsync(1);
+      await promise;
       expect(scrollToSpy).toHaveBeenCalled();
     });
   });

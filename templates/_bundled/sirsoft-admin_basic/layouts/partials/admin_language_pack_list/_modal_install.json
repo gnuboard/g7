@@ -1,0 +1,352 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "언어팩 설치 모달 (ZIP/GitHub 2-tab) — 모듈 설치 모달 UX 패턴 동일"
+    },
+    "id": "language_pack_install_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.language_packs.install_modal.title",
+        "size": "medium"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex items-start justify-between gap-3 mb-4" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-gray-600 dark:text-gray-400" },
+                    "text": "$t:admin.language_packs.install_modal.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "shrink-0 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md"
+                    },
+                    "actions": [
+                        { "event": "onClick", "handler": "openModal", "target": "language_pack_manifest_preview_drawer" }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "fas fa-eye", "size": "sm" } },
+                        { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.actions.preview_manifest" }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.languagePackInstallError}}",
+            "props": { "className": "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "flex items-start gap-3" },
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "className": "text-red-500 mt-0.5", "size": "sm" } },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                { "type": "basic", "name": "P", "props": { "className": "text-sm font-medium text-red-800 dark:text-red-200" }, "text": "{{_global.languagePackInstallError}}" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "language_pack_install_tabs",
+            "type": "composite",
+            "name": "TabNavigation",
+            "props": {
+                "tabs": [
+                    { "id": "file_upload", "label": "$t:admin.language_packs.install_modal.tabs.zip", "iconName": "upload" },
+                    { "id": "github", "label": "$t:admin.language_packs.install_modal.tabs.github", "iconName": "code-branch" }
+                ],
+                "activeTabId": "{{_global.languagePackInstallTab || 'file_upload'}}",
+                "variant": "underline"
+            },
+            "actions": [
+                {
+                    "event": "onTabChange",
+                    "type": "change",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "languagePackInstallTab": "{{$args[0]}}",
+                        "languagePackInstallError": null,
+                        "languagePackInstallErrors": null
+                    }
+                }
+            ]
+        },
+        {
+            "id": "language_pack_file_upload_tab",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload'}}",
+            "props": { "className": "mt-4 space-y-4" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "space-y-2" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+                            "text": "$t:admin.language_packs.install_modal.file_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "FileInput",
+                            "props": {
+                                "accept": ".zip",
+                                "className": "{{_global.languagePackInstallErrors?.file ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}",
+                                "buttonText": "$t:common.browse",
+                                "placeholder": "$t:admin.language_packs.install_modal.no_file_selected"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "languagePackUploadFile": "{{$event.target.value}}",
+                                        "languagePackUploadFileName": "{{$event.target.value?.name}}",
+                                        "languagePackInstallError": null,
+                                        "languagePackInstallErrors": null
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.languagePackInstallErrors?.file}}",
+                            "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1" },
+                            "text": "{{Array.isArray(_global.languagePackInstallErrors?.file) ? _global.languagePackInstallErrors.file[0] : _global.languagePackInstallErrors?.file}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-start gap-2" },
+                            "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "info-circle", "className": "text-blue-500 mt-0.5", "size": "sm" } },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "P", "props": { "className": "text-sm text-blue-700 dark:text-blue-300" }, "text": "$t:admin.language_packs.install_modal.file_requirements" },
+                                        { "type": "basic", "name": "P", "props": { "className": "mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block" }, "text": "language-pack.json" }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "language_pack_github_tab",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.languagePackInstallTab === 'github'}}",
+            "props": { "className": "mt-4 space-y-4" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "space-y-2" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+                            "text": "$t:admin.language_packs.install_modal.github_url_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "url",
+                                "placeholder": "https://github.com/username/language-pack-name",
+                                "value": "{{_global.languagePackGithubUrl ?? ''}}",
+                                "className": "{{_global.languagePackInstallErrors?.github_url ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "languagePackGithubUrl": "{{$event.target.value}}",
+                                        "languagePackInstallError": null,
+                                        "languagePackInstallErrors": null
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.languagePackInstallErrors?.github_url}}",
+                            "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1" },
+                            "text": "{{Array.isArray(_global.languagePackInstallErrors?.github_url) ? _global.languagePackInstallErrors.github_url[0] : _global.languagePackInstallErrors?.github_url}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-start gap-2" },
+                            "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "info-circle", "className": "text-blue-500 mt-0.5", "size": "sm" } },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        { "type": "basic", "name": "P", "props": { "className": "text-sm text-blue-700 dark:text-blue-300" }, "text": "$t:admin.language_packs.install_modal.github_requirements" },
+                                        { "type": "basic", "name": "P", "props": { "className": "mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block" }, "text": "language-pack.json" }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex justify-end gap-3 mt-6" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isLanguagePackInstalling}}"
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "languagePackUploadFile": null,
+                                        "languagePackUploadFileName": null,
+                                        "languagePackGithubUrl": null,
+                                        "languagePackInstallError": null,
+                                        "languagePackInstallErrors": null,
+                                        "languagePackInstallTab": "file_upload"
+                                    }
+                                },
+                                { "handler": "closeModal" }
+                            ]
+                        }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Span", "text": "$t:common.cancel" }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isLanguagePackInstalling || ((!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? !_global.languagePackUploadFile : !_global.languagePackGithubUrl)}}"
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isLanguagePackInstalling": true,
+                                        "languagePackInstallError": null,
+                                        "languagePackInstallErrors": null
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "auth_required": true,
+                                    "target": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? '/api/admin/language-packs/install-from-file' : '/api/admin/language-packs/install-from-github'}}",
+                                    "params": {
+                                        "method": "POST",
+                                        "contentType": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}",
+                                        "body": "{{(!_global.languagePackInstallTab || _global.languagePackInstallTab === 'file_upload') ? { file: _global.languagePackUploadFile } : { github_url: _global.languagePackGithubUrl }}}"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isLanguagePackInstalling": false,
+                                                "languagePackUploadFile": null,
+                                                "languagePackUploadFileName": null,
+                                                "languagePackGithubUrl": null,
+                                                "languagePackInstallError": null,
+                                                "languagePackInstallErrors": null,
+                                                "languagePackInstallTab": "file_upload"
+                                            }
+                                        },
+                                        { "handler": "toast", "params": { "type": "success", "message": "$t:admin.language_packs.messages.install_success" } },
+                                        { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } },
+                                        { "handler": "reloadExtensions" },
+                                        { "handler": "closeModal" }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isLanguagePackInstalling": false,
+                                                "languagePackInstallError": "{{error.message}}",
+                                                "languagePackInstallErrors": "{{error.errors}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "if": "{{!_global.isLanguagePackInstalling}}", "props": { "name": "download", "size": "sm" } },
+                        { "type": "basic", "name": "Icon", "if": "{{_global.isLanguagePackInstalling}}", "props": { "name": "spinner", "className": "animate-spin", "size": "sm" } },
+                        { "type": "basic", "name": "Span", "text": "{{_global.isLanguagePackInstalling ? '$t:admin.language_packs.installing' : '$t:admin.language_packs.actions.install'}}" }
+                    ]
+                }
+            ]
+        }
+    ]
+}

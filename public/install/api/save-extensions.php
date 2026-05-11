@@ -30,6 +30,8 @@ require_once dirname(__DIR__) . '/includes/session.php';
 require_once dirname(__DIR__) . '/includes/config.php';
 require_once dirname(__DIR__) . '/includes/installer-state.php';
 require_once dirname(__DIR__) . '/includes/functions.php';
+require_once __DIR__ . '/_guard.php';
+installer_guard_or_410();
 
 // 다국어 로드
 $currentLang = getCurrentLanguage();
@@ -74,6 +76,10 @@ $plugins = isset($input['plugins']) && is_array($input['plugins'])
     ? $input['plugins']
     : [];
 
+$languagePacks = isset($input['language_packs']) && is_array($input['language_packs'])
+    ? $input['language_packs']
+    : [];
+
 // 확장 이름 매핑 (identifier → {ko: '...', en: '...'})
 $extensionNames = isset($input['extension_names']) && is_array($input['extension_names'])
     ? $input['extension_names']
@@ -94,6 +100,30 @@ $adminTemplates = array_values(array_filter(array_map('strval', $adminTemplates)
 $userTemplates = array_values(array_filter(array_map('strval', $userTemplates)));
 $modules = array_values(array_filter(array_map('strval', $modules)));
 $plugins = array_values(array_filter(array_map('strval', $plugins)));
+$languagePacks = array_values(array_filter(array_map('strval', $languagePacks)));
+
+// 식별자 형식 검증: 셸 메타문자/경로 조합 차단 후 artisan 명령에 안전하게 보간되도록 한다.
+// 실제 번들 식별자 예시: sirsoft-board, gnuboard7-hello_module, g7-module-sirsoft-board-ja
+$identifierPattern = '/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/';
+$identifierGroups = [
+    'admin_templates' => $adminTemplates,
+    'user_templates' => $userTemplates,
+    'modules' => $modules,
+    'plugins' => $plugins,
+    'language_packs' => $languagePacks,
+];
+foreach ($identifierGroups as $groupKey => $ids) {
+    foreach ($ids as $id) {
+        if (!preg_match($identifierPattern, $id)) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'error' => lang('error_invalid_extension_identifier', ['identifier' => $id, 'group' => $groupKey]),
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+}
 
 try {
     // 현재 상태 가져오기
@@ -105,6 +135,7 @@ try {
         'user_templates' => $userTemplates,
         'modules' => $modules,
         'plugins' => $plugins,
+        'language_packs' => $languagePacks,
     ];
 
     // 확장 이름 매핑 저장 (설치 시 표시용)
@@ -132,6 +163,7 @@ try {
         'user' => count($userTemplates),
         'modules' => count($modules),
         'plugins' => count($plugins),
+        'language_packs' => count($languagePacks),
     ]));
 
     // 성공 응답

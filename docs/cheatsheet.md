@@ -157,6 +157,16 @@ php artisan template:cache-clear
 php artisan template:check-updates [identifier?]
 php artisan template:update [identifier] [--layout-strategy=overwrite] [--force] [--source=auto|bundled|github]
 
+# 언어팩
+php artisan language-pack:list
+php artisan language-pack:install [identifier] [--source=bundled|github|url] [--no-activate]
+php artisan language-pack:activate [identifier] [--force]
+php artisan language-pack:deactivate [identifier]
+php artisan language-pack:uninstall [identifier] [--cascade] [--force]
+php artisan language-pack:cache-clear
+php artisan language-pack:check-updates [identifier?]
+php artisan language-pack:update [identifier] [--force] [--source=auto|bundled|github]
+
 # Composer 의존성 (모듈/플러그인별 독립 vendor/)
 php artisan extension:composer-install          # 모든 모듈+플러그인
 
@@ -188,6 +198,25 @@ php artisan vendor-bundle:verify-all
 ```
 
 > 상세 가이드: [docs/extension/vendor-bundle.md](extension/vendor-bundle.md)
+
+### 학습용 샘플 확장 설치
+
+```bash
+# 학습용 최소 샘플 4종 (manifest.hidden=true → 관리자 UI 기본 제외)
+php artisan module:install gnuboard7-hello_module
+php artisan module:activate gnuboard7-hello_module
+php artisan plugin:install gnuboard7-hello_plugin
+php artisan plugin:activate gnuboard7-hello_plugin
+php artisan template:install gnuboard7-hello_admin_template
+php artisan template:install gnuboard7-hello_user_template
+
+# 숨김 포함 목록 조회
+php artisan module:list --hidden
+php artisan plugin:list --hidden
+php artisan template:list --hidden
+```
+
+> 상세: [extension/sample-extensions.md](extension/sample-extensions.md)
 
 ### SEO Artisan 커맨드
 

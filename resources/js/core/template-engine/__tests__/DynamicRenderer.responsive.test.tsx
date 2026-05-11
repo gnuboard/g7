@@ -16,7 +16,7 @@
 
 import React from 'react';
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import DynamicRenderer, { ComponentDefinition } from '../DynamicRenderer';
 import { ComponentRegistry } from '../ComponentRegistry';
 import { DataBindingEngine } from '../DataBindingEngine';
@@ -196,6 +196,7 @@ describe('DynamicRenderer - Responsive 오버라이드', () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 

@@ -100,6 +100,14 @@ class User extends Authenticatable
         'last_login_at',
         'withdrawn_at',
         'blocked_at',
+        'identity_verified_at',
+        'identity_verified_provider',
+        'identity_verified_purpose_last',
+        'identity_hash',
+        'mobile_verified_at',
+        'failed_login_attempts',
+        'locked_until',
+        'last_failed_login_at',
     ];
 
     /**
@@ -126,7 +134,12 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'withdrawn_at' => 'datetime',
             'blocked_at' => 'datetime',
+            'identity_verified_at' => 'datetime',
+            'mobile_verified_at' => 'datetime',
             'is_super' => 'boolean',
+            'failed_login_attempts' => 'integer',
+            'locked_until' => 'datetime',
+            'last_failed_login_at' => 'datetime',
         ];
     }
 

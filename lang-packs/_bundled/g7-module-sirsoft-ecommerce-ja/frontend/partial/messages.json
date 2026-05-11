@@ -1,0 +1,85 @@
+{
+  "product_created": "商品が登録されました",
+  "product_updated": "商品が編集されました",
+  "products": {
+    "fetch_success": "商品リストを読み込みました",
+    "fetch_failed": "商品リストの読み込みに失敗しました",
+    "created": "商品が登録されました",
+    "create_failed": "商品登録に失敗しました",
+    "updated": "商品が編集されました",
+    "update_failed": "商品編集に失敗しました",
+    "deleted": "商品が削除されました",
+    "delete_failed": "商品削除に失敗しました",
+    "bulk_updated": ":count個の商品が一括編集されました",
+    "bulk_update_failed": "商品一括編集に失敗しました",
+    "bulk_price_updated": ":count個の商品の価格が一括変更されました",
+    "bulk_price_update_failed": "商品価格一括変更に失敗しました",
+    "bulk_stock_updated": ":count個の商品の在庫が一括変更されました",
+    "bulk_stock_update_failed": "商品在庫一括変更に失敗しました",
+    "bulk": {
+      "no_selection": "選択された項目がありません",
+      "update_success": "商品 {products}個、オプション {options}個が編集されました",
+      "update_error": "一括アップデートに失敗しました",
+      "option_update_success": "オプション {count}個が編集されました",
+      "option_update_error": "オプション一括アップデートに失敗しました",
+      "overwrite_warning": "一括変更オプション（販売状態、表示状態、価格変更、在庫変更）が選択されている場合、個別の編集内容は無視されます"
+    }
+  },
+  "options": {
+    "bulk_price_updated": ":count個のオプションの販売価格が一括変更されました",
+    "bulk_price_update_failed": "オプション販売価格一括変更に失敗しました",
+    "bulk_stock_updated": ":count個のオプションの在庫が一括変更されました",
+    "bulk_stock_update_failed": "オプション在庫一括変更に失敗しました",
+    "bulk_update_success": "オプション {count}個が編集されました",
+    "bulk_update_error": "オプション一括アップデートに失敗しました",
+    "has_order_history": "注文履歴がのあるオプションは削除できません"
+  },
+  "presets": {
+    "created": "プリセットが保存されました",
+    "updated": "プリセットが編集されました",
+    "deleted": "プリセットが削除されました"
+  },
+  "notice_templates": {
+    "fetch_success": "商品情報提供通知リストを読み込みました",
+    "created": "商品情報提供通知が作成されました",
+    "updated": "商品情報提供通知が編集されました",
+    "deleted": "商品情報提供通知が削除されました",
+    "copied": "商品情報提供通知がコピーされました",
+    "not_found": "商品情報提供通知が見つかりません"
+  },
+  "common_infos": {
+    "fetch_success": "共通情報リストを読み込みました",
+    "created": "共通情報が作成されました",
+    "updated": "共通情報が編集されました",
+    "deleted": "共通情報が削除されました",
+    "not_found": "共通情報が見つかりません",
+    "activated": "共通情報が有効化されました",
+    "deactivated": "共通情報が無効化されました"
+  },
+  "categories": {
+    "list_retrieved": "カテゴリリストを閲覧しました",
+    "fetch_success": "カテゴリを閲覧しました",
+    "fetch_failed": "カテゴリの読み込みに失敗しました",
+    "not_found": "カテゴリが見つかりません",
+    "created": "カテゴリが登録されました",
+    "retrieved": "カテゴリを閲覧しました",
+    "updated": "カテゴリが編集されました",
+    "deleted": "カテゴリが削除されました",
+    "status_changed": "カテゴリステータスが変更されました",
+    "reorder_data_required": "並べ替えデータが必要です",
+    "order_updated": "カテゴリの順序が変更されました"
+  },
+  "extra_fee_template": {
+    "list_retrieved": "追加配送費テンプレートリストを読み込みました",
+    "retrieved": "追加配送費テンプレートを読み込みました",
+    "not_found": "追加配送費テンプレートが見つかりません",
+    "created": "追加配送費テンプレートが登録されました",
+    "updated": "追加配送費テンプレートが編集されました",
+    "deleted": "追加配送費テンプレートが削除されました",
+    "toggled": "使用有無が変更されました",
+    "bulk_deleted": "選択したテンプレートが削除されました",
+    "bulk_toggled": "選択したテンプレートの使用有無が変更されました",
+    "bulk_created": "テンプレートが一括登録されました",
+    "settings_retrieved": "追加配送費設定を読み込みました"
+  }
+}

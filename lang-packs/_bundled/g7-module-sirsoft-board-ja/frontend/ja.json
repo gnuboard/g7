@@ -1,0 +1,49 @@
+{
+  "common": {
+    "$partial": "partial/common.json"
+  },
+  "admin": {
+    "board": {
+      "$partial": "partial/admin/board.json"
+    },
+    "modals": {
+      "$partial": "partial/admin/modals.json"
+    },
+    "form": {
+      "$partial": "partial/admin/form.json"
+    },
+    "reports": {
+      "$partial": "partial/admin/reports.json"
+    },
+    "posts": {
+      "$partial": "partial/admin/posts.json"
+    },
+    "settings": {
+      "$partial": "partial/admin/settings.json"
+    },
+    "board_types": {
+      "$partial": "partial/admin/board_types.json"
+    },
+    "users": {
+      "$partial": "partial/admin/users.json"
+    },
+    "ecommerce_settings": {
+      "$partial": "partial/admin/ecommerce_settings.json"
+    }
+  },
+  "board": {
+    "$partial": "partial/board.json"
+  },
+  "messages": {
+    "$partial": "partial/messages.json"
+  },
+  "validation": {
+    "$partial": "partial/validation.json"
+  },
+  "attributes": {
+    "$partial": "partial/attributes.json"
+  },
+  "enums": {
+    "$partial": "partial/enums.json"
+  }
+}

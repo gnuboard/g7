@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\Admin;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Models\Attachment;
@@ -399,6 +400,73 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
+     * 본인인증(IDV) 탭 저장 성공 — _tab='identity' 가 허용 목록에 포함되어야 한다.
+     *
+     * 회귀 방지: identity 가 _tab Rule::in 목록에서 누락되어 422 ("선택한 tab이(가) 올바르지 않습니다.") 가
+     * 발생했던 사례. 환경설정 > 본인인증 탭의 모든 저장 시도가 차단됐음.
+     */
+    public function test_store_saves_identity_tab_settings(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'identity',
+            'identity' => [
+                'enabled' => true,
+                'default_provider' => 'g7:core.mail',
+                'signup' => [
+                    'mode' => 'disabled',
+                    'provider' => null,
+                ],
+                'purpose_providers' => [
+                    'password_reset' => null,
+                    'self_update' => null,
+                    'sensitive_action' => null,
+                ],
+                'challenge_ttl_minutes' => 15,
+                'max_attempts' => 5,
+            ],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson(['success' => true]);
+    }
+
+    /**
+     * 본인인증 탭 — challenge_ttl_minutes 범위(1~1440) 검증.
+     */
+    public function test_store_validates_identity_challenge_ttl_range(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'identity',
+            'identity' => [
+                'enabled' => true,
+                'challenge_ttl_minutes' => 99999, // 초과
+                'max_attempts' => 5,
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['identity.challenge_ttl_minutes']);
+    }
+
+    /**
+     * 본인인증 탭 — max_attempts 범위(1~20) 검증.
+     */
+    public function test_store_validates_identity_max_attempts_range(): void
+    {
+        $response = $this->authRequest()->postJson('/api/admin/settings', [
+            '_tab' => 'identity',
+            'identity' => [
+                'enabled' => true,
+                'challenge_ttl_minutes' => 15,
+                'max_attempts' => 0, // 1 미만
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['identity.max_attempts']);
+    }
+
+    /**
      * 일반 탭에서 site_name 필수 검증
      */
     public function test_store_validates_site_name_required_for_general_tab(): void
@@ -617,6 +685,106 @@ class SettingsControllerTest extends TestCase
                 'message',
                 'data',
             ]);
+    }
+
+    /**
+     * 메모리 사용량은 디스크 사용량과 동일한 구조(total/used/free/percentage)로 반환된다.
+     *
+     * 회귀 테스트: memory_get_usage(true)는 PHP 프로세스 메모리만 반환하여
+     * 서버 물리 RAM과 무관한 값(6~12MB)이 노출되던 이슈(#298) 방지.
+     */
+    public function test_system_info_memory_usage_has_disk_like_structure(): void
+    {
+        $response = $this->authRequest()->getJson('/api/admin/settings/system-info');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    'memory_usage' => ['total', 'used', 'free', 'percentage'],
+                ],
+            ]);
+
+        $memory = $response->json('data.memory_usage');
+        $this->assertIsArray($memory);
+        $this->assertIsNumeric($memory['percentage']);
+        $this->assertGreaterThanOrEqual(0, $memory['percentage']);
+        $this->assertLessThanOrEqual(100, $memory['percentage']);
+    }
+
+    /**
+     * CPU 정보는 비어있지 않은 문자열이며, 명령 실행 오류 메시지의 꼬리말이
+     * 그대로 노출되지 않는다.
+     *
+     * 회귀 테스트: Windows 11/Server 2025에서 wmic 제거로 인해
+     * "operable program or batch file."가 그대로 노출되던 이슈(#298) 방지.
+     */
+    public function test_system_info_cpu_info_is_not_shell_error_tail(): void
+    {
+        $response = $this->authRequest()->getJson('/api/admin/settings/system-info');
+
+        $response->assertStatus(200);
+
+        $cpu = $response->json('data.cpu_info');
+        $this->assertIsString($cpu);
+        $this->assertNotSame('', trim($cpu));
+        $this->assertStringNotContainsStringIgnoringCase('operable program or batch file', $cpu);
+        $this->assertStringNotContainsStringIgnoringCase('is not recognized', $cpu);
+    }
+
+    /**
+     * 두 번째 호출부터는 하드웨어 정보가 캐시에서 제공된다.
+     *
+     * 회귀 테스트: PowerShell(CIM) 호출이 수백ms ~ 수초 걸려 탭 전환
+     * UX 를 저해하던 이슈(#298) 방지. server_time 은 캐시 제외이므로
+     * 매 호출마다 갱신됨도 함께 검증한다.
+     */
+    public function test_system_info_caches_hardware_payload_but_refreshes_server_time(): void
+    {
+        $cache = app(CacheInterface::class);
+        $cache->forget('settings.system_info.'.app()->getLocale());
+
+        $first = $this->authRequest()->getJson('/api/admin/settings/system-info');
+        $first->assertStatus(200);
+
+        // 캐시에 기록됐는지 직접 확인
+        $this->assertTrue($cache->has('settings.system_info.'.app()->getLocale()));
+
+        // 1초 이상 간격을 두고 재호출 → server_time 은 갱신, cpu_info 는 동일해야 함
+        sleep(1);
+        $second = $this->authRequest()->getJson('/api/admin/settings/system-info');
+        $second->assertStatus(200);
+
+        $this->assertSame(
+            $first->json('data.cpu_info'),
+            $second->json('data.cpu_info'),
+            'cpu_info 는 캐시에서 재사용되어야 한다'
+        );
+        $this->assertNotSame(
+            $first->json('data.server_time'),
+            $second->json('data.server_time'),
+            'server_time 은 캐시 우회하여 매 호출마다 갱신되어야 한다'
+        );
+    }
+
+    /**
+     * clearCache 호출 시 시스템 정보 캐시도 함께 무효화된다.
+     */
+    public function test_clear_cache_invalidates_system_info_cache(): void
+    {
+        // 캐시 적재
+        $this->authRequest()->getJson('/api/admin/settings/system-info')->assertStatus(200);
+
+        $cache = app(CacheInterface::class);
+        $locale = app()->getLocale();
+        $this->assertTrue($cache->has('settings.system_info.'.$locale));
+
+        // clearCache 호출
+        $this->authRequest()->postJson('/api/admin/settings/clear-cache')->assertStatus(200);
+
+        $this->assertFalse(
+            $cache->has('settings.system_info.'.$locale),
+            'clearCache 는 settings.system_info.* 캐시도 제거해야 한다'
+        );
     }
 
     // ========================================================================

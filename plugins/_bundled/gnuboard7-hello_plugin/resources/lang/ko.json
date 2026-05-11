@@ -1,0 +1,14 @@
+{
+    "name": "Hello 플러그인",
+    "description": "학습용 최소 샘플 플러그인 (Hello 모듈 훅 소비)",
+    "settings": {
+        "title": "Hello 플러그인 설정",
+        "description": "Hello 모듈의 메모 생성 훅을 구독해 로그를 남기는 학습용 샘플입니다.",
+        "fields": {
+            "log_enabled": {
+                "label": "로그 기록 사용",
+                "hint": "활성화하면 메모 생성 시 hello-plugin.log 파일에 기록합니다."
+            }
+        }
+    }
+}

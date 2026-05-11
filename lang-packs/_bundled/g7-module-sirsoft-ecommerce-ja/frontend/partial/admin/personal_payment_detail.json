@@ -1,0 +1,66 @@
+{
+  "title": "個別決済詳細",
+  "meta": {
+    "payment_number": "決済番号",
+    "created_at": "作成日時",
+    "status": "ステータス"
+  },
+  "actions": {
+    "list": "一覧",
+    "edit": "編集",
+    "delete": "削除"
+  },
+  "product_info": {
+    "paid_at": "決済日時",
+    "payment_method": "決済方法",
+    "payer_name": "決済者名",
+    "approval_number": "承認番号",
+    "transaction_id": "トランザクションID",
+    "view_receipt": "領収書確認"
+  },
+  "status_message": {
+    "pending": "決済待機中です。",
+    "completed": "決済が完了しました。",
+    "expired": "決済が期限切れになりました。"
+  },
+  "member_info": {
+    "title": "会員情報",
+    "buyer_title": "購入者情報",
+    "name": "会員名",
+    "buyer_name": "名前",
+    "member_id": "会員ID",
+    "email": "メール",
+    "phone": "連絡先"
+  },
+  "payment_detail": {
+    "title": "個別決済詳細",
+    "payment_number": "決済番号",
+    "order_number": "注文番号",
+    "created_at": "作成日時",
+    "expired_at": "期限予定"
+  },
+  "payment_link": {
+    "title": "決済リンク",
+    "copy": "コピー",
+    "open": "開く"
+  },
+  "memo": {
+    "title": "メモ",
+    "edit": "編集"
+  },
+  "log": {
+    "title": "処理ログ",
+    "count": "{{count}}件",
+    "sort": "並べ替え",
+    "sort_options": {
+      "latest": "処理日時最新順",
+      "oldest": "処理日時古い順"
+    },
+    "per_page": "ページあたり",
+    "columns": {
+      "processed_at": "処理日時",
+      "processor": "処理者",
+      "event": "イベント"
+    }
+  }
+}

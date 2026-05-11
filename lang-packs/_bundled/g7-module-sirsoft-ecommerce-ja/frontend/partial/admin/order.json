@@ -1,0 +1,763 @@
+{
+  "default_shipping": "基本配送",
+  "title": "注文内容",
+  "description": "注文内容を照会および管理します。",
+  "index": {
+    "title": "注文管理",
+    "description": "注文リストを管理します",
+    "empty_title": "注文がありません",
+    "empty_description": "まだ受け付けられた注文がありません"
+  },
+  "detail": {
+    "title": "注文詳細",
+    "description": "注文詳細情報を確認します",
+    "placeholder": "注文詳細がここに表示されます",
+    "order_number": "注文番号",
+    "order_date": "注文日時",
+    "status": "ステータス",
+    "order_info": {
+      "title": "注文情報",
+      "order_products": "注文商品",
+      "no_products": "注文商品がありません。",
+      "selected_count": "{{count}}個選択されました",
+      "change_status": "注文ステータス変更",
+      "carrier": "配送業者",
+      "tracking_number": "送り状番号",
+      "batch_change": "一括変更",
+      "select_all": "すべて選択",
+      "columns": {
+        "product_info": "商品情報",
+        "price": "定価/販売価格",
+        "quantity": "購入数量",
+        "discount": "割引価格",
+        "actual_price": "実際の購入価格",
+        "points": "ポイント積立予定",
+        "status": "注文ステータス",
+        "delivery": "配送方法",
+        "subtotal": "小計"
+      },
+      "discount_details": {
+        "discount_code": "割引コード",
+        "referral": "流入経路",
+        "coupon": "クーポン",
+        "event": "イベント"
+      },
+      "price_details": {
+        "taxable": "課税",
+        "vat": "付加価値税",
+        "mileage": "マイレージ",
+        "deposit": "デポジット"
+      },
+      "delivery_info": {
+        "parcel": "宅配",
+        "free_shipping": "送料無料",
+        "paid_shipping": "有料配送",
+        "shipping_fee": "送料"
+      },
+      "summary": {
+        "total": "合計",
+        "original_price": "定価",
+        "selling_price": "販売価格",
+        "shipping_fee": "送料"
+      },
+      "orderer_info": {
+        "title": "注文者情報",
+        "name": "名前",
+        "phone": "携帯電話",
+        "tel": "電話番号",
+        "email": "メール",
+        "send": "送信"
+      },
+      "orderer_action": {
+        "view_member": "詳細情報を表示",
+        "search_by_member": "会員で検索",
+        "search_by_name": "注文者名で検索",
+        "search_by_phone": "連絡先で検索"
+      },
+      "receiver_info": {
+        "title": "受取人情報",
+        "name": "受取人名",
+        "phone": "携帯電話",
+        "tel": "電話番号",
+        "zipcode": "郵便番号",
+        "find_zipcode": "郵便番号検索",
+        "address": "住所",
+        "address_detail": "詳細住所",
+        "delivery_message": "配送メッセージ",
+        "send": "送信",
+        "phone_or_tel_hint": "携帯電話または電話番号のいずれかは必須です。"
+      },
+      "admin_memo": {
+        "title": "管理者メモ",
+        "placeholder": "管理者メモを入力してください..."
+      },
+      "save": "保存",
+      "save_success": "注文情報が保存されました。",
+      "save_error": "注文情報の保存に失敗しました。",
+      "validation_error_title": "入力値を確認してください。",
+      "member": "会員",
+      "non_member": "非会員",
+      "view_member_detail": "詳細情報を表示",
+      "search_by_member": "会員で検索",
+      "search_by_name": "注文者名で検索",
+      "search_by_phone": "連絡先で検索"
+    },
+    "tabs": {
+      "order_info": "注文情報",
+      "claim_history": "クレーム履歴",
+      "payment_info": "決済情報",
+      "activity_log": "アクティビティログ"
+    },
+    "handler": {
+      "bulk_change_success": "{{count}}個のオプションのステータスが変更されました。",
+      "bulk_change_failed": "ステータス変更に失敗しました。",
+      "memo_save_success": "管理者メモが保存されました。",
+      "address_save_success": "配送先情報が保存されました。"
+    },
+    "batch_modal": {
+      "title": "一括変更確認",
+      "description": "選択した商品を{{status}}に変更します。",
+      "columns": {
+        "product_name": "商品名",
+        "current_status": "現在のステータス",
+        "available_quantity": "保有数量",
+        "change_quantity": "変更数量"
+      },
+      "carrier_info": "配送業者: {{carrier}}、送り状番号: {{tracking}}",
+      "cancel": "キャンセル",
+      "confirm": "確認"
+    },
+    "claim_history": {
+      "title": "クレーム履歴",
+      "tabs": {
+        "refund": "返金履歴",
+        "return": "返品履歴",
+        "exchange": "交換履歴"
+      },
+      "view_refund_management": "返金管理で表示",
+      "view_return_management": "返品管理で表示",
+      "view_exchange_management": "交換管理で表示",
+      "empty": {
+        "refund": "返金履歴がありません",
+        "return": "返品履歴がありません",
+        "exchange": "交換履歴がありません"
+      },
+      "sort": {
+        "label": "並べ替え",
+        "request_date_desc": "申請日時 最新順"
+      },
+      "per_page": "ページあたり",
+      "items_count": "{{count}}個",
+      "columns": {
+        "request_date": "申請日時",
+        "refund_number": "返金番号",
+        "return_number": "返品番号",
+        "exchange_number": "交換番号",
+        "product_info": "商品情報",
+        "amount_info": "金額情報",
+        "quantity": "数量",
+        "refund_method": "返金方法",
+        "refund_status": "返金ステータス",
+        "return_status": "返品ステータス",
+        "exchange_status": "交換ステータス",
+        "refund_reason": "返金理由",
+        "return_reason": "返品理由",
+        "exchange_reason": "交換理由"
+      },
+      "amount": {
+        "actual_price": "実価格",
+        "expected_refund": "返金予定額",
+        "actual_refund": "実返金額",
+        "return_request": "返品申請",
+        "original_order": "元注文",
+        "order_quantity": "注文",
+        "difference": "差額"
+      },
+      "method": {
+        "direct_refund": "直接返金",
+        "deposit": "預かり金"
+      },
+      "status": {
+        "refund_rejected": "返金却下",
+        "refund_hold": "返金保留",
+        "refund_approved": "返金承認",
+        "refund_completed": "返金完了",
+        "return_requested": "返品受付",
+        "return_pickup_in_progress": "返品回収中",
+        "return_pickup_completed": "返品回収到着",
+        "return_completed": "返品完了",
+        "exchange_requested": "交換受付",
+        "exchange_shipping": "交換配送",
+        "exchange_completed": "交換完了"
+      },
+      "delivery": {
+        "carrier": "配送業者",
+        "tracking_number": "送り状番号",
+        "pickup_carrier": "回収配送業者",
+        "pickup_tracking": "回収送り状番号",
+        "shipping_carrier": "発送配送業者",
+        "shipping_tracking": "発送送り状番号",
+        "pickup_fee": "回収配送料",
+        "round_trip_fee": "往復配送料"
+      },
+      "reason": {
+        "customer_fault": "顧客責任",
+        "seller_fault": "販売者責任",
+        "simple_change": "単純変心",
+        "wrong_color": "色が異なる",
+        "defect": "初期不良",
+        "defective_product": "商品不良",
+        "color_change": "色変更",
+        "size_exchange": "サイズ交換"
+      },
+      "product": {
+        "original_product": "元商品",
+        "exchange_product": "交換商品",
+        "same_product": "同一商品交換",
+        "same_product_exchange": "同一商品交換",
+        "size": "サイズ",
+        "color": "色",
+        "capacity": "容量"
+      }
+    },
+    "payment_info": {
+      "title": "決済情報",
+      "type": {
+        "original": "元注文",
+        "additional_shipping": "追加配送料",
+        "admin_manual": "管理者手動要求"
+      },
+      "status": {
+        "completed": "決済完了",
+        "pending": "入金待ち"
+      },
+      "payment_method": "決済方法",
+      "payment_date": "決済日時",
+      "payment_request_date": "決済リクエスト日時",
+      "due_date": "入金期限",
+      "order_amount": "注文金額",
+      "shipping_fee": "配送料",
+      "total_discount": "合計割引",
+      "coupon": "クーポン",
+      "discount_code": "割引コード",
+      "event": "イベント",
+      "referral": "アクセス経路",
+      "mileage_used": "マイレージ使用",
+      "deposit_used": "デポジット使用",
+      "final_amount": "最終決済金額",
+      "taxable_amount": "課税金額",
+      "vat": "付加価値税（VAT）",
+      "expected_points": "積立予定ポイント",
+      "method": {
+        "credit_card": "クレジットカード",
+        "bank_transfer": "銀行振込",
+        "virtual_account": "バーチャルアカウント"
+      },
+      "account_info": "{{bank}} {{account}} ({{holder}})",
+      "cancelled_amount": "キャンセル金額",
+      "refunded_amount": "返金金額",
+      "refund_status": "返金ステータス",
+      "refund_points_amount": "マイレージ返金"
+    },
+    "activity_log": {
+      "title": "アクティビティログ",
+      "sort": {
+        "label": "並べ替え：",
+        "date_desc": "最新順",
+        "date_asc": "古い順"
+      },
+      "per_page": "ページあたり：",
+      "per_page_option": "{{count}}個",
+      "items_count": "{{count}}個",
+      "columns": {
+        "date": "日時",
+        "actor": "実行者",
+        "event": "内容"
+      },
+      "empty": "アクティビティログがありません。",
+      "actor_action": {
+        "view_member": "ユーザー情報を表示"
+      },
+      "system": "システム",
+      "changes": {
+        "title": "変更履歴",
+        "field": "項目",
+        "before": "変更前",
+        "after": "変更後",
+        "bulk_model_id": "ID: {{id}}"
+      }
+    },
+    "modal": {
+      "send_sms": {
+        "title": "メッセージを送信",
+        "description": "SMS テキストメッセージを送信します。",
+        "phone": "携帯電話番号",
+        "phone_placeholder": "010-1234-5678",
+        "message": "メッセージ内容",
+        "message_placeholder": "メッセージ内容を入力してください",
+        "char_count": "{{count}}文字",
+        "plugin_label": "SMS プラグイン",
+        "cancel": "キャンセル",
+        "send": "送信"
+      },
+      "send_email": {
+        "title": "メッセージを送信",
+        "description": "メール メッセージを送信します。",
+        "email": "メールアドレス",
+        "email_placeholder": "hong@example.com",
+        "message": "メッセージ内容",
+        "message_placeholder": "メッセージ内容を入力してください",
+        "char_count": "{{count}}文字",
+        "cancel": "キャンセル",
+        "send": "送信",
+        "validation_error": "入力値を確認してください。",
+        "sent_success": "メールが送信されました。",
+        "sent_failed": "メール送信に失敗しました。"
+      },
+      "batch_change": {
+        "title": "一括変更確認",
+        "confirm_message": "選択した{{count}}個の商品のステータスを一括変更しますか？",
+        "confirm_prefix": "選択した",
+        "confirm_count": "{{count}}個の商品を",
+        "confirm_status": "{{status}}",
+        "confirm_suffix": "に一括変更しますか？",
+        "status_label": "変更ステータス:",
+        "carrier_label": "配送業者:",
+        "tracking_label": "送り状番号:",
+        "no_changes": "変更する情報がありません。",
+        "cancel": "キャンセル",
+        "confirm": "確認",
+        "product_col": "商品情報",
+        "price_col": "販売価格",
+        "change_quantity_col": "変更数量",
+        "current_status_col": "現在のステータス",
+        "quantity_note": "数量を減らすと、残りの分は現在のステータスで維持されます。"
+      },
+      "cancel": {
+        "title": "注文キャンセル",
+        "description": "選択した商品の注文をキャンセルします。",
+        "validation_error_title": "入力値を確認してください",
+        "pg_error_title": "PG返金失敗",
+        "pg_error_description": "PG返金処理に失敗しました。エラーの内容を確認してから再試行するか、PG管理者画面から直接返金処理を行ってください。",
+        "product_col": "商品情報",
+        "unit_price_col": "単価",
+        "cancel_quantity_col": "キャンセル数量",
+        "status_col": "現在のステータス",
+        "cancel_pg": "PG決済も一緒にキャンセルします",
+        "cancel_pg_description": "チェックを外すと、注文ステータスのみが変更され、PG返金は別途行う必要があります。",
+        "cancel_reason_type_label": "キャンセル理由",
+        "reason_placeholder": "キャンセル理由を選択してください",
+        "reason": {
+          "order_mistake": "注文ミス",
+          "changed_mind": "単なる気が変わった",
+          "reorder_other": "別の商品で再注文",
+          "delayed_delivery": "配送遅延",
+          "product_info_different": "商品情報が異なっている",
+          "admin_cancel": "管理者キャンセル",
+          "etc": "その他"
+        },
+        "cancel_reason_detail_placeholder": "詳細な理由を入力してください (オプション)",
+        "refund_priority_label": "返金優先順位",
+        "refund_priority_pg_first": "PG決済を優先的に返金",
+        "refund_priority_points_first": "マイレージを優先的に返金",
+        "refund_estimate_title": "返金予定金額",
+        "refund_loading": "返金予定金額を計算中...",
+        "refund_product_amount": "商品返金額",
+        "refund_shipping_diff": "配送費変動",
+        "refund_discount_diff": "割引調整",
+        "refund_points_amount": "マイレージ返金",
+        "refund_total": "最終返金予定額",
+        "remaining_pg_balance": "返金後のPG残高",
+        "remaining_points_balance": "返金後のマイレージ残高",
+        "refund_shipping_base": "基本配送費",
+        "refund_shipping_extra": "追加配送費(離島)",
+        "restored_coupons_label": "復元されるクーポン",
+        "restored_coupons_notice": "上記のクーポンはクーポンボックスに復元されます。",
+        "comparison_title": "注文金額比較",
+        "col_before": "キャンセル前",
+        "col_after": "キャンセル後",
+        "item_count": "商品数量",
+        "count_unit": "個",
+        "list_price_amount": "合計定価金額",
+        "subtotal_amount": "合計販売価格金額",
+        "product_coupon_discount": "商品クーポン割引",
+        "order_coupon_discount": "注文クーポン割引",
+        "code_discount": "割引コード割引",
+        "shipping_coupon_discount": "配送費クーポン割引",
+        "base_shipping": "基本配送費",
+        "extra_shipping": "追加配送費",
+        "points_used": "ポイント使用",
+        "taxable_amount": "課税金額",
+        "vat_amount": "消費税",
+        "total_paid": "実際の決済金額",
+        "earned_points": "ポイント積立予定",
+        "product_subtotal": "小計",
+        "cancel_btn": "注文キャンセル",
+        "close_btn": "閉じる",
+        "estimate_failed": "返金予想金額の計算に失敗しました。",
+        "cancel_success": "注文がキャンセルされました。",
+        "cancel_failed": "注文のキャンセルに失敗しました。"
+      }
+    }
+  },
+  "preset": {
+    "label": "検索プリセット",
+    "applied": "{{name}}プリセットが適用されました。",
+    "today_payment": "本日決済完了",
+    "bank_pending": "銀行振込入金待ち",
+    "add_new": "新しいプリセットを追加",
+    "delete_confirm_message": "'{{name}}'プリセットを削除しますか?",
+    "delete_confirm_title": "プリセット削除",
+    "delete_success": "プリセットが削除されました",
+    "empty": "登録されたプリセットがありません",
+    "manage_description": "検索プリセットを管理します",
+    "manage_title": "プリセット管理",
+    "more": "もっと見る",
+    "name_label": "プリセット名",
+    "name_placeholder": "プリセット名を入力してください",
+    "save": "保存",
+    "save_description": "現在の検索条件をプリセットとして保存します",
+    "save_success": "プリセットが保存されました",
+    "save_title": "プリセット保存",
+    "update_success": "プリセットが編集されました"
+  },
+  "search": {
+    "placeholder": "検索キーワードを入力してください...",
+    "field": {
+      "all": "すべて",
+      "order_number": "注文番号",
+      "orderer_name": "注文者名",
+      "product_name": "商品名",
+      "receiver_name": "受取人名",
+      "phone": "連絡先",
+      "email": "メール"
+    },
+    "edit_search": "検索編集",
+    "preset_manage": "プリセット管理",
+    "column_select": "列選択",
+    "detail_search": "詳細検索"
+  },
+  "filter": {
+    "date": "日時",
+    "date_type": {
+      "order_date": "注文日",
+      "payment_date": "決済日",
+      "shipping_date": "発送日"
+    },
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "date_quick": {
+      "today": "本日",
+      "week": "1週間",
+      "1_month": "1ヶ月",
+      "3_months": "3ヶ月",
+      "6_months": "6ヶ月",
+      "1_year": "1年"
+    },
+    "order_status": "注文ステータス",
+    "order_status_options": {
+      "waiting": "注文待機中",
+      "payment_pending": "決済待機中",
+      "payment_complete": "決済完了",
+      "shipping_hold": "配送保留",
+      "preparing": "商品準備中",
+      "shipping_ready": "配送準備完了",
+      "shipping": "配送中",
+      "delivered": "配送完了",
+      "cancelled": "注文キャンセル",
+      "confirmed": "購入確定"
+    },
+    "claim_status": "クレームステータス",
+    "claim_mode": "クレームモード",
+    "claim_refund": "返金",
+    "claim_refund_options": {
+      "requested": "返金申請",
+      "hold": "返金保留",
+      "approved": "返金承認",
+      "rejected": "返金却下",
+      "completed": "返金完了"
+    },
+    "claim_return": "返品",
+    "claim_return_options": {
+      "requested": "返品申請",
+      "payment_pending": "返品決済待機中",
+      "hold": "返品保留",
+      "approved": "返品承認",
+      "pickup_in_progress": "返品回収中",
+      "pickup_completed": "返品回収到着",
+      "rejected": "返品却下",
+      "completed": "返品完了"
+    },
+    "claim_exchange": "交換",
+    "claim_exchange_options": {
+      "requested": "交換申請",
+      "payment_pending": "交換決済待機中",
+      "hold": "交換保留",
+      "approved": "交換承認",
+      "pickup_in_progress": "交換回収中",
+      "pickup_completed": "交換回収到着",
+      "rejected": "交換却下",
+      "reshipping": "交換発送",
+      "reshipping_completed": "交換配送完了",
+      "completed": "交換完了"
+    },
+    "delivery_method": "配送方法",
+    "delivery_options": {
+      "parcel": "宅配便",
+      "direct": "直接配送",
+      "mail": "郵便",
+      "pickup": "来店受取",
+      "quick": "速達配送"
+    },
+    "payment_method": "決済方法",
+    "payment_options": {
+      "bank": "銀行振込",
+      "card": "クレジットカード",
+      "virtual": "仮想口座",
+      "naver": "Naver Pay",
+      "kakao": "Kakao Pay",
+      "toss": "Toss Pay"
+    },
+    "category": "商品カテゴリー",
+    "category_level": "カテゴリー{{level}}",
+    "price": "購入金額",
+    "min_price": "最小金額",
+    "max_price": "最大金額",
+    "currency": "ウォン",
+    "country": "配送国",
+    "country_options": {
+      "kr": "大韓民国",
+      "us": "アメリカ",
+      "jp": "日本",
+      "cn": "中国",
+      "ru": "ロシア",
+      "tw": "台湾"
+    },
+    "device": "購入環境",
+    "device_options": {
+      "pc": "PC",
+      "mobile": "モバイル"
+    },
+    "shipping_policy": "配送ポリシー",
+    "shipping_fee": "配送料金",
+    "min_shipping_fee": "最小配送料金",
+    "max_shipping_fee": "最大配送料金",
+    "category_placeholder": "カテゴリーを選択",
+    "claim_module_link": "クレーム管理で表示",
+    "detail_title": "詳細検索",
+    "orderer": "注文者",
+    "orderer_select": "会員を選択",
+    "orderer_search_placeholder": "名前またはメールアドレスで検索",
+    "orderer_search_initial": "会員を検索してください"
+  },
+  "action": {
+    "search": "検索",
+    "reset": "初期化",
+    "save_preset": "プリセットを保存",
+    "excel_download": "Excelダウンロード",
+    "print": "印刷",
+    "view": "表示",
+    "view_detail": "詳細表示",
+    "view_member": "会員情報を表示",
+    "search_by_orderer": "注文者で検索"
+  },
+  "batch": {
+    "selected_count": "{{count}}件選択されました",
+    "status_change": "注文ステータス変更",
+    "shipping_process": "発送処理",
+    "carrier": "配送業者",
+    "carrier_options": {
+      "cj": "CJ大韓通運",
+      "lotte": "ロッテ宅配",
+      "hanjin": "ハンジン宅配",
+      "post": "郵便局宅配"
+    },
+    "tracking_number": "送り状番号",
+    "batch_change": "一括変更"
+  },
+  "table": {
+    "total_count": "合計{{count}}件",
+    "sort": {
+      "latest": "最新注文順",
+      "oldest": "古い注文順",
+      "amount_high": "金額が高い順",
+      "amount_low": "金額が低い順"
+    },
+    "per_page": "{{count}}件",
+    "excel_download": "Excelダウンロード",
+    "columns": {
+      "checkbox": "選択",
+      "no": "番号",
+      "order_date": "注文日時",
+      "order_number": "注文番号",
+      "order_status": "注文ステータス",
+      "order_amount": "注文金額",
+      "product": "注文商品",
+      "orderer": "注文者名",
+      "payment_method": "決済方法",
+      "country": "配送国",
+      "delivery_method": "配送方法",
+      "action": "作業",
+      "actions": "作業"
+    }
+  },
+  "mobile": {
+    "orderer": "注文者",
+    "payment": "決済",
+    "shipping": "配送",
+    "shipping_country": "配送国",
+    "payment_delivery": "決済・配送",
+    "country": "配送国"
+  },
+  "modal": {
+    "excel_download": {
+      "title": "Excelダウンロード",
+      "description": "ダウンロードする注文書の範囲を選択してください。",
+      "option_search": "現在の検索条件でダウンロード",
+      "option_search_desc": "合計{{count}}件の注文書がダウンロードされます。",
+      "option_selected": "選択した注文書のみダウンロード",
+      "option_selected_desc": "{{count}}件の注文書がダウンロードされます。",
+      "cancel": "キャンセル",
+      "download": "ダウンロード"
+    },
+    "preset_manage": {
+      "title": "プリセット管理",
+      "description": "検索プリセットを管理します。",
+      "add_preset": "新規プリセット追加",
+      "add_new": "新規プリセット追加",
+      "empty": "保存されたプリセットがありません。"
+    },
+    "preset_save": {
+      "title": "プリセット保存",
+      "description": "現在の検索条件をプリセットとして保存します。",
+      "placeholder": "プリセット名を入力してください",
+      "save": "保存"
+    },
+    "preset_edit": {
+      "title": "プリセット編集"
+    },
+    "preset_delete": {
+      "title": "プリセット削除",
+      "confirm": "'{{name}}'プリセットを削除しますか?"
+    }
+  },
+  "status": {
+    "waiting": "注文待機",
+    "payment_pending": "入金待機",
+    "payment_complete": "決済完了",
+    "shipping_hold": "発送保留",
+    "preparing": "商品準備中",
+    "shipping_ready": "配送準備中",
+    "shipping": "配送中",
+    "delivered": "配送完了",
+    "cancelled": "注文キャンセル",
+    "confirmed": "購入確定"
+  },
+  "datagrid": {
+    "total_count": "合計{count}件"
+  },
+  "message": {
+    "no_orders": "注文がありません"
+  },
+  "pagination": {
+    "showing_info": "{{from}}-{{to}} / {{total}}件"
+  },
+  "sort": {
+    "latest_order": "最新の注文順",
+    "oldest_order": "古い注文順",
+    "latest_payment": "最新の決済順",
+    "oldest_payment": "古い決済順",
+    "latest_shipping": "最新の発送順",
+    "oldest_shipping": "古い発送順",
+    "highest_amount": "金額が高い順",
+    "lowest_amount": "金額が低い順"
+  },
+  "excel": {
+    "title": "Excelダウンロード",
+    "description": "ダウンロードする注文書の範囲を選択してください",
+    "download": "ダウンロード",
+    "download_success": "Excelファイルがダウンロードされました",
+    "option_search": "現在の検索条件でダウンロード",
+    "option_search_desc": "合計{{count}}件の注文書がダウンロードされます",
+    "option_selected": "選択した注文書のみダウンロード",
+    "option_selected_desc": "{{count}}件の注文書がダウンロードされます"
+  },
+  "bulk": {
+    "selected_count": "{{count}}件選択されています",
+    "apply": "適用",
+    "apply_full": "一括適用",
+    "courier_placeholder": "配送業者選択",
+    "shipping_label": "発送処理:",
+    "status_placeholder": "ステータス選択",
+    "no_status_selected": "変更する注文ステータスを選択してください。",
+    "no_items_selected": "変更する商品を選択してください。",
+    "no_cancellable_items": "キャンセルできる商品がありません。既にキャンセルされた商品は除外されます。",
+    "carrier_required": "該当ステータスに変更するには、配送業者と送り状番号の両方を入力してください。",
+    "success": "一括変更されました",
+    "tracking_placeholder": "送り状番号を入力",
+    "confirm_title": "一括変更確認",
+    "confirm_message": "選択した{{count}}件の注文に対して、以下の変更を適用します。",
+    "confirm_status_label": "注文ステータス変更: ",
+    "confirm_carrier_label": "配送業者: ",
+    "confirm_tracking_label": "運送状番号: ",
+    "confirm_cancel": "キャンセル",
+    "confirm_apply": "変更を適用",
+    "confirm_no_changes": "変更する項目がありません。"
+  },
+  "column": {
+    "no": "番号",
+    "order_date": "注文日時",
+    "order_number": "注文番号",
+    "product": "注文商品",
+    "order_amount": "注文金額",
+    "shipping_fee_short": "配送料 {{amount}}",
+    "paid_short": "決済 {{amount}}",
+    "unpaid_short": "未決済 {{amount}}",
+    "order_status": "注文ステータス",
+    "orderer": "注文者名",
+    "payment_method": "決済方法",
+    "delivery_method": "配送方法",
+    "country": "配送国",
+    "device": "購入環境",
+    "first_order": "初回購入",
+    "action": "作業"
+  },
+  "device": {
+    "mobile": "モバイル",
+    "pc": "PC"
+  },
+  "product": {
+    "more": "他 {{count}}件"
+  },
+  "claim": {
+    "refund": {
+      "requested": "返金申請",
+      "hold": "返金保留",
+      "approved": "返金承認",
+      "rejected": "返金却下",
+      "completed": "返金完了"
+    },
+    "return": {
+      "requested": "返品申請",
+      "payment_pending": "返品決済待機",
+      "hold": "返品保留",
+      "approved": "返品承認",
+      "pickup_in_progress": "返品回収中",
+      "pickup_completed": "返品回収到着",
+      "rejected": "返品却下",
+      "completed": "返品完了"
+    },
+    "exchange": {
+      "requested": "交換申請",
+      "payment_pending": "交換決済待機",
+      "hold": "交換保留",
+      "approved": "交換承認",
+      "pickup_in_progress": "交換回収中",
+      "pickup_completed": "交換回収到着",
+      "rejected": "交換却下",
+      "reshipping": "交換発送",
+      "reshipping_completed": "交換配送完了",
+      "completed": "交換完了"
+    }
+  }
+}

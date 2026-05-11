@@ -180,7 +180,8 @@ describe('체크아웃 할인 섹션 쿠폰 다운로드 버튼 (_checkout_disco
 
     it('쿠폰 다운로드 버튼이 로그인 사용자만 표시된다', () => {
         const downloadBtn = sectionHeader.children[1]; // 우측 버튼
-        expect(downloadBtn.if).toBe('{{_global.currentUser}}');
+        // currentUser?.uuid 패턴 사용 (currentUser 객체는 항상 truthy 가능 → uuid 로 진위 확인)
+        expect(downloadBtn.if).toBe('{{_global.currentUser?.uuid}}');
         expect(downloadBtn.name).toBe('Button');
     });
 
@@ -254,10 +255,11 @@ describe('상품 상세 쿠폰 배지 (_info_summary.json)', () => {
         expect(loggedInCondition.if).toContain('_global.currentUser');
         expect(loggedInCondition.then.handler).toBe('sequence');
 
-        // 비로그인 시 로그인 안내 모달
-        const elseCondition = clickAction.conditions[1];
-        expect(elseCondition.else.handler).toBe('openModal');
-        expect(elseCondition.else.target).toBe('login_required_modal');
+        // 비로그인 fallback (conditions 핸들러는 if 없는 항목을 else 로 처리,
+        // 동작 자체는 then 키로 표현)
+        const fallbackCondition = clickAction.conditions[1];
+        expect(fallbackCondition.then.handler).toBe('openModal');
+        expect(fallbackCondition.then.target).toBe('login_required_modal');
     });
 
     it('3개 초과 시 더보기 버튼을 표시한다', () => {

@@ -144,7 +144,7 @@ class ProductOption extends Model
             return '';
         }
 
-        return $name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
@@ -169,8 +169,8 @@ class ProductOption extends Model
                 $key = $item['key'] ?? [];
                 $value = $item['value'] ?? [];
 
-                $localizedKey = is_array($key) ? ($key[$locale] ?? $key['ko'] ?? array_values($key)[0] ?? '') : $key;
-                $localizedValue = is_array($value) ? ($value[$locale] ?? $value['ko'] ?? array_values($value)[0] ?? '') : $value;
+                $localizedKey = is_array($key) ? ($key[$locale] ?? $key[config('app.fallback_locale', 'ko')] ?? array_values($key)[0] ?? '') : $key;
+                $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
 
                 if ($localizedKey !== '') {
                     $result[$localizedKey] = $localizedValue;
@@ -206,7 +206,7 @@ class ProductOption extends Model
                 $parts = [];
                 foreach ($values as $item) {
                     $value = $item['value'] ?? [];
-                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value['ko'] ?? '') : $value;
+                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? '') : $value;
                     if ($localizedValue !== '') {
                         $parts[] = $localizedValue;
                     }
@@ -232,7 +232,7 @@ class ProductOption extends Model
         $locale = $locale ?? app()->getLocale();
         $name = $this->generateOptionName();
 
-        return $name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**

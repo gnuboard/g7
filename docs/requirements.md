@@ -34,10 +34,24 @@
 
 ### 1.3 PHP
 
-| 항목 | 요구사항 |
-|------|---------|
-| 버전 | **8.2 이상** (`^8.2`) |
-| SAPI | FPM (권장) 또는 mod_php |
+| 항목 | 요구사항                                                    |
+|------|-------------------------------------------------------------|
+| 버전 | **8.2 이상** (`^8.2`)                                       |
+| SAPI | FPM (권장) 또는 mod_php (Apache + mod_fcgid 환경은 §1.3.1)  |
+
+#### 1.3.1 Apache + mod_fcgid 환경 추가 설정 (권장)
+
+PHP 8.5 NTS(Windows) 등 mod_php DLL 이 제공되지 않는 빌드를 Apache 와 결합할 때 PHP 가 `php-cgi.exe` 기반 mod_fcgid 로 구동된다. 이 SAPI 의 default 출력 버퍼(`FcgidOutputBufferSize` 64KB) 가 인스톨러 SSE 스트림과 폴링 응답을 스크립트 종료 시점까지 보관하여 진행 상황이 화면에 실시간 반영되지 않는다.
+
+Apache `fcgid.conf` 에 다음 1줄을 추가 후 Apache 재시작:
+
+```apache
+FcgidOutputBufferSize 0
+```
+
+미설정 시:
+- 인스톨러 SSE 호환성 사전 체크가 buffered 환경으로 자동 판정되어 폴링 모드로 fallback
+- 폴링 모드 응답은 코드 레벨 64KB padding 워크어라운드로 동작은 보장되나, SSE 모드가 아닌 1초 간격 폴링으로 진행 상황이 표시됨
 
 ### 1.4 PHP 필수 확장 모듈
 

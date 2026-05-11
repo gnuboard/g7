@@ -133,13 +133,13 @@ describe('Data Sources', () => {
         expect(params.is_active).toContain('query.is_active');
     });
 
-    it('shipping_available_countries data_source가 있다 (Settings 기반 동적 국가)', () => {
-        const ds = data_sources.find((d: any) => d.id === 'shipping_available_countries');
+    it('ecommerce_settings data_source 가 있고 국가 정보를 제공한다 (별도 shipping_available_countries 미사용)', () => {
+        // 별도 shipping_available_countries 데이터소스 → ecommerce_settings 단일 ds 로 통합
+        // 국가 목록은 ecommerce_settings.data.shipping.available_countries 경로에서 조회
+        const ds = data_sources.find((d: any) => d.id === 'ecommerce_settings');
         expect(ds).toBeDefined();
         expect(ds.endpoint).toContain('/admin/settings');
         expect(ds.auto_fetch).toBe(true);
-        expect(ds.transform).toContain('shipping');
-        expect(ds.transform).toContain('available_countries');
     });
 });
 
@@ -448,13 +448,17 @@ describe('필터 Partial (_partial_filter.json)', () => {
             expect(countryFilter).toBeDefined();
         });
 
-        it('shipping_available_countries가 있을 때만 표시된다', () => {
-            expect(countryFilter.if).toContain('shipping_available_countries');
+        it('ecommerce_settings.shipping.available_countries 가 있을 때만 표시된다', () => {
+            // shipping_available_countries 데이터소스 → ecommerce_settings 통합 후
+            // 표시 조건도 ecommerce_settings.data.shipping.available_countries 길이 검사로 변경
+            expect(countryFilter.if).toContain('ecommerce_settings');
+            expect(countryFilter.if).toContain('available_countries');
         });
 
-        it('동적 iteration으로 국가 Checkbox를 생성한다', () => {
+        it('동적 iteration으로 국가 Checkbox를 생성한다 (ecommerce_settings 기반)', () => {
             const iterNodes = allNodes.filter(
-                (n: any) => n.iteration?.source?.includes('shipping_available_countries')
+                (n: any) => n.iteration?.source?.includes('ecommerce_settings')
+                    && n.iteration?.source?.includes('available_countries'),
             );
             expect(iterNodes.length).toBeGreaterThan(0);
             const iterNode = iterNodes[0];
@@ -463,14 +467,14 @@ describe('필터 Partial (_partial_filter.json)', () => {
 
         it('국가 Checkbox가 _local.filter.countries를 토글한다', () => {
             const iterNodes = allNodes.filter(
-                (n: any) => n.iteration?.source?.includes('shipping_available_countries')
+                (n: any) => n.iteration?.source?.includes('ecommerce_settings')
+                    && n.iteration?.source?.includes('available_countries'),
             );
-            // iteration 내의 Input[type=checkbox] 찾기
             const checkboxNodes = flattenAll({ children: iterNodes }).filter(
                 (n: any) =>
                     n.name === 'Input' &&
                     n.props?.type === 'checkbox' &&
-                    n.props?.checked?.includes('filter.countries')
+                    n.props?.checked?.includes('filter.countries'),
             );
             expect(checkboxNodes.length).toBeGreaterThan(0);
         });

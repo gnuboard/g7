@@ -5,8 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\HookManager;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Models\Product;
-use Modules\Sirsoft\Ecommerce\Models\ProductOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 
 /**
  * 옵션 변경 후 상품 재고 자동 동기화 리스너
@@ -20,6 +20,15 @@ use Modules\Sirsoft\Ecommerce\Models\ProductOption;
  */
 class SyncProductFromOptionListener implements HookListenerInterface
 {
+    /**
+     * @param  ProductRepositoryInterface  $productRepository  상품 키 맵 조회/재고 갱신
+     * @param  ProductOptionRepositoryInterface  $productOptionRepository  옵션 ID → product_id, stock 합계
+     */
+    public function __construct(
+        protected ProductRepositoryInterface $productRepository,
+        protected ProductOptionRepositoryInterface $productOptionRepository,
+    ) {}
+
     /**
      * 구독할 훅 목록 반환
      *
@@ -76,27 +85,20 @@ class SyncProductFromOptionListener implements HookListenerInterface
 
         try {
             // 1. 변경된 옵션들의 상품 ID 추출
-            $productIds = ProductOption::whereIn('id', $optionIds)
-                ->pluck('product_id')
-                ->unique()
-                ->toArray();
+            $productIds = $this->productOptionRepository->pluckProductIds($optionIds);
 
             // 2. 각 상품의 변경 전 스냅샷 캡처
-            $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+            $products = $this->productRepository->findByIdsKeyed($productIds);
             $snapshots = $products->map->toArray()->all();
 
             // 3. 각 상품의 옵션 재고 합계로 상품 재고 업데이트
             foreach ($productIds as $productId) {
-                $totalStock = ProductOption::where('product_id', $productId)
-                    ->sum('stock_quantity');
-
-                Product::where('id', $productId)->update([
-                    'stock_quantity' => $totalStock,
-                ]);
+                $totalStock = $this->productOptionRepository->sumStockByProduct((int) $productId);
+                $this->productRepository->updateStockQuantity((int) $productId, $totalStock);
             }
 
             // 4. 변경된 상품별로 훅 발행 → ProductActivityLogListener에서 로그 기록
-            $freshProducts = Product::whereIn('id', $productIds)->get()->keyBy('id');
+            $freshProducts = $this->productRepository->findByIdsKeyed($productIds);
             foreach ($productIds as $productId) {
                 $product = $freshProducts->get($productId);
                 $snapshot = $snapshots[$productId] ?? null;
@@ -168,7 +170,7 @@ class SyncProductFromOptionListener implements HookListenerInterface
 
         try {
             // 현재 상품 상태 조회 (syncStockFromOptions이 이미 DB 갱신 완료)
-            $products = Product::whereIn('id', $affectedProductIds)->get()->keyBy('id');
+            $products = $this->productRepository->findByIdsKeyed($affectedProductIds);
 
             // 옵션 스냅샷에서 변경 전 상품 재고 복원 → 비교 → 훅 발행
             foreach ($affectedProductIds as $productId) {
@@ -193,10 +195,9 @@ class SyncProductFromOptionListener implements HookListenerInterface
 
                 // 현재 옵션에서 스냅샷에 없는 옵션의 재고도 합산
                 $snapshotOptionIds = array_keys($snapshots);
-                $otherOptionsStock = ProductOption::where('product_id', $productId)
-                    ->whereNotIn('id', $snapshotOptionIds)
-                    ->sum('stock_quantity');
-                $oldTotalStock += (int) $otherOptionsStock;
+                $otherOptionsStock = $this->productOptionRepository
+                    ->sumStockByProductExcluding((int) $productId, $snapshotOptionIds);
+                $oldTotalStock += $otherOptionsStock;
 
                 $currentStock = (int) $product->stock_quantity;
 

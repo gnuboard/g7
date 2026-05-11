@@ -144,6 +144,48 @@
             "fallback": {
                 "data": { "channels": [] }
             }
+        },
+        {
+            "id": "boardIdentityPolicies",
+            "type": "api",
+            "endpoint": "/api/admin/identity/policies",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "source_identifier": "sirsoft-board",
+                "source_type": "{{query.source_type ?? ''}}",
+                "scope": "{{query.scope ?? ''}}",
+                "purpose": "{{query.purpose ?? ''}}",
+                "search": "{{query.search ?? ''}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 10}}"
+            },
+            "fallback": {
+                "data": { "data": [], "meta": {} }
+            }
+        },
+        {
+            "id": "boardIdentityPurposes",
+            "type": "api",
+            "endpoint": "/api/identity/purposes",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "identityProviders",
+            "type": "api",
+            "endpoint": "/api/admin/identity/providers",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            }
         }
     ],
     "init_actions": [
@@ -437,6 +479,10 @@
                                                 {
                                                     "id": "notification_definitions",
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.notification_definitions"
+                                                },
+                                                {
+                                                    "id": "identity_policies",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.identity_policies"
                                                 }
                                             ],
                                             "activeTabId": "{{_global.activeBoardSettingsTab || query.tab || 'general'}}",
@@ -655,6 +701,9 @@
                             },
                             {
                                 "partial": "partials/admin_board_settings/_tab_notification_definitions.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_identity_policies.json"
                             }
                         ]
                     }
@@ -677,6 +726,12 @@
         },
         {
             "partial": "partials/admin_board_settings/_modal_notification_definition_reset.json"
+        },
+        {
+            "partial": "partials/admin_board_settings/_modal_identity_policy_form.json"
+        },
+        {
+            "partial": "partials/admin_board_settings/_modal_identity_policy_delete.json"
         }
     ]
 }

@@ -1,0 +1,465 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_identity_logs",
+    "permissions": [
+        "core.admin.identity.logs.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.identity.logs.page_title"
+    },
+    "state": {
+        "filter": {
+            "searchType": "auto",
+            "search": "",
+            "statuses": [],
+            "purposes": [],
+            "channels": [],
+            "originTypes": [],
+            "dateFrom": "",
+            "dateTo": "",
+            "sourceType": "",
+            "sourceIdentifier": "",
+            "advancedOpen": false
+        }
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "identityProviders",
+            "identityPurposes",
+            "identityLogs"
+        ]
+    },
+    "data_sources": [
+        {
+            "id": "identityProviders",
+            "type": "api",
+            "endpoint": "/api/admin/identity/providers",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "identityPurposes",
+            "type": "api",
+            "endpoint": "/api/identity/purposes",
+            "method": "GET",
+            "auto_fetch": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "identityLogs",
+            "type": "api",
+            "endpoint": "/api/admin/identity/logs",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "provider_id": "{{query.provider_id}}",
+                "purposes": "{{query.purposes}}",
+                "statuses": "{{query.statuses}}",
+                "channels": "{{query.channels}}",
+                "origin_types": "{{query.origin_types}}",
+                "source_type": "{{query.source_type}}",
+                "source_identifier": "{{query.source_identifier}}",
+                "date_from": "{{query.date_from}}",
+                "date_to": "{{query.date_to}}",
+                "search": "{{query.search}}",
+                "search_type": "{{query.search_type}}",
+                "sort_by": "{{query.sort_by || 'created_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0,
+                        "has_more_pages": false
+                    },
+                    "abilities": {
+                        "can_purge": false
+                    }
+                }
+            }
+        }
+    ],
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "filter": {
+                    "searchType": "{{query.search_type || 'auto'}}",
+                    "search": "{{query.search || ''}}",
+                    "statuses": "{{Array.isArray(query.statuses) ? query.statuses : (query.statuses ? [query.statuses] : (query.status ? [query.status] : []))}}",
+                    "purposes": "{{Array.isArray(query.purposes) ? query.purposes : (query.purposes ? [query.purposes] : (query.purpose ? [query.purpose] : []))}}",
+                    "channels": "{{Array.isArray(query.channels) ? query.channels : (query.channels ? [query.channels] : [])}}",
+                    "originTypes": "{{Array.isArray(query.origin_types) ? query.origin_types : (query.origin_types ? [query.origin_types] : [])}}",
+                    "dateFrom": "{{query.date_from || ''}}",
+                    "dateTo": "{{query.date_to || ''}}",
+                    "sourceType": "{{query.source_type || ''}}",
+                    "sourceIdentifier": "{{query.source_identifier || ''}}",
+                    "advancedOpen": "{{!!(query.source_type || query.source_identifier || query.origin_types)}}"
+                }
+            }
+        }
+    ],
+    "named_actions": {
+        "searchIdentityLogs": {
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/identity/logs",
+                "replace": true,
+                "mergeQuery": true,
+                "query": {
+                    "page": 1,
+                    "search": "{{_local.filter.search || undefined}}",
+                    "search_type": "{{_local.filter.searchType !== 'auto' ? _local.filter.searchType : undefined}}",
+                    "statuses": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}",
+                    "purposes": "{{_local.filter.purposes?.length > 0 ? _local.filter.purposes : undefined}}",
+                    "channels": "{{_local.filter.channels?.length > 0 ? _local.filter.channels : undefined}}",
+                    "origin_types": "{{_local.filter.originTypes?.length > 0 ? _local.filter.originTypes : undefined}}",
+                    "date_from": "{{_local.filter.dateFrom || undefined}}",
+                    "date_to": "{{_local.filter.dateTo || undefined}}",
+                    "source_type": "{{_local.filter.sourceType || undefined}}",
+                    "source_identifier": "{{_local.filter.sourceIdentifier || undefined}}",
+                    "status": null,
+                    "purpose": null
+                },
+                "transition_overlay_target": "identity_log_datagrid__body"
+            }
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "identity_log_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex items-center justify-between mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:admin.identity.logs.page_title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
+                                        },
+                                        "text": "$t:admin.identity.logs.page_description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "refresh_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors",
+                                            "title": "$t:admin.identity.logs.refresh"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "identityLogs"
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-solid fa-arrows-rotate",
+                                                    "className": "w-5 h-5"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "purge_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "if": "{{identityLogs?.data?.abilities?.can_purge === true}}",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors whitespace-nowrap"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "identity_log_purge_confirm_modal"
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.identity.logs.purge_button"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "provider_tabs",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "border-b border-gray-200 dark:border-gray-700 mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-1 -mb-px overflow-x-auto"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "{{!query.provider_id ? 'px-4 py-2.5 text-sm font-medium border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 whitespace-nowrap' : 'px-4 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap'}}"
+                                        },
+                                        "text": "$t:admin.identity.logs.tab_all",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/identity/logs",
+                                                    "replace": true,
+                                                    "query": []
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "iteration": {
+                                            "source": "{{identityProviders?.data ?? []}}",
+                                            "item_var": "pv"
+                                        },
+                                        "props": {
+                                            "type": "button",
+                                            "className": "{{query.provider_id === pv.id ? 'px-4 py-2.5 text-sm font-medium border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 whitespace-nowrap' : 'px-4 py-2.5 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent whitespace-nowrap'}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "{{pv.icon ?? 'fas fa-shield-halved'}}",
+                                                    "className": "mr-2"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "{{pv.label ?? pv.id}}"
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/identity/logs",
+                                                    "replace": true,
+                                                    "query": {
+                                                        "provider_id": "{{pv.id}}",
+                                                        "page": 1
+                                                    },
+                                                    "transition_overlay_target": "identity_log_datagrid__body"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_identity_logs/_partial_filter.json"
+                    },
+                    {
+                        "id": "data_table_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-6"
+                        },
+                        "children": [
+                            {
+                                "id": "table_header_bar",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-wrap items-center justify-between gap-3 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm text-gray-600 dark:text-gray-400"
+                                                },
+                                                "text": "$t:admin.identity.logs.total_count|count={{identityLogs?.data?.pagination?.total || 0}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "sortBy",
+                                                    "className": "w-36 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
+                                                    "options": [
+                                                        { "value": "created_at_desc", "label": "$t:admin.identity.logs.sort.created_at_desc" },
+                                                        { "value": "created_at_asc", "label": "$t:admin.identity.logs.sort.created_at_asc" },
+                                                        { "value": "attempts_desc", "label": "$t:admin.identity.logs.sort.attempts_desc" }
+                                                    ]
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/identity/logs",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            },
+                                                            "transition_overlay_target": "identity_log_datagrid__body"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "perPage",
+                                                    "className": "w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{query.per_page || '20'}}",
+                                                    "options": [
+                                                        { "value": "10", "label": "10" },
+                                                        { "value": "20", "label": "20" },
+                                                        { "value": "50", "label": "50" },
+                                                        { "value": "100", "label": "100" }
+                                                    ]
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/identity/logs",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "per_page": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            },
+                                                            "transition_overlay_target": "identity_log_datagrid__body"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/admin_identity_logs/_partial_datagrid.json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "partials/admin_identity_logs/_modal_log_detail.json"
+        },
+        {
+            "partial": "partials/admin_identity_logs/_modal_purge_confirm.json"
+        }
+    ]
+}

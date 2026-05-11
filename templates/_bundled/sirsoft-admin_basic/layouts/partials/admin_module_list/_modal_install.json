@@ -1,37 +1,40 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "모듈 설치 확인 모달"
+    "description": "모듈 설치 확인 모달 — install-preview API 응답 기반 cascade(의존 확장 + 동반 언어팩) 체크리스트 포함"
   },
   "id": "module_install_modal",
   "type": "composite",
   "name": "Modal",
+  "data_sources": [
+    {
+      "id": "moduleInstallPreview",
+      "type": "api",
+      "endpoint": "/api/admin/modules/{{_global.selectedModule.identifier}}/install-preview",
+      "auth_required": true,
+      "initGlobal": "installPreview"
+    }
+  ],
   "props": {
     "title": "$t:admin.modules.modals.install_title",
-    "size": "small"
+    "size": "medium"
   },
   "children": [
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "py-2"
-      },
+      "props": { "className": "py-2" },
       "children": [
         {
           "type": "basic",
           "name": "P",
-          "props": {
-            "className": "text-gray-700 dark:text-gray-300"
-          },
+          "props": { "className": "text-gray-700 dark:text-gray-300" },
           "text": "$t:admin.modules.modals.install_confirm|name={{_global.selectedModule.name}}"
         },
         {
           "type": "basic",
           "name": "P",
-          "props": {
-            "className": "mt-2 text-sm text-gray-500 dark:text-gray-400"
-          },
+          "props": { "className": "mt-2 text-sm text-gray-500 dark:text-gray-400" },
           "text": "$t:admin.modules.modals.install_description"
         }
       ]
@@ -39,16 +42,12 @@
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "mt-4"
-      },
+      "props": { "className": "mt-4" },
       "children": [
         {
           "type": "basic",
           "name": "Label",
-          "props": {
-            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-          },
+          "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" },
           "text": "$t:admin.modules.modals.vendor_mode_label"
         },
         {
@@ -77,45 +76,150 @@
         {
           "type": "basic",
           "name": "P",
-          "props": {
-            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
-          },
+          "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
           "text": "$t:admin.modules.modals.vendor_mode_hint"
+        }
+      ]
+    },
+    {
+      "id": "cascade_dependencies_section",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.installPreview?.dependencies && _global.installPreview.dependencies.length > 0}}",
+      "props": { "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2 mb-2" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "link", "className": "w-4 h-4 text-gray-500" } },
+            { "type": "basic", "name": "Span", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" }, "text": "$t:admin.modules.modals.cascade_dependencies_title" }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-2" },
+          "text": "$t:admin.modules.modals.cascade_dependencies_hint"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": { "source": "_global.installPreview.dependencies", "item_var": "dep" },
+          "props": { "className": "flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "checked": "{{(_global.installSelectedDeps ?? []).includes(dep.identifier) || ((_global.installSelectedDeps === undefined || _global.installSelectedDeps === null) && dep.default_selected)}}",
+                "disabled": "{{!dep.available}}",
+                "className": "w-4 h-4"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "installSelectedDeps": "{{ $event.target.checked ? [ ...((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier), dep.identifier ] : ((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier) }}"
+                  }
+                }
+              ]
+            },
+            { "type": "basic", "name": "Icon", "if": "{{dep.type === 'module'}}", "props": { "name": "cube", "className": "w-4 h-4 text-gray-500" } },
+            { "type": "basic", "name": "Icon", "if": "{{dep.type === 'plugin'}}", "props": { "name": "puzzle-piece", "className": "w-4 h-4 text-gray-500" } },
+            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-900 dark:text-white" }, "text": "{{dep.name ?? dep.identifier}} ({{dep.identifier}})" },
+            { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 font-mono" }, "text": "{{dep.required_version}}" },
+            { "type": "basic", "name": "Span", "if": "{{dep.is_met}}", "props": { "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded" }, "text": "$t:admin.modules.modals.dependency_met" },
+            { "type": "basic", "name": "Span", "if": "{{!dep.is_installed}}", "props": { "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded" }, "text": "$t:admin.modules.modals.dependency_not_installed" },
+            { "type": "basic", "name": "Span", "if": "{{dep.is_installed && !dep.is_active}}", "props": { "className": "px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded" }, "text": "$t:admin.modules.modals.dependency_inactive" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cascade_language_packs_section",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_global.installPreview?.language_packs && _global.installPreview.language_packs.length > 0}}",
+      "props": { "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex items-center gap-2 mb-2" },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "language", "className": "w-4 h-4 text-gray-500" } },
+            { "type": "basic", "name": "Span", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white" }, "text": "$t:admin.modules.modals.cascade_language_packs_title" }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mb-2" },
+          "text": "$t:admin.modules.modals.cascade_language_packs_hint"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": { "source": "_global.installPreview.language_packs", "item_var": "lp" },
+          "props": { "className": "flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Input",
+              "props": {
+                "type": "checkbox",
+                "checked": "{{((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) && lp.default_selected)) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}",
+                "disabled": "{{lp.depends_on_extension && !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)}}",
+                "className": "w-4 h-4"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "installSelectedLPs": "{{ $event.target.checked ? [ ...((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier), lp.bundled_identifier ] : ((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier) }}"
+                  }
+                }
+              ]
+            },
+            { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-900 dark:text-white" }, "text": "{{lp.locale_native_name}} ({{lp.locale}})" },
+            { "type": "basic", "name": "Span", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 font-mono" }, "text": "v{{lp.version}}" },
+            { "type": "basic", "name": "Span", "if": "{{lp.depends_on_extension}}", "props": { "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded" }, "text": "$t:admin.modules.modals.cascade_lp_depends_on|target={{lp.depends_on_extension}}" }
+          ]
         }
       ]
     },
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "className": "flex justify-end gap-3 mt-6"
-      },
+      "props": { "className": "flex justify-end gap-3 mt-6" },
       "children": [
         {
           "type": "basic",
           "name": "Button",
           "props": {
+            "type": "button",
             "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isModuleInstalling}}"
           },
           "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
+            { "type": "click", "handler": "closeModal" }
           ],
           "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
+            { "type": "basic", "name": "Span", "text": "$t:common.cancel" }
           ]
         },
         {
           "type": "basic",
           "name": "Button",
           "props": {
+            "type": "button",
             "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isModuleInstalling}}"
           },
@@ -124,13 +228,7 @@
               "type": "click",
               "handler": "sequence",
               "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isModuleInstalling": true
-                  }
-                },
+                { "handler": "setState", "params": { "target": "global", "isModuleInstalling": true } },
                 {
                   "handler": "apiCall",
                   "auth_required": true,
@@ -139,94 +237,32 @@
                     "method": "POST",
                     "body": {
                       "module_name": "{{_global.selectedModule.identifier}}",
-                      "vendor_mode": "{{_global.moduleInstallVendorMode ?? 'auto'}}"
+                      "vendor_mode": "{{_global.moduleInstallVendorMode ?? 'auto'}}",
+                      "dependencies": "{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}",
+                      "language_packs": "{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"
                     }
                   },
                   "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isModuleInstalling": false
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "selectedModule": null
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:admin.modules.install_success"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "modules"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "admin_menu"
-                      }
-                    },
-                    {
-                      "handler": "reloadExtensions"
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
+                    { "handler": "setState", "params": { "target": "global", "isModuleInstalling": false, "installSelectedDeps": null, "installSelectedLPs": null } },
+                    { "handler": "setState", "params": { "target": "global", "selectedModule": null } },
+                    { "handler": "toast", "params": { "type": "success", "message": "$t:admin.modules.install_success" } },
+                    { "handler": "refetchDataSource", "params": { "dataSourceId": "modules" } },
+                    { "handler": "refetchDataSource", "params": { "dataSourceId": "admin_menu" } },
+                    { "handler": "reloadExtensions" },
+                    { "handler": "closeModal" }
                   ],
                   "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isModuleInstalling": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
+                    { "handler": "setState", "params": { "target": "global", "isModuleInstalling": false } },
+                    { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
                   ]
                 }
               ]
             }
           ],
           "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{!_global.isModuleInstalling}}",
-              "props": {
-                "name": "download",
-                "className": "w-4 h-4"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isModuleInstalling}}",
-              "props": {
-                "name": "spinner",
-                "className": "w-4 h-4 animate-spin"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isModuleInstalling ? '$t:admin.modules.installing' : '$t:admin.modules.actions.install'}}"
-            }
+            { "type": "basic", "name": "Icon", "if": "{{!_global.isModuleInstalling}}", "props": { "name": "download", "className": "w-4 h-4" } },
+            { "type": "basic", "name": "Icon", "if": "{{_global.isModuleInstalling}}", "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" } },
+            { "type": "basic", "name": "Span", "text": "{{_global.isModuleInstalling ? '$t:admin.modules.installing' : '$t:admin.modules.actions.install'}}" }
           ]
         }
       ]

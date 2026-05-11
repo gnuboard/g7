@@ -52,10 +52,22 @@ class RegisterPgProviderListenerTest extends TestCase
 
         $toss = $result[1];
         $this->assertEquals('tosspayments', $toss['id']);
-        $this->assertEquals('토스페이먼츠', $toss['name']['ko']);
-        $this->assertEquals('TossPayments', $toss['name']['en']);
+        // 7.0.0-beta.4+ : registry payload name_key 계약
+        $this->assertEquals('sirsoft-tosspayments::provider.name', $toss['name_key']);
+        // name 은 활성 locale 로 해석된 문자열 (Container 미초기화 단위 환경에서는 빈 문자열)
+        $this->assertIsString($toss['name']);
         $this->assertEquals('credit-card', $toss['icon']);
         $this->assertContains('card', $toss['supported_methods']);
+    }
+
+    /**
+     * registerProvider 페이로드가 name_key (lang key) 를 보유해 활성 언어팩 보강 가능한지 확인.
+     */
+    public function test_register_provider_carries_name_key_for_lang_pack_resolution(): void
+    {
+        $result = $this->listener->registerProvider([]);
+        $this->assertArrayHasKey('name_key', $result[0]);
+        $this->assertSame('sirsoft-tosspayments::provider.name', $result[0]['name_key']);
     }
 
     /**

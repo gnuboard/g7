@@ -50,25 +50,11 @@ class RoleUserOverridesListener implements HookListenerInterface
      */
     public function handleBeforeUpdate(Role $role, array $data): void
     {
-        $userOverrides = $role->user_overrides ?? [];
-        $changed = false;
-
-        if (array_key_exists('name', $data) && $data['name'] !== $role->name) {
-            if (! in_array('name', $userOverrides, true)) {
-                $userOverrides[] = 'name';
-                $changed = true;
-            }
-        }
-
-        if (array_key_exists('description', $data) && $data['description'] !== $role->description) {
-            if (! in_array('description', $userOverrides, true)) {
-                $userOverrides[] = 'description';
-                $changed = true;
-            }
-        }
-
-        if ($changed) {
-            $this->roleRepository->update($role, ['user_overrides' => $userOverrides]);
+        // Trait 의 calculateUserOverridesFor 가 trackableFields + translatableTrackableFields 를
+        // 모두 인지하여 다국어 JSON 컬럼은 sub-key dot-path 단위로 user_overrides 를 누적함.
+        $newOverrides = $role->calculateUserOverridesFor($data);
+        if ($newOverrides !== ($role->user_overrides ?? [])) {
+            $this->roleRepository->update($role, ['user_overrides' => $newOverrides]);
         }
     }
 

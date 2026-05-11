@@ -102,6 +102,16 @@
 
 > **`license` 필드**: `module.json`에 `"license": "MIT"` 등의 라이선스 정보를 포함합니다. 이 값은 API 리소스의 `license` 필드로 노출됩니다. 또한 각 모듈 루트에 `LICENSE` 파일을 포함하여 라이선스 전문을 제공해야 합니다.
 
+### hidden 필드 (선택)
+
+`module.json` 에 `"hidden": true` 를 설정하면 관리자 UI 의 모듈 목록에서 기본 제외됩니다. 학습용 샘플 모듈, 내부 운영 전용 모듈을 일반 사용자에게 감출 때 사용합니다.
+
+- 제외 대상: 관리자 UI (`GET /api/admin/modules` 기본 응답)
+- 제외 대상 아님: artisan CLI (`module:list`, `module:install`, `module:activate` 등), 설치/제거/업데이트 감지
+- 슈퍼관리자는 "숨김 포함" 토글로 일시 조회 가능 (`?include_hidden=1`)
+- artisan CLI 에서도 기본 목록에서는 숨기고, `php artisan module:list --hidden` 으로 숨김 포함 목록을 조회할 수 있습니다
+- 사용 사례: 학습용 샘플 모듈(예: `gnuboard7-hello_module`), 내부 전용 통합 모듈
+
 ### 자동 추론 메서드 (final - 오버라이드 불가)
 
 | 메서드 | 반환 타입 | 설명 |
@@ -597,6 +607,97 @@ powershell -Command "npm run test:run"
 ```
 
 > 상세: [testing-guide.md](../testing-guide.md) "_bundled 확장 직접 테스트" 참조
+
+### ModuleTestCase 작성 가이드 — 훅 리스너 등록 (CRITICAL)
+
+```text
+⚠️ module.php 가 getHookListeners() 를 선언한 모듈은 ModuleTestCase setUp 에서
+   훅 리스너를 수동 등록해야 한다.
+```
+
+**왜 필요한가**:
+
+- `ModuleManager::loadModules()` 는 활성 디렉토리(`modules/`) 만 스캔하고 `_bundled/` 는 메타데이터만 로드 (`loadBundledModules`)
+- 테스트는 `_bundled/{identifier}/tests` 에서 직접 실행되므로 활성 디렉토리에 모듈이 설치되지 않은 환경
+- 결과: `module.php::getHookListeners()` 가 선언한 리스너들이 HookManager 에 자동 등록되지 않음
+- `applyFilters()` / `doAction()` 호출 시 등록된 리스너가 없어 default 빈 결과만 반환 → 알림 미발송, 캐시 무효화 누락 등 침묵 회귀 발생
+
+**ModuleTestCase setUp 필수 패턴**:
+
+```php
+protected function setUp(): void
+{
+    parent::setUp();
+
+    // 1. 오토로드 / ServiceProvider / 마이그레이션 / 역할 등 기존 로직
+    $this->registerModuleAutoload();
+    $this->app->register(\Modules\Vendor\YourModule\Providers\YourServiceProvider::class);
+    $this->runModuleMigrationIfNeeded();
+    $this->createDefaultRoles();
+
+    // 2. _bundled 모듈 인스턴스 + 훅 리스너 수동 등록 (CRITICAL)
+    $this->registerBundledModuleInstance();
+
+    // 3. HookManager 스냅샷 (위 등록도 스냅샷에 포함되어 테스트 간 격리)
+    $this->snapshotHookManager();
+}
+
+protected function registerBundledModuleInstance(): void
+{
+    $moduleClass = \Modules\Vendor\YourModule\Module::class;
+
+    if (! class_exists($moduleClass)) {
+        require_once $this->getModuleBasePath() . '/module.php';
+    }
+
+    $module = new $moduleClass();
+
+    /** @var \App\Extension\ModuleManager $manager */
+    $manager = $this->app->make(\App\Extension\ModuleManager::class);
+
+    // ModuleManager.modules 메모리 맵에 인스턴스 주입
+    $reflection = new \ReflectionClass($manager);
+    $modulesProp = $reflection->getProperty('modules');
+    $modulesProp->setAccessible(true);
+    $current = $modulesProp->getValue($manager);
+    if (! isset($current['vendor-your-module'])) {
+        $current['vendor-your-module'] = $module;
+        $modulesProp->setValue($manager, $current);
+    }
+
+    // module.php 의 getHookListeners() 가 선언한 리스너들을 HookManager 에 등록
+    if (method_exists($module, 'getHookListeners')) {
+        foreach ($module->getHookListeners() as $listenerClass) {
+            if (! class_exists($listenerClass)) {
+                continue;
+            }
+            if (! in_array(\App\Contracts\Extension\HookListenerInterface::class, class_implements($listenerClass), true)) {
+                continue;
+            }
+            try {
+                \App\Extension\HookListenerRegistrar::register($listenerClass, 'vendor-your-module');
+            } catch (\Throwable $e) {
+                // 중복 등록 등 무해한 예외는 무시
+            }
+        }
+    }
+}
+```
+
+**참조 구현**:
+
+- `modules/_bundled/sirsoft-board/tests/ModuleTestCase.php`
+- `modules/_bundled/sirsoft-page/tests/ModuleTestCase.php`
+
+**누락 시 증상**:
+
+- 알림 정의 기반 발송 테스트에서 `Notification::assertSentTo` 가 false 반환
+- `extract_data` 필터의 `context.skip` / `related_users` / `data` 가 default 빈 결과로 받아져 정책 gate 무력화
+- ActivityLog / Cache 등 리스너 의존 동작이 테스트에서만 미작동
+
+**스냅샷/복원 패턴 필수**:
+
+위 setUp 에서 등록한 훅도 `snapshotHookManager()` 로 캡처되어 `tearDown` 의 `restoreHookManager()` 가 테스트 간 격리를 보장한다. 테스트 본문에서 추가한 훅만 정리되고 setUp 의 훅은 보존된다.
 
 ### 왜 활성 디렉토리 직접 수정이 금지되는가?
 

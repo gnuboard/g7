@@ -60,12 +60,6 @@
     "activities": {
       "user_registered": "{{name}}님이 가입했습니다"
     },
-    "alerts": {
-      "system_update_available": "시스템 업데이트 가능",
-      "system_update_message": "새로운 버전의 그누보드7이 출시되었습니다.",
-      "disk_space_low": "디스크 용량 부족",
-      "disk_space_message": "디스크 사용량이 70%를 초과했습니다."
-    },
     "refreshed": "대시보드가 새로고침되었습니다.",
     "extension_status": {
       "more": "더보기"
@@ -301,6 +295,207 @@
       }
     }
   },
+  "language_packs": {
+    "page_title": "언어팩 관리",
+    "page_description": "코어 및 확장의 언어팩을 통합 관리합니다.",
+    "title": "언어팩 관리",
+    "description": "ZIP 업로드 또는 GitHub URL로 언어팩을 자유롭게 추가/제거할 수 있습니다.",
+    "columns": {
+      "locale": "로케일",
+      "scope": "스코프",
+      "target": "대상",
+      "vendor": "벤더",
+      "version": "버전",
+      "status": "상태",
+      "actions": "작업"
+    },
+    "scope": {
+      "core": "코어",
+      "module": "모듈",
+      "plugin": "플러그인",
+      "template": "템플릿"
+    },
+    "origin": {
+      "built_in": "빌트인",
+      "bundled": "번들",
+      "user_installed": "사용자 설치"
+    },
+    "status": {
+      "active": "활성",
+      "installed": "설치됨",
+      "inactive": "비활성",
+      "updating": "업데이트 중",
+      "uninstalled": "미설치 (번들)",
+      "error": "오류",
+      "bundled": "내장",
+      "version_mismatch": "버전 불일치"
+    },
+    "filter": {
+      "all_scopes": "전체 스코프",
+      "all_locales": "전체 로케일",
+      "all_statuses": "전체 상태",
+      "reset": "초기화",
+      "exclude_protected": "보호된 언어팩 제외"
+    },
+    "actions": {
+      "install": "설치",
+      "activate": "활성화",
+      "deactivate": "비활성화",
+      "uninstall": "제거",
+      "manage": "언어 관리",
+      "check_updates": "업데이트 확인",
+      "refresh_cache": "캐시 갱신",
+      "refresh_cache_now": "캐시 갱신",
+      "update": "업데이트",
+      "update_now": "지금 업데이트",
+      "detail": "상세 보기",
+      "cancel": "취소",
+      "close": "닫기",
+      "preview_manifest": "manifest 미리보기"
+    },
+    "search_placeholder": "식별자/벤더/언어로 검색",
+    "badge": {
+      "update_available": "업데이트 가능"
+    },
+    "banner": {
+      "scoped": "{{scope}} \"{{target}}\"의 언어팩만 보고 있습니다.",
+      "see_all": "전체 언어팩 보기",
+      "back_to_modules": "모듈 관리로 돌아가기",
+      "back_to_plugins": "플러그인 관리로 돌아가기",
+      "back_to_templates": "템플릿 관리로 돌아가기"
+    },
+    "pagination": {
+      "info": "{{current}} / {{last}} 페이지 (총 {{total}}건)",
+      "prev": "이전",
+      "next": "다음",
+      "per_page_label": "페이지당",
+      "summary": "총 {{total}}개 · {{from}}-{{to}} 표시"
+    },
+    "vendor_label": "벤더: {{vendor}}",
+    "source_label": "출처: {{source}}",
+    "dependency_label": "의존성:",
+    "modal": {
+      "detail": {
+        "title": "언어팩 상세",
+        "loading": "불러오는 중...",
+        "built_in_title": "코어/번들 확장에 내장된 번역",
+        "built_in_description": "이 항목은 코어 또는 번들 확장에 직접 포함된 번역으로, 별도의 언어팩 메타데이터가 없습니다. 항상 활성 상태이며 수정/제거할 수 없습니다.",
+        "basic_info": "기본 정보",
+        "identifier": "식별자",
+        "name": "이름",
+        "vendor": "벤더",
+        "locale": "로케일",
+        "version": "버전",
+        "scope": "스코프 / 대상",
+        "github_url": "GitHub 저장소",
+        "license": "라이선스",
+        "text_direction": "쓰기 방향",
+        "description": "설명",
+        "status": "상태",
+        "protected": "보호됨",
+        "compatibility": "호환성",
+        "target_version_constraint": "대상 확장 버전 제약",
+        "core_version_constraint": "코어 요구 버전",
+        "depends_on_core_locale": "코어 언어팩 의존",
+        "depends_on_core_locale_yes": "이 언어팩은 동일 로케일의 코어 언어팩이 활성 상태일 때만 사용 가능합니다.",
+        "depends_on_core_locale_no": "이 언어팩은 코어 언어팩과 독립적으로 동작합니다.",
+        "yes": "예",
+        "no": "아니오",
+        "target_version_mismatch_label": "대상 버전 일치",
+        "match": "일치",
+        "mismatch": "불일치",
+        "target_version_mismatch": "대상 확장 버전과 호환 제약이 일치하지 않습니다.",
+        "source": "소스 정보",
+        "source_type": "설치 출처",
+        "source_url": "소스 URL/경로",
+        "installed_at": "설치 시각",
+        "activated_at": "활성화 시각",
+        "changelog_title": "변경로그 (CHANGELOG.md)",
+        "load_changelog": "변경로그 불러오기",
+        "no_changelog": "이 언어팩에는 CHANGELOG.md 파일이 없습니다.",
+        "changelog_failed": "변경로그를 불러오지 못했습니다."
+      },
+      "update": {
+        "title": "언어팩 업데이트",
+        "body": "현재 버전 {{current}} → 최신 버전 {{latest}}로 업데이트합니다.",
+        "user_overrides_notice": "사용자가 수정한 번역은 그대로 유지됩니다."
+      },
+      "uninstall": {
+        "title": "언어팩 제거",
+        "body": "{{scope}} / {{target}} / {{locale}} 언어팩을 제거합니다. 되돌릴 수 없습니다.",
+        "cascade_label": "이 로케일의 모든 하위 확장 언어팩을 함께 비활성화",
+        "warning": "이 작업은 되돌릴 수 없습니다. 사용자가 직접 수정한 다국어 키도 함께 제거됩니다.",
+        "cascade_hint": "활성화된 의존 모듈/플러그인/템플릿 언어팩이 함께 비활성화됩니다."
+      },
+      "refresh_cache": {
+        "title": "캐시 갱신",
+        "body": "번역/레지스트리/템플릿 언어 캐시를 무효화합니다."
+      },
+      "preview": {
+        "title": "manifest 미리보기",
+        "description": "ZIP 파일을 업로드하면 설치 전에 manifest 정보와 검증 결과를 확인할 수 있습니다.",
+        "run": "미리보기 실행",
+        "valid": "manifest 검증 통과 — 설치 가능합니다.",
+        "already_installed": "이미 설치됨: 현재 버전 {{version}}"
+      }
+    },
+    "install_modal": {
+      "title": "언어팩 설치",
+      "description": "ZIP 파일 또는 GitHub URL로 언어팩을 설치합니다.",
+      "tabs": {
+        "zip": "ZIP 파일",
+        "github": "GitHub"
+      },
+      "file_label": "ZIP 파일",
+      "no_file_selected": "선택된 파일이 없습니다.",
+      "file_requirements": "다음 manifest 파일이 ZIP 루트에 포함되어 있어야 합니다.",
+      "github_url_label": "GitHub URL",
+      "github_requirements": "Public 저장소만 지원합니다. 다음 manifest 파일이 저장소 루트에 있어야 합니다."
+    },
+    "installing": "설치 중...",
+    "messages": {
+      "install_success": "언어팩이 설치되었습니다.",
+      "install_failed": "언어팩 설치에 실패했습니다.",
+      "uninstall_success": "언어팩이 제거되었습니다.",
+      "uninstall_failed": "언어팩 제거에 실패했습니다.",
+      "cascade_warning": "코어 언어팩 제거 시 관련 하위 언어팩이 비활성화됩니다.",
+      "empty": "설치된 언어팩이 없습니다.",
+      "protected_badge": "🔒 보호됨",
+      "check_updates_done": "업데이트 확인을 완료했습니다 ({{count}}건 가능).",
+      "check_updates_none": "모든 언어팩이 최신 상태입니다.",
+      "check_updates_failed": "업데이트 확인에 실패했습니다.",
+      "activate_success": "언어팩을 활성화했습니다.",
+      "deactivate_success": "언어팩을 비활성화했습니다.",
+      "toggle_failed": "활성 상태 변경에 실패했습니다.",
+      "update_success": "언어팩을 업데이트했습니다.",
+      "update_failed": "언어팩 업데이트에 실패했습니다.",
+      "refresh_cache_done": "언어팩 캐시를 갱신했습니다.",
+      "refresh_cache_failed": "캐시 갱신에 실패했습니다."
+    },
+    "modals": {
+      "install_bundled_title": "언어팩 설치",
+      "install_bundled_confirm": "번들 언어팩 \"{{identifier}}\" 을(를) 설치하시겠습니까?",
+      "install_bundled_core_required": "코어 언어팩(locale={{locale}}) 이 먼저 활성화되어 있어야 합니다.",
+      "install_blocked_target_not_installed": "대상 {{scope}} \"{{target}}\" 이(가) 설치되어 있지 않습니다.",
+      "install_blocked_target_inactive": "대상 {{scope}} \"{{target}}\" 이(가) 비활성 상태입니다. 먼저 활성화하세요.",
+      "install_blocked_target_version_too_old": "대상 {{scope}} \"{{target}}\" 의 버전이 요구 조건을 충족하지 않습니다."
+    },
+    "slot_conflict_modal": {
+      "title": "언어팩 교체 확인",
+      "description": "같은 슬롯에 이미 활성화된 언어팩이 있습니다. 교체하면 기존 언어팩은 비활성화됩니다.",
+      "current_label": "현재 활성",
+      "target_label": "교체 대상",
+      "warning": "교체 직후 프론트엔드 캐시 버전이 갱신되어 다국어 데이터가 새로 적재됩니다.",
+      "cancel": "취소",
+      "confirm": "교체"
+    },
+    "uninstalling": "제거 중...",
+    "updating": "업데이트 중...",
+    "errors": {
+      "manifest_invalid": "language-pack.json 검증에 실패했습니다.",
+      "core_locale_missing": "코어 언어팩이 먼저 활성화되어야 합니다."
+    }
+  },
   "modules": {
     "page_title": "모듈 관리",
     "page_description": "시스템에 설치된 모듈을 관리하고 새로운 모듈을 설치할 수 있습니다.",
@@ -308,6 +503,7 @@
     "description": "시스템에 설치된 모듈을 관리하고 새로운 모듈을 설치할 수 있습니다.",
     "search_placeholder": "모듈 검색...",
     "search": "검색",
+    "include_hidden": "숨김 항목 포함",
     "manual_install": "수동 설치",
     "marketplace": "마켓플레이스",
     "vendor": "작성자: {{vendor}}",
@@ -350,7 +546,18 @@
       "update": "업데이트",
       "check_updates": "업데이트 확인",
       "view_detail": "상세정보",
-      "refresh_layouts": "레이아웃 갱신"
+      "refresh_layouts": "레이아웃 갱신",
+      "preview_manifest": "manifest 미리보기"
+    },
+    "modal": {
+      "preview": {
+        "title": "모듈 manifest 미리보기",
+        "description": "ZIP 파일을 업로드하면 설치 전에 module.json 정보와 검증 결과를 확인할 수 있습니다.",
+        "run": "미리보기 실행",
+        "valid": "module.json 검증 통과 — 설치 가능합니다.",
+        "already_installed": "이미 설치됨: 현재 버전 {{version}}",
+        "failed": "manifest 미리보기에 실패했습니다."
+      }
     },
     "modals": {
       "detail_title": "모듈 정보",
@@ -387,6 +594,13 @@
       "layouts": "레이아웃",
       "layouts_count": "{{count}}개의 레이아웃이 등록됩니다.",
       "no_layouts": "등록되는 레이아웃이 없습니다.",
+      "supported_languages": "지원 언어",
+      "no_supported_languages": "지원 언어 정보가 없습니다.",
+      "cascade_dependencies_title": "함께 설치할 의존 확장",
+      "cascade_dependencies_hint": "본 확장이 의존하는 미설치 항목입니다. 체크 해제 시 해당 확장은 설치되지 않으며, 종속된 언어팩도 자동 비활성화됩니다.",
+      "cascade_language_packs_title": "함께 설치할 언어팩",
+      "cascade_language_packs_hint": "번들로 제공되는 언어팩 후보입니다. 체크된 항목만 본 설치와 함께 자동 설치됩니다.",
+      "cascade_lp_depends_on": "종속: {{target}}",
       "install_title": "모듈 설치 확인",
       "install_confirm": "{{name}} 모듈을 설치하시겠습니까?",
       "install_description": "설치 후 모듈을 활성화하면 기능을 사용할 수 있습니다.",
@@ -408,6 +622,15 @@
       "vendor_section": "Composer 의존성",
       "extension_directory_title": "삭제될 확장 디렉토리",
       "extension_directory_section": "확장 디렉토리",
+      "shared_records_section": "공유 테이블 데이터",
+      "shared_records_count": "{{count}}건",
+      "shared": {
+        "permissions": "권한",
+        "menus": "관리자 메뉴",
+        "notification_definitions": "알림 정의",
+        "identity_policies": "본인인증 정책",
+        "identity_message_definitions": "본인인증 메시지 정의"
+      },
       "no_tables": "삭제할 테이블이 없습니다.",
       "no_storage": "삭제할 스토리지가 없습니다.",
       "size_unknown": "알 수 없음",
@@ -478,6 +701,7 @@
     "description": "시스템에 설치된 플러그인을 관리하고 새로운 플러그인을 설치할 수 있습니다.",
     "search_placeholder": "플러그인 검색...",
     "search": "검색",
+    "include_hidden": "숨김 항목 포함",
     "manual_install": "수동 설치",
     "marketplace": "마켓플레이스",
     "vendor": "작성자: {{vendor}}",
@@ -520,7 +744,18 @@
       "check_updates": "업데이트 확인",
       "view_detail": "상세정보",
       "settings": "설정",
-      "refresh_layouts": "레이아웃 갱신"
+      "refresh_layouts": "레이아웃 갱신",
+      "preview_manifest": "manifest 미리보기"
+    },
+    "modal": {
+      "preview": {
+        "title": "플러그인 manifest 미리보기",
+        "description": "ZIP 파일을 업로드하면 설치 전에 plugin.json 정보와 검증 결과를 확인할 수 있습니다.",
+        "run": "미리보기 실행",
+        "valid": "plugin.json 검증 통과 — 설치 가능합니다.",
+        "already_installed": "이미 설치됨: 현재 버전 {{version}}",
+        "failed": "manifest 미리보기에 실패했습니다."
+      }
     },
     "settings": {
       "page_title": "플러그인 설정",
@@ -565,6 +800,13 @@
       "filters": "필터",
       "filters_description": "이 플러그인에서 사용하는 필터의 목록입니다.",
       "no_filters": "사용하는 필터가 없습니다.",
+      "supported_languages": "지원 언어",
+      "no_supported_languages": "지원 언어 정보가 없습니다.",
+      "cascade_dependencies_title": "함께 설치할 의존 확장",
+      "cascade_dependencies_hint": "본 확장이 의존하는 미설치 항목입니다. 체크 해제 시 해당 확장은 설치되지 않으며, 종속된 언어팩도 자동 비활성화됩니다.",
+      "cascade_language_packs_title": "함께 설치할 언어팩",
+      "cascade_language_packs_hint": "번들로 제공되는 언어팩 후보입니다. 체크된 항목만 본 설치와 함께 자동 설치됩니다.",
+      "cascade_lp_depends_on": "종속: {{target}}",
       "install_title": "플러그인 설치 확인",
       "install_confirm": "{{name}} 플러그인을 설치하시겠습니까?",
       "install_description": "설치 후 플러그인을 활성화하면 기능을 사용할 수 있습니다.",
@@ -586,6 +828,15 @@
       "vendor_section": "Composer 의존성",
       "extension_directory_title": "삭제될 확장 디렉토리",
       "extension_directory_section": "확장 디렉토리",
+      "shared_records_section": "공유 테이블 데이터",
+      "shared_records_count": "{{count}}건",
+      "shared": {
+        "permissions": "권한",
+        "menus": "관리자 메뉴",
+        "notification_definitions": "알림 정의",
+        "identity_policies": "본인인증 정책",
+        "identity_message_definitions": "본인인증 메시지 정의"
+      },
       "no_tables": "삭제할 테이블이 없습니다.",
       "no_storage": "삭제할 스토리지가 없습니다.",
       "size_unknown": "알 수 없음",
@@ -994,6 +1245,8 @@
       "drivers": "드라이버",
       "advanced": "고급",
       "notification_definitions": "알림 설정",
+      "language_packs": "언어팩",
+      "identity": "본인인증",
       "info": "정보"
     },
     "general": {
@@ -1073,6 +1326,23 @@
       "meta_description_hint": "검색 결과에 표시되는 설명입니다. 최대 160자를 권장합니다.",
       "meta_keywords": "메타 키워드",
       "meta_keywords_hint": "쉼표로 구분하여 입력하세요.",
+      "generator_settings": "Generator 메타 태그",
+      "generator_settings_desc": "CMS 식별을 위한 generator 메타 태그입니다. W3Techs 등 통계 도구가 이 값으로 사이트를 그누보드7로 분류합니다.",
+      "generator_enabled": "Generator 태그 표시",
+      "generator_enabled_desc": "비활성화 시 메타 태그 자체를 출력하지 않습니다.",
+      "generator_content": "Generator 내용",
+      "generator_content_hint": "비워두면 \"GnuBoard7 {버전}\" 이 자동 적용됩니다. 버전 노출을 원치 않으면 \"GnuBoard7\" 만 입력하세요.",
+      "og_twitter_settings": "OG / Twitter 카드 기본값",
+      "og_twitter_settings_desc": "페이스북·슬랙·트위터 등 링크 미리보기에 사용할 기본 메타 정보입니다. 레이아웃이 페이지별로 명시한 값이 있으면 그것이 우선합니다.",
+      "og_default_site_name": "OG 사이트 이름",
+      "og_default_site_name_hint": "비워두면 일반 설정의 사이트 이름이 사용됩니다. (og:site_name)",
+      "og_image_default_width": "OG 이미지 기본 가로 (px)",
+      "og_image_default_height": "OG 이미지 기본 세로 (px)",
+      "og_image_default_size_hint": "썸네일 실제 크기를 모르는 경우의 기본값입니다. 페이스북은 권장 1200×630, 최소 200×200.",
+      "twitter_default_card": "Twitter 카드 기본 타입",
+      "twitter_default_card_hint": "이미지가 큰 카드는 summary_large_image, 작은 카드는 summary 권장.",
+      "twitter_default_site": "Twitter 사이트 핸들",
+      "twitter_default_site_hint": "사이트의 트위터 계정 핸들 (예: @gnuboard). 미입력 시 출력 생략.",
       "analytics_settings": "애널리틱스 설정",
       "analytics_settings_desc": "웹사이트 분석 도구를 연동합니다.",
       "google_analytics_id": "Google Analytics ID",
@@ -1085,8 +1355,12 @@
       "bot_settings_desc": "검색 봇 감지 및 SEO 페이지 생성 관련 설정입니다.",
       "bot_detection_enabled": "봇 감지 활성화",
       "bot_detection_enabled_desc": "검색 봇을 감지하여 SEO 최적화된 HTML을 제공합니다.",
-      "bot_user_agents": "봇 User-Agent 목록",
-      "bot_user_agents_hint": "검색 봇으로 감지할 User-Agent 문자열을 추가합니다.",
+      "bot_detection_library_enabled": "봇 감지 라이브러리 사용",
+      "bot_detection_library_enabled_desc": "비활성 시 아래 \"추가 봇 패턴\" 목록만으로 봇을 감지합니다.",
+      "bot_library_notice_title": "검색 로봇 자동 감지 활성화",
+      "bot_library_notice_body": "검색엔진·링크 미리보기·AI 봇 등 약 1,000종을 자동으로 감지합니다. 슬랙·카카오톡·페이스북 등에 링크를 붙여넣으면 제목·설명·이미지 미리보기가 즉시 표시됩니다. 아래 \"추가 봇 패턴\" 필드에는 자동 감지 목록에 없는 봇이 있을 때만 추가하세요.",
+      "bot_user_agents": "추가 봇 패턴",
+      "bot_user_agents_hint": "User-Agent 부분 문자열(대소문자 무시) — 라이브러리 기본 감지에 추가로 봇으로 처리할 패턴을 입력합니다.",
       "bot_user_agents_placeholder": "User-Agent 입력 후 Enter",
       "seo_cache_settings": "SEO 캐시 설정",
       "seo_cache_settings_desc": "SEO 페이지 캐시 관련 설정입니다.",
@@ -1105,7 +1379,12 @@
       "sitemap_schedule_time": "생성 시각",
       "sitemap_schedule_time_hint": "HH:mm 형식으로 입력하세요. (예: 02:00)",
       "sitemap_cache_ttl": "Sitemap 캐시 유지 시간 (초)",
-      "sitemap_cache_ttl_hint": "최소 3600초 (1시간), 최대 604800초 (7일). 기본값: 86400초 (24시간)"
+      "sitemap_cache_ttl_hint": "최소 3600초 (1시간), 최대 604800초 (7일). 기본값: 86400초 (24시간)",
+      "sitemap_last_updated_at": "마지막 생성",
+      "sitemap_manual_update": "지금 생성",
+      "sitemap_updating": "생성 중...",
+      "sitemap_update_success": "Sitemap 생성이 완료되었습니다.",
+      "sitemap_update_failed": "Sitemap 생성에 실패했습니다."
     },
     "security": {
       "title": "보안 설정",
@@ -1123,6 +1402,123 @@
       "current_app_key": "현재 키",
       "regenerate_key": "키 재생성",
       "app_key_warning": "키를 변경하면 기존 암호화된 데이터에 접근할 수 없게 될 수 있습니다."
+    },
+    "identity": {
+      "sub_tabs": {
+        "basic": "기본",
+        "providers": "프로바이더",
+        "policies": "정책 관리",
+        "messages": "메시지 템플릿"
+      },
+      "messages": {
+        "title": "본인인증 메시지 템플릿",
+        "intro": "본인인증 메일에 사용할 제목과 본문을 직접 편집합니다. 한국어/영어를 모두 입력할 수 있고, 언제든 기본값으로 되돌릴 수 있습니다. 운영자가 추가한 정책에는 별도 메시지를 묶어 등록할 수 있습니다.",
+        "empty": "등록된 메시지 정의가 없습니다.",
+        "edit": "편집",
+        "btn_add_definition": "정의 추가",
+        "btn_reset": "기본값 복원",
+        "btn_delete": "삭제",
+        "status_active": "활성",
+        "status_inactive": "비활성",
+        "default_badge": "기본",
+        "body_preview": "본문 미리보기",
+        "total_count": "총 {count}건",
+        "per_page_label": "페이지당",
+        "channels": {
+          "mail": "메일"
+        },
+        "toggle_success": "메시지 정의 활성 상태가 변경되었습니다.",
+        "toggle_failed": "활성 상태 변경에 실패했습니다.",
+        "badges": {
+          "default": "기본값",
+          "customized": "사용자 수정"
+        },
+        "add_modal": {
+          "title": "메시지 정의 추가",
+          "errors_title": "입력 오류",
+          "provider": "프로바이더",
+          "scope_type": "범위 유형",
+          "policy_key": "정책 키",
+          "policy_key_placeholder": "운영자 정책을 선택하세요",
+          "policy_empty": "운영자 정책이 없습니다. 정책 탭에서 먼저 등록해 주세요.",
+          "name": "이름",
+          "subject": "제목",
+          "body": "본문",
+          "variables_title": "사용 가능한 변수",
+          "save_success": "메시지 정의가 추가되었습니다.",
+          "save_failed": "메시지 정의 추가에 실패했습니다."
+        },
+        "delete_modal": {
+          "title": "메시지 정의 삭제",
+          "target_label": "대상",
+          "confirm_message": "이 메시지 정의를 삭제하시겠습니까?",
+          "warning_message": "삭제하면 연결된 모든 채널 템플릿이 함께 제거됩니다. 이 작업은 되돌릴 수 없습니다.",
+          "btn_confirm": "삭제",
+          "btn_confirming": "삭제 중...",
+          "delete_success": "메시지 정의가 삭제되었습니다.",
+          "delete_failed": "메시지 정의 삭제에 실패했습니다."
+        },
+        "reset_modal": {
+          "title": "기본값 복원",
+          "target_label": "대상",
+          "confirm_message": "이 메시지 정의의 모든 채널 템플릿을 시드 기본값으로 복원하시겠습니까?",
+          "warning_message": "운영자 수정 내용이 모두 사라지며, 이 작업은 되돌릴 수 없습니다.",
+          "btn_confirm": "복원",
+          "btn_confirming": "복원 중...",
+          "reset_success": "메시지 정의가 기본값으로 복원되었습니다.",
+          "reset_failed": "기본값 복원에 실패했습니다."
+        },
+        "modal": {
+          "title": "메시지 템플릿 편집",
+          "errors_title": "입력 오류",
+          "variables_title": "사용 가능한 변수",
+          "subject": "제목",
+          "body": "본문",
+          "reset": "기본값으로 복원",
+          "reset_confirm": "운영자가 수정한 내용이 모두 시드 기본값으로 복원됩니다. 계속하시겠습니까?",
+          "reset_success": "기본값으로 복원되었습니다.",
+          "reset_failed": "복원에 실패했습니다.",
+          "save_success": "메시지 템플릿이 저장되었습니다.",
+          "save_failed": "저장에 실패했습니다.",
+          "preview": "미리보기",
+          "preview_failed": "미리보기를 불러오지 못했습니다.",
+          "subject_label": "제목",
+          "body_label": "본문"
+        }
+      },
+      "basic": {
+        "title": "기본 설정",
+        "desc": "본인인증 인프라의 기본 동작을 설정합니다. 정책별 활성화·강제 시점은 정책 관리 탭에서 설정합니다.",
+        "default_provider": "기본 프로바이더",
+        "default_provider_desc": "Purpose별로 지정되지 않은 경우 사용할 기본 프로바이더입니다.",
+        "challenge_ttl_minutes": "Challenge 만료 시간 (분)",
+        "challenge_ttl_desc": "발급된 인증 코드/링크의 유효시간입니다.",
+        "max_attempts": "최대 시도 횟수",
+        "max_attempts_desc": "연속 실패 시 해당 challenge 가 잠깁니다. 재전송이 필요합니다."
+      },
+      "purposes": {
+        "title": "목적별 프로바이더",
+        "desc": "본인인증 목적(Purpose)별로 사용할 프로바이더를 개별 지정할 수 있습니다. 미지정 시 기본 프로바이더가 사용됩니다.",
+        "use_default": "(기본 프로바이더 사용)",
+        "empty": "등록된 Purpose가 없습니다."
+      },
+      "providers": {
+        "title": "프로바이더 상세",
+        "desc": "현재 등록된 프로바이더 목록입니다. 플러그인으로 확장 가능합니다.",
+        "available": "사용 가능",
+        "unavailable": "사용 불가",
+        "empty": "등록된 프로바이더가 없습니다."
+      },
+      "policy_link": {
+        "title": "정책 관리",
+        "desc": "라우트/훅 단위로 IDV 강제 정책을 관리합니다.",
+        "button": "정책 관리 이동"
+      },
+      "logs_link": {
+        "title": "인증 이력",
+        "desc": "challenge 요청·검증·만료 이력을 조회합니다.",
+        "button": "이력 보기"
+      }
     },
     "drivers": {
       "common": {
@@ -1470,6 +1866,7 @@
     "description": "템플릿과 레이아웃을 관리하여 웹사이트의 디자인을 구성할 수 있습니다.",
     "search_placeholder": "템플릿 검색...",
     "search": "검색",
+    "include_hidden": "숨김 항목 포함",
     "manual_install": "수동 설치",
     "marketplace": "마켓플레이스",
     "vendor": "작성자: {{vendor}}",
@@ -1541,7 +1938,18 @@
       "view_detail": "상세정보",
       "refresh_layouts": "레이아웃 갱신",
       "edit_layouts": "레이아웃 편집",
-      "wysiwyg_edit": "위지윅 편집"
+      "wysiwyg_edit": "위지윅 편집",
+      "preview_manifest": "manifest 미리보기"
+    },
+    "modal": {
+      "preview": {
+        "title": "템플릿 manifest 미리보기",
+        "description": "ZIP 파일을 업로드하면 설치 전에 template.json 정보와 검증 결과를 확인할 수 있습니다.",
+        "run": "미리보기 실행",
+        "valid": "template.json 검증 통과 — 설치 가능합니다.",
+        "already_installed": "이미 설치됨: 현재 버전 {{version}}",
+        "failed": "manifest 미리보기에 실패했습니다."
+      }
     },
     "modals": {
       "detail_title": "템플릿 정보",
@@ -1559,6 +1967,13 @@
       "composite_components": "집합 컴포넌트",
       "composite_components_description": "기본 컴포넌트를 조합하여 만들어진 복합 UI 컴포넌트입니다.",
       "no_components": "컴포넌트가 없습니다.",
+      "supported_languages": "지원 언어",
+      "no_supported_languages": "지원 언어 정보가 없습니다.",
+      "cascade_dependencies_title": "함께 설치할 의존 확장",
+      "cascade_dependencies_hint": "본 확장이 의존하는 미설치 항목입니다. 체크 해제 시 해당 확장은 설치되지 않으며, 종속된 언어팩도 자동 비활성화됩니다.",
+      "cascade_language_packs_title": "함께 설치할 언어팩",
+      "cascade_language_packs_hint": "번들로 제공되는 언어팩 후보입니다. 체크된 항목만 본 설치와 함께 자동 설치됩니다.",
+      "cascade_lp_depends_on": "종속: {{target}}",
       "install_title": "템플릿 설치 확인",
       "install_confirm": "{{name}} 템플릿을 설치하시겠습니까?",
       "install_description": "설치 후 활성화하면 관리자 인터페이스의 디자인이 변경됩니다.",
@@ -1916,6 +2331,206 @@
       "bulk_confirm_title": "일괄 삭제 확인",
       "bulk_confirm_message": "선택한 발송 이력을 모두 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
       "bulk_success": "선택한 발송 이력이 모두 삭제되었습니다."
+    }
+  },
+  "identity": {
+    "challenge": {
+      "title": "본인 확인",
+      "code_title": "인증 코드 입력",
+      "code_subtitle": "전송된 6자리 코드를 입력해주세요.",
+      "code_placeholder": "인증 코드",
+      "verify": "확인",
+      "resend": "코드 재전송",
+      "resend_link": "이메일 재전송",
+      "resend_cooldown": "재전송 ({{seconds}}초 후)",
+      "resend_success": "인증 코드를 재전송했습니다.",
+      "remaining_time": "남은 시간: {{minutes}}:{{seconds}}",
+      "remaining_attempts": "남은 시도: {{count}}회",
+      "expired": "시간이 만료되었습니다. 재전송을 눌러주세요.",
+      "link_title": "이메일 확인이 필요합니다",
+      "link_subtitle": "메일로 전송된 링크를 클릭해 본인 확인을 완료해주세요.",
+      "check_spam": "메일이 도착하지 않으면 스팸함을 확인해주세요.",
+      "external_title": "외부 본인인증으로 이동 중",
+      "external_subtitle": "잠시 후 본인인증 서비스로 자동 이동됩니다.",
+      "manual_redirect": "수동으로 이동하기",
+      "error_generic": "인증에 실패했습니다. 다시 시도해주세요."
+    },
+    "policies": {
+      "page_title": "본인인증 정책 관리",
+      "page_description": "회원가입·비밀번호 재설정·민감 작업 등 어떤 시점에 본인인증을 요구할지 정책으로 관리합니다. 코어/모듈/플러그인이 제공한 기본 정책은 일부 필드만 편집 가능하며, 운영자가 직접 추가한 정책은 자유롭게 편집·삭제할 수 있습니다.",
+      "purposes_section_title": "코어가 제공하는 본인인증 목적",
+      "purposes_section_description": "코어가 기본으로 제공하는 본인인증 목적입니다. 정책의 \"인증 목적\" 컬럼에서 선택할 수 있으며, 모듈/플러그인이 추가 목적을 선언하면 해당 모듈/플러그인 환경설정 화면에 표시됩니다.",
+      "purposes_empty": "코어가 제공하는 본인인증 목적이 없습니다.",
+      "all_scopes": "전체 강제 시점",
+      "all_sources": "전체 출처",
+      "search_placeholder": "정책 키 또는 강제 위치로 검색",
+      "reset_filters": "검색 초기화",
+      "empty": "등록된 정책이 없습니다.",
+      "add_button": "+ 정책 추가",
+      "create_title": "정책 추가",
+      "edit_title": "정책 편집",
+      "save_success": "정책을 저장했습니다.",
+      "delete_title": "정책 삭제",
+      "delete_confirm": "이 정책을 삭제하시겠습니까? (운영자 추가 정책만 삭제할 수 있습니다)",
+      "delete_success": "정책을 삭제했습니다.",
+      "delete_failed": "정책 삭제에 실패했습니다.",
+      "enable_success": "정책을 활성화했습니다.",
+      "disable_success": "정책을 비활성화했습니다.",
+      "toggle_failed": "정책 활성 상태 변경에 실패했습니다.",
+      "pagination_summary": "총 {{total}}건 · {{page}}/{{last}} 페이지",
+      "page_indicator": "{{page}} / {{last}}",
+      "col": {
+        "key": "정책 키",
+        "scope": "강제 시점",
+        "target": "강제 위치",
+        "purpose": "인증 목적",
+        "grace_minutes": "재요구 주기 (분)",
+        "enabled": "활성",
+        "source_type": "출처"
+      },
+      "scope": {
+        "route": "API 호출 시",
+        "hook": "이벤트 발생 시",
+        "custom": "사용자 정의"
+      },
+      "scope_desc": {
+        "route": "사용자가 특정 API 라우트를 호출할 때 (예: 회원가입, 비밀번호 재설정)",
+        "hook": "내부 이벤트 발생 시 (예: 회원가입 완료 직후, 사용자 정보 변경 직전)",
+        "custom": "플러그인이 정의한 사용자 정의 시점"
+      },
+      "purpose": {
+        "signup": "회원가입",
+        "password_reset": "비밀번호 재설정",
+        "self_update": "프로필 변경",
+        "sensitive_action": "민감 작업"
+      },
+      "source": {
+        "core": "코어",
+        "module": "모듈",
+        "plugin": "플러그인",
+        "admin": "운영자"
+      },
+      "fail_mode": {
+        "block": "요청 차단",
+        "log_only": "감사 로그만 (요청 통과)"
+      },
+      "applies_to": {
+        "self": "본인 (관리자 제외)",
+        "admin": "관리자만",
+        "both": "전체"
+      },
+      "form": {
+        "key": "정책 키",
+        "scope": "강제 시점",
+        "scope_help": "어떤 종류의 요청에서 본인인증을 강제할지 선택합니다.",
+        "target": "강제 위치",
+        "target_help": "강제 시점 종류에 따라 라우트 이름(예: api.auth.register) 또는 이벤트 이름(예: core.auth.after_register) 을 입력합니다.",
+        "purpose": "인증 목적",
+        "purpose_help": "이 정책이 어떤 종류의 본인인증을 요구하는지 선택합니다.",
+        "provider_id": "인증 수단",
+        "use_default_provider": "(기본 인증 수단 사용)",
+        "grace_minutes": "재요구 주기 (분) — 0: 매번 요구",
+        "grace_minutes_help": "이 시간 안에 본인인증을 마쳤다면 다시 요구하지 않습니다. 0 으로 두면 매번 본인인증을 요구합니다.",
+        "applies_to": "적용 대상",
+        "fail_mode": "실패 시 처리",
+        "enabled": "정책 활성화",
+        "conditions": "추가 조건 (JSON)",
+        "signup_stage": "회원가입 단계",
+        "signup_stage_unset": "(미지정)",
+        "signup_stage_before_submit": "가입 제출 전 — 가입 폼 제출과 함께 인증 코드 동봉 필수",
+        "signup_stage_after_create": "가입 후 활성화 전 — 가입 직후 인증 안내 발송, 인증 완료 후 활성화",
+        "signup_stage_desc": "회원가입 정책에서 어느 단계에 본인인증을 요구할지 지정합니다.",
+        "declared_policy_notice": "코어/모듈/플러그인이 제공한 기본 정책입니다. 활성화 · 재요구 주기 · 인증 수단 · 실패 처리 4개 필드만 편집할 수 있으며, 운영자가 수정한 값은 업데이트 후에도 그대로 유지됩니다.",
+        "reset_to_default": "기본값으로 되돌리기",
+        "reset_success": "기본값으로 복원했습니다."
+      }
+    },
+    "logs": {
+      "page_title": "본인인증 이력",
+      "page_description": "본인인증 요청/검증/만료 이력을 조회합니다. 기본 보관주기는 180일입니다.",
+      "detail_title": "인증 이력 상세",
+      "search_placeholder": "사용자 ID 또는 대상 식별자 검색",
+      "all_providers": "모든 인증 수단",
+      "all_purposes": "모든 인증 목적",
+      "all_statuses": "모든 상태",
+      "empty": "이력이 없습니다.",
+      "purge_button": "오래된 로그 일괄 파기",
+      "purge_confirm": "180일이 지난 로그를 모두 삭제합니다. 진행하시겠습니까?",
+      "purge_success": "오래된 로그를 삭제했습니다.",
+      "tab_all": "전체 인증 수단",
+      "refresh": "새로고침",
+      "total_count": "총 {{count}}건",
+      "search_type": {
+        "auto": "자동",
+        "user_id": "사용자 ID",
+        "target_hash": "대상 식별자",
+        "ip_address": "IP 주소",
+        "policy_key": "정책 키"
+      },
+      "filter": {
+        "status_label": "상태",
+        "purpose_label": "인증 목적",
+        "channel_label": "채널",
+        "date_range_label": "기간",
+        "origin_type_label": "발생 유형",
+        "source_type_label": "출처",
+        "source_type_any": "전체",
+        "source_identifier_label": "출처 식별자",
+        "source_identifier_placeholder": "예: sirsoft-ecommerce",
+        "advanced_search_toggle": "고급 검색",
+        "search_button": "검색",
+        "reset_button": "초기화",
+        "status_all": "전체",
+        "purpose_all": "전체"
+      },
+      "origin_type": {
+        "route": "라우트",
+        "hook": "훅",
+        "policy": "정책",
+        "middleware": "미들웨어",
+        "api": "API 직접 호출",
+        "custom": "커스텀",
+        "system": "시스템"
+      },
+      "sort": {
+        "created_at_desc": "최신순",
+        "created_at_asc": "오래된순",
+        "attempts_desc": "시도 많은 순"
+      },
+      "detail": {
+        "expanded": {
+          "target_hash_label": "대상 식별자",
+          "origin_label": "발생 위치",
+          "origin_policy_key_label": "정책 키",
+          "properties_label": "추가 속성",
+          "metadata_label": "부가 정보",
+          "no_properties": "추가 속성이 없습니다.",
+          "no_metadata": "부가 정보가 없습니다."
+        }
+      },
+      "col": {
+        "created_at": "생성일시",
+        "provider_id": "인증 수단",
+        "purpose": "인증 목적",
+        "channel": "채널",
+        "status": "상태",
+        "user_id": "사용자",
+        "ip_address": "IP",
+        "verified_at": "검증시각",
+        "expires_at": "만료시각",
+        "attempts": "시도",
+        "origin_type": "발생 유형",
+        "origin_identifier": "발생 지점"
+      },
+      "status": {
+        "requested": "요청됨",
+        "sent": "발송됨",
+        "verified": "검증됨",
+        "failed": "실패",
+        "expired": "만료됨",
+        "cancelled": "취소됨",
+        "policy_violation_logged": "정책 위반 기록"
+      }
     }
   }
 }

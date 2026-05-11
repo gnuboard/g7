@@ -65,5 +65,28 @@
     "notifications_title": "Notifications",
     "board_title": "Board Activity",
     "inquiries_title": "Product Inquiries"
+  },
+  "identity": {
+    "challenge": {
+      "title": "Identity Verification",
+      "code_title": "Enter Verification Code",
+      "code_subtitle": "Please enter the 6-digit code that was sent to you.",
+      "code_placeholder": "Verification code",
+      "verify": "Verify",
+      "resend": "Resend code",
+      "resend_cooldown": "Resend (in {{seconds}}s)",
+      "resend_success": "Verification code has been resent.",
+      "remaining_time": "Time remaining: {{minutes}}:{{seconds}}",
+      "remaining_attempts": "Attempts left: {{count}}",
+      "expired": "Code has expired. Please resend.",
+      "link_title": "Email Verification Required",
+      "link_subtitle": "Click the link in your email to complete identity verification.",
+      "resend_link": "Resend email",
+      "check_spam": "If the email hasn't arrived, please check your spam folder.",
+      "external_title": "Redirecting to external verification",
+      "external_subtitle": "You will be redirected to the identity verification service shortly.",
+      "manual_redirect": "Redirect manually",
+      "error_generic": "Verification failed. Please try again."
+    }
   }
 }

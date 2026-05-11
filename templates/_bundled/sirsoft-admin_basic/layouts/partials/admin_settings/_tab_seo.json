@@ -150,6 +150,328 @@
       ]
     },
     {
+      "id": "card_generator_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.seo.generator_settings"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.seo.generator_settings_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "toggle_generator_enabled",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:admin.settings.seo.generator_enabled"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.seo.generator_enabled_desc"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "seo.generator_enabled",
+                    "size": "md"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "field_generator_content",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "{{_local.form?.seo?.generator_enabled ? '' : 'opacity-50'}}"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.generator_content"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "seo.generator_content",
+                    "maxLength": 200,
+                    "placeholder": "GnuBoard7 {{_global.appConfig?.version ?? ''}}",
+                    "disabled": "{{_computed.isReadOnly || !_local.form?.seo?.generator_enabled}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.generator_content_hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "card_og_twitter_settings",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H3",
+          "props": {
+            "className": "text-lg font-semibold text-gray-900 dark:text-white mb-1"
+          },
+          "text": "$t:admin.settings.seo.og_twitter_settings"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+          },
+          "text": "$t:admin.settings.seo.og_twitter_settings_desc"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.og_default_site_name"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "seo.og_default_site_name",
+                    "placeholder": "GNUBOARD.NET",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.og_default_site_name_hint"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-2 gap-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "text": "$t:admin.settings.seo.og_image_default_width"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "seo.og_image_default_width",
+                        "min": "0",
+                        "max": "8000",
+                        "placeholder": "1200",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      },
+                      "text": "$t:admin.settings.seo.og_image_default_height"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "seo.og_image_default_height",
+                        "min": "0",
+                        "max": "8000",
+                        "placeholder": "630",
+                        "disabled": "{{_computed.isReadOnly}}",
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400"
+              },
+              "text": "$t:admin.settings.seo.og_image_default_size_hint"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.twitter_default_card"
+                },
+                {
+                  "type": "basic",
+                  "name": "Select",
+                  "props": {
+                    "name": "seo.twitter_default_card",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "options": [
+                      { "value": "summary_large_image", "label": "summary_large_image" },
+                      { "value": "summary", "label": "summary" },
+                      { "value": "app", "label": "app" },
+                      { "value": "player", "label": "player" }
+                    ],
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.twitter_default_card_hint"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": {
+                    "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  },
+                  "text": "$t:admin.settings.seo.twitter_default_site"
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "name": "seo.twitter_default_site",
+                    "placeholder": "@gnuboard",
+                    "disabled": "{{_computed.isReadOnly}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                  },
+                  "text": "$t:admin.settings.seo.twitter_default_site_hint"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "card_bot_settings",
       "type": "basic",
       "name": "Div",
@@ -180,6 +502,46 @@
             "className": "space-y-4"
           },
           "children": [
+            {
+              "id": "notice_bot_library",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-900 dark:text-blue-100"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "info-circle",
+                    "className": "flex-shrink-0 mt-0.5"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "font-semibold"
+                      },
+                      "text": "$t:admin.settings.seo.bot_library_notice_title"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "mt-1"
+                      },
+                      "text": "$t:admin.settings.seo.bot_library_notice_body"
+                    }
+                  ]
+                }
+              ]
+            },
             {
               "id": "toggle_bot_detection_enabled",
               "type": "basic",
@@ -221,9 +583,53 @@
               ]
             },
             {
+              "id": "toggle_bot_detection_library_enabled",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700 {{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50'}}"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "$t:admin.settings.seo.bot_detection_library_enabled"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "$t:admin.settings.seo.bot_detection_library_enabled_desc"
+                    }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Toggle",
+                  "props": {
+                    "name": "seo.bot_detection_library_enabled",
+                    "size": "md",
+                    "disabled": "{{!_local.form?.seo?.bot_detection_enabled}}"
+                  }
+                }
+              ]
+            },
+            {
               "id": "field_bot_user_agents",
               "type": "basic",
               "name": "Div",
+              "props": {
+                "className": "{{_local.form?.seo?.bot_detection_enabled ? '' : 'opacity-50 pointer-events-none'}}"
+              },
               "children": [
                 {
                   "type": "basic",
@@ -241,7 +647,8 @@
                     "creatable": true,
                     "placeholder": "$t:admin.settings.seo.bot_user_agents_placeholder",
                     "className": "w-full",
-                    "defaultVariant": "blue"
+                    "defaultVariant": "blue",
+                    "disabled": "{{!_local.form?.seo?.bot_detection_enabled}}"
                   }
                 },
                 {
@@ -533,6 +940,110 @@
                     "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
                   },
                   "text": "$t:admin.settings.seo.sitemap_cache_ttl_hint"
+                }
+              ]
+            },
+            {
+              "id": "sitemap_last_updated_block",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "space-y-2 pt-4 border-t border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm font-medium text-gray-900 dark:text-white block"
+                  },
+                  "text": "$t:admin.settings.seo.sitemap_last_updated_at"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex flex-col md:flex-row md:items-center md:gap-3 space-y-2 md:space-y-0"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "disabled": true,
+                        "value": "{{_local.form?.seo?.sitemap_last_updated_at ?? '-'}}",
+                        "className": "w-full md:flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300 text-sm"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": {
+                        "type": "button",
+                        "disabled": "{{_computed.isReadOnly || _local.sitemapUpdating === true}}",
+                        "className": "w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                      },
+                      "text": "{{_local.sitemapUpdating === true ? $t('admin.settings.seo.sitemap_updating') : $t('admin.settings.seo.sitemap_manual_update')}}",
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "sitemapUpdating": true
+                          },
+                          "onSuccess": [
+                            {
+                              "handler": "apiCall",
+                              "auth_required": true,
+                              "target": "/api/admin/seo/sitemap/regenerate",
+                              "params": {
+                                "method": "POST"
+                              },
+                              "onSuccess": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "sitemapUpdating": false,
+                                    "form": {
+                                      "seo": {
+                                        "sitemap_last_updated_at": "{{response.data?.last_updated_at ?? ''}}"
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "handler": "toast",
+                                  "params": {
+                                    "type": "success",
+                                    "message": "{{$t('admin.settings.seo.sitemap_update_success')}}"
+                                  }
+                                }
+                              ],
+                              "onError": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "sitemapUpdating": false
+                                  }
+                                },
+                                {
+                                  "handler": "toast",
+                                  "params": {
+                                    "type": "error",
+                                    "message": "{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }

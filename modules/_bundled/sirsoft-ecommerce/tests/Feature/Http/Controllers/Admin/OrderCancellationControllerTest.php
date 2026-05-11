@@ -33,6 +33,18 @@ class OrderCancellationControllerTest extends ModuleTestCase
     {
         parent::setUp();
         $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+
+        // 이전 테스트에서 저장된 환경설정 파일 제거 (RefreshDatabase 는 storage 롤백 안 함)
+        $settingsDir = storage_path('app/modules/sirsoft-ecommerce/settings');
+        if (is_dir($settingsDir)) {
+            foreach (glob($settingsDir.'/*.json') as $file) {
+                @unlink($file);
+            }
+        }
+        app(\Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService::class)->clearCache();
+
+        // g7_settings.modules Config cache 도 제거 (CoreServiceProvider 가 boot 시 로드)
+        \Illuminate\Support\Facades\Config::set('g7_settings.modules.sirsoft-ecommerce', []);
     }
 
     /**
@@ -108,17 +120,35 @@ class OrderCancellationControllerTest extends ModuleTestCase
             'shipping_policy_applied_snapshot' => [],
         ]);
 
+        // 스냅샷 가격은 factory default 가 random(5000~100000) 이므로 명시 고정
+        // (OrderAdjustmentService::buildRecalcInput 가 snapshot.selling_price 를 재계산 기준가로
+        // 사용 — 원 총액보다 크면 "환불 음수" 에러 발생. 단위 테스트는 faker 상태가 테스트 간
+        // 변하므로 suite 실행에서만 재현되어 state leak 처럼 보임.)
+        $snapshotOverride = [
+            'product_snapshot' => [
+                'id' => null, 'name' => ['ko' => 't', 'en' => 't'], 'product_code' => null,
+                'sku' => null, 'brand_id' => null, 'list_price' => $unitPrice, 'selling_price' => $unitPrice,
+                'currency_code' => 'KRW', 'stock_quantity' => 100, 'tax_status' => 'taxable',
+                'tax_rate' => 10, 'has_options' => false, 'option_groups' => null, 'thumbnail_url' => null,
+            ],
+            'option_snapshot' => [
+                'id' => null, 'option_code' => null, 'option_values' => null, 'option_name' => 't',
+                'price_adjustment' => 0, 'list_price' => $unitPrice, 'selling_price' => $unitPrice,
+                'currency_code' => 'KRW', 'stock_quantity' => 100, 'weight' => 0, 'volume' => 0,
+            ],
+        ];
+
         $options = [];
         for ($i = 0; $i < $optionCount; $i++) {
             $subtotalPrice = $unitPrice * $quantity;
-            $options[] = OrderOption::factory()->forOrder($order)->create([
+            $options[] = OrderOption::factory()->forOrder($order)->create(array_merge([
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'subtotal_price' => $subtotalPrice,
                 'subtotal_paid_amount' => $subtotalPrice,
                 'subtotal_discount_amount' => 0,
                 'option_status' => OrderStatusEnum::PAYMENT_COMPLETE,
-            ]);
+            ], $snapshotOverride));
         }
 
         $payment = null;
@@ -473,7 +503,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
      */
     public function test_admin_cancel_preparing_order_fails_without_settings(): void
     {
-        // Given: 상품준비중(PREPARING) 상태의 주문 (환경설정 미변경)
+        // Given: 상품준비중(PREPARING) 상태의 주문 (환경설정 미변경 — setUp 에서 파일 초기화됨)
         $user = User::factory()->create();
         $order = Order::factory()->create([
             'user_id' => $user->id,

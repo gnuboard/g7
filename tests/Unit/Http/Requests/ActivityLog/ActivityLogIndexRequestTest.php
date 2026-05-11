@@ -148,7 +148,9 @@ class ActivityLogIndexRequestTest extends TestCase
 
     public function test_actor_exceeding_max_length_fails(): void
     {
-        $validator = $this->makeValidator(['actor' => str_repeat('a', 256)]);
+        // actor 필드는 rules 에 존재하지 않으므로 크기 제한 검증이 없다.
+        // 최신 구현은 created_by 필드로 검증하며, max:36 적용됨.
+        $validator = $this->makeValidator(['created_by' => str_repeat('a', 37)]);
         $this->assertTrue($validator->fails());
     }
 

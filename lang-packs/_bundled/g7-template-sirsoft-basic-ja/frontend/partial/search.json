@@ -1,0 +1,51 @@
+{
+  "title": "検索",
+  "placeholder": "検索キーワードを入力してください",
+  "button": "検索",
+  "submit": "検索",
+  "results": "検索結果",
+  "results_count": "{{count}}件の結果",
+  "result_summary": "検索結果{{count}}件",
+  "result_count_suffix": "件",
+  "no_results": "検索結果がありません。",
+  "try_different": "別の検索キーワードで試してみてください。",
+  "tabs": {
+    "all": "すべて",
+    "posts": "投稿",
+    "products": "商品",
+    "pages": "ページ"
+  },
+  "filter": {
+    "all": "すべて",
+    "posts": "投稿",
+    "products": "商品",
+    "all_boards": "すべての掲示板"
+  },
+  "sort": {
+    "relevance": "関連度順",
+    "latest": "最新順",
+    "popular": "人気順",
+    "price_asc": "低い価格順",
+    "price_desc": "高い価格順"
+  },
+  "empty": {
+    "all": "検索結果がありません。",
+    "posts": "投稿の検索結果がありません。",
+    "products": "商品の検索結果がありません。",
+    "pages": "ページの検索結果がありません。",
+    "posts_in_all": "投稿の検索結果がありません",
+    "products_in_all": "商品の検索結果がありません",
+    "pages_in_all": "ページの検索結果がありません",
+    "suggestion": "別の検索キーワードで試してみてください"
+  },
+  "page_published_at": "公開日:{{date}}",
+  "view_more": "さらに表示",
+  "view_all": "すべて表示",
+  "initial": {
+    "title": "検索キーワードを入力してください",
+    "description": "投稿、商品、ページを統合検索できます。",
+    "hint_title": "検索のコツ",
+    "hint_1": "2語以上を入力するとより正確な結果が得られます",
+    "hint_2": "検索キーワードはタイトルと内容から一緒に検索されます"
+  }
+}

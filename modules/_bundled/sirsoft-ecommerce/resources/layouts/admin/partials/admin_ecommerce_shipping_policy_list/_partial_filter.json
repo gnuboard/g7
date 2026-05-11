@@ -165,7 +165,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "iteration": {
-                                        "source": "(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name[_global.locale || 'ko'] || t.name.ko || t.code}))",
+                                        "source": "(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.[_global.locale] ?? t.name?.ko ?? t.code}))",
                                         "item_var": "option"
                                     },
                                     "props": {

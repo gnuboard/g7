@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Log;
  *
  * user_overrides 컬럼에서 유저가 수정한 필드명 목록을 읽어,
  * 해당 필드는 건너뛰고 나머지만 갱신합니다.
- * parent_id와 is_active는 항상 확장 정의값으로 업데이트됩니다.
+ * parent_id 는 항상 확장 정의값으로 업데이트됩니다.
+ * is_active 는 확장 정의의 `is_active` 값을 따르며 (기본 true), user_overrides 에 등록되었으면 보존됩니다.
  */
 class ExtensionMenuSyncHelper
 {
@@ -54,7 +55,7 @@ class ExtensionMenuSyncHelper
         $existing = $this->menuRepository->findBySlugAndExtension($slug, $extensionType, $extensionIdentifier);
 
         if (! $existing) {
-            // 신규 생성
+            // 신규 생성 — 정의의 is_active 값을 그대로 채택 (기본 true)
             $menu = $this->menuRepository->updateOrCreate(
                 [
                     'slug' => $slug,
@@ -67,7 +68,7 @@ class ExtensionMenuSyncHelper
                     'icon' => $newAttributes['icon'] ?? null,
                     'order' => $newAttributes['order'] ?? 0,
                     'parent_id' => $parentId,
-                    'is_active' => true,
+                    'is_active' => (bool) ($newAttributes['is_active'] ?? true),
                 ]
             );
 
@@ -77,27 +78,51 @@ class ExtensionMenuSyncHelper
             return $menu;
         }
 
-        // 기존 메뉴 업데이트: user_overrides에 없는 필드만 갱신
+        // 기존 메뉴 업데이트: user_overrides 에 없는 필드만 갱신.
+        //
+        // user_overrides 형식 호환: 컬럼명 단위(`'name'`, legacy) + dot-path sub-key 단위
+        // (`'name.ko'`, `'name.en'`, beta.4 도입). 다국어 컬럼은 어느 형태로든 마킹되어
+        // 있으면 컬럼 전체를 보존 대상으로 간주한다 (간소화 — sub-key 단위 부분 보존은
+        // 별도 도메인 helper 에서 처리).
         $userOverrides = $existing->user_overrides ?? [];
+
+        $isFieldOverridden = static function (string $column) use ($userOverrides): bool {
+            if (in_array($column, $userOverrides, true)) {
+                return true;
+            }
+            // dot-path 마킹 (`name.ko`, `name.en` 등) 도 컬럼 전체 보존으로 인정
+            $prefix = $column.'.';
+            foreach ($userOverrides as $entry) {
+                if (is_string($entry) && str_starts_with($entry, $prefix)) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
 
         $updateData = [
             'parent_id' => $parentId,
-            'is_active' => true,
         ];
 
-        if (! in_array('name', $userOverrides, true)) {
+        // is_active 는 운영자가 user_overrides 로 마킹한 경우 보존, 아니면 정의값으로 갱신
+        if (! $isFieldOverridden('is_active')) {
+            $updateData['is_active'] = (bool) ($newAttributes['is_active'] ?? true);
+        }
+
+        if (! $isFieldOverridden('name')) {
             $updateData['name'] = $newAttributes['name'] ?? [];
         }
 
-        if (! in_array('icon', $userOverrides, true)) {
+        if (! $isFieldOverridden('icon')) {
             $updateData['icon'] = $newAttributes['icon'] ?? null;
         }
 
-        if (! in_array('order', $userOverrides, true)) {
+        if (! $isFieldOverridden('order')) {
             $updateData['order'] = $newAttributes['order'] ?? 0;
         }
 
-        if (! in_array('url', $userOverrides, true)) {
+        if (! $isFieldOverridden('url')) {
             $updateData['url'] = $newAttributes['url'] ?? null;
         }
 
@@ -147,6 +172,8 @@ class ExtensionMenuSyncHelper
                 'icon' => $menuData['icon'] ?? null,
                 'order' => $menuData['order'] ?? 0,
                 'url' => $menuData['url'] ?? null,
+                // 정의의 is_active 값을 명시 전달 (기본 true). 미전달 시 syncMenu 가 true 로 폴백.
+                'is_active' => $menuData['is_active'] ?? true,
             ],
             parentId: $parentId,
         );

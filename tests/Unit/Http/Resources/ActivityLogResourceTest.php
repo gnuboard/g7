@@ -542,9 +542,10 @@ class ActivityLogResourceTest extends TestCase
     public function test_resource_resolves_unreplaced_count_from_bulk_changes(): void
     {
         $locale = app()->getLocale();
+        // namespaced key ('vendor::group.key') 는 addLines 의 3번째 인자 namespace 로 전달해야 함
         app('translator')->addLines([
-            'sirsoft-ecommerce::activity_log.description.order_bulk_status_update' => '주문 일괄 상태 변경 (:count건)',
-        ], $locale);
+            'activity_log.description.order_bulk_status_update' => '주문 일괄 상태 변경 (:count건)',
+        ], $locale, 'sirsoft-ecommerce');
 
         $bulkChanges = [
             101 => [
@@ -579,8 +580,8 @@ class ActivityLogResourceTest extends TestCase
     {
         $locale = app()->getLocale();
         app('translator')->addLines([
-            'sirsoft-ecommerce::activity_log.description.order_bulk_status_update' => '주문 일괄 상태 변경 (:count건)',
-        ], $locale);
+            'activity_log.description.order_bulk_status_update' => '주문 일괄 상태 변경 (:count건)',
+        ], $locale, 'sirsoft-ecommerce');
 
         $bulkChanges = [
             101 => [

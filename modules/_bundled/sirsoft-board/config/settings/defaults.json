@@ -71,7 +71,9 @@
       "rejection_limit_days": 30,
       "notify_admin_on_report": true,
       "notify_admin_on_report_scope": "per_case",
-      "notify_author_on_report_action": true
+      "notify_admin_on_report_channels": ["mail", "database"],
+      "notify_author_on_report_action": true,
+      "notify_author_on_report_action_channels": ["mail", "database"]
     },
     "spam_security": {
       "post_cooldown_seconds": 0,

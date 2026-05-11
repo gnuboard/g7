@@ -32,6 +32,9 @@ import templateMetadata from '../template.json';
 // Handlers
 import { handlerMap } from './handlers';
 
+// IDV Modal Launcher (engine-v1.46.0+)
+import { registerSirsoftAdminBasicIdentityLauncher } from './handlers/identityLauncher';
+
 // handlerMap을 전역으로 노출 (로케일 변경 시 재등록용)
 if (typeof window !== 'undefined') {
   (window as any).G7TemplateHandlers = handlerMap;
@@ -66,6 +69,9 @@ export function initTemplate(): void {
         });
 
         logger.log(`${Object.keys(handlerMap).length} custom handler(s) registered:`, Object.keys(handlerMap));
+
+        // IDV Modal Launcher 등록 (window.G7Core.identity.setLauncher 사용)
+        registerSirsoftAdminBasicIdentityLauncher();
       } else {
         retryCount++;
         if (retryCount <= maxRetries) {

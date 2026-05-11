@@ -270,4 +270,15 @@ class ScheduleRepository implements ScheduleRepositoryInterface
 
         return $newSchedule;
     }
+
+    /**
+     * ID 목록으로 스케줄들을 조회하고 ID 키 맵으로 반환합니다.
+     *
+     * @param  array<int, int>  $ids  스케줄 ID 목록
+     * @return Collection<int, Schedule> id => Schedule 매핑
+     */
+    public function findManyByIdsKeyed(array $ids): Collection
+    {
+        return Schedule::whereIn('id', $ids)->get()->keyBy('id');
+    }
 }

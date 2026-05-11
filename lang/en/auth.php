@@ -31,6 +31,8 @@ return [
     'account_inactive' => 'Your account is inactive. Please contact the administrator.',
     'account_blocked' => 'Your account has been blocked. Please contact the administrator.',
     'account_withdrawn' => 'This account has been withdrawn.',
+    'account_pending_verification' => 'Identity verification is not complete. Please complete the email verification.',
+    'account_locked' => 'Too many failed login attempts. Your account is locked for :minutes minute(s).',
 
     // Password reset
     'reset_token_invalid' => 'Invalid password reset token.',

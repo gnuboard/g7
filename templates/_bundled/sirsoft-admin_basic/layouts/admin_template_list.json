@@ -10,7 +10,8 @@
         "description": "$t:admin.templates.page_description"
     },
     "state": {
-        "searchQuery": ""
+        "searchQuery": "",
+        "showHidden": false
     },
     "transition_overlay": {
         "wait_for": [
@@ -43,7 +44,8 @@
                 "type": "{{route.type}}",
                 "page": "{{query.page}}",
                 "per_page": "{{query.per_page || 12}}",
-                "search": "{{query.search}}"
+                "search": "{{query.search}}",
+                "include_hidden": "{{_local.showHidden ? 1 : 0}}"
             },
             "fallback": {
                 "data": {
@@ -52,6 +54,24 @@
                     "last_page": 1,
                     "per_page": 12,
                     "total": 0
+                }
+            }
+        },
+        {
+            "id": "auto_deactivated_banner",
+            "type": "api",
+            "endpoint": "/api/admin/extensions/auto-deactivated",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "items": {
+                        "plugins": [],
+                        "modules": [],
+                        "templates": []
+                    },
+                    "current_core_version": ""
                 }
             }
         }
@@ -323,6 +343,210 @@
                         ]
                     },
                     {
+                        "id": "auto_deactivated_banner_wrapper",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(auto_deactivated_banner?.data?.items?.templates?.length ?? 0) > 0}}",
+                        "props": {
+                            "className": "mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg",
+                            "role": "alert"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-start gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "exclamation-triangle",
+                                            "className": "text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-1 min-w-0"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-sm font-medium text-amber-800 dark:text-amber-200 mb-2"
+                                                },
+                                                "text": "$t:extensions.banner.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "space-y-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "iteration": {
+                                                            "source": "{{auto_deactivated_banner?.data?.items?.templates ?? []}}",
+                                                            "item_var": "banner_item"
+                                                        },
+                                                        "props": {
+                                                            "className": "flex items-center justify-between gap-2 text-sm text-amber-700 dark:text-amber-300"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "font-mono"
+                                                                },
+                                                                "text": "{{banner_item.identifier}} — $t:defer:extensions.banner.item_required|required={{banner_item.incompatible_required_version ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "text-xs text-amber-700 dark:text-amber-300 hover:underline",
+                                                                    "aria-label": "$t:extensions.banner.dismiss"
+                                                                },
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "apiCall",
+                                                                        "auth_required": true,
+                                                                        "target": "/api/admin/extensions/template/{{banner_item.identifier}}/dismiss",
+                                                                        "params": {
+                                                                            "method": "POST"
+                                                                        },
+                                                                        "onSuccess": [
+                                                                            {
+                                                                                "handler": "refetchDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "auto_deactivated_banner"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "times",
+                                                                            "size": "xs"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "mt-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-200 hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer"
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "openModal",
+                                                                "target": "core_update_guide_modal"
+                                                            }
+                                                        ],
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "arrow-up-circle",
+                                                                    "size": "xs"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:extensions.banner.guide_link"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "include_hidden_toggle_wrapper",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{currentUser?.is_super === true}}",
+                        "props": {
+                            "className": "flex justify-end mb-3"
+                        },
+                        "children": [
+                            {
+                                "id": "include_hidden_toggle",
+                                "type": "basic",
+                                "name": "Label",
+                                "props": {
+                                    "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "props": {
+                                            "type": "checkbox",
+                                            "checked": "{{_local.showHidden === true}}",
+                                            "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "showHidden": "{{!_local.showHidden}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "change",
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "templates"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.templates.include_hidden"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
                         "id": "tab_navigation",
                         "type": "composite",
                         "name": "TabNavigation",
@@ -389,6 +613,9 @@
             "partial": "partials/admin_template_list/_modal_install.json"
         },
         {
+            "partial": "partials/admin_template_list/_drawer_manifest_preview.json"
+        },
+        {
             "partial": "partials/admin_template_list/_modal_uninstall.json"
         },
         {
@@ -411,6 +638,9 @@
         },
         {
             "partial": "partials/admin_template_list/_modal_extension_license.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_core_update_guide.json"
         }
     ]
 }

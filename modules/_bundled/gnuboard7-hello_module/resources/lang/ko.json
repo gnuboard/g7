@@ -1,0 +1,29 @@
+{
+    "admin": {
+        "memos": {
+            "index": {
+                "title": "Hello 메모",
+                "description": "학습용 메모 목록"
+            },
+            "form": {
+                "title_create": "메모 생성",
+                "title_edit": "메모 수정",
+                "fields": {
+                    "title": "제목",
+                    "content": "본문"
+                },
+                "actions": {
+                    "save": "저장",
+                    "cancel": "취소"
+                }
+            }
+        }
+    },
+    "user": {
+        "memos": {
+            "index": {
+                "title": "메모 목록"
+            }
+        }
+    }
+}

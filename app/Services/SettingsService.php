@@ -32,8 +32,6 @@ class SettingsService
      * 시스템 설정 캐시를 무효화합니다.
      *
      * 설정 저장 시 4곳에서 중복되던 로직을 단일 메서드로 통합했습니다.
-     *
-     * @return void
      */
     private function invalidateSettingsCache(): void
     {
@@ -175,6 +173,21 @@ class SettingsService
 
             if ($frontendKey === 'supportedTimezones' && is_array($value)) {
                 $result[$frontendKey] = $this->buildTimezoneOptions($value);
+
+                continue;
+            }
+
+            // 언어 셀렉터에 노출할 활성 로케일은 config 의 허용 집합과
+            // 활성 코어 언어팩의 합집합. 언어팩 설치/활성화 직후 SSR 결과도
+            // 즉시 반영되도록 LanguagePackService 를 통해 동적 산출한다.
+            if ($frontendKey === 'supportedLocales' && is_array($value)) {
+                try {
+                    $result[$frontendKey] = app(LanguagePackService::class)->getActiveLocales();
+                } catch (\Throwable $e) {
+                    // 부트 초기/마이그레이션 미수행 환경에서는 config 값으로 폴백
+                    $result[$frontendKey] = $this->castValue($value, $fieldSchema);
+                }
+
                 continue;
             }
 
@@ -746,15 +759,58 @@ class SettingsService
     }
 
     /**
+     * 시스템 캐시 키 접두사.
+     *
+     * clearCache() 및 getSystemInfo() 에서 공유하여 사용합니다.
+     */
+    private const SYSTEM_INFO_CACHE_PREFIX = 'settings.system_info';
+
+    /**
+     * 시스템 캐시 TTL (초).
+     *
+     * CPU/메모리 총량 등 거의 변하지 않는 하드웨어 정보가 대부분이고,
+     * Windows 환경에서 PowerShell(CIM) 호출이 수백 ms ~ 수 초 걸려
+     * 탭 전환 UX를 저해하므로 1시간 동안 재사용한다.
+     */
+    private const SYSTEM_INFO_CACHE_TTL = 3600;
+
+    /**
      * 시스템 환경 정보를 조회합니다.
+     *
+     * 하드웨어/환경 정보는 1시간 캐시하며, 실시간성이 요구되는
+     * server_time 은 매 호출마다 갱신합니다.
      *
      * @return array 시스템 정보 배열
      */
     public function getSystemInfo(): array
     {
+        $locale = app()->getLocale();
+        $key = self::SYSTEM_INFO_CACHE_PREFIX.'.'.$locale;
+
+        $info = $this->cache->remember(
+            $key,
+            fn () => $this->buildSystemInfo(),
+            self::SYSTEM_INFO_CACHE_TTL
+        );
+
+        $info['server_time'] = now()->format('Y-m-d H:i:s');
+
+        return $info;
+    }
+
+    /**
+     * 시스템 환경 정보 페이로드를 실제로 수집합니다.
+     *
+     * PowerShell/파일 I/O 가 포함되어 비용이 크므로 getSystemInfo() 에서
+     * 캐시로 감싸 호출합니다.
+     *
+     * @return array 시스템 정보 배열 (server_time 제외)
+     */
+    private function buildSystemInfo(): array
+    {
         return [
             'os_info' => php_uname('s').' '.php_uname('r'),
-            'web_server' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
+            'web_server' => $_SERVER['SERVER_SOFTWARE'] ?? __('common.unknown'),
             'php_version' => PHP_VERSION,
             'mysql_version' => $this->getDatabaseInfo(),
             'g7_version' => config('app.version', '1.0.0'),
@@ -773,7 +829,6 @@ class SettingsService
             'upload_path' => storage_path('app/public'),
             'php_extensions' => $this->getPhpExtensions(),
             'database_config' => $this->getDatabaseConfig(),
-            'server_time' => now()->format('Y-m-d H:i:s'),
             'timezone' => config('app.timezone'),
         ];
     }
@@ -786,6 +841,10 @@ class SettingsService
     public function clearCache(): bool
     {
         try {
+            foreach (config('app.supported_locales', ['ko', 'en']) as $locale) {
+                $this->cache->forget(self::SYSTEM_INFO_CACHE_PREFIX.'.'.$locale);
+            }
+
             Artisan::call('cache:clear');
             Artisan::call('config:clear');
             Artisan::call('route:clear');
@@ -886,20 +945,63 @@ class SettingsService
     }
 
     /**
-     * 현재 메모리 사용량을 조회합니다.
+     * 서버의 물리 메모리 사용량을 조회합니다.
      *
-     * @return string 메모리 사용량 문자열
+     * 디스크 사용량과 동일한 형식(total/used/free/percentage)으로 반환합니다.
+     * OS 별 조회 방식:
+     * - Linux: /proc/meminfo 파싱 (MemTotal, MemAvailable)
+     * - Windows: PowerShell (Get-CimInstance Win32_OperatingSystem)
+     *
+     * @return array 메모리 사용량 정보 배열
      */
-    private function getMemoryUsage(): string
+    private function getMemoryUsage(): array
     {
-        $bytes = memory_get_usage(true);
-        $units = ['B', 'KB', 'MB', 'GB'];
+        $total = 0;
+        $free = 0;
 
-        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
-            $bytes /= 1024;
+        if (PHP_OS_FAMILY === 'Linux' && is_readable('/proc/meminfo')) {
+            $memInfo = @file_get_contents('/proc/meminfo');
+            if ($memInfo !== false) {
+                if (preg_match('/MemTotal:\s+(\d+)\s*kB/i', $memInfo, $m)) {
+                    $total = (int) $m[1] * 1024;
+                }
+                if (preg_match('/MemAvailable:\s+(\d+)\s*kB/i', $memInfo, $m)) {
+                    $free = (int) $m[1] * 1024;
+                } elseif (preg_match('/MemFree:\s+(\d+)\s*kB/i', $memInfo, $m)) {
+                    $free = (int) $m[1] * 1024;
+                }
+            }
+        } elseif (PHP_OS_FAMILY === 'Windows') {
+            $script = '$os = Get-CimInstance Win32_OperatingSystem; '
+                .'Write-Output $os.TotalVisibleMemorySize; '
+                .'Write-Output $os.FreePhysicalMemory';
+            $output = @shell_exec('powershell -NoProfile -NonInteractive -Command "'.$script.'" 2>&1');
+            if ($output) {
+                $lines = array_values(array_filter(array_map('trim', explode("\n", $output)), fn ($l) => $l !== ''));
+                if (isset($lines[0], $lines[1]) && is_numeric($lines[0]) && is_numeric($lines[1])) {
+                    $total = (int) $lines[0] * 1024;
+                    $free = (int) $lines[1] * 1024;
+                }
+            }
         }
 
-        return round($bytes, 2).' '.$units[$i];
+        if ($total <= 0) {
+            return [
+                'total' => __('common.unknown'),
+                'used' => __('common.unknown'),
+                'free' => __('common.unknown'),
+                'percentage' => 0,
+            ];
+        }
+
+        $used = max(0, $total - $free);
+
+        return [
+            'total' => $this->formatBytes($total),
+            'used' => $this->formatBytes($used),
+            'free' => $this->formatBytes($free),
+            'percentage' => round(($used / $total) * 100, 2),
+        ];
     }
 
     /**
@@ -942,20 +1044,31 @@ class SettingsService
     /**
      * CPU 정보를 조회합니다.
      *
+     * Windows 11/Server 2025 이상에서는 `wmic`이 제거되어 PowerShell(CIM)을 우선 사용하고,
+     * 레거시 환경(wmic 존재)을 위해 폴백도 유지합니다.
+     *
      * @return string CPU 정보 문자열
      */
     private function getCpuInfo(): string
     {
         if (PHP_OS_FAMILY === 'Windows') {
-            $output = shell_exec('wmic cpu get name 2>&1');
+            $output = @shell_exec('powershell -NoProfile -NonInteractive -Command "(Get-CimInstance Win32_Processor | Select-Object -First 1).Name" 2>&1');
+            if ($output) {
+                $name = trim($output);
+                if ($name !== '' && ! str_contains(strtolower($name), 'error')) {
+                    return $name;
+                }
+            }
+
+            $output = @shell_exec('wmic cpu get name 2>&1');
             if ($output) {
                 $lines = explode("\n", trim($output));
-                if (isset($lines[1])) {
+                if (isset($lines[1]) && trim($lines[1]) !== '') {
                     return trim($lines[1]);
                 }
             }
 
-            return 'Unknown';
+            return __('common.unknown');
         }
 
         if (file_exists('/proc/cpuinfo')) {
@@ -965,7 +1078,7 @@ class SettingsService
             }
         }
 
-        return 'Unknown';
+        return __('common.unknown');
     }
 
     /**

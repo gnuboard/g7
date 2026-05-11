@@ -13,6 +13,11 @@ class InstallTemplateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * 권한 체크는 라우트의 permission 미들웨어에서 수행되므로
+     * FormRequest 레벨은 항상 통과시킵니다.
+     *
+     * @return bool 항상 true
      */
     public function authorize(): bool
     {
@@ -28,6 +33,12 @@ class InstallTemplateRequest extends FormRequest
     {
         $rules = [
             'template_name' => ['required', 'string', 'max:255', new ValidExtensionIdentifier],
+            // cascade 동반 설치 — install-preview 응답을 바탕으로 사용자가 선택한 항목
+            'dependencies' => ['nullable', 'array'],
+            'dependencies.*.type' => ['required_with:dependencies', 'string', 'in:module,plugin'],
+            'dependencies.*.identifier' => ['required_with:dependencies', 'string', 'max:255'],
+            'language_packs' => ['nullable', 'array'],
+            'language_packs.*' => ['string', 'max:255'],
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공

@@ -210,6 +210,16 @@ class Plugin implements PluginInterface
 
 > **`license` 필드**: `plugin.json`에 `"license": "MIT"` 등의 라이선스 정보를 포함합니다. `getLicense()` 메서드로 값을 읽으며, API 리소스의 `license` 필드로 노출됩니다. 또한 각 플러그인 루트에 `LICENSE` 파일을 포함하여 라이선스 전문을 제공해야 합니다.
 
+### hidden 필드 (선택)
+
+`plugin.json` 에 `"hidden": true` 를 설정하면 관리자 UI 의 플러그인 목록에서 기본 제외됩니다. 학습용 샘플 플러그인, 내부 운영 전용 플러그인을 일반 사용자에게 감출 때 사용합니다.
+
+- 제외 대상: 관리자 UI (`GET /api/admin/plugins` 기본 응답)
+- 제외 대상 아님: artisan CLI (`plugin:list`, `plugin:install`, `plugin:activate` 등), 설치/제거/업데이트 감지
+- 슈퍼관리자는 "숨김 포함" 토글로 일시 조회 가능 (`?include_hidden=1`)
+- artisan CLI 에서도 기본 목록에서는 숨기고, `php artisan plugin:list --hidden` 으로 숨김 포함 목록을 조회할 수 있습니다
+- 사용 사례: 학습용 샘플 플러그인(예: `gnuboard7-hello_plugin`), 내부 전용 연동 플러그인
+
 ### 자동 추론 메서드 (final - 오버라이드 불가)
 
 | 메서드 | 반환 타입 | 설명 |

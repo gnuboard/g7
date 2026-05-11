@@ -67,7 +67,8 @@ class CategoryActivityLogListenerTest extends ModuleTestCase
                     && $context['description_key'] === 'sirsoft-ecommerce::activity_log.description.category_create'
                     && $context['description_params']['category_id'] === 1
                     && isset($context['loggable'])
-                    && $context['properties']['name'] === 'Electronics';
+                    // Category.name 은 AsUnicodeJson cast — 다국어 배열로 저장됨
+                    && $context['properties']['name'] === ['ko' => 'Electronics', 'en' => 'Electronics'];
             });
 
         $this->listener->handleAfterCreate($category, ['name' => 'Electronics']);
@@ -226,7 +227,13 @@ class CategoryActivityLogListenerTest extends ModuleTestCase
     private function createCategoryMock(int $id, ?string $name = null): Category
     {
         $category = Mockery::mock(Category::class)->makePartial();
-        $category->forceFill(['id' => $id, 'name' => $name]);
+        // Category.name 은 AsUnicodeJson cast (다국어 JSON) — raw JSON 문자열로 세팅해야
+        // getAttribute 시 배열로 올바르게 복원됨
+        $nameArray = $name !== null ? ['ko' => $name, 'en' => $name] : null;
+        $category->setRawAttributes([
+            'id' => $id,
+            'name' => $nameArray !== null ? json_encode($nameArray, JSON_UNESCAPED_UNICODE) : null,
+        ], false);
         $category->shouldReceive('getKey')->andReturn($id);
         $category->shouldReceive('getMorphClass')->andReturn('category');
 

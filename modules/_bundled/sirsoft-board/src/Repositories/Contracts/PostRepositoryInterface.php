@@ -288,4 +288,30 @@ interface PostRepositoryInterface
      * @return Post|null 첫 번째 자식 게시글 (board 관계 포함) 또는 null
      */
     public function findFirstReplyWithBoard(int $parentPostId): ?Post;
+
+    /**
+     * 게시글의 comments_count 컬럼을 활성 댓글 수로 재계산해 갱신합니다.
+     *
+     * Listener (PostCountSyncListener) 가 호출하는 영속 단일 진입점.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculateCommentsCount(int $postId): int;
+
+    /**
+     * 게시글의 attachments_count 컬럼을 활성 첨부파일 수로 재계산해 갱신합니다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculateAttachmentsCount(int $postId): int;
+
+    /**
+     * 부모 게시글의 replies_count 컬럼을 활성 답글 수로 재계산해 갱신합니다.
+     *
+     * @param  int  $parentPostId  부모 게시글 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculateRepliesCount(int $parentPostId): int;
 }

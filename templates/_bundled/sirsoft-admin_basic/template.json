@@ -5,7 +5,7 @@
         "ko": "Admin Basic",
         "en": "Admin Basic"
     },
-    "version": "1.0.0-beta.3",
+    "version": "1.0.0-beta.4",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 기본 관리자 템플릿",
@@ -19,7 +19,7 @@
         "url": "https://sirsoft.com"
     },
     "release_date": "2025-01-01",
-    "g7_version": ">=7.0.0-beta.2",
+    "g7_version": ">=7.0.0-beta.4",
     "dependencies": {
         "modules": {},
         "plugins": {}

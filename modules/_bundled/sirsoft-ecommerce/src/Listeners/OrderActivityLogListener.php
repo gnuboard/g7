@@ -9,6 +9,8 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 
 /**
  * 주문 관련 활동 로그 리스너
@@ -22,6 +24,15 @@ use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 class OrderActivityLogListener implements HookListenerInterface
 {
     use ResolvesActivityLogType;
+
+    /**
+     * @param  OrderRepositoryInterface  $orderRepository  주문 bulk lookup
+     * @param  OrderOptionRepositoryInterface  $orderOptionRepository  옵션 bulk lookup
+     */
+    public function __construct(
+        protected OrderRepositoryInterface $orderRepository,
+        protected OrderOptionRepositoryInterface $orderOptionRepository,
+    ) {}
 
     /**
      * 구독할 훅과 메서드 매핑 반환
@@ -124,7 +135,7 @@ class OrderActivityLogListener implements HookListenerInterface
      */
     public function handleOrderAfterBulkUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
-        $orders = Order::whereIn('id', $ids)->get()->keyBy('id');
+        $orders = $this->orderRepository->findByIdsKeyed($ids);
 
         foreach ($ids as $id) {
             $order = $orders->get($id);
@@ -154,7 +165,7 @@ class OrderActivityLogListener implements HookListenerInterface
      */
     public function handleOrderAfterBulkStatusUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
-        $orders = Order::whereIn('id', $ids)->get()->keyBy('id');
+        $orders = $this->orderRepository->findByIdsKeyed($ids);
 
         foreach ($ids as $id) {
             $order = $orders->get($id);
@@ -184,7 +195,7 @@ class OrderActivityLogListener implements HookListenerInterface
      */
     public function handleOrderAfterBulkShippingUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
-        $orders = Order::whereIn('id', $ids)->get()->keyBy('id');
+        $orders = $this->orderRepository->findByIdsKeyed($ids);
 
         foreach ($ids as $id) {
             $order = $orders->get($id);
@@ -299,7 +310,7 @@ class OrderActivityLogListener implements HookListenerInterface
             }
         }
         $targetIds = array_unique(array_filter($targetIds));
-        $options = OrderOption::whereIn('id', $targetIds)->get()->keyBy('id');
+        $options = $this->orderOptionRepository->findByIdsKeyed($targetIds);
 
         foreach ($results as $result) {
             $originalId = $result['order_option_id'] ?? null;
@@ -413,7 +424,7 @@ class OrderActivityLogListener implements HookListenerInterface
         $cancelItems = $cancelSnapshot['cancel_items'] ?? [];
         if (! empty($cancelItems)) {
             $optionIds = array_column($cancelItems, 'order_option_id');
-            $options = OrderOption::whereIn('id', $optionIds)->get()->keyBy('id');
+            $options = $this->orderOptionRepository->findByIdsKeyed($optionIds);
 
             foreach ($cancelItems as $item) {
                 $optionId = $item['order_option_id'] ?? null;

@@ -68,14 +68,24 @@ class MarketingConsentService
      * 저장된 설정과 무관하게 항상 보장되어야 하는 system 채널 정의입니다.
      * 채널 저장 시 system 채널 누락 방지에 사용됩니다.
      *
-     * @return array<int, array{key: string, label: array{ko: string, en: string}, page_slug: string, enabled: bool, is_system: bool}>
+     * 라벨은 lang key 기반으로 선언되어 활성 언어팩으로 자동 보강됩니다.
+     * (registry payload name_key 계약 — 7.0.0-beta.4+)
+     *
+     * @return array<int, array{key: string, label_key: string, label: array{ko: string, en: string}, page_slug: string, enabled: bool, is_system: bool}>
      */
     public function getDefaultSystemChannels(): array
     {
+        $emailLabelKey = 'sirsoft-marketing::channels.email_subscription.label';
+
         return [
             [
                 'key'       => 'email_subscription',
-                'label'     => ['ko' => '광고성 이메일 수신', 'en' => 'Email Marketing'],
+                'label_key' => $emailLabelKey,
+                // label 은 plugin_settings 저장 시 fallback (lang pack 미설치 환경 보호)
+                'label'     => [
+                    'ko' => __($emailLabelKey, [], 'ko'),
+                    'en' => __($emailLabelKey, [], 'en'),
+                ],
                 'page_slug' => '',
                 'enabled'   => true,
                 'is_system' => true,

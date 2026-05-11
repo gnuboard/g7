@@ -118,8 +118,8 @@ describe('labelHandlers', () => {
                     'form.label_assignments': [
                         {
                             label_id: 1,
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     ],
                     'ui.lastClickedLabelId': 1,
@@ -129,7 +129,7 @@ describe('labelHandlers', () => {
 
             it('기존 라벨이 있는 경우 배열 끝에 추가해야 한다', () => {
                 const existingAssignments = [
-                    { label_id: 2, start_date: null, end_date: null },
+                    { label_id: 2, started_at: null, ended_at: null },
                 ];
 
                 const { action, context, g7CoreMock } = createMockSetup({
@@ -148,8 +148,8 @@ describe('labelHandlers', () => {
                         ...existingAssignments,
                         {
                             label_id: 3,
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     ],
                     'ui.lastClickedLabelId': 3,
@@ -171,8 +171,8 @@ describe('labelHandlers', () => {
                     'form.label_assignments': [
                         {
                             label_id: 5,
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     ],
                     'ui.lastClickedLabelId': 5,
@@ -184,8 +184,8 @@ describe('labelHandlers', () => {
         describe('라벨 제거 (이미 할당된 라벨 클릭)', () => {
             it('할당된 라벨을 클릭하면 제거해야 한다', () => {
                 const existingAssignments = [
-                    { label_id: 1, start_date: null, end_date: null },
-                    { label_id: 2, start_date: null, end_date: null },
+                    { label_id: 1, started_at: null, ended_at: null },
+                    { label_id: 2, started_at: null, ended_at: null },
                 ];
 
                 const { action, context, g7CoreMock } = createMockSetup({
@@ -201,7 +201,7 @@ describe('labelHandlers', () => {
 
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                     'form.label_assignments': [
-                        { label_id: 2, start_date: null, end_date: null },
+                        { label_id: 2, started_at: null, ended_at: null },
                     ],
                     'ui.lastClickedLabelId': 1,
                     hasChanges: true,
@@ -210,7 +210,7 @@ describe('labelHandlers', () => {
 
             it('마지막 라벨을 제거하면 빈 배열이 되어야 한다', () => {
                 const existingAssignments = [
-                    { label_id: 1, start_date: null, end_date: null },
+                    { label_id: 1, started_at: null, ended_at: null },
                 ];
 
                 const { action, context, g7CoreMock } = createMockSetup({
@@ -234,9 +234,9 @@ describe('labelHandlers', () => {
             it('중간에 있는 라벨을 제거하면 나머지가 유지되어야 한다', () => {
                 // 기간이 없는 라벨만 테스트 (기간이 있으면 확인 모달이 열림)
                 const existingAssignments = [
-                    { label_id: 1, start_date: null, end_date: null },
-                    { label_id: 2, start_date: null, end_date: null },
-                    { label_id: 3, start_date: null, end_date: null },
+                    { label_id: 1, started_at: null, ended_at: null },
+                    { label_id: 2, started_at: null, ended_at: null },
+                    { label_id: 3, started_at: null, ended_at: null },
                 ];
 
                 const { action, context, g7CoreMock } = createMockSetup({
@@ -252,8 +252,8 @@ describe('labelHandlers', () => {
 
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                     'form.label_assignments': [
-                        { label_id: 1, start_date: null, end_date: null },
-                        { label_id: 3, start_date: null, end_date: null },
+                        { label_id: 1, started_at: null, ended_at: null },
+                        { label_id: 3, started_at: null, ended_at: null },
                     ],
                     'ui.lastClickedLabelId': 2,
                     hasChanges: true,
@@ -343,7 +343,7 @@ describe('labelHandlers', () => {
 
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                     'form.label_assignments': [
-                        { label_id: 7, start_date: null, end_date: null },
+                        { label_id: 7, started_at: null, ended_at: null },
                     ],
                     'ui.lastClickedLabelId': 7,
                     hasChanges: true,
@@ -356,8 +356,8 @@ describe('labelHandlers', () => {
         describe('성공 시나리오', () => {
             it('라벨 name/color를 API로 저장하고 기간을 로컬 업데이트해야 한다', async () => {
                 const existingAssignments = [
-                    { label_id: 1, start_date: null, end_date: null },
-                    { label_id: 2, start_date: null, end_date: null },
+                    { label_id: 1, started_at: null, ended_at: null },
+                    { label_id: 2, started_at: null, ended_at: null },
                 ];
 
                 const { action, context, g7CoreMock } = createMockSetup({
@@ -371,8 +371,8 @@ describe('labelHandlers', () => {
                         labelFormData: {
                             name: { ko: '할인', en: 'Sale' },
                             color: '#FF0000',
-                            start_date: '2025-01-01',
-                            end_date: '2025-12-31',
+                            started_at: '2025-01-01',
+                            ended_at: '2025-12-31',
                         },
                     },
                     apiResponse: { success: true },
@@ -392,8 +392,8 @@ describe('labelHandlers', () => {
                 // 로컬 상태에서 기간 업데이트 확인
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                     'form.label_assignments': [
-                        { label_id: 1, start_date: '2025-01-01', end_date: '2025-12-31' },
-                        { label_id: 2, start_date: null, end_date: null },
+                        { label_id: 1, started_at: '2025-01-01', ended_at: '2025-12-31' },
+                        { label_id: 2, started_at: null, ended_at: null },
                     ],
                     hasChanges: true,
                 });
@@ -411,7 +411,7 @@ describe('labelHandlers', () => {
                     localState: {
                         form: {
                             label_assignments: [
-                                { label_id: 5, start_date: null, end_date: null },
+                                { label_id: 5, started_at: null, ended_at: null },
                             ],
                         },
                     },
@@ -420,8 +420,8 @@ describe('labelHandlers', () => {
                         labelFormData: {
                             name: { ko: '신상', en: 'New' },
                             color: null,
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     },
                     apiResponse: { success: true },
@@ -439,7 +439,7 @@ describe('labelHandlers', () => {
 
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                     'form.label_assignments': [
-                        { label_id: 5, start_date: null, end_date: null },
+                        { label_id: 5, started_at: null, ended_at: null },
                     ],
                     hasChanges: true,
                 });
@@ -453,7 +453,7 @@ describe('labelHandlers', () => {
                 const { action, context, g7CoreMock } = createMockSetup({
                     localState: {
                         form: {
-                            label_assignments: [{ label_id: 1, start_date: null, end_date: null }],
+                            label_assignments: [{ label_id: 1, started_at: null, ended_at: null }],
                         },
                     },
                     globalState: {
@@ -461,8 +461,8 @@ describe('labelHandlers', () => {
                         labelFormData: {
                             name: { ko: '할인', en: 'Sale' },
                             color: '#FF0000',
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     },
                     apiResponse: { success: false, message: 'Server error' },
@@ -481,7 +481,7 @@ describe('labelHandlers', () => {
                 const { action, context, g7CoreMock } = createMockSetup({
                     localState: {
                         form: {
-                            label_assignments: [{ label_id: 1, start_date: null, end_date: null }],
+                            label_assignments: [{ label_id: 1, started_at: null, ended_at: null }],
                         },
                     },
                     globalState: {
@@ -489,8 +489,8 @@ describe('labelHandlers', () => {
                         labelFormData: {
                             name: { ko: '할인', en: 'Sale' },
                             color: '#FF0000',
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     },
                     apiError: { message: 'Network error' },
@@ -514,8 +514,8 @@ describe('labelHandlers', () => {
                         labelFormData: {
                             name: { ko: '할인', en: 'Sale' },
                             color: '#FF0000',
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     },
                 });
@@ -536,8 +536,8 @@ describe('labelHandlers', () => {
                         labelFormData: {
                             name: { ko: '', en: 'Sale' },
                             color: '#FF0000',
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     },
                 });
@@ -554,7 +554,7 @@ describe('labelHandlers', () => {
                 const { action, context, g7CoreMock } = createMockSetup({
                     localState: {
                         form: {
-                            label_assignments: [{ label_id: 1, start_date: null, end_date: null }],
+                            label_assignments: [{ label_id: 1, started_at: null, ended_at: null }],
                         },
                     },
                     globalState: {
@@ -562,8 +562,8 @@ describe('labelHandlers', () => {
                         labelFormData: {
                             name: { ko: '할인', en: 'Sale' },
                             color: '#FF0000',
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     },
                     apiResponse: { success: true },
@@ -578,7 +578,7 @@ describe('labelHandlers', () => {
                 const { action, context, g7CoreMock } = createMockSetup({
                     localState: {
                         form: {
-                            label_assignments: [{ label_id: 1, start_date: null, end_date: null }],
+                            label_assignments: [{ label_id: 1, started_at: null, ended_at: null }],
                         },
                     },
                     globalState: {
@@ -586,8 +586,8 @@ describe('labelHandlers', () => {
                         labelFormData: {
                             name: { ko: '할인', en: 'Sale' },
                             color: '#FF0000',
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     },
                     apiResponse: { success: true },
@@ -602,7 +602,7 @@ describe('labelHandlers', () => {
                 const { action, context, g7CoreMock } = createMockSetup({
                     localState: {
                         form: {
-                            label_assignments: [{ label_id: 1, start_date: null, end_date: null }],
+                            label_assignments: [{ label_id: 1, started_at: null, ended_at: null }],
                         },
                     },
                     globalState: {
@@ -610,8 +610,8 @@ describe('labelHandlers', () => {
                         labelFormData: {
                             name: { ko: '할인', en: 'Sale' },
                             color: '#FF0000',
-                            start_date: null,
-                            end_date: null,
+                            started_at: null,
+                            ended_at: null,
                         },
                     },
                     apiError: new Error('Network error'),
@@ -632,7 +632,7 @@ describe('labelHandlers', () => {
                     getLocal: vi.fn(() => ({
                         form: {
                             label_assignments: [
-                                { label_id: 1, start_date: '2025-01-01', end_date: '2025-12-31' },
+                                { label_id: 1, started_at: '2025-01-01', ended_at: '2025-12-31' },
                             ],
                         },
                     })),
@@ -655,14 +655,14 @@ describe('labelHandlers', () => {
             expect(g7CoreMock.state.setLocal).not.toHaveBeenCalled();
         });
 
-        it('start_date만 있어도 확인 모달을 열어야 한다', () => {
+        it('started_at만 있어도 확인 모달을 열어야 한다', () => {
             const g7CoreMock = {
                 state: {
                     get: vi.fn(() => ({})),
                     getLocal: vi.fn(() => ({
                         form: {
                             label_assignments: [
-                                { label_id: 1, start_date: '2025-01-01', end_date: null },
+                                { label_id: 1, started_at: '2025-01-01', ended_at: null },
                             ],
                         },
                     })),
@@ -689,7 +689,7 @@ describe('labelHandlers', () => {
                     getLocal: vi.fn(() => ({
                         form: {
                             label_assignments: [
-                                { label_id: 1, start_date: null, end_date: null },
+                                { label_id: 1, started_at: null, ended_at: null },
                             ],
                         },
                     })),
@@ -717,45 +717,45 @@ describe('labelHandlers', () => {
 
     describe('updateLabelPeriodInlineHandler', () => {
         describe('성공 시나리오', () => {
-            it('start_date를 업데이트해야 한다', () => {
+            it('started_at를 업데이트해야 한다', () => {
                 const { action, context, g7CoreMock } = createMockSetup({
                     localState: {
                         form: {
                             label_assignments: [
-                                { label_id: 1, start_date: null, end_date: null },
+                                { label_id: 1, started_at: null, ended_at: null },
                             ],
                         },
                     },
-                    params: { labelId: 1, field: 'start_date', value: '2025-01-01' },
+                    params: { labelId: 1, field: 'started_at', value: '2025-01-01' },
                 });
 
                 updateLabelPeriodInlineHandler(action, context);
 
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                     'form.label_assignments': [
-                        { label_id: 1, start_date: '2025-01-01', end_date: null },
+                        { label_id: 1, started_at: '2025-01-01', ended_at: null },
                     ],
                     hasChanges: true,
                 });
             });
 
-            it('end_date를 업데이트해야 한다', () => {
+            it('ended_at를 업데이트해야 한다', () => {
                 const { action, context, g7CoreMock } = createMockSetup({
                     localState: {
                         form: {
                             label_assignments: [
-                                { label_id: 1, start_date: '2025-01-01', end_date: null },
+                                { label_id: 1, started_at: '2025-01-01', ended_at: null },
                             ],
                         },
                     },
-                    params: { labelId: 1, field: 'end_date', value: '2025-12-31' },
+                    params: { labelId: 1, field: 'ended_at', value: '2025-12-31' },
                 });
 
                 updateLabelPeriodInlineHandler(action, context);
 
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                     'form.label_assignments': [
-                        { label_id: 1, start_date: '2025-01-01', end_date: '2025-12-31' },
+                        { label_id: 1, started_at: '2025-01-01', ended_at: '2025-12-31' },
                     ],
                     hasChanges: true,
                 });
@@ -766,18 +766,18 @@ describe('labelHandlers', () => {
                     localState: {
                         form: {
                             label_assignments: [
-                                { label_id: 1, start_date: '2025-01-01', end_date: null },
+                                { label_id: 1, started_at: '2025-01-01', ended_at: null },
                             ],
                         },
                     },
-                    params: { labelId: 1, field: 'start_date', value: '' },
+                    params: { labelId: 1, field: 'started_at', value: '' },
                 });
 
                 updateLabelPeriodInlineHandler(action, context);
 
                 expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                     'form.label_assignments': [
-                        { label_id: 1, start_date: null, end_date: null },
+                        { label_id: 1, started_at: null, ended_at: null },
                     ],
                     hasChanges: true,
                 });
@@ -788,7 +788,7 @@ describe('labelHandlers', () => {
             it('labelId가 없으면 아무 동작도 하지 않아야 한다', () => {
                 const { action, context, g7CoreMock } = createMockSetup({
                     localState: { form: { label_assignments: [] } },
-                    params: { field: 'start_date', value: '2025-01-01' },
+                    params: { field: 'started_at', value: '2025-01-01' },
                 });
 
                 updateLabelPeriodInlineHandler(action, context);
@@ -812,11 +812,11 @@ describe('labelHandlers', () => {
                     localState: {
                         form: {
                             label_assignments: [
-                                { label_id: 1, start_date: null, end_date: null },
+                                { label_id: 1, started_at: null, ended_at: null },
                             ],
                         },
                     },
-                    params: { labelId: 999, field: 'start_date', value: '2025-01-01' },
+                    params: { labelId: 999, field: 'started_at', value: '2025-01-01' },
                 });
 
                 updateLabelPeriodInlineHandler(action, context);
@@ -842,7 +842,7 @@ describe('labelHandlers', () => {
                     ui: { lastClickedLabelId: 1 },
                     form: {
                         label_assignments: [
-                            { label_id: 1, start_date: null, end_date: null },
+                            { label_id: 1, started_at: null, ended_at: null },
                         ],
                     },
                 },
@@ -853,7 +853,7 @@ describe('labelHandlers', () => {
 
             expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                 'form.label_assignments': [
-                    { label_id: 1, start_date: '2025-01-28', end_date: '2025-02-04' },
+                    { label_id: 1, started_at: '2025-01-28', ended_at: '2025-02-04' },
                 ],
                 hasChanges: true,
             });
@@ -865,7 +865,7 @@ describe('labelHandlers', () => {
                     ui: { lastClickedLabelId: 1 },
                     form: {
                         label_assignments: [
-                            { label_id: 1, start_date: null, end_date: null },
+                            { label_id: 1, started_at: null, ended_at: null },
                         ],
                     },
                 },
@@ -876,7 +876,7 @@ describe('labelHandlers', () => {
 
             expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                 'form.label_assignments': [
-                    { label_id: 1, start_date: '2025-01-28', end_date: '2025-02-11' },
+                    { label_id: 1, started_at: '2025-01-28', ended_at: '2025-02-11' },
                 ],
                 hasChanges: true,
             });
@@ -888,7 +888,7 @@ describe('labelHandlers', () => {
                     ui: { lastClickedLabelId: 1 },
                     form: {
                         label_assignments: [
-                            { label_id: 1, start_date: null, end_date: null },
+                            { label_id: 1, started_at: null, ended_at: null },
                         ],
                     },
                 },
@@ -899,19 +899,19 @@ describe('labelHandlers', () => {
 
             expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                 'form.label_assignments': [
-                    { label_id: 1, start_date: '2025-01-28', end_date: '2025-02-27' },
+                    { label_id: 1, started_at: '2025-01-28', ended_at: '2025-02-27' },
                 ],
                 hasChanges: true,
             });
         });
 
-        it('permanent 프리셋: start_date만 설정하고 end_date는 null이어야 한다', () => {
+        it('permanent 프리셋: started_at만 설정하고 ended_at는 null이어야 한다', () => {
             const { action, context, g7CoreMock } = createMockSetup({
                 localState: {
                     ui: { lastClickedLabelId: 1 },
                     form: {
                         label_assignments: [
-                            { label_id: 1, start_date: null, end_date: null },
+                            { label_id: 1, started_at: null, ended_at: null },
                         ],
                     },
                 },
@@ -922,7 +922,7 @@ describe('labelHandlers', () => {
 
             expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
                 'form.label_assignments': [
-                    { label_id: 1, start_date: '2025-01-28', end_date: null },
+                    { label_id: 1, started_at: '2025-01-28', ended_at: null },
                 ],
                 hasChanges: true,
             });
@@ -934,7 +934,7 @@ describe('labelHandlers', () => {
                     ui: { lastClickedLabelId: null },
                     form: {
                         label_assignments: [
-                            { label_id: 1, start_date: null, end_date: null },
+                            { label_id: 1, started_at: null, ended_at: null },
                         ],
                     },
                 },
@@ -948,51 +948,55 @@ describe('labelHandlers', () => {
     });
 
     describe('confirmUncheckLabelHandler', () => {
-        it('라벨을 label_assignments에서 제거해야 한다', () => {
-            const { action, context, g7CoreMock } = createMockSetup({
-                localState: {
-                    form: {
-                        label_assignments: [
-                            { label_id: 1, start_date: '2025-01-01', end_date: '2025-12-31' },
-                            { label_id: 2, start_date: null, end_date: null },
-                        ],
-                    },
+        it('부모 레이아웃의 label_assignments 에서 라벨을 제거해야 한다', () => {
+            // 모달 partial 분리 → 모달은 isolated scope, 부모 레이아웃의 _local 을
+            // 직접 수정해야 하므로 setParentLocal/getParent API 사용으로 변경됨
+            const parentLocal = {
+                form: {
+                    label_assignments: [
+                        { label_id: 1, started_at: '2025-01-01', ended_at: '2025-12-31' },
+                        { label_id: 2, started_at: null, ended_at: null },
+                    ],
                 },
-                globalState: {
-                    labelToUncheckId: 1,
+            };
+            const g7CoreMock = {
+                state: {
+                    get: vi.fn(() => ({ labelToUncheckId: 1 })),
+                    getParent: vi.fn(() => ({ _local: parentLocal })),
+                    setParentLocal: vi.fn(),
+                    setGlobal: vi.fn(),
                 },
-            });
+                modal: { close: vi.fn() },
+            };
+            (window as any).G7Core = g7CoreMock;
 
-            confirmUncheckLabelHandler(action, context);
+            confirmUncheckLabelHandler({ handler: 'confirmUncheckLabel' }, {} as any);
 
-            expect(g7CoreMock.state.setLocal).toHaveBeenCalledWith({
+            expect(g7CoreMock.state.setParentLocal).toHaveBeenCalledWith({
                 'form.label_assignments': [
-                    { label_id: 2, start_date: null, end_date: null },
+                    { label_id: 2, started_at: null, ended_at: null },
                 ],
-                'ui.lastClickedLabelId': null,
                 hasChanges: true,
             });
             expect(g7CoreMock.state.setGlobal).toHaveBeenCalledWith({ labelToUncheckId: null });
             expect(g7CoreMock.modal.close).toHaveBeenCalled();
         });
 
-        it('labelToUncheckId가 없으면 아무 동작도 하지 않아야 한다', () => {
-            const { action, context, g7CoreMock } = createMockSetup({
-                localState: {
-                    form: {
-                        label_assignments: [
-                            { label_id: 1, start_date: '2025-01-01', end_date: '2025-12-31' },
-                        ],
-                    },
+        it('labelToUncheckId 가 없으면 아무 동작도 하지 않아야 한다', () => {
+            const g7CoreMock = {
+                state: {
+                    get: vi.fn(() => ({ labelToUncheckId: null })),
+                    getParent: vi.fn(() => ({ _local: {} })),
+                    setParentLocal: vi.fn(),
+                    setGlobal: vi.fn(),
                 },
-                globalState: {
-                    labelToUncheckId: null,
-                },
-            });
+                modal: { close: vi.fn() },
+            };
+            (window as any).G7Core = g7CoreMock;
 
-            confirmUncheckLabelHandler(action, context);
+            confirmUncheckLabelHandler({ handler: 'confirmUncheckLabel' }, {} as any);
 
-            expect(g7CoreMock.state.setLocal).not.toHaveBeenCalled();
+            expect(g7CoreMock.state.setParentLocal).not.toHaveBeenCalled();
             expect(g7CoreMock.modal.close).not.toHaveBeenCalled();
         });
     });

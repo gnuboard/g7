@@ -148,9 +148,15 @@ core.settings.available_mail_drivers
 core.settings.apply_driver_config
 
 # SEO 렌더링 훅 (Filter)
-core.seo.filter_context
-core.seo.filter_meta
-core.seo.filter_view_data
+core.seo.filter_context        # DataSource 결합 후 컨텍스트 보강 ($context 배열)
+core.seo.filter_og_data         # OG 태그 분기별 hook ($og 배열) — image_width/site_name/extra 주입
+core.seo.filter_twitter_data    # Twitter 카드 분기별 hook ($twitter 배열)
+core.seo.filter_structured_data # JSON-LD 분기별 hook ($structuredData 배열)
+core.seo.filter_meta            # 통합 hook (모든 분기 결합 후 $meta 전체)
+core.seo.filter_view_data       # View 직전 ($viewData) — extraHeadTags / extraBodyEnd
+
+# SEO 봇 감지 훅 (Filter) — null 반환 시 라이브러리 평가로 fallthrough
+core.seo.resolve_is_bot
 ```
 
 ---
@@ -208,6 +214,89 @@ class ProductCacheInvalidationListener implements HookListenerInterface
         Log::info('상품 캐시가 무효화되었습니다.', [
             'product_id' => $args[0]->id ?? null,
         ]);
+    }
+}
+```
+
+### Listener 데이터 접근 규정
+
+Listener 는 thin orchestrator 로 동작하며 영속/도메인 책임은 Service / Repository 가 갖는다. 다음 패턴은 audit 가 차단한다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `Model::query()->where(...)->get()` | `$this->modelRepository->findByXxx()` 위임 |
+| `Model::find($id)`, `Model::create($data)` | Repository 의 `findById/create` 메서드 |
+| `DB::table('xxx')->update(...)` | Repository 의 도메인 의도 메서드 (`recalculateXxxCount`, `anonymizeUser` 등) |
+| `$row->save()`, `$row->saveQuietly()`, `$row->delete()` | Repository 의 `update/save/delete` |
+| 생성자에 구체 Repository 클래스 (`UserRepository $r`) | Repository Interface (`UserRepositoryInterface $r`) |
+| `request()->input(...)`, `$_POST` | Service 가 검증 후 도메인 객체로 전달 — Listener 는 받기만 |
+| Filter 훅 `'method' => '...'` 만 (`type` 누락) | `'type' => 'filter'` 명시 (반환값 무시 회귀 차단) |
+
+#### Service-Repository 위임 패턴 예시 — 카운트 동기화
+
+```php
+class BoardCommentsCountSyncListener implements HookListenerInterface
+{
+    public function __construct(
+        protected BoardRepositoryInterface $boardRepository,
+    ) {}
+
+    public static function getSubscribedHooks(): array
+    {
+        return [
+            'sirsoft-board.comment.after_create' => ['method' => 'syncCommentsCount', 'priority' => 10, 'sync' => true],
+            'sirsoft-board.comment.after_delete' => ['method' => 'syncCommentsCount', 'priority' => 10, 'sync' => true],
+        ];
+    }
+
+    public function syncCommentsCount(Comment $comment, string $slug): void
+    {
+        // ❌ 금지: DB::table('board_comments')->where(...)->count() + DB::table('boards')->update(...)
+        // ✅ 위임: 카운트 재계산은 Repository 의 단일 진입점
+        $this->boardRepository->recalculateCommentsCount((int) $comment->board_id);
+    }
+}
+```
+
+#### Bulk lookup 패턴 — `findByIdsKeyed`
+
+ActivityLogListener 등에서 ID 목록으로 모델을 일괄 조회 후 ID 키 맵으로 사용하는 패턴은 Repository 의 `findByIdsKeyed(array $ids): Collection` 으로 캡슐화한다.
+
+```php
+// ❌ 금지
+$products = Product::whereIn('id', $ids)->get()->keyBy('id');
+
+// ✅ 위임
+$products = $this->productRepository->findByIdsKeyed($ids);
+```
+
+#### 면제 (allowlist)
+
+다음과 같은 의도된 예외는 인라인 주석으로 명시한다 (audit 가 해당 라인을 건너뜀).
+
+```php
+// audit:allow listener-direct-db-facade reason: 동적 modelClass dispatch (description resolver 의 unified ID→name 변환)
+$entity = $modelClass::find($id);
+```
+
+면제는 *실제로 Repository 추상화가 부적절한* 경우에만 (예: 동적 `$modelClass::find` dispatcher, boot 컨텍스트 정적 메서드) 사용하며, reason 을 반드시 작성한다.
+
+#### 명시 등록 패턴 (HookListenerInterface 면제)
+
+대부분의 Listener 는 `HookListenerInterface` 구현 + auto-discovery 로 등록되지만, ServiceProvider 가 직접 `HookManager::addAction/addFilter` 로 등록하는 명시 등록 패턴 (예: LanguagePack 라이프사이클 listeners) 은 인터페이스 미구현이 합법이다. 이 경우 클래스 선언 직전에 다음 면제를 추가:
+
+```php
+// audit:allow listener-must-implement-hooklistenerinterface reason: ServiceProvider 가 HookManager::addAction 으로 직접 등록하는 명시 등록 패턴
+class SyncDatabaseTranslations
+{
+    public function __construct(
+        private readonly LanguagePackTranslationRepositoryInterface $translationRepository,
+    ) {}
+
+    public function handleActivated(LanguagePack $pack): void
+    {
+        // Service / Repository 위임만 수행
+        $audit = DB::transaction(fn () => $this->translationRepository->applySeedFromPack($pack, $seedBundle));
     }
 }
 ```

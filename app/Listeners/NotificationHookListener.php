@@ -27,6 +27,8 @@ class NotificationHookListener implements HookListenerInterface
      *
      * DB 기반 동적 구독이므로 정적 메서드에서는 빈 배열을 반환하고,
      * boot 시점에 registerDynamicHooks()로 동적 구독합니다.
+     *
+     * @return array<string, array<string, mixed>> 빈 배열 (동적 등록)
      */
     public static function getSubscribedHooks(): array
     {
@@ -94,6 +96,13 @@ class NotificationHookListener implements HookListenerInterface
 
         $data = $extracted['data'] ?? [];
         $context = $extracted['context'] ?? [];
+
+        // Listener 가 명시적으로 skip 을 요청한 경우 발송 중단
+        // (e.g. 모듈 환경설정의 notify_* 플래그가 OFF 일 때, 템플릿 recipients 기반 해석이
+        //  Listener 의 정책 gate 를 우회하는 문제 해결 — 2026-04-24 sirsoft-board report_policy)
+        if (! empty($context['skip'])) {
+            return;
+        }
 
         // 활성 템플릿을 순회하며 채널별 독립 발송
         $templates = $definition->templates()->where('is_active', true)->get();

@@ -6,6 +6,7 @@ use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 
 /**
  * 쿠폰 활동 로그 리스너
@@ -16,6 +17,13 @@ use Modules\Sirsoft\Ecommerce\Models\Coupon;
 class CouponActivityLogListener implements HookListenerInterface
 {
     use ResolvesActivityLogType;
+
+    /**
+     * @param  CouponRepositoryInterface  $couponRepository  쿠폰 bulk lookup
+     */
+    public function __construct(
+        protected CouponRepositoryInterface $couponRepository,
+    ) {}
 
     /**
      * 구독할 훅과 메서드 매핑 반환
@@ -119,7 +127,7 @@ class CouponActivityLogListener implements HookListenerInterface
      */
     public function handleAfterBulkStatus(array $ids, mixed $issueStatus, int $count, array $snapshots = []): void
     {
-        $coupons = Coupon::whereIn('id', $ids)->get()->keyBy('id');
+        $coupons = $this->couponRepository->findByIdsKeyed($ids);
 
         foreach ($ids as $couponId) {
             $coupon = $coupons->get($couponId);

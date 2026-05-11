@@ -71,4 +71,17 @@ return [
         'delete_all_failed' => 'Failed to delete all notifications.',
         'not_found' => 'Notification not found.',
     ],
+
+    // Notification channel metadata (referenced by config/notification.php default_channels)
+    'channels' => [
+        'core_default' => 'Core default channel',
+        'mail' => [
+            'name' => 'Email',
+            'description' => 'Send notification via email',
+        ],
+        'database' => [
+            'name' => 'Site Notification',
+            'description' => 'Show in site notification center',
+        ],
+    ],
 ];

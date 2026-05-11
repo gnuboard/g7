@@ -458,13 +458,21 @@ class SeoMetaResolverTest extends TestCase
     }
 
     /**
-     * OG 설정이 비어 있으면 ogTags는 빈 문자열입니다.
+     * OG 설정이 비어있어도 코어 설정 기반 기본 og:type/og:site_name 등이 항상 출력됩니다.
+     *
+     * (이전 회귀: og 미선언 시 빈 문자열 반환 — Slack/Facebook 미리보기 무시)
+     * 신규 동작: og:type=website 기본값 + 코어 설정의 site_name fallback 으로 최소 보장.
      */
-    public function test_empty_og_config_returns_empty_og_tags(): void
+    public function test_empty_og_config_emits_default_type_and_site_name(): void
     {
         $result = $this->resolver->resolve([], [], null, null, []);
 
-        $this->assertSame('', $result['ogTags']);
+        // og 배열은 항상 채워짐
+        $this->assertSame('website', $result['og']['type']);
+        $this->assertSame('그누보드7 쇼핑몰', $result['og']['site_name']);
+        // ogTags HTML 도 최소 og:type 은 포함
+        $this->assertStringContainsString('og:type" content="website"', $result['ogTags']);
+        $this->assertStringContainsString('og:site_name" content="그누보드7 쇼핑몰"', $result['ogTags']);
     }
 
     /**
@@ -875,8 +883,8 @@ class SeoMetaResolverTest extends TestCase
 
         $result = $this->resolver->resolve($seoConfig, [], 'sirsoft-ecommerce', null, []);
 
-        // nonexistent 경로 → 빈 문자열 → ' 상품'
-        $this->assertSame(' 상품', $result['title']);
+        // nonexistent 경로 → 빈 문자열 → '상품' (선두 공백 자동 trim — substituteVars cleanup)
+        $this->assertSame('상품', $result['title']);
     }
 
     /**
@@ -1231,5 +1239,403 @@ class SeoMetaResolverTest extends TestCase
 
         // _seo도 없고 moduleIdentifier도 null → Tier 2 스킵 → 빈 문자열
         $this->assertEquals('', $result['title']);
+    }
+
+    /**
+     * resolve()는 og 데이터를 배열로 반환합니다 (HTML 렌더 지연 패턴).
+     */
+    public function test_resolve_returns_og_data_as_array(): void
+    {
+        $seoConfig = [
+            'og' => [
+                'type' => 'product',
+                'title' => '{{product.data.name}}',
+                'image' => 'https://example.com/p.jpg',
+            ],
+        ];
+        $context = ['product' => ['data' => ['name' => '에어맥스']]];
+
+        $result = $this->resolver->resolve($seoConfig, $context, 'sirsoft-ecommerce', null, []);
+
+        $this->assertIsArray($result['og']);
+        $this->assertSame('product', $result['og']['type']);
+        $this->assertSame('에어맥스', $result['og']['title']);
+        $this->assertSame('https://example.com/p.jpg', $result['og']['image']);
+    }
+
+    /**
+     * og:image:width / og:image:height 가 코어 설정 fallback 으로 채워집니다.
+     */
+    public function test_og_image_dimensions_fallback_to_core_settings(): void
+    {
+        Config::set('g7_settings.core.seo.og_image_default_width', 1200);
+        Config::set('g7_settings.core.seo.og_image_default_height', 630);
+
+        $seoConfig = [
+            'og' => [
+                'type' => 'product',
+                'title' => 'p',
+                'image' => 'https://example.com/p.jpg',
+            ],
+        ];
+
+        $result = $this->resolver->resolve($seoConfig, [], null, null, []);
+
+        $this->assertSame(1200, $result['og']['image_width']);
+        $this->assertSame(630, $result['og']['image_height']);
+        $this->assertStringContainsString('og:image:width" content="1200"', $result['ogTags']);
+        $this->assertStringContainsString('og:image:height" content="630"', $result['ogTags']);
+    }
+
+    /**
+     * og:site_name 은 코어 설정 fallback (general.site_name) 을 사용합니다.
+     */
+    public function test_og_site_name_fallback_to_core_general_site_name(): void
+    {
+        Config::set('g7_settings.core.seo.og_default_site_name', '');
+        Config::set('g7_settings.core.general.site_name', 'GNUBOARD.NET');
+
+        $seoConfig = [
+            'og' => [
+                'type' => 'website',
+                'title' => 'Home',
+            ],
+        ];
+
+        $result = $this->resolver->resolve($seoConfig, [], null, null, []);
+
+        $this->assertSame('GNUBOARD.NET', $result['og']['site_name']);
+        $this->assertStringContainsString('og:site_name" content="GNUBOARD.NET"', $result['ogTags']);
+    }
+
+    /**
+     * Twitter 카드 데이터가 OG 데이터를 fallback 으로 사용합니다.
+     */
+    public function test_twitter_data_falls_back_to_og(): void
+    {
+        Config::set('g7_settings.core.seo.twitter_default_card', 'summary_large_image');
+
+        $seoConfig = [
+            'og' => [
+                'type' => 'product',
+                'title' => '에어맥스',
+                'description' => '나이키 에어맥스',
+                'image' => 'https://example.com/p.jpg',
+            ],
+        ];
+
+        $result = $this->resolver->resolve($seoConfig, [], null, null, []);
+
+        $this->assertSame('summary_large_image', $result['twitter']['card']);
+        $this->assertSame('에어맥스', $result['twitter']['title']);
+        $this->assertSame('https://example.com/p.jpg', $result['twitter']['image']);
+        $this->assertStringContainsString('twitter:card" content="summary_large_image"', $result['twitterTags']);
+        $this->assertStringContainsString('twitter:image" content="https://example.com/p.jpg"', $result['twitterTags']);
+    }
+
+    /**
+     * og.extra 배열의 자유 메타태그가 출력에 포함됩니다.
+     */
+    public function test_og_extra_meta_tags_rendered(): void
+    {
+        $seoConfig = [
+            'og' => [
+                'type' => 'product',
+                'title' => 'p',
+                'extra' => [
+                    ['property' => 'product:price:amount', 'content' => '50000'],
+                    ['property' => 'product:price:currency', 'content' => 'KRW'],
+                ],
+            ],
+        ];
+
+        $result = $this->resolver->resolve($seoConfig, [], null, null, []);
+
+        $this->assertStringContainsString('product:price:amount" content="50000"', $result['ogTags']);
+        $this->assertStringContainsString('product:price:currency" content="KRW"', $result['ogTags']);
+    }
+
+    /**
+     * 회귀: 모듈 템플릿 "{commerce_name} - {product_name}" 에서
+     * commerce_name 이 빈 값일 때 선두 "- " 가 남는 회귀를 방지합니다.
+     *
+     * issue#300: og:title="- 무선 마우스 #99" 슬랙/페이스북 미리보기 제목 깨짐
+     */
+    public function test_module_template_title_no_leading_dash_when_var_empty(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_title', '{commerce_name} - {product_name}');
+        Config::set('g7_settings.modules.sirsoft-ecommerce.seo.seo_product', true);
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info.shop_name', '');
+
+        $seoConfig = [
+            'page_type' => 'product',
+            'vars' => [
+                'product_name' => "{{product.data.name ?? ''}}",
+                'commerce_name' => '$module_settings:basic_info.shop_name',
+            ],
+        ];
+        $context = ['product' => ['data' => ['name' => '무선 마우스 #99']]];
+
+        $result = $this->resolver->resolve($seoConfig, $context, 'sirsoft-ecommerce', null, []);
+
+        $this->assertSame('무선 마우스 #99', $result['title'], '선두 dash 가 제거되어야 합니다');
+        $this->assertStringNotContainsString('- 무선 마우스', $result['title']);
+    }
+
+    /**
+     * 회귀: 옵셔널 그룹 [{var} - ] 신택스 — var 채워지면 그룹 keep, 비면 통째 drop.
+     */
+    public function test_module_template_title_optional_group_filled(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_title', '[{commerce_name} - ]{product_name}');
+        Config::set('g7_settings.modules.sirsoft-ecommerce.seo.seo_product', true);
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info.shop_name', '나이키몰');
+
+        $seoConfig = [
+            'page_type' => 'product',
+            'vars' => [
+                'product_name' => "{{product.data.name ?? ''}}",
+                'commerce_name' => '$module_settings:basic_info.shop_name',
+            ],
+        ];
+        $context = ['product' => ['data' => ['name' => '에어맥스']]];
+
+        $result = $this->resolver->resolve($seoConfig, $context, 'sirsoft-ecommerce', null, []);
+
+        $this->assertSame('나이키몰 - 에어맥스', $result['title']);
+    }
+
+    public function test_module_template_title_optional_group_empty_var_dropped(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_title', '[{commerce_name} - ]{product_name}');
+        Config::set('g7_settings.modules.sirsoft-ecommerce.seo.seo_product', true);
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info.shop_name', '');
+
+        $seoConfig = [
+            'page_type' => 'product',
+            'vars' => [
+                'product_name' => "{{product.data.name ?? ''}}",
+                'commerce_name' => '$module_settings:basic_info.shop_name',
+            ],
+        ];
+        $context = ['product' => ['data' => ['name' => '에어맥스']]];
+
+        $result = $this->resolver->resolve($seoConfig, $context, 'sirsoft-ecommerce', null, []);
+
+        $this->assertSame('에어맥스', $result['title']);
+    }
+
+    /**
+     * resolveStructuredDataArray 는 배열 형태로 반환하여 hook 변경이 가능합니다.
+     */
+    public function test_structured_data_returns_array_for_hook_modification(): void
+    {
+        $seoConfig = [
+            'structured_data' => [
+                '@type' => 'Product',
+                'name' => '{{product.data.name}}',
+            ],
+        ];
+        $context = ['product' => ['data' => ['name' => '에어맥스']]];
+
+        $array = $this->resolver->resolveStructuredDataArray($seoConfig, $context);
+
+        $this->assertIsArray($array);
+        $this->assertSame('Product', $array['@type']);
+        $this->assertSame('에어맥스', $array['name']);
+
+        // hook 이 array 를 수정 후 다시 JSON 렌더 가능한지
+        $array['offers'] = ['@type' => 'Offer', 'price' => '50000'];
+        $json = $this->resolver->renderStructuredJson($array);
+        $this->assertNotNull($json);
+        $this->assertStringContainsString('"offers"', $json);
+        $this->assertStringContainsString('@context', $json);
+    }
+
+    /**
+     * 회귀: 코어 설정 site_name 이 다국어 JSON 배열로 저장된 경우에도
+     * resolveOgData 가 'Array to string conversion' throw 없이 정상 동작.
+     *
+     * 운영자가 일반 설정 site_name 을 MultilingualInput 으로 저장하면
+     * config 값이 ["ko" => "...", "en" => "..."] 배열이 됨.
+     * 이전 회귀: SeoRenderer 가 봇 요청에서 항상 Array to string ErrorException → SPA fallback.
+     */
+    public function test_resolve_handles_multilingual_array_in_core_settings(): void
+    {
+        // site_name 이 다국어 JSON 배열 (운영자가 MultilingualInput 사용 시)
+        Config::set('g7_settings.core.general.site_name', [
+            'ko' => '한글몰',
+            'en' => 'EnglishMall',
+        ]);
+        Config::set('g7_settings.core.seo.og_default_site_name', '');
+        app()->setLocale('ko');
+
+        $seoConfig = [
+            'og' => [
+                'type' => 'product',
+                'title' => 'Product',
+            ],
+        ];
+
+        // throw 없이 정상 반환되어야 함
+        $result = $this->resolver->resolve($seoConfig, [], null, null, []);
+
+        $this->assertIsArray($result['og']);
+        $this->assertSame('한글몰', $result['og']['site_name']);
+        $this->assertStringContainsString('og:site_name" content="한글몰"', $result['ogTags']);
+    }
+
+    /**
+     * 회귀: 데이터소스 컬럼(meta_title/meta_description/meta_keywords) 이 다국어 JSON array 인 경우에도 throw 없이 동작.
+     *
+     * Product/Post 의 DB 컬럼이 multilingual JSON ({"ko":..., "en":...}) 으로 저장된 환경에서
+     * getResourceMetaField / getPageSeoMetaField / resolveKeywords 의 `(string) $value` 가
+     * "Array to string conversion" → SPA fallback 회귀 차단.
+     */
+    public function test_resolve_handles_multilingual_array_in_resource_meta_columns(): void
+    {
+        app()->setLocale('ko');
+
+        $context = [
+            'product' => [
+                'data' => [
+                    'name' => '에어맥스',
+                    'meta_title' => ['ko' => '에어맥스 한정판', 'en' => 'AirMax Limited'],
+                    'meta_description' => ['ko' => '나이키 에어맥스 한정판 상품', 'en' => 'Limited edition'],
+                    'meta_keywords' => ['ko' => '운동화,에어맥스,한정판', 'en' => 'sneakers,airmax'],
+                ],
+            ],
+        ];
+
+        // throw 없이 정상 반환
+        $result = $this->resolver->resolve([], $context, null, null, []);
+
+        $this->assertSame('에어맥스 한정판', $result['title']);
+        $this->assertSame('나이키 에어맥스 한정판 상품', $result['description']);
+        $this->assertSame('운동화,에어맥스,한정판', $result['keywords']);
+    }
+
+    /**
+     * 회귀: 페이지 seo_meta 객체 안에 다국어 JSON array 가 있어도 throw 없이 동작.
+     */
+    public function test_resolve_handles_multilingual_array_in_page_seo_meta(): void
+    {
+        app()->setLocale('ko');
+
+        $context = [
+            'page' => [
+                'data' => [
+                    'seo_meta' => [
+                        'title' => ['ko' => '회사 소개', 'en' => 'About'],
+                        'description' => ['ko' => '저희 회사를 소개합니다', 'en' => 'About us'],
+                        'keywords' => ['ko' => '회사,소개', 'en' => 'about,company'],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->resolver->resolve([], $context, null, null, []);
+
+        $this->assertSame('회사 소개', $result['title']);
+        $this->assertSame('저희 회사를 소개합니다', $result['description']);
+    }
+
+    /**
+     * 회귀: substituteVars 가 다국어 JSON 배열을 변수 값으로 받은 경우에도 throw 없이 동작.
+     *
+     * 운영자가 var 의 source(예: $module_settings:basic_info.shop_name) 가 다국어 array 를
+     * 반환하는 환경에서, 기존 substituteVars 의 `(string) $resolvedVars[$matches[1]]` 가
+     * "Array to string conversion" → SeoMiddleware catch → SPA fallback 회귀를 차단.
+     *
+     * (이 회귀는 #300 작업의 substituteVars 강화에서 도입됨 — 이전 str_replace 기반은
+     *  array 받아도 fatal 안 났음.)
+     */
+    public function test_substitute_vars_handles_multilingual_array_value_without_throw(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_title', '{commerce_name} - {product_name}');
+        Config::set('g7_settings.modules.sirsoft-ecommerce.seo.seo_product', true);
+        // resolveVars 결과에 다국어 array 가 들어가는 경로: 표현식이 직접 array 반환
+        // (예: 다국어 객체 리터럴 또는 evaluator 가 반환한 값)
+        app()->setLocale('ko');
+
+        $seoConfig = [
+            'page_type' => 'product',
+            'vars' => [
+                // 표현식이 다국어 객체를 직접 반환 — substituteVars 까지 array 전달
+                'product_name' => "{{product.data.name}}",
+                'commerce_name' => '$module_settings:basic_info.shop_name',
+            ],
+        ];
+
+        // product.data.name 자체를 다국어 array 로
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info.shop_name', [
+            'ko' => '한글몰', 'en' => 'EnglishMall',
+        ]);
+        $context = ['product' => ['data' => ['name' => ['ko' => '에어맥스', 'en' => 'AirMax']]]];
+
+        // throw 없이 정상 반환 (현재 로케일 ko)
+        $result = $this->resolver->resolve($seoConfig, $context, 'sirsoft-ecommerce', null, []);
+
+        $this->assertSame('한글몰 - 에어맥스', $result['title']);
+    }
+
+    /**
+     * 회귀: 모듈 설정값이 다국어 JSON 배열인 경우에도 vars 해석이 throw 없이 정상 동작.
+     *
+     * meta.seo.vars 에서 `$module_settings:key` 접두사로 모듈 설정을 참조하는데,
+     * 운영자가 commerce_name(쇼핑몰 이름) 등을 MultilingualInput 으로 저장하면 array 가 됨.
+     *
+     * 이전 회귀: SeoMetaResolver.resolveVarExpression 의 `(string) g7_module_settings(...)`
+     * 가 array → "Array to string conversion" → render() throw → SPA fallback.
+     */
+    public function test_resolve_vars_handles_multilingual_array_in_module_settings(): void
+    {
+        Config::set('g7_settings.modules.sirsoft-ecommerce.seo.meta_product_title', '{commerce_name} - {product_name}');
+        Config::set('g7_settings.modules.sirsoft-ecommerce.seo.seo_product', true);
+        // 다국어 JSON array 형태로 저장된 모듈 설정
+        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info.shop_name', [
+            'ko' => '한글몰',
+            'en' => 'EnglishMall',
+        ]);
+        app()->setLocale('ko');
+
+        $seoConfig = [
+            'page_type' => 'product',
+            'vars' => [
+                'product_name' => "{{product.data.name ?? ''}}",
+                'commerce_name' => '$module_settings:basic_info.shop_name',
+            ],
+        ];
+        $context = ['product' => ['data' => ['name' => '에어맥스']]];
+
+        // throw 없이 정상 반환
+        $result = $this->resolver->resolve($seoConfig, $context, 'sirsoft-ecommerce', null, []);
+
+        $this->assertSame('한글몰 - 에어맥스', $result['title']);
+    }
+
+    /**
+     * 회귀: 레이아웃 og.title 이 직접 다국어 객체 리터럴 형식인 경우에도
+     * resolveOgData 가 throw 없이 현재 로케일 값으로 변환.
+     */
+    public function test_resolve_handles_multilingual_array_in_layout_og_field(): void
+    {
+        app()->setLocale('ko');
+
+        $seoConfig = [
+            'og' => [
+                'type' => 'product',
+                'title' => ['ko' => '에어맥스', 'en' => 'AirMax'],
+                'description' => ['ko' => '운동화', 'en' => 'Sneakers'],
+                'image' => ['ko' => 'https://e.co/ko.jpg', 'en' => 'https://e.co/en.jpg'],
+            ],
+        ];
+
+        // throw 없이 정상 반환
+        $result = $this->resolver->resolve($seoConfig, [], null, null, []);
+
+        $this->assertSame('에어맥스', $result['og']['title']);
+        $this->assertSame('운동화', $result['og']['description']);
+        $this->assertSame('https://e.co/ko.jpg', $result['og']['image']);
     }
 }

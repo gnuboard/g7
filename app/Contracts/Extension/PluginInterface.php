@@ -48,6 +48,16 @@ interface PluginInterface
     public function getLicense(): ?string;
 
     /**
+     * 관리자 UI 에서 숨김 여부를 반환합니다.
+     *
+     * true 반환 시 관리자 플러그인 목록 응답에서 기본 제외됩니다.
+     * CLI 명령, 설치/제거, 업데이트 감지는 영향 받지 않습니다.
+     *
+     * @return bool 숨김 여부
+     */
+    public function isHidden(): bool;
+
+    /**
      * 플러그인의 추가 메타데이터를 반환합니다.
      *
      * @return array 메타데이터 배열

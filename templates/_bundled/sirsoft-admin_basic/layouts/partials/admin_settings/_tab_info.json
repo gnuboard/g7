@@ -354,7 +354,7 @@
                   },
                   "children": [
                     { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-600 dark:text-gray-400" }, "text": "$t:admin.settings.info.memory" },
-                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.memory_usage ?? '-'}}" }
+                    { "type": "basic", "name": "Span", "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" }, "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)" }
                   ]
                 },
                 {

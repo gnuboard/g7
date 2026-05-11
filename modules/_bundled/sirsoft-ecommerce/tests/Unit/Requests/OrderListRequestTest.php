@@ -162,7 +162,7 @@ class OrderListRequestTest extends ModuleTestCase
     public function test_valid_payment_method_passes(): void
     {
         $validator = $this->validate([
-            'payment_method' => ['card', 'kakaopay'],
+            'payment_method' => ['card', 'vbank'],
         ]);
 
         $this->assertFalse($validator->fails());

@@ -78,6 +78,20 @@ class SeoRendererTest extends TestCase
             ->andReturn([])
             ->byDefault();
 
+        // 기본 metaResolver mock — resolveLocalizedValue 는 다국어 처리 흉내 (array → 첫 키 값)
+        $this->metaResolver->shouldReceive('resolveLocalizedValue')
+            ->andReturnUsing(function ($value) {
+                if (is_string($value)) {
+                    return $value;
+                }
+                if (is_array($value)) {
+                    $locale = app()->getLocale();
+                    return (string) ($value[$locale] ?? reset($value) ?? '');
+                }
+                return (string) ($value ?? '');
+            })
+            ->byDefault();
+
         // 기본 SeoConfigMerger mock (병합된 config 반환)
         $this->seoConfigMerger->shouldReceive('getMergedConfig')
             ->andReturn([])
@@ -943,13 +957,22 @@ class SeoRendererTest extends TestCase
         string $description = '',
         string $ogTags = '',
         string $jsonLd = '',
+        array $og = [],
+        array $twitter = [],
+        ?array $structuredData = null,
+        string $twitterTags = '',
     ): array {
         return [
             'title' => $title,
             'titleSuffix' => '',
             'description' => $description,
             'keywords' => '',
+            'og' => $og,
+            'twitter' => $twitter,
+            'structured_data' => $structuredData,
+            'extraMetaTags' => [],
             'ogTags' => $ogTags,
+            'twitterTags' => $twitterTags,
             'jsonLd' => $jsonLd,
             'googleAnalyticsId' => '',
             'googleVerification' => '',
@@ -3610,5 +3633,120 @@ class SeoRendererTest extends TestCase
 
         $this->assertNotNull($capturedContext);
         $this->assertArrayNotHasKey('_seo', $capturedContext);
+    }
+
+    /**
+     * 회귀: filter_og_data 청취자가 og 배열을 수정하면 SeoRenderer 가
+     * renderOgHtml 을 다시 호출하여 최종 ogTags 에 반영됨.
+     *
+     * 검증 포인트: hook 적용 → 변경 감지 → 재렌더 호출 흐름.
+     * (실제 HTML 출력은 SeoMetaResolverTest 가 단위 레벨로 커버)
+     */
+    public function test_filter_og_data_hook_triggers_rerender_via_metaresolver(): void
+    {
+        $request = Request::create('/products/99');
+
+        $this->setupRouteResolver('/products/99', [
+            'templateIdentifier' => 'sirsoft-user_basic',
+            'layoutName' => 'shop/show',
+            'routeParams' => ['id' => '99'],
+            'moduleIdentifier' => null,
+            'routeMeta' => [],
+        ]);
+        $this->layoutService->shouldReceive('getLayout')->once()->andReturn(
+            $this->buildMergedLayout(seoEnabled: true, pageType: 'product')
+        );
+        $this->dataSourceResolver->shouldReceive('resolve')->andReturn([]);
+
+        // resolve() 가 og 배열 포함 결과 반환
+        $initialOg = [
+            'type' => 'product',
+            'title' => 'p',
+            'image' => 'https://e.co/p.jpg',
+            'image_width' => 800,
+            'site_name' => 'TestShop',
+        ];
+        $this->metaResolver->shouldReceive('resolve')->once()->andReturn(
+            $this->buildMetaResult(
+                title: 'p',
+                ogTags: '<initial>',
+                og: $initialOg,
+            )
+        );
+
+        // 청취자: image_width 1200 으로 변경
+        HookManager::addFilter('core.seo.filter_og_data', function (array $og) {
+            $og['image_width'] = 1200;
+            return $og;
+        });
+
+        // hook 변경 후 SeoRenderer 가 renderOgHtml 을 다시 호출해야 함
+        $this->metaResolver->shouldReceive('renderOgHtml')
+            ->once()
+            ->with(Mockery::on(fn ($og) => ($og['image_width'] ?? null) === 1200))
+            ->andReturn('<post-hook-og>');
+
+        $this->htmlMapper->shouldReceive('render')->andReturn('');
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->andReturn('<html></html>');
+        View::shouldReceive('make')
+            ->with('seo', Mockery::on(fn ($d) => str_contains($d['ogTags'], '<post-hook-og>')))
+            ->once()
+            ->andReturn($viewMock);
+
+        $result = $this->renderer->render($request);
+        $this->assertNotNull($result);
+
+        HookManager::resetAll();
+    }
+
+    /**
+     * 회귀: filter_structured_data 청취자가 JSON-LD 배열을 수정하면 재렌더.
+     */
+    public function test_filter_structured_data_hook_triggers_rerender_via_metaresolver(): void
+    {
+        $request = Request::create('/posts/42');
+
+        $this->setupRouteResolver('/posts/42', [
+            'templateIdentifier' => 'sirsoft-user_basic',
+            'layoutName' => 'board/show',
+            'routeParams' => ['id' => '42'],
+            'moduleIdentifier' => null,
+            'routeMeta' => [],
+        ]);
+        $this->layoutService->shouldReceive('getLayout')->once()->andReturn(
+            $this->buildMergedLayout(seoEnabled: true, pageType: 'post')
+        );
+        $this->dataSourceResolver->shouldReceive('resolve')->andReturn([]);
+
+        $initialSchema = ['@type' => 'Article', 'headline' => 'h'];
+        $this->metaResolver->shouldReceive('resolve')->once()->andReturn(
+            $this->buildMetaResult(
+                title: 'h',
+                jsonLd: '{"@type":"Article"}',
+                structuredData: $initialSchema,
+            )
+        );
+
+        // 청취자: review 배열 주입
+        HookManager::addFilter('core.seo.filter_structured_data', function (?array $sd) {
+            if ($sd === null) return $sd;
+            $sd['review'] = [['@type' => 'Review', 'reviewBody' => 'Great!']];
+            return $sd;
+        });
+
+        $this->metaResolver->shouldReceive('renderStructuredJson')
+            ->once()
+            ->with(Mockery::on(fn ($sd) => isset($sd['review']) && count($sd['review']) === 1))
+            ->andReturn('{"@type":"Article","review":[...]}');
+
+        $this->htmlMapper->shouldReceive('render')->andReturn('');
+        $viewMock = Mockery::mock(\Illuminate\View\View::class);
+        $viewMock->shouldReceive('render')->andReturn('<html></html>');
+        View::shouldReceive('make')->once()->andReturn($viewMock);
+
+        $this->renderer->render($request);
+
+        HookManager::resetAll();
     }
 }

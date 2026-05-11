@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Repositories\LayoutPreviewRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Extension\HookManager;
 use App\Models\TemplateLayoutPreview;
 use Illuminate\Support\Str;
 
@@ -41,10 +42,13 @@ class LayoutPreviewService
      */
     public function createPreview(int $templateId, string $layoutName, array $content, int $adminId): TemplateLayoutPreview
     {
+        // 훅: 미리보기 생성 전 (IDV 정책 가드 지점)
+        HookManager::doAction('core.layout_preview.before_generate', $templateId, $layoutName, $content, $adminId);
+
         // 기존 동일 조합의 미리보기 삭제
         $this->previewRepository->deleteByLayoutAndAdmin($templateId, $layoutName, $adminId);
 
-        return $this->previewRepository->create([
+        $preview = $this->previewRepository->create([
             'token' => (string) Str::uuid(),
             'template_id' => $templateId,
             'layout_name' => $layoutName,
@@ -52,6 +56,10 @@ class LayoutPreviewService
             'admin_id' => $adminId,
             'expires_at' => now()->addMinutes(self::DEFAULT_TTL_MINUTES),
         ]);
+
+        HookManager::doAction('core.layout_preview.after_generate', $preview);
+
+        return $preview;
     }
 
     /**

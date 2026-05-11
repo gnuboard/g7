@@ -877,11 +877,15 @@ class UserOrderControllerTest extends ModuleTestCase
 
     public function test_배송지명_자동_순번_부여(): void
     {
+        // auto_saved_label 은 locale 의존 (__() 호출 시점마다 다를 수 있음)이므로
+        // 테스트 전체에서 locale 을 명시적으로 'ko' 로 고정
+        app()->setLocale('ko');
+
         $user = $this->createUser();
         $this->actingAs($user);
         $this->createTempOrder($user->id);
 
-        // 기존 '새 배송지' 생성 (문자열 형식 — 다국어 제거됨)
+        // 기존 '새 배송지' 생성 — 컨트롤러가 동일 locale 로 호출하도록 보장
         $autoSavedLabel = __('sirsoft-ecommerce::messages.address.auto_saved_label');
         UserAddress::factory()->create([
             'user_id' => $user->id,
@@ -891,7 +895,7 @@ class UserOrderControllerTest extends ModuleTestCase
         $response = $this->postJson(
             '/api/modules/sirsoft-ecommerce/user/orders',
             $this->buildOrderPayload(['save_shipping_address' => true]),
-            ['X-Cart-Key' => $this->cartKey]
+            ['X-Cart-Key' => $this->cartKey, 'Accept-Language' => 'ko']
         );
 
         $response->assertStatus(201);

@@ -12,11 +12,6 @@ use Illuminate\Validation\Rule;
 class SaveSettingsRequest extends FormRequest
 {
     /**
-     * 지원되는 언어 목록
-     */
-    private const SUPPORTED_LANGUAGES = ['ko', 'en'];
-
-    /**
      * 지원되는 메일러 목록
      */
     private const SUPPORTED_MAILERS = ['smtp', 'mailgun', 'ses'];
@@ -73,6 +68,8 @@ class SaveSettingsRequest extends FormRequest
 
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -150,7 +147,7 @@ class SaveSettingsRequest extends FormRequest
 
         $rules = [
             // 탭 식별자
-            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications'])],
+            '_tab' => ['nullable', 'string', Rule::in(['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notifications', 'identity'])],
 
             // 각 탭의 컨테이너
             'general' => ['sometimes', 'array'],
@@ -161,6 +158,7 @@ class SaveSettingsRequest extends FormRequest
             'drivers' => ['sometimes', 'array'],
             'advanced' => ['sometimes', 'array'],
             'notifications' => ['sometimes', 'array'],
+            'identity' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
             'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
             'notifications.channels.*.is_active' => ['required_with:notifications.channels', 'boolean'],
@@ -172,7 +170,7 @@ class SaveSettingsRequest extends FormRequest
             'general.site_description' => ['nullable', 'string', 'max:500'],
             'general.admin_email' => $this->getTabRules($tab, 'general', 'email|max:255'),
             'general.timezone' => $this->getTabRules($tab, 'general', ['timezone']),
-            'general.language' => $this->getTabRules($tab, 'general', [Rule::in(self::SUPPORTED_LANGUAGES)]),
+            'general.language' => $this->getTabRules($tab, 'general', [Rule::in(config('app.supported_locales', ['ko', 'en']))]),
             'general.currency' => ['nullable', 'string', 'max:10'],
             'general.maintenance_mode' => ['nullable', 'boolean'],
             'general.site_logo' => ['nullable', 'array'],
@@ -211,12 +209,20 @@ class SaveSettingsRequest extends FormRequest
             'seo.bot_user_agents' => ['nullable', 'array'],
             'seo.bot_user_agents.*' => ['string', 'max:100'],
             'seo.bot_detection_enabled' => ['nullable', 'boolean'],
+            'seo.bot_detection_library_enabled' => ['nullable', 'boolean'],
+            'seo.og_default_site_name' => ['nullable', 'string', 'max:200'],
+            'seo.og_image_default_width' => ['nullable', 'integer', 'min:0', 'max:8000'],
+            'seo.og_image_default_height' => ['nullable', 'integer', 'min:0', 'max:8000'],
+            'seo.twitter_default_card' => ['nullable', 'string', Rule::in(['summary', 'summary_large_image', 'app', 'player', ''])],
+            'seo.twitter_default_site' => ['nullable', 'string', 'max:50'],
             'seo.cache_enabled' => ['nullable', 'boolean'],
             'seo.cache_ttl' => ['nullable', 'integer', 'min:60', 'max:86400'],
             'seo.sitemap_enabled' => ['nullable', 'boolean'],
             'seo.sitemap_cache_ttl' => ['nullable', 'integer', 'min:3600', 'max:604800'],
             'seo.sitemap_schedule' => ['nullable', 'string', Rule::in(['hourly', 'daily', 'weekly'])],
             'seo.sitemap_schedule_time' => ['nullable', 'string', 'regex:/^\d{2}:\d{2}$/'],
+            'seo.generator_enabled' => ['nullable', 'boolean'],
+            'seo.generator_content' => ['nullable', 'string', 'max:200'],
 
             // 보안 설정
             'security.force_https' => $this->getTabRules($tab, 'security', 'boolean'),
@@ -281,6 +287,13 @@ class SaveSettingsRequest extends FormRequest
             'drivers.log_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_LOG_DRIVERS)]),
             'drivers.log_level' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_LOG_LEVELS)]),
             'drivers.log_days' => ['nullable', 'integer', 'min:1', 'max:365'],
+
+            // 본인인증(IDV) provider 기술 파라미터 — 정책 분기는 IdentityPolicy 로 흡수됨
+            'identity.default_provider' => ['nullable', 'string', 'max:100'],
+            'identity.purpose_providers' => ['sometimes', 'array'],
+            'identity.purpose_providers.*' => ['nullable', 'string', 'max:100'],
+            'identity.challenge_ttl_minutes' => $this->getTabRules($tab, 'identity', 'integer|min:1|max:1440'),
+            'identity.max_attempts' => $this->getTabRules($tab, 'identity', 'integer|min:1|max:20'),
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -495,10 +508,26 @@ class SaveSettingsRequest extends FormRequest
             'seo.google_analytics_id.max' => __('validation.settings.google_analytics_id_max'),
             'seo.google_site_verification.max' => __('validation.settings.google_site_verification_max'),
             'seo.naver_site_verification.max' => __('validation.settings.naver_site_verification_max'),
+            'seo.generator_enabled.boolean' => __('validation.settings.generator_enabled_boolean'),
+            'seo.generator_content.string' => __('validation.settings.generator_content_string'),
+            'seo.generator_content.max' => __('validation.settings.generator_content_max'),
             'seo.bot_user_agents.array' => __('validation.settings.bot_user_agents_array'),
             'seo.bot_user_agents.*.string' => __('validation.settings.bot_user_agents_item_string'),
             'seo.bot_user_agents.*.max' => __('validation.settings.bot_user_agents_item_max'),
             'seo.bot_detection_enabled.boolean' => __('validation.settings.bot_detection_enabled_boolean'),
+            'seo.bot_detection_library_enabled.boolean' => __('validation.settings.bot_detection_library_enabled_boolean'),
+            'seo.og_default_site_name.string' => __('validation.settings.og_default_site_name_string'),
+            'seo.og_default_site_name.max' => __('validation.settings.og_default_site_name_max'),
+            'seo.og_image_default_width.integer' => __('validation.settings.og_image_default_width_integer'),
+            'seo.og_image_default_width.min' => __('validation.settings.og_image_default_width_min'),
+            'seo.og_image_default_width.max' => __('validation.settings.og_image_default_width_max'),
+            'seo.og_image_default_height.integer' => __('validation.settings.og_image_default_height_integer'),
+            'seo.og_image_default_height.min' => __('validation.settings.og_image_default_height_min'),
+            'seo.og_image_default_height.max' => __('validation.settings.og_image_default_height_max'),
+            'seo.twitter_default_card.string' => __('validation.settings.twitter_default_card_string'),
+            'seo.twitter_default_card.in' => __('validation.settings.twitter_default_card_in'),
+            'seo.twitter_default_site.string' => __('validation.settings.twitter_default_site_string'),
+            'seo.twitter_default_site.max' => __('validation.settings.twitter_default_site_max'),
             'seo.cache_enabled.boolean' => __('validation.settings.seo_cache_enabled_boolean'),
             'seo.cache_ttl.integer' => __('validation.settings.seo_cache_ttl_integer'),
             'seo.cache_ttl.min' => __('validation.settings.seo_cache_ttl_min'),
@@ -614,6 +643,21 @@ class SaveSettingsRequest extends FormRequest
             'drivers.log_days.integer' => __('validation.settings.log_days_integer'),
             'drivers.log_days.min' => __('validation.settings.log_days_min'),
             'drivers.log_days.max' => __('validation.settings.log_days_max'),
+
+            // 본인인증(IDV) 설정
+            'identity.default_provider.string' => __('validation.settings.identity_default_provider_string'),
+            'identity.default_provider.max' => __('validation.settings.identity_default_provider_max'),
+            'identity.purpose_providers.array' => __('validation.settings.identity_purpose_providers_array'),
+            'identity.purpose_providers.*.string' => __('validation.settings.identity_purpose_provider_string'),
+            'identity.purpose_providers.*.max' => __('validation.settings.identity_purpose_provider_max'),
+            'identity.challenge_ttl_minutes.required' => __('validation.settings.identity_challenge_ttl_required'),
+            'identity.challenge_ttl_minutes.integer' => __('validation.settings.identity_challenge_ttl_integer'),
+            'identity.challenge_ttl_minutes.min' => __('validation.settings.identity_challenge_ttl_min'),
+            'identity.challenge_ttl_minutes.max' => __('validation.settings.identity_challenge_ttl_max'),
+            'identity.max_attempts.required' => __('validation.settings.identity_max_attempts_required'),
+            'identity.max_attempts.integer' => __('validation.settings.identity_max_attempts_integer'),
+            'identity.max_attempts.min' => __('validation.settings.identity_max_attempts_min'),
+            'identity.max_attempts.max' => __('validation.settings.identity_max_attempts_max'),
         ];
     }
 
@@ -633,6 +677,11 @@ class SaveSettingsRequest extends FormRequest
             'general.admin_email' => __('validation.attributes.admin_email'),
             'general.timezone' => __('validation.attributes.timezone'),
             'general.language' => __('validation.attributes.language'),
+            // 본인인증(IDV) 필드
+            'identity.default_provider' => __('validation.attributes.identity_default_provider'),
+            'identity.purpose_providers' => __('validation.attributes.identity_purpose_providers'),
+            'identity.challenge_ttl_minutes' => __('validation.attributes.identity_challenge_ttl_minutes'),
+            'identity.max_attempts' => __('validation.attributes.identity_max_attempts'),
         ];
     }
 }

@@ -230,4 +230,41 @@ class ModuleStorageDriverTest extends TestCase
         // Then: null 반환
         $this->assertNull($response);
     }
+
+    // ========================================================================
+    // 트랙 2-A — `.preserve-ownership` 마커 자동 작성 (코어 7.0.0-beta.4+)
+    //
+    // ModuleStorageDriver 가 첫 디렉토리 생성 시 마커 파일을 자동으로 작성하여
+    // 미래 코어 update 의 chownRecursive 가 storage/app/modules/{id}/ 트리를
+    // 자동 skip 하도록 함. 시드 시점 owner/perms 영구 보존.
+    // ========================================================================
+
+    #[Test]
+    public function it_writes_preservation_marker_on_first_put(): void
+    {
+        // When: 첫 파일 저장 (디렉토리 자동 생성)
+        $this->driver->put('images', 'product/img.jpg', 'image-data');
+
+        // Then: 모듈 루트에 .preserve-ownership 마커 자동 생성
+        $markerPath = 'test-module/.preserve-ownership';
+        $this->assertTrue(
+            Storage::disk('modules')->exists($markerPath),
+            'ModuleStorageDriver 가 첫 사용 시 .preserve-ownership 마커를 자동 작성해야 함 '
+                .'(미래 chownRecursive 가드 트리거)',
+        );
+    }
+
+    #[Test]
+    public function it_does_not_overwrite_existing_marker(): void
+    {
+        // Given: 마커 사전 작성 (운영자 커스텀 내용)
+        Storage::disk('modules')->put('test-module/.preserve-ownership', 'custom marker');
+
+        // When: 추가 파일 저장
+        $this->driver->put('images', 'test.jpg', 'data');
+
+        // Then: 기존 마커 내용 보존 (멱등)
+        $content = Storage::disk('modules')->get('test-module/.preserve-ownership');
+        $this->assertSame('custom marker', $content, '기존 마커 내용 무변경 (멱등)');
+    }
 }

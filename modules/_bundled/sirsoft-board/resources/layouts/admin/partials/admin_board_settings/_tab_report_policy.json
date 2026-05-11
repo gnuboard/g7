@@ -567,6 +567,29 @@
                       }
                     }
                   ]
+                },
+                {
+                  "id": "field_notify_admin_on_report_channels",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "space-y-1.5" },
+                  "children": [
+                    { "type": "basic", "name": "Label", "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_channels" },
+                    {
+                      "type": "composite",
+                      "name": "TagInput",
+                      "props": {
+                        "name": "report_policy.notify_admin_on_report_channels",
+                        "options": [
+                          { "value": "mail", "label": "$t:sirsoft-board.admin.settings.fields.notification_channels.mail" },
+                          { "value": "database", "label": "$t:sirsoft-board.admin.settings.fields.notification_channels.database" }
+                        ],
+                        "placeholder": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_channels_placeholder",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    },
+                    { "type": "basic", "name": "Span", "props": { "className": "block text-xs text-gray-400 dark:text-gray-500" }, "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_channels_help" }
+                  ]
                 }
               ]
             }
@@ -595,6 +618,38 @@
                   ]
                 },
                 { "type": "composite", "name": "Toggle", "props": { "name": "report_policy.notify_author_on_report_action", "className": "flex-shrink-0 mt-0.5" } }
+              ]
+            },
+            {
+              "comment": "하위 옵션 (토글 ON 시에만 표시)",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.form?.report_policy?.notify_author_on_report_action === true}}",
+              "props": { "className": "px-4 py-4 space-y-4 border-t border-gray-200 dark:border-gray-700" },
+              "children": [
+                {
+                  "id": "field_notify_author_on_report_action_channels",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "space-y-1.5" },
+                  "children": [
+                    { "type": "basic", "name": "Label", "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }, "text": "$t:sirsoft-board.admin.settings.fields.notify_author_on_report_action_channels" },
+                    {
+                      "type": "composite",
+                      "name": "TagInput",
+                      "props": {
+                        "name": "report_policy.notify_author_on_report_action_channels",
+                        "options": [
+                          { "value": "mail", "label": "$t:sirsoft-board.admin.settings.fields.notification_channels.mail" },
+                          { "value": "database", "label": "$t:sirsoft-board.admin.settings.fields.notification_channels.database" }
+                        ],
+                        "placeholder": "$t:sirsoft-board.admin.settings.fields.notify_author_on_report_action_channels_placeholder",
+                        "disabled": "{{_computed.isReadOnly}}"
+                      }
+                    },
+                    { "type": "basic", "name": "Span", "props": { "className": "block text-xs text-gray-400 dark:text-gray-500" }, "text": "$t:sirsoft-board.admin.settings.fields.notify_author_on_report_action_channels_help" }
+                  ]
+                }
               ]
             }
           ]

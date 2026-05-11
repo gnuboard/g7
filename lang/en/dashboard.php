@@ -30,12 +30,4 @@ return [
     'activities' => [
         'user_registered' => ':name has registered.',
     ],
-
-    // System alerts
-    'alerts' => [
-        'system_update_available' => 'System Update Available',
-        'system_update_message' => 'A new version of Gnuboard7 is available. Please check for updates.',
-        'disk_space_low' => 'Disk Space Low',
-        'disk_space_message' => 'Disk usage has exceeded 90%. Please clean up unnecessary files.',
-    ],
 ];

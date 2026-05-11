@@ -13,7 +13,8 @@ class ListPluginCommand extends Command
      * The name and signature of the console command.
      */
     protected $signature = 'plugin:list
-        {--status= : 상태로 필터 (installed, uninstalled, active, inactive)}';
+        {--status= : 상태로 필터 (installed, uninstalled, active, inactive)}
+        {--hidden : 숨김(hidden=true) 플러그인도 함께 출력}';
 
     /**
      * The console command description.
@@ -39,6 +40,7 @@ class ListPluginCommand extends Command
         $this->pluginManager->loadPlugins();
 
         $statusFilter = $this->option('status');
+        $includeHidden = (bool) $this->option('hidden');
 
         // 상태 필터 검증
         if ($statusFilter && ! in_array($statusFilter, ['installed', 'uninstalled', 'active', 'inactive'])) {
@@ -58,6 +60,11 @@ class ListPluginCommand extends Command
 
         // 설치된 플러그인 추가
         foreach ($installedPlugins as $identifier => $plugin) {
+            // 숨김 필터: --hidden 미지정 시 hidden=true 플러그인 제외
+            if (! $includeHidden && ! empty($plugin['hidden'])) {
+                continue;
+            }
+
             // 상태 필터
             if ($statusFilter) {
                 if ($statusFilter === 'uninstalled') {
@@ -86,6 +93,11 @@ class ListPluginCommand extends Command
         // 미설치 플러그인 추가
         if (! $statusFilter || $statusFilter === 'uninstalled') {
             foreach ($uninstalledPlugins as $identifier => $plugin) {
+                // 숨김 필터: --hidden 미지정 시 hidden=true 플러그인 제외
+                if (! $includeHidden && ! empty($plugin['hidden'])) {
+                    continue;
+                }
+
                 // 상태 필터 (uninstalled 또는 필터 없음)
                 if ($statusFilter && $statusFilter !== 'uninstalled') {
                     continue;

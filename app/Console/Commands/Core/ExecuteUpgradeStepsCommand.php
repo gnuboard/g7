@@ -46,6 +46,51 @@ class ExecuteUpgradeStepsCommand extends Command
             return self::INVALID;
         }
 
+        // spawn 자식 진입 시 활성 모듈/플러그인의 PSR-4 매핑을 fresh 등록.
+        // 부모 프로세스의 autoload-extensions.php 가 stale 한 경우 upgrade step 안에서
+        // ModuleManager / PluginManager 호출 → declaration 메서드가 Models/Services 등
+        // 다른 클래스 lazy load 시 "Class not found" 발생. 진입 직후 1회 호출로 모든 후속
+        // upgrade step (현재 + 미래) 이 fresh autoload 환경에서 실행됨을 보장.
+        //
+        // 본 커맨드 자체가 spawn 자식 (proc_open 으로 fork 된 별개 PHP 프로세스) 의 진입점이라
+        // 디스크의 fresh ExtensionManager(beta.X+1) 클래스를 메모리에 로드한 상태. 따라서
+        // `app(ExtensionManager::class)->updateComposerAutoload()` 직접 호출은 stale 가능성
+        // 없음. (Artisan::call 대신 직접 호출 — nested Artisan::call 이 outer 명령의
+        // output buffer 를 덮어쓰는 Laravel 동작 회피)
+        try {
+            app(\App\Extension\ExtensionManager::class)->updateComposerAutoload();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('upgrade step spawn 자식: updateComposerAutoload 호출 실패', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // spawn 자식 진입 시 활성 디렉토리의 쓰기 권한 디렉토리를 멱등적으로 보장.
+        // fresh 디스크 config (`app.update.restore_ownership_group_writable`) 를 읽어 처리하므로
+        // 미래 release 가 새 쓰기 권한 디렉토리를 도입할 때 본 호출은 자동으로 신규 항목을 처리한다.
+        // upgrade step 에 mkdir/chown 코드를 매번 하드코딩할 필요 없음.
+        //
+        // 한계: 부모(이전 버전) 만 알고 있던 신규 디렉토리는 처리 불가 — 그 일회성 케이스는
+        // 해당 release 의 upgrade step 단발 처리. (예: beta.3→beta.4 의 lang-packs/* 보정)
+        try {
+            $writablePaths = (array) config('app.update.restore_ownership_group_writable', []);
+            if (! empty($writablePaths)) {
+                $service->ensureWritableDirectories(
+                    $writablePaths,
+                    function (string $level, string $msg): void {
+                        // 콘솔 + upgrade 로그 채널 동시 출력 — PO 가 단일 파일(upgrade.log)에서
+                        // spawn 자식의 권한 정상화 진행을 추적할 수 있도록 양쪽 모두 누적.
+                        $this->{$level === 'warning' ? 'warn' : 'info'}($msg);
+                        \Illuminate\Support\Facades\Log::channel('upgrade')->$level('[spawn] '.$msg);
+                    },
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('upgrade step spawn 자식: ensureWritableDirectories 호출 실패', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         try {
             $service->runUpgradeSteps(
                 $from,

@@ -47,9 +47,8 @@
               "children": [
                 {
                   "type": "basic", "name": "Label", "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-900 dark:text-white flex-1 cursor-pointer" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_comment') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_comment') : [...(_local.bulkApplyFields ?? []), 'use_comment']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('use_comment')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('use_comment')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_comment') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_comment') : [...(_local.bulkApplyFields ?? []), 'use_comment']}}" } }] },
                     { "type": "basic", "name": "Div", "children": [
                       { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.use_comment" },
                       { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" }, "text": "$t:sirsoft-board.admin.settings.fields.descriptions.use_comment" }
@@ -71,9 +70,8 @@
               "children": [
                 {
                   "type": "basic", "name": "Label", "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_comment_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_comment_depth') : [...(_local.bulkApplyFields ?? []), 'max_comment_depth']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('max_comment_depth')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('max_comment_depth')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_comment_depth') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_comment_depth') : [...(_local.bulkApplyFields ?? []), 'max_comment_depth']}}" } }] },
                     { "type": "basic", "name": "Div", "children": [
                       { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.max_comment_depth" },
                       { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" }, "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_comment_depth" }
@@ -98,9 +96,8 @@
               "children": [
                 {
                   "type": "basic", "name": "Label", "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('comment_order') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'comment_order') : [...(_local.bulkApplyFields ?? []), 'comment_order']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('comment_order')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('comment_order')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('comment_order') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'comment_order') : [...(_local.bulkApplyFields ?? []), 'comment_order']}}" } }] },
                     { "type": "basic", "name": "Div", "children": [
                       { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.comment_order" },
                       { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" }, "text": "$t:sirsoft-board.admin.settings.fields.descriptions.comment_order" }
@@ -122,9 +119,8 @@
               "children": [
                 {
                   "type": "basic", "name": "Label", "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('min_comment_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_comment_length') : [...(_local.bulkApplyFields ?? []), 'min_comment_length']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('min_comment_length')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('min_comment_length')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('min_comment_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_comment_length') : [...(_local.bulkApplyFields ?? []), 'min_comment_length']}}" } }] },
                     { "type": "basic", "name": "Div", "children": [
                       { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.min_comment_length" },
                       { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" }, "text": "$t:sirsoft-board.admin.settings.fields.descriptions.min_comment_length" }
@@ -149,9 +145,8 @@
               "children": [
                 {
                   "type": "basic", "name": "Label", "props": { "className": "flex items-start gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 flex-1 cursor-pointer" },
-                  "actions": [{ "type": "click", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_comment_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_comment_length') : [...(_local.bulkApplyFields ?? []), 'max_comment_length']}}" } }],
                   "children": [
-                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('max_comment_length')}}" } },
+                    { "type": "basic", "name": "Input", "props": { "type": "checkbox", "className": "checkbox flex-shrink-0 mt-0.5", "checked": "{{(_local.bulkApplyFields ?? []).includes('max_comment_length')}}" }, "actions": [{ "type": "change", "handler": "setState", "params": { "target": "local", "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_comment_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_comment_length') : [...(_local.bulkApplyFields ?? []), 'max_comment_length']}}" } }] },
                     { "type": "basic", "name": "Div", "children": [
                       { "type": "basic", "name": "Span", "text": "$t:sirsoft-board.admin.settings.fields.max_comment_length" },
                       { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal" }, "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_comment_length" }

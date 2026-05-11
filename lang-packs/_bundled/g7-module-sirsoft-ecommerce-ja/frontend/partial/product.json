@@ -1,0 +1,13 @@
+{
+  "name": "商品名",
+  "price": "価格",
+  "stock": "在庫",
+  "description": "商品説明",
+  "category": "カテゴリー",
+  "status": "ステータス",
+  "statuses": {
+    "active": "販売中",
+    "inactive": "販売停止",
+    "soldout": "品切れ"
+  }
+}

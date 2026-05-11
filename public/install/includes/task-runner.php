@@ -13,6 +13,7 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/installer-state.php';
+require_once __DIR__ . '/installer-runtime.php';
 require_once __DIR__ . '/progress-emitter.php';
 require_once __DIR__ . '/../api/rollback-functions.php';
 
@@ -137,22 +138,52 @@ if (!function_exists('getPhpBinary')) {
     }
 }
 
+if (!function_exists('isInstallerExecutablePath')) {
+    /**
+     * 인스톨러가 exec 에 전달하기 안전한 단일 실행 파일 경로인지 검증한다.
+     *
+     * - 빈 문자열은 호출자가 시스템 기본값을 쓰겠다는 신호이므로 별도 처리.
+     * - 공백/세미콜론/백틱/`$` 등 셸 메타문자가 포함된 입력은 거부.
+     * - 실제로 존재하고 실행 가능한 파일이어야 함.
+     */
+    function isInstallerExecutablePath(string $path): bool
+    {
+        if ($path === '') {
+            return false;
+        }
+        // 셸 메타문자 차단 — 공백·따옴표·리다이렉션·세미콜론·백틱·$()·| 등
+        if (preg_match('/[\s;`$|<>"\'\\\\&]/', $path)) {
+            return false;
+        }
+        return is_file($path) && is_executable($path);
+    }
+}
+
 if (!function_exists('getComposerCommand')) {
     function getComposerCommand(): string
     {
         $state = getInstallationState();
-        $composerBinary = $state['config']['composer_binary'] ?? '';
+        $composerBinary = (string) ($state['config']['composer_binary'] ?? '');
 
-        if ($composerBinary) {
-            if (str_contains($composerBinary, ' ')) {
-                return $composerBinary;
-            }
-            return str_ends_with($composerBinary, '.phar')
-                ? escapeshellarg(getPhpBinary()) . ' ' . escapeshellarg($composerBinary)
-                : escapeshellarg($composerBinary);
+        if ($composerBinary === '') {
+            return 'composer';
         }
 
-        return 'composer';
+        // 검증 실패 시 시스템 기본 'composer' 로 폴백 — 설치 흐름은 유지하되
+        // 사용자 입력이 셸 명령으로 흘러가지 않도록 차단.
+        if (!isInstallerExecutablePath($composerBinary)) {
+            return 'composer';
+        }
+
+        if (str_ends_with($composerBinary, '.phar')) {
+            $phpBinary = getPhpBinary();
+            $phpArg = ($phpBinary !== 'php' && isInstallerExecutablePath($phpBinary))
+                ? escapeshellarg($phpBinary)
+                : escapeshellarg('php');
+            return $phpArg . ' ' . escapeshellarg($composerBinary);
+        }
+
+        return escapeshellarg($composerBinary);
     }
 }
 
@@ -160,18 +191,17 @@ if (!function_exists('getComposerCommandForDisplay')) {
     function getComposerCommandForDisplay(): string
     {
         $state = getInstallationState();
-        $composerBinary = $state['config']['composer_binary'] ?? '';
+        $composerBinary = (string) ($state['config']['composer_binary'] ?? '');
 
-        if ($composerBinary) {
-            if (str_contains($composerBinary, ' ')) {
-                return $composerBinary;
-            }
-            return str_ends_with($composerBinary, '.phar')
-                ? getPhpBinary() . ' ' . $composerBinary
-                : $composerBinary;
+        if ($composerBinary === '' || !isInstallerExecutablePath($composerBinary)) {
+            return 'composer';
         }
 
-        return 'composer';
+        if (str_ends_with($composerBinary, '.phar')) {
+            return getPhpBinary() . ' ' . $composerBinary;
+        }
+
+        return $composerBinary;
     }
 }
 
@@ -326,6 +356,14 @@ if (!function_exists('installVendorBundleSSE')) {
         }
 
         sendSSEEvent('log', ['message' => "vendor 번들 추출 완료 ({$result['package_count']} packages)"]);
+
+        // 이전 환경(특히 dev) 의 stale 캐시 정리 — 미정리 시 제거된 dev 패키지의
+        // ServiceProvider 를 후속 artisan 호출(key:generate 등) 에서 참조하다가 실패한다.
+        $cleared = clearLaravelCompiledCache(BASE_PATH);
+        if (! empty($cleared)) {
+            sendSSEEvent('log', ['message' => lang('log_composer_cache_cleared')]);
+        }
+
         sendSSEEvent('log', ['message' => lang('log_separator')]);
 
         markTaskCompleted('composer_install');
@@ -338,6 +376,9 @@ if (!function_exists('installVendorBundleSSE')) {
 if (!function_exists('installComposerDependenciesSSE')) {
     function installComposerDependenciesSSE(): array
     {
+        // Laravel compiled cache 정리 헬퍼(clearLaravelCompiledCache)가 정의된 shim
+        require_once __DIR__ . '/vendor-bundle-installer.php';
+
         // Vendor 모드에 따라 분기: bundled → vendor-bundle.zip 추출
         $state = getInstallationState();
         $vendorMode = $state['config']['vendor_mode'] ?? 'auto';
@@ -348,7 +389,6 @@ if (!function_exists('installComposerDependenciesSSE')) {
 
         if ($vendorMode === 'auto') {
             // composer 가능 여부에 따라 자동 분기
-            require_once __DIR__ . '/vendor-bundle-installer.php';
             $composerBinary = $state['config']['composer_binary'] ?? '';
             $phpBinary = $state['config']['php_binary'] ?? 'php';
 
@@ -404,9 +444,11 @@ if (!function_exists('installComposerDependenciesSSE')) {
             sendSSEEvent('log', ['message' => lang('log_composer_fresh_install')]);
         }
 
-        $bootstrapCachePath = BASE_PATH . '/bootstrap/cache/packages.php';
-        if (file_exists($bootstrapCachePath)) {
-            @unlink($bootstrapCachePath);
+        // packages.php / services.php / config.php 모두 정리 — 이전 환경의 캐시가 남아있으면
+        // composer post-autoload-dump 단계의 package:discover 가 부팅 중 stale provider 를
+        // 참조하여 실패한다.
+        $cleared = clearLaravelCompiledCache(BASE_PATH);
+        if (! empty($cleared)) {
             sendSSEEvent('log', ['message' => lang('log_composer_cache_cleared')]);
         }
 
@@ -508,6 +550,18 @@ if (!function_exists('installComposerDependenciesSSE')) {
 }
 
 if (!function_exists('updateEnvFileSSE')) {
+    /**
+     * 동적 설정(DB 자격증명) 을 storage/installer/runtime.php 에 작성한다.
+     *
+     * php artisan serve 의 .env mtime 워처가 진행 중 재시작을 일으키지 않도록
+     * 설치 진행 중에는 .env 를 직접 수정하지 않는다. runtime.php 는 부팅 시
+     * InstallerRuntimeServiceProvider 가 읽어 config 에 주입하므로 mysql
+     * 마이그레이션/시더가 정상 동작한다.
+     *
+     * 설치 완료 UI 노출 후 finalize-env.php 가 runtime.php → .env 머지를 1회 수행한다.
+     *
+     * @return array{success: bool, message?: string, message_key?: string}
+     */
     function updateEnvFileSSE(): array
     {
         if (checkAbortStatusSSE()) {
@@ -520,28 +574,32 @@ if (!function_exists('updateEnvFileSSE')) {
         sendSSEEvent('task_start', ['task' => 'env_update', 'name' => $taskName]);
         sendSSEEvent('log', ['message' => lang('log_task_in_progress', ['task' => $taskName])]);
 
-        $envPath = BASE_PATH . '/.env';
-
-        if (!file_exists($envPath)) {
-            logInstallationError(lang('error_env_not_found'));
+        // .env.example 존재 여부만 확인 — finalize 단계에서 generateEnvContent() 가 사용
+        $envExamplePath = BASE_PATH . '/.env.example';
+        if (!file_exists($envExamplePath)) {
+            logInstallationError(lang('error_env_example_not_found'));
             return [
                 'success' => false,
-                'message' => lang('error_env_not_found'),
-                'message_key' => 'error_env_not_found',
+                'message' => lang('error_env_example_not_found'),
+                'message_key' => 'error_env_example_not_found',
             ];
         }
 
-        if (is_writable($envPath)) {
-            $content = generateEnvContent();
-            if ($content !== null) {
-                file_put_contents($envPath, $content);
-                @chmod($envPath, 0600);
-            }
-            sendSSEEvent('log', ['message' => lang('log_env_update_success')]);
-        } else {
-            sendSSEEvent('log', ['message' => lang('log_env_readonly_skip')]);
+        $state = getInstallationState();
+        $stateConfig = is_array($state['config'] ?? null) ? $state['config'] : [];
+
+        $runtime = buildInstallerRuntimeFromState($stateConfig);
+
+        if (!writeInstallerRuntime($runtime)) {
+            logInstallationError(lang('error_env_write_failed', ['path' => INSTALLER_RUNTIME_PATH]));
+            return [
+                'success' => false,
+                'message' => lang('error_env_write_failed', ['path' => INSTALLER_RUNTIME_PATH]),
+                'message_key' => 'error_env_write_failed',
+            ];
         }
 
+        sendSSEEvent('log', ['message' => lang('log_env_update_success')]);
         sendSSEEvent('log', ['message' => lang('log_task_completed', ['task' => $taskName])]);
         sendSSEEvent('log', ['message' => lang('log_separator')]);
 
@@ -553,33 +611,72 @@ if (!function_exists('updateEnvFileSSE')) {
 }
 
 if (!function_exists('generateApplicationKeySSE')) {
+    /**
+     * APP_KEY 를 pure PHP 로 생성하여 runtime.php 에 기록한다.
+     *
+     * 기존: php artisan key:generate --force (artisan 이 .env 직접 수정).
+     * 신규: random_bytes(32) + base64 → runtime.php 의 'app.key' 키로 기록.
+     *       Laravel 의 Encrypter::generateKey('AES-256-CBC') 와 동일.
+     *
+     * runtime.php 에 이미 키가 있으면 보존 (재시도 시 키 변경 방지).
+     *
+     * @return array{success: bool, message?: string, message_key?: string}
+     */
     function generateApplicationKeySSE(): array
     {
-        $envPath = BASE_PATH . '/.env';
-        if (file_exists($envPath)) {
-            $content = file_get_contents($envPath);
-            if (preg_match('/^APP_KEY=base64:.{40,}$/m', $content)) {
-                $taskName = lang('task_key_generate');
-
-                updateCurrentTask('key_generate');
-                sendSSEEvent('task_start', ['task' => 'key_generate', 'name' => $taskName]);
-                sendSSEEvent('log', ['message' => lang('log_already_completed', ['task' => $taskName])]);
-                sendSSEEvent('log', ['message' => lang('log_separator')]);
-
-                markTaskCompleted('key_generate');
-                sendSSEEvent('task_complete', ['task' => 'key_generate', 'message' => lang('log_key_generate_success')]);
-
-                return ['success' => true];
-            }
+        if (checkAbortStatusSSE()) {
+            return ['success' => false, 'aborted' => true];
         }
 
-        return executeArtisanCommandSSE(
-            artisanCommand: 'key:generate --force',
-            taskId: 'key_generate',
-            taskNameKey: 'task_key_generate',
-            successMsgKey: 'log_key_generate_success',
-            errorMsgKey: 'error_key_generate_failed'
-        );
+        // 재시도 경로 방어 — composer_install 재진입 시 stale bootstrap/cache 정리
+        require_once __DIR__ . '/vendor-bundle-installer.php';
+        clearLaravelCompiledCache(BASE_PATH);
+
+        $taskName = lang('task_key_generate');
+
+        updateCurrentTask('key_generate');
+        sendSSEEvent('task_start', ['task' => 'key_generate', 'name' => $taskName]);
+
+        // runtime.php 에 키가 이미 있으면 그대로 둠 (재시도 안전성)
+        $runtime = readInstallerRuntime();
+        $existingKey = $runtime['app']['key'] ?? null;
+
+        if (is_string($existingKey) && str_starts_with($existingKey, 'base64:') && strlen($existingKey) >= 47) {
+            sendSSEEvent('log', ['message' => lang('log_already_completed', ['task' => $taskName])]);
+            sendSSEEvent('log', ['message' => lang('log_separator')]);
+
+            markTaskCompleted('key_generate');
+            sendSSEEvent('task_complete', ['task' => 'key_generate', 'message' => lang('log_key_generate_success')]);
+
+            return ['success' => true];
+        }
+
+        sendSSEEvent('log', ['message' => lang('log_task_in_progress', ['task' => $taskName])]);
+
+        // pure PHP 키 생성 — .env 무수정
+        $key = generateAppKeyInline();
+
+        $runtime = is_array($runtime) ? $runtime : [];
+        $runtime['app']['key'] = $key;
+        $runtime['created_at'] = $runtime['created_at'] ?? date('c');
+
+        if (!writeInstallerRuntime($runtime)) {
+            logInstallationError(lang('error_key_generate_failed'));
+            return [
+                'success' => false,
+                'message' => lang('error_key_generate_failed'),
+                'message_key' => 'error_key_generate_failed',
+            ];
+        }
+
+        sendSSEEvent('log', ['message' => lang('log_key_generate_success')]);
+        sendSSEEvent('log', ['message' => lang('log_task_completed', ['task' => $taskName])]);
+        sendSSEEvent('log', ['message' => lang('log_separator')]);
+
+        markTaskCompleted('key_generate');
+        sendSSEEvent('task_complete', ['task' => 'key_generate', 'message' => lang('log_key_generate_success')]);
+
+        return ['success' => true];
     }
 }
 
@@ -831,7 +928,43 @@ if (!function_exists('getSelectedExtensions')) {
             'user_templates' => [],
             'modules' => [],
             'plugins' => [],
+            'language_packs' => [],
         ];
+    }
+}
+
+if (!function_exists('reserveCommandOutputFile')) {
+    /**
+     * artisan 명령 stdout/stderr redirect 용 임시 로그 파일 경로 예약.
+     *
+     * pipe deadlock 회피를 위해 PHP exec() 의 child output 을 pipe 가 아닌 파일로 보낸다.
+     * 파일은 권한이 보장된 디렉토리에 생성 — 인스톨러 환경에서 항상 writable 인 곳:
+     *  1) storage/logs/  (installation.log 와 같은 검증된 디렉토리, REQUIRED_DIRECTORIES 의 storage 하위)
+     *  2) storage/installer/  (runtime.php 와 같은 디렉토리)
+     *  3) sys_get_temp_dir()  (최후 fallback)
+     *
+     * @return string 예약된 임시 파일 경로 (호출자가 redirect 후 read + unlink)
+     */
+    function reserveCommandOutputFile(): string
+    {
+        $candidates = [
+            BASE_PATH.'/storage/logs',
+            BASE_PATH.'/storage/installer',
+            sys_get_temp_dir(),
+        ];
+
+        foreach ($candidates as $dir) {
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            if (is_dir($dir) && is_writable($dir)) {
+                return $dir.DIRECTORY_SEPARATOR.'installer-cmd-output-'.uniqid('', true).'.log';
+            }
+        }
+
+        // 모든 fallback 실패 — 마지막 시도로 sys_get_temp_dir 의 파일 경로 그대로 반환
+        // (해당 디렉토리가 존재할 가능성이 매우 높지만 is_writable 가 false 였다면 redirect 가 실패할 것)
+        return sys_get_temp_dir().DIRECTORY_SEPARATOR.'installer-cmd-output-'.uniqid('', true).'.log';
     }
 }
 
@@ -857,8 +990,16 @@ if (!function_exists('executeArtisanCommandSSE')) {
         $output = [];
         $returnCode = 0;
         $phpBin = escapeshellarg(getPhpBinary());
-        $fullCommand = "{$phpBin} -d memory_limit=512M artisan {$artisanCommand} 2>&1";
-        exec($fullCommand, $output, $returnCode);
+
+        $cmdLogFile = reserveCommandOutputFile();
+        $fullCommand = "{$phpBin} -d memory_limit=512M artisan {$artisanCommand} > "
+            . escapeshellarg($cmdLogFile) . " 2>&1";
+        exec($fullCommand, $_ignored, $returnCode);
+
+        if (file_exists($cmdLogFile)) {
+            $output = file($cmdLogFile, FILE_IGNORE_NEW_LINES) ?: [];
+            @unlink($cmdLogFile);
+        }
 
         foreach ($output as $line) {
             if (!empty(trim($line))) {
@@ -913,9 +1054,17 @@ if (!function_exists('executeDbCommandSSE')) {
         $output = [];
         $returnCode = 0;
         $phpBin = escapeshellarg(getPhpBinary());
-        $fullCommand = "{$phpBin} -d memory_limit=512M artisan {$artisanCommand} 2>&1";
 
-        exec($fullCommand, $output, $returnCode);
+        $cmdLogFile = reserveCommandOutputFile();
+        $fullCommand = "{$phpBin} -d memory_limit=512M artisan {$artisanCommand} > "
+            . escapeshellarg($cmdLogFile) . " 2>&1";
+
+        exec($fullCommand, $_ignored, $returnCode);
+
+        if (file_exists($cmdLogFile)) {
+            $output = file($cmdLogFile, FILE_IGNORE_NEW_LINES) ?: [];
+            @unlink($cmdLogFile);
+        }
 
         foreach ($output as $line) {
             if (!empty(trim($line))) {
@@ -1038,12 +1187,38 @@ if (!function_exists('executeExtensionCommandSSE')) {
         $output = [];
         $returnCode = 0;
         $phpBin = escapeshellarg(getPhpBinary());
-        $fullCommand = "{$phpBin} -d memory_limit=512M artisan {$artisanCommand} 2>&1";
-        exec($fullCommand, $output, $returnCode);
 
-        foreach ($output as $line) {
-            if (!empty(trim($line))) {
-                sendSSEEvent('log', ['message' => $line]);
+        $cmdLogFile = reserveCommandOutputFile();
+        $fullCommand = "{$phpBin} -d memory_limit=512M artisan {$artisanCommand} > "
+            . escapeshellarg($cmdLogFile) . " 2>&1";
+
+        exec($fullCommand, $_ignored, $returnCode);
+
+        if (file_exists($cmdLogFile)) {
+            $output = file($cmdLogFile, FILE_IGNORE_NEW_LINES) ?: [];
+            @unlink($cmdLogFile);
+        }
+
+        // 폴링 모드(NullEmitter)는 batch write — Windows file IO 라인당 ~5ms 누적 회피.
+        // SSE 모드는 stream emit 으로 사용자에게 실시간 진행 표시.
+        $emitter = getProgressEmitter();
+        if ($emitter instanceof NullEmitter) {
+            $nonEmpty = [];
+            foreach ($output as $line) {
+                if (trim($line) !== '') {
+                    $nonEmpty[] = $line;
+                }
+            }
+            if (! empty($nonEmpty)) {
+                addLogBatch($nonEmpty);
+            }
+            // heartbeat 갱신 1회 (라인당 호출 시 state.json IO 병목)
+            $emitter->emit('heartbeat', []);
+        } else {
+            foreach ($output as $line) {
+                if (!empty(trim($line))) {
+                    sendSSEEvent('log', ['message' => $line]);
+                }
             }
         }
 
@@ -1206,6 +1381,30 @@ if (!function_exists('activateUserTemplateSSE')) {
     }
 }
 
+if (!function_exists('installLanguagePackSSE')) {
+    /**
+     * 번들 언어팩 설치 (best-effort).
+     *
+     * `php artisan language-pack:install {id} --source=bundled` 호출. 자동 활성화 default.
+     * 1건 실패는 전체 설치를 중단하지 않으며, 호출자(runInstallationTasks)는
+     * task 정의에 `best_effort: true` 를 두어 실패 시 rollback 우회 + 경고 로그 처리.
+     *
+     * @param  string  $packId  번들 언어팩 식별자 (예: g7-core-ja)
+     * @return array{success: bool, ...}
+     */
+    function installLanguagePackSSE(string $packId): array
+    {
+        return executeExtensionCommandSSE(
+            artisanCommand: "language-pack:install {$packId} --source=bundled",
+            taskId: 'language_pack_install',
+            target: $packId,
+            taskNameKey: 'task_language_pack_install',
+            successMsgKey: 'log_language_pack_install_success',
+            errorMsgKey: 'error_language_pack_install_failed'
+        );
+    }
+}
+
 if (!function_exists('clearCacheSSE')) {
     function clearCacheSSE(): array
     {
@@ -1339,16 +1538,10 @@ if (!function_exists('setInstallationCompleteSSE')) {
         sendSSEEvent('log', ['message' => lang('log_task_in_progress', ['task' => $taskName])]);
 
         try {
-            $envPath = BASE_PATH . '/.env';
-            if (file_exists($envPath) && is_writable($envPath)) {
-                $envContent = file_get_contents($envPath);
-                $envContent .= "\n\n# Installation Status\n";
-                $envContent .= "INSTALLER_COMPLETED=true\n";
-                file_put_contents($envPath, $envContent);
-                sendSSEEvent('log', ['message' => lang('log_env_flag_added')]);
-            } else {
-                sendSSEEvent('log', ['message' => lang('log_env_flag_skipped')]);
-            }
+            // .env 의 INSTALLER_COMPLETED=true 는 finalize-env.php 단계에서 작성된다.
+            // 본 단계에서는 .env 를 건드리지 않아 php artisan serve 의 mtime 워처가
+            // 진행 중 재시작을 일으키지 않도록 한다. g7_installed 파일과 state.json
+            // 의 completed 마커만으로 "Step 5 완료" 시점을 보장.
 
             $installedFlagPath = BASE_PATH . '/storage/app/g7_installed';
             $installedFlagDir = dirname($installedFlagPath);
@@ -1360,6 +1553,24 @@ if (!function_exists('setInstallationCompleteSSE')) {
             file_put_contents($installedFlagPath, date('Y-m-d H:i:s'));
             @chmod($installedFlagPath, 0644);
             sendSSEEvent('log', ['message' => lang('log_installed_flag_created')]);
+
+            // 인스톨러 작업 중 composer install 등이 storage/temp 에 남긴 Symfony Process
+            // sf_proc_*.{out,err,lock} 잔여 파일 정리. 디렉토리 자체는 보존 (다음 사용 대비).
+            $tempDir = BASE_PATH . '/storage/temp';
+            if (is_dir($tempDir)) {
+                $entries = @scandir($tempDir);
+                if (is_array($entries)) {
+                    foreach ($entries as $entry) {
+                        if ($entry === '.' || $entry === '..') {
+                            continue;
+                        }
+                        $entryPath = $tempDir . '/' . $entry;
+                        if (is_file($entryPath)) {
+                            @unlink($entryPath);
+                        }
+                    }
+                }
+            }
 
             $state = getInstallationState();
             $state['current_step'] = 5;
@@ -1375,21 +1586,10 @@ if (!function_exists('setInstallationCompleteSSE')) {
             markTaskCompleted('complete_flag');
             sendSSEEvent('task_complete', ['task' => 'complete_flag', 'message' => lang('log_installation_completed')]);
 
-            if (DELETE_INSTALLER_AFTER_COMPLETE) {
-                $stateFilePath = BASE_PATH . '/storage/installer-state.json';
-
-                if (file_exists($stateFilePath)) {
-                    sendSSEEvent('log', ['message' => lang('log_removing_state_file')]);
-
-                    if (@unlink($stateFilePath)) {
-                        sendSSEEvent('log', ['message' => lang('log_state_file_removed')]);
-                        addLog(lang('log_state_file_removed') . ': ' . $stateFilePath);
-                    } else {
-                        sendSSEEvent('log', ['message' => lang('log_state_file_remove_failed')]);
-                        addLog(lang('log_state_file_remove_failed') . ': ' . $stateFilePath);
-                    }
-                }
-            }
+            // state.json 삭제는 finalize-env.php 로 위임됨.
+            // 본 단계에서 즉시 삭제하면 finalize 가 generateEnvContent() 호출 시
+            // state.config 를 읽지 못해 .env.example 의 placeholder 값으로 .env 가
+            // 작성되는 회귀 발생. finalize 가 .env 머지 성공 후 state 삭제.
 
             return ['success' => true];
         } catch (Exception $e) {
@@ -1467,7 +1667,20 @@ if (!function_exists('runInstallationTasks')) {
                 $tasks[] = ['id' => 'user_template_activate', 'target' => $templateId, 'function' => 'activateUserTemplateSSE', 'args' => [$templateId]];
             }
 
-            // 7. 마무리
+            // 7. 번들 언어팩 (best-effort — 1건 실패는 전체 중단하지 않음)
+            //    코어/모듈/플러그인/템플릿 install·activate 가 모두 끝난 뒤 실행해야
+            //    target_identifier 매칭 + DB 마이그레이션·시드가 완료된 상태에서 활성화 가능.
+            foreach ($selectedExtensions['language_packs'] ?? [] as $packId) {
+                $tasks[] = [
+                    'id' => 'language_pack_install',
+                    'target' => $packId,
+                    'function' => 'installLanguagePackSSE',
+                    'args' => [$packId],
+                    'best_effort' => true,
+                ];
+            }
+
+            // 8. 마무리
             $tasks[] = ['id' => 'create_settings_json', 'function' => 'createSettingsJsonSSE'];
             $tasks[] = ['id' => 'cache_clear', 'function' => 'clearCacheSSE'];
             $tasks[] = ['id' => 'complete_flag', 'function' => 'setInstallationCompleteSSE'];
@@ -1487,6 +1700,7 @@ if (!function_exists('runInstallationTasks')) {
                 $target = $task['target'] ?? null;
                 $functionName = $task['function'];
                 $args = $task['args'] ?? [];
+                $bestEffort = ! empty($task['best_effort']);
 
                 $completedKey = $target ? "{$taskId}:{$target}" : $taskId;
 
@@ -1516,6 +1730,15 @@ if (!function_exists('runInstallationTasks')) {
                 }
 
                 if (!$result['success']) {
+                    // best-effort task (예: 번들 언어팩 설치) — 실패 시 경고 로그만 남기고 계속 진행
+                    if ($bestEffort) {
+                        $warnMsg = lang('warning_language_pack_install_partial', ['identifier' => (string) $target]);
+                        sendSSEEvent('log', ['message' => $warnMsg]);
+                        addLog($warnMsg);
+                        // task_complete 이벤트는 보내지 않고 다음 task 로 진행 (재시도 시 다시 시도 가능)
+                        continue;
+                    }
+
                     $state = getInstallationState();
                     $taskNameKey = "task_{$taskId}";
                     $taskName = lang($taskNameKey);

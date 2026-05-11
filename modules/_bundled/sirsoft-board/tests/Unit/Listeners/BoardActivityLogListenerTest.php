@@ -45,7 +45,7 @@ class BoardActivityLogListenerTest extends ModuleTestCase
 
         $this->app->instance('request', Request::create('/api/admin/test'));
 
-        $this->listener = new BoardActivityLogListener();
+        $this->listener = app(BoardActivityLogListener::class);
         $this->logChannel = Mockery::mock(\Psr\Log\LoggerInterface::class);
         Log::shouldReceive('channel')
             ->with('activity')

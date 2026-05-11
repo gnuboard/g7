@@ -1,0 +1,23 @@
+{
+    "name": "modules/gnuboard7-hello_module",
+    "description": "Hello sample module for Gnuboard7 (learning purpose)",
+    "type": "library",
+    "version": "0.1.0-beta.1",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Gnuboard7\\HelloModule\\": "src/",
+            "Modules\\Gnuboard7\\HelloModule\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Gnuboard7\\HelloModule\\Database\\Factories\\": "database/factories/",
+            "Modules\\Gnuboard7\\HelloModule\\Upgrades\\": "upgrades/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\Gnuboard7\\HelloModule\\Tests\\": "tests/"
+        }
+    },
+    "require": {
+        "php": "^8.2"
+    }
+}

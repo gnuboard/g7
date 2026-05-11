@@ -1,0 +1,95 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 인스톨러 진입 가드 + 경로 검증 패치의 시나리오 매트릭스 SSoT 로 기록. 회귀 가드는 test_files (InstallerGuardTest 8건 + ComposerPathValidationTest 8건, 단위 테스트는 정적 cross product 매핑 대신 effect 단위 검증 형태) + manual_verification 의 PoC 재현으로 커버.
+
+feature: 인스톨러 진입 가드 + Composer/PHP 경로 검증 강화
+
+description: |
+  설치가 완료된 시스템에서 public/install/ 하위의 모든 비즈니스 로직 진입점이
+  HTTP 410 으로 차단되어야 한다는 정책과, 사용자 입력을 shell 명령으로 그대로
+  실행하던 Composer/PHP 경로 검증의 결함 패치에 대한 시나리오 매트릭스.
+
+  배경:
+    - public/install/api/check-configuration.php 의 test-composer / test-php-binary
+      액션은 Laravel 라우팅 외부의 독립 PHP 엔드포인트로 인증·CSRF 보호 미적용.
+    - validateComposerPath() 가 입력 경로에 공백이 있으면 escapeshellarg 없이
+      '${path} --version 2>&1' 을 exec 에 전달하여 인증 없는 RCE 가 성립.
+    - 설치 완료 후에도 인스톨러 디렉토리가 노출되면 같은 계열의 미래 결함이 그대로
+      공격 표면으로 남으므로, 코드 레벨 진입 가드로 일괄 차단.
+
+axes:
+  installation_state: [not_started, in_progress, completed_lock_only, completed_env_only, completed_both]
+  entry_point: [index_php, check_configuration, check_env, finalize_env, install_process, install_worker, save_extensions, scan_extensions, sse_probe]
+  composer_path_input: [empty, valid_binary, valid_phar, nonexistent_path, directory_path, shell_injection_space, shell_injection_semicolon, shell_injection_backtick]
+  php_path_input: [default_php, valid_binary, nonexistent_path, shell_injection]
+
+exclusions:
+  - { installation_state: not_started, entry_point: finalize_env, reason: "finalize 는 설치 진행 후 호출되므로 not_started 상태 결합 무의미" }
+  - { entry_point: scan_extensions, composer_path_input: "*", reason: "scan-extensions 는 composer 경로 입력을 받지 않음" }
+  - { entry_point: sse_probe, composer_path_input: "*", reason: "sse-probe 는 사이드이펙트 없는 streaming 핑" }
+
+effects:
+  # 진입 가드 (installer_is_completed)
+  - guard_returns_false_when_no_signals_present
+  - guard_returns_true_when_lock_file_present
+  - guard_returns_true_when_env_flag_true_present
+  - guard_returns_true_when_env_flag_one_present
+  - guard_returns_true_when_env_flag_yes_present
+  - guard_returns_true_when_env_flag_quoted_true_present
+  - guard_returns_false_when_env_flag_false_present
+  - guard_returns_false_when_env_missing_flag
+  - guard_returns_true_when_both_signals_present
+  - guard_resolves_base_path_from_constant_when_defined
+  - guard_resolves_base_path_from_file_location_when_undefined
+
+  # 진입점별 가드 호출 주입
+  - index_php_calls_guard_after_includes_block
+  - check_configuration_calls_guard_after_includes_block
+  - check_env_calls_guard_after_includes_block
+  - finalize_env_calls_guard_after_includes_block
+  - install_process_calls_guard_after_includes_block
+  - install_worker_calls_guard_after_includes_block
+  - save_extensions_calls_guard_after_includes_block
+  - scan_extensions_calls_guard_inside_non_library_mode_block
+  - sse_probe_calls_guard_before_sse_headers
+
+  # validateComposerPath
+  - composer_empty_path_falls_back_to_system_composer
+  - composer_path_with_space_is_rejected_before_exec
+  - composer_path_with_semicolon_is_rejected_before_exec
+  - composer_path_with_backtick_is_rejected_before_exec
+  - composer_nonexistent_file_path_is_rejected_before_exec
+  - composer_directory_path_is_rejected_before_exec
+  - composer_valid_phar_with_invalid_php_path_is_rejected_before_exec
+  - composer_valid_phar_with_default_php_invokes_exec_with_escapeshellarg
+  - composer_valid_binary_invokes_exec_with_escapeshellarg
+
+  # validatePhpPath
+  - php_default_php_string_invokes_exec
+  - php_path_with_shell_metachars_is_rejected_before_exec
+  - php_nonexistent_file_path_is_rejected_before_exec
+  - php_valid_binary_invokes_exec_with_escapeshellarg
+
+  # 부정 효과 (절대 발생 금지)
+  - rce_payload_does_not_create_filesystem_marker
+  - rce_payload_does_not_modify_env_file
+  - rce_payload_does_not_invoke_subshell
+
+test_files:
+  - tests/Unit/Installer/InstallerGuardTest.php
+  - tests/Unit/Installer/ComposerPathValidationTest.php
+
+manual_verification:
+  - description: "PoC 재현 — 패치 후 RCE 마커 미생성 확인"
+    steps:
+      - "php -S 127.0.0.1:18081 -t public 로 인스톨러 기동 (g7_installed 락 부재 상태)"
+      - "curl -X POST 'http://127.0.0.1:18081/install/api/check-configuration.php?action=test-composer' -H 'Content-Type: application/json' --data-binary '{\"path\":\"sh -c \\\"id > /tmp/g7_kve_repro\\\"\",\"php_path\":\"php\"}'"
+      - "응답: success=false, version=null, message=error_composer_exec_failed (가짜 path 형식)"
+      - "ls /tmp/g7_kve_repro → 부재 (RCE 미실행)"
+  - description: "설치 완료 후 인스톨러 진입점 410 응답"
+    steps:
+      - "touch storage/app/g7_installed (또는 .env 에 INSTALLER_COMPLETED=true 기록)"
+      - "9개 진입점 각각 GET/POST 요청"
+      - "모든 응답이 HTTP 410 + X-Installer: disabled + Installer is disabled 메시지"
+  - description: "정상 인스톨 흐름 비파괴"
+    steps:
+      - "fresh 환경에서 /install/ 진입 → 설치 진행 → step5/6 통과 → finalize 완료"
+      - "각 단계가 패치 전과 동일한 응답을 반환"

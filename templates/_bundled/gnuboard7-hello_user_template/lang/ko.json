@@ -1,0 +1,52 @@
+{
+    "user": {
+        "base_layout_title": "Hello 사용자 템플릿",
+        "base_layout_description": "그누보드7 학습용 최소 샘플 사용자 템플릿",
+        "header": {
+            "home_link": "Hello",
+            "tagline": "학습용 최소 샘플"
+        },
+        "footer": {
+            "copyright": "© gnuboard7 Hello User Template"
+        },
+        "nav": {
+            "home": "홈"
+        },
+        "home": {
+            "page_title": "홈",
+            "page_description": "Hello 사용자 템플릿 홈",
+            "welcome_title": "환영합니다!",
+            "welcome_description": "이 화면은 학습용 최소 샘플 사용자 템플릿의 홈 페이지입니다.",
+            "memos_title": "최근 메모",
+            "memos_empty": "표시할 메모가 없습니다.",
+            "back_to_home": "홈으로"
+        }
+    },
+    "error": {
+        "back_to_home": "홈으로 돌아가기",
+        "401": {
+            "title": "로그인이 필요합니다",
+            "description": "이 페이지를 이용하려면 로그인이 필요합니다."
+        },
+        "403": {
+            "title": "접근 권한이 없습니다",
+            "description": "이 페이지에 접근할 수 있는 권한이 없습니다."
+        },
+        "404": {
+            "title": "페이지를 찾을 수 없어요",
+            "description": "요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다."
+        },
+        "500": {
+            "title": "문제가 발생했습니다",
+            "description": "잠시 후 다시 시도해 주세요."
+        },
+        "503": {
+            "title": "잠시 이용이 어려워요",
+            "description": "서비스를 점검 중입니다. 잠시 후 다시 시도해 주세요."
+        },
+        "maintenance": {
+            "title": "점검 중입니다",
+            "description": "더 나은 서비스를 위해 잠시 점검을 진행하고 있어요."
+        }
+    }
+}

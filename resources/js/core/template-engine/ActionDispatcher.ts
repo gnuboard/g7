@@ -28,6 +28,7 @@ import type { G7DevToolsInterface } from './G7CoreGlobals';
 import { evaluateConditionBranches } from './helpers/ConditionEvaluator';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import type { GlobalHeaderRule } from './LayoutLoader';
+import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 
 const logger = createLogger('ActionDispatcher');
 
@@ -110,6 +111,10 @@ export type ActionType =
   | 'saveToLocalStorage' // 로컬스토리지에 저장
   | 'loadFromLocalStorage' // 로컬스토리지에서 불러오기
   | 'scrollIntoView' // 특정 요소로 스크롤
+  | 'ensureIdentityVerified' // 본인인증 선제 보장 (IDV 정책 프론트 가드)
+  | 'resolveIdentityChallenge' // 본인인증 모달 → IdentityGuardInterceptor deferred resolver 통보
+  | 'startInterval' // 주기적으로 액션 실행 (id 기반 관리, stopInterval 로 중단)
+  | 'stopInterval' // startInterval 로 등록한 interval 중단
   | 'custom'; // 사용자 정의 액션
 
 /**
@@ -526,6 +531,17 @@ export class ActionDispatcher {
    * @since engine-v1.26.1
    */
   private previewMode: boolean = false;
+
+  /**
+   * startInterval 핸들러로 등록된 타이머 맵.
+   *
+   * key = 레이아웃이 지정한 interval id, value = setInterval 반환 timerId.
+   * 레이아웃은 stopInterval 로 id 기반 중단을 수행할 수 있으며,
+   * 페이지 전환 시에는 `stopAllIntervals()` 로 일괄 정리된다.
+   *
+   * @since engine-v1.45.0
+   */
+  private intervals: Map<string, ReturnType<typeof setInterval>> = new Map();
 
   /**
    * ActionDispatcher 생성자
@@ -1145,10 +1161,17 @@ export class ActionDispatcher {
     });
 
     // refresh: 현재 페이지 새로고침
-    this.registerHandler('refresh', async (_action: ActionDefinition, _context: ActionContext) => {
+    // params.delayMs (number, 기본 0) — 선행 토스트/모달 닫힘 애니메이션이 보이도록 지연 후 reload.
+    //   토스트(_global.toasts) 메시지가 사용자에게 인지되기 전에 reload 가 일어나는 것을 방지.
+    this.registerHandler('refresh', async (action: ActionDefinition, _context: ActionContext) => {
       if (typeof window === 'undefined') {
         logger.warn('refresh: window is not available');
         return;
+      }
+
+      const delayMs = Number(action.params?.delayMs ?? 0);
+      if (delayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
       }
 
       window.location.reload();
@@ -2224,6 +2247,14 @@ export class ActionDispatcher {
       let result: any;
 
       switch (action.handler) {
+        case 'ensureIdentityVerified':
+          result = await this.handleEnsureIdentityVerified(resolvedParams);
+          break;
+
+        case 'resolveIdentityChallenge':
+          result = this.handleResolveIdentityChallenge(resolvedParams);
+          break;
+
         case 'navigate':
           // navigate 액션의 경우 params.path를 우선적으로 사용 (동적 바인딩 지원)
           const navigatePath = resolvedParams.path || resolvedTarget;
@@ -2332,6 +2363,14 @@ export class ActionDispatcher {
 
         case 'parallel':
           result = await this.handleParallel(action, context);
+          break;
+
+        case 'startInterval':
+          result = this.handleStartInterval(resolvedParams, context);
+          break;
+
+        case 'stopInterval':
+          result = this.handleStopInterval(resolvedParams);
           break;
 
         case 'loadScript':
@@ -3251,6 +3290,118 @@ export class ActionDispatcher {
   }
 
   /**
+   * ensureIdentityVerified 액션 — API 호출 전 본인인증을 선제 보장합니다.
+   *
+   * 레이아웃에서 `{ handler: 'ensureIdentityVerified', params: { purpose: '...' } }` 로 호출.
+   * 정책 resolve 는 GET /api/identity/policies/resolve (v1.1) 로 미래 확장 예정.
+   * 현 버전은 POST /api/identity/challenges 로 즉시 challenge 를 시작하고,
+   * IdentityGuardInterceptor.handle 과 동일한 launcher 플로우를 재사용합니다.
+   *
+   * @param params 액션 파라미터 (purpose 필수)
+   * @returns 사용자가 verify 에 성공하면 true, 취소 시 false
+   */
+  private async handleEnsureIdentityVerified(params: Record<string, any>): Promise<boolean> {
+    const purpose = typeof params.purpose === 'string' ? params.purpose : 'sensitive_action';
+
+    const verified = await IdentityGuardInterceptor.handle({
+      success: false,
+      error_code: 'identity_verification_required',
+      message: '',
+      verification: {
+        policy_key: (params.policy_key as string) ?? '',
+        purpose,
+        provider_id: (params.provider_id as string) ?? null,
+        render_hint: (params.render_hint as string) ?? null,
+        return_request: null, // pre-emptive 호출은 재실행할 원 요청 없음
+      },
+    });
+
+    return verified !== null;
+  }
+
+  /**
+   * resolveIdentityChallenge 액션 — 본인인증 모달/풀페이지/외부 SDK callback 이
+   * `IdentityGuardInterceptor` 의 deferred resolver 에 verify 결과를 통보합니다.
+   *
+   * 레이아웃 JSON 호출 예시:
+   * - verify 성공: `{ handler: 'resolveIdentityChallenge', params: { result: 'verified', token: '...' } }`
+   * - 사용자 취소: `{ handler: 'resolveIdentityChallenge', params: { result: 'cancelled' } }`
+   * - verify 실패: `{ handler: 'resolveIdentityChallenge', params: { result: 'failed', failureCode: 'INVALID_CODE' } }`
+   *
+   * 부작용은 인터셉터의 글로벌 deferred resolver 1회 호출뿐입니다.
+   * setState / 렌더 사이클 / 폼 자동바인딩 / localDynamicState 와 무관합니다.
+   *
+   * @param params 결과 정보 (result 필수)
+   * @returns 항상 true — resolver 호출 자체는 실패하지 않으며 실패 정보는 result.status 로 전달됨
+   * @since engine-v1.46.0
+   */
+  private handleResolveIdentityChallenge(params: Record<string, any>): boolean {
+    const rawResult = typeof params.result === 'string' ? params.result : 'cancelled';
+
+    let result:
+      | { status: 'verified'; token: string; providerData?: Record<string, unknown> }
+      | { status: 'pending'; pollUrl: string; pollIntervalMs?: number; expiresAt: string }
+      | { status: 'cancelled' }
+      | { status: 'failed'; failureCode: string; reason?: string };
+
+    switch (rawResult) {
+      case 'verified': {
+        const token = typeof params.token === 'string' ? params.token : '';
+        if (!token) {
+          logger.warn(
+            'resolveIdentityChallenge: result=verified 인데 token 이 비어있습니다. failed 로 강등합니다.'
+          );
+          result = { status: 'failed', failureCode: 'MISSING_TOKEN' };
+          break;
+        }
+        result = {
+          status: 'verified',
+          token,
+          providerData:
+            params.providerData && typeof params.providerData === 'object'
+              ? (params.providerData as Record<string, unknown>)
+              : undefined,
+        };
+        break;
+      }
+      case 'pending': {
+        const pollUrl = typeof params.pollUrl === 'string' ? params.pollUrl : '';
+        const expiresAt = typeof params.expiresAt === 'string' ? params.expiresAt : '';
+        if (!pollUrl || !expiresAt) {
+          logger.warn(
+            'resolveIdentityChallenge: result=pending 인데 pollUrl/expiresAt 누락 — failed 로 강등합니다.'
+          );
+          result = { status: 'failed', failureCode: 'MALFORMED_PENDING' };
+          break;
+        }
+        result = {
+          status: 'pending',
+          pollUrl,
+          pollIntervalMs:
+            typeof params.pollIntervalMs === 'number' ? params.pollIntervalMs : undefined,
+          expiresAt,
+        };
+        break;
+      }
+      case 'failed':
+        result = {
+          status: 'failed',
+          failureCode:
+            typeof params.failureCode === 'string' ? params.failureCode : 'UNKNOWN',
+          reason: typeof params.reason === 'string' ? params.reason : undefined,
+        };
+        break;
+      case 'cancelled':
+      default:
+        result = { status: 'cancelled' };
+        break;
+    }
+
+    IdentityGuardInterceptor.resolveDeferred(result);
+    return true;
+  }
+
+  /**
    * apiCall 액션을 처리합니다.
    *
    * @param target API 엔드포인트
@@ -3366,7 +3517,7 @@ export class ActionDispatcher {
     }
 
     try {
-      const response = await fetch(finalTarget, options);
+      let response = await fetch(finalTarget, options);
 
       // 응답 본문 파싱 (성공/실패 모두)
       let responseData: any;
@@ -3374,6 +3525,26 @@ export class ActionDispatcher {
         responseData = await response.json();
       } catch {
         responseData = null;
+      }
+
+      // HTTP 428 + identity_verification_required → IDV Guard 인터셉트
+      // Challenge 모달 launcher 호출 후 성공 시 원 요청을 재실행합니다.
+      if (IdentityGuardInterceptor.isIdentityRequired(response.status, responseData)) {
+        // retry fetch 가 원 요청의 body/headers/credentials 를 그대로 재사용해야 백엔드가
+        // 빈 body 로 422 를 던지지 않음 (회원가입 등 모든 POST 흐름의 핵심 회귀 방지)
+        const replayed = await IdentityGuardInterceptor.handle(responseData, {
+          body: options.body,
+          headers: options.headers,
+          credentials: options.credentials,
+        });
+        if (replayed) {
+          response = replayed;
+          try {
+            responseData = await response.json();
+          } catch {
+            responseData = null;
+          }
+        }
       }
 
       // DevTools 요청 완료 추적 (성공/에러 모두 상태 코드와 응답 기록)
@@ -4767,6 +4938,77 @@ export class ActionDispatcher {
    * @param context 액션 컨텍스트
    * @returns 모든 액션 결과 배열
    */
+  /**
+   * startInterval 핸들러.
+   *
+   * `params.id` (필수) 로 타이머를 등록하고 `params.intervalMs` 주기로 `params.actions` 를 실행합니다.
+   * 같은 id 로 재등록 시 기존 타이머를 자동 정리합니다.
+   *
+   * @since engine-v1.45.0
+   */
+  private handleStartInterval(params: Record<string, any>, context: ActionContext): { success: boolean; id?: string } {
+    const id = typeof params.id === 'string' ? params.id : '';
+    const intervalMs = Number(params.intervalMs ?? 1000);
+    const actions = Array.isArray(params.actions) ? params.actions : [];
+
+    if (id === '' || !actions.length || intervalMs <= 0) {
+      logger.warn('startInterval requires non-empty id, positive intervalMs, and actions array');
+      return { success: false };
+    }
+
+    // 같은 id 에 이미 등록된 타이머가 있으면 먼저 중단 (idempotent)
+    const existing = this.intervals.get(id);
+    if (existing) {
+      clearInterval(existing);
+      this.intervals.delete(id);
+    }
+
+    const timerId = setInterval(() => {
+      for (const act of actions) {
+        this.executeAction(act as ActionDefinition, context).catch((err) => {
+          logger.error(`[startInterval:${id}] tick action failed`, err);
+        });
+      }
+    }, intervalMs);
+
+    this.intervals.set(id, timerId);
+
+    return { success: true, id };
+  }
+
+  /**
+   * stopInterval 핸들러 — startInterval 로 등록한 타이머를 `params.id` 로 찾아 중단합니다.
+   *
+   * @since engine-v1.45.0
+   */
+  private handleStopInterval(params: Record<string, any>): { success: boolean; id?: string } {
+    const id = typeof params.id === 'string' ? params.id : '';
+    if (id === '') {
+      logger.warn('stopInterval requires id parameter');
+      return { success: false };
+    }
+
+    const timerId = this.intervals.get(id);
+    if (timerId) {
+      clearInterval(timerId);
+      this.intervals.delete(id);
+    }
+
+    return { success: true, id };
+  }
+
+  /**
+   * 등록된 모든 interval 을 중단합니다. 페이지 전환 등에서 호출해 누수를 방지합니다.
+   *
+   * @since engine-v1.45.0
+   */
+  public stopAllIntervals(): void {
+    for (const timerId of this.intervals.values()) {
+      clearInterval(timerId);
+    }
+    this.intervals.clear();
+  }
+
   private async handleSequence(
     action: ActionDefinition,
     context: ActionContext
@@ -6697,6 +6939,9 @@ export class ActionDispatcher {
                     } as unknown as Event;
                     this.createHandler(action, dataContext, componentContext)(eventForHandler);
                   }
+                  // 주의: raw value fallback 없음 — 컴포넌트는 `{ target: { value } }` 패턴을 사용해야 함
+                  // (사례 26 회귀 테스트 참조: 마운트 시 raw value로 초기 setState가 발동하여
+                  //  API 로드 데이터를 덮어쓰는 버그 방지를 위해 의도적으로 제거됨)
                 }
               }
             }

@@ -70,7 +70,14 @@ class TossPaymentsApiService
             $body['cancelAmount'] = $cancelAmount;
         }
 
-        return $this->request('POST', "/v1/payments/{$paymentKey}/cancel", $body);
+        // 훅: 결제 취소 전 (본인인증 등 확장 지점)
+        \App\Extension\HookManager::doAction('sirsoft-tosspayments.payment.before_cancel', $paymentKey, $cancelReason, $cancelAmount);
+
+        $response = $this->request('POST', "/v1/payments/{$paymentKey}/cancel", $body);
+
+        \App\Extension\HookManager::doAction('sirsoft-tosspayments.payment.after_cancel', $paymentKey, $response);
+
+        return $response;
     }
 
     /**

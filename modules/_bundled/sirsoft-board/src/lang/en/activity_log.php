@@ -1,6 +1,24 @@
 <?php
 
 return [
+    // Action labels (last segment).
+    // ActivityLog::getActionLabelAttribute resolves module-origin labels from the module's lang first.
+    'action' => [
+        'add_to_menu' => 'Added to Menu',
+        'blind' => 'Blinded',
+        'blind_content' => 'Content Blinded',
+        'bulk_apply' => 'Bulk Applied',
+        'bulk_update_status' => 'Bulk Status Changed',
+        'create' => 'Created',
+        'delete' => 'Deleted',
+        'delete_content' => 'Content Deleted',
+        'restore' => 'Restored',
+        'restore_content' => 'Content Restored',
+        'update' => 'Updated',
+        'update_status' => 'Status Updated',
+        'upload' => 'Uploaded',
+    ],
+
     'description' => [
         // Board management (Admin)
         'board_index' => 'Board list viewed',

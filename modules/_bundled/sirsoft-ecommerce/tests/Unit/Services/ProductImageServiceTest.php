@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
@@ -45,6 +46,9 @@ class ProductImageServiceTest extends TestCase
         parent::setUp();
 
         config(['telescope.enabled' => false]);
+
+        // Hook listener job 차단 (mock 모델 deserialize 시 null TypeError 방지)
+        Queue::fake();
 
         $this->repository = Mockery::mock(ProductImageRepositoryInterface::class);
         $this->storage = Mockery::mock(StorageInterface::class);
@@ -275,6 +279,13 @@ class ProductImageServiceTest extends TestCase
             ->once()
             ->with($tempKey)
             ->andReturn(new EloquentCollection([$tempImage]));
+
+        // linkTempImages 는 복사 이미지 뒤에 배치하기 위해 getMaxSortOrder 조회
+        $this->repository
+            ->shouldReceive('getMaxSortOrder')
+            ->once()
+            ->with($productId, 'main')
+            ->andReturn(0);
 
         // get → put → delete (파일 이동)
         $this->storage

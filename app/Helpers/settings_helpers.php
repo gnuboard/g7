@@ -118,3 +118,31 @@ if (! function_exists('g7_plugin_settings')) {
         return Config::get("g7_settings.plugins.{$identifier}.{$key}", $default);
     }
 }
+
+if (! function_exists('g7_meta_generator_tag')) {
+    /**
+     * `<meta name="generator">` 태그 HTML을 생성합니다.
+     *
+     * 코어 SEO 설정(`seo.generator_enabled`, `seo.generator_content`)에 따라
+     * 메타 태그를 출력합니다. SEO 봇 페이지·SPA 셸·Admin 셸에서 공통 호출됩니다.
+     *
+     * - `seo.generator_enabled` 가 false 이면 빈 문자열 반환
+     * - `seo.generator_content` 가 빈 값이면 `"GnuBoard7 {버전}"` 자동 적용
+     * - content 는 e() 로 escape 처리되어 XSS 방어됨
+     *
+     * @return string `<meta name="generator" content="...">` 또는 빈 문자열
+     */
+    function g7_meta_generator_tag(): string
+    {
+        if (! g7_core_settings('seo.generator_enabled', true)) {
+            return '';
+        }
+
+        $content = trim((string) g7_core_settings('seo.generator_content', ''));
+        if ($content === '') {
+            $content = trim('GnuBoard7 '.config('app.version', ''));
+        }
+
+        return '<meta name="generator" content="'.e($content).'">';
+    }
+}

@@ -1,0 +1,87 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "확장(모듈/플러그인/템플릿) 언어팩 관리 공통 본문 — 환경설정 탭 UI 와 분리된 독립 wrapper. 상단에 부모 확장 페이지로의 back 버튼 + 스코프 안내 배너를 두고, 본문은 partials/admin_language_pack_list/_content.json (검색/필터/리스트/페이지네이션 SSoT) 을 재사용."
+    },
+    "id": "ext_lang_pack_content",
+    "type": "basic",
+    "name": "Div",
+    "props": { "className": "space-y-4" },
+    "children": [
+        {
+            "id": "ext_lp_back_bar",
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "flex items-center gap-2 text-blue-800 dark:text-blue-200" },
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "fas fa-info-circle", "size": "sm" } },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{route.path && route.path.indexOf('/admin/modules/') === 0}}",
+                            "text": "$t:admin.language_packs.banner.scoped|scope=module|target={{route.identifier}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{route.path && route.path.indexOf('/admin/plugins/') === 0}}",
+                            "text": "$t:admin.language_packs.banner.scoped|scope=plugin|target={{route.identifier}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{route.path && route.path.indexOf('/admin/templates/') === 0}}",
+                            "text": "$t:admin.language_packs.banner.scoped|scope=template|target={{route.identifier}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium"
+                    },
+                    "actions": [
+                        {
+                            "event": "onClick",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{route.path && route.path.indexOf('/admin/modules/') === 0 ? '/admin/modules' : (route.path && route.path.indexOf('/admin/plugins/') === 0 ? '/admin/plugins' : (route.path && route.path.indexOf('/admin/templates/') === 0 ? '/admin/templates' : '/admin/settings?tab=language_packs'))}}"
+                            }
+                        }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "fas fa-arrow-left", "size": "sm" } },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{route.path && route.path.indexOf('/admin/modules/') === 0}}",
+                            "text": "$t:admin.language_packs.banner.back_to_modules"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{route.path && route.path.indexOf('/admin/plugins/') === 0}}",
+                            "text": "$t:admin.language_packs.banner.back_to_plugins"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{route.path && route.path.indexOf('/admin/templates/') === 0}}",
+                            "text": "$t:admin.language_packs.banner.back_to_templates"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "partial": "partials/admin_language_pack_list/_content.json"
+        }
+    ]
+}

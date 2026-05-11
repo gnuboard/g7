@@ -5,6 +5,7 @@ namespace Tests\Unit\Services;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
+use App\Extension\ModuleManager;
 use App\Models\LayoutExtension;
 use App\Models\Module;
 use App\Models\Template;
@@ -48,6 +49,18 @@ class LayoutExtensionServiceVersionTest extends TestCase
      */
     public function test_extension_without_version_constraint_always_applies(): void
     {
+        // 오버라이드 대상 모듈을 Active 상태로 DB 에 등록 (isExtensionSourceActive 통과)
+        Module::create([
+            'identifier' => 'sirsoft-ecommerce',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '이커머스', 'en' => 'Ecommerce'],
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+        ModuleManager::invalidateModuleStatusCache();
+        $this->app->forgetInstance(LayoutExtensionService::class);
+        $this->service = app(LayoutExtensionService::class);
+
         // version_constraint가 없는 템플릿 오버라이드
         LayoutExtension::create([
             'template_id' => $this->template->id,
@@ -493,6 +506,26 @@ class LayoutExtensionServiceVersionTest extends TestCase
      */
     public function test_non_template_override_skips_version_check(): void
     {
+        // 모듈을 Active 로 등록 (isExtensionSourceActive(Module) 통과용)
+        Module::create([
+            'identifier' => 'sirsoft-ecommerce',
+            'vendor' => 'sirsoft',
+            'name' => ['ko' => '이커머스', 'en' => 'Ecommerce'],
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+        ]);
+        ModuleManager::invalidateModuleStatusCache();
+        $this->app->forgetInstance(LayoutExtensionService::class);
+        $this->service = app(LayoutExtensionService::class);
+
+        // ModuleManager.modules 는 부팅 시 filesystem 에서 디스커버링되지만 테스트 환경에서
+        // 누락될 수 있으므로 LayoutExtensionService.activeModules 를 직접 주입.
+        $reflection = new \ReflectionClass($this->service);
+        $activeModulesProp = $reflection->getProperty('activeModules');
+        $activeModulesProp->setValue($this->service, ['sirsoft-ecommerce']);
+        $activePluginsProp = $reflection->getProperty('activePlugins');
+        $activePluginsProp->setValue($this->service, []);
+
         // 모듈에서 직접 등록된 확장 (템플릿 오버라이드가 아님)
         LayoutExtension::create([
             'template_id' => $this->template->id,
@@ -547,6 +580,14 @@ class LayoutExtensionServiceVersionTest extends TestCase
             'version' => '2.0.0',
             'status' => ExtensionStatus::Active->value,
         ]);
+        ModuleManager::invalidateModuleStatusCache();
+        $this->app->forgetInstance(LayoutExtensionService::class);
+        $this->service = app(LayoutExtensionService::class);
+
+        // ModuleManager.modules 누락 대응: activeModules 직접 주입
+        $reflection = new \ReflectionClass($this->service);
+        $reflection->getProperty('activeModules')->setValue($this->service, ['sirsoft-ecommerce']);
+        $reflection->getProperty('activePlugins')->setValue($this->service, []);
 
         // 모듈이 등록한 원본 동적 UI
         LayoutExtension::create([

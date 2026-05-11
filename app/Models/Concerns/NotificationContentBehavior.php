@@ -60,7 +60,7 @@ trait NotificationContentBehavior
         $locale = $locale ?? app()->getLocale();
         $subject = $this->subject ?? [];
 
-        return $subject[$locale] ?? $subject['ko'] ?? $subject['en'] ?? '';
+        return $subject[$locale] ?? $subject[config('app.fallback_locale', 'ko')] ?? '';
     }
 
     /**
@@ -74,7 +74,7 @@ trait NotificationContentBehavior
         $locale = $locale ?? app()->getLocale();
         $body = $this->body ?? [];
 
-        return $body[$locale] ?? $body['ko'] ?? $body['en'] ?? '';
+        return $body[$locale] ?? $body[config('app.fallback_locale', 'ko')] ?? '';
     }
 
     /**

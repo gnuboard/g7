@@ -1,0 +1,262 @@
+{
+  "sirsoft-ecommerce": {
+    "name": "eコマース",
+    "description": "eコマースモジュール権限"
+  },
+  "sirsoft-ecommerce.products": {
+    "name": "商品管理",
+    "description": "商品管理権限"
+  },
+  "sirsoft-ecommerce.products.read": {
+    "name": "商品閲覧",
+    "description": "商品一覧および詳細閲覧"
+  },
+  "sirsoft-ecommerce.products.create": {
+    "name": "商品作成",
+    "description": "新規商品登録"
+  },
+  "sirsoft-ecommerce.products.update": {
+    "name": "商品編集",
+    "description": "商品情報編集"
+  },
+  "sirsoft-ecommerce.products.delete": {
+    "name": "商品削除",
+    "description": "商品削除"
+  },
+  "sirsoft-ecommerce.orders": {
+    "name": "注文管理",
+    "description": "注文管理権限"
+  },
+  "sirsoft-ecommerce.orders.read": {
+    "name": "注文閲覧",
+    "description": "注文一覧および詳細閲覧"
+  },
+  "sirsoft-ecommerce.orders.update": {
+    "name": "注文編集",
+    "description": "注文ステータス変更"
+  },
+  "sirsoft-ecommerce.categories": {
+    "name": "カテゴリ管理",
+    "description": "カテゴリ管理権限"
+  },
+  "sirsoft-ecommerce.categories.read": {
+    "name": "カテゴリ閲覧",
+    "description": "カテゴリ一覧および詳細閲覧"
+  },
+  "sirsoft-ecommerce.categories.create": {
+    "name": "カテゴリ作成",
+    "description": "カテゴリ作成"
+  },
+  "sirsoft-ecommerce.categories.update": {
+    "name": "カテゴリ編集",
+    "description": "カテゴリ編集"
+  },
+  "sirsoft-ecommerce.categories.delete": {
+    "name": "カテゴリ削除",
+    "description": "カテゴリ削除"
+  },
+  "sirsoft-ecommerce.brands": {
+    "name": "ブランド管理",
+    "description": "ブランド管理権限"
+  },
+  "sirsoft-ecommerce.brands.read": {
+    "name": "ブランド閲覧",
+    "description": "ブランド一覧および詳細閲覧"
+  },
+  "sirsoft-ecommerce.brands.create": {
+    "name": "ブランド作成",
+    "description": "ブランド作成"
+  },
+  "sirsoft-ecommerce.brands.update": {
+    "name": "ブランド編集",
+    "description": "ブランド編集"
+  },
+  "sirsoft-ecommerce.brands.delete": {
+    "name": "ブランド削除",
+    "description": "ブランド削除"
+  },
+  "sirsoft-ecommerce.product-notice-templates": {
+    "name": "商品情報提供表示管理",
+    "description": "商品情報提供表示テンプレート管理権限"
+  },
+  "sirsoft-ecommerce.product-notice-templates.read": {
+    "name": "閲覧",
+    "description": "商品情報提供表示閲覧"
+  },
+  "sirsoft-ecommerce.product-notice-templates.create": {
+    "name": "作成",
+    "description": "商品情報提供表示作成"
+  },
+  "sirsoft-ecommerce.product-notice-templates.update": {
+    "name": "編集",
+    "description": "商品情報提供表示編集"
+  },
+  "sirsoft-ecommerce.product-notice-templates.delete": {
+    "name": "削除",
+    "description": "商品情報提供表示削除"
+  },
+  "sirsoft-ecommerce.product-common-infos": {
+    "name": "共通情報管理",
+    "description": "商品共通情報管理権限"
+  },
+  "sirsoft-ecommerce.product-common-infos.read": {
+    "name": "閲覧",
+    "description": "共通情報閲覧"
+  },
+  "sirsoft-ecommerce.product-common-infos.create": {
+    "name": "作成",
+    "description": "共通情報作成"
+  },
+  "sirsoft-ecommerce.product-common-infos.update": {
+    "name": "編集",
+    "description": "共通情報編集"
+  },
+  "sirsoft-ecommerce.product-common-infos.delete": {
+    "name": "削除",
+    "description": "共通情報削除"
+  },
+  "sirsoft-ecommerce.settings": {
+    "name": "環境設定",
+    "description": "eコマース環境設定権限"
+  },
+  "sirsoft-ecommerce.settings.read": {
+    "name": "環境設定閲覧",
+    "description": "eコマース環境設定閲覧"
+  },
+  "sirsoft-ecommerce.settings.update": {
+    "name": "環境設定編集",
+    "description": "eコマース環境設定編集"
+  },
+  "sirsoft-ecommerce.promotion-coupon": {
+    "name": "クーポン管理",
+    "description": "クーポン管理権限"
+  },
+  "sirsoft-ecommerce.promotion-coupon.read": {
+    "name": "クーポン閲覧",
+    "description": "クーポン一覧および詳細閲覧"
+  },
+  "sirsoft-ecommerce.promotion-coupon.create": {
+    "name": "クーポン作成",
+    "description": "新規クーポン登録"
+  },
+  "sirsoft-ecommerce.promotion-coupon.update": {
+    "name": "クーポン編集",
+    "description": "クーポン情報編集"
+  },
+  "sirsoft-ecommerce.promotion-coupon.delete": {
+    "name": "クーポン削除",
+    "description": "クーポン削除"
+  },
+  "sirsoft-ecommerce.shipping-policies": {
+    "name": "配送ポリシー管理",
+    "description": "配送ポリシー管理権限"
+  },
+  "sirsoft-ecommerce.shipping-policies.read": {
+    "name": "配送ポリシー閲覧",
+    "description": "配送ポリシー一覧および詳細閲覧"
+  },
+  "sirsoft-ecommerce.shipping-policies.create": {
+    "name": "配送ポリシー作成",
+    "description": "新規配送ポリシー登録"
+  },
+  "sirsoft-ecommerce.shipping-policies.update": {
+    "name": "配送ポリシー編集",
+    "description": "配送ポリシー情報編集"
+  },
+  "sirsoft-ecommerce.shipping-policies.delete": {
+    "name": "配送ポリシー削除",
+    "description": "配送ポリシー削除"
+  },
+  "sirsoft-ecommerce.product-labels": {
+    "name": "商品ラベル管理",
+    "description": "商品ラベル管理権限"
+  },
+  "sirsoft-ecommerce.product-labels.read": {
+    "name": "商品ラベル閲覧",
+    "description": "商品ラベルリストおよび詳細閲覧"
+  },
+  "sirsoft-ecommerce.product-labels.create": {
+    "name": "商品ラベル作成",
+    "description": "新規商品ラベル登録"
+  },
+  "sirsoft-ecommerce.product-labels.update": {
+    "name": "商品ラベル編集",
+    "description": "商品ラベル情報編集"
+  },
+  "sirsoft-ecommerce.product-labels.delete": {
+    "name": "商品ラベル削除",
+    "description": "商品ラベル削除"
+  },
+  "sirsoft-ecommerce.identity.policies": {
+    "name": "イーコマース本人認証ポリシー",
+    "description": "イーコマースコンテキストの本人認証ポリシー管理権限"
+  },
+  "sirsoft-ecommerce.identity.policies.read": {
+    "name": "本人認証ポリシー閲覧",
+    "description": "イーコマース本人認証ポリシー閲覧"
+  },
+  "sirsoft-ecommerce.identity.policies.update": {
+    "name": "本人認証ポリシー編集",
+    "description": "イーコマース本人認証ポリシー編集·追加·削除"
+  },
+  "sirsoft-ecommerce.reviews": {
+    "name": "レビュー管理",
+    "description": "商品レビュー管理権限"
+  },
+  "sirsoft-ecommerce.reviews.read": {
+    "name": "レビュー閲覧",
+    "description": "レビューリストおよび詳細閲覧"
+  },
+  "sirsoft-ecommerce.reviews.update": {
+    "name": "レビュー処理",
+    "description": "レビューステータス変更·回答登録·編集·削除·一括処理"
+  },
+  "sirsoft-ecommerce.reviews.delete": {
+    "name": "レビュー削除",
+    "description": "レビュー削除"
+  },
+  "sirsoft-ecommerce.inquiries": {
+    "name": "お問い合わせ管理",
+    "description": "商品お問い合わせ管理権限"
+  },
+  "sirsoft-ecommerce.inquiries.update": {
+    "name": "お問い合わせ処理",
+    "description": "回答登録·編集·削除·非公開記事内容の閲覧"
+  },
+  "sirsoft-ecommerce.inquiries.delete": {
+    "name": "お問い合わせ削除",
+    "description": "顧客が作成したお問い合わせそのものを削除"
+  },
+  "sirsoft-ecommerce.user-products": {
+    "name": "ユーザー商品",
+    "description": "ユーザー商品アクセス権限(ブラックコンシューマー対策用)"
+  },
+  "sirsoft-ecommerce.user-products.read": {
+    "name": "商品閲覧",
+    "description": "商品リストおよび詳細閲覧"
+  },
+  "sirsoft-ecommerce.user-orders": {
+    "name": "ユーザー注文",
+    "description": "ユーザー注文関連権限(ブラックコンシューマー対策用)"
+  },
+  "sirsoft-ecommerce.user-orders.create": {
+    "name": "注文する",
+    "description": "注文作成"
+  },
+  "sirsoft-ecommerce.user-orders.cancel": {
+    "name": "注文キャンセル",
+    "description": "注文キャンセル要求"
+  },
+  "sirsoft-ecommerce.user-orders.confirm": {
+    "name": "購入確定",
+    "description": "注文商品購入確定"
+  },
+  "sirsoft-ecommerce.user-reviews": {
+    "name": "ユーザーレビュー",
+    "description": "ユーザーレビュー関連権限(ブラックコンシューマー対策用)"
+  },
+  "sirsoft-ecommerce.user-reviews.write": {
+    "name": "レビュー作成",
+    "description": "商品レビュー作成"
+  }
+}

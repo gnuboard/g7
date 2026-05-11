@@ -1,0 +1,35 @@
+{
+  "parcel": {
+    "name": "宅配便"
+  },
+  "direct": {
+    "name": "直送"
+  },
+  "quick": {
+    "name": "クイックサービス"
+  },
+  "freight": {
+    "name": "貨物配送"
+  },
+  "pickup": {
+    "name": "店舗受取"
+  },
+  "express": {
+    "name": "国内特急"
+  },
+  "international_ems": {
+    "name": "国際EMS"
+  },
+  "international_standard": {
+    "name": "国際通常"
+  },
+  "cvs": {
+    "name": "コンビニ宅配便"
+  },
+  "digital": {
+    "name": "デジタル商品"
+  },
+  "custom": {
+    "name": "直接入力"
+  }
+}

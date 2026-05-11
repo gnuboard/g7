@@ -19,6 +19,10 @@ class DashboardStatsListenerTest extends TestCase
      */
     public function test_listener_broadcasts_stats_update(): void
     {
+        // HookManager::broadcast 는 null/log 드라이버 또는 host 미설정 시 dispatch 스킵
+        config(['broadcasting.default' => 'reverb']);
+        config(['broadcasting.connections.reverb.options.host' => 'localhost']);
+
         Event::fake([GenericBroadcastEvent::class]);
 
         $mockService = Mockery::mock(DashboardService::class);
@@ -41,6 +45,10 @@ class DashboardStatsListenerTest extends TestCase
      */
     public function test_listener_fetches_data_from_dashboard_service(): void
     {
+        // HookManager::broadcast 는 null/log 드라이버 또는 host 미설정 시 dispatch 스킵
+        config(['broadcasting.default' => 'reverb']);
+        config(['broadcasting.connections.reverb.options.host' => 'localhost']);
+
         Event::fake([GenericBroadcastEvent::class]);
 
         $expectedData = [

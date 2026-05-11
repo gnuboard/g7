@@ -522,6 +522,14 @@ class AttachmentServiceTest extends ModuleTestCase
         $tempKey = 'temp-uuid-123';
         $postId = 5;
 
+        // Service 는 훅 발화를 위해 getByTempKey → linkTempAttachments → getById 순으로 호출
+        // Repository 시그니처: Eloquent\Collection 반환 필수 (Support\Collection 불일치)
+        $this->repository
+            ->shouldReceive('getByTempKey')
+            ->once()
+            ->with($slug, $tempKey)
+            ->andReturn(new \Illuminate\Database\Eloquent\Collection());
+
         $this->repository
             ->shouldReceive('linkTempAttachments')
             ->once()

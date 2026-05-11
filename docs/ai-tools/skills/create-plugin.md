@@ -2,6 +2,16 @@
 
 새로운 플러그인의 기본 구조를 생성합니다.
 
+## TL;DR (5초 요약)
+
+```text
+1. 명령: /create-plugin vendor-plugin
+2. 위치: plugins/_bundled/vendor-plugin/
+3. 참조 샘플: plugins/_bundled/gnuboard7-hello_plugin/ (학습용 최소 플러그인, Action+Filter 훅)
+4. hidden 플래그: manifest.hidden=true 시 관리자 UI 제외 (CLI 정상)
+5. 생성 후: extension:update-autoload → plugin:install → plugin:activate
+```
+
 ## 사용법
 
 ```text

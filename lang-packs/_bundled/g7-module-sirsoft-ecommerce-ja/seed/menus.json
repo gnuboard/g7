@@ -1,0 +1,35 @@
+{
+  "sirsoft-ecommerce": {
+    "name": "eコマース"
+  },
+  "sirsoft-ecommerce-settings": {
+    "name": "環境設定"
+  },
+  "sirsoft-ecommerce-products": {
+    "name": "商品管理"
+  },
+  "sirsoft-ecommerce-categories": {
+    "name": "カテゴリ管理"
+  },
+  "sirsoft-ecommerce-brands": {
+    "name": "ブランド管理"
+  },
+  "sirsoft-ecommerce-product-notices": {
+    "name": "商品情報提供告示"
+  },
+  "sirsoft-ecommerce-common-info": {
+    "name": "共通情報管理"
+  },
+  "sirsoft-ecommerce-orders": {
+    "name": "注文管理"
+  },
+  "sirsoft-ecommerce-promotion-coupons": {
+    "name": "クーポン管理"
+  },
+  "sirsoft-ecommerce-shipping-policies": {
+    "name": "配送ポリシー"
+  },
+  "sirsoft-ecommerce-reviews": {
+    "name": "レビュー管理"
+  }
+}

@@ -4,9 +4,11 @@ namespace Tests\Unit\Services;
 
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
+use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Services\DashboardService;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
 
@@ -15,9 +17,13 @@ use Tests\TestCase;
  */
 class DashboardServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private DashboardService $service;
 
     private $userRepository;
+
+    private $activityLogRepository;
 
     private $moduleManager;
 
@@ -28,11 +34,13 @@ class DashboardServiceTest extends TestCase
         parent::setUp();
 
         $this->userRepository = Mockery::mock(UserRepositoryInterface::class);
+        $this->activityLogRepository = Mockery::mock(ActivityLogRepositoryInterface::class);
         $this->moduleManager = Mockery::mock(ModuleManagerInterface::class);
         $this->pluginManager = Mockery::mock(PluginManagerInterface::class);
 
         $this->service = new DashboardService(
             $this->userRepository,
+            $this->activityLogRepository,
             $this->moduleManager,
             $this->pluginManager
         );
@@ -180,6 +188,7 @@ class DashboardServiceTest extends TestCase
     {
         $service = Mockery::mock(DashboardService::class, [
             $this->userRepository,
+            $this->activityLogRepository,
             $this->moduleManager,
             $this->pluginManager,
         ])->makePartial()->shouldAllowMockingProtectedMethods();
@@ -258,8 +267,8 @@ class DashboardServiceTest extends TestCase
 
     public function test_get_recent_activities_returns_array(): void
     {
-        $this->userRepository->shouldReceive('getRecentUsers')
-            ->with(10)
+        $this->activityLogRepository->shouldReceive('getRecent')
+            ->with('core.dashboard.activities', 5)
             ->andReturn(new EloquentCollection([]));
 
         $activities = $this->service->getRecentActivities();
@@ -269,14 +278,16 @@ class DashboardServiceTest extends TestCase
 
     public function test_get_recent_activities_formats_user_registration(): void
     {
-        $mockUser = Mockery::mock();
-        $mockUser->name = 'Test User';
-        $mockUser->email = 'test@example.com';
-        $mockUser->created_at = now()->subMinutes(5);
+        $mockLog = Mockery::mock(\App\Models\ActivityLog::class)->makePartial();
+        $mockLog->shouldReceive('getAttribute')->with('log_type')->andReturn(\App\Enums\ActivityLogType::User);
+        $mockLog->shouldReceive('getAttribute')->with('action')->andReturn('register');
+        $mockLog->shouldReceive('getAttribute')->with('localized_description')->andReturn('테스트 유저가 가입했습니다');
+        $mockLog->shouldReceive('getAttribute')->with('actor_name')->andReturn('Test User');
+        $mockLog->shouldReceive('getAttribute')->with('created_at')->andReturn(now()->subMinutes(5));
 
-        $this->userRepository->shouldReceive('getRecentUsers')
-            ->with(10)
-            ->andReturn(new EloquentCollection([$mockUser]));
+        $this->activityLogRepository->shouldReceive('getRecent')
+            ->with('core.dashboard.activities', 5)
+            ->andReturn(new EloquentCollection([$mockLog]));
 
         $activities = $this->service->getRecentActivities();
 
@@ -302,6 +313,7 @@ class DashboardServiceTest extends TestCase
     {
         $alerts = $this->service->getSystemAlerts();
 
+        $this->assertIsArray($alerts);
         foreach ($alerts as $alert) {
             $this->assertArrayHasKey('id', $alert);
             $this->assertArrayHasKey('title', $alert);
@@ -318,9 +330,17 @@ class DashboardServiceTest extends TestCase
         $alerts = $this->service->getSystemAlerts();
         $validTypes = ['info', 'warning', 'success', 'error'];
 
+        $this->assertIsArray($alerts);
         foreach ($alerts as $alert) {
             $this->assertContains($alert['type'], $validTypes);
         }
+    }
+
+    public function test_get_system_alerts_returns_empty_when_no_listeners(): void
+    {
+        $alerts = $this->service->getSystemAlerts();
+
+        $this->assertIsArray($alerts);
     }
 
     protected function tearDown(): void

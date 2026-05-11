@@ -2,6 +2,16 @@
 
 새로운 템플릿(관리자 또는 사용자)의 기본 구조를 생성합니다.
 
+## TL;DR (5초 요약)
+
+```text
+1. 명령: /create-template vendor-template [--type=admin|user]
+2. 위치: templates/_bundled/vendor-template/
+3. 참조 샘플: templates/_bundled/gnuboard7-hello_admin_template/ (Admin), gnuboard7-hello_user_template/ (User)
+4. hidden 플래그: manifest.hidden=true 시 관리자 UI 제외 (CLI 정상)
+5. 생성 후: npm install → template:build → template:install → template:activate
+```
+
 ## 사용법
 
 ```text

@@ -668,6 +668,50 @@ describe('DataBindingEngine', () => {
       const result = engine.resolveBindings('메뉴: {{$localized(menu.name)}}', context);
       expect(result).toBe('메뉴: 사용자 관리');
     });
+
+    // ─── fallbackKey (engine-v1.x — 다국어 라벨 lang pack 보강) ──────────
+    it('fallbackKey 미지정 시 기존 동작 유지 (활성 locale → ko → en → 첫 키)', () => {
+      const context = {
+        country: { name: { ko: '대한민국', en: 'South Korea' }, code: 'KR' },
+        $locale: 'ja',
+      };
+      // ja 키 없으면 ko 폴백
+      const result = engine.evaluateExpression('$localized(country.name)', context);
+      expect(result).toBe('대한민국');
+    });
+
+    it('fallbackKey 지정 + 활성 locale 키 존재 시 value 우선', () => {
+      const context = {
+        country: { name: { ko: '대한민국', en: 'South Korea', ja: '韓国' }, code: 'KR' },
+        $locale: 'ja',
+      };
+      // ja 키 있으면 fallbackKey 무시
+      const result = engine.evaluateExpression(
+        "$localized(country.name, 'sirsoft-ecommerce::settings.countries.KR.name')",
+        context
+      );
+      expect(result).toBe('韓国');
+    });
+
+    it('fallbackKey 지정 + 활성 locale 키 부재 + lang key 미해석 시 ko fallback', () => {
+      const context = {
+        country: { name: { ko: '대한민국', en: 'South Korea' }, code: 'KR' },
+        $locale: 'ja',
+      };
+      // ja 키 없음, fallbackKey 도 미등록 → ko 로 fallback
+      const result = engine.evaluateExpression(
+        "$localized(country.name, 'sirsoft-ecommerce::settings.countries.KR.name')",
+        context
+      );
+      // $t() 가 키를 그대로 반환 (등록 안됨) → value.ko
+      expect(result).toBe('대한민국');
+    });
+
+    it('value=null + fallbackKey 미해석 → 빈 문자열', () => {
+      const context = { $locale: 'ja' };
+      const result = engine.evaluateExpression("$localized(null, 'no.such.key')", context);
+      expect(result).toBe('');
+    });
   });
 
   describe('$t() 헬퍼 함수', () => {
@@ -734,8 +778,8 @@ describe('DataBindingEngine', () => {
    * 회귀 테스트 (Regression Tests)
    *
    * 트러블슈팅 가이드에 기록된 버그 사례들의 재발 방지를 위한 테스트
-   * @see .claude/docs/frontend/troubleshooting-cache.md
-   * @see .claude/docs/frontend/troubleshooting-state-setstate.md
+   * @see docs/frontend/troubleshooting-cache.md
+   * @see docs/frontend/troubleshooting-state-setstate.md
    */
   describe('Regression Tests', () => {
     describe('[TS-CACHE-1~4] skipCache 옵션 검증', () => {

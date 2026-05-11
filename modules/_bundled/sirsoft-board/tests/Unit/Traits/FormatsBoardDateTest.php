@@ -95,7 +95,10 @@ class FormatsBoardDateTest extends ModuleTestCase
 
         $result = $this->subject->callFormatCreatedAtFormat($dateTime, 'standard');
 
-        $this->assertEquals($dateTime->format('m-d'), $result);
+        // trait 가 사용자 타임존(예: Asia/Seoul) 으로 변환한 후 포맷하므로, 기대값도
+        // 동일 변환을 거쳐야 UTC↔Seoul 9시간 boundary 에서 ±1일 어긋나지 않음
+        $expectedDate = TimezoneHelper::toUserCarbon($dateTime)->format('m-d');
+        $this->assertEquals($expectedDate, $result);
     }
 
     #[Test]
@@ -105,7 +108,9 @@ class FormatsBoardDateTest extends ModuleTestCase
 
         $result = $this->subject->callFormatCreatedAtFormat($dateTime, 'standard');
 
-        $this->assertEquals($dateTime->format('y-m-d'), $result);
+        // 동일 이유 — 사용자 타임존 변환 후 포맷
+        $expectedDate = TimezoneHelper::toUserCarbon($dateTime)->format('y-m-d');
+        $this->assertEquals($expectedDate, $result);
     }
 
     // =========================================================================
@@ -125,7 +130,10 @@ class FormatsBoardDateTest extends ModuleTestCase
     #[Test]
     public function relative_format_returns_N개월전_when_months_ago(): void
     {
-        $dateTime = Carbon::now()->subMonths(2);
+        // Carbon::diffInMonths() 는 일수 차가 한 달 미만일 때 내림 처리하므로
+        // 월말/월초 boundary 에서 subMonths(2) 만으로는 1개월로 평가될 수 있다.
+        // 안정적인 2개월 차이를 보장하기 위해 추가로 며칠을 더 뺀다.
+        $dateTime = Carbon::now()->subMonths(2)->subDays(5);
 
         $result = $this->subject->callFormatCreatedAtFormat($dateTime, 'relative');
 

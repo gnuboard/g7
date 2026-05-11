@@ -1,0 +1,62 @@
+{
+  "mail.provider_default": {
+    "definition": {
+      "name": "メール本人確認 (デフォルト)",
+      "description": "特定の目的がマッチしない場合に使用されるデフォルトのメールテンプレート"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 本人確認認証コード",
+        "body": "<p>こんにちは。</p><p>下記の認証コードを入力して本人確認を完了してください。</p><p style=\"font-size:24px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に有効期限切れになります。</p><p>本人が申請していない場合は、このメールを無視してください。</p><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
+  },
+  "mail.purpose.signup": {
+    "definition": {
+      "name": "会員登録認証",
+      "description": "会員登録段階でメール本人確認時に送信"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 会員登録認証コード",
+        "body": "<h1>{app_name} 会員登録認証</h1><p>下記の認証コードを会員登録画面に入力してください。</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に有効期限切れになります。</p><p>本人が登録を試行していない場合は、このメールを無視してください。</p><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
+  },
+  "mail.purpose.password_reset": {
+    "definition": {
+      "name": "パスワード再設定リンク",
+      "description": "パスワード再設定リクエスト時に送信される署名付きリンクメール (link フロー)"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] パスワード再設定のご案内",
+        "body": "<h1>パスワード再設定</h1><p>パスワード再設定のリクエストを受け取りました。下記のボタンをクリックしてパスワードを再設定してください。</p><p>このリンクは<strong>{expire_minutes}分</strong>後に有効期限切れになります。</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin:24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display:inline-block; padding:12px 32px; background-color:#2d3748; color:#ffffff; text-decoration:none; border-radius:4px; font-weight:600; font-size:14px;\">パスワード再設定</a></td></tr></table><p>本人が申請していない場合は、このメールを無視してください。</p><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
+  },
+  "mail.purpose.self_update": {
+    "definition": {
+      "name": "アカウント情報変更認証",
+      "description": "アカウント情報変更時の本人確認コードメール"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] アカウント情報変更認証コード",
+        "body": "<h1>アカウント情報変更認証</h1><p>{purpose_label}の処理のために下記の認証コードを入力してください。</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に有効期限切れになります。</p><p><strong>本人が変更を試行していない場合は、直ちにパスワードを変更してください。</strong></p><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
+  },
+  "mail.purpose.sensitive_action": {
+    "definition": {
+      "name": "重要な作業認証",
+      "description": "決済、重要な設定変更など重要な作業時の本人確認コードメール"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 重要な作業認証コード",
+        "body": "<h1>重要な作業認証</h1><p>{purpose_label}の進行のために下記の認証コードを入力してください。</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に有効期限切れになります。</p><p><strong>本人が試行していない場合は、直ちにカスタマーサポートチームにお問い合わせください。</strong></p><p>ご利用ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
+  }
+}

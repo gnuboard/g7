@@ -2,8 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Contracts\Extension\CacheInterface;
-use App\Seo\SitemapGenerator;
+use App\Seo\SitemapManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -14,8 +13,8 @@ use Illuminate\Support\Facades\Log;
 /**
  * Sitemap XML 생성 큐 잡
  *
- * Sitemap을 비동기로 생성하여 캐시에 저장합니다.
- * 스케줄러 또는 Artisan 커맨드에서 디스패치됩니다.
+ * 스케줄러 또는 Artisan 커맨드에서 디스패치되며,
+ * 실제 생성 로직은 SitemapManager 서비스에 위임합니다.
  */
 class GenerateSitemapJob implements ShouldQueue
 {
@@ -32,26 +31,27 @@ class GenerateSitemapJob implements ShouldQueue
     public int $timeout = 300;
 
     /**
-     * Sitemap을 생성하고 캐시에 저장합니다.
+     * Sitemap 을 생성하고 캐시에 저장합니다.
      *
-     * @param  SitemapGenerator  $generator  Sitemap 생성기
+     * @param  SitemapManager  $manager  Sitemap 매니저 서비스
      */
-    public function handle(SitemapGenerator $generator, CacheInterface $cache): void
+    public function handle(SitemapManager $manager): void
     {
-        $enabled = (bool) g7_core_settings('seo.sitemap_enabled', true);
-        if (! $enabled) {
+        $result = $manager->regenerate();
+
+        if (($result['status'] ?? null) === 'disabled') {
             Log::info('[SEO] Sitemap generation skipped (disabled)');
 
             return;
         }
 
-        $xml = $generator->generate();
-        $ttl = (int) g7_core_settings('cache.seo_sitemap_ttl', g7_core_settings('seo.sitemap_cache_ttl', 86400));
-        $cache->put('seo.sitemap', $xml, $ttl);
+        if (! ($result['success'] ?? false)) {
+            throw new \RuntimeException($result['message'] ?? 'Sitemap regeneration failed');
+        }
 
         Log::info('[SEO] Sitemap generated and cached', [
-            'size' => strlen($xml),
-            'ttl' => $ttl,
+            'size' => $result['data']['size_bytes'] ?? null,
+            'ttl' => $result['data']['ttl'] ?? null,
         ]);
     }
 

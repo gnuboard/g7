@@ -24,9 +24,6 @@ import postForm from '../../../../../../../templates/_bundled/sirsoft-basic/layo
 import typeRenderer from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/form/_type_renderer.json';
 import passwordVerifyModal from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/form/_password_verify_modal.json';
 
-// === Shop QnA (게시판 abilities 사용) ===
-import tabQna from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_qna.json';
-
 // === Board Index 타입별 ===
 import galleryIndex from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/types/gallery/index.json';
 
@@ -97,7 +94,6 @@ const allBoardLayouts: Array<{ name: string; json: unknown }> = [
     { name: 'form/_post_form.json', json: postForm },
     { name: 'form/_type_renderer.json', json: typeRenderer },
     { name: 'form/_password_verify_modal.json', json: passwordVerifyModal },
-    { name: 'shop/detail/_tab_qna.json', json: tabQna },
     { name: 'types/gallery/index.json', json: galleryIndex },
 ];
 
@@ -264,14 +260,6 @@ describe('게시판 사용자 레이아웃 abilities 키 마이그레이션 검�
             expect(canManage.length).toBeGreaterThanOrEqual(1);
         });
 
-        it('shop/detail/_tab_qna.json: abilities?.can_write 표현식 포함', () => {
-            const expressions = findExpressionsInJson(tabQna);
-            const canWrite = findExpressionsContaining(
-                expressions,
-                'abilities?.can_write'
-            );
-            expect(canWrite.length).toBeGreaterThanOrEqual(1);
-        });
     });
 
     describe('findExpressionsInJson 헬퍼 정합성 검증', () => {

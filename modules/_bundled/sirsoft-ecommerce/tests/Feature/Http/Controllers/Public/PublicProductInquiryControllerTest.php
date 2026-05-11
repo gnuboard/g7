@@ -24,6 +24,22 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
         parent::setUp();
 
         $this->product = Product::factory()->create();
+
+        // 다른 모듈(sirsoft-board 등) 의 ServiceProvider 가 등록한 inquiry.* 필터가
+        // ModuleTestCase snapshot 에 의해 잔존하여 test mock 과 충돌하는 cross-module
+        // contamination 을 차단.
+        foreach ([
+            'sirsoft-ecommerce.inquiry.delete',
+            'sirsoft-ecommerce.inquiry.update_reply',
+            'sirsoft-ecommerce.inquiry.delete_reply',
+            'sirsoft-ecommerce.inquiry.create',
+            'sirsoft-ecommerce.inquiry.get_settings',
+            'sirsoft-ecommerce.inquiry.get_by_ids',
+            'sirsoft-ecommerce.inquiry.store_validation_rules',
+            'sirsoft-ecommerce.inquiry.update_validation_rules',
+        ] as $hook) {
+            HookManager::clearFilter($hook);
+        }
     }
 
     // ========================================
@@ -112,7 +128,7 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
     {
         $response = $this->postJson(
             "/api/modules/sirsoft-ecommerce/products/{$this->product->id}/inquiries",
-            ['content' => '문의 내용입니다.']
+            ['content' => '문의 내용입니다 자세하게']
         );
 
         $response->assertUnauthorized();
@@ -134,7 +150,7 @@ class PublicProductInquiryControllerTest extends ModuleTestCase
         $response = $this->actingAs($user)
             ->postJson(
                 "/api/modules/sirsoft-ecommerce/products/{$this->product->id}/inquiries",
-                ['content' => '문의 내용입니다.']
+                ['content' => '문의 내용입니다 자세하게']
             );
 
         $response->assertStatus(201)

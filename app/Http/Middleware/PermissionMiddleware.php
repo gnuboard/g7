@@ -148,6 +148,20 @@ class PermissionMiddleware
     }
 
     /**
+     * guest role 캐시를 무효화합니다.
+     *
+     * RolePermissionSeeder 실행 후 자동 호출 — 시드 직후 권한 변경이 즉시 반영되도록 보장.
+     * 운영 환경에서는 권한 재시드 (코어 업데이트 / 확장 install) 시점에 캐시 정합 유지.
+     * 테스트 환경에서는 RefreshDatabase 트랜잭션 rollback 후 새 시드의 stale id 회귀 방지.
+     *
+     * @return void
+     */
+    public static function clearGuestRoleCache(): void
+    {
+        self::$guestRoleCache = null;
+    }
+
+    /**
      * 권한 식별자의 동적 파라미터를 URL 파라미터 값으로 치환합니다.
      *
      * 예시: sirsoft-board.{slug}.posts.create + {slug: 'notice'}

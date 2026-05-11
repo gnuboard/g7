@@ -36,6 +36,24 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         // inquiry board_slug 설정 (createReply/updateReply/deleteReply 등에서 필요)
         app(EcommerceSettingsService::class)->setSetting('inquiry.board_slug', 'test-inquiry-board');
 
+        // 다른 모듈(sirsoft-board 등) 의 ServiceProvider 가 등록한 inquiry.* 필터가
+        // ModuleTestCase snapshot 에 의해 잔존하여 test mock 과 충돌하는 cross-module
+        // contamination 을 차단.
+        foreach ([
+            'sirsoft-ecommerce.inquiry.delete',
+            'sirsoft-ecommerce.inquiry.update_reply',
+            'sirsoft-ecommerce.inquiry.delete_reply',
+            'sirsoft-ecommerce.inquiry.create',
+            'sirsoft-ecommerce.inquiry.update',
+            'sirsoft-ecommerce.inquiry.get_settings',
+            'sirsoft-ecommerce.inquiry.get_by_ids',
+            'sirsoft-ecommerce.inquiry.store_validation_rules',
+            'sirsoft-ecommerce.inquiry.update_validation_rules',
+            'sirsoft-board.post.get_by_ids',
+        ] as $hook) {
+            HookManager::clearFilter($hook);
+        }
+
         // 게시판 훅 모킹 — 빈 데이터 반환
         HookManager::addFilter(
             'sirsoft-board.post.get_by_ids',
@@ -66,7 +84,7 @@ class UserProductInquiryControllerTest extends ModuleTestCase
     {
         $response = $this->putJson(
             "/api/modules/sirsoft-ecommerce/user/inquiries/{$this->inquiry->id}",
-            ['content' => '수정된 내용']
+            ['content' => '수정된 내용입니다 자세히 작성']
         );
 
         $response->assertUnauthorized();
@@ -104,7 +122,7 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $response = $this->actingAs($this->user)
             ->putJson(
                 '/api/modules/sirsoft-ecommerce/user/inquiries/99999',
-                ['content' => '수정 내용']
+                ['content' => '수정 내용입니다 자세하게 작성']
             );
 
         $response->assertNotFound();
@@ -160,7 +178,7 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $response = $this->actingAs($this->user)
             ->postJson(
                 "/api/modules/sirsoft-ecommerce/user/inquiries/{$this->inquiry->id}/reply",
-                ['content' => '답변 내용']
+                ['content' => '답변 내용입니다 친절하게 작성']
             );
 
         $response->assertStatus(403);
@@ -200,7 +218,7 @@ class UserProductInquiryControllerTest extends ModuleTestCase
         $response = $this->actingAs($this->user)
             ->putJson(
                 "/api/modules/sirsoft-ecommerce/user/inquiries/{$answeredInquiry->id}/reply",
-                ['content' => '수정된 답변']
+                ['content' => '수정된 답변 내용입니다 자세히']
             );
 
         $response->assertStatus(403);

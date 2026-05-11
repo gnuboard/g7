@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
  * - trigger_user: 이벤트를 유발한 사용자 (주문자, 가입자 등)
  * - related_user: 관련 사용자 (문의 답변 → 문의 작성자)
  * - role: 특정 역할의 사용자들 (admin, manager 등)
+ * - permission: 특정 권한을 가진 역할에 소속된 사용자들 (예: sirsoft-board.reports.manage)
  * - specific_users: 지정된 사용자 UUID 목록
  */
 class NotificationRecipientResolver
@@ -45,6 +46,7 @@ class NotificationRecipientResolver
                     'trigger_user' => $this->addTriggerUser($recipients, $context),
                     'related_user' => $this->addRelatedUser($recipients, $context, $rule),
                     'role' => $this->addByRole($recipients, $rule),
+                    'permission' => $this->addByPermission($recipients, $rule),
                     'specific_users' => $this->addSpecificUsers($recipients, $rule),
                     default => Log::warning('NotificationRecipientResolver: 알 수 없는 수신자 타입', [
                         'type' => $type,
@@ -140,6 +142,38 @@ class NotificationRecipientResolver
         }
 
         $recipients->push(...$roleUsers->all());
+    }
+
+    /**
+     * 특정 권한 보유 사용자를 수신자에 추가합니다.
+     *
+     * `rule.value` 에 지정된 권한 identifier 를 가진 역할에 소속된 모든 사용자를 수집합니다.
+     * role 기반 수신자와 달리 "권한을 가진 자" 기준이므로 테스트에서 권한을 제거하면
+     * 자동으로 수신자 목록에서 제외됩니다.
+     *
+     * @param Collection $recipients 수신자 컬렉션
+     * @param array $rule 수신자 규칙 (value = permission identifier)
+     */
+    private function addByPermission(Collection $recipients, array $rule): void
+    {
+        $permissionIdentifier = $rule['value'] ?? null;
+        if (! $permissionIdentifier) {
+            return;
+        }
+
+        $permission = \App\Models\Permission::where('identifier', $permissionIdentifier)->first();
+        if (! $permission) {
+            return;
+        }
+
+        $roleIds = $permission->roles()->pluck('roles.id');
+        $userIds = \DB::table('user_roles')
+            ->whereIn('role_id', $roleIds)
+            ->pluck('user_id')
+            ->unique();
+
+        $users = User::whereIn('id', $userIds)->get();
+        $recipients->push(...$users->all());
     }
 
     /**

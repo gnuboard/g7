@@ -1,0 +1,119 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 웹 인스톨러 Step 4 번들 언어팩 동반선택 흐름의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 ScanLanguagePacksTest + 수동 브라우저 검증으로 커버.
+
+feature: 웹 인스톨러 Step 4 — 번들 언어팩 동반 선택 · 설치 UI
+
+description: |
+  관리자 화면의 install-preview cascade 모달(이슈 #263 후속)과 동일한 정책을
+  웹 인스톨러(`public/install/`) Step 4 에 이식. 사용자가 코어/모듈/플러그인/
+  템플릿을 선택할 때 번들 언어팩(`lang-packs/_bundled/*`)을 함께 선택해 설치
+  마지막 단계에서 `php artisan language-pack:install --source=bundled` 로 일괄
+  설치한다.
+
+  설계 원칙:
+    - 번들 매니페스트(language-pack.json) = SSoT. 인스톨러는 Laravel 부팅 없이
+      직접 스캔.
+    - locale 별 서브헤딩 그룹핑. 코어/확장당 다수 locale 가능 (ja + zh-CN 동시).
+    - default_selected = OFF (admin 모달의 "모든 후보 ON" 정책과 차별화).
+    - 종속 확장 미선택 시 disabled + 자동 해제 (admin 모달과 동일).
+    - 언어팩 1건 설치 실패는 best-effort (rollback 회피, 경고 로그).
+
+axes:
+  scope: [core, module, plugin, template]
+  target_extension_selected: [yes, no, n_a_for_core]
+  pack_initial_state: [unselected, selected_by_user]
+  user_action: [select_extension, deselect_extension, select_pack, deselect_pack, none]
+  install_outcome: [all_success, pack_partial_failure, extension_failure_blocks_pack]
+  multi_locale: [single_locale, ja_plus_zh_cn]
+
+exclusions:
+  - { scope: core, target_extension_selected: yes, reason: "코어 언어팩은 target_identifier 가 null — '확장 선택됨' 개념 미적용" }
+  - { scope: core, target_extension_selected: no, reason: "동상" }
+  - { scope: module, target_extension_selected: n_a_for_core, reason: "비-core 항목은 target 매칭 필수" }
+  - { scope: plugin, target_extension_selected: n_a_for_core, reason: "동상" }
+  - { scope: template, target_extension_selected: n_a_for_core, reason: "동상" }
+  - { user_action: deselect_pack, pack_initial_state: unselected, reason: "이미 unselected 상태에서 deselect 액션 부재" }
+  - { user_action: deselect_extension, target_extension_selected: no, reason: "미선택 확장은 deselect 대상 부재" }
+
+effects:
+  # 스캔
+  - scan_returns_all_bundled_manifests
+  - scan_excludes_hidden_manifests
+  - scan_excludes_packs_targeting_hidden_host_extensions
+  - scan_preserves_scope_target_locale_fields
+  - scan_supports_multiple_locales_per_extension
+
+  # 종속 확장 표시
+  - extension_pack_card_shows_target_extension_name_and_identifier
+  - extension_pack_card_falls_back_to_identifier_when_extension_metadata_missing
+
+  # UI 상태
+  - core_pack_card_always_clickable
+  - extension_pack_card_disabled_when_target_extension_unselected
+  - extension_pack_card_clickable_when_target_extension_selected
+  - locale_grouping_renders_one_subheading_per_unique_locale
+  - default_selected_is_off_for_all_packs
+
+  # cascade
+  - selecting_extension_enables_dependent_pack_card
+  - deselecting_extension_disables_dependent_pack_card_and_auto_removes_from_selection
+  - cascade_state_applied_after_load_extensions
+  - cascade_state_applied_after_toggle_extension
+  - cascade_state_applied_after_restore_selection_state
+
+  # 저장 / 설치
+  - save_extensions_persists_language_packs_array_to_state_json
+  - state_json_default_includes_language_packs_empty_array
+  - task_runner_installs_language_packs_after_all_extension_activations
+  - task_runner_invokes_artisan_with_source_bundled_flag
+  - task_runner_treats_language_pack_failure_as_best_effort_no_rollback
+  - task_runner_logs_warning_on_partial_failure_and_continues
+  - step5_progress_ui_renders_language_packs_task_group_with_per_pack_items
+
+  # 일괄 토글
+  - master_bulk_toggle_selects_all_optional_categories_in_correct_order
+  - master_bulk_toggle_deselects_in_reverse_order_to_release_cascade_dependencies
+  - section_bulk_toggle_selects_all_items_in_target_category
+  - section_bulk_toggle_for_user_templates_selects_only_first_item_due_to_single_select_rule
+  - section_bulk_toggle_for_language_packs_skips_disabled_cards
+  - bulk_toggle_checkbox_indeterminate_when_partially_selected
+  - bulk_toggle_checkbox_disabled_when_no_selectable_items_in_section
+  - admin_templates_excluded_from_bulk_toggle_due_to_required_single_select
+
+  # 회귀 가드
+  - existing_4_extension_categories_unchanged
+  - hidden_sample_filtering_still_applies_to_modules_plugins_templates
+  - empty_lang_packs_directory_renders_no_language_packs_message
+
+manual_verifications:
+  - description: "Step 4 진입 시 5번째 '언어팩' 카드 노출 + locale 별 서브헤딩"
+    steps:
+      - "신규 클론 + /install 진입"
+      - "Step 4 도달"
+      - "확인: 5번째 카드 '🌐 언어팩' 노출"
+      - "확인: '日本語 (ja)' 서브헤딩 + 12개 카드"
+      - "확인: 모든 비-core 카드 회색 (disabled, default OFF)"
+
+  - description: "확장 선택에 따른 언어팩 카드 활성화"
+    steps:
+      - "'게시판' 모듈 체크"
+      - "확인: 'Sirsoft Board JP' 카드 즉시 활성화 + clickable"
+      - "'Sirsoft Board JP' 체크"
+      - "확인: 선택 요약 '언어팩: 1'"
+
+  - description: "확장 해제에 따른 자동 비활성화"
+    steps:
+      - "위 상태에서 '게시판' 모듈 해제"
+      - "확인: 'Sirsoft Board JP' 자동 disabled + 자동 해제"
+      - "확인: 선택 요약 '언어팩: 0'"
+
+  - description: "설치 흐름 — 마지막 단계에서 언어팩 일괄 설치"
+    steps:
+      - "'G7 Core Japanese' 체크 + 다음"
+      - "Step 5 진행"
+      - "확인: 모든 확장 install/activate 완료 후 '언어팩 설치' 단계 노출"
+      - "확인: 'log_language_pack_install_success' 로그 출력"
+      - "확인: admin 로그인 후 언어 셀렉터에 '日本語' 노출"
+
+test_files:
+  - tests/Unit/Installer/ScanLanguagePacksTest.php
+  - tests/Unit/Installer/InstallerStateSchemaTest.php

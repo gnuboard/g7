@@ -9,7 +9,8 @@ use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Modules\Sirsoft\Board\Database\Seeders\BoardNotificationDefinitionSeeder;
+use App\Extension\Helpers\NotificationSyncHelper;
+use App\Extension\ModuleManager;
 
 /**
  * Board 모듈 1.0.0-beta.2 업그레이드 스텝
@@ -121,9 +122,9 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
             return;
         }
 
-        // 게시판 알림 정의 시딩 (7종)
+        // 게시판 알림 정의 시딩 (module.php::getNotificationDefinitions() SSoT)
         $context->logger->info('[board-beta.2] 게시판 알림 정의 시딩...');
-        (new BoardNotificationDefinitionSeeder())->run();
+        $this->syncBoardNotificationDefinitions();
 
         // board_mail_templates → notification_templates 데이터 이관
         if (Schema::hasTable('board_mail_templates')) {
@@ -136,6 +137,42 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
         $context->logger->info('[board-beta.2] 게시판 메일 템플릿 캐시 무효화 완료');
 
         $context->logger->info('[board-beta.2] 게시판 알림 정의 이관 완료');
+    }
+
+    /**
+     * module.php::getNotificationDefinitions() 를 SSoT 로 알림 정의를 동기화합니다.
+     *
+     * declarative getter 패턴 도입 이후 별도 Seeder 없이 Manager 가 자동 동기화하나,
+     * 본 업그레이드 스텝은 beta.1/2/3 → beta.4 경로 호환을 위해 명시적으로 1회 동기화합니다.
+     *
+     * @return void
+     */
+    private function syncBoardNotificationDefinitions(): void
+    {
+        $module = app(ModuleManager::class)->getModule('sirsoft-board');
+        if (! $module) {
+            return;
+        }
+
+        $helper = app(NotificationSyncHelper::class);
+        $definedTypes = [];
+
+        foreach ($module->getNotificationDefinitions() as $data) {
+            $data['extension_type'] = 'module';
+            $data['extension_identifier'] = 'sirsoft-board';
+
+            $definition = $helper->syncDefinition($data);
+            $definedTypes[] = $definition->type;
+
+            $definedChannels = [];
+            foreach ($data['templates'] ?? [] as $template) {
+                $helper->syncTemplate($definition->id, $template);
+                $definedChannels[] = $template['channel'];
+            }
+            $helper->cleanupStaleTemplates($definition->id, $definedChannels);
+        }
+
+        $helper->cleanupStaleDefinitions('module', 'sirsoft-board', $definedTypes);
     }
 
     /**
@@ -543,8 +580,11 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
         $types = ['new_comment', 'reply_comment', 'post_reply', 'post_action', 'new_post_admin', 'report_received_admin', 'report_action'];
         $created = 0;
 
-        $seeder = new BoardNotificationDefinitionSeeder();
-        $definitionsMap = collect($seeder->getDefaultDefinitions())->keyBy('type');
+        // module.php::getNotificationDefinitions() 가 SSoT
+        $module = app(ModuleManager::class)->getModule('sirsoft-board');
+        $definitionsMap = $module
+            ? collect($module->getNotificationDefinitions())->keyBy('type')
+            : collect();
 
         foreach ($types as $type) {
             $definition = NotificationDefinition::where('type', $type)->first();

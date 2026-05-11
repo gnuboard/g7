@@ -22,12 +22,9 @@ class SequenceSeeder extends Seeder
     {
         $this->command->info('시퀀스 초기 데이터 동기화를 시작합니다.');
 
-        $types = [
-            SequenceType::PRODUCT,
-            SequenceType::ORDER,
-            SequenceType::CANCEL,
-            SequenceType::REFUND,
-        ];
+        // SequenceType::cases() 전체를 순회하여 enum 변경 시 자동 동기화 (drift 방지).
+        // enum 에 새 멤버를 추가하면 시더가 자동으로 따라간다.
+        $types = SequenceType::cases();
 
         $created = 0;
         $preserved = 0;

@@ -1,0 +1,100 @@
+{
+  "common": {
+    "$partial": "partial/common.json"
+  },
+  "currency": {
+    "$partial": "partial/currency.json"
+  },
+  "admin": {
+    "locale": {
+      "$partial": "partial/admin/locale.json"
+    },
+    "settings": {
+      "$partial": "partial/admin/settings.json"
+    },
+    "order_settings": {
+      "$partial": "partial/admin/order_settings.json"
+    },
+    "product": {
+      "$partial": "partial/admin/product.json"
+    },
+    "brand": {
+      "$partial": "partial/admin/brand.json"
+    },
+    "category": {
+      "$partial": "partial/admin/category.json"
+    },
+    "promotion_coupon": {
+      "$partial": "partial/admin/promotion_coupon.json"
+    },
+    "order": {
+      "$partial": "partial/admin/order.json"
+    },
+    "main_banner": {
+      "$partial": "partial/admin/main_banner.json"
+    },
+    "product_review": {
+      "$partial": "partial/admin/product_review.json"
+    },
+    "payment_failure_history": {
+      "$partial": "partial/admin/payment_failure_history.json"
+    },
+    "excel_download": {
+      "$partial": "partial/admin/excel_download.json"
+    },
+    "personal_payment": {
+      "$partial": "partial/admin/personal_payment.json"
+    },
+    "personal_payment_create": {
+      "$partial": "partial/admin/personal_payment_create.json"
+    },
+    "personal_payment_detail": {
+      "$partial": "partial/admin/personal_payment_detail.json"
+    },
+    "mileage_deposit_settings": {
+      "$partial": "partial/admin/mileage_deposit_settings.json"
+    },
+    "product_notice_template": {
+      "$partial": "partial/admin/product_notice_template.json"
+    },
+    "deposit": {
+      "$partial": "partial/admin/deposit.json"
+    },
+    "promotion_discount_code": {
+      "$partial": "partial/admin/promotion_discount_code.json"
+    },
+    "common_info": {
+      "$partial": "partial/admin/common_info.json"
+    },
+    "shipping_policy": {
+      "$partial": "partial/admin/shipping_policy.json"
+    }
+  },
+  "user": {
+    "$partial": "partial/user.json"
+  },
+  "product": {
+    "$partial": "partial/product.json"
+  },
+  "order": {
+    "$partial": "partial/order.json"
+  },
+  "category": {
+    "$partial": "partial/category.json"
+  },
+  "enums": {
+    "$partial": "partial/enums.json"
+  },
+  "messages": {
+    "$partial": "partial/messages.json"
+  },
+  "exceptions": {
+    "$partial": "partial/exceptions.json"
+  },
+  "validation": {
+    "$partial": "partial/validation.json"
+  },
+  "shop": {
+    "$partial": "partial/shop.json"
+  }
+}

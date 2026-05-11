@@ -13,7 +13,8 @@ class ListTemplateCommand extends Command
      */
     protected $signature = 'template:list
         {--type= : 템플릿 타입으로 필터 (admin, user)}
-        {--status= : 상태로 필터 (installed, uninstalled, active, inactive)}';
+        {--status= : 상태로 필터 (installed, uninstalled, active, inactive)}
+        {--hidden : 숨김(hidden=true) 템플릿도 함께 출력}';
 
     /**
      * The console command description.
@@ -40,6 +41,7 @@ class ListTemplateCommand extends Command
 
         $typeFilter = $this->option('type');
         $statusFilter = $this->option('status');
+        $includeHidden = (bool) $this->option('hidden');
 
         // 타입 필터 검증
         if ($typeFilter && ! in_array($typeFilter, ['admin', 'user'])) {
@@ -66,6 +68,11 @@ class ListTemplateCommand extends Command
 
         // 설치된 템플릿 추가
         foreach ($installedTemplates as $identifier => $template) {
+            // 숨김 필터: --hidden 미지정 시 hidden=true 템플릿 제외
+            if (! $includeHidden && ! empty($template['hidden'])) {
+                continue;
+            }
+
             // 타입 필터
             if ($typeFilter && $template['type'] !== $typeFilter) {
                 continue;
@@ -99,6 +106,11 @@ class ListTemplateCommand extends Command
         // 미설치 템플릿 추가
         if (! $statusFilter || $statusFilter === 'uninstalled') {
             foreach ($uninstalledTemplates as $identifier => $template) {
+                // 숨김 필터: --hidden 미지정 시 hidden=true 템플릿 제외
+                if (! $includeHidden && ! empty($template['hidden'])) {
+                    continue;
+                }
+
                 // 타입 필터
                 if ($typeFilter && $template['type'] !== $typeFilter) {
                     continue;

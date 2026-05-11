@@ -128,7 +128,9 @@ class Product extends Model implements FulltextSearchable
     ];
 
     /**
-     * 상품 옵션 관계
+     * 이 상품의 옵션 관계 (color/size 등 가변 옵션 정의).
+     *
+     * @return HasMany ProductOption 컬렉션 관계
      */
     public function options(): HasMany
     {
@@ -136,7 +138,9 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 활성 옵션만 조회
+     * 이 상품의 활성 옵션만 sort_order 정렬로 반환합니다 (`is_active=true`).
+     *
+     * @return HasMany 활성 ProductOption 컬렉션 관계
      */
     public function activeOptions(): HasMany
     {
@@ -144,7 +148,9 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 상품 이미지 관계
+     * 이 상품의 모든 이미지 관계 (sort_order 정렬).
+     *
+     * @return HasMany ProductImage 컬렉션 관계
      */
     public function images(): HasMany
     {
@@ -152,7 +158,9 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 대표 이미지 조회
+     * 이 상품의 대표 이미지 관계 (`is_thumbnail=true`).
+     *
+     * @return HasMany 대표 ProductImage 관계
      */
     public function thumbnail(): HasMany
     {
@@ -160,7 +168,11 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 대표 이미지 URL 반환 (API 서빙 URL)
+     * 대표 이미지 서빙 URL 을 반환합니다.
+     *
+     * 대표 이미지(`is_thumbnail=true`) 가 없으면 첫 번째 이미지로 폴백.
+     *
+     * @return string|null 대표 이미지 download_url 또는 이미지가 없으면 null
      */
     public function getThumbnailUrl(): ?string
     {
@@ -171,7 +183,9 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 카테고리 다대다 관계
+     * 이 상품과 카테고리의 다대다 관계 (`ecommerce_product_categories` 피벗, is_primary 포함).
+     *
+     * @return BelongsToMany Category 다대다 관계
      */
     public function categories(): BelongsToMany
     {
@@ -184,7 +198,9 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 대표 카테고리만 조회
+     * 이 상품의 대표 카테고리만 반환합니다 (피벗 `is_primary=true`).
+     *
+     * @return BelongsToMany 대표 Category 다대다 관계
      */
     public function primaryCategory(): BelongsToMany
     {
@@ -304,8 +320,11 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 카테고리 ID 배열 반환 (검색엔진 색인용)
-     * 상위 카테고리 ID도 모두 포함
+     * 검색엔진 색인용 — 직접 카테고리 ID 와 그 모든 상위(ancestor) 카테고리 ID 의 합집합을 반환합니다.
+     *
+     * Category 의 `path` 필드(예: `"1/5/23"`) 를 분해하여 조상 ID 를 포함시킵니다.
+     *
+     * @return array<int, int> 직접/상위 카테고리 ID 의 unique 배열
      */
     public function getAllCategoryIds(): array
     {
@@ -326,22 +345,24 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 현재 로케일의 상품명 반환
+     * 현재 로케일의 상품명을 반환합니다 (다국어 fallback chain 적용).
      *
-     * @param  string|null  $locale  로케일
+     * @param  string|null  $locale  반환할 로케일. null 이면 현재 앱 로케일 사용
+     * @return string 로케일별 상품명, 누락 시 fallback 로케일/첫 번째 키 순으로 시도
      */
     public function getLocalizedName(?string $locale = null): string
     {
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return $name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
-     * 현재 로케일의 상세 설명 반환
+     * 현재 로케일의 상세 설명을 반환합니다 (다국어 fallback chain 적용).
      *
-     * @param  string|null  $locale  로케일
+     * @param  string|null  $locale  반환할 로케일. null 이면 현재 앱 로케일 사용
+     * @return string|null 로케일별 상세 설명, description 이 비어있으면 null
      */
     public function getLocalizedDescription(?string $locale = null): ?string
     {
@@ -352,7 +373,7 @@ class Product extends Model implements FulltextSearchable
         $locale = $locale ?? app()->getLocale();
         $desc = $this->description;
 
-        return $desc[$locale] ?? $desc['ko'] ?? $desc[array_key_first($desc)] ?? null;
+        return $desc[$locale] ?? $desc[config('app.fallback_locale', 'ko')] ?? $desc[array_key_first($desc)] ?? null;
     }
 
     /**
@@ -376,12 +397,12 @@ class Product extends Model implements FulltextSearchable
             $values = $group['values'] ?? [];
 
             // name이 다국어 객체인 경우
-            $localizedName = is_array($name) ? ($name[$locale] ?? $name['ko'] ?? array_values($name)[0] ?? '') : $name;
+            $localizedName = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? array_values($name)[0] ?? '') : $name;
 
             // values가 다국어 객체 배열인 경우
             $localizedValues = [];
             foreach ($values as $value) {
-                $localizedValues[] = is_array($value) ? ($value[$locale] ?? $value['ko'] ?? array_values($value)[0] ?? '') : $value;
+                $localizedValues[] = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
             }
 
             $result[] = [
@@ -414,12 +435,12 @@ class Product extends Model implements FulltextSearchable
             $values = $group['values'] ?? [];
 
             // name_localized
-            $nameLocalized = is_array($name) ? ($name[$locale] ?? $name['ko'] ?? array_values($name)[0] ?? '') : $name;
+            $nameLocalized = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? array_values($name)[0] ?? '') : $name;
 
             // values_localized
             $valuesLocalized = [];
             foreach ($values as $value) {
-                $valuesLocalized[] = is_array($value) ? ($value[$locale] ?? $value['ko'] ?? array_values($value)[0] ?? '') : $value;
+                $valuesLocalized[] = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
             }
 
             $result[] = [
@@ -434,7 +455,11 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 옵션 재고 합계 계산
+     * 옵션 재고 합계를 계산합니다.
+     *
+     * 옵션이 있는 상품(`has_options=true`)은 활성 옵션 재고 합계를, 그 외는 상품 자체 재고를 반환.
+     *
+     * @return int 옵션 재고 합 또는 단일 재고 수량
      */
     public function calculateOptionStockSum(): int
     {
@@ -446,7 +471,11 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 재고 일치 여부 확인
+     * 상품 본체 재고 와 옵션 재고 합이 일치하는지 검증합니다.
+     *
+     * 옵션 없는 상품은 항상 true. 옵션 있는 상품은 합산이 상품 재고와 같아야 true.
+     *
+     * @return bool 일치하면 true
      */
     public function isStockConsistent(): bool
     {
@@ -458,7 +487,9 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 안전재고 이하 여부 확인
+     * 현재 재고가 안전재고 임계값 이하인지 검사합니다.
+     *
+     * @return bool stock_quantity <= safe_stock_quantity 면 true
      */
     public function isBelowSafeStock(): bool
     {
@@ -466,7 +497,9 @@ class Product extends Model implements FulltextSearchable
     }
 
     /**
-     * 할인율 계산
+     * 정가 대비 판매가의 할인율(%) 을 소수 1자리로 반환합니다.
+     *
+     * @return float 할인율(%) — 정가가 0 이하면 0
      */
     public function getDiscountRate(): float
     {

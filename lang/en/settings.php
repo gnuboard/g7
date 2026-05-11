@@ -33,6 +33,40 @@ return [
     // System info related
     'seconds' => 's',
 
+    // Driver labels (resolved per active language pack by DriverRegistryService)
+    'drivers' => [
+        'storage' => [
+            'local' => 'Local',
+            's3' => 'Amazon S3',
+        ],
+        'cache' => [
+            'file' => 'File',
+            'redis' => 'Redis',
+        ],
+        'session' => [
+            'file' => 'File',
+            'database' => 'Database',
+            'redis' => 'Redis',
+        ],
+        'queue' => [
+            'sync' => 'Sync',
+            'database' => 'Database',
+            'redis' => 'Redis',
+        ],
+        'log' => [
+            'single' => 'Single File',
+            'daily' => 'Daily File',
+        ],
+        'websocket' => [
+            'reverb' => 'Laravel Reverb',
+        ],
+        'mail' => [
+            'smtp' => 'SMTP',
+            'mailgun' => 'Mailgun',
+            'ses' => 'SES (Amazon)',
+        ],
+    ],
+
     // Driver connection test messages
     'driver_test_success' => 'All driver connection tests passed.',
     'driver_test_partial' => 'Some driver connection tests failed.',
@@ -138,5 +172,7 @@ return [
         'all_extract_methods_failed' => 'All archive extraction methods failed. Try manual update with --source option.',
         'unzip_command_failed' => 'unzip command failed (exit code: :code). :output',
         'zip_file_not_found' => 'Specified ZIP file not found: :path',
+        'source_vendor_missing' => 'No vendor directory in source. composer install may not have been executed.',
+        'composer_failed_with_output' => 'composer install failed.:output',
     ],
 ];

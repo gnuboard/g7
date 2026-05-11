@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\PluginOperationException;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
@@ -105,7 +106,16 @@ class PluginService
 
         return $this->pluginManager->getPluginUninstallInfo($pluginName);
     }
-
+    /**
+     * 플러그인을 설치합니다 (before/after_install 훅 발화 + ValidationException 변환).
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @param  \App\Extension\Vendor\VendorMode  $vendorMode  vendor 설치 모드 (Auto/Composer/Bundled)
+     * @param  bool  $force  Updating/Failed 등 진행 중 상태도 무시하고 강제 설치 여부
+     * @return array|null 설치된 플러그인 정보 또는 설치 실패 시 null
+     *
+     * @throws ValidationException 플러그인 설치 실패 시
+     */
     public function installPlugin(
         string $pluginName,
         \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
@@ -133,7 +143,17 @@ class PluginService
             ]);
         }
     }
-
+    /**
+     * 플러그인을 활성화합니다 (before/after_activate 훅 발화 + ValidationException 변환).
+     *
+     * 의존성 미충족 등으로 경고 응답이 돌아오면 success/warning 형태 그대로 반환합니다.
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @param  bool  $force  의존성 경고를 무시하고 강제 활성화 여부
+     * @return array{success: bool, plugin_info?: array, warning?: bool} 활성화 결과
+     *
+     * @throws ValidationException 활성화 실패 시
+     */
     public function activatePlugin(string $pluginName, bool $force = false): array
     {
         HookManager::doAction('core.plugins.before_activate', $pluginName);
@@ -165,7 +185,17 @@ class PluginService
             ]);
         }
     }
-
+    /**
+     * 플러그인을 비활성화합니다 (before/after_deactivate 훅 발화 + ValidationException 변환).
+     *
+     * 의존하는 다른 활성 확장이 있으면 경고 응답이 돌아오며 그대로 반환합니다.
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @param  bool  $force  의존성 경고를 무시하고 강제 비활성화 여부
+     * @return array{success: bool, plugin_info?: array, warning?: bool} 비활성화 결과
+     *
+     * @throws ValidationException 비활성화 실패 시
+     */
     public function deactivatePlugin(string $pluginName, bool $force = false): array
     {
         HookManager::doAction('core.plugins.before_deactivate', $pluginName);
@@ -182,7 +212,8 @@ class PluginService
             if ($result['success']) {
                 $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
-                HookManager::doAction('core.plugins.after_deactivate', $pluginName, $pluginInfo);
+                // after_deactivate 훅은 PluginManager 가 string identifier 시그니처로 이미 발화
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return array_merge($result, ['plugin_info' => $pluginInfo]);
             }
@@ -194,7 +225,15 @@ class PluginService
             ]);
         }
     }
-
+    /**
+     * 플러그인을 제거합니다 (before/after_uninstall 훅 발화).
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @param  bool  $deleteData  플러그인이 생성한 DB 데이터/스토리지 디렉토리까지 삭제 여부
+     * @return bool 제거 성공 여부
+     *
+     * @throws ValidationException 제거 실패 시
+     */
     public function uninstallPlugin(string $pluginName, bool $deleteData = false): bool
     {
         HookManager::doAction('core.plugins.before_uninstall', $pluginName, $deleteData);
@@ -236,6 +275,9 @@ class PluginService
             array_values($uninstalledPlugins)
         );
 
+        // 숨김 필터 적용 (기본: 숨김 항목 제외)
+        $allPlugins = $this->applyHiddenFilter($allPlugins, (bool) ($filters['include_hidden'] ?? false));
+
         // 상태 필터 적용
         if (! empty($filters['status'])) {
             $allPlugins = $this->applyStatusFilter($allPlugins, $filters['status']);
@@ -264,6 +306,27 @@ class PluginService
             'last_page' => (int) ceil($total / $perPage),
             'per_page' => $perPage,
         ];
+    }
+
+    /**
+     * 숨김 필터를 적용합니다.
+     *
+     * manifest 의 hidden=true 로 마킹된 플러그인은 기본 제외되며,
+     * $includeHidden=true 인 경우 포함됩니다.
+     *
+     * @param  array  $plugins  플러그인 목록
+     * @param  bool  $includeHidden  숨김 항목 포함 여부
+     * @return array 필터링된 플러그인 목록
+     */
+    private function applyHiddenFilter(array $plugins, bool $includeHidden): array
+    {
+        if ($includeHidden) {
+            return $plugins;
+        }
+
+        return array_filter($plugins, function ($plugin) {
+            return empty($plugin['hidden']);
+        });
     }
 
     /**
@@ -385,7 +448,7 @@ class PluginService
             // 현재 로케일 우선, 없으면 ko, 그 다음 en
             $locale = app()->getLocale();
 
-            return $value[$locale] ?? $value['ko'] ?? $value['en'] ?? reset($value) ?: null;
+            return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value) ?: null;
         }
 
         return (string) $value;
@@ -422,6 +485,7 @@ class PluginService
      * @param  string  $pluginName  업데이트할 플러그인 identifier
      * @param  \App\Extension\Vendor\VendorMode  $vendorMode  Vendor 설치 모드
      * @param  string  $layoutStrategy  레이아웃 전략 (overwrite|keep)
+     * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
      * @throws ValidationException 업데이트 실패 시
@@ -430,6 +494,7 @@ class PluginService
         string $pluginName,
         \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
         string $layoutStrategy = 'overwrite',
+        bool $force = false,
     ): array {
         HookManager::doAction('core.plugins.before_update', $pluginName);
 
@@ -437,7 +502,7 @@ class PluginService
             $this->pluginManager->loadPlugins();
             $result = $this->pluginManager->updatePlugin(
                 $pluginName,
-                false,
+                $force,
                 null,
                 $vendorMode,
                 $layoutStrategy,
@@ -663,6 +728,59 @@ class PluginService
      *
      * @throws \RuntimeException 설치 실패 시
      */
+    /**
+     * 업로드된 ZIP 의 manifest 와 검증 결과만 추출합니다 (실제 설치 X).
+     *
+     * 사용자가 플러그인 설치 전 plugin.json 검증 실패 사유를 미리 확인할 수 있게 합니다.
+     *
+     * @param  UploadedFile  $file  업로드된 ZIP 파일
+     * @return array{manifest: ?array<string, mixed>, validation: array<string, mixed>} 미리보기 결과
+     */
+    public function previewManifest(UploadedFile $file): array
+    {
+        $tempPath = storage_path('app/temp/plugins');
+        $extractPath = $tempPath.'/preview-'.uniqid('plugin_');
+        $manifest = null;
+        $errors = [];
+
+        try {
+            File::ensureDirectoryExists($tempPath);
+
+            $result = ZipInstallHelper::extractAndValidate(
+                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins'
+            );
+
+            $manifest = $result['config'];
+        } catch (\Throwable $e) {
+            $errors[] = $e->getMessage();
+        } finally {
+            if (File::exists($extractPath)) {
+                File::deleteDirectory($extractPath);
+            }
+        }
+
+        $existing = $manifest && ! empty($manifest['identifier'])
+            ? $this->pluginRepository->findByIdentifier($manifest['identifier'])
+            : null;
+
+        return [
+            'manifest' => $manifest,
+            'validation' => [
+                'errors' => $errors,
+                'is_valid' => $errors === [] && $manifest !== null,
+                'already_installed' => $existing !== null,
+                'existing_version' => $existing?->version,
+            ],
+        ];
+    }
+    /**
+     * 업로드된 ZIP 파일로부터 플러그인을 추출/검증하고 _pending 으로 이동 후 설치합니다.
+     *
+     * `plugin.json` 검증 → identifier 충돌 검사 → _pending 이동 → 설치 파이프라인 진입.
+     *
+     * @param  UploadedFile  $file  사용자가 업로드한 플러그인 ZIP 파일
+     * @return array 설치 결과 (identifier/version/installed_at 포함)
+     */
     public function installFromZipFile(UploadedFile $file): array
     {
         $tempPath = storage_path('app/temp/plugins');
@@ -719,7 +837,7 @@ class PluginService
             $token = config('app.update.github_token') ?? '';
 
             if (! GithubHelper::checkRepoExists($owner, $repo, $token)) {
-                throw new \RuntimeException(__('plugins.errors.github_repo_not_found'));
+                throw new PluginOperationException('plugins.errors.github_repo_not_found');
             }
 
             $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath, $token);
@@ -768,7 +886,7 @@ class PluginService
         $existingPlugin = $this->pluginManager->getPluginInfo($identifier);
 
         if ($existingPlugin && $existingPlugin['is_installed']) {
-            throw new \RuntimeException(__('plugins.errors.already_installed', ['plugin' => $identifier]));
+            throw new PluginOperationException('plugins.errors.already_installed', ['plugin' => $identifier]);
         }
     }
 
@@ -786,7 +904,7 @@ class PluginService
         $result = $this->pluginManager->installPlugin($identifier);
 
         if (! $result) {
-            throw new \RuntimeException(__('plugins.errors.install_failed'));
+            throw new PluginOperationException('plugins.errors.install_failed');
         }
 
         return $this->pluginManager->getPluginInfo($identifier);

@@ -3,9 +3,11 @@
 namespace Tests\Feature\Console\Commands\Template;
 
 use App\Enums\ExtensionStatus;
+use App\Extension\TemplateManager;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Helpers\ProtectsExtensionDirectories;
 use Tests\TestCase;
 
 /**
@@ -46,15 +48,26 @@ use Tests\TestCase;
  */
 class TemplateArtisanCommandsTest extends TestCase
 {
+    use ProtectsExtensionDirectories;
     use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
 
+        // 활성 디렉토리 보호 — uninstall 등이 dev 환경 디렉토리를 삭제하는 것을 차단
+        $this->setUpExtensionProtection();
+
         // 템플릿 매니저가 템플릿 디렉토리를 스캔하도록 초기화
-        $templateManager = app(\App\Extension\TemplateManager::class);
+        $templateManager = app(TemplateManager::class);
         $templateManager->loadTemplates();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->tearDownExtensionProtection();
+
+        parent::tearDown();
     }
 
     // ========================================================================
@@ -311,7 +324,7 @@ class TemplateArtisanCommandsTest extends TestCase
 
         // 삭제 확인에서 거절 → 템플릿 유지
         $this->artisan('template:uninstall', ['identifier' => $identifier])
-            ->expectsQuestion(__('templates.commands.uninstall.confirm_question'), false)
+            ->expectsQuestion(__('templates.commands.uninstall.confirm_question').' (yes/no) [no]', 'no')
             ->expectsOutput(__('templates.commands.uninstall.aborted'))
             ->assertExitCode(0);
 
@@ -322,7 +335,7 @@ class TemplateArtisanCommandsTest extends TestCase
         // 삭제 확인에서 승인 → 템플릿 삭제
         $templateId = $template->id;
         $this->artisan('template:uninstall', ['identifier' => $identifier])
-            ->expectsQuestion(__('templates.commands.uninstall.confirm_question'), true)
+            ->expectsQuestion(__('templates.commands.uninstall.confirm_question').' (yes/no) [no]', 'yes')
             ->expectsOutput('✅ '.__('templates.commands.uninstall.success', ['template' => $identifier]))
             ->assertExitCode(0);
 
@@ -389,7 +402,7 @@ class TemplateArtisanCommandsTest extends TestCase
 
         // 삭제
         $this->artisan('template:uninstall', ['identifier' => $identifier])
-            ->expectsQuestion(__('templates.commands.uninstall.confirm_question'), true)
+            ->expectsQuestion(__('templates.commands.uninstall.confirm_question').' (yes/no) [no]', 'yes')
             ->assertExitCode(0);
 
         // =====================================================================
@@ -426,7 +439,7 @@ class TemplateArtisanCommandsTest extends TestCase
 
         // Uninstall
         $this->artisan('template:uninstall', ['identifier' => $identifier])
-            ->expectsQuestion(__('templates.commands.uninstall.confirm_question'), true)
+            ->expectsQuestion(__('templates.commands.uninstall.confirm_question').' (yes/no) [no]', 'yes')
             ->assertExitCode(0);
 
         $this->assertDatabaseMissing('templates', [

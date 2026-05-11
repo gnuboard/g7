@@ -527,10 +527,49 @@ export const Card: React.FC<CardProps> = ({ title, onClick }) => (
 
 ---
 
+## 템플릿 부트스트랩 의무 (engine-v1.46.0+)
+
+`src/index.ts` 의 `initTemplate()` 함수에서 다음을 등록해야 합니다:
+
+1. 커스텀 핸들러 등록 — `actionDispatcher.registerHandler(name, handler)` (모든 템플릿 공통)
+2. **IDV 모달 launcher 등록** — `window.G7Core.identity.setLauncher(launcher)` (engine-v1.46.0+ 신규)
+
+본인인증 정책이 활성화되면 코어 `IdentityGuardInterceptor` 가 428 응답을 가로채 launcher 를 호출합니다. launcher 미등록 시 코어 `defaultLauncher` 가 토스트 + `/identity/challenge` 풀페이지 navigate 로 폴백합니다.
+
+```typescript
+// src/index.ts
+import { handlerMap } from './handlers';
+import { registerMyTemplateIdentityLauncher } from './handlers/identityLauncher';
+
+export function initTemplate(): void {
+  if (typeof window === 'undefined') return;
+
+  const registerHandlers = () => {
+    const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
+    if (actionDispatcher) {
+      Object.entries(handlerMap).forEach(([name, handler]) => {
+        actionDispatcher.registerHandler(name, handler);
+      });
+      // IDV launcher 는 핸들러 등록 직후 — G7Core.identity 준비됨
+      registerMyTemplateIdentityLauncher();
+    }
+    // ...
+  };
+  // ...
+}
+```
+
+상세 가이드: [../extension/template-idv-bootstrap.md](../extension/template-idv-bootstrap.md).
+
+---
+
 ## 관련 문서
 
 - [컴포넌트 개발 규칙](./components.md)
 - [레이아웃 JSON 스키마](./layout-json.md)
 - [데이터 바인딩](./data-binding.md)
 - [다크 모드 지원](./dark-mode.md)
+- [본인인증 모달 UI 표준 (engine-v1.46.0+)](./identity-verification-ui.md)
+- [본인인증 인터셉터 API 레퍼런스](./identity-guard-interceptor.md)
+- [외부 템플릿 IDV launcher 등록](../extension/template-idv-bootstrap.md)
 - [프론트엔드 가이드 인덱스](./index.md)

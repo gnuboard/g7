@@ -166,15 +166,8 @@ class PageRepository implements PageRepositoryInterface
      */
     public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', int $limit = 10): array
     {
-        $results = Page::search($keyword)
-            ->query(function ($query) use ($keyword, $orderBy, $direction) {
-                $query->published();
-
-                // FULLTEXT 외 필드 OR 조건 (slug)
-                $query->orWhere('slug', 'like', "%{$keyword}%");
-
-                $query->orderBy($orderBy, $direction);
-            })
+        $results = $this->buildKeywordQuery($keyword)
+            ->orderBy($orderBy, $direction)
             ->paginate($limit);
 
         return [
@@ -191,15 +184,35 @@ class PageRepository implements PageRepositoryInterface
      */
     public function countByKeyword(string $keyword): int
     {
-        return Page::search($keyword)
-            ->query(function ($query) use ($keyword) {
-                $query->published();
+        return $this->buildKeywordQuery($keyword)->count();
+    }
 
-                // FULLTEXT 외 필드 OR 조건 (slug)
-                $query->orWhere('slug', 'like', "%{$keyword}%");
-            })
-            ->paginate(1)
-            ->total();
+    /**
+     * 키워드 검색 공통 쿼리를 구성합니다.
+     *
+     * FULLTEXT(title, content) OR slug LIKE 를 properly grouped 상태로 AND published 와 결합.
+     *
+     * 주의: Scout 의 `Page::search($keyword)->query(fn)` 경로에서 non-FT `orWhere('slug')` 를
+     * 사용하면, Scout 내부 `Builder::getTotalCount` 가 queryCallback 이 존재할 때
+     * `queryScoutModelsByIds` 로 FT 없이 whereIn 을 붙여 재계수하는 경로에서 callback 을 재적용하며
+     * `WHERE published = ? OR slug LIKE ? AND id IN (...)` 형태로 연산자 우선순위가 깨져
+     * `published = ?` 만 유효해지고 total 이 모든 발행 페이지 수로 부풀려지는 회귀가 발생한다.
+     * 이 Repository 의 applyTitleKeywordSearch 에서 이미 사용중인
+     * `DatabaseFulltextEngine::whereFulltext` 정적 헬퍼 패턴과 동일하게 해결한다
+     * (Scout 엔진은 indexing 및 다른 검색에서 계속 사용됨).
+     *
+     * @param  string  $keyword  검색 키워드
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function buildKeywordQuery(string $keyword): \Illuminate\Database\Eloquent\Builder
+    {
+        return Page::query()
+            ->published()
+            ->where(function ($q) use ($keyword) {
+                DatabaseFulltextEngine::whereFulltext($q, 'title', $keyword, 'and');
+                DatabaseFulltextEngine::whereFulltext($q, 'content', $keyword, 'or');
+                $q->orWhere('slug', 'like', '%'.$keyword.'%');
+            });
     }
 
     /**

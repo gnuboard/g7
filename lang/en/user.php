@@ -26,7 +26,6 @@ return [
     'update_failed' => 'Failed to update user information: :error',
     'delete_success' => 'User deleted successfully.',
     'delete_failed' => 'Failed to delete user: :error',
-    'delete_admin_forbidden' => 'Administrator account cannot be deleted.',
     'statistics_success' => 'User statistics retrieved successfully.',
     'statistics_failed' => 'Failed to retrieve user statistics.',
     'search_success' => 'User search completed successfully.',

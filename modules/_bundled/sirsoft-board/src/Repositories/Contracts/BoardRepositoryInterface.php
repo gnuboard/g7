@@ -226,4 +226,22 @@ interface BoardRepositoryInterface
      * @return int 해당 유형의 게시판 개수
      */
     public function countByType(string $type): int;
+
+    /**
+     * 게시판의 posts_count 컬럼을 활성 게시글 수로 재계산해 갱신합니다.
+     *
+     * Listener (BoardPostsCountSyncListener) 가 호출하는 영속 단일 진입점.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculatePostsCount(int $boardId): int;
+
+    /**
+     * 게시판의 comments_count 컬럼을 활성 댓글 수로 재계산해 갱신합니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculateCommentsCount(int $boardId): int;
 }

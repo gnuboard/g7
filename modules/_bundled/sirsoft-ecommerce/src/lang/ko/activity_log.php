@@ -1,6 +1,49 @@
 <?php
 
 return [
+    // 액션 라벨 (마지막 세그먼트 기준).
+    // ActivityLog::getActionLabelAttribute 가 모듈 origin 라벨을 자체 lang 에서 우선 조회하므로,
+    // 이 모듈 listener 가 발화하는 모든 last segment 를 자기 영역으로 등록 (G7 영역 분리 일관성).
+    // 코어 lang 도 동일 키를 일부 보유하지만 본 lang 이 1차 SSoT.
+    'action' => [
+        'add' => '추가',
+        'bulk_create' => '일괄 생성',
+        'bulk_delete' => '일괄 삭제',
+        'bulk_price_update' => '일괄 가격 수정',
+        'bulk_shipping_update' => '운송장 일괄 입력',
+        'bulk_status' => '일괄 상태 변경',
+        'bulk_status_change' => '일괄 상태 변경',
+        'bulk_status_update' => '일괄 상태 변경',
+        'bulk_stock_update' => '일괄 재고 수정',
+        'bulk_toggle_active' => '일괄 활성 상태 변경',
+        'bulk_update' => '일괄 수정',
+        'cancel' => '취소',
+        'change_option' => '옵션 변경',
+        'confirm' => '구매 확정',
+        'copy' => '복사',
+        'create' => '생성',
+        'delete' => '삭제',
+        'delete_all' => '전체 삭제',
+        'download' => '다운로드',
+        'earn' => '적립',
+        'partial_cancel' => '부분 취소',
+        'payment_complete' => '결제 완료',
+        'payment_failed' => '결제 실패',
+        'reorder' => '순서 변경',
+        'restore' => '복원',
+        'send_email' => '이메일 발송',
+        'set_default' => '기본값 설정',
+        'status_change' => '상태 변경',
+        'stock_sync' => '재고 동기화',
+        'toggle_active' => '활성 상태 변경',
+        'toggle_status' => '상태 전환',
+        'update' => '수정',
+        'update_quantity' => '수량 변경',
+        'update_shipping_address' => '배송지 변경',
+        'upload' => '업로드',
+        'use' => '사용',
+    ],
+
     'description' => [
         // 상품 관리 (Admin)
         'product_index' => '상품 목록 조회',

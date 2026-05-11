@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OptionHasOrderHistoryException;
 use Modules\Sirsoft\Ecommerce\Exceptions\StockMismatchException;
 use Modules\Sirsoft\Ecommerce\Models\Product;
+use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
@@ -43,9 +44,10 @@ class ProductService
     ) {}
 
     /**
-     * 상품 목록 조회
+     * 관리자 상품 목록을 페이지네이션으로 조회합니다 (filter_list_params 훅 적용).
      *
-     * @param  array  $filters  필터 조건
+     * @param  array<string, mixed>  $filters  필터/정렬 조건 (per_page 포함)
+     * @return LengthAwarePaginator 페이지네이션된 상품 목록
      */
     public function getList(array $filters): LengthAwarePaginator
     {
@@ -58,10 +60,13 @@ class ProductService
     }
 
     /**
-     * 공개 상품 목록 조회 (사용자 페이지용)
+     * 사용자(공개) 페이지용 상품 목록을 페이지네이션으로 조회합니다.
      *
-     * @param  array  $filters  필터 조건 (category_id, search, sort, min_price, max_price, brand_id)
+     * before/after_public_list 훅과 filter_public_list_params 훅을 발화합니다.
+     *
+     * @param  array<string, mixed>  $filters  필터 조건 (category_id, search, sort, min_price, max_price, brand_id)
      * @param  int  $perPage  페이지당 개수
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator 페이지네이션된 공개 상품 목록
      */
     public function getPublicList(array $filters, int $perPage = 20): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
@@ -77,9 +82,12 @@ class ProductService
     }
 
     /**
-     * 인기 상품 조회 (최근 30일 판매량 기준)
+     * 최근 30일 판매량 기준 인기 상품 컬렉션을 조회합니다.
+     *
+     * before/after_popular_list 훅과 filter_popular_list_result 훅을 발화합니다.
      *
      * @param  int  $limit  조회 개수
+     * @return \Illuminate\Database\Eloquent\Collection<int, Product> 인기 상품 컬렉션
      */
     public function getPopularProducts(int $limit = 10): \Illuminate\Database\Eloquent\Collection
     {
@@ -95,9 +103,12 @@ class ProductService
     }
 
     /**
-     * 신상품 조회 (최신 등록순)
+     * 최신 등록순으로 신상품 컬렉션을 조회합니다.
+     *
+     * before/after_new_list 훅과 filter_new_list_result 훅을 발화합니다.
      *
      * @param  int  $limit  조회 개수
+     * @return \Illuminate\Database\Eloquent\Collection<int, Product> 신상품 컬렉션
      */
     public function getNewProducts(int $limit = 10): \Illuminate\Database\Eloquent\Collection
     {
@@ -113,9 +124,10 @@ class ProductService
     }
 
     /**
-     * ID 목록으로 상품 조회 (최근 본 상품용)
+     * ID 배열로 상품 컬렉션을 조회합니다 ('최근 본 상품' 등에 사용).
      *
-     * @param  array  $ids  상품 ID 배열
+     * @param  array<int, int>  $ids  조회할 상품 ID 배열
+     * @return \Illuminate\Database\Eloquent\Collection<int, Product> 상품 컬렉션 (빈 입력 시 빈 컬렉션)
      */
     public function getProductsByIds(array $ids): \Illuminate\Database\Eloquent\Collection
     {
@@ -137,10 +149,11 @@ class ProductService
     }
 
     /**
-     * 상품 상세 조회
+     * 상품 상세를 옵션과 함께 조회합니다 (after_read 훅 발화).
      *
      * @param  int  $id  상품 ID
-     * @param  bool  $includeInactive  비활성 옵션 포함 여부
+     * @param  bool  $includeInactive  비활성 옵션 포함 여부 (관리자 화면에서만 true)
+     * @return Product|null 상품 모델 또는 부재 시 null
      */
     public function getDetail(int $id, bool $includeInactive = false): ?Product
     {
@@ -154,9 +167,12 @@ class ProductService
     }
 
     /**
-     * 상품 생성
+     * 상품을 생성합니다 (트랜잭션 + 카테고리/옵션/이미지/라벨 동기화 + before/after_create 훅).
      *
-     * @param  array  $data  상품 데이터
+     * description XSS sanitize, currency_code 자동 설정, 생성자 ID 기록을 포함합니다.
+     *
+     * @param  array<string, mixed>  $data  상품 fillable + 관계 데이터 (options/category_ids/images/label_assignments 등)
+     * @return Product 생성된 상품 모델
      */
     public function create(array $data): Product
     {
@@ -230,10 +246,13 @@ class ProductService
     }
 
     /**
-     * 상품 수정
+     * 상품을 수정합니다 (트랜잭션 + 카테고리/옵션/이미지/라벨 재동기화 + before/after_update 훅).
      *
-     * @param  Product  $product  상품 모델
-     * @param  array  $data  수정 데이터
+     * 변경 감지를 위한 toArray 스냅샷을 캡처하여 활동 로그용 후속 처리에 활용합니다.
+     *
+     * @param  Product  $product  수정 대상 상품 모델
+     * @param  array<string, mixed>  $data  수정할 fillable + 관계 데이터
+     * @return Product 갱신된 상품 모델
      */
     public function update(Product $product, array $data): Product
     {
@@ -401,11 +420,14 @@ class ProductService
     }
 
     /**
-     * 상품 일괄 상태 변경
+     * 다수 상품의 단일 상태 필드를 일괄 변경합니다 (활동 로그용 스냅샷 캡처 포함).
      *
-     * @param  array  $ids  상품 ID 배열
-     * @param  string  $field  필드명
-     * @param  string  $value  변경 값
+     * before/after_bulk_update 훅을 발화하여 활동 로그 리스너가 변경 감지를 수행할 수 있게 합니다.
+     *
+     * @param  array<int, int>  $ids  대상 상품 ID 배열
+     * @param  string  $field  변경할 상태 필드명 (sales_status/display_status/tax_status 등)
+     * @param  string  $value  새 값
+     * @return array{updated_count: int, requested_count: int} 갱신/요청 건수
      */
     public function bulkUpdateStatus(array $ids, string $field, string $value): array
     {
@@ -430,12 +452,15 @@ class ProductService
     }
 
     /**
-     * 상품 일괄 가격 변경
+     * 다수 상품의 가격을 일괄 변경합니다 (활동 로그용 스냅샷 캡처 포함).
      *
-     * @param  array  $ids  상품 ID 배열
-     * @param  string  $method  변경 방식
-     * @param  int  $value  변경 값
-     * @param  string  $unit  단위
+     * before/after_bulk_price_update 훅을 발화합니다.
+     *
+     * @param  array<int, int>  $ids  대상 상품 ID 배열
+     * @param  string  $method  변경 방식 ('set' | 'increase' | 'decrease')
+     * @param  int  $value  변경 값 (단위 의존)
+     * @param  string  $unit  변경 단위 ('amount' | 'percent')
+     * @return array{updated_count: int, requested_count: int} 갱신/요청 건수
      */
     public function bulkUpdatePrice(array $ids, string $method, int $value, string $unit): array
     {
@@ -460,11 +485,14 @@ class ProductService
     }
 
     /**
-     * 상품 일괄 재고 변경
+     * 다수 상품의 재고를 일괄 변경합니다 (활동 로그용 스냅샷 캡처 포함).
      *
-     * @param  array  $ids  상품 ID 배열
-     * @param  string  $method  변경 방식
-     * @param  int  $value  변경 값
+     * before/after_bulk_stock_update 훅을 발화합니다.
+     *
+     * @param  array<int, int>  $ids  대상 상품 ID 배열
+     * @param  string  $method  변경 방식 ('set' | 'increase' | 'decrease')
+     * @param  int  $value  변경 수량
+     * @return array{updated_count: int, requested_count: int} 갱신/요청 건수
      */
     public function bulkUpdateStock(array $ids, string $method, int $value): array
     {
@@ -819,7 +847,7 @@ class ProductService
                 $parts = [];
                 foreach ($optionValues as $item) {
                     $value = $item['value'] ?? [];
-                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value['ko'] ?? '') : $value;
+                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? '') : $value;
                     if ($localizedValue !== '') {
                         $parts[] = $localizedValue;
                     }
@@ -1160,9 +1188,10 @@ class ProductService
     }
 
     /**
-     * 상품코드로 상품 조회
+     * `product_code` 컬럼으로 상품을 조회합니다.
      *
-     * @param  string  $code  상품코드
+     * @param  string  $code  상품코드 (vendor_code/sku 등 외부 식별자)
+     * @return Product|null 일치 상품 또는 부재 시 null
      */
     public function findByCode(string $code): ?Product
     {
@@ -1170,12 +1199,12 @@ class ProductService
     }
 
     /**
-     * ID 또는 상품코드로 상품 조회
+     * 문자열 식별자로 상품을 조회합니다 — 숫자면 ID 우선, 미발견/비숫자는 product_code 폴백.
      *
-     * 숫자인 경우 먼저 ID로 조회를 시도하고,
-     * 없으면 product_code로 조회합니다.
+     * URL 라우트에서 `id` 와 `product_code` 어느 것이 들어와도 동일하게 처리하기 위한 헬퍼.
      *
-     * @param  string  $identifier  상품 ID 또는 상품코드
+     * @param  string  $identifier  상품 ID 숫자 문자열 또는 product_code
+     * @return Product|null 일치 상품 또는 부재 시 null
      */
     public function findByIdOrCode(string $identifier): ?Product
     {
@@ -1192,9 +1221,12 @@ class ProductService
     }
 
     /**
-     * 폼 초기 데이터용 상품 상세 조회
+     * 상품 수정 폼의 초기 데이터를 위한 모든 관계 포함 배열을 반환합니다.
+     *
+     * `findWithAllRelations` 결과를 폼 모델에 맞게 직렬화한 형태입니다.
      *
      * @param  int  $id  상품 ID
+     * @return array<string, mixed>|null 폼용 직렬화 데이터 또는 부재 시 null
      */
     public function getDetailForForm(int $id): ?array
     {

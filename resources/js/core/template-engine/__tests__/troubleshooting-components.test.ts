@@ -3,10 +3,10 @@
  *
  * troubleshooting-components.md, troubleshooting-components-*.md에 기록된 사례의 회귀 테스트입니다.
  *
- * @see .claude/docs/frontend/troubleshooting-components.md
- * @see .claude/docs/frontend/troubleshooting-components-datagrid.md
- * @see .claude/docs/frontend/troubleshooting-components-form.md
- * @see .claude/docs/frontend/troubleshooting-components-misc.md
+ * @see docs/frontend/troubleshooting-components.md
+ * @see docs/frontend/troubleshooting-components-datagrid.md
+ * @see docs/frontend/troubleshooting-components-form.md
+ * @see docs/frontend/troubleshooting-components-misc.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -295,6 +295,115 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
       };
 
       expect(buttonProps.type).toBe('button');
+    });
+  });
+
+  describe('[사례 6] 부모 Div click + controlled checkbox 자식의 한 박자 지연 토글 (#304)', () => {
+    /**
+     * 증상: 체크박스를 직접 클릭하면 즉시 체크되지 않고, 다른 항목을 클릭한 시점에야 이전 클릭이 반영됨
+     * 근본 원인: controlled checkbox + 부모 click 액션 + 자식 액션 없음 패턴은
+     *           React 표준 onChange 동작과 동기화되지 않아 한 박자 지연 발생
+     * 해결: 부모를 Label로 변경 + 자식 Input에 change 액션 부여
+     */
+
+    it('금지 패턴: 부모 Div click 액션 + 자식 controlled checkbox 액션 없음', () => {
+      // ❌ 한 박자 지연 발생하는 결함 패턴
+      const badPattern = {
+        name: 'Div',
+        actions: [{ type: 'click', handler: 'setState', params: { fields: '...' } }],
+        children: [
+          {
+            name: 'Input',
+            props: { type: 'checkbox', checked: '{{state.value}}' },
+            // actions 없음 — 결함 원인
+          },
+        ],
+      };
+
+      // 결함 패턴 식별: 부모에 click + 자식 Input(checkbox)에 액션 없음
+      const parentClick = badPattern.actions?.find((a: any) => a.type === 'click');
+      const childInput = badPattern.children[0];
+      const childAction = (childInput as any).actions;
+
+      expect(parentClick).toBeDefined();
+      expect((childInput as any).props.type).toBe('checkbox');
+      expect(childAction).toBeUndefined();
+      // → 이 조합이 Phase 1 ① 단계의 fail 테스트가 검출한 결함
+    });
+
+    it('올바른 패턴: Label로 감싸기 + 자식 Input에 change 액션', () => {
+      const goodPattern = {
+        name: 'Label',
+        // 부모 액션 없음 — HTML 표준이 자식 Input change 자동 발화
+        children: [
+          {
+            name: 'Input',
+            props: { type: 'checkbox', checked: '{{state.value}}' },
+            actions: [
+              {
+                type: 'change',
+                handler: 'setState',
+                params: { target: 'local', value: '{{...토글 표현식}}' },
+              },
+            ],
+          },
+          { name: 'Span', text: '필드명' },
+        ],
+      };
+
+      expect(goodPattern.name).toBe('Label');
+      expect((goodPattern as any).actions).toBeUndefined();
+
+      const checkbox = goodPattern.children[0] as any;
+      const changeAction = checkbox.actions?.find((a: any) => a.type === 'change');
+      expect(changeAction).toBeDefined();
+      expect(changeAction.handler).toBe('setState');
+    });
+
+    it('Label 안 Label 중첩 금지 — 텍스트는 Span으로 다운그레이드', () => {
+      const correctedPattern = {
+        name: 'Label',
+        children: [
+          {
+            name: 'Input',
+            props: { type: 'checkbox' },
+            actions: [{ type: 'change', handler: 'setState' }],
+          },
+          { name: 'Span', text: '권한 이름' }, // ✅ 기존 Label에서 다운그레이드
+          { name: 'Span', text: '권한 설명' },
+        ],
+      };
+
+      // 부모 Label 안에 중첩 Label이 없어야 함
+      const nestedLabels = correctedPattern.children.filter((c: any) => c.name === 'Label');
+      expect(nestedLabels.length).toBe(0);
+    });
+
+    it('자식 컨테이너에 pointer-events-none 사용 금지', () => {
+      // 결함 차단 목적의 pointer-events-none은 본 패턴에서 불필요
+      const goodPattern = {
+        name: 'Label',
+        children: [
+          {
+            name: 'Div',
+            props: { className: 'flex items-start gap-2' }, // ✅ pointer-events-none 없음
+            children: [{ name: 'Input', props: { type: 'checkbox' } }],
+          },
+        ],
+      };
+
+      const innerDiv = goodPattern.children[0] as any;
+      expect(innerDiv.props.className).not.toContain('pointer-events-none');
+    });
+
+    it('change 이벤트 vs click 이벤트 구분', () => {
+      // React controlled checkbox는 change 이벤트로만 표준 동기화 가능
+      const supportedEventsForControlledCheckbox = ['change'];
+      const problematicEventsForControlledCheckbox = ['click'];
+
+      expect(supportedEventsForControlledCheckbox).toContain('change');
+      expect(problematicEventsForControlledCheckbox).toContain('click');
+      // click은 발화되지만 controlled checked 강제 동기화와 충돌 → 한 박자 지연
     });
   });
 });

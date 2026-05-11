@@ -422,6 +422,168 @@ class ExtensionMenuSyncHelperTest extends TestCase
         );
     }
 
+    /**
+     * config 정의의 is_active=false 가 신규 메뉴 생성 시 그대로 적용되는지 테스트
+     *
+     * 회귀: ExtensionMenuSyncHelper 가 hardcoded `is_active=true` 로 강제하여 개발 중인
+     * 메뉴(예: config/core.php 의 admin-schedules `is_active: false`) 가 운영 환경에서
+     * 자동 활성화되던 결함 차단.
+     */
+    public function test_sync_menu_honors_is_active_false_from_definition_on_create(): void
+    {
+        $this->menuRepository
+            ->shouldReceive('findBySlugAndExtension')
+            ->once()
+            ->andReturn(null);
+
+        $newMenu = $this->createModelMock(Menu::class, ['id' => 1]);
+
+        $this->menuRepository
+            ->shouldReceive('updateOrCreate')
+            ->once()
+            ->with(
+                Mockery::any(),
+                Mockery::on(fn ($values) => $values['is_active'] === false)
+            )
+            ->andReturn($newMenu);
+
+        $this->helper->syncMenu(
+            slug: 'admin-schedules',
+            extensionType: ExtensionOwnerType::Core,
+            extensionIdentifier: 'core',
+            newAttributes: [
+                'name' => ['ko' => '스케쥴 관리', 'en' => 'Schedule Management'],
+                'icon' => 'fas fa-clock',
+                'order' => 12,
+                'url' => '/admin/schedules',
+                'is_active' => false,
+            ],
+        );
+    }
+
+    /**
+     * config 정의의 is_active=false 가 기존 메뉴 업데이트 시에도 적용되는지 테스트
+     *
+     * 운영자가 user_overrides 로 마킹하지 않았다면 정의값이 우선.
+     */
+    public function test_sync_menu_honors_is_active_false_from_definition_on_update(): void
+    {
+        $existingMenu = $this->createModelMock(Menu::class, [
+            'id' => 1,
+            'is_active' => true, // 이전 동기화 때 잘못 활성화된 상태
+            'user_overrides' => [],
+        ]);
+
+        $this->menuRepository
+            ->shouldReceive('findBySlugAndExtension')
+            ->once()
+            ->andReturn($existingMenu);
+
+        $this->menuRepository
+            ->shouldReceive('update')
+            ->once()
+            ->with(
+                $existingMenu,
+                Mockery::on(fn ($data) => array_key_exists('is_active', $data)
+                    && $data['is_active'] === false)
+            )
+            ->andReturn(true);
+
+        $existingMenu->shouldReceive('fresh')->once()->andReturn($existingMenu);
+
+        $this->helper->syncMenu(
+            slug: 'admin-schedules',
+            extensionType: ExtensionOwnerType::Core,
+            extensionIdentifier: 'core',
+            newAttributes: [
+                'name' => ['ko' => '스케쥴 관리', 'en' => 'Schedule Management'],
+                'icon' => 'fas fa-clock',
+                'order' => 12,
+                'url' => '/admin/schedules',
+                'is_active' => false,
+            ],
+        );
+    }
+
+    /**
+     * 운영자가 user_overrides 에 is_active 를 마킹한 경우 정의값이 무시되고 기존 상태가 보존되는지 테스트
+     *
+     * 시나리오: 정의는 is_active=false 지만 운영자가 UI 에서 활성화 후 user_overrides 에 마킹.
+     * 재시드 시 운영자 선택이 보존되어야 한다.
+     */
+    public function test_sync_menu_preserves_user_overridden_is_active(): void
+    {
+        $existingMenu = $this->createModelMock(Menu::class, [
+            'id' => 1,
+            'is_active' => true, // 운영자가 활성화
+            'user_overrides' => ['is_active'],
+        ]);
+
+        $this->menuRepository
+            ->shouldReceive('findBySlugAndExtension')
+            ->once()
+            ->andReturn($existingMenu);
+
+        $this->menuRepository
+            ->shouldReceive('update')
+            ->once()
+            ->with(
+                $existingMenu,
+                Mockery::on(fn ($data) => ! array_key_exists('is_active', $data))
+            )
+            ->andReturn(true);
+
+        $existingMenu->shouldReceive('fresh')->once()->andReturn($existingMenu);
+
+        $this->helper->syncMenu(
+            slug: 'admin-schedules',
+            extensionType: ExtensionOwnerType::Core,
+            extensionIdentifier: 'core',
+            newAttributes: [
+                'name' => ['ko' => '스케쥴 관리', 'en' => 'Schedule Management'],
+                'icon' => 'fas fa-clock',
+                'order' => 12,
+                'url' => '/admin/schedules',
+                'is_active' => false, // 정의는 false 지만 user_overrides 가 우선
+            ],
+        );
+    }
+
+    /**
+     * syncMenuRecursive 가 menuData 의 is_active 를 newAttributes 로 전달하는지 테스트
+     */
+    public function test_sync_menu_recursive_passes_is_active_to_sync_menu(): void
+    {
+        $newMenu = $this->createModelMock(Menu::class, ['id' => 1]);
+
+        $this->menuRepository
+            ->shouldReceive('findBySlugAndExtension')
+            ->once()
+            ->andReturn(null);
+
+        $this->menuRepository
+            ->shouldReceive('updateOrCreate')
+            ->once()
+            ->with(
+                Mockery::any(),
+                Mockery::on(fn ($values) => $values['is_active'] === false)
+            )
+            ->andReturn($newMenu);
+
+        $this->helper->syncMenuRecursive(
+            menuData: [
+                'slug' => 'admin-schedules',
+                'name' => ['ko' => '스케쥴 관리', 'en' => 'Schedule Management'],
+                'icon' => 'fas fa-clock',
+                'order' => 12,
+                'url' => '/admin/schedules',
+                'is_active' => false,
+            ],
+            extensionType: ExtensionOwnerType::Core,
+            extensionIdentifier: 'core',
+        );
+    }
+
     // ========== syncMenuRecursive 테스트 ==========
 
     /**

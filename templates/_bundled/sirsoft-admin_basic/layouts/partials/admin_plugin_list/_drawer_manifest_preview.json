@@ -1,0 +1,140 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "플러그인 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 plugin.json 검증 결과 조회"
+    },
+    "id": "plugin_manifest_preview_drawer",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.plugins.modal.preview.title",
+        "size": "large"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": { "className": "text-sm text-gray-600 dark:text-gray-400 mb-4" },
+            "text": "$t:admin.plugins.modal.preview.description"
+        },
+        {
+            "type": "basic",
+            "name": "FileInput",
+            "props": {
+                "accept": ".zip",
+                "buttonText": "$t:common.browse",
+                "placeholder": "$t:admin.plugins.tabs.no_file_selected",
+                "className": "w-full"
+            },
+            "actions": [
+                {
+                    "type": "change",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "pluginPreviewFile": "{{$event.target.value}}",
+                        "pluginPreviewFileName": "{{$event.target.value?.name}}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Button",
+            "if": "{{_global.pluginPreviewFile}}",
+            "props": {
+                "type": "button",
+                "disabled": "{{_global.isPluginPreviewLoading}}",
+                "className": "mt-3 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            },
+            "actions": [
+                {
+                    "event": "onClick",
+                    "handler": "sequence",
+                    "actions": [
+                        { "handler": "setState", "params": { "target": "global", "isPluginPreviewLoading": true, "pluginPreviewResult": null } },
+                        {
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "/api/admin/plugins/manifest-preview",
+                            "params": {
+                                "method": "POST",
+                                "contentType": "multipart/form-data",
+                                "body": "{{ ({ file: _global.pluginPreviewFile }) }}"
+                            },
+                            "onSuccess": [
+                                { "handler": "setState", "params": { "target": "global", "isPluginPreviewLoading": false, "pluginPreviewResult": "{{response.data}}" } }
+                            ],
+                            "onError": [
+                                { "handler": "setState", "params": { "target": "global", "isPluginPreviewLoading": false } },
+                                { "handler": "toast", "params": { "type": "error", "message": "{{$error.message ?? '$t:admin.plugins.modal.preview.failed'}}" } }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "children": [
+                { "type": "basic", "name": "Icon", "if": "{{_global.isPluginPreviewLoading}}", "props": { "name": "fas fa-spinner", "className": "animate-spin", "size": "sm" } },
+                { "type": "basic", "name": "Span", "text": "$t:admin.plugins.modal.preview.run" }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.pluginPreviewResult}}",
+            "props": { "className": "mt-4 space-y-3" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.pluginPreviewResult?.manifest}}",
+                    "props": { "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm" },
+                    "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "font-semibold text-gray-700 dark:text-gray-300" }, "text": "{{_global.pluginPreviewResult?.manifest?.identifier}} v{{_global.pluginPreviewResult?.manifest?.version}}" },
+                        { "type": "basic", "name": "Span", "props": { "className": "ml-2 text-gray-500 dark:text-gray-400" }, "text": "({{_global.pluginPreviewResult?.manifest?.vendor}})" }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.pluginPreviewResult?.validation?.is_valid === true}}",
+                    "props": { "className": "p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-sm text-green-800 dark:text-green-200" },
+                    "text": "$t:admin.plugins.modal.preview.valid"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.pluginPreviewResult?.validation?.is_valid === false}}",
+                    "props": { "className": "p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-800 dark:text-red-200" },
+                    "iteration": { "source": "_global.pluginPreviewResult?.validation?.errors", "item_var": "err" },
+                    "children": [
+                        { "type": "basic", "name": "Div", "text": "• {{err}}" }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.pluginPreviewResult?.validation?.already_installed === true}}",
+                    "props": { "className": "p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-sm text-amber-800 dark:text-amber-200" },
+                    "text": "$t:admin.plugins.modal.preview.already_installed|version={{_global.pluginPreviewResult?.validation?.existing_version}}"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex justify-end gap-2 mt-6" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": { "type": "button", "className": "px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md" },
+                    "text": "$t:common.close",
+                    "actions": [
+                        { "event": "onClick", "handler": "closeModal", "target": "plugin_manifest_preview_drawer" }
+                    ]
+                }
+            ]
+        }
+    ]
+}

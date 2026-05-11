@@ -1,0 +1,51 @@
+{
+  "title": "注文設定",
+  "description": "注文に関する設定を管理します。",
+  "payment_methods": {
+    "title": "決済方法設定",
+    "description": "ショッピングモールで使用可能な決済方法を設定します。ドラッグして公開順序を変更できます。",
+    "method": "決済方法",
+    "min_order_amount": "最小注文金額",
+    "enabled": "使用の有無",
+    "pg_hint": "* PG社プラグインをインストールすると、追加の決済方法が自動的に登録されます。"
+  },
+  "bank_accounts": {
+    "title": "銀行振込口座番号設定",
+    "description": "銀行振込入金時に顧客に案内される口座情報を設定します。",
+    "add_account": "口座追加",
+    "default": "デフォルト",
+    "bank": "銀行",
+    "account_number": "口座番号",
+    "account_holder": "名義人",
+    "enabled": "使用の有無",
+    "delete": "削除",
+    "default_account": "デフォルト口座"
+  },
+  "auto_cancel": {
+    "title": "注文自動キャンセル",
+    "description": "銀行振込·仮想口座決済時の入金待機期間を設定します。",
+    "days_prefix": "入金待機状態の注文は注文日を含む",
+    "days_suffix": "営業日後に自動キャンセルされます。",
+    "hint": "* 注文時点で入金期限が決定されます。"
+  },
+  "cart_expiry": {
+    "title": "カート有効期限",
+    "description": "カートに入れた商品を保持する期間を設定します。",
+    "days_prefix": "カートの商品は",
+    "days_suffix": "日後に自動削除されます。"
+  },
+  "inventory": {
+    "title": "在庫管理",
+    "description": "商品在庫の差引および復元ポリシーを設定します。",
+    "deduction_timing": "在庫差引時点",
+    "deduction_suffix": "時に商品在庫を差し引きます。",
+    "deduction_options": {
+      "order_complete": "注文完了",
+      "payment_complete": "決済完了",
+      "shipping_start": "配送開始"
+    },
+    "restore_on_cancel": "注文キャンセル時の在庫復元",
+    "restore_description": "注文がキャンセルされた場合、差し引かれた在庫を自動的に復元します。",
+    "restore_label": "注文キャンセル後に商品在庫を復元します。"
+  }
+}

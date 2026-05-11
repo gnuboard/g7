@@ -1,0 +1,22 @@
+{
+    "identifier": "gnuboard7-hello_plugin",
+    "vendor": "gnuboard7",
+    "name": {
+        "ko": "Hello 플러그인",
+        "en": "Hello Plugin"
+    },
+    "version": "0.1.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "학습용 최소 샘플 플러그인 (Hello 모듈 훅 소비)",
+        "en": "Learning minimal sample plugin (consumes Hello module hooks)"
+    },
+    "g7_version": ">=7.0.0-beta.4",
+    "hidden": true,
+    "dependencies": {
+        "modules": {
+            "gnuboard7-hello_module": ">=0.1.0"
+        },
+        "plugins": {}
+    }
+}

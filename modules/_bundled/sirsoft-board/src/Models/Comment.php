@@ -84,6 +84,7 @@ class Comment extends Model
         'action_logs',
         'depth',
         'ip_address',
+        'replies_count',
     ];
 
     /**
@@ -98,6 +99,7 @@ class Comment extends Model
             'trigger_type' => TriggerType::class,
             'action_logs' => 'array',
             'depth' => 'integer',
+            'replies_count' => 'integer',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',

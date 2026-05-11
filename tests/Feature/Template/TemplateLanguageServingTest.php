@@ -129,16 +129,17 @@ class TemplateLanguageServingTest extends TestCase
      */
     public function test_language_file_is_cached(): void
     {
-        $cacheKey = 'template.language.sirsoft-admin_basic.ko';
+        // PublicBaseController::cached() 는 CacheInterface + v{version} 접미사 (기본 v=0)
+        $cache = app(\App\Contracts\Extension\CacheInterface::class);
+        $cacheKey = 'template.language.sirsoft-admin_basic.ko.v0';
+        $cache->forget($cacheKey);
 
         // 첫 번째 요청
         $this->getJson('/api/templates/sirsoft-admin_basic/lang/ko.json');
 
         // 캐시 확인
-        $this->assertTrue(Cache::has($cacheKey));
-
-        // 캐시된 데이터 확인
-        $cachedData = Cache::get($cacheKey);
+        $cachedData = $cache->get($cacheKey);
+        $this->assertNotNull($cachedData);
         $this->assertIsArray($cachedData);
         $this->assertArrayHasKey('success', $cachedData);
         $this->assertTrue($cachedData['success']);

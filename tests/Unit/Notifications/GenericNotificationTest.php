@@ -80,10 +80,13 @@ class GenericNotificationTest extends TestCase
 
     /**
      * via()가 notification_definitions 테이블에서 채널을 조회하는지 확인
+     *
+     * engine-v1.x+ 이후 via() 는 (a) 확장 채널 활성 여부 (b) readiness (c) 활성 템플릿 존재 여부
+     * 를 모두 검증하므로, 채널별 NotificationTemplate 가 있어야 최종 채널에 포함됨.
      */
     public function test_via_reads_channels_from_definition(): void
     {
-        NotificationDefinition::create([
+        $definition = NotificationDefinition::create([
             'type' => 'test_notification',
             'hook_prefix' => 'core.test',
             'extension_type' => 'core',
@@ -95,6 +98,18 @@ class GenericNotificationTest extends TestCase
             'is_active' => true,
             'is_default' => true,
         ]);
+
+        // 각 채널별 활성 템플릿 등록 (없으면 via() 가 filter out)
+        foreach (['mail', 'database'] as $channel) {
+            NotificationTemplate::create([
+                'definition_id' => $definition->id,
+                'channel' => $channel,
+                'locale' => 'ko',
+                'subject' => '테스트 제목',
+                'body' => '테스트 본문',
+                'is_active' => true,
+            ]);
+        }
 
         // 캐시를 무효화하여 최신 데이터 반영
         app(NotificationDefinitionService::class)->invalidateCache('test_notification');
@@ -109,15 +124,19 @@ class GenericNotificationTest extends TestCase
 
     /**
      * 정의가 없을 때 via()가 기본 ['mail'] 채널을 반환하는지 확인
+     *
+     * 현재 구현은 mail 채널에도 활성 템플릿 존재를 요구하므로, 정의 없으면 템플릿도 없어
+     * via() 는 빈 배열을 반환한다. (채널 skip 은 notification_logs 에 기록됨)
      */
-    public function test_via_returns_mail_default_when_no_definition(): void
+    public function test_via_returns_empty_when_no_definition_or_template(): void
     {
         $notification = new GenericNotification('nonexistent_type', 'core.auth');
         $user = new User(['email' => 'test@example.com']);
 
         $channels = $notification->via($user);
 
-        $this->assertEquals(['mail'], $channels);
+        // 활성 템플릿 없으면 모든 채널이 skip 됨 (회귀 방지 — 이전엔 ['mail'] 기본 반환)
+        $this->assertEquals([], $channels);
     }
 
     /**

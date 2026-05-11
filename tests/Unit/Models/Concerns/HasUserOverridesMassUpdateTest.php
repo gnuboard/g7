@@ -53,7 +53,8 @@ class HasUserOverridesMassUpdateTest extends TestCase
 
         $this->assertSame(['ko' => '사용자 수정'], $reloaded->name);
         $this->assertIsArray($reloaded->user_overrides);
-        $this->assertContains('name', $reloaded->user_overrides, 'mass update 시에도 trackable 필드가 user_overrides 에 자동 기록');
+        // 7.0.0-beta.4+ 다국어 컬럼은 sub-key dot-path 단위 기록
+        $this->assertContains('name.ko', $reloaded->user_overrides, 'mass update 시에도 다국어 sub-key 가 user_overrides 에 자동 기록');
     }
 
     public function test_mass_update_accumulates_overrides_across_multiple_edits(): void
@@ -69,7 +70,7 @@ class HasUserOverridesMassUpdateTest extends TestCase
 
         $reloaded = NotificationDefinition::find($definition->id);
 
-        $this->assertContains('name', $reloaded->user_overrides);
+        $this->assertContains('name.ko', $reloaded->user_overrides);
         $this->assertContains('is_active', $reloaded->user_overrides, '여러 번의 mass update 가 누적 기록');
     }
 
@@ -101,8 +102,8 @@ class HasUserOverridesMassUpdateTest extends TestCase
         $reloadedA = NotificationDefinition::find($a->id);
         $reloadedB = NotificationDefinition::find($b->id);
 
-        $this->assertContains('name', $reloadedA->user_overrides ?? []);
-        $this->assertContains('name', $reloadedB->user_overrides ?? []);
+        $this->assertContains('name.ko', $reloadedA->user_overrides ?? []);
+        $this->assertContains('name.ko', $reloadedB->user_overrides ?? []);
     }
 
     public function test_seeder_context_bypasses_tracking_on_mass_update(): void

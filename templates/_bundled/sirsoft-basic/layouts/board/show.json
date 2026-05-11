@@ -27,8 +27,9 @@
             "structured_data": {
                 "@type": "Article",
                 "headline": "{{_seo.post.title ?? post.data.title ?? ''}}",
+                "description": "{{_seo.post.description ?? post.data.content ?? ''}}",
                 "datePublished": "{{post.data.created_at ?? ''}}",
-                "dateModified": "{{post.data.updated_at ?? ''}}"
+                "dateModified": "{{post.data.updated_at ?? post.data.created_at ?? ''}}"
             }
         }
     },

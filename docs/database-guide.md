@@ -684,7 +684,45 @@ public function getLocalizedName(?string $locale = null): string
 | **사용 예** | 언어 선택자, 미들웨어 | DB JSON 필드, FormRequest |
 | **검증 위치** | 런타임 (미들웨어) | 데이터 입력 시 (FormRequest) |
 
+#### 언어팩 시스템과의 관계
+
+`config/app.php` 의 `supported_locales` / `translatable_locales` / `locale_names` 는 boot 시점에 `LanguagePackServiceProvider::refreshSupportedLocales()` 가 활성 코어 언어팩의 locale 을 합쳐 동적으로 갱신합니다. 따라서:
+
+- 새 locale 은 **`config/app.php` 편집이 아니라 언어팩 설치/활성화** 로 추가합니다.
+- 코드에서 `config('app.supported_locales')` / `config('app.translatable_locales')` 를 호출하면 이미 활성 언어팩이 반영된 결과가 반환됩니다.
+- 두 config 는 항상 동기화됩니다. `supported_locales` 에는 ja 가 있는데 `translatable_locales` 에는 없는 상태가 되지 않도록 provider 가 함께 갱신합니다.
+
+#### 다국어 fallback chain 정책
+
+다국어 JSON 필드 (`permissions.name`, `module.name`, 모듈 모델의 `name`/`description` 등) 에서 현재 locale 의 값을 반환할 때는 **`config('app.fallback_locale', 'ko')` 기반 fallback chain** 을 사용합니다.
+
+```php
+// ✅ DO: app.fallback_locale config 기반
+return $name[$locale]
+    ?? $name[config('app.fallback_locale', 'ko')]
+    ?? (! empty($name) ? array_values($name)[0] : '')
+    ?? '';
+
+// ❌ DON'T: ko / en 하드코딩
+return $name[$locale]
+    ?? $name['ko']
+    ?? $name['en']
+    ?? '';
+```
+
+운영자가 `APP_FALLBACK_LOCALE` 환경변수로 폴백 locale 을 ko 외 값으로 변경할 수 있도록 하기 위함입니다. ko 가 fallback 인 환경에서는 두 패턴이 동일 결과지만, 환경 변경 시 하드코딩 패턴은 의도와 어긋난 ko 폴백을 보입니다.
+
 #### 새 언어 추가 절차
+
+권장: **언어팩 시스템 사용**
+
+1. 번들 언어팩 패키지 준비 (`lang-packs/_bundled/g7-core-{locale}/` 디렉토리에 매니페스트와 backend/frontend 파일 작성)
+2. 설치 + 활성화: `php artisan language-pack:install g7-core-{locale} --source=bundled`
+3. provider 가 boot 시 자동으로 supported_locales / translatable_locales / locale_names 갱신
+
+상세: [extension/language-packs.md](extension/language-packs.md)
+
+레거시 (config 직접 편집) 방식:
 
 1. **`config/app.php` 업데이트**:
    ```php

@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\UserStatus;
-use App\Exceptions\CannotDeleteAdminException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
@@ -297,15 +296,14 @@ class UserService
     public function deleteUser(User $user): bool
     {
         try {
-            // 슈퍼 관리자는 삭제 불가
+            // 슈퍼 관리자는 시스템 불변식으로 삭제 불가 (관리 anchor 보호)
             if ($user->isSuperAdmin()) {
                 throw new CannotDeleteSuperAdminException;
             }
 
-            // 관리자 역할을 가진 계정은 삭제 방지
-            if ($user->isAdmin()) {
-                throw new CannotDeleteAdminException;
-            }
+            // 관리자 계정 삭제 가능 여부는 G7 역할/퍼미션/스코프 시스템에 위임
+            // (라우트 단계의 PermissionMiddleware 가 core.users.delete 권한 + scope_type 검증).
+            // UserService 는 비-HTTP 경로(Artisan, 내부 호출) 에서도 호출되므로 별도 하드코딩하지 않는다.
 
             // 삭제 전 사용자 데이터 보관 (after_delete 훅에서 사용)
             $userData = $user->only(['id', 'uuid', 'name', 'email']);
@@ -340,10 +338,6 @@ class UserService
             }
 
             if ($e instanceof CannotDeleteSuperAdminException) {
-                throw $e;
-            }
-
-            if ($e instanceof CannotDeleteAdminException) {
                 throw $e;
             }
 

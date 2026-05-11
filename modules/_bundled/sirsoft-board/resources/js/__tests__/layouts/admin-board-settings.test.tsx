@@ -271,20 +271,22 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         const tabAction = tabNav.actions[0];
 
         expect(tabAction.handler).toBe('sequence');
-        expect(tabAction.actions).toHaveLength(3);
+        // sequence 하위 액션은 params.actions 에 위치 (엔진 규약)
+        const innerActions = tabAction.params.actions;
+        expect(innerActions).toHaveLength(3);
 
         // setState - errors 초기화
-        expect(tabAction.actions[0].handler).toBe('setState');
-        expect(tabAction.actions[0].params.target).toBe('local');
-        expect(tabAction.actions[0].params.errors).toBeNull();
+        expect(innerActions[0].handler).toBe('setState');
+        expect(innerActions[0].params.target).toBe('local');
+        expect(innerActions[0].params.errors).toBeNull();
 
         // setState - 글로벌 탭 상태
-        expect(tabAction.actions[1].handler).toBe('setState');
-        expect(tabAction.actions[1].params.target).toBe('global');
+        expect(innerActions[1].handler).toBe('setState');
+        expect(innerActions[1].params.target).toBe('global');
 
         // replaceUrl - URL 업데이트
-        expect(tabAction.actions[2].handler).toBe('replaceUrl');
-        expect(tabAction.actions[2].params.query.tab).toBeDefined();
+        expect(innerActions[2].handler).toBe('replaceUrl');
+        expect(innerActions[2].params.query.tab).toBeDefined();
     });
 
     it('sticky 헤더 구조가 올바르다', () => {
@@ -336,14 +338,16 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
 
         const clickAction = saveBtn.actions[0];
         expect(clickAction.handler).toBe('sequence');
+        // sequence 하위 액션은 params.actions 에 위치
+        const innerActions = clickAction.params.actions;
 
         // 1단계: setState isSaving=true
-        const setStateAction = clickAction.actions[0];
+        const setStateAction = innerActions[0];
         expect(setStateAction.handler).toBe('setState');
         expect(setStateAction.params.isSaving).toBe(true);
 
         // 2단계: apiCall PUT
-        const apiCallAction = clickAction.actions[1];
+        const apiCallAction = innerActions[1];
         expect(apiCallAction.handler).toBe('apiCall');
         expect(apiCallAction.target).toBe('/api/modules/sirsoft-board/admin/settings');
         expect(apiCallAction.params.method).toBe('PUT');
@@ -456,7 +460,7 @@ describe('_tab_board_settings_basic.json - 기본 하위 탭', () => {
         expect(fields).toContain('basic_defaults.use_report');
     });
 
-    it('각 필드에 일괄 적용 체크박스가 있고 Label 클릭으로 토글된다', () => {
+    it('각 필드에 일괄 적용 체크박스가 있고 Input change 액션으로 토글된다 — controlled checkbox 표준 (#304)', () => {
         const fieldType = findById(tabBoardSettingsBasic, 'field_type');
         expect(fieldType).toBeDefined();
 
@@ -464,15 +468,49 @@ describe('_tab_board_settings_basic.json - 기본 하위 탭', () => {
             (c: any) => c.props?.type === 'checkbox' && c.props?.className?.includes('checkbox')
         );
         expect(checkboxes.length).toBeGreaterThanOrEqual(1);
-        expect(checkboxes[0].actions).toBeUndefined();
 
-        const labels = findByName(fieldType, 'Label');
-        const labelWithClick = labels.find(
-            (l: any) => l.actions?.some((a: any) => a.type === 'click' && a.handler === 'setState')
+        // 체크박스 Input 토글 시 change 이벤트로 setState 발화 — React controlled checkbox 표준
+        const checkboxChangeAction = checkboxes[0].actions?.find(
+            (a: any) => a.type === 'change' && a.handler === 'setState'
         );
-        expect(labelWithClick).toBeDefined();
-        const clickAction = labelWithClick!.actions.find((a: any) => a.type === 'click');
-        expect(clickAction.params.bulkApplyFields).toBeDefined();
+        expect(checkboxChangeAction).toBeDefined();
+        expect(checkboxChangeAction.params.target).toBe('local');
+        expect(checkboxChangeAction.params.bulkApplyFields).toContain("includes('type')");
+
+        // 라벨에는 click 액션이 없어야 한다 (HTML 표준: Label 클릭 시 자식 Input의 change 자동 발화)
+        const labels = findByName(fieldType, 'Label');
+        for (const label of labels) {
+            const labelClick = label.actions?.find((a: any) => a.type === 'click');
+            expect(labelClick, 'Label에 click 액션 없음 (이중 발화 방지)').toBeUndefined();
+        }
+    });
+
+    it('basic 탭의 모든 일괄적용 필드(4개) Input에 change 액션이 적용되어 있고 라벨에는 click 액션이 없다 (#304)', () => {
+        const fieldIds = ['field_type', 'field_secret_mode', 'field_show_view_count', 'field_use_report'];
+
+        for (const fieldId of fieldIds) {
+            const field = findById(tabBoardSettingsBasic, fieldId);
+            expect(field, `${fieldId} 노드 존재`).toBeDefined();
+
+            const checkboxes = findByName(field, 'Input').filter(
+                (c: any) => c.props?.type === 'checkbox' && c.props?.className?.includes('checkbox')
+            );
+            expect(checkboxes.length, `${fieldId} 체크박스 1개 이상`).toBeGreaterThanOrEqual(1);
+
+            const checkboxChange = checkboxes[0].actions?.find(
+                (a: any) => a.type === 'change' && a.handler === 'setState'
+            );
+            expect(checkboxChange, `${fieldId} 체크박스 Input change 액션 존재`).toBeDefined();
+            expect(checkboxChange.params.target, `${fieldId} target=local`).toBe('local');
+            expect(checkboxChange.params.bulkApplyFields, `${fieldId} bulkApplyFields 토글 표현식`).toBeDefined();
+
+            // 라벨에 click 액션이 없는지 (이중 발화 방지)
+            const labels = findByName(field, 'Label');
+            for (const label of labels) {
+                const labelClick = label.actions?.find((a: any) => a.type === 'click');
+                expect(labelClick, `${fieldId} Label에 click 액션 없음`).toBeUndefined();
+            }
+        }
     });
 });
 
@@ -522,6 +560,83 @@ describe('_tab_board_settings_permissions.json - 권한 하위 탭', () => {
             expect(tagInput.props.name).toBeUndefined();
             expect(tagInput.props.value).toContain('default_board_permissions');
             expect(tagInput.props.value).toContain('perm?.[0]');
+        }
+    });
+
+    it('권한 행은 Label로 체크박스+텍스트를 감싸고 Input change로 토글한다 — basic 탭과 동일 패턴 (#304)', () => {
+        const sectionIds = ['permissions_admin_section', 'permissions_user_section'];
+
+        for (const sectionId of sectionIds) {
+            const section = findById(tabBoardSettingsPermissions, sectionId);
+            expect(section, `${sectionId} 노드 존재`).toBeDefined();
+
+            const iterDiv = findByName(section, 'Div').find(
+                (d: any) => d.iteration?.source?.includes('Permissions')
+            );
+            expect(iterDiv, `${sectionId} iteration Div 존재`).toBeDefined();
+
+            // iteration Div에는 click 액션이 없어야 한다 (HTML Label이 자식 Input change를 자동 발화)
+            const parentClick = iterDiv.actions?.find((a: any) => a.type === 'click');
+            expect(parentClick, `${sectionId} iteration Div에 click 액션 없음`).toBeUndefined();
+
+            // iteration Div의 직계 자식에 Label이 있고, Label이 체크박스를 감싼다
+            const labelChild = iterDiv.children?.find((c: any) => c.name === 'Label');
+            expect(labelChild, `${sectionId} 직계 자식 Label 존재`).toBeDefined();
+
+            const labelCheckbox = findByName(labelChild, 'Input').find(
+                (c: any) => c.props?.type === 'checkbox'
+            );
+            expect(labelCheckbox, `${sectionId} Label 안 체크박스 존재`).toBeDefined();
+            const checkboxChange = labelCheckbox.actions?.find(
+                (a: any) => a.type === 'change' && a.handler === 'setState'
+            );
+            expect(checkboxChange, `${sectionId} 체크박스 Input에 change 액션 존재`).toBeDefined();
+
+            // 자식 컨테이너의 className에 pointer-events-none 사용 금지 (이중 발화 차단 회피)
+            const childDivs = findByName(iterDiv, 'Div');
+            for (const child of childDivs) {
+                const className: string = child.props?.className ?? '';
+                expect(
+                    className.includes('pointer-events-none'),
+                    `${sectionId} 자식 Div className: "${className}" — pointer-events-none 사용 금지`
+                ).toBe(false);
+            }
+
+            // Label 안에 Label 중첩 금지 (기존 권한 이름 Label은 Span으로 다운그레이드되어야 함)
+            const nestedLabels = findByName(labelChild, 'Label').filter((l: any) => l !== labelChild);
+            expect(nestedLabels.length, `${sectionId} Label 안 중첩 Label 금지`).toBe(0);
+        }
+    });
+
+    it('권한 섹션 헤더(전체 토글)는 Label로 체크박스+텍스트를 감싸고 Input change로 토글한다 (#304)', () => {
+        const sectionIds = ['permissions_admin_section', 'permissions_user_section'];
+
+        for (const sectionId of sectionIds) {
+            const section = findById(tabBoardSettingsPermissions, sectionId);
+            expect(section, `${sectionId} 노드 존재`).toBeDefined();
+
+            // 섹션 헤더는 첫 자식 Label (cursor-pointer + 체크박스 감쌈)
+            const headerLabel = section.children.find(
+                (c: any) => c.name === 'Label' && (c.props?.className ?? '').includes('cursor-pointer')
+            );
+            expect(headerLabel, `${sectionId} 섹션 헤더 Label 존재`).toBeDefined();
+
+            // Label 자체에는 click 액션이 없어야 한다 (HTML 표준이 자식 Input change를 자동 발화)
+            expect(headerLabel.actions, `${sectionId} 섹션 헤더 Label에 액션 없음`).toBeUndefined();
+
+            // 헤더 내 체크박스에 change 액션 + pointer-events-none 미사용
+            const headerCheckbox = findByName(headerLabel, 'Input').find(
+                (c: any) => c.props?.type === 'checkbox'
+            );
+            expect(headerCheckbox, `${sectionId} 섹션 헤더 체크박스 존재`).toBeDefined();
+            expect(
+                (headerCheckbox.props.className ?? '').includes('pointer-events-none'),
+                `${sectionId} 섹션 헤더 체크박스 pointer-events-none 미사용`
+            ).toBe(false);
+            const headerChange = headerCheckbox.actions?.find(
+                (a: any) => a.type === 'change' && a.handler === 'setState'
+            );
+            expect(headerChange, `${sectionId} 섹션 헤더 체크박스 change 액션 존재`).toBeDefined();
         }
     });
 });
@@ -1082,13 +1197,16 @@ describe('크로스 파일 검증', () => {
         }
     });
 
-    it('저장 body에 notification_channels 포함 로직이 있다', () => {
+    it('저장 body에 notification channels 포함 로직이 있다', () => {
         const content = mainLayout.slots.content[0];
         const saveBtn = findById(content, 'save_button');
-        const apiCallAction = saveBtn.actions[0].actions[1];
+        const apiCallAction = saveBtn.actions[0].params.actions[1];
 
+        // body 표현식 안에서 notifications.channels 구조를 조립한다
+        // (notification_definitions 탭 진입 시 form.notifications.channels 를 그대로 전송)
         const body = apiCallAction.params.body;
-        expect(body).toContain('notification_channels');
+        expect(body).toContain('notifications');
+        expect(body).toContain('channels');
         expect(body).toContain('basic_defaults');
     });
 
@@ -1192,7 +1310,7 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
     it('저장 body에 general 탭 분기 로직이 있다', () => {
         const content = mainLayout.slots.content[0];
         const saveBtn = findById(content, 'save_button');
-        const apiCallAction = saveBtn.actions[0].actions[1];
+        const apiCallAction = saveBtn.actions[0].params.actions[1];
         const body = apiCallAction.params.body as string;
 
         // general 탭에서 display 카테고리 전송
@@ -1371,7 +1489,7 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
     it('저장 body에 seo 탭 분기 로직이 있다', () => {
         const content = mainLayout.slots.content[0];
         const saveBtn = findById(content, 'save_button');
-        const apiCallAction = saveBtn.actions[0].actions[1];
+        const apiCallAction = saveBtn.actions[0].params.actions[1];
         const body = apiCallAction.params.body as string;
         expect(body).toContain("'seo'");
         expect(body).toContain('seo:');

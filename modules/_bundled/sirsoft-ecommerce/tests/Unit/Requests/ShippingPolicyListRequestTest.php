@@ -12,6 +12,17 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 class ShippingPolicyListRequestTest extends ModuleTestCase
 {
     /**
+     * ShippingPolicyListRequest::rules() 는 ShippingType DB rows 를 Rule::in 값으로
+     * 사용하므로 테스트 전에 시드 필요.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(\Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder::class);
+    }
+
+    /**
      * 검증 수행
      *
      * @param array $data
@@ -85,8 +96,9 @@ class ShippingPolicyListRequestTest extends ModuleTestCase
 
     public function test_valid_shipping_methods_passes(): void
     {
+        // ShippingTypeSeeder 가 시딩하는 코드들 사용 (parcel/direct/quick/freight/pickup/express/cvs 등)
         $validator = $this->validate([
-            'shipping_methods' => ['parcel', 'collect', 'quick', 'direct', 'pickup', 'other'],
+            'shipping_methods' => ['parcel', 'quick', 'direct', 'pickup'],
         ]);
 
         $this->assertFalse($validator->fails());

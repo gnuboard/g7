@@ -107,8 +107,9 @@ class CouponIssuesListTest extends ModuleTestCase
         $this->createCouponIssue($coupon, $user1);
         $this->createCouponIssue($coupon, $user2);
 
+        // CouponIssuesListRequest 는 user_id 를 UUID 로 검증
         $response = $this->actingAs($this->adminUser)
-            ->getJson("/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{$coupon->id}/issues?user_id={$user1->id}");
+            ->getJson("/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{$coupon->id}/issues?user_id={$user1->uuid}");
 
         $response->assertStatus(200);
     }

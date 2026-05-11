@@ -1,0 +1,755 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Identity Logs Filter Section"
+    },
+    "id": "filter_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "card"
+    },
+    "children": [
+        {
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "composite",
+                            "name": "Select",
+                            "props": {
+                                "name": "searchType",
+                                "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500",
+                                "value": "{{_local.filter.searchType || 'auto'}}",
+                                "options": [
+                                    { "value": "auto", "label": "$t:admin.identity.logs.search_type.auto" },
+                                    { "value": "user_id", "label": "$t:admin.identity.logs.search_type.user_id" },
+                                    { "value": "target_hash", "label": "$t:admin.identity.logs.search_type.target_hash" },
+                                    { "value": "ip_address", "label": "$t:admin.identity.logs.search_type.ip_address" },
+                                    { "value": "policy_key", "label": "$t:admin.identity.logs.search_type.policy_key" }
+                                ]
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.searchType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "relative flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-search",
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "name": "search",
+                                        "type": "text",
+                                        "placeholder": "$t:admin.identity.logs.search_placeholder",
+                                        "className": "input w-full pl-10",
+                                        "value": "{{_local.filter.search || ''}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.search": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "keydown",
+                                            "key": "Enter",
+                                            "actionRef": "searchIdentityLogs"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_grid",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col"
+            },
+            "children": [
+                {
+                    "id": "status_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.identity.logs.filter.status_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.statuses || _local.filter.statuses.length === 0}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{[]}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.identity.logs.filter.status_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "iteration": {
+                                        "source": "{{['requested','sent','verified','failed','expired','cancelled','policy_violation_logged']}}",
+                                        "item_var": "st"
+                                    },
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.statuses || []).includes(st)}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.statuses": "{{$event.target.checked ? [...(_local.filter.statuses || []).filter(s => s !== st), st] : (_local.filter.statuses || []).filter(s => s !== st)}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "{{$t('admin.identity.logs.status.' + st)}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "purpose_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.identity.logs.filter.purpose_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.purposes || _local.filter.purposes.length === 0}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.purposes": "{{[]}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "$t:admin.identity.logs.filter.purpose_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "iteration": {
+                                        "source": "{{identityPurposes?.data ?? []}}",
+                                        "item_var": "pp"
+                                    },
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.purposes || []).includes(pp.id)}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.purposes": "{{$event.target.checked ? [...(_local.filter.purposes || []).filter(p => p !== pp.id), pp.id] : (_local.filter.purposes || []).filter(p => p !== pp.id)}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "{{pp.label ?? pp.id}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "date_range_filter",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "filter-row"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "filter-label w-32"
+                    },
+                    "text": "$t:admin.identity.logs.filter.date_range_label"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-wrap items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "date",
+                                "name": "dateFrom",
+                                "className": "input w-40",
+                                "value": "{{_local.filter.dateFrom || ''}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.dateFrom": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-400"
+                            },
+                            "text": "~"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "date",
+                                "name": "dateTo",
+                                "className": "input w-40",
+                                "value": "{{_local.filter.dateTo || ''}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.dateTo": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "channel_filter",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(identityProviders?.data ?? []).some(p => Array.isArray(p.channels) && p.channels.length > 0)}}",
+            "props": {
+                "className": "filter-row"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "filter-label w-32"
+                    },
+                    "text": "$t:admin.identity.logs.filter.channel_label"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-wrap items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "iteration": {
+                                "source": "{{Array.from(new Set((identityProviders?.data ?? []).flatMap(p => Array.isArray(p.channels) ? p.channels : [])))}}",
+                                "item_var": "ch"
+                            },
+                            "props": {
+                                "className": "inline-flex items-center gap-2 cursor-pointer"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "checkbox",
+                                        "className": "checkbox",
+                                        "checked": "{{(_local.filter.channels || []).includes(ch)}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.channels": "{{$event.target.checked ? [...(_local.filter.channels || []).filter(c => c !== ch), ch] : (_local.filter.channels || []).filter(c => c !== ch)}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "{{ch}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "advanced_toggle_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end mt-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1"
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "filter.advancedOpen": "{{!_local.filter.advancedOpen}}"
+                            }
+                        }
+                    ],
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "{{_local.filter.advancedOpen ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
+                                "className": "text-xs"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.identity.logs.filter.advanced_search_toggle"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "advanced_filters",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.filter.advancedOpen === true}}",
+            "props": {
+                "className": "flex flex-col gap-3 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+            },
+            "children": [
+                {
+                    "id": "origin_type_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.identity.logs.filter.origin_type_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "iteration": {
+                                        "source": "{{['route','hook','policy','middleware','api','custom','system']}}",
+                                        "item_var": "ot"
+                                    },
+                                    "props": {
+                                        "className": "inline-flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.originTypes || []).includes(ot)}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.originTypes": "{{$event.target.checked ? [...(_local.filter.originTypes || []).filter(o => o !== ot), ot] : (_local.filter.originTypes || []).filter(o => o !== ot)}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                            },
+                                            "text": "{{$t('admin.identity.logs.origin_type.' + ot)}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "source_type_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.identity.logs.filter.source_type_label"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Select",
+                            "props": {
+                                "name": "sourceType",
+                                "className": "input w-48",
+                                "value": "{{_local.filter.sourceType || ''}}",
+                                "options": [
+                                    { "value": "", "label": "$t:admin.identity.logs.filter.source_type_any" },
+                                    { "value": "core", "label": "$t:identity.policy.source_type.core" },
+                                    { "value": "module", "label": "$t:identity.policy.source_type.module" },
+                                    { "value": "plugin", "label": "$t:identity.policy.source_type.plugin" },
+                                    { "value": "admin", "label": "$t:identity.policy.source_type.admin" }
+                                ]
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.sourceType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "source_identifier_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.identity.logs.filter.source_identifier_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "name": "sourceIdentifier",
+                                "placeholder": "$t:admin.identity.logs.filter.source_identifier_placeholder",
+                                "className": "input w-64",
+                                "value": "{{_local.filter.sourceIdentifier || ''}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.sourceIdentifier": "{{$event.target.value}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-center gap-3 mt-6"
+            },
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex gap-3 mt-6"
+                    }
+                }
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary px-6"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-primary flex-1"
+                            }
+                        }
+                    },
+                    "text": "$t:admin.identity.logs.filter.search_button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "searchIdentityLogs"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary px-6"
+                    },
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-secondary flex-1"
+                            }
+                        }
+                    },
+                    "text": "$t:admin.identity.logs.filter.reset_button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "params": {
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "filter": {
+                                                "searchType": "auto",
+                                                "search": "",
+                                                "statuses": [],
+                                                "purposes": [],
+                                                "channels": [],
+                                                "originTypes": [],
+                                                "dateFrom": "",
+                                                "dateTo": "",
+                                                "sourceType": "",
+                                                "sourceIdentifier": "",
+                                                "advancedOpen": false
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/identity/logs"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

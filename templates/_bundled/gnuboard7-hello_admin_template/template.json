@@ -1,0 +1,48 @@
+{
+    "identifier": "gnuboard7-hello_admin_template",
+    "vendor": "gnuboard7",
+    "name": {
+        "ko": "Hello Admin Template",
+        "en": "Hello Admin Template"
+    },
+    "version": "0.1.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "그누보드7 학습용 최소 Admin 템플릿 스켈레톤",
+        "en": "Gnuboard7 minimal admin template skeleton for learning"
+    },
+    "type": "admin",
+    "hidden": true,
+    "locales": ["ko", "en"],
+    "author": {
+        "name": "gnuboard7",
+        "email": "contact@gnuboard.com",
+        "url": "https://gnuboard.com"
+    },
+    "release_date": "2026-04-21",
+    "g7_version": ">=7.0.0-beta.4",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "assets": {
+        "js": ["dist/components.js"]
+    },
+    "components": {
+        "basic": [
+            "a", "button", "div", "h1", "h2", "h3", "img", "span"
+        ],
+        "composite": [],
+        "layout": []
+    },
+    "error_config": {
+        "layouts": {
+            "401": "errors/401",
+            "403": "errors/403",
+            "404": "errors/404",
+            "500": "errors/500",
+            "503": "errors/503",
+            "maintenance": "errors/maintenance"
+        }
+    }
+}

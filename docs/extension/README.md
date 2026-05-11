@@ -59,7 +59,13 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 
 | 문서 | 설명 |
 |------|------|
-| [extension-manager.md](extension-manager.md) | Composer 오토로드, 서비스 등록 |
+| [extension-manager.md](extension-manager.md) | Composer 오토로드, 서비스 등록, hidden 필터링 |
+
+### 학습용 샘플
+
+| 문서 | 설명 |
+|------|------|
+| [sample-extensions.md](sample-extensions.md) | 학습용 최소 샘플 확장 4종 (gnuboard7-hello_*) — 계층 1:1 비교 레퍼런스 |
 
 ### 템플릿 시스템
 

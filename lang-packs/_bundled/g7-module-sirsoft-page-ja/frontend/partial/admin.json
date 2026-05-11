@@ -1,0 +1,166 @@
+{
+  "page": {
+    "page_title": "ページ管理",
+    "page_description": "ページを管理します。",
+    "title": "ページ管理",
+    "description": "静的ページを管理します。",
+    "add_page": "ページを追加",
+    "search": "検索",
+    "search_placeholder": "タイトルまたはスラッグで検索...",
+    "search_fields": {
+      "all": "すべて",
+      "title": "タイトル",
+      "slug": "スラッグ"
+    },
+    "columns": {
+      "id": "ID",
+      "title": "タイトル",
+      "slug": "スラッグ",
+      "published": "公開",
+      "current_version": "バージョン",
+      "creator": "作成者",
+      "created_at": "作成日",
+      "published_at": "公開日時",
+      "updated_at": "編集日"
+    },
+    "published_filter": {
+      "all": "すべて",
+      "published": "公開",
+      "unpublished": "非公開"
+    },
+    "published_status": {
+      "published": "公開",
+      "unpublished": "非公開",
+      "publish_action": "公開",
+      "unpublish_action": "非公開にする"
+    },
+    "total_count": "合計{{count}}個",
+    "per_page": "{{count}}個",
+    "sort": {
+      "created_at_desc": "最新の作成順",
+      "created_at_asc": "古い作成順",
+      "published_at_desc": "最新の公開順",
+      "published_at_asc": "古い公開順"
+    },
+    "selected_count": "{{count}}個が選択されました",
+    "bulk_status_change": "ステータス変更:",
+    "bulk_publish": "一括公開",
+    "bulk_unpublish": "一括非公開",
+    "bulk_clear_selection": "選択を解除",
+    "actions": {
+      "view": "詳細表示",
+      "edit": "編集",
+      "delete": "削除"
+    },
+    "modals": {
+      "delete_title": "ページを削除",
+      "delete_confirm": "本当にこのページを削除してもよろしいですか?",
+      "delete_success": "ページが削除されました。",
+      "restore_title": "バージョンを復元",
+      "restore_confirm": "このバージョンに復元してもよろしいですか?現在の内容が上書きされます。",
+      "restore_notice": "復元する場合、選択したバージョンの内容で新しいバージョンが作成されます。既存のバージョン履歴はすべて保持されます。添付ファイルは復元対象に含まれません。",
+      "restoring": "復元中...",
+      "restore_success": "バージョンが復元されました。",
+      "bulk_publish_title": "一括公開",
+      "bulk_publish_confirm": "{{count}}個のページを公開状態に変更します。",
+      "bulk_publish_success": "選択したページが公開されました。",
+      "bulk_unpublish_title": "一括非公開",
+      "bulk_unpublish_confirm": "{{count}}個のページを非公開状態に変更します。",
+      "bulk_unpublish_success": "選択したページが非公開に変更されました。"
+    },
+    "errors": {
+      "delete_failed": "ページの削除に失敗しました。",
+      "restore_failed": "バージョン復元に失敗しました。",
+      "publish_change_failed": "公開状態の変更に失敗しました。"
+    },
+    "form": {
+      "page_title_create": "ページを登録",
+      "page_title_edit": "ページを編集",
+      "page_description_create": "新しいページを登録します。",
+      "page_description_edit": "ページ情報を編集します。",
+      "sections": {
+        "basic_info": "基本情報"
+      },
+      "fields": {
+        "title": "タイトル",
+        "title_placeholder": "ページタイトルを入力してください",
+        "slug": "スラッグ",
+        "slug_placeholder": "url-slug",
+        "slug_hint": "URL: /page/{{slug}}",
+        "slug_check": "重複確認",
+        "slug_available": "使用可能なスラッグです。",
+        "slug_unavailable": "既に使用中のスラッグです。",
+        "slug_format_hint": "英字小文字、数字、ハイフン(-)のみ使用可能",
+        "slug_checking": "確認中...",
+        "slug_check_required": "スラッグの重複確認を先に行ってください。",
+        "published": "公開するかどうか",
+        "content": "内容",
+        "content_mode": "編集モード"
+      },
+      "seo": {
+        "title": "SEO設定",
+        "seo_title": "SEOタイトル",
+        "seo_title_placeholder": "検索エンジンに表示されるタイトル",
+        "seo_description": "SEO説明",
+        "seo_description_placeholder": "検索エンジンに表示される説明",
+        "seo_keywords": "SEOキーワード",
+        "seo_keywords_placeholder": "カンマで区切って入力"
+      },
+      "lang_tabs": {
+        "ko": "韓国語",
+        "en": "English"
+      },
+      "attachments": "添付ファイル",
+      "attachments_section": "添付ファイル",
+      "confirm_remove_attachment_title": "添付ファイル削除",
+      "confirm_remove_attachment_message": "ファイルは即座に削除されます。ページ保存の有無に関わらず、復元することはできません。",
+      "create_success": "ページが登録されました。",
+      "update_success": "ページが編集されました。",
+      "validation_error": "入力情報を確認してください。",
+      "read_only_message": "編集権限がないため、読み取り専用として表示されます。"
+    },
+    "attachment": {
+      "download": "ダウンロード"
+    },
+    "show": {
+      "title": "ページ"
+    },
+    "detail": {
+      "page_title": "ページ詳細",
+      "page_description": "ページ詳細情報を確認します。",
+      "back_to_list": "一覧へ",
+      "edit": "編集",
+      "delete": "削除",
+      "display_language": "表示言語",
+      "display_language_hint": "選択した言語でタイトルと内容が表示されます。",
+      "view_page": "ページ表示",
+      "publish_changed": "公開ステータスが変更されました。",
+      "attachments": "添付ファイル ({{count}})",
+      "info": {
+        "published_at": "公開日時",
+        "created_at": "作成日",
+        "updated_at": "編集日",
+        "creator": "作成者"
+      },
+      "tabs": {
+        "preview": "内容プレビュー",
+        "versions": "バージョン履歴"
+      },
+      "versions": {
+        "version": "バージョン",
+        "creator": "保存者",
+        "created_at": "保存日時",
+        "changes": "変更内容",
+        "actions": "作業",
+        "view": "表示",
+        "preview_modal_title": "バージョン v{{version}} プレビュー",
+        "restore": "復元",
+        "current": "現在",
+        "initial": "初期作成",
+        "changed_fields": "変更: {{fields}}",
+        "restored_from": "v{{version}}から復元",
+        "restore_guide": "表示ボタンをクリックすると、内容を確認して復元できます。添付ファイルはバージョン管理に含まれていません。"
+      }
+    }
+  }
+}

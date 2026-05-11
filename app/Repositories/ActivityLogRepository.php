@@ -237,4 +237,15 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
             ->limit($limit)
             ->get();
     }
+
+    /**
+     * 사용자 삭제 시 해당 사용자의 모든 activity_logs.user_id 컬럼을 NULL 로 익명화합니다.
+     *
+     * @param  int  $userId  익명화 대상 사용자 ID
+     * @return int 익명화된 row 수
+     */
+    public function anonymizeUserId(int $userId): int
+    {
+        return ActivityLog::where('user_id', $userId)->update(['user_id' => null]);
+    }
 }

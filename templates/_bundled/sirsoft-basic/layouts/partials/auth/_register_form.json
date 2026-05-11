@@ -541,7 +541,7 @@
           "target": "/api/auth/register",
           "params": {
             "method": "POST",
-            "body": "{{_local.registerForm}}"
+            "body": "{{Object.assign({}, _local.registerForm, query.verification_token ? { verification_token: query.verification_token } : {})}}"
           },
           "onSuccess": [
             {

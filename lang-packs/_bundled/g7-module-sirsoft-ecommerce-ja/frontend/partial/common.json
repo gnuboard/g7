@@ -1,0 +1,51 @@
+{
+  "create": "作成",
+  "edit": "編集",
+  "delete": "削除",
+  "copy": "コピー",
+  "cancel": "キャンセル",
+  "confirm": "確認",
+  "save": "保存",
+  "saving": "保存中",
+  "close": "閉じる",
+  "refresh": "更新",
+  "created_at": "作成日",
+  "updated_at": "更新日",
+  "active": "有効",
+  "inactive": "無効",
+  "list": "一覧",
+  "use": "使用",
+  "not_use": "未使用",
+  "korean": "韓国語",
+  "english": "英語",
+  "all": "すべて",
+  "min": "最小",
+  "max": "最大",
+  "processing": "処理中...",
+  "deleting": "削除中...",
+  "validation_error": "入力内容をご確認ください",
+  "locale": {
+    "ko": "韓国語",
+    "en": "英語"
+  },
+  "date": {
+    "today": "今日",
+    "week": "1週間",
+    "3months": "3ヶ月",
+    "6months": "6ヶ月",
+    "1year": "1年"
+  },
+  "error": {
+    "general": "エラーが発生しました。"
+  },
+  "currency": {
+    "won": "ウォン"
+  },
+  "column_selector": "列の選択",
+  "column_selector_title": "表示する列を選択",
+  "column_selector_description": "表示または非表示にする列を選択してください",
+  "loading": "読み込み中...",
+  "select_placeholder": "選択してください",
+  "selected_count": "{{count}}個が選択されました",
+  "read_only_notice": "閲覧権限のみです。編集が必要な場合は管理者にお問い合わせください。"
+}

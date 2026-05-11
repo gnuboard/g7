@@ -171,7 +171,7 @@ ${fileList}
 각 파일 유형에 맞는 그누보드7 규정 준수 여부를 확인하세요:
 
 ### PHP 파일
-- validate-code 도구 사용
+- validate-backend 도구 사용
 - Service-Repository 패턴
 - FormRequest 검증
 - 훅 시스템

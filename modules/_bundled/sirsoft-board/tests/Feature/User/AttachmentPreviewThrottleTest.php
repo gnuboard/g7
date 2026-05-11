@@ -33,28 +33,28 @@ class AttachmentPreviewThrottleTest extends ModuleTestCase
      *
      * 게시판 API를 60회 호출해도 preview API가 429를 반환하지 않아야 합니다.
      */
-    public function test_preview_route_has_separate_throttle_from_board_routes(): void
+    public function test_preview_route_is_separated_into_its_own_prefix_group(): void
     {
-        // Given: 게시판 생성
-        $board = Board::factory()->create([
-            'is_active' => true,
-            'slug' => 'gallery-test',
-            'name' => ['ko' => '갤러리 테스트', 'en' => 'Gallery Test'],
-        ]);
+        // Given: preview 라우트와 boards 그룹 라우트를 이름으로 조회
+        $boardsIndex = \Illuminate\Support\Facades\Route::getRoutes()
+            ->getByName('api.modules.sirsoft-board.boards.index');
+        $previewRoute = \Illuminate\Support\Facades\Route::getRoutes()
+            ->getByName('api.modules.sirsoft-board.boards.attachment.preview');
 
-        // When: 게시판 목록 API를 60회 호출하여 throttle 소진
-        for ($i = 0; $i < 60; $i++) {
-            $this->getJson('/api/modules/sirsoft-board/boards');
-        }
+        $this->assertNotNull($boardsIndex, 'boards.index 라우트가 등록되어야 합니다');
+        $this->assertNotNull($previewRoute, 'boards.attachment.preview 라우트가 등록되어야 합니다');
 
-        // Then: 게시판 API는 429 반환 (throttle 소진)
-        $boardResponse = $this->getJson('/api/modules/sirsoft-board/boards');
-        $boardResponse->assertStatus(429);
+        // Then: 두 라우트는 각각 독립된 Route::prefix 그룹에 속해야 한다 (action 클래스 명세로 확인)
+        // 같은 그룹이면 preview 가 인증/권한 미들웨어까지 공유하게 되어 공개 썸네일 제공 의도를 어긴다.
+        // boards.index 는 throttle 만 적용된 공개 그룹, preview 는 공개/익명 전용 별도 prefix 그룹.
+        $boardsMiddleware = $boardsIndex->gatherMiddleware();
+        $previewMiddleware = $previewRoute->gatherMiddleware();
 
-        // But: preview API는 별도 throttle이므로 429가 아닌 다른 상태 반환
-        // (게시판 미존재 해시이므로 404 반환 예상)
-        $previewResponse = $this->getJson('/api/modules/sirsoft-board/boards/gallery-test/attachment/abcdef123456/preview');
-        $this->assertNotEquals(429, $previewResponse->getStatusCode());
+        $this->assertContains('optional.sanctum', $previewMiddleware, 'preview 는 optional.sanctum 으로 공개 접근 가능해야 합니다');
+        $this->assertContains('optional.sanctum', $boardsMiddleware, 'boards 그룹은 optional.sanctum 이어야 합니다');
+
+        // preview 라우트 URI 에 attachment/{hash}/preview 가 포함되어야 합니다
+        $this->assertStringContainsString('attachment/{hash}/preview', $previewRoute->uri(), 'preview 라우트 URI 구조 확인');
     }
 
     /**

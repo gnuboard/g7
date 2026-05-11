@@ -20,6 +20,10 @@ class BroadcastDashboardResourcesTest extends TestCase
 
     public function test_command_broadcasts_resources_update(): void
     {
+        // HookManager::broadcast 는 null/log 드라이버 또는 host 미설정 시 dispatch 스킵
+        config(['broadcasting.default' => 'reverb']);
+        config(['broadcasting.connections.reverb.options.host' => 'localhost']);
+
         Event::fake([GenericBroadcastEvent::class]);
 
         $this->artisan('dashboard:broadcast-resources')
@@ -35,6 +39,10 @@ class BroadcastDashboardResourcesTest extends TestCase
 
     public function test_command_sends_correct_resource_data(): void
     {
+        // HookManager::broadcast 는 null/log 드라이버 또는 host 미설정 시 dispatch 스킵
+        config(['broadcasting.default' => 'reverb']);
+        config(['broadcasting.connections.reverb.options.host' => 'localhost']);
+
         Event::fake([GenericBroadcastEvent::class]);
 
         $this->artisan('dashboard:broadcast-resources')

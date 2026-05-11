@@ -19,6 +19,7 @@ return [
     'system' => 'System',
     'yes' => 'Yes',
     'no' => 'No',
+    'unknown' => 'Unknown',
 
     // Common error messages
     'errors' => [

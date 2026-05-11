@@ -1,0 +1,364 @@
+{
+  "title": "クーポン管理",
+  "description": "クーポンを作成して管理します。",
+  "actions": {
+    "create": "クーポン登録",
+    "edit_search": "検索編集",
+    "search": "検索",
+    "reset": "初期化",
+    "bulk_change": "一括変更",
+    "view_member": "会員情報表示",
+    "search_by_creator": "この登録者で検索"
+  },
+  "action": {
+    "edit": "編集",
+    "delete": "削除",
+    "edit_search": "検索編集",
+    "search": "検索",
+    "reset": "初期化",
+    "view_member": "会員情報表示",
+    "search_by_creator": "この登録者で検索"
+  },
+  "search": {
+    "field": {
+      "all": "すべて",
+      "coupon_name": "クーポン名",
+      "coupon_code": "クーポンコード"
+    },
+    "placeholder": "検索キーワードを入力してください...",
+    "column_select": "カラム選択",
+    "detail_search": "詳細検索"
+  },
+  "filter": {
+    "target_type": "適用対象",
+    "benefit_amount": "特典金額",
+    "created_at": "登録日",
+    "issue_status": "発行ステータス",
+    "issue_method": "発行方法",
+    "issue_condition": "発行条件",
+    "min_order_amount": "最小注文金額",
+    "min_order_amount_placeholder": "金額入力",
+    "min_order_amount_suffix": "円以上の購入時に使用可能",
+    "validity_period": "有効期間",
+    "valid_period": "有効期間",
+    "validity_range": "開始日 ~ 終了日",
+    "validity_from_issue": "発行日から",
+    "validity_days_suffix": "日",
+    "issue_period": "発行期間",
+    "creator": "登録者",
+    "creator_select": "登録者選択",
+    "creator_search_placeholder": "名前で検索",
+    "creator_search_initial": "登録者名を入力してください",
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "min": "最小",
+    "max": "最大",
+    "date_quick": {
+      "today": "今日",
+      "1_week": "1週間",
+      "1_month": "1ヶ月",
+      "3_months": "3ヶ月",
+      "6_months": "6ヶ月",
+      "1_year": "1年"
+    }
+  },
+  "target_type": {
+    "all": "すべて",
+    "product_amount": "商品金額",
+    "order_amount": "注文金額",
+    "shipping_fee": "送料"
+  },
+  "benefit_type": {
+    "fixed": "定額",
+    "rate": "定率"
+  },
+  "issue_status": {
+    "all": "すべて",
+    "issuing": "発行中",
+    "stopped": "発行停止"
+  },
+  "issue_method": {
+    "all": "すべて",
+    "direct": "直接発行",
+    "download": "ダウンロード",
+    "auto": "自動発行"
+  },
+  "issue_condition": {
+    "all": "すべて",
+    "manual": "手動発行",
+    "signup": "会員登録",
+    "first_purchase": "初回購入",
+    "birthday": "誕生日"
+  },
+  "batch": {
+    "selected_count": "{{count}}個選択されました",
+    "status_change": "発行ステータス変更"
+  },
+  "bulk": {
+    "apply": "適用",
+    "select_status": "変更するステータスを選択してください"
+  },
+  "toast": {
+    "status_changed": "発行ステータスが変更されました。",
+    "deleted": "クーポンが削除されました。"
+  },
+  "table": {
+    "total_count": "合計 {{count}}個",
+    "selected_count": "{{count}}個選択されました",
+    "empty": "登録されたクーポンがありません。",
+    "sort": {
+      "created_at_desc": "登録日時 最新順",
+      "created_at_asc": "登録日時 古い順",
+      "coupon_name_asc": "クーポン名 昇順",
+      "coupon_name_desc": "クーポン名 降順",
+      "name_asc": "クーポン名 昇順",
+      "name_desc": "クーポン名 降順",
+      "valid_to_asc": "有効期限 早い順",
+      "valid_to_desc": "有効期限 遅い順"
+    },
+    "per_page": "{{count}}個",
+    "columns": {
+      "checkbox": "選択",
+      "target_type": "適用対象",
+      "coupon_name": "クーポン名",
+      "name": "クーポン名",
+      "description": "説明",
+      "benefit_amount": "特典金額",
+      "validity_period": "有効期限",
+      "valid_period": "有効期限",
+      "issue_period": "発行期間",
+      "issue_count": "発行数量",
+      "issue_method": "発行方法",
+      "issue_condition": "発行条件",
+      "issue_status": "発行ステータス",
+      "created_at": "登録日",
+      "creator": "登録者",
+      "created_by": "登録者",
+      "actions": "操作"
+    }
+  },
+  "mobile": {
+    "benefit_label": "特典金額",
+    "target_type_label": "適用対象",
+    "issue_label": "発行",
+    "validity_period_label": "有効期限",
+    "issue_period_label": "発行期間",
+    "issue_count_label": "発行数量",
+    "status_label": "ステータス",
+    "creator_label": "登録者",
+    "target_type:": "適用対象:",
+    "issue:": "発行:",
+    "valid_period: ": "有効期限: ",
+    "issue_period: ": "発行期間: ",
+    "issue_count: ": "発行数量: ",
+    "status:": "ステータス:"
+  },
+  "modal": {
+    "status_change": {
+      "title": "発行ステータスを変更しますか?",
+      "message": "選択された{{count}}個のクーポンの発行ステータスが{{status}}に変更されます。"
+    },
+    "delete": {
+      "title": "クーポンを削除しますか?",
+      "message": "この操作は元に戻すことができません。クーポンとすべての投稿が永久に削除されます。",
+      "warning": "削除されたクーポンは復元できません。",
+      "delete": "削除"
+    },
+    "issue_history": {
+      "title": "クーポン発行履歴",
+      "subtitle": "合計{{count}}件の発行履歴",
+      "total": "合計{{count}}件",
+      "empty": "発行履歴がありません。",
+      "description": "このクーポンが発行されたユーザー一覧です。(合計12件)",
+      "total_count": "合計12件",
+      "columns": {
+        "issued_at": "発行日時",
+        "user": "会員",
+        "status": "ステータス",
+        "member_info": "会員情報",
+        "usage_status": "使用状態",
+        "used_at": "使用日時"
+      },
+      "action": {
+        "filter_by_user": "このメンバーでフィルター"
+      },
+      "status": {
+        "used": "使用完了",
+        "unused": "未使用"
+      }
+    }
+  },
+  "messages": {
+    "created": "クーポンが登録されました。",
+    "updated": "クーポンが編集されました。"
+  },
+  "create": {
+    "title": "クーポン登録",
+    "description": "新しいクーポンを登録します。",
+    "section": {
+      "basic_info": "基本情報",
+      "benefit_settings": "特典設定",
+      "issue_settings": "発行設定",
+      "usage_conditions": "使用条件設定"
+    },
+    "field": {
+      "target_type": "適用対象",
+      "issue_method": "発行方法",
+      "issue_condition": "発行条件",
+      "coupon_name": "クーポン名",
+      "coupon_description": "クーポン説明",
+      "benefit_amount": "特典金額",
+      "min_order_amount": "最小注文金額",
+      "validity_period": "有効期限",
+      "issue_quantity": "発行数量",
+      "issue_period": "発行期間",
+      "reissue": "再発行 (重複ダウンロード)",
+      "coupon_overlap": "他のクーポンとの重複使用可能",
+      "apply_target": "適用対象"
+    },
+    "option": {
+      "product_amount": "商品金額",
+      "order_amount": "注文金額",
+      "shipping_fee": "配送費",
+      "direct_issue": "直接発行",
+      "download": "ダウンロード",
+      "auto_issue": "自動発行",
+      "manual_issue": "手動発行",
+      "unlimited": "無制限",
+      "quantity_limit": "数量制限",
+      "period_setting": "期間設定",
+      "limit_per_member": "制限 会員当たり",
+      "possible": "可能",
+      "impossible": "不可能",
+      "no_limit": "制限なし",
+      "specific_product": "特定商品",
+      "specific_category": "特定カテゴリ"
+    },
+    "placeholder": {
+      "coupon_name": "クーポン名を入力してください",
+      "coupon_description": "クーポン説明を入力してください",
+      "amount_input": "金額入力",
+      "max_discount": "最大金額",
+      "min_order": "最小注文金額",
+      "quantity": "数量",
+      "days": "日数"
+    },
+    "hint": {
+      "min_order_suffix": "円以上購入時に適用可能です",
+      "max_discount_suffix": "円割引",
+      "quantity_suffix": "個",
+      "days_suffix": "日",
+      "times_suffix": "回"
+    },
+    "table": {
+      "product_code": "商品コード",
+      "product_name": "商品名",
+      "sale_price": "販売価格",
+      "category_name": "カテゴリ名",
+      "product_count": "登録商品数"
+    },
+    "button": {
+      "select_product": "商品選択",
+      "select_category": "カテゴリ選択",
+      "delete_selected": "選択削除"
+    }
+  },
+  "form": {
+    "title_create": "クーポン登録",
+    "title_edit": "クーポン編集",
+    "description_create": "新しいクーポンを登録します。",
+    "description_edit": "クーポン #{id}を編集します。",
+    "section": {
+      "basic_info": "基本情報",
+      "benefit_settings": "特典設定",
+      "issue_settings": "発行設定",
+      "usage_conditions": "使用条件設定"
+    },
+    "field": {
+      "target_type": "適用対象",
+      "issue_method": "発行方法",
+      "issue_condition": "発行条件",
+      "coupon_name": "クーポン名",
+      "coupon_description": "クーポン説明",
+      "benefit_amount": "特典金額",
+      "max_discount": "最大割引金額",
+      "min_order_amount": "最小注文金額",
+      "validity_period": "有効期間",
+      "issue_quantity": "発行数量",
+      "issue_period": "発行期間",
+      "reissue": "再発行（重複ダウンロード）",
+      "coupon_overlap": "他のクーポンとの重複使用",
+      "apply_target": "適用対象"
+    },
+    "option": {
+      "target_type_product_amount": "商品金額",
+      "target_type_order_amount": "注文金額",
+      "target_type_shipping_fee": "配送費",
+      "issue_method_direct": "直接発行",
+      "issue_method_download": "ダウンロード",
+      "issue_method_auto": "自動発行",
+      "issue_condition_manual": "手動発行",
+      "issue_condition_signup": "会員登録",
+      "issue_condition_first_purchase": "初回購入",
+      "issue_condition_birthday": "誕生日",
+      "discount_type_fixed": "円",
+      "discount_type_rate": "%",
+      "valid_type_fixed_period": "期間指定",
+      "valid_type_days_from_issue": "発行日から",
+      "unlimited": "無制限",
+      "issue_quantity_limited": "数量制限",
+      "issue_period_limited": "期間設定",
+      "reissue_limited": "制限",
+      "combinable_yes": "可能",
+      "combinable_no": "不可能",
+      "target_scope_all": "制限なし",
+      "target_scope_products": "特定商品",
+      "target_scope_categories": "特定カテゴリ"
+    },
+    "placeholder": {
+      "coupon_name": "クーポン名を入力してください",
+      "coupon_description": "クーポン説明を入力してください"
+    },
+    "hint": {
+      "min_order_suffix": "円以上購入時にご利用可能",
+      "max_prefix": "最大",
+      "currency_won_discount": "円割引",
+      "from_issue_date": "発行日から",
+      "unit_days": "日間有効",
+      "unit_quantity": "枚",
+      "per_user": "会員当たり",
+      "unit_times": "回"
+    },
+    "search": {
+      "products": "商品検索",
+      "categories": "カテゴリ検索",
+      "field_all": "すべて",
+      "field_code": "商品コード",
+      "field_name": "商品名",
+      "field_sku": "SKU",
+      "keyword_placeholder": "検索ワードを入力してください",
+      "results": "検索結果",
+      "no_results": "検索結果がありません。",
+      "add_selected": "選択を追加",
+      "selected_products": "選択された商品",
+      "selected_categories": "選択されたカテゴリ",
+      "no_selected": "選択された項目がありません。",
+      "delete_selected": "選択を削除",
+      "category_placeholder": "カテゴリ名を入力してください",
+      "category_tree": "カテゴリツリー",
+      "load_more": "さらに表示 ({{current}} / {{total}})"
+    },
+    "table": {
+      "product_code": "商品コード",
+      "product_name": "商品名",
+      "price": "販売価格",
+      "category_name": "カテゴリ名",
+      "product_count": "登録商品数"
+    },
+    "button": {
+      "cancel": "キャンセル",
+      "save": "保存",
+      "saving": "保存中..."
+    }
+  }
+}

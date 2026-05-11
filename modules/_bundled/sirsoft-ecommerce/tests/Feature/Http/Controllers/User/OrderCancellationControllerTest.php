@@ -210,21 +210,38 @@ class OrderCancellationControllerTest extends ModuleTestCase
             'shipping_policy_applied_snapshot' => [],
         ]);
 
-        $option1 = OrderOption::factory()->forOrder($order)->create([
-            'quantity' => 1,
-            'unit_price' => 20000,
-            'subtotal_price' => 20000,
-            'subtotal_paid_amount' => 20000,
-            'option_status' => OrderStatusEnum::PAYMENT_COMPLETE,
-        ]);
+        // 스냅샷 가격은 factory default 가 random(5000~100000) 이므로 명시 고정
+        // (OrderAdjustmentService::buildRecalcInput 가 snapshot 의 selling_price 를
+        // 재계산 기준가로 사용 — 원 총액 40000 보다 크면 "환불 음수" 에러 발생)
+        $snapshotOverride = [
+            'product_snapshot' => [
+                'id' => null, 'name' => ['ko' => 't', 'en' => 't'], 'product_code' => null,
+                'sku' => null, 'brand_id' => null, 'list_price' => 20000, 'selling_price' => 20000,
+                'currency_code' => 'KRW', 'stock_quantity' => 100, 'tax_status' => 'taxable',
+                'tax_rate' => 10, 'has_options' => false, 'option_groups' => null, 'thumbnail_url' => null,
+            ],
+            'option_snapshot' => [
+                'id' => null, 'option_code' => null, 'option_values' => null, 'option_name' => 't',
+                'price_adjustment' => 0, 'list_price' => 20000, 'selling_price' => 20000,
+                'currency_code' => 'KRW', 'stock_quantity' => 100, 'weight' => 0, 'volume' => 0,
+            ],
+        ];
 
-        $option2 = OrderOption::factory()->forOrder($order)->create([
+        $option1 = OrderOption::factory()->forOrder($order)->create(array_merge([
             'quantity' => 1,
             'unit_price' => 20000,
             'subtotal_price' => 20000,
             'subtotal_paid_amount' => 20000,
             'option_status' => OrderStatusEnum::PAYMENT_COMPLETE,
-        ]);
+        ], $snapshotOverride));
+
+        $option2 = OrderOption::factory()->forOrder($order)->create(array_merge([
+            'quantity' => 1,
+            'unit_price' => 20000,
+            'subtotal_price' => 20000,
+            'subtotal_paid_amount' => 20000,
+            'option_status' => OrderStatusEnum::PAYMENT_COMPLETE,
+        ], $snapshotOverride));
 
         OrderPayment::factory()->forOrder($order)->create([
             'payment_status' => PaymentStatusEnum::PAID,

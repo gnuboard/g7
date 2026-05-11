@@ -4234,3 +4234,106 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Step 4 — 번들 언어팩 카드 (locale 별 그룹) */
+.lp-locale-heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #374151;
+}
+
+.lp-locale-heading:first-child {
+  margin-top: 0;
+}
+
+.lp-locale-grid {
+  margin-bottom: 0.75rem;
+}
+
+/* 종속 확장 미선택 시 disabled 시각화 */
+.extension-card.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+  background-color: #f9fafb;
+}
+
+.extension-card.disabled .extension-card-name,
+.extension-card.disabled .extension-card-description {
+  color: #9ca3af;
+}
+
+/* scope 배지 */
+.lp-scope-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.lp-scope-badge.lp-scope-core {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.lp-target-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-left: 0.25rem;
+}
+
+/* Step 4 — 일괄 토글 (마스터 + 섹션별) */
+.bulk-toggle-master {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+}
+
+.bulk-toggle-label,
+.bulk-toggle-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+  cursor: pointer;
+  user-select: none;
+}
+
+.bulk-toggle-section {
+  margin-left: auto;
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.bulk-toggle-checkbox {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.bulk-toggle-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* requirement-card-header 가 flexbox 가 아닌 경우 토글 우측 정렬을 위해 보정 */
+.requirement-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

@@ -66,4 +66,12 @@ interface OrderOptionRepositoryInterface
      * @return bool 삭제 성공 여부
      */
     public function delete(OrderOption $option): bool;
+
+    /**
+     * ID 목록으로 주문 옵션을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
+     *
+     * @param  array<int, int>  $ids  주문 옵션 ID 목록
+     * @return \Illuminate\Database\Eloquent\Collection<int, OrderOption> id => OrderOption 매핑
+     */
+    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection;
 }

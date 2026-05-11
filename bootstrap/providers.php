@@ -1,6 +1,7 @@
 <?php
 
 return [
+    App\Providers\InstallerRuntimeServiceProvider::class,  // 설치 진행 중 runtime.php 로 동적 설정 주입 (.env 무수정)
     App\Providers\SettingsServiceProvider::class,  // DB 연결 전 JSON 설정 로드
     App\Providers\AppServiceProvider::class,
     App\Providers\AuthServiceProvider::class,
@@ -12,6 +13,7 @@ return [
     App\Providers\ModuleRouteServiceProvider::class,
     App\Providers\PluginRouteServiceProvider::class,
     App\Providers\TranslationServiceProvider::class,
+    App\Providers\LanguagePackServiceProvider::class,
     App\Providers\ScoutServiceProvider::class,
     App\Seo\SeoServiceProvider::class,
 ];

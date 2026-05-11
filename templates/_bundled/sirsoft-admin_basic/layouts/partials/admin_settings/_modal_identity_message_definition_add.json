@@ -1,0 +1,461 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "IDV 메시지 정의 신규 추가 모달 — 알림 템플릿 모달 패리티 (언어 탭 + 고정 footer + 검증 에러 영역)"
+  },
+  "id": "modal_identity_message_definition_add",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "size": "xl",
+    "title": "$t:admin.settings.identity.messages.add_modal.title",
+    "closeOnOverlayClick": false
+  },
+  "children": [
+    {
+      "id": "identity_message_add_container",
+      "type": "basic",
+      "name": "Div",
+      "blur_until_loaded": "{{_global.identity_message_definition_add_modal?.isSaving}}",
+      "props": {
+        "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex-1 overflow-y-auto space-y-5 pr-1"
+          },
+          "children": [
+            {
+              "id": "identity_message_add_errors",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.identity_message_definition_add_modal?.errors}}",
+              "props": {
+                "className": "rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-sm font-medium text-red-800 dark:text-red-200 mb-1" },
+                  "text": "$t:admin.settings.identity.messages.add_modal.errors_title"
+                },
+                {
+                  "type": "basic",
+                  "name": "Ul",
+                  "props": { "className": "text-xs text-red-700 dark:text-red-300 list-disc pl-5 space-y-0.5" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Li",
+                      "iteration": {
+                        "source": "{{Object.values(_global.identity_message_definition_add_modal?.errors ?? {}).flat()}}",
+                        "item_var": "errMsg"
+                      },
+                      "text": "{{errMsg}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "identity_message_add_meta",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "grid grid-cols-1 sm:grid-cols-2 gap-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                      "text": "$t:admin.settings.identity.messages.add_modal.provider"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "value": "{{_global.identity_message_definition_add_modal?.form?.provider_id ?? 'g7:core.mail'}}",
+                        "readonly": true,
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 font-mono text-sm"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                      "text": "$t:admin.settings.identity.messages.add_modal.scope_type"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "text",
+                        "value": "policy",
+                        "readonly": true,
+                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 font-mono text-sm"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "identity_message_add_policy_key",
+              "type": "basic",
+              "name": "Div",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "text": "$t:admin.settings.identity.messages.add_modal.policy_key" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400 ml-1" }, "text": "*" }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "if": "{{(adminIdentityPolicies?.data?.data ?? []).length > 0}}",
+                  "props": {
+                    "value": "{{_global.identity_message_definition_add_modal?.form?.scope_value ?? ''}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                    "placeholder": "$t:admin.settings.identity.messages.add_modal.policy_key_placeholder",
+                    "options": "{{(adminIdentityPolicies?.data?.data ?? []).map(p => ({ value: p.key, label: p.key }))}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "identity_message_definition_add_modal.form.scope_value": "{{$event.target.value}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "if": "{{(adminIdentityPolicies?.data?.data ?? []).length === 0}}",
+                  "props": { "className": "text-sm text-amber-700 dark:text-amber-300 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md" },
+                  "text": "$t:admin.settings.identity.messages.add_modal.policy_empty"
+                }
+              ]
+            },
+            {
+              "id": "identity_message_add_variables",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "rounded-md bg-gray-100 dark:bg-gray-700 p-3"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H4",
+                  "props": { "className": "text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2" },
+                  "text": "$t:admin.settings.identity.messages.add_modal.variables_title"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex flex-wrap gap-1" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "iteration": {
+                        "source": "[{\"key\":\"code\"},{\"key\":\"action_url\"},{\"key\":\"expire_minutes\"},{\"key\":\"purpose_label\"},{\"key\":\"app_name\"},{\"key\":\"site_url\"},{\"key\":\"recipient_email\"}]",
+                        "item_var": "varItem"
+                      },
+                      "props": { "className": "px-2 py-1 text-[11px] rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-mono" },
+                      "text": "{{'{' + varItem.key + '}'}}"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "identity_message_add_lang_tabs",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "iteration": {
+                    "source": "{{$locales}}",
+                    "item_var": "loc"
+                  },
+                  "props": {
+                    "type": "button",
+                    "className": "{{(_global.identity_message_definition_add_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                  },
+                  "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}",
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "identity_message_definition_add_modal.editLang": "{{loc}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "identity_message_add_name",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "space-y-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "text": "$t:admin.settings.identity.messages.add_modal.name" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400 ml-1" }, "text": "*" }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "value": "{{_global.identity_message_definition_add_modal?.form?.name?.[_global.identity_message_definition_add_modal?.editLang ?? $locale] ?? ''}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "input",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "identity_message_definition_add_modal.form.name": "{{Object.assign({}, _global.identity_message_definition_add_modal?.form?.name, {[_global.identity_message_definition_add_modal?.editLang ?? $locale]: $event.target.value})}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "identity_message_add_subject",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "space-y-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "text": "$t:admin.settings.identity.messages.add_modal.subject" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400 ml-1" }, "text": "*" }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "text",
+                    "value": "{{_global.identity_message_definition_add_modal?.form?.subject?.[_global.identity_message_definition_add_modal?.editLang ?? $locale] ?? ''}}",
+                    "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "input",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "identity_message_definition_add_modal.form.subject": "{{Object.assign({}, _global.identity_message_definition_add_modal?.form?.subject, {[_global.identity_message_definition_add_modal?.editLang ?? $locale]: $event.target.value})}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "identity_message_add_body",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "space-y-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "text": "$t:admin.settings.identity.messages.add_modal.body" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-red-500 dark:text-red-400 ml-1" }, "text": "*" }
+                  ]
+                },
+                {
+                  "type": "composite",
+                  "name": "HtmlEditor",
+                  "props": {
+                    "content": "{{_global.identity_message_definition_add_modal?.form?.body?.[_global.identity_message_definition_add_modal?.editLang ?? $locale] ?? ''}}",
+                    "isHtml": true,
+                    "showHtmlModeToggle": false,
+                    "className": "min-h-[200px]"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "identity_message_definition_add_modal.form.body": "{{Object.assign({}, _global.identity_message_definition_add_modal?.form?.body, {[_global.identity_message_definition_add_modal?.editLang ?? $locale]: $event.target.value})}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "identity_message_add_footer",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex justify-end gap-2 pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "text-sm px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_global.identity_message_definition_add_modal?.isSaving ?? false}}"
+              },
+              "text": "$t:common.cancel",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "closeModal",
+                  "target": "modal_identity_message_definition_add"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "flex items-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "disabled": "{{_global.identity_message_definition_add_modal?.isSaving ?? false}}"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "if": "{{_global.identity_message_definition_add_modal?.isSaving}}",
+                  "props": { "name": "spinner", "className": "animate-spin", "size": "sm" }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "{{_global.identity_message_definition_add_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                }
+              ],
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "sequence",
+                  "params": {
+                    "actions": [
+                      {
+                        "handler": "setState",
+                        "params": {
+                          "target": "global",
+                          "identity_message_definition_add_modal.isSaving": true,
+                          "identity_message_definition_add_modal.errors": null
+                        }
+                      },
+                      {
+                        "handler": "apiCall",
+                        "auth_required": true,
+                        "target": "/api/admin/identity/messages/definitions",
+                        "params": {
+                          "method": "POST",
+                          "body": {
+                            "provider_id": "{{_global.identity_message_definition_add_modal?.form?.provider_id ?? 'g7:core.mail'}}",
+                            "scope_type": "policy",
+                            "scope_value": "{{_global.identity_message_definition_add_modal?.form?.scope_value ?? ''}}",
+                            "name": "{{_global.identity_message_definition_add_modal?.form?.name ?? ''}}",
+                            "channels": ["mail"],
+                            "variables": [
+                              {"key": "code", "description": "인증 코드"},
+                              {"key": "action_url", "description": "검증 링크"},
+                              {"key": "expire_minutes", "description": "만료 분"},
+                              {"key": "purpose_label", "description": "목적 라벨"},
+                              {"key": "app_name", "description": "사이트명"},
+                              {"key": "site_url", "description": "사이트 URL"},
+                              {"key": "recipient_email", "description": "수신자 이메일"}
+                            ],
+                            "templates": [
+                              {
+                                "channel": "mail",
+                                "subject": "{{_global.identity_message_definition_add_modal?.form?.subject ?? ''}}",
+                                "body": "{{_global.identity_message_definition_add_modal?.form?.body ?? ''}}"
+                              }
+                            ]
+                          }
+                        },
+                        "onSuccess": [
+                          { "handler": "refetchDataSource", "params": { "dataSourceId": "identityMessages" } },
+                          { "handler": "toast", "params": { "message": "$t:admin.settings.identity.messages.add_modal.save_success", "type": "success" } },
+                          { "handler": "closeModal", "target": "modal_identity_message_definition_add" },
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "identity_message_definition_add_modal": null
+                            }
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "global",
+                              "identity_message_definition_add_modal.isSaving": false,
+                              "identity_message_definition_add_modal.errors": "{{error.errors}}"
+                            }
+                          },
+                          { "handler": "toast", "params": { "message": "$t:admin.settings.identity.messages.add_modal.save_failed", "type": "error" } }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

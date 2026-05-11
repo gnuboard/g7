@@ -116,13 +116,6 @@
                       "handler": "closeModal"
                     },
                     {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "selectedTemplate": null
-                      }
-                    },
-                    {
                       "handler": "toast",
                       "params": {
                         "type": "success",
@@ -137,6 +130,25 @@
                     },
                     {
                       "handler": "reloadExtensions"
+                    },
+                    {
+                      "handler": "conditions",
+                      "conditions": [
+                        {
+                          "if": "{{_global.selectedTemplate.type === 'admin'}}",
+                          "then": {
+                            "handler": "refresh",
+                            "params": { "delayMs": 800 }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "selectedTemplate": null
+                      }
                     }
                   ],
                   "errorHandling": {

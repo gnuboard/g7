@@ -1,0 +1,97 @@
+{
+  "title": "メインバナー管理",
+  "description": "ホームページのメインバナーを管理し、順序を変更できます。",
+  "actions": {
+    "create": "登録",
+    "preview_close": "プレビューを閉じる"
+  },
+  "preview": {
+    "title": "顧客画面プレビュー",
+    "info": "合計 {{count}}個のバナー · {{interval}}秒間隔で自動切り替え",
+    "carousel_placeholder": "Carouselコンポーネント開発が必要です"
+  },
+  "list": {
+    "title": "バナー",
+    "tabs": {
+      "all": "すべて",
+      "active": "有効化",
+      "inactive": "無効化"
+    },
+    "empty": "登録されたバナーがありません。",
+    "drag_placeholder": "DragListコンポーネント開発が必要です",
+    "period_always": "常時表示",
+    "status_ended": "終了"
+  },
+  "detail": {
+    "title": "バナー情報",
+    "preview": "バナープレビュー",
+    "language": {
+      "ko": "日本語",
+      "en": "English",
+      "ja": "日本語",
+      "zh": "中文"
+    },
+    "field": {
+      "banner_title": "タイトル",
+      "banner_content": "内容",
+      "style_settings": "スタイル設定",
+      "title_style": "タイトル",
+      "content_style": "内容",
+      "show": "表示",
+      "hide": "非表示",
+      "color": "色",
+      "position": "位置",
+      "position_left": "左",
+      "position_center": "中央",
+      "position_right": "右",
+      "banner_image": "バナー画像",
+      "image_upload_hint": "画像をドラッグするか、クリックしてファイルを選択してください。",
+      "image_size_hint": "推奨サイズ: 1200x200px、最大 5MB",
+      "image_placeholder": "画像が登録されていません",
+      "image_upload_placeholder": "ImageUploadコンポーネント開発が必要です",
+      "link_url": "リンク URL",
+      "link_url_placeholder": "/promotion/sale",
+      "link_url_hint": "バナークリック時に移動する URLを入力してください",
+      "exposure_period": "表示期間",
+      "start_date": "開始日時",
+      "end_date": "終了日時",
+      "period_hint": "期間を設定しない場合は常時表示されます",
+      "status": "ステータス",
+      "status_active": "有効化",
+      "status_inactive": "無効化",
+      "created_at": "作成日",
+      "color_picker_placeholder": "ColorPickerコンポーネント開発が必要です"
+    },
+    "actions": {
+      "edit": "編集",
+      "delete": "削除"
+    }
+  },
+  "form": {
+    "add_title": "バナーを追加",
+    "edit_title": "バナーを修正",
+    "cancel": "キャンセル",
+    "save": "保存"
+  },
+  "modal": {
+    "delete": {
+      "title": "確認",
+      "message": "選択したバナーを削除しますか？",
+      "cancel": "キャンセル",
+      "confirm": "確認"
+    },
+    "edit_cancel": {
+      "title": "編集中です",
+      "message": "編集中の内容は保存されません。",
+      "sub_message": "本当にキャンセルして別のバナーを選択しますか？",
+      "cancel": "編集を続行",
+      "confirm": "キャンセルして移動"
+    },
+    "status_change": {
+      "title": "バナーステータス一括変更",
+      "message": "選択したバナーのステータスを変更します。",
+      "cancel": "キャンセル",
+      "confirm": "変更"
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -40,6 +41,9 @@ class Plugin extends Model
         'latest_version',
         'description',
         'status',
+        'deactivated_reason',
+        'deactivated_at',
+        'incompatible_required_version',
         'update_available',
         'hooks',
         'github_url',
@@ -62,6 +66,8 @@ class Plugin extends Model
             'hooks' => 'array',
             'metadata' => 'array',
             'update_available' => 'boolean',
+            'deactivated_reason' => DeactivationReason::class,
+            'deactivated_at' => 'datetime',
         ];
     }
 

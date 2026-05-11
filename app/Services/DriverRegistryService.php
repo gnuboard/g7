@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Extension\HookManager;
 use App\Repositories\JsonConfigRepository;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -16,41 +17,21 @@ use Illuminate\Support\Facades\Log;
 class DriverRegistryService
 {
     /**
-     * 카테고리별 코어 드라이버 목록
+     * 카테고리별 코어 드라이버 ID 목록
      *
-     * @var array<string, array<array{id: string, label: array{ko: string, en: string}}>>
+     * 라벨은 활성 translatable_locales 별로 lang/{locale}/settings.php 의
+     * 'drivers.{category}.{id}' 키에서 동적 조회됩니다.
+     *
+     * @var array<string, list<string>>
      */
-    private const CORE_DRIVERS = [
-        'storage' => [
-            ['id' => 'local', 'label' => ['ko' => '로컬', 'en' => 'Local']],
-            ['id' => 's3', 'label' => ['ko' => 'Amazon S3', 'en' => 'Amazon S3']],
-        ],
-        'cache' => [
-            ['id' => 'file', 'label' => ['ko' => '파일', 'en' => 'File']],
-            ['id' => 'redis', 'label' => ['ko' => 'Redis', 'en' => 'Redis']],
-        ],
-        'session' => [
-            ['id' => 'file', 'label' => ['ko' => '파일', 'en' => 'File']],
-            ['id' => 'database', 'label' => ['ko' => '데이터베이스', 'en' => 'Database']],
-            ['id' => 'redis', 'label' => ['ko' => 'Redis', 'en' => 'Redis']],
-        ],
-        'queue' => [
-            ['id' => 'sync', 'label' => ['ko' => '동기', 'en' => 'Sync']],
-            ['id' => 'database', 'label' => ['ko' => '데이터베이스', 'en' => 'Database']],
-            ['id' => 'redis', 'label' => ['ko' => 'Redis', 'en' => 'Redis']],
-        ],
-        'log' => [
-            ['id' => 'single', 'label' => ['ko' => '단일 파일', 'en' => 'Single File']],
-            ['id' => 'daily', 'label' => ['ko' => '일별 파일', 'en' => 'Daily File']],
-        ],
-        'websocket' => [
-            ['id' => 'reverb', 'label' => ['ko' => 'Laravel Reverb', 'en' => 'Laravel Reverb']],
-        ],
-        'mail' => [
-            ['id' => 'smtp', 'label' => ['ko' => 'SMTP', 'en' => 'SMTP']],
-            ['id' => 'mailgun', 'label' => ['ko' => 'Mailgun', 'en' => 'Mailgun']],
-            ['id' => 'ses', 'label' => ['ko' => 'SES (Amazon)', 'en' => 'SES (Amazon)']],
-        ],
+    private const CORE_DRIVER_IDS = [
+        'storage' => ['local', 's3'],
+        'cache' => ['file', 'redis'],
+        'session' => ['file', 'database', 'redis'],
+        'queue' => ['sync', 'database', 'redis'],
+        'log' => ['single', 'daily'],
+        'websocket' => ['reverb'],
+        'mail' => ['smtp', 'mailgun', 'ses'],
     ];
 
     /**
@@ -112,13 +93,15 @@ class DriverRegistryService
      * 특정 카테고리의 사용 가능한 드라이버 목록을 반환합니다.
      *
      * 코어 드라이버 + 플러그인 필터 훅으로 추가된 드라이버를 병합합니다.
+     * 라벨은 활성 translatable_locales 전 로케일별로 lang/{locale}/settings.php 의
+     * 'drivers.{category}.{id}' 키에서 조회되어 JSON 으로 반환됩니다.
      *
      * @param  string  $category  드라이버 카테고리 (storage, cache, session, queue, log, websocket, mail)
-     * @return array<array{id: string, label: array{ko: string, en: string}, provider?: string}> 사용 가능한 드라이버 배열
+     * @return array<array{id: string, label: array<string, string>, provider?: string}> 사용 가능한 드라이버 배열
      */
     public function getAvailableDrivers(string $category): array
     {
-        $coreDrivers = self::CORE_DRIVERS[$category] ?? [];
+        $coreDrivers = $this->buildCoreDrivers($category);
 
         $hookName = self::HOOK_PREFIX.$category.self::HOOK_SUFFIX;
 
@@ -128,17 +111,43 @@ class DriverRegistryService
     /**
      * 모든 카테고리의 사용 가능한 드라이버 목록을 반환합니다.
      *
-     * @return array<string, array<array{id: string, label: array{ko: string, en: string}, provider?: string}>>
+     * @return array<string, array<array{id: string, label: array<string, string>, provider?: string}>>
      */
     public function getAllAvailableDrivers(): array
     {
         $result = [];
 
-        foreach (array_keys(self::CORE_DRIVERS) as $category) {
+        foreach (array_keys(self::CORE_DRIVER_IDS) as $category) {
             $result[$category] = $this->getAvailableDrivers($category);
         }
 
         return $result;
+    }
+
+    /**
+     * 카테고리의 코어 드라이버 배열을 동적으로 빌드합니다.
+     *
+     * 활성 translatable_locales 전 로케일에 대해 lang/{locale}/settings.drivers.{category}.{id}
+     * 키를 조회하여 JSON 라벨을 구성합니다. 로케일별 키가 없으면 ID 자체로 폴백합니다.
+     *
+     * @param  string  $category  드라이버 카테고리
+     * @return array<array{id: string, label: array<string, string>}>
+     */
+    private function buildCoreDrivers(string $category): array
+    {
+        $ids = self::CORE_DRIVER_IDS[$category] ?? [];
+        $locales = config('app.translatable_locales', ['ko', 'en']);
+
+        $drivers = [];
+        foreach ($ids as $id) {
+            $label = [];
+            foreach ($locales as $locale) {
+                $label[$locale] = Lang::get("settings.drivers.{$category}.{$id}", [], $locale) ?: $id;
+            }
+            $drivers[] = ['id' => $id, 'label' => $label];
+        }
+
+        return $drivers;
     }
 
     /**
@@ -150,15 +159,7 @@ class DriverRegistryService
      */
     public function isCoreDriver(string $category, string $driverId): bool
     {
-        $coreDrivers = self::CORE_DRIVERS[$category] ?? [];
-
-        foreach ($coreDrivers as $driver) {
-            if ($driver['id'] === $driverId) {
-                return true;
-            }
-        }
-
-        return false;
+        return in_array($driverId, self::CORE_DRIVER_IDS[$category] ?? [], true);
     }
 
     /**
@@ -243,7 +244,7 @@ class DriverRegistryService
      */
     public function getCategories(): array
     {
-        return array_keys(self::CORE_DRIVERS);
+        return array_keys(self::CORE_DRIVER_IDS);
     }
 
     /**

@@ -205,6 +205,36 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 - `if`: 조건부 렌더링
 - `actions[].payload.*`: 액션 payload
 
+### `if` 표현식의 `{{}}` 위치 (CRITICAL, engine-v1.47.1 명문화)
+
+`if` 값은 `ConditionEvaluator.evaluateStringCondition` 이 평가한다. 평가 분기는 다음과 같다:
+
+| 형태 | 평가 방식 | 결과 |
+|------|----------|------|
+| `"{{x === 'y'}}"` (전체를 `{{}}` 한 쌍) | `extractSingleBinding` 추출 → `evaluateExpression` (식 평가) | ✅ 의도대로 동작 |
+| `"{{x}} === 'y'"` (보간 + 비교) | `resolveBindings` 로 `{{x}}` 만 치환 → 결과 문자열을 `Boolean()` | ❌ x 값과 무관하게 비-빈 문자열 → 항상 truthy |
+| `"x === 'y'"` (`{{}}` 없음) | `resolveBindings` 가 보간 대상 없음을 감지 → 원본 문자열 그대로 → `Boolean()` | ❌ 항상 truthy |
+
+**규칙**: 비교(`===`, `!==`, `<`, `>`), 논리(`&&`, `||`), 옵셔널체이닝(`?.`), 삼항(`? :`) 등 연산자가 포함된 식을 `if` 에 쓸 때는 **반드시 식 전체를 `{{...}}` 한 쌍 안**에 넣는다.
+
+```json
+// ✅ 올바른 사용
+{ "if": "{{query?.reason === 'session_expired'}}" }
+{ "if": "{{user?.role === 'admin' && user?.active}}" }
+{ "if": "{{count > 0 ? true : false}}" }
+
+// ❌ 잘못된 사용 — 항상 truthy
+{ "if": "{{query?.reason}} === 'session_expired'" }
+{ "if": "query?.reason === 'session_expired'" }
+
+// ❌ 잘못된 경로 — 항상 false (G7 컨텍스트는 query 가 root 직접 노출, route.query 아님)
+{ "if": "{{route?.query?.reason === 'session_expired'}}" }
+```
+
+> **G7 컨텍스트의 query 위치**: URL query string 은 `query.xxx` 또는 `query?.xxx` 로 root 컨텍스트에 직접 노출된다 (`route.xxx` 는 path params 만 — 예: `/users/:id` 의 `route.id`). 다른 모든 레이아웃 사례 (`query.tab`, `query.error`, `query.q`, `query.clone_from` 등) 와 일관됨.
+
+단순 변수 참조는 형태에 상관없이 동작 (`{{user.isAdmin}}` ↔ 식 평가 분기로 정확히 boolean 캐스팅됨). 위 규칙은 **연산자 포함 식**에만 해당.
+
 ---
 
 ## Optional Chaining & Nullish Coalescing (engine-v1.1.0+)

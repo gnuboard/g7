@@ -1,15 +1,15 @@
 {
     "schema_version": "1.0",
-    "generated_at": "2026-04-21T03:32:02+00:00",
+    "generated_at": "2026-05-03T22:43:49+00:00",
     "generator": "g7 vendor-bundle:build",
     "target": "core",
-    "composer_json_sha256": "b22b62e1c059171ffd45c7b92e63e707ee883171fb6189a94944d617dcac881b",
-    "composer_lock_sha256": "c178a79aa8a1e34e5b256a536a3ce9924f277f0138af12aac8100132c9f75c18",
-    "zip_sha256": "2279a3be51eabeb6d9e47c901fed8113d64baea2e94de3413f1eb97e77316cd7",
-    "zip_size": 14372946,
-    "package_count": 104,
+    "composer_json_sha256": "76294945639dbbe4b6d054c0aea4b78377a55bcdffcd1c9136beb294bc7cfc90",
+    "composer_lock_sha256": "b812e39509b96eff0a5794a88a4e86739129427a1d117afd3dfa96cd6d5e929c",
+    "zip_sha256": "f64a922f0cb825d13ae38b9f6ea1bea23f77d56329e2644fcafad1f93b4cd5eb",
+    "zip_size": 14414054,
+    "package_count": 105,
     "php_requirement": "^8.2",
-    "g7_version": "7.0.0-beta.2",
+    "g7_version": "7.0.0-beta.4",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -114,6 +114,11 @@
         {
             "name": "guzzlehttp/uri-template",
             "version": "v1.0.5",
+            "type": "library"
+        },
+        {
+            "name": "jaybizzle/crawler-detect",
+            "version": "v1.3.9",
             "type": "library"
         },
         {

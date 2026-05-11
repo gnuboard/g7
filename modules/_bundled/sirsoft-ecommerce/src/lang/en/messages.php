@@ -6,6 +6,9 @@
  * Controller response messages
  */
 return [
+    // Locale-specific suffix appended to names on copy (used by ProductNoticeTemplateRepository, etc.)
+    'copy_suffix' => ' (Copy)',
+
     'categories' => [
         'list_retrieved' => 'Category list retrieved successfully.',
         'retrieved' => 'Category information retrieved successfully.',

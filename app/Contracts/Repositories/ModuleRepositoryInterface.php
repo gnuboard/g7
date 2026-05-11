@@ -193,4 +193,13 @@ interface ModuleRepositoryInterface
      * @return Collection 해당 플러그인에 의존하는 활성 모듈 컬렉션
      */
     public function findActiveByPluginDependency(string $pluginIdentifier): Collection;
+
+    /**
+     * 코어 버전 비호환으로 자동 비활성화된 모듈을 조회합니다.
+     *
+     * `deactivated_reason = 'incompatible_core'` 인 레코드만 반환합니다.
+     *
+     * @return Collection 자동 비활성화된 모듈 컬렉션
+     */
+    public function findAutoDeactivated(): Collection;
 }

@@ -13,6 +13,8 @@
 6. 채널 확장: Filter 훅 `{hookPrefix}.notification.channels`로 채널 추가/제거
 ```
 
+> **본인인증(IDV) 메시지는 별도 시스템**: 본 알림 시스템과 완전히 분리된 IDV 전용 인프라가 [identity-messages.md](identity-messages.md) 에 있습니다. IDV는 `notification_*` 테이블 / `GenericNotification` 을 사용하지 않고, 자체 `identity_message_definitions` / `identity_message_templates` + `IdentityMessageDispatcher` 를 사용합니다.
+
 ---
 
 ## 아키텍처 개요
@@ -117,6 +119,31 @@ $user->notify(new GenericNotification(
 **훅 필터**: `core.notification.channel_enabled` — 시그니처 `(bool $enabled, string $extensionType, ?string $extensionIdentifier, string $channelId)`. 플러그인이 동적으로 재정의 가능.
 
 **메모이제이션**: 같은 요청 내 동일 조합 반복 조회는 in-memory 캐시. `clearChannelEnabledCache()`로 초기화.
+
+### 언어팩 다국어 보강
+
+`notification_definitions` 는 **다국어 데이터 직접 보유 SSoT** (config/core.php 의 각 entry 가 `name`/`description`/`templates.subject`/`templates.body` 의 ko/en 배열) — lang pack seed 대상.
+
+흐름:
+
+```text
+NotificationDefinitionSeeder 실행 (코어)
+    ↓
+config('core.notification_definitions') 로드
+    ↓
+applyFilters('seed.notifications.translations', $definitions)
+    ↓
+LanguagePackSeedInjector::injectNotifications($definitions)
+    ↓ 활성 코어 ja 언어팩의 seed/notifications.json 로드
+    ↓ 각 entry 에 ja 키 병합 (이미 존재하는 ko/en 보존)
+    ↓
+NotificationSyncHelper::syncDefinition() — DB upsert
+    ↑ user_overrides 마킹된 필드는 운영자 수정값 보존
+```
+
+모듈/플러그인 측: `ModuleManager::syncModuleNotificationDefinitions` / `PluginManager::syncPluginNotificationDefinitions` 가 동일 패턴 (`seed.{id}.notifications.translations` 필터 발화).
+
+신규 lang pack 추가 시 운영자가 수정하지 않은 키만 자동 보강. 운영자 편집값은 user_overrides 로 보존되어 시더 재실행/lang pack 재설치에도 덮어써지지 않음.
 
 ---
 
@@ -269,6 +296,82 @@ return [
 
 ---
 
+## 알림 정의 선언 — Declarative SSoT 패턴 (7.0.0-beta.4+)
+
+알림 정의는 **선언적 SSoT 패턴**으로 통일되었습니다 — 권한·메뉴·본인인증과 동일한 구조:
+
+| 영역 | SSoT 위치 | 동기화 트리거 |
+|------|----------|--------------|
+| **코어** | `config/core.php` 의 `notification_definitions` 블록 | `NotificationDefinitionSeeder` (fresh install / migrate) |
+| **모듈** | `module.php::getNotificationDefinitions()` | `ModuleManager` 가 activate / update --force / uninstall(deleteData=true) 시 자동 |
+| **플러그인** | `plugin.php::getNotificationDefinitions()` | `PluginManager` 가 동일 시점에 자동 |
+
+### 모듈/플러그인 getter
+
+`AbstractModule::getNotificationDefinitions(): array` 를 오버라이드하여 알림 정의를 선언합니다. `extension_type`/`extension_identifier` 는 Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다.
+
+```php
+public function getNotificationDefinitions(): array
+{
+    return [
+        [
+            'type' => 'order_confirmed',
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'name' => ['ko' => '주문 확인', 'en' => 'Order Confirmed'],
+            'description' => ['ko' => '...', 'en' => '...'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['sirsoft-ecommerce.order.after_confirm'],
+            'variables' => [['key' => 'order_number', 'description' => '주문번호']],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '...', 'en' => '...'],
+                    'body' => ['ko' => '...', 'en' => '...'],
+                ],
+            ],
+        ],
+    ];
+}
+```
+
+### 코어 config 블록
+
+`config/core.php`:
+
+```php
+'notification_definitions' => [
+    'welcome' => [
+        'hook_prefix' => 'core.auth',
+        'name' => ['ko' => '회원가입 환영', 'en' => 'Welcome'],
+        'description' => [...],
+        'channels' => ['mail', 'database'],
+        'hooks' => ['core.auth.after_register'],
+        'variables' => [...],
+        'templates' => [...],
+    ],
+    // ...
+],
+```
+
+배열 키(`'welcome'`)가 `type` 으로 매핑되며, `extension_type='core'` / `extension_identifier='core'` 가 자동 주입됩니다.
+
+### 자동 동기화 동작
+
+| 시점 | 동작 |
+|------|------|
+| 모듈/플러그인 install | getter 결과를 helper 로 upsert + cleanup stale |
+| 모듈/플러그인 update --force | 동일 (운영자 user_overrides 보존) |
+| 모듈/플러그인 uninstall(deleteData=true) | `extension_type`/`extension_identifier` 매칭 정의 전부 정리 (FK cascade 로 템플릿 자동 정리) |
+| 모듈/플러그인 uninstall(deleteData=false) | 보존 (재설치 시 user_overrides 복원) |
+
+### 금지 사항
+
+- 모듈/플러그인 측에 별도 `*NotificationDefinitionSeeder.php` 파일을 두면 안 됩니다. 동일 데이터를 두 곳에서 유지하면 SSoT 가 깨지며, audit 룰 `notification-seeder-orphan` 이 차단합니다.
+- 코어는 `database/seeders/NotificationDefinitionSeeder.php` 가 fresh install 진입점으로 유지되지만, 데이터 자체는 `config/core.php` 가 SSoT 입니다 (시더는 config 를 읽기만 함).
+
+---
+
 ## 알림 정의 동기화 (NotificationSyncHelper)
 
 업그레이드/시더 재실행 시 알림 정의(Definition) 와 템플릿(Template) 의 정합성을 **완전 동기화** 패턴으로 유지합니다. 로직은 `NotificationSyncHelper` 에 집중되어 있고 Seeder 는 얇은 진입점입니다.
@@ -284,30 +387,33 @@ public function cleanupStaleDefinitions(string $extensionType, string $extension
 public function cleanupStaleTemplates(int $definitionId, array $currentChannels): int;
 ```
 
-### Seeder 패턴
+### 동기화 호출 패턴
+
+코어 시더 / Manager 모두 동일한 패턴으로 helper 를 호출합니다 — SSoT 위치(config 또는 module getter)만 다릅니다.
 
 ```php
-public function run(): void
-{
-    $helper = app(\App\Extension\Helpers\NotificationSyncHelper::class);
-    $definedTypes = [];
+// 예: ModuleManager::syncModuleNotificationDefinitions() 와 동일한 흐름
+$helper = app(\App\Extension\Helpers\NotificationSyncHelper::class);
+$definedTypes = [];
 
-    foreach ($this->getDefaultDefinitions() as $data) {
-        $definition = $helper->syncDefinition($data);
-        $definedTypes[] = $definition->type;
+foreach ($module->getNotificationDefinitions() as $data) {
+    $data['extension_type'] = 'module';
+    $data['extension_identifier'] = $module->getIdentifier();
 
-        $definedChannels = [];
-        foreach ($data['templates'] as $template) {
-            $helper->syncTemplate($definition->id, $template);
-            $definedChannels[] = $template['channel'];
-        }
-        // 정의 유지 + 채널 제거 시 stale 삭제
-        $helper->cleanupStaleTemplates($definition->id, $definedChannels);
+    $definition = $helper->syncDefinition($data);
+    $definedTypes[] = $definition->type;
+
+    $definedChannels = [];
+    foreach ($data['templates'] ?? [] as $template) {
+        $helper->syncTemplate($definition->id, $template);
+        $definedChannels[] = $template['channel'];
     }
-
-    // seeder 에서 제거된 definition 삭제 (FK cascade 로 template 도 자동 정리)
-    $helper->cleanupStaleDefinitions('module', 'sirsoft-ecommerce', $definedTypes);
+    // 정의 유지 + 채널 제거 시 stale 삭제
+    $helper->cleanupStaleTemplates($definition->id, $definedChannels);
 }
+
+// SSoT 에서 제거된 definition 삭제 (FK cascade 로 template 도 자동 정리)
+$helper->cleanupStaleDefinitions('module', $module->getIdentifier(), $definedTypes);
 ```
 
 ### 동작 보장
@@ -321,9 +427,10 @@ public function run(): void
 
 ### 호출처
 
-- `database/seeders/NotificationDefinitionSeeder.php` (코어)
-- `modules/_bundled/sirsoft-board/database/seeders/BoardNotificationDefinitionSeeder.php`
-- `modules/_bundled/sirsoft-ecommerce/database/seeders/EcommerceNotificationDefinitionSeeder.php`
+- **코어**: `database/seeders/NotificationDefinitionSeeder.php` (fresh install 진입점, `config/core.php` 에서 데이터 로드)
+- **모듈**: `ModuleManager::syncModuleNotificationDefinitions()` (activate / update --force / uninstall 자동 호출)
+- **플러그인**: `PluginManager::syncPluginNotificationDefinitions()` (동일)
+- **확장 측 별도 Seeder 는 작성 금지** — `module.php::getNotificationDefinitions()` / `plugin.php::getNotificationDefinitions()` 만 정의
 
 ### 참고
 
@@ -409,7 +516,7 @@ public function run(): void
 **리셋 동작**:
 - 템플릿 편집 시 `Template.is_default = false` + `Definition.is_default = false` 자동 전환
 - 정의 리셋 시 모든 소속 템플릿을 `is_default = true`로 복원 + `Definition.is_default = true` 복구
-- 복원 대상 기본값은 각 확장의 `NotificationDefinitionSeeder::getDefaultDefinitions()`에서 조회
+- 복원 대상 기본값은 코어는 `config('core.notification_definitions')`, 확장은 `module.php::getNotificationDefinitions()` / `plugin.php::getNotificationDefinitions()` 에서 조회 (filter 훅 통합)
 
 ### 모듈/플러그인 기본 정의 기여 (Filter 훅)
 
@@ -460,29 +567,41 @@ GenericNotification의 `__call()`이 `toFcm()` 호출을 `{hookPrefix}.notificat
 
 ### 채널 메타데이터 다국어 규칙
 
-채널의 이름(`name`), 설명(`description`), 출처 라벨(`source_label`)은 **설정 파일에서 다국어 배열로 관리**합니다. 프론트엔드 번역 파일(`$t:`)에 하드코딩하면 안 됩니다.
+채널의 이름(`name`), 설명(`description`), 출처 라벨(`source_label`)은 **`{field}_key` 패턴으로 lang key 만 선언**하고, `NotificationChannelService::getAvailableChannels()` 가 활성 locale 기준으로 string 으로 해석해 반환합니다 (registry payload `name_key` 계약, 7.0.0-beta.4+).
 
 ```php
 // config/notification.php — 올바른 패턴
 [
     'id' => 'mail',
-    'name' => ['ko' => '메일', 'en' => 'Email'],
-    'description' => ['ko' => '이메일로 알림 발송', 'en' => 'Send notification via email'],
-    'source_label' => ['ko' => '코어 기본 채널', 'en' => 'Core default channel'],
+    'name_key' => 'notification.channels.mail.name',
+    'description_key' => 'notification.channels.mail.description',
+    'source' => 'core',
+    'source_label_key' => 'notification.channels.core_default',
 ]
 ```
+
+```php
+// lang/ko/notification.php — lang key 정의 (en/ja 도 동일 구조)
+'channels' => [
+    'core_default' => '코어 기본 채널',
+    'mail' => ['name' => '메일', 'description' => '이메일로 알림 발송'],
+],
+```
+
+API 응답: `name` / `description` / `source_label` 가 **이미 활성 locale 로 해석된 string** 으로 반환됩니다. (`name_key` 등 lang key 도 응답에 함께 포함되어 lang pack 보강 가능)
 
 프론트엔드 레이아웃에서 접근:
 
 ```json
-"text": "{{ch.name?.[$locale] ?? ch.name?.ko ?? ch.id}}"
-"text": "{{ch.source_label?.[$locale] ?? ch.source_label?.ko ?? ch.source}}"
+"text": "{{ch.name ?? ch.id}}"
+"text": "{{ch.source_label ?? ch.source}}"
 ```
 
 | 금지 | 올바른 사용 |
 |------|------------|
-| `$t:admin.settings.notification_definitions.source_core` | `ch.source_label?.[$locale]` |
-| 번역 파일에 채널 메타데이터 하드코딩 | `config/notification.php`에서 다국어 배열로 관리 |
+| `$t:admin.settings.notification_definitions.source_core` | `ch.source_label` (백엔드 해석 string) |
+| 번역 파일에 채널 메타데이터 하드코딩 | `config/notification.php` 의 `*_key` + `lang/{locale}/notification.php` 의 lang key |
+| `ch.name?.[$locale] ?? ch.name?.ko` (다국어 객체 가정) | `ch.name` (백엔드가 이미 해석) |
 
 ---
 

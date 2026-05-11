@@ -12,6 +12,7 @@ use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
@@ -21,8 +22,13 @@ use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
+use App\Extension\Concerns\ResolvesExtensionSharedRecords;
+use App\Extension\Helpers\IdentityMessageSyncHelper;
+use App\Extension\Helpers\IdentityPolicySyncHelper;
+use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\GithubHelper;
+use App\Providers\CoreServiceProvider;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
@@ -45,6 +51,7 @@ use Illuminate\Support\Facades\Schema;
 
 class PluginManager implements PluginManagerInterface
 {
+    use ResolvesExtensionSharedRecords;
     use Traits\CachesPluginStatus;
     use Traits\ClearsTemplateCaches;
     use Traits\ComputesLayoutContentHash;
@@ -281,6 +288,8 @@ class PluginManager implements PluginManagerInterface
      *
      * @param  string  $pluginName  설치할 플러그인명
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  VendorMode  $vendorMode  vendor 디렉토리 처리 모드
+     * @param  bool  $force  강제 설치 여부
      * @return bool 설치 성공 여부
      *
      * @throws \Exception 플러그인을 찾을 수 없거나 의존성 문제 시
@@ -427,6 +436,15 @@ class PluginManager implements PluginManagerInterface
             // 권한-Role 연결
             $this->assignPermissionsToRoles($plugin);
 
+            // IDV 정책 자동 동기화 (identity_policies 테이블)
+            $this->syncPluginIdentityPolicies($plugin);
+
+            // IDV 메시지 정의/템플릿 자동 동기화
+            $this->syncPluginIdentityMessages($plugin);
+
+            // 알림 정의/템플릿 자동 동기화 (notification_definitions / notification_templates)
+            $this->syncPluginNotificationDefinitions($plugin);
+
             DB::commit();
 
         } catch (\Exception $e) {
@@ -495,6 +513,18 @@ class PluginManager implements PluginManagerInterface
             );
         }
 
+        // 코어 버전 호환성 사전 검증 (#306 sync 훅보다 앞쪽)
+        // - force=true 시 우회 (CLI/웹 모두)
+        // - 코어 업데이트 spawn 컨텍스트에서는 매니페스트와 코어 버전이 일시적으로
+        //   어긋날 수 있어 자동 비활성화 가드와 동일 정책으로 스킵
+        if (! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
+            CoreVersionChecker::validateExtension(
+                $plugin->getRequiredCoreVersion(),
+                $plugin->getIdentifier(),
+                'plugin'
+            );
+        }
+
         // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
         // 중첩 구조 ['modules' => [...], 'plugins' => [...]] 를 순회
         $missingModules = [];
@@ -555,6 +585,9 @@ class PluginManager implements PluginManagerInterface
         if ($result) {
             $this->pluginRepository->updateByIdentifier($plugin->getIdentifier(), [
                 'status' => ExtensionStatus::Active->value,
+                'deactivated_reason' => null,
+                'deactivated_at' => null,
+                'incompatible_required_version' => null,
                 'updated_by' => Auth::id(),
                 'updated_at' => now(),
             ]);
@@ -624,10 +657,16 @@ class PluginManager implements PluginManagerInterface
      *
      * @param  string  $pluginName  비활성화할 플러그인명
      * @param  bool  $force  의존 확장이 있어도 강제 비활성화 여부
+     * @param  string  $reason  비활성화 사유 (DeactivationReason enum value: manual|incompatible_core)
+     * @param  string|null  $incompatibleRequiredVersion  incompatible_core 사유 시 요구된 코어 버전 제약
      * @return array{success: bool, layouts_deleted: int, warning?: bool, dependent_templates?: array, dependent_modules?: array, dependent_plugins?: array, message?: string} 비활성화 결과 및 삭제된 레이아웃 개수
      */
-    public function deactivatePlugin(string $pluginName, bool $force = false): array
-    {
+    public function deactivatePlugin(
+        string $pluginName,
+        bool $force = false,
+        string $reason = DeactivationReason::Manual->value,
+        ?string $incompatibleRequiredVersion = null,
+    ): array {
         $plugin = $this->getPlugin($pluginName);
         if (! $plugin) {
             return ['success' => false, 'layouts_deleted' => 0];
@@ -689,6 +728,9 @@ class PluginManager implements PluginManagerInterface
         if ($result) {
             $this->pluginRepository->updateByIdentifier($plugin->getIdentifier(), [
                 'status' => ExtensionStatus::Inactive->value,
+                'deactivated_reason' => $reason,
+                'deactivated_at' => now(),
+                'incompatible_required_version' => $incompatibleRequiredVersion,
                 'updated_by' => Auth::id(),
                 'updated_at' => now(),
             ]);
@@ -713,6 +755,9 @@ class PluginManager implements PluginManagerInterface
 
             // 플러그인 상태 캐시 무효화
             self::invalidatePluginStatusCache();
+
+            // PO #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
+            HookManager::doAction('core.plugins.after_deactivate', $plugin->getIdentifier());
         }
 
         $response = ['success' => $result, 'layouts_deleted' => $layoutsDeleted];
@@ -845,6 +890,45 @@ class PluginManager implements PluginManagerInterface
                 // PO 정책: "동적 권한은 '데이터도 함께 삭제' 옵션 체크 시에만 삭제"
                 if ($deleteData) {
                     $this->removePluginPermissions($plugin);
+
+                    // IDV 정책도 data 옵션 선택 시 제거 (user_overrides 손실 허용)
+                    if (\Illuminate\Support\Facades\Schema::hasTable('identity_policies')) {
+                        try {
+                            app(IdentityPolicySyncHelper::class)
+                                ->cleanupStalePolicies('plugin', $plugin->getIdentifier(), []);
+                        } catch (\Throwable $e) {
+                            Log::warning('IDV 정책 정리 실패 (uninstall plugin)', [
+                                'plugin' => $plugin->getIdentifier(),
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    // IDV 메시지 정의/템플릿도 data 옵션 선택 시 제거 (FK cascade 로 templates 자동 정리)
+                    if (\Illuminate\Support\Facades\Schema::hasTable('identity_message_definitions')) {
+                        try {
+                            app(IdentityMessageSyncHelper::class)
+                                ->cleanupStaleDefinitions('plugin', $plugin->getIdentifier(), []);
+                        } catch (\Throwable $e) {
+                            Log::warning('IDV 메시지 정리 실패 (uninstall plugin)', [
+                                'plugin' => $plugin->getIdentifier(),
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    // 알림 정의/템플릿도 data 옵션 선택 시 제거 (FK cascade 로 templates 자동 정리)
+                    if (\Illuminate\Support\Facades\Schema::hasTable('notification_definitions')) {
+                        try {
+                            app(NotificationSyncHelper::class)
+                                ->cleanupStaleDefinitions('plugin', $plugin->getIdentifier(), []);
+                        } catch (\Throwable $e) {
+                            Log::warning('알림 정의 정리 실패 (uninstall plugin)', [
+                                'plugin' => $plugin->getIdentifier(),
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
                 }
 
                 // 플러그인 레이아웃 영구 삭제
@@ -995,6 +1079,7 @@ class PluginManager implements PluginManagerInterface
                     'status' => 'uninstalled',
                     'is_pending' => false,
                     'is_bundled' => false,
+                    'hidden' => $plugin->isHidden(),
                     'has_settings' => $plugin->hasSettings(),
                     'settings_route' => $plugin->getSettingsRoute(),
                     'assets' => $assets,
@@ -1015,6 +1100,7 @@ class PluginManager implements PluginManagerInterface
                     'status' => 'uninstalled',
                     'is_pending' => true,
                     'is_bundled' => false,
+                    'hidden' => (bool) ($metadata['hidden'] ?? false),
                     'has_settings' => false,
                     'settings_route' => null,
                     'assets' => null,
@@ -1035,6 +1121,7 @@ class PluginManager implements PluginManagerInterface
                     'status' => 'uninstalled',
                     'is_pending' => false,
                     'is_bundled' => true,
+                    'hidden' => (bool) ($metadata['hidden'] ?? false),
                     'has_settings' => false,
                     'settings_route' => null,
                     'assets' => null,
@@ -1093,12 +1180,14 @@ class PluginManager implements PluginManagerInterface
                     $latestVersion = $bundledVersion ?? $fileVersion;
                 }
 
+                $nameJson = $record->name ?: $plugin->getName();
+                $descriptionJson = $record->description ?: $plugin->getDescription();
                 $installedPlugins[$name] = [
                     'identifier' => $identifier,
                     'vendor' => $plugin->getVendor(),
-                    'name' => $this->getLocalizedValue($plugin->getName(), $locale),
+                    'name' => $this->getLocalizedValue($nameJson, $locale),
                     'version' => $record->version,
-                    'description' => $this->getLocalizedValue($plugin->getDescription(), $locale),
+                    'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
                     'status' => $record->status,
                     'update_available' => $updateAvailable,
@@ -1107,6 +1196,7 @@ class PluginManager implements PluginManagerInterface
                     'update_source' => $record->update_source ?? null,
                     'github_url' => $plugin->getGithubUrl(),
                     'github_changelog_url' => $record->github_changelog_url ?? null,
+                    'hidden' => $plugin->isHidden(),
                     'has_settings' => $plugin->hasSettings(),
                     'settings_route' => $plugin->getSettingsRoute(),
                     'assets' => $assets,
@@ -1117,6 +1207,12 @@ class PluginManager implements PluginManagerInterface
         return $installedPlugins;
     }
 
+    /**
+     * 플러그인 상세 정보를 반환합니다.
+     *
+     * @param  string  $pluginName  플러그인명
+     * @return array|null 플러그인 정보 배열 또는 null
+     */
     public function getPluginInfo(string $pluginName): ?array
     {
         $plugin = $this->getPlugin($pluginName);
@@ -1147,12 +1243,18 @@ class PluginManager implements PluginManagerInterface
             }
         }
 
+        // 다국어 필드는 DB row(applyExtensionManifests 가 활성 언어팩 ja 등을 주입) 우선,
+        // 미설치 시 plugin.json 폴백.
+        $pluginRecord = $this->pluginRepository->findByIdentifier($identifier);
+        $nameJson = $pluginRecord?->name ?: $plugin->getName();
+        $descriptionJson = $pluginRecord?->description ?: $plugin->getDescription();
+
         return [
             'identifier' => $identifier,
             'vendor' => $plugin->getVendor(),
-            'name' => $this->getLocalizedValue($plugin->getName(), $locale),
+            'name' => $this->getLocalizedValue($nameJson, $locale),
             'version' => $plugin->getVersion(),
-            'description' => $this->getLocalizedValue($plugin->getDescription(), $locale),
+            'description' => $this->getLocalizedValue($descriptionJson, $locale),
             'github_url' => $plugin->getGithubUrl(),
             'metadata' => $metadata,
             'requires_core' => $plugin->getRequiredCoreVersion(),
@@ -1656,6 +1758,14 @@ class PluginManager implements PluginManagerInterface
     protected function createPluginRoles(PluginInterface $plugin): void
     {
         $roles = $plugin->getRoles();
+
+        // 활성 언어팩이 plugin 의 roles 다국어 필드(name/description)에 추가 locale 을
+        // 주입할 수 있도록 필터 훅 적용 (LanguagePackSeedInjector::injectExtensionRoles 결선).
+        $roles = HookManager::applyFilters(
+            "plugin.{$plugin->getIdentifier()}.roles.translations",
+            $roles,
+        );
+
         $syncHelper = $this->getRoleSyncHelper();
 
         foreach ($roles as $role) {
@@ -1682,6 +1792,14 @@ class PluginManager implements PluginManagerInterface
     {
         $permissionConfig = $plugin->getPermissions();
         $pluginIdentifier = $plugin->getIdentifier();
+
+        // 활성 언어팩이 권한 트리(plugin/categories/permissions 의 name/description) 에 추가
+        // locale 을 주입할 수 있도록 필터 훅 적용 (LanguagePackSeedInjector 결선).
+        $permissionConfig = HookManager::applyFilters(
+            "plugin.{$pluginIdentifier}.permissions.translations",
+            $permissionConfig,
+        );
+
         $syncHelper = $this->getRoleSyncHelper();
         $allIdentifiers = [];
 
@@ -1695,10 +1813,10 @@ class PluginManager implements PluginManagerInterface
         $pluginDesc = $permissionConfig['description'] ?? $plugin->getDescription();
 
         if (is_string($pluginName)) {
-            $pluginName = ['ko' => $pluginName, 'en' => $pluginName];
+            $pluginName = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $pluginName);
         }
         if (is_string($pluginDesc)) {
-            $pluginDesc = ['ko' => $pluginDesc, 'en' => $pluginDesc];
+            $pluginDesc = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $pluginDesc);
         }
 
         $pluginNode = $syncHelper->syncPermission(
@@ -1725,10 +1843,10 @@ class PluginManager implements PluginManagerInterface
             $catName = $categoryData['name'];
             $catDesc = $categoryData['description'] ?? $catName;
             if (is_string($catName)) {
-                $catName = ['ko' => $catName, 'en' => $catName];
+                $catName = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $catName);
             }
             if (is_string($catDesc)) {
-                $catDesc = ['ko' => $catDesc, 'en' => $catDesc];
+                $catDesc = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $catDesc);
             }
 
             // 카테고리 type을 하위 권한의 type에서 자동 결정
@@ -1767,10 +1885,10 @@ class PluginManager implements PluginManagerInterface
                 $pName = $permData['name'];
                 $pDesc = $permData['description'] ?? $pName;
                 if (is_string($pName)) {
-                    $pName = ['ko' => $pName, 'en' => $pName];
+                    $pName = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $pName);
                 }
                 if (is_string($pDesc)) {
-                    $pDesc = ['ko' => $pDesc, 'en' => $pDesc];
+                    $pDesc = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $pDesc);
                 }
 
                 $permissionType = isset($permData['type'])
@@ -1891,6 +2009,330 @@ class PluginManager implements PluginManagerInterface
                     array_merge($staticRoleIds, $dynamicRoleIds),
                 );
             }
+        }
+    }
+
+    /**
+     * 플러그인이 선언한 모든 선언형 산출물을 DB 에 동기화합니다.
+     *
+     * `installPlugin` / `updatePlugin` 트랜잭션 내부에서 호출되어 플러그인 디스크 상태와 DB
+     * 를 정합 상태로 유지한다. 외부 진입점으로도 노출되어 코어 업그레이드 사후 보정
+     * (`Upgrade_7_0_0_beta_4` 등) 이나 운영자 수동 재시드 도구가 사용 가능.
+     *
+     * 동기화 대상 (플러그인은 메뉴 미지원 — getAdminMenus 부재):
+     *   1. 역할 (`getRoles`)
+     *   2. 권한 (`getPermissions`)
+     *   3. 역할-권한 매핑 (`getRolePermissions`)
+     *   4. stale cleanup (현재 선언에 없는 기존 레코드 제거)
+     *   5. IDV 정책 (`getIdentityPolicies`)
+     *   6. IDV 메시지 정의/템플릿 (`getIdentityMessages`)
+     *   7. 알림 정의/템플릿 (`getNotificationDefinitions`)
+     *
+     * 각 sync 메서드는 helper 내부의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출
+     * 무해 (멱등).
+     *
+     * @param  PluginInterface  $plugin  대상 플러그인 인스턴스
+     */
+    public function syncDeclarativeArtifacts(PluginInterface $plugin): void
+    {
+        $this->createPluginRoles($plugin);
+        $this->createPluginPermissions($plugin);
+        $this->assignPermissionsToRoles($plugin);
+        $this->cleanupStalePluginEntries($plugin);
+        $this->syncPluginIdentityPolicies($plugin);
+        $this->syncPluginIdentityMessages($plugin);
+        $this->syncPluginNotificationDefinitions($plugin);
+    }
+
+    /**
+     * 활성 플러그인 전체를 _bundled 디렉토리에서 fresh-load 하여 declarative sync 를 일괄 호출.
+     *
+     * 코어 업그레이드 transition 사후 보정용. 이전 코어 버전(예: beta.3)의 활성 dir 에는
+     * NEW declaration 인프라(IDV/메시지/알림 등) 가 아직 도입되지 않았으므로 활성 dir
+     * fresh-load 는 declaration count 0 을 반환해 시드가 발동하지 않는다. 본 메서드는
+     * 새 코어 버전이 _bundled 로 출하한 NEW 코드를 기준으로 declaration 을 재시드해
+     * 인프라 초기화 결함을 차단한다.
+     *
+     * 신규 인프라 도입 시점의 활성 dir 에는 사용자가 거부할 수 있는 OLD declaration 자체가
+     * 없으므로 본 보정은 사용자 의지(전역 yes/no/strategy) 와 양립한다. 미래 release 에서
+     * 사용자가 플러그인 업데이트를 거부한 케이스는 정상 흐름(ExecuteBundledUpdatesCommand →
+     * updatePlugin → syncDeclarativeArtifacts) 이 자동 처리하므로 본 보정의 추가 호출은
+     * 무해 (멱등) 하다.
+     *
+     * _bundled 에 plugin.php 가 부재한 외부 설치 플러그인(GitHub 직접 설치 등) 은 skip.
+     *
+     * @return array{synced: array<int, string>, skipped: array<int, string>, failed: array<string, string>}
+     *
+     * @since 7.0.0-beta.4
+     */
+    public function resyncAllActiveDeclarativeArtifacts(): array
+    {
+        $synced = [];
+        $skipped = [];
+        $failed = [];
+
+        foreach (self::getActivePluginIdentifiers() as $identifier) {
+            $pluginDir = $this->bundledPluginsPath.DIRECTORY_SEPARATOR.$identifier;
+            $pluginFile = $pluginDir.DIRECTORY_SEPARATOR.'plugin.php';
+
+            // _bundled 에 진입점이 없는 외부 설치 플러그인(GitHub 등) 은 skip.
+            if (! File::exists($pluginFile)) {
+                $skipped[] = $identifier;
+
+                continue;
+            }
+
+            try {
+                $namespace = $this->convertDirectoryToNamespace($identifier);
+                $pluginClass = "Plugins\\{$namespace}\\Plugin";
+
+                if (class_exists($pluginClass, false)) {
+                    $plugin = $this->evalFreshPlugin($pluginFile, $pluginClass, $pluginDir);
+                } else {
+                    require_once $pluginFile;
+                    $plugin = class_exists($pluginClass) ? new $pluginClass : null;
+                }
+
+                if (! $plugin instanceof PluginInterface) {
+                    $failed[$identifier] = 'fresh-load 실패 (클래스 미생성)';
+
+                    continue;
+                }
+
+                $this->syncDeclarativeArtifacts($plugin);
+                $synced[] = $identifier;
+            } catch (\Throwable $e) {
+                $failed[$identifier] = $e->getMessage();
+                Log::channel('upgrade')->warning('[resyncAllActiveDeclarativeArtifacts] sync 실패', [
+                    'plugin' => $identifier,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return ['synced' => $synced, 'skipped' => $skipped, 'failed' => $failed];
+    }
+
+    /**
+     * 플러그인이 선언한 IDV 정책을 `identity_policies` 테이블에 동기화합니다.
+     *
+     * `AbstractPlugin::getIdentityPolicies()` 결과를 순회하며
+     * `IdentityPolicySyncHelper::syncPolicy()` 로 upsert 하고,
+     * 현재 선언에 없는 기존 정책은 `cleanupStalePolicies()` 로 제거합니다.
+     *
+     * 운영자가 관리자 UI 에서 수정한 필드(`enabled` / `grace_minutes` / `provider_id` / `fail_mode`)
+     * 는 `user_overrides` JSON 으로 보존됩니다.
+     *
+     * @param  PluginInterface  $plugin  IDV 정책을 동기화할 플러그인 인스턴스
+     */
+    protected function syncPluginIdentityPolicies(PluginInterface $plugin): void
+    {
+        if (! method_exists($plugin, 'getIdentityPolicies')) {
+            return;
+        }
+
+        if (! \Illuminate\Support\Facades\Schema::hasTable('identity_policies')) {
+            return; // 마이그레이션 미실행 환경 보호
+        }
+
+        $policies = $plugin->getIdentityPolicies();
+
+        // 데이터 손실 방어막 — 자세한 배경은 ModuleManager::syncModuleIdentityPolicies 의 동일 가드 주석 참조.
+        if (empty($policies)) {
+            if ($this->hasExistingIdentityPolicies('plugin', $plugin->getIdentifier())) {
+                Log::warning('IDV 정책 cleanup 차단 — declaration 빈 배열인데 DB row 존재 (데이터 손실 방어)', [
+                    'plugin' => $plugin->getIdentifier(),
+                ]);
+            }
+
+            return;
+        }
+
+        $helper = app(IdentityPolicySyncHelper::class);
+        $definedKeys = [];
+
+        foreach ($policies as $data) {
+            $data['source_type'] = 'plugin';
+            $data['source_identifier'] = $plugin->getIdentifier();
+
+            $helper->syncPolicy($data);
+            $definedKeys[] = $data['key'];
+        }
+
+        $helper->cleanupStalePolicies('plugin', $plugin->getIdentifier(), $definedKeys);
+    }
+
+    /**
+     * 플러그인이 선언한 IDV 메시지 정의/템플릿을 동기화합니다.
+     *
+     * `AbstractPlugin::getIdentityMessages()` 결과를 순회하며
+     * `IdentityMessageSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
+     * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 제거합니다.
+     *
+     * @param  PluginInterface  $plugin  IDV 메시지를 동기화할 플러그인 인스턴스
+     */
+    protected function syncPluginIdentityMessages(PluginInterface $plugin): void
+    {
+        if (! method_exists($plugin, 'getIdentityMessages')) {
+            return;
+        }
+
+        if (! \Illuminate\Support\Facades\Schema::hasTable('identity_message_definitions')) {
+            return; // 마이그레이션 미실행 환경 보호
+        }
+
+        $messages = $plugin->getIdentityMessages();
+
+        // 언어팩 시스템: 활성 플러그인 언어팩의 seed/identity_messages.json 으로 다국어 키 병합.
+        $messages = HookManager::applyFilters(
+            "seed.{$plugin->getIdentifier()}.identity_messages.translations",
+            $messages
+        );
+
+        // 데이터 손실 방어막 — 자세한 배경은 ModuleManager::syncModuleIdentityPolicies 의 동일 가드 주석 참조.
+        if (empty($messages)) {
+            if ($this->hasExistingIdentityMessageDefinitions('plugin', $plugin->getIdentifier())) {
+                Log::warning('IDV 메시지 cleanup 차단 — declaration 빈 배열인데 DB row 존재 (데이터 손실 방어)', [
+                    'plugin' => $plugin->getIdentifier(),
+                ]);
+            }
+
+            return;
+        }
+
+        $helper = app(IdentityMessageSyncHelper::class);
+        $definedScopes = [];
+
+        foreach ($messages as $data) {
+            $data['extension_type'] = 'plugin';
+            $data['extension_identifier'] = $plugin->getIdentifier();
+
+            $definition = $helper->syncDefinition($data);
+            $definedScopes[] = [
+                'provider_id' => $definition->provider_id,
+                'scope_type' => $definition->scope_type->value,
+                'scope_value' => $definition->scope_value,
+            ];
+
+            $definedChannels = [];
+            foreach ($data['templates'] ?? [] as $template) {
+                $helper->syncTemplate($definition->id, $template);
+                $definedChannels[] = $template['channel'];
+            }
+            $helper->cleanupStaleTemplates($definition->id, $definedChannels);
+        }
+
+        $helper->cleanupStaleDefinitions('plugin', $plugin->getIdentifier(), $definedScopes);
+    }
+
+    /**
+     * 플러그인이 선언한 알림 정의/템플릿을 `notification_definitions` / `notification_templates` 에 동기화합니다.
+     *
+     * `AbstractPlugin::getNotificationDefinitions()` 결과를 순회하며
+     * `NotificationSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
+     * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 제거합니다.
+     *
+     * `extension_type='plugin'`, `extension_identifier=$plugin->getIdentifier()` 는 자동 주입.
+     * 운영자 user_overrides 보존은 helper 내부 trait 가 처리.
+     *
+     * @param  PluginInterface  $plugin  알림 정의를 동기화할 플러그인 인스턴스
+     */
+    protected function syncPluginNotificationDefinitions(PluginInterface $plugin): void
+    {
+        if (! method_exists($plugin, 'getNotificationDefinitions')) {
+            return;
+        }
+
+        if (! \Illuminate\Support\Facades\Schema::hasTable('notification_definitions')) {
+            return; // 마이그레이션 미실행 환경 보호
+        }
+
+        $definitions = $plugin->getNotificationDefinitions();
+
+        // 언어팩 시스템: 활성 플러그인 언어팩의 seed/notifications.json 으로 다국어 키 병합.
+        $definitions = HookManager::applyFilters(
+            "seed.{$plugin->getIdentifier()}.notifications.translations",
+            $definitions
+        );
+
+        // 데이터 손실 방어막 — 자세한 배경은 ModuleManager::syncModuleIdentityPolicies 의 동일 가드 주석 참조.
+        if (empty($definitions)) {
+            if ($this->hasExistingNotificationDefinitions('plugin', $plugin->getIdentifier())) {
+                Log::warning('알림 정의 cleanup 차단 — declaration 빈 배열인데 DB row 존재 (데이터 손실 방어)', [
+                    'plugin' => $plugin->getIdentifier(),
+                ]);
+            }
+
+            return;
+        }
+
+        $helper = app(NotificationSyncHelper::class);
+        $definedTypes = [];
+
+        foreach ($definitions as $data) {
+            $data['extension_type'] = 'plugin';
+            $data['extension_identifier'] = $plugin->getIdentifier();
+
+            $definition = $helper->syncDefinition($data);
+            $definedTypes[] = $definition->type;
+
+            $definedChannels = [];
+            foreach ($data['templates'] ?? [] as $template) {
+                $helper->syncTemplate($definition->id, $template);
+                $definedChannels[] = $template['channel'];
+            }
+            $helper->cleanupStaleTemplates($definition->id, $definedChannels);
+        }
+
+        $helper->cleanupStaleDefinitions('plugin', $plugin->getIdentifier(), $definedTypes);
+    }
+
+    /**
+     * 해당 source 가 기존에 등록한 IDV 정책이 있는지 확인합니다.
+     *
+     * @param  string  $sourceType
+     * @param  string  $sourceIdentifier
+     * @return bool
+     */
+    protected function hasExistingIdentityPolicies(string $sourceType, string $sourceIdentifier): bool
+    {
+        try {
+            return \Illuminate\Support\Facades\DB::table('identity_policies')
+                ->where('source_type', $sourceType)
+                ->where('source_identifier', $sourceIdentifier)
+                ->exists();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * 해당 source 가 기존에 등록한 IDV 메시지 정의가 있는지 확인합니다 (데이터 손실 방어용).
+     */
+    protected function hasExistingIdentityMessageDefinitions(string $extensionType, string $extensionIdentifier): bool
+    {
+        try {
+            return \Illuminate\Support\Facades\DB::table('identity_message_definitions')
+                ->where('extension_type', $extensionType)
+                ->where('extension_identifier', $extensionIdentifier)
+                ->exists();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * 해당 source 가 기존에 등록한 알림 정의가 있는지 확인합니다 (데이터 손실 방어용).
+     */
+    protected function hasExistingNotificationDefinitions(string $extensionType, string $extensionIdentifier): bool
+    {
+        try {
+            return \Illuminate\Support\Facades\DB::table('notification_definitions')
+                ->where('extension_type', $extensionType)
+                ->where('extension_identifier', $extensionIdentifier)
+                ->exists();
+        } catch (\Throwable) {
+            return false;
         }
     }
 
@@ -2155,11 +2597,15 @@ class PluginManager implements PluginManagerInterface
         $totalTableSize = array_sum(array_column($tablesInfo, 'size_bytes'));
         $totalStorageSize = array_sum(array_column($storageInfo, 'size_bytes'));
 
+        // 코어 공유 테이블에 적재된 이 플러그인의 데이터 (deleteData=true 시 정리 대상)
+        $sharedRecords = $this->resolveExtensionSharedRecords('plugin', $identifier);
+
         return [
             'tables' => $tablesInfo,
             'storage_directories' => $storageInfo,
             'vendor_directory' => $vendorInfo,
             'extension_directory' => $extensionDirInfo,
+            'shared_records' => $sharedRecords,
             'total_table_size_bytes' => $totalTableSize,
             'total_table_size_formatted' => $this->formatBytes($totalTableSize),
             'total_storage_size_bytes' => $totalStorageSize,
@@ -3493,16 +3939,13 @@ class PluginManager implements PluginManagerInterface
     {
         $record = $this->pluginRepository->findByIdentifier($identifier);
         if (! $record) {
-            return [
-                'update_available' => false,
-                'update_source' => null,
-                'latest_version' => null,
-                'current_version' => null,
-            ];
+            return $this->buildPluginUpdateResponse(false, null, null, null, null);
         }
 
         $currentVersion = $record->version;
         $plugin = $this->getPlugin($identifier);
+        // 활성 manifest 의 g7_version (github 경로 베스트 이펙트 + 폴백)
+        $activeRequiredCoreVersion = $plugin ? $plugin->getRequiredCoreVersion() : null;
 
         // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (조회 성공 시 GitHub만 신뢰)
         if ($plugin && $plugin->getGithubUrl()) {
@@ -3519,21 +3962,25 @@ class PluginManager implements PluginManagerInterface
 
             if ($latestVersion !== null) {
                 // GitHub 조회 성공 → GitHub 결과만 신뢰 (bundled 폴백 없음)
+                // GitHub 경로는 release manifest 미다운로드 → 현재 활성 manifest 의 g7_version 으로
+                // 베스트 이펙트 호환성 판정. 정확한 판정은 staging 단계 (A.1) 에서 수행됨.
                 if (version_compare($latestVersion, $currentVersion, '>')) {
-                    return [
-                        'update_available' => true,
-                        'update_source' => 'github',
-                        'latest_version' => $latestVersion,
-                        'current_version' => $currentVersion,
-                    ];
+                    return $this->buildPluginUpdateResponse(
+                        true,
+                        'github',
+                        $latestVersion,
+                        $currentVersion,
+                        $activeRequiredCoreVersion
+                    );
                 }
 
-                return [
-                    'update_available' => false,
-                    'update_source' => null,
-                    'latest_version' => $currentVersion,
-                    'current_version' => $currentVersion,
-                ];
+                return $this->buildPluginUpdateResponse(
+                    false,
+                    null,
+                    $currentVersion,
+                    $currentVersion,
+                    $activeRequiredCoreVersion
+                );
             }
 
             // GitHub 조회 실패 → _bundled 폴백 안내
@@ -3545,35 +3992,70 @@ class PluginManager implements PluginManagerInterface
         // 2. _bundled에서 업데이트 확인 (GitHub URL 없음 OR GitHub 조회 실패)
         if (isset($this->bundledPlugins[$identifier])) {
             $bundledVersion = $this->bundledPlugins[$identifier]['version'] ?? null;
+            $bundledRequired = $this->bundledPlugins[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
             if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
-                return [
-                    'update_available' => true,
-                    'update_source' => 'bundled',
-                    'latest_version' => $bundledVersion,
-                    'current_version' => $currentVersion,
-                ];
+                return $this->buildPluginUpdateResponse(
+                    true,
+                    'bundled',
+                    $bundledVersion,
+                    $currentVersion,
+                    $bundledRequired
+                );
             }
         } else {
             $bundledMeta = ExtensionPendingHelper::loadBundledExtensions($this->pluginsPath, 'plugin.json');
             if (isset($bundledMeta[$identifier])) {
                 $bundledVersion = $bundledMeta[$identifier]['version'] ?? null;
+                $bundledRequired = $bundledMeta[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
                 if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
-                    return [
-                        'update_available' => true,
-                        'update_source' => 'bundled',
-                        'latest_version' => $bundledVersion,
-                        'current_version' => $currentVersion,
-                    ];
+                    return $this->buildPluginUpdateResponse(
+                        true,
+                        'bundled',
+                        $bundledVersion,
+                        $currentVersion,
+                        $bundledRequired
+                    );
                 }
             }
         }
 
         // 4. 업데이트 없음
+        return $this->buildPluginUpdateResponse(
+            false,
+            null,
+            $currentVersion,
+            $currentVersion,
+            $activeRequiredCoreVersion
+        );
+    }
+
+    /**
+     * checkPluginUpdate 응답 페이로드 빌더.
+     *
+     * 호환성 메타 (required_core_version / is_compatible / current_core_version) 을 일관되게 부착합니다.
+     *
+     * @param  bool  $updateAvailable  업데이트 가용 여부
+     * @param  string|null  $updateSource  업데이트 소스 (github|bundled|null)
+     * @param  string|null  $latestVersion  최신 버전
+     * @param  string|null  $currentVersion  현재 설치된 버전
+     * @param  string|null  $requiredCoreVersion  요구 코어 버전 제약 (null 이면 호환으로 간주)
+     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string}
+     */
+    protected function buildPluginUpdateResponse(
+        bool $updateAvailable,
+        ?string $updateSource,
+        ?string $latestVersion,
+        ?string $currentVersion,
+        ?string $requiredCoreVersion,
+    ): array {
         return [
-            'update_available' => false,
-            'update_source' => null,
-            'latest_version' => $currentVersion,
+            'update_available' => $updateAvailable,
+            'update_source' => $updateSource,
+            'latest_version' => $latestVersion,
             'current_version' => $currentVersion,
+            'required_core_version' => $requiredCoreVersion,
+            'is_compatible' => CoreVersionChecker::isCompatible($requiredCoreVersion),
+            'current_core_version' => CoreVersionChecker::getCoreVersion(),
         ];
     }
 
@@ -3813,6 +4295,8 @@ class PluginManager implements PluginManagerInterface
      * @param  VendorMode  $vendorMode  vendor 설치 모드
      * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
      * @param  \Closure|null  $onUpgradeStep  upgrade step 실행 콜백 (인자: 버전 문자열)
+     * @param  string|null  $sourceOverride  업데이트 소스 강제 지정 (auto|bundled|github)
+     * @param  string|null  $zipPath  사전 다운로드된 zip 파일 경로
      * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
      *
      * @throws \RuntimeException 업데이트 실패 시
@@ -3906,6 +4390,16 @@ class PluginManager implements PluginManagerInterface
             $toVersion = $updateInfo['latest_version'];
             $updateSource = $updateInfo['update_source'];
         }
+
+        // 다운그레이드 차단 — fromVersion > toVersion 인 경우 force=false 면 차단.
+        // force=true 는 의도적 다운그레이드 (장애 롤백 등) 허용. lang pack/모듈과 일관.
+        if ($fromVersion && version_compare($toVersion, $fromVersion, '<') && ! $force) {
+            throw new \RuntimeException(__('plugins.errors.downgrade_blocked', [
+                'from' => $fromVersion,
+                'to' => $toVersion,
+            ]));
+        }
+
         $backupPath = null;
 
         try {
@@ -3934,6 +4428,19 @@ class PluginManager implements PluginManagerInterface
                 } elseif ($updateSource === 'zip') {
                     $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->pluginsPath, $identifier);
                     ExtensionPendingHelper::stageForUpdate($zipExtractedDir, $stagingPath, $onProgress);
+                }
+
+                // 3.4. 코어 버전 호환성 사전 검증 (staging manifest 기준)
+                // - 백업은 이미 생성됐으므로 비호환 시 finally 에서 staging 정리됨
+                // - 외부 ZIP / GitHub / _bundled 모두 staging manifest 가 SSoT
+                // - force=true 또는 코어 업데이트 spawn 컨텍스트에서는 스킵
+                if ($stagingPath && ! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
+                    $stagedManifest = (new Vendor\VendorIntegrityChecker)->readManifest($stagingPath);
+                    CoreVersionChecker::validateExtension(
+                        $stagedManifest['g7_version'] ?? null,
+                        $identifier,
+                        'plugin'
+                    );
                 }
 
                 // 3.5. Vendor 설치 (의존성 있는 경우만, 변경 시에만)
@@ -4024,11 +4531,9 @@ class PluginManager implements PluginManagerInterface
                 ]);
 
                 // Role/Permission 동기화 (있으면 업데이트) + 완전 동기화 (stale cleanup)
+                // 선언형 산출물 (역할/권한/IDV/알림) 일괄 동기화 + stale cleanup
                 if ($plugin) {
-                    $this->createPluginRoles($plugin);
-                    $this->createPluginPermissions($plugin);
-                    $this->assignPermissionsToRoles($plugin);
-                    $this->cleanupStalePluginEntries($plugin);
+                    $this->syncDeclarativeArtifacts($plugin);
                 }
 
                 DB::commit();

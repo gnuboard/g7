@@ -515,8 +515,8 @@ class OrderProcessingService
                     $key = $item['key'] ?? [];
                     $value = $item['value'] ?? [];
 
-                    $localizedKey = is_array($key) ? ($key[$locale] ?? $key['ko'] ?? array_values($key)[0] ?? '') : $key;
-                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value['ko'] ?? array_values($value)[0] ?? '') : $value;
+                    $localizedKey = is_array($key) ? ($key[$locale] ?? $key[config('app.fallback_locale', 'ko')] ?? array_values($key)[0] ?? '') : $key;
+                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
 
                     if ($localizedKey !== '' && $localizedValue !== '') {
                         $parts[] = $localizedKey.': '.$localizedValue;

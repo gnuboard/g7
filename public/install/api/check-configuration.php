@@ -741,27 +741,35 @@ class ValidationApi
             return;
         }
 
-        $absolutePath = str_starts_with($path, '/')
+        // 경로 traversal 및 NUL 바이트 거부.
+        // 정상 사용자는 BASE_PATH 하위의 _pending 또는 자기 디스크의 절대경로만 입력하므로
+        // 상대경로 부모 추적이 필요한 시나리오가 없다.
+        $hasParentSegment = preg_match('#(^|[/\\\\])\.\.([/\\\\]|$)#', $path) === 1;
+        if ($hasParentSegment || str_contains($path, "\0")) {
+            echo json_encode([
+                'success' => false,
+                'message' => lang('error_core_pending_path_invalid'),
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $candidatePath = (str_starts_with($path, '/') || preg_match('#^[A-Za-z]:[/\\\\]#', $path) === 1)
             ? $path
-            : BASE_PATH . '/' . $path;
+            : BASE_PATH . DIRECTORY_SEPARATOR . $path;
 
-        if (!file_exists($absolutePath)) {
+        $resolved = @realpath($candidatePath);
+
+        if ($resolved === false || !is_dir($resolved)) {
+            // 존재 여부/타입 차이를 응답으로 분기하지 않고 단일 메시지로 통일하여
+            // 임의 경로 enumeration 신호 차단.
             echo json_encode([
                 'success' => false,
-                'message' => lang('error_path_not_exists', ['path' => $path]),
+                'message' => lang('error_core_pending_path_invalid'),
             ], JSON_UNESCAPED_UNICODE);
             return;
         }
 
-        if (!is_dir($absolutePath)) {
-            echo json_encode([
-                'success' => false,
-                'message' => lang('error_core_pending_not_directory'),
-            ], JSON_UNESCAPED_UNICODE);
-            return;
-        }
-
-        $writable = is_writable($absolutePath);
+        $writable = is_writable($resolved);
         echo json_encode([
             'success' => $writable,
             'message' => $writable
@@ -782,7 +790,12 @@ class ValidationApi
             return ['valid' => false, 'version' => null, 'message' => lang('error_php_path_empty')];
         }
 
-        // file_exists 사전 체크 없이 실행 결과로 판단
+        // 'php' 기본값이 아니면 반드시 실제 실행 가능한 단일 파일 경로여야 함
+        // (사용자 입력을 그대로 shell 에 전달하던 경로 차단)
+        if ($path !== 'php' && (!is_file($path) || !is_executable($path))) {
+            return ['valid' => false, 'version' => null, 'message' => lang('error_php_exec_failed', ['path' => $path])];
+        }
+
         $command = escapeshellarg($path) . ' --version 2>&1';
         $output = [];
         $returnCode = -1;
@@ -824,16 +837,29 @@ class ValidationApi
         // 빈 문자열이면 시스템 기본 composer 사용
         $effectivePath = $composerPath ?: 'composer';
 
-        // 실행 명령어 구성
-        if (str_contains($effectivePath, ' ')) {
-            // 공백 포함 = 전체 실행 명령어 (예: "/usr/local/php84/bin/php composer.phar")
-            // escapeshellarg 없이 그대로 실행
-            $command = $effectivePath . ' --version 2>&1';
-        } elseif (str_ends_with($effectivePath, '.phar')) {
-            // .phar 파일 단독 경로 → PHP 바이너리와 결합
+        // 보안: 입력값을 "전체 실행 명령어" 로 허용하던 공백 분기 제거.
+        // 시스템 기본('composer') 가 아니면 반드시 실행 가능한 단일 파일 경로여야 하며,
+        // 모든 분기에서 escapeshellarg 를 강제한다.
+        if ($effectivePath !== 'composer' && (!is_file($effectivePath) || !is_executable($effectivePath))) {
+            return [
+                'valid' => false,
+                'version' => null,
+                'message' => lang('error_composer_exec_failed', ['path' => $effectivePath]),
+            ];
+        }
+
+        // .phar 파일이면 PHP 바이너리와 결합
+        if (str_ends_with($effectivePath, '.phar')) {
+            // phpPath 도 동일한 가드 — 'php' 기본값이 아니면 실행 가능 파일이어야 함
+            if ($phpPath !== 'php' && (!is_file($phpPath) || !is_executable($phpPath))) {
+                return [
+                    'valid' => false,
+                    'version' => null,
+                    'message' => lang('error_php_exec_failed', ['path' => $phpPath]),
+                ];
+            }
             $command = escapeshellarg($phpPath) . ' ' . escapeshellarg($effectivePath) . ' --version 2>&1';
         } else {
-            // composer 바이너리 경로
             $command = escapeshellarg($effectivePath) . ' --version 2>&1';
         }
 
@@ -942,15 +968,24 @@ class ValidationApi
 // 실행 부분
 // ========================================
 
-// 필수 파일 로드 (config.php가 BASE_PATH를 정의함)
-require_once __DIR__.'/../includes/config.php';
-require_once __DIR__.'/../includes/session.php';
-require_once __DIR__.'/../includes/functions.php';
+// 라이브러리 모드 — 단위 테스트가 ValidationApi 클래스 정의만 로드할 때 메인 실행을 건너뛴다.
+$checkConfigurationLibraryMode = defined('CHECK_CONFIGURATION_LIBRARY') && constant('CHECK_CONFIGURATION_LIBRARY');
 
-// 다국어 로드
-$currentLang = getCurrentLanguage();
-$translations = loadTranslations($currentLang);
+if (! $checkConfigurationLibraryMode) {
+    // 필수 파일 로드 (config.php가 BASE_PATH를 정의함)
+    require_once __DIR__.'/../includes/config.php';
+    require_once __DIR__.'/../includes/session.php';
+    require_once __DIR__.'/../includes/functions.php';
 
-// API 인스턴스 생성 및 요청 처리
-$api = new ValidationApi;
-$api->handleRequest();
+    // 설치 완료 시 인스톨러 비즈니스 로직 진입 차단
+    require_once __DIR__.'/_guard.php';
+    installer_guard_or_410();
+
+    // 다국어 로드
+    $currentLang = getCurrentLanguage();
+    $translations = loadTranslations($currentLang);
+
+    // API 인스턴스 생성 및 요청 처리
+    $api = new ValidationApi;
+    $api->handleRequest();
+}

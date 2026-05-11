@@ -14,9 +14,9 @@
 
 import { describe, it, expect } from 'vitest';
 
-import modalCartAdded from '../../../../../../templates/sirsoft-basic/layouts/partials/shop/detail/_modal_cart_added.json';
-import showLayout from '../../../../../../templates/sirsoft-basic/layouts/shop/show.json';
-import purchaseCard from '../../../../../../templates/sirsoft-basic/layouts/partials/shop/detail/_purchase_card.json';
+import modalCartAdded from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_cart_added.json';
+import showLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/shop/show.json';
+import purchaseCard from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_purchase_card.json';
 
 describe('장바구니 담기 완료 모달 구조 검증', () => {
     it('모달이 올바른 id와 Modal 컴포넌트를 사용해야 함', () => {
@@ -100,7 +100,8 @@ describe('장바구니 담기 완료 모달 구조 검증', () => {
         expect(clickAction.actions[1].handler).toBe('closeModal');
         // navigate
         expect(clickAction.actions[2].handler).toBe('navigate');
-        expect(clickAction.actions[2].params.path).toBe('/cart');
+        // shopBase prefix 가 도입되어 path 가 동적으로 조립됨
+        expect(clickAction.actions[2].params.path).toBe('{{_global.shopBase}}/cart');
     });
 
     it('장바구니 이동 버튼이 로딩 중 비활성화되어야 함', () => {

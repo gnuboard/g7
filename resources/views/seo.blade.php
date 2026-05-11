@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }}{{ $titleSuffix }}</title>
+    {!! $generatorTag ?? '' !!}
     <meta name="description" content="{{ $description }}">
     @if($keywords)
     <meta name="keywords" content="{{ $keywords }}">
@@ -22,6 +23,9 @@
 
     {{-- Open Graph --}}
     {!! $ogTags !!}
+
+    {{-- Twitter Card --}}
+    {!! $twitterTags ?? '' !!}
 
     {{-- CSS --}}
     <link rel="stylesheet" href="{{ $cssPath }}">

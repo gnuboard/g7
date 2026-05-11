@@ -117,81 +117,19 @@ describe('productFormLayouts', () => {
                 expect(labelFormModal.props.title).toBe('$t:sirsoft-ecommerce.admin.product.labels.modal_title');
             });
 
-            it('기간 프리셋 섹션이 존재해야 한다', () => {
+            it('라벨 모달에는 기간 편집 섹션이 더 이상 없다 (인라인 편집으로 분리됨)', () => {
+                // date_preset_section / date_range_section / start_date / end_date 입력은
+                // 라벨 모달 partial 에서 제거되고, 라벨별 인라인 위젯 (DateRangePicker)
+                // 으로 분리됨. 라벨 모달은 이름/색상만 편집한다
                 const labelFormContent = labelFormModal.children[0];
                 const datePresetSection = labelFormContent.children.find(
-                    (child: any) => child.id === 'date_preset_section'
+                    (child: any) => child.id === 'date_preset_section',
                 );
-
-                expect(datePresetSection).toBeDefined();
-                expect(datePresetSection.children).toHaveLength(2); // Label + Button Container
-            });
-
-            it('4개의 프리셋 버튼(7d, 14d, 30d, permanent)이 존재해야 한다', () => {
-                const labelFormContent = labelFormModal.children[0];
-                const datePresetSection = labelFormContent.children.find(
-                    (child: any) => child.id === 'date_preset_section'
-                );
-                const buttonContainer = datePresetSection.children[1];
-                const buttons = buttonContainer.children;
-
-                expect(buttons).toHaveLength(4);
-
-                // 각 버튼의 핸들러 검증
-                const presets = ['7d', '14d', '30d', 'permanent'];
-                buttons.forEach((button: any, index: number) => {
-                    expect(button.name).toBe('Button');
-                    expect(button.actions[0].handler).toBe('sirsoft-ecommerce.setLabelDatePreset');
-                    expect(button.actions[0].params.preset).toBe(presets[index]);
-                });
-            });
-
-            it('각 프리셋 버튼이 올바른 다국어 키를 사용해야 한다', () => {
-                const labelFormContent = labelFormModal.children[0];
-                const datePresetSection = labelFormContent.children.find(
-                    (child: any) => child.id === 'date_preset_section'
-                );
-                const buttonContainer = datePresetSection.children[1];
-                const buttons = buttonContainer.children;
-
-                const expectedTexts = [
-                    '$t:sirsoft-ecommerce.admin.product.labels.preset_7d',
-                    '$t:sirsoft-ecommerce.admin.product.labels.preset_14d',
-                    '$t:sirsoft-ecommerce.admin.product.labels.preset_30d',
-                    '$t:sirsoft-ecommerce.admin.product.labels.preset_permanent',
-                ];
-
-                buttons.forEach((button: any, index: number) => {
-                    expect(button.text).toBe(expectedTexts[index]);
-                });
-            });
-        });
-
-        describe('시작일/종료일 필드 검증', () => {
-            it('시작일 입력 필드가 존재하고 올바른 바인딩을 가져야 한다', () => {
-                const labelFormContent = labelFormModal.children[0];
                 const dateRangeSection = labelFormContent.children.find(
-                    (child: any) => child.id === 'date_range_section'
+                    (child: any) => child.id === 'date_range_section',
                 );
-                const startDateSection = dateRangeSection.children[0];
-                const startDateInput = startDateSection.children[1];
-
-                expect(startDateInput.props.name).toBe('start_date');
-                expect(startDateInput.props.type).toBe('date');
-                expect(startDateInput.props.value).toBe("{{_global.labelFormData?.start_date ?? ''}}");
-            });
-
-            it('종료일 입력 필드가 존재하고 올바른 바인딩을 가져야 한다', () => {
-                const labelFormContent = labelFormModal.children[0];
-                const dateRangeSection = labelFormContent.children.find(
-                    (child: any) => child.id === 'date_range_section'
-                );
-                const endDateSection = dateRangeSection.children[1];
-                const endDateInput = endDateSection.children[1];
-
-                expect(endDateInput.props.name).toBe('end_date');
-                expect(endDateInput.props.type).toBe('date');
-                expect(endDateInput.props.value).toBe("{{_global.labelFormData?.end_date ?? ''}}");
+                expect(datePresetSection).toBeUndefined();
+                expect(dateRangeSection).toBeUndefined();
             });
         });
     });
@@ -204,8 +142,10 @@ describe('productFormLayouts', () => {
                 expect(noticeTemplateConfirmModal.name).toBe('Modal');
             });
 
-            it('조건부 렌더링 표현식이 올바르게 설정되어야 한다', () => {
-                expect(noticeTemplateConfirmModal.if).toBe('{{_global.showNoticeTemplateConfirmModal}}');
+            it('모달 partial 이 단독 if 표현식 없이 modals 섹션의 isolated 스코프로 관리된다', () => {
+                // 기존에는 _global.showNoticeTemplateConfirmModal 로 직접 표시 토글 → modals
+                // 섹션 isolated scope 로 이전됨. 모달 루트의 if 는 더 이상 없음
+                expect(noticeTemplateConfirmModal.if).toBeUndefined();
             });
 
             it('경고 메시지가 amber 스타일로 표시되어야 한다', () => {
@@ -216,19 +156,21 @@ describe('productFormLayouts', () => {
                 expect(warningBox.props.className).toContain('dark:bg-amber-900/20');
             });
 
-            it('취소 버튼이 모달을 닫고 상태를 초기화해야 한다', () => {
+            it('취소 버튼이 sequence(setState pending=null + closeModal) 패턴이다', () => {
                 const content = noticeTemplateConfirmModal.children[0];
                 const buttonContainer = content.children[1];
                 const cancelButton = buttonContainer.children[0];
 
                 expect(cancelButton.text).toBe('$t:sirsoft-ecommerce.common.cancel');
-                expect(cancelButton.actions[0].handler).toBe('setState');
-                expect(cancelButton.actions[0].params.target).toBe('global');
-                expect(cancelButton.actions[0].params.showNoticeTemplateConfirmModal).toBe(false);
-                expect(cancelButton.actions[0].params.pendingNoticeTemplateId).toBe(null);
+                expect(cancelButton.actions[0].handler).toBe('sequence');
+                const cancelInner = cancelButton.actions[0].params.actions;
+                const setStateAction = cancelInner.find((a: any) => a.handler === 'setState');
+                expect(setStateAction.params.target).toBe('global');
+                expect(setStateAction.params.pendingNoticeTemplateId).toBe(null);
+                expect(cancelInner.some((a: any) => a.handler === 'closeModal')).toBe(true);
             });
 
-            it('확인 버튼이 sequence 핸들러로 모달 닫기 + 템플릿 적용 + 상태 초기화를 수행해야 한다', () => {
+            it('확인 버튼 sequence 가 closeModal → 템플릿 적용 → pending 초기화 순으로 실행된다', () => {
                 const content = noticeTemplateConfirmModal.children[0];
                 const buttonContainer = content.children[1];
                 const confirmButton = buttonContainer.children[1];
@@ -239,9 +181,8 @@ describe('productFormLayouts', () => {
                 const sequenceActions = confirmButton.actions[0].params.actions;
                 expect(sequenceActions).toHaveLength(3);
 
-                // 1. 모달 닫기
-                expect(sequenceActions[0].handler).toBe('setState');
-                expect(sequenceActions[0].params.showNoticeTemplateConfirmModal).toBe(false);
+                // 1. 모달 닫기 (showNoticeTemplateConfirmModal 키 제거됨)
+                expect(sequenceActions[0].handler).toBe('closeModal');
 
                 // 2. 템플릿 적용
                 expect(sequenceActions[1].handler).toBe('sirsoft-ecommerce.selectNoticeTemplate');
@@ -270,67 +211,34 @@ describe('productFormLayouts', () => {
     });
 
     describe('레이아웃 액션 통합 검증', () => {
-        it('프리셋 버튼 클릭 시 setLabelDatePreset 핸들러가 호출되어야 한다', async () => {
-            // 핸들러 모킹
-            const mockHandler = vi.fn();
-            (window as any).G7Core.handlers = {
-                'sirsoft-ecommerce.setLabelDatePreset': mockHandler,
-            };
+        // setLabelDatePreset / 프리셋 버튼은 라벨 모달에서 인라인 위젯으로 분리되어
+        // 본 partial 테스트 범위에서 제외됨 (별도 모달 기간 위젯 테스트 필요 시 분리 작성)
 
-            // 레이아웃에서 7d 프리셋 버튼의 액션 추출
-            const labelFormContent = labelFormModal.children[0];
-            const datePresetSection = labelFormContent.children.find(
-                (child: any) => child.id === 'date_preset_section'
-            );
-            const buttonContainer = datePresetSection.children[1];
-            const preset7dButton = buttonContainer.children[0];
-
-            // 액션 정의 검증
-            expect(preset7dButton.actions[0]).toEqual({
-                type: 'click',
-                handler: 'sirsoft-ecommerce.setLabelDatePreset',
-                params: { preset: '7d' },
-            });
-        });
-
-        it('확인 모달의 취소 버튼이 글로벌 상태를 올바르게 업데이트해야 한다', () => {
+        it('확인 모달의 취소 버튼이 sequence 로 pending 만 초기화한다', () => {
             const content = noticeTemplateConfirmModal.children[0];
             const buttonContainer = content.children[1];
             const cancelButton = buttonContainer.children[0];
 
-            // 취소 액션 검증
             const cancelAction = cancelButton.actions[0];
-            expect(cancelAction.handler).toBe('setState');
-            expect(cancelAction.params).toEqual({
+            expect(cancelAction.handler).toBe('sequence');
+            const setStateAction = cancelAction.params.actions.find((a: any) => a.handler === 'setState');
+            expect(setStateAction.params).toEqual({
                 target: 'global',
-                showNoticeTemplateConfirmModal: false,
                 pendingNoticeTemplateId: null,
             });
         });
     });
 
     describe('레이아웃 스타일 및 반응형 검증', () => {
-        it('날짜 범위 섹션이 반응형 클래스를 가져야 한다', () => {
+        // 날짜 범위 섹션 / 프리셋 flex wrap 검증은 라벨 모달 섹션 제거에 따라 함께 제거
+        it('라벨 모달은 이름/색상/미리보기 섹션만 가지며 기간 섹션을 포함하지 않는다', () => {
             const labelFormContent = labelFormModal.children[0];
-            const dateRangeSection = labelFormContent.children.find(
-                (child: any) => child.id === 'date_range_section'
-            );
-
-            expect(dateRangeSection.props.className).toContain('grid-cols-2');
-            expect(dateRangeSection.responsive).toBeDefined();
-            expect(dateRangeSection.responsive.portable.props.className).toContain('grid-cols-1');
-        });
-
-        it('프리셋 버튼들이 flex wrap으로 배치되어야 한다', () => {
-            const labelFormContent = labelFormModal.children[0];
-            const datePresetSection = labelFormContent.children.find(
-                (child: any) => child.id === 'date_preset_section'
-            );
-            const buttonContainer = datePresetSection.children[1];
-
-            expect(buttonContainer.props.className).toContain('flex');
-            expect(buttonContainer.props.className).toContain('flex-wrap');
-            expect(buttonContainer.props.className).toContain('gap-2');
+            const ids = (labelFormContent.children ?? []).map((c: any) => c.id);
+            expect(ids).toContain('label_preview_section');
+            expect(ids).toContain('label_name_section');
+            expect(ids).toContain('label_color_section');
+            expect(ids).not.toContain('date_preset_section');
+            expect(ids).not.toContain('date_range_section');
         });
     });
 
@@ -407,11 +315,10 @@ describe('productFormLayouts', () => {
             expect(pagination.if).toBeUndefined();
         });
 
-        it('데이터 경로가 pagination을 사용한다 (ProductLogCollection 응답 구조)', () => {
+        it('데이터 경로가 meta 를 사용한다 (Collection 응답 구조)', () => {
+            // ProductLogCollection 의 페이지네이션 메타가 pagination → meta 로 정규화됨
             const json = JSON.stringify(activityLogPartial);
-            expect(json).toContain('activity_logs.data?.pagination?.current_page');
-            expect(json).toContain('activity_logs.data?.pagination?.last_page');
-            expect(json).toContain('activity_logs.data?.pagination?.total');
+            expect(json).toContain('activity_logs.data?.meta');
         });
 
         it('작업(action) 컬럼이 제거되었다', () => {

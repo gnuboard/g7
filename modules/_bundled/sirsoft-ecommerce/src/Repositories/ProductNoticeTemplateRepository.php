@@ -17,7 +17,11 @@ class ProductNoticeTemplateRepository implements ProductNoticeTemplateRepository
     ) {}
 
     /**
-     * {@inheritDoc}
+     * 필터/eager loading 을 적용해 모든 상품정보 템플릿을 조회합니다 (sort_order 정렬).
+     *
+     * @param  array{is_active?: bool, search?: string}  $filters  필터 조건
+     * @param  array<int, string>  $with  eager loading 관계명 배열
+     * @return Collection<int, ProductNoticeTemplate> 템플릿 컬렉션
      */
     public function getAll(array $filters = [], array $with = []): Collection
     {
@@ -51,7 +55,12 @@ class ProductNoticeTemplateRepository implements ProductNoticeTemplateRepository
     }
 
     /**
-     * {@inheritDoc}
+     * 필터/페이지네이션을 적용해 상품정보 템플릿을 조회합니다.
+     *
+     * @param  array{is_active?: bool, search?: string}  $filters  필터 조건
+     * @param  int  $perPage  페이지당 항목 수
+     * @param  array<int, string>  $with  eager loading 관계명 배열
+     * @return LengthAwarePaginator 페이지네이션된 템플릿 컬렉션
      */
     public function getPaginated(array $filters = [], int $perPage = 20, array $with = []): LengthAwarePaginator
     {
@@ -85,7 +94,11 @@ class ProductNoticeTemplateRepository implements ProductNoticeTemplateRepository
     }
 
     /**
-     * {@inheritDoc}
+     * ID 로 상품정보 템플릿을 조회합니다.
+     *
+     * @param  int  $id  템플릿 ID
+     * @param  array<int, string>  $with  eager loading 관계명 배열
+     * @return ProductNoticeTemplate|null 템플릿 또는 부재 시 null
      */
     public function findById(int $id, array $with = []): ?ProductNoticeTemplate
     {
@@ -99,7 +112,10 @@ class ProductNoticeTemplateRepository implements ProductNoticeTemplateRepository
     }
 
     /**
-     * {@inheritDoc}
+     * 새 상품정보 템플릿을 생성합니다.
+     *
+     * @param  array<string, mixed>  $data  fillable 필드 데이터 (name/category/fields/is_active/sort_order)
+     * @return ProductNoticeTemplate 생성된 템플릿
      */
     public function create(array $data): ProductNoticeTemplate
     {
@@ -107,7 +123,11 @@ class ProductNoticeTemplateRepository implements ProductNoticeTemplateRepository
     }
 
     /**
-     * {@inheritDoc}
+     * ID 로 상품정보 템플릿을 갱신합니다.
+     *
+     * @param  int  $id  템플릿 ID
+     * @param  array<string, mixed>  $data  갱신할 fillable 필드 데이터
+     * @return ProductNoticeTemplate 갱신 직후 fresh 인스턴스
      */
     public function update(int $id, array $data): ProductNoticeTemplate
     {
@@ -118,7 +138,10 @@ class ProductNoticeTemplateRepository implements ProductNoticeTemplateRepository
     }
 
     /**
-     * {@inheritDoc}
+     * ID 로 상품정보 템플릿을 삭제합니다 (SoftDeletes 적용 모델인 경우 soft delete).
+     *
+     * @param  int  $id  템플릿 ID
+     * @return bool 삭제 성공 여부
      */
     public function delete(int $id): bool
     {
@@ -128,18 +151,35 @@ class ProductNoticeTemplateRepository implements ProductNoticeTemplateRepository
     }
 
     /**
-     * {@inheritDoc}
+     * 기존 템플릿을 복제합니다 (이름에 locale 별 `(Copy)` 접미사 추가, sort_order 는 max+1).
+     *
+     * 다국어 name 의 경우 활성 언어팩의 `sirsoft-ecommerce::messages.copy_suffix` 번역을 사용하며
+     * 미정의 시 영어 ` (Copy)` 로 폴백합니다.
+     *
+     * @param  int  $id  복제 대상 템플릿 ID
+     * @return ProductNoticeTemplate 복제된 새 템플릿
      */
     public function copy(int $id): ProductNoticeTemplate
     {
         $original = $this->findById($id);
 
-        // 이름에 복사 접미사 추가
+        // 이름에 locale 별 복사 접미사 추가 — 언어팩이 제공하는 번역 사용
         $name = $original->name;
         if (is_array($name)) {
-            foreach ($name as $locale => $value) {
-                $copySuffix = $locale === 'ko' ? ' (복사)' : ' (Copy)';
-                $name[$locale] = $value . $copySuffix;
+            $previousLocale = app()->getLocale();
+            try {
+                foreach ($name as $locale => $value) {
+                    app()->setLocale($locale);
+                    // sirsoft-ecommerce::messages.copy_suffix 가 정의된 locale 만 번역 적용,
+                    // 미정의 시 영어 폴백 (모듈 자체 ko/en 또는 활성 언어팩 ja 등에서 제공)
+                    $copySuffix = trans('sirsoft-ecommerce::messages.copy_suffix');
+                    if ($copySuffix === 'sirsoft-ecommerce::messages.copy_suffix') {
+                        $copySuffix = ' (Copy)';
+                    }
+                    $name[$locale] = $value.$copySuffix;
+                }
+            } finally {
+                app()->setLocale($previousLocale);
             }
         }
 
@@ -153,7 +193,9 @@ class ProductNoticeTemplateRepository implements ProductNoticeTemplateRepository
     }
 
     /**
-     * {@inheritDoc}
+     * 현재 등록된 템플릿 중 가장 큰 sort_order 값을 반환합니다 (신규 등록 시 +1 위치 산정용).
+     *
+     * @return int 최대 sort_order. 레코드가 없으면 0
      */
     public function getMaxSortOrder(): int
     {

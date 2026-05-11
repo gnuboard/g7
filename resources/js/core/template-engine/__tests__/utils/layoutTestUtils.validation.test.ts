@@ -218,12 +218,11 @@ describe('layoutTestUtils 검증 기능', () => {
               type: 'composite',
               name: 'DataGrid',
               props: {
-                // 버그: items?.data는 객체 { data: [], meta: {} }를 반환
-                // 배열인 items?.data?.data를 사용해야 함
-                // API 응답: { success: true, data: { data: [], meta: {} } }
-                // items = { success: true, data: { data: [], meta: {} } }
-                // items?.data = { data: [], meta: {} } ← 객체!
-                data: '{{items?.data || []}}',
+                // createLayoutTest 의 fetch 로직이 { success:true, data:X } 래핑을 자동 해제하여
+                // items 자체가 { data: [...], meta: {...} } 객체가 됨.
+                // DataGrid.data 에 items (객체) 를 바인딩하면 배열 타입 mismatch 경고 발생해야 함
+                // (올바른 사용은 `{{items?.data}}` 로 배열 경로 지정)
+                data: '{{items}}',
               },
             },
           ],

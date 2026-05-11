@@ -7,6 +7,7 @@ use App\Seo\Contracts\SitemapContributorInterface;
 use App\Seo\SitemapGenerator;
 use App\Seo\TemplateRouteResolver;
 use App\Services\TemplateService;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
@@ -34,6 +35,11 @@ class SitemapGeneratorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 단일 언어 테스트의 기본 가정: 이후 다국어 테스트에서 명시적으로 override.
+        // 활성 언어팩에 따라 변동되는 환경 설정 의존을 제거합니다.
+        Config::set('app.locale', 'ko');
+        Config::set('app.supported_locales', ['ko']);
 
         $this->routeResolver = Mockery::mock(TemplateRouteResolver::class);
         $this->templateService = Mockery::mock(TemplateService::class);

@@ -1129,7 +1129,7 @@
     },
     {
       "comment": "답글 섹션 (답변 기능 활성화 + 답글이 있는 경우) - 비밀글 미검증 시 숨김",
-      "if": "{{(post?.data?.replies ?? []).length > 0 && (!post?.data?.is_secret || post?.data?.content !== null)}}",
+      "if": "{{(post?.data?.reply_count ?? 0) > 0 && (!post?.data?.is_secret || post?.data?.content !== null)}}",
       "type": "basic",
       "name": "Div",
       "props": {

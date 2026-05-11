@@ -25,6 +25,13 @@ class OrderOptionResource extends BaseApiResource
         $listPrice = $this->option_snapshot['list_price'] ?? $this->product_snapshot['list_price'] ?? null;
         $finalAmount = $this->getActualPaymentAmount();
 
+        // reset() 은 참조 인자를 요구하므로 Eloquent overloaded property 를 바로 전달하면
+        // "Indirect modification" 경고가 에러로 승격됨. 로컬 변수로 복사 후 사용.
+        $productName = $this->product_name;
+        $productOptionName = $this->product_option_name;
+        $optionName = $this->option_name;
+        $locale = app()->getLocale();
+
         return [
             'id' => $this->id,
             'option_status' => $this->option_status,
@@ -33,15 +40,15 @@ class OrderOptionResource extends BaseApiResource
             'product_id' => $this->product_id,
             'product_option_id' => $this->product_option_id,
             'sku' => $this->sku,
-            'product_name' => is_array($this->product_name)
-                ? ($this->product_name[app()->getLocale()] ?? reset($this->product_name) ?: '')
-                : ($this->product_name ?? ''),
-            'product_option_name' => is_array($this->product_option_name)
-                ? ($this->product_option_name[app()->getLocale()] ?? reset($this->product_option_name) ?: '')
-                : ($this->product_option_name ?? ''),
-            'option_name' => is_array($this->option_name)
-                ? ($this->option_name[app()->getLocale()] ?? reset($this->option_name) ?: '')
-                : ($this->option_name ?? ''),
+            'product_name' => is_array($productName)
+                ? ($productName[$locale] ?? reset($productName) ?: '')
+                : ($productName ?? ''),
+            'product_option_name' => is_array($productOptionName)
+                ? ($productOptionName[$locale] ?? reset($productOptionName) ?: '')
+                : ($productOptionName ?? ''),
+            'option_name' => is_array($optionName)
+                ? ($optionName[$locale] ?? reset($optionName) ?: '')
+                : ($optionName ?? ''),
             'quantity' => $this->quantity,
             'shipped_quantity' => $this->shipped_quantity,
             'unit_price' => $this->unit_price,
@@ -115,7 +122,7 @@ class OrderOptionResource extends BaseApiResource
                     if (is_array($name)) {
                         $locale = app()->getLocale();
 
-                        return $name[$locale] ?? $name['ko'] ?? $name[array_key_first($name)] ?? null;
+                        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? null;
                     }
 
                     return null;

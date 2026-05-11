@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
+use App\Exceptions\CoreUpdateOperationException;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\CoreBackupHelper;
@@ -18,6 +19,9 @@ use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
+use Database\Seeders\IdentityMessageDefinitionSeeder;
+use Database\Seeders\IdentityPolicySeeder;
+use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
@@ -25,10 +29,209 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class CoreUpdateService
 {
+    /**
+     * 마지막 `restoreOwnership()` 실행에서 누적된 권한 정상화 경고.
+     *
+     * 각 항목은 `['target' => string, 'kind' => 'chown'|'group_writable', 'failed' => int, 'failed_paths' => string[]]`.
+     * 콘솔/로그가 운영자에게 즉시 노출하기 위한 side-channel — 호출 후 `getLastPermissionWarnings()` 로 조회.
+     *
+     * @var array<int, array{target:string, kind:string, failed:int, failed_paths:array<int,string>}>
+     */
+    protected array $lastPermissionWarnings = [];
+
+    /**
+     * 마지막 restoreOwnership 호출에서 발생한 권한 정상화 경고를 조회합니다.
+     *
+     * @return array<int, array{target:string, kind:string, failed:int, failed_paths:array<int,string>}>
+     */
+    public function getLastPermissionWarnings(): array
+    {
+        return $this->lastPermissionWarnings;
+    }
+
+    /**
+     * 쓰기 권한이 필요한 디렉토리를 멱등적으로 보장합니다.
+     *
+     * 코어 업그레이드 spawn 자식이 fresh 코드/config 환경에서 진입 직후 1회 호출하여
+     * 활성 디렉토리의 ownership / 그룹 쓰기 권한을 정합 상태로 강제. 미래 release 가
+     * 새 쓰기 권한 디렉토리를 도입할 때 본 메서드 호출만으로 자동 처리되며, 해당 release
+     * 의 upgrade step 에 mkdir/chown 코드를 하드코딩할 필요 없음.
+     *
+     * 처리:
+     * - 디렉토리 부재 시 modules/ → plugins/ → templates/ → base_path() stat 기준으로 mkdir
+     * - chown by extension reference owner/group (chownRecursiveDetailed)
+     * - 강제 g+w 모드 (syncGroupWritabilityDetailed force=true) — sudo 결함으로 root 가
+     *   0755 로 생성한 케이스에서 silent no-op 되던 결함 차단
+     *
+     * 한계: spawn 자식이 fresh 디스크 config 를 읽는 시점에만 작동. 부모(이전 버전) 만
+     * 알고 있던 신규 디렉토리는 처리 못 함 — 그런 일회성 케이스는 해당 release 의 upgrade
+     * step 이 단발 처리 (예: beta.3→beta.4 의 lang-packs/* 보정).
+     *
+     * @param  array<int, string>  $relativePaths  base_path() 기준 상대 경로 배열
+     * @param  callable|object|null  $logger  Monolog 호환 logger ($logger->info(...)) 또는 callable($level, $message)
+     * @return array{
+     *     reference: array{owner:int|false, group:int|false, perms:int|null, source:string},
+     *     processed: array<int, array{path:string, mkdir:bool, chown_changed:int, chown_failed:int, gw_changed:int, gw_failed:int}>,
+     *     warnings: array<int, string>,
+     * }
+     */
+    public function ensureWritableDirectories(array $relativePaths, $logger = null): array
+    {
+        $reference = $this->resolveExtensionDirReferenceStat();
+        $owner = $reference['owner'];
+        $group = $reference['group'];
+        $perms = $reference['perms'] ?? 0775;
+
+        if ($owner === false) {
+            [$owner, $group, $_] = FilePermissionHelper::inferWebServerOwnership();
+        }
+
+        $log = function (string $level, string $message) use ($logger): void {
+            if ($logger === null) {
+                Log::$level($message);
+
+                return;
+            }
+            if (is_callable($logger)) {
+                $logger($level, $message);
+
+                return;
+            }
+            if (is_object($logger) && method_exists($logger, $level)) {
+                $logger->$level($message);
+
+                return;
+            }
+            Log::$level($message);
+        };
+
+        $log('info', sprintf(
+            '[ensureWritableDirectories] 기준 — owner=%s group=%s perms=%s source=%s',
+            $owner === false ? 'unresolved' : (string) $owner,
+            $group === false ? 'unresolved' : (string) $group,
+            sprintf('0%o', $perms),
+            $reference['source'],
+        ));
+
+        $processed = [];
+        $warnings = [];
+
+        foreach ($relativePaths as $relative) {
+            $relative = trim((string) $relative);
+            if ($relative === '') {
+                continue;
+            }
+            $path = base_path($relative);
+            $entry = ['path' => $relative, 'mkdir' => false, 'chown_changed' => 0, 'chown_failed' => 0, 'gw_changed' => 0, 'gw_failed' => 0];
+
+            if (! File::isDirectory($path)) {
+                if (! @mkdir($path, $perms, true) && ! File::isDirectory($path)) {
+                    $msg = sprintf('[ensureWritableDirectories] mkdir 실패 — %s', $relative);
+                    $log('warning', $msg);
+                    $warnings[] = $msg;
+                    $processed[] = $entry;
+
+                    continue;
+                }
+                @chmod($path, $perms);
+                $entry['mkdir'] = true;
+                $log('info', sprintf('[ensureWritableDirectories] mkdir + perms 0%o — %s', $perms, $relative));
+            }
+
+            if ($owner !== false) {
+                $report = FilePermissionHelper::chownRecursiveDetailed($path, $owner, $group);
+                $entry['chown_changed'] = $report['changed'];
+                $entry['chown_failed'] = $report['failed'];
+                if ($report['failed'] > 0) {
+                    $msg = sprintf(
+                        '[ensureWritableDirectories] chown 실패 %d 건 (%s) — 첫 실패: %s. 수동: sudo chown -R %d:%d %s',
+                        $report['failed'],
+                        $relative,
+                        $report['failed_paths'][0] ?? '?',
+                        $owner,
+                        (int) ($group ?: 0),
+                        $path,
+                    );
+                    $log('warning', $msg);
+                    $warnings[] = $msg;
+                } elseif ($report['changed'] > 0) {
+                    $log('info', sprintf('[ensureWritableDirectories] chown changed=%d — %s', $report['changed'], $relative));
+                }
+            }
+
+            // perms 정상화 (루트가 g-w 등으로 생성됐을 때 reference perms 로 강제)
+            $currentPerms = @fileperms($path) & 0777;
+            if ($currentPerms !== false && $currentPerms !== $perms) {
+                if (! @chmod($path, $perms)) {
+                    $msg = sprintf('[ensureWritableDirectories] chmod 실패 — %s. 수동: sudo chmod %o %s', $relative, $perms, $path);
+                    $log('warning', $msg);
+                    $warnings[] = $msg;
+                } else {
+                    $log('info', sprintf('[ensureWritableDirectories] perms 보정 %o → %o — %s', $currentPerms, $perms, $relative));
+                }
+            }
+
+            // force=true: 루트 g-w 정책 보존 우회 (sudo 결함 보정)
+            $gwReport = FilePermissionHelper::syncGroupWritabilityDetailed($path, true);
+            $entry['gw_changed'] = $gwReport['changed'];
+            $entry['gw_failed'] = $gwReport['failed'];
+            if ($gwReport['failed'] > 0) {
+                $msg = sprintf('[ensureWritableDirectories] g+w 실패 %d 건 — %s', $gwReport['failed'], $relative);
+                $log('warning', $msg);
+                $warnings[] = $msg;
+            } elseif ($gwReport['changed'] > 0) {
+                $log('info', sprintf('[ensureWritableDirectories] g+w changed=%d — %s', $gwReport['changed'], $relative));
+            }
+
+            $processed[] = $entry;
+        }
+
+        return ['reference' => $reference, 'processed' => $processed, 'warnings' => $warnings];
+    }
+
+    /**
+     * 확장 디렉토리(modules/ → plugins/ → templates/ → base_path()) 의 stat 을 권한 기준으로 반환합니다.
+     *
+     * @return array{owner:int|false, group:int|false, perms:int|null, source:string}
+     */
+    public function resolveExtensionDirReferenceStat(): array
+    {
+        foreach (['modules', 'plugins', 'templates'] as $dir) {
+            $path = base_path($dir);
+            if (! File::isDirectory($path)) {
+                continue;
+            }
+            $stat = @stat($path);
+            if (! is_array($stat)) {
+                continue;
+            }
+
+            return [
+                'owner' => (int) $stat['uid'],
+                'group' => (int) $stat['gid'],
+                'perms' => ($stat['mode'] & 0777) ?: null,
+                'source' => $dir,
+            ];
+        }
+
+        $stat = @stat(base_path());
+        if (! is_array($stat)) {
+            return ['owner' => false, 'group' => false, 'perms' => null, 'source' => 'unresolved'];
+        }
+
+        return [
+            'owner' => (int) $stat['uid'],
+            'group' => (int) $stat['gid'],
+            'perms' => ($stat['mode'] & 0777) ?: null,
+            'source' => 'base_path',
+        ];
+    }
+
     /**
      * GitHub API에서 최신 코어 릴리스를 확인합니다.
      *
@@ -350,7 +553,7 @@ class CoreUpdateService
         $githubUrl = config('app.update.github_url');
 
         if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
-            throw new \RuntimeException(__('settings.core_update.invalid_github_url'));
+            throw new CoreUpdateOperationException('settings.core_update.invalid_github_url');
         }
 
         $owner = $matches[1];
@@ -400,7 +603,7 @@ class CoreUpdateService
                 // GitHub 아카이브는 owner-repo-hash/ 형태로 압축해제됨
                 $extractedDirs = File::directories($extractDir);
                 if (empty($extractedDirs)) {
-                    throw new \RuntimeException(__('settings.core_update.extract_empty'));
+                    throw new CoreUpdateOperationException('settings.core_update.extract_empty');
                 }
 
                 $sourcePath = $extractedDirs[0];
@@ -433,10 +636,10 @@ class CoreUpdateService
         }
 
         // 모든 전략 실패
-        throw new \RuntimeException(
-            __('settings.core_update.all_extract_methods_failed'),
-            0,
-            $lastError
+        throw new CoreUpdateOperationException(
+            'settings.core_update.all_extract_methods_failed',
+            [],
+            $lastError,
         );
     }
 
@@ -480,7 +683,7 @@ class CoreUpdateService
     {
         $zip = new \ZipArchive;
         if ($zip->open($zipPath) !== true) {
-            throw new \RuntimeException(__('settings.core_update.zip_extract_failed'));
+            throw new CoreUpdateOperationException('settings.core_update.zip_extract_failed');
         }
 
         $zip->extractTo($extractDir);
@@ -501,10 +704,10 @@ class CoreUpdateService
         exec("unzip -o {$escapedZip} -d {$escapedDir} 2>&1", $output, $exitCode);
 
         if ($exitCode !== 0) {
-            throw new \RuntimeException(__('settings.core_update.unzip_command_failed', [
+            throw new CoreUpdateOperationException('settings.core_update.unzip_command_failed', [
                 'code' => $exitCode,
                 'output' => implode("\n", array_slice($output, -5)),
-            ]));
+            ]);
         }
     }
 
@@ -523,27 +726,27 @@ class CoreUpdateService
      *
      * @param  string  $pendingPath  검증할 경로
      *
-     * @throws \RuntimeException 검증 실패 시
+     * @throws CoreUpdateOperationException 검증 실패 시
      */
     public function validatePendingUpdate(string $pendingPath): void
     {
         if (! File::exists($pendingPath.DIRECTORY_SEPARATOR.'composer.json')) {
-            throw new \RuntimeException(__('settings.core_update.invalid_package'));
+            throw new CoreUpdateOperationException('settings.core_update.invalid_package');
         }
 
         if (! File::isDirectory($pendingPath.DIRECTORY_SEPARATOR.'app')) {
-            throw new \RuntimeException(__('settings.core_update.invalid_package'));
+            throw new CoreUpdateOperationException('settings.core_update.invalid_package');
         }
 
         // 그누보드7 프로젝트인지 확인 (config/app.php의 version 키 존재 여부)
         $configPath = $pendingPath.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'app.php';
         if (! File::exists($configPath)) {
-            throw new \RuntimeException(__('settings.core_update.invalid_package_not_g7'));
+            throw new CoreUpdateOperationException('settings.core_update.invalid_package_not_g7');
         }
 
         $config = include $configPath;
         if (! is_array($config) || ! isset($config['version'])) {
-            throw new \RuntimeException(__('settings.core_update.invalid_package_not_g7'));
+            throw new CoreUpdateOperationException('settings.core_update.invalid_package_not_g7');
         }
     }
 
@@ -582,12 +785,12 @@ class CoreUpdateService
      * @param  \Closure|null  $onProgress  진행 콜백
      * @return string _pending 내 추출된 소스 경로 (래퍼 감지 후)
      *
-     * @throws \RuntimeException ZIP 미존재 / 추출 실패 / 패키지 검증 실패 시
+     * @throws CoreUpdateOperationException ZIP 미존재 / 추출 실패 / 패키지 검증 실패 시
      */
     public function extractZipToPending(string $zipPath, ?\Closure $onProgress = null): string
     {
         if (! File::exists($zipPath)) {
-            throw new \RuntimeException(__('settings.core_update.zip_file_not_found', ['path' => $zipPath]));
+            throw new CoreUpdateOperationException('settings.core_update.zip_file_not_found', ['path' => $zipPath]);
         }
 
         $pendingPath = $this->createPendingDirectory();
@@ -596,7 +799,7 @@ class CoreUpdateService
 
         $strategies = $this->buildExtractionStrategies();
         if (empty($strategies)) {
-            throw new \RuntimeException(__('settings.core_update.no_extract_method_available'));
+            throw new CoreUpdateOperationException('settings.core_update.no_extract_method_available');
         }
 
         $lastError = null;
@@ -630,10 +833,10 @@ class CoreUpdateService
             }
         }
 
-        throw new \RuntimeException(
-            __('settings.core_update.all_extract_methods_failed'),
-            0,
-            $lastError
+        throw new CoreUpdateOperationException(
+            'settings.core_update.all_extract_methods_failed',
+            [],
+            $lastError,
         );
     }
 
@@ -692,6 +895,8 @@ class CoreUpdateService
         $targets = config('app.update.targets', []);
         $excludes = config('app.update.excludes', []);
 
+        $applied = [];
+
         foreach ($targets as $target) {
             $src = $sourcePath.DIRECTORY_SEPARATOR.$target;
             $dest = base_path($target);
@@ -708,7 +913,102 @@ class CoreUpdateService
                 File::ensureDirectoryExists(dirname($dest));
                 FilePermissionHelper::copyFile($src, $dest);
             }
+
+            $applied[$this->normalizeRelativePath($target)] = true;
         }
+
+        // 자동 발견 폴백 — 부모 프로세스(구버전) 의 stale `app.update.targets` 가
+        // 신버전이 도입한 최상위 디렉토리(예: beta.4 의 `lang-packs/`) 를 인식하지 못하는
+        // 결함을 안전망으로 차단한다.
+        //
+        // source 디렉토리의 최상위 항목 중 targets 에 누락되었고 PROTECTED 에도 포함되지
+        // 않은 항목은 동일 흐름으로 복사하며 경고 로그를 남긴다. 다음 코어 업데이트의
+        // applyUpdate 는 이미 디스크에 반영된 신버전 config 의 targets 로 정상 처리한다.
+        $this->applyDiscoveredTopLevelPaths($sourcePath, $applied, $excludes, $onProgress);
+    }
+
+    /**
+     * source 디렉토리의 최상위 항목 중 targets allowlist 에 누락된 신규 항목을 자동으로 적용합니다.
+     *
+     * @param  string  $sourcePath  _pending 추출 소스 루트
+     * @param  array<string, bool>  $applied  이미 처리된 normalize 된 상대 경로 맵
+     * @param  array<int, string>  $excludes  copyDirectory 내부 제외 목록
+     * @param  \Closure|null  $onProgress  진행 콜백
+     */
+    private function applyDiscoveredTopLevelPaths(string $sourcePath, array $applied, array $excludes, ?\Closure $onProgress): void
+    {
+        if (! File::isDirectory($sourcePath)) {
+            return;
+        }
+
+        $protected = array_flip(array_map([$this, 'normalizeRelativePath'], (array) config('app.update.protected_paths', [])));
+        $userExcludes = array_flip(array_map([$this, 'normalizeRelativePath'], $excludes));
+
+        $entries = array_merge(File::directories($sourcePath), File::files($sourcePath));
+
+        foreach ($entries as $absPath) {
+            $name = basename($absPath);
+            $normalized = $this->normalizeRelativePath($name);
+
+            if ($name === '.' || $name === '..') {
+                continue;
+            }
+            if (isset($applied[$normalized])) {
+                continue;
+            }
+            // 부모 디렉토리 단위로 이미 적용된 경우 (예: targets 에 'modules/_bundled' 가 있고 source 에 'modules' 디렉토리만 보일 때)
+            // 자식 디렉토리를 통째로 다시 복사하지 않도록 검사
+            if ($this->isCoveredByApplied($normalized, $applied)) {
+                continue;
+            }
+            if (isset($protected[$normalized])) {
+                continue;
+            }
+            if (isset($userExcludes[$normalized])) {
+                continue;
+            }
+
+            $dest = base_path($name);
+            Log::warning('[core-update] targets allowlist 누락 신규 항목 자동 적용', [
+                'name' => $name,
+                'reason' => 'parent process targets list did not include this path; falling back to source auto-discovery',
+            ]);
+            $onProgress?->__invoke('apply', $name.' (auto)');
+
+            if (File::isDirectory($absPath)) {
+                FilePermissionHelper::copyDirectory($absPath, $dest, $onProgress, $excludes, removeOrphans: true);
+            } else {
+                File::ensureDirectoryExists(dirname($dest));
+                FilePermissionHelper::copyFile($absPath, $dest);
+            }
+        }
+    }
+
+    /**
+     * 상대 경로를 normalize 합니다 (선행/후행 슬래시 제거 + DIRECTORY_SEPARATOR 통일).
+     */
+    private function normalizeRelativePath(string $path): string
+    {
+        return trim(str_replace(['\\', '/'], '/', $path), '/');
+    }
+
+    /**
+     * 정규화된 path 가 이미 처리된 상위 path 의 하위 항목인지 검사합니다.
+     *
+     * @param  array<string, bool>  $applied
+     */
+    private function isCoveredByApplied(string $path, array $applied): bool
+    {
+        $segments = explode('/', $path);
+        $accumulated = '';
+        foreach ($segments as $segment) {
+            $accumulated = $accumulated === '' ? $segment : $accumulated.'/'.$segment;
+            if (isset($applied[$accumulated])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -717,7 +1017,7 @@ class CoreUpdateService
      * @param  string  $pendingPath  _pending 내 소스 경로
      * @param  \Closure|null  $onProgress  진행 콜백
      *
-     * @throws \RuntimeException 실행 실패 시
+     * @throws CoreUpdateOperationException 실행 실패 시
      */
     public function runComposerInstallInPending(string $pendingPath, ?\Closure $onProgress = null): void
     {
@@ -738,8 +1038,9 @@ class CoreUpdateService
      * @param  string  $pendingPath  _pending 내 소스 경로
      * @param  VendorMode  $mode  요청된 vendor 설치 모드
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return VendorInstallResult 설치 결과 컨텍스트 (vendor 경로/모드 포함)
      *
-     * @throws \RuntimeException 실행 실패 시
+     * @throws CoreUpdateOperationException 실행 실패 시
      */
     public function runVendorInstallInPending(
         string $pendingPath,
@@ -827,7 +1128,7 @@ class CoreUpdateService
      *
      * @param  \Closure|null  $onProgress  진행 콜백
      *
-     * @throws \RuntimeException 실행 실패 시
+     * @throws CoreUpdateOperationException 실행 실패 시
      */
     public function runComposerInstall(?\Closure $onProgress = null): void
     {
@@ -843,7 +1144,7 @@ class CoreUpdateService
      * @param  string  $pendingPath  _pending 또는 소스 디렉토리 경로
      * @param  \Closure|null  $onProgress  진행 콜백
      *
-     * @throws \RuntimeException vendor 디렉토리가 없을 경우
+     * @throws CoreUpdateOperationException vendor 디렉토리가 없을 경우
      */
     public function copyVendorFromPending(string $pendingPath, ?\Closure $onProgress = null): void
     {
@@ -851,7 +1152,7 @@ class CoreUpdateService
         $destVendor = base_path('vendor');
 
         if (! File::isDirectory($sourceVendor)) {
-            throw new \RuntimeException('소스 디렉토리에 vendor가 없습니다. composer install이 실행되지 않았을 수 있습니다.');
+            throw new CoreUpdateOperationException('settings.core_update.source_vendor_missing');
         }
 
         $onProgress?->__invoke('vendor', 'vendor 디렉토리 복사 중...');
@@ -876,7 +1177,7 @@ class CoreUpdateService
      * @param  \Closure|null  $onProgress  진행 콜백
      * @param  bool  $noScripts  post-autoload-dump 등 스크립트 건너뛰기 (_pending용)
      *
-     * @throws \RuntimeException 실행 실패 시
+     * @throws CoreUpdateOperationException 실행 실패 시
      */
     protected function executeComposerInstall(string $workingDir, ?\Closure $onProgress = null, bool $noScripts = false): void
     {
@@ -909,7 +1210,7 @@ class CoreUpdateService
         $process = proc_open($command, $descriptors, $pipes, $workingDir);
 
         if (! is_resource($process)) {
-            throw new \RuntimeException(__('settings.core_update.composer_failed'));
+            throw new CoreUpdateOperationException('settings.core_update.composer_failed');
         }
 
         fclose($pipes[0]);
@@ -926,7 +1227,7 @@ class CoreUpdateService
         ]);
 
         if ($exitCode !== 0) {
-            throw new \RuntimeException(__('settings.core_update.composer_failed')."\n".$output);
+            throw new CoreUpdateOperationException('settings.core_update.composer_failed_with_output', ['output' => "\n".$output]);
         }
     }
 
@@ -1132,16 +1433,32 @@ class CoreUpdateService
     }
 
     /**
-     * 디스크의 config/core.php 를 재로드하고 코어 권한/메뉴를 재동기화합니다.
+     * 디스크의 config/core.php 를 재로드하고 config-driven 코어 도메인 데이터를 재동기화합니다.
      *
      * Laravel 은 프로세스 시작 시점에 로드한 config 를 재로드하지 않으므로,
      * 업데이트로 config/core.php 가 교체되어도 현재 프로세스의 `config('core.*')`
      * 는 이전 값을 반환한다. 본 메서드는 디스크 값을 다시 require 하여 Config
-     * Repository 에 주입한 뒤 syncCoreRolesAndPermissions/syncCoreMenus 를
-     * 재호출하여 신규 권한·메뉴를 DB 에 반영한다.
+     * Repository 에 주입한 뒤 다음 도메인 동기화를 일괄 수행한다:
      *
-     * 주 사용처: CoreUpdateCommand Step 10 에서 별도 프로세스 spawn 이
-     * 실패했을 때의 in-process fallback. 수동 복구 도구로도 사용 가능.
+     *   - syncCoreRolesAndPermissions / syncCoreMenus  ← config('core.permissions|roles|menus')
+     *   - NotificationDefinitionSeeder                  ← config('core.notification_definitions')
+     *   - IdentityPolicySeeder                          ← config('core.identity_policies')
+     *   - IdentityMessageDefinitionSeeder               ← config('core.identity_messages')
+     *
+     * 모든 시더는 멱등 upsert + user_overrides 보존 패턴이라 정상 환경에서 재실행해도 무해.
+     * 각 도메인은 독립 try/catch + Log::warning 으로 격리 — 한 도메인 실패가 다른 도메인을
+     * 막지 않는다. 각 시더는 호출 전 테이블 존재 가드로 마이그레이션 미실행 환경에서도 안전.
+     *
+     * 주 사용처:
+     *   1. CoreUpdateCommand Step 9 의 정상 경로 — applyUpdate(Step 7) 로 디스크가 교체된 직후
+     *      부모 프로세스가 fresh config 로 sync 를 수행하기 위한 표준 진입점. syncCoreRolesAndPermissions
+     *      / syncCoreMenus 직접 호출 금지 — 부모 메모리의 stale config 로 sync 가 돌면 신규
+     *      권한·메뉴가 누락된다 (회귀 차단은 audit 룰 `core-update-command-direct-sync` 가 자동 적발).
+     *   2. CoreUpdateCommand Step 10 의 spawn fallback — proc_open 실패 시 in-process 로
+     *      upgrade step 실행 후 config 재주입 + 재동기화.
+     *   3. 코어 upgrade step 의 박제 보정 호출 — 이전 버전 CoreUpdateCommand 의 stale 부모
+     *      sync 결함을 spawn 자식의 fresh config 로 사후 보정. 멱등이라 정상 환경 무해.
+     *   4. 수동 복구 도구 — 운영자가 코어 권한·메뉴·알림·IDV 정의 누락 의심 시 호출.
      *
      * ⚠ 경로 A(beta.1 → beta.2) 에서는 직접 호출 금지. beta.1 메모리에는
      * 본 메서드가 존재하지 않으므로 Fatal 발생. 해당 경로의 upgrade step 은
@@ -1175,6 +1492,30 @@ class CoreUpdateService
             $this->syncCoreMenus();
         } catch (\Throwable $e) {
             Log::warning('reloadCoreConfigAndResync: 메뉴 재동기화 실패', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            if (Schema::hasTable('notification_definitions')) {
+                (new NotificationDefinitionSeeder())->run();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('reloadCoreConfigAndResync: 알림 정의 재시딩 실패', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            if (Schema::hasTable('identity_policies')) {
+                (new IdentityPolicySeeder())->run();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('reloadCoreConfigAndResync: IDV 정책 재시딩 실패', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            if (Schema::hasTable('identity_message_definitions') && Schema::hasTable('identity_message_templates')) {
+                (new IdentityMessageDefinitionSeeder())->run();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('reloadCoreConfigAndResync: IDV 메시지 정의 재시딩 실패', ['error' => $e->getMessage()]);
         }
     }
 
@@ -1421,6 +1762,16 @@ class CoreUpdateService
 
         // 4. 확장 오토로드 재생성 (코어 업데이트로 _bundled 변경 가능)
         Artisan::call('extension:update-autoload');
+
+        // 5. 디스크 상태 캐시 + opcache 초기화.
+        //    Step 7 applyUpdate 가 신규 lang 파일 (예: beta.4 의 `lang/ko/identity.php`) 을
+        //    디스크에 깔아도, 부모 프로세스의 PHP file-stat 캐시 / opcache 가 그 파일을
+        //    "부재" 로 캐싱한 상태일 수 있음. 후속 `__()` 호출이 raw key 를 반환하여
+        //    관리자 UI 에 i18n 키 그대로 노출되는 회귀 차단.
+        clearstatcache(true);
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
+        }
     }
 
     /**
@@ -1469,6 +1820,7 @@ class CoreUpdateService
         }
 
         $results = [];
+        // audit:allow service-direct-data-access reason: 3개 확장 테이블(modules/plugins/templates)을 동적 테이블명으로 일괄 스캔하는 generic 업데이트 감지 헬퍼. Repository 별 타입 분리 시 동일 로직이 3중 복제되며 manifest 비교 분기를 분산시켜 회귀 위험 증가
         foreach (DB::table($tableAndDir)->get(['identifier', 'version']) as $record) {
             $identifier = (string) $record->identifier;
             $current = (string) $record->version;
@@ -1552,6 +1904,126 @@ class CoreUpdateService
     }
 
     /**
+     * 좁힌 영역의 항목별 owner/group/perms 를 재귀 스냅샷합니다 (Stage 4 정합화).
+     *
+     * `snapshotOwnership()` 가 target 의 **루트만** stat 하는 한계를 보완. PHP-FPM 쓰기
+     * 영역(`storage/logs`, `storage/framework`, `storage/app/core_pending`, `bootstrap/cache`)
+     * 처럼 좁고 항목 수가 적은 영역에 한해 재귀 스냅샷 후 `restoreOwnership` 의 detailed
+     * 인자로 전달하면 항목별 정확 복원이 가능하다.
+     *
+     * 결과 형식: `[$absolutePath => ['owner', 'group', 'perms', 'is_dir', 'is_link']]`
+     * 키는 절대 경로 (base_path 적용 후 또는 입력이 이미 절대면 그대로).
+     *
+     * 안전 한계:
+     * - 50,000 항목 초과 시 warning 로그 후 첫 50,000 만 직렬화 (스레드 폭주 방어)
+     * - chown 미지원 환경(Windows 등) 은 빈 배열 반환
+     * - symbolic link 는 lstat 으로 처리하여 대상 따라가지 않음 (은닉 cycle 방어)
+     *
+     * @param  array<int, string>  $paths  base_path 상대 또는 절대 경로 목록
+     * @return array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>
+     */
+    public function snapshotOwnershipDetailed(array $paths): array
+    {
+        if (! function_exists('chown')) {
+            return [];
+        }
+
+        $snapshot = [];
+        $maxItems = 50000;
+        $truncated = false;
+
+        foreach ($paths as $rawPath) {
+            $rawPath = trim((string) $rawPath);
+            if ($rawPath === '') {
+                continue;
+            }
+
+            $absolute = $this->resolveAbsolutePath($rawPath);
+            if (! File::exists($absolute) && ! is_link($absolute)) {
+                continue;
+            }
+
+            $this->collectStatRecursively($absolute, $snapshot, $maxItems, $truncated);
+
+            if ($truncated) {
+                break;
+            }
+        }
+
+        if ($truncated) {
+            Log::warning('snapshotOwnershipDetailed: 50000 항목 초과 — 첫 50000 항목만 스냅샷', [
+                'collected' => count($snapshot),
+                'paths' => $paths,
+            ]);
+        }
+
+        return $snapshot;
+    }
+
+    /**
+     * 입력 경로를 절대 경로로 정규화합니다.
+     *
+     * 절대 경로(/ 또는 Windows 드라이브) 는 그대로, 상대 경로는 base_path 적용.
+     */
+    private function resolveAbsolutePath(string $path): string
+    {
+        if ($path === '') {
+            return base_path();
+        }
+        if ($path[0] === '/' || $path[0] === DIRECTORY_SEPARATOR) {
+            return $path;
+        }
+        // Windows 드라이브 접두사 (예: C:\ 또는 C:/)
+        if (strlen($path) >= 2 && ctype_alpha($path[0]) && $path[1] === ':') {
+            return $path;
+        }
+
+        return base_path($path);
+    }
+
+    /**
+     * 트리를 재귀 stat 하여 snapshot 배열에 누적합니다.
+     *
+     * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $snapshot
+     */
+    private function collectStatRecursively(string $path, array &$snapshot, int $maxItems, bool &$truncated): void
+    {
+        if ($truncated || count($snapshot) >= $maxItems) {
+            $truncated = true;
+
+            return;
+        }
+
+        $isLink = is_link($path);
+        // symbolic link 는 lstat — 대상 추적 금지
+        $stat = $isLink ? @lstat($path) : @stat($path);
+        if (! is_array($stat)) {
+            return;
+        }
+
+        $snapshot[$path] = [
+            'owner' => isset($stat['uid']) ? (int) $stat['uid'] : false,
+            'group' => isset($stat['gid']) ? (int) $stat['gid'] : false,
+            'perms' => isset($stat['mode']) ? ($stat['mode'] & 0777) : null,
+            'is_dir' => is_dir($path) && ! $isLink,
+            'is_link' => $isLink,
+        ];
+
+        // symbolic link 는 대상 추적 금지 + 디렉토리만 재귀
+        if ($isLink || ! is_dir($path)) {
+            return;
+        }
+
+        $items = new \FilesystemIterator($path, \FilesystemIterator::SKIP_DOTS);
+        foreach ($items as $item) {
+            $this->collectStatRecursively($item->getPathname(), $snapshot, $maxItems, $truncated);
+            if ($truncated) {
+                return;
+            }
+        }
+    }
+
+    /**
      * 업데이트 경로의 소유권을 스냅샷 기준으로 복원합니다.
      *
      * sudo 로 실행된 외부 프로세스(composer install, package:discover,
@@ -1568,12 +2040,22 @@ class CoreUpdateService
      * - @chown/@chgrp suppress 로 권한 부족 시 silent fail
      * - 대상 경로 목록은 config('app.update.restore_ownership') 기준
      *
+     * Stage 4 (`$detailedSnapshot` 인자) — 항목별 정확 복원:
+     * - `snapshotOwnershipDetailed()` 결과를 전달하면 좁힌 영역의 owner/group/perms 를
+     *   항목별로 정확 복원 (디렉토리 traversal 비트 손실 같은 회귀 차단)
+     * - 빈 배열이면 기존 chownRecursive 만 동작 (호환성 유지)
+     * - 두 메커니즘은 독립 — `$snapshot` 에는 거시 chown 대상, `$detailedSnapshot` 에는
+     *   PHP-FPM 쓰기 영역의 정확 복원 대상을 따로 전달
+     *
      * @param  array<string, array{owner:int|false, group:int|false}>  $snapshot  snapshotOwnership() 결과
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $detailedSnapshot  snapshotOwnershipDetailed() 결과 (선택)
      * @return void
      */
-    public function restoreOwnership(array $snapshot, ?\Closure $onProgress = null): void
+    public function restoreOwnership(array $snapshot, ?\Closure $onProgress = null, array $detailedSnapshot = []): void
     {
+        $this->lastPermissionWarnings = [];
+
         if (! function_exists('chown')) {
             return;
         }
@@ -1614,18 +2096,35 @@ class CoreUpdateService
             }
 
             $onProgress?->__invoke('ownership', $target);
-            $changed = FilePermissionHelper::chownRecursive($path, $owner, $group);
+            // 트랙 2-A — `.preserve-ownership` 마커가 있는 서브트리(사용자 데이터 영역) 자동 skip.
+            // ModuleStorageDriver/PluginStorageDriver 가 자동 작성하는 마커로 시드 시점 owner 영구 보존.
+            $report = FilePermissionHelper::chownRecursiveDetailed($path, $owner, $group, respectPreservationMarker: true);
 
-            if ($changed > 0) {
+            if ($report['changed'] > 0) {
                 Log::info('코어 업데이트: 소유권 복원', [
                     'target' => $target,
                     'owner' => $owner,
                     'group' => $group,
                     'source' => $source,
-                    'changed_entries' => $changed,
+                    'changed_entries' => $report['changed'],
                 ]);
-                $restoredCount += $changed;
+                $restoredCount += $report['changed'];
             }
+
+            if ($report['failed'] > 0) {
+                $this->lastPermissionWarnings[] = [
+                    'target' => $target,
+                    'kind' => 'chown',
+                    'failed' => $report['failed'],
+                    'failed_paths' => $report['failed_paths'],
+                ];
+            }
+        }
+
+        // Stage 4 — detailed snapshot 기반 항목별 정확 복원 (chown + chgrp + chmod).
+        // 좁힌 영역(PHP-FPM 쓰기 경로)의 owner/group/perms 를 원본과 100% 일치 복원.
+        if (! empty($detailedSnapshot)) {
+            $this->restoreFromDetailedSnapshot($detailedSnapshot, $onProgress);
         }
 
         // 7.0.0-beta.3+: Laravel 런타임 쓰기 경로(storage/, bootstrap/cache/) 에 한해
@@ -1647,7 +2146,17 @@ class CoreUpdateService
             }
 
             $onProgress?->__invoke('group_writable', $target);
-            $groupWritableChanged += FilePermissionHelper::syncGroupWritability($path);
+            $report = FilePermissionHelper::syncGroupWritabilityDetailed($path);
+            $groupWritableChanged += $report['changed'];
+
+            if ($report['failed'] > 0) {
+                $this->lastPermissionWarnings[] = [
+                    'target' => $target,
+                    'kind' => 'group_writable',
+                    'failed' => $report['failed'],
+                    'failed_paths' => $report['failed_paths'],
+                ];
+            }
         }
 
         if ($groupWritableChanged > 0) {
@@ -1661,6 +2170,121 @@ class CoreUpdateService
             Log::info('코어 업데이트: 소유권 복원 완료', [
                 'restored_entries_total' => $restoredCount,
                 'targets' => $targets,
+            ]);
+        }
+    }
+
+    /**
+     * `snapshotOwnershipDetailed()` 결과를 항목별로 정확 복원합니다.
+     *
+     * 동작:
+     * - 각 항목의 현재 stat 을 읽어 snapshot 과 비교
+     * - owner/group/perms 가 다르면 해당 비트만 변경 (chown/chgrp/chmod)
+     * - symbolic link 는 lchown 시도 (없으면 skip), perms 무변경
+     * - silent fail — 권한 부족·chmod 미지원 환경에서도 예외 미발생
+     * - 실패 항목 누적 → `lastPermissionWarnings` 에 'kind' => 'detailed' 로 기록
+     *
+     * @param  array<string, array{owner:int|false, group:int|false, perms:int|null, is_dir:bool, is_link:bool}>  $detailedSnapshot
+     * @param  \Closure|null  $onProgress
+     */
+    private function restoreFromDetailedSnapshot(array $detailedSnapshot, ?\Closure $onProgress = null): void
+    {
+        $changed = 0;
+        $failed = 0;
+        $failedPaths = [];
+        $supportsLchown = function_exists('lchown');
+        $supportsLchgrp = function_exists('lchgrp');
+
+        foreach ($detailedSnapshot as $absolutePath => $meta) {
+            if (! file_exists($absolutePath) && ! is_link($absolutePath)) {
+                continue;
+            }
+
+            $isLink = $meta['is_link'] ?? is_link($absolutePath);
+            $targetOwner = $meta['owner'] ?? false;
+            $targetGroup = $meta['group'] ?? false;
+            $targetPerms = $meta['perms'] ?? null;
+            $itemFailed = false;
+
+            // owner 복원
+            if ($targetOwner !== false) {
+                $currentOwner = $isLink ? @lstat($absolutePath)['uid'] ?? false : @fileowner($absolutePath);
+                if ($currentOwner !== false && $currentOwner !== $targetOwner) {
+                    if ($isLink) {
+                        if ($supportsLchown && @lchown($absolutePath, $targetOwner)) {
+                            $changed++;
+                        } else {
+                            $itemFailed = true;
+                        }
+                    } else {
+                        if (@chown($absolutePath, $targetOwner)) {
+                            $changed++;
+                        } else {
+                            $itemFailed = true;
+                        }
+                    }
+                }
+            }
+
+            // group 복원
+            if ($targetGroup !== false) {
+                $currentGroup = $isLink ? @lstat($absolutePath)['gid'] ?? false : @filegroup($absolutePath);
+                if ($currentGroup !== false && $currentGroup !== $targetGroup) {
+                    if ($isLink) {
+                        if ($supportsLchgrp && @lchgrp($absolutePath, $targetGroup)) {
+                            $changed++;
+                        } else {
+                            $itemFailed = true;
+                        }
+                    } else {
+                        if (@chgrp($absolutePath, $targetGroup)) {
+                            $changed++;
+                        } else {
+                            $itemFailed = true;
+                        }
+                    }
+                }
+            }
+
+            // perms 복원 — symbolic link 는 perms 무변경 (대부분 OS 가 link perms 무시)
+            if (! $isLink && $targetPerms !== null) {
+                $currentPerms = @fileperms($absolutePath);
+                if ($currentPerms !== false && ($currentPerms & 0777) !== $targetPerms) {
+                    if (@chmod($absolutePath, $targetPerms)) {
+                        $changed++;
+                    } else {
+                        $itemFailed = true;
+                    }
+                }
+            }
+
+            if ($itemFailed) {
+                $failed++;
+                if (count($failedPaths) < 50) {
+                    $failedPaths[] = $absolutePath;
+                }
+            }
+
+            $onProgress?->__invoke('detailed_restore', $absolutePath);
+        }
+
+        if ($changed > 0) {
+            Log::info('코어 업데이트: 항목별 정확 복원 완료', [
+                'snapshot_items' => count($detailedSnapshot),
+                'changed_attributes' => $changed,
+            ]);
+        }
+
+        if ($failed > 0) {
+            $this->lastPermissionWarnings[] = [
+                'target' => 'detailed_snapshot',
+                'kind' => 'detailed',
+                'failed' => $failed,
+                'failed_paths' => $failedPaths,
+            ];
+            Log::warning('코어 업데이트: 항목별 복원 부분 실패', [
+                'failed_count' => $failed,
+                'first_failed' => $failedPaths[0] ?? null,
             ]);
         }
     }

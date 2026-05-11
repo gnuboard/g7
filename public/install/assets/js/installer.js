@@ -1765,7 +1765,8 @@
         admin_templates: [],
         user_templates: [],
         modules: [],
-        plugins: []
+        plugins: [],
+        language_packs: []
     };
 
     /** 의존성에 의해 자동 선택된 확장 identifier 집합 */
@@ -1813,10 +1814,20 @@
             renderExtensionCards(modulesGrid, 'modules', extensionsData.modules || [], false, modulesEmpty);
             renderExtensionCards(pluginsGrid, 'plugins', extensionsData.plugins || [], false, pluginsEmpty);
 
+            // 언어팩 — locale 별 서브헤딩으로 그룹 렌더
+            renderLanguagePackGroups(
+                document.getElementById('language-packs-locale-groups'),
+                extensionsData.language_packs || [],
+                document.getElementById('language-packs-empty')
+            );
+
             restoreSelectionState();
             updateSelectionSummary();
             autoSelectMissingDependencies();
             validateAdminTemplate();
+            applyLanguagePackCascadeState();
+            attachBulkToggleHandlers();
+            updateBulkToggleStates();
         } catch (error) {
             if (loadingEl) loadingEl.classList.add('hidden');
             if (errorEl) {
@@ -1896,6 +1907,22 @@
             }
         }
 
+        // 관리자 템플릿에서 검색
+        var adminTpls = extensionsData.admin_templates || [];
+        for (var k = 0; k < adminTpls.length; k++) {
+            if (adminTpls[k].identifier === identifier) {
+                return { ...adminTpls[k], type: 'template' };
+            }
+        }
+
+        // 사용자 템플릿에서 검색
+        var userTpls = extensionsData.user_templates || [];
+        for (var l = 0; l < userTpls.length; l++) {
+            if (userTpls[l].identifier === identifier) {
+                return { ...userTpls[l], type: 'template' };
+            }
+        }
+
         return null;
     }
 
@@ -1968,6 +1995,314 @@
         return div.innerHTML;
     }
 
+    /**
+     * 번들 언어팩 — locale 별 서브헤딩 + extension-grid 렌더링
+     * @param {HTMLElement} container - 컨테이너 요소
+     * @param {Array} items - 번들 언어팩 목록 (scan-extensions.php 응답)
+     * @param {HTMLElement} emptyEl - 비어있을 때 표시할 요소
+     */
+    function renderLanguagePackGroups(container, items, emptyEl) {
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!items || items.length === 0) {
+            if (emptyEl) emptyEl.classList.remove('hidden');
+            return;
+        }
+        if (emptyEl) emptyEl.classList.add('hidden');
+
+        // locale 키로 그룹핑 (Map) — 입력 순서 유지
+        const groups = new Map();
+        items.forEach(function(item) {
+            const locale = item.locale || '';
+            if (!groups.has(locale)) groups.set(locale, []);
+            groups.get(locale).push(item);
+        });
+
+        // locale 알파벳 오름차순 정렬
+        const sortedLocales = Array.from(groups.keys()).sort();
+
+        sortedLocales.forEach(function(locale) {
+            const groupItems = groups.get(locale);
+            const native = groupItems[0].locale_native_name || groupItems[0].locale_name || locale;
+
+            const heading = document.createElement('h4');
+            heading.className = 'lp-locale-heading';
+            heading.textContent = native + ' (' + locale + ')';
+            container.appendChild(heading);
+
+            const grid = document.createElement('div');
+            grid.className = 'extension-grid lp-locale-grid';
+            groupItems.forEach(function(item) {
+                grid.appendChild(createLanguagePackCard(item));
+            });
+            container.appendChild(grid);
+        });
+    }
+
+    /**
+     * 언어팩 카드 DOM 생성 — extension-card 패턴 + scope/target 데이터 속성
+     * @param {object} item - 번들 언어팩 매니페스트 데이터
+     * @returns {HTMLElement}
+     */
+    function createLanguagePackCard(item) {
+        const card = document.createElement('div');
+        card.className = 'extension-card';
+        card.dataset.type = 'language_packs';
+        card.dataset.identifier = item.identifier;
+        card.dataset.scope = item.scope || 'core';
+        card.dataset.targetIdentifier = item.target_identifier || '';
+        card.dataset.locale = item.locale || '';
+
+        const isSelected = selectedExtensions.language_packs.indexOf(item.identifier) !== -1;
+        if (isSelected) card.classList.add('selected');
+
+        const name = (typeof item.name === 'string') ? item.name : (getLocalizedText(item.name) || item.identifier);
+        const description = getLocalizedText(item.description);
+        const version = item.version || '1.0.0';
+        const author = item.author || '';
+
+        const scope = item.scope || 'core';
+        const scopeLabelKey = 'language_pack_scope_' + scope;
+        const scopeLabel = (window.EXTENSION_LABELS && window.EXTENSION_LABELS[scopeLabelKey]) || scope;
+
+        // 종속 확장의 실제 이름(현재 locale) + 식별자 동시 표시 — 미발견 시 식별자만
+        let targetText = '';
+        if (item.target_identifier) {
+            const targetInfo = findExtensionById(item.target_identifier);
+            const targetName = targetInfo ? getLocalizedText(targetInfo.name) : '';
+            if (targetName && targetName !== item.target_identifier) {
+                targetText = ' · ' + escapeHtml(targetName) + ' (' + escapeHtml(item.target_identifier) + ')';
+            } else {
+                targetText = ' · ' + escapeHtml(item.target_identifier);
+            }
+        }
+
+        const scopeBadgeHtml =
+            '<span class="lp-scope-badge lp-scope-' + escapeHtml(scope) + '">' +
+                escapeHtml(scopeLabel) +
+            '</span>' +
+            (targetText ? '<span class="lp-target-text">' + targetText + '</span>' : '');
+
+        const selectIcon = isSelected
+            ? '<i class="fas fa-check-square"></i>'
+            : '<i class="far fa-square"></i>';
+
+        card.innerHTML =
+            '<div class="extension-card-header">' +
+                '<div class="extension-card-icon"><i class="fas fa-language"></i></div>' +
+                '<div class="extension-card-info">' +
+                    '<h4 class="extension-card-name">' + escapeHtml(name) + '</h4>' +
+                    '<div class="extension-card-meta">v' + escapeHtml(version) + (author ? ' · ' + escapeHtml(author) : '') + '</div>' +
+                '</div>' +
+                '<div class="extension-card-select">' + selectIcon + '</div>' +
+            '</div>' +
+            (description ? '<p class="extension-card-description">' + escapeHtml(description) + '</p>' : '') +
+            '<div class="extension-card-footer"><div class="extension-card-dependencies">' + scopeBadgeHtml + '</div></div>';
+
+        card.addEventListener('click', function() {
+            if (card.classList.contains('disabled')) return;
+            toggleExtension('language_packs', item.identifier, false);
+        });
+
+        return card;
+    }
+
+    /**
+     * 언어팩 cascade 상태 갱신 — 선택된 확장과 매칭 검사 후 disabled/자동 해제
+     *
+     * 규칙:
+     * - scope === 'core' → 항상 활성
+     * - scope === 'module' → selectedExtensions.modules 에 target_identifier 가 있어야 활성
+     * - scope === 'plugin' → selectedExtensions.plugins 에 있어야 활성
+     * - scope === 'template' → admin_templates 또는 user_templates 에 있어야 활성
+     * - 비활성 진입 시 selectedExtensions.language_packs 에서 자동 제거
+     *
+     * 호출 시점: loadExtensions, toggleExtension, restoreSelectionState 마지막
+     */
+    function applyLanguagePackCascadeState() {
+        const cards = document.querySelectorAll('.extension-card[data-type="language_packs"]');
+        let changed = false;
+        const reasonText = (window.EXTENSION_LABELS && window.EXTENSION_LABELS.language_pack_disabled_by_extension) || '';
+
+        cards.forEach(function(card) {
+            const scope = card.dataset.scope || 'core';
+            const target = card.dataset.targetIdentifier || '';
+            const id = card.dataset.identifier;
+
+            let disabled = false;
+            if (scope !== 'core' && target) {
+                let matched = false;
+                if (scope === 'module') {
+                    matched = selectedExtensions.modules.indexOf(target) !== -1;
+                } else if (scope === 'plugin') {
+                    matched = selectedExtensions.plugins.indexOf(target) !== -1;
+                } else if (scope === 'template') {
+                    matched = (selectedExtensions.admin_templates.indexOf(target) !== -1) ||
+                              (selectedExtensions.user_templates.indexOf(target) !== -1);
+                }
+                if (!matched) disabled = true;
+            }
+
+            if (disabled) {
+                card.classList.add('disabled');
+                card.title = reasonText;
+                const idx = selectedExtensions.language_packs.indexOf(id);
+                if (idx !== -1) {
+                    selectedExtensions.language_packs.splice(idx, 1);
+                    changed = true;
+                }
+                card.classList.remove('selected');
+                const sel = card.querySelector('.extension-card-select');
+                if (sel) sel.innerHTML = '<i class="far fa-square"></i>';
+            } else {
+                card.classList.remove('disabled');
+                card.title = '';
+            }
+        });
+
+        if (changed) {
+            updateSelectionSummary();
+        }
+    }
+
+    /**
+     * 일괄 토글 가능한 다중 선택 카테고리 — admin_templates 는 단일 선택 + 필수 이므로 제외
+     */
+    const BULK_TOGGLE_CATEGORIES = ['user_templates', 'modules', 'plugins', 'language_packs'];
+
+    /**
+     * 카테고리 내에서 현재 선택 가능한 항목(disabled 제외) 식별자 목록 반환
+     * @param {string} category
+     * @returns {Array<string>}
+     */
+    function getSelectableIdentifiers(category) {
+        if (!extensionsData) return [];
+        const items = extensionsData[category] || [];
+        const ids = [];
+        items.forEach(function(item) {
+            // language_packs 는 disabled 카드 제외
+            if (category === 'language_packs') {
+                const card = document.querySelector(
+                    '.extension-card[data-type="language_packs"][data-identifier="' + item.identifier + '"]'
+                );
+                if (card && card.classList.contains('disabled')) return;
+            }
+            ids.push(item.identifier);
+        });
+        return ids;
+    }
+
+    /**
+     * 섹션 단위 일괄 토글 — 가능 항목 모두 선택 / 모두 해제
+     * @param {string} category
+     * @param {boolean} select - true=전체 선택, false=전체 해제
+     */
+    function bulkToggleSection(category, select) {
+        if (BULK_TOGGLE_CATEGORIES.indexOf(category) === -1) return;
+
+        // user_templates 는 단일 선택 — 일괄 선택 시 마지막 항목 1개만 선택, 일괄 해제는 정상
+        const isSingleSelect = (category === 'user_templates');
+        const targetIds = getSelectableIdentifiers(category);
+
+        if (select) {
+            if (isSingleSelect) {
+                // 첫 번째 가능 항목 선택 (이미 선택되어 있지 않다면)
+                if (targetIds.length > 0 && selectedExtensions[category].indexOf(targetIds[0]) === -1) {
+                    toggleExtension(category, targetIds[0], true);
+                }
+            } else {
+                targetIds.forEach(function(id) {
+                    if (selectedExtensions[category].indexOf(id) === -1) {
+                        toggleExtension(category, id, false);
+                    }
+                });
+            }
+        } else {
+            // 전체 해제 — 의존성에 의해 차단된 항목은 toggleExtension 가 차단하므로 정상 동작
+            const currentSelected = selectedExtensions[category].slice();
+            currentSelected.forEach(function(id) {
+                toggleExtension(category, id, isSingleSelect);
+            });
+        }
+
+        updateBulkToggleStates();
+    }
+
+    /**
+     * 마스터 토글 — 모든 다중 선택 카테고리에 일괄 적용
+     * 순서: 모듈/플러그인 먼저 선택 → cascade 갱신 → 언어팩 선택 (disabled 풀린 후 적용 가능)
+     */
+    function bulkToggleMaster(select) {
+        // 선택 시: 모듈/플러그인/사용자템플릿 먼저, language_packs 는 cascade 갱신 후 마지막
+        // 해제 시: language_packs 먼저, 그 다음 다른 카테고리 (역순)
+        const order = select
+            ? ['user_templates', 'modules', 'plugins', 'language_packs']
+            : ['language_packs', 'plugins', 'modules', 'user_templates'];
+
+        order.forEach(function(cat) {
+            bulkToggleSection(cat, select);
+        });
+    }
+
+    /**
+     * 모든 일괄 토글 체크박스의 표시 상태를 현재 selectedExtensions 기준으로 갱신
+     */
+    function updateBulkToggleStates() {
+        BULK_TOGGLE_CATEGORIES.forEach(function(cat) {
+            const cb = document.querySelector('.bulk-toggle-checkbox[data-bulk-target="' + cat + '"]');
+            if (!cb) return;
+            const selectable = getSelectableIdentifiers(cat);
+            if (selectable.length === 0) {
+                cb.checked = false;
+                cb.indeterminate = false;
+                cb.disabled = true;
+                return;
+            }
+            cb.disabled = false;
+            const selected = selectedExtensions[cat] || [];
+            const allSelected = selectable.every(function(id) { return selected.indexOf(id) !== -1; });
+            const anySelected = selectable.some(function(id) { return selected.indexOf(id) !== -1; });
+            cb.checked = allSelected;
+            cb.indeterminate = !allSelected && anySelected;
+        });
+
+        // 마스터 토글 — 모든 카테고리가 전체 선택 상태일 때만 ON, 일부면 indeterminate
+        const master = document.getElementById('bulk-toggle-all');
+        if (master) {
+            const allFull = BULK_TOGGLE_CATEGORIES.every(function(cat) {
+                const cb = document.querySelector('.bulk-toggle-checkbox[data-bulk-target="' + cat + '"]');
+                return cb && cb.checked;
+            });
+            const anyOn = BULK_TOGGLE_CATEGORIES.some(function(cat) {
+                const cb = document.querySelector('.bulk-toggle-checkbox[data-bulk-target="' + cat + '"]');
+                return cb && (cb.checked || cb.indeterminate);
+            });
+            master.checked = allFull;
+            master.indeterminate = !allFull && anyOn;
+        }
+    }
+
+    /**
+     * 일괄 토글 체크박스에 change 핸들러 부착 — 한 번만 부착되도록 데이터 속성으로 가드
+     */
+    function attachBulkToggleHandlers() {
+        document.querySelectorAll('.bulk-toggle-checkbox[data-bulk-target]').forEach(function(cb) {
+            if (cb.dataset.handlerAttached === '1') return;
+            cb.dataset.handlerAttached = '1';
+            cb.addEventListener('change', function() {
+                bulkToggleSection(cb.dataset.bulkTarget, cb.checked);
+            });
+        });
+        const master = document.getElementById('bulk-toggle-all');
+        if (master && master.dataset.handlerAttached !== '1') {
+            master.dataset.handlerAttached = '1';
+            master.addEventListener('change', function() {
+                bulkToggleMaster(master.checked);
+            });
+        }
+    }
+
     window.toggleExtension = function(type, identifier, isSingleSelect, _isAutoSelect) {
         const card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
         if (!card) return;
@@ -2034,16 +2369,24 @@
         updateSelectionSummary();
         validateAdminTemplate();
 
+        // 확장 선택 변경 시 언어팩 cascade 상태 갱신 (admin/user/module/plugin 변동 영향)
+        if (type !== 'language_packs') {
+            applyLanguagePackCascadeState();
+        }
+
         // 선택 변경 시 의존성 즉시 자동 선택 (자동 선택에 의한 재귀 호출 방지)
         if (!_isAutoSelect) {
             autoSelectMissingDependencies();
         }
+
+        // 일괄 토글 체크박스 상태 동기화
+        updateBulkToggleStates();
     };
 
     function restoreSelectionState() {
         if (window.INSTALLER_SELECTED_EXTENSIONS) {
             var saved = window.INSTALLER_SELECTED_EXTENSIONS;
-            ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach(function(type) {
+            ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach(function(type) {
                 if (saved[type] && Array.isArray(saved[type])) {
                     selectedExtensions[type] = saved[type].slice();
                 }
@@ -2058,7 +2401,7 @@
             });
         }
         if (extensionsData) {
-            ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach(function(type) {
+            ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach(function(type) {
                 var items = extensionsData[type] || [];
                 items.forEach(function(item) {
                     if (item.is_required && selectedExtensions[type].indexOf(item.identifier) === -1) {
@@ -2067,6 +2410,8 @@
                 });
             });
         }
+        // 복원 후 언어팩 cascade 상태 동기화 (확장 선택 복원 결과 반영)
+        applyLanguagePackCascadeState();
     }
 
     function updateSelectionSummary() {
@@ -2075,11 +2420,13 @@
         const userCount = document.getElementById('summary-user-templates');
         const modulesCount = document.getElementById('summary-modules');
         const pluginsCount = document.getElementById('summary-plugins');
+        const lpCount = document.getElementById('summary-language-packs');
 
         if (adminCount) adminCount.textContent = selectedExtensions.admin_templates.length;
         if (userCount) userCount.textContent = selectedExtensions.user_templates.length;
         if (modulesCount) modulesCount.textContent = selectedExtensions.modules.length;
         if (pluginsCount) pluginsCount.textContent = selectedExtensions.plugins.length;
+        if (lpCount) lpCount.textContent = selectedExtensions.language_packs.length;
     }
 
     /**
@@ -2101,13 +2448,13 @@
         if (!extensionsData) return [];
 
         const selectedIdSet = new Set();
-        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+        ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach((cat) => {
             (selectedExtensions[cat] || []).forEach((id) => selectedIdSet.add(id));
         });
 
         // 모든 확장의 identifier → version 매핑 (버전 검증용)
         const availableVersions = {};
-        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+        ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach((cat) => {
             (extensionsData[cat] || []).forEach((item) => {
                 availableVersions[item.identifier] = item.version || '0.0.0';
             });
@@ -2148,7 +2495,7 @@
             });
         };
 
-        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+        ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach((cat) => {
             (extensionsData[cat] || []).forEach((item) => checkOne(cat, item));
         });
 
@@ -2164,7 +2511,7 @@
 
         // 카테고리별 identifier → category 역인덱스 구축
         const idToCategory = {};
-        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+        ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach((cat) => {
             (extensionsData[cat] || []).forEach((item) => {
                 idToCategory[item.identifier] = cat;
             });
@@ -2274,11 +2621,11 @@
         if (!extensionsData) return [];
         const dependents = [];
         const selectedIdSet = new Set();
-        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+        ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach((cat) => {
             (selectedExtensions[cat] || []).forEach((id) => selectedIdSet.add(id));
         });
 
-        ['admin_templates', 'user_templates', 'modules', 'plugins'].forEach((cat) => {
+        ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach((cat) => {
             (extensionsData[cat] || []).forEach((item) => {
                 if (!selectedIdSet.has(item.identifier)) return;
                 const deps = item.dependencies_detailed || [];
@@ -2468,7 +2815,12 @@
         if (!extensionsData) return null;
         const list = extensionsData[category] || [];
         const ext = list.find(e => e.identifier === identifier);
-        return ext ? ext.name : null;
+        if (!ext) return null;
+        // 언어팩의 name 은 단일 string — {ko, en} 객체 형태로 정규화 (state.json 다운스트림 호환)
+        if (typeof ext.name === 'string') {
+            return { ko: ext.name, en: ext.name };
+        }
+        return ext.name;
     }
 
     async function saveExtensionsAndProceed() {
@@ -2487,7 +2839,7 @@
 
         // 확장 이름 매핑 수집 (identifier → {ko: '...', en: '...'})
         const extensionNames = {};
-        const categories = ['admin_templates', 'user_templates', 'modules', 'plugins'];
+        const categories = ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'];
         categories.forEach(category => {
             (selectedExtensions[category] || []).forEach(identifier => {
                 const name = getExtensionNameFromData(category, identifier);
@@ -2746,6 +3098,65 @@
     window.confirmDropTables = confirmDropTables;
 
     /**
+     * SSE 호환성 사전 체크 (streaming 검증).
+     *
+     * sse-probe.php 가 두 phase 의 probe 이벤트를 sleep(2초) 간격으로 송신한다.
+     * 클라이언트는 두 메시지의 client 측 도착 timestamp 차이로 streaming 호환성을 판정:
+     *  - 차이 ≥ 1500ms → streaming 가능 (호환) → SSE 모드
+     *  - 차이 < 1500ms → buffer 후 일괄 도착 (비호환) → 폴링 모드
+     *  - timeout / 에러 → 비호환
+     *
+     * 단순 응답 수신 검증 (single-phase) 은 cgi-fcgi/mod_fcgid 환경에서 false positive
+     * 가능 (응답 종료 시점에 한 번에 flush 되어도 onmessage 발화). timing 검증으로
+     * 실제 streaming 가능성을 실증한다.
+     *
+     * @param {number} timeoutMs probe 응답 대기 timeout (default 5000 — sleep 2s + 여유)
+     * @returns {Promise<boolean>} 호환 여부
+     */
+    function detectSseCompatibility(timeoutMs = 5000) {
+        return new Promise((resolve) => {
+            const probeUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/sse-probe.php`;
+            const STREAMING_THRESHOLD_MS = 1500;
+            let settled = false;
+            let source = null;
+            let phase1ClientTs = null;
+
+            const finish = (compatible) => {
+                if (settled) return;
+                settled = true;
+                if (source) {
+                    try { source.close(); } catch (e) { /* ignore */ }
+                }
+                resolve(compatible);
+            };
+
+            try {
+                source = new EventSource(probeUrl);
+            } catch (e) {
+                finish(false);
+                return;
+            }
+
+            source.addEventListener('probe', (e) => {
+                let payload = null;
+                try { payload = JSON.parse(e.data); } catch (_) { /* malformed */ }
+                if (!payload) return;
+
+                if (payload.phase === 1) {
+                    phase1ClientTs = Date.now();
+                } else if (payload.phase === 2 && phase1ClientTs !== null) {
+                    const gap = Date.now() - phase1ClientTs;
+                    finish(gap >= STREAMING_THRESHOLD_MS);
+                }
+            });
+
+            source.onerror = () => finish(false);
+
+            setTimeout(() => finish(false), timeoutMs);
+        });
+    }
+
+    /**
      * 설치 시작 (SSE / 폴링 듀얼 모드)
      */
     async function startInstallation(modeOverride = null) {
@@ -2762,11 +3173,43 @@
         // 작업 목록 렌더링
         renderTaskList();
 
-        // 모드 결정: 인자 > Step 5 라디오 값 > 'sse' 기본
+        // 모드 결정: 인자(명시 override) > SSE 호환성 사전 체크 > Step 5 라디오 값 > 'sse' 기본
+        //
+        // SSE 사전 체크 — sse-probe.php 의 두 phase 메시지 timing 으로 streaming 호환성 판정.
+        // 비호환 시 사용자에게 폴링 모드 진행 여부를 명시적으로 확인 (자동 진행 안 함).
         let installationMode = modeOverride;
         if (!installationMode) {
             const modeRadio = document.querySelector('input[name="installation_mode"]:checked');
-            installationMode = modeRadio ? modeRadio.value : 'sse';
+            const radioMode = modeRadio ? modeRadio.value : null;
+
+            if (radioMode === 'polling') {
+                // 사용자가 명시 폴링 선택 — probe 생략
+                installationMode = 'polling';
+            } else {
+                // SSE 호환성 probe (5초 timeout — 서버 sleep 2초 + 여유)
+                const sseCompatible = await detectSseCompatibility(5000);
+
+                if (sseCompatible) {
+                    installationMode = 'sse';
+                } else {
+                    // 비호환 — 사용자에게 폴링 모드 진행 여부 명시 confirm
+                    const proceedWithPolling = window.confirm(lang('sse_probe_incompat_use_polling'));
+                    if (!proceedWithPolling) {
+                        // 사용자 취소 — 시작 화면 복원 (진행 미시작)
+                        installationStarted = false;
+                        hideAbortButton();
+                        showInstallationStartSection();
+                        return;
+                    }
+                    installationMode = 'polling';
+                }
+
+                // 결정된 모드를 라디오에 반영 (시각적 일관성)
+                const reflectedRadio = document.querySelector(`input[name="installation_mode"][value="${installationMode}"]`);
+                if (reflectedRadio) {
+                    reflectedRadio.checked = true;
+                }
+            }
         }
 
         try {
@@ -2852,21 +3295,11 @@
                     showError(errorMessage, errorDetail, failedTaskId);
                 },
                 onConnectionTimeout: () => {
-                    // SSE 연결 실패 → 폴링 모드로 자동 폴백 제안
+                    // SSE 모드에서 연결 timeout 시 — 사전 체크 통과 후의 예외 케이스라
+                    // 자동 폴링 fallback 대신 사용자에게 명시적 에러 노출. 사용자가 페이지를
+                    // 새로고침하면 sse-probe 재실행으로 모드 재결정.
                     if (installationCompleted) return;
-
-                    const confirmMsg = lang('sse_fallback_confirm');
-                    if (window.confirm(confirmMsg)) {
-                        // 폴링 모드로 재시도
-                        const pollingRadio = document.querySelector('input[name="installation_mode"][value="polling"]');
-                        if (pollingRadio) {
-                            pollingRadio.checked = true;
-                        }
-                        installationStarted = false;
-                        startInstallation('polling');
-                    } else {
-                        showError(lang('sse_connection_timeout'), lang('sse_server_config_guide'));
-                    }
+                    showError(lang('sse_connection_timeout'), lang('sse_server_config_guide'));
                 },
             };
 
@@ -3209,6 +3642,21 @@
                 completionSection.style.opacity = '1';
             }, 100);
         }
+
+        // .env 최종 머지 — fire-and-forget. 응답을 기다리지 않으며,
+        // php artisan serve 의 .env mtime 워처가 트리거하는 워커 재시작은
+        // 완료 화면 노출 후 발생하므로 사용자 경험에 영향이 없다.
+        // keepalive: 탭 닫힘에도 요청 유지. catch: 워커 재시작으로 인한
+        // connection abort 를 에러로 표시하지 않는다 (의도된 동작).
+        try {
+            fetch('/install/api/finalize-env.php', {
+                method: 'POST',
+                keepalive: true,
+                headers: { 'X-Installer-Finalize': '1' },
+            }).catch(() => { /* 의도된 abort */ });
+        } catch (_) {
+            // fetch 자체가 실패해도 무시 — runtime.php 가 보존되어 다음 부팅 시 앱 정상 동작
+        }
     }
 
     /**
@@ -3537,6 +3985,11 @@
         if (modeCard) modeCard.style.display = '';
         if (warning) warning.style.display = 'none';
         if (progressCard) progressCard.style.display = 'none';
+
+        // 모드 선택 라디오 활성화 (사전 체크 취소 후 재시도 가능하도록)
+        document.querySelectorAll('input[name="installation_mode"]').forEach(input => {
+            input.disabled = false;
+        });
     }
 
     /**

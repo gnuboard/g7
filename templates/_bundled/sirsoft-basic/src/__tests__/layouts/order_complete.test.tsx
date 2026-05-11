@@ -163,21 +163,30 @@ const mockOrderDataVbank = {
 
 // ========== 테스트 스위트 ==========
 
+// Fragment 컴포넌트 — createLayoutTest() 가 최상위 Fragment 로 감싸므로 등록 필수
+const TestFragment: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
+  <>{children}</>
+);
+
 describe('주문 완료 페이지 레이아웃', () => {
   let testUtils: ReturnType<typeof createLayoutTest>;
 
   beforeEach(() => {
-    // 컴포넌트 레지스트리 초기화
-    ComponentRegistry.clear();
-    ComponentRegistry.register('basic', 'Div', TestDiv);
-    ComponentRegistry.register('basic', 'Span', TestSpan);
-    ComponentRegistry.register('basic', 'Button', TestButton);
-    ComponentRegistry.register('basic', 'H1', TestH1);
-    ComponentRegistry.register('basic', 'H3', TestH1);
-    ComponentRegistry.register('basic', 'P', TestP);
-    ComponentRegistry.register('basic', 'Icon', TestIcon);
-    ComponentRegistry.register('basic', 'Img', TestImg);
-    ComponentRegistry.register('layout', 'Container', TestDiv);
+    // ComponentRegistry 는 singleton + registry 는 private — (registry as any).registry
+    // 에 직접 할당하는 패턴으로 테스트 컴포넌트 주입 (기존 static register/clear API 제거됨)
+    const registry = ComponentRegistry.getInstance();
+    (registry as any).registry = {
+      Div: { component: TestDiv, metadata: { name: 'Div', type: 'basic' } },
+      Span: { component: TestSpan, metadata: { name: 'Span', type: 'basic' } },
+      Button: { component: TestButton, metadata: { name: 'Button', type: 'basic' } },
+      H1: { component: TestH1, metadata: { name: 'H1', type: 'basic' } },
+      H3: { component: TestH1, metadata: { name: 'H3', type: 'basic' } },
+      P: { component: TestP, metadata: { name: 'P', type: 'basic' } },
+      Icon: { component: TestIcon, metadata: { name: 'Icon', type: 'basic' } },
+      Img: { component: TestImg, metadata: { name: 'Img', type: 'basic' } },
+      Container: { component: TestDiv, metadata: { name: 'Container', type: 'layout' } },
+      Fragment: { component: TestFragment, metadata: { name: 'Fragment', type: 'layout' } },
+    };
   });
 
   afterEach(() => {
@@ -201,18 +210,17 @@ describe('주문 완료 페이지 레이아웃', () => {
             auto_fetch: true,
           },
         ],
-        children: [
+        components: [
           {
             type: 'basic',
             name: 'Div',
-            'data-testid': 'card-complete',
+            props: { 'data-testid': 'card-complete' },
             if: "{{orderData?.data?.payment?.payment_method === 'card'}}",
             children: [
               {
                 type: 'basic',
                 name: 'H1',
-                'data-testid': 'card-title',
-                text: '결제가 완료되었습니다',
+                props: { 'data-testid': 'card-title', text: '결제가 완료되었습니다' },
               },
             ],
           },
@@ -244,24 +252,28 @@ describe('주문 완료 페이지 레이아웃', () => {
             auto_fetch: true,
           },
         ],
-        children: [
+        components: [
           {
             type: 'basic',
             name: 'Div',
-            'data-testid': 'dbank-info',
+            props: { 'data-testid': 'dbank-info' },
             if: "{{orderData?.data?.payment?.payment_method === 'dbank'}}",
             children: [
               {
                 type: 'basic',
                 name: 'Span',
-                'data-testid': 'dbank-name',
-                text: '{{orderData?.data?.payment?.dbank_name}}',
+                props: {
+                  'data-testid': 'dbank-name',
+                  text: '{{orderData?.data?.payment?.dbank_name}}',
+                },
               },
               {
                 type: 'basic',
                 name: 'Span',
-                'data-testid': 'dbank-account',
-                text: '{{orderData?.data?.payment?.dbank_account}}',
+                props: {
+                  'data-testid': 'dbank-account',
+                  text: '{{orderData?.data?.payment?.dbank_account}}',
+                },
               },
             ],
           },
@@ -294,24 +306,28 @@ describe('주문 완료 페이지 레이아웃', () => {
             auto_fetch: true,
           },
         ],
-        children: [
+        components: [
           {
             type: 'basic',
             name: 'Div',
-            'data-testid': 'vbank-info',
+            props: { 'data-testid': 'vbank-info' },
             if: "{{orderData?.data?.payment?.payment_method === 'vbank'}}",
             children: [
               {
                 type: 'basic',
                 name: 'Span',
-                'data-testid': 'vbank-name',
-                text: '{{orderData?.data?.payment?.vbank_name}}',
+                props: {
+                  'data-testid': 'vbank-name',
+                  text: '{{orderData?.data?.payment?.vbank_name}}',
+                },
               },
               {
                 type: 'basic',
                 name: 'Span',
-                'data-testid': 'vbank-number',
-                text: '{{orderData?.data?.payment?.vbank_number}}',
+                props: {
+                  'data-testid': 'vbank-number',
+                  text: '{{orderData?.data?.payment?.vbank_number}}',
+                },
               },
             ],
           },
@@ -335,11 +351,9 @@ describe('주문 완료 페이지 레이아웃', () => {
       const saveAddressLayout = {
         version: '1.0.0',
         layout_name: 'test/order_complete_save_address',
-        state: {
-          _global: {
-            auth: {
-              isLoggedIn: true,
-            },
+        initGlobal: {
+          auth: {
+            isLoggedIn: true,
           },
         },
         data_sources: [
@@ -351,20 +365,18 @@ describe('주문 완료 페이지 레이아웃', () => {
             auto_fetch: true,
           },
         ],
-        children: [
+        components: [
           {
             type: 'basic',
             name: 'Button',
-            'data-testid': 'save-address-btn',
+            props: { 'data-testid': 'save-address-btn', text: '이 배송지를 저장하기' },
             if: '{{_global.auth?.isLoggedIn}}',
-            text: '이 배송지를 저장하기',
           },
         ],
       };
 
       testUtils = createLayoutTest(saveAddressLayout);
       testUtils.mockApi('orderData', { response: mockOrderDataCard });
-      testUtils.setGlobalState('auth', { isLoggedIn: true });
       await testUtils.render();
 
       await waitFor(() => {
@@ -377,11 +389,9 @@ describe('주문 완료 페이지 레이아웃', () => {
       const saveAddressLayout = {
         version: '1.0.0',
         layout_name: 'test/order_complete_guest',
-        state: {
-          _global: {
-            auth: {
-              isLoggedIn: false,
-            },
+        initGlobal: {
+          auth: {
+            isLoggedIn: false,
           },
         },
         data_sources: [
@@ -393,20 +403,18 @@ describe('주문 완료 페이지 레이아웃', () => {
             auto_fetch: true,
           },
         ],
-        children: [
+        components: [
           {
             type: 'basic',
             name: 'Button',
-            'data-testid': 'save-address-btn',
+            props: { 'data-testid': 'save-address-btn', text: '이 배송지를 저장하기' },
             if: '{{_global.auth?.isLoggedIn}}',
-            text: '이 배송지를 저장하기',
           },
         ],
       };
 
       testUtils = createLayoutTest(saveAddressLayout);
       testUtils.mockApi('orderData', { response: mockOrderDataCard });
-      testUtils.setGlobalState('auth', { isLoggedIn: false });
       await testUtils.render();
 
       // 버튼이 렌더링되지 않아야 함
@@ -428,11 +436,11 @@ describe('주문 완료 페이지 레이아웃', () => {
             auto_fetch: true,
           },
         ],
-        children: [
+        components: [
           {
             type: 'basic',
             name: 'Div',
-            'data-testid': 'order-items',
+            props: { 'data-testid': 'order-items' },
             children: [
               {
                 type: 'basic',
@@ -446,8 +454,10 @@ describe('주문 완료 페이지 레이아웃', () => {
                   {
                     type: 'basic',
                     name: 'P',
-                    'data-testid': 'product-name',
-                    text: '{{item.product_name}}',
+                    props: {
+                      'data-testid': 'product-name',
+                      text: '{{item.product_name}}',
+                    },
                   },
                 ],
               },

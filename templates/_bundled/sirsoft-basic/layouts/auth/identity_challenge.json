@@ -1,0 +1,536 @@
+{
+  "version": "1.0.0",
+  "layout_name": "auth/identity_challenge",
+  "extends": "_user_base",
+  "meta": {
+    "title": "$t:user.identity.challenge.title"
+  },
+  "state": {
+    "code": "",
+    "resendCooldown": 0,
+    "attempts": 0,
+    "maxAttempts": 5,
+    "expiresAt": null,
+    "remainingSeconds": 0,
+    "error": null
+  },
+  "data_sources": [
+    {
+      "id": "challenge",
+      "type": "api",
+      "endpoint": "/api/identity/challenges/{{query.challenge_id}}",
+      "method": "GET",
+      "auto_fetch": false,
+      "fallback": {
+        "data": {
+          "id": "{{query.challenge_id ?? ''}}",
+          "render_hint": "{{query.render_hint ?? 'text_code'}}",
+          "purpose": "{{query.purpose ?? ''}}",
+          "redirect_url": "{{query.redirect_url ?? ''}}",
+          "expires_at": "{{query.expires_at ?? ''}}"
+        }
+      }
+    }
+  ],
+  "init_actions": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "challenge_id": "{{query.challenge_id ?? ''}}",
+        "render_hint": "{{query.render_hint ?? 'text_code'}}",
+        "purpose": "{{query.purpose ?? 'signup'}}",
+        "return_url": "{{query.return_url ?? '/'}}",
+        "redirect_url": "{{query.redirect_url ?? ''}}",
+        "expiresAt": "{{query.expires_at ?? ''}}",
+        "remainingSeconds": "{{query.expires_at ? Math.max(0, Math.floor((new Date(query.expires_at).getTime() - Date.now()) / 1000)) : 0}}",
+        "attempts": "{{Number(query.attempts ?? 0)}}",
+        "maxAttempts": "{{Number(query.max_attempts ?? 5)}}",
+        "resendCooldown": 0
+      }
+    },
+    {
+      "handler": "startInterval",
+      "params": {
+        "id": "identity_challenge_tick",
+        "intervalMs": 1000,
+        "actions": [
+          {
+            "handler": "setState",
+            "params": {
+              "target": "local",
+              "remainingSeconds": "{{_local.expiresAt ? Math.max(0, Math.floor((new Date(_local.expiresAt).getTime() - Date.now()) / 1000)) : 0}}",
+              "resendCooldown": "{{Math.max(0, (_local.resendCooldown ?? 0) - 1)}}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "min-h-[60vh] flex items-center justify-center py-12 px-4"
+        },
+        "children": [
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+              "className": "w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-8"
+            },
+            "responsive": {
+              "portable": {
+                "props": {
+                  "className": "w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+                }
+              }
+            },
+            "children": [
+              {
+                "comment": "S4 — render_hint = text_code (OTP 코드 입력)",
+                "type": "basic",
+                "name": "Div",
+                "if": "{{(_local.render_hint ?? 'text_code') === 'text_code'}}",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "text-center mb-6"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "H1",
+                        "props": {
+                          "className": "text-2xl font-bold text-gray-900 dark:text-white mb-2"
+                        },
+                        "text": "$t:user.identity.challenge.code_title"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                          "className": "text-sm text-gray-600 dark:text-gray-400"
+                        },
+                        "text": "$t:user.identity.challenge.code_subtitle"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.error}}",
+                    "props": {
+                      "className": "mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                          "className": "text-sm text-red-700 dark:text-red-300"
+                        },
+                        "text": "{{_local.error ?? ''}}"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "space-y-4"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Input",
+                        "props": {
+                          "type": "text",
+                          "name": "code",
+                          "inputMode": "numeric",
+                          "autoComplete": "one-time-code",
+                          "placeholder": "$t:user.identity.challenge.code_placeholder",
+                          "maxLength": 10,
+                          "className": "w-full px-4 py-3 text-center text-xl tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        }
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                          "className": "flex items-center justify-between text-sm",
+                          "role": "status",
+                          "aria-live": "polite"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(_local.remainingSeconds ?? 0) > 0}}",
+                            "props": {
+                              "className": "text-gray-600 dark:text-gray-400"
+                            },
+                            "text": "$t:user.identity.challenge.remaining_time|minutes={{Math.floor((_local.remainingSeconds ?? 0) / 60)}}|seconds={{String((_local.remainingSeconds ?? 0) % 60).padStart(2, '0')}}"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(_local.remainingSeconds ?? 0) <= 0 && _local.expiresAt}}",
+                            "props": {
+                              "className": "text-red-600 dark:text-red-400"
+                            },
+                            "text": "$t:user.identity.challenge.expired"
+                          },
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                              "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:user.identity.challenge.remaining_attempts|count={{Math.max(0, (_local.maxAttempts ?? 5) - (_local.attempts ?? 0))}}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Button",
+                        "props": {
+                          "type": "button",
+                          "className": "w-full px-4 py-3 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors",
+                          "disabled": "{{!_local.code || _local.code.length < 4 || (_local.remainingSeconds ?? 0) <= 0 || (_local.attempts ?? 0) >= (_local.maxAttempts ?? 5)}}"
+                        },
+                        "actions": [
+                          {
+                            "type": "click",
+                            "handler": "sequence",
+                            "params": {
+                              "actions": [
+                                {
+                                  "handler": "setState",
+                                  "params": {
+                                    "target": "local",
+                                    "error": null
+                                  }
+                                },
+                                {
+                                  "handler": "apiCall",
+                                  "target": "/api/identity/challenges/{{_local.challenge_id}}/verify",
+                                  "params": {
+                                    "method": "POST",
+                                    "body": {
+                                      "code": "{{_local.code ?? ''}}"
+                                    }
+                                  },
+                                  "onSuccess": [
+                                    {
+                                      "comment": "코어 IdentityGuardInterceptor 의 deferred resolver 가 살아있다면(launcher 미등록 폴백으로 풀페이지 진입) verify 결과 통보 — defaultLauncher 폴백 흐름 일관성 확보",
+                                      "handler": "resolveIdentityChallenge",
+                                      "params": {
+                                        "result": "verified",
+                                        "token": "{{response.data.verification_token ?? ''}}"
+                                      }
+                                    },
+                                    {
+                                      "handler": "navigate",
+                                      "params": {
+                                        "path": "{{_local.return_url ?? '/'}}",
+                                        "mergeQuery": true,
+                                        "query": {
+                                          "verification_token": "{{response.data.verification_token ?? ''}}",
+                                          "challenge_id": "{{_local.challenge_id}}"
+                                        }
+                                      }
+                                    }
+                                  ],
+                                  "onError": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "local",
+                                        "error": "{{error.message ?? '$t:user.identity.challenge.error_generic'}}",
+                                        "attempts": "{{(_local.attempts ?? 0) + 1}}"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:user.identity.challenge.verify"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                          "className": "text-center"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                              "type": "button",
+                              "disabled": "{{(_local.resendCooldown ?? 0) > 0}}",
+                              "className": "text-sm text-indigo-600 dark:text-indigo-400 hover:underline disabled:text-gray-400 dark:disabled:text-gray-600 disabled:no-underline disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                              {
+                                "type": "click",
+                                "handler": "sequence",
+                                "params": {
+                                  "actions": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "local",
+                                        "resendCooldown": 30
+                                      }
+                                    },
+                                    {
+                                      "handler": "apiCall",
+                                      "target": "/api/identity/challenges",
+                                      "params": {
+                                        "method": "POST",
+                                        "body": {
+                                          "purpose": "{{_local.purpose ?? 'signup'}}",
+                                          "target": "{{query.target ?? ''}}"
+                                        }
+                                      },
+                                      "onSuccess": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "local",
+                                            "challenge_id": "{{response.data.id ?? _local.challenge_id}}",
+                                            "expiresAt": "{{response.data.expires_at ?? _local.expiresAt}}",
+                                            "remainingSeconds": "{{response.data.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : (_local.remainingSeconds ?? 0)}}",
+                                            "attempts": 0,
+                                            "error": null
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{(_local.resendCooldown ?? 0) > 0}}",
+                                "text": "$t:user.identity.challenge.resend_cooldown|seconds={{_local.resendCooldown ?? 0}}"
+                              },
+                              {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{(_local.resendCooldown ?? 0) <= 0}}",
+                                "text": "$t:user.identity.challenge.resend"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "comment": "S5 — render_hint = link (메일 링크 안내)",
+                "type": "basic",
+                "name": "Div",
+                "if": "{{(_local.render_hint ?? '') === 'link'}}",
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "text-center mb-6"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                          "className": "inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/40 rounded-full mb-4"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                              "name": "fas fa-envelope",
+                              "className": "text-3xl text-blue-600 dark:text-blue-400"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "H1",
+                        "props": {
+                          "className": "text-2xl font-bold text-gray-900 dark:text-white mb-2"
+                        },
+                        "text": "$t:user.identity.challenge.link_title"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                          "className": "text-sm text-gray-600 dark:text-gray-400"
+                        },
+                        "text": "$t:user.identity.challenge.link_subtitle"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "space-y-3"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Button",
+                        "props": {
+                          "type": "button",
+                          "className": "w-full px-4 py-3 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                        },
+                        "actions": [
+                          {
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/identity/challenges",
+                            "params": {
+                              "method": "POST",
+                              "body": {
+                                "purpose": "{{_local.purpose ?? 'password_reset'}}",
+                                "target": "{{query.target ?? ''}}"
+                              }
+                            },
+                            "onSuccess": [
+                              {
+                                "handler": "setState",
+                                "params": {
+                                  "target": "local",
+                                  "challenge_id": "{{response.data.id ?? _local.challenge_id}}"
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:user.identity.challenge.resend_link"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                          "className": "text-xs text-gray-500 dark:text-gray-400 text-center"
+                        },
+                        "text": "$t:user.identity.challenge.check_spam"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "comment": "S6 — render_hint = external_redirect (외부 리다이렉트 로딩)",
+                "type": "basic",
+                "name": "Div",
+                "if": "{{(_local.render_hint ?? '') === 'external_redirect'}}",
+                "init_actions": [
+                  {
+                    "handler": "redirect",
+                    "params": {
+                      "url": "{{_local.redirect_url ?? ''}}"
+                    },
+                    "if": "{{_local.redirect_url}}"
+                  }
+                ],
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                      "className": "text-center py-8"
+                    },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                          "className": "inline-flex items-center justify-center w-16 h-16 mb-4"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                              "name": "fas fa-spinner fa-spin",
+                              "className": "text-4xl text-indigo-600 dark:text-indigo-400"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "basic",
+                        "name": "H1",
+                        "props": {
+                          "className": "text-xl font-bold text-gray-900 dark:text-white mb-2"
+                        },
+                        "text": "$t:user.identity.challenge.external_title"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                          "className": "text-sm text-gray-600 dark:text-gray-400 mb-4"
+                        },
+                        "text": "$t:user.identity.challenge.external_subtitle"
+                      },
+                      {
+                        "type": "basic",
+                        "name": "A",
+                        "if": "{{_local.redirect_url}}",
+                        "props": {
+                          "href": "{{_local.redirect_url}}",
+                          "className": "inline-block px-4 py-2 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg"
+                        },
+                        "children": [
+                          {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:user.identity.challenge.manual_redirect"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

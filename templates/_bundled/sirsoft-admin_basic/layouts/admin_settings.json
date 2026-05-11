@@ -20,10 +20,56 @@
             "systemInfo",
             "appKey",
             "notificationDefinitions",
-            "availableChannels"
+            "availableChannels",
+            "identityProviders",
+            "identityPurposes",
+            "policies"
         ]
     },
     "data_sources": [
+        {
+            "id": "language_packs",
+            "type": "api",
+            "endpoint": "/api/admin/language-packs",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page}}",
+                "per_page": "{{query.per_page ?? 10}}",
+                "scope": "{{_local.filterScope || query.scope}}",
+                "target_identifier": "{{_local.filterTarget || query.target_identifier}}",
+                "locale": "{{query.locale}}",
+                "status": "{{query.status}}",
+                "search": "{{query.search}}",
+                "exclude_protected": "{{query.exclude_protected ?? '1'}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "meta": { "total": 0, "active": 0, "installed": 0, "inactive": 0, "error": 0 },
+                    "abilities": {}
+                }
+            }
+        },
+        {
+            "id": "language_pack_detail",
+            "type": "api",
+            "endpoint": "/api/admin/language-packs/{{_local.detailId}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "depends_on": ["_local.detailId"]
+        },
+        {
+            "id": "language_pack_changelog",
+            "type": "api",
+            "endpoint": "/api/admin/language-packs/{{_local.detailId}}/changelog",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "depends_on": ["_local.detailId"]
+        },
         {
             "id": "settings",
             "type": "api",
@@ -102,6 +148,86 @@
             "auth_required": true,
             "fallback": {
                 "data": []
+            }
+        },
+        {
+            "id": "identityProviders",
+            "type": "api",
+            "endpoint": "/api/admin/identity/providers",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "identityPurposes",
+            "type": "api",
+            "endpoint": "/api/identity/purposes",
+            "method": "GET",
+            "auto_fetch": true,
+            "fallback": {
+                "data": []
+            }
+        },
+        {
+            "id": "identityMessages",
+            "type": "api",
+            "endpoint": "/api/admin/identity/messages/definitions",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.messages_page || 1}}",
+                "per_page": "{{query.messages_per_page || 20}}",
+                "sort_by": "id",
+                "sort_order": "asc"
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            }
+        },
+        {
+            "id": "adminIdentityPolicies",
+            "type": "api",
+            "endpoint": "/api/admin/identity/policies",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "source_type": "admin",
+                "per_page": 100
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            }
+        },
+        {
+            "id": "policies",
+            "type": "api",
+            "endpoint": "/api/admin/identity/policies",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "scope": "{{query.scope}}",
+                "purpose": "{{query.purpose}}",
+                "source_type": "{{query.source_type}}",
+                "enabled": "{{query.enabled}}",
+                "search": "{{query.search}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 10}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "meta": {}
+                }
             }
         }
     ],
@@ -228,6 +354,14 @@
                                 {
                                     "id": "notification_definitions",
                                     "label": "$t:admin.settings.tabs.notification_definitions"
+                                },
+                                {
+                                    "id": "language_packs",
+                                    "label": "$t:admin.settings.tabs.language_packs"
+                                },
+                                {
+                                    "id": "identity",
+                                    "label": "$t:admin.settings.tabs.identity"
                                 },
                                 {
                                     "id": "info",
@@ -376,6 +510,12 @@
                                 "partial": "partials/admin_settings/_tab_notification_definitions.json"
                             },
                             {
+                                "partial": "partials/admin_settings/_tab_language_packs.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_identity.json"
+                            },
+                            {
                                 "partial": "partials/admin_settings/_tab_info.json"
                             }
                         ]
@@ -384,7 +524,7 @@
                         "id": "footer_buttons",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{!_computed.isReadOnly && (_global.activeSettingsTab || query.tab || 'general') !== 'info'}}",
+                        "if": "{{!_computed.isReadOnly && (_global.activeSettingsTab || query.tab || 'general') !== 'info' && (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}",
                         "props": {
                             "className": "flex justify-end gap-3 mt-6"
                         },
@@ -534,6 +674,27 @@
     },
     "modals": [
         {
+            "partial": "partials/admin_language_pack_list/_modal_install.json"
+        },
+        {
+            "partial": "partials/admin_language_pack_list/_modal_install_bundled.json"
+        },
+        {
+            "partial": "partials/admin_language_pack_list/_modal_detail.json"
+        },
+        {
+            "partial": "partials/admin_language_pack_list/_modal_update.json"
+        },
+        {
+            "partial": "partials/admin_language_pack_list/_modal_uninstall.json"
+        },
+        {
+            "partial": "partials/admin_language_pack_list/_modal_refresh_cache.json"
+        },
+        {
+            "partial": "partials/admin_language_pack_list/_drawer_manifest_preview.json"
+        },
+        {
             "partial": "partials/admin_settings/_modal_password_confirm.json"
         },
         {
@@ -556,6 +717,27 @@
         },
         {
             "partial": "partials/admin_settings/_modal_core_update_guide.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_identity_policy_form.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_identity_policy_delete.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_identity_message_template_form.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_identity_message_template_preview.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_identity_message_definition_add.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_identity_message_definition_delete.json"
+        },
+        {
+            "partial": "partials/admin_settings/_modal_identity_message_definition_reset.json"
         }
     ],
     "initLocal": {
@@ -570,7 +752,11 @@
         "checkingCoreUpdate": false,
         "coreUpdateInfo": null,
         "coreChangelog": null,
-        "loadingChangelog": false
+        "loadingChangelog": false,
+        "policyForm": null,
+        "policyErrors": null,
+        "policyIsNew": true,
+        "policyIsSaving": false
     },
     "init_actions": [
         {
@@ -580,7 +766,13 @@
                 "notificationDefinitionFilter": {
                     "search": "{{query.search || ''}}",
                     "searchType": "{{query.search_type || 'all'}}"
-                }
+                },
+                "filterScope": "{{query.scope || ''}}",
+                "filterStatus": "{{query.status || ''}}",
+                "filterLocale": "{{query.locale || ''}}",
+                "filterSearch": "{{query.search || ''}}",
+                "filterTarget": "",
+                "scopeLocked": false
             }
         }
     ]

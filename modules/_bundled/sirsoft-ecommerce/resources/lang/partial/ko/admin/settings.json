@@ -9,7 +9,8 @@
     "claim": "클래임",
     "shipping": "배송설정",
     "review_settings": "리뷰 설정",
-    "notification_definitions": "알림 설정"
+    "notification_definitions": "알림 설정",
+    "identity_policies": "본인인증 정책"
   },
   "save_success": "설정이 저장되었습니다.",
   "save_error": "설정 저장에 실패했습니다.",
@@ -477,6 +478,43 @@
       "rendered_subject": "렌더링된 제목",
       "rendered_body": "렌더링된 본문",
       "btn_close": "닫기"
+    }
+  },
+  "identity": {
+    "intro_title": "이커머스 본인인증 정책",
+    "intro": "이커머스 모듈이 선언한 정책과 운영자가 추가한 정책을 관리합니다. 결제 직전 본인 확인 등 도메인 특화 정책을 활성화할 수 있습니다.",
+    "purposes_section_title": "이 모듈이 등록한 본인인증 목적",
+    "purposes_section_description": "이커머스 모듈이 선언한 본인인증 목적입니다. 정책의 \"인증 목적\" 컬럼에서 선택할 수 있습니다.",
+    "purposes_empty": "이 모듈이 등록한 본인인증 목적이 없습니다.",
+    "allowed_channels": "허용 채널:",
+    "list_title": "정책 목록",
+    "add_policy": "정책 추가",
+    "empty": "등록된 정책이 없습니다.",
+    "edit": "편집",
+    "grace_minutes": "{minutes}분",
+    "enable_success": "정책이 활성화되었습니다.",
+    "disable_success": "정책이 비활성화되었습니다.",
+    "toggle_failed": "정책 상태 변경에 실패했습니다.",
+    "col": {
+      "key": "정책 키",
+      "scope": "범위",
+      "target": "대상",
+      "purpose": "목적",
+      "enabled": "활성",
+      "grace": "유예",
+      "source": "출처",
+      "actions": "작업"
+    },
+    "scope": {
+      "route": "라우트",
+      "hook": "훅",
+      "custom": "커스텀"
+    },
+    "source": {
+      "core": "코어",
+      "module": "모듈",
+      "plugin": "플러그인",
+      "admin": "관리자"
     }
   }
 }

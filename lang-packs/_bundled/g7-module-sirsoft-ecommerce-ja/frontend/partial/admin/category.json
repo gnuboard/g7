@@ -1,0 +1,87 @@
+{
+  "title": "カテゴリ管理",
+  "description": "イーコマース商品カテゴリを管理します。",
+  "tree": {
+    "title": "カテゴリ一覧",
+    "add": "カテゴリ追加",
+    "empty": "登録されたカテゴリがありません"
+  },
+  "empty": {
+    "title": "カテゴリを選択してください",
+    "description": "左側からカテゴリを選択するか、新しく追加してください"
+  },
+  "form": {
+    "new_category_title": "新規カテゴリ",
+    "edit_category_title": "カテゴリ編集",
+    "name": "カテゴリ名",
+    "name_placeholder": "カテゴリ名を入力してください",
+    "slug": "スラッグ",
+    "slug_placeholder": "category-slug",
+    "slug_hint": "スラッグは英小文字で始まる必要があり、英小文字/数字/ハイフン(-)のみ使用可能です。",
+    "description": "説明",
+    "description_placeholder": "カテゴリの説明を入力してください",
+    "parent_category": "親カテゴリ",
+    "parent_category_placeholder": "親カテゴリを検索してください",
+    "parent_category_hint": "親カテゴリを選択するか、「最上位カテゴリ」を選択してください。",
+    "parent_top_level": "最上位カテゴリ",
+    "sort_order": "ソート順序",
+    "sort_order_hint": "同じレベル内でのソート順序(数字が小さいほど最初に表示されます)",
+    "is_active": "有効化",
+    "image": "カテゴリ画像",
+    "meta_title": "SEOメタタイトル",
+    "meta_description": "SEOメタ説明",
+    "confirm_remove_image_title": "画像削除",
+    "confirm_remove_image_message": "画像は直ちに削除されます。カテゴリの保存とは無関係に、復元できません。"
+  },
+  "info": {
+    "title": "カテゴリ情報",
+    "basic": "基本情報",
+    "name": "カテゴリ名",
+    "slug": "スラッグ",
+    "depth": "階層の深さ",
+    "order": "順序",
+    "path": "パス",
+    "status": "ステータス",
+    "description": "説明",
+    "image": "画像",
+    "image_click_to_enlarge": "画像をクリックすると拡大表示できます。",
+    "no_image": "画像が存在しません。",
+    "products_count": "登録商品",
+    "hierarchy_info": "階層情報",
+    "parent_category": "親カテゴリ",
+    "top_level": "最上位",
+    "child_categories": "子カテゴリ",
+    "no_children": "子カテゴリなし",
+    "children_count": "{{count}}個",
+    "seo": "SEO情報",
+    "system": "システム情報",
+    "statistics": "統計",
+    "product_count": "商品数",
+    "subcategory_count": "子カテゴリ数"
+  },
+  "delete_modal": {
+    "title": "カテゴリ削除",
+    "message_can_delete": ":attributeカテゴリを本当に削除しますか?",
+    "message_cannot_delete": ":attributeカテゴリは削除できません。",
+    "message_suffix": ":attributeカテゴリを本当に削除しますか?",
+    "cannot_delete_title": "削除できません",
+    "has_children_cannot_delete": "子カテゴリが{count}個あります。まず子カテゴリを削除してください。",
+    "has_products_cannot_delete": "関連する商品が{count}個あります。まず商品のカテゴリを変更してください。",
+    "irreversible_warning": "この操作は取り消せません。本当に削除しますか?"
+  },
+  "modal": {
+    "image_preview": {
+      "title": "画像プレビュー",
+      "close": "閉じる"
+    }
+  },
+  "messages": {
+    "created": "カテゴリが登録されました。",
+    "updated": "カテゴリが編集されました。",
+    "deleted": "カテゴリが削除されました。",
+    "order_updated": "カテゴリの順序が変更されました。",
+    "order_update_failed": "カテゴリの順序変更に失敗しました。",
+    "status_changed": "カテゴリのステータスが変更されました。",
+    "image_delete_failed": "画像削除に失敗しました。"
+  }
+}

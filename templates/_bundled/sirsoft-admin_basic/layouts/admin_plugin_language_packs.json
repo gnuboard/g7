@@ -1,0 +1,13 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_plugin_language_packs",
+    "permissions": ["core.language_packs.read"],
+    "extends": "admin_language_pack_list",
+    "meta": {
+        "title": "$t:admin.language_packs.page_title",
+        "description": "$t:admin.language_packs.page_description"
+    },
+    "state": {
+        "scopeContext": "plugin"
+    }
+}

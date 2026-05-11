@@ -40,6 +40,21 @@ interface ProgressEmitter
  */
 class SseEmitter implements ProgressEmitter
 {
+    /**
+     * connection 끊김 감지 후 종료 처리 락 (재진입 방지).
+     */
+    private bool $aborting = false;
+
+    /**
+     * 워커 lock owner ID (시나리오 B). null 이면 lock 무관 모드 (legacy).
+     */
+    private ?string $workerId;
+
+    public function __construct(?string $workerId = null)
+    {
+        $this->workerId = $workerId;
+    }
+
     public function emit(string $event, array $data): void
     {
         echo "event: {$event}\n";
@@ -49,15 +64,66 @@ class SseEmitter implements ProgressEmitter
         }
         flush();
 
-        // log 이벤트는 installation.log에도 기록
+        // log 이벤트는 installation.log에도 기록 (disconnect 감지 전에 우선 기록)
         if ($event === 'log' && isset($data['message'])) {
             addLog($data['message']);
         }
+
+        // 워커 lock heartbeat 갱신 — 자기가 owner 가 아니면 즉시 종료 (다른 워커 takeover)
+        $this->exitIfNotOwner();
+
+        // flush 직후 connection 상태 검사 — disconnect 면 워커 즉시 종료.
+        // 이슈 #319 부수 발견: SSE 워커가 disconnect 후 백그라운드에서 진행을
+        // 계속하여 폴링 워커와 race condition 발생. flush 시 EPIPE 가 발생해야
+        // connection_status() 가 NORMAL 외 값을 반환하므로 emit 마다 검사.
+        $this->exitIfDisconnected();
+    }
+
+    /**
+     * 자기가 워커 lock owner 가 아니면 워커 종료.
+     *
+     * 다른 워커가 stale takeover 한 경우 자기는 stale loser 이므로 즉시 종료하여
+     * race condition 차단. workerId 가 null 이면 lock 미사용 모드 (legacy).
+     */
+    private function exitIfNotOwner(): void
+    {
+        if ($this->workerId === null || $this->aborting) {
+            return;
+        }
+
+        if (refreshWorkerHeartbeat($this->workerId)) {
+            return;
+        }
+
+        $this->aborting = true;
+        addLog('=== SSE Worker lock lost — another worker took over, aborting ===');
+        exit(0);
     }
 
     public function isConnectionAborted(): bool
     {
-        return (bool) connection_aborted();
+        return connection_aborted() === 1 || connection_status() !== CONNECTION_NORMAL;
+    }
+
+    /**
+     * 클라이언트 연결이 끊겼으면 워커 프로세스를 즉시 종료한다.
+     *
+     * 폴링 워커가 같은 인스톨러 흐름에 진입한 직후, 백그라운드에서 살아있는
+     * SSE 워커가 DB 를 추가 조작하여 race 가 발생하는 것을 차단한다.
+     */
+    private function exitIfDisconnected(): void
+    {
+        if ($this->aborting) {
+            return;
+        }
+
+        if (! $this->isConnectionAborted()) {
+            return;
+        }
+
+        $this->aborting = true;
+        addLog('=== SSE Worker disconnected — aborting ===');
+        exit(0);
     }
 }
 
@@ -69,12 +135,30 @@ class SseEmitter implements ProgressEmitter
  */
 class NullEmitter implements ProgressEmitter
 {
+    /**
+     * 워커 lock owner ID (시나리오 B). null 이면 lock 무관 모드 (legacy).
+     */
+    private ?string $workerId;
+
+    /**
+     * lock 손실 후 종료 처리 락 (재진입 방지).
+     */
+    private bool $aborting = false;
+
+    public function __construct(?string $workerId = null)
+    {
+        $this->workerId = $workerId;
+    }
+
     public function emit(string $event, array $data): void
     {
         if ($event === 'log' && isset($data['message'])) {
             addLog($data['message']);
         }
         // 그 외 이벤트는 state.json 업데이트(task-runner.php 내부)로 커버됨
+
+        // 워커 lock heartbeat 갱신 — 자기가 owner 가 아니면 즉시 종료.
+        $this->exitIfNotOwner();
     }
 
     public function isConnectionAborted(): bool
@@ -82,6 +166,24 @@ class NullEmitter implements ProgressEmitter
         // 폴링 모드: fastcgi_finish_request() 이후 호출되므로 connection_aborted()는 의미 없음.
         // 사용자 중단은 state.json의 installation_status === 'aborted'로 감지.
         return false;
+    }
+
+    /**
+     * 자기가 워커 lock owner 가 아니면 워커 종료 (race 차단).
+     */
+    private function exitIfNotOwner(): void
+    {
+        if ($this->workerId === null || $this->aborting) {
+            return;
+        }
+
+        if (refreshWorkerHeartbeat($this->workerId)) {
+            return;
+        }
+
+        $this->aborting = true;
+        addLog('=== Polling Worker lock lost — another worker took over, aborting ===');
+        exit(0);
     }
 }
 

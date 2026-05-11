@@ -5,6 +5,9 @@ namespace App\Listeners;
 use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use App\Contracts\Repositories\ActivityLogRepositoryInterface;
+use App\Contracts\Repositories\ScheduleRepositoryInterface;
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Models\ActivityLog;
 use App\Models\Attachment;
 use App\Models\Schedule;
@@ -23,6 +26,17 @@ use Illuminate\Database\Eloquent\Model;
 class CoreActivityLogListener implements HookListenerInterface
 {
     use ResolvesActivityLogType;
+
+    /**
+     * @param  ActivityLogRepositoryInterface  $activityLogRepository  활동 로그 Repository
+     * @param  UserRepositoryInterface  $userRepository  사용자 Repository (bulk lookup)
+     * @param  ScheduleRepositoryInterface  $scheduleRepository  스케줄 Repository (bulk lookup)
+     */
+    public function __construct(
+        protected ActivityLogRepositoryInterface $activityLogRepository,
+        protected UserRepositoryInterface $userRepository,
+        protected ScheduleRepositoryInterface $scheduleRepository,
+    ) {}
 
     /**
      * 구독할 훅과 메서드 매핑 반환
@@ -49,6 +63,15 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.auth.forgot_password' => ['method' => 'handleAuthForgotPassword', 'priority' => 20],
             'core.auth.reset_password' => ['method' => 'handleAuthResetPassword', 'priority' => 20],
             'core.auth.record_consents' => ['method' => 'handleAuthRecordConsents', 'priority' => 20],
+            'core.auth.login_failed' => ['method' => 'handleAuthLoginFailed', 'priority' => 20],
+            'core.auth.account_locked' => ['method' => 'handleAuthAccountLocked', 'priority' => 20],
+
+            // ─── IdentityVerification (IDV) ───
+            // DTO(VerificationChallenge/VerificationResult) 를 인자로 받으므로 sync 실행 필수
+            // (큐 직렬화 대상에 POPO 는 포함되지 않아 queue 시 null 전달됨)
+            'core.identity.after_request' => ['method' => 'handleIdentityRequested', 'priority' => 20, 'sync' => true],
+            'core.identity.after_verify' => ['method' => 'handleIdentityVerified', 'priority' => 20, 'sync' => true],
+            'core.identity.challenge_expired' => ['method' => 'handleIdentityExpired', 'priority' => 20, 'sync' => true],
 
             // ─── Role ───
             'core.role.after_create' => ['method' => 'handleRoleAfterCreate', 'priority' => 20],
@@ -177,7 +200,7 @@ class CoreActivityLogListener implements HookListenerInterface
     {
         // user 삭제 시 activity_logs.user_id를 NULL 처리 (FK 제거됨 — 파티셔닝 호환)
         if (isset($userData['id'])) {
-            ActivityLog::where('user_id', $userData['id'])->update(['user_id' => null]);
+            $this->activityLogRepository->anonymizeUserId((int) $userData['id']);
         }
 
         $this->logActivity('user.delete', [
@@ -248,10 +271,11 @@ class CoreActivityLogListener implements HookListenerInterface
      * @param array $uuids 대상 UUID 목록
      * @param string $status 변경된 상태
      * @param int $updatedCount 변경된 수
+     * @param array $snapshots 변경 전 스냅샷 (uuid => snapshot)
      */
     public function handleUserAfterBulkUpdate(array $uuids, string $status, int $updatedCount, array $snapshots = []): void
     {
-        $users = User::whereIn('uuid', $uuids)->get()->keyBy('uuid');
+        $users = $this->userRepository->findManyByUuidsKeyed($uuids);
 
         foreach ($uuids as $uuid) {
             $user = $users->get($uuid);
@@ -353,16 +377,51 @@ class CoreActivityLogListener implements HookListenerInterface
      *
      * @param User $user 동의한 사용자
      * @param array $data 동의 데이터
-     * @param string $agreedAt 동의 시각
-     * @param string $ip IP 주소
+     * @param string|null $agreedAt 동의 시각 (DispatchHookListenerJob 역직렬화 과정에서 null 가능)
+     * @param string|null $ip IP 주소
      */
-    public function handleAuthRecordConsents(User $user, array $data, string $agreedAt, string $ip): void
+    public function handleAuthRecordConsents(User $user, array $data, ?string $agreedAt = null, ?string $ip = null): void
     {
         $this->logActivity('auth.record_consents', [
             'loggable' => $user,
             'description_key' => 'activity_log.description.auth_record_consents',
             'user_id' => $user->id,
             'ip_address' => $ip,
+        ]);
+    }
+
+    /**
+     * 로그인 실패 로그 기록 (사용자 존재 여부와 무관)
+     *
+     * @param string $email 시도된 이메일
+     * @param array $context IP/UA/시각 등 부가 정보
+     */
+    public function handleAuthLoginFailed(string $email, array $context = []): void
+    {
+        $this->logActivity('auth.login_failed', [
+            'description_key' => 'activity_log.description.auth_login_failed',
+            'description_params' => ['email' => $email],
+            'ip_address' => $context['ip_address'] ?? null,
+        ]);
+    }
+
+    /**
+     * 계정 잠금 로그 기록
+     *
+     * @param User $user 잠긴 사용자
+     * @param array $context attempts/locked_until/lockout_minutes/IP
+     */
+    public function handleAuthAccountLocked(User $user, array $context = []): void
+    {
+        $this->logActivity('auth.account_locked', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.auth_account_locked',
+            'description_params' => [
+                'attempts' => $context['attempts'] ?? null,
+                'minutes' => $context['lockout_minutes'] ?? null,
+            ],
+            'user_id' => $user->id,
+            'ip_address' => $context['ip_address'] ?? null,
         ]);
     }
 
@@ -653,10 +712,11 @@ class CoreActivityLogListener implements HookListenerInterface
      * @param array $ids 대상 ID 목록
      * @param bool $isActive 활성화 여부
      * @param int $updatedCount 변경된 수
+     * @param array $snapshots 변경 전 스냅샷 (id => snapshot)
      */
     public function handleScheduleAfterBulkUpdate(array $ids, bool $isActive, int $updatedCount, array $snapshots = []): void
     {
-        $schedules = Schedule::whereIn('id', $ids)->get()->keyBy('id');
+        $schedules = $this->scheduleRepository->findManyByIdsKeyed($ids);
 
         foreach ($ids as $id) {
             $schedule = $schedules->get($id);
@@ -682,6 +742,7 @@ class CoreActivityLogListener implements HookListenerInterface
      *
      * @param array $ids 대상 ID 목록
      * @param int $deletedCount 삭제된 수
+     * @param array $snapshots 삭제 전 스냅샷 (id => snapshot)
      */
     public function handleScheduleAfterBulkDelete(array $ids, int $deletedCount, array $snapshots = []): void
     {
@@ -721,9 +782,9 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 첨부파일 삭제 후 로그 기록
      *
-     * @param Model $attachment 삭제된 첨부파일
+     * @param Model|null $attachment 삭제된 첨부파일 (DispatchHookListenerJob 역직렬화 과정에서 null 가능)
      */
-    public function handleAttachmentAfterDelete(Model $attachment): void
+    public function handleAttachmentAfterDelete(?Model $attachment = null): void
     {
         $this->logActivity('attachment.delete', [
             'description_key' => 'activity_log.description.attachment_delete',
@@ -794,9 +855,8 @@ class CoreActivityLogListener implements HookListenerInterface
      * 모듈 비활성화 후 로그 기록
      *
      * @param string $moduleName 모듈 식별자
-     * @param array $moduleInfo 모듈 정보
      */
-    public function handleModuleAfterDeactivate(string $moduleName, array $moduleInfo): void
+    public function handleModuleAfterDeactivate(string $moduleName): void
     {
         $this->logActivity('module.deactivate', [
             'description_key' => 'activity_log.description.module_deactivate',
@@ -887,9 +947,8 @@ class CoreActivityLogListener implements HookListenerInterface
      * 플러그인 비활성화 후 로그 기록
      *
      * @param string $pluginName 플러그인 식별자
-     * @param array $pluginInfo 플러그인 정보
      */
-    public function handlePluginAfterDeactivate(string $pluginName, array $pluginInfo): void
+    public function handlePluginAfterDeactivate(string $pluginName): void
     {
         $this->logActivity('plugin.deactivate', [
             'description_key' => 'activity_log.description.plugin_deactivate',
@@ -964,13 +1023,13 @@ class CoreActivityLogListener implements HookListenerInterface
     /**
      * 템플릿 비활성화 후 로그 기록
      *
-     * @param array $templateInfo 템플릿 정보
+     * @param string $identifier 템플릿 식별자
      */
-    public function handleTemplateAfterDeactivate(array $templateInfo): void
+    public function handleTemplateAfterDeactivate(string $identifier): void
     {
         $this->logActivity('template.deactivate', [
             'description_key' => 'activity_log.description.template_deactivate',
-            'description_params' => ['template_name' => $templateInfo['identifier'] ?? ''],
+            'description_params' => ['template_name' => $identifier],
         ]);
     }
 
@@ -1121,6 +1180,75 @@ class CoreActivityLogListener implements HookListenerInterface
         $this->logActivity('plugin_settings.reset', [
             'description_key' => 'activity_log.description.plugin_settings_reset',
             'description_params' => ['plugin_name' => $identifier],
+        ]);
+    }
+
+    // ─────────────────────────────────────────────
+    // IdentityVerification (IDV) 핸들러
+    // ─────────────────────────────────────────────
+
+    /**
+     * 본인인증 challenge 요청 후 로그 기록.
+     *
+     * @param  \App\Extension\IdentityVerification\DTO\VerificationChallenge  $challenge
+     * @param  string  $purpose
+     * @param  \App\Models\User|array  $target
+     * @param  array  $context
+     */
+    public function handleIdentityRequested($challenge, string $purpose, $target, array $context = []): void
+    {
+        $this->logActivity('identity.request', [
+            'description_key' => 'identity.logs.activity.requested',
+            'description_params' => [
+                'email' => is_object($target) ? ($target->email ?? '') : (string) ($target['email'] ?? ''),
+            ],
+            'properties' => [
+                'provider_id' => $challenge->providerId ?? null,
+                'purpose' => $purpose,
+                'render_hint' => $challenge->renderHint ?? null,
+            ],
+        ]);
+    }
+
+    /**
+     * 본인인증 검증 후 로그 기록 (성공·실패 공통 디스패치).
+     *
+     * @param  \App\Extension\IdentityVerification\DTO\VerificationResult  $result
+     * @param  \App\Models\IdentityVerificationLog|null  $log
+     * @param  array  $context
+     */
+    public function handleIdentityVerified($result, $log, array $context = []): void
+    {
+        $action = $result->success ? 'identity.verify' : 'identity.verify_failed';
+        $key = $result->success
+            ? 'identity.logs.activity.verified'
+            : 'identity.logs.activity.failed';
+
+        $this->logActivity($action, [
+            'description_key' => $key,
+            'description_params' => [],
+            'properties' => [
+                'provider_id' => $result->providerId ?? null,
+                'challenge_id' => $result->challengeId ?? null,
+                'failure_code' => $result->failureCode ?? null,
+            ],
+        ]);
+    }
+
+    /**
+     * 본인인증 challenge 만료 로그 기록.
+     *
+     * @param  \App\Models\IdentityVerificationLog  $log
+     */
+    public function handleIdentityExpired($log): void
+    {
+        $this->logActivity('identity.expired', [
+            'description_key' => 'identity.logs.activity.expired',
+            'description_params' => [],
+            'properties' => [
+                'provider_id' => $log->provider_id ?? null,
+                'purpose' => $log->purpose ?? null,
+            ],
         ]);
     }
 

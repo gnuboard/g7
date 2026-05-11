@@ -2,10 +2,15 @@
 
 namespace Tests\Unit\Rules;
 
+use App\Models\User;
 use App\Rules\ExcludeCurrentUser;
 use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
+/**
+ * ExcludeCurrentUser Rule 은 Auth::user()?->uuid 를 기준으로 검증한다.
+ * 이전 Auth::id() 정수 비교 방식에서 UUID 비교로 변경됨 (리팩토링 반영).
+ */
 class ExcludeCurrentUserTest extends TestCase
 {
     private ExcludeCurrentUser $rule;
@@ -17,18 +22,18 @@ class ExcludeCurrentUserTest extends TestCase
     }
 
     /**
-     * 로그인한 사용자가 ID 목록에 포함된 경우 검증 실패
+     * 로그인한 사용자의 uuid 가 ID 목록에 포함된 경우 검증 실패
      */
     public function test_fails_when_current_user_is_in_ids(): void
     {
-        // DB 없이 테스트 - Auth::id()만 모킹
-        $userId = 123;
-        Auth::shouldReceive('id')->andReturn($userId);
+        $currentUuid = 'user-uuid-current';
+        $user = (new User)->forceFill(['uuid' => $currentUuid]);
+        Auth::shouldReceive('user')->andReturn($user);
 
         $failCalled = false;
         $failMessage = '';
 
-        $this->rule->validate('ids', [$userId, 2, 3], function ($message) use (&$failCalled, &$failMessage) {
+        $this->rule->validate('ids', [$currentUuid, 'other-1', 'other-2'], function ($message) use (&$failCalled, &$failMessage) {
             $failCalled = true;
             $failMessage = $message;
         });
@@ -38,15 +43,16 @@ class ExcludeCurrentUserTest extends TestCase
     }
 
     /**
-     * 로그인한 사용자가 ID 목록에 포함되지 않은 경우 검증 성공
+     * 로그인한 사용자의 uuid 가 ID 목록에 포함되지 않은 경우 검증 성공
      */
     public function test_passes_when_current_user_is_not_in_ids(): void
     {
-        Auth::shouldReceive('id')->andReturn(999);
+        $user = (new User)->forceFill(['uuid' => 'current-uuid']);
+        Auth::shouldReceive('user')->andReturn($user);
 
         $failCalled = false;
 
-        $this->rule->validate('ids', [1, 2, 3], function () use (&$failCalled) {
+        $this->rule->validate('ids', ['uuid-1', 'uuid-2', 'uuid-3'], function () use (&$failCalled) {
             $failCalled = true;
         });
 
@@ -58,11 +64,11 @@ class ExcludeCurrentUserTest extends TestCase
      */
     public function test_passes_when_user_is_not_authenticated(): void
     {
-        Auth::shouldReceive('id')->andReturn(null);
+        Auth::shouldReceive('user')->andReturn(null);
 
         $failCalled = false;
 
-        $this->rule->validate('ids', [1, 2, 3], function () use (&$failCalled) {
+        $this->rule->validate('ids', ['uuid-1', 'uuid-2'], function () use (&$failCalled) {
             $failCalled = true;
         });
 
@@ -74,7 +80,8 @@ class ExcludeCurrentUserTest extends TestCase
      */
     public function test_passes_when_value_is_not_array(): void
     {
-        Auth::shouldReceive('id')->andReturn(1);
+        $user = (new User)->forceFill(['uuid' => 'current-uuid']);
+        Auth::shouldReceive('user')->andReturn($user);
 
         $failCalled = false;
 
@@ -90,7 +97,8 @@ class ExcludeCurrentUserTest extends TestCase
      */
     public function test_passes_when_array_is_empty(): void
     {
-        Auth::shouldReceive('id')->andReturn(1);
+        $user = (new User)->forceFill(['uuid' => 'current-uuid']);
+        Auth::shouldReceive('user')->andReturn($user);
 
         $failCalled = false;
 
@@ -102,16 +110,18 @@ class ExcludeCurrentUserTest extends TestCase
     }
 
     /**
-     * 문자열 ID와 정수 ID의 느슨한 비교 테스트
+     * UUID 는 strict 비교이므로 정확히 일치해야 실패.
+     * (이전 테스트는 loose 비교 (1 == '1') 였으나 UUID 는 문자열 정합성 필수)
      */
-    public function test_fails_with_loose_comparison(): void
+    public function test_fails_with_exact_uuid_match(): void
     {
-        Auth::shouldReceive('id')->andReturn(1);
+        $uuid = 'exact-uuid-match';
+        $user = (new User)->forceFill(['uuid' => $uuid]);
+        Auth::shouldReceive('user')->andReturn($user);
 
         $failCalled = false;
 
-        // 문자열 '1'도 정수 1과 동일하게 처리
-        $this->rule->validate('ids', ['1', 2, 3], function () use (&$failCalled) {
+        $this->rule->validate('ids', [$uuid, 'other'], function () use (&$failCalled) {
             $failCalled = true;
         });
 

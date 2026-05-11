@@ -13,6 +13,7 @@ use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
@@ -24,6 +25,11 @@ use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\GithubHelper;
+use App\Providers\CoreServiceProvider;
+use App\Extension\Concerns\ResolvesExtensionSharedRecords;
+use App\Extension\Helpers\IdentityMessageSyncHelper;
+use App\Extension\Helpers\IdentityPolicySyncHelper;
+use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
@@ -45,6 +51,7 @@ use Illuminate\Support\Facades\Schema;
 
 class ModuleManager implements ModuleManagerInterface
 {
+    use ResolvesExtensionSharedRecords;
     use Traits\CachesModuleStatus;
     use Traits\ClearsTemplateCaches;
     use Traits\ComputesLayoutContentHash;
@@ -297,6 +304,8 @@ class ModuleManager implements ModuleManagerInterface
      *
      * @param  string  $moduleName  설치할 모듈명
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  VendorMode  $vendorMode  vendor 디렉토리 처리 모드
+     * @param  bool  $force  강제 설치 여부
      * @return bool 설치 성공 여부
      *
      * @throws \Exception 모듈을 찾을 수 없거나 의존성 문제 시
@@ -449,6 +458,15 @@ class ModuleManager implements ModuleManagerInterface
             // 관리자 메뉴 자동 생성
             $this->createModuleMenus($module);
 
+            // IDV 정책 자동 동기화 (identity_policies 테이블)
+            $this->syncModuleIdentityPolicies($module);
+
+            // IDV 메시지 정의/템플릿 자동 동기화 (identity_message_definitions / identity_message_templates)
+            $this->syncModuleIdentityMessages($module);
+
+            // 알림 정의/템플릿 자동 동기화 (notification_definitions / notification_templates)
+            $this->syncModuleNotificationDefinitions($module);
+
             DB::commit();
 
         } catch (\Exception $e) {
@@ -517,6 +535,15 @@ class ModuleManager implements ModuleManagerInterface
             );
         }
 
+        // 코어 버전 호환성 사전 검증 (#306 sync 훅보다 앞쪽)
+        if (! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
+            CoreVersionChecker::validateExtension(
+                $module->getRequiredCoreVersion(),
+                $module->getIdentifier(),
+                'module'
+            );
+        }
+
         // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
         // 중첩 구조 ['modules' => [...], 'plugins' => [...]] 를 순회
         $missingModules = [];
@@ -577,6 +604,9 @@ class ModuleManager implements ModuleManagerInterface
         if ($result) {
             $this->moduleRepository->updateByIdentifier($module->getIdentifier(), [
                 'status' => ExtensionStatus::Active->value,
+                'deactivated_reason' => null,
+                'deactivated_at' => null,
+                'incompatible_required_version' => null,
                 'updated_by' => Auth::id(),
                 'updated_at' => now(),
             ]);
@@ -646,10 +676,16 @@ class ModuleManager implements ModuleManagerInterface
      *
      * @param  string  $moduleName  비활성화할 모듈명
      * @param  bool  $force  의존 확장이 있어도 강제 비활성화 여부
+     * @param  string  $reason  비활성화 사유 (DeactivationReason enum value: manual|incompatible_core)
+     * @param  string|null  $incompatibleRequiredVersion  incompatible_core 사유 시 요구된 코어 버전 제약
      * @return array{success: bool, layouts_deleted: int, warning?: bool, dependent_templates?: array, dependent_modules?: array, dependent_plugins?: array, message?: string} 비활성화 결과 및 삭제된 레이아웃 개수
      */
-    public function deactivateModule(string $moduleName, bool $force = false): array
-    {
+    public function deactivateModule(
+        string $moduleName,
+        bool $force = false,
+        string $reason = DeactivationReason::Manual->value,
+        ?string $incompatibleRequiredVersion = null,
+    ): array {
         $module = $this->getModule($moduleName);
         if (! $module) {
             return ['success' => false, 'layouts_deleted' => 0];
@@ -708,6 +744,9 @@ class ModuleManager implements ModuleManagerInterface
         if ($result) {
             $this->moduleRepository->updateByIdentifier($module->getIdentifier(), [
                 'status' => ExtensionStatus::Inactive->value,
+                'deactivated_reason' => $reason,
+                'deactivated_at' => now(),
+                'incompatible_required_version' => $incompatibleRequiredVersion,
                 'updated_by' => Auth::id(),
                 'updated_at' => now(),
             ]);
@@ -732,6 +771,9 @@ class ModuleManager implements ModuleManagerInterface
 
             // 모듈 상태 캐시 무효화
             self::invalidateModuleStatusCache();
+
+            // PO #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
+            HookManager::doAction('core.modules.after_deactivate', $module->getIdentifier());
         }
 
         return ['success' => $result, 'layouts_deleted' => $layoutsDeleted];
@@ -828,6 +870,45 @@ class ModuleManager implements ModuleManagerInterface
                 // PO 정책: "동적 권한/메뉴는 '데이터도 함께 삭제' 옵션 체크 시에만 삭제"
                 if ($deleteData) {
                     $this->removeModulePermissionsAndMenus($module);
+
+                    // IDV 정책도 data 옵션 선택 시 제거 (동일 정책 — 재설치 시 user_overrides 손실 허용)
+                    if (Schema::hasTable('identity_policies')) {
+                        try {
+                            app(IdentityPolicySyncHelper::class)
+                                ->cleanupStalePolicies('module', $module->getIdentifier(), []);
+                        } catch (\Throwable $e) {
+                            Log::warning('IDV 정책 정리 실패 (uninstall)', [
+                                'module' => $module->getIdentifier(),
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    // IDV 메시지 정의/템플릿도 data 옵션 선택 시 제거 (FK cascade 로 templates 자동 정리)
+                    if (Schema::hasTable('identity_message_definitions')) {
+                        try {
+                            app(IdentityMessageSyncHelper::class)
+                                ->cleanupStaleDefinitions('module', $module->getIdentifier(), []);
+                        } catch (\Throwable $e) {
+                            Log::warning('IDV 메시지 정리 실패 (uninstall)', [
+                                'module' => $module->getIdentifier(),
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    // 알림 정의/템플릿도 data 옵션 선택 시 제거 (FK cascade 로 templates 자동 정리)
+                    if (Schema::hasTable('notification_definitions')) {
+                        try {
+                            app(NotificationSyncHelper::class)
+                                ->cleanupStaleDefinitions('module', $module->getIdentifier(), []);
+                        } catch (\Throwable $e) {
+                            Log::warning('알림 정의 정리 실패 (uninstall)', [
+                                'module' => $module->getIdentifier(),
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
                 }
 
                 // 모듈 레이아웃 영구 삭제
@@ -970,6 +1051,7 @@ class ModuleManager implements ModuleManagerInterface
                     'status' => 'uninstalled',
                     'is_pending' => false,
                     'is_bundled' => false,
+                    'hidden' => $module->isHidden(),
                     'assets' => $assets,
                 ];
             }
@@ -988,6 +1070,7 @@ class ModuleManager implements ModuleManagerInterface
                     'status' => 'uninstalled',
                     'is_pending' => true,
                     'is_bundled' => false,
+                    'hidden' => (bool) ($metadata['hidden'] ?? false),
                     'assets' => null,
                 ];
             }
@@ -1006,6 +1089,7 @@ class ModuleManager implements ModuleManagerInterface
                     'status' => 'uninstalled',
                     'is_pending' => false,
                     'is_bundled' => true,
+                    'hidden' => (bool) ($metadata['hidden'] ?? false),
                     'assets' => null,
                 ];
             }
@@ -1062,12 +1146,15 @@ class ModuleManager implements ModuleManagerInterface
                     $latestVersion = $bundledVersion ?? $fileVersion;
                 }
 
+                // 설치된 모듈은 DB row 의 다국어 컬럼 우선 (applyExtensionManifests 가 ja 등 주입).
+                $nameJson = $record->name ?: $module->getName();
+                $descriptionJson = $record->description ?: $module->getDescription();
                 $installedModules[$name] = [
                     'identifier' => $identifier,
                     'vendor' => $module->getVendor(),
-                    'name' => $this->getLocalizedValue($module->getName(), $locale),
+                    'name' => $this->getLocalizedValue($nameJson, $locale),
                     'version' => $record->version,
-                    'description' => $this->getLocalizedValue($module->getDescription(), $locale),
+                    'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $this->enrichDependencies($module->getDependencies()),
                     'status' => $record->status,
                     'update_available' => $updateAvailable,
@@ -1076,6 +1163,7 @@ class ModuleManager implements ModuleManagerInterface
                     'update_source' => $record->update_source ?? null,
                     'github_url' => $module->getGithubUrl(),
                     'github_changelog_url' => $record->github_changelog_url ?? null,
+                    'hidden' => $module->isHidden(),
                     'assets' => $assets,
                 ];
             }
@@ -1155,6 +1243,12 @@ class ModuleManager implements ModuleManagerInterface
         return $result;
     }
 
+    /**
+     * 모듈 상세 정보를 반환합니다.
+     *
+     * @param  string  $moduleName  모듈명
+     * @return array|null 모듈 정보 배열 또는 null
+     */
     public function getModuleInfo(string $moduleName): ?array
     {
         $module = $this->getModule($moduleName);
@@ -1185,12 +1279,17 @@ class ModuleManager implements ModuleManagerInterface
             }
         }
 
+        // 다국어 필드는 DB row(applyExtensionManifests 가 활성 언어팩 ja 등을 주입) 우선,
+        // 미설치 시 module.json 폴백.
+        $nameJson = $moduleRecord?->name ?: $module->getName();
+        $descriptionJson = $moduleRecord?->description ?: $module->getDescription();
+
         return [
             'identifier' => $identifier,
             'vendor' => $module->getVendor(),
-            'name' => $this->getLocalizedValue($module->getName(), $locale),
+            'name' => $this->getLocalizedValue($nameJson, $locale),
             'version' => $module->getVersion(),
-            'description' => $this->getLocalizedValue($module->getDescription(), $locale),
+            'description' => $this->getLocalizedValue($descriptionJson, $locale),
             'github_url' => $module->getGithubUrl(),
             'metadata' => $metadata,
             'requires_core' => $module->getRequiredCoreVersion(),
@@ -1776,17 +1875,22 @@ class ModuleManager implements ModuleManagerInterface
         $totalTableSize = array_sum(array_column($tablesInfo, 'size_bytes'));
         $totalStorageSize = array_sum(array_column($storageInfo, 'size_bytes'));
 
+        // 8. 코어 공유 테이블에 적재된 이 모듈의 데이터 (deleteData=true 시 정리 대상)
+        $sharedRecords = $this->resolveExtensionSharedRecords('module', $identifier);
+
         return [
             'tables' => $tablesInfo,
             'storage_directories' => $storageInfo,
             'vendor_directory' => $vendorInfo,
             'extension_directory' => $extensionDirInfo,
+            'shared_records' => $sharedRecords,
             'total_table_size_bytes' => $totalTableSize,
             'total_table_size_formatted' => $this->formatBytes($totalTableSize),
             'total_storage_size_bytes' => $totalStorageSize,
             'total_storage_size_formatted' => $this->formatBytes($totalStorageSize),
         ];
     }
+
 
     /**
      * 단일 마이그레이션 파일을 롤백합니다.
@@ -1867,6 +1971,14 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         $roles = $module->getRoles();
+
+        // 활성 언어팩이 module 의 roles 다국어 필드(name/description)에 추가 locale 을
+        // 주입할 수 있도록 필터 훅 적용 (LanguagePackSeedInjector::injectExtensionRoles 결선).
+        $roles = HookManager::applyFilters(
+            "module.{$module->getIdentifier()}.roles.translations",
+            $roles,
+        );
+
         $syncHelper = $this->getRoleSyncHelper();
 
         foreach ($roles as $role) {
@@ -1895,6 +2007,13 @@ class ModuleManager implements ModuleManagerInterface
         $permissionConfig = $module->getPermissions();
         $moduleIdentifier = $module->getIdentifier();
 
+        // 활성 언어팩이 권한 트리(module/categories/permissions 의 name/description) 에 추가
+        // locale 을 주입할 수 있도록 필터 훅 적용 (LanguagePackSeedInjector 결선).
+        $permissionConfig = HookManager::applyFilters(
+            "module.{$moduleIdentifier}.permissions.translations",
+            $permissionConfig,
+        );
+
         // 계층형 구조 여부 확인
         if (! isset($permissionConfig['categories'])) {
             return;
@@ -1909,10 +2028,10 @@ class ModuleManager implements ModuleManagerInterface
 
         // 이름/설명이 문자열인 경우 배열로 변환 (역호환)
         if (is_string($permName)) {
-            $permName = ['ko' => $permName, 'en' => $permName];
+            $permName = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $permName);
         }
         if (is_string($permDesc)) {
-            $permDesc = ['ko' => $permDesc, 'en' => $permDesc];
+            $permDesc = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $permDesc);
         }
 
         $moduleNode = $syncHelper->syncPermission(
@@ -1939,10 +2058,10 @@ class ModuleManager implements ModuleManagerInterface
             $catName = $categoryData['name'];
             $catDesc = $categoryData['description'];
             if (is_string($catName)) {
-                $catName = ['ko' => $catName, 'en' => $catName];
+                $catName = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $catName);
             }
             if (is_string($catDesc)) {
-                $catDesc = ['ko' => $catDesc, 'en' => $catDesc];
+                $catDesc = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $catDesc);
             }
 
             // 2레벨: 카테고리 권한 노드
@@ -1983,10 +2102,10 @@ class ModuleManager implements ModuleManagerInterface
                 $pName = $permData['name'];
                 $pDesc = $permData['description'];
                 if (is_string($pName)) {
-                    $pName = ['ko' => $pName, 'en' => $pName];
+                    $pName = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $pName);
                 }
                 if (is_string($pDesc)) {
-                    $pDesc = ['ko' => $pDesc, 'en' => $pDesc];
+                    $pDesc = array_fill_keys(config('app.translatable_locales', ['ko', 'en']), $pDesc);
                 }
 
                 // 모듈 정의에서 type을 읽거나, 없으면 admin 기본값
@@ -2087,6 +2206,14 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         $menus = $module->getAdminMenus();
+
+        // 활성 언어팩이 module 의 admin_menus 다국어 필드(name 등)에 추가 locale 을
+        // 주입할 수 있도록 필터 훅을 적용한다 (LanguagePackSeedInjector 가 결선).
+        $menus = HookManager::applyFilters(
+            "module.{$module->getIdentifier()}.admin_menus.translations",
+            $menus,
+        );
+
         $helper = $this->getMenuSyncHelper();
 
         foreach ($menus as $menuData) {
@@ -2097,6 +2224,361 @@ class ModuleManager implements ModuleManagerInterface
             );
         }
 
+    }
+
+    /**
+     * 모듈이 선언한 모든 선언형 산출물을 DB 에 동기화합니다.
+     *
+     * 동기화 대상 (모듈 manifest 가 정의하는 모든 declarative 영역):
+     *   1. 역할 (`getRoles`)
+     *   2. 권한 (`getPermissions`)
+     *   3. 역할-권한 매핑 (`getRolePermissions`)
+     *   4. 관리자 메뉴 (`getAdminMenus` / `getMenus`)
+     *   5. 위 4종에서 stale 항목 제거 (현재 선언에 없는 기존 레코드)
+     *   6. IDV 정책 (`getIdentityPolicies`)
+     *   7. IDV 메시지 정의/템플릿 (`getIdentityMessages`)
+     *   8. 알림 정의/템플릿 (`getNotificationDefinitions`)
+     *
+     * `installModule` / `updateModule` 트랜잭션 내부에서 호출되어 모듈 디스크 상태와 DB 를
+     * 정합 상태로 유지한다. 외부 호출 진입점으로도 노출되어 코어 업그레이드 사후 보정
+     * (`Upgrade_7_0_0_beta_4` 등) 이나 운영자 수동 재시드 도구가 사용 가능.
+     *
+     * 각 sync 메서드는 helper 내부의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출
+     * 무해 (멱등).
+     *
+     * @param  ModuleInterface  $module  대상 모듈 인스턴스
+     */
+    public function syncDeclarativeArtifacts(ModuleInterface $module): void
+    {
+        $this->createModuleRoles($module);
+        $this->createModulePermissions($module);
+        $this->assignPermissionsToRoles($module);
+        $this->createModuleMenus($module);
+        $this->cleanupStaleModuleEntries($module);
+        $this->syncModuleIdentityPolicies($module);
+        $this->syncModuleIdentityMessages($module);
+        $this->syncModuleNotificationDefinitions($module);
+    }
+
+    /**
+     * 활성 모듈 전체를 _bundled 디렉토리에서 fresh-load 하여 declarative sync 를 일괄 호출.
+     *
+     * 코어 업그레이드 transition 사후 보정용. 이전 코어 버전(예: beta.3)의 활성 dir 에는
+     * NEW declaration 인프라(IDV/메시지/알림 등) 가 아직 도입되지 않았으므로 활성 dir
+     * fresh-load 는 declaration count 0 을 반환해 시드가 발동하지 않는다. 본 메서드는
+     * 새 코어 버전이 _bundled 로 출하한 NEW 코드를 기준으로 declaration 을 재시드해
+     * 인프라 초기화 결함을 차단한다.
+     *
+     * 신규 인프라 도입 시점의 활성 dir 에는 사용자가 거부할 수 있는 OLD declaration 자체가
+     * 없으므로 본 보정은 사용자 의지(전역 yes/no/strategy) 와 양립한다. 미래 release 에서
+     * 사용자가 모듈 업데이트를 거부한 케이스는 정상 흐름(ExecuteBundledUpdatesCommand →
+     * updateModule → syncDeclarativeArtifacts) 이 자동 처리하므로 본 보정의 추가 호출은
+     * 무해 (멱등) 하다.
+     *
+     * _bundled 에 module.php 가 부재한 외부 설치 모듈(GitHub 직접 설치 등) 은 skip.
+     *
+     * @return array{synced: array<int, string>, skipped: array<int, string>, failed: array<string, string>}
+     *
+     * @since 7.0.0-beta.4
+     */
+    public function resyncAllActiveDeclarativeArtifacts(): array
+    {
+        $synced = [];
+        $skipped = [];
+        $failed = [];
+
+        foreach (self::getActiveModuleIdentifiers() as $identifier) {
+            $moduleDir = $this->bundledModulesPath.DIRECTORY_SEPARATOR.$identifier;
+            $moduleFile = $moduleDir.DIRECTORY_SEPARATOR.'module.php';
+
+            // _bundled 에 진입점이 없는 외부 설치 모듈(GitHub 등) 은 skip.
+            if (! File::exists($moduleFile)) {
+                $skipped[] = $identifier;
+
+                continue;
+            }
+
+            try {
+                $namespace = $this->convertDirectoryToNamespace($identifier);
+                $moduleClass = "Modules\\{$namespace}\\Module";
+
+                if (class_exists($moduleClass, false)) {
+                    $module = $this->evalFreshModule($moduleFile, $moduleClass, $moduleDir);
+                } else {
+                    require_once $moduleFile;
+                    $module = class_exists($moduleClass) ? new $moduleClass : null;
+                }
+
+                if (! $module instanceof ModuleInterface) {
+                    $failed[$identifier] = 'fresh-load 실패 (클래스 미생성)';
+
+                    continue;
+                }
+
+                $this->syncDeclarativeArtifacts($module);
+                $synced[] = $identifier;
+            } catch (\Throwable $e) {
+                $failed[$identifier] = $e->getMessage();
+                Log::channel('upgrade')->warning('[resyncAllActiveDeclarativeArtifacts] sync 실패', [
+                    'module' => $identifier,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return ['synced' => $synced, 'skipped' => $skipped, 'failed' => $failed];
+    }
+
+    /**
+     * 모듈이 선언한 IDV 정책을 `identity_policies` 테이블에 동기화합니다.
+     *
+     * `AbstractModule::getIdentityPolicies()` 결과를 순회하며
+     * `IdentityPolicySyncHelper::syncPolicy()` 로 upsert 하고,
+     * 현재 선언에 없는 기존 정책은 `cleanupStalePolicies()` 로 제거합니다.
+     *
+     * 운영자가 관리자 UI 에서 수정한 필드(`enabled` / `grace_minutes` / `provider_id` / `fail_mode`)
+     * 는 `user_overrides` JSON 으로 보존됩니다.
+     *
+     * @param  ModuleInterface  $module  IDV 정책을 동기화할 모듈 인스턴스
+     */
+    protected function syncModuleIdentityPolicies(ModuleInterface $module): void
+    {
+        if (! method_exists($module, 'getIdentityPolicies')) {
+            return;
+        }
+
+        if (! Schema::hasTable('identity_policies')) {
+            return; // 마이그레이션 미실행 환경 (예: 초기 설치) 보호
+        }
+
+        $policies = $module->getIdentityPolicies();
+
+        // 데이터 손실 방어막 — declaration 이 빈 배열인 경우 cleanup 호출 자체를 차단.
+        // declaration 은 모듈 코드 계약(getIdentityPolicies) 의 결과이므로 빈 배열 = "이 모듈은
+        // IDV 정책을 사용하지 않음". 이 경우 첫 install 시점부터 DB row 가 없을 것이라는 전제가
+        // 성립한다. DB 에 기존 row 가 존재하면 declaration 이 환경 결함(spawn 자식 PSR-4 stale,
+        // fresh-load 의존성 누락, trait 부분 로드 등) 으로 빈 배열을 반환했을 가능성이 높으므로,
+        // cleanup 을 건너뛰고 warning 로그만 남긴다 (silent 데이터 손실 차단).
+        if (empty($policies)) {
+            $existingCount = DB::table('identity_policies')
+                ->where('source_type', 'module')
+                ->where('source_identifier', $module->getIdentifier())
+                ->count();
+            if ($existingCount > 0) {
+                Log::warning('IDV 정책 cleanup 차단 — declaration 빈 배열인데 DB row 존재 (데이터 손실 방어)', [
+                    'module' => $module->getIdentifier(),
+                ]);
+            }
+
+            return;
+        }
+
+        $helper = app(IdentityPolicySyncHelper::class);
+        $definedKeys = [];
+
+        foreach ($policies as $data) {
+            $data['source_type'] = 'module';
+            $data['source_identifier'] = $module->getIdentifier();
+
+            $helper->syncPolicy($data);
+            $definedKeys[] = $data['key'];
+        }
+
+        $helper->cleanupStalePolicies('module', $module->getIdentifier(), $definedKeys);
+    }
+
+    /**
+     * 모듈이 선언한 IDV 메시지 정의/템플릿을 동기화합니다.
+     *
+     * `AbstractModule::getIdentityMessages()` 결과를 순회하며
+     * `IdentityMessageSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
+     * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 제거합니다.
+     *
+     * `extension_type='module'`, `extension_identifier=$module->getIdentifier()` 는 자동 주입.
+     * 운영자 user_overrides 보존은 helper 내부 trait 가 처리.
+     *
+     * @param  ModuleInterface  $module  IDV 메시지를 동기화할 모듈 인스턴스
+     */
+    protected function syncModuleIdentityMessages(ModuleInterface $module): void
+    {
+        if (! method_exists($module, 'getIdentityMessages')) {
+            return;
+        }
+
+        if (! Schema::hasTable('identity_message_definitions')) {
+            return; // 마이그레이션 미실행 환경 보호
+        }
+
+        $messages = $module->getIdentityMessages();
+
+        // 언어팩 시스템: 활성 모듈 언어팩의 seed/identity_messages.json 으로 다국어 키 병합.
+        $messages = HookManager::applyFilters(
+            "seed.{$module->getIdentifier()}.identity_messages.translations",
+            $messages
+        );
+
+        // 데이터 손실 방어막 — declaration 빈 배열 시 cleanup 호출 자체를 차단.
+        // 자세한 배경은 syncModuleIdentityPolicies 의 동일 가드 주석 참조.
+        if (empty($messages)) {
+            if ($this->hasExistingIdentityMessageDefinitions('module', $module->getIdentifier())) {
+                Log::warning('IDV 메시지 cleanup 차단 — declaration 빈 배열인데 DB row 존재 (데이터 손실 방어)', [
+                    'module' => $module->getIdentifier(),
+                ]);
+            }
+
+            return;
+        }
+
+        $helper = app(IdentityMessageSyncHelper::class);
+        $definedScopes = [];
+
+        foreach ($messages as $data) {
+            $data['extension_type'] = 'module';
+            $data['extension_identifier'] = $module->getIdentifier();
+
+            $definition = $helper->syncDefinition($data);
+            $definedScopes[] = [
+                'provider_id' => $definition->provider_id,
+                'scope_type' => $definition->scope_type->value,
+                'scope_value' => $definition->scope_value,
+            ];
+
+            $definedChannels = [];
+            foreach ($data['templates'] ?? [] as $template) {
+                $helper->syncTemplate($definition->id, $template);
+                $definedChannels[] = $template['channel'];
+            }
+            $helper->cleanupStaleTemplates($definition->id, $definedChannels);
+        }
+
+        $helper->cleanupStaleDefinitions('module', $module->getIdentifier(), $definedScopes);
+    }
+
+    /**
+     * 모듈이 선언한 알림 정의/템플릿을 `notification_definitions` / `notification_templates` 에 동기화합니다.
+     *
+     * `AbstractModule::getNotificationDefinitions()` 결과를 순회하며
+     * `NotificationSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
+     * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 제거합니다.
+     *
+     * `extension_type='module'`, `extension_identifier=$module->getIdentifier()` 는 자동 주입.
+     * 운영자 user_overrides 보존은 helper 내부 trait 가 처리.
+     *
+     * @param  ModuleInterface  $module  알림 정의를 동기화할 모듈 인스턴스
+     */
+    protected function syncModuleNotificationDefinitions(ModuleInterface $module): void
+    {
+        if (! method_exists($module, 'getNotificationDefinitions')) {
+            return;
+        }
+
+        if (! Schema::hasTable('notification_definitions')) {
+            return; // 마이그레이션 미실행 환경 보호
+        }
+
+        $definitions = $module->getNotificationDefinitions();
+
+        // 언어팩 시스템: 활성 모듈 언어팩의 seed/notifications.json 으로 다국어 키 병합.
+        $definitions = HookManager::applyFilters(
+            "seed.{$module->getIdentifier()}.notifications.translations",
+            $definitions
+        );
+
+        // 데이터 손실 방어막 — declaration 빈 배열 시 cleanup 호출 자체를 차단.
+        // 자세한 배경은 syncModuleIdentityPolicies 의 동일 가드 주석 참조.
+        if (empty($definitions)) {
+            if ($this->hasExistingNotificationDefinitions('module', $module->getIdentifier())) {
+                Log::warning('알림 정의 cleanup 차단 — declaration 빈 배열인데 DB row 존재 (데이터 손실 방어)', [
+                    'module' => $module->getIdentifier(),
+                ]);
+            }
+
+            return;
+        }
+
+        $helper = app(NotificationSyncHelper::class);
+        $definedTypes = [];
+
+        foreach ($definitions as $data) {
+            $data['extension_type'] = 'module';
+            $data['extension_identifier'] = $module->getIdentifier();
+
+            $definition = $helper->syncDefinition($data);
+            $definedTypes[] = $definition->type;
+
+            $definedChannels = [];
+            foreach ($data['templates'] ?? [] as $template) {
+                $helper->syncTemplate($definition->id, $template);
+                $definedChannels[] = $template['channel'];
+            }
+            $helper->cleanupStaleTemplates($definition->id, $definedChannels);
+        }
+
+        $helper->cleanupStaleDefinitions('module', $module->getIdentifier(), $definedTypes);
+    }
+
+    /**
+     * 해당 source 가 기존에 등록한 IDV 정책이 있는지 확인합니다.
+     *
+     * @param  string  $sourceType
+     * @param  string  $sourceIdentifier
+     * @return bool
+     */
+    protected function hasExistingIdentityPolicies(string $sourceType, string $sourceIdentifier): bool
+    {
+        try {
+            return DB::table('identity_policies')
+                ->where('source_type', $sourceType)
+                ->where('source_identifier', $sourceIdentifier)
+                ->exists();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * 해당 source 가 기존에 등록한 IDV 메시지 정의가 있는지 확인합니다 (데이터 손실 방어용).
+     */
+    protected function hasExistingIdentityMessageDefinitions(string $extensionType, string $extensionIdentifier): bool
+    {
+        try {
+            return DB::table('identity_message_definitions')
+                ->where('extension_type', $extensionType)
+                ->where('extension_identifier', $extensionIdentifier)
+                ->exists();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * 해당 source 가 기존에 등록한 알림 정의가 있는지 확인합니다 (데이터 손실 방어용).
+     */
+    protected function hasExistingNotificationDefinitions(string $extensionType, string $extensionIdentifier): bool
+    {
+        try {
+            return DB::table('notification_definitions')
+                ->where('extension_type', $extensionType)
+                ->where('extension_identifier', $extensionIdentifier)
+                ->exists();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * 해당 모듈이 기존에 등록한 메뉴가 있는지 확인합니다 (데이터 손실 방어용).
+     */
+    protected function hasExistingModuleMenus(string $moduleIdentifier): bool
+    {
+        try {
+            return DB::table('menus')
+                ->where('extension_type', ExtensionOwnerType::Module->value)
+                ->where('extension_identifier', $moduleIdentifier)
+                ->exists();
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**
@@ -2150,16 +2632,26 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         // 2. 메뉴 stale 정리 (정적 + 동적 slug 병합)
+        // 데이터 손실 방어: declaration 이 빈 배열인데 DB 에 모듈 메뉴 row 가 존재하면 cleanup 차단.
+        // declaration 빈 배열은 환경 결함(spawn 자식 PSR-4 stale, fresh-load 의존성 누락 등) 으로
+        // 인한 silent 빈 반환일 가능성이 높다. 모듈이 진짜 메뉴를 비웠다면 첫 install 시점부터
+        // DB row 가 없을 것이라는 전제가 성립. (역할/권한 cleanup 의 동일 가드와 일관)
         if (method_exists($module, 'getAdminMenus')) {
             $currentSlugs = $menuSyncHelper->collectSlugsRecursive($module->getAdminMenus());
             if (method_exists($module, 'getDynamicMenuSlugs')) {
                 $currentSlugs = array_merge($currentSlugs, $module->getDynamicMenuSlugs());
             }
-            $menuSyncHelper->cleanupStaleMenus(
-                ExtensionOwnerType::Module,
-                $module->getIdentifier(),
-                $currentSlugs,
-            );
+            if (! empty($currentSlugs)) {
+                $menuSyncHelper->cleanupStaleMenus(
+                    ExtensionOwnerType::Module,
+                    $module->getIdentifier(),
+                    $currentSlugs,
+                );
+            } elseif ($this->hasExistingModuleMenus($module->getIdentifier())) {
+                Log::warning('모듈 메뉴 cleanup 차단 — declaration 빈 배열인데 DB row 존재 (데이터 손실 방어)', [
+                    'module' => $module->getIdentifier(),
+                ]);
+            }
         }
 
         // 3. 역할 stale 정리 (정적 getRoles + 동적 역할 병합)
@@ -3292,16 +3784,12 @@ class ModuleManager implements ModuleManagerInterface
     {
         $record = $this->moduleRepository->findByIdentifier($identifier);
         if (! $record) {
-            return [
-                'update_available' => false,
-                'update_source' => null,
-                'latest_version' => null,
-                'current_version' => null,
-            ];
+            return $this->buildModuleUpdateResponse(false, null, null, null, null);
         }
 
         $currentVersion = $record->version;
         $module = $this->getModule($identifier);
+        $activeRequiredCoreVersion = $module ? $module->getRequiredCoreVersion() : null;
 
         // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (조회 성공 시 GitHub만 신뢰)
         if ($module && $module->getGithubUrl()) {
@@ -3317,62 +3805,75 @@ class ModuleManager implements ModuleManagerInterface
             }
 
             if ($latestVersion !== null) {
-                // GitHub 조회 성공 → GitHub 결과만 신뢰 (bundled 폴백 없음)
                 if (version_compare($latestVersion, $currentVersion, '>')) {
-                    return [
-                        'update_available' => true,
-                        'update_source' => 'github',
-                        'latest_version' => $latestVersion,
-                        'current_version' => $currentVersion,
-                    ];
+                    return $this->buildModuleUpdateResponse(
+                        true, 'github', $latestVersion, $currentVersion, $activeRequiredCoreVersion
+                    );
                 }
 
-                return [
-                    'update_available' => false,
-                    'update_source' => null,
-                    'latest_version' => $currentVersion,
-                    'current_version' => $currentVersion,
-                ];
+                return $this->buildModuleUpdateResponse(
+                    false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion
+                );
             }
 
-            // GitHub 조회 실패 → _bundled 폴백 안내
             Log::info('모듈 업데이트 확인: GitHub 조회 실패로 bundled 폴백', [
                 'module' => $identifier,
             ]);
         }
 
-        // 2. _bundled에서 업데이트 확인 (GitHub URL 없음 OR GitHub 조회 실패)
+        // 2. _bundled에서 업데이트 확인
         if (isset($this->bundledModules[$identifier])) {
             $bundledVersion = $this->bundledModules[$identifier]['version'] ?? null;
+            $bundledRequired = $this->bundledModules[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
             if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
-                return [
-                    'update_available' => true,
-                    'update_source' => 'bundled',
-                    'latest_version' => $bundledVersion,
-                    'current_version' => $currentVersion,
-                ];
+                return $this->buildModuleUpdateResponse(
+                    true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
+                );
             }
         } else {
             $bundledMeta = ExtensionPendingHelper::loadBundledExtensions($this->modulesPath, 'module.json');
             if (isset($bundledMeta[$identifier])) {
                 $bundledVersion = $bundledMeta[$identifier]['version'] ?? null;
+                $bundledRequired = $bundledMeta[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
                 if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
-                    return [
-                        'update_available' => true,
-                        'update_source' => 'bundled',
-                        'latest_version' => $bundledVersion,
-                        'current_version' => $currentVersion,
-                    ];
+                    return $this->buildModuleUpdateResponse(
+                        true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
+                    );
                 }
             }
         }
 
         // 4. 업데이트 없음
+        return $this->buildModuleUpdateResponse(
+            false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion
+        );
+    }
+
+    /**
+     * checkModuleUpdate 응답 페이로드 빌더 (호환성 메타 부착).
+     *
+     * @param  bool  $updateAvailable  업데이트 가용 여부
+     * @param  string|null  $updateSource  업데이트 소스 (github|bundled|null)
+     * @param  string|null  $latestVersion  최신 버전
+     * @param  string|null  $currentVersion  현재 설치된 버전
+     * @param  string|null  $requiredCoreVersion  요구 코어 버전 제약
+     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string}
+     */
+    protected function buildModuleUpdateResponse(
+        bool $updateAvailable,
+        ?string $updateSource,
+        ?string $latestVersion,
+        ?string $currentVersion,
+        ?string $requiredCoreVersion,
+    ): array {
         return [
-            'update_available' => false,
-            'update_source' => null,
-            'latest_version' => $currentVersion,
+            'update_available' => $updateAvailable,
+            'update_source' => $updateSource,
+            'latest_version' => $latestVersion,
             'current_version' => $currentVersion,
+            'required_core_version' => $requiredCoreVersion,
+            'is_compatible' => CoreVersionChecker::isCompatible($requiredCoreVersion),
+            'current_core_version' => CoreVersionChecker::getCoreVersion(),
         ];
     }
 
@@ -3615,6 +4116,8 @@ class ModuleManager implements ModuleManagerInterface
      * @param  VendorMode  $vendorMode  vendor 설치 모드
      * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
      * @param  \Closure|null  $onUpgradeStep  upgrade step 실행 콜백 (인자: 버전 문자열)
+     * @param  string|null  $sourceOverride  업데이트 소스 강제 지정 (auto|bundled|github)
+     * @param  string|null  $zipPath  사전 다운로드된 zip 파일 경로
      * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
      *
      * @throws \RuntimeException 업데이트 실패 시
@@ -3710,6 +4213,16 @@ class ModuleManager implements ModuleManagerInterface
             $toVersion = $updateInfo['latest_version'];
             $updateSource = $updateInfo['update_source'];
         }
+
+        // 다운그레이드 차단 — fromVersion > toVersion 인 경우 force=false 면 차단.
+        // force=true 는 의도적 다운그레이드 (장애 롤백 등) 허용. lang pack 정책과 일관.
+        if ($fromVersion && version_compare($toVersion, $fromVersion, '<') && ! $force) {
+            throw new \RuntimeException(__('modules.errors.downgrade_blocked', [
+                'from' => $fromVersion,
+                'to' => $toVersion,
+            ]));
+        }
+
         $backupPath = null;
 
         try {
@@ -3738,6 +4251,16 @@ class ModuleManager implements ModuleManagerInterface
                 } elseif ($updateSource === 'zip') {
                     $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->modulesPath, $identifier);
                     ExtensionPendingHelper::stageForUpdate($zipExtractedDir, $stagingPath, $onProgress);
+                }
+
+                // 3.4. 코어 버전 호환성 사전 검증 (staging manifest 기준)
+                if ($stagingPath && ! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
+                    $stagedManifest = (new Vendor\VendorIntegrityChecker)->readManifest($stagingPath);
+                    CoreVersionChecker::validateExtension(
+                        $stagedManifest['g7_version'] ?? null,
+                        $identifier,
+                        'module'
+                    );
                 }
 
                 // 3.5. Vendor 설치 (의존성 있는 경우만, 변경 시에만)
@@ -3828,13 +4351,9 @@ class ModuleManager implements ModuleManagerInterface
                     'updated_at' => now(),
                 ]);
 
-                // Role/Permission/Menu 동기화 (있으면 업데이트) + 완전 동기화 (stale cleanup)
+                // 선언형 산출물 (역할/권한/메뉴/IDV/알림) 일괄 동기화 + stale cleanup
                 if ($module) {
-                    $this->createModuleRoles($module);
-                    $this->createModulePermissions($module);
-                    $this->assignPermissionsToRoles($module);
-                    $this->createModuleMenus($module);
-                    $this->cleanupStaleModuleEntries($module);
+                    $this->syncDeclarativeArtifacts($module);
                 }
 
                 DB::commit();

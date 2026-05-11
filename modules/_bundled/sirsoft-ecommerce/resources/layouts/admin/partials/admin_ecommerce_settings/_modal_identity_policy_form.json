@@ -1,0 +1,662 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "이커머스 환경설정 > 본인인증 정책 탭 내 정책 추가/편집 모달. _global.identity_policy_form_modal 단일 진실 패턴 — list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피)"
+    },
+    "id": "identity_policy_form_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "{{_global.identity_policy_form_modal?.isNew ? '$t:admin.identity.policies.create_title' : '$t:admin.identity.policies.edit_title'}}",
+        "size": "lg",
+        "closeOnOverlayClick": false
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
+            },
+            "children": [
+                {
+                    "id": "policy_form_body",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 overflow-y-auto space-y-4 px-4 py-4 pr-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.identity_policy_form_modal?.errors}}",
+                            "props": {
+                                "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": { "className": "flex gap-2" },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "triangle-exclamation",
+                                                "className": "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": { "className": "flex-1" },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                                    },
+                                                    "text": "{{_global.identity_policy_form_modal?.errors?.message ?? '$t:common.validation_error'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Ul",
+                                                    "if": "{{_global.identity_policy_form_modal?.errors?.errors && Object.keys(_global.identity_policy_form_modal.errors.errors).length > 0}}",
+                                                    "props": {
+                                                        "className": "mt-1 list-disc list-inside space-y-0.5"
+                                                    },
+                                                    "iteration": {
+                                                        "source": "Object.entries(_global.identity_policy_form_modal?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])",
+                                                        "item_var": "msg"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Li",
+                                                            "props": {
+                                                                "className": "text-xs text-red-700 dark:text-red-300"
+                                                            },
+                                                            "text": "{{msg}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                    "text": "$t:admin.identity.policies.form.key"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{_global.identity_policy_form_modal?.form?.key ?? ''}}",
+                                        "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                        "className": "{{_global.identity_policy_form_modal?.errors?.errors?.key ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}"
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "identity_policy_form_modal.form.key": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.identity_policy_form_modal?.errors?.errors?.key}}",
+                                    "props": { "className": "text-red-500 text-xs mt-1 block" },
+                                    "text": "{{_global.identity_policy_form_modal?.errors?.errors?.key?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "grid grid-cols-1 md:grid-cols-2 gap-3" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                            "text": "$t:admin.identity.policies.form.scope"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "value": "{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}",
+                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm disabled:bg-gray-100 dark:disabled:bg-gray-900'}}",
+                                                "options": [
+                                                    { "value": "route", "label": "$t:admin.identity.policies.scope.route" },
+                                                    { "value": "hook", "label": "$t:admin.identity.policies.scope.hook" },
+                                                    { "value": "custom", "label": "$t:admin.identity.policies.scope.custom" }
+                                                ]
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.scope": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.identity_policy_form_modal?.errors?.errors?.scope}}",
+                                            "props": { "className": "text-red-500 text-xs mt-1 block" },
+                                            "text": "{{_global.identity_policy_form_modal?.errors?.errors?.scope?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                            "text": "$t:admin.identity.policies.form.target"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "value": "{{_global.identity_policy_form_modal?.form?.target ?? ''}}",
+                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.target ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.target": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.identity_policy_form_modal?.errors?.errors?.target}}",
+                                            "props": { "className": "text-red-500 text-xs mt-1 block" },
+                                            "text": "{{_global.identity_policy_form_modal?.errors?.errors?.target?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "grid grid-cols-1 md:grid-cols-2 gap-3" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                            "text": "$t:admin.identity.policies.form.purpose"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "value": "{{_global.identity_policy_form_modal?.form?.purpose ?? 'sensitive_action'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}",
+                                                "options": "{{(ecommerceIdentityPurposes?.data ?? []).map(function(p) { return {value: p.id, label: p.label ?? p.id}; })}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.purpose": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose}}",
+                                            "props": { "className": "text-red-500 text-xs mt-1 block" },
+                                            "text": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                            "text": "$t:admin.identity.policies.form.provider_id"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "value": "{{_global.identity_policy_form_modal?.form?.provider_id ?? ''}}",
+                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm",
+                                                "options": "{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.provider_id": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "grid grid-cols-1 md:grid-cols-2 gap-3" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                            "text": "$t:admin.identity.policies.form.grace_minutes"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "value": "{{_global.identity_policy_form_modal?.form?.grace_minutes ?? 0}}",
+                                                "min": 0,
+                                                "max": 1440,
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.grace_minutes": "{{Number($event.target.value)}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes}}",
+                                            "props": { "className": "text-red-500 text-xs mt-1 block" },
+                                            "text": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                            "text": "$t:admin.identity.policies.form.applies_to"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "value": "{{_global.identity_policy_form_modal?.form?.applies_to ?? 'both'}}",
+                                                "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm disabled:bg-gray-100 dark:disabled:bg-gray-900'}}",
+                                                "options": [
+                                                    { "value": "self", "label": "$t:admin.identity.policies.applies_to.self" },
+                                                    { "value": "admin", "label": "$t:admin.identity.policies.applies_to.admin" },
+                                                    { "value": "both", "label": "$t:admin.identity.policies.applies_to.both" }
+                                                ]
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.applies_to": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to}}",
+                                            "props": { "className": "text-red-500 text-xs mt-1 block" },
+                                            "text": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "grid grid-cols-1 md:grid-cols-2 gap-3" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                            "text": "$t:admin.identity.policies.form.fail_mode"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "value": "{{_global.identity_policy_form_modal?.form?.fail_mode ?? 'block'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode ? 'w-full px-3 py-2 border border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}",
+                                                "options": [
+                                                    { "value": "block", "label": "$t:admin.identity.policies.fail_mode.block" },
+                                                    { "value": "log_only", "label": "$t:admin.identity.policies.fail_mode.log_only" }
+                                                ]
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.fail_mode": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode}}",
+                                            "props": { "className": "text-red-500 text-xs mt-1 block" },
+                                            "text": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": { "className": "flex items-end justify-between gap-2 pb-2" },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300" },
+                                            "text": "$t:admin.identity.policies.form.enabled"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "checked": "{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}",
+                                                "size": "md"
+                                            },
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_policy_form_modal.form.enabled": "{{!_global.identity_policy_form_modal?.form?.enabled}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.identity_policy_form_modal?.form?.purpose === 'signup'}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" },
+                                    "text": "$t:admin.identity.policies.form.signup_stage"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "props": {
+                                        "value": "{{_global.identity_policy_form_modal?.form?.conditions?.signup_stage ?? ''}}",
+                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm",
+                                        "options": [
+                                            { "value": "", "label": "$t:admin.identity.policies.form.signup_stage_unset" },
+                                            { "value": "before_submit", "label": "$t:admin.identity.policies.form.signup_stage_before_submit" },
+                                            { "value": "after_create", "label": "$t:admin.identity.policies.form.signup_stage_after_create" }
+                                        ]
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "identity_policy_form_modal.form.conditions.signup_stage": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-1" },
+                                    "text": "$t:admin.identity.policies.form.signup_stage_desc"
+                                }
+                            ]
+                        },
+
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
+                            "props": {
+                                "className": "p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-xs text-yellow-800 dark:text-yellow-200"
+                            },
+                            "text": "$t:admin.identity.policies.form.declared_policy_notice"
+                        }
+                    ]
+                },
+                {
+                    "id": "policy_form_footer",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end items-center gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_global.identity_policy_form_modal?.isSaving ?? false}}",
+                                "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal",
+                                    "target": "identity_policy_form_modal"
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_global.identity_policy_form_modal?.isSaving}}",
+                                "className": "flex items-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "params": {
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "identity_policy_form_modal.isSaving": true,
+                                                    "identity_policy_form_modal.errors": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "auth_required": true,
+                                                "target": "{{_global.identity_policy_form_modal?.isNew ? '/api/admin/identity/policies' : '/api/admin/identity/policies/' + _global.identity_policy_form_modal?.form?.id}}",
+                                                "params": {
+                                                    "method": "{{_global.identity_policy_form_modal?.isNew ? 'POST' : 'PUT'}}",
+                                                    "body": {
+                                                        "key": "{{_global.identity_policy_form_modal?.form?.key}}",
+                                                        "scope": "{{_global.identity_policy_form_modal?.form?.scope}}",
+                                                        "target": "{{_global.identity_policy_form_modal?.form?.target}}",
+                                                        "purpose": "{{_global.identity_policy_form_modal?.form?.purpose}}",
+                                                        "provider_id": "{{_global.identity_policy_form_modal?.form?.provider_id || null}}",
+                                                        "grace_minutes": "{{Number(_global.identity_policy_form_modal?.form?.grace_minutes ?? 0)}}",
+                                                        "applies_to": "{{_global.identity_policy_form_modal?.form?.applies_to}}",
+                                                        "fail_mode": "{{_global.identity_policy_form_modal?.form?.fail_mode}}",
+                                                        "enabled": "{{Boolean(_global.identity_policy_form_modal?.form?.enabled)}}",
+                                                        "priority": "{{Number(_global.identity_policy_form_modal?.form?.priority ?? 100)}}",
+                                                        "conditions": "{{_global.identity_policy_form_modal?.form?.conditions ?? null}}",
+                                                        "source_type": "{{_global.identity_policy_form_modal?.isNew ? 'admin' : (_global.identity_policy_form_modal?.form?.source_type ?? 'admin')}}",
+                                                        "source_identifier": "{{_global.identity_policy_form_modal?.isNew ? 'sirsoft-ecommerce' : (_global.identity_policy_form_modal?.form?.source_identifier ?? 'sirsoft-ecommerce')}}"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "message": "$t:admin.identity.policies.save_success",
+                                                            "type": "success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "closeModal",
+                                                        "target": "identity_policy_form_modal"
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": { "dataSourceId": "ecommerceIdentityPolicies" }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "identity_policy_form_modal": null
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "identity_policy_form_modal.isSaving": false,
+                                                            "identity_policy_form_modal.errors": "{{error}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.identity_policy_form_modal?.isSaving}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "animate-spin",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.identity_policy_form_modal?.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

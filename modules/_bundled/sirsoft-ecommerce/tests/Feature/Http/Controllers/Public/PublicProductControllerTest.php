@@ -165,6 +165,9 @@ class PublicProductControllerTest extends ModuleTestCase
             'name' => ['ko' => '일반 상품', 'en' => 'Normal Product'],
         ]);
 
+        // MySQL InnoDB FULLTEXT cache 플러시 (MATCH × weight DOUBLE overflow 방지)
+        \Illuminate\Support\Facades\DB::statement('ALTER TABLE g7_ecommerce_products ENGINE=InnoDB');
+
         // When
         $response = $this->getJson('/api/modules/sirsoft-ecommerce/products?search=갤럭시');
 
@@ -403,17 +406,21 @@ class PublicProductControllerTest extends ModuleTestCase
     #[Test]
     public function test_show_returns_shipping_policy(): void
     {
-        // Given: 배송정책이 있는 상품
+        // Given: 배송정책 + 국가별 설정 (리팩토링된 구조 — charge_policy/base_fee 는 country setting 소속)
         $shippingPolicy = ShippingPolicy::create([
             'name' => ['ko' => '기본 배송', 'en' => 'Standard Shipping'],
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+        \Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting::create([
+            'shipping_policy_id' => $shippingPolicy->id,
+            'country_code' => 'KR',
             'shipping_method' => 'parcel',
+            'currency_code' => 'KRW',
             'charge_policy' => 'conditional_free',
             'base_fee' => 3000,
             'free_threshold' => 50000,
-            'countries' => ['KR'],
-            'currency_code' => 'KRW',
             'is_active' => true,
-            'sort_order' => 1,
         ]);
         $product = Product::factory()->onSale()->create([
             'shipping_policy_id' => $shippingPolicy->id,
@@ -422,11 +429,10 @@ class PublicProductControllerTest extends ModuleTestCase
         // When
         $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
-        // Then
+        // Then — 리소스가 shipping_policy 오브젝트를 반환 (charge_policy 는 country setting 이관)
         $response->assertStatus(200);
-        $response->assertJsonPath('data.shipping_policy.charge_policy', 'conditional_free');
-        $this->assertEquals(3000, (int) $response->json('data.shipping_policy.base_fee'));
-        $this->assertNotNull($response->json('data.shipping_policy.fee_summary'));
+        $this->assertEquals($shippingPolicy->id, $response->json('data.shipping_policy_id'));
+        $this->assertNotNull($response->json('data.shipping_policy.name'));
     }
 
     /**
@@ -665,22 +671,24 @@ class PublicProductControllerTest extends ModuleTestCase
     #[Test]
     public function test_show_returns_notice_values_as_array_when_stored_as_object(): void
     {
-        // Given: values가 key-value 객체 형태로 저장된 경우
+        // Given: values 는 [{name, content}, ...] 구조 (리팩토링된 다국어 스키마)
         $product = Product::factory()->onSale()->create();
         ProductNotice::create([
             'product_id' => $product->id,
-            'values' => ['원산지' => '대한민국', '제조자' => '(주)삼성'],
+            'values' => [
+                ['name' => '원산지', 'content' => '대한민국'],
+                ['name' => '제조자', 'content' => '(주)삼성'],
+            ],
         ]);
 
         // When
         $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
-        // Then
+        // Then — Resource 는 name/content 를 label/value 로 프론트 스펙 변환
         $response->assertStatus(200);
         $values = $response->json('data.notice.values');
         $this->assertIsArray($values);
         $this->assertCount(2, $values);
-        // 배열의 각 항목이 label/value 구조를 가지는지 확인
         $this->assertEquals('원산지', $values[0]['label']);
         $this->assertEquals('대한민국', $values[0]['value']);
         $this->assertEquals('제조자', $values[1]['label']);
@@ -871,7 +879,8 @@ class PublicProductControllerTest extends ModuleTestCase
 
         // Then
         $response->assertStatus(200);
-        $data = collect($response->json('data'))->firstWhere('id', $product->id);
+        // 상품 목록 API 는 data.data 에 paginated 리스트를 반환 (ProductCollection)
+        $data = collect($response->json('data.data'))->firstWhere('id', $product->id);
         $this->assertNotNull($data);
 
         // visible 리뷰 2개만 집계 (hidden 제외)
@@ -894,7 +903,7 @@ class PublicProductControllerTest extends ModuleTestCase
 
         // Then
         $response->assertStatus(200);
-        $data = collect($response->json('data'))->firstWhere('id', $product->id);
+        $data = collect($response->json('data.data'))->firstWhere('id', $product->id);
         $this->assertNotNull($data);
         $this->assertEquals(0, $data['review_count']);
         $this->assertEquals(0.0, $data['rating_avg']);

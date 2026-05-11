@@ -1,0 +1,330 @@
+{
+  "core": {
+    "name": "コア",
+    "description": "コアシステム権限"
+  },
+  "core.users": {
+    "name": "ユーザー管理",
+    "description": "ユーザー管理権限"
+  },
+  "core.users.read": {
+    "name": "ユーザー조회",
+    "description": "ユーザー一覧および詳細情報を閲覧できます。"
+  },
+  "core.users.create": {
+    "name": "ユーザー作成",
+    "description": "新しいユーザーを作成できます。"
+  },
+  "core.users.update": {
+    "name": "ユーザー編集",
+    "description": "ユーザー情報を編集できます。"
+  },
+  "core.users.delete": {
+    "name": "ユーザー削除",
+    "description": "ユーザーを削除できます。"
+  },
+  "core.menus": {
+    "name": "メニュー管理",
+    "description": "メニュー管理権限"
+  },
+  "core.menus.read": {
+    "name": "メニュー조회",
+    "description": "メニュー一覧を閲覧できます。"
+  },
+  "core.menus.create": {
+    "name": "メニュー作成",
+    "description": "新しいメニューを作成できます。"
+  },
+  "core.menus.update": {
+    "name": "メニュー編集",
+    "description": "メニュー情報を編集できます。"
+  },
+  "core.menus.delete": {
+    "name": "メニュー削除",
+    "description": "メニューを削除できます。"
+  },
+  "core.modules": {
+    "name": "モジュール管理",
+    "description": "モジュール管理権限"
+  },
+  "core.modules.read": {
+    "name": "モジュール조회",
+    "description": "モジュール一覧を閲覧できます。"
+  },
+  "core.modules.install": {
+    "name": "モジュールインストール",
+    "description": "新しいモジュールをインストールできます。"
+  },
+  "core.modules.activate": {
+    "name": "モジュール有効化",
+    "description": "モジュールを有効化/無効化できます。"
+  },
+  "core.modules.uninstall": {
+    "name": "モジュール削除",
+    "description": "モジュールを削除できます。"
+  },
+  "core.plugins": {
+    "name": "プラグイン管理",
+    "description": "プラグイン管理権限"
+  },
+  "core.plugins.read": {
+    "name": "プラグイン조회",
+    "description": "プラグイン一覧を閲覧できます。"
+  },
+  "core.plugins.install": {
+    "name": "プラグインインストール",
+    "description": "新しいプラグインをインストールできます。"
+  },
+  "core.plugins.activate": {
+    "name": "プラグイン有効化",
+    "description": "プラグインを有効化/無効化できます。"
+  },
+  "core.plugins.update": {
+    "name": "プラグイン設定",
+    "description": "プラグイン環境設定を編集できます。"
+  },
+  "core.plugins.uninstall": {
+    "name": "プラグイン削除",
+    "description": "プラグインを削除できます。"
+  },
+  "core.templates": {
+    "name": "テンプレート管理",
+    "description": "テンプレート管理権限"
+  },
+  "core.templates.read": {
+    "name": "テンプレート조회",
+    "description": "テンプレート一覧を閲覧できます。"
+  },
+  "core.templates.install": {
+    "name": "テンプレートインストール",
+    "description": "新しいテンプレートをインストールできます。"
+  },
+  "core.templates.activate": {
+    "name": "テンプレート有効化",
+    "description": "テンプレートを有効化/無効化できます。"
+  },
+  "core.templates.uninstall": {
+    "name": "テンプレート削除",
+    "description": "テンプレートを削除できます。"
+  },
+  "core.templates.layouts.edit": {
+    "name": "レイアウト編集",
+    "description": "テンプレートレイアウトを編集できます。"
+  },
+  "core.permissions": {
+    "name": "権限管理",
+    "description": "ロールおよび権限管理権限"
+  },
+  "core.permissions.read": {
+    "name": "権限조회",
+    "description": "ロールおよび権限一覧を閲覧できます。"
+  },
+  "core.permissions.create": {
+    "name": "ロール作成",
+    "description": "新しいロールを作成できます。"
+  },
+  "core.permissions.update": {
+    "name": "ロール編集",
+    "description": "ロール情報および権限を編集できます。"
+  },
+  "core.permissions.delete": {
+    "name": "ロール削除",
+    "description": "ロールを削除できます。"
+  },
+  "core.notification-logs": {
+    "name": "通知発送履歴",
+    "description": "通知発送履歴管理権限"
+  },
+  "core.notification-logs.read": {
+    "name": "発送履歴조회",
+    "description": "通知発送履歴を閲覧できます。"
+  },
+  "core.notification-logs.delete": {
+    "name": "発送履歴削除",
+    "description": "通知発送履歴を削除できます。"
+  },
+  "core.notifications": {
+    "name": "通知（管理者）",
+    "description": "管理者用通知管理権限（管理者画面で使用）"
+  },
+  "core.notifications.read": {
+    "name": "通知조회",
+    "description": "通知一覧および未読数を閲覧できます。"
+  },
+  "core.notifications.update": {
+    "name": "通知既読処理",
+    "description": "通知を既読処理できます。"
+  },
+  "core.notifications.delete": {
+    "name": "通知削除",
+    "description": "通知を削除できます。"
+  },
+  "core.user-notifications": {
+    "name": "通知 (ユーザー)",
+    "description": "ユーザー用通知権限 (ユーザー画面で本人通知管理)"
+  },
+  "core.user-notifications.read": {
+    "name": "通知閲覧",
+    "description": "本人の通知リスト及び未読数を閲覧できます。"
+  },
+  "core.user-notifications.update": {
+    "name": "通知読了処理",
+    "description": "本人の通知を読了処理できます。"
+  },
+  "core.user-notifications.delete": {
+    "name": "通知削除",
+    "description": "本人の通知を削除できます。"
+  },
+  "core.identity": {
+    "name": "本人確認 (ユーザー)",
+    "description": "ログインユーザーの本人確認チャレンジリクエスト/検証/キャンセル権限"
+  },
+  "core.identity.request": {
+    "name": "IDVリクエスト",
+    "description": "本人確認チャレンジをリクエストできます。"
+  },
+  "core.identity.verify": {
+    "name": "IDV検証",
+    "description": "本人確認チャレンジを検証できます。"
+  },
+  "core.identity.cancel": {
+    "name": "IDVキャンセル",
+    "description": "本人の本人確認チャレンジをキャンセルできます。"
+  },
+  "core.admin.identity": {
+    "name": "本人確認管理 (管理者)",
+    "description": "管理者用IDVプロバイダ/ポリシー/ログ管理権限"
+  },
+  "core.admin.identity.manage": {
+    "name": "プロバイダ設定",
+    "description": "本人確認プロバイダ設定を管理できます。"
+  },
+  "core.admin.identity.policies.manage": {
+    "name": "ポリシー管理",
+    "description": "本人確認ポリシー(ルート/フック別)をCRUD できます。"
+  },
+  "core.admin.identity.logs.read": {
+    "name": "ログ閲覧",
+    "description": "本人確認履歴を閲覧できます。"
+  },
+  "core.admin.identity.logs.purge": {
+    "name": "ログ破棄",
+    "description": "本人確認履歴を破棄(保管期間外)できます。"
+  },
+  "core.admin.identity.messages.read": {
+    "name": "メッセージテンプレート閲覧",
+    "description": "本人確認メッセージ定義/テンプレートを閲覧できます。"
+  },
+  "core.admin.identity.messages.update": {
+    "name": "メッセージテンプレート編集",
+    "description": "本人確認メッセージ定義/テンプレートを編集できます。"
+  },
+  "core.settings": {
+    "name": "環境設定",
+    "description": "システム環境設定権限"
+  },
+  "core.settings.read": {
+    "name": "設定閲覧",
+    "description": "システム設定を閲覧できます。"
+  },
+  "core.settings.update": {
+    "name": "設定編集",
+    "description": "システム設定を編集できます。"
+  },
+  "core.dashboard": {
+    "name": "ダッシュボード",
+    "description": "ダッシュボードアクセス権限"
+  },
+  "core.dashboard.read": {
+    "name": "ダッシュボード閲覧",
+    "description": "ダッシュボード統計及び情報を閲覧できます。"
+  },
+  "core.dashboard.system-status": {
+    "name": "システム状態",
+    "description": "システム状態情報を閲覧できます。"
+  },
+  "core.dashboard.resources": {
+    "name": "システムリソース",
+    "description": "CPU、メモリ、ディスク使用量を閲覧できます。"
+  },
+  "core.dashboard.activities": {
+    "name": "最近の活動",
+    "description": "最近の活動履歴を閲覧できます。"
+  },
+  "core.dashboard.alerts": {
+    "name": "システム通知",
+    "description": "システム通知を閲覧できます。"
+  },
+  "core.activities": {
+    "name": "アクティビティログ",
+    "description": "アクティビティログ閲覧権限"
+  },
+  "core.activities.read": {
+    "name": "アクティビティログ閲覧",
+    "description": "アクティビティログを閲覧できます。"
+  },
+  "core.activities.delete": {
+    "name": "アクティビティログ削除",
+    "description": "アクティビティログを削除できます。"
+  },
+  "core.attachments": {
+    "name": "添付ファイル管理",
+    "description": "添付ファイル管理権限"
+  },
+  "core.attachments.create": {
+    "name": "添付ファイルアップロード",
+    "description": "添付ファイルをアップロードできます。"
+  },
+  "core.attachments.update": {
+    "name": "添付ファイル編集",
+    "description": "添付ファイル情報及び順序を編集できます。"
+  },
+  "core.attachments.delete": {
+    "name": "添付ファイル削除",
+    "description": "添付ファイルを削除できます。"
+  },
+  "core.schedules": {
+    "name": "スケジュール管理",
+    "description": "スケジュール作業管理権限"
+  },
+  "core.schedules.read": {
+    "name": "スケジュール閲覧",
+    "description": "スケジュールリスト及び詳細情報を閲覧できます。"
+  },
+  "core.schedules.create": {
+    "name": "スケジュール作成",
+    "description": "新しいスケジュールを作成できます。"
+  },
+  "core.schedules.update": {
+    "name": "スケジュール編集",
+    "description": "スケジュール情報を編集できます。"
+  },
+  "core.schedules.delete": {
+    "name": "スケジュール削除",
+    "description": "スケジュールを削除できます。"
+  },
+  "core.schedules.run": {
+    "name": "スケジュール実行",
+    "description": "スケジュールを手動で実行できます。"
+  },
+  "core.language_packs": {
+    "name": "言語パック管理",
+    "description": "言語パックインストール/削除/有効化権限"
+  },
+  "core.language_packs.read": {
+    "name": "言語パック閲覧",
+    "description": "インストール済み言語パックリスト及び詳細情報を閲覧できます。"
+  },
+  "core.language_packs.install": {
+    "name": "言語パックインストール",
+    "description": "ZIP/GitHub/URL で言語パックをインストールできます。"
+  },
+  "core.language_packs.manage": {
+    "name": "言語パック管理",
+    "description": "言語パックを有効化/無効化/削除できます。"
+  },
+  "core.language_packs.update": {
+    "name": "言語パック アップデート",
+    "description": "インストールされた言語パックのアップデートを確認して実行できます。"
+  }
+}

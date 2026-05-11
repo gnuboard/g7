@@ -12,8 +12,10 @@ use Illuminate\Database\Seeder;
  * 설치 필수 시더는 항상 실행되며, 샘플 시더는 --sample 옵션 시에만 실행됩니다.
  *
  * 설치 시더:
- * - InstallSeeder (BoardNotificationDefinitionSeeder 포함)
  * - BoardTypeSeeder
+ *
+ * 알림 정의는 module.php::getNotificationDefinitions() 가 SSoT 로,
+ * ModuleManager 가 activate/update 시 자동 동기화합니다 (시더 호출 불필요).
  *
  * 샘플 시더 (--sample 옵션 시):
  * 1. BoardSampleSeeder - 게시판 8개 (테이블 + 권한 자동 생성)
@@ -42,11 +44,9 @@ class DatabaseSeeder extends Seeder
         $this->command->info('');
 
         // 설치 필수 시더 (항상 실행)
-        $this->command->info('[설치] 게시판 타입 및 메일 템플릿 생성');
+        $this->command->info('[설치] 게시판 타입 생성');
         $this->call([
-            InstallSeeder::class,
             BoardTypeSeeder::class,
-            BoardNotificationDefinitionSeeder::class,
         ]);
         $this->command->info('');
 
@@ -66,12 +66,22 @@ class DatabaseSeeder extends Seeder
             $this->command->info('');
 
             // 3. 신고 샘플 생성 (count 불필요)
-            $this->command->info('[3/5] 신고 샘플 생성');
+            $this->command->info('[3/6] 신고 샘플 생성');
             $this->call(Sample\ReportSampleSeeder::class);
             $this->command->info('');
 
-            // 4. 활동 로그 샘플 (모든 샘플 데이터 생성 후 마지막에 실행)
-            $this->command->info('[4/4] 활동 로그 샘플 생성');
+            // 4. 알림 발송 이력 샘플 (count-aware)
+            $this->command->info('[4/6] 알림 발송 이력 샘플 생성');
+            $this->callWithCounts(Sample\NotificationLogSeeder::class);
+            $this->command->info('');
+
+            // 5. 본인인증 이력 샘플 (count-aware)
+            $this->command->info('[5/6] 본인인증 이력 샘플 생성');
+            $this->callWithCounts(Sample\IdentityVerificationLogSeeder::class);
+            $this->command->info('');
+
+            // 6. 활동 로그 샘플 (모든 샘플 데이터 생성 후 마지막에 실행)
+            $this->command->info('[6/6] 활동 로그 샘플 생성');
             $this->call(ActivityLogSampleSeeder::class);
             $this->command->info('');
         }

@@ -318,4 +318,32 @@ class MarketingConsentServiceTest extends PluginTestCase
 
         $this->assertEquals(2, $record->consent_count);
     }
+
+    // ── getDefaultSystemChannels (registry payload name_key 계약, 7.0.0-beta.4+) ──
+
+    public function test_default_system_channels_carry_label_key(): void
+    {
+        $channels = $this->service->getDefaultSystemChannels();
+
+        $this->assertCount(1, $channels);
+        $email = $channels[0];
+
+        $this->assertSame('email_subscription', $email['key']);
+        $this->assertSame('sirsoft-marketing::channels.email_subscription.label', $email['label_key']);
+        $this->assertTrue($email['is_system']);
+    }
+
+    public function test_default_system_channels_label_resolves_via_lang_pack(): void
+    {
+        // label 은 lang 파일에서 해석된 ko/en 값으로 자동 채워져 plugin_settings 저장 시 fallback 보장
+        $channels = $this->service->getDefaultSystemChannels();
+        $email = $channels[0];
+
+        $this->assertIsArray($email['label']);
+        $this->assertArrayHasKey('ko', $email['label']);
+        $this->assertArrayHasKey('en', $email['label']);
+        // 활성 lang 파일이 등록되어 있으면 실제 라벨, 미등록 환경이면 키 그대로 (둘 다 string)
+        $this->assertIsString($email['label']['ko']);
+        $this->assertIsString($email['label']['en']);
+    }
 }

@@ -145,4 +145,12 @@ interface OrderRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getExpiredPendingPaymentOrders(int $limit = 100): \Illuminate\Database\Eloquent\Collection;
+
+    /**
+     * ID 목록으로 주문을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
+     *
+     * @param  array<int, int>  $ids  주문 ID 목록
+     * @return \Illuminate\Database\Eloquent\Collection<int, Order> id => Order 매핑
+     */
+    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection;
 }

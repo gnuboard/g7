@@ -1,0 +1,340 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Identity Log Detail Modal"
+    },
+    "id": "identity_log_detail_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.identity.logs.detail_title",
+        "size": "lg"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "p-2 space-y-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-1 md:grid-cols-2 gap-3 text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.provider_id"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white font-mono text-xs mt-0.5" },
+                                    "text": "{{_global.identity_log_modal_data?.provider_id ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.purpose"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white mt-0.5" },
+                                    "text": "{{(identityPurposes?.data ?? []).find(p => p.id === _global.identity_log_modal_data?.purpose)?.label ?? _global.identity_log_modal_data?.purpose ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.status"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white mt-0.5" },
+                                    "text": "{{$t('admin.identity.logs.status.' + (_global.identity_log_modal_data?.status ?? 'requested'))}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.channel"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white mt-0.5" },
+                                    "text": "{{_global.identity_log_modal_data?.channel ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.user_id"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white mt-0.5" },
+                                    "text": "{{_global.identity_log_modal_data?.user_id ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.ip_address"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white font-mono text-xs mt-0.5" },
+                                    "text": "{{_global.identity_log_modal_data?.ip_address ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.created_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white mt-0.5" },
+                                    "text": "{{_global.identity_log_modal_data?.created_at ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.verified_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white mt-0.5" },
+                                    "text": "{{_global.identity_log_modal_data?.verified_at ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.expires_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white mt-0.5" },
+                                    "text": "{{_global.identity_log_modal_data?.expires_at ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.attempts"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white mt-0.5" },
+                                    "text": "{{(_global.identity_log_modal_data?.attempts ?? 0) + ' / ' + (_global.identity_log_modal_data?.max_attempts ?? 5)}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.origin_type"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white mt-0.5" },
+                                    "text": "{{_global.identity_log_modal_data?.origin_type ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                                    "text": "$t:admin.identity.logs.col.origin_identifier"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "block text-gray-900 dark:text-white font-mono text-xs mt-0.5 break-all" },
+                                    "text": "{{_global.identity_log_modal_data?.origin_identifier ?? '-'}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide" },
+                            "text": "$t:admin.identity.logs.detail.expanded.target_hash_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "block text-gray-900 dark:text-white font-mono text-xs mt-0.5 break-all" },
+                            "text": "{{_global.identity_log_modal_data?.target_hash ?? '-'}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.identity_log_modal_data?.properties}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1" },
+                            "text": "$t:admin.identity.logs.detail.expanded.properties_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Pre",
+                            "props": {
+                                "className": "p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto"
+                            },
+                            "text": "{{JSON.stringify(_global.identity_log_modal_data?.properties ?? {}, null, 2)}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.identity_log_modal_data?.metadata}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1" },
+                            "text": "$t:admin.identity.logs.detail.expanded.metadata_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Pre",
+                            "props": {
+                                "className": "p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto"
+                            },
+                            "text": "{{JSON.stringify(_global.identity_log_modal_data?.metadata ?? {}, null, 2)}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "identity_log_detail_modal"
+                        }
+                    ],
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.close"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -2,7 +2,7 @@
     "_meta": {
         "version": "1.0.0",
         "description": "그누보드7 환경설정 기본값 및 프론트엔드 스키마",
-        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications"]
+        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity"]
     },
     "defaults": {
         "general": {
@@ -56,14 +56,23 @@
             "google_analytics_id": "",
             "google_site_verification": "",
             "naver_site_verification": "",
-            "bot_user_agents": ["Googlebot", "Bingbot", "Naverbot", "Yeti", "Yandex"],
+            "bot_user_agents": ["kakaotalk-scrap", "Meta-ExternalAgent", "ChatGPT-User"],
             "bot_detection_enabled": true,
+            "bot_detection_library_enabled": true,
+            "og_default_site_name": "",
+            "og_image_default_width": 1200,
+            "og_image_default_height": 630,
+            "twitter_default_card": "summary_large_image",
+            "twitter_default_site": "",
             "cache_enabled": true,
             "cache_ttl": 7200,
             "sitemap_enabled": true,
             "sitemap_cache_ttl": 86400,
             "sitemap_schedule": "daily",
-            "sitemap_schedule_time": "02:00"
+            "sitemap_schedule_time": "02:00",
+            "sitemap_last_updated_at": "",
+            "generator_enabled": true,
+            "generator_content": ""
         },
         "cache": {
             "enabled": true,
@@ -134,6 +143,16 @@
                 { "id": "mail", "is_active": true, "sort_order": 1 },
                 { "id": "database", "is_active": true, "sort_order": 2 }
             ]
+        },
+        "identity": {
+            "default_provider": "g7:core.mail",
+            "purpose_providers": {
+                "password_reset": null,
+                "self_update": null,
+                "sensitive_action": null
+            },
+            "challenge_ttl_minutes": 15,
+            "max_attempts": 5
         }
     },
     "frontend_schema": {
@@ -183,12 +202,21 @@
                 "naver_site_verification": { "type": "string", "sensitive": false },
                 "bot_user_agents": { "type": "array", "sensitive": false },
                 "bot_detection_enabled": { "type": "boolean", "sensitive": false },
+                "bot_detection_library_enabled": { "type": "boolean", "sensitive": false },
+                "og_default_site_name": { "type": "string", "sensitive": false },
+                "og_image_default_width": { "type": "integer", "sensitive": false },
+                "og_image_default_height": { "type": "integer", "sensitive": false },
+                "twitter_default_card": { "type": "string", "sensitive": false },
+                "twitter_default_site": { "type": "string", "sensitive": false },
                 "cache_enabled": { "type": "boolean", "sensitive": false },
                 "cache_ttl": { "type": "integer", "sensitive": false },
                 "sitemap_enabled": { "type": "boolean", "sensitive": false },
                 "sitemap_cache_ttl": { "type": "integer", "sensitive": false },
                 "sitemap_schedule": { "type": "string", "sensitive": false },
-                "sitemap_schedule_time": { "type": "string", "sensitive": false }
+                "sitemap_schedule_time": { "type": "string", "sensitive": false },
+                "sitemap_last_updated_at": { "type": "string", "sensitive": false },
+                "generator_enabled": { "type": "boolean", "sensitive": false },
+                "generator_content": { "type": "string", "sensitive": false }
             }
         },
         "cache": {
@@ -281,6 +309,16 @@
             "expose": true,
             "fields": {
                 "channels": { "type": "array", "sensitive": false }
+            }
+        },
+        "identity": {
+            "expose": true,
+            "_comment": "본인인증 인프라 provider 기술 파라미터 — signup/enabled 등 정책 분기 키는 IdentityPolicy 로 흡수됨",
+            "fields": {
+                "default_provider": { "type": "string", "sensitive": false },
+                "purpose_providers": { "type": "array", "sensitive": false, "expose": false },
+                "challenge_ttl_minutes": { "type": "integer", "sensitive": false, "expose": false },
+                "max_attempts": { "type": "integer", "sensitive": false, "expose": false }
             }
         }
     }

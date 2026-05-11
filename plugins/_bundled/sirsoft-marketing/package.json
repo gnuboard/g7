@@ -1,6 +1,6 @@
 {
     "name": "@g7/sirsoft-marketing",
-    "version": "1.0.0-beta.2",
+    "version": "1.0.0-beta.3",
     "description": "G7 마케팅 동의 플러그인 프론트엔드 에셋",
     "private": true,
     "type": "module",

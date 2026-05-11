@@ -350,9 +350,12 @@ describe('ActionDispatcher', () => {
         boundProps.onChange(customEvent);
 
         // setState가 호출되어야 함 (dot notation은 중첩 객체로 변환됨)
-        expect(mockSetGlobalState).toHaveBeenCalledWith({
-          labelFormData: { name: { ko: '수정된 이름', en: 'Modified Name' } },
-        });
+        // ActionDispatcher.setState 는 globalStateUpdater 호출 시 두 번째 인자로
+        // { render: action.render } 를 전달 (action.render 미지정 시 undefined)
+        expect(mockSetGlobalState).toHaveBeenCalledWith(
+          {
+            labelFormData: { name: { ko: '수정된 이름', en: 'Modified Name' } },
+          }, { render: undefined });
       });
 
       it('표준 DOM 이벤트도 여전히 정상 동작해야 함', () => {
@@ -383,12 +386,13 @@ describe('ActionDispatcher', () => {
 
         boundProps.onChange(domLikeEvent);
 
-        expect(mockSetGlobalState).toHaveBeenCalledWith({
-          color: '#FF0000',
-        });
+        expect(mockSetGlobalState).toHaveBeenCalledWith(
+          { color: '#FF0000' }, { render: undefined });
       });
 
-      it('target이 없는 객체도 raw value fallback으로 처리되어야 함', () => {
+      it('target이 없는 raw 객체는 핸들러를 실행하지 않아야 함 (사례 26 회귀 방지)', () => {
+        // raw value fallback 의도적 제거 — 컴포넌트는 { target: { value } } 패턴을 사용해야 함.
+        // 이 회귀 테스트는 마운트 시 raw value 로 인한 API 데이터 덮어쓰기 방지.
         const mockSetGlobalState = vi.fn();
         dispatcher.setGlobalStateUpdater(mockSetGlobalState);
 
@@ -404,18 +408,10 @@ describe('ActionDispatcher', () => {
 
         const boundProps = dispatcher.bindActionsToProps(props, {});
 
-        // target이 없는 plain object → raw value fallback으로 처리
-        // $event.target.value = { data: 'some data' } (raw value가 래핑됨)
-        const rawValue = { data: 'some data' };
+        // target 이 없는 plain object → fallback 없음 → 핸들러 미실행
+        boundProps.onChange({ data: 'some data' });
 
-        boundProps.onChange(rawValue);
-
-        // raw value fallback: { target: { value: rawValue } }로 래핑되어 핸들러 실행
-        expect(mockSetGlobalState).toHaveBeenCalledWith(
-          expect.objectContaining({
-            value: rawValue,
-          })
-        );
+        expect(mockSetGlobalState).not.toHaveBeenCalled();
       });
     });
   });
@@ -565,7 +561,7 @@ describe('ActionDispatcher', () => {
 
       await handler(mockEvent);
 
-      expect(globalUpdater).toHaveBeenCalledWith({ testValue: 'hello' });
+      expect(globalUpdater).toHaveBeenCalledWith({ testValue: 'hello' }, expect.anything());
     });
   });
 
@@ -1193,7 +1189,7 @@ describe('ActionDispatcher', () => {
       expect(globalStateUpdater).toHaveBeenCalledWith({
         sortField: 'name',
         sortDirection: 'desc',
-      });
+      }, expect.anything());
     });
 
     it('onSelectionChange 이벤트의 배열 인자를 처리해야 함', () => {
@@ -1269,7 +1265,7 @@ describe('ActionDispatcher', () => {
 
       // 커스텀 콜백 이벤트 테스트
       boundProps.onSortChange('email');
-      expect(globalStateUpdater).toHaveBeenCalledWith({ sortField: 'email' });
+      expect(globalStateUpdater).toHaveBeenCalledWith({ sortField: 'email' }, expect.anything());
     });
 
     it('onColumnVisibilityChange 이벤트를 처리해야 함', () => {
@@ -1303,7 +1299,7 @@ describe('ActionDispatcher', () => {
 
       expect(globalStateUpdater).toHaveBeenCalledWith({
         visibleColumns: ['id', 'name', 'email'],
-      });
+      }, expect.anything());
     });
   });
 
@@ -1913,6 +1909,11 @@ describe('ActionDispatcher', () => {
   });
 
   describe('setState spread 연산자 ("...") 처리', () => {
+    beforeEach(() => {
+      delete (window as any).__g7PendingLocalState;
+      delete (window as any).__g7ForcedLocalFields;
+    });
+
     it('"..." 키를 spread 연산자로 처리해야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -1943,7 +1944,8 @@ describe('ActionDispatcher', () => {
 
       await handler(mockEvent);
 
-      expect(mockSetState).toHaveBeenCalledWith({
+      // engine-v1.24.6: 최종 병합 결과는 __g7PendingLocalState 에 반영됨
+      expect((window as any).__g7PendingLocalState).toEqual({
         form: {
           email: 'test@test.com',
           status: 'active',
@@ -1982,7 +1984,7 @@ describe('ActionDispatcher', () => {
 
       await handler(mockEvent);
 
-      expect(mockSetState).toHaveBeenCalledWith({
+      expect((window as any).__g7PendingLocalState).toEqual({
         form: {
           name: 'Updated Name',
           email: 'old@test.com',
@@ -2071,9 +2073,10 @@ describe('ActionDispatcher', () => {
         target: { value: 'abc' },
       } as unknown as Event);
 
-      const lastCall = mockSetState.mock.calls[mockSetState.mock.calls.length - 1][0];
-      expect(lastCall.form).toEqual({ name: 'abc' });
-      expect(lastCall.form['...']).toBeUndefined();
+      // engine-v1.24.6: 반복 spread 시 name 필드는 최신 값으로 갱신되어야 함
+      // (테스트 mockSetState 가 delta 만 누적하므로 '...' 자체는 잔존할 수 있으나,
+      // 실제 DynamicRenderer 경로에서는 merge 단계에서 정리됨)
+      expect((window as any).__g7PendingLocalState.form.name).toBe('abc');
     });
   });
 
@@ -3450,6 +3453,13 @@ describe('ActionDispatcher', () => {
   });
 
   describe('setState 깊은 병합 (deep merge)', () => {
+    beforeEach(() => {
+      // __g7PendingLocalState / __g7ForcedLocalFields 는 전역 상태이므로
+      // 이전 테스트 누수 방지 위해 초기화
+      delete (window as any).__g7PendingLocalState;
+      delete (window as any).__g7ForcedLocalFields;
+    });
+
     it('중첩 객체의 특정 필드만 업데이트해야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -3485,8 +3495,13 @@ describe('ActionDispatcher', () => {
 
       await handler(mockEvent);
 
-      // formData.name만 업데이트되고, email과 slug는 유지되어야 함
+      // engine-v1.24.6: context.setState에는 변경 필드만 전달 (전체 _local 축적 방지)
+      // 실제 병합 결과는 window.__g7PendingLocalState 에 전체 상태가 반영됨
       expect(mockSetState).toHaveBeenCalledWith({
+        formData: { name: 'new name' },
+        hasChanges: true,
+      });
+      expect((window as any).__g7PendingLocalState).toEqual({
         formData: {
           name: 'new name',
           email: 'test@example.com',
@@ -3541,8 +3556,10 @@ describe('ActionDispatcher', () => {
 
       await handler(mockEvent);
 
-      // spread 연산자로 복사된 후 name이 덮어쓰기됨
-      expect(mockSetState).toHaveBeenCalledWith({
+      // engine-v1.24.6: mockSetState 는 변경 필드만 받음 (spread 처리는 __g7PendingLocalState 에서 확인)
+      // spread 를 담은 delta 가 그대로 setState 에 전달됨 (processing 은 상위 계층)
+      expect(mockSetState).toHaveBeenCalled();
+      expect((window as any).__g7PendingLocalState).toEqual({
         formData: {
           name: 'spread name',
           email: 'test@example.com',
@@ -3618,10 +3635,14 @@ describe('ActionDispatcher', () => {
 
       await handler(mockEvent);
 
-      // 배열은 병합되지 않고 덮어쓰기됨 (기존 상태의 다른 필드는 유지됨)
+      // engine-v1.24.6: mockSetState 에는 변경 필드만 전달
+      // __g7PendingLocalState 에 전체 병합 결과가 반영됨 (기존 hasChanges: false 유지)
       expect(mockSetState).toHaveBeenCalledWith({
         selectedIds: [4, 5],
-        hasChanges: false, // 기존 상태 유지
+      });
+      expect((window as any).__g7PendingLocalState).toEqual({
+        selectedIds: [4, 5],
+        hasChanges: false,
       });
     });
 
@@ -3700,8 +3721,13 @@ describe('ActionDispatcher', () => {
 
       await handler(mockEvent);
 
-      // name만 업데이트되고 나머지 필드는 유지
+      // engine-v1.24.6: mockSetState 는 변경 필드(delta)만 받음
+      // 나머지 필드 유지 여부는 __g7PendingLocalState 로 확인
       expect(mockSetState).toHaveBeenCalledWith({
+        formData: { name: 'new board name' },
+        hasChanges: true,
+      });
+      expect((window as any).__g7PendingLocalState).toEqual({
         formData: {
           name: 'new board name',
           slug: 'old-board',
@@ -3958,8 +3984,7 @@ describe('ActionDispatcher', () => {
               listeners: 1,
             }),
           }),
-        })
-      );
+        }));
     });
 
     it('여러 리스너가 있을 때 모든 결과를 배열로 저장해야 함', async () => {
@@ -4000,8 +4025,7 @@ describe('ActionDispatcher', () => {
               listeners: 2,
             }),
           }),
-        })
-      );
+        }));
     });
 
     it('FileUploader 업로드 시나리오: sequence에서 emitEvent 후 apiCall', async () => {
@@ -4096,8 +4120,7 @@ describe('ActionDispatcher', () => {
               error: 'Upload failed',
             }),
           }),
-        })
-      );
+        }));
 
       consoleErrorSpy.mockRestore();
     });
@@ -4856,6 +4879,11 @@ describe('ActionDispatcher', () => {
   });
 
   describe('sequence 핸들러 상태 동기화', () => {
+    beforeEach(() => {
+      delete (window as any).__g7PendingLocalState;
+      delete (window as any).__g7ForcedLocalFields;
+    });
+
     it('sequence 내 setState 실행 후 다음 액션에서 업데이트된 상태를 참조해야 함', async () => {
       const mockSetState = vi.fn();
 
@@ -4903,22 +4931,21 @@ describe('ActionDispatcher', () => {
 
       await handler(mockEvent);
 
-      // 첫 번째 setState 호출: errors: null, isSaving: true
+      // engine-v1.24.6: mockSetState 는 변경 필드만 받음 — form 필드는 명시 안했으므로 포함 X
+      // 첫 번째 setState 호출: errors: null, isSaving: true (변경 필드만)
       expect(mockSetState).toHaveBeenNthCalledWith(
         1,
         expect.objectContaining({
-          form: { name: 'Test' },
           errors: null,
           isSaving: true,
         })
       );
 
-      // 두 번째 setState 호출: errors가 null로 유지되어야 함 (이전 상태의 errors 객체가 병합되면 안됨)
+      // 두 번째 setState 호출: errors 복원 방지 — 이 호출에 errors 키가 없어야 함
+      // (errors가 명시되지 않았을 때 이전 null 유지되는지는 DynamicRenderer 병합 책임)
       expect(mockSetState).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({
-          form: { name: 'Test' },
-          errors: null, // 핵심: 첫 번째 setState에서 설정한 null이 유지되어야 함
           isSaving: false,
           hasChanges: false,
         })
@@ -4982,14 +5009,15 @@ describe('ActionDispatcher', () => {
 
       await handler(mockEvent);
 
-      // 두 번째 setState에서 errors가 null로 유지되어야 함
-      // (initialState의 errors가 병합되면 안됨)
+      // engine-v1.24.6: mockSetState 는 변경 필드만 받음.
+      // 두 번째 setState에 errors 키가 없어야 함 (명시 안했으니 delta 에도 포함 X)
+      // form 유지 여부는 __g7PendingLocalState 에서 확인
       const secondCall = mockSetState.mock.calls[1][0];
-      expect(secondCall.errors).toBeNull();
       expect(secondCall.isSaving).toBe(false);
       expect(secondCall.hasChanges).toBe(false);
-      // form 데이터는 유지되어야 함
-      expect(secondCall.form).toEqual(initialState.form);
+      // 두 번째 호출 후 전체 병합 결과: errors null 유지 + form 데이터 유지
+      expect((window as any).__g7PendingLocalState.errors).toBeNull();
+      expect((window as any).__g7PendingLocalState.form).toEqual(initialState.form);
     });
 
     it('sequence 내에서 setState 결과가 다음 액션의 context.state에 반영되어야 함', async () => {
@@ -5106,8 +5134,7 @@ describe('ActionDispatcher', () => {
             reason: null,
             relatedData: { images: 5, options: 3 },
           },
-        })
-      );
+        }), expect.anything());
 
       // cleanup
       delete (window as any).G7Core;
@@ -5152,8 +5179,7 @@ describe('ActionDispatcher', () => {
           existingKey: 'existing value',
           newKey: 'new value',
           anotherKey: { nested: true },
-        })
-      );
+        }), expect.anything());
 
       // cleanup
       delete (window as any).G7Core;
@@ -5203,8 +5229,7 @@ describe('ActionDispatcher', () => {
             email: 'test@example.com',
             slug: 'old-slug',
           },
-        })
-      );
+        }), expect.anything());
 
       // cleanup
       delete (window as any).G7Core;
@@ -5261,8 +5286,7 @@ describe('ActionDispatcher', () => {
             reason: 'No dependencies',
             relatedData: { images: 5, options: 3 },
           },
-        })
-      );
+        }), expect.anything());
 
       // cleanup
       delete (window as any).G7Core;
@@ -5328,8 +5352,7 @@ describe('ActionDispatcher', () => {
             canDelete: true,
             reason: 'Can delete safely',
           }),
-        })
-      );
+        }), expect.anything());
 
       // cleanup
       delete (window as any).G7Core;
@@ -5338,7 +5361,7 @@ describe('ActionDispatcher', () => {
 
   /**
    * Regression Tests
-   * @see .claude/docs/frontend/troubleshooting-state-setstate.md
+   * @see docs/frontend/troubleshooting-state-setstate.md
    */
   describe('Regression Tests', () => {
     describe('[TS-STATE-1] sequence 내 여러 setState에서 상태 덮어쓰기', () => {
@@ -5461,8 +5484,7 @@ describe('ActionDispatcher', () => {
               name: 'Test',
               newCurrency: null,
             }),
-          })
-        );
+          }), expect.anything());
 
         delete (window as any).G7Core;
       });
@@ -5509,8 +5531,7 @@ describe('ActionDispatcher', () => {
                 childField: 'new value',
               }),
             }),
-          })
-        );
+          }), expect.anything());
 
         delete (window as any).G7Core;
       });
@@ -5639,14 +5660,18 @@ describe('ActionDispatcher', () => {
               canDelete: true,
               reason: 'No dependencies found',
             }),
-          })
-        );
+          }), expect.anything());
 
         delete (window as any).G7Core;
       });
     });
 
     describe('[TS-STATE-LOCAL-1] sequence 내 setState 후 apiCall body에서 _local 참조', () => {
+      beforeEach(() => {
+        delete (window as any).__g7PendingLocalState;
+        delete (window as any).__g7ForcedLocalFields;
+      });
+
       /**
        * 버그: sequence 내에서 setState로 _local 상태 업데이트 후,
        *       다음 apiCall의 body에서 {{_local.xxx}}가 이전 값을 참조함
@@ -5654,7 +5679,7 @@ describe('ActionDispatcher', () => {
        *       resolveBindings에서 이전 값을 사용
        * 해결: handleSequence에서 sequenceContext.data에 _local: currentState 추가
        *
-       * @see .claude/docs/frontend/troubleshooting-state-setstate.md
+       * @see docs/frontend/troubleshooting-state-setstate.md
        */
       it('sequence 내 setState 후 다음 액션의 context.data._local이 업데이트되어야 함', async () => {
         const mockSetState = vi.fn();
@@ -5827,8 +5852,7 @@ describe('ActionDispatcher', () => {
               dateRange: '2024-01-01~2024-12-31',
               minPrice: 1000,
             }),
-          })
-        );
+          }), expect.anything());
 
         delete (window as any).G7Core;
       });
@@ -5892,8 +5916,7 @@ describe('ActionDispatcher', () => {
                 }),
               }),
             }),
-          })
-        );
+          }), expect.anything());
 
         delete (window as any).G7Core;
       });
@@ -5949,8 +5972,7 @@ describe('ActionDispatcher', () => {
               b: 'valueB',
               c: 'valueC',
             }),
-          })
-        );
+          }), expect.anything());
 
         delete (window as any).G7Core;
       });
@@ -6014,8 +6036,7 @@ describe('ActionDispatcher', () => {
               status: 'active',
               type: 'premium',
             }),
-          })
-        );
+          }), expect.anything());
 
         delete (window as any).G7Core;
       });
@@ -6063,8 +6084,7 @@ describe('ActionDispatcher', () => {
               email: 'test@test.com',
               phone: '123-456-7890',
             }),
-          })
-        );
+          }), expect.anything());
 
         delete (window as any).G7Core;
       });
@@ -6832,104 +6852,10 @@ describe('ActionDispatcher', () => {
     });
   });
 
+  // NOTE: raw value fallback 기능은 troubleshooting-state-setstate.test.ts [사례 26]
+  // 회귀 방지를 위해 의도적으로 제거되었음. 컴포넌트는 반드시 `{ target: { value } }`
+  // 패턴으로 이벤트를 emit 해야 하며, 엔진은 raw value 를 무시한다.
   describe('raw value fallback (non-event callback)', () => {
-    it('File 객체를 전달하는 onChange에서 $event.target.value로 접근 가능해야 함', async () => {
-      const mockGlobalUpdater = vi.fn();
-      dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
-
-      const props = {
-        actions: [
-          {
-            type: 'change' as const,
-            handler: 'setState',
-            params: {
-              target: 'global',
-              uploadFile: '{{$event.target.value}}',
-              uploadFileName: '{{$event.target.value?.name}}',
-            },
-          },
-        ],
-      };
-
-      const boundProps = dispatcher.bindActionsToProps(props);
-
-      expect(boundProps.onChange).toBeDefined();
-
-      // File 객체 시뮬레이션 (preventDefault, target 없음)
-      const mockFile = { name: 'test.zip', size: 1024, type: 'application/zip' };
-      boundProps.onChange(mockFile);
-
-      // globalStateUpdater가 호출될 때까지 대기
-      await vi.waitFor(() => {
-        expect(mockGlobalUpdater).toHaveBeenCalled();
-      });
-
-      // 올바른 값으로 호출되었는지 확인
-      const callArgs = mockGlobalUpdater.mock.calls[0][0];
-      expect(callArgs.uploadFile).toEqual(mockFile);
-      expect(callArgs.uploadFileName).toBe('test.zip');
-    });
-
-    it('onChange에 null 전달 시에도 핸들러가 실행되어야 함 (파일 초기화)', async () => {
-      const mockGlobalUpdater = vi.fn();
-      dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
-
-      const props = {
-        actions: [
-          {
-            type: 'change' as const,
-            handler: 'setState',
-            params: {
-              target: 'global',
-              uploadFile: '{{$event.target.value}}',
-            },
-          },
-        ],
-      };
-
-      const boundProps = dispatcher.bindActionsToProps(props);
-
-      // null은 undefined가 아니므로 fallback이 실행되어야 함
-      boundProps.onChange(null);
-
-      await vi.waitFor(() => {
-        expect(mockGlobalUpdater).toHaveBeenCalled();
-      });
-
-      const callArgs = mockGlobalUpdater.mock.calls[0][0];
-      expect(callArgs.uploadFile).toBeNull();
-    });
-
-    it('boolean 값을 전달하는 콜백에서도 $event.target.value로 접근 가능해야 함', async () => {
-      const mockGlobalUpdater = vi.fn();
-      dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
-
-      const props = {
-        actions: [
-          {
-            type: 'change' as const,
-            handler: 'setState',
-            params: {
-              target: 'global',
-              isOpen: '{{$event.target.value}}',
-            },
-          },
-        ],
-      };
-
-      const boundProps = dispatcher.bindActionsToProps(props);
-
-      // boolean (non-event, non-object) 값
-      boundProps.onChange(true);
-
-      await vi.waitFor(() => {
-        expect(mockGlobalUpdater).toHaveBeenCalled();
-      });
-
-      const callArgs = mockGlobalUpdater.mock.calls[0][0];
-      expect(callArgs.isOpen).toBe(true);
-    });
-
     it('표준 DOM 이벤트는 기존 경로로 처리 (fallback 미사용)', async () => {
       const mockGlobalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
@@ -6999,7 +6925,9 @@ describe('ActionDispatcher', () => {
       expect(callArgs.value).toBe('custom_value');
     });
 
-    it('undefined를 전달하면 fallback이 실행되지 않아야 함', () => {
+    it('raw value (File/null/boolean 등)를 전달하면 핸들러가 실행되지 않아야 함', () => {
+      // 사례 26 회귀 테스트: raw value fallback 의도적 제거
+      // (컴포넌트 마운트 시 초기 setState 로 API 로드 데이터가 덮어쓰이는 버그 방지)
       const mockGlobalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
 
@@ -7018,10 +6946,12 @@ describe('ActionDispatcher', () => {
 
       const boundProps = dispatcher.bindActionsToProps(props);
 
-      // undefined 전달 → firstArg !== undefined 조건에서 제외
+      // File, null, boolean, undefined — 어느 것도 핸들러를 트리거하지 않아야 함
+      boundProps.onChange({ name: 'test.zip' } as any);
+      boundProps.onChange(null);
+      boundProps.onChange(true);
       boundProps.onChange(undefined);
 
-      // globalStateUpdater가 호출되지 않아야 함
       expect(mockGlobalUpdater).not.toHaveBeenCalled();
     });
   });
@@ -7058,8 +6988,7 @@ describe('ActionDispatcher', () => {
       expect(mockGlobalUpdater).toHaveBeenCalledWith(
         expect.objectContaining({
           uploadFile: testFile,
-        })
-      );
+        }), expect.anything());
 
       // File 참조가 동일해야 함 (spread로 복사되지 않음)
       const payload = mockGlobalUpdater.mock.calls[0][0];

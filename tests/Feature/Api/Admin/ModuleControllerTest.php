@@ -859,10 +859,11 @@ class ModuleControllerTest extends TestCase
         ]);
 
         // Assert
+        // 활성화 응답은 data.module 으로 ModuleResource 를 래핑하고, pending_language_packs 를 동시에 노출
         $response->assertStatus(200)
-            ->assertJsonPath('data.assets.js', '/api/modules/assets/test-module/dist/js/module.iife.js')
-            ->assertJsonPath('data.assets.css', '/api/modules/assets/test-module/dist/css/module.css')
-            ->assertJsonPath('data.assets.priority', 100);
+            ->assertJsonPath('data.module.assets.js', '/api/modules/assets/test-module/dist/js/module.iife.js')
+            ->assertJsonPath('data.module.assets.css', '/api/modules/assets/test-module/dist/css/module.css')
+            ->assertJsonPath('data.module.assets.priority', 100);
     }
 
     /**

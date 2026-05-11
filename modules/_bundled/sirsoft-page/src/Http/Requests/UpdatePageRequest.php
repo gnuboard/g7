@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Page\Http\Requests;
 use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Page\Models\Page;
 
 /**
  * 페이지 수정 요청
@@ -27,7 +29,14 @@ class UpdatePageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // 수정 시 슬러그는 변경 불가 (읽기 전용이므로 검증에서 제외)
+            'slug' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^[a-z0-9\-]+$/',
+                Rule::unique(Page::class, 'slug')->ignore($this->route('page')),
+            ],
             'title' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 255)],
             'content' => ['nullable', new TranslatableField(maxLength: 16777215)],
             'content_mode' => ['nullable', 'string', 'in:html,text'],
@@ -48,6 +57,9 @@ class UpdatePageRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'slug.max' => __('sirsoft-page::validation.slug.max'),
+            'slug.regex' => __('sirsoft-page::validation.slug.format'),
+            'slug.unique' => __('sirsoft-page::validation.slug.unique'),
             'title.required' => __('sirsoft-page::validation.title.required'),
             'content_mode.in' => __('sirsoft-page::validation.content_mode.in'),
             'published.boolean' => __('sirsoft-page::validation.published.boolean'),

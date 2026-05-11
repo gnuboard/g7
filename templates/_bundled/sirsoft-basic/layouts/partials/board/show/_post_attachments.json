@@ -5,7 +5,7 @@
   },
   "type": "basic",
   "name": "Div",
-  "if": "{{(post?.data?.attachments?.length ?? 0) > 0}}",
+  "if": "{{post?.data?.has_attachment}}",
   "props": {
     "className": "mb-6 border-b border-gray-200 dark:border-gray-700 px-6 pt-4"
   },
@@ -59,7 +59,7 @@
               "props": {
                 "className": "ml-1 px-1.5 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
               },
-              "text": "{{post?.data?.attachments?.length ?? 0}}"
+              "text": "{{post?.data?.attachment_count ?? 0}}"
             }
           ]
         },

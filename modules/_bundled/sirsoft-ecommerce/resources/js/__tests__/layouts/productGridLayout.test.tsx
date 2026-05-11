@@ -12,7 +12,7 @@
 import { describe, it, expect } from 'vitest';
 
 // 레이아웃 JSON 임포트
-import productGrid from '../../../../templates/sirsoft-basic/layouts/partials/shop/list/_product_grid.json';
+import productGrid from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_product_grid.json';
 
 describe('상품 그리드 레이아웃 구조 검증', () => {
     it('최상위 컴포넌트가 Div여야 함', () => {

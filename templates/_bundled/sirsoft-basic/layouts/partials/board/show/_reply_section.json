@@ -37,7 +37,7 @@
             {
               "type": "basic",
               "name": "Span",
-              "text": "$t:board.posts.detail.replies_title|count={{(post?.data?.replies ?? []).length}}"
+              "text": "$t:board.posts.detail.replies_title|count={{post?.data?.reply_count ?? 0}}"
             }
           ]
         }

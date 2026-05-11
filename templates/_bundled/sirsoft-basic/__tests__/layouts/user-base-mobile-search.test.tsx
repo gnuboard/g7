@@ -186,7 +186,7 @@ describe('모바일 메뉴 통합검색', () => {
 
     expect(navigateAction.handler).toBe('navigate');
     expect(navigateAction.params.query).toHaveProperty('q');
-    // $event.target.value 패턴 사용 (CLAUDE.md: $value 금지)
+    // $event.target.value 패턴 사용 ($value 금지)
     expect(navigateAction.params.query.q).toContain('$event.target.value');
     expect(navigateAction.params.query.q).not.toContain('$value');
   });

@@ -1,0 +1,161 @@
+{
+  "title": "商品レビュー管理",
+  "description": "顧客レビューを確認し、返信を管理してください",
+  "search": {
+    "field": {
+      "order_number": "注文番号",
+      "product_name": "商品名",
+      "option_name": "オプション名",
+      "reviewer": "作成者",
+      "content": "レビュー内容"
+    },
+    "placeholder": "検索キーワードを入力してください",
+    "column_select": "列の選択"
+  },
+  "filter": {
+    "rating": "評価",
+    "reply_status": "返信ステータス",
+    "photo": "写真の有無",
+    "review_status": "レビューステータス",
+    "date_range": "作成日期間",
+    "all": "すべて",
+    "replied": "返信完了",
+    "not_replied": "未返信",
+    "photo_review": "フォトレビュー",
+    "text_review": "通常レビュー",
+    "visible": "表示中",
+    "hidden": "非表示",
+    "start_date": "開始日",
+    "end_date": "終了日",
+    "search": "検索",
+    "reset": "初期化",
+    "date_quick": {
+      "today": "本日",
+      "3days": "3日間",
+      "week": "1週間",
+      "month": "1ヶ月",
+      "3months": "3ヶ月",
+      "all": "すべて"
+    }
+  },
+  "batch": {
+    "selected_count": "{{count}}個選択されました",
+    "status_change": "レビューステータス変更",
+    "apply": "適用"
+  },
+  "table": {
+    "total_count": "合計{{count}}個",
+    "sort": {
+      "created_at_desc": "作成日（最新順）",
+      "created_at_asc": "作成日（古い順）",
+      "rating_desc": "評価（高い順）",
+      "rating_asc": "評価（低い順）"
+    },
+    "per_page": {
+      "10": "10個ずつ表示",
+      "20": "20個ずつ表示",
+      "50": "50個ずつ表示",
+      "100": "100個ずつ表示",
+      "template": "{{count}}個ずつ表示"
+    },
+    "columns": {
+      "checkbox": "選択",
+      "no": "番号",
+      "photo": "写真",
+      "product_name": "商品名",
+      "content": "レビュー内容",
+      "rating": "評価",
+      "reviewer": "作成者",
+      "order_number": "注文番号",
+      "created_at": "作成日",
+      "reply": "返信",
+      "status": "ステータス",
+      "actions": "管理"
+    },
+    "photo_count": "+{{count}}",
+    "empty": "登録されたレビューがありません",
+    "reply_status": {
+      "replied": "返信完了",
+      "not_replied": "未返信"
+    }
+  },
+  "detail": {
+    "purchase_info": {
+      "title": "購入情報",
+      "product_name": "商品名",
+      "options": "オプション",
+      "reviewer": "作成者",
+      "created_at": "作成日時",
+      "updated_at": "更新日時",
+      "order_number": "注文番号",
+      "quantity": "購入数量",
+      "purchase_date": "購入日時"
+    },
+    "customer_review": {
+      "title": "顧客レビュー",
+      "edited": "更新済み",
+      "attached_images": "添付画像",
+      "images_count": "（{{count}}枚）",
+      "attached_images_label": "添付画像（{{count}}枚）",
+      "created_at_label": "作成：",
+      "updated_at_label": "更新："
+    },
+    "image_preview": {
+      "title": "画像プレビュー"
+    },
+    "seller_reply": {
+      "title": "販売者返信",
+      "edited": "更新済み",
+      "created_at": "登録",
+      "updated_at": "編集",
+      "edit": "編集",
+      "edit_save": "保存",
+      "cancel": "キャンセル",
+      "delete": "削除",
+      "reply_complete": "回答完了"
+    },
+    "reply_form": {
+      "title": "販売者の回答",
+      "placeholder": "顧客に送信する回答を作成してください...",
+      "hint_1": "親切で明確に回答してください",
+      "hint_2": "顧客のお問い合わせに誠実にお応えください",
+      "char_count": "{{count}}文字",
+      "submit": "回答を登録"
+    },
+    "expand": "折りたたむ",
+    "collapse": "展開"
+  },
+  "mobile": {
+    "select_all": "すべて選択",
+    "product_label": "商品",
+    "order_number_label": "注文番号",
+    "quantity_label": "数量",
+    "purchase_date_label": "購入日",
+    "rating_label": "評価",
+    "review_content_label": "レビュー",
+    "reviewer_label": "投稿者",
+    "created_at_label": "投稿日",
+    "updated_at_label": "編集日"
+  },
+  "modal": {
+    "status_change": {
+      "title": "確認",
+      "message": "{{count}}件のレビューを「{{status}}」に処理しますか?",
+      "cancel": "キャンセル",
+      "confirm": "確認"
+    },
+    "reply_delete": {
+      "title": "回答を削除",
+      "message": "この回答を削除しますか?",
+      "warning": "削除された回答は復元できません。",
+      "cancel": "キャンセル",
+      "confirm": "削除"
+    },
+    "reply_edit": {
+      "title": "回答を編集",
+      "placeholder": "編集する回答を入力してください...",
+      "cancel": "キャンセル",
+      "confirm": "保存"
+    }
+  }
+}

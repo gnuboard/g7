@@ -33,13 +33,16 @@ class ImageUploadService
      */
     public function upload(UploadedFile $file, ?int $uploadedBy): Ckeditor5ImageUpload
     {
+        // 훅: 이미지 업로드 전 (본인인증 등 확장 지점)
+        \App\Extension\HookManager::doAction('sirsoft-ckeditor5.image.before_upload', $file, $uploadedBy);
+
         $extension = $file->guessExtension() ?? $file->getClientOriginalExtension();
         $storedFilename = Str::uuid().'.'.$extension;
         $path = date('Y/m/d').'/'.$storedFilename;
 
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
-        return $this->repository->create([
+        $record = $this->repository->create([
             'original_name' => $file->getClientOriginalName(),
             'file_path'     => "images/{$path}",
             'storage_disk'  => $this->storage->getDisk(),
@@ -47,5 +50,9 @@ class ImageUploadService
             'mime_type'     => $file->getMimeType(),
             'uploaded_by'   => $uploadedBy,
         ]);
+
+        \App\Extension\HookManager::doAction('sirsoft-ckeditor5.image.after_upload', $record);
+
+        return $record;
     }
 }

@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from 'vitest';
 
-import tabDetail from '../../../../../../templates/sirsoft-basic/layouts/partials/shop/detail/_tab_detail.json';
+import tabDetail from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_detail.json';
 
 describe('상품 상세정보 탭 구조 검증', () => {
     const children = tabDetail.children;
@@ -51,12 +51,18 @@ describe('상품 상세정보 탭 구조 검증', () => {
             expect(commonInfoSection.if).toContain('content');
         });
 
-        it('HTML 모드용 HtmlContent가 content_mode === html 조건으로 렌더링되어야 함', () => {
-            const htmlContent = commonInfoSection.children.find(
-                (c: any) => c.name === 'HtmlContent' && c.if?.includes("content_mode === 'html'"),
+        it('HTML 모드용 html_content extension_point 가 content_mode === html 조건으로 렌더링되어야 함', () => {
+            // extension_point 로 래핑되어 default[] 에 HtmlContent 가 포함됨
+            const htmlExtPoint = commonInfoSection.children.find(
+                (c: any) => c.type === 'extension_point' && c.name === 'html_content'
+                    && c.if?.includes("content_mode === 'html'"),
             );
-            expect(htmlContent).toBeDefined();
-            expect(htmlContent.props.content).toContain('product.data?.common_info?.content');
+            expect(htmlExtPoint).toBeDefined();
+            expect(htmlExtPoint.props.content).toContain('product.data?.common_info?.content');
+            const fallback = (htmlExtPoint.default ?? []).find(
+                (c: any) => c.name === 'HtmlContent',
+            );
+            expect(fallback).toBeDefined();
         });
 
         it('Text 모드용 Div가 whitespace-pre-line 스타일로 렌더링되어야 함', () => {

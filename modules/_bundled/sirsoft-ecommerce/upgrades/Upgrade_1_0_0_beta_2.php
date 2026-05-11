@@ -2,14 +2,15 @@
 
 namespace Modules\Sirsoft\Ecommerce\Upgrades;
 
+use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
+use App\Extension\Helpers\NotificationSyncHelper;
+use App\Extension\ModuleManager;
 use App\Extension\UpgradeContext;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Modules\Sirsoft\Ecommerce\Database\Seeders\EcommerceNotificationDefinitionSeeder;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 
 /**
@@ -113,8 +114,9 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
         }
 
         // 알림 정의 시딩 (7종 — mail + database 채널 템플릿 포함)
+        // module.php::getNotificationDefinitions() 가 SSoT — declarative getter 패턴
         $context->logger->info('[v1.0.0-beta.2] 이커머스 알림 정의 시딩...');
-        (new EcommerceNotificationDefinitionSeeder())->run();
+        $this->syncEcommerceNotificationDefinitions();
 
         // database 채널 템플릿 보강 — 이전 빌드에서 시더를 실행하여 mail 템플릿만 생성된 환경에서
         // database 채널 템플릿이 누락된 정의를 보완합니다. updateOrCreate 패턴이므로 중복 생성 없음.
@@ -161,14 +163,51 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
             $context->logger->info("[v1.0.0-beta.2] 이커머스 메일 템플릿 {$migratedCount}건 이관 완료");
         }
 
-        // 캐시 무효화
+        // 캐시 무효화 (CacheInterface 추상화 사용 — 코어 캐시 드라이버 위임)
+        $cache = app(CacheInterface::class);
         $cachePrefix = 'mail_template:sirsoft-ecommerce:';
         $types = ['order_confirmed', 'order_shipped', 'order_completed', 'order_cancelled', 'new_order_admin', 'inquiry_received', 'inquiry_replied'];
         foreach ($types as $type) {
-            Cache::forget($cachePrefix . $type);
+            $cache->forget($cachePrefix . $type);
         }
 
         $context->logger->info('[v1.0.0-beta.2] 이커머스 알림 정의 이관 완료');
+    }
+
+    /**
+     * module.php::getNotificationDefinitions() 를 SSoT 로 알림 정의를 동기화합니다.
+     *
+     * declarative getter 패턴 도입 이후 별도 Seeder 없이 Manager 가 자동 동기화하나,
+     * 본 업그레이드 스텝은 beta.1/2 → beta.3 경로 호환을 위해 명시적으로 1회 동기화합니다.
+     *
+     * @return void
+     */
+    private function syncEcommerceNotificationDefinitions(): void
+    {
+        $module = app(ModuleManager::class)->getModule('sirsoft-ecommerce');
+        if (! $module) {
+            return;
+        }
+
+        $helper = app(NotificationSyncHelper::class);
+        $definedTypes = [];
+
+        foreach ($module->getNotificationDefinitions() as $data) {
+            $data['extension_type'] = 'module';
+            $data['extension_identifier'] = 'sirsoft-ecommerce';
+
+            $definition = $helper->syncDefinition($data);
+            $definedTypes[] = $definition->type;
+
+            $definedChannels = [];
+            foreach ($data['templates'] ?? [] as $template) {
+                $helper->syncTemplate($definition->id, $template);
+                $definedChannels[] = $template['channel'];
+            }
+            $helper->cleanupStaleTemplates($definition->id, $definedChannels);
+        }
+
+        $helper->cleanupStaleDefinitions('module', 'sirsoft-ecommerce', $definedTypes);
     }
 
     /**
@@ -185,8 +224,11 @@ class Upgrade_1_0_0_beta_2 implements UpgradeStepInterface
         $types = ['order_confirmed', 'order_shipped', 'order_completed', 'order_cancelled', 'new_order_admin', 'inquiry_received', 'inquiry_replied'];
         $created = 0;
 
-        $seeder = new EcommerceNotificationDefinitionSeeder();
-        $definitionsMap = collect($seeder->getDefaultDefinitions())->keyBy('type');
+        // module.php::getNotificationDefinitions() 가 SSoT
+        $module = app(ModuleManager::class)->getModule('sirsoft-ecommerce');
+        $definitionsMap = $module
+            ? collect($module->getNotificationDefinitions())->keyBy('type')
+            : collect();
 
         foreach ($types as $type) {
             $definition = NotificationDefinition::where('type', $type)->first();

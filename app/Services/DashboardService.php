@@ -9,7 +9,6 @@ use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
-use Carbon\Carbon;
 
 /**
  * 대시보드 서비스
@@ -32,6 +31,9 @@ class DashboardService
      */
     public function getStats(): array
     {
+        // 훅: 대시보드 통계 조회 전 (IDV 정책 가드 지점)
+        HookManager::doAction('core.dashboard.before_stats');
+
         $stats = [
             'total_users' => $this->getUserStats(),
             'installed_modules' => $this->getModuleStats(),
@@ -148,6 +150,9 @@ class DashboardService
      */
     public function getSystemResources(): array
     {
+        // IDV 정책 가드 지점 (계획서 #297 — 민감 관리자 조회 훅 커버리지)
+        HookManager::doAction('core.dashboard.before_resources');
+
         $resources = [
             'cpu' => $this->getCpuUsage(),
             'memory' => $this->getMemoryUsage(),
@@ -433,30 +438,6 @@ class DashboardService
      */
     public function getSystemAlerts(): array
     {
-        // TODO: 실제 알림 시스템 연동 예정
-        // 현재는 더미 데이터 반환
-        $alerts = [
-            [
-                'id' => 1,
-                'type' => 'info',
-                'icon' => 'info-circle',
-                'title' => __('dashboard.alerts.system_update_available'),
-                'message' => __('dashboard.alerts.system_update_message'),
-                'time' => TimezoneHelper::toUserCarbon(Carbon::now()->subHours(2))?->diffForHumans(),
-                'read' => false,
-            ],
-            [
-                'id' => 2,
-                'type' => 'warning',
-                'icon' => 'exclamation-triangle',
-                'title' => __('dashboard.alerts.disk_space_low'),
-                'message' => __('dashboard.alerts.disk_space_message'),
-                'time' => TimezoneHelper::toUserCarbon(Carbon::now()->subDay())?->diffForHumans(),
-                'read' => true,
-            ],
-        ];
-
-        // 훅을 통한 알림 확장 지원
-        return HookManager::applyFilters('core.dashboard.alerts', $alerts);
+        return HookManager::applyFilters('core.dashboard.alerts', []);
     }
 }

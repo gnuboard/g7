@@ -110,7 +110,8 @@ class TemplateSystemIntegrationTest extends TestCase
 
         $result = $this->templateManager->activateTemplate('test-admin');
 
-        $this->assertTrue($result);
+        $this->assertIsArray($result);
+        $this->assertTrue($result['success']);
         $this->assertDatabaseHas('templates', [
             'identifier' => 'test-admin',
             'status' => 'active',

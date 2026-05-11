@@ -3,7 +3,7 @@
  *
  * troubleshooting-state-closure.md에 기록된 모든 사례의 회귀 테스트입니다.
  *
- * @see .claude/docs/frontend/troubleshooting-state-closure.md
+ * @see docs/frontend/troubleshooting-state-closure.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -754,7 +754,7 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
      *       currentLocalState(pendingLocalState, 최신)를 덮어씀
      * 해결: v1.19.1 dispatch에서 pendingLocalState를 context.data._local에도 반영
      *
-     * @see .claude/docs/frontend/troubleshooting-state-closure.md 사례 7
+     * @see docs/frontend/troubleshooting-state-closure.md 사례 7
      */
     it('dispatch 경로에서 pendingLocalState가 context.data._local보다 우선 적용되어야 함', () => {
       // refetchDataSource의 merge 패턴 시뮬레이션
@@ -852,6 +852,126 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
 
       // sequence 내에서 setState 결과가 다음 액션에 반영되어야 함
       expect(capturedSelectedItems).toEqual([1, 2]);
+    });
+  });
+});
+
+describe('트러블슈팅 회귀 테스트 - startInterval Stale Closure (사례 8)', () => {
+  /**
+   * 증상:
+   * - G7Core.state.set 직후 dispatch({ handler: 'startInterval', ... }) 호출
+   * - 매 tick 의 setState 표현식이 _global 의 새 값을 못 봄 (stale)
+   * - launcher 가 자체 window.setInterval 을 사용하면 클로저로 안전하게 값 보유
+   *
+   * 검증 의도: launcher 패턴(클로저 기반 setInterval) 이 stale closure 우회 가능함을 확인.
+   * 코어 startInterval 핸들러 동작 자체는 변경하지 않음 — 이 테스트는 우회 패턴을 잠금.
+   */
+  describe('[사례 8] launcher 가 setInterval 직접 사용으로 stale closure 우회', () => {
+    let setSpy: ReturnType<typeof vi.fn>;
+    let originalG7Core: any;
+
+    beforeEach(() => {
+      setSpy = vi.fn();
+      originalG7Core = (window as any).G7Core;
+      (window as any).G7Core = {
+        state: {
+          set: setSpy,
+          get: () => ({}),
+          getLocal: () => ({}),
+          getGlobal: () => ({}),
+        },
+      };
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      (window as any).G7Core = originalG7Core;
+    });
+
+    it('launcher 클로저의 expiresMs 를 매 tick 마다 사용해 remainingSeconds 가 정확히 감소', () => {
+      const G7Core = (window as any).G7Core;
+      const startTime = 1_700_000_000_000;
+      vi.setSystemTime(startTime);
+
+      // 60초 후 만료
+      const expiresMs = startTime + 60_000;
+
+      // launcher 패턴: 클로저로 expiresMs 보유 + setInterval 직접 사용
+      const tickHandle = window.setInterval(() => {
+        const remaining = Math.max(
+          0,
+          Math.floor((expiresMs - Date.now()) / 1000),
+        );
+        G7Core.state.set({ challenge: { remainingSeconds: remaining } });
+      }, 1000);
+
+      // 5초 경과 — 5번 tick
+      for (let i = 0; i < 5; i++) {
+        vi.advanceTimersByTime(1000);
+      }
+
+      // 5번의 setState 호출 — remainingSeconds 가 60→59→58→57→56→55 순으로 감소
+      expect(setSpy).toHaveBeenCalledTimes(5);
+      const calls = setSpy.mock.calls.map((c) => c[0].challenge.remainingSeconds);
+      expect(calls).toEqual([59, 58, 57, 56, 55]);
+
+      window.clearInterval(tickHandle);
+    });
+
+    it('만료 시각 도달 시 remainingSeconds 가 0 으로 고정 (음수 방지)', () => {
+      const G7Core = (window as any).G7Core;
+      const startTime = 1_700_000_000_000;
+      vi.setSystemTime(startTime);
+
+      // 2초 후 만료
+      const expiresMs = startTime + 2_000;
+
+      const tickHandle = window.setInterval(() => {
+        const remaining = Math.max(
+          0,
+          Math.floor((expiresMs - Date.now()) / 1000),
+        );
+        G7Core.state.set({ challenge: { remainingSeconds: remaining } });
+      }, 1000);
+
+      // 5초 경과 — 만료 시각 초과
+      for (let i = 0; i < 5; i++) {
+        vi.advanceTimersByTime(1000);
+      }
+
+      // 마지막 호출들은 0 으로 고정 (Math.max(0, negative))
+      const lastCall = setSpy.mock.calls[setSpy.mock.calls.length - 1][0];
+      expect(lastCall.challenge.remainingSeconds).toBe(0);
+      // 음수가 절대 발생하지 않아야 함
+      const allCalls = setSpy.mock.calls.map((c) => c[0].challenge.remainingSeconds);
+      expect(allCalls.every((n: number) => n >= 0)).toBe(true);
+
+      window.clearInterval(tickHandle);
+    });
+
+    it('clearInterval 후 setState 호출 중단 — 모달 닫힌 후 누수 방지', () => {
+      const G7Core = (window as any).G7Core;
+      const startTime = 1_700_000_000_000;
+      vi.setSystemTime(startTime);
+      const expiresMs = startTime + 60_000;
+
+      const tickHandle = window.setInterval(() => {
+        G7Core.state.set({
+          challenge: {
+            remainingSeconds: Math.max(0, Math.floor((expiresMs - Date.now()) / 1000)),
+          },
+        });
+      }, 1000);
+
+      // 2 tick 후 정리
+      vi.advanceTimersByTime(2000);
+      const callsBeforeClear = setSpy.mock.calls.length;
+      window.clearInterval(tickHandle);
+
+      // 추가 시간 경과해도 더 이상 호출 없음
+      vi.advanceTimersByTime(5000);
+      expect(setSpy).toHaveBeenCalledTimes(callsBeforeClear);
     });
   });
 });

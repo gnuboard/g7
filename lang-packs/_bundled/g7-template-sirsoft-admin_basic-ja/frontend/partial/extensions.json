@@ -1,0 +1,35 @@
+{
+  "types": {
+    "module": "モジュール",
+    "plugin": "プラグイン",
+    "template": "テンプレート"
+  },
+  "alerts": {
+    "incompatible_deactivated": "{{type}} \"{{name}}\" が自動無効化されました",
+    "incompatible_message": "必要なバージョン: {{required}}, 現在インストール済み: {{installed}}",
+    "recovered_title": "{{type}} \"{{name}}\" が再び互換性があります",
+    "recovered_body": "コアアップグレード後に互換性があります (以前の要件: {{previously_required}})。再度有効化できます。",
+    "recovered_success": "拡張が再度有効化されました。",
+    "dismissed": "通知を閉じました。",
+    "auto_deactivated_listed": "自動無効化された拡張のリストです。",
+    "recover_action": "再度有効化",
+    "dismiss_action": "通知を閉じる"
+  },
+  "badges": {
+    "incompatible": "コアアップグレードが必要です",
+    "incompatible_tooltip": "コア {{required}} 以上が必要です (現在: {{installed}})",
+    "incompatible_sr": "{{name}} はコア {{required}} 以上が必要ですが、現在 {{installed}} がインストールされているため更新できません。"
+  },
+  "banner": {
+    "title": "コア互換性の問題により自動無効化された拡張があります",
+    "item_required": "必要なバージョン: {{required}}",
+    "guide_link": "コアアップグレードガイド",
+    "dismiss": "閉じる"
+  },
+  "update_modal": {
+    "compat_warning_title": "コアバージョン互換性警告",
+    "compat_warning_message": "この {{type}} はコア {{required}} 以上が必要です。(現在: {{installed}})",
+    "compat_guide_link": "コアアップグレードガイドを表示",
+    "force_label": "警告を無視して強制更新します (非推奨)"
+  }
+}

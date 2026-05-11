@@ -201,4 +201,12 @@ interface ReportRepositoryInterface
      * @return array<int> 신고한 대상 ID 목록
      */
     public function getReportedTargetIds(int $userId, int $boardId, string $targetType, array $targetIds): array;
+
+    /**
+     * ID 목록으로 신고를 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
+     *
+     * @param  array<int, int>  $ids  신고 ID 목록
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection;
 }

@@ -170,6 +170,23 @@ interface ProductRepositoryInterface
     public function findByIds(array $ids): \Illuminate\Database\Eloquent\Collection;
 
     /**
+     * ID 목록으로 상품을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
+     *
+     * @param  array<int, int>  $ids  상품 ID 목록
+     * @return \Illuminate\Database\Eloquent\Collection<int, Product> id => Product 매핑
+     */
+    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection;
+
+    /**
+     * 상품의 stock_quantity 컬럼만 갱신합니다 (옵션 재고 합계 동기화 전용).
+     *
+     * @param  int  $productId  상품 ID
+     * @param  int  $stock  새 재고 수량
+     * @return int 업데이트된 행 수 (0 또는 1)
+     */
+    public function updateStockQuantity(int $productId, int $stock): int;
+
+    /**
      * 키워드로 공개 상품을 검색합니다.
      *
      * @param string $keyword 검색 키워드

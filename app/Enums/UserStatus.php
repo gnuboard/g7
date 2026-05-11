@@ -30,6 +30,11 @@ enum UserStatus: string
     case Withdrawn = 'withdrawn';
 
     /**
+     * 본인인증 대기 (Mode C — 가입 직후 비활성, IDV 통과 후 활성화)
+     */
+    case PendingVerification = 'pending_verification';
+
+    /**
      * 모든 상태 값을 문자열 배열로 반환합니다.
      *
      * @return array<string>
@@ -82,6 +87,7 @@ enum UserStatus: string
             self::Inactive => 'secondary',
             self::Blocked => 'danger',
             self::Withdrawn => 'warning',
+            self::PendingVerification => 'info',
         };
     }
 }

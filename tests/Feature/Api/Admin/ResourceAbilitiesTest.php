@@ -93,13 +93,16 @@ class ResourceAbilitiesTest extends TestCase
     }
 
     // =========================================================================
-    // self 바이패스 abilities 테스트
+    // permission 기반 abilities 테스트 (scope_type 시스템 도입 이후)
     // =========================================================================
 
     /**
-     * 자기 자신 조회 시 core.users.update 권한 없어도 can_update가 true로 반환된다.
+     * 자기 자신 조회 시에도 core.users.update 권한이 없으면 can_update는 false로 반환된다.
+     *
+     * 과거 abilityBypassMap() 의 self/owner 바이패스는 폐기되고 scope_type 시스템으로
+     * 대체되었으므로, permission 보유 여부가 단일 판정 기준이 된다.
      */
-    public function test_self_user_gets_can_update_true_without_permission(): void
+    public function test_self_user_gets_can_update_false_without_permission(): void
     {
         // core.users.read + core.users.create만 가진 사용자 (update 없음)
         $user = $this->createUserWithRole([
@@ -115,8 +118,8 @@ class ResourceAbilitiesTest extends TestCase
         $response->assertOk();
         $abilities = $response->json('data.abilities');
 
-        $this->assertTrue($abilities['can_update'], '자기 자신은 can_update가 true여야 합니다');
-        $this->assertFalse($abilities['can_delete'], 'can_delete는 바이패스되지 않아야 합니다');
+        $this->assertFalse($abilities['can_update'], 'permission 없으면 자기 자신이라도 can_update=false');
+        $this->assertFalse($abilities['can_delete'], 'permission 없으면 can_delete=false');
     }
 
     /**
@@ -143,24 +146,31 @@ class ResourceAbilitiesTest extends TestCase
     }
 
     // =========================================================================
-    // is_owner 테스트 (ownerField 미정의 리소스)
+    // is_owner 테스트 (UserResource ownerField='id')
     // =========================================================================
 
     /**
-     * ownerField 미정의 리소스(UserResource)는 is_owner 키를 포함하지 않는다.
+     * UserResource 는 ownerField='id' 를 정의하므로 is_owner 키가 응답에 포함된다.
+     *
+     * 자기 자신 조회 시 is_owner=true, 타인 조회 시 is_owner=false.
+     * (ownerField 미정의 리소스의 is_owner 생략 동작은 BaseApiResource 단위 테스트에서 검증.)
      */
-    public function test_resource_without_owner_field_excludes_is_owner(): void
+    public function test_user_resource_includes_is_owner_based_on_request_user(): void
     {
         $targetUser = User::factory()->create();
 
-        $response = $this->withToken($this->adminToken)
+        // 타인 조회: is_owner=false
+        $responseOther = $this->withToken($this->adminToken)
             ->getJson("/api/admin/users/{$targetUser->uuid}");
+        $responseOther->assertOk();
+        $this->assertArrayHasKey('is_owner', $responseOther->json('data'));
+        $this->assertFalse($responseOther->json('data.is_owner'));
 
-        $response->assertOk();
-        $data = $response->json('data');
-
-        // UserResource는 ownerField() 미정의 → is_owner 미포함
-        $this->assertArrayNotHasKey('is_owner', $data);
+        // 자기 자신 조회: is_owner=true
+        $responseSelf = $this->withToken($this->adminToken)
+            ->getJson("/api/admin/users/{$this->adminUser->uuid}");
+        $responseSelf->assertOk();
+        $this->assertTrue($responseSelf->json('data.is_owner'));
     }
 
     // =========================================================================

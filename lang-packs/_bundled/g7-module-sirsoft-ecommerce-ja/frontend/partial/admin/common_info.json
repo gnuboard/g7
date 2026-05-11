@@ -1,0 +1,89 @@
+{
+  "title": "共通情報管理",
+  "description": "商品詳細ページに表示される共通案内情報を管理します",
+  "list": {
+    "title": "共通情報",
+    "add": "追加",
+    "languages_count": "{count}個の言語",
+    "default": "デフォルト",
+    "empty": "登録された共通情報がありません",
+    "search_placeholder": "共通情報名で検索"
+  },
+  "empty_state": {
+    "title": "共通情報を選択してください",
+    "description": "左側のリストから共通情報を選択するか、新規に追加してください"
+  },
+  "detail": {
+    "title": "共通情報情報",
+    "name": "共通情報名",
+    "status": "ステータス",
+    "default": "デフォルト",
+    "active": "使用",
+    "created_at": "登録日",
+    "updated_at": "編集日",
+    "copy": "複製",
+    "content": "案内内容",
+    "content_placeholder": "案内内容表示"
+  },
+  "form": {
+    "title_add": "共通情報追加",
+    "title_edit": "共通情報編集",
+    "title_copy": "共通情報複製",
+    "name": "共通情報名",
+    "name_placeholder": "共通情報名を入力してください",
+    "set_default": "デフォルト値として設定",
+    "is_active": "使用有無",
+    "active_label": "使用",
+    "content_section": "案内内容",
+    "mode_text": "テキスト",
+    "mode_html": "HTML",
+    "preview": "プレビュー",
+    "placeholder_text": "案内内容を入力してください",
+    "placeholder_html": "HTMLコードで案内内容を入力してください",
+    "status_section": "ステータス設定",
+    "status_default": "デフォルト設定",
+    "status_active": "有効化"
+  },
+  "language": {
+    "ko": "日本語",
+    "en": "English"
+  },
+  "modal": {
+    "delete": {
+      "title": "共通情報削除",
+      "confirm_message": "'{name}'共通情報を削除しますか?",
+      "confirm_suffix": "共通情報を削除しますか?",
+      "warning": "この共通情報を使用している全ての商品の連携が解除されます",
+      "irreversible": "※この作業は取り消せません"
+    },
+    "editing": {
+      "title": "編集中です",
+      "message": "編集中の内容は保存されません",
+      "confirm_message": "本当にキャンセルして別の商品グループを選択しますか?",
+      "continue": "編集を続行",
+      "discard": "キャンセルして移動"
+    },
+    "content_mode_change": {
+      "title": "入力モード変更",
+      "message": "HTMLから一般テキストに変更すると、HTMLタグが全て削除されます。続行しますか?",
+      "confirm": "変更"
+    },
+    "set_default": {
+      "title": "デフォルト設定確認",
+      "message": "この共通情報をデフォルトとして設定しますか?既存のデフォルト設定は解除されます"
+    },
+    "copy": {
+      "title": "共通情報複製",
+      "message": "'{name}'共通情報を複製しますか?",
+      "confirm": "複製"
+    }
+  },
+  "button": {
+    "cancel": "キャンセル",
+    "save": "保存",
+    "edit": "編集",
+    "delete": "削除",
+    "confirm": "確認",
+    "set_default": "デフォルト値として設定"
+  }
+}

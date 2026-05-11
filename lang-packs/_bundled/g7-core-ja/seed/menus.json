@@ -1,0 +1,38 @@
+{
+  "admin-dashboard": {
+    "name": "ダッシュボード"
+  },
+  "admin-settings": {
+    "name": "環境設定"
+  },
+  "admin-notification-logs": {
+    "name": "通知発送履歴"
+  },
+  "admin-identity-logs": {
+    "name": "本人認証履歴"
+  },
+  "admin-activity-logs": {
+    "name": "アクティビティログ"
+  },
+  "admin-menus": {
+    "name": "メニュー管理"
+  },
+  "admin-users": {
+    "name": "ユーザー管理"
+  },
+  "admin-roles": {
+    "name": "権限管理"
+  },
+  "admin-modules": {
+    "name": "モジュール管理"
+  },
+  "admin-plugins": {
+    "name": "プラグイン管理"
+  },
+  "admin-templates": {
+    "name": "テンプレート管理"
+  },
+  "admin-schedules": {
+    "name": "スケジュール管理"
+  }
+}

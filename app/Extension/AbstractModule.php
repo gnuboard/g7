@@ -153,6 +153,8 @@ abstract class AbstractModule implements ModuleInterface
      * 모듈 설치
      *
      * 모듈 개발자가 설치 시 추가 작업이 필요한 경우 오버라이드
+     *
+     * @return bool 성공 여부
      */
     public function install(): bool
     {
@@ -163,6 +165,8 @@ abstract class AbstractModule implements ModuleInterface
      * 모듈 제거
      *
      * 모듈 개발자가 제거 시 추가 작업이 필요한 경우 오버라이드
+     *
+     * @return bool 성공 여부
      */
     public function uninstall(): bool
     {
@@ -188,6 +192,8 @@ abstract class AbstractModule implements ModuleInterface
      * 모듈 활성화
      *
      * 모듈 개발자가 활성화 시 추가 작업이 필요한 경우 오버라이드
+     *
+     * @return bool 성공 여부
      */
     public function activate(): bool
     {
@@ -198,6 +204,8 @@ abstract class AbstractModule implements ModuleInterface
      * 모듈 비활성화
      *
      * 모듈 개발자가 비활성화 시 추가 작업이 필요한 경우 오버라이드
+     *
+     * @return bool 성공 여부
      */
     public function deactivate(): bool
     {
@@ -275,6 +283,8 @@ abstract class AbstractModule implements ModuleInterface
      *
      * 기본적으로 src/routes/api.php, src/routes/web.php를 반환
      * 파일이 존재하는 경우에만 포함
+     *
+     * @return array<string, string> 라우트 키 => 파일 경로 매핑
      */
     public function getRoutes(): array
     {
@@ -300,6 +310,8 @@ abstract class AbstractModule implements ModuleInterface
      *
      * 기본적으로 database/migrations 디렉토리를 반환
      * 디렉토리가 존재하는 경우에만 포함
+     *
+     * @return array<string> 마이그레이션 디렉토리 경로 배열
      */
     public function getMigrations(): array
     {
@@ -317,6 +329,8 @@ abstract class AbstractModule implements ModuleInterface
      *
      * 기본적으로 빈 배열 반환
      * 모듈 개발자가 뷰가 필요한 경우 오버라이드
+     *
+     * @return array<string> 뷰 디렉토리 경로 배열
      */
     public function getViews(): array
     {
@@ -428,6 +442,8 @@ abstract class AbstractModule implements ModuleInterface
      *
      * 기본적으로 빈 배열 반환
      * 모듈 개발자가 설정이 필요한 경우 오버라이드
+     *
+     * @return array 모듈 설정 배열
      */
     public function getConfig(): array
     {
@@ -439,6 +455,8 @@ abstract class AbstractModule implements ModuleInterface
      *
      * 기본적으로 빈 배열 반환
      * 모듈 개발자가 관리자 메뉴가 필요한 경우 오버라이드
+     *
+     * @return array 관리자 메뉴 정의 배열
      */
     public function getAdminMenus(): array
     {
@@ -475,6 +493,8 @@ abstract class AbstractModule implements ModuleInterface
      *
      * 기본적으로 빈 배열 반환
      * 모듈 개발자가 훅 리스너가 필요한 경우 오버라이드
+     *
+     * @return array 훅 리스너 정의 배열
      */
     public function getHookListeners(): array
     {
@@ -526,6 +546,173 @@ abstract class AbstractModule implements ModuleInterface
      *   - 'sirsoft-ecommerce.order_settings.auto_cancel_expired' → identifier 접두사 자동 제거 후 동일하게 조회
      */
     public function getSchedules(): array
+    {
+        return [];
+    }
+
+    /**
+     * Declarative i18n getter family — 모듈이 선언하는 다국어/SSoT 데이터 4종.
+     *
+     * 모두 default `[]` 반환 (override 미선택 시 무영향). 각 메서드 결과는 `ModuleManager` 가
+     * activate/update 시 자동 동기화하며, lang pack 활성 시 다국어 키 보강 필터를 통해 ja/en 등 추가
+     * 로케일이 자동 주입됩니다 (audit 룰 `seeder-translation-filter` 가 hook 호출 발화 보장).
+     *
+     * | 메서드                          | 도메인         | 동기화 위치                      | lang pack 필터                                    |
+     * |--------------------------------|---------------|---------------------------------|--------------------------------------------------|
+     * | `getNotificationDefinitions()` | 알림 정의      | `notification_definitions`     | `seed.{id}.notifications.translations`           |
+     * | `getIdentityMessages()`        | IDV 메일       | `identity_message_definitions` | `seed.{id}.identity_messages.translations`       |
+     * | `getIdentityPolicies()`        | IDV 정책       | `identity_policies`            | (lang pack seed 대상 외 — 다국어 필드 부재)        |
+     * | `getIdentityPurposes()`        | IDV 목적       | 메모리 레지스트리 (DB 없음)      | (lang pack seed 대상 외 — `label_key` 참조)        |
+     *
+     * 신규 i18n SSoT 도메인 추가 시 동일 패턴(meta 4-요소: declarative getter + Manager sync +
+     * applyFilters + Injector 메서드) 을 따라야 하며, audit 룰 `core-config-lang-pack-seed-coverage`
+     * 와 `module-getter-lang-pack-coverage` 가 정합성을 자동 검증합니다.
+     *
+     * @see getIdentityPolicies()
+     * @see getIdentityPurposes()
+     * @see getIdentityMessages()
+     * @see getNotificationDefinitions()
+     */
+
+    /**
+     * 이 모듈이 등록할 IDV(본인인증) 정책 선언을 반환합니다.
+     *
+     * 반환된 정책은 `ModuleManager` 가 activate/update 시
+     * `IdentityPolicySyncHelper::syncPolicy()` 로 DB(identity_policies) 에 동기화하며,
+     * deactivate/uninstall 시 `cleanupStalePolicies()` 로 정리합니다.
+     *
+     * `source_type` / `source_identifier` 는 Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다.
+     * 운영자가 관리자 UI 에서 수정한 필드(`enabled` / `grace_minutes` / `provider_id` / `fail_mode`)
+     * 는 `user_overrides` JSON 으로 보존됩니다.
+     *
+     * @return array<int, array{
+     *     key: string,
+     *     scope: string,
+     *     target: string,
+     *     purpose: string,
+     *     provider_id?: string|null,
+     *     grace_minutes?: int,
+     *     enabled?: bool,
+     *     priority?: int,
+     *     applies_to?: string,
+     *     fail_mode?: string,
+     *     conditions?: array<string, mixed>
+     * }>
+     */
+    public function getIdentityPolicies(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 모듈이 등록할 IDV(본인인증) 목적(purpose) 선언을 반환합니다.
+     *
+     * DB 에 저장되지 않는 **코드 계약** 입니다. 활성화된 모듈의 getter 결과를
+     * `IdentityVerificationManager` 가 부팅 시 런타임 레지스트리에 병합하며,
+     * `core.identity.purposes` filter 훅으로도 서드파티 동적 등록을 수용합니다.
+     *
+     * 새 purpose 는 이를 지원하는 Provider 와 challenge 로직이 함께 제공되어야 동작합니다.
+     * Provider 없이 purpose 만 선언하면 관리자 UI 에는 노출되나 실제 challenge 는 실패합니다.
+     *
+     * @return array<string, array{
+     *     label: string|array,
+     *     description?: string|array,
+     *     default_provider?: string|null,
+     *     allowed_channels?: string[]
+     * }>
+     */
+    public function getIdentityPurposes(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 모듈이 등록할 IDV(본인인증) 메시지 정의/템플릿 선언을 반환합니다.
+     *
+     * `getIdentityPolicies()` / `getIdentityPurposes()` 와 동일한 패턴으로
+     * `ModuleManager` 가 activate/update 시 `IdentityMessageSyncHelper` 를 통해
+     * `identity_message_definitions` / `identity_message_templates` 테이블에 동기화하며,
+     * uninstall(deleteData=true) 시 자동 정리됩니다.
+     *
+     * 운영자가 관리자 UI 에서 수정한 필드(name/description/subject/body 등) 는
+     * `user_overrides` JSON 으로 보존됩니다.
+     *
+     * `extension_type='module'`, `extension_identifier=$this->getIdentifier()` 는
+     * Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다.
+     *
+     * 반환 형식 예:
+     * ```php
+     * return [
+     *     [
+     *         'provider_id' => 'g7:core.mail',
+     *         'scope_type' => IdentityMessageDefinition::SCOPE_PURPOSE,
+     *         'scope_value' => 'checkout_verification',
+     *         'name' => ['ko' => '결제 시 본인 확인', 'en' => 'Checkout Verification'],
+     *         'description' => ['ko' => '...', 'en' => '...'],
+     *         'channels' => ['mail'],
+     *         'variables' => [['key' => 'code', 'description' => '인증 코드']],
+     *         'templates' => [
+     *             [
+     *                 'channel' => 'mail',
+     *                 'subject' => ['ko' => '...', 'en' => '...'],
+     *                 'body' => ['ko' => '...', 'en' => '...'],
+     *             ],
+     *         ],
+     *     ],
+     * ];
+     * ```
+     *
+     * scope_type 권장:
+     * - `IdentityMessageDefinition::SCOPE_PURPOSE` — purpose 단위 메시지 (해당 purpose 트리거 시 우선)
+     * - `IdentityMessageDefinition::SCOPE_POLICY` — 특정 policy_key 전용 메시지 (가장 구체적, purpose 보다 우선)
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getIdentityMessages(): array
+    {
+        return [];
+    }
+
+    /**
+     * 이 모듈이 등록할 알림 정의/템플릿 선언을 반환합니다.
+     *
+     * `getIdentityMessages()` 와 동일한 패턴으로 `ModuleManager` 가 activate/update 시
+     * `NotificationSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
+     * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 정리합니다.
+     * uninstall(deleteData=true) 시에도 자동 정리됩니다.
+     *
+     * 운영자가 관리자 UI 에서 수정한 필드(name/description/subject/body/recipients 등) 는
+     * `user_overrides` JSON 으로 보존됩니다.
+     *
+     * `extension_type='module'`, `extension_identifier=$this->getIdentifier()` 는
+     * Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다 (포함되어 있으면 덮어씀).
+     *
+     * 반환 형식 예:
+     * ```php
+     * return [
+     *     [
+     *         'type' => 'order_confirmed',
+     *         'hook_prefix' => 'sirsoft-ecommerce',
+     *         'name' => ['ko' => '주문 확인', 'en' => 'Order Confirmed'],
+     *         'description' => ['ko' => '...', 'en' => '...'],
+     *         'channels' => ['mail', 'database'],
+     *         'hooks' => ['sirsoft-ecommerce.order.after_confirm'],
+     *         'variables' => [['key' => 'order_number', 'description' => '주문번호']],
+     *         'templates' => [
+     *             [
+     *                 'channel' => 'mail',
+     *                 'recipients' => [['type' => 'trigger_user']],
+     *                 'subject' => ['ko' => '...', 'en' => '...'],
+     *                 'body' => ['ko' => '...', 'en' => '...'],
+     *             ],
+     *         ],
+     *     ],
+     * ];
+     * ```
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getNotificationDefinitions(): array
     {
         return [];
     }
@@ -650,10 +837,26 @@ abstract class AbstractModule implements ModuleInterface
     }
 
     /**
+     * 관리자 UI 에서 숨김 여부 반환
+     *
+     * module.json 의 hidden 필드가 true 면 관리자 모듈 목록(/api/admin/modules) 에서 기본 제외됩니다.
+     * artisan CLI, 설치/제거, 업데이트 감지는 영향을 받지 않습니다.
+     * 학습용 샘플 모듈, 내부 운영용 모듈 등에 사용합니다.
+     *
+     * @return bool 숨김 여부 (기본값: false)
+     */
+    public function isHidden(): bool
+    {
+        return (bool) ($this->loadManifest()['hidden'] ?? false);
+    }
+
+    /**
      * 모듈 메타데이터 반환
      *
      * 기본적으로 빈 배열 반환
      * 모듈 개발자가 메타데이터가 필요한 경우 오버라이드
+     *
+     * @return array 메타데이터 배열
      */
     public function getMetadata(): array
     {
@@ -747,6 +950,53 @@ abstract class AbstractModule implements ModuleInterface
      *               ]
      */
     public function seoVariables(): array
+    {
+        return [];
+    }
+
+    /**
+     * 페이지 타입별 OG 메타태그 기본값 선언
+     *
+     * 모듈이 자기 도메인 데이터로부터 og:image, og:image:width/height,
+     * og:type, og:product:price 같은 도메인별 OG 태그를 직접 만들어 제공합니다.
+     * 레이아웃 meta.seo.og 가 같은 키를 선언하면 그쪽이 우선 (override).
+     *
+     * @param  string  $pageType  레이아웃 meta.seo.page_type (예: 'product', 'category', 'post')
+     * @param  array  $context  DataSourceResolver 결과 + _seo 주입된 컨텍스트
+     * @param  array  $routeParams  URL 라우트 파라미터
+     * @return array OG 데이터 (type, image, image_width, image_height, image_secure_url,
+     *               image_type, image_alt, site_name, locale, extra)
+     */
+    public function seoOgDefaults(string $pageType, array $context, array $routeParams = []): array
+    {
+        return [];
+    }
+
+    /**
+     * 페이지 타입별 Twitter 카드 기본값 선언
+     *
+     * @param  string  $pageType  페이지 타입
+     * @param  array  $context  컨텍스트
+     * @param  array  $routeParams  라우트 파라미터
+     * @return array Twitter 카드 데이터 (card, site, creator, title, description, image, image_alt, extra)
+     */
+    public function seoTwitterDefaults(string $pageType, array $context, array $routeParams = []): array
+    {
+        return [];
+    }
+
+    /**
+     * 페이지 타입별 JSON-LD 구조화 데이터 선언
+     *
+     * 모듈이 자기 도메인 스키마(Product/Article/Event 등 Schema.org 타입)를
+     * 직접 owned. 레이아웃 meta.seo.structured_data 가 비어있을 때 적용.
+     *
+     * @param  string  $pageType  페이지 타입
+     * @param  array  $context  컨텍스트
+     * @param  array  $routeParams  라우트 파라미터
+     * @return array Schema.org 형식 (@type 필수). 빈 배열 반환 시 미적용.
+     */
+    public function seoStructuredData(string $pageType, array $context, array $routeParams = []): array
     {
         return [];
     }

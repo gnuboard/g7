@@ -1,0 +1,149 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "언어팩 제거 확인 모달 — 모듈/플러그인 uninstall 모달과 동일 수준. 위험 경고 박스, 로딩 스피너, reloadExtensions 후속 호출 포함."
+    },
+    "id": "language_pack_uninstall_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.language_packs.modal.uninstall.title",
+        "size": "small"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "py-2 space-y-3" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                    "text": "$t:admin.language_packs.modal.uninstall.body|scope={{_local.uninstallScope}}|target={{_local.uninstallTarget ?? '—'}}|locale={{_local.uninstallLocale}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-800 dark:text-red-200" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-start gap-2" },
+                            "children": [
+                                { "type": "basic", "name": "Icon", "props": { "name": "fas fa-triangle-exclamation", "size": "sm", "className": "mt-0.5" } },
+                                { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.modal.uninstall.warning" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.uninstallScope === 'core'}}",
+                    "props": { "className": "rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-sm" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": { "className": "flex items-center gap-2 text-amber-800 dark:text-amber-200 cursor-pointer" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "checkbox",
+                                        "checked": "{{_local.uninstallCascade === true}}",
+                                        "disabled": "{{_global.isLanguagePackUninstalling}}",
+                                        "className": "h-4 w-4 text-indigo-600 border-gray-300 rounded disabled:opacity-50"
+                                    },
+                                    "actions": [
+                                        { "event": "onChange", "handler": "setState", "params": { "target": "local", "uninstallCascade": "{{$event.target.checked}}" } }
+                                    ]
+                                },
+                                { "type": "basic", "name": "Span", "text": "$t:admin.language_packs.modal.uninstall.cascade_label" }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": { "className": "mt-1 text-xs text-amber-700 dark:text-amber-300" },
+                            "text": "$t:admin.language_packs.modal.uninstall.cascade_hint"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex justify-end gap-2 mt-6" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.isLanguagePackUninstalling}}",
+                        "className": "px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "actions": [
+                        { "event": "onClick", "handler": "closeModal", "target": "language_pack_uninstall_modal" }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Span", "text": "$t:common.cancel" }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.isLanguagePackUninstalling}}",
+                        "className": "flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "actions": [
+                        {
+                            "event": "onClick",
+                            "handler": "sequence",
+                            "params": {
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": { "target": "global", "isLanguagePackUninstalling": true }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "auth_required": true,
+                                        "target": "/api/admin/language-packs/{{_local.uninstallId}}",
+                                        "params": {
+                                            "method": "DELETE",
+                                            "body": { "cascade": "{{_local.uninstallCascade === true}}" }
+                                        },
+                                        "onSuccess": [
+                                            { "handler": "setState", "params": { "target": "global", "isLanguagePackUninstalling": false } },
+                                            { "handler": "toast", "params": { "type": "success", "message": "$t:admin.language_packs.messages.uninstall_success" } },
+                                            { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } },
+                                            { "handler": "reloadExtensions" },
+                                            { "handler": "closeModal", "target": "language_pack_uninstall_modal" }
+                                        ],
+                                        "onError": [
+                                            { "handler": "setState", "params": { "target": "global", "isLanguagePackUninstalling": false } },
+                                            { "handler": "toast", "params": { "type": "error", "message": "{{error.message ?? '$t:admin.language_packs.messages.uninstall_failed'}}" } }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "children": [
+                        { "type": "basic", "name": "Icon", "if": "{{!_global.isLanguagePackUninstalling}}", "props": { "name": "fas fa-trash", "size": "sm" } },
+                        { "type": "basic", "name": "Icon", "if": "{{_global.isLanguagePackUninstalling}}", "props": { "name": "fas fa-spinner", "className": "animate-spin", "size": "sm" } },
+                        { "type": "basic", "name": "Span", "text": "{{_global.isLanguagePackUninstalling ? '$t:admin.language_packs.uninstalling' : '$t:admin.language_packs.actions.uninstall'}}" }
+                    ]
+                }
+            ]
+        }
+    ]
+}

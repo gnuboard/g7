@@ -165,6 +165,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Locale → Country Code 휴리스틱 매핑
+    |--------------------------------------------------------------------------
+    |
+    | Accept-Language 헤더에서 국가 코드를 추출할 수 없을 때 사용하는
+    | 언어 코드 → 기본 국가 코드 폴백 매핑입니다. AuthService 가 사용합니다.
+    |
+    */
+
+    'locale_country_fallback' => [
+        'ko' => 'KR',
+        'en' => 'US',
+        'ja' => 'JP',
+        'zh' => 'CN',
+        'de' => 'DE',
+        'fr' => 'FR',
+        'es' => 'ES',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Encryption Key
     |--------------------------------------------------------------------------
     |
@@ -211,7 +231,7 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.0.0-beta.3'),
+    'version' => env('APP_VERSION', '7.0.0-beta.4'),
 
     /*
     |--------------------------------------------------------------------------
@@ -250,21 +270,38 @@ return [
         'github_url' => env('G7_UPDATE_GITHUB_URL', 'https://github.com/gnuboard/g7'),
         'github_token' => env('G7_UPDATE_GITHUB_TOKEN', ''),
         'pending_path' => env('G7_UPDATE_PENDING_PATH') ?: storage_path('app/core_pending'),
-        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,resources,routes,public,tests,upgrades,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vitest.config.ts,tsconfig.json,phpunit.xml,.editorconfig,.gitattributes,.gitignore,README.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
+        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,artisan,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vitest.config.ts,tsconfig.json,phpunit.xml,.editorconfig,.gitattributes,.gitignore,README.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
         'excludes' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_EXCLUDES', 'node_modules,.git,bootstrap/cache')))),
+        // applyUpdate 의 "신규 최상위 항목 자동 발견" 폴백이 절대 덮어쓰면 안 되는 경로 목록.
+        // 런타임 데이터(`storage`), 로컬 환경(`.env*`), 별도 파이프라인 산출물(`vendor`),
+        // 개발 도구 메타(`.git`, `.claude`, `.serena` 등) 를 보호한다.
+        // 부모 프로세스의 stale `targets` 가 신버전 신규 디렉토리를 인식하지 못해
+        // 자동 발견이 트리거될 때만 참조된다 (정상 경로의 targets 는 항상 처리됨).
+        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.mcp.json,.phpunit.result.cache,core_pending')))),
         'backup_only' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_BACKUP_ONLY', 'vendor')))),
         'backup_extra' => ['storage/app/settings'],
         // 업데이트 종료 시 base_path() 소유자/그룹 기준으로 소유권을 재귀 복원할 경로 목록.
         // sudo 실행 시 composer·artisan 등 외부 프로세스가 root 로 생성한 파일을 원상 회복한다.
         //
-        // 기본값은 인스톨러 `public/install/includes/config.php:REQUIRED_DIRECTORIES` 의
-        // SSoT 경로와 1:1 정렬. 상위 → 하위 순서로 나열하여 복원 루프가 디렉토리 단위
-        // chown 후 하위 경로별 개별 복원을 수행하게 한다.
+        // 기본값 = "sudo update 가 root 로 새 파일을 만들 가능성이 있는 영역" 한정.
+        // 인스톨러 SSoT (`public/install/includes/config.php:REQUIRED_DIRECTORIES`) 의
+        // `'storage' => true (재귀 검증)` 와는 의미가 다르다 — 인스톨러 SSoT 는 "운영자가
+        // 초기 설치 시 storage 트리 전체에 적절한 권한을 부여했는지 검증" 용도이고,
+        // 본 설정은 "sudo 후 root 가 만든 파일의 소유권을 원상 복원" 용도. 두 책임이 다르므로
+        // 정렬이 깨져도 무방하다.
+        //
+        // storage 트리에서 chown 대상은 PHP-FPM 쓰기 필수 + sudo update 가 root 로 만들 수
+        // 있는 경로만 한정한다 (`storage/logs`, `storage/framework/{cache,sessions,views}`,
+        // `storage/app/core_pending`). `storage/app/{modules,plugins,attachments,public,settings}`
+        // 같은 사용자 데이터/모듈 storage 영역은 PHP-FPM 시드/업로드 시점 owner 가 보존
+        // 되어야 한다 (chown 대상에서 제외). 단 settings *.json 처럼 모듈/플러그인 upgrade
+        // step 이 sudo 컨텍스트에서 만들 수 있는 파일은 `SettingsMigrator::writeJsonFile`
+        // 가 부모 디렉토리 owner/group 을 상속하여 별도 처리.
         //
         // 환경변수 `G7_UPDATE_RESTORE_OWNERSHIP` 로 공유 호스팅 등 축소 필요 시 재정의 가능.
         'restore_ownership' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP',
-            'storage,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,storage/app/core_pending'
+            'storage/logs,storage/framework,storage/app/core_pending,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending'
         )))),
         // 7.0.0-beta.3+: 그룹 쓰기 권한 비대칭 정상화 대상.
         // sudo root 로 실행된 업데이트가 umask 022 로 신규 생성한 하위 디렉토리/파일이
@@ -275,22 +312,24 @@ return [
         // 정책: 루트가 g+w 면 하위 g-w 항목을 g+w 로 승격, 다른 비트 무변경.
         // 운영자가 의도적으로 그룹 쓰기를 차단한 경로(0755 등) 는 자동 보존됨.
         //
-        // Laravel 런타임 그룹 쓰기 필요 경로 — 인스톨러 SSoT(public/install/includes/config.php
-        // REQUIRED_DIRECTORIES) 와 1:1 정렬:
-        //  - storage, bootstrap/cache: 캐시·세션·로그
+        // Laravel 런타임 그룹 쓰기 필요 경로 — `restore_ownership` 과 동일한 책임 분리 원칙
+        // (PHP-FPM 쓰기 영역 한정, 사용자 데이터 영역 비대상). 인스톨러 SSoT 의 storage
+        // 재귀 검증 의도와는 다른 책임이다.
+        //  - storage/logs, storage/framework/{cache,sessions,views}: 캐시·세션·로그
+        //  - storage/app/core_pending: 코어 업데이트 _pending 영역
+        //  - bootstrap/cache: Laravel 설정·라우트 캐시
         //  - vendor: composer/sudo 가 root 로 재생성한 후 일반 권한 사용자/php-fpm 이 후속 작업
         //  - modules, plugins, templates: 확장 설치/업데이트/제거 시 php-fpm 이 디렉토리 조작
         //  - modules/_pending, plugins/_pending, templates/_pending: 다운로드 대기소
-        //  - storage/app/core_pending: 코어 업데이트 _pending 영역 (storage 재귀로도 커버되지만
-        //    SSoT 정렬 위해 명시)
+        //  - lang-packs, lang-packs/_pending: 언어팩 활성/대기 영역
         //
-        // _bundled/ 는 개발 시점 원본 배포본이므로 런타임 쓰기 불필요 — SSoT 에도 미포함.
+        // _bundled/ 는 개발 시점 원본 배포본이므로 런타임 쓰기 불필요 — 미포함.
         //
         // 자식 디렉토리(예: plugins/sirsoft-*)는 syncGroupWritability 가 재귀 순회하여
         // 자동 정상화되므로 상위 루트만 지정하면 충분. 환경변수로 재정의 가능.
         'restore_ownership_group_writable' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE',
-            'storage,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,storage/app/core_pending'
+            'storage/logs,storage/framework,storage/app/core_pending,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending'
         )))),
     ],
 

@@ -91,18 +91,19 @@ class BaseApiResourceMetaTest extends TestCase
 
     /**
      * ownerField가 정의되고 요청 사용자가 소유자이면 is_owner = true.
+     *
+     * 실제 사용처는 Eloquent Model 래핑 (`$this->resource->{$field}` 은 객체 프로퍼티 접근)
+     * 이므로 테스트도 stdClass / Model 인스턴스를 사용해야 한다 (배열로 주입 시 에러).
      */
     public function test_resource_meta_returns_is_owner_true_when_user_is_owner(): void
     {
-        $resource = new class(['id' => 1, 'user_id' => null]) extends BaseApiResource {
+        $data = (object) ['id' => 1, 'user_id' => $this->adminUser->id];
+        $resource = new class($data) extends BaseApiResource {
             protected function ownerField(): ?string
             {
                 return 'user_id';
             }
         };
-
-        // user_id를 adminUser의 id로 설정
-        $resource->resource['user_id'] = $this->adminUser->id;
 
         $request = Request::create('/test');
         $request->setUserResolver(fn () => $this->adminUser);
@@ -118,7 +119,8 @@ class BaseApiResourceMetaTest extends TestCase
      */
     public function test_resource_meta_returns_is_owner_false_when_user_is_not_owner(): void
     {
-        $resource = new class(['id' => 1, 'user_id' => 999]) extends BaseApiResource {
+        $data = (object) ['id' => 1, 'user_id' => 999];
+        $resource = new class($data) extends BaseApiResource {
             protected function ownerField(): ?string
             {
                 return 'user_id';
@@ -139,7 +141,8 @@ class BaseApiResourceMetaTest extends TestCase
      */
     public function test_resource_meta_returns_is_owner_false_for_guest(): void
     {
-        $resource = new class(['id' => 1, 'user_id' => 1]) extends BaseApiResource {
+        $data = (object) ['id' => 1, 'user_id' => 1];
+        $resource = new class($data) extends BaseApiResource {
             protected function ownerField(): ?string
             {
                 return 'user_id';
@@ -218,8 +221,8 @@ class BaseApiResourceMetaTest extends TestCase
      */
     public function test_resource_meta_returns_both_is_owner_and_abilities(): void
     {
-        $userId = $this->adminUser->id;
-        $resource = new class(['id' => 1, 'user_id' => $userId]) extends BaseApiResource {
+        $data = (object) ['id' => 1, 'user_id' => $this->adminUser->id];
+        $resource = new class($data) extends BaseApiResource {
             protected function ownerField(): ?string
             {
                 return 'user_id';
@@ -233,8 +236,6 @@ class BaseApiResourceMetaTest extends TestCase
                 ];
             }
         };
-        // 명시적으로 user_id 재설정 (anonymous class에서 캡처 안 될 수 있으므로)
-        $resource->resource['user_id'] = $this->adminUser->id;
 
         $request = Request::create('/test');
         $request->setUserResolver(fn () => $this->adminUser);

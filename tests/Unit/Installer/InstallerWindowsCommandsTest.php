@@ -98,10 +98,13 @@ class InstallerWindowsCommandsTest extends TestCase
 
     /**
      * getPermissionFixCommand()가 Windows에서 icacls 명령어를 반환하는지 확인합니다.
+     *
+     * 현재 시그니처: getPermissionFixCommand(string $pathList, string $mode = 'ownership')
+     * (이전 (owner, path, mode) 3-arg 에서 리팩토링되어 owner 인자 제거됨)
      */
     public function test_get_permission_fix_command_ownership_mode(): void
     {
-        $command = getPermissionFixCommand('www-data', '/var/www/storage', 'ownership');
+        $command = getPermissionFixCommand('/var/www/storage', 'ownership');
 
         if (isWindows()) {
             $this->assertStringContainsString('icacls', $command);
@@ -109,8 +112,7 @@ class InstallerWindowsCommandsTest extends TestCase
             $this->assertStringContainsString('Everyone:(OI)(CI)F', $command);
             $this->assertStringContainsString('/T', $command);
         } else {
-            $this->assertStringContainsString('sudo chown -R www-data:www-data', $command);
-            $this->assertStringContainsString('sudo chmod -R 2770', $command);
+            $this->assertStringContainsString('chmod -R 755 /var/www/storage', $command);
         }
     }
 
@@ -119,15 +121,14 @@ class InstallerWindowsCommandsTest extends TestCase
      */
     public function test_get_permission_fix_command_file_mode(): void
     {
-        $command = getPermissionFixCommand('www-data', '/var/www/.env', 'file');
+        $command = getPermissionFixCommand('/var/www/.env', 'file');
 
         if (isWindows()) {
             $this->assertStringContainsString('icacls', $command);
             $this->assertStringContainsString('Everyone:F', $command);
             $this->assertStringNotContainsString('/T', $command);
         } else {
-            $this->assertStringContainsString('sudo chown www-data:www-data', $command);
-            $this->assertStringContainsString('sudo chmod 660', $command);
+            $this->assertStringContainsString('chmod 644 /var/www/.env', $command);
         }
     }
 
@@ -140,7 +141,7 @@ class InstallerWindowsCommandsTest extends TestCase
             $this->markTestSkipped('Windows 전용 테스트');
         }
 
-        $command = getPermissionFixCommand('www-data', '/var/www/storage', 'ownership');
+        $command = getPermissionFixCommand('/var/www/storage', 'ownership');
         $this->assertStringContainsString('\\var\\www\\storage', $command);
         $this->assertStringNotContainsString('/var/', $command);
     }

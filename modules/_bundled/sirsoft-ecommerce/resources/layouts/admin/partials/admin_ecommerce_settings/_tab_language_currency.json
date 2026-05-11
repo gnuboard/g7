@@ -76,25 +76,8 @@
                   "name": "Select",
                   "props": {
                     "name": "language_currency.default_language",
-                    "value": "{{_local.form?.language_currency?.default_language ?? 'ko'}}",
-                    "options": [
-                      {
-                        "value": "ko",
-                        "label": "한국어"
-                      },
-                      {
-                        "value": "en",
-                        "label": "English"
-                      },
-                      {
-                        "value": "ja",
-                        "label": "日本語"
-                      },
-                      {
-                        "value": "zh",
-                        "label": "中文"
-                      }
-                    ],
+                    "value": "{{_local.form?.language_currency?.default_language ?? $locale ?? 'ko'}}",
+                    "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
                     "className": "{{_local.errors?.['language_currency.default_language'] ? 'w-full select-error' : 'w-full'}}",
                     "disabled": "{{_computed.isReadOnly}}"
                   }

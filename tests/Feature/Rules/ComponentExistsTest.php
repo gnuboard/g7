@@ -331,8 +331,9 @@ class ComponentExistsTest extends TestCase
         $this->assertFalse($failed1);
         $this->assertFalse($failed2);
 
-        // 캐시 키가 올바르게 생성되었는지 확인
+        // 캐시 키가 올바르게 생성되었는지 확인 (CacheInterface 사용 — ComponentExists.php 참조)
+        $cache = app(\App\Contracts\Extension\CacheInterface::class);
         $cacheKey = 'template.test-template.components_manifest';
-        $this->assertTrue(Cache::has($cacheKey), '캐시가 생성되어야 합니다.');
+        $this->assertNotNull($cache->get($cacheKey), '캐시가 생성되어야 합니다.');
     }
 }

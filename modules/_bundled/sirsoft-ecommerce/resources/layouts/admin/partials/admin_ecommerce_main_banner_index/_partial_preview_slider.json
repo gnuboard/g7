@@ -33,12 +33,7 @@
             "name": "previewLanguage",
             "className": "w-28",
             "value": "{{_local.previewLanguage}}",
-            "options": [
-              { "value": "ko", "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.language.ko" },
-              { "value": "en", "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.language.en" },
-              { "value": "ja", "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.language.ja" },
-              { "value": "zh", "label": "$t:sirsoft-ecommerce.admin.main_banner.detail.language.zh" }
-            ]
+            "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
           },
           "actions": [
             {
@@ -46,7 +41,7 @@
               "handler": "setState",
               "params": {
                 "target": "_local",
-                "previewLanguage": "{{$value}}"
+                "previewLanguage": "{{$event.target.value}}"
               }
             }
           ]

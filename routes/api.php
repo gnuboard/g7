@@ -6,9 +6,11 @@ use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
 // Admin Controllers
 use App\Http\Controllers\Api\Admin\CoreUpdateController as AdminCoreUpdateController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Api\Admin\ExtensionRecoveryController as AdminExtensionRecoveryController;
 use App\Http\Controllers\Api\Admin\LayoutController as AdminLayoutController;
 use App\Http\Controllers\Api\Admin\LicenseController as AdminLicenseController;
 use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
+use App\Http\Controllers\Api\Admin\LanguagePackController as AdminLanguagePackController;
 use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Api\Admin\NotificationChannelController as AdminNotificationChannelController;
 use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
@@ -29,8 +31,11 @@ use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
 // Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
+// Identity Verification
+use App\Http\Controllers\Api\Identity\IdentityVerificationController;
 // Public Controllers
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
+use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
 use App\Http\Controllers\Api\Public\PublicAttachmentController;
 use App\Http\Controllers\Api\Public\PublicLayoutController;
 use App\Http\Controllers\Api\Public\PublicModuleController;
@@ -115,6 +120,10 @@ Route::group([], function () {
         Route::get('{user}/profile', [PublicProfileController::class, 'show'])
             ->name('api.public.users.profile');
     });
+
+    // 활성 로케일 목록 — 언어팩 설치/활성화 직후 셀렉터 즉시 갱신용
+    Route::get('locales/active', [PublicLocaleController::class, 'active'])
+        ->name('api.public.locales.active');
 });
 
 // 브로드캐스팅 인증 (Sanctum 토큰 사용)
@@ -122,18 +131,65 @@ Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (Request
     return Broadcast::auth($request);
 })->name('api.broadcasting.auth');
 
+// 본인인증 (IdentityVerification) 공개 엔드포인트
+// challenge 라우트 파라미터를 IdentityVerificationLog 모델로 자동 resolve — PermissionMiddleware 의 owner_key='user_id' scope 매칭 표준 메커니즘 활용
+Route::model('challenge', \App\Models\IdentityVerificationLog::class);
+Route::prefix('identity')->group(function () {
+    Route::get('providers', [IdentityVerificationController::class, 'providers'])
+        ->name('api.identity.providers.index');
+
+    Route::get('purposes', [IdentityVerificationController::class, 'purposes'])
+        ->name('api.identity.purposes.index');
+
+    Route::get('policies/resolve', [IdentityVerificationController::class, 'resolvePolicy'])
+        ->middleware('optional.sanctum')
+        ->name('api.identity.policies.resolve');
+
+    // Challenge 요청 / 검증 / 취소는 로그인 상태와 비로그인 상태(Mode B 가입) 모두 허용 — guest 역할에 IDV 권한 부여
+    // verify/cancel 은 로그인 사용자에 한해 PermissionMiddleware 의 scope=self 가드가 challenge.user_id 일치 여부 자동 검증
+    // request 한도는 정상 회원가입 흐름(모달 만료 후 재전송 / 같은 NAT IP 게스트 다회 가입 시도)을 차단하지 않도록
+    // verify(10) 보다 넉넉히 두고 cancel/show(30) 와 동일 수준 적용 — 게스트 IP 단일 키 공유 환경 대응
+    Route::middleware(['throttle:30,1', 'optional.sanctum', 'permission:user,core.identity.request'])
+        ->post('challenges', [IdentityVerificationController::class, 'request'])
+        ->name('api.identity.challenges.request');
+
+    Route::middleware(['throttle:10,1', 'optional.sanctum', 'permission:user,core.identity.verify'])
+        ->post('challenges/{challenge}/verify', [IdentityVerificationController::class, 'verify'])
+        ->name('api.identity.challenges.verify');
+
+    Route::middleware(['throttle:30,1', 'optional.sanctum', 'permission:user,core.identity.cancel'])
+        ->post('challenges/{challenge}/cancel', [IdentityVerificationController::class, 'cancel'])
+        ->name('api.identity.challenges.cancel');
+
+    // 비동기 검증 인프라 (engine-v1.46.0+) — Stripe Identity / 토스인증 push / 외부 redirect 콜백 지원
+    // 폴링 엔드포인트는 권한 가드 없음 (공개 안전 필드만 노출 — Service::getStatus 참조)
+    Route::middleware(['throttle:30,1', 'optional.sanctum'])
+        ->get('challenges/{challenge}', [IdentityVerificationController::class, 'show'])
+        ->name('api.identity.challenges.show');
+
+    Route::middleware(['throttle:30,1', 'optional.sanctum'])
+        ->post('callback/{providerId}', [IdentityVerificationController::class, 'callback'])
+        ->name('api.identity.callback');
+});
+
 // 인증 관련 라우트 (인증 불필요, 속도 제한 없음 - 공개 API)
 // start.api.session: 로그인 시 세션 생성 (/dev 대시보드 인증용)
+// throttle:auth-login: per-IP brute-force 백업 방어 (보안 환경설정의 per-account 잠금과 2중 방어)
 Route::prefix('auth')->group(function () {
     // 로그인 라우트 (세션 생성 필요)
-    Route::middleware('start.api.session')->group(function () {
+    Route::middleware(['throttle:auth-login', 'start.api.session'])->group(function () {
         Route::post('login', [UserAuthController::class, 'login'])->name('api.auth.login');
     });
 
     // 공개 인증 라우트 (세션 불필요)
-    Route::post('register', [UserAuthController::class, 'register'])->name('api.auth.register');
+    // IDV 정책은 bootstrap/app.php 의 자동 매핑 미들웨어가 라우트 이름 기반으로 enforce.
+    // 정책 DB 토글만으로 즉시 효과 — 라우트 코드 수정 불필요. 외부 모듈/플러그인이 자기 정책 키를
+    // 강제하고 싶을 때만 ->middleware('identity.policy:KEY') 를 명시 사용.
+    Route::post('register', [UserAuthController::class, 'register'])
+        ->name('api.auth.register');
     Route::post('forgot-password', [UserAuthController::class, 'forgotPassword'])->name('api.auth.forgot-password');
-    Route::post('reset-password', [UserAuthController::class, 'resetPassword'])->name('api.auth.reset-password');
+    Route::post('reset-password', [UserAuthController::class, 'resetPassword'])
+        ->name('api.auth.reset-password');
     Route::post('validate-reset-token', [UserAuthController::class, 'validateResetToken'])->name('api.auth.validate-reset-token');
 
     // 일반 사용자 인증 (인증 필요 - 공용 경로)
@@ -142,9 +198,11 @@ Route::prefix('auth')->group(function () {
         Route::post('logout', [UserAuthController::class, 'logout'])->middleware('start.api.session')->name('api.auth.logout');
     });
 
-    // 관리자 인증 (로그인: 세션 생성 필요)
+    // 관리자 인증 (로그인: 세션 생성 필요 + per-IP throttle)
     Route::prefix('admin')->group(function () {
-        Route::post('login', [AdminAuthController::class, 'login'])->middleware('start.api.session')->name('api.auth.admin.login');
+        Route::post('login', [AdminAuthController::class, 'login'])
+            ->middleware(['throttle:auth-login', 'start.api.session'])
+            ->name('api.auth.admin.login');
     });
 });
 
@@ -236,6 +294,72 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('refresh', [AdminAuthController::class, 'refresh'])->name('api.admin.auth.refresh');
     });
 
+    // IDV 관리자 라우트 (identity 정책/로그/프로바이더)
+    Route::prefix('identity')->group(function () {
+        Route::get('providers', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityProviderController::class, 'index'])
+            ->middleware('permission:admin,core.admin.identity.manage')
+            ->name('api.admin.identity.providers.index');
+
+        Route::get('logs', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController::class, 'index'])
+            ->middleware('permission:admin,core.admin.identity.logs.read')
+            ->name('api.admin.identity.logs.index');
+
+        Route::post('logs/purge', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController::class, 'purge'])
+            ->middleware('permission:admin,core.admin.identity.logs.purge')
+            ->name('api.admin.identity.logs.purge');
+
+        Route::prefix('policies')->middleware('permission:admin,core.admin.identity.policies.manage')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'index'])
+                ->name('api.admin.identity.policies.index');
+            Route::post('/', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'store'])
+                ->name('api.admin.identity.policies.store');
+            Route::put('{id}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'update'])
+                ->name('api.admin.identity.policies.update');
+            Route::delete('{id}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'destroy'])
+                ->name('api.admin.identity.policies.destroy');
+            Route::post('{id}/reset-field', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'resetField'])
+                ->name('api.admin.identity.policies.reset-field');
+        });
+
+        // IDV 메시지 정의/템플릿 관리
+        Route::prefix('messages')->group(function () {
+            Route::get('definitions', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'index'])
+                ->middleware('permission:admin,core.admin.identity.messages.read')
+                ->name('api.admin.identity.messages.definitions.index');
+            Route::post('definitions', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'store'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.definitions.store');
+            Route::get('definitions/{definition}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'show'])
+                ->middleware('permission:admin,core.admin.identity.messages.read')
+                ->name('api.admin.identity.messages.definitions.show');
+            Route::patch('definitions/{definition}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'update'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.definitions.update');
+            Route::delete('definitions/{definition}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'destroy'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.definitions.destroy');
+            Route::patch('definitions/{definition}/toggle-active', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'toggleActive'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.definitions.toggle-active');
+            Route::post('definitions/{definition}/reset', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'reset'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.definitions.reset');
+
+            Route::patch('templates/{template}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'update'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.templates.update');
+            Route::patch('templates/{template}/toggle-active', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'toggleActive'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.templates.toggle-active');
+            Route::post('templates/{template}/reset', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'reset'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.templates.reset');
+            Route::post('templates/preview', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'preview'])
+                ->middleware('permission:admin,core.admin.identity.messages.read')
+                ->name('api.admin.identity.messages.templates.preview');
+        });
+    });
+
     // 관리자 알림
     Route::prefix('notifications')->group(function () {
         Route::get('/', [AdminNotificationController::class, 'index'])
@@ -284,6 +408,63 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     // 현재 사용자 정보 업데이트
     Route::patch('users/me/language', [AdminUserController::class, 'updateMyLanguage'])->name('api.admin.users.me.language');
 
+    // 언어팩 관리
+    Route::prefix('language-packs')->group(function () {
+        Route::get('/', [AdminLanguagePackController::class, 'index'])
+            ->middleware('permission:admin,core.language_packs.read')
+            ->name('api.admin.language-packs.index');
+        Route::post('check-updates', [AdminLanguagePackController::class, 'checkUpdates'])
+            ->middleware('permission:admin,core.language_packs.update')
+            ->name('api.admin.language-packs.check-updates');
+        Route::post('refresh-cache', [AdminLanguagePackController::class, 'refreshCache'])
+            ->middleware('permission:admin,core.language_packs.manage')
+            ->name('api.admin.language-packs.refresh-cache');
+        Route::post('manifest-preview', [AdminLanguagePackController::class, 'manifestPreview'])
+            ->middleware('permission:admin,core.language_packs.install')
+            ->name('api.admin.language-packs.manifest-preview');
+        Route::post('install-from-file', [AdminLanguagePackController::class, 'installFromFile'])
+            ->middleware('permission:admin,core.language_packs.install')
+            ->name('api.admin.language-packs.install-from-file');
+        Route::post('install-from-github', [AdminLanguagePackController::class, 'installFromGithub'])
+            ->middleware('permission:admin,core.language_packs.install')
+            ->name('api.admin.language-packs.install-from-github');
+        Route::post('install-from-url', [AdminLanguagePackController::class, 'installFromUrl'])
+            ->middleware('permission:admin,core.language_packs.install')
+            ->name('api.admin.language-packs.install-from-url');
+        Route::post('install-from-bundled', [AdminLanguagePackController::class, 'installFromBundled'])
+            ->middleware('permission:admin,core.language_packs.install')
+            ->name('api.admin.language-packs.install-from-bundled');
+        // PO #7: 호스트 확장 재활성화 시 cascade 비활성화됐던 언어팩 일괄 활성화
+        Route::post('bulk-activate', [AdminLanguagePackController::class, 'bulkActivate'])
+            ->middleware('permission:admin,core.language_packs.manage')
+            ->name('api.admin.language-packs.bulk-activate');
+        // 미설치 번들 행은 DB id 가 없으므로 정수/문자열(번들 식별자) 모두 수용
+        Route::get('{id}', [AdminLanguagePackController::class, 'show'])
+            ->where('id', '[A-Za-z0-9_\-]+')
+            ->middleware('permission:admin,core.language_packs.read')
+            ->name('api.admin.language-packs.show');
+        Route::get('{id}/changelog', [AdminLanguagePackController::class, 'changelog'])
+            ->where('id', '[A-Za-z0-9_\-]+')
+            ->middleware('permission:admin,core.language_packs.read')
+            ->name('api.admin.language-packs.changelog');
+        Route::post('{id}/activate', [AdminLanguagePackController::class, 'activate'])
+            ->whereNumber('id')
+            ->middleware('permission:admin,core.language_packs.manage')
+            ->name('api.admin.language-packs.activate');
+        Route::post('{id}/deactivate', [AdminLanguagePackController::class, 'deactivate'])
+            ->whereNumber('id')
+            ->middleware('permission:admin,core.language_packs.manage')
+            ->name('api.admin.language-packs.deactivate');
+        Route::post('{id}/update', [AdminLanguagePackController::class, 'performUpdate'])
+            ->whereNumber('id')
+            ->middleware('permission:admin,core.language_packs.update')
+            ->name('api.admin.language-packs.update');
+        Route::delete('{id}', [AdminLanguagePackController::class, 'uninstall'])
+            ->whereNumber('id')
+            ->middleware('permission:admin,core.language_packs.manage')
+            ->name('api.admin.language-packs.uninstall');
+    });
+
     // 모듈 관리
     Route::prefix('modules')->group(function () {
         Route::get('/', [AdminModuleController::class, 'index'])->middleware('permission:admin,core.modules.read|core.menus.read,false')->name('api.admin.modules.index');
@@ -294,8 +475,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('{identifier}/changelog', [AdminModuleController::class, 'changelog'])->middleware('permission:admin,core.modules.read')->name('api.admin.modules.changelog');
         Route::get('{identifier}/license', [AdminModuleController::class, 'license'])->middleware('permission:admin,core.modules.read')->name('api.admin.modules.license');
         Route::get('{moduleName}/uninstall-info', [AdminModuleController::class, 'uninstallInfo'])->middleware('permission:admin,core.modules.uninstall')->name('api.admin.modules.uninstall-info');
+        Route::get('{moduleName}/install-preview', [AdminModuleController::class, 'installPreview'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.install-preview');
         Route::post('install', [AdminModuleController::class, 'install'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.install');
         Route::post('install-from-file', [AdminModuleController::class, 'installFromFile'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.install-from-file');
+        Route::post('manifest-preview', [AdminModuleController::class, 'manifestPreview'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.manifest-preview');
         Route::post('install-from-github', [AdminModuleController::class, 'installFromGithub'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.install-from-github');
         Route::post('activate', [AdminModuleController::class, 'activate'])->middleware('permission:admin,core.modules.activate')->name('api.admin.modules.activate');
         Route::post('deactivate', [AdminModuleController::class, 'deactivate'])->middleware('permission:admin,core.modules.activate')->name('api.admin.modules.deactivate');
@@ -314,9 +497,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('{identifier}/dependent-templates', [AdminPluginController::class, 'dependentTemplates'])->middleware('permission:admin,core.plugins.read')->name('api.admin.plugins.dependent-templates');
         Route::get('{identifier}/changelog', [AdminPluginController::class, 'changelog'])->middleware('permission:admin,core.plugins.read')->name('api.admin.plugins.changelog');
         Route::get('{identifier}/license', [AdminPluginController::class, 'license'])->middleware('permission:admin,core.plugins.read')->name('api.admin.plugins.license');
+        Route::get('{pluginName}/install-preview', [AdminPluginController::class, 'installPreview'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.install-preview');
         Route::get('{pluginName}/uninstall-info', [AdminPluginController::class, 'uninstallInfo'])->middleware('permission:admin,core.plugins.uninstall')->name('api.admin.plugins.uninstall-info');
         Route::post('install', [AdminPluginController::class, 'install'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.install');
         Route::post('install-from-file', [AdminPluginController::class, 'installFromFile'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.install-from-file');
+        Route::post('manifest-preview', [AdminPluginController::class, 'manifestPreview'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.manifest-preview');
         Route::post('install-from-github', [AdminPluginController::class, 'installFromGithub'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.install-from-github');
         Route::post('activate', [AdminPluginController::class, 'activate'])->middleware('permission:admin,core.plugins.activate')->name('api.admin.plugins.activate');
         Route::post('deactivate', [AdminPluginController::class, 'deactivate'])->middleware('permission:admin,core.plugins.activate')->name('api.admin.plugins.deactivate');
@@ -330,6 +515,21 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('{identifier}/settings', [AdminPluginSettingsController::class, 'show'])->middleware('permission:admin,core.plugins.read')->name('api.admin.plugins.settings.show');
         Route::put('{identifier}/settings', [AdminPluginSettingsController::class, 'update'])->middleware('permission:admin,core.plugins.update')->name('api.admin.plugins.settings.update');
         Route::get('{identifier}/settings/layout', [AdminPluginSettingsController::class, 'layout'])->middleware('permission:admin,core.plugins.read')->name('api.admin.plugins.settings.layout');
+    });
+
+    // 확장 호환성 복구/조회/dismiss (코어 버전 비호환 자동 비활성화 → 원클릭 복구)
+    Route::prefix('extensions')->group(function () {
+        Route::get('auto-deactivated', [AdminExtensionRecoveryController::class, 'autoDeactivated'])
+            ->middleware('permission:admin,core.plugins.activate')
+            ->name('api.admin.extensions.auto-deactivated');
+        Route::post('{type}/{identifier}/recover', [AdminExtensionRecoveryController::class, 'recover'])
+            ->where('type', 'plugin|module|template')
+            ->middleware('permission:admin,core.plugins.activate')
+            ->name('api.admin.extensions.recover');
+        Route::post('{type}/{identifier}/dismiss', [AdminExtensionRecoveryController::class, 'dismiss'])
+            ->where('type', 'plugin|module|template')
+            ->middleware('permission:admin,core.plugins.activate')
+            ->name('api.admin.extensions.dismiss');
     });
 
     // 환경설정 관리
@@ -450,6 +650,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('stats', [AdminSeoCacheController::class, 'stats'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.stats');
         Route::post('clear-cache', [AdminSeoCacheController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.clear-cache');
         Route::post('warmup', [AdminSeoCacheController::class, 'warmup'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.warmup');
+        Route::post('sitemap/regenerate', [AdminSeoCacheController::class, 'regenerateSitemap'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.sitemap.regenerate');
         Route::get('cached-urls', [AdminSeoCacheController::class, 'cachedUrls'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.cached-urls');
     });
 
@@ -483,8 +684,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     Route::prefix('templates')->group(function () {
         Route::get('/', [AdminTemplateController::class, 'index'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.index');
         Route::get('{templateName}', [AdminTemplateController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.show');
+        Route::get('{templateName}/install-preview', [AdminTemplateController::class, 'installPreview'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.install-preview');
         Route::post('install', [AdminTemplateController::class, 'install'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.install');
         Route::post('install-from-file', [AdminTemplateController::class, 'installFromFile'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.install-from-file');
+        Route::post('manifest-preview', [AdminTemplateController::class, 'manifestPreview'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.manifest-preview');
         Route::post('install-from-github', [AdminTemplateController::class, 'installFromGithub'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.install-from-github');
         Route::post('activate', [AdminTemplateController::class, 'activate'])->middleware('permission:admin,core.templates.activate')->name('api.admin.templates.activate');
         Route::post('deactivate', [AdminTemplateController::class, 'deactivate'])->middleware('permission:admin,core.templates.activate')->name('api.admin.templates.deactivate');

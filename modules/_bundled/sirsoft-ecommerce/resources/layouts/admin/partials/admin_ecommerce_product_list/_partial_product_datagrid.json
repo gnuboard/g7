@@ -68,10 +68,7 @@
                                         "name": "MultilingualInput",
                                         "props": {
                                             "value": "{{row.name}}",
-                                            "locales": [
-                                                "ko",
-                                                "en"
-                                            ],
+                                            "availableLocales": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}",
                                             "layout": "tabs",
                                             "inputType": "text",
                                             "compact": true,
@@ -700,7 +697,7 @@
                                                                 "type": "composite",
                                                                 "name": "MultilingualInput",
                                                                 "props": {
-                                                                    "value": "{{option.option_name ?? {}}}",
+                                                                    "value": "{{option.option_name ?? {} }}",
                                                                     "layout": "compact",
                                                                     "inputType": "text",
                                                                     "disabled": "{{row.abilities?.can_update !== true}}"
@@ -1209,7 +1206,7 @@
                                                                         "type": "composite",
                                                                         "name": "MultilingualInput",
                                                                         "props": {
-                                                                            "value": "{{option.option_name ?? {}}}",
+                                                                            "value": "{{option.option_name ?? {} }}",
                                                                             "layout": "compact",
                                                                             "inputType": "text",
                                                                             "disabled": "{{row.abilities?.can_update !== true}}"

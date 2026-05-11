@@ -15,6 +15,9 @@ class AdminAuthTest extends TestCase
 
     /**
      * 관리자 역할 생성 및 할당
+     *
+     * isAdmin() 은 role 에 type='admin' permission 이 하나라도 있어야 true.
+     * 테스트 통과를 위해 admin.default permission 을 기본 생성하여 role 에 연결.
      */
     private function createAdminUser(): User
     {
@@ -28,6 +31,17 @@ class AdminAuthTest extends TestCase
                 'description' => json_encode(['ko' => '시스템 관리자', 'en' => 'System Administrator']),
             ]
         );
+
+        // isAdmin() 에 필요한 type=admin permission 최소 1개 보장
+        $adminPermission = \App\Models\Permission::firstOrCreate(
+            ['identifier' => 'admin.test_default'],
+            [
+                'name' => json_encode(['ko' => 'admin default', 'en' => 'admin default']),
+                'description' => json_encode(['ko' => 'admin default', 'en' => 'admin default']),
+                'type' => 'admin',
+            ]
+        );
+        $adminRole->permissions()->syncWithoutDetaching([$adminPermission->id]);
 
         // 사용자에게 admin 역할 할당
         $user->roles()->attach($adminRole->id, [

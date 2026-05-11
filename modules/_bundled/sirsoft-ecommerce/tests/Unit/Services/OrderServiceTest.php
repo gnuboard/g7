@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -24,6 +25,9 @@ class OrderServiceTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Hook listener job 차단 (mock 모델 deserialize 시 null TypeError 방지)
+        Queue::fake();
 
         $this->mockRepository = Mockery::mock(OrderRepositoryInterface::class);
         $mockUserAddressRepository = Mockery::mock(UserAddressRepositoryInterface::class);

@@ -121,7 +121,10 @@ class SetLocaleMiddlewareTest extends TestCase
     }
 
     /**
-     * 지원되지 않는 언어는 무시되고 기본값이 사용됩니다.
+     * 지원되지 않는 언어는 무시되고 시스템 기본 로케일이 사용됩니다.
+     *
+     * 시스템 기본 로케일은 config('app.locale') 로 결정되며, SettingsServiceProvider 가
+     * DB 일반설정의 language 값으로 오버라이드하므로 하드코딩된 값을 비교하지 않는다.
      */
     public function test_unsupported_language_falls_back_to_default(): void
     {
@@ -131,7 +134,7 @@ class SetLocaleMiddlewareTest extends TestCase
             ->getJson('/api/test-locale');
 
         $response->assertStatus(200)
-            ->assertJson(['locale' => 'ko']); // 기본값 사용
+            ->assertJson(['locale' => config('app.locale')]);
     }
 
     /**
@@ -147,8 +150,8 @@ class SetLocaleMiddlewareTest extends TestCase
         $response->assertStatus(200);
 
         // 응답 메시지가 영어인지 확인 (한국어 유니코드 문자가 없어야 함)
+        // PHP PCRE 는 \x{AC00} 형식의 Unicode 코드포인트 표기 필수 (\xAC00 은 0xAC + 리터럴 00 으로 오해석됨)
         $message = $response->json('message');
-        // 한글 유니코드 범위: \xAC00-\xD7AF (가-힣)
-        $this->assertDoesNotMatchRegularExpression('/[\xAC00-\xD7AF]/u', $message);
+        $this->assertDoesNotMatchRegularExpression('/[\x{AC00}-\x{D7AF}]/u', $message);
     }
 }

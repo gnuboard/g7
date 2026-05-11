@@ -1,0 +1,89 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 인스톨러 후속 보안 감사로 발견된 5개 결함 패치의 시나리오 매트릭스 SSoT 로 기록. 회귀 가드는 test_files (InstallerSecurityHardeningTest 16건) + manual_verification 의 양방향 PoC 로 커버.
+
+feature: 인스톨러 후속 보안 강화 (composer 명령 / 확장 ID / pending 경로 / .env 라인 주입 / DSN 파라미터)
+
+description: |
+  인스톨러 Composer 경로 검증 결함 패치 직후 전체를 전수 감사하여 발견된 5개 추가
+  결함의 패치에 대한 시나리오 매트릭스.
+
+  배경:
+    - install-worker 내부 헬퍼 getComposerCommand() 가 동일한 "공백이면 전체 명령어"
+      가정을 또 가지고 있었음 (앞선 패치의 validateComposerPath 와 동일 패턴).
+    - save-extensions.php 가 모듈/플러그인/템플릿/언어팩 ID 를 strval 만으로 통과시켜
+      task-runner 가 artisan 명령에 그대로 보간 → 셸 메타문자 주입으로 RCE 성립.
+    - checkCorePendingPath 가 임의 경로의 존재/타입을 응답으로 분기 → 정찰 가능.
+    - escapeEnvValue 가 개행 미escape → DB 비밀번호 등 입력에 \n 포함 시 .env 라인 주입.
+    - PDO DSN 구성 시 host/port/database 에 ;= 등 메타문자 미차단 → DSN 파라미터 주입.
+
+axes:
+  vector: [getComposerCommand, getComposerCommandForDisplay, save_extensions_id, check_core_pending_path, escapeEnvValue, getDatabaseConnection]
+  payload_class: [empty, normal, shell_meta_space, shell_meta_semicolon, shell_meta_backtick, shell_meta_dollarparen, shell_meta_pipe, shell_meta_redirect, newline_lf, newline_crlf, parent_traversal, null_byte, dsn_semicolon, dsn_equals]
+  expected_outcome: [accept_normal, fall_back_to_default, return_invalid_message, throw_pdo_exception, strip_silently]
+
+exclusions:
+  - { vector: getDatabaseConnection, payload_class: parent_traversal, reason: "DSN 검증은 traversal 과 무관" }
+  - { vector: escapeEnvValue, payload_class: parent_traversal, reason: "env value 는 경로 traversal 과 무관" }
+  - { vector: check_core_pending_path, payload_class: dsn_semicolon, reason: "경로 검증은 DSN 과 무관" }
+
+effects:
+  # Critical-1: getComposerCommand
+  - getComposerCommand_returns_composer_for_empty_input
+  - getComposerCommand_returns_composer_for_shell_metachar_input
+  - getComposerCommand_returns_composer_for_nonexistent_path
+  - getComposerCommand_returns_composer_for_directory_path
+  - getComposerCommand_returns_escapeshellarg_quoted_path_for_valid_binary
+  - getComposerCommand_combines_php_and_phar_via_escapeshellarg
+  - getComposerCommandForDisplay_does_not_leak_shell_payload
+  - isInstallerExecutablePath_rejects_metachars
+  - isInstallerExecutablePath_rejects_nonexistent
+
+  # Critical-2: save-extensions ID 화이트리스트
+  - save_extensions_accepts_normal_identifiers
+  - save_extensions_rejects_id_with_space
+  - save_extensions_rejects_id_with_semicolon
+  - save_extensions_rejects_id_with_backtick
+  - save_extensions_rejects_id_with_dollar_paren
+  - save_extensions_rejects_id_with_redirect
+  - save_extensions_rejects_id_with_traversal
+  - save_extensions_returns_400_for_invalid_id
+
+  # High-2: checkCorePendingPath
+  - check_core_pending_path_rejects_double_dot_segment
+  - check_core_pending_path_rejects_null_byte
+  - check_core_pending_path_returns_uniform_message_for_nonexistent
+  - check_core_pending_path_returns_uniform_message_for_file_path
+  - check_core_pending_path_returns_writable_for_valid_dir
+
+  # Medium-1: escapeEnvValue
+  - escapeEnvValue_strips_lf_from_input
+  - escapeEnvValue_strips_cr_from_input
+  - escapeEnvValue_preserves_normal_password
+  - escapeEnvValue_escapes_quotes_and_backslashes
+  - escapeEnvValue_no_unclosed_quote_after_strip
+
+  # Medium-2: getDatabaseConnection DSN sanitize
+  - dsn_throws_for_semicolon_in_host
+  - dsn_throws_for_equals_in_database
+  - dsn_throws_for_newline_in_port
+  - dsn_throws_for_null_byte_in_any_param
+  - dsn_accepts_normal_localhost_3306
+
+test_files:
+  - tests/Unit/Installer/InstallerSecurityHardeningTest.php
+
+manual_verification:
+  - description: "Critical-1 양방향 PoC — composer_binary 셸 페이로드"
+    steps:
+      - "state.json 의 config.composer_binary 를 'sh -c \"id > /tmp/g7_C1\"' 로 설정 후 install-worker 트리거"
+      - "패치 전: /tmp/g7_C1 생성됨 (RCE)"
+      - "패치 후: getComposerCommand 가 'composer' 폴백 → /tmp/g7_C1 미생성"
+  - description: "Critical-2 양방향 PoC — modules ID 셸 페이로드"
+    steps:
+      - "POST /install/api/save-extensions.php body: {\"admin_templates\":[\"sirsoft-admin_basic\"],\"modules\":[\"foo; sh -c \\\"id > /tmp/g7_C2\\\"; #\"]}"
+      - "패치 전: 200 OK + state 저장 성공 → install-worker 진입 시 RCE 가능"
+      - "패치 후: 400 Bad Request + error_invalid_extension_identifier → state 미저장"
+  - description: "정상 흐름 비파괴 검증"
+    steps:
+      - "정상 ID (sirsoft-board, gnuboard7-hello_module 등) 를 POST → 200 OK"
+      - "정상 composer 바이너리 경로 (예: /usr/bin/composer) 설정 → escape 적용된 명령어 구성"
+      - "정상 DB 자격증명 (host=localhost, port=3306, database=g7) → 연결 시도 진행"

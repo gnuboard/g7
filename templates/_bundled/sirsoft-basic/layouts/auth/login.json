@@ -2,6 +2,16 @@
   "version": "1.0.0",
   "layout_name": "auth/login",
   "extends": "_user_base",
+  "init_actions": [
+    {
+      "if": "{{query?.reason === 'session_expired'}}",
+      "handler": "toast",
+      "params": {
+        "type": "warning",
+        "message": "$t:auth.session_expired_toast"
+      }
+    }
+  ],
   "slots": {
     "content": [
       {

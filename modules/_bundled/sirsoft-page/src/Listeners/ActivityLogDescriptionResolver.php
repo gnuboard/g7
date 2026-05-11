@@ -3,7 +3,7 @@
 namespace Modules\Sirsoft\Page\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use Modules\Sirsoft\Page\Models\Page;
+use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
 
 /**
  * 페이지 활동 로그 description_params 해석 리스너
@@ -15,6 +15,13 @@ use Modules\Sirsoft\Page\Models\Page;
  */
 class ActivityLogDescriptionResolver implements HookListenerInterface
 {
+    /**
+     * @param  PageRepositoryInterface  $pageRepository  페이지 Repository (ID → 이름 변환)
+     */
+    public function __construct(
+        private readonly PageRepositoryInterface $pageRepository,
+    ) {}
+
     /**
      * 구독할 훅과 메서드 매핑 반환
      *
@@ -93,7 +100,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
         // 2순위: properties.page_id로 DB 조회
         $pageId = $properties['page_id'] ?? null;
         if ($pageId) {
-            $page = Page::find($pageId);
+            $page = $this->pageRepository->findById((int) $pageId);
             if ($page) {
                 $params['title'] = $page->title ?? "ID: {$pageId}";
             } else {

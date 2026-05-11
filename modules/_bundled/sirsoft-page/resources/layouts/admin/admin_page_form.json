@@ -56,6 +56,16 @@
             }
         },
         {
+            "comment": "수정 모드에서 폼 로드 시 현재 슬러그는 유효하므로 slugChecked 초기화",
+            "if": "{{!!route?.id}}",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "slugChecked": true,
+                "slugAvailable": true
+            }
+        },
+        {
             "comment": "tempKey 생성 (신규/수정 모두 - 취소 시 임시파일 정리 목적)",
             "handler": "setState",
             "params": {
@@ -123,8 +133,8 @@
                                         "handler": "conditions",
                                         "conditions": [
                                             {
-                                                "comment": "생성 모드에서 슬러그 중복확인 필수 체크",
-                                                "if": "{{!route?.id && !_local.slugChecked}}",
+                                                "comment": "슬러그 중복확인 필수 체크 (생성·수정 공통)",
+                                                "if": "{{!_local.slugChecked}}",
                                                 "then": [
                                                     {
                                                         "handler": "setState",
@@ -450,8 +460,8 @@
                                                                     "type": "text",
                                                                     "placeholder": "$t:sirsoft-page.admin.page.form.fields.slug_placeholder",
                                                                     "value": "{{_local.form?.slug ?? ''}}",
-                                                                    "disabled": "{{!!route?.id || _computed.isReadOnly}}",
-                                                                    "className": "{{route?.id ? 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed' : _local.slugChecked ? (_local.slugAvailable ? 'flex-1 px-3 py-2 border-2 border-green-500 dark:border-green-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm') : _local.errors?.slug ? 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                                    "className": "{{_local.slugChecked ? (_local.slugAvailable ? 'flex-1 px-3 py-2 border-2 border-green-500 dark:border-green-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm') : _local.errors?.slug ? 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
                                                                 },
                                                                 "actions": [
                                                                     {
@@ -472,7 +482,7 @@
                                                                 "id": "slug_check_button",
                                                                 "type": "basic",
                                                                 "name": "Button",
-                                                                "if": "{{!route?.id && !_computed.isReadOnly}}",
+                                                                "if": "{{!_computed.isReadOnly}}",
                                                                 "props": {
                                                                     "type": "button",
                                                                     "disabled": "{{_local.slugChecking || !_local.form?.slug}}",
@@ -566,7 +576,6 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{!route?.id}}",
                                                                 "props": {
                                                                     "className": "block text-xs text-gray-400 dark:text-gray-500"
                                                                 },

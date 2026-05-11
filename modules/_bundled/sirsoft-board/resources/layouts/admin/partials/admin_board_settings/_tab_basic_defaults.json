@@ -218,7 +218,7 @@
                   "name": "Select",
                   "props": {
                     "name": "basic_defaults.type",
-                    "options": "{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
+                    "options": "{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[_global.locale ?? $locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
                     "className": "w-48 flex-shrink-0 text-sm",
                     "disabled": "{{_computed.isReadOnly}}"
                   }

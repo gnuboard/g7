@@ -76,6 +76,9 @@ class Post extends Model implements FulltextSearchable
         'view_count',
         'parent_id',
         'depth',
+        'replies_count',
+        'comments_count',
+        'attachments_count',
     ];
 
     /**
@@ -93,6 +96,9 @@ class Post extends Model implements FulltextSearchable
             'action_logs' => 'array',
             'view_count' => 'integer',
             'depth' => 'integer',
+            'replies_count' => 'integer',
+            'comments_count' => 'integer',
+            'attachments_count' => 'integer',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',

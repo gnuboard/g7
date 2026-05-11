@@ -5,13 +5,13 @@
         "ko": "게시판",
         "en": "Board"
     },
-    "version": "1.0.0-beta.3",
+    "version": "1.0.0-beta.4",
     "license": "MIT",
     "description": {
         "ko": "게시판 관리를 위한 모듈",
         "en": "Module for board management"
     },
-    "g7_version": ">=7.0.0-beta.2",
+    "g7_version": ">=7.0.0-beta.4",
     "dependencies": {
         "modules": {},
         "plugins": {}

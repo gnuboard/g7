@@ -271,7 +271,9 @@ describe('AuthManager', () => {
     });
 
     it('로그아웃 후 로그인 페이지로 리다이렉트해야 합니다', async () => {
-      const locationMock = { href: '' };
+      // logout 구현이 returnUrl(`${pathname}${search}`) 을 redirect 쿼리로 포함하므로
+      // mock 에 pathname/search 를 제공해야 URL 조립이 정상 동작
+      const locationMock = { href: '', pathname: '/admin/dashboard', search: '' };
       Object.defineProperty(window, 'location', {
         value: locationMock,
         writable: true,
@@ -281,7 +283,7 @@ describe('AuthManager', () => {
 
       await authManager.logout();
 
-      expect(locationMock.href).toBe('/admin/login');
+      expect(locationMock.href).toMatch(/^\/admin\/login(\?redirect=.*)?$/);
     });
   });
 

@@ -160,7 +160,11 @@ class StoreBoardSettingsRequest extends FormRequest
             'report_policy.rejection_limit_days' => ['nullable', 'integer', 'min:1', 'max:365'],
             'report_policy.notify_admin_on_report' => ['nullable', 'boolean'],
             'report_policy.notify_admin_on_report_scope' => ['nullable', 'string', 'in:per_case,per_report'],
+            'report_policy.notify_admin_on_report_channels' => ['nullable', 'array'],
+            'report_policy.notify_admin_on_report_channels.*' => ['string', 'in:mail,database'],
             'report_policy.notify_author_on_report_action' => ['nullable', 'boolean'],
+            'report_policy.notify_author_on_report_action_channels' => ['nullable', 'array'],
+            'report_policy.notify_author_on_report_action_channels.*' => ['string', 'in:mail,database'],
 
             // ========================================
             // report_permissions (신고 관리 권한) — 설정값이 아닌 DB 권한 데이터

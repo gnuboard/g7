@@ -1,0 +1,29 @@
+{
+    "admin": {
+        "memos": {
+            "index": {
+                "title": "Hello Memos",
+                "description": "Learning memo list"
+            },
+            "form": {
+                "title_create": "Create Memo",
+                "title_edit": "Edit Memo",
+                "fields": {
+                    "title": "Title",
+                    "content": "Content"
+                },
+                "actions": {
+                    "save": "Save",
+                    "cancel": "Cancel"
+                }
+            }
+        }
+    },
+    "user": {
+        "memos": {
+            "index": {
+                "title": "Memo List"
+            }
+        }
+    }
+}

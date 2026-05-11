@@ -1,0 +1,63 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 신규 기능 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+
+feature: 로그인 시도 제한 / 계정 잠금 (per-account)
+
+description: |
+  보안 환경설정의 `security.login_attempt_enabled / max_login_attempts /
+  login_lockout_time` 키가 실제 인증 흐름에서 적용되는지 보장하는 시나리오.
+
+  배경:
+    - 설정 UI 는 동작하나 AuthService 가 설정값을 미참조하여 차단이 일어나지 않던 회귀.
+    - per-account 잠금 (이메일 기준) + per-IP 백업 throttle 미들웨어 2 중 방어로 도입.
+    - 실패 카운트 mutation 은 Listener (`HandleFailedLoginListener` /
+      `HandleSuccessfulLoginListener`) 가 `UserRepositoryInterface` 를 통해 처리.
+      AuthService 는 사전 잠금 체크와 G7 액션 훅 발화 (`core.auth.login_failed`)
+      만 담당.
+
+axes:
+  login_attempt_enabled: [true, false]
+  user_existence: [exists, not_exists]
+  lock_state: [none, active, expired]
+  credential: [valid, invalid]
+  controller: [user, admin]
+  ip_pattern: [same, different]
+
+exclusions:
+  - { lock_state: active, credential: valid, reason: "잠금 상태에서는 자격 증명과 무관하게 423" }
+  - { user_existence: not_exists, lock_state: active, reason: "존재하지 않는 사용자는 잠금 불가" }
+  - { user_existence: not_exists, lock_state: expired, reason: "동일 사유" }
+  - { login_attempt_enabled: false, lock_state: active, reason: "기능 OFF 시 사전 잠금 체크 자체 미수행" }
+
+effects:
+  - failed_attempt_increments_counter
+  - counter_reaches_threshold_triggers_lock
+  - lock_event_resets_counter_to_zero
+  - lock_event_fires_core_auth_account_locked_action_hook
+  - account_locked_response_status_423
+  - account_locked_response_includes_retry_after_header
+  - account_locked_message_uses_auth_account_locked_lang_key_with_minutes_param
+  - successful_login_resets_failed_attempts
+  - successful_login_resets_locked_until
+  - successful_login_resets_last_failed_login_at
+  - lockout_expires_naturally_after_locked_until
+  - lockout_disabled_setting_skips_pre_check_and_mutation
+  - failed_login_fires_core_auth_login_failed_action_hook
+  - activity_log_records_auth_login_failed_with_email_param
+  - activity_log_records_auth_account_locked_with_attempts_and_minutes_params
+  - per_ip_throttle_blocks_burst_attempts_with_429
+  - per_ip_throttle_uses_security_max_login_attempts_setting_x6_with_min_30_floor
+
+test_files:
+  - tests/Feature/Auth/LoginThrottleTest.php
+
+rules_layer_coverage:
+  - rule: service-direct-data-access
+    coverage: AuthService 는 Auth::attempt 결과만 다루며 User mutation 은 Repository 위임
+  - rule: listener-must-implement-hooklistenerinterface
+    coverage: HandleFailedLoginListener / HandleSuccessfulLoginListener 모두 구현
+  - rule: listener-direct-db-facade
+    coverage: 두 리스너 모두 UserRepositoryInterface 만 호출 (DB facade 미사용)
+  - rule: i18n-throw-hardcoded-korean
+    coverage: AccountLockedException 메시지 키는 lang/{ko,en}/auth.php#account_locked 다국어
+  - rule: hook-broadcast-direct
+    coverage: HookManager::doAction 만 사용 (direct broadcast 없음)

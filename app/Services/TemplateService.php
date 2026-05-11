@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\TemplateOperationException;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
@@ -99,6 +100,9 @@ class TemplateService
             $allTemplates = array_values($allTemplates);
         }
 
+        // 숨김 필터 적용 (기본: 숨김 항목 제외)
+        $allTemplates = $this->applyHiddenFilter($allTemplates, (bool) ($filters['include_hidden'] ?? false));
+
         // 상태 필터 적용
         if (! empty($filters['status'])) {
             $allTemplates = $this->applyStatusFilter($allTemplates, $filters['status']);
@@ -131,6 +135,27 @@ class TemplateService
         HookManager::doAction('core.templates.after_list', $result, $filters);
 
         return $result;
+    }
+
+    /**
+     * 숨김 필터를 적용합니다.
+     *
+     * manifest 의 hidden=true 로 마킹된 템플릿은 기본 제외되며,
+     * $includeHidden=true 인 경우 포함됩니다.
+     *
+     * @param  array  $templates  템플릿 목록
+     * @param  bool  $includeHidden  숨김 항목 포함 여부
+     * @return array 필터링된 템플릿 목록
+     */
+    private function applyHiddenFilter(array $templates, bool $includeHidden): array
+    {
+        if ($includeHidden) {
+            return $templates;
+        }
+
+        return array_filter($templates, function ($template) {
+            return empty($template['hidden']);
+        });
     }
 
     /**
@@ -252,7 +277,7 @@ class TemplateService
             // 현재 로케일 우선, 없으면 ko, 그 다음 en
             $locale = app()->getLocale();
 
-            return $value[$locale] ?? $value['ko'] ?? $value['en'] ?? reset($value) ?: null;
+            return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value) ?: null;
         }
 
         return (string) $value;
@@ -340,7 +365,10 @@ class TemplateService
     }
 
     /**
-     * 활성화된 템플릿 identifier 조회
+     * 활성화된 템플릿 identifier 조회.
+     *
+     * @param  string  $type  템플릿 타입 ('admin' 또는 'user')
+     * @return string 활성 템플릿 identifier
      *
      * @throws TemplateNotFoundException 활성화된 템플릿이 없을 때
      */
@@ -461,10 +489,9 @@ class TemplateService
 
             if ($result) {
                 // 템플릿 매니저에서 업데이트된 정보 조회
+                // (after_deactivate 훅은 TemplateManager 가 string identifier 시그니처로 이미 발화)
                 $this->templateManager->loadTemplates();
                 $templateInfo = $this->templateManager->getTemplateInfo($template->identifier);
-
-                HookManager::doAction('core.templates.after_deactivate', $templateInfo);
 
                 return $templateInfo;
             }
@@ -534,7 +561,13 @@ class TemplateService
     }
 
     /**
-     * 템플릿 업데이트
+     * 템플릿 DB 레코드를 업데이트합니다 (before/after_update 훅 + filter_update_data 발화).
+     *
+     * @param  int  $id  템플릿 DB 레코드 ID
+     * @param  array<string, mixed>  $data  업데이트할 필드 (display_name/description/settings 등)
+     * @return object 갱신된 템플릿 레코드
+     *
+     * @throws TemplateOperationException 템플릿을 찾을 수 없을 때
      */
     public function updateTemplate(int $id, array $data): object
     {
@@ -543,7 +576,7 @@ class TemplateService
         $template = $this->templateRepository->findById($id);
 
         if (! $template) {
-            throw new \Exception(__('templates.not_found'));
+            throw new TemplateOperationException('templates.not_found');
         }
 
         $data = HookManager::applyFilters('core.templates.filter_update_data', $data, $template);
@@ -556,7 +589,12 @@ class TemplateService
     }
 
     /**
-     * 템플릿 삭제
+     * 템플릿 DB 레코드를 삭제합니다 (before/after_delete 훅 발화).
+     *
+     * @param  int  $id  템플릿 DB 레코드 ID
+     * @return bool 삭제 성공 여부
+     *
+     * @throws TemplateOperationException 템플릿을 찾을 수 없을 때
      */
     public function deleteTemplate(int $id): bool
     {
@@ -565,7 +603,7 @@ class TemplateService
         $template = $this->templateRepository->findById($id);
 
         if (! $template) {
-            throw new \Exception(__('templates.not_found'));
+            throw new TemplateOperationException('templates.not_found');
         }
 
         $result = $this->templateRepository->delete($id);
@@ -709,9 +747,11 @@ class TemplateService
             ];
         }
 
-        // 4. 요청된 로케일이 locales에 있는지 검증
-        $supportedLocales = $templateInfo['locales'] ?? [];
-        if (! in_array($locale, $supportedLocales, true)) {
+        // 4. 요청된 로케일 검증 — 시스템 활성 로케일(언어팩 반영) 기준
+        //    템플릿 자체 번역(`template.json` `locales`)에 없더라도, 활성 언어팩이
+        //    번역을 제공할 수 있으므로 시스템 supported_locales 로 통과시킨다.
+        $systemLocales = config('app.supported_locales', ['ko', 'en']);
+        if (! in_array($locale, $systemLocales, true)) {
             return [
                 'success' => false,
                 'langPath' => null,
@@ -723,10 +763,10 @@ class TemplateService
         $langPath = base_path("templates/{$identifier}/lang/{$locale}.json");
 
         // 6. Path Traversal 공격 방지
-        $realPath = realpath($langPath);
         $basePath = realpath(base_path("templates/{$identifier}/lang"));
+        $realPath = realpath($langPath);
 
-        if ($realPath === false || ! str_starts_with($realPath, $basePath)) {
+        if ($realPath !== false && ($basePath === false || ! str_starts_with($realPath, $basePath))) {
             return [
                 'success' => false,
                 'langPath' => null,
@@ -734,7 +774,18 @@ class TemplateService
             ];
         }
 
+        // 7. 템플릿이 자체 번역하지 않는 로케일(언어팩 전담)도 허용 — null 반환 시
+        //    호출자가 빈 베이스에 언어팩 데이터를 병합하도록 한다.
         if (! file_exists($langPath)) {
+            $templateLocales = $templateInfo['locales'] ?? [];
+            if (! in_array($locale, $templateLocales, true)) {
+                return [
+                    'success' => true,
+                    'langPath' => null,
+                    'error' => null,
+                ];
+            }
+
             return [
                 'success' => false,
                 'langPath' => null,
@@ -773,14 +824,20 @@ class TemplateService
         }
 
         // 2. 템플릿 다국어 데이터 로드 (fragment 해석 포함)
-        $templateLangData = $this->loadLanguageFileWithFragments($result['langPath']);
+        //    langPath 가 null 인 경우 템플릿이 해당 로케일을 자체 번역하지 않음 →
+        //    빈 베이스에서 시작해 활성 언어팩 데이터로만 채운다.
+        if ($result['langPath'] === null) {
+            $templateLangData = [];
+        } else {
+            $templateLangData = $this->loadLanguageFileWithFragments($result['langPath']);
 
-        if ($templateLangData === null) {
-            return [
-                'success' => false,
-                'data' => null,
-                'error' => 'invalid_json',
-            ];
+            if ($templateLangData === null) {
+                return [
+                    'success' => false,
+                    'data' => null,
+                    'error' => 'invalid_json',
+                ];
+            }
         }
 
         // 3. 활성화된 모듈들의 다국어 데이터 병합 (fragment 해석 포함)
@@ -791,6 +848,14 @@ class TemplateService
 
         // 5. 템플릿 데이터와 모듈/플러그인 데이터 병합
         $mergedData = array_merge($templateLangData, $moduleLangData, $pluginLangData);
+
+        // 6. 활성 언어팩의 frontend/*.json 병합 (가장 높은 우선순위 — 코어/모듈/플러그인 모두 덮어쓸 수 있음)
+        $mergedData = \App\Extension\HookManager::applyFilters(
+            'template.language.merge',
+            $mergedData,
+            $identifier,
+            $locale
+        );
 
         return [
             'success' => true,
@@ -1152,6 +1217,60 @@ class TemplateService
      *
      * @throws \RuntimeException 설치 실패 시
      */
+    /**
+     * 업로드된 ZIP 의 manifest 와 검증 결과만 추출합니다 (실제 설치 X).
+     *
+     * 사용자가 템플릿 설치 전 template.json 검증 실패 사유를 미리 확인할 수 있게 합니다.
+     *
+     * @param  UploadedFile  $file  업로드된 ZIP 파일
+     * @return array{manifest: ?array<string, mixed>, validation: array<string, mixed>} 미리보기 결과
+     */
+    public function previewManifest(UploadedFile $file): array
+    {
+        $tempPath = storage_path('app/temp/templates');
+        $extractPath = $tempPath.'/preview-'.uniqid('template_');
+        $manifest = null;
+        $errors = [];
+
+        try {
+            File::ensureDirectoryExists($tempPath);
+
+            $result = ZipInstallHelper::extractAndValidate(
+                $file->getRealPath(), $extractPath, 'template.json', 'templates'
+            );
+
+            $manifest = $result['config'];
+        } catch (\Throwable $e) {
+            $errors[] = $e->getMessage();
+        } finally {
+            if (File::exists($extractPath)) {
+                File::deleteDirectory($extractPath);
+            }
+        }
+
+        $existing = $manifest && ! empty($manifest['identifier'])
+            ? $this->templateRepository->findByIdentifier($manifest['identifier'])
+            : null;
+
+        return [
+            'manifest' => $manifest,
+            'validation' => [
+                'errors' => $errors,
+                'is_valid' => $errors === [] && $manifest !== null,
+                'already_installed' => $existing !== null,
+                'existing_version' => $existing?->version,
+            ],
+        ];
+    }
+    /**
+     * 업로드된 ZIP 파일로부터 템플릿을 추출/검증하고 _pending 으로 이동 후 설치합니다.
+     *
+     * `template.json` 검증 → identifier 충돌 검사 → _pending 이동 → 설치 파이프라인 진입.
+     *
+     * @param  UploadedFile  $file  사용자가 업로드한 템플릿 ZIP 파일
+     * @return array 설치 결과 (identifier/version/installed_at 포함)
+     */
+
     public function installFromZipFile(UploadedFile $file): array
     {
         $tempPath = storage_path('app/temp/templates');
@@ -1208,7 +1327,7 @@ class TemplateService
             $token = config('app.update.github_token') ?? '';
 
             if (! GithubHelper::checkRepoExists($owner, $repo, $token)) {
-                throw new \RuntimeException(__('templates.errors.github_repo_not_found'));
+                throw new TemplateOperationException('templates.errors.github_repo_not_found');
             }
 
             $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath, $token);
@@ -1257,7 +1376,7 @@ class TemplateService
         $existingTemplate = $this->templateManager->getTemplateInfo($identifier);
 
         if ($existingTemplate && $existingTemplate['is_installed']) {
-            throw new \RuntimeException(__('templates.errors.already_installed'));
+            throw new TemplateOperationException('templates.errors.already_installed');
         }
     }
 
@@ -1275,7 +1394,7 @@ class TemplateService
         $result = $this->templateManager->installTemplate($identifier);
 
         if (! $result) {
-            throw new \RuntimeException(__('templates.errors.install_failed'));
+            throw new TemplateOperationException('templates.errors.install_failed');
         }
 
         return $this->templateManager->getTemplateInfo($identifier);
@@ -1456,17 +1575,18 @@ class TemplateService
      *
      * @param  string  $templateName  업데이트할 템플릿 identifier
      * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
+     * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
      * @throws ValidationException 업데이트 실패 시
      */
-    public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite'): array
+    public function performVersionUpdate(string $templateName, string $layoutStrategy = 'overwrite', bool $force = false): array
     {
         HookManager::doAction('core.templates.before_version_update', $templateName);
 
         try {
             $this->templateManager->loadTemplates();
-            $result = $this->templateManager->updateTemplate($templateName, false, null, $layoutStrategy);
+            $result = $this->templateManager->updateTemplate($templateName, $force, null, $layoutStrategy);
 
             $templateInfo = $this->templateManager->getTemplateInfo($templateName);
 

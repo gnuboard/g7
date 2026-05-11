@@ -45,6 +45,13 @@ abstract class ModuleTestCase extends TestCase
     protected static string $sharedBoardSlug = '';
 
     /**
+     * HookManager static state 스냅샷 — tearDown 에서 복원하여 테스트 간 훅 격리 보장.
+     *
+     * @var array{hooks: array, filters: array, dispatching: array}|null
+     */
+    private ?array $hookSnapshot = null;
+
+    /**
      * 테스트 환경 설정
      */
     protected function setUp(): void
@@ -68,11 +75,67 @@ abstract class ModuleTestCase extends TestCase
         // 테스트 컨테이너에서 ModuleManager 싱글톤이 비어있는 경우를 대비해 명시적으로 재로드
         $this->app->make(\App\Extension\ModuleManager::class)->loadModules();
 
+        // _bundled 디렉토리 모듈은 loadModules() 가 스캔하지 않아
+        // 모듈 인스턴스 등록 + 훅 리스너 자동 등록이 누락된다.
+        // 테스트 환경에서 module.php 가 선언한 getHookListeners() 의 리스너들을 수동 등록.
+        $this->registerBundledModuleInstance();
+
         // 모듈 라우트를 수동으로 등록
         $this->registerModuleRoutes();
 
         // 기본 역할 생성
         $this->createDefaultRoles();
+
+        // HookManager 상태 스냅샷 (tearDown 에서 복원하여 테스트 내 추가 훅만 제거)
+        $this->snapshotHookManager();
+
+        // PermissionMiddleware::$guestRoleCache 초기화 — 이전 테스트에서 로드된 guest role/permissions 캐시가
+        // DatabaseTransactions 롤백 후에도 남아있어 다음 테스트의 새 permission 설정이 반영되지 않는 문제 회피.
+        $middlewareRef = new \ReflectionClass(\App\Http\Middleware\PermissionMiddleware::class);
+        if ($middlewareRef->hasProperty('guestRoleCache')) {
+            $prop = $middlewareRef->getProperty('guestRoleCache');
+            $prop->setValue(null, null);
+        }
+    }
+
+    /**
+     * tearDown 에 HookManager 상태 복원.
+     */
+    protected function tearDown(): void
+    {
+        $this->restoreHookManager();
+
+        parent::tearDown();
+    }
+
+    /**
+     * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
+     */
+    private function snapshotHookManager(): void
+    {
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $this->hookSnapshot = [
+            'hooks' => $ref->getProperty('hooks')->getValue(),
+            'filters' => $ref->getProperty('filters')->getValue(),
+            'dispatching' => $ref->getProperty('dispatching')->getValue(),
+        ];
+    }
+
+    /**
+     * 스냅샷 시점으로 HookManager 복원.
+     */
+    private function restoreHookManager(): void
+    {
+        if ($this->hookSnapshot === null) {
+            return;
+        }
+
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
+        $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
+        $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
+
+        $this->hookSnapshot = null;
     }
 
     /**
@@ -88,21 +151,68 @@ abstract class ModuleTestCase extends TestCase
             return;
         }
 
-        // 코어 마이그레이션 먼저 실행 (users, roles, modules 등 의존 테이블 생성)
-        // Board 모듈의 FK는 users 테이블을 참조하므로 코어 테이블이 먼저 필요
-        if (! Schema::hasTable('users') || ! Schema::hasTable('roles') || ! Schema::hasTable('modules')) {
-            $this->artisan('migrate');
-        }
+        // 매 PHP process 첫 setUp 시 DB 를 완전 초기화 후 코어+모듈 마이그레이션을 처음부터
+        // 실행한다 (board 는 DatabaseTransactions 사용 — RefreshDatabase 가 아니므로 schema
+        // 자동 재구축 없음). 이전 process 의 부분 schema 잔재(예: 컬럼은 추가됐지만 migration
+        // record 누락) 로 인한 "Duplicate column" 등 충돌을 차단한다.
+        $this->artisan('migrate:fresh');
 
         // 모듈 마이그레이션 실행 (코어 테이블 생성 후)
-        if (! Schema::hasTable('boards')) {
-            $this->artisan('migrate', [
-                '--path' => $this->getModuleBasePath() . '/database/migrations',
-                '--realpath' => true,
-            ]);
-        }
+        $this->artisan('migrate', [
+            '--path' => $this->getModuleBasePath() . '/database/migrations',
+            '--realpath' => true,
+        ]);
 
         static::$migrated = true;
+    }
+
+    /**
+     * _bundled 디렉토리 모듈 인스턴스 + 훅 리스너 수동 등록.
+     *
+     * ModuleManager::loadModules() 는 modules/ (활성) 디렉토리만 스캔하고
+     * _bundled 는 메타데이터만 로드 (loadBundledModules) — 인스턴스/훅 미등록.
+     * 테스트 환경에서는 _bundled 에서 직접 실행하므로 module.php 의
+     * getHookListeners() 가 선언한 리스너들을 수동으로 등록해야 실제 부트 시점과 동일한 훅 흐름이 복원된다.
+     */
+    protected function registerBundledModuleInstance(): void
+    {
+        $moduleClass = \Modules\Sirsoft\Board\Module::class;
+
+        if (! class_exists($moduleClass)) {
+            require_once $this->getModuleBasePath() . '/module.php';
+        }
+
+        $module = new $moduleClass();
+
+        /** @var \App\Extension\ModuleManager $manager */
+        $manager = $this->app->make(\App\Extension\ModuleManager::class);
+
+        // ModuleManager.modules 에 인스턴스 주입
+        $reflection = new \ReflectionClass($manager);
+        $modulesProp = $reflection->getProperty('modules');
+        $modulesProp->setAccessible(true);
+        $current = $modulesProp->getValue($manager);
+        if (! isset($current['sirsoft-board'])) {
+            $current['sirsoft-board'] = $module;
+            $modulesProp->setValue($manager, $current);
+        }
+
+        // 훅 리스너 등록 — module.php 의 getHookListeners() 반환 클래스들을 HookListenerRegistrar 로 등록
+        if (method_exists($module, 'getHookListeners')) {
+            foreach ($module->getHookListeners() as $listenerClass) {
+                if (! class_exists($listenerClass)) {
+                    continue;
+                }
+                if (! in_array(\App\Contracts\Extension\HookListenerInterface::class, class_implements($listenerClass), true)) {
+                    continue;
+                }
+                try {
+                    \App\Extension\HookListenerRegistrar::register($listenerClass, 'sirsoft-board');
+                } catch (\Throwable $e) {
+                    // 중복 등록 등 무해한 예외는 무시 (snapshot/restore 패턴이 정리)
+                }
+            }
+        }
     }
 
     /**

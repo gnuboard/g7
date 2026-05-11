@@ -12,6 +12,7 @@
 3. Service에서 훅 실행: before_create → applyFilters → create → after_create
 4. 검증 로직은 FormRequest에서 (Service에 검증 금지)
 5. 다중 검색은 HasMultipleSearchFilters Trait 사용
+6. Service 에서 Model 직접 인스턴스화 금지 — Repository 의 build/factory 메서드 위임 (가상 모델 합성 포함)
 ```
 
 ---
@@ -247,6 +248,55 @@ class ListModuleCommand extends Command
 - 훅 실행 (before/after)
 - 트랜잭션 관리
 - 여러 리포지토리 조율
+
+### Model 인스턴스화는 Repository 책임
+
+Service 에서 Model 을 직접 인스턴스화(`new EloquentModel`, `$model->forceFill`, `$model->setAttribute`) 하지 않는다. 모든 Model 인스턴스 생성은 Repository 의 build/factory 메서드에 위임한다. 영속성 있는 행(create/update) 뿐 아니라 가상 모델(미설치 가상 행, DTO-style 합성) 도 동일.
+
+| ❌ 잘못된 패턴 (Service) | ✅ 올바른 패턴 (Service) |
+|---|---|
+| `$pack = new LanguagePack(); $pack->forceFill([...]); $pack->exists = false;` | `$pack = $this->repository->buildVirtualFromManifest($manifest, $id);` |
+| Service 안에서 직접 `setAttribute('virtual_field', ...)` | Repository 의 build 메서드가 가상 속성도 함께 채움 |
+
+이유:
+
+- Service 가 Model 생성 세부(컬럼, 캐스트, 가상 속성 등)를 알게 되면 영속 계층 변경(컬럼 추가/제거, 모델 클래스 교체)이 Service 까지 파급된다.
+- Repository 가 단일 진입점이 되어야 Resource/Test 가 의존하는 가상 행 합성 패턴이 일관 유지된다.
+- 동일 합성을 여러 Service 메서드에서 반복할 때 DRY 위반을 방지한다.
+
+Repository Interface 에 합성 메서드 시그니처를 선언:
+
+```php
+// app/Contracts/Repositories/LanguagePackRepositoryInterface.php
+public function buildVirtualFromManifest(array $manifest, string $bundledIdentifier): LanguagePack;
+```
+
+Repository 구현체는 Model 인스턴스화 + 가상 속성 채움 + `exists=false` 설정 모두 책임:
+
+```php
+// app/Repositories/LanguagePackRepository.php
+public function buildVirtualFromManifest(array $manifest, string $bundledIdentifier): LanguagePack
+{
+    $pack = new LanguagePack;
+    $pack->identifier = (string) $manifest['identifier'];
+    // ... 모든 필드 채움 ...
+    $pack->setAttribute('bundled_identifier', $bundledIdentifier);
+    $pack->exists = false;
+    return $pack;
+}
+```
+
+Service 는 호출만:
+
+```php
+// app/Services/LanguagePackService.php
+public function findOrBundled(int|string $id): ?LanguagePack
+{
+    if (is_numeric($id)) return $this->find((int) $id);
+    $manifest = json_decode(File::get(...), true);
+    return $this->repository->buildVirtualFromManifest($manifest, (string) $id);
+}
+```
 
 ### 패턴
 
@@ -593,6 +643,57 @@ foreach ($locales as $locale) {
     $query->orWhere("name->{$locale}", 'like', "%{$keyword}%");
 }
 $query->orderBy("name->{$locale}", $sortOrder);
+```
+
+#### 다국어 필드 fallback chain
+
+Model 의 `getLocalizedX()` / Resource 의 다국어 컬럼 출력 / Service 의 다국어 매핑 등에서 현재 locale 값을 반환할 때는 `config('app.fallback_locale', 'ko')` 기반 fallback chain 을 사용합니다.
+
+```php
+// ✅ DO: app.fallback_locale config 기반
+public function getLocalizedName(?string $locale = null): string
+{
+    $locale = $locale ?? app()->getLocale();
+    if (! is_array($this->name)) {
+        return (string) $this->name;
+    }
+    return $this->name[$locale]
+        ?? $this->name[config('app.fallback_locale', 'ko')]
+        ?? (! empty($this->name) ? array_values($this->name)[0] : '')
+        ?? '';
+}
+
+// ❌ DON'T: ko / en 하드코딩
+return $this->name[$locale]
+    ?? $this->name['ko']
+    ?? $this->name['en']
+    ?? '';
+```
+
+운영자가 `APP_FALLBACK_LOCALE` 환경변수로 폴백 locale 을 변경할 수 있도록 보장하는 정합성 정책입니다.
+
+#### 다국어 라벨이 들어간 비즈니스 로직 (copy 접미사 등)
+
+Repository / Service 가 데이터를 복제하면서 이름에 locale 별 접미사를 붙이는 경우, **lang key 를 사용** 하고 `locale === 'ko'` / `locale === 'en'` 같은 분기는 사용하지 않습니다.
+
+```php
+// ✅ DO: locale 별 lang key (모듈 자체 lang/{locale}/messages.php + 활성 언어팩 ja 가 보완)
+$previousLocale = app()->getLocale();
+try {
+    foreach ($name as $locale => $value) {
+        app()->setLocale($locale);
+        $suffix = trans('vendor-module::messages.copy_suffix');
+        if ($suffix === 'vendor-module::messages.copy_suffix') {
+            $suffix = ' (Copy)'; // 미정의 시 영어 폴백
+        }
+        $name[$locale] = $value.$suffix;
+    }
+} finally {
+    app()->setLocale($previousLocale);
+}
+
+// ❌ DON'T: ko/en 분기 — ja 등 추가 locale 이 영어 폴백으로 떨어짐
+$suffix = $locale === 'ko' ? ' (복사)' : ' (Copy)';
 ```
 
 #### 허용되는 Raw 쿼리
@@ -969,4 +1070,5 @@ class ProductService
 
 - [컨트롤러 계층 구조](controllers.md) - Controller에서 Service 사용
 - [검증 로직 구현](validation.md) - FormRequest 검증 규칙
+- [DTO 사용 규칙](dto.md) - Service 가 반환하는 DTO 의 두 패턴 (Value Object / Data Carrier)
 - [index.md](index.md) - 백엔드 가이드 전체 목차

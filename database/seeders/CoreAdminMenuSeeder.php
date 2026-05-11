@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\MenuPermissionType;
+use App\Extension\HookManager;
 use App\Models\Menu;
 use App\Models\Role;
 use App\Models\User;
@@ -51,6 +52,9 @@ class CoreAdminMenuSeeder extends Seeder
     private function createCoreMenus(?User $admin): void
     {
         $coreMenus = config('core.menus');
+
+        // 언어팩 시스템: 활성 코어 언어팩의 seed/menus.json 으로 다국어 키 병합 (§9 필터 주입)
+        $coreMenus = HookManager::applyFilters('core.menus.config', $coreMenus);
 
         $createdMenus = [];
         foreach ($coreMenus as $menuData) {

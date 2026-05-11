@@ -23,8 +23,9 @@
 2. [런타임 오토로드 방식](#런타임-오토로드-방식)
 3. [Composer 의존성 관리](#composer-의존성-관리)
 4. [식별자 검증 규칙](#식별자-검증-규칙-validextensionidentifier)
-5. [Artisan 커맨드](#artisan-커맨드)
-6. [서비스 등록](#서비스-등록)
+5. [관리자 UI 필터링 (hidden 플래그)](#관리자-ui-필터링-hidden-플래그)
+6. [Artisan 커맨드](#artisan-커맨드)
+7. [서비스 등록](#서비스-등록)
 
 ---
 
@@ -317,6 +318,54 @@ php artisan extension:composer-install
 
 ---
 
+## 관리자 UI 필터링 (hidden 플래그)
+
+확장 manifest (`module.json` / `plugin.json` / `template.json`) 에 `"hidden": true` 를 설정하면, 관리자 UI 목록 응답과 artisan `*:list` 기본 출력에서 제외됩니다. 학습용 샘플 확장, 내부 운영 전용 확장을 숨길 때 사용합니다.
+
+### 제외 범위
+
+| 대상 | hidden 적용 |
+|------|-------------|
+| 관리자 UI 기본 응답 (`GET /api/admin/modules`, `/plugins`, `/templates`) | 제외 |
+| artisan 기본 목록 (`module:list`, `plugin:list`, `template:list`) | 제외 |
+| 설치/활성화/비활성화/제거 커맨드 (`*:install`, `*:activate`, `*:uninstall`) | 정상 동작 |
+| 업데이트 감지 (`*:check-updates`, `*:update`) | 정상 동작 |
+| 확장 로딩/오토로드/훅 실행 | 정상 동작 (활성화되어 있으면 기능 전부 사용 가능) |
+
+### 숨김 포함 조회
+
+슈퍼관리자는 다음 방법으로 숨김 확장까지 포함하여 조회할 수 있습니다:
+
+```bash
+# artisan CLI
+php artisan module:list --hidden
+php artisan plugin:list --hidden
+php artisan template:list --hidden
+
+# API 쿼리
+GET /api/admin/modules?include_hidden=1
+GET /api/admin/plugins?include_hidden=1
+GET /api/admin/templates?include_hidden=1
+```
+
+### manifest 설정
+
+```json
+{
+    "identifier": "gnuboard7-hello_module",
+    "version": "0.1.0",
+    "hidden": true
+}
+```
+
+- 기본값은 필드 생략 (hidden=false)
+- `true` 설정 시에만 숨김 처리됨
+- 학습용 샘플 확장 예: `gnuboard7-hello_module`, `gnuboard7-hello_plugin`, `gnuboard7-hello_admin_template`, `gnuboard7-hello_user_template`
+
+> 상세: [sample-extensions.md](sample-extensions.md) — 학습용 샘플 확장 전체 가이드
+
+---
+
 ## 서비스 등록
 
 `CoreServiceProvider`에서 싱글톤으로 등록됩니다.
@@ -352,6 +401,39 @@ ModuleManager ← ExtensionManager 주입
     ↓
 PluginManager ← ExtensionManager 주입
 ```
+
+---
+
+## 비활성화 사유 추적 (DeactivationReason)
+
+확장 비활성화는 **사용자 수동 비활성화**와 **시스템 자동 비활성화**를 DB 레벨에서 구분합니다.
+
+### Enum 값
+
+| 값 | 의미 | 시스템 트리거 |
+| --- | --- | --- |
+| `manual` | 관리자가 관리자 UI 또는 Artisan 커맨드로 직접 비활성화 | false |
+| `incompatible_core` | 코어 버전 호환성 검사 실패로 자동 비활성화 | true |
+
+`DeactivationReason::isSystemTriggered()` 가 `true` 인 사유는 알림 영속화 + 재호환 시 원클릭 복구 UX 대상이 됩니다.
+
+### Manager 시그니처
+
+```php
+ModuleManager::deactivateModule(
+    string $identifier,
+    string $reason = DeactivationReason::Manual->value,
+    ?string $incompatibleRequiredVersion = null,
+): void
+```
+
+`PluginManager::deactivatePlugin` / `TemplateManager::deactivateTemplate` 도 동일 시그니처. `$incompatibleRequiredVersion` 은 `incompatible_core` 사유에서 어떤 코어 버전을 요구했는지 기록 (재호환 알림에서 사용).
+
+### 자동 복구 흐름
+
+코어 업그레이드 후 `incompatible_core` 사유로 비활성화된 확장이 다시 호환 범위에 들어오면 관리자 대시보드 카드에 "다시 활성화" CTA 가 표시됩니다 (수동 비활성화 `manual` 은 대상 아님 — 사용자 의도 존중).
+
+DB 컬럼: `modules/plugins/templates` 테이블의 `deactivated_reason` (string) + `incompatible_required_version` (string|null).
 
 ---
 

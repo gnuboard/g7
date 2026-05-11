@@ -55,7 +55,8 @@ class RegisterPgProviderListener implements HookListenerInterface
     {
         $providers[] = [
             'id' => 'tosspayments',
-            'name' => ['ko' => '토스페이먼츠', 'en' => 'TossPayments'],
+            'name_key' => 'sirsoft-tosspayments::provider.name',
+            'name' => localized_label(nameKey: 'sirsoft-tosspayments::provider.name'),
             'icon' => 'credit-card',
             'supported_methods' => ['card'],
         ];

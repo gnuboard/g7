@@ -37,7 +37,7 @@
             {
               "type": "basic",
               "name": "Span",
-              "text": "{{(post?.data?.comments ?? []).length}}"
+              "text": "{{post?.data?.comment_count ?? 0}}"
             }
           ]
         },
@@ -82,7 +82,7 @@
       "comment": "댓글 없음 안내 (조회+작성 권한 O, 댓글 0개, 블라인드 아님)",
       "type": "basic",
       "name": "Div",
-      "if": "{{(post?.data?.comments ?? []).length === 0 && post?.data?.abilities?.can_write_comments && post?.data?.status !== 'blinded'}}",
+      "if": "{{(post?.data?.comment_count ?? 0) === 0 && post?.data?.abilities?.can_write_comments && post?.data?.status !== 'blinded'}}",
       "props": {
         "className": "px-6 py-8 text-center"
       },

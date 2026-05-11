@@ -70,7 +70,9 @@ class MenuUserOverridesListenerTest extends TestCase
             ->with($menu, Mockery::on(function ($arg) {
                 $overrides = $arg['user_overrides'];
 
-                return in_array('name', $overrides, true)
+                // 다국어 JSON name 은 sub-key dot-path 단위로 기록 (7.0.0-beta.4+)
+                return in_array('name.ko', $overrides, true)
+                    && in_array('name.en', $overrides, true)
                     && in_array('icon', $overrides, true)
                     && in_array('order', $overrides, true)
                     && in_array('url', $overrides, true);
@@ -199,11 +201,11 @@ class MenuUserOverridesListenerTest extends TestCase
      */
     public function test_duplicate_override_not_added(): void
     {
-        // name, icon이 이미 user_overrides에 있는 경우
+        // name.ko, name.en, icon 이 이미 user_overrides 에 있는 경우 (sub-key dot-path 형식)
         $menu = new Menu();
         $menu->name = ['ko' => '대시보드', 'en' => 'Dashboard'];
         $menu->icon = 'fa-home';
-        $menu->forceFill(['user_overrides' => ['name', 'icon']]);
+        $menu->forceFill(['user_overrides' => ['name.ko', 'name.en', 'icon']]);
 
         $data = [
             'name' => ['ko' => '홈', 'en' => 'Home'],

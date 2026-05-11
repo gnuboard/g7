@@ -79,7 +79,7 @@ class GeoIpServiceTest extends TestCase
         config(['geoip.cache.enabled' => false]);
 
         // 새로운 서비스 인스턴스 생성 (설정 변경 반영)
-        $service = new GeoIpService;
+        $service = app(GeoIpService::class);
 
         // Google DNS (미국) - America/Chicago 또는 다른 미국 타임존
         $supportedTimezones = [
@@ -112,7 +112,7 @@ class GeoIpServiceTest extends TestCase
         config(['geoip.database_path' => $dbPath]);
         config(['geoip.cache.enabled' => false]);
 
-        $service = new GeoIpService;
+        $service = app(GeoIpService::class);
 
         // 미국 IP인데 한국 타임존만 지원하는 경우
         $result = $service->getTimezoneByIp('8.8.8.8', ['Asia/Seoul', 'Asia/Tokyo']);
@@ -134,13 +134,14 @@ class GeoIpServiceTest extends TestCase
         config(['geoip.enabled' => true]);
         config(['geoip.database_path' => $dbPath]);
         config(['geoip.cache.enabled' => true]);
-        config(['geoip.cache.prefix' => 'test.geoip.timezone.']);
         config(['geoip.cache.ttl' => 3600]);
 
-        // 캐시 클리어
-        Cache::forget('test.geoip.timezone.8.8.8.8');
+        // CacheInterface 경유 — 실제 사용 키는 'geoip.timezone.'.{ip}
+        $cache = app(\App\Contracts\Extension\CacheInterface::class);
+        $cacheKey = 'geoip.timezone.8.8.8.8';
+        $cache->forget($cacheKey);
 
-        $service = new GeoIpService;
+        $service = app(GeoIpService::class);
 
         $supportedTimezones = [
             'America/New_York',
@@ -153,8 +154,8 @@ class GeoIpServiceTest extends TestCase
         // 첫 번째 조회 (캐시 미스)
         $result1 = $service->getTimezoneByIp('8.8.8.8', $supportedTimezones);
 
-        // 캐시에 저장되었는지 확인
-        $cached = Cache::get('test.geoip.timezone.8.8.8.8');
+        // 캐시에 저장되었는지 확인 (빈 문자열이어도 저장됨 — 실패 반복 방지 패턴)
+        $cached = $cache->get($cacheKey);
         $this->assertNotNull($cached);
 
         // 두 번째 조회 (캐시 히트)
@@ -163,7 +164,7 @@ class GeoIpServiceTest extends TestCase
         $this->assertEquals($result1, $result2);
 
         // 정리
-        Cache::forget('test.geoip.timezone.8.8.8.8');
+        $cache->forget($cacheKey);
     }
 
     /**
@@ -181,7 +182,7 @@ class GeoIpServiceTest extends TestCase
         config(['geoip.database_path' => $dbPath]);
         config(['geoip.cache.enabled' => false]);
 
-        $service = new GeoIpService;
+        $service = app(GeoIpService::class);
 
         // KT DNS (한국)
         $supportedTimezones = ['Asia/Seoul', 'Asia/Tokyo', 'UTC'];
@@ -206,7 +207,7 @@ class GeoIpServiceTest extends TestCase
         config(['geoip.database_path' => $dbPath]);
         config(['geoip.cache.enabled' => false]);
 
-        $service = new GeoIpService;
+        $service = app(GeoIpService::class);
 
         // NTT (일본)
         $supportedTimezones = ['Asia/Seoul', 'Asia/Tokyo', 'UTC'];
@@ -231,7 +232,7 @@ class GeoIpServiceTest extends TestCase
         config(['geoip.database_path' => $dbPath]);
         config(['geoip.cache.enabled' => false]);
 
-        $service = new GeoIpService;
+        $service = app(GeoIpService::class);
 
         // 프라이빗 IP (192.168.x.x)
         $result = $service->getTimezoneByIp('192.168.1.1', ['Asia/Seoul', 'UTC']);
@@ -254,7 +255,7 @@ class GeoIpServiceTest extends TestCase
         config(['geoip.database_path' => $dbPath]);
         config(['geoip.cache.enabled' => false]);
 
-        $service = new GeoIpService;
+        $service = app(GeoIpService::class);
 
         $result = $service->getTimezoneByIp('127.0.0.1', ['Asia/Seoul', 'UTC']);
 

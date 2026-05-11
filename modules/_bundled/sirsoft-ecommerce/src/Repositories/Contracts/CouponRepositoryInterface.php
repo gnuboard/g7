@@ -119,4 +119,12 @@ interface CouponRepositoryInterface
      * @return Coupon|null
      */
     public function findByIdForUpdate(int $id): ?Coupon;
+
+    /**
+     * ID 목록으로 쿠폰을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
+     *
+     * @param  array<int, int>  $ids  쿠폰 ID 목록
+     * @return \Illuminate\Database\Eloquent\Collection<int, Coupon>
+     */
+    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection;
 }

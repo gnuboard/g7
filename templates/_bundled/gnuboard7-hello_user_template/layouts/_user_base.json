@@ -1,0 +1,103 @@
+{
+    "version": "1.0.0",
+    "layout_name": "_user_base",
+    "meta": {
+        "title": "$t:user.base_layout_title",
+        "description": "$t:user.base_layout_description",
+        "is_base": true
+    },
+    "components": [
+        {
+            "id": "user_layout_root",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "min-h-screen flex flex-col bg-white text-gray-900"
+            },
+            "children": [
+                {
+                    "comment": "=== 간단한 헤더 (홈 링크 1개) ===",
+                    "id": "site_header",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-b border-gray-200 px-4 py-3 flex items-center justify-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "A",
+                            "props": {
+                                "href": "/",
+                                "className": "text-lg font-bold text-gray-900 hover:text-blue-600"
+                            },
+                            "text": "$t:user.header.home_link"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-gray-500"
+                            },
+                            "text": "$t:user.header.tagline"
+                        }
+                    ]
+                },
+                {
+                    "comment": "=== 메인 콘텐츠 슬롯 ===",
+                    "id": "main_content_area",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 max-w-3xl w-full mx-auto px-4 py-6"
+                    },
+                    "children": [
+                        {
+                            "id": "main_content",
+                            "type": "basic",
+                            "name": "Div",
+                            "slot": "content",
+                            "children": []
+                        }
+                    ]
+                },
+                {
+                    "comment": "=== 최소 푸터 ===",
+                    "id": "site_footer",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border-t border-gray-200 px-4 py-4 text-center text-sm text-gray-500"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:user.footer.copyright"
+                        }
+                    ]
+                },
+                {
+                    "comment": "=== 최소 모바일 네비 (홈 링크만) ===",
+                    "id": "mobile_nav",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "fixed bottom-0 inset-x-0 border-t border-gray-200 bg-white px-4 py-2 flex justify-center md:hidden"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "A",
+                            "props": {
+                                "href": "/",
+                                "className": "text-sm text-gray-700 hover:text-blue-600"
+                            },
+                            "text": "$t:user.nav.home"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

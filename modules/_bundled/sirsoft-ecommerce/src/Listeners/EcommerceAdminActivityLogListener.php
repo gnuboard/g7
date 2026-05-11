@@ -15,6 +15,9 @@ use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExtraFeeTemplateRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
 
 /**
  * 이커머스 관리자 엔티티 통합 활동 로그 리스너
@@ -28,6 +31,17 @@ use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 class EcommerceAdminActivityLogListener implements HookListenerInterface
 {
     use ResolvesActivityLogType;
+
+    /**
+     * @param  ExtraFeeTemplateRepositoryInterface  $extraFeeTemplateRepository  추가비용 템플릿 bulk lookup
+     * @param  ShippingPolicyRepositoryInterface  $shippingPolicyRepository  배송정책 bulk lookup
+     * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 bulk lookup
+     */
+    public function __construct(
+        protected ExtraFeeTemplateRepositoryInterface $extraFeeTemplateRepository,
+        protected ShippingPolicyRepositoryInterface $shippingPolicyRepository,
+        protected ProductOptionRepositoryInterface $productOptionRepository,
+    ) {}
 
     /**
      * 구독할 훅과 메서드 매핑 반환
@@ -506,7 +520,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     public function handleExtraFeeAfterBulkToggleActive(array $ids, bool $isActive, int $count, array $snapshots = []): void
     {
-        $templates = ExtraFeeTemplate::whereIn('id', $ids)->get()->keyBy('id');
+        $templates = $this->extraFeeTemplateRepository->findByIdsKeyed($ids);
 
         foreach ($ids as $id) {
             $template = $templates->get($id);
@@ -605,7 +619,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     public function handleShippingPolicyAfterBulkToggleActive(array $ids, bool $isActive, int $count, array $snapshots = []): void
     {
-        $policies = ShippingPolicy::whereIn('id', $ids)->get()->keyBy('id');
+        $policies = $this->shippingPolicyRepository->findByIdsKeyed($ids);
 
         foreach ($ids as $id) {
             $policy = $policies->get($id);
@@ -825,7 +839,7 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     private function logPerOptionChanges(array $optionIds, array $snapshots, string $action, string $descriptionKeySuffix): void
     {
-        $options = ProductOption::whereIn('id', $optionIds)->get()->keyBy('id');
+        $options = $this->productOptionRepository->findByIdsKeyed($optionIds);
 
         foreach ($optionIds as $optionId) {
             $snapshot = $snapshots[$optionId] ?? null;

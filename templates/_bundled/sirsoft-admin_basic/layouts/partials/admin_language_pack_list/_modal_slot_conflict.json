@@ -1,0 +1,153 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "동일 슬롯에 이미 활성 언어팩이 있을 때 교체 확인 모달 (모듈 force_activate 패턴)"
+    },
+    "id": "language_pack_slot_conflict_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.language_packs.slot_conflict_modal.title",
+        "size": "small"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "space-y-4" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                    "text": "$t:admin.language_packs.slot_conflict_modal.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3 space-y-2" },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-center justify-between gap-2 text-sm" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "text": "$t:admin.language_packs.slot_conflict_modal.current_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "font-medium text-gray-900 dark:text-gray-100 truncate" },
+                                    "text": "{{_global.slotConflictCurrent?.identifier ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": { "className": "flex items-center justify-between gap-2 text-sm" },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "text": "$t:admin.language_packs.slot_conflict_modal.target_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": { "className": "font-medium text-indigo-700 dark:text-indigo-300 truncate" },
+                                    "text": "{{_global.slotConflictTarget?.identifier ?? '-'}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": { "className": "text-xs text-amber-700 dark:text-amber-300" },
+                    "text": "$t:admin.language_packs.slot_conflict_modal.warning"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "mt-6 flex justify-end gap-2" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
+                    },
+                    "text": "$t:admin.language_packs.slot_conflict_modal.cancel",
+                    "actions": [
+                        {
+                            "event": "onClick",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "slotConflictCurrent": null,
+                                        "slotConflictTarget": null,
+                                        "slotConflictTargetId": null
+                                    }
+                                },
+                                { "handler": "closeModal", "target": "language_pack_slot_conflict_modal" },
+                                { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md"
+                    },
+                    "text": "$t:admin.language_packs.slot_conflict_modal.confirm",
+                    "actions": [
+                        {
+                            "event": "onClick",
+                            "handler": "apiCall",
+                            "auth_required": true,
+                            "target": "/api/admin/language-packs/{{_global.slotConflictTargetId}}/activate",
+                            "params": {
+                                "method": "POST",
+                                "body": { "force": true }
+                            },
+                            "onSuccess": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "slotConflictCurrent": null,
+                                        "slotConflictTarget": null,
+                                        "slotConflictTargetId": null
+                                    }
+                                },
+                                { "handler": "closeModal", "target": "language_pack_slot_conflict_modal" },
+                                { "handler": "toast", "params": { "type": "success", "message": "$t:admin.language_packs.messages.activate_success" } },
+                                { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } },
+                                { "handler": "reloadExtensions" }
+                            ],
+                            "onError": [
+                                { "handler": "toast", "params": { "type": "error", "message": "{{$error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}" } }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

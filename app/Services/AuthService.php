@@ -23,7 +23,8 @@ class AuthService
         private UserRepositoryInterface $userRepository,
         private RoleRepositoryInterface $roleRepository,
         private UserConsentRepositoryInterface $userConsentRepository,
-        private PasswordResetTokenRepositoryInterface $passwordResetTokenRepository
+        private PasswordResetTokenRepositoryInterface $passwordResetTokenRepository,
+        private IdentityPolicyService $policyService,
     ) {}
 
     /**
@@ -63,17 +64,9 @@ class AuthService
             return $matches[2];
         }
 
-        // 언어 코드만 있는 경우 (ko, en, ja 등) → 기본 국가 매핑
+        // 언어 코드만 있는 경우 (ko, en, ja 등) → 기본 국가 매핑 (config 기반)
         if (preg_match('/^([a-z]{2})/', $acceptLanguage, $matches)) {
-            $languageToCountry = [
-                'ko' => 'KR',
-                'en' => 'US',
-                'ja' => 'JP',
-                'zh' => 'CN',
-                'de' => 'DE',
-                'fr' => 'FR',
-                'es' => 'ES',
-            ];
+            $languageToCountry = config('app.locale_country_fallback', []);
 
             return $languageToCountry[$matches[1]] ?? null;
         }
@@ -84,15 +77,43 @@ class AuthService
     /**
      * 사용자를 로그인시키고 인증 토큰을 발급합니다.
      *
+     * 보안 환경설정 `security.login_attempt_enabled` 가 켜져 있으면
+     * `Auth::attempt()` 직전에 계정 잠금 상태를 검사합니다. 실제 카운트
+     * 증감/리셋은 Laravel 의 `Auth\Events\Failed` / `Auth\Events\Login`
+     * 이벤트를 구독하는 Listener (`HandleFailedLoginListener` /
+     * `HandleSuccessfulLoginListener`) 가 Repository 를 통해 처리합니다.
+     *
      * @param  string  $email  사용자 이메일
      * @param  string  $password  사용자 비밀번호
      * @return array 사용자 정보와 토큰을 포함한 배열
      *
      * @throws ValidationException 인증 정보가 올바르지 않을 때
+     * @throws \App\Exceptions\Auth\AccountLockedException 계정이 잠겨 있을 때
      */
     public function login(string $email, string $password): array
     {
+        // 사전 잠금 체크 — 잠긴 계정은 Auth::attempt 자체를 시도하지 않는다.
+        // (실패 카운트가 0 으로 리셋된 잠금 상태에서 Failed 이벤트가 다시
+        //  카운트를 올려 재잠금 시각을 갱신하는 부작용 방지)
+        if ((bool) g7_core_settings('security.login_attempt_enabled', true)) {
+            $candidate = $this->userRepository->findByEmail($email);
+            if ($candidate !== null && $this->userRepository->isLocked($candidate)) {
+                $remaining = max(1, (int) ceil(now()->diffInSeconds($candidate->locked_until, false) / 60));
+                throw new \App\Exceptions\Auth\AccountLockedException(
+                    lockedUntil: $candidate->locked_until,
+                    remainingMinutes: $remaining,
+                );
+            }
+        }
+
         if (! Auth::attempt(['email' => $email, 'password' => $password])) {
+            // 실패 카운트 증가/잠금 처리는 HandleFailedLoginListener 에서 담당
+            HookManager::doAction('core.auth.login_failed', $email, [
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'attempted_at' => now(),
+            ]);
+
             throw ValidationException::withMessages([
                 'email' => [__('auth.invalid_credentials')],
             ]);
@@ -142,12 +163,32 @@ class AuthService
     /**
      * 새로운 사용자를 등록하고 인증 토큰을 발급합니다.
      *
-     * @param  array  $data  사용자 등록 데이터
-     * @return array 사용자 정보와 토큰을 포함한 배열
+     * 가입 단계 정책 매칭:
+     *   - core.auth.signup_before_submit (route): RegisterRequest 검증 단계에서 평가
+     *   - core.auth.signup_after_create (hook): 가입 직후 PendingVerification 으로 둘지 결정
+     *
+     * @param  array<string, mixed>  $data  RegisterRequest 가 검증한 가입 데이터
+     * @return array{user: User, token: string, token_type: string} 사용자 + 토큰
      */
     public function register(array $data): array
     {
         $now = now();
+
+        // 사전 검증 훅: AssertIdentityVerifiedBeforeRegister 가 정책 기반으로 verification_token 검증
+        HookManager::doAction('core.auth.before_register', $data, [
+            'signup_stage' => 'before_submit',
+            'http_method' => 'POST',
+        ]);
+
+        // signup_after_create 정책 매칭 시 PendingVerification, 아니면 Active
+        $modeCPolicy = $this->policyService->resolve(
+            scope: 'hook',
+            target: 'core.auth.after_register',
+            context: ['signup_stage' => 'after_create'],
+        );
+        $status = ($modeCPolicy && $modeCPolicy->enabled)
+            ? UserStatus::PendingVerification->value
+            : UserStatus::Active->value;
 
         $userData = [
             'name' => $data['name'],
@@ -157,6 +198,7 @@ class AuthService
             'language' => $data['language'] ?? 'ko',
             'country' => $this->detectCountryFromAcceptLanguage(),
             'ip_address' => request()->ip(),
+            'status' => $status,
         ];
 
         $user = $this->userRepository->create($userData);
@@ -172,11 +214,14 @@ class AuthService
 
         $token = $user->createToken('auth-token', ['*'], $this->getTokenExpiresAt())->plainTextToken;
 
-        // Hook 발생 (회원가입 완료) — 알림 발송은 NotificationHookListener가 처리
+        // Hook 발생 (회원가입 완료) — 알림 발송은 NotificationHookListener,
+        // signup_after_create 정책이 enabled 면 InitiateIdentityChallengeAfterRegister 가 challenge 발행.
         HookManager::doAction('core.auth.after_register', $user, [
             'registration_time' => now(),
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
+            'signup_stage' => 'after_create',
+            'verification_token' => $data['verification_token'] ?? null,
         ]);
 
         return [
@@ -459,6 +504,8 @@ class AuthService
         }
 
         // 플러그인 확장 동의 처리 (마케팅 등 추가 동의)
-        HookManager::doAction('core.auth.record_consents', $user, $data, $agreedAt, $ip);
+        // HookArgumentSerializer 는 Carbon 을 직렬화하지 못해 Queue 실행 시 null 로 대체되므로
+        // 미리 ISO8601 문자열로 변환해 listener 시그니처(string)와 일치시킵니다.
+        HookManager::doAction('core.auth.record_consents', $user, $data, $agreedAt->toIso8601String(), $ip);
     }
 }

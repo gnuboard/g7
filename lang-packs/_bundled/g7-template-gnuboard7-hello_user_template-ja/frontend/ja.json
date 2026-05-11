@@ -1,0 +1,52 @@
+{
+  "user": {
+    "base_layout_title": "Hello ユーザー テンプレート",
+    "base_layout_description": "グヌボード7 学習用最小サンプル ユーザー テンプレート",
+    "header": {
+      "home_link": "Hello",
+      "tagline": "学習用最小サンプル"
+    },
+    "footer": {
+      "copyright": "© gnuboard7 Hello User Template"
+    },
+    "nav": {
+      "home": "ホーム"
+    },
+    "home": {
+      "page_title": "ホーム",
+      "page_description": "Hello ユーザー テンプレート ホーム",
+      "welcome_title": "ようこそ",
+      "welcome_description": "このページは学習用最小サンプル ユーザー テンプレートのホームページです。",
+      "memos_title": "最近のメモ",
+      "memos_empty": "表示するメモがありません。",
+      "back_to_home": "ホームへ"
+    }
+  },
+  "error": {
+    "401": {
+      "title": "ログインが必要です",
+      "description": "このページを利用するにはログインが必要です。"
+    },
+    "403": {
+      "title": "アクセス権限がありません",
+      "description": "このページにアクセスする権限がありません。"
+    },
+    "404": {
+      "title": "ページが見つかりません",
+      "description": "リクエストされたページは存在しないか、移動されている可能性があります。"
+    },
+    "500": {
+      "title": "問題が発生しました",
+      "description": "しばらく後にもう一度お試しください。"
+    },
+    "503": {
+      "title": "しばらくご利用ができません",
+      "description": "サービスをメンテナンス中です。しばらく後にもう一度お試しください。"
+    },
+    "back_to_home": "ホームに戻る",
+    "maintenance": {
+      "title": "メンテナンス中です",
+      "description": "より良いサービスのため、現在メンテナンスを進めております。"
+    }
+  }
+}

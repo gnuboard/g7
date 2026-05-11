@@ -30,6 +30,16 @@ class Role extends Model
      */
     protected array $trackableFields = ['name', 'description'];
 
+    /**
+     * 다국어 JSON 컬럼 — sub-key dot-path 단위로 user_overrides 보존.
+     *
+     * 사용자가 ko 라벨만 수정하면 user_overrides=['name.ko'] 로 기록되어
+     * 언어팩 활성/시더 재실행 시 ja/en 키는 자동 동기화 가능.
+     *
+     * @var array<int, string>
+     */
+    protected array $translatableTrackableFields = ['name', 'description'];
+
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
         'identifier' => ['label_key' => 'activity_log.fields.identifier', 'type' => 'text'],

@@ -1,0 +1,12 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "Hello 학습용 샘플 플러그인 환경설정"
+    },
+    "defaults": {
+        "log_enabled": true
+    },
+    "frontend_schema": {
+        "log_enabled": { "expose": true }
+    }
+}

@@ -638,4 +638,32 @@ class BoardRepository implements BoardRepositoryInterface
     {
         return Board::where('type', $type)->count();
     }
+
+    /**
+     * 게시판의 posts_count 컬럼을 활성 게시글 수로 재계산해 갱신합니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculatePostsCount(int $boardId): int
+    {
+        $count = Post::where('board_id', $boardId)->whereNull('deleted_at')->count();
+        Board::where('id', $boardId)->update(['posts_count' => $count]);
+
+        return $count;
+    }
+
+    /**
+     * 게시판의 comments_count 컬럼을 활성 댓글 수로 재계산해 갱신합니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return int 갱신된 카운트 값
+     */
+    public function recalculateCommentsCount(int $boardId): int
+    {
+        $count = Comment::where('board_id', $boardId)->whereNull('deleted_at')->count();
+        Board::where('id', $boardId)->update(['comments_count' => $count]);
+
+        return $count;
+    }
 }

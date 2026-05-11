@@ -48,6 +48,9 @@ abstract class PluginTestCase extends TestCase
             ->needs(StorageInterface::class)
             ->give(fn () => new PluginStorageDriver('sirsoft-ckeditor5', 'plugins'));
 
+        // HookManager 상태 스냅샷 (tearDown 에서 복원하여 테스트 간 훅 격리)
+        $this->snapshotHookManager();
+
         // 라우트 등록
         Route::prefix('api/plugins/sirsoft-ckeditor5')
             ->middleware('api')
@@ -58,6 +61,53 @@ abstract class PluginTestCase extends TestCase
                 Route::get('images/{hash}', [ImageServeController::class, 'serve'])
                     ->name('api.sirsoft-ckeditor5.images.serve');
             });
+    }
+
+    /**
+     * HookManager static state 스냅샷 — tearDown 에서 복원하여 테스트 간 훅 격리 보장.
+     *
+     * @var array{hooks: array, filters: array, dispatching: array}|null
+     */
+    private ?array $hookSnapshot = null;
+
+    /**
+     * tearDown 에 HookManager 상태 복원.
+     */
+    protected function tearDown(): void
+    {
+        $this->restoreHookManager();
+
+        parent::tearDown();
+    }
+
+    /**
+     * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
+     */
+    private function snapshotHookManager(): void
+    {
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $this->hookSnapshot = [
+            'hooks' => $ref->getProperty('hooks')->getValue(),
+            'filters' => $ref->getProperty('filters')->getValue(),
+            'dispatching' => $ref->getProperty('dispatching')->getValue(),
+        ];
+    }
+
+    /**
+     * 스냅샷 시점으로 HookManager 복원.
+     */
+    private function restoreHookManager(): void
+    {
+        if ($this->hookSnapshot === null) {
+            return;
+        }
+
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
+        $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
+        $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
+        $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
+
+        $this->hookSnapshot = null;
     }
 
     /**
@@ -92,14 +142,20 @@ abstract class PluginTestCase extends TestCase
      */
     protected function migrateFreshUsing(): array
     {
+        // 모든 번들 확장 migrations 포함 — Plugin suite 전체 실행 시 스키마 보장
+        $paths = ['database/migrations'];
+        foreach (glob(base_path('modules/_bundled/*/database/migrations'), GLOB_ONLYDIR) as $p) {
+            $paths[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $p);
+        }
+        foreach (glob(base_path('plugins/_bundled/*/database/migrations'), GLOB_ONLYDIR) as $p) {
+            $paths[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $p);
+        }
+
         return [
             '--drop-views' => $this->shouldDropViews(),
             '--drop-types' => $this->shouldDropTypes(),
             '--seed' => false,
-            '--path' => [
-                'database/migrations',
-                'plugins/_bundled/sirsoft-ckeditor5/database/migrations',
-            ],
+            '--path' => $paths,
         ];
     }
 }

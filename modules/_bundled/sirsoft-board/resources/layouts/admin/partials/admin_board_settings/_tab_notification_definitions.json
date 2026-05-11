@@ -94,7 +94,7 @@
                           "props": {
                             "className": "text-sm font-medium text-gray-900 dark:text-white"
                           },
-                          "text": "{{ch.name?.[$locale] ?? ch.name?.ko ?? ch.id}}"
+                          "text": "{{ch.name ?? ch.id}}"
                         },
                         {
                           "type": "basic",
@@ -102,7 +102,7 @@
                           "props": {
                             "className": "block text-xs text-gray-400 dark:text-gray-500"
                           },
-                          "text": "{{ch.source_label?.[$locale] ?? ch.source_label?.ko ?? ch.source}}"
+                          "text": "{{ch.source_label ?? ch.source}}"
                         }
                       ]
                     }
@@ -151,7 +151,7 @@
           },
           "props": {
             "type": "button",
-            "className": "{{(_local.activeNotificationChannel ?? query.channel ?? (availableChannels?.data?.channels ?? [])[0]?.id ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2"
+            "className": "{{(_local.activeNotificationChannel ?? query.channel ?? (availableChannels?.data?.channels ?? [])[0]?.id ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex items-center gap-2"
           },
           "children": [
             {
@@ -165,7 +165,7 @@
             {
               "type": "basic",
               "name": "Span",
-              "text": "{{ch.name?.[$locale] ?? ch.name?.ko ?? ch.id}}"
+              "text": "{{ch.name ?? ch.id}}"
             }
           ],
           "actions": [
@@ -239,9 +239,18 @@
                 "className": "w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                 "value": "{{String(query.per_page || 20)}}",
                 "options": [
-                  { "value": "10", "label": "10" },
-                  { "value": "20", "label": "20" },
-                  { "value": "50", "label": "50" }
+                  {
+                    "value": "10",
+                    "label": "10"
+                  },
+                  {
+                    "value": "20",
+                    "label": "20"
+                  },
+                  {
+                    "value": "50",
+                    "label": "50"
+                  }
                 ]
               },
               "actions": [
@@ -555,13 +564,17 @@
                                       {
                                         "handler": "setState",
                                         "params": {
-                                          "target": "local",
-                                          "editingDefinition": "{{def}}",
-                                          "editingTemplate": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
-                                          "editingRecipients": "{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []))}}",
-                                          "editLang": "{{$locale}}",
-                                          "templateErrors": null,
-                                          "isSaving": false
+                                          "target": "global",
+                                          "board_notification_template_form_modal": {
+                                            "template": "{{(def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))}}",
+                                            "definition": "{{def}}",
+                                            "recipients": "{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (_local.activeNotificationChannel ?? query.channel ?? 'mail'))?.recipients ?? []))}}",
+                                            "editLang": "{{$locale}}",
+                                            "errors": null,
+                                            "isSaving": false,
+                                            "roleSearchResults": [],
+                                            "userSearchResults": []
+                                          }
                                         }
                                       },
                                       {

@@ -1,0 +1,195 @@
+{
+  "order_status": {
+    "pending_order": "注文待機",
+    "pending_payment": "決済待機",
+    "payment_complete": "決済完了",
+    "shipping_hold": "配送保留",
+    "preparing": "商品準備中",
+    "shipping_ready": "配送準備完了",
+    "shipping": "配送中",
+    "delivered": "配送完了",
+    "confirmed": "購入確定",
+    "cancelled": "注文キャンセル"
+  },
+  "payment_status": {
+    "ready": "決済待機",
+    "in_progress": "決済進行中",
+    "waiting_deposit": "入金待機",
+    "paid": "決済完了",
+    "partial_cancelled": "部分キャンセル",
+    "cancelled": "決済キャンセル",
+    "failed": "決済失敗",
+    "expired": "期限切れ"
+  },
+  "payment_method": {
+    "card": "クレジットカード",
+    "vbank": "仮想口座",
+    "dbank": "無通帳振込",
+    "bank": "口座振替",
+    "phone": "携帯電話決済",
+    "point": "ポイント決済",
+    "deposit": "預託金決済",
+    "free": "無料"
+  },
+  "shipping_status": {
+    "pending": "配送待機",
+    "preparing": "商品準備中",
+    "ready": "配送準備完了",
+    "shipped": "配送中",
+    "in_transit": "移動中",
+    "out_for_delivery": "配送出発",
+    "delivered": "配送完了",
+    "failed": "配送失敗",
+    "returned": "返送",
+    "pickup_ready": "訪問受取待機",
+    "pickup_complete": "訪問受取完了"
+  },
+  "sales_status": {
+    "on_sale": "販売中",
+    "suspended": "販売中止",
+    "sold_out": "品切れ",
+    "coming_soon": "出試予定"
+  },
+  "display_status": {
+    "visible": "展示中",
+    "hidden": "展示中止"
+  },
+  "tax_status": {
+    "taxable": "課税",
+    "tax_free": "免税"
+  },
+  "target_screen": {
+    "products": "商品",
+    "orders": "注文",
+    "customers": "顧客"
+  },
+  "price_type": {
+    "list_price": "定価",
+    "selling_price": "販売価格",
+    "supply_price": "仕入価格"
+  },
+  "image_collection": {
+    "main": "代表画像",
+    "gallery": "ギャラリー",
+    "detail": "詳細画像"
+  },
+  "date_type": {
+    "created_at": "登録日",
+    "updated_at": "編集日"
+  },
+  "order_date_type": {
+    "ordered_at": "注文日",
+    "paid_at": "決済日",
+    "confirmed_at": "確認日",
+    "delivered_at": "配送完了日",
+    "cancelled_at": "キャンセル日"
+  },
+  "device_type": {
+    "pc": "PC",
+    "mobile": "モバイル",
+    "app_ios": "iOSアプリ",
+    "app_android": "Androidアプリ",
+    "admin": "管理者",
+    "api": "API"
+  },
+  "option_status": {
+    "ordered": "注文完了",
+    "confirmed": "確認完了",
+    "preparing": "準備中",
+    "shipped": "発送完了",
+    "delivered": "配送完了",
+    "cancelled": "キャンセル",
+    "refund_requested": "返金要請",
+    "refund_complete": "返金完了",
+    "return_requested": "返品要請",
+    "return_complete": "返品完了",
+    "exchange_requested": "交換要請",
+    "exchange_complete": "交換完了"
+  },
+  "order_option_status": {
+    "pending": "注文待機",
+    "payment_complete": "決済完了",
+    "preparing": "商品準備中",
+    "shipped": "発送完了",
+    "delivered": "配送完了",
+    "confirmed": "購入確定",
+    "cancelled": "キャンセル",
+    "return_requested": "返品申請",
+    "return_complete": "返品完了",
+    "exchange_requested": "交換申請",
+    "exchange_complete": "交換完了",
+    "refund_complete": "返金完了"
+  },
+  "order_option_source_type": {
+    "order": "初回注文",
+    "exchange": "交換",
+    "split": "数量分割"
+  },
+  "tax_invoice_status": {
+    "pending": "発行待機",
+    "processing": "発行処理中",
+    "issued": "発行完了",
+    "failed": "発行失敗",
+    "cancelled": "発行キャンセル"
+  },
+  "coupon_target_type": {
+    "product_amount": "商品金額",
+    "order_amount": "注文金額",
+    "shipping_fee": "配送料"
+  },
+  "coupon_discount_type": {
+    "fixed": "定額",
+    "rate": "定率"
+  },
+  "coupon_issue_status": {
+    "issuing": "発行中",
+    "stopped": "発行中止"
+  },
+  "coupon_issue_method": {
+    "direct": "直接発行",
+    "download": "ダウンロード",
+    "auto": "自動発行"
+  },
+  "coupon_issue_condition": {
+    "manual": "手動発行",
+    "signup": "会員登録",
+    "first_purchase": "初回購入",
+    "birthday": "誕生日"
+  },
+  "coupon_use_status": {
+    "available": "使用可能",
+    "used": "使用完了",
+    "expired": "期間満了",
+    "cancelled": "キャンセル済み"
+  },
+  "carrier": {
+    "cj": "大韓通運",
+    "logen": "ロジェン宅配便",
+    "ems": "EMS",
+    "dhl": "DHL",
+    "fedex": "フェデックス",
+    "other": "その他"
+  },
+  "charge_policy": {
+    "free": "無料",
+    "fixed": "固定",
+    "conditional_free": "条件付き無料",
+    "range_amount": "区間別(金額)",
+    "range_quantity": "区間別(数量)",
+    "range_weight": "区間別(重量)",
+    "range_volume": "区間別(体積)",
+    "range_volume_weight": "区間別(体積+重量)",
+    "api": "計算API",
+    "per_quantity": "数量当たり",
+    "per_weight": "重量当たり",
+    "per_volume": "体積当たり",
+    "per_volume_weight": "体積重量当たり",
+    "per_amount": "金額当たり"
+  },
+  "shipping_country": {
+    "KR": "韓国",
+    "US": "アメリカ",
+    "CN": "中国",
+    "JP": "日本"
+  }
+}

@@ -158,10 +158,14 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             expect(offAction.handler).toBe('conditions');
             expect(offAction.conditions).toBeDefined();
             expect(offAction.conditions.length).toBe(2);
-            // 첫 번째 조건: 외국 활성 국가 존재 → openModal
+            // 첫 번째 조건: 외국 활성 국가 존재 → sequence(setState + openModal)
             expect(offAction.conditions[0].if).toContain('is_active');
-            expect(offAction.conditions[0].then.handler).toBe('openModal');
-            expect(offAction.conditions[0].then.params.id).toBe('disable_international_shipping_modal');
+            expect(offAction.conditions[0].then.handler).toBe('sequence');
+            const innerOpenModal = offAction.conditions[0].then.actions?.find(
+                (a: any) => a.handler === 'openModal',
+            );
+            expect(innerOpenModal).toBeDefined();
+            expect(innerOpenModal.target).toBe('disable_international_shipping_modal');
             // 두 번째 조건: 기본(fallback) → setState
             expect(offAction.conditions[1].then.handler).toBe('setState');
             expect(offAction.conditions[1].then.params?.['form.shipping.international_shipping_enabled']).toBe(false);
@@ -261,79 +265,25 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             const addForm = findById(allNodes, 'add_country_form');
             const formNodes = flattenAll(addForm);
             const buttons = formNodes.filter((n: any) => n.name === 'Button');
-            // disabled prop이 없는 button 중 cancel 텍스트를 가진 것
-            const cancelBtn = buttons.find(
-                (b: any) =>
-                    !b.props?.disabled &&
-                    flattenAll(b).some((n: any) => n.text?.includes('$t:common.cancel'))
+            // 취소 버튼 식별: 자식 중 $t:common.cancel 텍스트를 가진 Button
+            // (disabled 유무 기준은 isReadOnly 가드로 인해 모든 버튼에 적용되어 부정확)
+            const cancelBtn = buttons.find((b: any) =>
+                flattenAll(b).some((n: any) => n.text === '$t:common.cancel'),
             );
             expect(cancelBtn).toBeDefined();
             const action = cancelBtn.actions?.find(
-                (a: any) => a.handler === 'setState'
+                (a: any) => a.handler === 'setState',
             );
             expect(action?.params?.isAddingCountry).toBe(false);
         });
     });
 
     describe('도서산간 전역 설정 카드', () => {
-        it('remote_area_card가 존재한다', () => {
+        // 도서산간 추가배송비는 환경설정 전역에서 제거되고 배송정책 단위로 이전됨
+        // (settings → shipping_policy.charge_policy.surcharges 로 이동)
+        it('remote_area_card 가 환경설정 탭에서 제거되었다', () => {
             const card = findById(allNodes, 'remote_area_card');
-            expect(card).toBeDefined();
-        });
-
-        it('도서산간 활성화 Toggle이 자동 바인딩으로 구성되어 있다', () => {
-            const card = findById(allNodes, 'remote_area_card');
-            const cardNodes = flattenAll(card);
-            const toggles = cardNodes.filter((n: any) => n.name === 'Toggle');
-            expect(toggles.length).toBeGreaterThan(0);
-            const enableToggle = toggles.find((t: any) =>
-                t.props?.name === 'shipping.remote_area_enabled'
-            );
-            expect(enableToggle).toBeDefined();
-            // 자동 바인딩: type=composite, name prop, value prop, actions 없음
-            expect(enableToggle.type).toBe('composite');
-            expect(enableToggle.props?.value).toContain('remote_area_enabled');
-            expect(enableToggle.actions).toBeUndefined();
-        });
-
-        it('도서산간 활성 시 추가배송비 Input이 조건부 표시된다', () => {
-            const card = findById(allNodes, 'remote_area_card');
-            const cardNodes = flattenAll(card);
-            // if 조건에 remote_area_enabled가 있는 Div
-            const conditionalDiv = cardNodes.find(
-                (n: any) => n.if?.includes('remote_area_enabled') && n.name === 'Div'
-            );
-            expect(conditionalDiv).toBeDefined();
-            // 내부에 number Input 2개 (산간/도서)
-            const innerNodes = flattenAll(conditionalDiv);
-            const numInputs = innerNodes.filter(
-                (n: any) => n.name === 'Input' && n.props?.type === 'number'
-            );
-            expect(numInputs.length).toBe(2);
-        });
-
-        it('산간 추가배송비 Input이 remote_area_extra_fee를 바인딩한다', () => {
-            const card = findById(allNodes, 'remote_area_card');
-            const cardNodes = flattenAll(card);
-            const remoteInput = cardNodes.find(
-                (n: any) =>
-                    n.name === 'Input' &&
-                    n.props?.value?.includes('remote_area_extra_fee')
-            );
-            expect(remoteInput).toBeDefined();
-            expect(remoteInput.props.min).toBe(0);
-        });
-
-        it('도서 추가배송비 Input이 island_extra_fee를 바인딩한다', () => {
-            const card = findById(allNodes, 'remote_area_card');
-            const cardNodes = flattenAll(card);
-            const islandInput = cardNodes.find(
-                (n: any) =>
-                    n.name === 'Input' &&
-                    n.props?.value?.includes('island_extra_fee')
-            );
-            expect(islandInput).toBeDefined();
-            expect(islandInput.props.min).toBe(0);
+            expect(card).toBeUndefined();
         });
     });
 });
@@ -547,40 +497,8 @@ describe('바인딩 패턴 일관성 검증', () => {
             expect(offAction.handler).toBe('conditions');
         });
 
-        it('도서산간 활성화 Toggle이 name prop 자동 바인딩이다', () => {
-            const card = findById(allNodes, 'remote_area_card');
-            const cardNodes = flattenAll(card);
-            const enableToggle = cardNodes.find(
-                (n: any) => n.name === 'Toggle' && n.props?.name === 'shipping.remote_area_enabled'
-            );
-            expect(enableToggle).toBeDefined();
-            expect(enableToggle.type).toBe('composite');
-            expect(enableToggle.actions).toBeUndefined();
-        });
-
-        it('산간 추가배송비 Input이 name prop 자동 바인딩이다', () => {
-            const card = findById(allNodes, 'remote_area_card');
-            const cardNodes = flattenAll(card);
-            const remoteInput = cardNodes.find(
-                (n: any) =>
-                    n.name === 'Input' &&
-                    n.props?.name === 'shipping.remote_area_extra_fee'
-            );
-            expect(remoteInput).toBeDefined();
-            expect(remoteInput.actions).toBeUndefined();
-        });
-
-        it('도서 추가배송비 Input이 name prop 자동 바인딩이다', () => {
-            const card = findById(allNodes, 'remote_area_card');
-            const cardNodes = flattenAll(card);
-            const islandInput = cardNodes.find(
-                (n: any) =>
-                    n.name === 'Input' &&
-                    n.props?.name === 'shipping.island_extra_fee'
-            );
-            expect(islandInput).toBeDefined();
-            expect(islandInput.actions).toBeUndefined();
-        });
+        // 도서산간 자동 바인딩 검증은 remote_area_card 제거에 따라 함께 제거
+        // (배송정책 단위 surcharge 검증은 별도 productFormLayouts/shippingPolicyForm 테스트에서 다룸)
     });
 
     describe('수동 바인딩 필드 (hasChanges: true 필수)', () => {
@@ -663,18 +581,20 @@ describe('해외배송 비활성화 확인 모달 (_disable_international_shippi
         expect(keys).toContain('$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message');
     });
 
-    it('취소 버튼이 closeModal 핸들러를 호출한다', () => {
+    it('취소 버튼이 sequence(parent setState + closeModal) 패턴이다', () => {
         const buttons = allNodes.filter((n: any) => n.name === 'Button');
         const cancelBtn = buttons.find((b: any) => {
             const btnNodes = flattenAll(b);
             return btnNodes.some((n: any) =>
-                n.text?.includes('$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.cancel')
+                n.text?.includes('$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.cancel'),
             );
         });
         expect(cancelBtn).toBeDefined();
-        const action = cancelBtn.actions?.find((a: any) => a.handler === 'closeModal');
+        // 단순 closeModal → sequence(parent setState 복원 + closeModal) 패턴으로 변경
+        const action = cancelBtn.actions?.find((a: any) => a.handler === 'sequence');
         expect(action).toBeDefined();
-        expect(action.params?.id).toBe('disable_international_shipping_modal');
+        const closeAction = action.actions?.find((a: any) => a.handler === 'closeModal');
+        expect(closeAction).toBeDefined();
     });
 
     it('확인 버튼이 sequence(setState + closeModal) 핸들러를 호출한다', () => {
@@ -682,20 +602,23 @@ describe('해외배송 비활성화 확인 모달 (_disable_international_shippi
         const confirmBtn = buttons.find((b: any) => {
             const btnNodes = flattenAll(b);
             return btnNodes.some((n: any) =>
-                n.text?.includes('$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.confirm')
+                n.text?.includes('$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.confirm'),
             );
         });
         expect(confirmBtn).toBeDefined();
         const action = confirmBtn.actions?.find((a: any) => a.handler === 'sequence');
         expect(action).toBeDefined();
-        // setState: international_shipping_enabled = false
+        // setState: target=$parent._local 로 변경됨, form.shipping 중첩 객체 형식
         const setStateAction = action.actions?.find((a: any) => a.handler === 'setState');
         expect(setStateAction).toBeDefined();
-        expect(setStateAction.params?.['form.shipping.international_shipping_enabled']).toBe(false);
+        expect(setStateAction.params?.target).toBe('$parent._local');
+        expect(setStateAction.params?.form?.shipping?.international_shipping_enabled).toBe(false);
         expect(setStateAction.params?.hasChanges).toBe(true);
-        // setState: available_countries를 map으로 비기본국가 비활성화
-        expect(setStateAction.params?.['form.shipping.available_countries']).toContain('map');
-        expect(setStateAction.params?.['form.shipping.available_countries']).toContain('is_active: false');
+        // available_countries 도 중첩 객체 안에 들어있고 map 표현식으로 비기본국가 비활성화
+        const availableCountriesExpr = setStateAction.params?.form?.shipping?.available_countries;
+        expect(typeof availableCountriesExpr).toBe('string');
+        expect(availableCountriesExpr).toContain('map');
+        expect(availableCountriesExpr).toContain('is_active: false');
         // closeModal
         const closeAction = action.actions?.find((a: any) => a.handler === 'closeModal');
         expect(closeAction).toBeDefined();
@@ -736,6 +659,8 @@ describe('다국어 키', () => {
             ...collectI18nKeys(countryTable),
             ...collectI18nKeys(disableIntlModal),
         ];
+        // remote_area.* 키는 도서산간 카드 제거에 따라 환경설정 i18n 에서 제외
+        // (배송정책 단위 surcharge 키는 별도 네임스페이스에서 검증)
         const requiredKeys = [
             '$t:sirsoft-ecommerce.admin.settings.shipping.basic.title',
             '$t:sirsoft-ecommerce.admin.settings.shipping.basic.default_country',
@@ -746,8 +671,6 @@ describe('다국어 키', () => {
             '$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_name',
             '$t:sirsoft-ecommerce.admin.settings.shipping.countries.is_active',
             '$t:sirsoft-ecommerce.admin.settings.shipping.countries.empty',
-            '$t:sirsoft-ecommerce.admin.settings.shipping.remote_area.title',
-            '$t:sirsoft-ecommerce.admin.settings.shipping.remote_area.enable',
             '$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.title',
             '$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message',
             '$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.confirm',

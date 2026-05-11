@@ -3,14 +3,21 @@
 namespace Modules\Sirsoft\Board\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Models\Comment;
+use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 
 /**
  * 대댓글 생성/삭제/복원 시 부모 댓글의 replies_count를 재카운팅합니다.
  */
 class CommentReplySyncListener implements HookListenerInterface
 {
+    /**
+     * @param  CommentRepositoryInterface  $commentRepository  댓글 Repository
+     */
+    public function __construct(
+        protected CommentRepositoryInterface $commentRepository,
+    ) {}
+
     /**
      * 구독할 훅 목록을 반환합니다.
      *
@@ -33,8 +40,8 @@ class CommentReplySyncListener implements HookListenerInterface
     /**
      * 부모 댓글의 replies_count를 재카운팅합니다.
      *
-     * @param Comment $comment 댓글 모델
-     * @param string $slug 게시판 slug
+     * @param  Comment  $comment  댓글 모델
+     * @param  string  $slug  게시판 slug
      * @return void
      */
     public function syncRepliesCount(Comment $comment, string $slug): void
@@ -43,13 +50,6 @@ class CommentReplySyncListener implements HookListenerInterface
             return;
         }
 
-        $count = DB::table('board_comments')
-            ->where('parent_id', $comment->parent_id)
-            ->whereNull('deleted_at')
-            ->count();
-
-        DB::table('board_comments')
-            ->where('id', $comment->parent_id)
-            ->update(['replies_count' => $count]);
+        $this->commentRepository->recalculateRepliesCount((int) $comment->parent_id);
     }
 }

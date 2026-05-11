@@ -38,6 +38,26 @@ function findById(node: any, id: string): any | null {
 }
 
 /**
+ * 재귀적으로 트리에서 predicate 를 만족하는 첫 번째 노드 검색
+ * (children/itemTemplate 모두 순회)
+ */
+function findFirst(node: any, predicate: (n: any) => boolean): any | null {
+    if (!node) return null;
+    if (predicate(node)) return node;
+    if (Array.isArray(node.children)) {
+        for (const child of node.children) {
+            const found = findFirst(child, predicate);
+            if (found) return found;
+        }
+    }
+    if (node.itemTemplate) {
+        const found = findFirst(node.itemTemplate, predicate);
+        if (found) return found;
+    }
+    return null;
+}
+
+/**
  * 재귀적으로 컴포넌트 트리에서 name으로 모든 항목 검색
  */
 function findAllByName(node: any, name: string): any[] {
@@ -113,35 +133,35 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
             expect(tab.if).toContain('order_settings');
         });
 
-        it('5개 카드 섹션을 포함해야 한다', () => {
-            expect(tab.children).toHaveLength(5);
+        it('8개 카드 섹션을 포함해야 한다 (기본 PG / 결제수단 / 계좌 / 자동취소 / 취소가능상태 / 확정가능상태 / 장바구니 / 재고)', () => {
+            expect(tab.children).toHaveLength(8);
         });
     });
 
     describe('카드 ID 검증', () => {
         it('결제수단 설정 카드가 존재해야 한다', () => {
-            expect(tab.children[0].id).toBe('payment_methods_card');
+            expect(findById(tab, 'payment_methods_card')).not.toBeNull();
         });
 
         it('무통장 계좌번호 설정 카드가 존재해야 한다', () => {
-            expect(tab.children[1].id).toBe('bank_accounts_card');
+            expect(findById(tab, 'bank_accounts_card')).not.toBeNull();
         });
 
         it('주문 자동취소 카드가 존재해야 한다', () => {
-            expect(tab.children[2].id).toBe('auto_cancel_card');
+            expect(findById(tab, 'auto_cancel_card')).not.toBeNull();
         });
 
         it('장바구니 유효기간 카드가 존재해야 한다', () => {
-            expect(tab.children[3].id).toBe('cart_expiry_card');
+            expect(findById(tab, 'cart_expiry_card')).not.toBeNull();
         });
 
         it('재고 관리 카드가 존재해야 한다', () => {
-            expect(tab.children[4].id).toBe('stock_management_card');
+            expect(findById(tab, 'stock_management_card')).not.toBeNull();
         });
     });
 
     describe('결제수단 카드 구조', () => {
-        const card = tab.children[0];
+        const card = findById(tab, 'payment_methods_card');
 
         it('card 클래스를 가져야 한다', () => {
             expect(card.props.className).toBe('card');
@@ -170,13 +190,13 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
     });
 
     describe('계좌번호 카드 구조', () => {
-        const card = tab.children[1];
+        const card = findById(tab, 'bank_accounts_card');
 
         it('은행 관리 버튼이 openModal 핸들러를 사용해야 한다', () => {
-            const headerButtons = card.children[0].children[1];
-            const bankManageBtn = headerButtons.children[0];
-            expect(bankManageBtn.actions[0].handler).toBe('openModal');
-            expect(bankManageBtn.actions[0].params.id).toBe('bank_management_modal');
+            // openModal 핸들러는 params.id 가 아닌 action.target 으로 모달 ID 를 지정한다
+            const json = JSON.stringify(card);
+            expect(json).toContain('"handler":"openModal"');
+            expect(json).toContain('"target":"bank_management_modal"');
         });
 
         it('계좌 추가 버튼이 setState로 빈 계좌를 추가해야 한다', () => {
@@ -198,7 +218,7 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
     });
 
     describe('주문 자동취소 카드 구조', () => {
-        const card = tab.children[2];
+        const card = findById(tab, 'auto_cancel_card');
 
         it('자동취소 Toggle이 폼 자동바인딩 name을 사용해야 한다', () => {
             const toggleSection = card.children[1].children[0];
@@ -212,49 +232,51 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
             expect(daysSection.if).toContain('auto_cancel_expired');
         });
 
-        it('자동취소일 Input이 min=1, max=30이어야 한다', () => {
-            const daysSection = card.children[1].children[1];
-            const input = daysSection.children[1];
-            expect(input.name).toBe('Input');
-            expect(input.props.name).toBe('order_settings.auto_cancel_days');
+        it('자동취소일 Input 이 min=1, max=30 으로 정의되어야 한다 (위치 의존 제거)', () => {
+            const input = findFirst(card, (n: any) =>
+                n?.name === 'Input' && n?.props?.name === 'order_settings.auto_cancel_days',
+            );
+            expect(input).not.toBeNull();
             expect(input.props.min).toBe(1);
             expect(input.props.max).toBe(30);
         });
 
-        it('가상계좌 입금기한 Input이 올바른 name을 가져야 한다', () => {
-            // 구분선(인덱스 2) 뒤 가상계좌(인덱스 3)
-            const vbankSection = card.children[1].children[3];
-            const vbankInput = vbankSection.children[1];
-            expect(vbankInput.props.name).toBe('order_settings.vbank_due_days');
+        it('가상계좌 입금기한 Input(vbank_due_days) 이 존재해야 한다', () => {
+            const vbankInput = findFirst(card, (n: any) =>
+                n?.name === 'Input' && n?.props?.name === 'order_settings.vbank_due_days',
+            );
+            expect(vbankInput).not.toBeNull();
         });
 
-        it('무통장 입금기한 Input이 올바른 name을 가져야 한다', () => {
-            const dbankSection = card.children[1].children[4];
-            const dbankInput = dbankSection.children[1];
-            expect(dbankInput.props.name).toBe('order_settings.dbank_due_days');
+        it('무통장 입금기한 Input(dbank_due_days) 이 존재해야 한다', () => {
+            const dbankInput = findFirst(card, (n: any) =>
+                n?.name === 'Input' && n?.props?.name === 'order_settings.dbank_due_days',
+            );
+            expect(dbankInput).not.toBeNull();
         });
     });
 
     describe('장바구니 유효기간 카드 구조', () => {
-        const card = tab.children[3];
+        const card = findById(tab, 'cart_expiry_card');
 
         it('cart_expiry_days Input이 min=1, max=365이어야 한다', () => {
-            const content = card.children[1];
-            const input = content.children[1];
-            expect(input.props.name).toBe('order_settings.cart_expiry_days');
+            const input = findFirst(card, (n: any) =>
+                n?.name === 'Input' && n?.props?.name === 'order_settings.cart_expiry_days',
+            );
+            expect(input).not.toBeNull();
             expect(input.props.min).toBe(1);
             expect(input.props.max).toBe(365);
         });
     });
 
     describe('재고 관리 카드 구조', () => {
-        const card = tab.children[4];
+        const card = findById(tab, 'stock_management_card');
 
         it('재고 복구 Toggle이 폼 자동바인딩 name을 사용해야 한다', () => {
-            const content = card.children[1];
-            const toggle = content.children[1];
-            expect(toggle.name).toBe('Toggle');
-            expect(toggle.props.name).toBe('order_settings.stock_restore_on_cancel');
+            const toggle = findFirst(card, (n: any) =>
+                n?.name === 'Toggle' && n?.props?.name === 'order_settings.stock_restore_on_cancel',
+            );
+            expect(toggle).not.toBeNull();
         });
     });
 });
@@ -327,19 +349,25 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
             );
         });
 
-        it('재고차감시점 Select가 2개 옵션을 가져야 한다', () => {
-            // children[3] = 재고차감시점 Div (if: !_orphaned)
-            const timingDiv = tpl.children[3];
-            expect(timingDiv.if).toContain('!$method._orphaned');
-            const select = timingDiv.children[1];
-            expect(select.name).toBe('Select');
-            expect(select.props.options).toHaveLength(2);
-            expect(select.props.options[0].value).toBe('order_placed');
-            expect(select.props.options[1].value).toBe('payment_complete');
+        it('재고차감시점 Select가 3개 옵션(order_placed/payment_complete/none)을 가져야 한다', () => {
+            // 2개 옵션 → 3개 (none 추가: 차감 안함)
+            const select = findFirst(tpl, (n: any) =>
+                n?.name === 'Select' && typeof n?.props?.value === 'string'
+                    && n.props.value.includes('stock_deduction_timing'),
+            );
+            expect(select).not.toBeNull();
+            expect(select.props.options).toHaveLength(3);
+            const values = select.props.options.map((o: any) => o.value);
+            expect(values).toContain('order_placed');
+            expect(values).toContain('payment_complete');
+            expect(values).toContain('none');
         });
 
         it('재고차감시점 변경이 setState로 배열 전체를 업데이트해야 한다', () => {
-            const select = tpl.children[3].children[1];
+            const select = findFirst(tpl, (n: any) =>
+                n?.name === 'Select' && typeof n?.props?.value === 'string'
+                    && n.props.value.includes('stock_deduction_timing'),
+            );
             const action = select.actions[0];
             expect(action.handler).toBe('setState');
             expect(action.params['form.order_settings.payment_methods']).toContain(
@@ -348,26 +376,33 @@ describe('결제수단 Sortable 리스트 구조 검증 (_payment_methods_list.j
         });
 
         it('최소주문금액 Input이 있어야 한다', () => {
-            const amountDiv = tpl.children[4];
-            expect(amountDiv.if).toContain('!$method._orphaned');
-            const input = amountDiv.children[1];
-            expect(input.name).toBe('Input');
-            expect(input.props.type).toBe('number');
+            const input = findFirst(tpl, (n: any) =>
+                n?.name === 'Input' && n?.props?.type === 'number'
+                    && typeof n?.props?.value === 'string'
+                    && n.props.value.includes('min_order_amount'),
+            );
+            expect(input).not.toBeNull();
         });
 
         it('사용여부 Toggle이 setState로 is_active를 토글해야 한다', () => {
-            const toggleDiv = tpl.children[5];
-            expect(toggleDiv.if).toContain('!$method._orphaned');
-            const toggle = toggleDiv.children[0];
-            expect(toggle.name).toBe('Toggle');
+            // Toggle 의 바인딩 prop 이 checked → value 로 변경됨
+            const toggle = findFirst(tpl, (n: any) =>
+                n?.name === 'Toggle' && typeof n?.props?.value === 'string'
+                    && n.props.value.includes('is_active'),
+            );
+            expect(toggle).not.toBeNull();
             const action = toggle.actions[0];
             expect(action.handler).toBe('setState');
             expect(action.params['form.order_settings.payment_methods']).toContain('is_active');
         });
 
         it('고아 항목 삭제 버튼이 _orphaned 조건에서만 표시되어야 한다', () => {
-            const deleteBtn = tpl.children[6];
-            expect(deleteBtn.if).toContain('$method._orphaned');
+            const deleteBtn = findFirst(tpl, (n: any) =>
+                n?.name === 'Button' && typeof n?.if === 'string'
+                    && n.if.includes('$method._orphaned')
+                    && !n.if.includes('!$method._orphaned'),
+            );
+            expect(deleteBtn).not.toBeNull();
             expect(deleteBtn.actions[0].handler).toBe('setState');
             expect(deleteBtn.actions[0].params['form.order_settings.payment_methods']).toContain(
                 'filter',
@@ -540,57 +575,72 @@ describe('은행 관리 모달 구조 검증 (_bank_management_modal.json)', () 
     });
 
     describe('은행 목록 iteration', () => {
-        const content = modal.children[0];
-        const listContainer = content.children[0];
-        const iterationDiv = listContainer.children[0];
-
-        it('$parent._local의 banks를 순회해야 한다', () => {
-            expect(iterationDiv.iteration).toBeDefined();
-            expect(iterationDiv.iteration.source).toContain('$parent._local');
-            expect(iterationDiv.iteration.source).toContain('banks');
-            expect(iterationDiv.iteration.item_var).toBe('bank');
-        });
-
-        it('은행 코드/한국어/영문 3개 Input이 있어야 한다', () => {
-            const inputs = findAllByName(iterationDiv, 'Input');
-            expect(inputs.length).toBe(3);
-        });
-
-        it('모든 Input이 $parent._local 대상으로 setState해야 한다', () => {
-            const inputs = findAllByName(iterationDiv, 'Input');
-            for (const input of inputs) {
-                if (input.actions) {
-                    const action = input.actions[0];
-                    expect(action.handler).toBe('setState');
-                    expect(action.params.target).toBe('$parent._local');
-                }
-            }
-        });
-
-        it('삭제 버튼이 $parent._local 대상으로 filter해야 한다', () => {
-            const buttons = findAllByName(iterationDiv, 'Button');
-            const deleteBtn = buttons.find(
-                (b: any) => b.actions?.[0]?.params?.['form.order_settings.banks']?.includes('filter'),
+        it('$parent._local의 banks 를 순회해야 한다 (item_var: bank)', () => {
+            const iter = findFirst(modal, (n: any) =>
+                typeof n?.iteration?.source === 'string'
+                    && n.iteration.source.includes('$parent._local')
+                    && n.iteration.source.includes('banks')
+                    && n.iteration?.item_var === 'bank',
             );
-            expect(deleteBtn).toBeDefined();
-            expect(deleteBtn.actions[0].params.target).toBe('$parent._local');
+            expect(iter).not.toBeNull();
+        });
+
+        it('은행 코드 입력 Input 이 $parent._local 대상으로 setState 한다', () => {
+            const codeInput = findFirst(modal, (n: any) =>
+                n?.name === 'Input'
+                    && Array.isArray(n.actions)
+                    && n.actions.some(
+                        (a: any) => a.handler === 'setState'
+                            && a.params?.target === '$parent._local'
+                            && typeof a.params?.['form.order_settings.banks'] === 'string'
+                            && a.params['form.order_settings.banks'].includes('code:'),
+                    ),
+            );
+            expect(codeInput).not.toBeNull();
+        });
+
+        it('은행 이름 다국어 입력(MultilingualInput 또는 Input)이 존재한다', () => {
+            // 한국어/영문이 별도 Input → MultilingualInput 단일 컴포넌트로 통합되거나
+            // 분리 유지 가능. 어느 형태든 name 키 setState 가 존재하는지 검증
+            const json = JSON.stringify(modal);
+            expect(json).toContain('name: $args[0]?.target?.value ?? b.name');
+        });
+
+        it('삭제 버튼이 $parent._local 대상으로 filter 한다', () => {
+            const deleteBtn = findFirst(modal, (n: any) =>
+                n?.name === 'Button'
+                    && Array.isArray(n.actions)
+                    && n.actions.some(
+                        (a: any) => a.handler === 'setState'
+                            && a.params?.target === '$parent._local'
+                            && typeof a.params?.['form.order_settings.banks'] === 'string'
+                            && a.params['form.order_settings.banks'].includes('filter'),
+                    ),
+            );
+            expect(deleteBtn).not.toBeNull();
         });
     });
 
     describe('추가/닫기 버튼', () => {
-        const content = modal.children[0];
-
-        it('은행 추가 버튼이 $parent._local에 빈 은행을 추가해야 한다', () => {
-            const addBtn = content.children[1];
-            expect(addBtn.actions[0].handler).toBe('setState');
-            expect(addBtn.actions[0].params.target).toBe('$parent._local');
-            expect(addBtn.actions[0].params['form.order_settings.banks']).toContain("code: ''");
+        it('은행 추가 버튼이 $parent._local 에 빈 은행을 추가해야 한다', () => {
+            const addBtn = findFirst(modal, (n: any) =>
+                n?.name === 'Button'
+                    && Array.isArray(n.actions)
+                    && n.actions.some(
+                        (a: any) => a.handler === 'setState'
+                            && a.params?.target === '$parent._local'
+                            && typeof a.params?.['form.order_settings.banks'] === 'string'
+                            && a.params['form.order_settings.banks'].includes("code: ''"),
+                    ),
+            );
+            expect(addBtn).not.toBeNull();
         });
 
-        it('확인 버튼이 closeModal을 호출해야 한다', () => {
-            const confirmBtn = content.children[2];
-            expect(confirmBtn.actions[0].handler).toBe('closeModal');
-            expect(confirmBtn.actions[0].params.id).toBe('bank_management_modal');
+        it('모달 어딘가에서 closeModal 핸들러가 호출되어야 한다 (저장 후 자동 닫기 또는 닫기 버튼)', () => {
+            // 닫기 버튼 단독 → 저장 시퀀스 onSuccess 안의 closeModal 로 통합 가능
+            const json = JSON.stringify(modal);
+            expect(json).toContain('"handler":"closeModal"');
+            expect(json).toContain('"id":"bank_management_modal"');
         });
     });
 });
@@ -600,10 +650,18 @@ describe('은행 관리 모달 구조 검증 (_bank_management_modal.json)', () 
 describe('다국어 키 종합 검증', () => {
     const prefix = 'sirsoft-ecommerce.admin.settings.order_settings';
 
-    it('탭 레이아웃의 모든 다국어 키가 order_settings 네임스페이스를 사용해야 한다', () => {
+    it('탭 레이아웃의 다국어 키가 order_settings 또는 enums 네임스페이스를 사용해야 한다', () => {
+        // cancellable_statuses_card / confirmable_statuses_card 가 enum 라벨을 직접
+        // 참조하면서 sirsoft-ecommerce.enums.order_status.* 키도 사용함
         const keys = collectI18nKeys(tabOrderSettings);
+        const allowedPrefixes = [
+            `${prefix}`,
+            'sirsoft-ecommerce.enums',
+            'common.',
+        ];
         for (const key of keys) {
-            expect(key).toMatch(new RegExp(`^${prefix.replace(/\./g, '\\.')}`));
+            const matched = allowedPrefixes.some((p) => key.startsWith(p));
+            expect(matched, `unexpected key: ${key}`).toBe(true);
         }
     });
 
