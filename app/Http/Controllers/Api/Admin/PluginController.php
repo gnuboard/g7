@@ -241,7 +241,7 @@ class PluginController extends AdminBaseController
             if ($result['success']) {
                 $pluginInfo = $result['plugin_info'] ?? null;
 
-                // PO #7: 재활성화 시 cascade 비활성화됐던 언어팩 목록 응답에 포함
+                // 요구사항 #7: 재활성화 시 cascade 비활성화됐던 언어팩 목록 응답에 포함
                 $pendingLanguagePacks = app(\App\Services\LanguagePack\LanguagePackBundledRegistrar::class)
                     ->getPendingForReactivation('plugin', $pluginName);
 

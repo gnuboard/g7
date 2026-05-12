@@ -188,7 +188,7 @@ class ModuleRolePermissionTest extends TestCase
     /**
      * 모듈 제거 (deleteData=true) 시 권한이 role에서 분리되는지 테스트
      *
-     * PO 정책(#716eef99d, 2026-04-20): deleteData=true 경로에서만 권한 detach + 삭제.
+     * 운영 정책(#716eef99d, 2026-04-20): deleteData=true 경로에서만 권한 detach + 삭제.
      * deleteData=false 경로는 권한 보존 (재설치 시 사용자 역할 할당 복원 목적).
      */
     public function test_module_uninstallation_detaches_permissions_from_roles(): void

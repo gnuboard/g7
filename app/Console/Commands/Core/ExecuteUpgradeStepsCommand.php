@@ -78,7 +78,7 @@ class ExecuteUpgradeStepsCommand extends Command
                 $service->ensureWritableDirectories(
                     $writablePaths,
                     function (string $level, string $msg): void {
-                        // 콘솔 + upgrade 로그 채널 동시 출력 — PO 가 단일 파일(upgrade.log)에서
+                        // 콘솔 + upgrade 로그 채널 동시 출력 — 운영자가 단일 파일(upgrade.log)에서
                         // spawn 자식의 권한 정상화 진행을 추적할 수 있도록 양쪽 모두 누적.
                         $this->{$level === 'warning' ? 'warn' : 'info'}($msg);
                         \Illuminate\Support\Facades\Log::channel('upgrade')->$level('[spawn] '.$msg);
@@ -91,11 +91,16 @@ class ExecuteUpgradeStepsCommand extends Command
             ]);
         }
 
+        $stepsExecuted = 0;
+
         try {
             $service->runUpgradeSteps(
                 $from,
                 $to,
-                fn (string $version) => $this->info("upgrade step 실행: {$version}"),
+                function (string $version) use (&$stepsExecuted): void {
+                    $this->info("upgrade step 실행: {$version}");
+                    $stepsExecuted++;
+                },
                 $force,
             );
         } catch (UpgradeHandoffException $e) {
@@ -133,6 +138,16 @@ class ExecuteUpgradeStepsCommand extends Command
 
             return self::FAILURE;
         }
+
+        // 부모 (CoreUpdateCommand::spawnUpgradeStepsProcess) 가 silent skip 가드용으로 파싱하는
+        // 명시 종료 신호. [HANDOFF] 와 동일 구조의 라인 프로토콜. 정상 종료 (handoff 미발생) 경로
+        // 에서만 발행되며, 부모는 exit=0 인데 본 라인이 부재하면 mode=abort 시 throw,
+        // mode=fallback 시 in-process 진행 (`spawn_failure_mode`).
+        $this->line('[STEPS_EXECUTED] '.json_encode([
+            'count' => $stepsExecuted,
+            'fromVersion' => $from,
+            'toVersion' => $to,
+        ], JSON_UNESCAPED_UNICODE));
 
         return self::SUCCESS;
     }

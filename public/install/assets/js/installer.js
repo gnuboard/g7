@@ -988,7 +988,7 @@
 
             if (result.success) {
                 // Write DB 기존 테이블 감지: 인라인 상세 카드로 표시 (이슈 #244 대응)
-                // PO 요구: 모달 대신 페이지 본문에 즉시 노출, 백업 동의 체크박스로
+                // 요구사항: 모달 대신 페이지 본문에 즉시 노출, 백업 동의 체크박스로
                 // 다음 단계 진행 여부 제어. 실제 삭제는 Step 5의 db_cleanup task에서 수행.
                 let existingCardHtml = '';
                 if (type === 'write' && result.existing_tables && result.existing_tables.has_tables) {
@@ -3960,7 +3960,7 @@
                 });
             } else {
                 // 처음 시작하는 경우 — 필수 파일 체크 후 "설치 시작" 버튼 표시 (자동 시작 금지)
-                // PO가 모드(SSE/폴링)를 선택한 뒤 명시적으로 시작할 수 있도록 대기
+                // 운영자가 모드(SSE/폴링)를 선택한 뒤 명시적으로 시작할 수 있도록 대기
                 const filesReady = await checkFilesBeforeInstall();
                 if (filesReady) {
                     showInstallationStartSection();

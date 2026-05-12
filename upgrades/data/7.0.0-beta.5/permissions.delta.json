@@ -1,0 +1,14 @@
+{
+  "added": [],
+  "removed": [],
+  "renamed": [
+    {
+      "from": "core.admin.identity.manage",
+      "to": "core.admin.identity.providers.update"
+    },
+    {
+      "from": "core.admin.identity.policies.manage",
+      "to": "core.admin.identity.policies.update"
+    }
+  ]
+}

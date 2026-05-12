@@ -98,7 +98,7 @@
 
 - IdentityGuardInterceptor — HTTP 428 `identity_verification_required` 응답을 감지해 모달 launcher 호출 후 return_request 자동 재실행. launcher 는 S8 공통 모달 레이아웃이 제공. ActionDispatcher.handleApiCall 응답 후처리 한 곳에 정적 메서드로 직접 위임 — 별도 디스패처 인프라 없이 모든 apiCall 의 choke point 효과 (IdentityGuardInterceptor)
 
-<!-- ⚠️ 버전 재번호 부여 검토 필요 (PO 결정 대기): 아래 v1.43.1 은 시간상 v1.45.0/v1.44.0 보다 늦지만(2026-04-25), develop 브랜치에서 별도 발행되어 버전 번호 모순 발생. v1.45.1 또는 v1.46.0 으로 재번호 검토 필요. -->
+<!-- ⚠️ 버전 재번호 부여 검토 필요 (정책 결정 대기): 아래 v1.43.1 은 시간상 v1.45.0/v1.44.0 보다 늦지만(2026-04-25), develop 브랜치에서 별도 발행되어 버전 번호 모순 발생. v1.45.1 또는 v1.46.0 으로 재번호 검토 필요. -->
 
 ## [engine-v1.43.1] - 2026-04-25
 

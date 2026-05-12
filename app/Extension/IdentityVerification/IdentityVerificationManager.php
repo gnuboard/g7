@@ -190,6 +190,7 @@ class IdentityVerificationManager
      * 특정 purpose 에 사용할 프로바이더를 해석합니다.
      *
      * 해석 순서:
+     * 0. 명시 $providerId 가 등록 + supportsPurpose 통과 → 사용 (호출자 명시 우선)
      * 1. `settings.identity.purpose_providers.{purpose}` 에 명시적 지정 + 해당 프로바이더가 purpose 지원 → 사용
      * 2. 기본 프로바이더가 purpose 지원 → 사용
      * 3. 등록된 프로바이더 중 purpose 지원하는 첫 번째 → 사용
@@ -198,12 +199,20 @@ class IdentityVerificationManager
      * 정책의 provider_id 가 우선되므로 (IdentityPolicyService::resolveRenderHint 참조), 본 메서드는
      * 정책에 provider_id 가 명시되지 않은 경우의 fallback 으로 사용됩니다.
      *
+     * $providerId 가 등록되지 않았거나 purpose 미지원이면 silent fallback (1~4 단계 진행).
+     * 운영자가 정책에 명시한 provider 가 비활성화/미설치된 상태에서도 가입 흐름이 중단되지 않도록 한다.
+     *
      * @param  string  $purpose  IDV 목적 (signup, password_reset, sensitive_action 등)
+     * @param  string|null  $providerId  호출자 명시 provider id (Mode A controller 요청 / Mode B 정책)
      * @return IdentityVerificationInterface 해석된 provider
      */
-    public function resolveForPurpose(string $purpose): IdentityVerificationInterface
+    public function resolveForPurpose(string $purpose, ?string $providerId = null): IdentityVerificationInterface
     {
         $providers = $this->all();
+
+        if ($providerId !== null && $providerId !== '' && isset($providers[$providerId]) && $providers[$providerId]->supportsPurpose($purpose)) {
+            return $providers[$providerId];
+        }
 
         $explicitId = (string) config("settings.identity.purpose_providers.{$purpose}", '');
         if ($explicitId !== '' && isset($providers[$explicitId]) && $providers[$explicitId]->supportsPurpose($purpose)) {

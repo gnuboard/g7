@@ -11,6 +11,7 @@
 4. 경로 A (모듈/플러그인) · 경로 C 규율: 기존 클래스의 신규 메서드 호출 금지, 로컬 private 헬퍼 우선
 5. 모든 분기에 upgrade.log 출력 — 로그 없음 = 디버깅 단서 없음
 6. beta.3+ 타깃 step 이 중간에 새 프로세스 재진입이 필요하면 `UpgradeHandoffException` throw (섹션 10.5)
+7. 7.0.0-beta.5+ 신규 step 은 `AbstractUpgradeStep` 상속 의무 + 카탈로그/변환/핫픽스를 `upgrades/data/{version}/` 으로 격리 (섹션 13)
 ```
 
 ---
@@ -29,6 +30,8 @@
 10. [경로 C 내부 inline spawn 패턴](#10-경로-c-내부-inline-spawn-패턴)
 10.5. [업그레이드 핸드오프 (beta.3+ 인프라)](#105-업그레이드-핸드오프-beta3-인프라)
 11. [업그레이드 후 데이터 정합성 (완전 동기화)](#11-업그레이드-후-데이터-정합성-완전-동기화)
+12. [Declarative artifacts 일회성 보정 패턴](#12-declarative-artifacts-일회성-보정-패턴)
+13. [버전별 데이터 스냅샷 (7.0.0-beta.5+)](#13-버전별-데이터-스냅샷-700-beta5)
 
 ---
 
@@ -399,6 +402,39 @@ upgrade step 작성 전 다음을 확인:
 
 경로 B 라고 판단했더라도, proc_open 차단 환경에서는 in-process fallback 이 작동하므로 **가능하면 경로 A/C 규율도 충족** 하도록 작성하는 것이 안전하다.
 
+### V-1 안전 작성 패턴 (경로 B 의 사각지대)
+
+경로 B 의 "spawn 자식이 fresh 디스크 코드를 로드" 가정은 `proc_open` 정상 동작에 의존한다. 다음 4가지 상황에서 in-process fallback 으로 전환되어 V-1 (이전 버전 메모리에 부재한 신규 메서드 호출) fatal 위험이 부활:
+
+1. `proc_open` 함수 비활성 (보안 설정 / 일부 공유 호스팅)
+2. `proc_open` 자원 생성 실패 (메모리 부족 / pipe 한도 초과)
+3. 자식 비정상 종료 (uncaught exception / fatal / OOM)
+4. 자식 exit=0 이지만 `[STEPS_EXECUTED]` 신호 미발행 또는 step 0건 실행 (silent skip)
+
+beta.5+ 의 `spawn_failure_mode` (기본 `abort`) 가 위 4분기 모두를 fail-fast 차단하지만, 운영자가 `G7_UPDATE_SPAWN_FAILURE_MODE=fallback` 으로 호환 모드를 선택하면 V-1 위험이 잔존한다.
+
+따라서 신규 step 작성 시 다음 안전 패턴을 적용:
+
+- 신규 도입 (현재 작성 중인 버전에서 처음 추가된) 클래스/메서드/Repository 를 upgrade step 안에서 호출 금지
+- 부득이 호출이 필요하면 `@upgrade-path C` 어노테이션으로 명시 + 로컬 private 메서드로 인라인 작성
+- 허용 호출: `FilePermissionHelper`, `File` / `DB` / `Schema` / `Cache` / `Log` 파사드 등 *이전 버전 디스크 코드에도 존재하는* 코어 헬퍼만
+- 검증: PR review 단계에서 "이 step 이 호출하는 모든 메서드/클래스가 *이전 버전* 디스크 코드에도 존재하는가?" 자문
+
+#### In-process fallback 진입 시 위험 메커니즘
+
+부모 프로세스 메모리의 stale 클래스 인스턴스가 Laravel DI 컨테이너에서 반환되어, 디스크의 신버전 코드를 무시한 채 신규 메서드 호출 → `Call to undefined method` fatal. 이슈 #28 의 실 보고 사례:
+
+```text
+Call to undefined method App\Services\CoreUpdateService::ensureWritableDirectories()
+ at upgrades/Upgrade_7_0_0_beta_4.php:173 — ensureLangPacksPermissions()
+```
+
+beta.4 의 `Upgrade_7_0_0_beta_4` step 이 `app(CoreUpdateService::class)->ensureWritableDirectories(...)` 를 호출했으나, 부모 메모리의 stale beta.3 `CoreUpdateService` 인스턴스에는 `ensureWritableDirectories` 가 없어 fatal. 디스크는 이미 beta.4 였음에도 PHP autoloader 가 beta.3 인스턴스를 재사용한 결과.
+
+#### 자동 검출 — `upgrade-step-vone-safety` audit rule (manual-only)
+
+`upgrades/Upgrade_*.php` 안의 `app(\w+Service::class)` / `app(\w+Manager::class)` / `app(\w+Repository::class)` 패턴은 PR review reviewer 에게 manual-only 경고를 발행한다. 자동 차단은 아니지만, 매치된 위치를 보고 "이 메서드가 이전 버전 디스크에 존재했는가" 를 reviewer 가 수동 판정한다. 면제: `// audit:allow upgrade-step-vone-safety reason: ...` 인라인 주석.
+
 ---
 
 ## 10. 경로 C 내부 inline spawn 패턴
@@ -592,6 +628,183 @@ $pluginResult = app(PluginManager::class)->resyncAllActiveDeclarativeArtifacts()
 ### 권한 정상화 실패 노출
 
 `CoreUpdateService::restoreOwnership()` 는 chown / `chmod g+w` 실패 항목을 누적하여 `getLastPermissionWarnings()` 로 노출. `CoreUpdateCommand` 가 매 호출 직후 콘솔에 실패 경로 + 운영자 수동 복구 명령(`sudo chown -R / chmod g+w`) 을 즉시 안내. upgrade step 에서 권한 정상화를 수행할 때도 동일한 회귀 차단 패턴이 권장된다 (`FilePermissionHelper::chownRecursiveDetailed` / `syncGroupWritabilityDetailed` 사용).
+
+---
+
+## 13. 버전별 데이터 스냅샷 (7.0.0-beta.5+)
+
+### 배경
+
+spawn 자식 (경로 B) 은 디스크의 *최신* 코드/시더/카탈로그를 fresh-load 한다. 멀티 버전 점프 (예: beta.1 → beta.5) 시 beta.2/3/4 의 upgrade step 이 순차 실행되더라도, 각 step 이 호출하는 시더·Manager·헬퍼는 모두 **beta.5 메모리** 위에서 동작한다. 결과: 사용자가 하나씩 단계 업그레이드한 것과 동등하지 않은 데이터 상태.
+
+본 섹션은 이 비대칭을 해소하는 규약을 정의한다 — **카탈로그 / 변환 / 핫픽스 모두를 그 버전 디렉토리 안에 동결**하여 "각 스텝별 동작 100% 동일 보장" invariant 를 성립시킨다.
+
+### 적용 시점
+
+- **코어**: 7.0.0-beta.5 부터 신규 step 의무 (beta.2~4 는 legacy 호환 유지)
+- **번들 모듈/플러그인**: `module.json` / `plugin.json` 의 `g7_version` 제약 최소 버전이 `7.0.0-beta.5` 이상이면 *그 확장의 현재 version 부터* 신규 step 의무. 그 미만이면 legacy (가드 미발동)
+- **외부 확장 (`modules/{not _bundled}` / `plugins/{not _bundled}`)**: 런타임 가드는 동일하게 발화 (manifest g7_version 판정), audit 만 적용 제외 (사용자 수정 코드 PR 차단 부적합)
+- **번들 템플릿/언어팩**: upgrade step 시스템 자체가 부재 — 미래 도입 시 동일 규약 자동 상속
+
+### 확장 작성자의 적용 트리거
+
+확장 작성자가 `g7_version` 을 `>=7.0.0-beta.5` 이상으로 상향하는 시점이 본 규약의 *자동 적용 첫 버전* 이다 (`ExtensionUpgradeGuardHelper::resolveSinceVersion`). 그 이후 `upgrades()` 에서 반환하는 신규 step 은 모두 `AbstractUpgradeStep` 상속 의무 — 미상속 시 `ModuleManager::runUpgradeSteps` / `PluginManager::runUpgradeSteps` 가 `RuntimeException` throw.
+
+| `g7_version` | 확장 working version | 의무 시작 버전 | 효과 |
+| --- | --- | --- | --- |
+| `>=7.0.0-beta.5` | `1.2.0` | `1.2.0` | `1.2.0` 이상 step 은 모두 AbstractUpgradeStep 의무 |
+| `>=7.0.0-beta.4` | `1.2.0` | (legacy) | 가드 미발동 — 신규 step 도 자유 작성 가능 |
+| (미선언 / null) | `1.2.0` | (legacy) | 가드 미발동 |
+
+### `dataDir()` 의 코어/확장 자동 분기
+
+`AbstractUpgradeStep::dataDir()` 는 `ReflectionClass($this)->getFileName()` 으로 *상속받은 구체 클래스의 파일 위치* 를 기준으로 data 디렉토리를 계산:
+
+| 상속 위치 | `dataDir()` 결과 |
+| --- | --- |
+| `upgrades/Upgrade_7_0_0_beta_5.php` (코어) | `upgrades/data/7.0.0-beta.5/` |
+| `modules/_bundled/vendor-foo/upgrades/Upgrade_1_2_0.php` | `modules/_bundled/vendor-foo/upgrades/data/1.2.0/` |
+| `plugins/_bundled/vendor-bar/upgrades/Upgrade_2_0_0.php` | `plugins/_bundled/vendor-bar/upgrades/data/2.0.0/` |
+
+확장은 코어 인프라(`AbstractUpgradeStep`, `DataSnapshot`, `SnapshotApplier` / `DataMigration` 인터페이스, manifest 스키마) 를 그대로 재사용한다 — 별도 사본 없음.
+
+### 격리 원칙
+
+각 step 은 다음을 보유:
+
+- 스텝 파일 `upgrades/Upgrade_X_Y_Z.php` — `AbstractUpgradeStep` 상속만, 비즈니스 로직 없음
+- `upgrades/data/{version}/manifest.json` — kind → delta JSON 파일 매핑
+- `upgrades/data/{version}/*.delta.json` — 카탈로그 시드 delta (added / removed / renamed)
+- `upgrades/data/{version}/appliers/{Kind}Applier.php` — delta JSON 적용기 (버전 namespace)
+- `upgrades/data/{version}/migrations/*.php` — 변환 / 단발성 핫픽스 (버전 namespace)
+
+namespace 규약 (코어/확장 자동 분기):
+
+| 위치 | namespace |
+| --- | --- |
+| 코어 (`upgrades/data/{ver}/`) | `App\Upgrades\Data\V{token}\(Appliers\|Migrations)` |
+| 번들 모듈 (`modules/_bundled/{id}/upgrades/data/{ver}/`) | `App\Upgrades\Data\Ext\Modules\{StudlyId}\V{token}\(Appliers\|Migrations)` |
+| 번들 플러그인 (`plugins/_bundled/{id}/upgrades/data/{ver}/`) | `App\Upgrades\Data\Ext\Plugins\{StudlyId}\V{token}\(Appliers\|Migrations)` |
+| 외부 모듈 (`modules/{id}/upgrades/data/{ver}/`) | 동일 패턴 (Ext\Modules) — 사용자 수정 경로도 격리 |
+| 외부 플러그인 (`plugins/{id}/upgrades/data/{ver}/`) | 동일 패턴 (Ext\Plugins) |
+
+`{token}` = 점·하이픈을 underscore 로 치환 (예: `7.0.0-beta.5` → `V7_0_0_beta_5`).
+`{StudlyId}` = 확장 식별자 hyphen/underscore 를 StudlyCase 로 변환 (예: `sirsoft-ecommerce` → `SirsoftEcommerce`).
+
+`DataSnapshot::versionedNamespace($context, $sourceLocation)` 가 `$sourceLocation` 경로의 `modules|plugins` 마커 substring 을 기준으로 분기 — 코어/확장의 같은 step 버전이라도 *서로 다른 namespace* 가 부여되어 PHP compile-time fatal ("Cannot declare class ...") 회귀가 차단된다.
+
+### `AbstractUpgradeStep` 위임 흐름
+
+```php
+final public function run(UpgradeContext $context): void
+{
+    $this->dataSnapshot($context)->apply($context);    // Applier 순차 실행
+    foreach ($this->dataMigrations($context) as $m) {  // Migration 순차 실행 (파일명 정렬 순)
+        $m->run($context);
+    }
+    $this->postRun($context);                           // 거의 사용 안 함
+}
+```
+
+`dataSnapshot()` / `dataMigrations()` 모두 default impl 이 `data/{version}/` 을 스캔 + `require_once` + 버전 namespace 클래스 인스턴스화. 일반 케이스는 override 불필요.
+
+### 실행 순서 제어
+
+`dataMigrations()` 는 `data/{version}/migrations/*.php` 를 파일명 alphabetical 정렬 순으로 실행. 명시적 순서가 필요하면 파일명에 두 자리 숫자 prefix 사용:
+
+```text
+01_RecoverActiveExtensionDirs.php
+02_RecoverPendingStubFiles.php
+03_VerifyBundledLangPacksFallback.php
+04_IdentityPermissionPivotMerge.php
+05_RecoverPublicStorageSymlink.php
+```
+
+클래스명 자체는 prefix 없이 (PHP 식별자 제약). `AbstractUpgradeStep` 이 매핑 시 정규식 `/^\d{2,}_/` 으로 제거.
+
+### Delta JSON 스키마
+
+`permissions.delta.json` 예:
+
+```json
+{
+  "added": [
+    {
+      "identifier": "core.foo.read",
+      "type": "admin",
+      "category": "core.foo",
+      "name": { "ko": "Foo 조회", "en": "Read Foo" }
+    }
+  ],
+  "removed": ["core.legacy.x"],
+  "renamed": [
+    { "from": "core.old.key", "to": "core.new.key" }
+  ]
+}
+```
+
+`role_permissions.delta.json` 예:
+
+```json
+{
+  "grants": [{ "role": "user", "permission": "core.notifications.read" }],
+  "revokes": [{ "role": "user", "permission": "core.legacy.read" }]
+}
+```
+
+각 Applier 가 동일 패턴으로 added/removed/renamed (또는 grants/revokes) 를 idempotent SQL 로 적용.
+
+### Applier / Migration 작성 의무
+
+- **raw JSON 만 read** (Applier) — 시더 클래스 `Database\Seeders\*` 참조 금지 (fresh-load invariant)
+- **idempotent** — `Schema::hasColumn` / `where->exists()` 가드 동반
+- **V-1 안전 강화** — `app(*Service|*Manager|*Repository::class)` 호출 금지 (audit `upgrade-step-data-snapshot` 가 error 로 차단)
+- **버전 격리** — 다른 버전 namespace `App\Upgrades\Data\V{other}\*` 참조 금지
+- **로컬 헬퍼 + Illuminate 파사드만 사용** — 신규 도입 클래스 / 미래 변경 가능 클래스 의존 회피
+- **공용 헬퍼 사용 시 신중** — `FilePermissionHelper::copyDirectory` 처럼 V-1 안전 검증된 헬퍼만 허용 (audit 룰이 미허용 호출은 차단)
+
+### 강제 메커니즘
+
+| 시점 | 영역 | 메커니즘 | 동작 |
+| --- | --- | --- | --- |
+| 런타임 | 코어 | `CoreUpdateService::runUpgradeSteps()` 의 instance 검증 | 버전 ≥ beta.5 인데 `AbstractUpgradeStep` 미상속 → `CoreUpdateOperationException` throw → update 전체 중단 → 백업 복원 |
+| 런타임 | 모듈 | `ModuleManager::runUpgradeSteps()` 내 `ExtensionUpgradeGuardHelper` 호출 | manifest g7_version 기반 since-version 판정 → 미상속 시 `RuntimeException` throw |
+| 런타임 | 플러그인 | `PluginManager::runUpgradeSteps()` 내 `ExtensionUpgradeGuardHelper` 호출 | 동일 패턴 (식별자만 다름) |
+| PR 시점 | 코어 + 번들 모듈/플러그인 | audit rule `upgrade-step-data-snapshot` (severity: error) | namespace 불일치 / Seeders use / app() 호출 / 다른 버전 참조 / 공용 디렉토리 사용 자동 차단. 확장 경로는 manifest g7_version 기반 since-version 으로 검사 범위 결정 |
+
+면제: `// audit:allow upgrade-step-data-snapshot reason: ...` 인라인 주석. legacy 미들 케이스 또는 임시 우회 시.
+
+### 확장간 namespace 격리
+
+`DataSnapshot::versionedNamespace($context, $sourceLocation)` 가 step 파일/data 디렉토리 경로의 `modules|plugins` 마커로 코어/확장을 분기하여 namespace 를 결정. 결과:
+
+- 두 다른 모듈 (`vendor-foo` / `vendor-bar`) 이 동일 step 버전(예: `1.0.0`) 을 가져도 namespace 가 각자 격리:
+  - `App\Upgrades\Data\Ext\Modules\VendorFoo\V1_0_0\Migrations\Shared`
+  - `App\Upgrades\Data\Ext\Modules\VendorBar\V1_0_0\Migrations\Shared`
+- `require_once` 가 두 파일을 로드해도 별개 FQCN 이라 PHP compile-time fatal ("Cannot declare class ...") 없음.
+- 모듈 vs 플러그인 vs 코어 namespace 도 서로 격리.
+
+회귀 안전망:
+
+- `tests/Unit/Extension/Upgrade/DataSnapshotTest::test_versionedNamespace_different_extensions_same_step_version_produce_different_namespaces` — 정적 검증
+- `tests/Feature/Upgrades/ExtensionAbstractUpgradeStepFullFlowTest::test_two_extensions_with_same_step_version_isolated_by_namespace` — 실제 실행 회귀 검증 (두 확장 fixture 의 같은 step 버전 + 같은 클래스명 → 양쪽 모두 자기 코드 실행 확인)
+
+### dogfood — 7.0.0-beta.5
+
+본 규약의 첫 사례:
+
+- `upgrades/Upgrade_7_0_0_beta_5.php` — `extends AbstractUpgradeStep` 만 선언, 본문 비어있음
+- `upgrades/data/7.0.0-beta.5/manifest.json` — `permissions` kind 1건
+- `upgrades/data/7.0.0-beta.5/permissions.delta.json` — IDV 권한 식별자 rename 2건
+- `upgrades/data/7.0.0-beta.5/appliers/PermissionsApplier.php` — added/removed/renamed (부재 경로) 적용기
+- `upgrades/data/7.0.0-beta.5/migrations/` — 5종:
+  1. `01_RecoverActiveExtensionDirs.php` — #347 회귀 후속: 4개 도메인 활성 디렉토리 복구
+  2. `02_RecoverPendingStubFiles.php` — #347 회귀 후속: _pending stub 재생성
+  3. `03_VerifyBundledLangPacksFallback.php` — #347 회귀 후속: lang-packs/_bundled fallback
+  4. `04_IdentityPermissionPivotMerge.php` — IDV 권한 rename 충돌 경로 피벗 병합
+  5. `05_RecoverPublicStorageSymlink.php` — public/storage symlink 복구
+
+beta.4 까지 출시본의 박제된 핫픽스 모든 동작이 본 격리 구조로 100% 보존되며, 미래 버전이 이 디렉토리를 *수정하지 않는 한* (수정은 audit error) beta.1 → beta.7 같은 멀티 점프에서도 동일한 결과를 보장한다.
 
 ---
 

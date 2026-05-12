@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 언어팩 시스템 PO 8대 요구사항 정합성 검증 통합 테스트.
+ * 언어팩 시스템 8대 요구사항 정합성 검증 통합 테스트.
  *
  * 본 테스트는 abstract-foraging-pony.md 계획서의 §1~§7 핵심 동작을
  * 한 파일로 통합 검증합니다. 도메인 매트릭스: Pure Logic + CRUD 혼합.
@@ -22,7 +22,7 @@ class PolicyAlignmentTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * PO #1, #2: base locale 판정 헬퍼 동작 검증.
+     * 요구사항 #1, #2: base locale 판정 헬퍼 동작 검증.
      */
     public function test_base_locale_helper_recognizes_ko_en_only(): void
     {
@@ -34,7 +34,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * PO #1: DB 비어있을 때 코어 lang/ko, lang/en 디렉토리에 대해 가상 보호 행이 합성된다.
+     * 요구사항 #1: DB 비어있을 때 코어 lang/ko, lang/en 디렉토리에 대해 가상 보호 행이 합성된다.
      */
     public function test_virtual_built_in_packs_synthesized_for_core_locales(): void
     {
@@ -57,7 +57,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * PO #1, slot dedup: 같은 슬롯에 DB 행이 있으면 가상 행은 list 응답에서 스킵된다.
+     * 요구사항 #1, slot dedup: 같은 슬롯에 DB 행이 있으면 가상 행은 list 응답에서 스킵된다.
      */
     public function test_db_row_overrides_virtual_built_in_in_same_slot(): void
     {
@@ -93,7 +93,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * PO #5: activate 시 의존성/버전 검사. 호스트 모듈이 없으면 실패해야 한다.
+     * 요구사항 #5: activate 시 의존성/버전 검사. 호스트 모듈이 없으면 실패해야 한다.
      */
     public function test_activate_fails_when_target_extension_does_not_exist(): void
     {
@@ -125,13 +125,13 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * PO #3: install 흐름의 lang-packs/_bundled/ 패키지는 비보호로 등록되어야 한다.
+     * 요구사항 #3: install 흐름의 lang-packs/_bundled/ 패키지는 비보호로 등록되어야 한다.
      *
      * 실제 install 은 ZIP 추출이 필요하므로 buildPackData 의 출력을 직접 검증.
      */
     public function test_install_flow_produces_unprotected_packs(): void
     {
-        // 가상 행도 비보호 (PO #3): 미설치 가상 행은 lang-packs/_bundled/ 의 ja 패키지 표현
+        // 가상 행도 비보호 (요구사항 #3): 미설치 가상 행은 lang-packs/_bundled/ 의 ja 패키지 표현
         $repo = app(\App\Contracts\Repositories\LanguagePackRepositoryInterface::class);
         $manifest = [
             'identifier' => 'g7-module-test-ja',
@@ -146,7 +146,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * PO #6: 호스트 확장 deactivate cascade 헬퍼 stash/get 라운드트립.
+     * 요구사항 #6: 호스트 확장 deactivate cascade 헬퍼 stash/get 라운드트립.
      */
     public function test_reactivation_stash_round_trip(): void
     {
@@ -176,7 +176,7 @@ class PolicyAlignmentTest extends TestCase
         $this->assertSame($pack->id, $pending[0]['id']);
         $this->assertSame('日本語', $pending[0]['locale_native_name']);
 
-        // 두 번 호출하면 cache 가 비워져 빈 배열 반환 (PO #8: 모달 표시 안 함)
+        // 두 번 호출하면 cache 가 비워져 빈 배열 반환 (요구사항 #8: 모달 표시 안 함)
         $second = $registrar->getPendingForReactivation('module', 'stash-module');
         $this->assertEmpty($second);
     }

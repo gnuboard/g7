@@ -1182,6 +1182,152 @@ MD;
     }
 
     /**
+     * targets 에 `templates/_bundled` 만 있고 source 의 `templates/` 디렉토리에 `_bundled`
+     * 만 있을 때, 활성 디렉토리(`templates/sirsoft-basic` 등) 가 자동 발견 폴백의
+     * removeOrphans 로 삭제되지 않아야 한다.
+     *
+     * 회귀 시나리오 (#347): beta.4 의 `isCoveredByApplied` 가 단방향 검사만 수행하여
+     * applied=['templates/_bundled'] 일 때 source 의 'templates' 자체를 신규 항목으로
+     * 오인 → `copyDirectory(removeOrphans:true)` 가 base 의 활성 sirsoft-* 서브디렉토리를
+     * orphan 으로 판정하여 삭제.
+     */
+    public function test_apply_update_preserves_active_extension_dirs_when_source_only_has_bundled(): void
+    {
+        $sourcePath = storage_path('test_apply_preserve_src_'.uniqid());
+        $this->tempDirs[] = $sourcePath;
+        File::ensureDirectoryExists($sourcePath);
+
+        // source: templates/_bundled/{shared-id}/manifest.json 만 보유
+        File::ensureDirectoryExists($sourcePath.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-basic');
+        File::put(
+            $sourcePath.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-basic'.DIRECTORY_SEPARATOR.'manifest.json',
+            '{"identifier":"sirsoft-basic","version":"1.0.0"}'
+        );
+
+        // base: templates/_bundled/sirsoft-basic + templates/sirsoft-basic (활성 디렉토리)
+        $fakeBase = storage_path('test_apply_preserve_base_'.uniqid());
+        $this->tempDirs[] = $fakeBase;
+        File::ensureDirectoryExists($fakeBase);
+
+        $originalBasePath = base_path();
+        app()->setBasePath($fakeBase);
+
+        File::ensureDirectoryExists($fakeBase.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-basic');
+        File::put(
+            $fakeBase.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-basic'.DIRECTORY_SEPARATOR.'manifest.json',
+            '{"identifier":"sirsoft-basic","version":"0.9.0"}'
+        );
+        File::ensureDirectoryExists($fakeBase.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.'sirsoft-basic');
+        File::put(
+            $fakeBase.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.'sirsoft-basic'.DIRECTORY_SEPARATOR.'manifest.json',
+            '{"identifier":"sirsoft-basic","installed":true}'
+        );
+
+        try {
+            config([
+                'app.update.targets' => ['templates/_bundled'],
+                'app.update.excludes' => [],
+                'app.update.protected_paths' => ['.env', 'storage', 'vendor', 'node_modules', '.git'],
+            ]);
+
+            $this->service->applyUpdate($sourcePath);
+
+            // _bundled 는 source 기준으로 정상 sync
+            $this->assertFileExists(
+                $fakeBase.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-basic'.DIRECTORY_SEPARATOR.'manifest.json'
+            );
+
+            // 활성 디렉토리는 source 에 부재하지만 base 에 보존되어야 함 (회귀 차단)
+            $this->assertFileExists(
+                $fakeBase.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.'sirsoft-basic'.DIRECTORY_SEPARATOR.'manifest.json',
+                '활성 templates/sirsoft-basic 이 자동 발견 폴백에 의해 삭제되어서는 안 된다 (#347 회귀)'
+            );
+        } finally {
+            app()->setBasePath($originalBasePath);
+        }
+    }
+
+    /**
+     * modules/, plugins/ 에도 동일 패턴 보존 확인 (#347 회귀).
+     */
+    public function test_apply_update_preserves_active_module_and_plugin_dirs_same_pattern(): void
+    {
+        $sourcePath = storage_path('test_apply_preserve_mp_src_'.uniqid());
+        $this->tempDirs[] = $sourcePath;
+        File::ensureDirectoryExists($sourcePath);
+
+        // source: modules/_bundled, plugins/_bundled 만 보유
+        File::ensureDirectoryExists($sourcePath.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-ecommerce');
+        File::put(
+            $sourcePath.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-ecommerce'.DIRECTORY_SEPARATOR.'module.json',
+            '{"identifier":"sirsoft-ecommerce","version":"1.0.0"}'
+        );
+        File::ensureDirectoryExists($sourcePath.DIRECTORY_SEPARATOR.'plugins'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-payment');
+        File::put(
+            $sourcePath.DIRECTORY_SEPARATOR.'plugins'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-payment'.DIRECTORY_SEPARATOR.'plugin.json',
+            '{"identifier":"sirsoft-payment","version":"1.0.0"}'
+        );
+
+        $fakeBase = storage_path('test_apply_preserve_mp_base_'.uniqid());
+        $this->tempDirs[] = $fakeBase;
+        File::ensureDirectoryExists($fakeBase);
+
+        $originalBasePath = base_path();
+        app()->setBasePath($fakeBase);
+
+        // base 활성 디렉토리 + _bundled 모두 있는 상태
+        File::ensureDirectoryExists($fakeBase.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-ecommerce');
+        File::put(
+            $fakeBase.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-ecommerce'.DIRECTORY_SEPARATOR.'module.json',
+            '{"identifier":"sirsoft-ecommerce","version":"0.9.0"}'
+        );
+        File::ensureDirectoryExists($fakeBase.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'sirsoft-ecommerce');
+        File::put(
+            $fakeBase.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'sirsoft-ecommerce'.DIRECTORY_SEPARATOR.'module.json',
+            '{"installed":true}'
+        );
+
+        File::ensureDirectoryExists($fakeBase.DIRECTORY_SEPARATOR.'plugins'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-payment');
+        File::put(
+            $fakeBase.DIRECTORY_SEPARATOR.'plugins'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-payment'.DIRECTORY_SEPARATOR.'plugin.json',
+            '{"identifier":"sirsoft-payment","version":"0.9.0"}'
+        );
+        File::ensureDirectoryExists($fakeBase.DIRECTORY_SEPARATOR.'plugins'.DIRECTORY_SEPARATOR.'sirsoft-payment');
+        File::put(
+            $fakeBase.DIRECTORY_SEPARATOR.'plugins'.DIRECTORY_SEPARATOR.'sirsoft-payment'.DIRECTORY_SEPARATOR.'plugin.json',
+            '{"installed":true}'
+        );
+
+        try {
+            config([
+                'app.update.targets' => ['modules/_bundled', 'plugins/_bundled'],
+                'app.update.excludes' => [],
+                'app.update.protected_paths' => ['.env', 'storage', 'vendor', 'node_modules', '.git'],
+            ]);
+
+            $this->service->applyUpdate($sourcePath);
+
+            // 활성 모듈/플러그인 디렉토리 보존
+            $this->assertFileExists(
+                $fakeBase.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'sirsoft-ecommerce'.DIRECTORY_SEPARATOR.'module.json',
+                '활성 modules/sirsoft-ecommerce 이 보존되어야 한다 (#347 회귀)'
+            );
+            $this->assertFileExists(
+                $fakeBase.DIRECTORY_SEPARATOR.'plugins'.DIRECTORY_SEPARATOR.'sirsoft-payment'.DIRECTORY_SEPARATOR.'plugin.json',
+                '활성 plugins/sirsoft-payment 이 보존되어야 한다 (#347 회귀)'
+            );
+
+            // _bundled sync 정상
+            $this->assertStringContainsString(
+                '"version":"1.0.0"',
+                File::get($fakeBase.DIRECTORY_SEPARATOR.'modules'.DIRECTORY_SEPARATOR.'_bundled'.DIRECTORY_SEPARATOR.'sirsoft-ecommerce'.DIRECTORY_SEPARATOR.'module.json')
+            );
+        } finally {
+            app()->setBasePath($originalBasePath);
+        }
+    }
+
+    /**
      * 자동 발견 폴백이 protected_paths 와 user excludes 양쪽을 존중하는지 검증합니다.
      */
     public function test_apply_update_auto_discovery_respects_protected_paths_and_excludes(): void

@@ -268,7 +268,7 @@ class IdentityPolicyService
 
         // HasUserOverrides trait 의 auto-record 우회 — 이 저장은 운영자 수정이 아니라
         // 기본값 복원이므로 trackable 필드가 변경되어도 user_overrides 에 재추가되면 안 됨.
-        return $this->withUserOverridesBypass(fn () => $policy->save());
+        return $this->withUserOverridesBypass(fn () => $this->policyRepository->save($policy));
     }
 
     /**
@@ -480,6 +480,10 @@ class IdentityPolicyService
      * 정책의 provider 가 제공하는 렌더 힌트를 반환합니다.
      * provider_id 가 명시되어 있으면 우선 사용, 미명시 시 purpose 기반 fallback.
      *
+     * fallback 분기에서도 정책의 provider_id 를 Manager 의 0번 우선순위로 전달한다.
+     * 정책에 지정된 provider 가 비활성/언인스톨된 순간 Manager 가 같은 우선순위 체인으로
+     * 일관 처리하도록 정합화 — IdentityVerificationService::start 와 동일 패턴.
+     *
      * @param  IdentityPolicy  $policy  대상 정책
      * @return string|null Provider 의 렌더 힌트 (UI 분기용) 또는 null
      */
@@ -491,7 +495,7 @@ class IdentityPolicyService
                 return $this->manager->get($providerId)->getRenderHint();
             }
 
-            return $this->manager->resolveForPurpose($policy->purpose)->getRenderHint();
+            return $this->manager->resolveForPurpose($policy->purpose, $providerId)->getRenderHint();
         } catch (\Throwable) {
             return null;
         }

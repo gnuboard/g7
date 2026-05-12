@@ -6,7 +6,9 @@ return [
     'action' => [
         'create' => 'Created',
         'delete' => 'Deleted',
+        'publish' => 'Published',
         'restore' => 'Restored',
+        'unpublish' => 'Unpublished',
         'update' => 'Updated',
         'upload' => 'Uploaded',
     ],

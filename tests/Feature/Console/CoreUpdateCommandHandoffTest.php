@@ -20,7 +20,7 @@ use Tests\TestCase;
  *
  * handle() catch 블록 내부 cleanup 시퀀스 (updateVersionInEnv(toVersion),
  * clearAllCaches, restoreOwnership, cleanupPending, disableMaintenanceMode,
- * 사용자 안내) 는 본 테스트 범위에서 제외되며, PO Linux 서버 수동 검증으로 보완한다.
+ * 사용자 안내) 는 본 테스트 범위에서 제외되며, 운영자 Linux 서버 수동 검증으로 보완한다.
  *
  * 본 테스트는 실제 proc_open 으로 자식 PHP 프로세스를 띄우므로 proc_open 미지원
  * 환경에서는 skip.
@@ -109,6 +109,9 @@ PHP);
     /**
      * 자식 프로세스가 정상 완료(exit 0)되면 spawn 은 true 를 반환한다.
      * Handoff 파싱 로직이 정상 경로를 손상시키지 않는지 회귀 가드.
+     *
+     * 본 테스트는 실 step 1건이 실행되는 시나리오 — `spawn_failure_mode` 의 silent skip 가드
+     * (step 0건 차단) 을 통과하기 위해 동일 버전 + --force 로 무해한 step 1건만 실행시킨다.
      */
     public function test_spawn_returns_true_on_normal_exit(): void
     {
@@ -116,12 +119,28 @@ PHP);
             $this->markTestSkipped('proc_open 미지원 환경');
         }
 
-        // upgrade 파일 없이 실행 → runUpgradeSteps 가 조용히 no-op → exit 0
+        File::put($this->handoffStepPath, <<<'PHP'
+<?php
+
+namespace App\Upgrades;
+
+use App\Contracts\Extension\UpgradeStepInterface;
+use App\Extension\UpgradeContext;
+
+class Upgrade_0_0_1_test_integration_handoff implements UpgradeStepInterface
+{
+    public function run(UpgradeContext $context): void
+    {
+        // no-op — step 1건 실행되도록만 보장
+    }
+}
+PHP);
+
         $command = $this->makeCommandWithDummyIo();
         $method = new \ReflectionMethod(CoreUpdateCommand::class, 'spawnUpgradeStepsProcess');
         $method->setAccessible(true);
 
-        $result = $method->invoke($command, '9.9.8', '9.9.9', true, fn () => null);
+        $result = $method->invoke($command, '0.0.0', '0.0.1', true, fn () => null);
 
         $this->assertTrue($result, '정상 종료 시 true 반환해야 한다');
     }
@@ -129,12 +148,17 @@ PHP);
     /**
      * 자식 프로세스가 일반 실패(exit != 0, != 75)면 spawn 은 false 를 반환하여
      * 상위 호출자가 in-process fallback 경로로 전환할 수 있게 한다.
+     *
+     * 본 회귀 가드는 `spawn_failure_mode=fallback` 의 호환 모드 동작을 검증한다.
+     * 기본 abort 모드 동작은 `CoreUpdateCommandSpawnFailureTest` 가 별도로 검증한다.
      */
     public function test_spawn_returns_false_on_generic_failure(): void
     {
         if (! function_exists('proc_open')) {
             $this->markTestSkipped('proc_open 미지원 환경');
         }
+
+        config(['app.update.spawn_failure_mode' => 'fallback']);
 
         File::put($this->failingStepPath, <<<'PHP'
 <?php
@@ -208,6 +232,106 @@ PHP);
                 'resumeCommand 는 null 로 유지되어야 CoreUpdateCommand 가 자동 생성한다'
             );
         }
+    }
+
+    /**
+     * isValidHandoffPayload — 빈 afterVersion 거부.
+     *
+     * 회귀 시나리오: 자식 stdout 의 [HANDOFF] 라인이 `afterVersion=""` 으로 도착하면
+     * Step 11 fromVersion 해석이 혼란스러워진다 (CoreUpdateCommand catch 분기의 sprintf
+     * 자동 생성에서도 비정상 명령어 출력). 검증 거부 후 정상 출력으로 fall through.
+     */
+    public function test_isValidHandoffPayload_rejects_empty_after_version(): void
+    {
+        $command = app(CoreUpdateCommand::class);
+        $method = new \ReflectionMethod(CoreUpdateCommand::class, 'isValidHandoffPayload');
+        $method->setAccessible(true);
+
+        $this->assertFalse($method->invoke($command, [
+            'afterVersion' => '',
+            'reason' => '정상 사유',
+            'resumeCommand' => null,
+        ]));
+
+        $this->assertFalse($method->invoke($command, [
+            'afterVersion' => 'not-a-version',
+            'reason' => '정상 사유',
+            'resumeCommand' => null,
+        ]));
+
+        $this->assertTrue($method->invoke($command, [
+            'afterVersion' => '7.0.0-beta.4',
+            'reason' => '정상 사유',
+            'resumeCommand' => null,
+        ]));
+    }
+
+    /**
+     * isValidHandoffPayload — reason 과도 길이 거부.
+     *
+     * 회귀 시나리오: 자식이 비정상적으로 긴 reason 문자열을 보내면 부모 로그 / 운영자
+     * 안내 출력이 폭증한다. 500자 이상은 비정상으로 간주하고 거부.
+     */
+    public function test_isValidHandoffPayload_rejects_oversized_reason(): void
+    {
+        $command = app(CoreUpdateCommand::class);
+        $method = new \ReflectionMethod(CoreUpdateCommand::class, 'isValidHandoffPayload');
+        $method->setAccessible(true);
+
+        $this->assertFalse($method->invoke($command, [
+            'afterVersion' => '7.0.0-beta.4',
+            'reason' => str_repeat('a', 500),
+            'resumeCommand' => null,
+        ]));
+
+        $this->assertTrue($method->invoke($command, [
+            'afterVersion' => '7.0.0-beta.4',
+            'reason' => str_repeat('a', 499),
+            'resumeCommand' => null,
+        ]));
+    }
+
+    /**
+     * isValidHandoffPayload — resumeCommand shell metacharacter / 과도 길이 거부.
+     *
+     * 회귀 시나리오: 자식이 손상되거나 악의적으로 조작된 resumeCommand 를 보내면
+     * 부모가 운영자 안내에 shell injection 문자열을 출력. 정상 명령(`php artisan ...`)
+     * 에 등장하지 않는 metacharacter 가 포함되면 거부.
+     */
+    public function test_isValidHandoffPayload_rejects_shell_metacharacters_in_resume_command(): void
+    {
+        $command = app(CoreUpdateCommand::class);
+        $method = new \ReflectionMethod(CoreUpdateCommand::class, 'isValidHandoffPayload');
+        $method->setAccessible(true);
+
+        foreach (['; rm -rf /', '`whoami`', '$(id)', 'php a && php b', 'php a | tee x', 'php a > x'] as $bad) {
+            $this->assertFalse(
+                $method->invoke($command, [
+                    'afterVersion' => '7.0.0-beta.4',
+                    'reason' => '정상 사유',
+                    'resumeCommand' => $bad,
+                ]),
+                "shell metacharacter 가 포함된 resumeCommand 거부: {$bad}",
+            );
+        }
+
+        $this->assertFalse($method->invoke($command, [
+            'afterVersion' => '7.0.0-beta.4',
+            'reason' => '정상 사유',
+            'resumeCommand' => str_repeat('a', 1000),
+        ]));
+
+        $this->assertTrue($method->invoke($command, [
+            'afterVersion' => '7.0.0-beta.4',
+            'reason' => '정상 사유',
+            'resumeCommand' => 'php artisan core:update --force --from=7.0.0-beta.4',
+        ]));
+
+        $this->assertTrue($method->invoke($command, [
+            'afterVersion' => '7.0.0-beta.4',
+            'reason' => '정상 사유',
+            'resumeCommand' => null,
+        ]));
     }
 
     /**

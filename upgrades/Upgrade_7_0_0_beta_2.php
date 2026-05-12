@@ -763,7 +763,7 @@ PHP;
     /**
      * user role 에 코어 사용자 알림 권한(core.user-notifications.*) 매핑을 보장합니다 (beta.1 → beta.2 1회성).
      *
-     * PO 환경 관측: beta.2 에서 신규 추가된 `core.user-notifications.*` (type=user) 3종이
+     * 운영 환경 관측: beta.2 에서 신규 추가된 `core.user-notifications.*` (type=user) 3종이
      * user 역할에 매핑되지 않아 사용자 권한 UI 코어 카테고리가 완전히 비어있는 문제 발생.
      *
      * spawn 이 성공하면 `syncCoreRolesAndPermissions` 의 매핑 로직이 자동 처리하지만,

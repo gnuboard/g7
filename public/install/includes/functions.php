@@ -158,6 +158,39 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
 }
 
 /**
+ * 현재 PHP 프로세스에 composer root/non-interactive 환경변수를 적용합니다.
+ *
+ * exec() 자식 프로세스는 부모의 환경변수를 상속하므로 putenv() 시점에 설정해두면
+ * 후속 composer 자식 프로세스가 root 환경에서도 정상 동작합니다.
+ *
+ * Synology DSM 등 PHP-FPM root 실행 환경 + 비대화형 컨텍스트 대응.
+ */
+if (!function_exists('applyInstallerComposerEnvVars')) {
+    function applyInstallerComposerEnvVars(): void
+    {
+        putenv('COMPOSER_ALLOW_SUPERUSER=1');
+        putenv('COMPOSER_NO_INTERACTION=1');
+    }
+}
+
+/**
+ * proc_open() 5번째 인자에 병합할 composer 환경변수 배열을 반환합니다.
+ *
+ * 호출자는 기존 $env 와 array_merge 하여 사용합니다.
+ *
+ * @return array<string, string>
+ */
+if (!function_exists('buildInstallerComposerEnv')) {
+    function buildInstallerComposerEnv(): array
+    {
+        return [
+            'COMPOSER_ALLOW_SUPERUSER' => '1',
+            'COMPOSER_NO_INTERACTION' => '1',
+        ];
+    }
+}
+
+/**
  * 인스톨러 에러 로깅
  *
  * @param string $message 에러 메시지
@@ -1201,7 +1234,7 @@ function checkExistingTables(PDO $pdo, string $database, string $tablePrefix = '
         ];
     }
 
-    // G7 핵심 시그니처 테이블 — PO 결정: 4개 모두 일치 시 "G7 설치됨"으로 판단
+    // G7 핵심 시그니처 테이블 — 정책 결정: 4개 모두 일치 시 "G7 설치됨"으로 판단
     // 테이블 prefix를 적용하여 비교 (예: prefix='g7_'이면 'g7_users', 'g7_migrations' 등)
     $coreSignatures = ['users', 'migrations', 'roles', 'permissions'];
     $g7Signatures = array_map(fn ($t) => $tablePrefix . $t, $coreSignatures);

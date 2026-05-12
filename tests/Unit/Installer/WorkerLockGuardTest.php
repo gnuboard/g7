@@ -48,7 +48,7 @@ class WorkerLockGuardTest extends TestCase
     {
         // $this->stateFile 은 setUp 시점의 BASE_PATH 로 이미 결정되어 있으므로
         // 그 경로를 그대로 정리. 이전 코드는 BASE_PATH 가 self::tempBase 와 다를 때
-        // (다른 테스트가 먼저 바인딩한 경우) 정리를 skip 하여 PO 작업 디렉토리에
+        // (다른 테스트가 먼저 바인딩한 경우) 정리를 skip 하여 사용자 작업 디렉토리에
         // 잔여물을 남겼다.
         @unlink($this->stateFile);
         parent::tearDown();

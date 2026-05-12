@@ -115,7 +115,12 @@ class NamespaceMergeRegressionTest extends TestCase
         $this->assertInstanceOf(LanguagePackTranslator::class, $translator);
 
         // 모듈 자체 src/lang 등록을 시뮬레이션 (TranslationServiceProvider 가 부팅 시 수행하는 작업)
-        $translator->addNamespace('sirsoft-ecommerce', base_path('modules/sirsoft-ecommerce/src/lang'));
+        // 활성 디렉토리 우선, 없으면 _bundled 로 폴백 (테스트 환경에서 ecommerce 미설치인 경우 대비)
+        $ecommerceLangPath = base_path('modules/sirsoft-ecommerce/src/lang');
+        if (! is_dir($ecommerceLangPath)) {
+            $ecommerceLangPath = base_path('modules/_bundled/sirsoft-ecommerce/src/lang');
+        }
+        $translator->addNamespace('sirsoft-ecommerce', $ecommerceLangPath);
 
         // 언어팩 fallback 등록 (LanguagePackServiceProvider::registerActivePack 가 수행)
         $translator->addNamespaceFallbackPath(

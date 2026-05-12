@@ -268,6 +268,7 @@ if (!function_exists('checkComposerSSE')) {
         }
         putenv('COMPOSER_HOME=' . $composerHome);
         putenv('HOME=' . $composerHome);
+        applyInstallerComposerEnvVars();
 
         $output = [];
         $returnCode = 0;
@@ -468,6 +469,9 @@ if (!function_exists('installComposerDependenciesSSE')) {
         }
         $env['COMPOSER_HOME'] = $composerHome;
         $env['HOME'] = $composerHome;
+
+        // root/super user 환경 + 비대화형 컨텍스트 대응 (Synology DSM 등 PHP-FPM root 실행)
+        $env = array_merge($env, buildInstallerComposerEnv());
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             if (!isset($env['TEMP']) || !is_dir($env['TEMP']) || !is_writable($env['TEMP'])) {

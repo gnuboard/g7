@@ -231,7 +231,7 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.0.0-beta.4'),
+    'version' => env('APP_VERSION', '7.0.0-beta.5'),
 
     /*
     |--------------------------------------------------------------------------
@@ -277,7 +277,11 @@ return [
         // 개발 도구 메타(`.git`, `.claude`, `.serena` 등) 를 보호한다.
         // 부모 프로세스의 stale `targets` 가 신버전 신규 디렉토리를 인식하지 못해
         // 자동 발견이 트리거될 때만 참조된다 (정상 경로의 targets 는 항상 처리됨).
-        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.mcp.json,.phpunit.result.cache,core_pending')))),
+        // modules,plugins,templates,lang-packs 부모 디렉토리도 보호 대상에 포함.
+        // targets 에 `{modules,plugins,templates,lang-packs}/_bundled` 가 명시되어 정상 흐름에서는
+        // 처리되므로 영향 없음. 자동 발견 폴백이 부모 디렉토리 단위로 base 를 통째로 복사해
+        // 활성 서브디렉토리(예: templates/sirsoft-basic) 를 잘못 삭제하는 회귀(#347) 차단용 방어 깊이.
+        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs')))),
         'backup_only' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_BACKUP_ONLY', 'vendor')))),
         'backup_extra' => ['storage/app/settings'],
         // 업데이트 종료 시 base_path() 소유자/그룹 기준으로 소유권을 재귀 복원할 경로 목록.
@@ -331,6 +335,25 @@ return [
             'G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE',
             'storage/logs,storage/framework,storage/app/core_pending,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending'
         )))),
+
+        // spawn 자식 프로세스 실패 시 동작 모드.
+        //
+        //  - 'abort'    (기본 / 안전 우선): 즉시 abort 후 운영자에게 수동 명령
+        //                                  (`php artisan core:execute-upgrade-steps --from=... --to=...`)
+        //                                  안내. 부모 메모리 stale 로 인한 upgrade step fatal
+        //                                  위험을 원천 차단한다.
+        //  - 'fallback' (호환 모드)      : 기존 동작 — in-process fallback 으로 진행.
+        //                                  proc_open 비활성 공유 호스팅 등에서만 사용. 부모
+        //                                  메모리 stale 시 신규 메서드 호출 fatal 위험 잔존.
+        //
+        // 4가지 분기 모두 본 모드를 따른다:
+        //   (1) proc_open 비활성
+        //   (2) proc_open 자원 생성 실패
+        //   (3) 자식 비정상 종료 (exit != 0)
+        //   (4) 자식 exit=0 이지만 [STEPS_EXECUTED] 신호 미발행/step 0건 실행 (silent skip)
+        //
+        // `CoreUpdateService::runUpgradeSteps` 의 stale 메모리 가드도 본 모드와 연동한다.
+        'spawn_failure_mode' => env('G7_UPDATE_SPAWN_FAILURE_MODE', 'abort'),
     ],
 
 ];

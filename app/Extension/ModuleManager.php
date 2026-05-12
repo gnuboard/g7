@@ -24,6 +24,7 @@ use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
+use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Providers\CoreServiceProvider;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
@@ -772,7 +773,7 @@ class ModuleManager implements ModuleManagerInterface
             // 모듈 상태 캐시 무효화
             self::invalidateModuleStatusCache();
 
-            // PO #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
+            // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
             HookManager::doAction('core.modules.after_deactivate', $module->getIdentifier());
         }
 
@@ -867,7 +868,7 @@ class ModuleManager implements ModuleManagerInterface
             if ($result) {
                 // 권한·메뉴·역할은 $deleteData=true 시에만 삭제.
                 // false 시 보존하여 재설치 시 기존 역할 할당/커스터마이징이 복원 가능하도록 한다.
-                // PO 정책: "동적 권한/메뉴는 '데이터도 함께 삭제' 옵션 체크 시에만 삭제"
+                // 운영 정책: "동적 권한/메뉴는 '데이터도 함께 삭제' 옵션 체크 시에만 삭제"
                 if ($deleteData) {
                     $this->removeModulePermissionsAndMenus($module);
 
@@ -4044,6 +4045,20 @@ class ModuleManager implements ModuleManagerInterface
             $stepContext->logger->info("Upgrading {$module->getIdentifier()} step {$stepVersion}...");
 
             if ($step instanceof UpgradeStepInterface) {
+                $sinceVersion = ExtensionUpgradeGuardHelper::resolveSinceVersion(
+                    $module->getRequiredCoreVersion(),
+                    $module->getVersion(),
+                );
+                if ($sinceVersion !== null) {
+                    ExtensionUpgradeGuardHelper::assertAbstractInheritance(
+                        (string) $stepVersion,
+                        $sinceVersion,
+                        $step,
+                        'module',
+                        $module->getIdentifier(),
+                    );
+                }
+
                 $step->run($stepContext);
             } elseif (is_callable($step)) {
                 $step($stepContext);
@@ -4457,7 +4472,7 @@ class ModuleManager implements ModuleManagerInterface
     /**
      * --force 시 업데이트 소스를 결정합니다.
      *
-     * PO 정책: --force 시에는 번들이 우선, 번들이 없는 경우에만 GitHub 사용.
+     * 운영 정책: --force 시에는 번들이 우선, 번들이 없는 경우에만 GitHub 사용.
      * (일반 업데이트의 GitHub 우선과 반대 — 개발자가 로컬 번들로 되돌리려는 의도 존중)
      *
      * 우선순위:

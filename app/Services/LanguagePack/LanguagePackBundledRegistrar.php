@@ -132,7 +132,7 @@ class LanguagePackBundledRegistrar
     }
 
     /**
-     * 호스트 확장 비활성화 시 해당 확장에 종속된 언어팩을 cascade 비활성화합니다 (PO #6).
+     * 호스트 확장 비활성화 시 해당 확장에 종속된 언어팩을 cascade 비활성화합니다 (요구사항 #6).
      *
      * 비활성화된 active 팩 ID 목록을 cache 에 stash 하여, 재활성화 시 §6 모달이
      * 표시할 후보로 사용됩니다.
@@ -191,10 +191,10 @@ class LanguagePackBundledRegistrar
     }
 
     /**
-     * 호스트 확장 재활성화 시 모달에 표시할 pending 언어팩 목록을 반환합니다 (PO #7).
+     * 호스트 확장 재활성화 시 모달에 표시할 pending 언어팩 목록을 반환합니다 (요구사항 #7).
      *
      * stash 된 ID 중 현재도 DB 에 존재하고 inactive 상태인 팩만 필터링합니다.
-     * 빈 배열을 반환하면 프론트엔드는 모달을 띄우지 않습니다 (PO #8).
+     * 빈 배열을 반환하면 프론트엔드는 모달을 띄우지 않습니다 (요구사항 #8).
      *
      * @param  string  $scope  스코프
      * @param  string  $targetIdentifier  대상 확장 식별자

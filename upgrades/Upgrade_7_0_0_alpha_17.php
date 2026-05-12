@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * - description 컬럼 삭제 → description_key/description_params 기반 다국어 전환
  * - changes 컬럼 추가 (구조화된 변경 이력)
  * - 복합 인덱스 추가
- * - 기존 로그 데이터는 description_key NULL 상태로 유지 (백필 생략 — PO 결정)
+ * - 기존 로그 데이터는 description_key NULL 상태로 유지 (백필 생략 — 정책 결정)
  */
 class Upgrade_7_0_0_alpha_17 implements UpgradeStepInterface
 {

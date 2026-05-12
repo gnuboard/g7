@@ -78,7 +78,7 @@ class RegistryPayloadLocalizationTest extends TestCase
      * ja 활성 + 활성 언어팩(g7-core-ja) 의 notification.channels 키가 보강된 시나리오.
      *
      * lang pack 빌드로 채워진 ja 라벨이 표시되는지 end-to-end 검증.
-     * lang pack 미설치 환경에서는 skip — 회귀 본체(PO 보고)는 lang pack 활성화 후 발생.
+     * lang pack 미설치 환경에서는 skip — 회귀 본체(현장 보고)는 lang pack 활성화 후 발생.
      */
     public function test_notification_channels_resolve_to_japanese_when_lang_pack_active(): void
     {
@@ -86,7 +86,7 @@ class RegistryPayloadLocalizationTest extends TestCase
         $koValue = __('notification.channels.mail.name', [], 'ko');
 
         // ja 키가 lang pack 으로 로드되지 않은 환경(=ja 결과 = key 또는 ko fallback)에서는 skip.
-        // PO 가 build-language-pack 실행 후 + 테스트 환경에서 LanguagePackServiceProvider 가
+        // 운영자가 build-language-pack 실행 후 + 테스트 환경에서 LanguagePackServiceProvider 가
         // ja namespace 를 로드한 환경에서만 통합 시나리오 검증 가능.
         if ($jaValue === 'notification.channels.mail.name' || $jaValue === $koValue) {
             $this->markTestSkipped('g7-core-ja lang pack 의 notification.channels.* 키가 테스트 환경에 로드되지 않음');

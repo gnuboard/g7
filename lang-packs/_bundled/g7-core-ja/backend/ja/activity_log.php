@@ -29,6 +29,8 @@ return [
         'account_locked' => 'アカウントロック',
         'request' => 'リクエスト',
         'expired' => '期限切れ',
+        'verify' => '本人認証',
+        'verify_failed' => '本人認証失敗',
         'export' => 'エクスポート',
         'import' => 'インポート',
         'index' => 'リスト表示',

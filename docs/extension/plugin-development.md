@@ -240,7 +240,7 @@ class Plugin implements PluginInterface
 | `getDynamicRoleIdentifiers()` | `[]` | 런타임 생성 역할 식별자 — stale cleanup 보존 대상 |
 | `getDependencies()` | `[]` | 의존하는 모듈/플러그인 목록 |
 | `getHookListeners()` | `[]` | 훅 리스너 클래스 목록 |
-| `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견) |
+| `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 플러그인은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `PluginManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
 > **동적 식별자 보존 규칙**: `Permission::updateOrCreate()` / `Role::firstOrCreate()` 등으로 런타임에 생성한 엔티티는 업데이트 시 `cleanupStalePluginEntries` 에 의해 "정적 정의에 없는 고아 레코드" 로 판정되어 삭제될 위험이 있습니다. 이를 방지하려면 동적 식별자 목록을 위 3개 훅에서 반환하세요 — 정적 정의 + 동적 식별자가 병합된 expected 목록을 기준으로 판정되어 보존됩니다. 상세는 [extension-update-system.md](extension-update-system.md) 참조.
 
@@ -296,8 +296,14 @@ plugins/_bundled/sirsoft-payment/
 ├── LICENSE                      # 라이선스 전문 (MIT)
 ├── composer.json                 # PSR-4 오토로딩 + 외부 패키지 의존성
 ├── vendor/                      # Composer 의존성 (자동 생성, gitignore 대상)
-├── upgrades/                    # 버전 업그레이드 스텝 (UpgradeStepInterface 구현)
-│   └── Upgrade_1_1_0.php        # 1.1.0 버전 업그레이드 로직
+├── upgrades/                    # 버전 업그레이드 스텝 (AbstractUpgradeStep 상속 — g7_version >= 7.0.0-beta.5 플러그인 의무)
+│   ├── Upgrade_1_1_0.php        # 1.1.0 버전 업그레이드 스텝 (extends AbstractUpgradeStep)
+│   └── data/                    # 버전별 데이터 스냅샷 — 카탈로그 delta / Applier / Migration 동결
+│       └── 1.1.0/
+│           ├── manifest.json    # kind → delta JSON 매핑
+│           ├── *.delta.json     # added/removed/renamed 시드
+│           ├── appliers/        # SnapshotApplier 구현 (버전 namespace)
+│           └── migrations/      # DataMigration 구현 (변환/핫픽스, 버전 namespace)
 ├── config/                      # 플러그인 설정
 │   ├── payment.php
 │   └── settings/

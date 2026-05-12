@@ -283,7 +283,7 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
         $pack->license = $manifest['license'] ?? null;
         $pack->description = is_array($manifest['description'] ?? null) ? $manifest['description'] : null;
         $pack->status = \App\Enums\LanguagePackStatus::Uninstalled->value;
-        $pack->is_protected = false; // lang-packs/_bundled/ 패키지는 사용자가 install/uninstall 자유 (PO #3)
+        $pack->is_protected = false; // lang-packs/_bundled/ 패키지는 사용자가 install/uninstall 자유 (요구사항 #3)
         $pack->manifest = $manifest;
         $pack->source_type = \App\Enums\LanguagePackSourceType::Bundled->value;
         $pack->source_url = $bundledIdentifier;
@@ -298,7 +298,7 @@ class LanguagePackRepository implements LanguagePackRepositoryInterface
      * 코어/번들 확장의 lang/{ko,en}/ 디렉토리로부터 가상 보호 LanguagePack 인스턴스를 합성합니다.
      *
      * `built_in` 가상 행은 DB 행이 없는 상태로 항상 active+protected 표시되며, 사용자가
-     * install/uninstall/activate/deactivate 할 수 없습니다 (PO #1, #2).
+     * install/uninstall/activate/deactivate 할 수 없습니다 (요구사항 #1, #2).
      *
      * @param  string  $scope  스코프 (core/module/plugin/template)
      * @param  string|null  $targetIdentifier  대상 확장 식별자 (core 일 때 null)

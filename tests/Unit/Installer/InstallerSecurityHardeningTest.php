@@ -66,7 +66,7 @@ class InstallerSecurityHardeningTest extends TestCase
     }
 
     /**
-     * 테스트가 도중 종료되어도 PO 작업 디렉토리에 state.json 잔여물이 남지 않도록 항상 정리.
+     * 테스트가 도중 종료되어도 사용자 작업 디렉토리에 state.json 잔여물이 남지 않도록 항상 정리.
      * BASE_PATH 가 다른 테스트 인프라에 의해 프로젝트 루트로 바인딩되는 경우를 대비해
      * 프로젝트 루트의 storage/installer-state.json 도 함께 정리.
      */

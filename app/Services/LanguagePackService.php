@@ -165,7 +165,7 @@ class LanguagePackService
 
     /**
      * 코어/번들 확장의 `lang/{ko,en}/` 디렉토리를 자동 스캔하여 가상 보호 LanguagePack
-     * 인스턴스 컬렉션을 반환합니다 (PO #1, #2).
+     * 인스턴스 컬렉션을 반환합니다 (요구사항 #1, #2).
      *
      * 스캔 대상:
      *  - 코어: lang/{ko,en}/
@@ -351,7 +351,7 @@ class LanguagePackService
             return false;
         }
         if (array_key_exists('target_identifier', $filters) && $filters['target_identifier'] !== null) {
-            // 개별 확장 언어팩 관리 화면 — 그 확장에 해당되는 행만 노출 (PO 정정).
+            // 개별 확장 언어팩 관리 화면 — 그 확장에 해당되는 행만 노출 (정정 사항).
             // 코어 보호 팩은 환경설정 > 언어팩 관리(필터 없음) 화면에서만 노출됨.
             if ($pack->target_identifier !== $filters['target_identifier']) {
                 return false;
@@ -848,7 +848,7 @@ class LanguagePackService
             return $pack;
         }
 
-        // PO #5: activate 시점에도 의존성/버전 호환성 검사 (이전: install 시점만)
+        // 요구사항 #5: activate 시점에도 의존성/버전 호환성 검사 (이전: install 시점만)
         $this->assertDependencies($pack->manifest ?? []);
         $this->assertTargetExtensionExists($pack->manifest ?? []);
 
@@ -884,7 +884,7 @@ class LanguagePackService
     }
 
     /**
-     * 여러 언어팩을 일괄 활성화합니다 (PO #7 reactivate 모달 → "활성화" 버튼).
+     * 여러 언어팩을 일괄 활성화합니다 (요구사항 #7 reactivate 모달 → "활성화" 버튼).
      *
      * 각 ID 에 대해 activate() 를 호출하며, 실패한 항목은 reason 과 함께 응답에 포함합니다.
      * 의존성 검사는 activate() 내부에서 자동 수행됩니다 (§4).
@@ -931,7 +931,7 @@ class LanguagePackService
             return $pack;
         }
 
-        // PO #6: 호스트 확장 cascade 컨텍스트에서는 protected 가드 우회
+        // 요구사항 #6: 호스트 확장 cascade 컨텍스트에서는 protected 가드 우회
         if ($pack->isProtected() && ! $cascadeFromHost) {
             throw new LanguagePackOperationException('language_packs.errors.protected_pack');
         }
@@ -1322,7 +1322,7 @@ class LanguagePackService
      */
     public function checkUpdates(?string $identifier = null): array
     {
-        // PO #4: 모듈 패턴 — 모든 source_type 점검 (GitHub 1순위, 실패 시 bundled 폴백)
+        // 요구사항 #4: 모듈 패턴 — 모든 source_type 점검 (GitHub 1순위, 실패 시 bundled 폴백)
         $packs = $identifier
             ? collect([$this->repository->findByIdentifier($identifier)])->filter()
             : $this->repository->paginate([], 1000)->getCollection();
@@ -1435,7 +1435,7 @@ class LanguagePackService
     }
 
     /**
-     * 번들 manifest 로부터 최신 버전을 조회합니다 (PO #4 폴백 경로).
+     * 번들 manifest 로부터 최신 버전을 조회합니다 (요구사항 #4 폴백 경로).
      *
      * @param  LanguagePack  $pack  대상 언어팩
      * @return string|null 최신 버전 문자열 또는 null
@@ -1538,7 +1538,7 @@ class LanguagePackService
      */
     public function performUpdate(LanguagePack $pack, bool $force = false): LanguagePack
     {
-        // PO #4: bundled 도 update 가능. force=true 시 bundled 1순위, 그 외 GitHub 1순위 + bundled 폴백
+        // 요구사항 #4: bundled 도 update 가능. force=true 시 bundled 1순위, 그 외 GitHub 1순위 + bundled 폴백
         $githubUrl = $this->resolveGithubUrl($pack);
         if (! $githubUrl && ! $this->hasBundledManifest($pack->identifier)) {
             throw new LanguagePackOperationException('language_packs.errors.update_no_source');

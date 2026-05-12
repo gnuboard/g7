@@ -9,7 +9,7 @@ use Tests\TestCase;
 /**
  * 실제 상품 상세 페이지 렌더링 시나리오를 검증합니다.
  *
- * PO 피드백 기반: 실제 SEO 페이지에서 발생한 문제들을 재현하여 검증합니다.
+ * 사용자 피드백 기반: 실제 SEO 페이지에서 발생한 문제들을 재현하여 검증합니다.
  * - Icon이 <div> 대신 <i>로 렌더링되는지
  * - Img가 <img> 셀프 클로징 태그로 렌더링되는지
  * - 상품 데이터 바인딩 (이름, 가격, 이미지) 적용 여부
@@ -76,7 +76,7 @@ class RealWorldRenderingTest extends TestCase
     // ========================================================
 
     /**
-     * Icon 컴포넌트가 <i> 태그로 렌더링됩니다 (PO 버그: <div>로 렌더링됨).
+     * Icon 컴포넌트가 <i> 태그로 렌더링됩니다 (재현 시 발생한 버그: <div>로 렌더링됨).
      */
     public function test_icon_renders_as_i_tag(): void
     {
@@ -407,7 +407,7 @@ class RealWorldRenderingTest extends TestCase
     // ========================================================
 
     /**
-     * $t: 번역 키가 해석됩니다 (PO 버그: $t:shop.product.reviews_count 그대로 노출).
+     * $t: 번역 키가 해석됩니다 (재현 시 발생한 버그: $t:shop.product.reviews_count 그대로 노출).
      */
     public function test_translation_key_resolved(): void
     {

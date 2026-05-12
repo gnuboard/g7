@@ -192,7 +192,7 @@ class ModuleCleanupStaleEntriesTest extends TestCase
 
     /**
      * uninstall(deleteData=false) 시 권한·메뉴·역할이 보존되어 재설치 경로를 비파괴적으로 만드는지 검증.
-     * PO 정책: "동적 권한/메뉴는 데이터 삭제 옵션 체크 시에만 삭제".
+     * 운영 정책: "동적 권한/메뉴는 데이터 삭제 옵션 체크 시에만 삭제".
      */
     public function test_uninstall_without_delete_data_preserves_permissions(): void
     {

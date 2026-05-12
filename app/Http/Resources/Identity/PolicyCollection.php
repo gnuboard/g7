@@ -24,9 +24,9 @@ class PolicyCollection extends BaseApiCollection
     protected function abilityMap(): array
     {
         return [
-            'can_create' => 'core.admin.identity.policies.manage',
-            'can_update' => 'core.admin.identity.policies.manage',
-            'can_delete' => 'core.admin.identity.policies.manage',
+            'can_create' => 'core.admin.identity.policies.update',
+            'can_update' => 'core.admin.identity.policies.update',
+            'can_delete' => 'core.admin.identity.policies.update',
         ];
     }
 

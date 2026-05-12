@@ -12,7 +12,7 @@
         "en": "G7 core Japanese language pack (bundled)",
         "ja": "G7 コア 日本語 言語パック(バンドル)"
     },
-    "version": "1.0.0-beta.1",
+    "version": "1.0.0-beta.2",
     "license": "MIT",
     "scope": "core",
     "target_identifier": null,
@@ -20,7 +20,7 @@
     "locale_name": "Japanese",
     "locale_native_name": "日本語",
     "text_direction": "ltr",
-    "g7_version": ">=7.0.0-beta.4",
+    "g7_version": ">=7.0.0-beta.5",
     "requires": {
         "target_version": null,
         "depends_on_core_locale": false

@@ -1,0 +1,61 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 IDV provider 해석 우선순위 매트릭스 SSoT. 회귀 가드는 test_files 의 Unit/Feature 테스트로 커버.
+
+feature: IDV provider 해석 우선순위 — `provider_id` 명시 전달 (refs #275)
+
+description: |
+  본인인증 challenge 발행 시 어떤 IdentityVerification provider 가 선택되는지를 결정하는
+  우선순위 매트릭스. 다음 2가지 진입점에서 호출자가 명시한 `provider_id` 가 우선되어야 한다:
+
+    1. Mode A (API 직접 호출):
+       POST /api/identity/challenges { provider_id: 'plugin:external' }
+       → Controller → Service::start(providerId) → Manager::resolveForPurpose($purpose, $providerId)
+
+    2. Mode B (정책 기반 자동 발행):
+       core.auth.after_register 훅 → InitiateIdentityChallengeAfterRegister::handle
+       → 정책 resolve 후 $policy->provider_id 를 Service::start 에 전달
+       → Manager::resolveForPurpose($purpose, $policy->provider_id)
+
+  결함 배경 (이슈 #275):
+    - 코어 Controller / Service / Manager 가 `provider_id` 를 전달할 통로 자체가 없었음
+    - signup_after_create 정책에 inicis 매핑해도 항상 mail fallback 발생
+    - 결과: 프론트 모달은 KG이니시스 UI 인데 백엔드는 mail challenge 를 만들어 검증 불일치
+
+  fallback 보장:
+    - 명시 provider 가 미등록 / purpose 미지원 시 silent fallback (예외 throw X)
+    - 운영자가 정책에 plugin provider 를 지정했지만 plugin 이 비활성화된 상태에서도 가입 흐름이 막히면 안 됨
+
+axes:
+  call_mode: [mode_a_explicit, mode_b_policy]
+  provider_id_state: [null_unspecified, valid_registered_supported, registered_not_supporting_purpose, unregistered]
+  purpose: [signup, password_reset, sensitive_action]
+
+exclusions:
+  - { call_mode: mode_b_policy, purpose: password_reset, reason: "after_register 훅은 signup 전용. password_reset 은 별도 진입점." }
+  - { call_mode: mode_b_policy, purpose: sensitive_action, reason: "동일 사유 — Mode B 는 signup 정책에만 매칭" }
+
+effects:
+  - explicit_provider_id_takes_precedence_over_settings_purpose_providers
+  - explicit_provider_id_takes_precedence_over_default_provider
+  - unregistered_provider_id_silently_falls_back_to_legacy_priority
+  - registered_provider_id_not_supporting_purpose_silently_falls_back
+  - null_provider_id_preserves_legacy_priority_chain
+  - policy_provider_id_propagates_through_listener_to_manager
+  - log_provider_id_matches_explicit_provider_when_resolution_succeeds
+  - log_provider_id_falls_back_to_legacy_when_explicit_unavailable
+  - policy_render_hint_fallback_passes_provider_id_to_manager
+  - policy_render_hint_first_branch_short_circuits_when_provider_registered
+
+test_files:
+  - tests/Unit/Extension/IdentityVerification/IdentityVerificationManagerTest.php
+  - tests/Unit/Services/IdentityPolicyServiceResolveRenderHintTest.php
+  - tests/Feature/Identity/IdentityProviderResolutionTest.php
+
+rules_layer_coverage:
+  - rule: service-direct-data-access
+    coverage: |
+      IdentityVerificationService 는 Manager 위임 + Repository 통한 사용자 갱신만 (직접 모델 mutation 없음).
+      IdentityPolicyService::resetFieldOverride 는 Repository::save 경유 (직접 $policy->save() 호출 금지).
+  - rule: listener-must-implement-hooklistenerinterface
+    coverage: InitiateIdentityChallengeAfterRegister 는 HookListenerInterface 구현 + getSubscribedHooks() 보유
+  - rule: listener-direct-db-facade
+    coverage: Listener 는 Service 와 PolicyService 만 호출 (DB facade / Model::query 미사용)

@@ -76,6 +76,7 @@ class InitiateIdentityChallengeAfterRegister implements HookListenerInterface
                     'origin_identifier' => 'core.auth.after_register',
                     'origin_policy_key' => $policy->key,
                 ],
+                providerId: $policy->provider_id,
             );
         } catch (\Throwable $e) {
             Log::warning('[IDV] signup_after_create challenge 발행 실패', [

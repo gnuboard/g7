@@ -338,7 +338,7 @@ class ModuleArtisanCommandsTest extends TestCase
             'identifier' => $identifier,
         ]);
 
-        // 권한은 보존됨 — PO 정책: 권한/메뉴 삭제는 --delete-data 옵션 시에만.
+        // 권한은 보존됨 — 운영 정책: 권한/메뉴 삭제는 --delete-data 옵션 시에만.
         // (재설치 시 기존 역할 할당/커스터마이징이 복원 가능하도록 보존)
         $this->assertGreaterThan(0, Permission::byExtension(ExtensionOwnerType::Module, $identifier)->count());
 

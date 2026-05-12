@@ -297,7 +297,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     // IDV 관리자 라우트 (identity 정책/로그/프로바이더)
     Route::prefix('identity')->group(function () {
         Route::get('providers', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityProviderController::class, 'index'])
-            ->middleware('permission:admin,core.admin.identity.manage')
+            ->middleware('permission:admin,core.admin.identity.providers.read')
             ->name('api.admin.identity.providers.index');
 
         Route::get('logs', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController::class, 'index'])
@@ -308,16 +308,21 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->middleware('permission:admin,core.admin.identity.logs.purge')
             ->name('api.admin.identity.logs.purge');
 
-        Route::prefix('policies')->middleware('permission:admin,core.admin.identity.policies.manage')->group(function () {
+        Route::prefix('policies')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'index'])
+                ->middleware('permission:admin,core.admin.identity.policies.read')
                 ->name('api.admin.identity.policies.index');
             Route::post('/', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'store'])
+                ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.store');
             Route::put('{id}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'update'])
+                ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.update');
             Route::delete('{id}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'destroy'])
+                ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.destroy');
             Route::post('{id}/reset-field', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'resetField'])
+                ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.reset-field');
         });
 
@@ -434,7 +439,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('install-from-bundled', [AdminLanguagePackController::class, 'installFromBundled'])
             ->middleware('permission:admin,core.language_packs.install')
             ->name('api.admin.language-packs.install-from-bundled');
-        // PO #7: 호스트 확장 재활성화 시 cascade 비활성화됐던 언어팩 일괄 활성화
+        // 요구사항 #7: 호스트 확장 재활성화 시 cascade 비활성화됐던 언어팩 일괄 활성화
         Route::post('bulk-activate', [AdminLanguagePackController::class, 'bulkActivate'])
             ->middleware('permission:admin,core.language_packs.manage')
             ->name('api.admin.language-packs.bulk-activate');

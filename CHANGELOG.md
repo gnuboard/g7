@@ -4,6 +4,95 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [7.0.0-beta.5] - 2026-05-12
+
+### Upgrade Notice
+
+beta.4 → beta.5 업그레이드 시 beta.4 의 결함으로 인해 활성 확장 디렉토리 일부가 손실됩니다.
+
+- 손실 항목 1: 운영자가 활성 디렉토리(`modules/{id}`, `plugins/{id}`, `templates/{id}`, `lang-packs/{id}`)에서 직접 수정한 코드
+- 손실 항목 2: 외부 install 한 확장 (GitHub 등 `_bundled` 에 포함되지 않은 모듈/플러그인/템플릿/언어팩)
+
+beta.5 의 자동 복구 스텝이 `_bundled` 기반으로 번들 확장은 복원하지만, 위 두 항목은 `_bundled` 에 없어 자동 복구가 불가능합니다.
+
+업그레이드 전에 다음 디렉토리 전체를 별도 위치(외장 디스크, 별도 git 브랜치, tar.gz 파일)로 백업해두실 것을 권고합니다.
+
+- `modules/`
+- `plugins/`
+- `templates/`
+- `lang-packs/`
+
+업그레이드 후 자동 복구된 활성 디렉토리에 본인의 수정 사항/외부 확장이 누락되어 있다면, 사전 백업에서 복원하거나 외부 확장은 원본 소스(GitHub 등)에서 재설치하세요. 실패한 외부 확장 식별자는 업그레이드 로그(`storage/logs/core_update_success_*.log`)에 명시됩니다.
+
+#### 3가지 사용자군별 업그레이드 절차
+
+- **사용자군 B — 정상 beta.4 사용자 (대다수)**: `php artisan core:update` 표준 절차. beta.5 의 자동 복구 스텝이 활성 확장 디렉토리 + lang-packs 정합성을 보장합니다.
+
+- **사용자군 A — beta.3 → beta.4 업그레이드 도중 `Call to undefined method` 류 fatal 후 stuck 한 사용자**: `.env` `APP_VERSION` 을 변경하지 마시고 그대로 `php artisan core:update --force` 를 재실행하면 됩니다. 디스크는 이미 beta.4 이므로 새 자식 프로세스가 beta.5 메모리로 부팅되어 남은 업그레이드 스텝이 멱등 적용됩니다. 단, 활성 디렉토리에서 직접 수정한 코드 또는 `_bundled` 에 없는 외부 확장은 자동 복구 대상이 아니므로 업그레이드 전 위 디렉토리 백업이 동일하게 권장됩니다.
+
+- **사용자군 C — beta.1 또는 beta.2 사용자**: `php artisan core:update` 1회 호출로 beta.5 까지 직접 업그레이드는 권장하지 않습니다. 중간 버전의 업그레이드 스텝이 이전 버전 메모리에 없는 신규 코드에 의존하여 fatal 위험이 있습니다. 다음 단계적 업그레이드를 권장합니다:
+
+  ```text
+  beta.1 사용자: beta.1 → beta.2 → beta.3 → beta.4 → beta.5   (4 회)
+  beta.2 사용자: beta.2 → beta.3 → beta.4 → beta.5             (3 회)
+  ```
+
+  각 단계마다 `.env` `APP_VERSION` 이 자동 갱신되므로 다음 호출은 그대로 `php artisan core:update` 실행하면 됩니다. 가까운 릴리즈 zip 으로 `--source=` 또는 `--zip=` 옵션을 사용해 단계별 진행 가능합니다.
+
+#### 자동 롤백 후 `public/storage` 회복
+
+업그레이드 도중 자동 롤백 후 화면에서 업로드 파일이 보이지 않거나 미디어 경로가 깨졌다면 `public/storage` symlink 가 일반 디렉토리로 변질된 상태일 수 있습니다.
+
+**우선 시도 — beta.5 의 자동 복구**: beta.4 → beta.5 업그레이드 자체는 부모 beta.4 메모리 결함으로 symlink 가 깨질 수 있으나, beta.5 의 업그레이드 스텝이 다음 패턴을 자동 감지하여 복구합니다:
+
+- 감지 조건: `public/storage` 가 일반 디렉토리 + `storage/app/public` 이 존재 (Laravel 표준 구성)
+- 복구 동작: 손상된 디렉토리를 `public/storage.broken.YYYYMMDDHHMMSS` 로 보존 후 symlink 재생성
+- 운영자 조치: 자동 복구 후 `.broken` 디렉토리의 콘텐츠를 검증한 뒤 수동 삭제 (false positive 방어를 위해 자동 삭제하지 않음)
+
+**자동 복구가 작동하지 않은 경우 매뉴얼 회복**:
+
+```bash
+rm -rf public/storage
+php artisan storage:link
+```
+
+beta.5 부터 백업/복원 과정에서도 symlink 가 보존되므로 beta.5 → beta.6 이후로는 본 결함이 자동 차단됩니다. Windows 환경에서는 PHP `symlink()` 가 `SeCreateSymbolicLink` 권한을 요구하므로 자동 복구가 silent skip 될 수 있어 매뉴얼 회복 절차가 여전히 필요합니다.
+
+#### spawn 자식 프로세스 실패 시 동작 모드
+
+beta.5 부터 코어 업데이트의 자식 프로세스 spawn 이 실패하면 즉시 abort 가 기본 동작입니다 (`G7_UPDATE_SPAWN_FAILURE_MODE=abort`). 다음 4가지 상황에서 부모 프로세스 메모리의 stale 클래스로 인한 fatal 위험을 차단합니다:
+
+1. `proc_open` 비활성 (일부 공유 호스팅)
+2. `proc_open` 자원 생성 실패
+3. 자식 비정상 종료 (uncaught exception)
+4. 자식 exit=0 이지만 업그레이드 스텝 0건 실행 (silent skip)
+
+abort 발생 시 운영자에게 수동 재개 명령 (`php artisan core:execute-upgrade-steps --from=... --to=...`) 을 안내합니다. `proc_open` 비활성 환경 등 호환성이 필요한 경우 `.env` 에 `G7_UPDATE_SPAWN_FAILURE_MODE=fallback` 을 설정하여 in-process fallback 으로 진행할 수 있으나, 부모 메모리 stale 로 인한 fatal 위험이 잔존합니다.
+
+### Added
+
+- 본인인증 관리자 권한을 조회/수정으로 분리 — "프로바이더 설정 조회" / "정책 조회" 권한 신설로 단순 조회 권한만 부여받은 운영자도 환경설정 본인인증 화면에 접근 가능 (기존에는 수정 권한이 없으면 조회 화면도 403)
+- 환경설정의 본인인증 정책/메시지 탭에 권한 기반 버튼 비활성화 적용 — 수정 권한이 없는 운영자에게는 "정책 추가" / "수정" / "삭제" / "활성 토글" 버튼이 자동으로 비활성화 (이커머스/게시판 본인인증 탭 동일)
+- 코어 업데이트의 spawn 자식 프로세스 실패 시 abort/fallback 동작 모드 선택 (`G7_UPDATE_SPAWN_FAILURE_MODE`, 기본 `abort`) — 부모 메모리 stale 로 인한 upgrade step fatal 위험을 fail-fast 로 차단
+- 업그레이드 스텝에 "버전별 데이터 스냅샷" 규약 도입 — 멀티 버전 점프 시에도 사용자가 단계별로 업그레이드한 것과 동등한 결과를 보장하도록 각 스텝의 시드 카탈로그·적용 로직·단발성 핫픽스를 해당 버전 디렉토리로 격리. 외부 확장 작성자가 beta.5+ 신규 업그레이드 스텝 작성 시 적용 (상세: 업그레이드 스텝 가이드)
+- 언어팩 일괄 활성화 검증 규칙에 동적 확장 훅 추가 (`core.language_packs.bulk_activate_validation_rules`) — 모듈/플러그인이 호스트 확장 재활성화 cascade 흐름에서 추가 검증 필드를 동적으로 등록 가능
+
+### Changed
+
+#### Breaking
+
+- 본인인증 관리자 권한 키 정리 — 기존 `core.admin.identity.manage` / `core.admin.identity.policies.manage` 가 각각 `core.admin.identity.providers.update` / `core.admin.identity.policies.update` 로 변경. beta.4 환경에서 기존 권한을 부여받은 운영자 역할은 업그레이드 시 자동으로 새 권한 키로 마이그레이션 (부여 시점/부여자/스코프 메타데이터 모두 보존). 외부 확장 또는 운영 도구가 옛 키 문자열을 하드코딩한 경우 새 키로 갱신 필요
+
+### Fixed
+
+- 코어 업데이트 시 활성 모듈/플러그인/템플릿/언어팩 디렉토리가 삭제되던 문제 수정 — beta.4 → beta.5 업그레이드 시 번들 원본에서 활성 디렉토리를 자동 복원하고, 외부 설치 확장은 업데이트 로그로 재설치 안내
+- 코어 업데이트의 단계 전환 신호를 비정상 입력으로부터 차단하도록 검증 강화
+- 본인인증 정책 응답의 생성/수정 일시가 사용자 타임존이 아닌 UTC ISO 문자열로 노출되던 문제 수정
+- 백업/롤백 시 `public/storage` 등 symlink 가 target 디렉토리 내용으로 추적 복사되어 symlink 가 일반 디렉토리로 변질되던 문제 수정 (Linux 환경 한정 — Windows 는 권한 한계로 일반 디렉토리 폴백 + 수동 회복 안내 유지)
+- root/super user 환경에서 Composer 검증·설치가 비대화형 컨텍스트에서 실패하던 문제 수정 (코어 업데이트, 확장 의존성 설치, 인스톨러 포함)
+- 본인인증 활동 로그의 "액션" 열에 `identity.verify` / `identity.verify_failed` 가 번역되지 않은 키 그대로 노출되던 문제 수정 — 코어 액션 라벨 매핑이 누락되어 있던 부분을 추가
+- 본인인증 단계에서 운영자가 지정한 본인인증 수단이 무시되고 항상 기본 수단(메일)으로 발행되던 문제 수정 — 가입 정책에 설정한 본인인증 수단과 API 요청에서 명시한 수단이 실제 인증 발행에 반영되도록 변경
+
 ## [7.0.0-beta.4] - 2026-05-11
 
 ### Changed

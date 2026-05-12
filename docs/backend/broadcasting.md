@@ -179,7 +179,7 @@ HookManager::broadcast("core.user.notifications.{$user->uuid}", 'notification.re
 
 브로드캐스팅은 부가 기능이므로 실패해도 메인 작업(사용자 업데이트, 주문 처리, 알림 발송 등)을 중단시키지 않습니다. 개별 리스너에서 try-catch를 추가할 필요가 없습니다.
 
-> **중요**: 웹소켓 OFF 시 `broadcasting.default`가 `'null'`로 강제되는 동작은 `.env`의 `BROADCAST_CONNECTION` 값을 무시하고 적용됩니다. 따라서 PO가 환경설정에서 OFF한 경우, `.env`에 `REVERB_HOST=localhost` 등이 남아 있어도 broadcast 시도가 발생하지 않습니다. 알림 시스템(mail/database 채널)은 이 설정과 독립적으로 정상 동작합니다.
+> **중요**: 웹소켓 OFF 시 `broadcasting.default`가 `'null'`로 강제되는 동작은 `.env`의 `BROADCAST_CONNECTION` 값을 무시하고 적용됩니다. 따라서 운영자가 환경설정에서 OFF한 경우, `.env`에 `REVERB_HOST=localhost` 등이 남아 있어도 broadcast 시도가 발생하지 않습니다. 알림 시스템(mail/database 채널)은 이 설정과 독립적으로 정상 동작합니다.
 
 ### 채널 타입
 

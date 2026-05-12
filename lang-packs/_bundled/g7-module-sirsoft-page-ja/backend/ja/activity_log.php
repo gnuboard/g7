@@ -5,7 +5,9 @@ return [
     'action' => [
         'create' => '作成',
         'delete' => '削除',
+        'publish' => '公開',
         'restore' => '復元',
+        'unpublish' => '公開キャンセル',
         'update' => '編集',
         'upload' => 'アップロード',
     ],

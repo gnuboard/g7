@@ -672,7 +672,7 @@ class TemplateManager implements TemplateManagerInterface
         // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
         $this->incrementExtensionCacheVersion();
 
-        // PO #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
+        // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
         HookManager::doAction('core.templates.after_deactivate', $templateName);
 
         Log::info(__('templates.messages.template_deactivated'), [
@@ -3116,7 +3116,7 @@ class TemplateManager implements TemplateManagerInterface
     /**
      * --force 시 업데이트 소스를 결정합니다.
      *
-     * PO 정책: --force 시에는 번들이 우선, 번들이 없는 경우에만 GitHub 사용.
+     * 운영 정책: --force 시에는 번들이 우선, 번들이 없는 경우에만 GitHub 사용.
      * (일반 업데이트의 GitHub 우선과 반대 — 개발자가 로컬 번들로 되돌리려는 의도 존중)
      *
      * 우선순위:

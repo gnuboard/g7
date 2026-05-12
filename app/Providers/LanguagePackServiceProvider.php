@@ -338,7 +338,7 @@ class LanguagePackServiceProvider extends ServiceProvider
             $registrar->cleanupForExtension('template', (string) $identifier);
         });
 
-        // PO #6: 호스트 확장 비활성화 시 종속 언어팩 cascade 비활성화
+        // 요구사항 #6: 호스트 확장 비활성화 시 종속 언어팩 cascade 비활성화
         HookManager::addAction('core.modules.after_deactivate', function ($identifier) use ($registrar) {
             $registrar->deactivateForExtension('module', (string) $identifier);
         });

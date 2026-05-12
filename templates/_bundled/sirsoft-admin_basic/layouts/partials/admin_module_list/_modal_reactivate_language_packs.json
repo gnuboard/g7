@@ -1,7 +1,7 @@
 {
   "meta": {
     "is_partial": true,
-    "description": "모듈 재활성화 후 cascade 비활성화됐던 언어팩 일괄 활성화 확인 모달 (PO #7)"
+    "description": "모듈 재활성화 후 cascade 비활성화됐던 언어팩 일괄 활성화 확인 모달 (요구사항 #7)"
   },
   "id": "module_reactivate_language_packs_modal",
   "type": "composite",
@@ -118,7 +118,7 @@
           "type": "basic",
           "name": "Button",
           "props": {
-            "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
             "disabled": "{{_global.isBulkActivatingLanguagePacks}}"
           },
           "actions": [

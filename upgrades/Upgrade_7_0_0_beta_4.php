@@ -531,9 +531,9 @@ class Upgrade_7_0_0_beta_4 implements UpgradeStepInterface
      *   대상) 인 경우 부모는 storage/app 을 건드리지 않음 → chmod 정상화도 멱등 무해.
      *   미래 transition 에서는 트랙 2-A 의 마커 + chownRecursive 가드가 영구 차단.
      *
-     * 한계 (PO 정합):
+     * 한계 (운영 정합):
      *   - 시드 시점 perms (예: 0700 private visibility) 가 0755 로 변경 — 100% 원본 보존
-     *     아님. PO 결정으로 자동화 우선 (수동 sudo 명령 부재).
+     *     아님. 정책 결정으로 자동화 우선 (수동 sudo 명령 부재).
      *   - 즉시 PHP-FPM access 보장이 본 fix 의 책임.
      */
     private function normalizeStorageAppPermissionsForLegacyParent(UpgradeContext $context): void

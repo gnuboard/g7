@@ -1,7 +1,7 @@
 {
     "meta": {
         "is_partial": true,
-        "description": "번들 언어팩 설치 확인 모달 — 모듈/플러그인의 install 모달과 동일한 패턴. 행의 '설치' 버튼이 즉시 apiCall 하지 않고 본 모달을 열어 PO 가 확인 후 진행."
+        "description": "번들 언어팩 설치 확인 모달 — 모듈/플러그인의 install 모달과 동일한 패턴. 행의 '설치' 버튼이 즉시 apiCall 하지 않고 본 모달을 열어 운영자가 확인 후 진행."
     },
     "id": "language_pack_install_bundled_modal",
     "type": "composite",
@@ -133,7 +133,7 @@
                     "name": "Button",
                     "props": {
                         "type": "button",
-                        "className": "flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isLanguagePackInstalling || _global.selectedBundledLanguagePack?.install_blocked_reason || _global.selectedBundledLanguagePack?.abilities?.can_install !== true}}"
                     },
                     "actions": [

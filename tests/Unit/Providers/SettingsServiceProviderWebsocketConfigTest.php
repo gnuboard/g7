@@ -41,7 +41,7 @@ class SettingsServiceProviderWebsocketConfigTest extends TestCase
         Config::set('broadcasting.default', 'reverb');
         Config::set('broadcasting.connections.reverb.options.host', 'localhost');
 
-        // PO 설정: 웹소켓 OFF
+        // 사용자 설정: 웹소켓 OFF
         $this->callApplyWebsocketConfig([
             'websocket_enabled' => false,
             'websocket_host' => 'g7.dev',

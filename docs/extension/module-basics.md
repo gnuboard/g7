@@ -141,7 +141,7 @@
 | `getHookListeners()` | `[]` | 훅 리스너 |
 | `getDependencies()` | `[]` | 의존성 |
 | `getMetadata()` | `[]` | 메타데이터 |
-| `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견) |
+| `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 모듈은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `ModuleManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
 #### 동적 권한/역할/메뉴 보존 규칙
 
@@ -489,8 +489,14 @@ modules/_bundled/sirsoft-ecommerce/
 ├── dist/                        # 프론트엔드 빌드 출력 (에셋 모듈만, gitignore 대상)
 │   ├── js/module.iife.js
 │   └── css/module.css
-├── upgrades/                    # 버전 업그레이드 스텝 (UpgradeStepInterface 구현)
-│   └── Upgrade_1_1_0.php        # 1.1.0 버전 업그레이드 로직
+├── upgrades/                    # 버전 업그레이드 스텝 (AbstractUpgradeStep 상속 — g7_version >= 7.0.0-beta.5 모듈 의무)
+│   ├── Upgrade_1_1_0.php        # 1.1.0 버전 업그레이드 스텝 (extends AbstractUpgradeStep)
+│   └── data/                    # 버전별 데이터 스냅샷 — 카탈로그 delta / Applier / Migration 동결
+│       └── 1.1.0/
+│           ├── manifest.json    # kind → delta JSON 매핑
+│           ├── *.delta.json     # added/removed/renamed 시드
+│           ├── appliers/        # SnapshotApplier 구현 (버전 namespace)
+│           └── migrations/      # DataMigration 구현 (변환/핫픽스, 버전 namespace)
 ├── config/
 │   └── ecommerce.php            # 모듈 설정
 ├── database/

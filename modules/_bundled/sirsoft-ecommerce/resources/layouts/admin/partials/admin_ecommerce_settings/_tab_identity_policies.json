@@ -51,7 +51,8 @@
                             "name": "Button",
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors whitespace-nowrap"
+                                "className": "px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 dark:disabled:hover:bg-indigo-500",
+                                "disabled": "{{ecommerceIdentityPolicies?.data?.abilities?.can_create !== true}}"
                             },
                             "actions": [
                                 {
@@ -545,7 +546,8 @@
                                                                     "name": "Toggle",
                                                                     "props": {
                                                                         "checked": "{{Boolean(policy.enabled)}}",
-                                                                        "size": "sm"
+                                                                        "size": "sm",
+                                                                        "disabled": "{{policy.abilities?.can_update !== true}}"
                                                                     },
                                                                     "actions": [
                                                                         {
@@ -633,7 +635,8 @@
                                                                     "name": "Button",
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors"
+                                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
+                                                                        "disabled": "{{policy.abilities?.can_update !== true}}"
                                                                     },
                                                                     "text": "$t:common.edit",
                                                                     "actions": [
@@ -681,7 +684,7 @@
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Button",
-                                                                    "if": "{{policy.source_type === 'admin'}}",
+                                                                    "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
                                                                     "props": {
                                                                         "type": "button",
                                                                         "className": "ml-2 text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
@@ -859,7 +862,8 @@
                                                     "name": "Toggle",
                                                     "props": {
                                                         "checked": "{{Boolean(policy.enabled)}}",
-                                                        "size": "sm"
+                                                        "size": "sm",
+                                                        "disabled": "{{policy.abilities?.can_update !== true}}"
                                                     },
                                                     "actions": [
                                                         {
@@ -930,7 +934,8 @@
                                                     "name": "Button",
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors"
+                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
+                                                        "disabled": "{{policy.abilities?.can_update !== true}}"
                                                     },
                                                     "text": "$t:common.edit",
                                                     "actions": [
@@ -978,7 +983,7 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{policy.source_type === 'admin'}}",
+                                                    "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
                                                     "props": {
                                                         "type": "button",
                                                         "className": "text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"

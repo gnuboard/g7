@@ -186,7 +186,7 @@ export interface InjectedComponent {
     overlayFile?: string;
   };
 
-  /** 편집 가능 여부 (PO 결정: 항상 true) */
+  /** 편집 가능 여부 (정책 결정: 항상 true) */
   isEditable: boolean;
 
   /** 주입 위치 */

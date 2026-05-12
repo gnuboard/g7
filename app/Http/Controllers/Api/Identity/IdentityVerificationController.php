@@ -57,6 +57,11 @@ class IdentityVerificationController extends PublicBaseController
             return $this->error('identity.errors.missing_target', 422);
         }
 
+        $providerId = $validated['provider_id'] ?? null;
+        if (is_string($providerId) && $providerId === '') {
+            $providerId = null;
+        }
+
         $challenge = $this->service->start(
             purpose: (string) $validated['purpose'],
             target: $target,
@@ -66,6 +71,7 @@ class IdentityVerificationController extends PublicBaseController
                 'origin_type' => \App\Enums\IdentityOriginType::Api->value,
                 'origin_identifier' => '/api/identity/challenges',
             ],
+            providerId: $providerId,
         );
 
         return $this->success(

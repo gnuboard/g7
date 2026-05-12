@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0-beta.5] - 2026-05-12
+
+### Fixed
+
+- 알림 센터의 미확인 알림 카운트 뱃지·알림 행의 unread 점·"읽지 않은 알림만" 체크박스가 다크 모드에서 색상이 부정합하게 노출되던 문제 수정
+
 ## [1.0.0-beta.4] - 2026-05-11
 
 ### Added

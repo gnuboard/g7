@@ -36,6 +36,8 @@ return [
         'account_locked' => '계정 잠금',
         'request' => '요청',
         'expired' => '만료',
+        'verify' => '본인인증',
+        'verify_failed' => '본인인증 실패',
         'export' => '내보내기',
         'import' => '가져오기',
         'index' => '목록 조회',

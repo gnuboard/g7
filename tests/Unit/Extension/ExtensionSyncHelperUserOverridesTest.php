@@ -16,7 +16,7 @@ use Tests\TestCase;
 /**
  * Phase C.1 (v6) 회귀 방지: helper `cleanupStale*` 가 user_overrides **무관** 으로 삭제하는지.
  *
- * PO 요구사항 재정의 (v6):
+ * 요구사항 재정의 (v6):
  *  - config/확장 정의에 없는 row 는 user_overrides 유무 무관 삭제
  *  - 필드 단위 보존은 upsert 시점(`syncMenu`/`syncRole`) 에서만 작동
  *  - 예외: Role 에 `user_roles` 피벗 참조 사용자 있으면 삭제 차단 (안전 가드)

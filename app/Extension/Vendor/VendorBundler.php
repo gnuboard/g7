@@ -68,6 +68,8 @@ class VendorBundler
      *
      * 러너는 `fn (string $stagingDir): void` 형식이며, 주어진 스테이징 디렉토리에
      * vendor/ 구조를 직접 생성해야 합니다.
+     *
+     * @param  \Closure|null  $runner  대체 러너 (null 이면 기본 composer install 사용)
      */
     public function setComposerInstallRunner(?\Closure $runner): void
     {
@@ -78,6 +80,9 @@ class VendorBundler
      * 코어(루트) vendor/를 번들링합니다.
      *
      * 코어는 소스 = 출력 경로가 base_path() 로 동일합니다.
+     *
+     * @param  bool  $force  manifest 해시 일치 여부와 무관하게 강제 재빌드
+     * @return VendorBundleResult  번들 생성 결과 (zip 경로, manifest 경로, 패키지 수 등)
      */
     public function buildForCore(bool $force = false): VendorBundleResult
     {
@@ -98,7 +103,10 @@ class VendorBundler
      * 이유: _bundled 는 Git 추적 소스 디렉토리로 vendor/ 를 두지 않는 것이 원칙.
      * 활성 디렉토리는 설치 시 composer install 이 실행되어 실제 패키지가 설치된 상태.
      *
-     * @param  string  $type  'module' | 'plugin'
+     * @param  string  $type  확장 타입 ('module' 또는 'plugin')
+     * @param  string  $identifier  확장 식별자 (vendor-name 형식, 예: 'sirsoft-ecommerce')
+     * @param  bool  $force  manifest 해시 일치 여부와 무관하게 강제 재빌드
+     * @return VendorBundleResult  번들 생성 결과 (활성 디렉토리 부재 시 skipped=true)
      */
     public function buildForExtension(string $type, string $identifier, bool $force = false): VendorBundleResult
     {
@@ -156,6 +164,7 @@ class VendorBundler
      *
      * @param  string  $sourcePath  composer.json/lock 을 읽을 경로 (활성 디렉토리)
      * @param  string|null  $outputPath  번들 출력 경로 (null 이면 sourcePath 와 동일 — 코어 케이스)
+     * @return bool  번들이 stale 한지 여부 (해시 불일치 또는 manifest 부재). 외부 의존성이 없으면 항상 false
      */
     public function isStale(string $sourcePath, ?string $outputPath = null): bool
     {
@@ -391,7 +400,7 @@ class VendorBundler
             2 => ['pipe', 'w'],
         ];
 
-        $process = @proc_open($command, $descriptors, $pipes, $stagingDir);
+        $process = @proc_open($command, $descriptors, $pipes, $stagingDir, EnvironmentDetector::buildComposerEnv());
 
         if (! is_resource($process)) {
             throw new VendorInstallException(

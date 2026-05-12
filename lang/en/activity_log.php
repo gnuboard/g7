@@ -36,6 +36,8 @@ return [
         'account_locked' => 'Account locked',
         'request' => 'Request',
         'expired' => 'Expired',
+        'verify' => 'Identity verified',
+        'verify_failed' => 'Identity verification failed',
         'export' => 'Export',
         'import' => 'Import',
         'index' => 'List Viewed',

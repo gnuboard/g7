@@ -927,6 +927,11 @@ PHP;
         $env['COMPOSER_HOME'] = $composerHome;
         $env['HOME'] = $composerHome;
 
+        // root/super user 환경 + 비대화형 컨텍스트에서 composer interactive 경고로 인한
+        // 비정상 종료를 차단 (Synology DSM 등 PHP-FPM root 실행 환경 대응)
+        $env['COMPOSER_ALLOW_SUPERUSER'] = '1';
+        $env['COMPOSER_NO_INTERACTION'] = '1';
+
         // Windows: TEMP 디렉토리가 없거나 쓰기 불가능하면 storage/temp 사용
         if (PHP_OS_FAMILY === 'Windows') {
             if (! isset($env['TEMP']) || ! is_dir($env['TEMP']) || ! is_writable($env['TEMP'])) {

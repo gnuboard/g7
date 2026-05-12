@@ -244,7 +244,7 @@ class ModuleMenuSyncTest extends TestCase
     /**
      * 제거 후 재설치 시 메뉴가 올바르게 유지·복원되는지 테스트
      *
-     * PO 정책(#716eef99d, 2026-04-20): deleteData=false 시 메뉴/권한/역할은 보존된다.
+     * 운영 정책(#716eef99d, 2026-04-20): deleteData=false 시 메뉴/권한/역할은 보존된다.
      * 따라서 uninstall 후에도 메뉴는 DB 에 남아있고, 재설치는 idempotent (user_overrides 비어있음 유지).
      */
     public function test_reinstall_after_uninstall_creates_clean_menus(): void
@@ -475,7 +475,7 @@ class ModuleMenuSyncTest extends TestCase
     /**
      * 모듈 제거 (deleteData=true) 시 동적 메뉴를 포함한 모든 메뉴가 삭제되는지 테스트
      *
-     * PO 정책(#716eef99d, 2026-04-20): deleteData=true 경로에서만 메뉴/권한/역할 전수 삭제.
+     * 운영 정책(#716eef99d, 2026-04-20): deleteData=true 경로에서만 메뉴/권한/역할 전수 삭제.
      * deleteData=false (기본) 경로는 메뉴 보존 → test_module_uninstall_preserves_menus_by_default 참조.
      */
     public function test_module_uninstall_removes_all_menus_including_dynamic(): void

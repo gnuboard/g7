@@ -27,6 +27,7 @@ return [
         'partial_cancel' => '部分キャンセル',
         'payment_complete' => '決済完了',
         'payment_failed' => '決済失敗',
+        'remove' => '削除',
         'reorder' => '順序変更',
         'restore' => '復元',
         'send_email' => 'メール送信',

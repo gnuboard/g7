@@ -126,6 +126,84 @@ return new class extends Migration
 };
 ```
 
+### 마이그레이션 멱등성
+
+```
+필수: Schema::table 안의 컬럼 추가 (`$table->{type}('{column}')`) 는 Schema::hasColumn 가드와 함께 작성
+배경: 코어 업그레이드 도중 마이그레이션이 부분 적용된 채 fatal 한 경우, `core:update --force` 재실행 시 이미 적용된 컬럼이 재시도되어 "Column already exists" SQL error 가 발생
+면제: `// audit:allow migration-idempotency-guard reason: ...` 인라인 주석 (의도적 비-멱등 사유 기재)
+```
+
+#### 멱등 작성 예시
+
+```php
+// ✅ 올바른 패턴 — Schema::hasColumn 가드
+public function up(): void
+{
+    Schema::table('users', function (Blueprint $table): void {
+        if (! Schema::hasColumn('users', 'locked_until')) {
+            $table->timestamp('locked_until')->nullable()->after('email');
+        }
+        if (! Schema::hasColumn('users', 'last_failed_login_at')) {
+            $table->timestamp('last_failed_login_at')->nullable();
+        }
+    });
+}
+
+// ❌ 잘못된 패턴 — 가드 부재
+public function up(): void
+{
+    Schema::table('users', function (Blueprint $table): void {
+        $table->timestamp('locked_until')->nullable();      // partial migrate 후 재실행 시 fatal
+        $table->timestamp('last_failed_login_at')->nullable();
+    });
+}
+```
+
+#### 인덱스 추가의 멱등성
+
+인덱스 추가는 Laravel 의 Schema 빌더가 멱등 가드를 직접 제공하지 않으므로 다음 패턴 중 하나 적용:
+
+```php
+// 방식 1 — Schema::hasIndex (Laravel 11+ Schema::getIndexes 기반)
+public function up(): void
+{
+    Schema::table('users', function (Blueprint $table): void {
+        if (! collect(Schema::getIndexes('users'))->pluck('name')->contains('users_email_idx')) {
+            $table->index('email', 'users_email_idx');
+        }
+    });
+}
+
+// 방식 2 — try/catch (인덱스명이 명시되지 않은 경우)
+public function up(): void
+{
+    try {
+        Schema::table('users', function (Blueprint $table): void {
+            $table->index('email');
+        });
+    } catch (\Throwable $e) {
+        // 이미 존재 — 멱등 skip
+    }
+}
+```
+
+#### `->change()` 패턴의 멱등성
+
+`->change()` 는 이미 존재하는 컬럼의 타입/제약 변경이므로 컬럼 부재 fatal 위험은 없다. 단, MariaDB/MySQL 의 일부 ALTER 가 비-멱등인 경우 (예: enum 값 추가 후 재실행) 가 있으므로 마이그레이션 작성자가 의도 검증 필요. audit rule `migration-idempotency-guard` 는 `->change()` 라인을 자동 제외하므로 false positive 미발생.
+
+#### 검증 절차
+
+단일 마이그레이션의 dry-run 출력을 두 번 적용해도 동일 출력인지 확인:
+
+```bash
+php artisan migrate --pretend --path=database/migrations/2026_05_05_172526_add_login_attempt_columns_to_users_table.php
+```
+
+신규 마이그레이션 작성 후에는 같은 마이그레이션을 두 번 실행하는 시나리오를 PHPUnit Feature 테스트로 작성해 SQL error 미발생을 검증한다 (`tests/Feature/Upgrades/MultiVersionUpgradePathTest.php` 의 `hasColumn_가드된_마이그레이션은_두_번_적용해도_SQL_error_없다` 사례 참조).
+
+---
+
 ### 모듈/플러그인 마이그레이션 down() 메서드
 
 ```

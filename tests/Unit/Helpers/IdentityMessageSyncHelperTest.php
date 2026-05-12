@@ -41,7 +41,11 @@ class IdentityMessageSyncHelperTest extends TestCase
 
         $definition->update(['name' => ['ko' => '운영자 변경 이름', 'en' => 'Custom Name']]);
         $definition->refresh();
-        $this->assertContains('name', $definition->user_overrides ?? []);
+        // HasUserOverrides Trait 가 다국어 trackable 컬럼을 sub-key dot-path 단위로 기록한다 (7.0.0-beta.4+).
+        // name 의 ko/en 모두 변경되었으므로 두 sub-key 가 모두 user_overrides 에 들어있어야 한다.
+        $overrides = $definition->user_overrides ?? [];
+        $this->assertContains('name.ko', $overrides);
+        $this->assertContains('name.en', $overrides);
 
         $reseeded = $this->helper->syncDefinition($this->definitionData('signup'));
 

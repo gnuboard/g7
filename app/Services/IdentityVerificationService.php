@@ -38,14 +38,22 @@ class IdentityVerificationService
     /**
      * Challenge 를 시작합니다.
      *
+     * $providerId 가 주어지면 Manager 의 0번째 우선순위로 사용된다 (IdentityVerificationManager::resolveForPurpose).
+     * 미등록/미지원이면 silent fallback (기존 우선순위 체인 진행).
+     *
      * @param  string  $purpose  signup|password_reset|self_update|sensitive_action|플러그인 등록값
      * @param  User|array<string, mixed>  $target  로그인 사용자(User) 또는 ['email' => '...'] 배열
      * @param  array<string, mixed>  $context  origin_type / origin_identifier / origin_policy_key / ip_address / user_agent
+     * @param  string|null  $providerId  Mode A controller 요청 또는 Mode B 정책의 명시 provider id
      * @return VerificationChallenge 발행된 challenge DTO
      */
-    public function start(string $purpose, User|array $target, array $context = []): VerificationChallenge
-    {
-        $provider = $this->manager->resolveForPurpose($purpose);
+    public function start(
+        string $purpose,
+        User|array $target,
+        array $context = [],
+        ?string $providerId = null,
+    ): VerificationChallenge {
+        $provider = $this->manager->resolveForPurpose($purpose, $providerId);
 
         $context['purpose'] = $purpose;
 

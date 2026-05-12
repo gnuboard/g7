@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0-beta.5] - 2026-05-12
+
+### Added
+
+- 게시판 환경설정의 본인인증 정책 탭에 권한 기반 버튼 비활성화 적용 — 수정 권한이 없는 운영자는 "정책 추가" / "수정" / "삭제" / "활성 토글" 버튼이 자동 비활성화
+
 ## [1.0.0-beta.4] - 2026-05-11
 
 ### Added

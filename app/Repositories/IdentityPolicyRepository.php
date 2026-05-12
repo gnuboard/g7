@@ -121,6 +121,17 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
     }
 
     /**
+     * 정책 모델을 영속화합니다 (Eloquent save 위임).
+     *
+     * @param  IdentityPolicy  $policy  영속화할 모델
+     * @return bool 저장 성공 여부
+     */
+    public function save(IdentityPolicy $policy): bool
+    {
+        return (bool) $policy->save();
+    }
+
+    /**
      * 특정 소스의 정책 개수를 반환합니다.
      *
      * @param  string  $sourceType  소스 타입

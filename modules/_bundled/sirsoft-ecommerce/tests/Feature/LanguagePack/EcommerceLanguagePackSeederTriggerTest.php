@@ -32,6 +32,20 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 본 테스트는 활성 hook 체인이 module:seed 를 호출하는 경로를 검증한다.
+        // SeedModuleCommand 는 base_path('modules/{id}/database/seeders') 활성 디렉토리를
+        // is_dir() 로 확인하므로, 활성 디렉토리가 부재한 환경에서는 시더가 silent skip 된다.
+        // 활성 디렉토리가 없으면 본 테스트의 production-like 시나리오를 재현할 수 없으므로 skip.
+        $activeModuleSeederDir = base_path('modules/sirsoft-ecommerce/database/seeders');
+        if (! is_dir($activeModuleSeederDir)) {
+            $this->markTestSkipped(
+                'sirsoft-ecommerce 모듈이 활성 디렉토리에 설치되지 않은 환경 — '
+                .'본 테스트는 module:seed → entity 시더 → ja 자동 동기 production 경로를 검증하므로 '
+                .'php artisan module:install sirsoft-ecommerce 후 재실행 (또는 CI 환경에서 자동 통과)'
+            );
+        }
+
         // module:seed 가 outer transaction 외부에서 commit 한 데이터 정리
         DB::table('language_packs')
             ->where('target_identifier', 'sirsoft-ecommerce')

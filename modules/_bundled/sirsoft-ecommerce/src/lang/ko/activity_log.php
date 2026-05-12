@@ -29,6 +29,7 @@ return [
         'partial_cancel' => '부분 취소',
         'payment_complete' => '결제 완료',
         'payment_failed' => '결제 실패',
+        'remove' => '제거',
         'reorder' => '순서 변경',
         'restore' => '복원',
         'send_email' => '이메일 발송',

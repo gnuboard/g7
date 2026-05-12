@@ -1,6 +1,6 @@
 {
     "name": "@g7/sirsoft-board",
-    "version": "1.0.0-beta.4",
+    "version": "1.0.0-beta.5",
     "description": "그누보드7 게시판 모듈 프론트엔드 에셋",
     "private": true,
     "type": "module",

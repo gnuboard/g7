@@ -661,9 +661,12 @@ class CoreUpdateCommand extends Command
     private function spawnUpgradeStepsProcess(string $fromVersion, string $toVersion, bool $force, \Closure $log): bool
     {
         if (! function_exists('proc_open')) {
-            $log('proc_open 비활성 — spawn 스킵, in-process fallback 진행');
-
-            return false;
+            return $this->failSpawnWithMode(
+                'proc_open 비활성',
+                $log,
+                $fromVersion,
+                $toVersion,
+            );
         }
 
         $phpBinary = config('process.php_binary', PHP_BINARY);
@@ -708,17 +711,21 @@ class CoreUpdateCommand extends Command
 
         $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
         if (! is_resource($process)) {
-            $log('spawn 실패 — proc_open 자원 생성 실패');
-
-            return false;
+            return $this->failSpawnWithMode(
+                'proc_open 자원 생성 실패',
+                $log,
+                $fromVersion,
+                $toVersion,
+            );
         }
 
         fclose($pipes[0]);
 
         // stdout 실시간 전달 — 상위 콘솔에서 진행 상황 확인 가능
-        // 단, [HANDOFF] 접두사 라인은 상위 콘솔로 노출하지 않고 페이로드만 보관한다
-        // (exit=UpgradeHandoffException::EXIT_CODE 감지 시 UpgradeHandoffException 재구성용).
+        // 단, [HANDOFF] / [STEPS_EXECUTED] 접두사 라인은 상위 콘솔로 노출하지 않고
+        // 페이로드만 보관한다 (각각 UpgradeHandoffException 재구성 / silent skip 가드용).
         $handoffPayload = null;
+        $stepsExecuted = null;
         while (! feof($pipes[1])) {
             $line = fgets($pipes[1]);
             if ($line !== false) {
@@ -730,19 +737,30 @@ class CoreUpdateCommand extends Command
                 if (str_starts_with($trimmed, '[HANDOFF] ')) {
                     $json = substr($trimmed, strlen('[HANDOFF] '));
                     $decoded = json_decode($json, true);
-                    // resumeCommand 는 null 허용 (자식이 null 로 전달한 경우 부모가
-                    // CoreUpdateCommand catch 분기에서 from/to 기반으로 자동 생성)
-                    if (is_array($decoded)
-                        && array_key_exists('afterVersion', $decoded)
-                        && array_key_exists('reason', $decoded)
-                        && array_key_exists('resumeCommand', $decoded)
-                    ) {
+                    // 페이로드 값 검증 — array_key_exists 만으로는 비정상 입력(빈 문자열·
+                    // shell metacharacter·과도 길이) 이 통과한다. resumeCommand 는 null
+                    // 허용 (자식이 null 로 전달한 경우 부모가 from/to 기반 자동 생성).
+                    if ($this->isValidHandoffPayload($decoded)) {
                         $handoffPayload = $decoded;
                         $log('[spawn] 핸드오프 신호 수신: after='.$decoded['afterVersion']);
 
                         continue;
                     }
-                    // 구조가 깨진 핸드오프 라인 — 정상 출력으로 간주해 그대로 전달
+                    // 구조/값이 깨진 핸드오프 라인 — 정상 출력으로 간주해 그대로 전달
+                    if (is_array($decoded)) {
+                        $log('[spawn] 핸드오프 페이로드 검증 실패 — 정상 출력으로 처리: '.json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    }
+                }
+
+                if (str_starts_with($trimmed, '[STEPS_EXECUTED] ')) {
+                    $json = substr($trimmed, strlen('[STEPS_EXECUTED] '));
+                    $decoded = json_decode($json, true);
+                    if (is_array($decoded) && isset($decoded['count']) && is_int($decoded['count']) && $decoded['count'] >= 0) {
+                        $stepsExecuted = $decoded['count'];
+                        $log('[spawn] 실행된 step 수: '.$stepsExecuted);
+
+                        continue;
+                    }
                 }
 
                 $this->line($trimmed);
@@ -768,14 +786,131 @@ class CoreUpdateCommand extends Command
         }
 
         if ($exitCode === 0) {
-            $log('spawn 완료 (exit=0)');
+            // silent skip 가드 — 자식이 [STEPS_EXECUTED] 신호를 발행하지 않거나, step 0건
+            // 실행한 채 exit=0 으로 종료한 경우. 이전 버전 자식 (beta.5 이전 디스크) 또는
+            // 자식이 비정상 종료 직전 silent skip 한 상태로 추정. fail-fast 모드 가드 적용.
+            if ($stepsExecuted === null) {
+                return $this->failSpawnWithMode(
+                    'spawn 자식이 [STEPS_EXECUTED] 신호 미발행 — 이전 버전 자식 또는 silent skip 의심',
+                    $log,
+                    $fromVersion,
+                    $toVersion,
+                );
+            }
+
+            if ($stepsExecuted === 0 && version_compare($fromVersion, $toVersion, '<')) {
+                return $this->failSpawnWithMode(
+                    sprintf('spawn 자식 exit=0 이지만 step 0건 실행 — 의도된 동작이 아님 (from=%s to=%s)', $fromVersion, $toVersion),
+                    $log,
+                    $fromVersion,
+                    $toVersion,
+                );
+            }
+
+            $log("spawn 완료 (exit=0, steps={$stepsExecuted})");
 
             return true;
         }
 
-        $log("spawn 비정상 종료 (exit={$exitCode}) — fallback 진행");
+        return $this->failSpawnWithMode(
+            "spawn 비정상 종료 (exit={$exitCode})",
+            $log,
+            $fromVersion,
+            $toVersion,
+        );
+    }
+
+    /**
+     * spawn 자식 프로세스 실패 시 `app.update.spawn_failure_mode` 에 따라 분기합니다.
+     *
+     *  - 'abort'    (기본): `UpgradeHandoffException` 을 throw 하여 부모의 in-process
+     *                       fallback 진입을 차단. 부모 catch 블록이 cleanup 후 운영자에게
+     *                       `core:execute-upgrade-steps` 수동 명령을 안내한다.
+     *  - 'fallback' (호환): 기존 동작 — log 한 줄 남기고 false 반환. 호출자가
+     *                       in-process fallback 으로 진행. 부모 메모리 stale 시 fatal 위험.
+     *
+     * @param  string  $reason  실패 사유 (로그/안내 메시지에 포함)
+     * @param  \Closure  $log  로그 엔트리 수집 콜백
+     * @param  string  $fromVersion  업그레이드 시작 버전 (handoff afterVersion / resumeCommand 구성)
+     * @param  string  $toVersion  업그레이드 대상 버전 (resumeCommand 구성)
+     * @return false  fallback 모드일 때만 반환. abort 모드는 throw 후 미반환.
+     *
+     * @throws UpgradeHandoffException  mode=abort 일 때
+     */
+    private function failSpawnWithMode(string $reason, \Closure $log, string $fromVersion, string $toVersion): bool
+    {
+        $mode = config('app.update.spawn_failure_mode', 'fallback');
+
+        if ($mode === 'abort') {
+            $resumeCommand = sprintf(
+                'php artisan core:execute-upgrade-steps --from=%s --to=%s --force',
+                $fromVersion,
+                $toVersion,
+            );
+
+            $log("spawn 자식 실패 — {$reason}. fail-fast 모드 abort.");
+
+            throw new UpgradeHandoffException(
+                afterVersion: $fromVersion,
+                reason: "spawn 자식 실패 — {$reason}. fail-fast 모드. 수동 재개로 진행하세요.",
+                resumeCommand: $resumeCommand,
+            );
+        }
+
+        $log("{$reason} — in-process fallback 진행 (stale 메모리 위험)");
 
         return false;
+    }
+
+    /**
+     * [HANDOFF] 페이로드의 값을 검증합니다.
+     *
+     * spawn 자식의 stdout 을 부모가 그대로 신뢰하면 (a) 빈 afterVersion 으로 Step 11
+     * fromVersion 해석 혼란, (b) shell injection 문자열이 운영자 안내에 노출, (c) 과도한
+     * reason 길이로 로그 폭증 위험. 본 메서드는 다음 4가지 키/값을 동시에 검증한다:
+     *
+     *  - `afterVersion`: 정규식 `/^\d+\.\d+\.\d+/` 매치 + 비어있지 않음
+     *  - `reason`: string + 길이 < 500
+     *  - `resumeCommand`: null 허용. string 일 때 길이 < 1000 + shell metacharacter(`;&|`$()<>`) 부재
+     *
+     * @param  mixed  $payload  json_decode 결과
+     */
+    private function isValidHandoffPayload($payload): bool
+    {
+        if (! is_array($payload)) {
+            return false;
+        }
+
+        foreach (['afterVersion', 'reason', 'resumeCommand'] as $key) {
+            if (! array_key_exists($key, $payload)) {
+                return false;
+            }
+        }
+
+        $afterVersion = $payload['afterVersion'];
+        if (! is_string($afterVersion) || $afterVersion === '' || ! preg_match('/^\d+\.\d+\.\d+/', $afterVersion)) {
+            return false;
+        }
+
+        $reason = $payload['reason'];
+        if (! is_string($reason) || strlen($reason) >= 500) {
+            return false;
+        }
+
+        $resumeCommand = $payload['resumeCommand'];
+        if ($resumeCommand !== null) {
+            if (! is_string($resumeCommand)) {
+                return false;
+            }
+            if (strlen($resumeCommand) >= 1000) {
+                return false;
+            }
+            if (preg_match('/[;&|`$()<>]/', $resumeCommand)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

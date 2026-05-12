@@ -1,0 +1,93 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 코어 업데이트 spawn 실패 / silent skip / stale 메모리 가드 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+
+feature: 코어 업데이트 spawn 자식 실패 fail-fast + [STEPS_EXECUTED] silent skip 가드 + stale 메모리 가드
+
+description: |
+  공개 이슈 gnuboard/g7#28 (beta.3 → beta.4 업그레이드 도중 `Call to undefined method
+  ensureWritableDirectories()` fatal) 의 발현 메커니즘은 spawn 자식 프로세스 실패 →
+  부모 in-process fallback 진입 → 부모 메모리의 stale 클래스가 신규 메서드 호출 시
+  fatal.
+
+  본 매니페스트는 spawn 자식 실패의 4가지 분기 (proc_open 비활성 / 자원 생성 실패 /
+  자식 비정상 종료 / 자식 silent skip) 각각에 대해 spawn_failure_mode (abort/fallback)
+  가 정상 동작하는지 + stale 메모리 가드가 in-process fallback 진입 시점에 abort/fallback
+  분기를 일관 적용하는지의 cross product 회귀 가드.
+
+  구성 (정책 결정 2026-05-11):
+    1. `spawn_failure_mode` 기본값 `abort` — 4분기 모두 UpgradeHandoffException throw.
+    2. `[STEPS_EXECUTED]` stdout 라인 프로토콜 — 자식이 실행한 step 수 명시.
+       부모가 신호 미수신 또는 step 0건 실행 (from<to) 감지 시 silent skip 으로 판정.
+    3. `runUpgradeSteps` 진입 직후 stale 메모리 가드 — config('app.version') < toVersion
+       이면 mode=abort 시 throw, mode=fallback 시 warning log.
+    4. V-1 안전 작성 패턴 docs + audit rule `upgrade-step-vone-safety` (warning) —
+       upgrade step 안의 `app(*Service|*Manager|*Repository::class)` 호출을 reviewer 에게 surface.
+
+axes:
+  spawn_branch: [proc_open_disabled, proc_open_resource_fail, child_abnormal_exit, child_silent_skip_no_signal, child_silent_skip_zero_steps]
+  spawn_failure_mode: [abort, fallback]
+  from_to_relation: [from_lt_to, from_eq_to_forced]                # version_compare 분기
+  parent_memory_version: [equal_to_to, less_than_to, greater_than_to]  # stale 가드 트리거 조건
+  steps_executed_signal: [present_positive, present_zero, absent]   # 자식의 [STEPS_EXECUTED] 발행 상태
+  child_process_origin: [beta_5_plus, beta_4_or_earlier]            # 이전 버전 자식 (silent skip 시뮬레이션)
+  upgrade_step_v_one_pattern: [app_service_call, app_manager_call, app_repository_call, local_only]
+  audit_allow_inline: [present, absent]                              # 면제 주석 적용 여부
+  symlink_target_state: [valid, broken, windows_no_privilege]        # symlink 보존 분기 (§1 연동)
+
+exclusions:
+  - { spawn_branch: proc_open_disabled, parent_memory_version: equal_to_to, reason: "proc_open 비활성 시점에 부모는 항상 fromVersion 메모리 — equal 케이스 시뮬 불가" }
+  - { from_to_relation: from_eq_to_forced, spawn_branch: child_silent_skip_zero_steps, reason: "from==to + force 케이스는 step 0건이 정상 동작이므로 silent skip 가드 미트리거" }
+  - { child_process_origin: beta_4_or_earlier, steps_executed_signal: present_positive, reason: "beta.5 이전 자식은 [STEPS_EXECUTED] 신호 자체를 모름 — present_positive 시뮬 불가" }
+
+effects:
+  # §2 spawn_failure_mode + failSpawnWithMode
+  - failSpawnWithMode_abort_throws_UpgradeHandoffException_with_resume_command
+  - failSpawnWithMode_fallback_returns_false_with_warning_log
+  - spawnUpgradeStepsProcess_proc_open_disabled_dispatches_to_failSpawnWithMode
+  - spawnUpgradeStepsProcess_proc_open_resource_fail_dispatches_to_failSpawnWithMode
+  - spawnUpgradeStepsProcess_child_abnormal_exit_dispatches_to_failSpawnWithMode
+  # §2.1 [STEPS_EXECUTED] silent skip 가드
+  - ExecuteUpgradeStepsCommand_emits_STEPS_EXECUTED_with_count_on_normal_completion
+  - ExecuteUpgradeStepsCommand_does_not_emit_STEPS_EXECUTED_on_handoff_exit
+  - spawnUpgradeStepsProcess_parses_STEPS_EXECUTED_with_positive_count_returns_true
+  - spawnUpgradeStepsProcess_missing_STEPS_EXECUTED_dispatches_to_failSpawnWithMode
+  - spawnUpgradeStepsProcess_zero_steps_with_from_lt_to_dispatches_to_failSpawnWithMode
+  - spawnUpgradeStepsProcess_zero_steps_with_from_eq_to_forced_returns_true
+  # §6 stale 메모리 가드
+  - runUpgradeSteps_throws_UpgradeHandoffException_when_memory_lt_to_with_abort_mode
+  - runUpgradeSteps_logs_warning_when_memory_lt_to_with_fallback_mode
+  - runUpgradeSteps_proceeds_silently_when_memory_eq_or_gt_to
+  - runUpgradeSteps_resume_command_format_matches_execute_upgrade_steps_signature
+  # §1 symlink 보존 (CoreBackupHelper 위임 경로 포함)
+  - copyDirectory_preserves_symlink_target_pointer_on_linux
+  - copyDirectory_falls_back_to_directory_copy_on_symlink_failure
+  - copyDirectory_replaces_existing_directory_with_symlink_when_source_is_symlink
+  - removeOrphanItems_unlinks_orphan_symlinks_without_recursive_delete
+  # §7 V-1 audit rule
+  - upgrade_step_vone_safety_warns_on_app_service_call_in_upgrade_step
+  - upgrade_step_vone_safety_warns_on_app_manager_call_in_upgrade_step
+  - upgrade_step_vone_safety_warns_on_app_repository_call_in_upgrade_step
+  - upgrade_step_vone_safety_skips_when_audit_allow_inline_present
+
+test_files:
+  - tests/Feature/Console/CoreUpdateCommandSpawnFailureTest.php
+  - tests/Feature/Console/CoreUpdateCommandHandoffTest.php
+  - tests/Feature/Upgrades/MultiVersionUpgradePathTest.php
+  - tests/Unit/Extension/Helpers/FilePermissionHelperSymlinkTest.php
+
+# 본 매니페스트의 axes cross product 는 800+ 케이스이나, 실제 회귀 가드는 test_files 의
+# 통과 테스트들이 SSoT — 매니페스트는 매트릭스 SSoT 역할.
+#
+# 잔존 결함 (계획서 §9 명시, 본 매트릭스에서 제외):
+#   9.1: proc_open 비활성 + spawn_failure_mode=fallback 사용자의 V-1 fatal
+#        → mode=fallback 자체가 호환 옵션이며, V-1 위험 잔존은 fallback 의 본질.
+#        매트릭스 검증 대상 아님.
+#   9.2: Windows 환경의 public/storage symlink 보존
+#        → axes.symlink_target_state=windows_no_privilege 케이스로 표현되며,
+#        symlink 생성 자체가 PHP 권한 부족으로 실패 → 일반 디렉토리 폴백.
+#        회귀 테스트가 markTestSkipped 로 표시.
+#   9.3: OPCache file_cache 활성 환경의 stale 자식 디스크 캐시
+#        → 본 매니페스트 범위 밖 (인프라 설정).
+#   9.6: beta.1/2 사용자의 beta.5 직접 점프 fatal
+#        → axes.parent_memory_version=less_than_to 케이스 일부 시뮬레이션 가능하나,
+#        실 fatal 은 이전 버전 디스크의 CoreUpdateCommand 가 호출되는 시점이라
+#        본 브랜치 코드의 영향력 범위 밖. 단계적 업그레이드 가이드 (CHANGELOG Upgrade Notice).

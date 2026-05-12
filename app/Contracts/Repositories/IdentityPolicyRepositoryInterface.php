@@ -67,6 +67,17 @@ interface IdentityPolicyRepositoryInterface
     public function deleteByKey(string $key): bool;
 
     /**
+     * 정책 모델을 영속화합니다 (Eloquent save 위임).
+     *
+     * upsert/updateByKey 가 다루지 않는 부분 갱신 경로 (예: user_overrides 부분 복원) 에서 사용합니다.
+     * Service 가 모델 객체에 직접 변경을 적용한 뒤 본 메서드로 저장 — Service-Repository 경유 패턴 유지.
+     *
+     * @param  IdentityPolicy  $policy  영속화할 모델
+     * @return bool 저장 성공 여부
+     */
+    public function save(IdentityPolicy $policy): bool;
+
+    /**
      * source_type+source_identifier 에 속하지 않은 stale 정책을 제거합니다.
      *
      * @param  string  $sourceType  'core' | 'module' | 'plugin' | 'admin'

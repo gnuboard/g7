@@ -1,0 +1,73 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 #347 활성 디렉토리 보존 + 단발성 복구 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+
+feature: 코어 업데이트 활성 확장 디렉토리 보존 + beta.5 단발성 복구
+
+description: |
+  beta.4 의 `CoreUpdateService::applyDiscoveredTopLevelPaths` 가 `isCoveredByApplied`
+  단방향 검사 결함으로 `applied=['templates/_bundled']` 일 때 source 의 `templates/`
+  자체를 신규 항목으로 오인하여 `copyDirectory(removeOrphans:true)` 호출 → base 의
+  활성 서브디렉토리(`templates/sirsoft-basic` 등) 가 orphan 으로 판정되어 삭제되던
+  회귀 (#347) 의 차단 + beta.4 → beta.5 1회성 자동 복구 인프라.
+
+  근본 수정 (3건 trade-off 없는 구성):
+    1. `isCoveredByApplied` 양방향 검사 — applied 가 path 의 자식일 때도 cover 판정.
+    2. `applyDiscoveredTopLevelPaths` 의 `copyDirectory` 호출에서 `removeOrphans:false`
+       — 자동 발견 폴백은 destination 의 orphan 정리 책임 없음.
+    3. `update.protected_paths` 기본값에 `modules,plugins,templates,lang-packs` 추가
+       — 부모 디렉토리 단위 자동 발견 자체를 방어 깊이로 차단.
+
+  단발성 복구 인프라 (`Upgrade_7_0_0_beta_5`):
+    1. `recoverActiveExtensionDirs` — DB active row 식별자 + `_bundled/{id}` 매칭
+       → 활성 디렉토리 부재 시 `FilePermissionHelper::copyDirectory(removeOrphans:false)`
+       복사. 4개 도메인 (modules/plugins/templates/language_packs) 동일 패턴.
+    2. 외부 확장 (DB active + `_bundled` 부재): 자동 복구 불가 → stdout 안내 +
+       DB row `status='inactive' + deactivated_reason='extension_dir_lost_beta5'`
+       단발성 전환. `deactivated_*` 컬럼 부재 시 graceful skip.
+    3. `recoverPendingStubFiles` — `{type}/_pending/{.gitignore,.gitkeep}` 부재 시
+       재생성 (기존 stub 은 덮어쓰지 않음).
+    4. `verifyBundledLangPacksFallback` — beta.4 의 `recoverLangPacksBundled` 와
+       동등 fallback 을 무제한 깊이 재귀로 한 번 더 멱등 실행.
+
+axes:
+  source_structure: [bundled_only, bundled_plus_other, empty_top_level]   # source 의 templates/ 디렉토리 구조
+  applied_targets_set: [bundled_targets, no_targets, mixed_targets]       # config('app.update.targets')
+  active_subdir_state: [present, absent, empty]                            # base 의 활성 서브디렉토리 존재 여부
+  protected_paths_set: [defaults_with_parent, defaults_without_parent]    # protected_paths 에 부모 디렉토리 포함 여부
+  domain: [modules, plugins, templates, language_packs]
+  bundled_presence: [present, missing]                                    # _bundled/{id} 존재 여부 (단발성 복구)
+  source_url_column: [present_value, present_null, column_absent]         # 외부 확장 안내 분기
+  deactivated_columns: [present, absent]                                   # 마이그레이션 적용 여부 (graceful skip)
+  pending_stub_state: [both_present, gitignore_missing, gitkeep_missing, both_missing, dir_missing]
+  lang_packs_pending_depth: [depth_2, depth_3, depth_5, depth_unbounded]   # locatePendingLangPacksSourceDeep
+
+exclusions:
+  - { source_structure: empty_top_level, active_subdir_state: present, reason: "source 가 비었으면 자동 발견 폴백 자체가 트리거 안 됨 — 활성 서브디렉토리 보존 무조건 보장" }
+  - { applied_targets_set: no_targets, source_structure: bundled_only, reason: "targets 가 비면 source 의 templates/ 자체가 자동 발견 대상이 됨 — protected_paths 분기로 차단되어야 정상" }
+  - { domain: language_packs, deactivated_columns: absent, source_url_column: column_absent, reason: "마이그레이션 미적용 환경 — 단발성 마킹/안내 모두 graceful skip 외 다른 효과 없음" }
+
+effects:
+  - applyDiscoveredTopLevelPaths_does_not_remove_active_subdirs_when_source_only_has_bundled
+  - applyDiscoveredTopLevelPaths_skips_parent_when_isCoveredByApplied_detects_child_in_applied
+  - applyDiscoveredTopLevelPaths_skips_parent_when_protected_paths_lists_parent
+  - applyDiscoveredTopLevelPaths_preserves_modules_plugins_templates_lang_packs_all_four_domains
+  - applyUpdate_targets_branch_continues_to_remove_orphans_within_bundled_subtree   # _bundled 내부 stale 파일 정리는 정상 동작
+  - recoverActiveExtensionDirs_restores_from_bundled_when_active_missing
+  - recoverActiveExtensionDirs_skips_when_active_present_and_nonempty
+  - recoverActiveExtensionDirs_does_not_overwrite_user_modified_active_content
+  - recoverActiveExtensionDirs_marks_external_extension_inactive_with_reason
+  - recoverActiveExtensionDirs_skips_db_update_when_deactivated_columns_absent
+  - recoverActiveExtensionDirs_emits_stdout_with_reinstall_command_when_source_url_present
+  - recoverActiveExtensionDirs_emits_stdout_without_command_when_source_url_null
+  - recoverActiveExtensionDirs_does_not_write_preserve_ownership_marker_to_restored_dir
+  - recoverPendingStubFiles_creates_gitignore_and_gitkeep_when_absent
+  - recoverPendingStubFiles_preserves_existing_stubs_idempotently
+  - recoverPendingStubFiles_creates_pending_dir_when_missing
+  - verifyBundledLangPacksFallback_skips_when_active_bundled_present
+  - verifyBundledLangPacksFallback_recovers_from_deep_pending_source_unbounded_depth
+
+test_files:
+  - tests/Unit/Services/CoreUpdateServiceTest.php
+  - tests/Feature/Upgrades/Upgrade_7_0_0_beta_5RecoveryTest.php
+
+# 본 시나리오 매니페스트의 axes cross product 는 50+ 케이스이나, 실제 핵심 회귀 가드는
+# test_files 의 통과 테스트들이 SSoT — 매니페스트는 매트릭스 SSoT 역할.

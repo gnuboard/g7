@@ -242,7 +242,7 @@ class LanguagePackController extends AdminBaseController
     }
 
     /**
-     * 여러 언어팩을 일괄 활성화합니다 (PO #7 reactivate 모달 → "활성화" 버튼).
+     * 여러 언어팩을 일괄 활성화합니다 (요구사항 #7 reactivate 모달 → "활성화" 버튼).
      *
      * @param  \App\Http\Requests\LanguagePack\BulkActivateRequest  $request  요청
      * @return JsonResponse 결과 (succeeded/failed 분리)

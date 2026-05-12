@@ -20,8 +20,8 @@ class PolicyResource extends BaseApiResource
     public function abilityMap(): array
     {
         return [
-            'can_update' => 'core.admin.identity.policies.manage',
-            'can_delete' => 'core.admin.identity.policies.manage',
+            'can_update' => 'core.admin.identity.policies.update',
+            'can_delete' => 'core.admin.identity.policies.update',
         ];
     }
 
@@ -49,8 +49,7 @@ class PolicyResource extends BaseApiResource
             'applies_to' => $this->applies_to,
             'fail_mode' => $this->fail_mode,
             'user_overrides' => $this->user_overrides ?? [],
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
         ];
     }

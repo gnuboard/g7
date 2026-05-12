@@ -195,12 +195,20 @@
     "name": "本人確認管理 (管理者)",
     "description": "管理者用IDVプロバイダ/ポリシー/ログ管理権限"
   },
-  "core.admin.identity.manage": {
-    "name": "プロバイダ設定",
-    "description": "本人確認プロバイダ設定を管理できます。"
+  "core.admin.identity.providers.read": {
+    "name": "プロバイダ設定閲覧",
+    "description": "本人確認プロバイダ設定を閲覧できます。"
   },
-  "core.admin.identity.policies.manage": {
-    "name": "ポリシー管理",
+  "core.admin.identity.providers.update": {
+    "name": "プロバイダ設定編集",
+    "description": "本人確認プロバイダ設定を編集できます。"
+  },
+  "core.admin.identity.policies.read": {
+    "name": "ポリシー閲覧",
+    "description": "本人確認ポリシー(ルート/フック別)を閲覧できます。"
+  },
+  "core.admin.identity.policies.update": {
+    "name": "ポリシー編集",
     "description": "本人確認ポリシー(ルート/フック別)をCRUD できます。"
   },
   "core.admin.identity.logs.read": {

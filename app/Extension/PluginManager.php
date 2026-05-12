@@ -27,6 +27,7 @@ use App\Extension\Helpers\IdentityMessageSyncHelper;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
+use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Providers\CoreServiceProvider;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
@@ -756,7 +757,7 @@ class PluginManager implements PluginManagerInterface
             // 플러그인 상태 캐시 무효화
             self::invalidatePluginStatusCache();
 
-            // PO #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
+            // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
             HookManager::doAction('core.plugins.after_deactivate', $plugin->getIdentifier());
         }
 
@@ -887,7 +888,7 @@ class PluginManager implements PluginManagerInterface
 
             if ($result) {
                 // 권한/역할은 $deleteData=true 시에만 삭제.
-                // PO 정책: "동적 권한은 '데이터도 함께 삭제' 옵션 체크 시에만 삭제"
+                // 운영 정책: "동적 권한은 '데이터도 함께 삭제' 옵션 체크 시에만 삭제"
                 if ($deleteData) {
                     $this->removePluginPermissions($plugin);
 
@@ -4208,7 +4209,7 @@ class PluginManager implements PluginManagerInterface
 
         if (empty($filteredSteps)) {
             return;
-        }
+    }
 
         // 버전순 정렬
         uksort($filteredSteps, 'version_compare');
@@ -4226,6 +4227,20 @@ class PluginManager implements PluginManagerInterface
             $stepContext->logger->info("Upgrading {$plugin->getIdentifier()} step {$stepVersion}...");
 
             if ($step instanceof UpgradeStepInterface) {
+                $sinceVersion = ExtensionUpgradeGuardHelper::resolveSinceVersion(
+                    $plugin->getRequiredCoreVersion(),
+                    $plugin->getVersion(),
+                );
+                if ($sinceVersion !== null) {
+                    ExtensionUpgradeGuardHelper::assertAbstractInheritance(
+                        (string) $stepVersion,
+                        $sinceVersion,
+                        $step,
+                        'plugin',
+                        $plugin->getIdentifier(),
+                    );
+                }
+
                 $step->run($stepContext);
             } elseif (is_callable($step)) {
                 $step($stepContext);
@@ -4637,7 +4652,7 @@ class PluginManager implements PluginManagerInterface
     /**
      * --force 시 업데이트 소스를 결정합니다.
      *
-     * PO 정책: --force 시에는 번들이 우선, 번들이 없는 경우에만 GitHub 사용.
+     * 운영 정책: --force 시에는 번들이 우선, 번들이 없는 경우에만 GitHub 사용.
      * (일반 업데이트의 GitHub 우선과 반대 — 개발자가 로컬 번들로 되돌리려는 의도 존중)
      *
      * 우선순위:

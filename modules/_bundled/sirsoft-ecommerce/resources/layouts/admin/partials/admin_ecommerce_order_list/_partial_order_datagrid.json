@@ -173,7 +173,7 @@
                             "if": false,
                             "type": "basic",
                             "name": "Button",
-                            "comment": "D-070 (PO 지시: 숨김 처리)",
+                            "comment": "D-070 (요청 사항: 숨김 처리)",
                             "props": {
                                 "type": "button",
                                 "className": "btn btn-outline btn-sm"

@@ -24,6 +24,8 @@ class EnvironmentDetector
 
     /**
      * proc_open() 함수 사용 가능 여부.
+     *
+     * @return bool proc_open 호출 가능 여부 (disable_functions 차단 시 false)
      */
     public function hasProcOpen(): bool
     {
@@ -38,6 +40,8 @@ class EnvironmentDetector
 
     /**
      * shell_exec() 함수 사용 가능 여부.
+     *
+     * @return bool shell_exec 호출 가능 여부 (disable_functions 차단 시 false)
      */
     public function hasShellExec(): bool
     {
@@ -52,6 +56,8 @@ class EnvironmentDetector
 
     /**
      * ZipArchive 클래스 사용 가능 여부.
+     *
+     * @return bool ext-zip 활성화 여부
      */
     public function hasZipArchive(): bool
     {
@@ -63,6 +69,9 @@ class EnvironmentDetector
      *
      * 우선순위: hint → config(process.composer_binary) → $_ENV['COMPOSER_BINARY']
      *           → PATH 검색 → composer.phar
+     *
+     * @param  string|null  $hint  바이너리 경로 힌트 (null 이면 config/ENV/PATH 순으로 자동 탐색)
+     * @return string|null  발견된 composer 바이너리 경로. 없으면 null
      */
     public function findComposerBinary(?string $hint = null): ?string
     {
@@ -108,6 +117,9 @@ class EnvironmentDetector
      * composer 실행 가능 여부 종합 판단.
      *
      * proc_open 사용 가능 + composer 바이너리 발견 + `composer --version` 종료 코드 0.
+     *
+     * @param  string|null  $hint  composer 바이너리 경로 힌트 (캐시 우회용)
+     * @return bool  composer 가 현재 환경에서 실행 가능한지 여부
      */
     public function canExecuteComposer(?string $hint = null): bool
     {
@@ -135,7 +147,7 @@ class EnvironmentDetector
                 ],
                 $pipes,
                 null,
-                null,
+                self::buildComposerEnv(),
                 ['bypass_shell' => true]
             );
 
@@ -163,6 +175,9 @@ class EnvironmentDetector
 
     /**
      * 지정 경로에 쓰기 가능한지 확인.
+     *
+     * @param  string  $targetPath  vendor 디렉토리 경로 (존재하지 않아도 부모 디렉토리 쓰기 권한 검사)
+     * @return bool  부모 디렉토리가 존재하고 쓰기 가능한지 여부
      */
     public function canWriteVendor(string $targetPath): bool
     {
@@ -174,6 +189,7 @@ class EnvironmentDetector
     /**
      * 인스톨러 Step 2 요구사항 체크용 종합 리포트.
      *
+     * @param  string|null  $hint  composer 바이너리 경로 힌트 (캐시 우회용)
      * @return array{
      *     proc_open: bool,
      *     shell_exec: bool,
@@ -208,6 +224,30 @@ class EnvironmentDetector
     {
         $this->cachedComposerExecutable = null;
         $this->cachedComposerBinary = null;
+    }
+
+    /**
+     * proc_open() 5번째 인자용 composer 환경변수 배열을 구성합니다.
+     *
+     * root/super user 환경 + 비대화형(웹) 컨텍스트에서 composer 가 interactive
+     * 경고를 출력하며 비정상 종료하는 문제를 차단합니다.
+     *
+     * 현재 프로세스의 환경변수(getenv() + $_ENV)에 두 composer 전용 변수를 마지막에
+     * 덮어쓰기 — 외부에서 0 으로 설정되어 있어도 강제로 1.
+     *
+     * @return array<string, string>
+     */
+    public static function buildComposerEnv(): array
+    {
+        $current = getenv();
+        if (! is_array($current)) {
+            $current = [];
+        }
+
+        return array_merge($current, $_ENV, [
+            'COMPOSER_ALLOW_SUPERUSER' => '1',
+            'COMPOSER_NO_INTERACTION' => '1',
+        ]);
     }
 
     /**

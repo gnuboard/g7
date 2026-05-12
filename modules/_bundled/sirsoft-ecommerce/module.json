@@ -5,13 +5,13 @@
         "ko": "이커머스",
         "en": "Ecommerce"
     },
-    "version": "1.0.0-beta.3",
+    "version": "1.0.0-beta.4",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 이커머스 모듈 - 상품, 주문, 결제 관리",
         "en": "Gnuboard7 Ecommerce Module - Product, Order, Payment Management"
     },
-    "g7_version": ">=7.0.0-beta.4",
+    "g7_version": ">=7.0.0-beta.5",
     "dependencies": {
         "modules": {},
         "plugins": {}

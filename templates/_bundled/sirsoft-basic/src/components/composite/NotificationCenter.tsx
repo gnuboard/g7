@@ -285,7 +285,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       >
         <Icon name={IconName.Bell} className="w-5 h-5" />
         {displayCount > 0 && (
-          <Span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full">
+          <Span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 dark:bg-red-600 rounded-full">
             {displayCount > 99 ? '99+' : displayCount}
           </Span>
         )}
@@ -310,7 +310,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                       onUnreadOnlyToggle(e.target.checked);
                     }}
                     onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                    className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer"
                   />
                   <Span className="text-xs text-gray-600 dark:text-gray-400">{unreadOnlyText}</Span>
                 </Div>
@@ -332,7 +332,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 <Button
                   onClick={() => {
                     // 드롭다운은 닫지 않음 — 확인 모달이 닫히면 다시 자연스럽게 노출되어야 하고,
-                    // 사용자가 모달 취소 시에도 컨텍스트 유지 (PO 요구)
+                    // 사용자가 모달 취소 시에도 컨텍스트 유지 (요구사항)
                     onDeleteAll();
                   }}
                   className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline cursor-pointer"
@@ -398,7 +398,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                       </Div>
                       <Div className="flex flex-col items-center gap-2 flex-shrink-0">
                         {isUnread && (
-                          <Span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5" />
+                          <Span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5" />
                         )}
                         {onDelete && (
                           <Button

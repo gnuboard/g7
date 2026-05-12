@@ -28,6 +28,7 @@ return [
         'partial_cancel' => 'Partially Cancelled',
         'payment_complete' => 'Payment Completed',
         'payment_failed' => 'Payment Failed',
+        'remove' => 'Removed',
         'reorder' => 'Reordered',
         'restore' => 'Restored',
         'send_email' => 'Email Sent',

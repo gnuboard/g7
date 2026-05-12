@@ -11,7 +11,7 @@ use Tests\TestCase;
 /**
  * resolveForceUpdateSource() 회귀 테스트.
  *
- * PO 정책 (2026-04-14): --force 시 번들 우선, 번들 없으면 GitHub 폴백.
+ * 운영 정책 (2026-04-14): --force 시 번들 우선, 번들 없으면 GitHub 폴백.
  *
  * 본 테스트는 ModuleManager 의 private 메서드를 Reflection으로 직접 검증한다.
  * AbstractModule 은 getIdentifier/getVendor 가 final 이므로 Mockery 로 모킹한다.
@@ -92,7 +92,7 @@ class ModuleForceUpdateSourceTest extends TestCase
     public function test_prefers_bundled_over_github_when_both_exist(): void
     {
         $manager = app(ModuleManager::class);
-        // 번들과 GitHub 모두 존재하는 시나리오 — PO 정책상 bundled 우선
+        // 번들과 GitHub 모두 존재하는 시나리오 — 운영 정책상 bundled 우선
         $this->setBundledModules($manager, [
             'test-mod' => ['version' => '1.0.0'],
         ]);

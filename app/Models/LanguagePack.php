@@ -32,6 +32,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $license
  * @property array<string, string>|null $description
  * @property string $status
+ * @property string|null $deactivated_reason
+ * @property \Illuminate\Support\Carbon|null $deactivated_at
+ * @property string|null $incompatible_required_version
  * @property bool $is_protected
  * @property array<string, mixed> $manifest
  * @property string|null $source_type
@@ -86,6 +89,9 @@ class LanguagePack extends Model
         'license',
         'description',
         'status',
+        'deactivated_reason',
+        'deactivated_at',
+        'incompatible_required_version',
         'is_protected',
         'manifest',
         'source_type',
@@ -109,6 +115,7 @@ class LanguagePack extends Model
             'target_version_mismatch' => 'boolean',
             'installed_at' => 'datetime',
             'activated_at' => 'datetime',
+            'deactivated_at' => 'datetime',
         ];
     }
 

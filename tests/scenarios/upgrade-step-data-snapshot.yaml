@@ -1,0 +1,133 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 7.0.0-beta.5 도입 "버전별 데이터 스냅샷" 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+
+feature: 버전별 데이터 스냅샷 (AbstractUpgradeStep + data/{version}/ 격리)
+
+description: |
+  spawn 자식 (경로 B) 의 fresh-load 가 멀티 버전 점프 시 각 step 의 시더·Manager·헬퍼를
+  모두 *최종 버전 메모리* 로 동작하게 만드는 비대칭 회귀를 차단한다.
+
+  본 인프라는:
+    1. AbstractUpgradeStep — 카탈로그/변환/핫픽스 위임 규약
+    2. upgrades/data/{version}/ — manifest + delta JSON + appliers/ + migrations/ 격리
+    3. 버전 namespace (App\Upgrades\Data\V{ver}\Appliers|Migrations) — 다른 버전 클래스명 충돌 회피
+    4. CoreUpdateService::runUpgradeSteps 의 fatal 가드 — beta.5+ 미상속 step 즉시 throw
+    5. audit rule upgrade-step-data-snapshot (severity: error) — PR 시점 차단
+    6. dogfood — Upgrade_7_0_0_beta_5 의 모든 핫픽스 5종 + IDV 권한 rename 을 새 구조로 보존
+
+axes:
+  extension_type: [core, bundled_module, bundled_plugin, external_module, external_plugin, bundled_template_na, bundled_langpack_na]   # 적용 범위 (NA = upgrade step 시스템 부재)
+  extension_g7_version_constraint: [ge_beta_5, ge_beta_4_legacy, null_constraint, malformed]   # ExtensionUpgradeGuardHelper since-version 분기
+  step_version: [pre_beta_5_legacy, beta_5, post_beta_5, ext_below_since, ext_at_since, ext_above_since]   # 버전 가드 트리거 조건 (코어 + 확장 working-version 기준 양쪽)
+  step_class_inheritance: [extends_abstract, implements_only, no_implements, callable_closure]
+  data_dir_state: [absent, present_manifest_only, present_full]
+  manifest_kind: [permissions, role_permissions, notification_definitions, identity_policies, unknown]
+  applier_namespace: [matching_version, mismatched_version, missing_class]
+  migration_filename_prefix: [no_prefix, two_digit_prefix, three_digit_prefix, alphabetic_only]
+  migration_order: [01_02_03_alphabetical, 03_01_02_explicit_via_prefix]
+  delta_operation: [added_only, removed_only, renamed_only, mixed, empty_delta]
+  rename_collision: [new_row_absent, new_row_exists, both_absent]      # IDV 권한 마이그레이션 분기
+  pivot_state: [no_grant, single_role, dual_grant_on_both, multi_role]
+  v_one_violation_in_applier: [seeders_use, app_service_call, app_manager_call, app_repository_call, none]
+  v_one_violation_in_migration: [seeders_use, app_service_call, app_manager_call, app_repository_call, none]
+  cross_version_reference: [self_only, other_version_in_applier, other_version_in_migration]
+  audit_allow_inline: [present, absent]                                # 면제 주석 적용 여부
+  hotfix_filesystem_state: [healthy, broken_active_dir, broken_pending_stub, broken_langpacks_bundled, broken_storage_symlink]
+  cross_extension_namespace_collision: [single, two_extensions_same_step_version_class]   # known limitation 검증
+
+exclusions:
+  - { step_version: pre_beta_5_legacy, step_class_inheritance: extends_abstract, reason: "legacy step 은 AbstractUpgradeStep 도입 전 코드 — 상속 불가" }
+  - { step_version: pre_beta_5_legacy, data_dir_state: present_full, reason: "legacy step 은 data/ 디렉토리 미사용" }
+  - { applier_namespace: missing_class, manifest_kind: unknown, reason: "kind 자체가 모르는 값이면 applier 클래스 매핑 단계 진입 안 함" }
+  - { manifest_kind: unknown, delta_operation: mixed, reason: "unknown kind 는 manifest 단계에서 차단 — delta 미접근" }
+  - { rename_collision: both_absent, pivot_state: dual_grant_on_both, reason: "양쪽 row 부재 시 피벗 상태와 무관 (silent skip)" }
+  - { cross_version_reference: other_version_in_applier, v_one_violation_in_applier: app_service_call, reason: "두 위반 동시 케이스는 단일 axis 분석 의미 흐림" }
+  - { extension_type: bundled_template_na, reason: "템플릿은 upgrade step 시스템 부재 — 본 가드 대상 외 (미래 도입 시 자동 상속)" }
+  - { extension_type: bundled_langpack_na, reason: "언어팩은 upgrade step 시스템 부재 — 본 가드 대상 외" }
+  - { extension_type: external_module, extension_g7_version_constraint: ge_beta_5, audit_allow_inline: absent, reason: "외부 확장은 활성 디렉토리 — audit 미적용 (런타임 가드만 발화)" }
+  - { extension_type: external_plugin, extension_g7_version_constraint: ge_beta_5, audit_allow_inline: absent, reason: "외부 확장은 활성 디렉토리 — audit 미적용 (런타임 가드만 발화)" }
+  - { extension_g7_version_constraint: ge_beta_4_legacy, step_class_inheritance: no_implements, reason: "legacy g7_version 확장은 가드 미발동 (호환 유지)" }
+  - { extension_g7_version_constraint: null_constraint, step_class_inheritance: no_implements, reason: "g7_version 미선언 = legacy 로 판정 (호환)" }
+  - { extension_g7_version_constraint: malformed, step_class_inheritance: no_implements, reason: "파싱 실패 시 보수적으로 legacy 처리 (가드 미발동)" }
+  # cross_extension_namespace_collision 의 두 케이스 모두 회귀 가드 보유:
+  #   - single: 기본 케이스 (다른 step 버전이면 자명 격리)
+  #   - two_extensions_same_step_version_class: namespace 에 확장 식별자 segment 가
+  #     포함되어 PHP compile-time fatal 회피. 정적 검증(DataSnapshotTest) + 실행 검증
+  #     (ExtensionAbstractUpgradeStepFullFlowTest::test_two_extensions_..._isolated_by_namespace)
+
+test_files:
+  unit:
+    - path: tests/Unit/Extension/Upgrade/DataSnapshotTest.php
+      covers:
+        - empty / fromManifest 미존재 시 빈 스냅샷
+        - versionedNamespace 의 점/하이픈 → underscore 변환
+        - versionedNamespace 의 코어/번들 모듈/번들 플러그인/외부 확장 경로 분기
+        - 같은 step 버전이라도 다른 확장은 서로 다른 namespace 부여 (격리 회귀 가드)
+        - manifest → Applier 동적 로드 + 클래스 인스턴스화
+        - Applier 파일 부재 / namespace 불일치 시 RuntimeException
+    - path: tests/Unit/Extension/AbstractUpgradeStepTest.php
+      covers:
+        - run() 의 위임 흐름 (dataSnapshot → dataMigrations → postRun)
+        - migrations 파일명 정렬 순서 실행
+        - 두 자리 prefix 자동 제거 후 클래스명 매핑
+        - data/{version}/ 디렉토리 부재 시 silent skip
+  feature:
+    - path: tests/Feature/Upgrades/RunUpgradeStepsAbstractGuardTest.php
+      covers:
+        - beta.5+ AbstractUpgradeStep 미상속 시 CoreUpdateOperationException
+        - beta.5+ 상속 시 정상 실행
+        - legacy beta.4 이하는 미상속이어도 통과
+    - path: tests/Feature/Upgrades/Upgrade_7_0_0_beta_5PermissionRenameTest.php
+      covers:
+        - PermissionsApplier 의 in-place rename (신 row 부재 경로)
+        - IdentityPermissionPivotMerge 의 충돌 경로 피벗 병합
+        - 양쪽 부여된 role 의 옛 피벗 삭제 + 신 피벗 보존
+        - 멱등성 (두 번 실행 안전)
+    - path: tests/Feature/Upgrades/Upgrade_7_0_0_beta_5RecoveryTest.php
+      covers:
+        - 4개 도메인 활성 디렉토리 복구 (modules / plugins / templates / language_packs)
+        - 외부 확장 손실 시 단발성 비활성화 + 안내
+        - _pending stub 재생성
+        - lang-packs/_bundled fallback
+        - public/storage symlink 복구
+    - path: tests/Feature/Upgrades/ExtensionAbstractGuardTest.php
+      covers:
+        - 번들 모듈 — g7_version >= beta.5, 미상속 step → RuntimeException
+        - 번들 모듈 — 상속 step → 정상 실행
+        - 번들 모듈 — legacy g7_version → 가드 우회
+        - 번들 모듈 — callable closure → 가드 우회 (호환)
+        - 번들 모듈 — step 버전 < 확장 since-version → 가드 우회 (legacy step 호환)
+        - 번들 플러그인 — 미상속/상속/legacy/null g7_version 4종 동등 미러링
+    - path: tests/Feature/Upgrades/ExtensionAbstractUpgradeStepFullFlowTest.php
+      covers:
+        - 모듈 측 전체 흐름 — Applier → Migration → postRun 순서 보존
+        - 플러그인 측 전체 흐름 (동일)
+        - dataDir() 가 확장 디렉토리로 자동 분기 (ReflectionClass 기반)
+        - manifest.json 부재 시 graceful silent (no fatal)
+        - manifest 의 Applier 파일 미존재 시 명확한 RuntimeException
+        - 두 다른 모듈이 같은 step 버전 + 같은 Migration 클래스명 → namespace 격리로 양쪽 모두 자기 코드 실행
+        - DataSnapshot::versionedNamespace 가 코어/확장간 서로 다른 namespace 부여
+  unit_helpers:
+    - path: tests/Unit/Extension/Helpers/ExtensionUpgradeGuardHelperTest.php
+      covers:
+        - resolveSinceVersion 분기 (null / 빈 / legacy / beta.5+ / OR / 파싱 실패)
+        - assertAbstractInheritance 분기 (stepVersion < / = / > sinceVersion × 상속/미상속)
+        - 예외 메시지 포맷 (확장 타입 / 식별자 / step 버전 / 도입 코어 버전 포함)
+
+manual_verification:
+  - "실제 beta.4 환경에서 IDV 권한 옛 키 시드 후 php artisan core:update 로 beta.5 점프 → permissions / role_permissions 의 신 키 식별자 + 피벗 보존 확인"
+  - "fresh-load invariant 확인: data/7.0.0-beta.5/ 안의 클래스에서 Database\\Seeders 또는 app(*Service|*Manager|*Repository::class) 호출 시 audit error 발화"
+  - "공용 디렉토리 app/Extension/Upgrade/Appliers/ 또는 app/Extension/Upgrade/Migrations/ 생성 시 audit error 발화"
+  - "더미 _bundled 모듈에 g7_version=>=7.0.0-beta.5 + AbstractUpgradeStep 미상속 step 작성 → php artisan module:update 실행 시 RuntimeException 확인 (메시지에 must extend App\\Extension\\AbstractUpgradeStep 포함)"
+  - "동일 모듈에 step 을 extends AbstractUpgradeStep 으로 변경 + upgrades/data/{version}/manifest.json 추가 → 재실행 시 정상 통과"
+  - "g7_version=>=7.0.0-beta.4 인 더미 모듈에 미상속 step 작성 → 가드 우회 확인 (legacy 호환)"
+  - "동일 시나리오를 플러그인으로 반복"
+
+upstream_dependencies:
+  - "CoreUpdateService::runUpgradeSteps (line 1593+ fatal 가드 — 코어)"
+  - "ModuleManager::runUpgradeSteps (line 4046+ fatal 가드 — 번들 모듈)"
+  - "PluginManager::runUpgradeSteps (line 4228+ fatal 가드 — 번들 플러그인)"
+  - "ExtensionUpgradeGuardHelper (확장 since-version 판정 SSoT)"
+  - "AbstractUpgradeStep::run (final 메서드, 위임 순서 강제 — 코어/확장 공용)"
+  - "정적 audit 룰 (PR 시점 차단 — 코어/번들 확장 동시)"
+  - "docs/extension/upgrade-step-guide.md §13 (규약 문서)"
+  - "docs/extension/module-basics.md / plugin-development.md (확장 작성자 진입점)"

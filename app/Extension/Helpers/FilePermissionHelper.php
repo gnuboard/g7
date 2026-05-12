@@ -49,6 +49,17 @@ class FilePermissionHelper
 
             $destPath = $destination.DIRECTORY_SEPARATOR.$itemName;
 
+            // symlink 자체 보존: target 추적 없이 동일 symlink 재생성.
+            // SplFileInfo::isDir() 가 symlink 를 추적하므로 검사 순서가 isDir() 보다 먼저여야 한다.
+            // 미적용 시 `public/storage` 등 symlink 가 target 디렉토리 내용으로 복사되어 백업/복원 양쪽에서 손상.
+            if ($item->isLink()) {
+                if (static::copySymlink($item->getPathname(), $destPath)) {
+                    continue;
+                }
+                // 복원 실패 (Windows SeCreateSymbolicLink 권한 부족 등) — 일반 복사로 fall-through.
+                // 운영자가 추후 `php artisan storage:link` 수동 실행으로 회복 가능.
+            }
+
             if ($item->isDir()) {
                 static::copyDirectory($item->getPathname(), $destPath, $onProgress, $excludes, $itemRelativePath, $removeOrphans);
             } else {
@@ -60,6 +71,50 @@ class FilePermissionHelper
         if ($removeOrphans && File::isDirectory($destination)) {
             static::removeOrphanItems($source, $destination, $excludes, $relativePath);
         }
+    }
+
+    /**
+     * symlink 자체를 보존 복사합니다 (target 미추적).
+     *
+     * 기존 dest 가 symlink 또는 파일이면 unlink, 디렉토리면 deleteDirectory 후 symlink 재생성.
+     * readlink / symlink 실패 시 false 반환 — 호출자가 일반 복사로 fall-through.
+     *
+     * Windows 환경에서 PHP `symlink()` 는 `SeCreateSymbolicLink` 권한이 필요하며 일반 사용자는
+     * 권한이 없을 가능성이 높다. 실패 시 warning 로그 후 false 반환하여 호출자가 일반 복사로
+     * fall-through 하도록 한다. 운영자는 업그레이드 후 `php artisan storage:link` 등 수동
+     * 명령으로 symlink 를 회복할 수 있다.
+     *
+     * @param  string  $source  소스 symlink 경로
+     * @param  string  $destination  대상 symlink 경로
+     * @return bool  symlink 복원 성공 여부 (false 면 호출자가 일반 복사로 폴백)
+     */
+    protected static function copySymlink(string $source, string $destination): bool
+    {
+        $target = @readlink($source);
+        if ($target === false) {
+            Log::warning('copySymlink: readlink 실패 — 일반 복사로 폴백', ['source' => $source]);
+
+            return false;
+        }
+
+        // 기존 dest 정리 — symlink/파일 은 unlink, 디렉토리는 deleteDirectory
+        if (is_link($destination) || is_file($destination)) {
+            @unlink($destination);
+        } elseif (is_dir($destination)) {
+            File::deleteDirectory($destination);
+        }
+
+        if (! @symlink($target, $destination)) {
+            Log::warning('copySymlink: symlink 생성 실패 — 일반 복사로 폴백', [
+                'source' => $source,
+                'destination' => $destination,
+                'target' => $target,
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -90,7 +145,12 @@ class FilePermissionHelper
 
             // 소스에 존재하지 않는 항목만 삭제
             if (! File::exists($srcPath) && ! File::isDirectory($srcPath)) {
-                if ($destItem->isDir()) {
+                // symlink 는 항상 unlink — File::deleteDirectory 는 is_dir() 추적 검사 후
+                // 재귀 삭제하므로 symlink-to-dir 인 경우 target 의 모든 파일을 삭제하는 사고
+                // 발생 가능. is_link() 가 isDir() 보다 먼저 평가되어야 한다.
+                if (is_link($destItem->getPathname())) {
+                    @unlink($destItem->getPathname());
+                } elseif ($destItem->isDir()) {
                     File::deleteDirectory($destItem->getPathname());
                 } else {
                     File::delete($destItem->getPathname());

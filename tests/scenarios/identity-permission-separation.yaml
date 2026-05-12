@@ -1,0 +1,83 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 본인인증 권한 분리 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트가 cover.
+
+feature: 본인인증(IDV) 관리자 권한 — read / update 분리
+
+description: |
+  메시지 템플릿 카테고리(`messages.read` / `messages.update`)와 일관되도록
+  프로바이더/정책 카테고리도 `read` / `update` 로 분리.
+
+  핵심 변경:
+    - 권한 키 rename: `core.admin.identity.manage` → `.providers.update`
+    - 권한 키 rename: `core.admin.identity.policies.manage` → `.policies.update`
+    - 신설: `core.admin.identity.providers.read` (프로바이더 설정 조회)
+    - 신설: `core.admin.identity.policies.read` (정책 조회)
+    - 라우트 미들웨어 분리: GET → `.read`, POST/PATCH/DELETE → `.update`
+    - Upgrade_7_0_0_beta_5 step 이 in-place identifier UPDATE 로 마이그레이션 →
+      role_permissions 피벗(scope_type/granted_at/granted_by) 자동 보존
+    - PolicyResource / PolicyCollection / ProviderResource abilityMap 갱신
+    - 코어 admin + 이커머스 + 게시판 본인인증 정책 탭에 abilityMap 기반 disabled 적용
+
+axes:
+  permission_set: [none, providers_read_only, providers_update_only, providers_both, policies_read_only, policies_update_only, policies_both, all_four]
+  api_method: [GET_providers, POST_providers, GET_policies, POST_policies, PATCH_policies, DELETE_policies]
+  user_type: [super_admin, regular_with_role, guest]
+  upgrade_state: [pre_beta5_legacy_keys, post_beta5_migrated, post_beta5_fresh_install]
+
+exclusions:
+  - { user_type: guest, api_method: GET_providers, reason: "guest 는 admin 라우트 접근 불가 (401)" }
+  - { user_type: guest, api_method: POST_providers, reason: "동일" }
+  - { user_type: guest, api_method: GET_policies, reason: "동일" }
+  - { user_type: guest, api_method: POST_policies, reason: "동일" }
+  - { user_type: guest, api_method: PATCH_policies, reason: "동일" }
+  - { user_type: guest, api_method: DELETE_policies, reason: "동일" }
+  - { permission_set: providers_read_only, api_method: GET_policies, reason: "정책 API 는 policies.* 권한이 결정 — providers.read 무관" }
+  - { permission_set: providers_update_only, api_method: GET_policies, reason: "동일" }
+  - { permission_set: policies_read_only, api_method: GET_providers, reason: "프로바이더 API 는 providers.* 권한이 결정 — policies.read 무관" }
+  - { permission_set: policies_update_only, api_method: GET_providers, reason: "동일" }
+  - { upgrade_state: post_beta5_fresh_install, api_method: GET_providers, reason: "신규 설치는 legacy 키 자체가 없으므로 마이그레이션 대상 외" }
+
+effects:
+  # 조회 권한 분리
+  - providers_read_grants_get_access_without_update
+  - providers_update_alone_does_not_grant_get_access
+  - policies_read_grants_get_access_without_update
+  - policies_update_alone_does_not_grant_get_access
+
+  # 수정 권한 분리
+  - providers_update_required_for_post_endpoints
+  - policies_update_required_for_store_update_destroy
+  - read_only_user_blocked_on_mutation_endpoints
+
+  # 권한 격리
+  - no_permission_blocked_on_all_endpoints_with_403
+  - all_four_permission_user_has_full_access
+
+  # 마이그레이션 보존
+  - legacy_manage_permission_id_preserved_during_rename
+  - role_permissions_pivot_metadata_preserved_after_rename
+  - role_membership_with_legacy_permission_continues_after_migration
+  - migration_is_idempotent_silent_skip_when_no_legacy_rows
+  - fresh_install_creates_four_permissions_without_migration
+
+  # 새 권한 카탈로그 가시성
+  - permission_catalog_lists_eight_identity_permissions_after_migration
+  - permission_labels_localized_in_ko_en_ja
+
+  # abilityMap UI 가드
+  - policy_resource_can_update_reflects_policies_update_permission
+  - policy_resource_can_delete_reflects_policies_update_permission
+  - policy_collection_can_create_reflects_policies_update_permission
+  - provider_resource_can_update_reflects_providers_update_permission
+
+  # 레이아웃 disabled 가드 (코어/이커머스/게시판)
+  - core_admin_policies_tab_add_button_disabled_when_can_create_false
+  - core_admin_policies_tab_edit_button_hidden_when_can_update_false
+  - core_admin_policies_tab_delete_button_hidden_when_can_delete_false
+  - core_admin_providers_tab_save_button_disabled_when_can_update_false
+  - ecommerce_policies_tab_add_button_disabled_when_can_create_false
+  - board_policies_tab_add_button_disabled_when_can_create_false
+
+test_files:
+  - tests/Feature/Api/Admin/Identity/AdminIdentityProviderPermissionTest.php
+  - tests/Feature/Api/Admin/Identity/AdminIdentityPolicyPermissionTest.php
+  - tests/Feature/Upgrades/Upgrade_7_0_0_beta_5PermissionRenameTest.php

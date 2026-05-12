@@ -6,6 +6,7 @@ use App\Contracts\Extension\UpgradeStepInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
 use App\Exceptions\CoreUpdateOperationException;
+use App\Exceptions\UpgradeHandoffException;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\CoreBackupHelper;
@@ -15,6 +16,7 @@ use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\UpgradeContext;
+use App\Extension\Vendor\EnvironmentDetector;
 use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
@@ -976,7 +978,11 @@ class CoreUpdateService
             $onProgress?->__invoke('apply', $name.' (auto)');
 
             if (File::isDirectory($absPath)) {
-                FilePermissionHelper::copyDirectory($absPath, $dest, $onProgress, $excludes, removeOrphans: true);
+                // 자동 발견 폴백은 destination orphan 정리 책임이 없다.
+                // 부모 프로세스의 stale targets 누락을 메우는 안전망이므로,
+                // base 의 활성 서브디렉토리(예: templates/sirsoft-basic) 가 source 에 없다고
+                // 해서 삭제하면 사용자 데이터 영구 손실 위험. orphan 처리는 정상 targets 분기만 수행.
+                FilePermissionHelper::copyDirectory($absPath, $dest, $onProgress, $excludes, removeOrphans: false);
             } else {
                 File::ensureDirectoryExists(dirname($dest));
                 FilePermissionHelper::copyFile($absPath, $dest);
@@ -993,7 +999,12 @@ class CoreUpdateService
     }
 
     /**
-     * 정규화된 path 가 이미 처리된 상위 path 의 하위 항목인지 검사합니다.
+     * 정규화된 path 가 이미 처리된 상위/하위 path 와 관계가 있는지 검사합니다.
+     *
+     * 양방향 검사:
+     *  - 방향 1 — path 가 applied 의 자식: applied=['templates'], path='templates/sub' (자식 중복 복사 방지)
+     *  - 방향 2 — path 가 applied 의 부모: applied=['templates/_bundled'], path='templates'
+     *    (부모 통째로 복사 시 활성 서브디렉토리 orphan 판정 회피)
      *
      * @param  array<string, bool>  $applied
      */
@@ -1004,6 +1015,13 @@ class CoreUpdateService
         foreach ($segments as $segment) {
             $accumulated = $accumulated === '' ? $segment : $accumulated.'/'.$segment;
             if (isset($applied[$accumulated])) {
+                return true;
+            }
+        }
+
+        $prefix = $path.'/';
+        foreach ($applied as $appliedPath => $_) {
+            if (str_starts_with((string) $appliedPath, $prefix)) {
                 return true;
             }
         }
@@ -1207,7 +1225,7 @@ class CoreUpdateService
             2 => ['pipe', 'w'],
         ];
 
-        $process = proc_open($command, $descriptors, $pipes, $workingDir);
+        $process = proc_open($command, $descriptors, $pipes, $workingDir, EnvironmentDetector::buildComposerEnv());
 
         if (! is_resource($process)) {
             throw new CoreUpdateOperationException('settings.core_update.composer_failed');
@@ -1536,6 +1554,39 @@ class CoreUpdateService
      */
     public function runUpgradeSteps(string $fromVersion, string $toVersion, ?\Closure $onStep = null, bool $force = false): void
     {
+        // 부모 in-process fallback 진입 시 stale 메모리 가드.
+        //
+        // 현재 메모리의 `config('app.version')` 이 toVersion 보다 낮으면 부모는 stale 코드를
+        // 보유한 채 step 을 실행 중. upgrade step 안에서 신규 메서드 호출 시 fatal 위험
+        // (이슈 #28 의 발현 메커니즘). `spawn_failure_mode` 와 연동하여 abort/fallback 분기.
+        //
+        // spawn 자식 (ExecuteUpgradeStepsCommand) 의 경우 spawn env 의 APP_VERSION=toVersion
+        // 이 적용된 채 새 프로세스에서 부팅되므로 memoryVersion === toVersion → 가드 미발동.
+        $memoryVersion = (string) config('app.version', $fromVersion);
+        if (version_compare($memoryVersion, $toVersion, '<')) {
+            $mode = config('app.update.spawn_failure_mode', 'fallback');
+            $message = sprintf(
+                '[core-update] runUpgradeSteps 부모 메모리 stale 감지 — memory=%s, target=%s, mode=%s',
+                $memoryVersion,
+                $toVersion,
+                $mode,
+            );
+
+            if ($mode === 'abort') {
+                throw new UpgradeHandoffException(
+                    afterVersion: $fromVersion,
+                    reason: $message.' — fail-fast 모드. 수동 재개로 진행하세요.',
+                    resumeCommand: sprintf(
+                        'php artisan core:execute-upgrade-steps --from=%s --to=%s --force',
+                        $fromVersion,
+                        $toVersion,
+                    ),
+                );
+            }
+
+            Log::warning($message.' — fallback 모드. upgrade step 안에서 신규 메서드 호출 시 fatal 가능.');
+        }
+
         $upgradesPath = base_path('upgrades');
 
         if (! File::isDirectory($upgradesPath)) {
@@ -1575,6 +1626,21 @@ class CoreUpdateService
                 if (class_exists($className)) {
                     $instance = new $className;
                     if ($instance instanceof UpgradeStepInterface) {
+                        // 7.0.0-beta.5 부터 신규 업그레이드 스텝은 AbstractUpgradeStep 상속 의무.
+                        // "각 스텝별 동작 100% 동일 보장" invariant 를 위해 카탈로그/변환/핫픽스를
+                        // upgrades/data/{version}/ 의 버전 namespace 아래로 격리하도록 강제한다.
+                        //
+                        // 미상속 시점에 즉시 throw → core:update 전체 중단 → 상위 백업 복원.
+                        // 상세: docs/extension/upgrade-step-guide.md §12
+                        if (version_compare($version, '7.0.0-beta.5', '>=')
+                            && ! $instance instanceof \App\Extension\AbstractUpgradeStep) {
+                            throw new CoreUpdateOperationException(sprintf(
+                                'Upgrade step %s must extend App\\Extension\\AbstractUpgradeStep '
+                                .'(introduced in 7.0.0-beta.5). See docs/extension/upgrade-step-guide.md §12.',
+                                $version,
+                            ));
+                        }
+
                         $steps[$version] = $instance;
                     }
                 }

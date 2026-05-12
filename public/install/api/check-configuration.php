@@ -865,6 +865,9 @@ class ValidationApi
 
         $output = [];
         $returnCode = -1;
+        // root/super user 환경 + 비대화형 컨텍스트에서 composer interactive 경고로 인한
+        // 비정상 종료를 차단 (Synology DSM 등 PHP-FPM root 실행 환경 대응)
+        applyInstallerComposerEnvVars();
         exec($command, $output, $returnCode);
 
         if ($returnCode !== 0) {

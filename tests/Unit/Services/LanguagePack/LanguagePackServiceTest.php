@@ -387,13 +387,19 @@ class LanguagePackServiceTest extends TestCase
             $this->markTestSkipped('g7-core-ja 번들이 아직 빌드되지 않음 — build-language-pack-ja.cjs 실행 후 재시도');
         }
 
+        // 번들 manifest 의 현재 버전을 기준으로 설치 결과 검증
+        // (코어 lang 변경 시 g7-core-ja 버전이 patch bump 되므로 하드코딩 회피)
+        $bundledManifest = json_decode(file_get_contents($bundledPath.'/language-pack.json'), true);
+        $bundledVersion = $bundledManifest['version'] ?? null;
+        $this->assertNotNull($bundledVersion, '번들 manifest 에 version 누락');
+
         $pack = $this->service->installFromBundled('g7-core-ja', autoActivate: true);
 
         $this->assertSame('g7-core-ja', $pack->identifier);
         $this->assertSame(LanguagePackScope::Core->value, $pack->scope);
         $this->assertNull($pack->target_identifier);
         $this->assertSame('ja', $pack->locale);
-        $this->assertSame('1.0.0-beta.1', $pack->version);
+        $this->assertSame($bundledVersion, $pack->version);
         $this->assertSame(LanguagePackStatus::Active->value, $pack->status);
         $this->assertSame('bundled', $pack->source_type);
         // is_protected 는 모든 install 흐름에서 항상 false (보호 행은 코어/번들 확장의 lang/ 디렉토리를 가상 행으로 합성하는 경로에서만 true)

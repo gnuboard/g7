@@ -24,14 +24,11 @@ class IdentityVerificationManagerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        HookManager::resetAll();
+        // HookManager::resetAll() 호출 금지 — 코어 ServiceProvider 가 부트 시 등록한 listener
+        // (CoreActivityLogListener 등) 도 함께 날아가 동일 PHP 프로세스 내 다른 테스트에 누수된다.
+        // 본 클래스는 `new IdentityVerificationManager()` 로 독립 인스턴스를 만들고 그 위에서만 동작하므로
+        // 정적 hook 전역 상태를 초기화할 필요가 없다.
         $this->manager = new IdentityVerificationManager();
-    }
-
-    protected function tearDown(): void
-    {
-        HookManager::resetAll();
-        parent::tearDown();
     }
 
     public function test_register_and_get_provider(): void
@@ -64,16 +61,22 @@ class IdentityVerificationManagerTest extends TestCase
         $this->manager->register($mail);
 
         $injected = $this->makeProvider('plugin:fake', true, true);
-        HookManager::addFilter('core.identity.registered_providers', function (array $providers) use ($injected) {
+        $filter = function (array $providers) use ($injected) {
             $providers[$injected->getId()] = $injected;
 
             return $providers;
-        });
+        };
+        HookManager::addFilter('core.identity.registered_providers', $filter);
 
-        $all = $this->manager->all();
+        try {
+            $all = $this->manager->all();
 
-        $this->assertArrayHasKey('g7:core.mail', $all);
-        $this->assertArrayHasKey('plugin:fake', $all);
+            $this->assertArrayHasKey('g7:core.mail', $all);
+            $this->assertArrayHasKey('plugin:fake', $all);
+        } finally {
+            // 테스트 격리 — 동일 PHP 프로세스 내 후속 테스트가 본 filter 의 영향을 받지 않도록 정리.
+            HookManager::removeFilter('core.identity.registered_providers', $filter);
+        }
     }
 
     public function test_resolve_for_purpose_returns_provider_supporting_purpose(): void
@@ -97,6 +100,71 @@ class IdentityVerificationManagerTest extends TestCase
         $resolved = $this->manager->resolveForPurpose('signup');
 
         $this->assertSame('plugin:kcp', $resolved->getId());
+    }
+
+    /**
+     * 명시 $providerId 가 등록 + purpose 지원 시 settings/default 보다 우선 적용 (0번 우선순위, refs #275).
+     */
+    public function test_resolve_for_purpose_prefers_explicit_provider_id(): void
+    {
+        $mail = $this->makeProvider('g7:core.mail', true, true);
+        $external = $this->makeProvider('plugin:fake_external', true, true);
+
+        $this->manager->register($mail);
+        $this->manager->register($external);
+
+        // settings.identity.purpose_providers.signup = mail 로 강제 — 명시 providerId 가 이걸 덮어야 한다.
+        config(['settings.identity.purpose_providers.signup' => 'g7:core.mail']);
+
+        $resolved = $this->manager->resolveForPurpose('signup', 'plugin:fake_external');
+
+        $this->assertSame('plugin:fake_external', $resolved->getId());
+    }
+
+    /**
+     * 명시 $providerId 가 미등록이면 silent fallback (기존 우선순위 체인 진행, refs #275).
+     */
+    public function test_resolve_for_purpose_falls_back_when_explicit_provider_unregistered(): void
+    {
+        $mail = $this->makeProvider('g7:core.mail', true, true);
+        $this->manager->register($mail);
+
+        $resolved = $this->manager->resolveForPurpose('signup', 'plugin:nonexistent');
+
+        $this->assertSame('g7:core.mail', $resolved->getId());
+    }
+
+    /**
+     * 명시 $providerId 가 등록되어 있어도 supportsPurpose() false 면 silent fallback (refs #275).
+     */
+    public function test_resolve_for_purpose_falls_back_when_explicit_provider_does_not_support_purpose(): void
+    {
+        $mail = $this->makeProvider('g7:core.mail', true, true);
+        $passwordOnly = $this->makeProvider('plugin:password_only', true, false);
+
+        $this->manager->register($mail);
+        $this->manager->register($passwordOnly);
+
+        $resolved = $this->manager->resolveForPurpose('signup', 'plugin:password_only');
+
+        $this->assertSame('g7:core.mail', $resolved->getId());
+    }
+
+    /**
+     * $providerId = null (기본값) 시 기존 우선순위 유지 — BC 회귀 차단 (refs #275).
+     */
+    public function test_resolve_for_purpose_with_null_provider_id_preserves_legacy_order(): void
+    {
+        $mail = $this->makeProvider('g7:core.mail', true, true);
+        $external = $this->makeProvider('plugin:fake_external', true, true);
+
+        $this->manager->register($mail);
+        $this->manager->register($external);
+
+        // default = g7:core.mail (Manager 의 defaultId) — null providerId 이면 default 로 해석되어야 한다.
+        $resolved = $this->manager->resolveForPurpose('signup', null);
+
+        $this->assertSame('g7:core.mail', $resolved->getId());
     }
 
     /**

@@ -92,4 +92,63 @@ class EnvironmentDetectorTest extends TestCase
         $result = $this->detector->canExecuteComposer();
         $this->assertIsBool($result);
     }
+
+    public function test_build_composer_env_includes_superuser_flag(): void
+    {
+        $env = EnvironmentDetector::buildComposerEnv();
+
+        $this->assertArrayHasKey('COMPOSER_ALLOW_SUPERUSER', $env);
+        $this->assertSame('1', $env['COMPOSER_ALLOW_SUPERUSER']);
+    }
+
+    public function test_build_composer_env_includes_no_interaction_flag(): void
+    {
+        $env = EnvironmentDetector::buildComposerEnv();
+
+        $this->assertArrayHasKey('COMPOSER_NO_INTERACTION', $env);
+        $this->assertSame('1', $env['COMPOSER_NO_INTERACTION']);
+    }
+
+    public function test_build_composer_env_preserves_existing_env(): void
+    {
+        $original = $_ENV['PATH'] ?? null;
+        $_ENV['PATH'] = '/sentinel/test/path';
+
+        try {
+            $env = EnvironmentDetector::buildComposerEnv();
+
+            $this->assertArrayHasKey('PATH', $env);
+            $this->assertSame('/sentinel/test/path', $env['PATH']);
+        } finally {
+            if ($original === null) {
+                unset($_ENV['PATH']);
+            } else {
+                $_ENV['PATH'] = $original;
+            }
+        }
+    }
+
+    public function test_build_composer_env_overrides_external_false_values(): void
+    {
+        $originalAllow = $_ENV['COMPOSER_ALLOW_SUPERUSER'] ?? null;
+        $originalNoInteraction = $_ENV['COMPOSER_NO_INTERACTION'] ?? null;
+
+        $_ENV['COMPOSER_ALLOW_SUPERUSER'] = '0';
+        $_ENV['COMPOSER_NO_INTERACTION'] = '0';
+
+        try {
+            $env = EnvironmentDetector::buildComposerEnv();
+
+            $this->assertSame('1', $env['COMPOSER_ALLOW_SUPERUSER']);
+            $this->assertSame('1', $env['COMPOSER_NO_INTERACTION']);
+        } finally {
+            foreach (['COMPOSER_ALLOW_SUPERUSER' => $originalAllow, 'COMPOSER_NO_INTERACTION' => $originalNoInteraction] as $key => $value) {
+                if ($value === null) {
+                    unset($_ENV[$key]);
+                } else {
+                    $_ENV[$key] = $value;
+                }
+            }
+        }
+    }
 }

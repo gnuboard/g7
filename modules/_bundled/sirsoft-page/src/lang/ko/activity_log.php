@@ -6,7 +6,9 @@ return [
     'action' => [
         'create' => '생성',
         'delete' => '삭제',
+        'publish' => '발행',
         'restore' => '복원',
+        'unpublish' => '발행 취소',
         'update' => '수정',
         'upload' => '업로드',
     ],
