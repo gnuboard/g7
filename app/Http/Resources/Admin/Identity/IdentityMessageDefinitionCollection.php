@@ -16,6 +16,7 @@ class IdentityMessageDefinitionCollection extends BaseApiCollection
     protected function abilityMap(): array
     {
         return [
+            'can_create' => 'core.admin.identity.messages.update',
             'can_update' => 'core.admin.identity.messages.update',
         ];
     }
