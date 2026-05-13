@@ -3,18 +3,14 @@
 namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
-require_once __DIR__.'/../../ModuleTestCase.php';
+require_once __DIR__ . '/../../ModuleTestCase.php';
 
-use App\Models\Permission;
-use App\Models\Role;
 use App\Models\User;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * 관리자 게시판 관리 테스트
@@ -32,8 +28,6 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * DatabaseTransactions 비활성화 유지 (tearDown 수동 정리 경로 보존).
-     *
-     * @return void 반환값 없음
      */
     public function beginDatabaseTransaction(): void
     {
@@ -42,8 +36,6 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 테스트 환경 설정
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -52,7 +44,7 @@ class BoardManagementTest extends ModuleTestCase
         // board_types 테이블이 없으면 마이그레이션 실행
         if (! Schema::hasTable('board_types')) {
             $this->artisan('migrate', [
-                '--path' => $this->getModuleBasePath().'/database/migrations',
+                '--path' => $this->getModuleBasePath() . '/database/migrations',
                 '--realpath' => true,
             ]);
         }
@@ -77,8 +69,6 @@ class BoardManagementTest extends ModuleTestCase
      *
      * DatabaseTransactions 비활성화로 자동 롤백이 없으므로
      * 각 테스트에서 생성된 데이터를 FK 의존성 역순으로 수동 삭제합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -93,18 +83,18 @@ class BoardManagementTest extends ModuleTestCase
 
         foreach ($boardSlugs as $slug) {
             // board-scoped 권한/역할 정리 (sirsoft-board.{slug}.* 패턴)
-            $boardPermIds = Permission::where('identifier', 'like', "sirsoft-board.{$slug}.%")
+            $boardPermIds = \App\Models\Permission::where('identifier', 'like', "sirsoft-board.{$slug}.%")
                 ->pluck('id');
             if ($boardPermIds->isNotEmpty()) {
                 DB::table('role_permissions')->whereIn('permission_id', $boardPermIds)->delete();
-                Permission::whereIn('id', $boardPermIds)->delete();
+                \App\Models\Permission::whereIn('id', $boardPermIds)->delete();
             }
 
-            $boardRoleIds = Role::where('identifier', 'like', "sirsoft-board.{$slug}.%")
+            $boardRoleIds = \App\Models\Role::where('identifier', 'like', "sirsoft-board.{$slug}.%")
                 ->pluck('id');
             if ($boardRoleIds->isNotEmpty()) {
                 DB::table('user_roles')->whereIn('role_id', $boardRoleIds)->delete();
-                Role::whereIn('id', $boardRoleIds)->delete();
+                \App\Models\Role::whereIn('id', $boardRoleIds)->delete();
             }
         }
 
@@ -130,19 +120,13 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 게시판 생성 시 is_active 기본값 true 테스트
-     *
-     * @scenario case=create_default_active
-     *
-     * @effects board_is_active_defaults_true_on_create
-     *
-     * @return void 반환값 없음
      */
     public function test_board_created_with_default_is_active_true(): void
     {
         // Given: is_active를 지정하지 않은 게시판 데이터
         $data = [
             'name' => ['ko' => '테스트 게시판', 'en' => 'Test Board'],
-            'slug' => 'test-'.substr(md5(microtime()), 0, 8),
+            'slug' => 'test-' . substr(md5(microtime()), 0, 8),
             'type' => 'basic',
             'description' => ['ko' => '테스트 설명', 'en' => 'Test Description'],
             'show_view_count' => true,
@@ -161,60 +145,14 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 생성 시 반응 기본값이 모듈 환경설정(basic_defaults)에서 시드된다 (이슈 #525 확정 13).
-     *
-     * @scenario case=new_board_seeds_reaction_defaults
-     *
-     * @effects new_board_seeds_reaction_defaults_from_settings
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_created_seeds_reaction_defaults_from_settings(): void
-    {
-        // Given: 모듈 환경설정(basic_defaults)에 반응 기본값이 설정된 상태.
-        // 테스트 환경에는 g7_settings.modules 가 자동 로드되지 않으므로 (다른 board 테스트와
-        // 동일하게) 검증 대상 설정을 명시적으로 주입한다. StoreBoardRequest 는 이 값을 읽어 시드한다.
-        Config::set('g7_settings.modules.sirsoft-board.basic_defaults.use_reaction', true);
-        Config::set('g7_settings.modules.sirsoft-board.basic_defaults.active_reaction_types', ['like']);
-
-        // 반응 관련 필드를 지정하지 않은 게시판 데이터 (기본값 시드 기대)
-        $slug = 'test-'.substr(md5(microtime()), 0, 8);
-        $data = [
-            'name' => ['ko' => '테스트 게시판', 'en' => 'Test Board'],
-            'slug' => $slug,
-            'type' => 'basic',
-            'show_view_count' => true,
-            'use_report' => false,
-            'board_manager_ids' => [$this->adminUser->uuid],
-        ];
-
-        // When: 게시판 생성 API 호출
-        $response = $this->actingAs($this->adminUser)
-            ->postJson('/api/modules/sirsoft-board/admin/boards', $data);
-
-        // Then: 반응 기본값(use_reaction=true, active_reaction_types=["like"])이 시드됨
-        $response->assertStatus(201);
-
-        $board = Board::where('slug', $slug)->firstOrFail();
-        $this->assertTrue($board->use_reaction);
-        $this->assertContains('like', $board->active_reaction_types ?? []);
-    }
-
-    /**
      * is_active false로 게시판 생성 테스트
-     *
-     * @scenario case=create_inactive
-     *
-     * @effects board_is_active_false_honoured_on_create
-     *
-     * @return void 반환값 없음
      */
     public function test_board_created_with_is_active_false(): void
     {
         // Given: is_active를 false로 지정한 게시판 데이터
         $data = [
             'name' => ['ko' => '비활성 게시판', 'en' => 'Inactive Board'],
-            'slug' => 'inact-'.substr(md5(microtime().'inactive'), 0, 8),
+            'slug' => 'inact-' . substr(md5(microtime() . 'inactive'), 0, 8),
             'type' => 'basic',
             'description' => ['ko' => '비활성 설명', 'en' => 'Inactive Description'],
             'show_view_count' => true,
@@ -234,12 +172,6 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * is_active 수정 테스트 (true → false)
-     *
-     * @scenario case=update_active_off
-     *
-     * @effects board_is_active_update_persists_and_is_exposed
-     *
-     * @return void 반환값 없음
      */
     public function test_board_is_active_can_be_updated_to_false(): void
     {
@@ -261,48 +193,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * use_scrap 수정 + 응답 노출 회귀 테스트 (#524 브라우저 검수)
-     *
-     * BoardResource 에 use_scrap 미노출 시 편집 화면 토글이 DB 값을 못 받고,
-     * UpdateBoardRequest 에 규칙 미정의 시 저장이 누락된다. 두 경로를 함께 방어한다.
-     *
-     * @scenario case=update_scrap_toggle
-     *
-     * @effects board_use_scrap_update_persists_and_is_exposed
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_use_scrap_can_be_updated_and_is_exposed(): void
-    {
-        // Given: 스크랩 사용 게시판
-        $board = Board::factory()->create(['use_scrap' => true]);
-
-        // 조회 응답에 use_scrap 이 노출되어야 편집 화면 토글이 값을 반영한다.
-        $show = $this->actingAs($this->adminUser)
-            ->getJson("/api/modules/sirsoft-board/admin/boards/{$board->id}");
-        $show->assertStatus(200);
-        $this->assertTrue($show->json('data.use_scrap'));
-
-        // When: use_scrap 을 false 로 변경
-        $response = $this->actingAs($this->adminUser)
-            ->putJson("/api/modules/sirsoft-board/admin/boards/{$board->id}", [
-                'use_scrap' => false,
-            ]);
-
-        // Then: 수정 성공, 응답·DB 모두 false
-        $response->assertStatus(200);
-        $this->assertFalse($response->json('data.use_scrap'));
-        $this->assertFalse($board->fresh()->use_scrap);
-    }
-
-    /**
      * is_active 수정 테스트 (false → true)
-     *
-     * @scenario case=update_active_on
-     *
-     * @effects board_is_active_update_persists_and_is_exposed
-     *
-     * @return void 반환값 없음
      */
     public function test_board_is_active_can_be_updated_to_true(): void
     {
@@ -324,192 +215,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * 관리자 게시판 목록에는 역할 소속 사용자 정보가 실리지 않는다 (#518 / 공개 #76).
-     *
-     * 종전에는 행마다 매니저/스텝 역할을 조회해 그 역할에 속한 **사용자 전원의 uuid·이름·이메일**을
-     * 목록에 실었다. 목록 화면은 그 값을 쓰지 않으면서 행 수만큼 추가 쿼리가 나가고 개인정보가
-     * 노출됐다. 역할 편집은 게시판 상세/설정 화면이 공급한다.
-     *
-     * @scenario endpoint=admin_list,role_assignment=assigned
-     *
-     * @effects admin_list_omits_role_member_payload
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_list_omits_role_member_payload(): void
-    {
-        Board::factory()->count(2)->create(['is_active' => true]);
-
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/boards');
-
-        $response->assertStatus(200);
-
-        foreach ($response->json('data.data') as $row) {
-            foreach (['board_managers', 'board_steps', 'board_manager_ids', 'board_step_ids'] as $heavy) {
-                $this->assertArrayNotHasKey($heavy, $row, "게시판 목록에 {$heavy} 가 실리면 안 된다");
-            }
-        }
-    }
-
-    /**
-     * 관리자 목록 화면이 쓰는 표시 필드는 그대로 남는다 (기능 축소 아님).
-     *
-     * @scenario endpoint=admin_list,role_assignment=unassigned
-     *
-     * @effects admin_list_keeps_display_fields
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_list_keeps_admin_display_fields(): void
-    {
-        Board::factory()->create(['is_active' => true]);
-
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/boards');
-
-        $response->assertStatus(200);
-
-        $row = $response->json('data.data.0');
-
-        foreach (['id', 'name', 'slug', 'type', 'is_active', 'categories', 'posts_count', 'abilities'] as $field) {
-            $this->assertArrayHasKey($field, $row, "관리자 목록이 쓰는 {$field} 가 사라졌다");
-        }
-    }
-
-    /**
-     * 목록 응답 어디에도 사용자 이메일이 실리지 않는다.
-     *
-     * 키 이름만 검사하면 필드가 다른 이름으로 되살아났을 때 통과한다. 노출되면 안 되는 것은
-     * 특정 키가 아니라 **값**이므로 응답 전문에서 이메일 문자열 자체를 찾는다.
-     *
-     * @effects admin_list_never_exposes_member_email
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_list_never_exposes_member_email(): void
-    {
-        $manager = User::factory()->create(['email' => 'board-manager-probe@example.com']);
-        $board = Board::factory()->create(['is_active' => true]);
-
-        $managerRole = Role::firstOrCreate(
-            ['identifier' => "sirsoft-board.{$board->slug}.manager"],
-            ['name' => json_encode(['ko' => '매니저', 'en' => 'Manager']), 'is_active' => true]
-        );
-        $managerRole->users()->syncWithoutDetaching([$manager->id]);
-
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/boards');
-
-        $response->assertStatus(200);
-        $this->assertStringNotContainsString(
-            'board-manager-probe@example.com',
-            $response->getContent(),
-            '게시판 목록 응답에 역할 소속 사용자의 이메일이 실렸다'
-        );
-    }
-
-    /**
-     * 목록에서 뺀 역할 배정은 상세 조회가 여전히 공급한다 (기능 축소 아님).
-     *
-     * @scenario endpoint=detail,role_assignment=assigned
-     *
-     * @effects detail_still_provides_role_assignments
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_detail_still_provides_role_assignments(): void
-    {
-        $manager = User::factory()->create();
-        $board = Board::factory()->create(['is_active' => true]);
-
-        $managerRole = Role::firstOrCreate(
-            ['identifier' => "sirsoft-board.{$board->slug}.manager"],
-            ['name' => json_encode(['ko' => '매니저', 'en' => 'Manager']), 'is_active' => true]
-        );
-        $managerRole->users()->syncWithoutDetaching([$manager->id]);
-
-        $response = $this->actingAs($this->adminUser)
-            ->getJson("/api/modules/sirsoft-board/admin/boards/{$board->id}");
-
-        $response->assertStatus(200);
-
-        $data = $response->json('data');
-
-        $this->assertArrayHasKey('board_manager_ids', $data, '상세에서 역할 배정이 사라지면 설정 화면이 비어 열린다');
-        $this->assertContains($manager->uuid, $data['board_manager_ids']);
-    }
-
-    /**
-     * 역할이 배정되지 않은 게시판도 상세에서 필드 자체는 유지된다 (빈 배열).
-     *
-     * 필드가 통째로 사라지면 화면이 "아직 안 불러온 상태" 와 "배정이 없는 상태" 를 구분하지
-     * 못한다.
-     *
-     * @scenario endpoint=detail,role_assignment=unassigned
-     *
-     * @effects detail_still_provides_role_assignments
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_detail_returns_empty_role_assignments_when_unassigned(): void
-    {
-        $board = Board::factory()->create(['is_active' => true]);
-
-        $response = $this->actingAs($this->adminUser)
-            ->getJson("/api/modules/sirsoft-board/admin/boards/{$board->id}");
-
-        $response->assertStatus(200);
-
-        $data = $response->json('data');
-
-        $this->assertArrayHasKey('board_manager_ids', $data);
-        $this->assertSame([], $data['board_manager_ids']);
-    }
-
-    /**
-     * 게시판 수가 늘어도 역할 조회가 늘지 않는다 (행당 재조회 부재).
-     *
-     * @effects role_query_count_does_not_scale_with_board_count
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_list_role_query_count_does_not_grow_with_rows(): void
-    {
-        Board::factory()->count(2)->create(['is_active' => true]);
-
-        // 권한/설정 캐시 워밍 (측정 대상 제외)
-        $this->actingAs($this->adminUser)->getJson('/api/modules/sirsoft-board/admin/boards')->assertOk();
-
-        $queries = [];
-        DB::listen(function ($query) use (&$queries) {
-            $queries[] = $query->sql;
-        });
-
-        $this->actingAs($this->adminUser)->getJson('/api/modules/sirsoft-board/admin/boards')->assertOk();
-        $baseline = count(array_filter($queries, fn (string $sql) => $this->isBoardRoleMemberQuery($sql)));
-
-        Board::factory()->count(8)->create(['is_active' => true]);
-
-        $queries = [];
-        $this->actingAs($this->adminUser)->getJson('/api/modules/sirsoft-board/admin/boards')->assertOk();
-        $grown = count(array_filter($queries, fn (string $sql) => $this->isBoardRoleMemberQuery($sql)));
-
-        $this->assertSame(
-            $baseline,
-            $grown,
-            "게시판 수에 비례해 역할 조회가 늘었다 (기준: {$baseline}, 증가 후: {$grown})"
-        );
-    }
-
-    /**
      * 게시판 목록 조회 시 is_active 필드 포함 테스트
-     *
-     * @scenario case=list_exposes_is_active
-     *
-     * @effects admin_list_rows_carry_is_active
-     *
-     * @return void 반환값 없음
      */
     public function test_board_list_includes_is_active_field(): void
     {
@@ -540,12 +246,6 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * getFormData에 is_active 기본값 포함 테스트 (생성 모드)
-     *
-     * @scenario case=form_data_default_active
-     *
-     * @effects form_data_create_mode_is_active_true
-     *
-     * @return void 반환값 없음
      */
     public function test_get_form_data_includes_is_active_default_true(): void
     {
@@ -564,60 +264,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * getFormData 생성 모드에서 blocked_keywords / allowed_extensions가 배열로 반환되는지 테스트
-     *
-     * TagInput(태그 입력) 컴포넌트는 배열 값을 요구한다. 생성 모드에서 문자열(콤마 join)로
-     * 반환되면 폼이 깨지므로 categories 와 동일하게 배열로 주입되어야 한다.
-     *
-     * @effects form_data_create_mode_returns_fields_as_array
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_form_data_returns_blocked_keywords_and_allowed_extensions_as_array(): void
-    {
-        // When: 게시판 생성 폼 데이터 조회 (id 없이)
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/boards/form-data');
-
-        // Then: blocked_keywords / allowed_extensions가 배열 타입으로 포함됨
-        $response->assertStatus(200);
-
-        $data = $response->json('data');
-        $this->assertArrayHasKey('blocked_keywords', $data);
-        $this->assertArrayHasKey('allowed_extensions', $data);
-        $this->assertIsArray($data['blocked_keywords']);
-        $this->assertIsArray($data['allowed_extensions']);
-    }
-
-    /**
-     * getFormData 생성 모드의 금지어는 환경설정 「게시판 기본 설정」(basic_defaults)의 금지어로 채워진다.
-     *
-     * 예전에는 금지어 칸이 없는 스팸·보안 설정(spam_security)에서 읽어 새 게시판 폼의 금지어가 늘 빈칸이었다(B-19).
-     *
-     * @effects form_data_create_mode_blocked_keywords_from_basic_defaults
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_form_data_create_mode_prefills_blocked_keywords_from_basic_defaults(): void
-    {
-        Config::set('g7_settings.modules.sirsoft-board.basic_defaults.blocked_keywords', ['스팸', '광고']);
-        Config::set('g7_settings.modules.sirsoft-board.spam_security.blocked_keywords', ['다른값']);
-
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/boards/form-data');
-
-        $response->assertStatus(200);
-        $this->assertSame(['스팸', '광고'], $response->json('data.blocked_keywords'));
-    }
-
-    /**
      * getFormData에 _meta (limits) 포함 테스트
-     *
-     * @scenario case=form_data_meta_limits
-     *
-     * @effects form_data_meta_carries_limits_and_depth_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_get_form_data_includes_meta_with_limits_and_depth_fields(): void
     {
@@ -645,45 +292,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * getFormData 수정 모드에서 blocked_keywords / allowed_extensions가 배열로 반환되는지 테스트
-     *
-     * BoardResource 가 두 필드를 문자열(콤마 join)이 아닌 배열로 반환해야 TagInput 이 값을
-     * 정상적으로 칩(chip)으로 표시한다. (categories 와 동일한 배열 계약)
-     *
-     * @effects form_data_edit_mode_returns_fields_as_array
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_form_data_edit_mode_returns_blocked_keywords_and_allowed_extensions_as_array(): void
-    {
-        // Given: 제한 키워드/허용 확장자가 설정된 게시판
-        $board = Board::factory()->create([
-            'blocked_keywords' => ['욕설', '광고'],
-            'allowed_extensions' => ['jpg', 'png'],
-        ]);
-
-        // When: 수정 모드로 폼 데이터 조회 (board_id 지정)
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/boards/form-data?board_id='.$board->id);
-
-        // Then: 두 필드가 배열 타입으로 반환됨
-        $response->assertStatus(200);
-
-        $data = $response->json('data');
-        $this->assertIsArray($data['blocked_keywords']);
-        $this->assertIsArray($data['allowed_extensions']);
-        $this->assertSame(['욕설', '광고'], $data['blocked_keywords']);
-        $this->assertSame(['jpg', 'png'], $data['allowed_extensions']);
-    }
-
-    /**
      * 게시판 상세 조회 시 is_active 필드 포함 테스트
-     *
-     * @scenario case=detail_exposes_is_active
-     *
-     * @effects detail_carries_is_active
-     *
-     * @return void 반환값 없음
      */
     public function test_board_detail_includes_is_active_field(): void
     {
@@ -709,190 +318,7 @@ class BoardManagementTest extends ModuleTestCase
     }
 
     /**
-     * 게시판 상세를 slug 로 조회할 수 있다 (#450 관리자 라우팅 slug 전환)
-     *
-     * @scenario case=detail_by_slug
-     *
-     * @effects slug_resolves_board_in_admin_routes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_detail_can_be_fetched_by_slug(): void
-    {
-        // Given
-        $board = Board::factory()->create(['is_active' => true]);
-
-        // When: 숫자 id 가 아닌 slug 로 상세 조회
-        $response = $this->actingAs($this->adminUser)
-            ->getJson("/api/modules/sirsoft-board/admin/boards/{$board->slug}");
-
-        // Then: 동일 게시판 반환
-        $response->assertStatus(200);
-        $this->assertSame($board->id, $response->json('data.id'));
-        $this->assertSame($board->slug, $response->json('data.slug'));
-    }
-
-    /**
-     * 게시판을 slug 로 수정할 수 있다 (#450)
-     *
-     * @scenario case=update_by_slug
-     *
-     * @effects slug_resolves_board_in_admin_routes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_board_can_be_updated_by_slug(): void
-    {
-        // Given
-        $board = Board::factory()->create(['is_active' => true]);
-
-        // When: slug 로 PUT
-        $response = $this->actingAs($this->adminUser)
-            ->putJson("/api/modules/sirsoft-board/admin/boards/{$board->slug}", [
-                'is_active' => false,
-            ]);
-
-        // Then
-        $response->assertStatus(200);
-        $this->assertFalse($board->fresh()->is_active);
-    }
-
-    /**
-     * 폼 데이터를 그대로 되돌려 저장해도 통과해야 한다 (이슈 #78 통합 회귀)
-     *
-     * 관리자 폼은 GET 응답 전체를 _local.form 에 통째로 주입하고 그대로 PUT 한다.
-     * 따라서 요청에는 항상 모든 키가 존재하며, 무변경 저장이 검증에 막히면 안 된다.
-     * 이 테스트가 "전체 객체 PUT" 이라는 프런트 계약을 백엔드에 고정한다.
-     *
-     * @scenario case=upload_disabled_extensions_null
-     *
-     * @effects unchanged_form_data_round_trip_saves
-     *
-     * @param  array<string, mixed>  $attributes  게시판 속성
-     * @return void 반환값 없음
-     */
-    #[DataProvider('roundTripBoardAttributesProvider')]
-    public function test_form_data_round_trip_save_passes(array $attributes): void
-    {
-        // Given: 생성 API 로 만든 게시판 (board-scoped 역할/권한이 실제로 존재하는 상태)
-        $slug = 'test-rt-'.substr(md5(microtime().serialize($attributes)), 0, 8);
-
-        $this->actingAs($this->adminUser)
-            ->postJson('/api/modules/sirsoft-board/admin/boards', [
-                'name' => ['ko' => '왕복 저장 테스트', 'en' => 'Round Trip Test'],
-                'slug' => $slug,
-                'type' => 'basic',
-                'show_view_count' => true,
-                'use_report' => false,
-                'board_manager_ids' => [$this->adminUser->uuid],
-            ])->assertStatus(201);
-
-        // 검증 대상 상태를 DB 에 직접 반영 (레거시 데이터 재현)
-        $board = Board::where('slug', $slug)->firstOrFail();
-        $board->forceFill($attributes)->save();
-
-        // When: 폼 데이터를 조회하고 받은 객체를 그대로 PUT
-        $formResponse = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/boards/form-data?board_slug='.$board->slug);
-        $formResponse->assertStatus(200);
-
-        $payload = $formResponse->json('data');
-
-        $response = $this->actingAs($this->adminUser)
-            ->putJson("/api/modules/sirsoft-board/admin/boards/{$board->slug}", $payload);
-
-        // Then: 무변경 저장이 통과해야 함
-        $response->assertStatus(200, '무변경 저장 실패: '.json_encode($response->json(), JSON_UNESCAPED_UNICODE));
-    }
-
-    /**
-     * 무변경 저장 회귀 대상 게시판 속성.
-     *
-     * @return array<string, array{array<string, mixed>}> 게시판 속성
-     */
-    public static function roundTripBoardAttributesProvider(): array
-    {
-        return [
-            '첨부 미사용 + 확장자 NULL' => [[
-                'use_file_upload' => false,
-                'allowed_extensions' => null,
-            ]],
-            '첨부 미사용 + 확장자 빈 배열' => [[
-                'use_file_upload' => false,
-                'allowed_extensions' => [],
-            ]],
-            '첨부 미사용 + NEW 배지 끄기' => [[
-                'use_file_upload' => false,
-                'allowed_extensions' => null,
-                'new_display_hours' => 0,
-            ]],
-            '첨부 사용 + 확장자 지정' => [[
-                'use_file_upload' => true,
-                'allowed_extensions' => ['jpg', 'png'],
-            ]],
-        ];
-    }
-
-    /**
-     * 폼 데이터를 board_slug 로 수정 모드 조회할 수 있다 (#450)
-     *
-     * @scenario case=form_data_edit_by_slug
-     *
-     * @effects slug_resolves_board_in_admin_routes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_form_data_edit_mode_by_board_slug(): void
-    {
-        // Given
-        $board = Board::factory()->create(['is_active' => true]);
-
-        // When: board_slug 쿼리로 폼 데이터 조회
-        $response = $this->actingAs($this->adminUser)
-            ->getJson('/api/modules/sirsoft-board/admin/boards/form-data?board_slug='.$board->slug);
-
-        // Then: 해당 게시판 데이터가 로드됨
-        $response->assertStatus(200);
-        $this->assertSame($board->id, $response->json('data.id'));
-    }
-
-    /**
-     * 게시판을 slug 로 관리자 메뉴에 추가할 수 있다 (#450 add-to-menu slug 바인딩)
-     *
-     * 라우트 파라미터가 {board} 이므로 컨트롤러가 Board route-model binding 으로
-     * slug 를 해석해야 한다. int $id 로 받으면 slug 문자열이 전달될 때 실패한다.
-     *
-     * @scenario case=add_to_menu_by_slug
-     *
-     * @effects slug_resolves_board_in_admin_routes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_add_to_admin_menu_resolves_board_by_slug(): void
-    {
-        // Given: 활성 게시판
-        $board = Board::factory()->create([
-            'slug' => 'test-'.substr(md5(microtime().'addmenu'), 0, 8),
-            'is_active' => true,
-        ]);
-
-        // When: 숫자 id 가 아닌 slug 로 add-to-menu 호출
-        $response = $this->actingAs($this->adminUser)
-            ->postJson("/api/modules/sirsoft-board/admin/boards/{$board->slug}/add-to-menu");
-
-        // Then: slug 가 정상 해석되어 메뉴가 추가됨 (route-model binding 성공)
-        $response->assertStatus(200);
-        $this->assertNotNull($response->json('data.menu'));
-    }
-
-    /**
      * 부분 업데이트 시 is_active만 변경 가능 테스트
-     *
-     * @scenario case=partial_update_is_active_only
-     *
-     * @effects partial_update_leaves_other_fields_untouched
-     *
-     * @return void 반환값 없음
      */
     public function test_can_update_only_is_active_field(): void
     {
@@ -917,12 +343,6 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 게시판 생성 시 관리자/스텝 사용자가 역할에 연결되는지 테스트
-     *
-     * @scenario case=create_assigns_role_users
-     *
-     * @effects create_links_manager_and_step_users_to_board_roles
-     *
-     * @return void 반환값 없음
      */
     public function test_board_creation_assigns_users_to_manager_and_step_roles(): void
     {
@@ -930,7 +350,7 @@ class BoardManagementTest extends ModuleTestCase
         $managerUser = User::factory()->create();
         $stepUser = User::factory()->create();
 
-        $slug = 'role-'.substr(md5(time()), 0, 8);
+        $slug = 'role-' . substr(md5(time()), 0, 8);
         $data = [
             'name' => ['ko' => '역할 테스트 게시판', 'en' => 'Role Test Board'],
             'slug' => $slug,
@@ -950,7 +370,7 @@ class BoardManagementTest extends ModuleTestCase
         $response->assertStatus(201);
 
         // manager 역할에 사용자가 연결되었는지 확인
-        $managerRole = Role::where('identifier', "sirsoft-board.{$slug}.manager")->first();
+        $managerRole = \App\Models\Role::where('identifier', "sirsoft-board.{$slug}.manager")->first();
         $this->assertNotNull($managerRole, 'Manager 역할이 생성되어야 합니다.');
         $this->assertTrue(
             $managerRole->users()->where('users.id', $managerUser->id)->exists(),
@@ -958,7 +378,7 @@ class BoardManagementTest extends ModuleTestCase
         );
 
         // step 역할에 사용자가 연결되었는지 확인
-        $stepRole = Role::where('identifier', "sirsoft-board.{$slug}.step")->first();
+        $stepRole = \App\Models\Role::where('identifier', "sirsoft-board.{$slug}.step")->first();
         $this->assertNotNull($stepRole, 'Step 역할이 생성되어야 합니다.');
         $this->assertTrue(
             $stepRole->users()->where('users.id', $stepUser->id)->exists(),
@@ -968,17 +388,11 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 게시판 생성 시 권한에 manager/step 역할이 config 기본값으로 포함되는지 테스트
-     *
-     * @scenario case=create_default_permissions_include_roles
-     *
-     * @effects default_permissions_grant_manager_and_step_except_admin_manage
-     *
-     * @return void 반환값 없음
      */
     public function test_board_creation_auto_includes_manager_step_in_permissions(): void
     {
         // Given: 게시판 생성 데이터 (권한 설정 없음 = config 기본값 사용)
-        $slug = 'perm-'.substr(md5(time()), 0, 8);
+        $slug = 'perm-' . substr(md5(time()), 0, 8);
         $data = [
             'name' => ['ko' => '권한 테스트 게시판', 'en' => 'Perm Test Board'],
             'slug' => $slug,
@@ -997,7 +411,7 @@ class BoardManagementTest extends ModuleTestCase
         $response->assertStatus(201);
 
         // posts.read 권한에 manager/step 역할이 기본값으로 포함되었는지 확인
-        $postsReadPerm = Permission::where('identifier', "sirsoft-board.{$slug}.posts.read")->first();
+        $postsReadPerm = \App\Models\Permission::where('identifier', "sirsoft-board.{$slug}.posts.read")->first();
         $this->assertNotNull($postsReadPerm);
         $roleIdentifiers = $postsReadPerm->roles()->pluck('identifier')->toArray();
 
@@ -1005,7 +419,7 @@ class BoardManagementTest extends ModuleTestCase
         $this->assertContains("sirsoft-board.{$slug}.step", $roleIdentifiers, 'Step 역할이 config 기본값으로 포함되어야 합니다.');
 
         // admin.manage 권한에는 manager만 포함 (step 제외)
-        $adminManagePerm = Permission::where('identifier', "sirsoft-board.{$slug}.admin.manage")->first();
+        $adminManagePerm = \App\Models\Permission::where('identifier', "sirsoft-board.{$slug}.admin.manage")->first();
         $this->assertNotNull($adminManagePerm);
         $adminManageRoles = $adminManagePerm->roles()->pluck('identifier')->toArray();
         $this->assertContains("sirsoft-board.{$slug}.manager", $adminManageRoles, 'Manager 역할이 config 기본값으로 포함되어야 합니다.');
@@ -1014,17 +428,11 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 사용자가 커스텀 권한을 설정해도 Manager/Step이 자동 포함되는지 테스트
-     *
-     * @scenario case=custom_permissions_keep_roles
-     *
-     * @effects custom_permissions_still_include_manager_and_step
-     *
-     * @return void 반환값 없음
      */
     public function test_custom_permissions_still_include_manager_step(): void
     {
         // Given: 게시판 생성 데이터 + 커스텀 권한 설정
-        $slug = 'custom-'.substr(md5(time().'custom'), 0, 8);
+        $slug = 'custom-' . substr(md5(time() . 'custom'), 0, 8);
         $data = [
             'name' => ['ko' => '커스텀 권한 게시판', 'en' => 'Custom Perm Board'],
             'slug' => $slug,
@@ -1046,7 +454,7 @@ class BoardManagementTest extends ModuleTestCase
         $response->assertStatus(201);
 
         // posts.read 권한에 사용자가 설정한 역할 + Manager/Step 자동 포함
-        $postsReadPerm = Permission::where('identifier', "sirsoft-board.{$slug}.posts.read")->first();
+        $postsReadPerm = \App\Models\Permission::where('identifier', "sirsoft-board.{$slug}.posts.read")->first();
         $this->assertNotNull($postsReadPerm);
         $roleIdentifiers = $postsReadPerm->roles()->pluck('identifier')->toArray();
 
@@ -1062,12 +470,6 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * getFormData 생성 모드에서 로그인 관리자가 기본 관리자로 지정되는지 테스트
-     *
-     * @scenario case=form_data_default_manager
-     *
-     * @effects form_data_default_manager_is_requesting_admin
-     *
-     * @return void 반환값 없음
      */
     public function test_get_form_data_includes_current_user_as_default_manager(): void
     {
@@ -1088,17 +490,11 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 게시판명 변경 시 연관 역할(manager/step)의 이름이 동기화되는지 테스트
-     *
-     * @scenario case=name_update_syncs_roles
-     *
-     * @effects name_update_syncs_board_role_names
-     *
-     * @return void 반환값 없음
      */
     public function test_board_name_update_syncs_role_names(): void
     {
         // Given: 게시판 생성 (manager/step 역할 자동 생성됨)
-        $slug = 'role-'.substr(md5(microtime()), 0, 8);
+        $slug = 'role-' . substr(md5(microtime()), 0, 8);
         $data = [
             'name' => ['ko' => '원본 게시판', 'en' => 'Original Board'],
             'slug' => $slug,
@@ -1115,7 +511,7 @@ class BoardManagementTest extends ModuleTestCase
         $boardId = $response->json('data.id');
 
         // 역할이 원본 이름으로 생성되었는지 확인
-        $managerRole = Role::where('identifier', "sirsoft-board.{$slug}.manager")->first();
+        $managerRole = \App\Models\Role::where('identifier', "sirsoft-board.{$slug}.manager")->first();
         $this->assertNotNull($managerRole);
         $this->assertEquals('원본 게시판 게시판 관리자', $managerRole->name['ko']);
         $this->assertEquals('Original Board Board Manager', $managerRole->name['en']);
@@ -1132,7 +528,7 @@ class BoardManagementTest extends ModuleTestCase
         $this->assertEquals('변경된 게시판 게시판 관리자', $managerRole->name['ko']);
         $this->assertEquals('Changed Board Board Manager', $managerRole->name['en']);
 
-        $stepRole = Role::where('identifier', "sirsoft-board.{$slug}.step")->first();
+        $stepRole = \App\Models\Role::where('identifier', "sirsoft-board.{$slug}.step")->first();
         $this->assertNotNull($stepRole);
         $this->assertEquals('변경된 게시판 게시판 스텝', $stepRole->name['ko']);
         $this->assertEquals('Changed Board Board Step', $stepRole->name['en']);
@@ -1140,17 +536,11 @@ class BoardManagementTest extends ModuleTestCase
 
     /**
      * 게시판명 미변경(이름 외 필드만 수정) 시 역할명이 변경되지 않는지 테스트
-     *
-     * @scenario case=update_without_name_keeps_roles
-     *
-     * @effects update_without_name_leaves_role_names_untouched
-     *
-     * @return void 반환값 없음
      */
     public function test_board_update_without_name_does_not_touch_roles(): void
     {
         // Given: 게시판 생성
-        $slug = 'role-'.substr(md5(microtime().'noname'), 0, 8);
+        $slug = 'role-' . substr(md5(microtime() . 'noname'), 0, 8);
         $data = [
             'name' => ['ko' => '원본 게시판', 'en' => 'Original Board'],
             'slug' => $slug,
@@ -1166,7 +556,7 @@ class BoardManagementTest extends ModuleTestCase
         $response->assertStatus(201);
         $boardId = $response->json('data.id');
 
-        $managerRole = Role::where('identifier', "sirsoft-board.{$slug}.manager")->first();
+        $managerRole = \App\Models\Role::where('identifier', "sirsoft-board.{$slug}.manager")->first();
         $this->assertNotNull($managerRole);
         $originalName = $managerRole->name;
 
@@ -1179,20 +569,5 @@ class BoardManagementTest extends ModuleTestCase
         // Then: 역할명이 변경되지 않음
         $managerRole->refresh();
         $this->assertEquals($originalName, $managerRole->name);
-    }
-
-    /**
-     * 게시판 역할 **소속 사용자 조회** 쿼리인지 판정합니다.
-     *
-     * 권한 체크(`hasPermission`)도 같은 피벗 테이블을 참조하지만 그쪽은 `exists(...)` 서브쿼리이며,
-     * 행마다 실행되는 그 N+1 은 별도 이슈(#519)가 소유한다. 이 테스트는 목록이 게시판마다 역할
-     * 소속 사용자를 다시 끌어오지 않는지만 본다.
-     *
-     * @param  string  $sql  실행된 SQL
-     * @return bool 역할 소속 사용자 조회 여부
-     */
-    private function isBoardRoleMemberQuery(string $sql): bool
-    {
-        return str_contains($sql, 'user_roles') && ! str_contains($sql, 'exists(');
     }
 }

@@ -1,6 +1,0 @@
-{
-  "prune-temp-attachments": {
-    "label": "一時ページ添付の削除",
-    "description": "ページに紐付いていない一時添付を削除します。"
-  }
-}

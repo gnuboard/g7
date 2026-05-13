@@ -1,125 +1,167 @@
 {
-    "comment": "상품 카드 격자와 쪽 넘김 — 목록 화면(전체·카테고리)이 함께 쓴다. 어느 화면에 실리든 지금 경로\n     (`route.path`)에 쿼리만 갈아 끼우므로 조각이 어느 목록인지 알 필요가 없다.",
-    "meta": {
-        "is_partial": true,
-        "description": "상품 그리드 + 페이지네이션 (products 데이터소스 사용, route.path 기반 navigate)"
-    },
-    "type": "basic",
-    "name": "Div",
-    "children": [
+  "meta": {
+    "is_partial": true,
+    "description": "상품 그리드 + 페이지네이션 (products 데이터소스 사용, route.path 기반 navigate)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "comment": "상품 그리드",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 mb-8"
+      },
+      "children": [
         {
-            "comment": "상품 그리드",
-            "type": "basic",
-            "name": "Div",
-            "responsive": {
-                "640-1023": {
-                    "props": {
-                        "className": "grid gap-4 grid-cols-3 mb-8"
-                    }
-                },
-                "desktop": {
-                    "props": {
-                        "className": "grid gap-4 grid-cols-4 mb-8"
-                    }
-                }
-            },
-            "props": {
-                "className": "grid grid-cols-2 gap-4 mb-8"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "iteration": {
-                        "source": "{{products?.data?.data ?? []}}",
-                        "item_var": "product"
-                    },
-                    "children": [
-                        {
-                            "type": "composite",
-                            "name": "ProductCard",
-                            "props": {
-                                "product": "{{product}}",
-                                "shopBase": "{{_global.shopBase ?? '/shop'}}",
-                                "preserveListQuery": true
-                            }
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "comment": "빈 상태",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{products !== undefined && (products?.data?.data ?? []).length === 0}}",
-            "props": {
-                "className": "flex flex-col items-center justify-center py-20 px-4 my-16"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-5"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "search",
-                                "size": "2x",
-                                "className": "text-gray-500 dark:text-gray-400"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                        "className": "text-lg font-medium text-gray-700 dark:text-gray-300 mb-1"
-                    },
-                    "text": "$t:shop.no_products"
-                },
-                {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
-                    },
-                    "text": "$t:shop.no_search_results"
-                }
-            ]
-        },
-        {
-            "comment": "쪽 번호 — 다른 목록과 같은 쪽 번호 컴포넌트(번호마다 실제 링크). 총 건수가 상한에 걸리면 last_page 가 null 로 온다.\n         그때 last_page 만 보고 판단하면 쪽 이동이 통째로 사라지므로 has_more_pages 와 현재 쪽도 함께 본다",
-            "type": "composite",
-            "name": "Pagination",
-            "if": "{{((products?.data?.pagination?.last_page ?? 0) > 1) || (products?.data?.pagination?.has_more_pages ?? false) || ((products?.data?.pagination?.current_page ?? 1) > 1)}}",
-            "actions": [
-                {
-                    "comment": "검색어·분류·정렬·품절 제외는 그대로 두고 쪽수만 바꾼다",
-                    "event": "onPageChange",
-                    "handler": "navigate",
-                    "params": {
-                        "path": "{{route.path}}",
-                        "mergeQuery": true,
-                        "query": {
-                            "page": "{{$args[0]}}"
-                        }
-                    }
-                }
-            ],
-            "props": {
-                "pageHref": "{{route.path}}?page={page}",
-                "pageHrefMergeQuery": true,
-                "currentPage": "{{products?.data?.pagination?.current_page ?? 1}}",
-                "totalPages": "{{products?.data?.pagination?.last_page ?? null}}",
-                "hasMorePages": "{{products?.data?.pagination?.has_more_pages ?? false}}",
-                "className": "mb-12 flex justify-center"
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "{{products?.data?.data ?? []}}",
+            "item_var": "product"
+          },
+          "children": [
+            {
+              "type": "composite",
+              "name": "ProductCard",
+              "props": {
+                "product": "{{product}}",
+                "shopBase": "{{_global.shopBase ?? '/shop'}}"
+              }
             }
+          ]
         }
-    ]
+      ]
+    },
+    {
+      "comment": "빈 상태",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(products?.data?.data ?? []).length === 0}}",
+      "props": {
+        "className": "flex flex-col items-center justify-center py-20 px-4 my-16"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-5"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "search",
+                "size": "2x",
+                "className": "text-gray-400 dark:text-gray-500"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-lg font-medium text-gray-700 dark:text-gray-300 mb-1"
+          },
+          "text": "$t:shop.no_products"
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-sm text-gray-400 dark:text-gray-500"
+          },
+          "text": "$t:shop.no_search_results"
+        }
+      ]
+    },
+    {
+      "comment": "페이지네이션",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{(products?.data?.pagination?.last_page ?? 1) > 1}}",
+      "props": {
+        "className": "flex justify-center items-center gap-2 mb-12"
+      },
+      "children": [
+        {
+          "comment": "이전 페이지 버튼",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.current_page ?? 1) <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'}}",
+            "disabled": "{{(products?.data?.pagination?.current_page ?? 1) <= 1}}"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-left",
+                "className": "w-4 h-4"
+              }
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "{{route.path}}",
+                "mergeQuery": true,
+                "query": {
+                  "page": "{{(products?.data?.pagination?.current_page ?? 1) - 1}}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "comment": "페이지 번호 표시",
+          "type": "basic",
+          "name": "Span",
+          "props": {
+            "className": "px-3 py-1 text-sm text-gray-700 dark:text-gray-300"
+          },
+          "text": "{{products?.data?.pagination?.current_page ?? 1}} / {{products?.data?.pagination?.last_page ?? 1}}"
+        },
+        {
+          "comment": "다음 페이지 버튼",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.current_page ?? 1) >= (products?.data?.pagination?.last_page ?? 1) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'}}",
+            "disabled": "{{(products?.data?.pagination?.current_page ?? 1) >= (products?.data?.pagination?.last_page ?? 1)}}"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-right",
+                "className": "w-4 h-4"
+              }
+            }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "{{route.path}}",
+                "mergeQuery": true,
+                "query": {
+                  "page": "{{(products?.data?.pagination?.current_page ?? 1) + 1}}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

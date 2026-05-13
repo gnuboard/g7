@@ -15,29 +15,11 @@
 
 import type { ComponentRegistry } from './ComponentRegistry';
 import type { ErrorHandlingMap } from '../types/ErrorHandling';
-import type { ActionDefinition } from './ActionDispatcher';
 import { createLogger } from '../utils/Logger';
-import { fetchWithRetry, LAYOUT_REQUEST_TIMEOUT_MS } from './networkResilience';
-import { suffixed } from '../support/assetUrl';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
 import { getApiClient } from '../api/ApiClient';
 
 const logger = createLogger('LayoutLoader');
-
-/**
- * 오류 UI 에 끼워 넣는 글자를 HTML 로 해석되지 않게 바꿉니다(컴포넌트 이름·오류 메시지·오류 코드).
- *
- * @param value 원문
- * @returns 이스케이프한 문자열
- */
-function escapeHtmlText(value: unknown): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 /**
  * 레이아웃 컴포넌트 데이터 인터페이스
@@ -58,17 +40,36 @@ export interface LayoutComponent {
 
 /**
  * 초기화 액션 정의 (레이아웃 로드 시 실행)
- *
- * 일반 액션 정의와 같은 키를 쓴다 — 엔진은 항목을 통째로 실행한다(sequence·switch·actionRef·
- * errorHandling 포함, engine-v1.80.0). `type` 은 엔진이 채우고, `actionRef` 만 적은 항목은 `handler` 가 없다.
- * 진입점 전용 키(confirm·debounce·stopPropagation·key)는 이 자리에서 의미가 없어 굽기가 거부한다.
  */
-export type InitActionDefinition = Omit<ActionDefinition, 'type' | 'handler'> & {
-  /** 액션 핸들러 이름 (actionRef 만 적은 항목은 없음) */
-  handler?: ActionDefinition['handler'];
-  /** 형식 값 — 엔진이 `click` 으로 채운다 */
-  type?: ActionDefinition['type'];
-};
+export interface InitActionDefinition {
+  /** 액션 핸들러 이름 */
+  handler: string;
+  /** 액션 타겟 (선택적) */
+  target?: string;
+  /** 액션 파라미터 (선택적) */
+  params?: Record<string, any>;
+  /** 조건부 실행 (표현식이 truthy일 때만 실행) */
+  if?: string;
+  /** 핸들러 결과를 상태에 저장할 위치 (선택적) */
+  resultTo?: {
+    /** 저장 대상: "_local" (로컬 상태), "_global" (전역 상태), "_isolated" (격리된 상태) */
+    target: '_local' | '_global' | '_isolated';
+    /** 상태 키 */
+    key: string;
+    /** 병합 모드: "replace" | "shallow" | "deep" (기본값: "deep") */
+    merge?: 'replace' | 'shallow' | 'deep';
+  };
+  /** 액션 성공 시 실행할 후속 액션 (단일 또는 배열) */
+  onSuccess?: InitActionDefinition | InitActionDefinition[];
+  /** 액션 실패 시 실행할 후속 액션 (단일 또는 배열) */
+  onError?: InitActionDefinition | InitActionDefinition[];
+  /** conditions 핸들러용 조건 분기 배열 (선택적) */
+  conditions?: Array<{
+    if: string;
+    then?: any;
+    else?: any;
+  }>;
+}
 
 /**
  * 외부 스크립트 정의 (레이아웃 로드 시 동적 로드)
@@ -96,14 +97,6 @@ export interface LayoutScript {
   src: string;
   /** 스크립트 요소 ID (중복 로드 방지용, 필수) */
   id: string;
-  /**
-   * 로드 실패 안내에 쓸 사람이 읽는 이름 (선택적, `$t:키` 허용)
-   *
-   * 없으면 일반 이름(「화면 기능 스크립트」)으로 안내한다 — id 는 안내에 쓰지 않는다.
-   *
-   * @since engine-v1.79.0
-   */
-  label?: string;
   /** 조건부 로드 표현식 (선택적, 예: "{{_global.pluginActive}}") */
   if?: string;
   /**
@@ -723,17 +716,8 @@ export class LayoutLoader {
     }
 
     // 캐시 미스 - 새로운 로딩 Promise 생성 및 캐시에 저장
-    // 실패한 promise 를 캐시에 남기면 이후 모든 재요청이 그 rejection 을 그대로 재사용해
-    // 영구 실패가 된다(네트워크가 복구돼도 다시 시도할 기회가 없다). 실패 시 캐시에서 제거.
-    // @since engine-v1.53.0
     const loadPromise = this.fetchLayout(templateId, layoutPath);
     this.layoutCache.set(cacheKey, loadPromise);
-
-    loadPromise.catch(() => {
-      if (this.layoutCache.get(cacheKey) === loadPromise) {
-        this.layoutCache.delete(cacheKey);
-      }
-    });
 
     return loadPromise;
   }
@@ -750,14 +734,14 @@ export class LayoutLoader {
     try {
       // API 엔드포인트 구성 (캐시 버전 쿼리 파라미터 추가)
       // 시스템 레이아웃 분기: __preview__ 는 별도 API 엔드포인트 사용
-      const version = this.cacheVersion > 0 ? this.cacheVersion : null;
-      let apiUrl: string;
+      let baseUrl: string;
       if (layoutPath.startsWith('__preview__/')) {
         const token = layoutPath.replace('__preview__/', '');
-        apiUrl = suffixed(`/api/layouts/preview/${token}`, 'json', version);
+        baseUrl = `/api/layouts/preview/${token}.json`;
       } else {
-        apiUrl = suffixed(`/api/layouts/${templateId}/${layoutPath}`, 'json', version);
+        baseUrl = `/api/layouts/${templateId}/${layoutPath}.json`;
       }
+      const apiUrl = this.cacheVersion > 0 ? `${baseUrl}?v=${this.cacheVersion}` : baseUrl;
 
       logger.log('Fetching layout from API:', apiUrl);
 
@@ -772,16 +756,7 @@ export class LayoutLoader {
       }
 
       // API 호출 (인증 헤더 포함)
-      // 네트워크 일시 실패(응답 없음)에만 재시도한다. 401 등 HTTP 응답은 그대로 넘어와
-      // 아래 상태코드 분기가 종전대로 동작한다 (두 재시도는 계층이 달라 중첩되지 않는다).
-      // @since engine-v1.53.0
-      // 시도별 상한은 다른 API 요청과 같은 30초 — 공용 기본 15초는 느린 서버의 정상 응답을 끊었다 (#869)
-      // base-path:allow `apiUrl` 은 위 두 분기 모두 `suffixed()` 산출값이라 접두사가 이미 붙어 있다
-      const response = await fetchWithRetry(apiUrl, {
-        init: { headers },
-        label: `layout: ${layoutPath}`,
-        timeoutMs: LAYOUT_REQUEST_TIMEOUT_MS,
-      });
+      const response = await fetch(apiUrl, { headers });
 
       // JSON 파싱 (에러 응답도 JSON일 수 있으므로 먼저 파싱)
       let responseData: any;
@@ -1010,8 +985,8 @@ export class LayoutLoader {
     div.className = 'component-placeholder';
     div.setAttribute('data-component-type', componentType);
     div.innerHTML = `
-      <div class="g7-layout-placeholder__box">
-        <p class="g7-layout-placeholder__text">Component not found: <strong>${escapeHtmlText(componentType)}</strong></p>
+      <div style="padding: 1rem; border: 2px dashed #ccc; background: #f9f9f9; text-align: center;">
+        <p style="margin: 0; color: #666;">Component not found: <strong>${componentType}</strong></p>
       </div>
     `;
     return div;
@@ -1029,9 +1004,9 @@ export class LayoutLoader {
     div.className = 'component-error';
     div.setAttribute('data-component-type', componentType);
     div.innerHTML = `
-      <div class="g7-layout-component-error__box">
-        <p class="g7-layout-component-error__title">Component Error: ${escapeHtmlText(componentType)}</p>
-        <p class="g7-layout-component-error__message">${escapeHtmlText(error?.message || 'Unknown error')}</p>
+      <div style="padding: 1rem; border: 2px solid #f44336; background: #ffebee; border-radius: 4px;">
+        <p style="margin: 0 0 0.5rem 0; color: #c62828; font-weight: bold;">Component Error: ${componentType}</p>
+        <p style="margin: 0; color: #666; font-size: 0.875rem;">${error?.message || 'Unknown error'}</p>
       </div>
     `;
     return div;
@@ -1048,25 +1023,48 @@ export class LayoutLoader {
     const errorCode = error instanceof LayoutLoaderError ? error.code : 'UNKNOWN_ERROR';
 
     container.innerHTML = `
-      <div class="layout-error g7-layout-error__box" data-error-code="${escapeHtmlText(errorCode)}">
-        <h2 class="g7-layout-error__title">레이아웃 로드 실패</h2>
+      <div class="layout-error" data-error-code="${errorCode}" style="
+        padding: 2rem;
+        text-align: center;
+        background: #ffebee;
+        border: 2px solid #f44336;
+        border-radius: 8px;
+        margin: 2rem auto;
+        max-width: 600px;
+      ">
+        <h2 style="
+          margin: 0 0 1rem 0;
+          color: #c62828;
+          font-size: 1.5rem;
+        ">레이아웃 로드 실패</h2>
 
-        <p class="g7-layout-error__message">${escapeHtmlText(errorMessage)}</p>
+        <p style="
+          margin: 0 0 1rem 0;
+          color: #666;
+          font-size: 1rem;
+        ">${errorMessage}</p>
 
-        <p class="g7-layout-error__code">오류 코드: ${escapeHtmlText(errorCode)}</p>
+        <p style="
+          margin: 0;
+          color: #999;
+          font-size: 0.875rem;
+        ">오류 코드: ${errorCode}</p>
 
         <button
-          type="button"
-          data-g7-error-reload="1"
-          class="g7-layout-error__button"
+          onclick="window.location.reload()"
+          style="
+            margin-top: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+          "
         >페이지 새로고침</button>
       </div>
     `;
-
-    // 인라인 onclick 대신 리스너 — strict CSP 에서 인라인 핸들러는 실행되지 않는다(#158).
-    container
-      .querySelector('[data-g7-error-reload]')
-      ?.addEventListener('click', () => window.location.reload());
 
     logger.error('Error state rendered:', errorCode, errorMessage);
   }

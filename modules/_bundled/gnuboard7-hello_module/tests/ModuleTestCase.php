@@ -3,15 +3,13 @@
 namespace Modules\Gnuboard7\HelloModule\Tests;
 
 use App\Enums\ExtensionStatus;
-use App\Extension\HookManager;
 use App\Models\Module;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Route;
-use Modules\Gnuboard7\HelloModule\Providers\HelloModuleServiceProvider;
-use Tests\Concerns\RebuildsRouteNameLookups;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
@@ -21,10 +19,7 @@ use Tests\TestCase;
  */
 abstract class ModuleTestCase extends TestCase
 {
-    use DatabaseTransactions {
-        beginDatabaseTransaction as protected beginTransactionAfterSchema;
-    }
-    use RebuildsRouteNameLookups;
+    use DatabaseTransactions;
 
     /**
      * 마이그레이션 완료 플래그 (프로세스당 한 번만 실행)
@@ -50,8 +45,6 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 테스트 환경 설정
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -59,7 +52,9 @@ abstract class ModuleTestCase extends TestCase
 
         $this->registerModuleAutoload();
 
-        $this->app->register(HelloModuleServiceProvider::class);
+        $this->app->register(\Modules\Gnuboard7\HelloModule\Providers\HelloModuleServiceProvider::class);
+
+        $this->runModuleMigrationIfNeeded();
 
         $this->createDefaultRoles();
 
@@ -72,8 +67,6 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * tearDown 에 HookManager 상태 복원 — 테스트 본문이 추가한 훅만 제거.
-     *
-     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -84,12 +77,10 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
-     *
-     * @return void 반환값 없음
      */
     private function snapshotHookManager(): void
     {
-        $ref = new \ReflectionClass(HookManager::class);
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
         $this->hookSnapshot = [
             'hooks' => $ref->getProperty('hooks')->getValue(),
             'filters' => $ref->getProperty('filters')->getValue(),
@@ -99,8 +90,6 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 스냅샷 시점으로 HookManager 복원.
-     *
-     * @return void 반환값 없음
      */
     private function restoreHookManager(): void
     {
@@ -108,7 +97,7 @@ abstract class ModuleTestCase extends TestCase
             return;
         }
 
-        $ref = new \ReflectionClass(HookManager::class);
+        $ref = new \ReflectionClass(\App\Extension\HookManager::class);
         $ref->getProperty('hooks')->setValue(null, $this->hookSnapshot['hooks']);
         $ref->getProperty('filters')->setValue(null, $this->hookSnapshot['filters']);
         $ref->getProperty('dispatching')->setValue(null, $this->hookSnapshot['dispatching']);
@@ -117,36 +106,28 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
-     * 첫 사용 때는 시드 없는 테스트 스키마(잔여 행만 정리한 상태)를 요구하고, 그 뒤에는 현재 상태를 받아들인다.
-     *
-     * 예전에는 프로세스 첫 테스트가 `migrate:fresh` 로 시드까지 지운 DB 에서 시작했다 — 같은 전제를 재사용 스키마에서 재현한다.
-     *
-     * @return string 요구 프로필(none-exact · any)
+     * 모듈 마이그레이션을 필요 시 실행합니다.
      */
-    protected function requiredTestingSchema(): string
+    protected function runModuleMigrationIfNeeded(): void
     {
-        return static::$migrated ? 'any' : 'none-exact';
-    }
+        if (static::$migrated) {
+            return;
+        }
 
-    /**
-     * 스키마를 먼저 끝낸 뒤 시험 트랜잭션을 엽니다.
-     *
-     * 예전에는 setUp 에서 트랜잭션을 연 뒤 프로세스 첫 시험의 `migrate:fresh` 를 돌려, DDL 의 암묵 커밋으로 첫 시험의 행이
-     * 롤백되지 않고 남았다. 이제 스키마는 코어 TestCase 가 트레이트 초기화 전에 맞추고, 여기서는 첫 사용 표시만 남긴다.
-     *
-     * @return void 반환값 없음
-     */
-    public function beginDatabaseTransaction()
-    {
+        // 매 PHP process 첫 setUp 시 DB 완전 초기화 후 코어+모듈 마이그레이션을 처음부터 실행한다.
+        // (DatabaseTransactions 사용 시 schema 자동 재구축 없음 — 잔재로 인한 컬럼 충돌 차단)
+        $this->artisan('migrate:fresh');
+
+        $this->artisan('migrate', [
+            '--path' => $this->getModuleBasePath().'/database/migrations',
+            '--realpath' => true,
+        ]);
+
         static::$migrated = true;
-
-        $this->beginTransactionAfterSchema();
     }
 
     /**
      * 모듈 오토로드를 등록합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerModuleAutoload(): void
     {
@@ -172,20 +153,14 @@ abstract class ModuleTestCase extends TestCase
                 $file = $moduleBasePath.'/src/'.str_replace('\\', '/', $relativeClass).'.php';
             }
 
-            if (file_exists($file)
-                && ! class_exists($class, false) && ! interface_exists($class, false)
-                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
-                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
-                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
-                require_once $file;
+            if (file_exists($file)) {
+                require $file;
             }
         });
     }
 
     /**
      * 모듈을 활성화 상태로 등록합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerModuleAsActive(): void
     {
@@ -205,8 +180,6 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈 라우트를 등록합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerModuleRoutes(): void
     {
@@ -226,9 +199,6 @@ abstract class ModuleTestCase extends TestCase
                 ->middleware('api')
                 ->group($apiRoutesFile);
         }
-
-        // 라우트 캐시가 있는 머신에서 fluent `->name()` 등록분의 이름 조회를 살린다 (공유 trait).
-        $this->rebuildRouteNameLookups();
     }
 
     /**
@@ -236,8 +206,6 @@ abstract class ModuleTestCase extends TestCase
      *
      * 실제 런타임에서는 ModuleManager 가 자동 등록하지만
      * 테스트 환경에서는 수동으로 HookManager 에 주입해야 합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerModuleHookListeners(): void
     {
@@ -253,26 +221,18 @@ abstract class ModuleTestCase extends TestCase
             'version' => '0.1.0-beta.1',
         ]);
 
-        $hookManager = app(HookManager::class);
+        $hookManager = app(\App\Extension\HookManager::class);
         foreach ($module->getHookListeners() as $listenerClass) {
             foreach ($listenerClass::getSubscribedHooks() as $hookName => $config) {
                 $method = is_array($config) ? ($config['method'] ?? 'handle') : 'handle';
                 $priority = is_array($config) ? ($config['priority'] ?? 10) : 10;
-
-                // 필터 구독은 필터로 건다 — 액션으로 걸면 applyFilters 가 그 리스너를 보지 못한다
-                if (is_array($config) && ($config['type'] ?? 'action') === 'filter') {
-                    $hookManager->addFilter($hookName, [new $listenerClass, $method], $priority);
-                } else {
-                    $hookManager->addAction($hookName, [new $listenerClass, $method], $priority);
-                }
+                $hookManager->addAction($hookName, [new $listenerClass(), $method], $priority);
             }
         }
     }
 
     /**
      * 기본 역할을 생성합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function createDefaultRoles(): void
     {

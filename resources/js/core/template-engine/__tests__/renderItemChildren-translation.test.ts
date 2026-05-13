@@ -14,9 +14,6 @@ import { DataBindingEngine } from '../DataBindingEngine';
 import { TranslationEngine } from '../TranslationEngine';
 import { RAW_MARKER_START, RAW_MARKER_END } from '../rawMarkers';
 
-/** 렌더 결과 요소의 props — 시험은 몇 개 키만 읽는다(React 19 의 ReactElement 기본 props 는 unknown) */
-type RenderedProps = Record<string, unknown>;
-
 // AuthManager mock
 vi.mock('../../auth/AuthManager', () => ({
   AuthManager: {
@@ -74,8 +71,6 @@ describe('renderItemChildren - 표현식 결과 $t: 번역 후처리', () => {
     (translationEngine as any).translations.set(':ko', mockDict);
   });
 
-  // @scenario source=ternary_true
-  // @effects expression_translation_result_translated
   it('삼항 연산자 결과가 $t: 문자열이면 번역 처리 (하이픈 포함 모듈키)', () => {
     const children = [
       {
@@ -99,12 +94,10 @@ describe('renderItemChildren - 표현식 결과 $t: 번역 후처리', () => {
 
     // React element의 children이 번역된 텍스트여야 함
     expect(result).toHaveLength(1);
-    const element = result[0] as React.ReactElement<RenderedProps>;
+    const element = result[0] as React.ReactElement;
     expect(element.props.children).toBe('발행');
   });
 
-  // @scenario source=ternary_false
-  // @effects expression_translation_result_translated
   it('삼항 연산자 false 경로 번역 처리', () => {
     const children = [
       {
@@ -126,12 +119,10 @@ describe('renderItemChildren - 표현식 결과 $t: 번역 후처리', () => {
       translationContext: { templateId: '', locale: 'ko' },
     });
 
-    const element = result[0] as React.ReactElement<RenderedProps>;
+    const element = result[0] as React.ReactElement;
     expect(element.props.children).toBe('미발행');
   });
 
-  // @scenario source=unhyphenated_key
-  // @effects expression_translation_result_translated
   it('하이픈 없는 키도 정상 번역 (기존 동작 보존)', () => {
     const children = [
       {
@@ -153,12 +144,10 @@ describe('renderItemChildren - 표현식 결과 $t: 번역 후처리', () => {
       translationContext: { templateId: '', locale: 'ko' },
     });
 
-    const element = result[0] as React.ReactElement<RenderedProps>;
+    const element = result[0] as React.ReactElement;
     expect(element.props.children).toBe('저장');
   });
 
-  // @scenario source=static_text
-  // @effects expression_translation_result_translated
   it('정적 $t: 텍스트는 기존과 동일하게 번역 (회귀 없음)', () => {
     const children = [
       {
@@ -179,12 +168,10 @@ describe('renderItemChildren - 표현식 결과 $t: 번역 후처리', () => {
       translationContext: { templateId: '', locale: 'ko' },
     });
 
-    const element = result[0] as React.ReactElement<RenderedProps>;
+    const element = result[0] as React.ReactElement;
     expect(element.props.children).toBe('삭제');
   });
 
-  // @scenario source=raw_binding
-  // @effects raw_binding_kept_untranslated
   it('raw: 바인딩은 번역 면제 (회귀 없음)', () => {
     const children = [
       {
@@ -206,20 +193,12 @@ describe('renderItemChildren - 표현식 결과 $t: 번역 후처리', () => {
       translationContext: { templateId: '', locale: 'ko' },
     });
 
-    const element = result[0] as React.ReactElement<RenderedProps>;
-    // raw: 바인딩이므로 번역되지 않고 원본 유지.
-    //
-    // 마커는 번역 패스를 건너뛰게 하려는 **내부 표식**이므로 화면으로 나가기 전에 벗긴다.
-    // 종전에는 이 경로가 마커를 붙인 채 React 에 넘겨 Unicode Noncharacter 두 글자가
-    // 그대로 DOM 에 실렸다(단발 렌더 경로는 resolveTranslationsDeep 안에서 벗기지만
-    // 반복 렌더 경로에는 그 패스가 없다). @since engine-v1.56.3
-    expect(element.props.children).toBe('$t:common.save');
-    expect(element.props.children).not.toContain(RAW_MARKER_START);
-    expect(element.props.children).not.toContain(RAW_MARKER_END);
+    const element = result[0] as React.ReactElement;
+    // raw: 바인딩이므로 번역되지 않고 원본 유지 (raw 마커로 감싸져 반환)
+    // DynamicRenderer 상위에서 마커 스트리핑 처리됨
+    expect(element.props.children).toBe(`${RAW_MARKER_START}$t:common.save${RAW_MARKER_END}`);
   });
 
-  // @scenario source=non_translation_result
-  // @effects non_translation_result_untouched
   it('표현식 결과가 $t: 문자열이 아니면 번역 시도 안 함', () => {
     const children = [
       {
@@ -241,7 +220,7 @@ describe('renderItemChildren - 표현식 결과 $t: 번역 후처리', () => {
       translationContext: { templateId: '', locale: 'ko' },
     });
 
-    const element = result[0] as React.ReactElement<RenderedProps>;
+    const element = result[0] as React.ReactElement;
     expect(element.props.children).toBe('활성');
   });
 });

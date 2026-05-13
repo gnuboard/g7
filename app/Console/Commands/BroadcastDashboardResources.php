@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\HookManager;
 use App\Services\DashboardService;
 use Illuminate\Console\Command;
@@ -14,8 +13,6 @@ use Illuminate\Console\Command;
  */
 class BroadcastDashboardResources extends Command
 {
-    use LocalizesDescription;
-
     /**
      * 콘솔 명령어 시그니처
      *
@@ -24,10 +21,16 @@ class BroadcastDashboardResources extends Command
     protected $signature = 'dashboard:broadcast-resources';
 
     /**
+     * 콘솔 명령어 설명
+     *
+     * @var string
+     */
+    protected $description = '시스템 리소스 정보를 브로드캐스트합니다';
+
+    /**
      * 커맨드를 실행합니다.
      *
      * @param  DashboardService  $dashboardService  대시보드 서비스
-     * @return int 종료 코드
      */
     public function handle(DashboardService $dashboardService): int
     {
@@ -36,7 +39,7 @@ class BroadcastDashboardResources extends Command
             'data' => $dashboardService->getSystemResources(),
         ]);
 
-        $this->info(__('dashboard.console.broadcast_resources.done'));
+        $this->info('시스템 리소스 정보가 브로드캐스트되었습니다.');
 
         return Command::SUCCESS;
     }

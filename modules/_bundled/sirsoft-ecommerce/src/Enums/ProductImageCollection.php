@@ -12,14 +12,9 @@ enum ProductImageCollection: string
     case ADDITIONAL = 'additional'; // 추가 이미지
 
     /**
-     * 컬렉션당 허용 이미지 최대 개수 (프론트 FileUploader maxFiles 와 SSoT 일치)
-     */
-    public const MAX_IMAGES_PER_COLLECTION = 20;
-
-    /**
      * 다국어 라벨을 반환합니다.
      *
-     * @return string 컬렉션 다국어 라벨
+     * @return string
      */
     public function label(): string
     {
@@ -29,7 +24,7 @@ enum ProductImageCollection: string
     /**
      * 모든 값 배열을 반환합니다.
      *
-     * @return array 컬렉션 value 목록
+     * @return array
      */
     public static function values(): array
     {
@@ -39,7 +34,7 @@ enum ProductImageCollection: string
     /**
      * 프론트엔드용 옵션 배열을 반환합니다.
      *
-     * @return array value/label 옵션 목록
+     * @return array
      */
     public static function toSelectOptions(): array
     {

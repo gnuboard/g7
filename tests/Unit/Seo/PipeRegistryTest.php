@@ -2,120 +2,18 @@
 
 namespace Tests\Unit\Seo;
 
-use App\Extension\HookManager;
-use App\Seo\ExpressionEvaluator;
 use App\Seo\PipeRegistry;
-use App\Thumbnails\ThumbnailPresetRegistry;
-use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
-/**
- * 봇 화면 파이프 레지스트리 — 프론트 `PipeRegistry.ts` 내장 파이프의 PHP 미러가 같은 값을 내는지 본다.
- */
 class PipeRegistryTest extends TestCase
 {
     private PipeRegistry $registry;
 
-    /**
-     * 썸네일 설정을 고정하고 레지스트리를 만듭니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        // thumb·thumbSrcset 이 읽는 썸네일 설정을 고정한다 (`mem:core-settings-boot-config-leaks-into-unit-tests`)
-        Config::set('core.thumbnail.presets', null);
-        Config::set('core.thumbnail.enabled', true);
-        Config::set('g7_settings.core.seo.og_image_default_width', 1200);
-        Config::set('g7_settings.core.seo.og_image_default_height', 630);
-        HookManager::clearFilter('core.thumbnail.filter_presets');
-        HookManager::clearFilter('core.thumbnail.filter_url_patterns');
-        HookManager::clearFilter('core.thumbnail.filter_url');
-        app(ThumbnailPresetRegistry::class)->flush();
-
         $this->registry = new PipeRegistry;
-    }
-
-    /**
-     * 썸네일 필터와 규격 캐시를 비웁니다.
-     *
-     * @return void 반환값 없음
-     */
-    protected function tearDown(): void
-    {
-        HookManager::clearFilter('core.thumbnail.filter_presets');
-        HookManager::clearFilter('core.thumbnail.filter_url_patterns');
-        HookManager::clearFilter('core.thumbnail.filter_url');
-        app(ThumbnailPresetRegistry::class)->flush();
-
-        parent::tearDown();
-    }
-
-    // ============================================
-    // 이미지 썸네일 파이프 (thumb·thumbSrcset — 프론트 PipeRegistry.ts 미러)
-    // ============================================
-
-    /**
-     * thumb 은 등록된 서빙 경로에만 size 를 붙이고 기존 size 는 교체, 서명 쿼리는 원문 보존한다.
-     *
-     * @effects thumb_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
-     */
-    public function test_thumb_pipe_appends_size_only_to_serving_paths(): void
-    {
-        $this->assertTrue($this->registry->has('thumb'));
-        $this->assertSame('/api/attachment/abc?size=sm', $this->registry->execute('thumb', '/api/attachment/abc', ['sm']));
-        $this->assertSame('/api/attachment/abc?size=sm', $this->registry->execute('thumb', '/api/attachment/abc'));
-        $this->assertSame('/api/attachment/abc?size=xs', $this->registry->execute('thumb', '/api/attachment/abc?size=lg', ['xs']));
-        $this->assertSame(
-            '/api/attachment/abc?expires=1&signature=a%2Bb&size=md#top',
-            $this->registry->execute('thumb', '/api/attachment/abc?expires=1&signature=a%2Bb#top', ['md'])
-        );
-
-        $this->assertSame('https://cdn.example.com/a.jpg', $this->registry->execute('thumb', 'https://cdn.example.com/a.jpg', ['sm']));
-        $this->assertSame('/storage/a.jpg', $this->registry->execute('thumb', '/storage/a.jpg', ['sm']));
-        $this->assertNull($this->registry->execute('thumb', null, ['sm']));
-        $this->assertSame('', $this->registry->execute('thumb', '', ['sm']));
-    }
-
-    /**
-     * thumbSrcset 은 같은 맞춤·같은 비의 1.5배 이상 최소 규격을 2x 로, 없으면 1x 만 낸다.
-     *
-     * @effects thumb_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
-     */
-    public function test_thumb_srcset_pipe(): void
-    {
-        $this->assertSame(
-            '/api/attachment/abc?size=md 1x, /api/attachment/abc?size=lg 2x',
-            $this->registry->execute('thumbSrcset', '/api/attachment/abc', ['md'])
-        );
-        $this->assertSame('/api/attachment/abc?size=sm 1x', $this->registry->execute('thumbSrcset', '/api/attachment/abc', ['sm']));
-        $this->assertSame('', $this->registry->execute('thumbSrcset', 'https://cdn.example.com/a.jpg', ['md']));
-        $this->assertSame('', $this->registry->execute('thumbSrcset', null, ['md']));
-    }
-
-    /**
-     * 표현식 `{{url | thumb('sm')}}` 이 봇 화면 평가기에서도 같은 값을 낸다.
-     *
-     * @effects thumb_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
-     */
-    public function test_thumb_pipe_through_expression_evaluator(): void
-    {
-        $evaluator = new ExpressionEvaluator;
-        $context = ['user' => ['avatar' => '/api/attachment/abc']];
-
-        $this->assertSame('/api/attachment/abc?size=xs', $evaluator->evaluate("{{user.avatar | thumb('xs')}}", $context));
-        $this->assertSame(
-            '/api/attachment/abc?size=xs 1x, /api/attachment/abc?size=sm 2x',
-            $evaluator->evaluate("{{user.avatar | thumbSrcset('xs')}}", $context)
-        );
     }
 
     // ============================================
@@ -124,10 +22,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * 단일 파이프를 정확하게 분리합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_split_pipes_single(): void
     {
@@ -138,10 +32,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * 다중 파이프 체인을 분리합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_split_pipes_chain(): void
     {
@@ -152,10 +42,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * OR 연산자(||)는 파이프로 인식하지 않습니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_split_pipes_ignores_or_operator(): void
     {
@@ -166,10 +52,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * 파이프 없는 표현식에서는 빈 배열을 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_split_pipes_no_pipe(): void
     {
@@ -180,10 +62,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * 문자열 내부의 | 는 파이프로 인식하지 않습니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_split_pipes_inside_string_ignored(): void
     {
@@ -198,10 +76,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * 파이프가 포함된 표현식을 감지합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_has_pipes_true(): void
     {
@@ -210,10 +84,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * 파이프가 없는 표현식에서 false를 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_has_pipes_false(): void
     {
@@ -227,10 +97,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * 인자 없는 파이프를 파싱합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_parse_pipe_no_args(): void
     {
@@ -241,10 +107,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * 인자가 있는 파이프를 파싱합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_parse_pipe_with_args(): void
     {
@@ -255,10 +117,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * 다중 인자가 있는 파이프를 파싱합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_parse_pipe_multiple_args(): void
     {
@@ -273,10 +131,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * date 파이프가 날짜를 기본 포맷으로 변환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_date_pipe_default_format(): void
     {
@@ -286,10 +140,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * date 파이프가 커스텀 포맷을 적용합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_date_pipe_custom_format(): void
     {
@@ -299,10 +149,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * datetime 파이프가 날짜+시간을 포맷합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_datetime_pipe(): void
     {
@@ -312,10 +158,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * null 날짜에 대해 빈 문자열을 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_date_pipe_null(): void
     {
@@ -325,10 +167,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * relativeTime 파이프가 상대 시간을 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_relative_time_pipe(): void
     {
@@ -342,10 +180,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * number 파이프가 천단위 구분자를 추가합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_number_pipe_formatting(): void
     {
@@ -355,10 +189,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * number 파이프가 소수점 자릿수를 지정합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_number_pipe_with_decimals(): void
     {
@@ -368,10 +198,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * number 파이프가 비숫자에 대해 원본을 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_number_pipe_non_numeric(): void
     {
@@ -385,10 +211,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * truncate 파이프가 문자열을 자릅니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_truncate_pipe(): void
     {
@@ -398,10 +220,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * truncate 파이프가 짧은 문자열은 그대로 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_truncate_pipe_short_string(): void
     {
@@ -411,10 +229,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * uppercase 파이프가 대문자로 변환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_uppercase_pipe(): void
     {
@@ -424,10 +238,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * lowercase 파이프가 소문자로 변환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_lowercase_pipe(): void
     {
@@ -437,10 +247,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * stripHtml 파이프가 HTML 태그를 제거합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_strip_html_pipe(): void
     {
@@ -454,10 +260,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * default 파이프가 null에 기본값을 적용합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_default_pipe_null(): void
     {
@@ -467,10 +269,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * default 파이프가 빈 문자열에 기본값을 적용합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_default_pipe_empty_string(): void
     {
@@ -480,10 +278,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * default 파이프가 값이 있으면 원본을 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_default_pipe_with_value(): void
     {
@@ -493,10 +287,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * fallback 파이프가 null에만 폴백을 적용합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_fallback_pipe(): void
     {
@@ -510,10 +300,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * first 파이프가 배열의 첫 요소를 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_first_pipe(): void
     {
@@ -522,10 +308,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * last 파이프가 배열의 마지막 요소를 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_last_pipe(): void
     {
@@ -534,10 +316,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * join 파이프가 배열을 결합합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_join_pipe(): void
     {
@@ -547,10 +325,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * join 파이프가 커스텀 구분자로 결합합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_join_pipe_custom_separator(): void
     {
@@ -560,10 +334,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * length 파이프가 배열 길이를 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_length_pipe_array(): void
     {
@@ -572,10 +342,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * length 파이프가 문자열 길이를 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_length_pipe_string(): void
     {
@@ -588,10 +354,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * keys 파이프가 키 배열을 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_keys_pipe(): void
     {
@@ -601,10 +363,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * values 파이프가 값 배열을 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_values_pipe(): void
     {
@@ -614,10 +372,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * json 파이프가 JSON 문자열을 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_json_pipe(): void
     {
@@ -631,10 +385,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * localized 파이프가 현재 로케일 값을 추출합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_localized_pipe(): void
     {
@@ -645,10 +395,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * localized 파이프가 지정된 로케일 값을 추출합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_localized_pipe_with_locale_arg(): void
     {
@@ -658,10 +404,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * localized 파이프가 문자열 값은 그대로 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_localized_pipe_string(): void
     {
@@ -675,10 +417,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * 존재하지 않는 파이프는 원본 값을 반환합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_unknown_pipe_returns_original(): void
     {
@@ -688,10 +426,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * has()가 등록된 파이프를 확인합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_has_pipe(): void
     {
@@ -706,10 +440,6 @@ class PipeRegistryTest extends TestCase
 
     /**
      * filterBy 파이프가 허용 목록으로 필터링합니다.
-     *
-     * @effects builtin_pipes_mirror_frontend
-     *
-     * @return void 반환값 없음
      */
     public function test_filter_by_pipe(): void
     {

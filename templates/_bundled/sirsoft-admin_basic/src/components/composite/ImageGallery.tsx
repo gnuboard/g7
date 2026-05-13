@@ -1,8 +1,3 @@
-// e2e:allow모달 by-design 편집 placeholder 보강(basic 1-b-verify-3 동기).
-// 라이브 E2E(편집기 추가→선택→속성 편집→저장→실사용자화면)는 1-c-verify 세션의
-// Playwright spec(property-edit-propcontrols.spec.ts)이 cover. 데이터/컴포넌트 회귀는
-// ImageGallery.test.tsx(4) + adminPropControlCoverage.test.ts 가 가드.
-// 확대 창 라벨 다국어(labels)는 ImageGallery.labels.test.tsx + 확대 창 접근성 이름 브라우저 실측.
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Lightbox, { Slide } from 'yet-another-react-lightbox';
 import Zoom from 'yet-another-react-lightbox/plugins/zoom';
@@ -16,11 +11,6 @@ import 'yet-another-react-lightbox/plugins/thumbnails.css';
 
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
-import { isDirectAssetUrl } from './assetOrigin';
-import { Div } from '../basic/Div';
-import { Img } from '../basic/Img';
-import type { EditorAttrs } from '../../types';
-import { thumbUrl } from '../../support/thumbnail';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:ImageGallery')) ?? {
@@ -35,30 +25,6 @@ const G7Core = (window as any).G7Core;
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
   G7Core?.t?.(key, params) ?? key;
-
-/**
- * 확대 창 라벨 — 넘기지 않으면 라이브러리가 창 이름(「Lightbox」)·단추 이름을 영어로 붙인다.
- * 슬라이드 위치 문구의 `{index}`·`{total}` 은 라이브러리가 채우므로 인자 없이 번역한다.
- */
-const lightboxLabels = () => ({
-  Lightbox: t('common.lightbox.dialog'),
-  Carousel: t('common.lightbox.carousel'),
-  'Photo gallery': t('common.lightbox.photo_gallery'),
-  Slide: t('common.lightbox.slide'),
-  '{index} of {total}': t('common.lightbox.slide_position'),
-  Previous: t('common.lightbox.previous'),
-  Next: t('common.lightbox.next'),
-  Close: t('common.lightbox.close'),
-  'Zoom in': t('common.lightbox.zoom_in'),
-  'Zoom out': t('common.lightbox.zoom_out'),
-  'Enter Fullscreen': t('common.lightbox.enter_fullscreen'),
-  'Exit Fullscreen': t('common.lightbox.exit_fullscreen'),
-  Play: t('common.lightbox.play'),
-  Pause: t('common.lightbox.pause'),
-  Thumbnails: t('common.lightbox.thumbnails'),
-  'Show thumbnails': t('common.lightbox.show_thumbnails'),
-  'Hide thumbnails': t('common.lightbox.hide_thumbnails'),
-});
 
 // ========== Types ==========
 
@@ -102,19 +68,6 @@ export interface ImageGalleryProps {
   showThumbnails?: boolean;
   /** 커스텀 다운로드 핸들러 (제공 시 기본 다운로드 로직 대신 실행) */
   onDownload?: (image: GalleryImage, index: number) => void;
-
-  /**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용).
-   * 본 컴포넌트는 서드파티 Lightbox 모달(`createPortal` 로 body 렌더)이라 런타임에는
-   * 인라인 DOM 이 없다. 편집 모드(editorAttrs 존재)에서는 캔버스 선택·속성 편집이
-   * 가능하도록 인라인 placeholder(이미지 썸네일 그리드)를 대신 렌더하고 거기에
-   * editorAttrs·id 를 부착한다. 런타임(editorAttrs 미주입)은 종전 Lightbox 동작 그대로.
-   *
-   */
-  editorAttrs?: EditorAttrs;
-
-  /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID — 편집 placeholder 루트에 부착) */
-  id?: string;
 }
 
 // ========== Helper Functions ==========
@@ -164,9 +117,7 @@ export const executeImageDownload = async (image: GalleryImage): Promise<void> =
   const downloadUrl = image.downloadUrl || image.src;
   const filename = image.filename || image.title || 'image';
 
-  // 공개 자산 디스크(S3/CDN)의 교차 출처 URL 은 인증이 필요 없는 공개 자산이다.
-  // 인증 XHR 로 가져오면 CORS 미설정 CDN 에서 실패하므로 일반 링크 다운로드를 쓴다.
-  if (image.downloadRequiresAuth && !isDirectAssetUrl(downloadUrl)) {
+  if (image.downloadRequiresAuth) {
     await downloadAuthenticatedFile(downloadUrl, filename);
   } else {
     downloadFile(downloadUrl, filename);
@@ -232,33 +183,15 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   showDownload = true,
   showThumbnails = true,
   onDownload,
-  editorAttrs,
-  id,
 }) => {
   // 현재 슬라이드 인덱스 (다운로드 버튼용)
   const [currentIndex, setCurrentIndex] = useState(startIndex);
   // 최신 인덱스를 ref로 추적 (클로저 문제 방지)
   const currentIndexRef = useRef(startIndex);
 
-  // 닫힌 채 마운트된 뒤 열리면 startIndex 만 바뀐다(useState 초기값은 재평가되지 않음).
-  // Lightbox 는 열리는 렌더의 index 만 읽으므로 effect 가 아니라 열림 전환 렌더 중에 맞춘다(#821).
-  const [wasOpen, setWasOpen] = useState(isOpen);
-  if (isOpen !== wasOpen) {
-    setWasOpen(isOpen);
-    if (isOpen) {
-      currentIndexRef.current = startIndex;
-      setCurrentIndex(startIndex);
-    }
-  }
-
   // 이미지를 라이트박스 슬라이드 형식으로 변환 (썸네일 포함)
-  // 썸네일 줄(Thumbnails 플러그인)은 `slide.thumbnail` 이 있으면 그 주소를 그린다. 종전에는 넣지 않아 120×80 칸마다
-  // 원본을 받았다. 넘겨받은 thumbnail 이 없으면 서빙 경로 이미지에 sm(160 정사각)을 붙인다 — 칸이 가로 120·세로 80 이라
-  // xs(64)는 늘려 그려 흐려진다(외부·정적 주소는 그대로).
-  // 메인 슬라이드는 확대 보기라 원본이다.
   const slides: Slide[] = images.map((image) => ({
     src: image.src,
-    thumbnail: image.thumbnail ?? thumbUrl(image.src, 'sm'),
     title: image.title,
     description: image.description,
   }));
@@ -279,42 +212,10 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
 
-  // 편집 모드(편집기 캔버스) — Lightbox 모달은 인라인 DOM 이 없어 선택·편집 불가.
-  // editorAttrs 가 주입되면 인라인 placeholder(썸네일 그리드)를 대신 렌더해
-  // 캔버스에서 선택·속성 편집이 가능하게 한다. 런타임(editorAttrs 미주입)은 미진입.
-  // (Hooks 규칙 — 모든 hook 호출 이후에 분기 return)
-  if (editorAttrs) {
-    const previewImages = (images ?? []).slice(0, 4);
-    return (
-      <Div
-        id={id}
-        className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800"
-        {...editorAttrs}
-      >
-        {previewImages.length > 0 ? (
-          previewImages.map((image, index) => (
-            <Img
-              key={index}
-              src={image.thumbnail || image.src}
-              alt={image.title || ''}
-              className="w-full aspect-square object-cover rounded bg-gray-200 dark:bg-gray-700"
-            />
-          ))
-        ) : (
-          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-gray-500 dark:text-gray-400">
-            <I className="fa-regular fa-images mr-2" />
-            {t('editor.component.image_gallery')}
-          </Div>
-        )}
-      </Div>
-    );
-  }
-
   return (
     <Lightbox
       open={isOpen}
       close={onClose}
-      labels={lightboxLabels()}
       slides={slides}
       index={currentIndex}
       plugins={plugins}

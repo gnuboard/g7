@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
-import type { EditorAttrs } from '../../types';
-import { activateOnKey, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 export interface DropdownItem {
   label: string;
@@ -21,12 +19,6 @@ export interface DropdownProps {
   variant?: 'default' | 'text';
   className?: string;
   style?: React.CSSProperties;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -56,15 +48,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
   variant = 'default',
   className = '',
   style,
-  id,
-  editorAttrs,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  // 여는 단추 — 고르거나 Esc 로 닫은 뒤 포커스를 돌려받는다(메뉴가 사라져 body 로 빠지지 않게, #869 키보드 접근)
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
 
   // 외부 클릭 감지
@@ -122,7 +110,6 @@ export const Dropdown: React.FC<DropdownProps> = ({
           event.preventDefault();
           setIsOpen(false);
           setFocusedIndex(-1);
-          triggerRef.current?.focus();
           break;
       }
     };
@@ -189,28 +176,29 @@ export const Dropdown: React.FC<DropdownProps> = ({
     onItemClick?.(item.value, item);
     setIsOpen(false);
     setFocusedIndex(-1);
-    triggerRef.current?.focus();
   };
 
   const positionClasses = {
-    'bottom-left': 'dropdown-menu-bottom-left',
-    'bottom-right': 'dropdown-menu-bottom-right',
-    'top-left': 'dropdown-menu-top-left',
-    'top-right': 'dropdown-menu-top-right',
+    'bottom-left': 'top-full left-0 mt-2',
+    'bottom-right': 'top-full right-0 mt-2',
+    'top-left': 'bottom-full left-0 mb-2',
+    'top-right': 'bottom-full right-0 mb-2',
   };
 
   return (
     <Div
       ref={dropdownRef}
-      className={`dropdown ${className}`}
+      className={`relative inline-block ${className}`}
       style={style}
-      id={id} {...editorAttrs}
     >
       {/* Trigger Button */}
       <Button
-        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
-        className={variant === 'text' ? 'dropdown-trigger-text' : 'dropdown-trigger'}
+        className={
+          variant === 'text'
+            ? 'text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 inline-flex items-center'
+            : 'px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-white'
+        }
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
@@ -238,7 +226,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
       {isOpen && (
         <Div
           ref={menuRef}
-          className={`dropdown-menu ${positionClasses[adjustedPosition]}`}
+          className={`absolute z-50 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg ${positionClasses[adjustedPosition]}`}
           role="menu"
           aria-orientation="vertical"
         >
@@ -246,13 +234,12 @@ export const Dropdown: React.FC<DropdownProps> = ({
             {items.map((item, index) => (
               <Div
                 key={item.value}
-                className={`${
-                  item.disabled ? 'dropdown-item-disabled' : 'dropdown-item'
-                } ${focusedIndex === index ? 'dropdown-item-focused' : ''} ${FOCUS_VISIBLE_RING}`}
+                className={`px-4 py-2 text-sm ${
+                  item.disabled
+                    ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                    : 'text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700'
+                } ${focusedIndex === index ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
                 onClick={() => handleItemClick(item)}
-                // Tab 으로 잡은 항목을 Enter·Space 로 고른다 — 문서의 Enter 처리와 겹치지 않게 처리한 키는 번지지 않는다(#869)
-                onKeyDown={item.disabled ? undefined : activateOnKey(() => handleItemClick(item))}
-                onFocus={() => !item.disabled && setFocusedIndex(index)}
                 onMouseEnter={() => !item.disabled && setFocusedIndex(index)}
                 role="menuitem"
                 aria-disabled={item.disabled}

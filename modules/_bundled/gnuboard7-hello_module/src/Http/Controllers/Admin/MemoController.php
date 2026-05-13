@@ -3,11 +3,10 @@
 namespace Modules\Gnuboard7\HelloModule\Http\Controllers\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Modules\Gnuboard7\HelloModule\Http\Requests\Admin\StoreMemoRequest;
 use Modules\Gnuboard7\HelloModule\Http\Requests\Admin\UpdateMemoRequest;
-use Modules\Gnuboard7\HelloModule\Http\Requests\MemoListRequest;
 use Modules\Gnuboard7\HelloModule\Http\Resources\MemoCollection;
 use Modules\Gnuboard7\HelloModule\Http\Resources\MemoResource;
 use Modules\Gnuboard7\HelloModule\Services\MemoService;
@@ -33,13 +32,13 @@ class MemoController extends AdminBaseController
     /**
      * 메모 목록을 조회합니다.
      *
-     * @param  MemoListRequest  $request  목록 조회 요청 (페이지네이션 상·하한 검증)
+     * @param  Request  $request  HTTP 요청
      * @return JsonResponse 메모 목록 응답
      */
-    public function index(MemoListRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
-            $perPage = (int) ($request->validated()['per_page'] ?? 10);
+            $perPage = (int) $request->query('per_page', 10);
             $memos = $this->memoService->getMemos($perPage);
 
             return $this->success(
@@ -66,7 +65,7 @@ class MemoController extends AdminBaseController
                 'gnuboard7-hello_module::messages.memo.fetch_success',
                 new MemoResource($memo)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('gnuboard7-hello_module::messages.memo.not_found');
         } catch (\Exception $e) {
             return $this->error('gnuboard7-hello_module::messages.memo.fetch_failed', 500, $e->getMessage());
@@ -111,7 +110,7 @@ class MemoController extends AdminBaseController
                 'gnuboard7-hello_module::messages.memo.update_success',
                 new MemoResource($memo)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('gnuboard7-hello_module::messages.memo.not_found');
         } catch (\Exception $e) {
             return $this->error('gnuboard7-hello_module::messages.memo.update_failed', 500, $e->getMessage());
@@ -131,7 +130,7 @@ class MemoController extends AdminBaseController
             $this->memoService->deleteMemo($memo);
 
             return $this->success('gnuboard7-hello_module::messages.memo.delete_success');
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('gnuboard7-hello_module::messages.memo.not_found');
         } catch (\Exception $e) {
             return $this->error('gnuboard7-hello_module::messages.memo.delete_failed', 500, $e->getMessage());

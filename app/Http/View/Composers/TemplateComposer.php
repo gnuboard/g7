@@ -5,55 +5,37 @@ namespace App\Http\View\Composers;
 use App\Exceptions\TemplateNotFoundException;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
-use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
-use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
-use App\Http\View\Composers\Traits\CollectsCustomAssets;
-use App\Http\View\Composers\Traits\CollectsExtensionAssets;
-use App\Http\View\Composers\Traits\CollectsExtensionCssContract;
-use App\Http\View\Composers\Traits\CollectsTemplateExternals;
-use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
-use App\Seo\SeoTitleRuleExporter;
-use App\Services\FrontendConfigService;
+use App\Services\ModuleSettingsService;
+use App\Services\PluginSettingsService;
+use App\Services\SettingsService;
 use App\Services\TemplateService;
-use App\Services\TemplateSettingsService;
-use App\Support\StateContracts;
-use App\Support\TrustedScriptHosts;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class TemplateComposer
 {
-    use CollectsActiveExtensionMeta;
-    use CollectsCustomAssets;
-    use CollectsExtensionAssets;
-    use CollectsExtensionCssContract;
-    use CollectsTemplateExternals;
-    use CollectsTemplateStylesheets;
-
     /**
      * 서비스 주입
      *
      * @param  TemplateService  $templateService  템플릿 서비스
+     * @param  SettingsService  $settingsService  코어 설정 서비스
+     * @param  ModuleSettingsService  $moduleSettingsService  모듈 설정 서비스
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
      * @param  ModuleManager  $moduleManager  모듈 매니저
      * @param  PluginManager  $pluginManager  플러그인 매니저
-     * @param  TemplateManager  $templateManager  템플릿 매니저
-     * @param  FrontendConfigService  $frontendConfigService  프론트엔드 공개 설정 조립
-     * @param  TemplateSettingsService  $templateSettingsService  템플릿 설정 (설정 화면 부품 묶음 주소)
      */
     public function __construct(
         private TemplateService $templateService,
+        private SettingsService $settingsService,
+        private ModuleSettingsService $moduleSettingsService,
+        private PluginSettingsService $pluginSettingsService,
         private ModuleManager $moduleManager,
-        private PluginManager $pluginManager,
-        private TemplateManager $templateManager,
-        private FrontendConfigService $frontendConfigService,
-        private TemplateSettingsService $templateSettingsService,
+        private PluginManager $pluginManager
     ) {}
 
     /**
      * 뷰에 데이터 바인딩
-     *
-     * @param  View  $view  뷰 인스턴스
-     * @return void 반환값 없음
      */
     public function compose(View $view): void
     {
@@ -63,12 +45,27 @@ class TemplateComposer
             $activeTemplate = null;
         }
 
-        // 프론트엔드 공개 설정 — 관리자 공개 설정 API(`GET /api/admin/frontend-config`)와 같은 함수로 조립한다(#792 D8)
-        $bundle = $this->frontendConfigService->settingsBundle(FrontendConfigService::SCOPE_ADMIN);
-        $frontendSettings = $bundle['settings'];
-        $pluginSettings = $bundle['plugins'];
-        $templateSettings = $bundle['templateSettings'];
-        $moduleSettings = $bundle['modules'];
+        // 프론트엔드 전역 변수로 사용할 설정 조회
+        // SettingsService의 공통 메서드 사용
+        try {
+            $frontendSettings = $this->settingsService->getFrontendSettings();
+        } catch (\Exception $e) {
+            $frontendSettings = [];
+        }
+
+        // 활성화된 플러그인 설정 조회
+        try {
+            $pluginSettings = $this->pluginSettingsService->getAllActiveSettings();
+        } catch (\Exception $e) {
+            $pluginSettings = [];
+        }
+
+        // 활성화된 모듈 설정 조회 (frontend_schema 기반 필터링 적용)
+        try {
+            $moduleSettings = $this->moduleSettingsService->getAllActiveSettings();
+        } catch (\Exception $e) {
+            $moduleSettings = [];
+        }
 
         // 활성화된 모듈의 프론트엔드 에셋 정보 수집
         $moduleAssets = $this->collectModuleAssets();
@@ -76,82 +73,145 @@ class TemplateComposer
         // 활성화된 플러그인의 프론트엔드 에셋 정보 수집
         $pluginAssets = $this->collectPluginAssets();
 
-        // 활성 확장(모듈/플러그인) 메타 — 레이아웃 편집기 SSoT
-        // 기존 modules/plugins 키는 hasSettings() 필터로 활성 전수가 아님
-        $activeModulesMeta = $this->collectActiveModulesMeta();
-        $activePluginsMeta = $this->collectActivePluginsMeta();
-
-        // 프론트엔드에 노출할 앱 config 값 (공개 설정 API 와 같은 값)
-        $appConfig = $bundle['appConfig'];
-
-        // 확장 기능 캐시 버전 (브라우저 캐시 무효화용)
-        $extensionCacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
-
-        // 템플릿의 외부 리소스 정보 수집
-        // (자체 제공 `asset` 항목의 URL 을 만들 때 캐시 버전이 필요해 뒤로 옮겼다)
-        $templateExternals = $this->collectTemplateExternals($activeTemplate, $extensionCacheVersion);
-
-        // 확장 프론트엔드 병합 번들 URL (상시 ON — 활성 에셋이 없으면 null)
-        $bundleUrls = $this->buildExtensionBundleUrls($moduleAssets, $pluginAssets, $extensionCacheVersion);
-
-        // 신뢰 외부 스크립트 호스트 — 레이아웃 scripts[].src same-origin 예외 허용목록
-        // (KVE-2026-1915: 확장이 manifest 로 선언한 CDN 호스트만 런타임 로더가 허용)
-        $trustedScriptHosts = TrustedScriptHosts::hosts();
+        // 프론트엔드에 노출할 앱 config 값 조회
+        try {
+            $appConfig = $this->settingsService->getAppConfigForFrontend();
+        } catch (\Exception $e) {
+            $appConfig = [];
+        }
 
         $view->with('activeAdminTemplate', $activeTemplate);
-        $view->with('extensionCacheVersion', $extensionCacheVersion);
-        // 템플릿 설정 중 template.json `expose` 선언 키만 — 엔진이 첫 화면 전 config API 를 부르지 않게 한다(선언 없으면 null) (#879)
-        $view->with('exposedTemplateConfig', $activeTemplate !== null ? $this->templateService->getExposedTemplateConfig($activeTemplate) : null);
-        // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 빈 카테고리(`identity`)를 `{}` 로 바꾸는 일은 공개 설정 API 와 같은 조립 함수가 한다
         $view->with('frontendSettings', $frontendSettings);
         $view->with('pluginSettings', $pluginSettings);
-        $view->with('templateSettings', $templateSettings);
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);
         $view->with('pluginAssets', $pluginAssets);
-        $view->with('bundleUrls', $bundleUrls);
-        // 템플릿이 공급한 설정 화면 부품 묶음 — 어느 관리자 템플릿이 켜져 있든 그 템플릿 부품으로 설정 화면을 그린다 (#434 D28·D30)
-        $view->with('templateSettingsAssets', $this->templateSettingsService->settingsAssetUrls($extensionCacheVersion));
-        $view->with('activeModulesMeta', $activeModulesMeta);
-        $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
-        $view->with('seoTitle', $this->collectAdminTitle($appConfig['supportedLocales'] ?? null));
-        $view->with('templateExternals', $templateExternals);
-        // 템플릿이 선언하고 산출물이 있는 CSS 만 링크한다 — CSS 없는 템플릿에 없는 파일 요청을 남기지 않는다
-        $view->with('templateStylesheets', $this->collectTemplateStylesheets($activeTemplate));
-        $view->with('customAssets', $this->collectCustomAssets($activeTemplate));
-        // 확장 CSS 자기 공급 계약 — 템플릿 다크 방식 선언(중립 표식용)과 확장 CSS 덮기 파일
-        $view->with('colorScheme', $this->collectColorScheme($activeTemplate));
-        $view->with('extensionCssOverrides', $this->collectExtensionCssOverrides($activeTemplate, $extensionCacheVersion));
-        $view->with('extensionClassPrefixes', $this->collectExtensionClassPrefixes());
-        $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
-        $view->with('trustedScriptHosts', $trustedScriptHosts);
-        // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
-        $view->with('stateContracts', StateContracts::forFrontend());
-        // 엔진이 전체 페이지 이동으로 넘길 custom 주소(routes/custom.php, #792 W5) · 실시간 알림 접속정보
-        $view->with('customRoutes', $this->frontendConfigService->customRoutes());
-        $view->with('websocketConfig', $this->frontendConfigService->websocket());
-        $view->with('frontendLocale', $this->frontendConfigService->locale());
     }
 
     /**
-     * 관리자 화면 브라우저 탭 제목 계산 값을 모읍니다 (`{화면 제목} - {사이트 이름} 관리자`).
+     * 활성화된 모듈의 프론트엔드 에셋 정보를 수집합니다.
      *
-     * 실패하면 null 을 돌려준다 — 엔진은 값이 없으면 탭 제목을 바꾸지 않는다(종전 동작: 셸 제목).
-     *
-     * @param  mixed  $supportedLocales  프론트 앱 설정의 지원 언어 목록 (없으면 config 값)
-     * @return array<string, mixed>|null 제목 계산 값
+     * @return array<string, array{js?: string, css?: string, priority: int, external?: array}>
      */
-    private function collectAdminTitle(mixed $supportedLocales): ?array
+    private function collectModuleAssets(): array
     {
-        try {
-            $locales = is_array($supportedLocales) && $supportedLocales !== []
-                ? array_values($supportedLocales)
-                : (array) config('app.supported_locales', [app()->getLocale()]);
+        $assets = [];
 
-            return app(SeoTitleRuleExporter::class)->exportForAdmin($locales);
-        } catch (\Throwable $e) {
-            return null;
+        try {
+            // ModuleManager에서 활성화된 모듈 목록 조회
+            $activeModules = $this->moduleManager->getActiveModules();
+
+            // 캐시 버전 조회 (브라우저 캐시 무효화용)
+            $cacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
+
+            foreach ($activeModules as $identifier => $module) {
+                // 모듈에 에셋이 있는지 확인
+                if (! $module->hasAssets()) {
+                    continue;
+                }
+
+                $builtPaths = $module->getBuiltAssetPaths();
+                $loadingConfig = $module->getAssetLoadingConfig();
+                $assetConfig = $module->getAssets();
+
+                // global 전략인 경우에만 수집 (layout, lazy는 레이아웃에서 처리)
+                if ($loadingConfig['strategy'] !== 'global') {
+                    continue;
+                }
+
+                $moduleAsset = [
+                    'priority' => $loadingConfig['priority'],
+                ];
+
+                // JS 빌드 경로 (캐시 버전 파라미터 추가)
+                if (! empty($builtPaths['js'])) {
+                    $moduleAsset['js'] = "/api/modules/assets/{$identifier}/".$builtPaths['js']."?v={$cacheVersion}";
+                }
+
+                // CSS 빌드 경로 (캐시 버전 파라미터 추가)
+                if (! empty($builtPaths['css'])) {
+                    $moduleAsset['css'] = "/api/modules/assets/{$identifier}/".$builtPaths['css']."?v={$cacheVersion}";
+                }
+
+                // 외부 스크립트 (조건부 로드용)
+                if (! empty($assetConfig['external'])) {
+                    $moduleAsset['external'] = $assetConfig['external'];
+                }
+
+                $assets[$identifier] = $moduleAsset;
+            }
+
+            // 우선순위 기준 정렬 (낮을수록 먼저)
+            uasort($assets, fn ($a, $b) => $a['priority'] <=> $b['priority']);
+        } catch (\Exception $e) {
+            // 에러 발생 시 빈 배열 반환 (에셋 로드 실패해도 앱 진행)
+            Log::warning('Failed to collect module assets: '.$e->getMessage());
         }
+
+        return $assets;
+    }
+
+    /**
+     * 활성화된 플러그인의 프론트엔드 에셋 정보를 수집합니다.
+     *
+     * @return array<string, array{js?: string, css?: string, priority: int, external?: array}>
+     */
+    private function collectPluginAssets(): array
+    {
+        $assets = [];
+
+        try {
+            // PluginManager에서 활성화된 플러그인 목록 조회
+            $activePlugins = $this->pluginManager->getActivePlugins();
+
+            // 캐시 버전 조회 (브라우저 캐시 무효화용)
+            $cacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
+
+            foreach ($activePlugins as $identifier => $plugin) {
+                // 플러그인에 에셋이 있는지 확인
+                if (! $plugin->hasAssets()) {
+                    continue;
+                }
+
+                $builtPaths = $plugin->getBuiltAssetPaths();
+                $loadingConfig = $plugin->getAssetLoadingConfig();
+                $assetConfig = $plugin->getAssets();
+
+                // global 전략인 경우에만 수집 (layout, lazy는 레이아웃에서 처리)
+                if ($loadingConfig['strategy'] !== 'global') {
+                    continue;
+                }
+
+                $pluginAsset = [
+                    'priority' => $loadingConfig['priority'],
+                ];
+
+                // JS 빌드 경로 (캐시 버전 파라미터 추가)
+                if (! empty($builtPaths['js'])) {
+                    $pluginAsset['js'] = "/api/plugins/assets/{$identifier}/".$builtPaths['js']."?v={$cacheVersion}";
+                }
+
+                // CSS 빌드 경로 (캐시 버전 파라미터 추가)
+                if (! empty($builtPaths['css'])) {
+                    $pluginAsset['css'] = "/api/plugins/assets/{$identifier}/".$builtPaths['css']."?v={$cacheVersion}";
+                }
+
+                // 외부 스크립트 (조건부 로드용)
+                if (! empty($assetConfig['external'])) {
+                    $pluginAsset['external'] = $assetConfig['external'];
+                }
+
+                $assets[$identifier] = $pluginAsset;
+            }
+
+            // 우선순위 기준 정렬 (낮을수록 먼저)
+            uasort($assets, fn ($a, $b) => $a['priority'] <=> $b['priority']);
+        } catch (\Exception $e) {
+            // 에러 발생 시 빈 배열 반환 (에셋 로드 실패해도 앱 진행)
+            Log::warning('Failed to collect plugin assets: '.$e->getMessage());
+        }
+
+        return $assets;
     }
 }

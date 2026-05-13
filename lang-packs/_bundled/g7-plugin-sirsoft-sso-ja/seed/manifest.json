@@ -1,4 +1,0 @@
-{
-  "name": "SSO 連携",
-  "description": "会社アカウント(SAML 2.0、OpenID Connect、LDAP/Active Directory)でログインし、SCIM 2.0 で会員を作成・削除する企業向け SSO プラグイン。ログインの関門(ロック、2段階認証、パスワード変更、休眠解除)はコアが担います。"
-}

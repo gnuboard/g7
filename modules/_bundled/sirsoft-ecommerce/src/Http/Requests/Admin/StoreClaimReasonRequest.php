@@ -8,17 +8,16 @@ use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
-use Modules\Sirsoft\Ecommerce\Rules\ClaimReasonCodeFormat;
 
 /**
- * 클레임 사유 생성 요청
+ * 클래임 사유 생성 요청
  */
 class StoreClaimReasonRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      *
-     * @return bool 항상 true (권한은 라우트 permission 미들웨어가 담당)
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -28,7 +27,7 @@ class StoreClaimReasonRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, mixed> 검증 규칙 배열
+     * @return array
      */
     public function rules(): array
     {
@@ -38,8 +37,7 @@ class StoreClaimReasonRequest extends FormRequest
                 'required',
                 'string',
                 'max:50',
-                // 형식은 ClaimReasonCodeFormat 단일 출처. 신규 생성이라 면제 대상이 없다.
-                new ClaimReasonCodeFormat,
+                'regex:/^[a-z][a-z0-9_]*$/',
                 Rule::unique(ClaimReason::class, 'code')->where('type', $this->input('type', 'refund')),
             ],
             'name' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
@@ -53,7 +51,7 @@ class StoreClaimReasonRequest extends FormRequest
     /**
      * Get custom attributes for validator errors.
      *
-     * @return array<string, string> 필드명 → 표시명 매핑
+     * @return array
      */
     public function attributes(): array
     {

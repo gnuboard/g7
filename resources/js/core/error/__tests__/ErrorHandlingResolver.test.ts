@@ -4,13 +4,10 @@
  * 계층적 에러 핸들링 설정 해석 및 실행 테스트
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ErrorHandlingResolver, getErrorHandlingResolver } from '../ErrorHandlingResolver';
 import type { ErrorHandlingMap, ErrorHandlerConfig, ErrorContext } from '../../types/ErrorHandling';
 import { Logger } from '../../utils/Logger';
-
-/** setActionExecutor 가 받는 실행기 시그니처 */
-type ActionExecutor = Parameters<ErrorHandlingResolver['setActionExecutor']>[0];
 
 describe('ErrorHandlingResolver', () => {
   beforeEach(() => {
@@ -26,16 +23,12 @@ describe('ErrorHandlingResolver', () => {
   });
 
   describe('싱글톤 패턴', () => {
-    // @scenario area=singleton
-    // @effects error_resolver_singleton
     it('getInstance()는 동일한 인스턴스를 반환해야 함', () => {
       const instance1 = ErrorHandlingResolver.getInstance();
       const instance2 = ErrorHandlingResolver.getInstance();
       expect(instance1).toBe(instance2);
     });
 
-    // @scenario area=singleton
-    // @effects error_resolver_singleton
     it('resetInstance() 후에는 새 인스턴스를 반환해야 함', () => {
       const instance1 = ErrorHandlingResolver.getInstance();
       ErrorHandlingResolver.resetInstance();
@@ -43,8 +36,6 @@ describe('ErrorHandlingResolver', () => {
       expect(instance1).not.toBe(instance2);
     });
 
-    // @scenario area=singleton
-    // @effects error_resolver_singleton
     it('getErrorHandlingResolver()는 getInstance()와 동일한 결과를 반환해야 함', () => {
       const instance1 = getErrorHandlingResolver();
       const instance2 = ErrorHandlingResolver.getInstance();
@@ -59,8 +50,6 @@ describe('ErrorHandlingResolver', () => {
       resolver = ErrorHandlingResolver.getInstance();
     });
 
-    // @scenario area=priority
-    // @effects error_level_priority
     it('액션 레벨 errorHandling[코드]가 최우선 순위', () => {
       // 템플릿 설정
       resolver.setTemplateConfig({
@@ -85,8 +74,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.matchedKey).toBe(403);
     });
 
-    // @scenario area=priority
-    // @effects error_level_priority
     it('문자열 키로 정의된 errorHandling에서 target이 보존됨 (JSON 파싱 시나리오)', () => {
       // JSON 파싱 결과를 시뮬레이션 (키가 문자열)
       const jsonParsedErrorHandling: ErrorHandlingMap = {
@@ -104,8 +91,6 @@ describe('ErrorHandlingResolver', () => {
       expect([404, '404']).toContain(result.matchedKey);
     });
 
-    // @scenario area=priority
-    // @effects error_level_priority
     it('액션 errorHandling에 코드가 없으면 default 사용', () => {
       const result = resolver.resolve(500, {
         errorHandling: {
@@ -119,8 +104,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.matchedKey).toBe('default');
     });
 
-    // @scenario area=priority
-    // @effects error_level_priority
     it('액션 errorHandling에 없으면 onError 사용', () => {
       const result = resolver.resolve(500, {
         errorHandling: {
@@ -134,8 +117,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.matchedKey).toBe('onError');
     });
 
-    // @scenario area=priority
-    // @effects error_level_priority
     it('onError가 배열이면 sequence로 래핑', () => {
       const result = resolver.resolve(500, {
         onError: [
@@ -149,8 +130,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.level).toBe('action');
     });
 
-    // @scenario area=priority
-    // @effects error_level_priority
     it('액션 레벨에 없으면 레이아웃 설정 사용', () => {
       resolver.setLayoutConfig({
         403: { handler: 'toast', params: { message: 'layout 403' } },
@@ -167,8 +146,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.matchedKey).toBe(403);
     });
 
-    // @scenario area=priority
-    // @effects error_level_priority
     it('레이아웃에도 없으면 템플릿 설정 사용', () => {
       resolver.setTemplateConfig({
         403: { handler: 'navigate', params: { path: '/template-403' } },
@@ -181,8 +158,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.matchedKey).toBe(403);
     });
 
-    // @scenario area=priority
-    // @effects error_level_priority
     it('모든 레벨에 없으면 시스템 기본값 사용', () => {
       const result = resolver.resolve(403, {});
 
@@ -190,8 +165,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.level).toBe('system');
     });
 
-    // @scenario area=priority
-    // @effects error_level_priority
     it('문자열 키와 숫자 키 모두 지원', () => {
       resolver.setTemplateConfig({
         '404': { handler: 'navigate', params: { path: '/404' } },
@@ -213,8 +186,6 @@ describe('ErrorHandlingResolver', () => {
       resolver = ErrorHandlingResolver.getInstance();
     });
 
-    // @scenario area=show_error_page
-    // @effects error_page_code_injected
     it('showErrorPage에 errorCode가 없으면 매칭된 키값으로 자동 주입', () => {
       resolver.setTemplateConfig({
         403: {
@@ -229,8 +200,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.handler?.params?.errorCode).toBe(403);
     });
 
-    // @scenario area=show_error_page
-    // @effects error_page_code_injected
     it('showErrorPage에 errorCode가 이미 있으면 그대로 유지', () => {
       resolver.setTemplateConfig({
         403: {
@@ -245,8 +214,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.handler?.params?.errorCode).toBe(401);
     });
 
-    // @scenario area=show_error_page
-    // @effects error_page_code_injected
     it('default 키로 매칭될 때는 실제 에러 코드(actualErrorCode)로 주입', () => {
       resolver.setTemplateConfig({
         default: {
@@ -263,8 +230,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.handler?.params?.errorCode).toBe(500);
     });
 
-    // @scenario area=show_error_page
-    // @effects error_page_code_injected
     it('default 키로 매칭 + HTTP 403 에러 시 실제 에러 코드 403 주입', () => {
       const result = resolver.resolve(403, {
         errorHandling: {
@@ -283,16 +248,14 @@ describe('ErrorHandlingResolver', () => {
 
   describe('execute() - 핸들러 실행', () => {
     let resolver: ErrorHandlingResolver;
-    let mockExecutor: Mock<ActionExecutor>;
+    let mockExecutor: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
       resolver = ErrorHandlingResolver.getInstance();
-      mockExecutor = vi.fn<ActionExecutor>().mockResolvedValue({ success: true });
+      mockExecutor = vi.fn().mockResolvedValue({ success: true });
       resolver.setActionExecutor(mockExecutor);
     });
 
-    // @scenario area=execute
-    // @effects error_handler_executed
     it('executeAction이 설정되지 않으면 에러 로그 출력', async () => {
       ErrorHandlingResolver.resetInstance();
       const newResolver = ErrorHandlingResolver.getInstance();
@@ -312,8 +275,6 @@ describe('ErrorHandlingResolver', () => {
       consoleSpy.mockRestore();
     });
 
-    // @scenario area=execute
-    // @effects error_handler_executed
     it('핸들러 실행 시 executeAction 호출', async () => {
       const handler: ErrorHandlerConfig = {
         handler: 'toast',
@@ -329,8 +290,6 @@ describe('ErrorHandlingResolver', () => {
       expect(mockExecutor).toHaveBeenCalledWith(handler, { error: errorContext });
     });
 
-    // @scenario area=execute
-    // @effects error_handler_executed
     it('openModal 핸들러 실행 시 target이 executor에 전달됨', async () => {
       const handler: ErrorHandlerConfig = {
         handler: 'openModal',
@@ -353,8 +312,6 @@ describe('ErrorHandlingResolver', () => {
       );
     });
 
-    // @scenario area=execute
-    // @effects error_handler_executed
     it('executeAction 실패 시 에러 throw', async () => {
       mockExecutor.mockRejectedValue(new Error('Execution failed'));
 
@@ -371,16 +328,14 @@ describe('ErrorHandlingResolver', () => {
 
   describe('resolveAndExecute() - 통합 테스트', () => {
     let resolver: ErrorHandlingResolver;
-    let mockExecutor: Mock<ActionExecutor>;
+    let mockExecutor: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
       resolver = ErrorHandlingResolver.getInstance();
-      mockExecutor = vi.fn<ActionExecutor>().mockResolvedValue({ success: true });
+      mockExecutor = vi.fn().mockResolvedValue({ success: true });
       resolver.setActionExecutor(mockExecutor);
     });
 
-    // @scenario area=resolve_and_execute
-    // @effects error_resolve_execute_result
     it('핸들러 찾아서 실행 후 handled: true 반환', async () => {
       resolver.setTemplateConfig({
         403: { handler: 'toast', params: { message: 'forbidden' } },
@@ -396,41 +351,23 @@ describe('ErrorHandlingResolver', () => {
       expect(mockExecutor).toHaveBeenCalled();
     });
 
-    // @scenario area=resolve_and_execute
-    // @effects error_resolve_execute_result
-    // 종전 이름은 「핸들러를 찾지 못하면 handled: false 반환」이었으나 단언은 true 였다. 시스템 기본값에
-    // default 가 있어 설정을 모두 비워도 핸들러를 찾으므로, 실제로 검증하는 내용에 맞게 이름을 바로잡았다(#869).
-    it('설정을 모두 비워도 시스템 기본값 default 가 받아 handled: true 를 반환', async () => {
+    it('핸들러를 찾지 못하면 handled: false 반환', async () => {
+      // 모든 설정 초기화
       resolver.clearAllConfig();
 
+      // 존재하지 않는 에러 코드 (시스템 기본값에도 없는)
+      // 참고: 시스템 기본값에 default가 있으므로 항상 핸들러를 찾음
+      // 이 테스트는 시스템 기본값을 우회할 수 없으므로 항상 handled: true
       const result = await resolver.resolveAndExecute(
         999,
         { status: 999, message: 'Unknown' },
         {}
       );
 
+      // 시스템 기본값의 default 핸들러가 적용됨
       expect(result.handled).toBe(true);
-      expect(mockExecutor).toHaveBeenCalledOnce();
     });
 
-    // @scenario area=resolve_and_execute
-    // @effects error_resolve_execute_result
-    // 이름 그대로의 갈래(핸들러 없음 → handled: false)는 resolve 가 핸들러를 못 찾은 결과를 돌려줄 때만 닿는다.
-    it('핸들러를 찾지 못하면 실행하지 않고 handled: false 반환', async () => {
-      vi.spyOn(resolver, 'resolve').mockReturnValue({ handler: null, level: null, matchedKey: null });
-
-      const result = await resolver.resolveAndExecute(
-        999,
-        { status: 999, message: 'Unknown' },
-        {}
-      );
-
-      expect(result.handled).toBe(false);
-      expect(mockExecutor).not.toHaveBeenCalled();
-    });
-
-    // @scenario area=resolve_and_execute
-    // @effects error_resolve_execute_result
     it('실행 실패 시 handled: false 반환', async () => {
       mockExecutor.mockRejectedValue(new Error('Execution failed'));
 
@@ -458,8 +395,6 @@ describe('ErrorHandlingResolver', () => {
       resolver = ErrorHandlingResolver.getInstance();
     });
 
-    // @scenario area=suppress
-    // @effects error_suppress_stops_propagation
     it('suppress 핸들러가 action 레벨로 resolve되어 상위 전파를 중단한다', () => {
       // 레이아웃에 401 → showErrorPage 설정
       resolver.setLayoutConfig({
@@ -479,8 +414,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.matchedKey).toBe(401);
     });
 
-    // @scenario area=suppress
-    // @effects error_suppress_stops_propagation
     it('suppress가 없으면 레이아웃 레벨 errorHandling이 실행된다', () => {
       // 레이아웃에 401 → showErrorPage 설정
       resolver.setLayoutConfig({
@@ -494,8 +427,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.level).toBe('layout');
     });
 
-    // @scenario area=suppress
-    // @effects error_suppress_stops_propagation
     it('suppress를 default 키로 사용하면 모든 에러 코드의 전파를 방지한다', () => {
       resolver.setLayoutConfig({
         401: { handler: 'showErrorPage', params: { target: 'content' } },
@@ -513,8 +444,6 @@ describe('ErrorHandlingResolver', () => {
       expect(result.matchedKey).toBe('default');
     });
 
-    // @scenario area=suppress
-    // @effects error_suppress_stops_propagation
     it('suppress와 다른 핸들러를 혼합 사용할 수 있다', () => {
       resolver.setLayoutConfig({
         401: { handler: 'showErrorPage', params: { target: 'content' } },
@@ -543,8 +472,6 @@ describe('ErrorHandlingResolver', () => {
       resolver = ErrorHandlingResolver.getInstance();
     });
 
-    // @scenario area=config
-    // @effects error_config_managed
     it('clearLayoutConfig()은 레이아웃 설정만 초기화', () => {
       resolver.setTemplateConfig({
         403: { handler: 'toast', params: {} },
@@ -560,8 +487,6 @@ describe('ErrorHandlingResolver', () => {
       expect(status.hasLayout).toBe(false);
     });
 
-    // @scenario area=config
-    // @effects error_config_managed
     it('clearAllConfig()은 모든 설정 초기화', () => {
       resolver.setTemplateConfig({
         403: { handler: 'toast', params: {} },
@@ -577,8 +502,6 @@ describe('ErrorHandlingResolver', () => {
       expect(status.hasLayout).toBe(false);
     });
 
-    // @scenario area=config
-    // @effects error_config_managed
     it('getConfigStatus()는 현재 설정 상태 반환', () => {
       const mockExecutor = vi.fn();
       resolver.setActionExecutor(mockExecutor);

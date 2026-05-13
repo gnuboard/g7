@@ -1,0 +1,385 @@
+{
+  "target_layout": "mypage/profile",
+  "injections": [
+    {
+      "target_id": "profile_view_bio_card",
+      "position": "append",
+      "components": [
+        {
+          "id": "profile_view_marketing_consent_section",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+              }
+            }
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "flex flex-col gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+                  }
+                }
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "H3",
+                  "props": {
+                    "className": "text-base font-semibold text-gray-900 dark:text-white"
+                  },
+                  "text": "$t:sirsoft-marketing.marketing_consent_title"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-xs text-blue-600 dark:text-blue-400"
+                  },
+                  "text": "$t:sirsoft-marketing.marketing_consent_edit_hint"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-1 gap-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "if": "{{user.data?.marketing_consent_enabled === true}}",
+                      "props": {
+                        "className": "flex items-start gap-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Checkbox",
+                          "props": {
+                            "checked": "{{!!user.data?.marketing_consent}}",
+                            "disabled": true,
+                            "className": "mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-1 space-y-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex items-center gap-2 flex-wrap"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                  },
+                                  "text": "$t:sirsoft-marketing.marketing_consent"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{user.data?.marketing_consent_at}}",
+                                  "props": {
+                                    "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400"
+                                  },
+                                  "text": "{{user.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{!user.data?.marketing_consent_at}}",
+                                  "props": {
+                                    "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "$t:sirsoft-marketing.not_agreed"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "block text-xs text-gray-500 dark:text-gray-400"
+                              },
+                              "text": "$t:sirsoft-marketing.marketing_consent_desc"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "if": "{{user.data?.marketing_consent_enabled === true}}",
+                      "iteration": {
+                        "source": "(user.data?.channels ?? []).filter(ch => ch.enabled !== false)",
+                        "item_var": "channel"
+                      },
+                      "props": {
+                        "className": "flex items-start gap-3 ml-8"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Checkbox",
+                          "props": {
+                            "checked": "{{!!user.data?.[channel.key]}}",
+                            "disabled": true,
+                            "className": "mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-1 space-y-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex items-center gap-2 flex-wrap"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                  },
+                                  "text": "{{channel.label}}"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{user.data?.[channel.key + '_at']}}",
+                                  "props": {
+                                    "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400"
+                                  },
+                                  "text": "{{user.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{!user.data?.[channel.key + '_at']}}",
+                                  "props": {
+                                    "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "$t:sirsoft-marketing.not_agreed"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-3"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "if": "{{user.data?.third_party_consent_enabled === true}}",
+                      "props": {
+                        "className": "flex items-start gap-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Checkbox",
+                          "props": {
+                            "checked": "{{!!user.data?.third_party_consent}}",
+                            "disabled": true,
+                            "className": "mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-1 space-y-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex items-center gap-2 flex-wrap"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                  },
+                                  "text": "$t:sirsoft-marketing.third_party_consent"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{user.data?.third_party_consent_at}}",
+                                  "props": {
+                                    "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400"
+                                  },
+                                  "text": "{{user.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "if": "{{!user.data?.third_party_consent_at}}",
+                                  "props": {
+                                    "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "$t:sirsoft-marketing.not_agreed"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "block text-xs text-gray-500 dark:text-gray-400"
+                              },
+                              "text": "$t:sirsoft-marketing.third_party_consent_desc"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{user.data?.info_disclosure_enabled === true}}",
+                      "props": {
+                        "className": "space-y-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "flex items-start gap-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Checkbox",
+                              "props": {
+                                "checked": "{{!!user.data?.info_disclosure}}",
+                                "disabled": true,
+                                "className": "mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex-1 space-y-1"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-2 flex-wrap"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                      },
+                                      "text": "$t:sirsoft-marketing.info_disclosure"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "if": "{{user.data?.info_disclosure_at}}",
+                                      "props": {
+                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400"
+                                      },
+                                      "text": "{{user.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "if": "{{!user.data?.info_disclosure_at}}",
+                                      "props": {
+                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-marketing.not_agreed"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "$t:sirsoft-marketing.info_disclosure_desc"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-400 dark:text-gray-500 ml-8"
+                          },
+                          "text": "$t:sirsoft-marketing.info_disclosure_warning"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 100
+}

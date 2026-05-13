@@ -8,12 +8,9 @@ use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Seo\SeoDeclarationCollector;
-use App\Seo\TemplateRouteResolver;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
-use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Foundation\Exceptions\Handler;
-use Illuminate\Support\Facades\Exceptions;
+use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
 
@@ -38,8 +35,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * 테스트 초기화 - SeoDeclarationCollector 인스턴스와 의존성 목(Mock)을 준비합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -62,32 +57,22 @@ class SeoDeclarationCollectorTest extends TestCase
             ->andReturn(null)
             ->byDefault();
 
-        // 레이아웃 이름 해석은 봇 렌더와 같은 해석기를 쓴다 — 확장 판별 목(Mock)을 그대로 물려 둔다
         $this->collector = new SeoDeclarationCollector(
             $this->templateService,
             $this->layoutService,
             $this->templateManager,
-            new TemplateRouteResolver(
-                $this->templateService,
-                $this->templateManager,
-                $this->moduleManager,
-                $this->pluginManager,
-            ),
+            $this->moduleManager,
+            $this->pluginManager,
         );
     }
 
     /**
      * 테스트 종료 - Mockery 리소스를 정리합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 
     /**
@@ -95,7 +80,6 @@ class SeoDeclarationCollectorTest extends TestCase
      *
      * @param  array  $routes  라우트 배열
      * @param  string  $templateIdentifier  템플릿 식별자
-     * @return void 반환값 없음
      */
     private function setupActiveTemplateWithRoutes(array $routes, string $templateIdentifier = 'sirsoft-basic'): void
     {
@@ -121,7 +105,6 @@ class SeoDeclarationCollectorTest extends TestCase
      * @param  string  $layoutName  레이아웃 이름
      * @param  array  $layoutData  레이아웃 데이터
      * @param  string  $templateIdentifier  템플릿 식별자
-     * @return void 반환값 없음
      */
     private function mockLayout(string $layoutName, array $layoutData, string $templateIdentifier = 'sirsoft-basic'): void
     {
@@ -136,12 +119,6 @@ class SeoDeclarationCollectorTest extends TestCase
     /**
      * SEO 활성 레이아웃만 수집되는지 확인합니다.
      * meta.seo.enabled=true인 레이아웃만 반환되어야 합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_collects_only_seo_enabled_public_layouts
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_returns_only_seo_enabled_layouts(): void
     {
@@ -185,12 +162,6 @@ class SeoDeclarationCollectorTest extends TestCase
     /**
      * SEO 비활성 레이아웃이 제외되는지 확인합니다.
      * meta.seo.enabled=false인 레이아웃은 결과에 포함되지 않아야 합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_collects_only_seo_enabled_public_layouts
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_excludes_seo_disabled_layouts(): void
     {
@@ -221,12 +192,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * meta.seo 속성이 없는 레이아웃이 제외되는지 확인합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_collects_only_seo_enabled_public_layouts
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_excludes_layouts_without_seo_meta(): void
     {
@@ -257,12 +222,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * auth_required=true인 라우트가 제외되는지 확인합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_collects_only_seo_enabled_public_layouts
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_skips_auth_required_routes(): void
     {
@@ -289,12 +248,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * guest_only=true인 라우트가 제외되는지 확인합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_collects_only_seo_enabled_public_layouts
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_skips_guest_only_routes(): void
     {
@@ -313,79 +266,11 @@ class SeoDeclarationCollectorTest extends TestCase
         $this->assertCount(1, $result);
     }
 
-    /**
-     * 코어가 덧붙이는 시스템 라우트(미리보기 `__preview__`, meta.is_system_route)는 레이아웃을 읽지 않고 건너뜁니다.
-     *
-     * 템플릿 레이아웃이 아니라 읽으면 매번 실패해 사이트맵 생성마다 오류 보고가 1건씩 쌓였다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_skips_system_routes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_collect_skips_system_routes_without_loading_layout(): void
-    {
-        $this->setupActiveTemplateWithRoutes([
-            ['path' => '/', 'layout' => 'home', 'auth_required' => false],
-            ['path' => '*/preview/:token', 'layout' => '__preview__', 'auth_required' => false, 'meta' => ['title' => 'Preview', 'is_system_route' => true]],
-        ]);
-
-        $this->mockLayout('home', [
-            'meta' => ['seo' => ['enabled' => true]],
-            'components' => [],
-        ]);
-        $this->layoutService
-            ->shouldReceive('getLayout')
-            ->with('sirsoft-basic', '__preview__')
-            ->never();
-
-        $reported = [];
-        $this->app->instance(ExceptionHandler::class, new class($reported) extends Handler
-        {
-            /** @var array<int, string> */
-            public array $messages;
-
-            /**
-             * 보고된 메시지를 바깥 배열에 모으는 대역 처리기를 만듭니다.
-             *
-             * @param  array<int, string>  $messages  보고된 메시지 모음(참조)
-             */
-            public function __construct(array &$messages)
-            {
-                parent::__construct(app());
-                $this->messages = &$messages;
-            }
-
-            /**
-             * 보고된 예외 메시지를 모읍니다.
-             *
-             * @param  \Throwable  $e  보고된 예외
-             * @return void 반환값 없음
-             */
-            public function report(\Throwable $e): void
-            {
-                $this->messages[] = $e->getMessage();
-            }
-        });
-
-        $result = $this->collector->collect();
-
-        $this->assertSame(['home'], array_column($result, 'layoutName'));
-        $this->assertSame([], $reported, '시스템 라우트를 레이아웃으로 읽어 오류를 보고하면 안 된다');
-    }
-
     // ─── collect(): 모듈 레이아웃 (dotted notation) ──────────────────
 
     /**
      * 모듈 레이아웃의 moduleIdentifier가 올바르게 추출되는지 확인합니다.
      * 레이아웃명에 '.'이 포함되면 앞부분이 moduleIdentifier, 뒷부분이 actualLayoutName입니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_carries_stored_layout_name
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_extracts_module_identifier_from_dotted_layout_name(): void
     {
@@ -409,47 +294,11 @@ class SeoDeclarationCollectorTest extends TestCase
         $this->assertEquals('/shop/products', $result[0]['routePath']);
     }
 
-    /**
-     * 선언에 DB·편집기가 쓰는 전체 이름(storedLayoutName)이 더해지고, 기존 layoutName 은 뗀 이름 그대로입니다.
-     * 점 없는 템플릿 레이아웃은 두 이름이 같습니다 (공개#154).
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_carries_stored_layout_name
-     *
-     * @return void 반환값 없음
-     */
-    public function test_collect_adds_stored_layout_name_to_declarations(): void
-    {
-        $this->setupActiveTemplateWithRoutes([
-            ['path' => '/', 'layout' => 'home', 'auth_required' => false],
-            ['path' => '/shop/products', 'layout' => 'sirsoft-ecommerce.shop/index', 'auth_required' => false],
-        ]);
-
-        $this->mockLayout('home', ['meta' => ['seo' => ['enabled' => true]], 'components' => []]);
-        $this->mockLayout('sirsoft-ecommerce.shop/index', ['meta' => ['seo' => ['enabled' => true]], 'components' => []]);
-
-        $result = $this->collector->collect();
-
-        $this->assertCount(2, $result);
-        $this->assertSame('home', $result[0]['layoutName']);
-        $this->assertSame('home', $result[0]['storedLayoutName']);
-        $this->assertSame('shop/index', $result[1]['layoutName']);
-        $this->assertSame('sirsoft-ecommerce.shop/index', $result[1]['storedLayoutName']);
-        $this->assertSame('sirsoft-ecommerce', $result[1]['moduleIdentifier']);
-    }
-
     // ─── collect(): 부모-자식 SEO 병합 (getLayout이 이미 병합) ──────────
 
     /**
      * 부모 seo + 자식 seo가 deep merge된 결과로 수집되는지 확인합니다.
      * getLayout()은 이미 병합된 레이아웃을 반환하므로 수집기는 최종 결과만 판단합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_collects_only_seo_enabled_public_layouts
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_uses_merged_seo_from_layout_service(): void
     {
@@ -482,12 +331,6 @@ class SeoDeclarationCollectorTest extends TestCase
     /**
      * 부모만 seo.enabled=true이고 자식이 seo 미정의인 경우,
      * 병합 결과 enabled=true이므로 수집 대상에 포함됩니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_collects_only_seo_enabled_public_layouts
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_includes_layout_when_parent_seo_enabled_child_undefined(): void
     {
@@ -512,12 +355,6 @@ class SeoDeclarationCollectorTest extends TestCase
     /**
      * 자식이 seo.enabled=false로 오버라이드하면 (부모 true 상관없이)
      * 병합 결과 enabled=false이므로 수집에서 제외됩니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_collects_only_seo_enabled_public_layouts
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_excludes_layout_when_child_overrides_seo_enabled_false(): void
     {
@@ -542,12 +379,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * 라우트가 0개인 빈 템플릿에서 빈 배열이 반환되는지 확인합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_empty_without_active_template_or_routes
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_returns_empty_for_empty_routes(): void
     {
@@ -573,12 +404,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * 활성 템플릿이 없을 때 빈 배열이 반환되는지 확인합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_empty_without_active_template_or_routes
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_returns_empty_when_no_active_template(): void
     {
@@ -595,12 +420,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * 활성 템플릿에 identifier가 없을 때 빈 배열이 반환되는지 확인합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_empty_without_active_template_or_routes
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_returns_empty_when_template_has_no_identifier(): void
     {
@@ -617,12 +436,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * 라우트 데이터 조회 실패 시 빈 배열이 반환되는지 확인합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_empty_without_active_template_or_routes
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_returns_empty_when_routes_fetch_fails(): void
     {
@@ -646,12 +459,6 @@ class SeoDeclarationCollectorTest extends TestCase
     /**
      * 레이아웃 로드 중 예외 발생 시 해당 레이아웃을 건너뛰고
      * 나머지는 정상 수집되는지 확인합니다 (graceful skip).
-     *
-     * @scenario static=collector_failure
-     *
-     * @effects sitemap_failures_are_reported_and_generation_continues, declaration_skips_layout_that_fails_to_load
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_gracefully_skips_layout_on_exception(): void
     {
@@ -676,80 +483,22 @@ class SeoDeclarationCollectorTest extends TestCase
             'components' => [],
         ]);
 
-        Exceptions::fake();
+        Log::shouldReceive('warning')
+            ->once()
+            ->withArgs(function (string $message, array $context) {
+                return str_contains($message, 'SeoDeclarationCollector')
+                    && $context['layout'] === 'broken';
+            });
 
         $result = $this->collector->collect();
 
         $this->assertCount(2, $result);
         $this->assertEquals('home', $result[0]['layoutName']);
         $this->assertEquals('about', $result[1]['layoutName']);
-
-        // 경고 한 줄로 삼키지 않고 레이아웃 이름과 원인 예외를 담아 오류로 보고한다 (#155)
-        Exceptions::assertReported(fn (\RuntimeException $e): bool => str_contains($e->getMessage(), 'broken')
-            && $e->getPrevious()?->getMessage() === '레이아웃 파일을 찾을 수 없습니다');
-    }
-
-    /**
-     * 코어가 모든 템플릿에 덧붙이는 시스템 라우트(미리보기)는 레이아웃을 읽지 않고 건너뛰는지 확인합니다.
-     *
-     * 시스템 라우트의 레이아웃(`__preview__`)은 저장된 레이아웃이 아니라 읽기가 늘 실패한다. 읽기 전에
-     * 거르지 않으면 사이트맵을 만들 때마다 오류 보고가 한 건씩 남는다. 저장된 레이아웃을 못 읽은
-     * 일반 라우트는 같은 수집에서 여전히 오류로 보고되어야 한다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_skips_system_routes_without_layout_read, declaration_skips_layout_that_fails_to_load
-     *
-     * @return void 반환값 없음
-     */
-    public function test_collect_skips_system_routes_without_reading_layout_or_reporting(): void
-    {
-        $this->setupActiveTemplateWithRoutes([
-            ['path' => '/', 'layout' => 'home', 'auth_required' => false],
-            [
-                'path' => '*/preview/:token',
-                'layout' => '__preview__',
-                'auth_required' => false,
-                'meta' => ['title' => 'Preview', 'is_system_route' => true],
-            ],
-            ['path' => '/broken', 'layout' => 'broken', 'auth_required' => false],
-        ]);
-
-        $requested = [];
-        $this->layoutService
-            ->shouldReceive('getLayout')
-            ->andReturnUsing(function (string $template, string $layout) use (&$requested): array {
-                $requested[] = $layout;
-
-                if ($layout === 'broken') {
-                    throw new \Exception('레이아웃 파일을 찾을 수 없습니다');
-                }
-                if ($layout === '__preview__') {
-                    throw new \Exception('Layout not found');
-                }
-
-                return ['meta' => ['seo' => ['enabled' => true]], 'components' => []];
-            });
-
-        Exceptions::fake();
-
-        $result = $this->collector->collect();
-
-        $this->assertSame(['home'], array_column($result, 'layoutName'));
-        $this->assertNotContains('__preview__', $requested, '시스템 라우트의 레이아웃은 읽지 않는다');
-
-        Exceptions::assertNotReported(fn (\RuntimeException $e): bool => str_contains($e->getMessage(), '__preview__'));
-        Exceptions::assertReported(fn (\RuntimeException $e): bool => str_ends_with($e->getMessage(), ': broken'));
     }
 
     /**
      * 빈 레이아웃 이름인 라우트가 건너뛰어지는지 확인합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_collects_only_seo_enabled_public_layouts
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_skips_routes_with_empty_layout_name(): void
     {
@@ -773,12 +522,6 @@ class SeoDeclarationCollectorTest extends TestCase
     /**
      * SEO 선언이 확장별로 올바르게 그룹핑되는지 확인합니다.
      * moduleIdentifier가 null이면 'core' 키로 그룹핑됩니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_grouped_by_owning_extension
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_grouped_by_extension(): void
     {
@@ -833,12 +576,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * 수집된 선언이 없을 때 collectGroupedByExtension()이 빈 배열을 반환하는지 확인합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_grouped_by_owning_extension
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_grouped_by_extension_returns_empty_when_no_declarations(): void
     {
@@ -858,12 +595,6 @@ class SeoDeclarationCollectorTest extends TestCase
     /**
      * 수집된 선언의 구조가 올바른지 확인합니다.
      * 각 선언에는 layoutName, templateIdentifier, moduleIdentifier, seo, routePath가 포함되어야 합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_carries_stored_layout_name
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_declaration_has_correct_structure(): void
     {
@@ -906,12 +637,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * 플러그인 dot notation에서 pluginIdentifier가 추출되는지 확인합니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_carries_stored_layout_name
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_extracts_plugin_identifier_from_dotted_layout(): void
     {
@@ -939,12 +664,6 @@ class SeoDeclarationCollectorTest extends TestCase
 
     /**
      * collectGroupedByExtension()에서 플러그인 레이아웃이 별도 그룹 키로 분류됩니다.
-     *
-     * @scenario surface=declaration
-     *
-     * @effects declaration_grouped_by_owning_extension
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_grouped_by_extension_includes_plugins(): void
     {

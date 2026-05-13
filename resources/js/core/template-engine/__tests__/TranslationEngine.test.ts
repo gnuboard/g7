@@ -1,4 +1,3 @@
-// e2e:allow 테스트 전용 수정 — suffixed 헬퍼 일원화(#486)로 바뀐 쿼리 파라미터 순서를 순서 무관 단언으로 정정. 런타임 동작 무변경이며 대상 기능 E2E 는 tests/Playwright/specs/asset-url-mode.spec.ts 로 이미 커버됨.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   TranslationEngine,
@@ -22,15 +21,11 @@ describe('TranslationEngine', () => {
   });
 
   describe('생성자 및 초기화', () => {
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_initializes_with_default_or_custom_options
     it('기본 옵션으로 인스턴스 생성', () => {
       const newEngine = new TranslationEngine();
       expect(newEngine).toBeInstanceOf(TranslationEngine);
     });
 
-    // @scenario locale=en, locale_value_presence=has_locale
-    // @effects translation_engine_initializes_with_default_or_custom_options
     it('커스텀 옵션으로 인스턴스 생성', () => {
       const customEngine = new TranslationEngine({
         defaultLocale: 'en',
@@ -42,8 +37,6 @@ describe('TranslationEngine', () => {
   });
 
   describe('loadTranslations', () => {
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_loads_locale_file_and_reports_failures
     it('다국어 파일 로드 성공', async () => {
       const mockTranslations: TranslationDictionary = {
         dashboard: {
@@ -67,8 +60,6 @@ describe('TranslationEngine', () => {
       expect(global.fetch).toHaveBeenCalledWith('/api/templates/template-1/lang/ko.json');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_loads_locale_file_and_reports_failures
     it('커스텀 API 베이스 URL 사용', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -82,8 +73,6 @@ describe('TranslationEngine', () => {
       );
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_loads_locale_file_and_reports_failures
     it('API 호출 실패 시 에러 발생', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
@@ -95,8 +84,6 @@ describe('TranslationEngine', () => {
       );
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_loads_locale_file_and_reports_failures
     it('네트워크 에러 시 에러 발생', async () => {
       (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
 
@@ -162,36 +149,26 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'en');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_translates_dot_path_keys_with_params
     it('단순 키 번역', () => {
       const result = engine.translate('dashboard.title', context);
       expect(result).toBe('대시보드');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_translates_dot_path_keys_with_params
     it('중첩된 키 번역', () => {
       const result = engine.translate('common.save', context);
       expect(result).toBe('저장');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_translates_dot_path_keys_with_params
     it('파라미터 치환', () => {
       const result = engine.translate('messages.greeting', context, '|name=홍길동');
       expect(result).toBe('안녕하세요, 홍길동님');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_translates_dot_path_keys_with_params
     it('여러 파라미터 치환', () => {
       const result = engine.translate('messages.items_count', context, '|count=42');
       expect(result).toBe('총 42개의 항목');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_translates_dot_path_keys_with_params
     it('데이터 컨텍스트에서 파라미터 바인딩', () => {
       const dataContext = { user: { name: '홍길동' } };
       const result = engine.translate(
@@ -203,15 +180,11 @@ describe('TranslationEngine', () => {
       expect(result).toBe('안녕하세요, 홍길동님');
     });
 
-    // @scenario locale=ko, locale_value_presence=fallback_to_fallback_locale
-    // @effects translation_engine_returns_the_key_when_translation_is_missing
     it('존재하지 않는 키는 키 자체 반환', () => {
       const result = engine.translate('non.existent.key', context);
       expect(result).toBe('non.existent.key');
     });
 
-    // @scenario locale=ko, locale_value_presence=fallback_to_fallback_locale
-    // @effects translation_engine_falls_back_to_fallback_locale
     it('폴백 로케일 사용 (현재 로케일에 없는 경우)', () => {
       const koOnlyContext: TranslationContext = {
         templateId: 'template-1',
@@ -249,15 +222,11 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'ko');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_inline_t_expressions_in_strings
     it('문자열 내 단일 번역 표현식 처리', () => {
       const result = engine.resolveTranslations('버튼: $t:common.save', context);
       expect(result).toBe('버튼: 저장');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_inline_t_expressions_in_strings
     it('문자열 내 여러 번역 표현식 처리', () => {
       const result = engine.resolveTranslations(
         '$t:common.save / $t:common.cancel',
@@ -266,8 +235,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('저장 / 취소');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_inline_t_expressions_in_strings
     it('파라미터가 포함된 번역 표현식 처리', () => {
       const result = engine.resolveTranslations(
         '메시지: $t:messages.greeting|name=홍길동',
@@ -276,8 +243,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('메시지: 안녕하세요, 홍길동님');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_inline_t_expressions_in_strings
     it('데이터 컨텍스트를 사용한 파라미터 바인딩', () => {
       const dataContext = { userName: '이순신', user: { name: '홍길동' } };
 
@@ -290,8 +255,6 @@ describe('TranslationEngine', () => {
       expect(result1).toBe('안녕하세요, 이순신님');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_inline_t_expressions_in_strings
     it('번역 표현식이 없는 문자열은 그대로 반환', () => {
       const result = engine.resolveTranslations('일반 텍스트', context);
       expect(result).toBe('일반 텍스트');
@@ -305,8 +268,6 @@ describe('TranslationEngine', () => {
      *
      * 정상 동작: 인라인 $t:defer:key 형태도 일반 $t:key 와 동등하게 처리되어야 함.
      */
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_defer_prefixed_inline_keys
     it('인라인 $t:defer: prefix 도 정상 번역 (#302)', () => {
       const result = engine.resolveTranslations(
         '머리글 — $t:defer:common.save',
@@ -315,8 +276,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('머리글 — 저장');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_defer_prefixed_inline_keys
     it('인라인 $t:defer: prefix + 파라미터도 정상 번역 (#302)', () => {
       const result = engine.resolveTranslations(
         'prefix: $t:defer:messages.greeting|name=홍길동',
@@ -324,51 +283,9 @@ describe('TranslationEngine', () => {
       );
       expect(result).toBe('prefix: 안녕하세요, 홍길동님');
     });
-
-    /**
-     * 회귀: 파라미터 값의 표현식 평가를 엔진에 위임한다 (engine-v1.56.1).
-     *
-     * 종전에는 이 지점이 `new Function(...Object.keys(dataContext))` 로 자체 평가해
-     * 엔진 확장 컨텍스트($localized/$t/$uuid)를 알지 못했고, 컨텍스트 키가 유효한
-     * 식별자가 아니면 함수 생성 자체가 SyntaxError 로 실패했다. 두 경우 모두 예외를
-     * 삼키고 **빈 문자열**을 돌려줬기 때문에, 번역 문구에서 값만 조용히 사라졌다.
-     */
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_evaluate_against_the_data_context
-    it('파라미터 표현식에서 $localized 헬퍼를 쓸 수 있다', () => {
-      const result = engine.resolveTranslations(
-        "$t:messages.greeting|name={{$localized('이순신')}}",
-        context,
-        {}
-      );
-
-      expect(result).toBe('안녕하세요, 이순신님');
-    });
-
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_evaluate_against_the_data_context
-    it('파라미터 표현식이 식별자가 아닌 컨텍스트 키와 공존해도 값이 사라지지 않는다', () => {
-      // `sales_status[]` 는 함수 파라미터 이름이 될 수 없다 — 종전 구현은 여기서 실패했다.
-      const dataContext = {
-        'sales_status[]': ['selling'],
-        user: { name: '홍길동' },
-      };
-
-      // 단순 경로(`{{user.name}}`)는 함수를 만들지 않는 분기라 이 결함을 밟지 않는다.
-      // 연산자가 들어간 식이어야 종전 구현이 `new Function` 을 시도했다.
-      const result = engine.resolveTranslations(
-        "$t:messages.greeting|name={{user.name ?? ''}}",
-        context,
-        dataContext
-      );
-
-      expect(result).toBe('안녕하세요, 홍길동님');
-    });
   });
 
   describe('캐싱', () => {
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_caches_loaded_files_with_ttl
     it('동일한 번역 파일은 캐시에서 로드', async () => {
       const mockTranslations: TranslationDictionary = {
         test: { key: 'value' },
@@ -388,8 +305,6 @@ describe('TranslationEngine', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1); // 여전히 1번만 호출
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_caches_loaded_files_with_ttl
     it('캐시 초기화', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
@@ -403,8 +318,6 @@ describe('TranslationEngine', () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_caches_loaded_files_with_ttl
     it('캐시 만료 후 재로드', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
@@ -421,8 +334,6 @@ describe('TranslationEngine', () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_caches_loaded_files_with_ttl
     it('캐시 통계 조회', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
@@ -436,8 +347,6 @@ describe('TranslationEngine', () => {
       expect(stats.size).toBe(2);
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_caches_loaded_files_with_ttl
     it('만료된 캐시 정리', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
@@ -487,8 +396,6 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'en');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_falls_back_to_fallback_locale
     it('현재 로케일에서 찾기', () => {
       const context: TranslationContext = {
         templateId: 'template-1',
@@ -499,8 +406,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('한국어만');
     });
 
-    // @scenario locale=ko, locale_value_presence=fallback_to_fallback_locale
-    // @effects translation_engine_falls_back_to_fallback_locale
     it('현재 로케일에 없으면 폴백 로케일에서 찾기', () => {
       const context: TranslationContext = {
         templateId: 'template-1',
@@ -511,8 +416,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('English only');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_falls_back_to_fallback_locale
     it('둘 다 있으면 현재 로케일 우선', () => {
       const context: TranslationContext = {
         templateId: 'template-1',
@@ -523,8 +426,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('둘 다 (한국어)');
     });
 
-    // @scenario locale=ko, locale_value_presence=fallback_to_fallback_locale
-    // @effects translation_engine_returns_the_key_when_translation_is_missing
     it('어디에도 없으면 키 자체 반환', () => {
       const context: TranslationContext = {
         templateId: 'template-1',
@@ -537,8 +438,6 @@ describe('TranslationEngine', () => {
   });
 
   describe('에러 처리', () => {
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_error_carries_key_and_locale
     it('TranslationError는 key와 locale 정보 포함', () => {
       const error = new TranslationError(
         'Translation failed',
@@ -575,64 +474,46 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'ko');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('빈 문자열 번역 키 처리', () => {
       const result = engine.translate('', context);
       expect(result).toBe('');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('빈 문자열 번역 값 처리', () => {
       const result = engine.translate('test.empty', context);
       expect(result).toBe('');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('null 파라미터 처리', () => {
       const result = engine.translate('test.value', context, null as any);
       expect(result).toBe('테스트');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('undefined 파라미터 처리', () => {
       const result = engine.translate('test.value', context, undefined);
       expect(result).toBe('테스트');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('빈 데이터 컨텍스트 처리', () => {
       const result = engine.resolveTranslations('$t:test.value', context, {});
       expect(result).toBe('테스트');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('null 데이터 컨텍스트 처리', () => {
       const result = engine.resolveTranslations('$t:test.value', context, null);
       expect(result).toBe('테스트');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('undefined 데이터 컨텍스트 처리', () => {
       const result = engine.resolveTranslations('$t:test.value', context, undefined);
       expect(result).toBe('테스트');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('잘못된 형식의 파라미터 문자열', () => {
       const result = engine.translate('test.value', context, '|invalid');
       expect(result).toBe('테스트');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('존재하지 않는 데이터 경로 바인딩', () => {
       const dataContext = { user: { name: '홍길동' } };
       const result = engine.translate(
@@ -644,23 +525,17 @@ describe('TranslationEngine', () => {
       expect(result).toBe('테스트'); // 파라미터는 빈 문자열로 치환됨
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('특수 문자가 포함된 번역 키', () => {
       const result = engine.translate('test.value-with-dash', context);
       expect(result).toBe('test.value-with-dash'); // 존재하지 않으므로 키 자체 반환
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('매우 긴 번역 키', () => {
       const longKey = 'a'.repeat(1000);
       const result = engine.translate(longKey, context);
       expect(result).toBe(longKey);
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_tolerates_edge_case_inputs
     it('중첩 깊이가 깊은 키', () => {
       const result = engine.translate('a.b.c.d.e.f.g.h', context);
       expect(result).toBe('a.b.c.d.e.f.g.h');
@@ -682,9 +557,6 @@ describe('TranslationEngine', () => {
         complex: {
           message: '{{user}}님이 {{action}}을 수행했습니다 ({{count}}건)',
         },
-        auth: {
-          valid_until: '유효시간 {{until}} 까지',
-        },
       };
 
       (global.fetch as any).mockResolvedValueOnce({
@@ -695,8 +567,6 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'ko');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_params_accept_pipe_and_ampersand_separators
     it('파이프로 구분된 여러 파라미터 처리', () => {
       const result = engine.translate(
         'pagination.info',
@@ -706,8 +576,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('총 100명 중 1-10명 표시');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_params_accept_pipe_and_ampersand_separators
     it('단일 중괄호 형식 파라미터 치환', () => {
       const result = engine.translate(
         'pagination.info_single',
@@ -717,8 +585,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('총 50명 중 11-20명 표시');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_params_accept_pipe_and_ampersand_separators
     it('데이터 컨텍스트와 파이프 구분 파라미터 조합', () => {
       const dataContext = {
         users: { data: { total: 200, from: 21, to: 30 } },
@@ -732,8 +598,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('총 200명 중 21-30명 표시');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_params_accept_pipe_and_ampersand_separators
     it('3개 이상의 파라미터 처리', () => {
       const result = engine.translate(
         'complex.message',
@@ -743,8 +607,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('홍길동님이 로그인을 수행했습니다 (5건)');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_params_accept_pipe_and_ampersand_separators
     it('resolveTranslations에서 파이프 구분 다중 파라미터', () => {
       const result = engine.resolveTranslations(
         '페이지 정보: $t:pagination.info|total=500|from=1|to=25',
@@ -753,63 +615,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('페이지 정보: 총 500명 중 1-25명 표시');
     });
 
-    // 데이터 칩 param 은 개수 임의(0/1/N), 위치 임의(맨앞/중간/맨끝)일 수 있다.
-    // param 정의(`|pN={{소스}}`)가 있으면 모든 조합에서 전 param 이 정확히 치환되어야 한다
-    // (이전 "두 번째 파라미터 누락" 결함 재발 금지). param 정의가 없는 경우(desync)에는
-    // 키 값의 raw `{pN}` 을 그대로 노출한다.
-    describe('데이터 칩 param 임의 개수·위치 치환', () => {
-      const ctx: TranslationContext = { templateId: 'template-1', locale: 'ko' };
-      const dc = {
-        current_user: { data: { uuid: 'UU', email: 'a@b.com', name: '홍길동', id: 7 } },
-      };
-      const run = (keyValue: string, paramsStr: string): string => {
-        engine.setTranslationValue('template-1', 'ko', 'custom.t', keyValue);
-        return engine.translate('custom.t', ctx, paramsStr, dc);
-      };
-
-      // @scenario locale=ko, locale_value_presence=has_locale
-      // @effects translation_data_chip_params_substitute_any_count_and_position
-      it('맨 끝 1개', () => {
-        expect(run('회원 {p0}', "|p0={{current_user?.data?.id ?? ''}}")).toBe('회원 7');
-      });
-      // @scenario locale=ko, locale_value_presence=has_locale
-      // @effects translation_data_chip_params_substitute_any_count_and_position
-      it('맨 앞 1개', () => {
-        expect(run('{p0} 님', "|p0={{current_user?.data?.name ?? ''}}")).toBe('홍길동 님');
-      });
-      // @scenario locale=ko, locale_value_presence=has_locale
-      // @effects translation_data_chip_params_substitute_any_count_and_position
-      it('중간 1개', () => {
-        expect(run('회 {p0} 원', "|p0={{current_user?.data?.uuid ?? ''}}")).toBe('회 UU 원');
-      });
-      // @scenario locale=ko, locale_value_presence=has_locale
-      // @effects translation_data_chip_params_substitute_any_count_and_position
-      it('2개(앞+뒤) — 둘 다 치환(두 번째 누락 금지)', () => {
-        const r = run('회 {p0} 원 {p1} 끝', "|p0={{current_user?.data?.uuid ?? ''}}|p1={{current_user?.data?.email ?? ''}}");
-        expect(r).toBe('회 UU 원 a@b.com 끝');
-        expect(r).not.toContain('{p1}');
-      });
-      // @scenario locale=ko, locale_value_presence=has_locale
-      // @effects translation_data_chip_params_substitute_any_count_and_position
-      it('3개(앞·중간·끝) 전수 치환', () => {
-        const r = run('{p0}-{p1}-{p2}', "|p0={{current_user?.data?.id ?? ''}}|p1={{current_user?.data?.uuid ?? ''}}|p2={{current_user?.data?.name ?? ''}}");
-        expect(r).toBe('7-UU-홍길동');
-      });
-      // @scenario locale=ko, locale_value_presence=has_locale
-      // @effects translation_data_chip_params_substitute_any_count_and_position
-      it('불연속 번호(p0,p2 — p1 없음)도 각 자리 치환', () => {
-        const r = run('{p0} {p2}', "|p0={{current_user?.data?.id ?? ''}}|p2={{current_user?.data?.name ?? ''}}");
-        expect(r).toBe('7 홍길동');
-      });
-      // @scenario locale=ko, locale_value_presence=has_locale
-      // @effects translation_data_chip_params_substitute_any_count_and_position
-      it('param 0개(키화만, 평문) — 그대로', () => {
-        expect(run('순수 평문', '')).toBe('순수 평문');
-      });
-    });
-
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_params_accept_pipe_and_ampersand_separators
     it('앰퍼샌드(&)로 구분된 파라미터도 처리', () => {
       const result = engine.translate(
         'pagination.info',
@@ -819,8 +624,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('총 100명 중 1-10명 표시');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_params_accept_pipe_and_ampersand_separators
     it('파이프와 앰퍼샌드 혼합 사용', () => {
       const result = engine.translate(
         'pagination.info',
@@ -828,34 +631,6 @@ describe('TranslationEngine', () => {
         '|total=100|from=1&to=10'
       );
       expect(result).toBe('총 100명 중 1-10명 표시');
-    });
-
-    // 파라미터 값 안의 파이프는 **필터**다. 표현식 평가기는 `|` 를 비트 연산자로 읽어
-    // 평가에 실패하고 빈 문자열을 돌려주므로, 문장에서 값만 조용히 사라진다
-    // ("유효시간  까지"). 오류도 경고도 남지 않아 화면을 보지 않으면 드러나지 않는다.
-    // @since engine-v1.65.0
-    /** @effects translation_param_values_apply_pipe_filters */
-    it('파라미터 값의 파이프 필터가 적용된다', () => {
-      const result = engine.translate(
-        'auth.valid_until',
-        context,
-        '|until={{expires_at | datetime}}',
-        { expires_at: '2026-09-07T14:03:00' }
-      );
-
-      expect(result).toBe('유효시간 2026-09-07 14:03 까지');
-    });
-
-    /** @effects translation_param_values_apply_pipe_filters */
-    it('resolveTranslations 에서도 파라미터 파이프 필터가 적용된다', () => {
-      const result = engine.resolveTranslations(
-        '$t:auth.valid_until',
-        context,
-        { expires_at: '2026-09-07T14:03:00' }
-      );
-
-      // 파라미터가 없으면 자리표시자는 그대로 둔다 (기존 동작 유지)
-      expect(result).toContain('유효시간');
     });
   });
 
@@ -886,8 +661,6 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'ko');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_inline_t_expressions_in_strings
     it('중첩된 번역 표현식 처리', () => {
       const result = engine.resolveTranslations(
         '외부: $t:multi.first, 내부: $t:multi.second',
@@ -896,8 +669,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('외부: 첫번째, 내부: 두번째');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_inline_t_expressions_in_strings
     it('연속된 번역 표현식 처리', () => {
       const result = engine.resolveTranslations(
         '$t:multi.first$t:multi.second$t:multi.third',
@@ -906,8 +677,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('첫번째두번째세번째');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_inline_t_expressions_in_strings
     it('복잡한 문자열 내 다중 번역', () => {
       const text = `
         항목 1: $t:multi.first
@@ -920,8 +689,6 @@ describe('TranslationEngine', () => {
       expect(result).toContain('항목 3: 세번째');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_inline_t_expressions_in_strings
     it('파라미터가 있는 다중 번역 표현식', () => {
       const dataContext = { val1: 'A', val2: 'B' };
       const result = engine.resolveTranslations(
@@ -932,8 +699,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('A / B');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_resolves_inline_t_expressions_in_strings
     it('번역 표현식과 일반 텍스트 혼합', () => {
       const result = engine.resolveTranslations(
         '시작 $t:multi.first 중간 $t:multi.second 끝 $t:multi.third 완료',
@@ -969,8 +734,6 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'ko');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_evaluate_against_the_data_context
     it('문자열 연결로 조합된 다국어 키와 파라미터 처리', () => {
       // 표현식 평가 결과를 시뮬레이션
       // {{route?.id ? '$t:...edit|name=' + name + '|id=' + id : '$t:...create'}}
@@ -981,8 +744,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('민서(212)의 정보를 수정합니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_evaluate_against_the_data_context
     it('한글 이름과 숫자 ID 파라미터 조합', () => {
       const result = engine.translate(
         'admin.users.form.page_description_edit',
@@ -992,8 +753,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('홍길동(123)의 정보를 수정합니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_evaluate_against_the_data_context
     it('영어 이름과 숫자 ID 파라미터 조합', () => {
       const result = engine.translate(
         'admin.users.form.page_description_edit',
@@ -1003,8 +762,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('John(456)의 정보를 수정합니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_evaluate_against_the_data_context
     it('빈 파라미터 값 처리', () => {
       const result = engine.translate(
         'admin.users.form.page_description_edit',
@@ -1016,8 +773,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('{{name}}({{id}})의 정보를 수정합니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_evaluate_against_the_data_context
     it('특수문자가 포함된 이름 처리', () => {
       const result = engine.translate(
         'admin.users.form.page_description_edit',
@@ -1059,8 +814,6 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'ko');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('|| 연산자가 포함된 표현식 처리 (첫 번째 값이 truthy)', () => {
       const dataContext = {
         _global: {
@@ -1081,8 +834,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('Admin Basic 템플릿을 비활성화하시겠습니까?');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('|| 연산자가 포함된 표현식 처리 (다국어 객체)', () => {
       const dataContext = {
         _global: {
@@ -1105,8 +856,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('관리자 기본 템플릿을 비활성화하시겠습니까?');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('|| 연산자 폴백 체인 (첫 번째가 falsy일 때)', () => {
       const dataContext = {
         _global: {
@@ -1129,8 +878,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('Admin Basic 템플릿을 비활성화하시겠습니까?');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('&& 연산자가 포함된 표현식 처리', () => {
       const dataContext = {
         user: {
@@ -1148,8 +895,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('안녕하세요, 홍길동님');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('삼항 연산자가 포함된 표현식 처리', () => {
       const dataContext = {
         value: 10,
@@ -1164,8 +909,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('높음 값이 설정되었습니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('resolveTranslations에서 || 연산자 처리', () => {
       const dataContext = {
         _global: {
@@ -1184,8 +927,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('Test Template 템플릿을 비활성화하시겠습니까?');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('공백이 포함된 값과 || 연산자 조합', () => {
       const dataContext = {
         template: {
@@ -1202,8 +943,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('Admin Basic Template 템플릿을 비활성화하시겠습니까?');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('한글 공백이 포함된 이름 처리 (바인딩 해결 후)', () => {
       // DynamicRenderer에서 바인딩이 먼저 해결된 후 번역 처리되는 시나리오
       // 예: "$t:key|name={{selectedModule.name}}" → "$t:key|name=샘플 모듈"
@@ -1214,8 +953,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('샘플 모듈 템플릿을 비활성화하시겠습니까?');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('한글 공백과 영문 혼합 이름 처리', () => {
       const result = engine.resolveTranslations(
         '$t:templates.deactivate_confirm|name=게시판 Board',
@@ -1224,8 +961,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('게시판 Board 템플릿을 비활성화하시겠습니까?');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('여러 한글 단어로 된 이름 처리', () => {
       const result = engine.resolveTranslations(
         '$t:templates.deactivate_confirm|name=관리자 기본 템플릿',
@@ -1234,8 +969,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('관리자 기본 템플릿 템플릿을 비활성화하시겠습니까?');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('산술 연산자(-)가 포함된 표현식 처리', () => {
       // row.options_count - 1 같은 산술 표현식이 올바르게 평가되어야 함
       const dataContext = {
@@ -1250,8 +983,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('외 7건');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_expressions_support_js_operators
     it('산술 연산자(+, *, /)가 포함된 표현식 처리', () => {
       const dataContext = {
         page: 3,
@@ -1308,8 +1039,6 @@ describe('TranslationEngine', () => {
       await engine.loadTranslations('template-1', 'ko');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_values_resolve_nested_t_tokens
     it('파라미터 값에 $t: 토큰이 있으면 사전 해석 후 치환', () => {
       const result = engine.resolveTranslations(
         '$t:promotion_coupon.modal.status_change.message|count=2|status=$t:enums.coupon_issue_status.issuing',
@@ -1318,8 +1047,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('선택된 2개 쿠폰의 발급상태가 발급중(으)로 변경됩니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_values_resolve_nested_t_tokens
     it('다른 상태값에 대한 중첩 $t: 해석', () => {
       const result = engine.resolveTranslations(
         '$t:promotion_coupon.modal.status_change.message|count=5|status=$t:enums.coupon_issue_status.stopped',
@@ -1328,8 +1055,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('선택된 5개 쿠폰의 발급상태가 발급중단(으)로 변경됩니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_values_resolve_nested_t_tokens
     it('다중 파라미터에 각각 $t: 중첩 사용', () => {
       const result = engine.resolveTranslations(
         '$t:common.confirm_change|item=쿠폰|from=$t:enums.coupon_issue_status.issuing|to=$t:enums.coupon_issue_status.stopped',
@@ -1338,8 +1063,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('쿠폰을(를) 발급중에서 발급중단(으)로 변경합니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_values_resolve_nested_t_tokens
     it('$t: 중첩과 {{}} 표현식 파라미터 혼합 사용', () => {
       const dataContext = {
         _global: { bulkSelectedItems: [1, 2, 3] },
@@ -1352,8 +1075,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('선택된 3개 쿠폰의 발급상태가 발급중(으)로 변경됩니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_values_resolve_nested_t_tokens
     it('=$t: 패턴이 없으면 사전 해석 단계를 건너뜀 (기존 동작 유지)', () => {
       const result = engine.resolveTranslations(
         '$t:promotion_coupon.modal.status_change.message|count=10|status=발급중',
@@ -1362,8 +1083,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('선택된 10개 쿠폰의 발급상태가 발급중(으)로 변경됩니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_values_resolve_nested_t_tokens
     it('존재하지 않는 중첩 $t: 키는 키 자체를 반환', () => {
       const result = engine.resolveTranslations(
         '$t:promotion_coupon.modal.status_change.message|count=1|status=$t:enums.nonexistent_key',
@@ -1372,8 +1091,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('선택된 1개 쿠폰의 발급상태가 enums.nonexistent_key(으)로 변경됩니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_values_resolve_nested_t_tokens
     it('중첩 해석 결과에 다시 =$t:가 포함되면 재귀 해석 (깊이 제한 내)', () => {
       // status_label 번역: "상태: {{name}}" — 해석 결과에 =$t: 없으므로 1회로 충분
       const result = engine.resolveTranslations(
@@ -1383,8 +1100,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('상태: 배송중');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_values_resolve_nested_t_tokens
     it('기존 파이프 구분 파라미터 패턴은 회귀 없음', () => {
       const result = engine.resolveTranslations(
         '$t:promotion_coupon.modal.status_change.message|count=3|status=직접입력값',
@@ -1393,8 +1108,6 @@ describe('TranslationEngine', () => {
       expect(result).toBe('선택된 3개 쿠폰의 발급상태가 직접입력값(으)로 변경됩니다.');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_param_values_resolve_nested_t_tokens
     it('기존 || 연산자 파라미터는 회귀 없음', () => {
       const dataContext = {
         _global: { bulkSelectedItems: [1, 2] },
@@ -1410,21 +1123,15 @@ describe('TranslationEngine', () => {
   });
 
   describe('캐시 버전 관리', () => {
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_cache_version_busts_urls_and_clears_cache
     it('초기 캐시 버전은 0이다', () => {
       expect(engine.getCacheVersion()).toBe(0);
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_cache_version_busts_urls_and_clears_cache
     it('setCacheVersion으로 캐시 버전을 설정할 수 있다', () => {
       engine.setCacheVersion(1735000000);
       expect(engine.getCacheVersion()).toBe(1735000000);
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_cache_version_busts_urls_and_clears_cache
     it('캐시 버전이 설정되면 API URL에 쿼리 파라미터가 추가된다', async () => {
       engine.setCacheVersion(1735000000);
 
@@ -1440,8 +1147,6 @@ describe('TranslationEngine', () => {
       );
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_cache_version_busts_urls_and_clears_cache
     it('캐시 버전이 0이면 쿼리 파라미터가 추가되지 않는다', async () => {
       engine.setCacheVersion(0);
 
@@ -1455,8 +1160,6 @@ describe('TranslationEngine', () => {
       expect(global.fetch).toHaveBeenCalledWith('/api/templates/template-1/lang/ko.json');
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_cache_version_busts_urls_and_clears_cache
     it('캐시 버전과 bustCache가 함께 사용되면 두 파라미터가 모두 추가된다', async () => {
       engine.setCacheVersion(1735000000);
 
@@ -1467,18 +1170,12 @@ describe('TranslationEngine', () => {
 
       await engine.loadTranslations('template-1', 'ko', '/api', true);
 
-      // bustCache가 true이면 타임스탬프 쿼리 파라미터도 추가됨.
-      // 두 파라미터의 순서는 기능상 무의미하다 — #486 에서 URL 조립이 suffixed 헬퍼로
-      // 일원화되며 v=/_= 순서가 바뀌었다. 순서에 의존하지 말고 둘 다 존재하는지만 검증한다.
+      // bustCache가 true이면 타임스탬프 쿼리 파라미터도 추가됨
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringMatching(
-          /\/api\/templates\/template-1\/lang\/ko\.json\?(?=.*\bv=1735000000\b)(?=.*\b_=\d+\b)/
-        )
+        expect.stringMatching(/\/api\/templates\/template-1\/lang\/ko\.json\?v=1735000000&_=\d+/)
       );
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_cache_version_busts_urls_and_clears_cache
     it('캐시 버전 변경 시 기존 캐시가 클리어된다', async () => {
       const mockTranslations = { test: { key: '값' } };
 
@@ -1509,8 +1206,6 @@ describe('TranslationEngine', () => {
       );
     });
 
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_cache_version_busts_urls_and_clears_cache
     it('동일한 캐시 버전으로 설정하면 캐시가 유지된다', async () => {
       engine.setCacheVersion(1735000000);
 
@@ -1533,8 +1228,6 @@ describe('TranslationEngine', () => {
     // @since engine-v1.38.1
     // 회귀 방지: reloadExtensions 병렬 실행 중 setCacheVersion 이 활성 translations 맵을
     // 비워서 같은 parallel 블록 내의 toast($t:...) 가 raw key 를 반환하던 경합 조건
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects translation_engine_cache_version_busts_urls_and_clears_cache
     it('setCacheVersion 호출 후에도 이전 번역이 즉시 조회 가능해야 한다 (loadTranslations 완료 전)', async () => {
       const mockTranslations = {
         admin: { modules: { activate_success: '모듈 활성화 성공' } },
@@ -1558,42 +1251,6 @@ describe('TranslationEngine', () => {
       // 4. loadTranslations 재호출 전에도 기존 번역은 유지되어야 함
       //    → 병렬 toast 가 raw key 가 아닌 실제 번역을 받음
       expect(engine.translate('admin.modules.activate_success', context)).toBe('모듈 활성화 성공');
-    });
-  });
-
-  describe('setTranslationValue (낙관적 즉시 반영)', () => {
-    const context: TranslationContext = { templateId: 'tpl', locale: 'ko' };
-
-    // translate() 는 bare 키(`custom.home.2`)를 받는다($t: 접두 해석은 resolveTranslations 의 책임).
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects inline_edit_commit_optimistically_reflects_new_value_before_server_roundtrip
-    it('빈 사전에 점선 키를 주입하면 즉시 해석된다', () => {
-      engine.setTranslationValue('tpl', 'ko', 'custom.home.2', '환영합니다');
-      expect(engine.translate('custom.home.2', context)).toBe('환영합니다');
-    });
-
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects inline_edit_commit_optimistically_reflects_new_value_before_server_roundtrip
-    it('기존 사전의 다른 키를 보존하며 한 키만 덮어쓴다', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ nav: { home: '홈' }, custom: { home: { 1: '옛값' } } }),
-      });
-      await engine.loadTranslations('tpl', 'ko', '/api');
-      engine.setTranslationValue('tpl', 'ko', 'custom.home.1', '새값');
-      // 덮어쓴 키.
-      expect(engine.translate('custom.home.1', context)).toBe('새값');
-      // 다른 키 보존.
-      expect(engine.translate('nav.home', context)).toBe('홈');
-    });
-
-    // @scenario locale=ko, locale_value_presence=has_locale
-    // @effects inline_edit_commit_optimistically_reflects_new_value_before_server_roundtrip
-    it('중간 경로가 문자열이어도 객체로 승격해 주입한다(충돌 방지)', () => {
-      engine.setTranslationValue('tpl', 'ko', 'custom', '문자열');
-      // 이후 하위 키 주입 — custom 이 문자열이지만 객체로 승격.
-      engine.setTranslationValue('tpl', 'ko', 'custom.home.3', '값');
-      expect(engine.translate('custom.home.3', context)).toBe('값');
     });
   });
 });

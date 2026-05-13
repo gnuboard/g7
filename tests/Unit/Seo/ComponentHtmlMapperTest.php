@@ -2,13 +2,8 @@
 
 namespace Tests\Unit\Seo;
 
-use App\Extension\HookManager;
 use App\Seo\ComponentHtmlMapper;
 use App\Seo\ExpressionEvaluator;
-use App\Seo\SeoUrl;
-use App\Support\AssetUrl;
-use App\Thumbnails\ThumbnailPresetRegistry;
-use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 class ComponentHtmlMapperTest extends TestCase
@@ -19,8 +14,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 테스트 초기화 - ComponentHtmlMapper 및 ExpressionEvaluator 인스턴스를 준비합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -77,8 +70,7 @@ class ComponentHtmlMapperTest extends TestCase
             'Th' => ['tag' => 'th'],
             'Td' => ['tag' => 'td'],
             'Label' => ['tag' => 'label'],
-            'Select' => ['tag' => 'select', 'render' => 'select_options', 'props_source' => 'options'],
-            'Option' => ['tag' => 'option'],
+            'Select' => ['tag' => 'select'],
             'Textarea' => ['tag' => 'textarea'],
             'Strong' => ['tag' => 'strong'],
             'Em' => ['tag' => 'em'],
@@ -137,13 +129,6 @@ class ComponentHtmlMapperTest extends TestCase
                 'item_tag' => 'span',
                 'item_content' => '{label}',
                 'badge_field' => 'badge',
-            ],
-            'select_options' => [
-                'type' => 'iterate',
-                'source' => '$props_source',
-                'item_tag' => 'option',
-                'item_attrs' => ['value' => '{value}'],
-                'item_content' => '{label|label_key|text|name}',
             ],
             'text_format' => [
                 'type' => 'format',
@@ -216,12 +201,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Div + children 텍스트를 올바르게 렌더링합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_div_with_children_text(): void
     {
@@ -246,12 +225,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * H1 + text prop을 올바르게 렌더링합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_h1_with_text_prop(): void
     {
@@ -269,12 +242,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Img + src/alt를 셀프 클로징 태그로 렌더링합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_img_with_src_and_alt(): void
     {
@@ -298,525 +265,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * A + href + children을 올바르게 렌더링합니다.
-     *
-     * @return void 반환값 없음
-     */
-    /**
-     * 봇 화면의 사이트 내부 링크도 마운트 접두사를 거친다.
-     *
-     * 화면(React)은 접두사를 붙이는 자리를 템플릿 `A` 컴포넌트 한 곳으로 모았는데,
-     * 봇 경로는 `component_map` 이 `A` 를 `{"tag":"a"}` 로 치환하므로 그 자리를
-     * 거치지 않는다. 접두사가 빠지면 하위 폴더 배치에서 **검색 색인이 사이트 밖
-     * 주소로 쌓이고**, 오류가 나지 않아 아무도 모른다.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_internal_href_carries_the_mount_prefix_for_bots(): void
-    {
-        AssetUrl::forceBasePrefix('/g7');
-
-        try {
-            $html = $this->render([
-                ['name' => 'A', 'props' => ['href' => '/page/about', 'text' => '소개']],
-            ]);
-
-            $this->assertStringContainsString('<a href="/g7/page/about"', $html);
-        } finally {
-            AssetUrl::forceBasePrefix(null);
-        }
-    }
-
-    /**
-     * 사이트 경로가 아닌 목적지는 손대지 않는다 — 과잉 전환 대조.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_external_and_relative_href_are_untouched_for_bots(): void
-    {
-        AssetUrl::forceBasePrefix('/g7');
-
-        try {
-            $html = $this->render([
-                ['name' => 'A', 'props' => ['href' => 'https://example.com/x', 'text' => 'a']],
-                ['name' => 'A', 'props' => ['href' => '//cdn.example.com/y', 'text' => 'b']],
-                ['name' => 'A', 'props' => ['href' => '#section', 'text' => 'c']],
-                // 이미 접두사를 가진 값 — 멱등이어야 이중 접두가 생기지 않는다.
-                ['name' => 'A', 'props' => ['href' => '/g7/page/faq', 'text' => 'd']],
-            ]);
-
-            $this->assertStringContainsString('href="https://example.com/x"', $html);
-            $this->assertStringContainsString('href="//cdn.example.com/y"', $html);
-            $this->assertStringContainsString('href="#section"', $html);
-            $this->assertStringContainsString('href="/g7/page/faq"', $html);
-            $this->assertStringNotContainsString('/g7/g7/', $html);
-            $this->assertStringNotContainsString('/g7//cdn', $html);
-        } finally {
-            AssetUrl::forceBasePrefix(null);
-        }
-    }
-
-    /**
-     * 루트 설치에서는 종전과 동일하다 — 회귀 대조.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_root_install_href_is_unchanged_for_bots(): void
-    {
-        AssetUrl::forceBasePrefix('');
-
-        try {
-            $html = $this->render([
-                ['name' => 'A', 'props' => ['href' => '/page/about', 'text' => '소개']],
-            ]);
-
-            $this->assertStringContainsString('<a href="/page/about"', $html);
-        } finally {
-            AssetUrl::forceBasePrefix(null);
-        }
-    }
-
-    /**
-     * `href` 를 내보내는 **모든 지점**이 접두사 헬퍼를 거친다 (소스 계약).
-     *
-     * 동작 테스트는 자기가 세운 렌더 경로만 잰다 — 그래서 형제 지점 다섯을 배선하고도
-     * 여섯 번째(`renderFieldWithAttrs` — `seo-config.json` 이 자기 소유로 선언한 헤더·푸터
-     * 앵커를 그린다)가 남아, 같은 봇 응답 안에 `/g7/page/about` 와 `/page/about` 이
-     * **동시에** 나갔다. 단위 테스트는 초록이었고 P0 하위 폴더 실측이 잡았다.
-     *
-     * 그래서 「그 파일에서 `href` 속성을 조립하는 자리가 전부 헬퍼를 거치는가」를
-     * 소스로 잠근다 — 새 방출 지점이 생기면 이 검사가 즉시 요구한다.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_every_href_emission_point_goes_through_the_prefix_helper(): void
-    {
-        $source = (string) file_get_contents(base_path('app/Seo/ComponentHtmlMapper.php'));
-
-        // 주석을 걷어낸다 — 위 설명이 그 이름을 언급하므로 자기충족을 피한다.
-        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
-
-        // `href` 속성값을 만드는 자리: `'href'` 문자열 비교 또는 `href="` 리터럴 조립.
-        $emissionLines = [];
-        foreach (preg_split('~\r\n|\r|\n~', $code) ?: [] as $n => $line) {
-            if (preg_match('/href\s*=\s*"|[\'"]href[\'"]/', $line) === 1) {
-                $emissionLines[$n + 1] = trim($line);
-            }
-        }
-
-        $this->assertNotEmpty($emissionLines, 'href 방출 지점을 하나도 찾지 못했다 — 이 검사가 아무것도 재지 않는다');
-
-        // 판정 범위는 **감싸는 메서드 전체**다.
-        //
-        // ±N 줄 창으로는 부족하다 — 값을 메서드 앞에서 한 번 감싸 두고 아래에서 여러 번
-        // 쓰는 형태(`$escapedHref` 를 네 분기가 공유한다)가 정상인데, 좁은 창은 그것을
-        // 전부 위반으로 본다. 반대로 파일 전체를 보면 어디든 한 번만 나오면 통과해
-        // 아무것도 재지 못한다. 메서드가 그 중간이다.
-        $lines = preg_split('~\r\n|\r|\n~', $code) ?: [];
-        $unwired = [];
-
-        foreach ($emissionLines as $lineNo => $text) {
-            // 허용 목록 선언(`allowed_attrs` 등)은 값을 만들지 않는다.
-            if (str_contains($text, "'class', 'id', 'href'")) {
-                continue;
-            }
-
-            // 클래스 상수 선언(`URL_ATTRS` — 평가 옵션을 고르는 속성 이름 목록)도 값을 만들지 않는다.
-            // 메서드 밖이라 감싸는 메서드 판정이 성립하지 않는다.
-            if (preg_match('/^(?:(?:private|protected|public|final)\s+)*const\s+[A-Z_]+\s*=/', $text) === 1) {
-                continue;
-            }
-
-            if (! str_contains($this->enclosingMethodBody($lines, $lineNo), 'siteHref(')) {
-                $unwired[] = $lineNo.': '.substr($text, 0, 90);
-            }
-        }
-
-        $this->assertSame(
-            [],
-            $unwired,
-            '접두사 헬퍼를 거치지 않는 href 방출 지점이 있다 — 하위 폴더 배치에서 그 링크만 사이트 밖으로 나간다'
-        );
-    }
-
-    /**
-     * 봇 화면의 `src` 는 접두사를 **한 번만** 실은 절대 URL 이 된다.
-     *
-     * 이 자리에 오는 값의 생산자(`ProductImage::apiDownloadUrl()` 등)가 이미
-     * `AssetUrl::basePrefix()` 를 붙여 주는데 종전 코드는 그 위에 `url()` 을 태웠다 —
-     * `url()` 은 오리진과 접두사를 함께 붙이므로 `https://host/g7/g7/api/…` 가 나갔고
-     * 그 주소는 404 다. 오류가 아니라 **봇 화면에서 이미지가 안 나오는 것**이 유일한
-     * 증상이라, 같은 함수의 `href` 를 세 줄 아래에서 고치고도 남아 있었다.
-     *
-     * 반대 방향도 함께 잰다 — 레이아웃이 리터럴로 적은 사이트 경로에는 접두사를
-     * 붙일 주체가 이 자리밖에 없다.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_internal_src_is_absolute_and_carries_the_mount_prefix_once(): void
-    {
-        // 하위 폴더 설치의 사이트 주소는 접두사를 품는다 — 절대 주소의 접두사 출처는 사이트 주소(SiteUrl)다.
-        config(['app.url' => 'http://localhost/g7']);
-        AssetUrl::forceBasePrefix('/g7');
-
-        try {
-            $html = $this->render(
-                [['name' => 'ProductImageViewer', 'props' => ['images' => '{{images}}']]],
-                [
-                    'images' => [
-                        // 생산자가 이미 접두사를 실은 값 (`ProductImage::apiDownloadUrl()` 형태)
-                        ['src' => '/g7/api/modules/sirsoft-ecommerce/product-image/abc'],
-                        // 레이아웃 리터럴 — 접두사를 붙일 주체가 여기밖에 없다
-                        ['src' => '/images/logo.png'],
-                        // 사이트 경로가 아닌 값은 손대지 않는다
-                        ['src' => 'https://cdn.example.com/x.png'],
-                        ['src' => '//cdn.example.com/y.png'],
-                    ],
-                ],
-            );
-
-            $this->assertStringNotContainsString('/g7/g7/', $html, '접두사가 두 번 실렸다 — 그 주소는 404 다');
-            $this->assertStringContainsString('/g7/api/modules/sirsoft-ecommerce/product-image/abc"', $html);
-            $this->assertStringContainsString('/g7/images/logo.png"', $html);
-            $this->assertStringContainsString('src="https://cdn.example.com/x.png"', $html);
-            $this->assertStringContainsString('src="//cdn.example.com/y.png"', $html);
-            $this->assertStringNotContainsString('/g7//cdn', $html);
-
-            // 사이트 경로였던 둘은 절대 URL 이어야 한다 (봇은 페이지 주소를 모른 채 색인한다).
-            preg_match_all('/src="([^"]+)"/', $html, $m);
-            foreach ($m[1] as $src) {
-                if (str_contains($src, 'cdn.example.com')) {
-                    continue;
-                }
-                $this->assertStringStartsWith('http', $src, "봇 화면의 자산 주소가 절대 URL 이 아니다: {$src}");
-            }
-        } finally {
-            AssetUrl::forceBasePrefix(null);
-        }
-    }
-
-    /**
-     * 루트 설치에서는 접두사가 붙지 않는다 — 과잉 전환 대조.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_root_install_src_gains_origin_but_no_prefix(): void
-    {
-        AssetUrl::forceBasePrefix('');
-
-        try {
-            $html = $this->render(
-                [['name' => 'ProductImageViewer', 'props' => ['images' => '{{images}}']]],
-                ['images' => [['src' => '/images/logo.png']]],
-            );
-
-            $this->assertMatchesRegularExpression('~src="https?://[^/"]+/images/logo\.png"~', $html);
-        } finally {
-            AssetUrl::forceBasePrefix(null);
-        }
-    }
-
-    /**
-     * `src` 를 내보내는 **모든 지점**이 자산 헬퍼를 거친다 (소스 계약).
-     *
-     * 형제 축(`href`)이 정확히 이 형태의 검사를 갖고 있었고, 그 덕에 여섯 번째 방출
-     * 지점이 드러났다. `src` 축에는 그 검사가 없어서 세 지점 중 둘만 변환하고 하나는
-     * **아무 변환도 하지 않는** 상태가 유지되고 있었다.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_every_src_emission_point_goes_through_the_asset_helper(): void
-    {
-        $source = (string) file_get_contents(base_path('app/Seo/ComponentHtmlMapper.php'));
-
-        // 주석을 걷어낸다 — 위 설명이 그 이름을 언급하므로 자기충족을 피한다.
-        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
-
-        $lines = preg_split('~\r\n|\r|\n~', $code) ?: [];
-        $emissionLines = [];
-        foreach ($lines as $n => $line) {
-            if (preg_match('/[\'"]src[\'"]/', $line) === 1) {
-                $emissionLines[$n + 1] = trim($line);
-            }
-        }
-
-        $this->assertNotEmpty($emissionLines, 'src 방출 지점을 하나도 찾지 못했다 — 이 검사가 아무것도 재지 않는다');
-
-        $unwired = [];
-
-        foreach ($emissionLines as $lineNo => $text) {
-            // 허용 목록 선언은 값을 만들지 않는다.
-            if (str_contains($text, "'class', 'id', 'href'")) {
-                continue;
-            }
-
-            if (! str_contains($this->enclosingMethodBody($lines, $lineNo), 'siteAssetUrl(')) {
-                $unwired[] = $lineNo.': '.substr($text, 0, 90);
-            }
-        }
-
-        $this->assertSame(
-            [],
-            $unwired,
-            '자산 헬퍼를 거치지 않는 src 방출 지점이 있다 — 그 이미지만 봇 화면에서 사라지거나 사이트 밖을 가리킨다'
-        );
-    }
-
-    /**
-     * 지정한 줄을 감싸는 메서드의 본문을 돌려줍니다 (소스 계약 검사 공용).
-     *
-     * 판정 범위는 **감싸는 메서드 전체**다. ±N 줄 창으로는 부족하다 — 값을 메서드
-     * 앞에서 한 번 감싸 두고 아래에서 여러 번 쓰는 형태(`$escapedHref` 를 네 분기가
-     * 공유한다)가 정상인데, 좁은 창은 그것을 전부 위반으로 본다. 반대로 파일 전체를
-     * 보면 어디든 한 번만 나오면 통과해 아무것도 재지 못한다. 메서드가 그 중간이다.
-     *
-     * 이 도출을 세 검사가 공유한다 — 종전에는 같은 스캐너가 두 벌의 사본이었고,
-     * 한쪽만 고쳐지면 두 축의 판정 범위가 조용히 갈린다.
-     *
-     * @param  array  $lines  주석을 걷어낸 소스의 줄 배열 (0-based)
-     * @param  int  $lineNo  대상 줄 번호 (1-based)
-     * @return string 감싸는 메서드의 본문
-     */
-    private function enclosingMethodBody(array $lines, int $lineNo): string
-    {
-        $declaration = '/^\s*(?:private|protected|public)\s+function\s/';
-
-        $start = 0;
-        for ($i = $lineNo - 1; $i >= 0; $i--) {
-            if (preg_match($declaration, $lines[$i] ?? '') === 1) {
-                $start = $i;
-                break;
-            }
-        }
-
-        $end = count($lines);
-        for ($i = $lineNo; $i < count($lines); $i++) {
-            if (preg_match($declaration, $lines[$i] ?? '') === 1) {
-                $end = $i;
-                break;
-            }
-        }
-
-        return implode("\n", array_slice($lines, $start, max(1, $end - $start)));
-    }
-
-    /**
-     * 속성 문자열을 조립하는 **루프 전수**가 `href` 와 `src` 를 헬퍼로 처리한다 (소스 계약).
-     *
-     * 형제 두 검사(`…every_href_emission_point…` · `…every_src_emission_point…`)는
-     * 모집단을 「그 이름의 리터럴이 있는 줄」에서 도출한다. 그 모집단은 **자기충족**이다
-     * — 배선되지 않은 지점에는 애초에 그 리터럴이 없으므로, 이미 배선된 지점들만
-     * 스스로를 확인하고 배선되지 않은 지점은 **구조적으로 보이지 않는다**.
-     *
-     * 실제로 `buildAttributes()` 가 그 사각에 있었다. 그 메서드는 `src` 리터럴이 없어
-     * src 축 검사의 모집단 밖이었고, `src` 는 허용 속성이며 `component_map` 에 `Img` 가
-     * 있어 레이아웃 JSON 의 모든 `Img` 가 그 자리를 지난다 — 즉 봇 화면의 그 이미지는
-     * **아무 변환도 없이** 나갔다. 반대 방향으로 `buildIterateItemAttributes()` 는
-     * `href` 가 빠져 있었다.
-     *
-     * 그래서 모집단을 이름이 아니라 **구조**에서 도출한다: 속성 이름을 변수로 받아
-     * `이름="값"` 을 이어 붙이는 루프. 그 형태의 루프는 어떤 속성이든 실어 낼 수 있으므로
-     * 두 헬퍼를 **둘 다** 거쳐야 한다.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_every_attribute_building_loop_routes_both_href_and_src(): void
-    {
-        $source = (string) file_get_contents(base_path('app/Seo/ComponentHtmlMapper.php'));
-
-        // 주석을 걷어낸다 — 위 설명이 그 이름을 언급하므로 자기충족을 피한다.
-        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
-
-        $lines = preg_split('~\r\n|\r|\n~', $code) ?: [];
-
-        // 모집단: `$attrs .= " {$이름}=\"…"` 형태 — 속성 **이름이 변수**이고 값을 싣는 줄.
-        // 값 없는 boolean 속성(`$attrs .= " {$htmlAttr}"`)은 주소를 만들지 않으므로 제외한다.
-        $loopLines = [];
-        foreach ($lines as $n => $line) {
-            if (preg_match('/\$attr\w*\s*\.=/', $line) !== 1) {
-                continue;
-            }
-            if (preg_match('/\{\$\w+\}=/', $line) !== 1) {
-                continue;
-            }
-            $loopLines[$n + 1] = trim($line);
-        }
-
-        // 공허성 대조 — 도출 정규식이 무력해지면 이 검사가 조용히 초록이 된다.
-        // 현재 실물은 넷(`buildIterateItemAttributes` · `renderFieldIterate` ·
-        // `renderFieldWithAttrs` · `buildAttributes`)이다. 줄어들면 사람이 확인한다.
-        $this->assertGreaterThanOrEqual(
-            4,
-            count($loopLines),
-            '속성 조립 루프를 4개 미만으로 찾았다 — 도출이 무력해졌거나 구조가 바뀌었다'
-        );
-
-        $unwired = [];
-
-        foreach ($loopLines as $lineNo => $text) {
-            $body = $this->enclosingMethodBody($lines, $lineNo);
-
-            $missing = [];
-            if (! str_contains($body, 'siteHref(')) {
-                $missing[] = 'siteHref';
-            }
-            if (! str_contains($body, 'siteAssetUrl(')) {
-                $missing[] = 'siteAssetUrl';
-            }
-
-            if ($missing !== []) {
-                $unwired[] = $lineNo.': '.implode('+', $missing).' 누락 — '.substr($text, 0, 70);
-            }
-        }
-
-        $this->assertSame(
-            [],
-            $unwired,
-            '속성 조립 루프가 href/src 중 한쪽만 배선했다 — 그 축의 주소만 하위 폴더 배치에서 사이트 밖을 가리킨다'
-        );
-    }
-
-    /**
-     * `Img` props 의 `src` 가 봇 화면에서 접두사를 실은 절대 URL 이 된다 (동작 회귀).
-     *
-     * 이 경로(`buildAttributes`)는 레이아웃 JSON 이 선언한 `Img` 를 그린다 —
-     * `component_map` 에 `Img` 가 있고 `src` 가 허용 속성이므로 가장 흔한 통로인데,
-     * 형제 셋만 자산 헬퍼를 거치고 이 지점은 **아무 변환도 없었다**.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_component_props_src_carries_the_mount_prefix_and_origin(): void
-    {
-        // 하위 폴더 설치의 사이트 주소는 접두사를 품는다 — 절대 주소의 접두사 출처는 사이트 주소(SiteUrl)다.
-        config(['app.url' => 'http://localhost/g7']);
-        AssetUrl::forceBasePrefix('/g7');
-
-        try {
-            $html = $this->render([
-                ['name' => 'Img', 'props' => ['src' => '/images/logo.png', 'alt' => '로고']],
-            ]);
-
-            $this->assertMatchesRegularExpression(
-                '~src="https?://[^/"]+/g7/images/logo\.png"~',
-                $html,
-                'Img props 의 src 가 접두사·오리진 없이 나갔다'
-            );
-            $this->assertStringNotContainsString('/g7/g7/', $html, '접두사가 두 번 실렸다');
-        } finally {
-            AssetUrl::forceBasePrefix(null);
-        }
-    }
-
-    /**
-     * iterate 모드 `item_attrs` 의 `href` 가 봇 화면에서 접두사를 얻는다 (동작 회귀).
-     *
-     * 이 지점(`buildIterateItemAttributes`)은 `src` 만 배선돼 있었다 — 같은 함수의 `href` 쪽과 반대 방향
-     * 비대칭이며, `item_attrs` 는 속성 이름을 자유롭게 선언하므로 링크가 온다.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_iterate_item_attrs_href_carries_the_mount_prefix(): void
-    {
-        AssetUrl::forceBasePrefix('/g7');
-
-        try {
-            // 기본 맵에 **덧붙인다** — 통째로 갈아치우면 다른 축의 전제가 사라진다.
-            $this->mapper->setComponentMap(array_merge($this->getDefaultComponentMap(), [
-                'LinkList' => ['tag' => 'ul', 'render' => 'iterate_links', 'props_source' => 'items'],
-            ]));
-            $this->mapper->setRenderModes(array_merge($this->getDefaultRenderModes(), [
-                'iterate_links' => [
-                    'type' => 'iterate',
-                    'source' => '$props_source',
-                    'item_tag' => 'a',
-                    'item_attrs' => ['href' => '{url}'],
-                ],
-            ]));
-
-            $html = $this->render(
-                [['name' => 'LinkList', 'props' => ['items' => '{{links}}']]],
-                ['links' => [['url' => '/board/notice']]],
-            );
-
-            $this->assertStringContainsString('href="/g7/board/notice"', $html);
-            $this->assertStringNotContainsString('href="/board/notice"', $html);
-        } finally {
-            AssetUrl::forceBasePrefix(null);
-        }
-    }
-
-    /**
-     * 자산 헬퍼가 `url()` 로 되돌아가지 않는다 (소스 계약).
-     *
-     * 이 결함은 「접두사가 두 번 실린다」이므로 값 단언만으로는 재발을 못 막는다 —
-     * `config('app.url')` 에 접두사가 없는 개발 환경에서는 `url()` 도 같은 값을 내기
-     * 때문이다. 그래서 **그 헬퍼를 쓰지 않는다**는 것을 소스로 잠근다.
-     *
-     * @scenario render_concern=mount_prefix
-     *
-     * @effects bot_html_urls_carry_the_mount_prefix_once
-     *
-     * @return void 반환값 없음
-     */
-    public function test_bot_html_never_builds_asset_urls_with_the_url_helper(): void
-    {
-        $source = (string) file_get_contents(base_path('app/Seo/ComponentHtmlMapper.php'));
-        $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $source);
-
-        $this->assertSame(
-            0,
-            preg_match_all('/(?<![\w>$])url\s*\(/', $code),
-            'ComponentHtmlMapper 가 `url()` 을 쓴다 — 그 헬퍼는 오리진과 마운트 접두사를 함께 붙이므로 접두사를 이미 실은 값에서 이중 접두가 된다'
-        );
-    }
-
-    /**
-     * href 를 가진 A 컴포넌트가 자식 Span 을 감싼 a 태그로 렌더되는지 확인한다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_a_with_href_and_children(): void
     {
@@ -842,12 +290,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Container 컴포넌트는 div 태그로 렌더링됩니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_container_renders_as_div(): void
     {
@@ -872,12 +314,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 중첩 컴포넌트를 올바르게 렌더링합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_nested_components(): void
     {
@@ -910,12 +346,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * if=true 조건의 컴포넌트는 렌더링에 포함됩니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_if_true_included(): void
     {
@@ -934,12 +364,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * if=false 조건의 컴포넌트는 렌더링에서 제외됩니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_if_false_excluded(): void
     {
@@ -958,12 +382,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iteration으로 반복 렌더링을 올바르게 수행합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_iteration_renders_repeated_output(): void
     {
@@ -996,12 +414,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iteration의 source 키로 반복 렌더링을 수행합니다 (레이아웃 JSON 스키마 호환).
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_iteration_with_source_key(): void
     {
@@ -1043,12 +455,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 알 수 없는 컴포넌트명은 div 태그로 폴백됩니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_unknown_component_fallback_to_div(): void
     {
@@ -1066,12 +472,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * className prop이 class 속성으로 변환됩니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_classname_prop_to_class_attribute(): void
     {
@@ -1095,12 +495,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * children이 빈 배열이면 빈 태그를 렌더링합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_empty_children_renders_empty_tag(): void
     {
@@ -1118,12 +512,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 데이터 바인딩이 포함된 prop을 올바르게 평가합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_data_binding_in_props(): void
     {
@@ -1155,12 +543,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 허용되지 않은 속성(이벤트 핸들러 등)은 HTML에 포함되지 않습니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_disallowed_attributes_excluded(): void
     {
@@ -1184,12 +566,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 셀프 클로징 태그(hr, br)가 올바르게 렌더링됩니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_self_closing_tags(): void
     {
@@ -1208,12 +584,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 컴포넌트 레벨 text 속성이 렌더링됩니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_component_level_text_attribute(): void
     {
@@ -1234,12 +604,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 컴포넌트 레벨 text가 props.text보다 우선합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_component_text_takes_priority_over_props_text(): void
     {
@@ -1259,12 +623,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Composite 컴포넌트가 div 태그로 렌더링되고 children이 포함됩니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_composite_component_renders_with_children(): void
     {
@@ -1295,12 +653,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * ProductImageViewer가 이미지 태그를 렌더링합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_product_image_viewer_renders_images(): void
     {
@@ -1334,12 +686,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * TabNavigation이 탭 버튼을 렌더링합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_tab_navigation_renders_tabs(): void
     {
@@ -1373,12 +719,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * dangerouslySetInnerHTML prop이 HTML 콘텐츠를 렌더링합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_dangerously_set_inner_html_renders_content(): void
     {
@@ -1406,12 +746,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Fragment 컴포넌트는 래퍼 태그 없이 children만 렌더링합니다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects component_tree_renders_semantic_html
-     *
-     * @return void 반환값 없음
      */
     public function test_fragment_renders_children_without_wrapper(): void
     {
@@ -1437,12 +771,6 @@ class ComponentHtmlMapperTest extends TestCase
     /**
      * componentMap 미설정 시 모든 컴포넌트가 div로 렌더링됩니다.
      * textProps/allowedAttrs도 미설정이므로 텍스트/속성 미출력 (안전한 저하).
-     *
-     * @scenario render_concern=config_fallback
-     *
-     * @effects missing_config_falls_back_to_safe_defaults
-     *
-     * @return void 반환값 없음
      */
     public function test_no_config_all_components_fallback_to_div(): void
     {
@@ -1458,12 +786,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * renderModes 미설정 + component_map에 render 키 → 빈 문자열 반환
-     *
-     * @scenario render_concern=config_fallback
-     *
-     * @effects missing_config_falls_back_to_safe_defaults
-     *
-     * @return void 반환값 없음
      */
     public function test_no_render_modes_render_key_ignored(): void
     {
@@ -1481,12 +803,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * selfClosing 미설정 시 img, hr도 닫힘 태그 생성
-     *
-     * @scenario render_concern=config_fallback
-     *
-     * @effects missing_config_falls_back_to_safe_defaults
-     *
-     * @return void 반환값 없음
      */
     public function test_no_self_closing_all_tags_have_closing(): void
     {
@@ -1507,12 +823,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * selfClosing에 커스텀 태그 추가 시 해당 태그 셀프 클로징
-     *
-     * @scenario render_concern=config_fallback
-     *
-     * @effects missing_config_falls_back_to_safe_defaults
-     *
-     * @return void 반환값 없음
      */
     public function test_custom_self_closing_tags(): void
     {
@@ -1531,12 +841,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * skip:true 컴포넌트는 렌더링되지 않습니다.
-     *
-     * @scenario render_concern=config_fallback
-     *
-     * @effects missing_config_falls_back_to_safe_defaults
-     *
-     * @return void 반환값 없음
      */
     public function test_skip_true_component_renders_nothing(): void
     {
@@ -1549,12 +853,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * skip:true 컴포넌트는 children이 있어도 렌더링되지 않습니다.
-     *
-     * @scenario render_concern=config_fallback
-     *
-     * @effects missing_config_falls_back_to_safe_defaults
-     *
-     * @return void 반환값 없음
      */
     public function test_skip_true_ignores_children(): void
     {
@@ -1574,12 +872,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * tag:"" (Fragment) → 래퍼 없이 children만 렌더링
-     *
-     * @scenario render_concern=config_fallback
-     *
-     * @effects missing_config_falls_back_to_safe_defaults
-     *
-     * @return void 반환값 없음
      */
     public function test_empty_tag_renders_children_only(): void
     {
@@ -1600,12 +892,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 같은 이름으로 다른 tag 지정 시 config 태그 사용
-     *
-     * @scenario render_concern=config_fallback
-     *
-     * @effects missing_config_falls_back_to_safe_defaults
-     *
-     * @return void 반환값 없음
      */
     public function test_component_map_overrides_default_behavior(): void
     {
@@ -1628,12 +914,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: image_gallery → img 태그 목록 생성
-     *
-     * @scenario render_concern=iterate_mode
-     *
-     * @effects iterate_render_mode_repeats_item_markup
-     *
-     * @return void 반환값 없음
      */
     public function test_iterate_mode_renders_image_gallery(): void
     {
@@ -1663,12 +943,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: 빈 배열 → 빈 래퍼 태그만
-     *
-     * @scenario render_concern=iterate_mode
-     *
-     * @effects iterate_render_mode_repeats_item_markup
-     *
-     * @return void 반환값 없음
      */
     public function test_iterate_mode_with_empty_array(): void
     {
@@ -1689,12 +963,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: source가 null → 빈 래퍼 태그만
-     *
-     * @scenario render_concern=iterate_mode
-     *
-     * @effects iterate_render_mode_repeats_item_markup
-     *
-     * @return void 반환값 없음
      */
     public function test_iterate_mode_with_null_source(): void
     {
@@ -1714,12 +982,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: 1개 아이템 → 정확히 1개 아이템 태그
-     *
-     * @scenario render_concern=iterate_mode
-     *
-     * @effects iterate_render_mode_repeats_item_markup
-     *
-     * @return void 반환값 없음
      */
     public function test_iterate_mode_with_single_item(): void
     {
@@ -1743,12 +1005,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: 10개 아이템 → 10개 아이템 태그
-     *
-     * @scenario render_concern=iterate_mode
-     *
-     * @effects iterate_render_mode_repeats_item_markup
-     *
-     * @return void 반환값 없음
      */
     public function test_iterate_mode_with_many_items(): void
     {
@@ -1768,12 +1024,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: tab_list → span 태그에 label 텍스트
-     *
-     * @scenario render_concern=iterate_mode
-     *
-     * @effects iterate_render_mode_repeats_item_markup
-     *
-     * @return void 반환값 없음
      */
     public function test_iterate_mode_tab_list_with_labels(): void
     {
@@ -1797,12 +1047,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: tab_list + badge → badge span 포함
-     *
-     * @scenario render_concern=iterate_mode
-     *
-     * @effects iterate_render_mode_repeats_item_markup
-     *
-     * @return void 반환값 없음
      */
     public function test_iterate_mode_tab_list_with_badge(): void
     {
@@ -1825,12 +1069,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: item_attrs {url|src} → url 없으면 src 사용
-     *
-     * @scenario render_concern=iterate_mode
-     *
-     * @effects iterate_render_mode_repeats_item_markup
-     *
-     * @return void 반환값 없음
      */
     public function test_iterate_mode_item_attrs_fallback_field(): void
     {
@@ -1855,12 +1093,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * format 모드: "{value} / {max}" → "4.5 / 5"
-     *
-     * @scenario render_concern=format_mode
-     *
-     * @effects format_render_mode_fills_placeholders
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_star_rating(): void
     {
@@ -1879,12 +1111,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * format 모드: max 미전달 → defaults의 "5" 사용
-     *
-     * @scenario render_concern=format_mode
-     *
-     * @effects format_render_mode_fills_placeholders
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_with_defaults(): void
     {
@@ -1902,12 +1128,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * format 모드: props 없음 → 기본값만 표시
-     *
-     * @scenario render_concern=format_mode
-     *
-     * @effects format_render_mode_fills_placeholders
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_all_placeholders_missing(): void
     {
@@ -1925,12 +1145,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * format 모드: 일부 prop만 있음 → 있는 것만 치환
-     *
-     * @scenario render_concern=format_mode
-     *
-     * @effects format_render_mode_fills_placeholders
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_partial_placeholders(): void
     {
@@ -1948,12 +1162,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * format 모드: format 키 없음 → 빈 문자열
-     *
-     * @scenario render_concern=format_mode
-     *
-     * @effects format_render_mode_fills_placeholders
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_no_format_string(): void
     {
@@ -1976,12 +1184,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * raw 모드: HTML 콘텐츠 그대로 출력 (이스케이프 없음)
-     *
-     * @scenario render_concern=raw_mode
-     *
-     * @effects raw_render_mode_emits_bound_html
-     *
-     * @return void 반환값 없음
      */
     public function test_raw_mode_html_content(): void
     {
@@ -2001,12 +1203,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * raw 모드: {{binding}} → context에서 해석 후 출력
-     *
-     * @scenario render_concern=raw_mode
-     *
-     * @effects raw_render_mode_emits_bound_html
-     *
-     * @return void 반환값 없음
      */
     public function test_raw_mode_with_binding(): void
     {
@@ -2026,12 +1222,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * raw 모드: 콘텐츠 없음 → 빈 래퍼 태그
-     *
-     * @scenario render_concern=raw_mode
-     *
-     * @effects raw_render_mode_emits_bound_html
-     *
-     * @return void 반환값 없음
      */
     public function test_raw_mode_empty_content(): void
     {
@@ -2052,12 +1242,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * raw 모드: 여러 줄 HTML → 전부 보존
-     *
-     * @scenario render_concern=raw_mode
-     *
-     * @effects raw_render_mode_emits_bound_html
-     *
-     * @return void 반환값 없음
      */
     public function test_raw_mode_multiline_html(): void
     {
@@ -2083,12 +1267,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 상품 상세 페이지: Header+Main(이미지갤러리+상품정보)+Footer
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_product_detail_page_structure(): void
     {
@@ -2128,12 +1306,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 상품 목록 페이지: 카테고리명+ProductCard iteration
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_product_list_page_with_iteration(): void
     {
@@ -2167,12 +1339,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 카테고리 페이지: Breadcrumb+H1+Grid+Pagination
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_category_page_with_nested_components(): void
     {
@@ -2198,12 +1364,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 검색 결과 페이지: SearchBar+결과목록+조건부 빈결과
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_search_results_page(): void
     {
@@ -2245,12 +1405,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 로그인 폼: Form+FormField(Label+Input)+Button
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_login_page_form_structure(): void
     {
@@ -2287,12 +1441,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 게시글 페이지: 제목+작성자+본문(raw HTML)
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_article_page_with_html_content(): void
     {
@@ -2320,12 +1468,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 헤더: Logo(Img)+Nav(Ul>Li>A 반복)
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_header_navigation_structure(): void
     {
@@ -2371,12 +1513,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 푸터: 링크+저작권 텍스트
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_footer_with_links_and_copyright(): void
     {
@@ -2401,12 +1537,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 조건부 섹션: 로그인 시 마이페이지, 비로그인 시 로그인 버튼
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_page_with_conditional_sections(): void
     {
@@ -2428,12 +1558,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 전체 페이지에 걸친 데이터 바인딩
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_page_with_data_binding_throughout(): void
     {
@@ -2463,12 +1587,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 5단계 이상 중첩: Div>Section>Article>Div>P
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_deeply_nested_layout(): void
     {
@@ -2501,12 +1619,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 상품 카드 iteration 내부에 이미지+제목+가격+Badge
-     *
-     * @scenario render_concern=page_structure
-     *
-     * @effects real_page_structures_render_crawlable_html
-     *
-     * @return void 반환값 없음
      */
     public function test_complex_iteration_with_nested_children(): void
     {
@@ -2544,12 +1656,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * name 키 없음 → div fallback
-     *
-     * @scenario render_concern=edge_cases
-     *
-     * @effects edge_case_nodes_render_safely_without_errors
-     *
-     * @return void 반환값 없음
      */
     public function test_component_with_no_name(): void
     {
@@ -2560,13 +1666,7 @@ class ComponentHtmlMapperTest extends TestCase
     }
 
     /**
-     * name 이 빈 문자열("")이면 div 로 폴백합니다.
-     *
-     * @scenario render_concern=edge_cases
-     *
-     * @effects edge_case_nodes_render_safely_without_errors
-     *
-     * @return void 반환값 없음
+     * name:"" → div fallback
      */
     public function test_component_with_empty_name(): void
     {
@@ -2578,12 +1678,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text에 <script> → 이스케이프 처리
-     *
-     * @scenario render_concern=edge_cases
-     *
-     * @effects edge_case_nodes_render_safely_without_errors
-     *
-     * @return void 반환값 없음
      */
     public function test_xss_prevention_in_text(): void
     {
@@ -2596,12 +1690,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * className에 xss 시도 → 이스케이프 처리
-     *
-     * @scenario render_concern=edge_cases
-     *
-     * @effects edge_case_nodes_render_safely_without_errors
-     *
-     * @return void 반환값 없음
      */
     public function test_xss_prevention_in_attributes(): void
     {
@@ -2615,12 +1703,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * context에서 null 값 → 빈 문자열
-     *
-     * @scenario render_concern=edge_cases
-     *
-     * @effects edge_case_nodes_render_safely_without_errors
-     *
-     * @return void 반환값 없음
      */
     public function test_null_context_values(): void
     {
@@ -2632,12 +1714,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 빈 components 배열 → 빈 문자열
-     *
-     * @scenario render_concern=edge_cases
-     *
-     * @effects edge_case_nodes_render_safely_without_errors
-     *
-     * @return void 반환값 없음
      */
     public function test_empty_components_array(): void
     {
@@ -2648,12 +1724,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iteration source가 문자열 → 빈 결과 (에러 없음)
-     *
-     * @scenario render_concern=edge_cases
-     *
-     * @effects edge_case_nodes_render_safely_without_errors
-     *
-     * @return void 반환값 없음
      */
     public function test_iteration_with_non_array_data(): void
     {
@@ -2672,12 +1742,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * {{a.b.c.d.e}} 5단계 중첩 경로 → 정상 해석
-     *
-     * @scenario render_concern=edge_cases
-     *
-     * @effects edge_case_nodes_render_safely_without_errors
-     *
-     * @return void 반환값 없음
      */
     public function test_binding_with_nested_dot_path(): void
     {
@@ -2691,12 +1755,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * {{first}} {{last}} 여러 바인딩 → 모두 치환
-     *
-     * @scenario render_concern=edge_cases
-     *
-     * @effects edge_case_nodes_render_safely_without_errors
-     *
-     * @return void 반환값 없음
      */
     public function test_multiple_bindings_in_single_text(): void
     {
@@ -2710,12 +1768,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 한국어, 특수 문자 → 정상 렌더링
-     *
-     * @scenario render_concern=edge_cases
-     *
-     * @effects edge_case_nodes_render_safely_without_errors
-     *
-     * @return void 반환값 없음
      */
     public function test_special_characters_in_content(): void
     {
@@ -2734,12 +1786,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Img → <img ...> (닫힘 태그 없음)
-     *
-     * @scenario render_concern=self_closing
-     *
-     * @effects self_closing_tags_render_without_closing_tag
-     *
-     * @return void 반환값 없음
      */
     public function test_img_self_closing_no_end_tag(): void
     {
@@ -2752,12 +1798,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Input → <input ...> (닫힘 태그 없음)
-     *
-     * @scenario render_concern=self_closing
-     *
-     * @effects self_closing_tags_render_without_closing_tag
-     *
-     * @return void 반환값 없음
      */
     public function test_input_self_closing_no_end_tag(): void
     {
@@ -2770,12 +1810,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Hr, Br → <hr>, <br> (닫힘 태그 없음)
-     *
-     * @scenario render_concern=self_closing
-     *
-     * @effects self_closing_tags_render_without_closing_tag
-     *
-     * @return void 반환값 없음
      */
     public function test_hr_br_self_closing(): void
     {
@@ -2787,12 +1821,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Div, Span → 반드시 닫힘 태그 있음
-     *
-     * @scenario render_concern=self_closing
-     *
-     * @effects self_closing_tags_render_without_closing_tag
-     *
-     * @return void 반환값 없음
      */
     public function test_non_self_closing_has_end_tag(): void
     {
@@ -2812,12 +1840,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * $t:shop.title → 번역된 한국어 텍스트
-     *
-     * @scenario render_concern=translation_binding
-     *
-     * @effects translation_keys_and_bindings_resolve_in_html
-     *
-     * @return void 반환값 없음
      */
     public function test_translation_key_in_text(): void
     {
@@ -2832,12 +1854,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * $t:shop.greeting|name=홍길동 → 파라미터 치환
-     *
-     * @scenario render_concern=translation_binding
-     *
-     * @effects translation_keys_and_bindings_resolve_in_html
-     *
-     * @return void 반환값 없음
      */
     public function test_translation_with_params(): void
     {
@@ -2852,12 +1868,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 같은 페이지에 $t: 텍스트 + {{data}} 바인딩 공존
-     *
-     * @scenario render_concern=translation_binding
-     *
-     * @effects translation_keys_and_bindings_resolve_in_html
-     *
-     * @return void 반환값 없음
      */
     public function test_binding_and_translation_mixed(): void
     {
@@ -2877,12 +1887,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 존재하지 않는 번역 키 → 빈 문자열 (raw key 노출 방지)
-     *
-     * @scenario render_concern=translation_binding
-     *
-     * @effects translation_keys_and_bindings_resolve_in_html
-     *
-     * @return void 반환값 없음
      */
     public function test_missing_translation_key_empty_string(): void
     {
@@ -2899,12 +1903,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * responsive.desktop의 props가 기본 props에 병합됩니다.
-     *
-     * @scenario render_concern=responsive_props
-     *
-     * @effects responsive_desktop_props_are_merged
-     *
-     * @return void 반환값 없음
      */
     public function test_responsive_desktop_props_merged(): void
     {
@@ -2931,12 +1929,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * responsive.desktop의 if 조건이 적용됩니다.
-     *
-     * @scenario render_concern=responsive_props
-     *
-     * @effects responsive_desktop_props_are_merged
-     *
-     * @return void 반환값 없음
      */
     public function test_responsive_desktop_if_override(): void
     {
@@ -2963,12 +1955,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * responsive.desktop의 text 속성이 적용됩니다.
-     *
-     * @scenario render_concern=responsive_props
-     *
-     * @effects responsive_desktop_props_are_merged
-     *
-     * @return void 반환값 없음
      */
     public function test_responsive_desktop_text_override(): void
     {
@@ -2992,12 +1978,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * responsive에 desktop이 없으면 기본 속성이 유지됩니다.
-     *
-     * @scenario render_concern=responsive_props
-     *
-     * @effects responsive_desktop_props_are_merged
-     *
-     * @return void 반환값 없음
      */
     public function test_responsive_without_desktop_keeps_defaults(): void
     {
@@ -3028,12 +2008,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon의 name prop이 Font Awesome class로 변환됩니다.
-     *
-     * @scenario render_concern=icon_class
-     *
-     * @effects icon_names_convert_to_css_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_icon_name_to_font_awesome_class(): void
     {
@@ -3052,12 +2026,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon의 name이 바인딩 표현식인 경우 평가 후 변환합니다.
-     *
-     * @scenario render_concern=icon_class
-     *
-     * @effects icon_names_convert_to_css_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_icon_name_binding_evaluated(): void
     {
@@ -3075,12 +2043,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon의 fa- 접두사가 중복 방지됩니다.
-     *
-     * @scenario render_concern=icon_class
-     *
-     * @effects icon_names_convert_to_css_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_icon_fa_prefix_dedup(): void
     {
@@ -3099,12 +2061,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon의 기존 className이 name_to_class 결과와 병합됩니다.
-     *
-     * @scenario render_concern=icon_class
-     *
-     * @effects icon_names_convert_to_css_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_icon_classname_merged(): void
     {
@@ -3122,12 +2078,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon에 aria-label과 role이 자동 생성됩니다.
-     *
-     * @scenario render_concern=icon_class
-     *
-     * @effects icon_names_convert_to_css_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_icon_accessibility_attrs(): void
     {
@@ -3146,12 +2096,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon name이 빈 문자열이면 변환하지 않습니다.
-     *
-     * @scenario render_concern=icon_class
-     *
-     * @effects icon_names_convert_to_css_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_icon_empty_name_no_transform(): void
     {
@@ -3173,12 +2117,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Header가 text_format으로 site_name을 렌더링합니다.
-     *
-     * @scenario render_concern=text_format
-     *
-     * @effects text_format_mode_renders_composed_text
-     *
-     * @return void 반환값 없음
      */
     public function test_header_renders_site_name(): void
     {
@@ -3198,12 +2136,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Header에 site_name 미전달 시 기본값 G7이 사용됩니다.
-     *
-     * @scenario render_concern=text_format
-     *
-     * @effects text_format_mode_renders_composed_text
-     *
-     * @return void 반환값 없음
      */
     public function test_header_default_site_name(): void
     {
@@ -3221,12 +2153,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Footer가 copyright 포맷으로 렌더링됩니다.
-     *
-     * @scenario render_concern=text_format
-     *
-     * @effects text_format_mode_renders_composed_text
-     *
-     * @return void 반환값 없음
      */
     public function test_footer_renders_copyright(): void
     {
@@ -3247,12 +2173,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Footer에 site_name 미전달 시 기본값 G7이 사용됩니다.
-     *
-     * @scenario render_concern=text_format
-     *
-     * @effects text_format_mode_renders_composed_text
-     *
-     * @return void 반환값 없음
      */
     public function test_footer_default_site_name(): void
     {
@@ -3274,10 +2194,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * url 필드가 비어있을 때 download_url로 fallback합니다.
-     *
-     * @effects download_url_falls_back_to_api_path_when_direct_unavailable
-     *
-     * @return void 반환값 없음
      */
     public function test_image_gallery_download_url_fallback(): void
     {
@@ -3318,11 +2234,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * url 필드가 존재하면 download_url보다 우선합니다.
-     * (공개 자산 디스크 설정 시 download_url 이 직접 CDN URL 이어도 동일 경로로 소비)
-     *
-     * @effects download_url_falls_back_to_api_path_when_direct_unavailable
-     *
-     * @return void 반환값 없음
      */
     public function test_image_gallery_url_takes_priority(): void
     {
@@ -3355,130 +2266,7 @@ class ComponentHtmlMapperTest extends TestCase
     }
 
     /**
-     * download_url 이 절대 CDN URL 일 때(공개 자산 디스크 설정) iterate 가드가
-     * url() 이중 접두 없이 그대로 통과시킵니다.
-     *
-     * 공개#100 이후 download_url 은 상대 API 경로만이 아니라 절대 CDN URL 일 수
-     * 있다 — 가드가 http 프리픽스를 오판하면 `http://origin/https://cdn...` 처럼
-     * 깨진 src 가 봇 화면에 나간다.
-     *
-     * @effects seo_guard_passes_absolute_cdn_url_unmodified
-     *
-     * @return void 반환값 없음
-     */
-    public function test_image_gallery_absolute_cdn_download_url_passes_unmodified(): void
-    {
-        $components = [
-            [
-                'name' => 'ProductImageViewer',
-                'props' => [
-                    'images' => '{{product.images}}',
-                ],
-            ],
-        ];
-
-        $context = [
-            'product' => [
-                'images' => [
-                    [
-                        'url' => '',
-                        'download_url' => 'https://cdn.test/assets/sirsoft-ecommerce/images/products/1/a.jpg',
-                        'alt_text_current' => 'CDN 이미지',
-                    ],
-                ],
-            ],
-        ];
-
-        $html = $this->render($components, $context);
-
-        $this->assertStringContainsString(
-            'src="https://cdn.test/assets/sirsoft-ecommerce/images/products/1/a.jpg"',
-            $html,
-        );
-        // url() 이중 접두 회귀 방어 — 절대 URL 앞에 오리진이 덧붙으면 안 된다
-        $this->assertStringNotContainsString('/https://cdn.test/', $html);
-    }
-
-    /**
-     * ProductCard(fields attrs 가드)의 thumbnail_url 이 절대 CDN URL 일 때
-     * 그대로 통과하고, 상대 경로일 때만 절대화됩니다.
-     *
-     * @effects seo_guard_passes_absolute_cdn_url_unmodified
-     *
-     * @return void 반환값 없음
-     */
-    public function test_product_card_thumbnail_absolute_cdn_url_passes_unmodified(): void
-    {
-        $components = [
-            [
-                'type' => 'composite',
-                'name' => 'ProductCard',
-                'props' => ['product' => '{{product}}'],
-            ],
-        ];
-
-        $context = [
-            'product' => [
-                'id' => 7,
-                'name' => 'CDN Thumb',
-                'name_localized' => 'CDN 썸네일 상품',
-                'thumbnail_url' => 'https://cdn.test/assets/sirsoft-ecommerce/images/products/7/t.jpg',
-                'selling_price_formatted' => '1,000원',
-                'list_price_formatted' => '1,000원',
-                'discount_rate' => 0,
-                'primary_category' => '',
-                'brand_name' => '',
-                'sales_status' => '',
-                'sales_status_label' => '',
-                'labels' => [],
-            ],
-        ];
-
-        $html = $this->render($components, $context);
-
-        $this->assertStringContainsString(
-            'src="https://cdn.test/assets/sirsoft-ecommerce/images/products/7/t.jpg"',
-            $html,
-        );
-        $this->assertStringNotContainsString('/https://cdn.test/', $html);
-
-        // 대조군 — 상대 경로는 여전히 절대화된다 (가드의 양방향 동작 고정)
-        //
-        // 기대값을 `url()` 로 적지 않는다. 그 헬퍼는 **요청이 실어 온 호스트**를 오리진으로
-        // 쓰는데, 봇에게 나가는 자산 주소는 요청 호스트가 아니라 사이트가 선언한 오리진
-        // (`config('app.url')`)이어야 한다 — 대체 호스트명으로 들어온 봇이 그 호스트의
-        // 주소를 색인해 가면 안 되기 때문이다. 그래서 절대화 주체가
-        // `AssetUrl::absolute()` 로 바뀌었다.
-        //
-        // 기대값은 두 헬퍼 어느 쪽에도 기대지 않고 **성질**로 적는다 — 그래야 절대화
-        // 주체가 또 바뀌어도 이 단언이 자기충족으로 통과하지 않는다.
-        $context['product']['thumbnail_url'] = '/storage/products/rel.jpg';
-        $relativeHtml = $this->render($components, $context);
-
-        $this->assertSame(
-            1,
-            preg_match('/src="(https?:\/\/[^"]+)"/', $relativeHtml, $m),
-            '상대 경로 썸네일이 절대 URL 로 바뀌지 않았다',
-        );
-        $this->assertStringEndsWith('/storage/products/rel.jpg', $m[1]);
-        $this->assertStringContainsString(
-            (string) parse_url((string) config('app.url'), PHP_URL_HOST),
-            $m[1],
-            '봇 자산 주소의 오리진이 사이트가 선언한 오리진이 아니다',
-        );
-
-        // 사이트 주소(app.url) 기준 절대화 — SeoUrl(= SiteUrl) 과 같은 값이다
-        $this->assertStringContainsString('src="'.SeoUrl::absolute('/storage/products/rel.jpg').'"', $relativeHtml);
-    }
-
-    /**
      * alt_text_current 필드로 alt 속성이 렌더링됩니다.
-     *
-     * @scenario render_concern=image_src_fallback
-     *
-     * @effects image_alt_text_follows_the_current_field
-     *
-     * @return void 반환값 없음
      */
     public function test_image_gallery_alt_text_current_field(): void
     {
@@ -3509,666 +2297,6 @@ class ComponentHtmlMapperTest extends TestCase
 
         $this->assertStringContainsString('alt="현재 로케일 대체 텍스트"', $html);
         $this->assertStringContainsString('alt="기본 대체 텍스트"', $html);
-    }
-
-    // =========================================================================
-    // React 렌더러 패리티 — 노드 문법 (condition/conditions/iterator/text/responsive/if)
-    // =========================================================================
-
-    /**
-     * condition 속성이 if의 별칭으로 동작합니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_condition_property_acts_as_if_alias(): void
-    {
-        $shown = $this->render([
-            ['type' => 'basic', 'name' => 'Div', 'condition' => '{{flag}}', 'text' => '보임'],
-        ], ['flag' => true]);
-
-        $hidden = $this->render([
-            ['type' => 'basic', 'name' => 'Div', 'condition' => '{{flag}}', 'text' => '숨김'],
-        ], ['flag' => false]);
-
-        $this->assertStringContainsString('보임', $shown);
-        $this->assertSame('', $hidden);
-    }
-
-    /**
-     * conditions AND 그룹은 모든 조건이 참일 때만 렌더링됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_conditions_and_group(): void
-    {
-        $component = [
-            'type' => 'basic',
-            'name' => 'Div',
-            'conditions' => ['and' => ['{{a}}', '{{b}}']],
-            'text' => '표시',
-        ];
-
-        $this->assertStringContainsString('표시', $this->render([$component], ['a' => true, 'b' => true]));
-        $this->assertSame('', $this->render([$component], ['a' => true, 'b' => false]));
-    }
-
-    /**
-     * conditions OR 그룹은 하나라도 참이면 렌더링됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_conditions_or_group(): void
-    {
-        $component = [
-            'type' => 'basic',
-            'name' => 'Div',
-            'conditions' => ['or' => ['{{a}}', '{{b}}']],
-            'text' => '표시',
-        ];
-
-        $this->assertStringContainsString('표시', $this->render([$component], ['a' => false, 'b' => true]));
-        $this->assertSame('', $this->render([$component], ['a' => false, 'b' => false]));
-    }
-
-    /**
-     * conditions 중첩 그룹(AND 안의 OR)이 평가됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_conditions_nested_group(): void
-    {
-        $component = [
-            'type' => 'basic',
-            'name' => 'Div',
-            'conditions' => ['and' => ['{{a}}', ['or' => ['{{b}}', '{{c}}']]]],
-            'text' => '표시',
-        ];
-
-        $this->assertStringContainsString('표시', $this->render([$component], ['a' => true, 'b' => false, 'c' => true]));
-        $this->assertSame('', $this->render([$component], ['a' => true, 'b' => false, 'c' => false]));
-    }
-
-    /**
-     * conditions if/else 체인은 하나라도 매칭되면 렌더링됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_conditions_branch_chain(): void
-    {
-        $component = [
-            'type' => 'basic',
-            'name' => 'Div',
-            'conditions' => [
-                ['if' => "{{role === 'admin'}}"],
-                ['if' => "{{role === 'manager'}}"],
-            ],
-            'text' => '표시',
-        ];
-
-        $this->assertStringContainsString('표시', $this->render([$component], ['role' => 'manager']));
-        $this->assertSame('', $this->render([$component], ['role' => 'guest']));
-    }
-
-    /**
-     * conditions if/else 체인의 else 브랜치(if 없음)는 항상 매칭됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_conditions_else_branch_always_matches(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'conditions' => [['if' => '{{never}}'], []],
-                'text' => '표시',
-            ],
-        ], ['never' => false]);
-
-        $this->assertStringContainsString('표시', $html);
-    }
-
-    /**
-     * 빈 AND 그룹은 true, 빈 OR 그룹은 false 로 평가됩니다 (React와 동일).
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_conditions_empty_groups(): void
-    {
-        $and = $this->render([
-            ['type' => 'basic', 'name' => 'Div', 'conditions' => ['and' => []], 'text' => 'AND'],
-        ]);
-        $or = $this->render([
-            ['type' => 'basic', 'name' => 'Div', 'conditions' => ['or' => []], 'text' => 'OR'],
-        ]);
-
-        $this->assertStringContainsString('AND', $and);
-        $this->assertSame('', $or);
-    }
-
-    /**
-     * type: "iterator" 노드가 iteration 으로 변환되어 반복 렌더링됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_iterator_type_is_converted_to_iteration(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'iterator',
-                'name' => 'Div',
-                'data' => '{{items}}',
-                'itemName' => 'entry',
-                'children' => [
-                    ['type' => 'basic', 'name' => 'Span', 'text' => '{{entry.label}}'],
-                ],
-            ],
-        ], ['items' => [['label' => '하나'], ['label' => '둘']]]);
-
-        $this->assertStringContainsString('하나', $html);
-        $this->assertStringContainsString('둘', $html);
-    }
-
-    /**
-     * type: "iterator" 의 itemName 을 생략하면 기본 별칭 item 이 사용됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_iterator_type_defaults_item_var(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'iterator',
-                'name' => 'Div',
-                'data' => '{{items}}',
-                'children' => [
-                    ['type' => 'basic', 'name' => 'Span', 'text' => '{{item.label}}'],
-                ],
-            ],
-        ], ['items' => [['label' => '기본별칭']]]);
-
-        $this->assertStringContainsString('기본별칭', $html);
-    }
-
-    /**
-     * children 배열 내 문자열은 텍스트 노드로 출력됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_string_child_is_rendered_as_text_node(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'children' => ['문자열 조각', ['type' => 'basic', 'name' => 'Span', 'text' => '요소']],
-            ],
-        ]);
-
-        $this->assertStringContainsString('문자열 조각', $html);
-        $this->assertStringContainsString('<span>요소</span>', $html);
-    }
-
-    /**
-     * children 배열 내 문자열은 HTML 이스케이프되어 출력됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_string_child_is_escaped(): void
-    {
-        $html = $this->render([
-            ['type' => 'basic', 'name' => 'Div', 'children' => ['<b>굵게</b>']],
-        ]);
-
-        $this->assertStringContainsString('&lt;b&gt;', $html);
-        $this->assertStringNotContainsString('<b>', $html);
-    }
-
-    /**
-     * children 배열 내 문자열의 표현식은 해석하지 않고 리터럴로 둡니다.
-     *
-     * React DynamicRenderer 가 문자열 자식을 그대로 반환하므로(표현식 미해석),
-     * SEO 가 해석하면 반대 방향의 패리티 격차가 생깁니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_string_child_expression_is_not_resolved(): void
-    {
-        $html = $this->render([
-            ['type' => 'basic', 'name' => 'Div', 'children' => ['{{value}}']],
-        ], ['value' => '해석되면 안 됨']);
-
-        $this->assertStringContainsString('{{value}}', $html);
-        $this->assertStringNotContainsString('해석되면 안 됨', $html);
-    }
-
-    /**
-     * text 와 children 이 함께 있으면 text 가 우선합니다 (React와 동일 우선순위).
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_node_text_takes_precedence_over_children(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'text' => '텍스트 우선',
-                'children' => [['type' => 'basic', 'name' => 'Span', 'text' => '자식']],
-            ],
-        ]);
-
-        $this->assertStringContainsString('텍스트 우선', $html);
-        $this->assertStringNotContainsString('자식', $html);
-    }
-
-    /**
-     * text 키가 있으면 해석 결과가 비어도 children 으로 폴백하지 않습니다.
-     *
-     * React 는 `text !== undefined` 인 순간 children 경로로 내려가지 않는다
-     * (DynamicRenderer.tsx:2591,2639). 폴백하면 봇 화면에만 없는 내용이 나타난다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_empty_node_text_does_not_fall_back_to_children(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'text' => '{{missing.path}}',
-                'children' => [['type' => 'basic', 'name' => 'Span', 'text' => '자식폴백']],
-            ],
-        ], ['other' => 'x']);
-
-        $this->assertStringNotContainsString('자식폴백', $html);
-    }
-
-    /**
-     * `?? '$t:key'` 폴백으로 나온 번역 토큰이 text 에서 해석됩니다.
-     *
-     * bool/null 판정 때문에 text 해석 경로를 바꾸더라도, 파이프·인라인 `$t:` 후처리를
-     * 건너뛰면 안 된다 — 건너뛰면 봇 화면에 `$t:home.welcome_description` 이 그대로 남는다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_translation_token_in_fallback_literal_is_resolved_in_node_text(): void
-    {
-        $this->evaluator->setTranslations(['home.welcome_description' => '환영합니다']);
-
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'P',
-                'text' => "{{settings?.site_description ?? '\$t:home.welcome_description'}}",
-            ],
-        ], ['settings' => []]);
-
-        $this->assertStringContainsString('환영합니다', $html);
-        $this->assertStringNotContainsString('$t:', $html);
-    }
-
-    /**
-     * bool / null 로 평가되는 text 는 렌더되지 않습니다 (JSX 시맨틱).
-     *
-     * React 는 단일 바인딩 text 를 raw 값으로 받아 그대로 자식에 넘기므로 {false} 가
-     * 화면에 나오지 않는다. 문자열화하면 봇 화면에만 'false' 라는 글자가 노출된다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_boolean_and_null_node_text_are_not_rendered(): void
-    {
-        $context = ['flags' => ['on' => true, 'off' => false, 'nothing' => null]];
-
-        foreach (['{{flags.off}}' => 'false', '{{flags.on}}' => 'true'] as $expression => $forbidden) {
-            $html = $this->render([
-                ['type' => 'basic', 'name' => 'Span', 'text' => $expression],
-            ], $context);
-
-            $this->assertStringNotContainsString($forbidden, $html, "text={$expression} 가 문자열로 노출되었습니다.");
-        }
-
-        $html = $this->render([
-            ['type' => 'basic', 'name' => 'Span', 'text' => '{{flags.nothing}}'],
-        ], $context);
-
-        $this->assertStringNotContainsString('null', $html);
-    }
-
-    /**
-     * 알 수 없는 conditions 형식은 렌더링됩니다 (React evaluateRenderCondition 동형).
-     *
-     * 여기서 숨기면 봇 화면에서만 노드가 사라진다 — #86 과 동일한 실패 모드.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_unknown_conditions_format_still_renders(): void
-    {
-        $cases = [
-            '빈 배열' => [],
-            '문자열 리스트' => ['{{flag}}'],
-            'if/then 없는 객체 리스트' => [['foo' => 1]],
-            'and/or 없는 객체' => ['foo' => 1],
-        ];
-
-        foreach ($cases as $label => $conditions) {
-            $html = $this->render([
-                [
-                    'type' => 'basic',
-                    'name' => 'Span',
-                    'conditions' => $conditions,
-                    'text' => '렌더됨',
-                ],
-            ], ['flag' => true]);
-
-            $this->assertStringContainsString('렌더됨', $html, "conditions={$label} 이 숨겨졌습니다.");
-        }
-    }
-
-    /**
-     * 데스크톱에 매칭되는 responsive 키가 여러 개면 커스텀 범위가 프리셋을 이깁니다.
-     *
-     * React ResponsiveManager::getMatchingKey() 와 동일한 우선순위. 매칭 키를 전부
-     * 순차 병합하면 JSON 키 선언 순서에 따라 봇 화면 출력이 달라진다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_responsive_custom_range_wins_over_preset(): void
-    {
-        $node = [
-            'type' => 'basic',
-            'name' => 'Div',
-            'text' => '기본',
-            'responsive' => [
-                'desktop' => ['text' => '프리셋'],
-                '1024-' => ['text' => '커스텀'],
-            ],
-        ];
-
-        $this->assertStringContainsString('커스텀', $this->render([$node]));
-
-        // 선언 순서를 뒤집어도 결과가 같아야 한다
-        $node['responsive'] = [
-            '1024-' => ['text' => '커스텀'],
-            'desktop' => ['text' => '프리셋'],
-        ];
-
-        $html = $this->render([$node]);
-        $this->assertStringContainsString('커스텀', $html);
-        $this->assertStringNotContainsString('프리셋', $html);
-    }
-
-    /**
-     * 커스텀 범위끼리는 좁은 범위가 넓은 범위를 이깁니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_responsive_narrower_range_wins(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'text' => '기본',
-                'responsive' => [
-                    '1024-' => ['text' => '넓은범위'],
-                    '1024-1279' => ['text' => '좁은범위'],
-                ],
-            ],
-        ]);
-
-        $this->assertStringContainsString('좁은범위', $html);
-        $this->assertStringNotContainsString('넓은범위', $html);
-    }
-
-    /**
-     * min > max 인 잘못된 범위 키는 무시됩니다 (React parseRange 와 동일).
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_responsive_invalid_range_key_is_ignored(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'text' => '기본',
-                'responsive' => [
-                    '1500-1000' => ['text' => '잘못된범위'],
-                ],
-            ],
-        ]);
-
-        $this->assertStringContainsString('기본', $html);
-        $this->assertStringNotContainsString('잘못된범위', $html);
-    }
-
-    /**
-     * responsive.desktop 의 children 오버라이드가 적용됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_responsive_desktop_children_override(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'children' => [['type' => 'basic', 'name' => 'Span', 'text' => '기본자식']],
-                'responsive' => [
-                    'desktop' => [
-                        'children' => [['type' => 'basic', 'name' => 'Span', 'text' => '데스크톱자식']],
-                    ],
-                ],
-            ],
-        ]);
-
-        $this->assertStringContainsString('데스크톱자식', $html);
-        $this->assertStringNotContainsString('기본자식', $html);
-    }
-
-    /**
-     * responsive.desktop 의 iteration 오버라이드가 적용됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_responsive_desktop_iteration_override(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'responsive' => [
-                    'desktop' => [
-                        'iteration' => ['source' => '{{items}}', 'item_var' => 'row'],
-                    ],
-                ],
-                'children' => [['type' => 'basic', 'name' => 'Span', 'text' => '{{row.label}}']],
-            ],
-        ], ['items' => [['label' => 'A'], ['label' => 'B']]]);
-
-        $this->assertSame(2, substr_count($html, '<span>'));
-    }
-
-    /**
-     * 데스크톱 폭을 포함하는 숫자 범위 responsive 키가 적용됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_responsive_numeric_range_matching_desktop_is_applied(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'text' => '기본',
-                'responsive' => ['1024-' => ['text' => '넓은화면']],
-            ],
-        ]);
-
-        $this->assertStringContainsString('넓은화면', $html);
-    }
-
-    /**
-     * 데스크톱 폭 밖의 responsive 키(모바일/좁은 범위)는 무시됩니다.
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_responsive_non_desktop_breakpoints_are_ignored(): void
-    {
-        $html = $this->render([
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'text' => '기본',
-                'responsive' => [
-                    'mobile' => ['text' => '모바일'],
-                    'portable' => ['text' => '포터블'],
-                    '0-639' => ['text' => '좁은화면'],
-                ],
-            ],
-        ]);
-
-        $this->assertStringContainsString('기본', $html);
-        $this->assertStringNotContainsString('모바일', $html);
-        $this->assertStringNotContainsString('포터블', $html);
-        $this->assertStringNotContainsString('좁은화면', $html);
-    }
-
-    /**
-     * if 결과 문자열 "null" / "undefined" 는 거짓으로 판정됩니다 (React와 동일).
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_if_treats_null_and_undefined_strings_as_falsy(): void
-    {
-        foreach (['null', 'undefined', 'NULL', ' false ', '0'] as $value) {
-            $html = $this->render([
-                ['type' => 'basic', 'name' => 'Div', 'if' => '{{flag}}', 'text' => '표시'],
-            ], ['flag' => $value]);
-
-            $this->assertSame('', $html, "if 값 '{$value}' 는 거짓이어야 합니다.");
-        }
-    }
-
-    /**
-     * if 결과가 참이면 정상 렌더링됩니다 (거짓 목록 확장의 회귀 방지).
-     *
-     * @scenario render_concern=renderer_parity
-     *
-     * @effects node_grammar_matches_the_react_renderer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_if_truthy_values_still_render(): void
-    {
-        foreach ([true, 'yes', '1', 'nullable'] as $value) {
-            $html = $this->render([
-                ['type' => 'basic', 'name' => 'Div', 'if' => '{{flag}}', 'text' => '표시'],
-            ], ['flag' => $value]);
-
-            $this->assertStringContainsString('표시', $html);
-        }
     }
 
     // =========================================================================
@@ -4218,12 +2346,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text_props 설정에 따라 텍스트를 추출합니다.
-     *
-     * @scenario render_concern=config_props
-     *
-     * @effects config_text_props_attr_map_and_allowed_attrs_apply
-     *
-     * @return void 반환값 없음
      */
     public function test_text_props_from_config(): void
     {
@@ -4241,12 +2363,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text_props가 빈 배열이면 텍스트를 추출하지 않습니다.
-     *
-     * @scenario render_concern=config_props
-     *
-     * @effects config_text_props_attr_map_and_allowed_attrs_apply
-     *
-     * @return void 반환값 없음
      */
     public function test_empty_text_props_no_text_output(): void
     {
@@ -4266,12 +2382,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text_props 순서가 텍스트 추출 우선순위를 결정합니다.
-     *
-     * @scenario render_concern=config_props
-     *
-     * @effects config_text_props_attr_map_and_allowed_attrs_apply
-     *
-     * @return void 반환값 없음
      */
     public function test_custom_text_props_order(): void
     {
@@ -4296,12 +2406,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * attr_map에 따라 className이 class로 변환됩니다.
-     *
-     * @scenario render_concern=config_props
-     *
-     * @effects config_text_props_attr_map_and_allowed_attrs_apply
-     *
-     * @return void 반환값 없음
      */
     public function test_attr_map_from_config(): void
     {
@@ -4323,12 +2427,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 커스텀 attr_map으로 추가 매핑이 가능합니다.
-     *
-     * @scenario render_concern=config_props
-     *
-     * @effects config_text_props_attr_map_and_allowed_attrs_apply
-     *
-     * @return void 반환값 없음
      */
     public function test_custom_attr_map(): void
     {
@@ -4357,12 +2455,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * allowed_attrs에 포함된 속성만 출력됩니다.
-     *
-     * @scenario render_concern=config_props
-     *
-     * @effects config_text_props_attr_map_and_allowed_attrs_apply
-     *
-     * @return void 반환값 없음
      */
     public function test_allowed_attrs_from_config(): void
     {
@@ -4389,12 +2481,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * allowed_attrs가 빈 배열이면 속성을 출력하지 않습니다.
-     *
-     * @scenario render_concern=config_props
-     *
-     * @effects config_text_props_attr_map_and_allowed_attrs_apply
-     *
-     * @return void 반환값 없음
      */
     public function test_empty_allowed_attrs_no_attributes(): void
     {
@@ -4423,12 +2509,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 커스텀 속성(data-* 등)을 허용 목록에 추가할 수 있습니다.
-     *
-     * @scenario render_concern=config_props
-     *
-     * @effects config_text_props_attr_map_and_allowed_attrs_apply
-     *
-     * @return void 반환값 없음
      */
     public function test_extra_allowed_attrs(): void
     {
@@ -4462,12 +2542,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Button + 정적 path navigate → <a href="/login"> 변환을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_button_static_path(): void
     {
@@ -4490,12 +2564,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Div + navigate → <a>로 래핑을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_div_wrapping(): void
     {
@@ -4520,12 +2588,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 동적 path (데이터소스 컨텍스트) 해석을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_dynamic_path_from_context(): void
     {
@@ -4547,12 +2609,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * navigate + query params → 쿼리스트링 빌드를 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_with_query_params(): void
     {
@@ -4579,12 +2635,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * replace: true인 navigate → 링크 미생성을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_replace_true_skipped(): void
     {
@@ -4606,12 +2656,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * sequence 내 navigate 추출을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_in_sequence(): void
     {
@@ -4639,12 +2683,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 미해석 _global 표현식 → 링크 생성 skip을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_unresolved_global_skipped(): void
     {
@@ -4667,12 +2705,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * globalResolver로 _global.shopBase 해석을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_global_resolver(): void
     {
@@ -4701,12 +2733,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * A 컴포넌트 + 기존 href 있음 → navigate 무시(스킵)를 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_a_tag_existing_href_skipped(): void
     {
@@ -4729,12 +2755,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * A 컴포넌트 + href 없음 + navigate → href 주입을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_a_tag_no_href_inject(): void
     {
@@ -4757,12 +2777,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * click 외 이벤트(keydown) → navigate 무시를 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_non_click_event_ignored(): void
     {
@@ -4784,12 +2798,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iteration 내 navigate → 각 아이템별 다른 href 생성을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_in_iteration(): void
     {
@@ -4824,12 +2832,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Button 변환 시 class 보존을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_button_preserves_class(): void
     {
@@ -4853,12 +2855,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * self-closing 태그(Img) + navigate → <a>로 래핑을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_navigate_self_closing_wrapping(): void
     {
@@ -4880,12 +2876,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * openWindow → target="_blank" 자동 부여를 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_open_window_target_blank(): void
     {
@@ -4908,12 +2898,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * sequence 내 openWindow 추출을 검증합니다.
-     *
-     * @scenario render_concern=navigate_links
-     *
-     * @effects navigate_actions_render_as_crawlable_links
-     *
-     * @return void 반환값 없음
      */
     public function test_open_window_in_sequence(): void
     {
@@ -4945,12 +2929,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: ProductCard에서 상품 객체의 주요 필드가 HTML로 렌더링되는지 확인합니다.
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_renders_product_card_basic_fields(): void
     {
@@ -5031,12 +3009,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: 할인율 없는 상품에서 원가/할인율이 렌더링되지 않는지 확인합니다.
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_conditional_fields_hidden_when_empty(): void
     {
@@ -5091,12 +3063,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: name_localized가 없으면 name으로 fallback되는지 확인합니다.
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_field_pattern_fallback(): void
     {
@@ -5129,12 +3095,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: 소스 객체가 빈 경우 빈 article 태그만 렌더링되는지 확인합니다.
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_empty_source_renders_empty(): void
     {
@@ -5156,12 +3116,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: 여러 상품이 iteration으로 반복 렌더링되는지 확인합니다.
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_multiple_products_via_iteration(): void
     {
@@ -5227,12 +3181,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 각 필드 항목 사이에 줄바꿈이 삽입됩니다.
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_entries_separated_by_newlines(): void
     {
@@ -5273,12 +3221,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: children 그룹핑 — <p> 래퍼 내 <span> 2개 정상 렌더링
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_children_grouping(): void
     {
@@ -5313,12 +3255,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: children 그룹핑 — 모든 자식이 조건부+빈값이면 <p> 태그 미출력
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_children_all_empty(): void
     {
@@ -5356,12 +3292,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: link 래핑 — <a href="/products/42"> 전체 필드 래핑
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_link_wrapping(): void
     {
@@ -5393,12 +3323,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: link + $var:shopBase → /shop/products/1
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_link_with_var_base_url(): void
     {
@@ -5431,12 +3355,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: seoVars 미설정 시 $var: base_url은 빈 문자열, href만 사용
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_link_no_var_fallback(): void
     {
@@ -5468,161 +3386,7 @@ class ComponentHtmlMapperTest extends TestCase
     }
 
     /**
-     * fields 모드: link base_url `$prop:shopBase` 는 그 컴포넌트가 받은 shopBase prop 을 화면처럼 평가해 쓴다.
-     *
-     * 화면 ProductCard 는 `shopBase` prop 으로 상세 경로 앞머리를 정한다. 봇 화면이 화면마다 meta.seo.vars 를
-     * 따로 두어야만 맞던 것(홈·검색은 vars 가 없어 `/products/…` 404)을 컴포넌트 prop 하나로 맞춘다.
-     * 빈 문자열(상점을 루트에 붙인 사이트)도 값이고, prop 이 없으면 앞머리 없이 href 만 쓴다.
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
-     */
-    public function test_fields_mode_link_prop_base_url_uses_component_prop(): void
-    {
-        $this->mapper->setRenderModes([
-            'test_link_prop' => [
-                'type' => 'fields',
-                'source' => '$props_source',
-                'link' => ['href' => '/products/{product_code|id}', 'base_url' => '$prop:shopBase'],
-                'fields' => [
-                    ['tag' => 'h3', 'content' => '{name}'],
-                ],
-            ],
-        ]);
-        $this->mapper->setComponentMap([
-            'TestComp' => ['tag' => 'article', 'render' => 'test_link_prop', 'props_source' => 'item'],
-        ]);
-
-        $withProp = [
-            ['type' => 'composite', 'name' => 'TestComp', 'props' => ['item' => '{{item}}', 'shopBase' => "{{_global.shopBase ?? '/shop'}}"]],
-        ];
-        $item = ['id' => 1, 'product_code' => 'P1', 'name' => '상품'];
-
-        $this->assertStringContainsString('<a href="/mall/products/P1">', $this->render($withProp, ['item' => $item, '_global' => ['shopBase' => '/mall']]));
-        $this->assertStringContainsString('<a href="/products/P1">', $this->render($withProp, ['item' => $item, '_global' => ['shopBase' => '']]));
-        $this->assertStringContainsString('<a href="/shop/products/P1">', $this->render($withProp, ['item' => $item, '_global' => []]));
-
-        // seoVars 가 다른 값을 들고 있어도 컴포넌트 prop 이 우선이다(같은 렌더 안의 한 출처)
-        $this->mapper->setSeoVars(['shopBase' => 'stale']);
-        $this->assertStringContainsString('<a href="/mall/products/P1">', $this->render($withProp, ['item' => $item, '_global' => ['shopBase' => '/mall']]));
-
-        $withoutProp = [
-            ['type' => 'composite', 'name' => 'TestComp', 'props' => ['item' => '{{item}}']],
-        ];
-        $this->assertStringContainsString('<a href="/products/P1">', $this->render($withoutProp, ['item' => $item]));
-    }
-
-    /**
-     * fields 모드: link base_url `$global:key` 는 렌더 문맥의 `_global.key` 를 먼저 읽는다(빈 문자열도 값).
-     *
-     * 종전에는 globalResolver(모듈·플러그인 설정 식 전용)만 봐서 문서 예시 `$global:shopBase` 가 언제나 빈 값이었다.
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
-     */
-    public function test_fields_mode_link_global_base_url_reads_render_context(): void
-    {
-        $this->mapper->setRenderModes([
-            'test_link_global' => [
-                'type' => 'fields',
-                'source' => '$props_source',
-                'link' => ['href' => '/products/{id}', 'base_url' => '$global:shopBase'],
-                'fields' => [
-                    ['tag' => 'h3', 'content' => '{name}'],
-                ],
-            ],
-        ]);
-        $this->mapper->setComponentMap([
-            'TestComp' => ['tag' => 'div', 'render' => 'test_link_global', 'props_source' => 'item'],
-        ]);
-        $this->mapper->setGlobalResolver(fn (string $expr): ?string => 'resolver');
-
-        $components = [
-            ['type' => 'composite', 'name' => 'TestComp', 'props' => ['item' => '{{item}}']],
-        ];
-        $item = ['id' => 7, 'name' => '상품'];
-
-        $this->assertStringContainsString('<a href="/mall/products/7">', $this->render($components, ['item' => $item, '_global' => ['shopBase' => '/mall']]));
-        $this->assertStringContainsString('<a href="/products/7">', $this->render($components, ['item' => $item, '_global' => ['shopBase' => '']]));
-        // 문맥에 키가 없으면 종전처럼 globalResolver
-        $this->assertStringContainsString('<a href="/resolver/products/7">', $this->render($components, ['item' => $item, '_global' => []]));
-    }
-
-    /**
-     * fields 모드: img 항목의 `thumbPreset` 은 템플릿 Img 와 같이 src 를 썸네일 주소로, srcset 을 2배 밀도로 낸다.
-     *
-     * ProductCard 처럼 fields 로 그리는 컴포지트는 Img props 경로(buildAttributes)를 지나지 않아 원본 주소가
-     * 나갔다. 그 자체는 속성으로 나가지 않고, 레이아웃이 srcset 을 직접 적었으면 그 값을 존중한다.
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects img_thumb_preset_renders_thumbnail_src
-     *
-     * @return void 반환값 없음
-     */
-    public function test_fields_mode_img_thumb_preset_renders_thumbnail_src_and_srcset(): void
-    {
-        $this->prepareThumbnailRendering();
-
-        $this->mapper->setRenderModes([
-            'test_thumb' => [
-                'type' => 'fields',
-                'source' => '$props_source',
-                'fields' => [
-                    ['tag' => 'img', 'thumbPreset' => 'md', 'attrs' => ['src' => '{thumbnail_url}', 'alt' => '{name}']],
-                ],
-            ],
-            'test_thumb_explicit' => [
-                'type' => 'fields',
-                'source' => '$props_source',
-                'fields' => [
-                    ['tag' => 'img', 'thumbPreset' => 'md', 'attrs' => ['src' => '{thumbnail_url}', 'srcset' => '/x.png 2x']],
-                ],
-            ],
-        ]);
-        $this->mapper->setComponentMap([
-            'TestComp' => ['tag' => 'article', 'render' => 'test_thumb', 'props_source' => 'item'],
-            'TestExplicit' => ['tag' => 'article', 'render' => 'test_thumb_explicit', 'props_source' => 'item'],
-            'TestExternal' => ['tag' => 'article', 'render' => 'test_thumb', 'props_source' => 'item'],
-        ]);
-
-        $html = $this->render([
-            ['type' => 'composite', 'name' => 'TestComp', 'props' => ['item' => '{{item}}']],
-        ], ['item' => ['thumbnail_url' => '/api/attachment/abc', 'name' => '상품']]);
-
-        $this->assertStringContainsString(
-            '<img src="http://localhost/api/attachment/abc?size=md" srcset="http://localhost/api/attachment/abc?size=md 1x, http://localhost/api/attachment/abc?size=lg 2x" alt="상품">',
-            $html
-        );
-        $this->assertStringNotContainsString('thumbPreset', $html);
-
-        // 명시한 srcset 은 그대로, src 만 규격이 붙는다
-        $explicit = $this->render([
-            ['type' => 'composite', 'name' => 'TestExplicit', 'props' => ['item' => '{{item}}']],
-        ], ['item' => ['thumbnail_url' => '/api/attachment/abc']]);
-        $this->assertStringContainsString('<img src="http://localhost/api/attachment/abc?size=md" srcset="/x.png 2x">', $explicit);
-
-        // 패턴 밖(외부) 주소는 원본 그대로, srcset 없음
-        $external = $this->render([
-            ['type' => 'composite', 'name' => 'TestExternal', 'props' => ['item' => '{{item}}']],
-        ], ['item' => ['thumbnail_url' => 'https://cdn.test/a.jpg', 'name' => '상품']]);
-        $this->assertStringContainsString('<img src="https://cdn.test/a.jpg" alt="상품">', $external);
-    }
-
-    /**
      * fields 모드: base_url="/" → 이중 슬래시 방지 → /products/1
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_link_base_url_slash(): void
     {
@@ -5654,12 +3418,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: id 필드 없으면 link 미생성, 필드만 출력
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_link_missing_id(): void
     {
@@ -5693,12 +3451,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: link/children 없는 기존 flat 설정 → 동일 동작 (하위 호환)
-     *
-     * @scenario render_concern=fields_mode
-     *
-     * @effects fields_render_mode_renders_labelled_values
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_backward_compatible_flat(): void
     {
@@ -5737,12 +3489,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * seoVars 설정 시 Header의 {site_name}이 seoVars 값으로 치환됩니다.
-     *
-     * @scenario render_concern=seo_vars
-     *
-     * @effects seo_vars_are_injected_into_format_mode
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_seo_vars_override_defaults(): void
     {
@@ -5764,12 +3510,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * seoVars 설정 시 Footer의 {site_name}도 seoVars 값으로 치환됩니다.
-     *
-     * @scenario render_concern=seo_vars
-     *
-     * @effects seo_vars_are_injected_into_format_mode
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_seo_vars_footer(): void
     {
@@ -5790,12 +3530,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * props가 seoVars보다 우선합니다.
-     *
-     * @scenario render_concern=seo_vars
-     *
-     * @effects seo_vars_are_injected_into_format_mode
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_props_override_seo_vars(): void
     {
@@ -5816,12 +3550,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * seoVars 미설정 시 기존대로 defaults가 사용됩니다.
-     *
-     * @scenario render_concern=seo_vars
-     *
-     * @effects seo_vars_are_injected_into_format_mode
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_no_seo_vars_uses_defaults(): void
     {
@@ -5840,12 +3568,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * seoVars에 빈 문자열이면 defaults로 폴백합니다.
-     *
-     * @scenario render_concern=seo_vars
-     *
-     * @effects seo_vars_are_injected_into_format_mode
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_empty_seo_vars_falls_back_to_defaults(): void
     {
@@ -5865,12 +3587,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * seoVars는 format 모드에서만 작동하며 일반 태그 렌더링에는 영향 없습니다.
-     *
-     * @scenario render_concern=seo_vars
-     *
-     * @effects seo_vars_are_injected_into_format_mode
-     *
-     * @return void 반환값 없음
      */
     public function test_seo_vars_do_not_affect_normal_tag_rendering(): void
     {
@@ -5892,12 +3608,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * StarRating의 props가 seoVars보다 우선하여 렌더링됩니다.
-     *
-     * @scenario render_concern=seo_vars
-     *
-     * @effects seo_vars_are_injected_into_format_mode
-     *
-     * @return void 반환값 없음
      */
     public function test_format_mode_star_rating_props_over_seo_vars(): void
     {
@@ -5922,12 +3632,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Avatar 컴포넌트: author 객체에서 nickname을 추출합니다.
-     *
-     * @scenario render_concern=text_format
-     *
-     * @effects text_format_mode_renders_composed_text
-     *
-     * @return void 반환값 없음
      */
     public function test_avatar_renders_author_nickname(): void
     {
@@ -5952,12 +3656,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * UserInfo 컴포넌트: author nickname + subText(날짜)를 렌더링합니다.
-     *
-     * @scenario render_concern=text_format
-     *
-     * @effects text_format_mode_renders_composed_text
-     *
-     * @return void 반환값 없음
      */
     public function test_userinfo_renders_author_and_date(): void
     {
@@ -5987,12 +3685,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text_format dot notation: author가 null이면 빈 문자열을 출력합니다.
-     *
-     * @scenario render_concern=text_format
-     *
-     * @effects text_format_mode_renders_composed_text
-     *
-     * @return void 반환값 없음
      */
     public function test_text_format_dot_notation_null_object(): void
     {
@@ -6013,12 +3705,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text_format dot notation: 깊은 경로도 해석합니다.
-     *
-     * @scenario render_concern=text_format
-     *
-     * @effects text_format_mode_renders_composed_text
-     *
-     * @return void 반환값 없음
      */
     public function test_text_format_deep_dot_notation(): void
     {
@@ -6055,12 +3741,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Pagination — 여러 페이지가 있으면 페이지 링크 생성
-     *
-     * @scenario render_concern=pagination
-     *
-     * @effects pagination_render_mode_emits_page_links
-     *
-     * @return void 반환값 없음
      */
     public function test_pagination_renders_page_links(): void
     {
@@ -6089,12 +3769,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Pagination — 1 페이지만 있으면 빈 nav
-     *
-     * @scenario render_concern=pagination
-     *
-     * @effects pagination_render_mode_emits_page_links
-     *
-     * @return void 반환값 없음
      */
     public function test_pagination_single_page_renders_empty(): void
     {
@@ -6117,12 +3791,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Pagination — 현재 페이지는 span, 나머지는 a 태그
-     *
-     * @scenario render_concern=pagination
-     *
-     * @effects pagination_render_mode_emits_page_links
-     *
-     * @return void 반환값 없음
      */
     public function test_pagination_current_page_is_span(): void
     {
@@ -6151,12 +3819,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 source: $all_props 사용 시 모든 props를 해석하여 데이터로 사용합니다.
-     *
-     * @scenario render_concern=all_props
-     *
-     * @effects all_props_source_feeds_item_attrs
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_all_props_renders_site_name(): void
     {
@@ -6191,12 +3853,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 source: $all_props + iterate로 boards 네비게이션을 렌더링합니다.
-     *
-     * @scenario render_concern=all_props
-     *
-     * @effects all_props_source_feeds_item_attrs
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_all_props_renders_boards_navigation(): void
     {
@@ -6245,12 +3901,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 source: $all_props + 중첩 객체 (socialLinks) dot notation if 조건을 지원합니다.
-     *
-     * @scenario render_concern=all_props
-     *
-     * @effects all_props_source_feeds_item_attrs
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_all_props_renders_footer_with_social_links(): void
     {
@@ -6309,12 +3959,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate에서 item_attrs를 지원하여 아이템별 동적 속성을 렌더링합니다.
-     *
-     * @scenario render_concern=all_props
-     *
-     * @effects all_props_source_feeds_item_attrs
-     *
-     * @return void 반환값 없음
      */
     public function test_field_iterate_with_item_attrs(): void
     {
@@ -6359,12 +4003,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 $t: 번역 키를 content에서 해석합니다.
-     *
-     * @scenario render_concern=all_props
-     *
-     * @effects all_props_source_feeds_item_attrs
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_translates_t_keys_in_content(): void
     {
@@ -6416,12 +4054,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 $t: 번역 키를 children 내 중첩 구조에서 해석합니다.
-     *
-     * @scenario render_concern=all_props
-     *
-     * @effects all_props_source_feeds_item_attrs
-     *
-     * @return void 반환값 없음
      */
     public function test_fields_mode_translates_t_keys_in_footer_link_groups(): void
     {
@@ -6512,12 +4144,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * classMap의 key 표현식이 variants와 매칭되면 해당 클래스가 적용됩니다.
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_classmap_resolves_matching_variant(): void
     {
@@ -6545,12 +4171,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * classMap의 key가 variants에 없으면 default 클래스가 적용됩니다.
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_classmap_falls_back_to_default(): void
     {
@@ -6578,12 +4198,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * classMap과 기존 className이 함께 사용되면 클래스가 병합됩니다.
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_classmap_merges_with_existing_classname(): void
     {
@@ -6613,12 +4227,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * classMap에 base가 없어도 variant 클래스만 적용됩니다.
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_classmap_without_base(): void
     {
@@ -6645,12 +4253,6 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * classMap의 key가 빈 문자열이면 default가 적용됩니다.
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
      */
     public function test_classmap_empty_key_uses_default(): void
     {
@@ -6673,545 +4275,5 @@ class ComponentHtmlMapperTest extends TestCase
         $html = $this->mapper->render($components, $context, $this->evaluator);
 
         $this->assertStringContainsString('base-class default-class', $html);
-    }
-
-    /**
-     * Select 의 options 는 option 목록으로 렌더링됩니다.
-     *
-     * 일반 화면은 option 라벨을 그리는데 봇 화면에는 선택값(내부 식별자)이 글자로 나가고
-     * 있었다 (`<select>created_at_desc</select>`).
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_select_renders_option_list_from_options_prop(): void
-    {
-        $components = [[
-            'type' => 'basic',
-            'name' => 'Select',
-            'props' => [
-                'className' => 'w-40',
-                'value' => 'created_at_desc',
-                'options' => '{{sortOptions ?? []}}',
-            ],
-        ]];
-
-        $context = ['sortOptions' => [
-            ['value' => 'created_at_desc', 'label' => '최신순'],
-            ['value' => 'rating_desc', 'label' => '평점 높은순'],
-        ]];
-
-        $html = $this->mapper->render($components, $context, $this->evaluator);
-
-        $this->assertStringContainsString('<option value="created_at_desc">최신순</option>', $html);
-        $this->assertStringContainsString('<option value="rating_desc">평점 높은순</option>', $html);
-        $this->assertStringNotContainsString('>created_at_desc<', $html);
-    }
-
-    /**
-     * options 가 없는 Select 는 선택값을 글자로 노출하지 않습니다.
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_select_without_options_does_not_leak_value_as_text(): void
-    {
-        $components = [[
-            'type' => 'basic',
-            'name' => 'Select',
-            'props' => ['value' => 'created_at_desc'],
-        ]];
-
-        $html = $this->mapper->render($components, [], $this->evaluator);
-
-        $this->assertSame('<select></select>', $html);
-    }
-
-    /**
-     * children 으로 정의된 Option 은 option 태그로 보존됩니다.
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_select_children_options_are_preserved(): void
-    {
-        $components = [[
-            'type' => 'basic',
-            'name' => 'Select',
-            'props' => ['value' => 'a'],
-            'children' => [
-                ['type' => 'basic', 'name' => 'Option', 'props' => ['value' => 'a'], 'text' => '가나다'],
-                ['type' => 'basic', 'name' => 'Option', 'props' => ['value' => 'b'], 'text' => '라마바'],
-            ],
-        ]];
-
-        $html = $this->mapper->render($components, [], $this->evaluator);
-
-        $this->assertStringContainsString('<option>가나다</option>', $html);
-        $this->assertStringContainsString('<option>라마바</option>', $html);
-    }
-
-    /**
-     * Input/Textarea 도 선택값을 글자로 노출하지 않습니다.
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_form_controls_do_not_render_value_prop_as_text(): void
-    {
-        $components = [
-            ['type' => 'basic', 'name' => 'Input', 'props' => ['value' => 'internal_code']],
-            ['type' => 'basic', 'name' => 'Textarea', 'props' => ['value' => 'internal_code']],
-        ];
-
-        $html = $this->mapper->render($components, [], $this->evaluator);
-
-        $this->assertStringNotContainsString('internal_code', $html);
-    }
-
-    /**
-     * 폼 제어가 아닌 태그는 종전대로 value prop 을 텍스트로 승계합니다 (기존 동작 보존).
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_non_form_tag_still_uses_value_prop_as_text(): void
-    {
-        $components = [['type' => 'basic', 'name' => 'Span', 'props' => ['value' => '표시할 값']]];
-
-        $html = $this->mapper->render($components, [], $this->evaluator);
-
-        $this->assertStringContainsString('>표시할 값<', $html);
-    }
-
-    /**
-     * iterate 모드에서 item_attrs 와 item_content 는 함께 적용됩니다.
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_iterate_mode_applies_attrs_and_content_together(): void
-    {
-        $components = [[
-            'type' => 'basic',
-            'name' => 'Select',
-            'props' => ['options' => '{{items ?? []}}'],
-        ]];
-
-        $context = ['items' => [['value' => 'v1', 'label' => '라벨1']]];
-
-        $html = $this->mapper->render($components, $context, $this->evaluator);
-
-        $this->assertStringContainsString('<option value="v1">라벨1</option>', $html);
-    }
-
-    /**
-     * 속성만 선언된 iterate 모드(image_gallery)는 종전 동작을 유지합니다.
-     *
-     * @scenario render_concern=class_map
-     *
-     * @effects class_map_applies_conditional_classes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_iterate_mode_attrs_only_keeps_previous_behaviour(): void
-    {
-        $components = [[
-            'type' => 'composite',
-            'name' => 'ProductImageViewer',
-            'props' => ['images' => '{{images ?? []}}'],
-        ]];
-
-        $context = ['images' => [['url' => 'https://cdn.test/a.png', 'alt' => '이미지']]];
-
-        $html = $this->mapper->render($components, $context, $this->evaluator);
-
-        $this->assertStringContainsString('<img src="https://cdn.test/a.png" alt="이미지">', $html);
-    }
-
-    // =========================================================================
-    // 이미지 썸네일 (#869) — 템플릿 Img 의 thumbPreset·HtmlContent 본문 이미지 패리티
-    // =========================================================================
-
-    /**
-     * 썸네일 설정을 고정하고 srcset·loading·decoding 을 허용 속성에 넣습니다.
-     *
-     * @return void 반환값 없음
-     */
-    private function prepareThumbnailRendering(): void
-    {
-        Config::set('app.url', 'http://localhost');
-        Config::set('core.thumbnail.presets', null);
-        Config::set('core.thumbnail.enabled', true);
-        Config::set('core.thumbnail.content_preset', 'lg');
-        Config::set('g7_settings.core.seo.og_image_default_width', 1200);
-        Config::set('g7_settings.core.seo.og_image_default_height', 630);
-        HookManager::clearFilter('core.thumbnail.filter_presets');
-        HookManager::clearFilter('core.thumbnail.filter_url_patterns');
-        HookManager::clearFilter('core.thumbnail.filter_url');
-        app(ThumbnailPresetRegistry::class)->flush();
-
-        $this->mapper->setAllowedAttrs(array_merge($this->getDefaultAllowedAttrs(), ['srcset', 'sizes', 'loading', 'decoding']));
-        $this->mapper->setAttrMap(array_merge($this->getDefaultAttrMap(), ['srcSet' => 'srcset']));
-    }
-
-    /**
-     * Img 의 thumbPreset 은 src·srcset 으로 바뀌고 그 자체는 속성으로 나가지 않는다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects img_thumb_preset_renders_thumbnail_src
-     *
-     * @return void 반환값 없음
-     */
-    public function test_img_thumb_preset_renders_thumbnail_src_and_srcset(): void
-    {
-        $this->prepareThumbnailRendering();
-
-        $html = $this->render([
-            ['name' => 'Img', 'props' => ['src' => '{{user.avatar}}', 'alt' => '아바타', 'thumbPreset' => 'md']],
-        ], ['user' => ['avatar' => '/api/attachment/abc']]);
-
-        // 봇 화면 src 는 사이트 절대 주소가 된다(siteAssetUrl) — 같은 출처라 썸네일 대상 판정은 그대로다
-        $this->assertStringContainsString(
-            '<img src="http://localhost/api/attachment/abc?size=md" srcset="http://localhost/api/attachment/abc?size=md 1x, http://localhost/api/attachment/abc?size=lg 2x" alt="아바타" loading="lazy" decoding="async">',
-            $html
-        );
-        $this->assertStringNotContainsString('thumbPreset', $html);
-        $this->assertStringNotContainsString('thumbpreset', $html);
-    }
-
-    /**
-     * 패턴 밖 주소는 thumbPreset 이 있어도 원본 그대로이고 srcset 도 없다. 명시한 loading 은 존중한다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects img_thumb_preset_renders_thumbnail_src
-     *
-     * @return void 반환값 없음
-     */
-    public function test_img_thumb_preset_leaves_external_url_unchanged(): void
-    {
-        $this->prepareThumbnailRendering();
-
-        $html = $this->render([
-            ['name' => 'Img', 'props' => ['src' => 'https://cdn.test/a.jpg', 'thumbPreset' => 'sm', 'loading' => 'eager']],
-        ]);
-
-        $this->assertStringContainsString('src="https://cdn.test/a.jpg"', $html);
-        $this->assertStringNotContainsString('size=', $html);
-        $this->assertStringNotContainsString('srcset', $html);
-        $this->assertStringContainsString('loading="eager"', $html);
-        $this->assertStringNotContainsString('loading="lazy"', $html);
-    }
-
-    /**
-     * 레이아웃이 srcSet 을 직접 적었으면 그 값을 쓰고 자동 srcset 을 만들지 않는다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects img_thumb_preset_renders_thumbnail_src
-     *
-     * @return void 반환값 없음
-     */
-    public function test_img_thumb_preset_respects_explicit_srcset(): void
-    {
-        $this->prepareThumbnailRendering();
-
-        $html = $this->render([
-            ['name' => 'Img', 'props' => ['src' => '/api/attachment/abc', 'thumbPreset' => 'sm', 'srcSet' => '/x.png 2x']],
-        ]);
-
-        $this->assertStringContainsString('src="http://localhost/api/attachment/abc?size=sm"', $html);
-        $this->assertSame(1, substr_count($html, 'srcset='));
-        $this->assertStringContainsString('srcset="/x.png 2x"', $html);
-    }
-
-    /**
-     * HtmlContent 본문 이미지는 렌더 시점에 썸네일 주소·srcset·sizes(imageSizes prop)·지연 로딩을 받는다.
-     *
-     * @scenario render_concern=basic_tags
-     *
-     * @effects content_image_uses_thumbnail
-     *
-     * @return void 반환값 없음
-     */
-    public function test_html_content_image_gets_thumbnail_with_image_sizes_prop(): void
-    {
-        $this->prepareThumbnailRendering();
-
-        $html = $this->render([
-            ['name' => 'HtmlContent', 'props' => [
-                'content' => '{{post.content}}',
-                'imageSizes' => '(min-width: 640px) 600px, 100vw',
-            ]],
-        ], ['post' => ['content' => '<p><img src="/api/attachment/abc" width="1600"><img src="https://cdn.test/b.jpg"></p>']]);
-
-        $this->assertStringContainsString('src="/api/attachment/abc?size=lg"', $html);
-        $this->assertStringContainsString('sizes="(min-width: 640px) 600px, 100vw"', $html);
-        $this->assertStringContainsString('1280w', $html);
-        $this->assertStringContainsString('<img src="https://cdn.test/b.jpg">', $html);
-    }
-
-    // =========================================================================
-    // 이미지 썸네일 × responsive (#869) — 봇 화면은 데스크톱 폭(1024px) 한 구간의 규격을 쓴다
-    // =========================================================================
-
-    /**
-     * 봇 HTML 의 img 를 data-testid 별로 모읍니다 (src·srcset 원문).
-     *
-     * @param  string  $html  렌더 결과
-     * @return array<string, list<array{src: string|null, srcset: string|null}>> data-testid → img 목록
-     */
-    private function imagesByTestId(string $html): array
-    {
-        preg_match_all('/<img\b[^>]*>/', $html, $tags);
-        $images = [];
-        foreach ($tags[0] as $tag) {
-            preg_match('/\sdata-testid="([^"]*)"/', $tag, $id);
-            preg_match('/\ssrc="([^"]*)"/', $tag, $src);
-            preg_match('/\ssrcset="([^"]*)"/', $tag, $srcset);
-            $images[$id[1] ?? ''][] = ['src' => $src[1] ?? null, 'srcset' => $srcset[1] ?? null];
-        }
-
-        return $images;
-    }
-
-    /**
-     * 같은 주소에 규격을 responsive 없이 바로 준 Img 의 src·srcset — responsive 로 고른 규격과 비교할 기준.
-     *
-     * @param  string  $preset  규격 이름
-     * @param  string  $url  원 주소
-     * @return array{src: string|null, srcset: string|null} 기준 img
-     */
-    private function staticThumbnail(string $preset, string $url = '/api/attachment/abc'): array
-    {
-        $html = $this->render([
-            ['name' => 'Img', 'props' => ['src' => $url, 'thumbPreset' => $preset, 'data-testid' => 'static']],
-        ]);
-
-        $image = $this->imagesByTestId($html)['static'][0];
-        $this->assertStringContainsString('size='.$preset, (string) $image['src'], "기준 규격 {$preset} 이 src 에 붙어야 한다");
-
-        return $image;
-    }
-
-    /**
-     * responsive 를 가진 이미지 노드.
-     *
-     * @param  string  $testId  이미지 식별자(data-testid 값)
-     * @param  string  $preset  기본 규격
-     * @param  array  $responsive  구간별 오버라이드 맵
-     * @param  array  $extra  노드에 덧붙일 속성
-     * @return array 노드
-     */
-    private function responsiveImg(string $testId, string $preset, array $responsive, array $extra = []): array
-    {
-        return array_merge([
-            'type' => 'basic',
-            'name' => 'Img',
-            'props' => ['src' => '/api/attachment/abc', 'thumbPreset' => $preset, 'data-testid' => $testId],
-            'responsive' => $responsive,
-        ], $extra);
-    }
-
-    /**
-     * 프리셋 구간: desktop 값이 쓰이고 mobile·tablet·portable 은 쓰이지 않는다.
-     *
-     * @scenario render_concern=responsive_props
-     *
-     * @effects img_thumb_preset_responsive_uses_desktop_breakpoint
-     *
-     * @return void 반환값 없음
-     */
-    public function test_img_thumb_preset_responsive_preset_breakpoints_use_desktop_value(): void
-    {
-        $this->prepareThumbnailRendering();
-
-        $images = $this->imagesByTestId($this->render([
-            $this->responsiveImg('three', 'md', [
-                'mobile' => ['props' => ['thumbPreset' => 'xs']],
-                'tablet' => ['props' => ['thumbPreset' => 'sm']],
-                'desktop' => ['props' => ['thumbPreset' => 'lg']],
-            ]),
-            $this->responsiveImg('portableOnly', 'xl', ['portable' => ['props' => ['thumbPreset' => 'md']]]),
-            $this->responsiveImg('narrowOnly', 'md', [
-                'mobile' => ['props' => ['thumbPreset' => 'xs']],
-                'tablet' => ['props' => ['thumbPreset' => 'sm']],
-            ]),
-        ]));
-
-        $this->assertSame([$this->staticThumbnail('lg')], $images['three']);
-        $this->assertSame([$this->staticThumbnail('xl')], $images['portableOnly']);
-        $this->assertSame([$this->staticThumbnail('md')], $images['narrowOnly']);
-        $this->assertStringNotContainsString('thumbPreset', json_encode($images));
-    }
-
-    /**
-     * 커스텀 구간: 1024px 을 포함하는 키만 쓰이고, 커스텀 > 프리셋, 좁은 범위 우선(선언 순서 무관).
-     *
-     * 봇 폭은 정확히 1024px 이라 `1025-`·`1200-` 처럼 1024 를 넘는 구간은 적용되지 않는다(1024px 브라우저와 같다).
-     *
-     * @scenario render_concern=responsive_props
-     *
-     * @effects img_thumb_preset_responsive_custom_ranges_follow_desktop_width
-     *
-     * @return void 반환값 없음
-     */
-    public function test_img_thumb_preset_responsive_custom_ranges_follow_desktop_width(): void
-    {
-        $this->prepareThumbnailRendering();
-
-        $images = $this->imagesByTestId($this->render([
-            $this->responsiveImg('openEnded', 'md', ['1024-' => ['props' => ['thumbPreset' => 'xl']]]),
-            $this->responsiveImg('customOverPreset', 'md', [
-                'desktop' => ['props' => ['thumbPreset' => 'lg']],
-                '1024-' => ['props' => ['thumbPreset' => 'xl']],
-            ]),
-            $this->responsiveImg('customOverPresetReversed', 'md', [
-                '1024-' => ['props' => ['thumbPreset' => 'xl']],
-                'desktop' => ['props' => ['thumbPreset' => 'lg']],
-            ]),
-            $this->responsiveImg('narrowerCustom', 'md', [
-                '1024-' => ['props' => ['thumbPreset' => 'lg']],
-                '1024-1279' => ['props' => ['thumbPreset' => 'sm']],
-            ]),
-            $this->responsiveImg('straddling', 'md', ['1000-1100' => ['props' => ['thumbPreset' => 'xs']]]),
-            $this->responsiveImg('maxOnly', 'md', ['-1023' => ['props' => ['thumbPreset' => 'xs']]]),
-            $this->responsiveImg('maxOnlyIncluding', 'md', ['-1024' => ['props' => ['thumbPreset' => 'sm']]]),
-            $this->responsiveImg('aboveBotWidth', 'md', [
-                '1025-' => ['props' => ['thumbPreset' => 'xl']],
-                '1200-' => ['props' => ['thumbPreset' => 'lg']],
-            ]),
-        ]));
-
-        $this->assertSame([$this->staticThumbnail('xl')], $images['openEnded']);
-        $this->assertSame([$this->staticThumbnail('xl')], $images['customOverPreset']);
-        $this->assertSame([$this->staticThumbnail('xl')], $images['customOverPresetReversed']);
-        $this->assertSame([$this->staticThumbnail('sm')], $images['narrowerCustom']);
-        $this->assertSame([$this->staticThumbnail('xs')], $images['straddling']);
-        $this->assertSame([$this->staticThumbnail('md')], $images['maxOnly']);
-        $this->assertSame([$this->staticThumbnail('sm')], $images['maxOnlyIncluding']);
-        $this->assertSame([$this->staticThumbnail('md')], $images['aboveBotWidth']);
-    }
-
-    /**
-     * responsive 안의 식과 기본 규격의 식이 봇 화면 데이터로 평가된다.
-     *
-     * @scenario render_concern=responsive_props
-     *
-     * @effects img_thumb_preset_responsive_uses_desktop_breakpoint
-     *
-     * @return void 반환값 없음
-     */
-    public function test_img_thumb_preset_responsive_expressions_are_evaluated(): void
-    {
-        $this->prepareThumbnailRendering();
-
-        $images = $this->imagesByTestId($this->render([
-            $this->responsiveImg('desktopExpr', '{{cfg.base}}', ['desktop' => ['props' => ['thumbPreset' => '{{cfg.wide}}']]]),
-            $this->responsiveImg('baseExpr', '{{cfg.base}}', ['mobile' => ['props' => ['thumbPreset' => '{{cfg.narrow}}']]]),
-        ], ['cfg' => ['base' => 'md', 'wide' => 'xl', 'narrow' => 'xs']]));
-
-        $this->assertSame([$this->staticThumbnail('xl')], $images['desktopExpr']);
-        $this->assertSame([$this->staticThumbnail('md')], $images['baseExpr']);
-    }
-
-    /**
-     * 반복·children 교체·if 오버라이드 안의 Img 도 데스크톱 구간 규격을 쓴다.
-     *
-     * @scenario render_concern=responsive_props
-     *
-     * @effects img_thumb_preset_responsive_node_grammar_on_bot_html
-     *
-     * @return void 반환값 없음
-     */
-    public function test_img_thumb_preset_responsive_inside_iteration_children_and_if(): void
-    {
-        $this->prepareThumbnailRendering();
-
-        $items = ['items' => [['url' => '/api/attachment/a1'], ['url' => '/api/attachment/a2']]];
-        $html = $this->render([
-            // 반복하는 Img 자신의 responsive
-            [
-                'type' => 'basic',
-                'name' => 'Img',
-                'iteration' => ['source' => '{{items}}', 'item_var' => 'it'],
-                'props' => ['src' => '{{it.url}}', 'thumbPreset' => 'md', 'data-testid' => 'selfLoop'],
-                'responsive' => [
-                    'mobile' => ['props' => ['thumbPreset' => 'xs']],
-                    'desktop' => ['props' => ['thumbPreset' => 'lg']],
-                ],
-            ],
-            // 반복 안 자식 Img 의 responsive
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'iteration' => ['source' => '{{items}}', 'item_var' => 'it'],
-                'children' => [[
-                    'type' => 'basic',
-                    'name' => 'Img',
-                    'props' => ['src' => '{{it.url}}', 'thumbPreset' => 'xs', 'data-testid' => 'childLoop'],
-                    'responsive' => ['1024-' => ['props' => ['thumbPreset' => 'xl']]],
-                ]],
-            ],
-            // responsive 가 반복 원천과 규격을 함께 바꾼다
-            [
-                'type' => 'basic',
-                'name' => 'Img',
-                'iteration' => ['source' => '{{items}}', 'item_var' => 'it'],
-                'props' => ['src' => '{{it.url}}', 'thumbPreset' => 'xs', 'data-testid' => 'iterSwap'],
-                'responsive' => [
-                    'desktop' => [
-                        'iteration' => ['source' => '{{wideItems}}', 'item_var' => 'it'],
-                        'props' => ['thumbPreset' => 'lg'],
-                    ],
-                ],
-            ],
-            // children 교체 안의 Img
-            [
-                'type' => 'basic',
-                'name' => 'Div',
-                'children' => [['type' => 'basic', 'name' => 'Img', 'props' => ['src' => '/api/attachment/abc', 'thumbPreset' => 'xs', 'data-testid' => 'swapBase']]],
-                'responsive' => [
-                    'desktop' => [
-                        'children' => [['type' => 'basic', 'name' => 'Img', 'props' => ['src' => '/api/attachment/abc', 'thumbPreset' => 'lg', 'data-testid' => 'swapChild']]],
-                    ],
-                ],
-            ],
-            // if 오버라이드 — 데스크톱용 이미지만 남는다
-            $this->responsiveImg('wideOnly', 'lg', ['portable' => ['if' => '{{true}}']], ['if' => '{{true}}']),
-            $this->responsiveImg('narrowOnly', 'xs', ['desktop' => ['if' => '{{false}}']], ['if' => '{{true}}']),
-            $this->responsiveImg('desktopShown', 'md', ['desktop' => ['if' => '{{true}}', 'props' => ['thumbPreset' => 'xl']]], ['if' => '{{false}}']),
-        ], $items + ['wideItems' => [['url' => '/api/attachment/w1']]]);
-
-        $images = $this->imagesByTestId($html);
-
-        $this->assertSame([$this->staticThumbnail('lg', '/api/attachment/a1'), $this->staticThumbnail('lg', '/api/attachment/a2')], $images['selfLoop']);
-        $this->assertSame([$this->staticThumbnail('xl', '/api/attachment/a1'), $this->staticThumbnail('xl', '/api/attachment/a2')], $images['childLoop']);
-        $this->assertSame([$this->staticThumbnail('lg', '/api/attachment/w1')], $images['iterSwap']);
-        $this->assertSame([$this->staticThumbnail('lg')], $images['swapChild']);
-        $this->assertArrayNotHasKey('swapBase', $images);
-        $this->assertSame([$this->staticThumbnail('lg')], $images['wideOnly']);
-        $this->assertArrayNotHasKey('narrowOnly', $images);
-        $this->assertSame([$this->staticThumbnail('xl')], $images['desktopShown']);
     }
 }

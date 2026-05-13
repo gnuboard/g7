@@ -2,12 +2,8 @@
 
 namespace App\Models;
 
-use App\Extension\HookManager;
 use App\Models\Concerns\HasUserOverrides;
-use App\Notifications\Identity\IdentityNotificationType;
-use App\Notifications\MemberVariables;
 use App\Services\NotificationDefinitionService;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,12 +16,9 @@ class NotificationDefinition extends Model
     /**
      * 사용자 수정 보존 대상 필드.
      *
-     * `channels` 는 운영자가 알림 설정에서 켜고 끈 발송 수단이다 — 추적하지 않으면 확장 업데이트의 재동기화가 선언값으로
-     * 덮어, 운영자가 켠 수단(과 그때 만든 빈 템플릿의 발송)이 업데이트마다 사라진다.
-     *
      * @var array<int, string>
      */
-    protected array $trackableFields = ['name', 'is_active', 'channels'];
+    protected array $trackableFields = ['name', 'is_active'];
 
     /**
      * 다국어 JSON 컬럼 — sub-key dot-path 단위 user_overrides 보존.
@@ -36,8 +29,6 @@ class NotificationDefinition extends Model
 
     /**
      * 모델 이벤트 등록 — 모든 변경 시 알림 정의 캐시 자동 삭제.
-     *
-     * @return void 반환값 없음
      */
     protected static function booted(): void
     {
@@ -87,13 +78,11 @@ class NotificationDefinition extends Model
         'hook_prefix',
         'extension_type',
         'extension_identifier',
-        'category',
         'name',
         'description',
         'variables',
         'channels',
         'hooks',
-        'relations',
         'is_active',
         'is_default',
         'user_overrides',
@@ -112,33 +101,10 @@ class NotificationDefinition extends Model
             'variables' => 'array',
             'channels' => 'array',
             'hooks' => 'array',
-            'relations' => 'array',
             'is_active' => 'boolean',
             'is_default' => 'boolean',
             'user_overrides' => 'array',
         ];
-    }
-
-    /**
-     * 수정 여부를 가릴 때 쓸 값 — 발송 수단 목록은 순서가 뜻을 갖지 않으므로 정렬해 비교한다.
-     *
-     * 화면은 켠 순서대로 목록을 돌려보내므로, 맞추지 않으면 같은 수단을 다시 저장만 해도 「수정됨」 으로 기록되고
-     * 확장이 새 수단을 선언해도 업데이트가 그 목록을 덮지 못한다.
-     *
-     * @param  string  $field  trackable 컬럼명
-     * @param  mixed  $value  비교할 값
-     * @return mixed 비교용 값
-     */
-    public function comparableTrackableValue(string $field, mixed $value): mixed
-    {
-        if ($field === 'channels' && is_array($value)) {
-            $channels = array_values($value);
-            sort($channels);
-
-            return $channels;
-        }
-
-        return $value;
     }
 
     /**
@@ -154,7 +120,7 @@ class NotificationDefinition extends Model
     /**
      * 활성 알림 정의만 조회.
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopeActive(Builder $query): Builder
@@ -165,8 +131,8 @@ class NotificationDefinition extends Model
     /**
      * 특정 타입의 알림 정의 조회.
      *
-     * @param  Builder  $query
-     * @param  string  $type
+     * @param Builder $query
+     * @param string $type
      * @return Builder
      */
     public function scopeByType(Builder $query, string $type): Builder
@@ -177,9 +143,9 @@ class NotificationDefinition extends Model
     /**
      * 특정 확장의 알림 정의 조회.
      *
-     * @param  Builder  $query
-     * @param  string  $extensionType
-     * @param  string  $extensionIdentifier
+     * @param Builder $query
+     * @param string $extensionType
+     * @param string $extensionIdentifier
      * @return Builder
      */
     public function scopeByExtension(Builder $query, string $extensionType, string $extensionIdentifier): Builder
@@ -191,7 +157,7 @@ class NotificationDefinition extends Model
     /**
      * 현재 로케일의 이름 반환.
      *
-     * @param  string|null  $locale
+     * @param string|null $locale
      * @return string
      */
     public function getLocalizedName(?string $locale = null): string
@@ -199,13 +165,13 @@ class NotificationDefinition extends Model
         $locale = $locale ?? app()->getLocale();
         $name = $this->name ?? [];
 
-        return LocalizedValue::pick($name, $locale, anyAsLast: false) ?? '';
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? '';
     }
 
     /**
      * 현재 로케일의 설명 반환.
      *
-     * @param  string|null  $locale
+     * @param string|null $locale
      * @return string
      */
     public function getLocalizedDescription(?string $locale = null): string
@@ -213,127 +179,6 @@ class NotificationDefinition extends Model
         $locale = $locale ?? app()->getLocale();
         $description = $this->description ?? [];
 
-        return LocalizedValue::pick($description, $locale, anyAsLast: false) ?? '';
-    }
-
-    /**
-     * 수신자 관계 키(`post_author` 등)의 표시 이름을 찾습니다.
-     *
-     * 관계는 그 알림을 만든 확장이 선언하므로 이름도 그 확장의 언어 파일에서 찾는다 — 확장은
-     * `{식별자}::messages.notification_relations.{관계}`, 코어는 `notification.relations.{관계}`.
-     * 이름이 없으면 키를 그대로 돌려준다.
-     *
-     * @param  string  $relation  관계 키
-     * @return string 표시 이름(없으면 키)
-     */
-    public function relationLabel(string $relation): string
-    {
-        $identifier = (string) ($this->extension_identifier ?? '');
-        $key = ($identifier === '' || $identifier === 'core')
-            ? 'notification.relations.'.$relation
-            : $identifier.'::messages.notification_relations.'.$relation;
-        $label = __($key);
-
-        return is_string($label) && $label !== $key ? $label : $relation;
-    }
-
-    /**
-     * 템플릿 변수(`{name}` 등)의 설명을 지금 언어로 찾습니다.
-     *
-     * 변수 설명은 선언(config/core.php·확장 getNotificationDefinitions())에 한국어 문자열로만 있어,
-     * 그대로 내보내면 영어·일본어 화면의 편집 창에도 한국어가 섞였다. 운영자가 고칠 수 없는 시스템
-     * 문구라 언어 파일에서 찾는다 — 본인인증 알림(`identity.*`)은 코어 공통 변수라
-     * `notification.variables.identity.{키}`, 그 밖은 코어 `notification.variables.*` /
-     * 확장 `{식별자}::messages.notification_variables.*` 에서 `by_type.{type}.{키}`(그 알림에서만 뜻이
-     * 다른 변수) → `common.{키}` 순. 어디에도 없으면 선언 문자열을 그대로 돌려준다.
-     *
-     * @param  string  $key  변수 키
-     * @param  mixed  $fallback  언어 파일에 없을 때 돌려줄 선언 설명
-     * @return mixed 번역된 설명 문자열, 없으면 $fallback
-     */
-    public function variableDescription(string $key, mixed $fallback): mixed
-    {
-        if ($key === '' || str_contains($key, '.')) {
-            return $fallback;
-        }
-
-        $type = (string) ($this->type ?? '');
-        $identifier = (string) ($this->extension_identifier ?? '');
-        $candidates = [];
-
-        if (str_starts_with($type, IdentityNotificationType::PREFIX)) {
-            $candidates[] = 'notification.variables.identity.'.$key;
-        } else {
-            $prefix = ($identifier === '' || $identifier === 'core')
-                ? 'notification.variables.'
-                : $identifier.'::messages.notification_variables.';
-            if ($type !== '' && ! str_contains($type, '.')) {
-                $candidates[] = $prefix.'by_type.'.$type.'.'.$key;
-            }
-            $candidates[] = $prefix.'common.'.$key;
-        }
-
-        foreach ($candidates as $candidate) {
-            $text = __($candidate);
-            if (is_string($text) && $text !== $candidate) {
-                return $text;
-            }
-        }
-
-        return $fallback;
-    }
-
-    /**
-     * 템플릿 편집 화면에 보일 변수 목록을 돌려줍니다.
-     *
-     * 이 정의가 선언한 변수의 설명을 지금 언어로 바꾸고(키, 순서, 다른 칸은 그대로), 뒤에 회원 공통 변수 묶음
-     * (`member.display_name`, `member.<키>`, `member.custom.<키>` — 항목마다 `group: member`)을 덧붙인 다음
-     * 필터 `core.notification.filter_template_variables` 를 태운다. 확장은 이 필터로 자기 변수를 더하거나 뺀다.
-     *
-     * 본인인증 알림은 받는 사람이 회원으로 정해지기 전에 나가므로 회원 공통 변수를 덧붙이지 않는다.
-     *
-     * @param  array<int, mixed>|null  $variables  변수 목록(생략하면 이 정의의 variables)
-     * @return array<int, mixed> 편집 화면용 변수 목록
-     */
-    public function localizedVariables(?array $variables = null): array
-    {
-        $variables ??= (array) ($this->variables ?? []);
-
-        $localized = array_map(function ($variable) {
-            if (! is_array($variable) || ! is_string($variable['key'] ?? null)) {
-                return $variable;
-            }
-            $variable['description'] = $this->variableDescription($variable['key'], $variable['description'] ?? null);
-
-            return $variable;
-        }, $variables);
-
-        if ($this->supportsMemberVariables()) {
-            $declared = [];
-            foreach ($localized as $variable) {
-                if (is_array($variable) && is_string($variable['key'] ?? null)) {
-                    $declared[$variable['key']] = true;
-                }
-            }
-            foreach (app(MemberVariables::class)->catalog() as $variable) {
-                if (! isset($declared[$variable['key']])) {
-                    $localized[] = $variable;
-                }
-            }
-        }
-
-        $filtered = HookManager::applyFilters('core.notification.filter_template_variables', $localized, $this);
-
-        return is_array($filtered) ? array_values($filtered) : $localized;
-    }
-
-    /**
-     * 이 알림의 템플릿이 회원 항목 변수(`member.…`)를 쓸 수 있는지 반환합니다.
-     *
-     * @return bool 본인인증 알림이 아니면 true
-     */
-    public function supportsMemberVariables(): bool
-    {
-        return ! str_starts_with((string) ($this->type ?? ''), IdentityNotificationType::PREFIX);
+        return $description[$locale] ?? $description[config('app.fallback_locale', 'ko')] ?? '';
     }
 }

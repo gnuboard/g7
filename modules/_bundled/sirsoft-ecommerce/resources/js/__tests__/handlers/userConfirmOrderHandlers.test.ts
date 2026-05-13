@@ -11,8 +11,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { confirmOrderOptionHandler } from '../../handlers/userConfirmOrderHandlers';
 
 let mockLocalState: Record<string, any> = {};
-let mockGlobalState: Record<string, any> = {};
-let mockOrderDataSource: { data?: { order_number?: string } } | null = null;
 
 const mockG7Core = {
     state: {
@@ -20,10 +18,6 @@ const mockG7Core = {
         setLocal: vi.fn((updates: Record<string, any>) => {
             mockLocalState = { ...mockLocalState, ...updates };
         }),
-        get: vi.fn((key: string) => (key === '_global' ? mockGlobalState : undefined)),
-    },
-    dataSource: {
-        get: vi.fn((id: string) => (id === 'order' ? mockOrderDataSource : null)),
     },
     api: {
         post: vi.fn(),
@@ -52,8 +46,6 @@ describe('confirmOrderOptionHandler', () => {
             isConfirming: false,
             confirmTarget: null,
         };
-        mockGlobalState = {};
-        mockOrderDataSource = null;
         (window as any).G7Core = mockG7Core;
     });
 
@@ -68,11 +60,9 @@ describe('confirmOrderOptionHandler', () => {
             {} as any
         );
 
-        // API 호출 확인 (회원: data=undefined, config=undefined)
+        // API 호출 확인
         expect(mockG7Core.api.post).toHaveBeenCalledWith(
-            '/api/modules/sirsoft-ecommerce/user/orders/1/options/2/confirm',
-            undefined,
-            undefined
+            '/api/modules/sirsoft-ecommerce/user/orders/1/options/2/confirm'
         );
 
         // 상태 초기화 확인
@@ -136,39 +126,5 @@ describe('confirmOrderOptionHandler', () => {
 
         // 첫 번째 setLocal 호출이 isConfirming: true
         expect(mockG7Core.state.setLocal).toHaveBeenNthCalledWith(1, { isConfirming: true });
-    });
-
-    it('비회원 컨텍스트 — _global.guestOrderToken + order.data.order_number 존재 시 guest endpoint 호출 + X-Guest-Order-Token 헤더 첨부', async () => {
-        mockGlobalState = { guestOrderToken: 'guest-token-abc' };
-        mockOrderDataSource = { data: { order_number: '20260527-123456' } };
-        mockG7Core.api.post.mockResolvedValue({ success: true, message: 'OK' });
-
-        await confirmOrderOptionHandler(
-            { handler: 'confirmOrderOption', params: { orderId: 1, optionId: 2 } },
-            {} as any
-        );
-
-        expect(mockG7Core.api.post).toHaveBeenCalledWith(
-            '/api/modules/sirsoft-ecommerce/guest/orders/20260527-123456/options/2/confirm',
-            undefined,
-            { headers: { 'X-Guest-Order-Token': 'guest-token-abc' } }
-        );
-    });
-
-    it('회원 컨텍스트 — guestOrderToken 없으면 user endpoint 호출 + 토큰 헤더 미첨부 (회원 회귀 차단)', async () => {
-        mockGlobalState = {};
-        mockOrderDataSource = { data: { order_number: '20260527-123456' } };
-        mockG7Core.api.post.mockResolvedValue({ success: true, message: 'OK' });
-
-        await confirmOrderOptionHandler(
-            { handler: 'confirmOrderOption', params: { orderId: 1, optionId: 2 } },
-            {} as any
-        );
-
-        expect(mockG7Core.api.post).toHaveBeenCalledWith(
-            '/api/modules/sirsoft-ecommerce/user/orders/1/options/2/confirm',
-            undefined,
-            undefined
-        );
     });
 });

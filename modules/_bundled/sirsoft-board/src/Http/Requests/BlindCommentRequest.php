@@ -11,8 +11,6 @@ class BlindCommentRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
-     *
-     * @return bool 권한 보유 여부
      */
     public function authorize(): bool
     {
@@ -27,7 +25,7 @@ class BlindCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reason' => ['nullable', 'string', 'max:1000'],
+            'reason' => ['nullable', 'string'],
         ];
     }
 
@@ -39,7 +37,7 @@ class BlindCommentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            // reason 규칙에 min 이 없으므로 min 메시지는 매핑하지 않는다 (死매핑 정리 — lang 키 자체는 유지)
+            'reason.min' => __('sirsoft-board::validation.blind.reason.min'),
             'reason.max' => __('sirsoft-board::validation.blind.reason.max'),
         ];
     }
@@ -52,7 +50,7 @@ class BlindCommentRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'reason' => __('sirsoft-board::validation.attributes.blind.reason'),
+            'reason' => __('sirsoft-board::attributes.blind.reason'),
         ];
     }
 }

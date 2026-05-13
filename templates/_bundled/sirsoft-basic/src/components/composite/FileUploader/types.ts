@@ -4,8 +4,6 @@
  * @module composite/FileUploader/types
  */
 
-import type { EditorAttrs } from '../../../types';
-
 // ========== Types ==========
 
 export interface Attachment {
@@ -16,8 +14,6 @@ export interface Attachment {
   size: number;
   size_formatted: string;
   download_url: string;
-  /** 미리보기 주소 (게시판·페이지 첨부 — 있으면 썸네일·확대 보기가 이 주소를 쓴다) */
-  preview_url?: string | null;
   order: number;
   is_image: boolean;
   meta?: Record<string, unknown>;
@@ -75,11 +71,7 @@ export interface FileUploaderProps {
   maxFiles?: number;
   /** 파일당 최대 크기 (MB) */
   maxSize?: number;
-  /**
-   * 동시 업로드 수 (기본 1 — 고른 순서대로 하나씩 올린다).
-   * 2 이상이면 빨리 올리지만, 서버가 도착 순서로 번호를 매기는 경우 저장 순서가 완료 순서가 된다.
-   * 화면 목록·완료 콜백·저장 목록은 어느 값이든 고른 순서를 지킨다.
-   */
+  /** 동시 업로드 수 */
   maxConcurrentUploads?: number;
   /** 허용 확장자 (예: ".jpg,.png,.pdf") */
   accept?: string;
@@ -152,20 +144,13 @@ export interface FileUploaderProps {
    * }
    */
   apiEndpoints?: {
-    /**
-     * 파일 업로드 API. **기본값이 없다** — 사용자 화면에는 공용 첨부 API 가 없어서 화면이 자기 주소를 넘겨야 한다.
-     * 주소 없이 업로드하면 그 파일은 실패로 남고 `onUploadError` 가 불린다.
-     */
+    /** 파일 업로드 API (기본값: /api/attachments) */
     upload?: string;
-    /** 파일 삭제 API - :id를 실제 ID로 치환. 없거나 빈 문자열이면 서버 삭제 없이 화면에서만 뺀다 */
+    /** 파일 삭제 API - :id를 실제 ID로 치환 (기본값: /api/attachments/:id) */
     delete?: string;
-    /** 순서 변경 API. 없거나 `null`·빈 문자열이면 정렬 요청을 보내지 않는다 */
-    reorder?: string | null;
+    /** 순서 변경 API (기본값: /api/attachments/reorder) */
+    reorder?: string;
   };
-  /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID) */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 export interface FileUploaderRef {
@@ -180,6 +165,5 @@ export interface FileUploaderRef {
 export interface ApiEndpoints {
   upload: string;
   delete: string;
-  /** null 이면 정렬 요청을 보내지 않는다 */
-  reorder: string | null;
+  reorder: string;
 }

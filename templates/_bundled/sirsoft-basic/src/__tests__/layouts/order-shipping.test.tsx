@@ -91,23 +91,12 @@ const TestFragment: React.FC<{ children?: React.ReactNode }> =
 
 // ========== Fixture: 배송지 정보 섹션 ==========
 
-/**
- * 고정물 노드의 공통 모양. 리터럴 고정물은 갈래마다 속성이 달라 인덱스로 파고들 때 이 모양으로 받는다.
- */
-interface FixtureNode {
-  type: string;
-  name: string;
-  if?: string;
-  children?: FixtureNode[];
-}
-
 const shippingInfoFixture = {
   version: '1.0.0',
   layout_name: 'mypage/orders/shipping',
   data_sources: [
     {
       id: 'order',
-      type: 'api',
       endpoint: '/api/modules/sirsoft-ecommerce/user/orders/1',
       method: 'GET',
     },
@@ -254,8 +243,6 @@ describe('주문 상세 - 배송지 정보', () => {
     vi.restoreAllMocks();
   });
 
-  // @scenario surface=shipping_info
-  // @effects shipping_info_renders
   it('배송지 정보를 렌더링한다', async () => {
     testUtils = createLayoutTest(shippingInfoFixture, {
       componentRegistry: registry,
@@ -286,8 +273,6 @@ describe('주문 상세 - 배송지 정보', () => {
     expect(screen.getByTestId('recipient-phone')).toBeInTheDocument();
   });
 
-  // @scenario surface=shipping_info
-  // @effects edit_button_only_before_shipping
   it('payment_complete 상태에서 배송지 수정 버튼이 표시된다', async () => {
     testUtils = createLayoutTest(shippingInfoFixture, {
       componentRegistry: registry,
@@ -314,8 +299,6 @@ describe('주문 상세 - 배송지 정보', () => {
     expect(screen.getByTestId('change-address-btn')).toBeInTheDocument();
   });
 
-  // @scenario surface=shipping_info
-  // @effects edit_button_only_before_shipping
   it('shipping 상태에서 배송지 수정 버튼이 숨겨진다', async () => {
     testUtils = createLayoutTest(shippingInfoFixture, {
       componentRegistry: registry,
@@ -342,8 +325,6 @@ describe('주문 상세 - 배송지 정보', () => {
     expect(screen.queryByTestId('change-address-btn')).not.toBeInTheDocument();
   });
 
-  // @scenario surface=shipping_info
-  // @effects shipping_memo_shown_when_present
   it('배송 메모가 있을 때 표시된다', async () => {
     testUtils = createLayoutTest(shippingInfoFixture, {
       componentRegistry: registry,
@@ -371,8 +352,6 @@ describe('주문 상세 - 배송지 정보', () => {
     expect(screen.getByTestId('delivery-memo')).toBeInTheDocument();
   });
 
-  // @scenario surface=shipping_info
-  // @effects shipping_memo_hidden_when_absent
   it('배송 메모가 없으면 숨겨진다', async () => {
     testUtils = createLayoutTest(shippingInfoFixture, {
       componentRegistry: registry,
@@ -402,8 +381,6 @@ describe('주문 상세 - 배송지 정보', () => {
 });
 
 describe('주문 배송지 변경 모달 구조 검증', () => {
-  // @scenario surface=change_address_modal
-  // @effects address_change_requires_confirm
   it('저장된 배송지 모드 apiCall에 confirm 속성이 있다', () => {
     const savedAction = changeAddressModalFixture.actions[0];
     expect(savedAction.confirm).toBe('$t:mypage.order_detail.confirm_change_address');
@@ -411,8 +388,6 @@ describe('주문 배송지 변경 모달 구조 검증', () => {
     expect(savedAction.params.method).toBe('PUT');
   });
 
-  // @scenario surface=change_address_modal
-  // @effects address_change_requires_confirm
   it('직접 입력 모드 apiCall에 confirm 속성이 있다', () => {
     const manualAction = changeAddressModalFixture.actions[1];
     expect(manualAction.confirm).toBe('$t:mypage.order_detail.confirm_change_address');
@@ -420,11 +395,8 @@ describe('주문 배송지 변경 모달 구조 검증', () => {
     expect(manualAction.params.method).toBe('PUT');
   });
 
-  // @scenario surface=shipping_info
-  // @effects edit_button_only_before_shipping
   it('배송지 수정 버튼 조건에 pending_payment과 payment_complete만 포함한다', () => {
-    const info: FixtureNode = shippingInfoFixture.components[0];
-    const ifCondition = info.children![0].children![1].if;
+    const ifCondition = shippingInfoFixture.components[0].children[0].children[1].if;
     expect(ifCondition).toContain('pending_payment');
     expect(ifCondition).toContain('payment_complete');
     expect(ifCondition).not.toContain('preparing');

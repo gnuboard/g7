@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands\LanguagePack;
 
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -16,14 +14,16 @@ use Throwable;
  */
 class DeactivateLanguagePackCommand extends Command
 {
-    use LocalizesDescription;
-    use ReportsLifecycleWarnings;
-
     /**
      * @var string
      */
     protected $signature = 'language-pack:deactivate
         {identifier : 언어팩 식별자}';
+
+    /**
+     * @var string
+     */
+    protected $description = '언어팩을 비활성화합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service
@@ -45,18 +45,18 @@ class DeactivateLanguagePackCommand extends Command
 
         $pack = $this->service->findByIdentifier($identifier);
         if (! $pack) {
-            $this->error(__('language_packs.commands.deactivate.not_found', ['identifier' => $identifier]));
+            $this->error("언어팩을 찾을 수 없습니다: {$identifier}");
 
             return self::FAILURE;
         }
 
         try {
             $this->service->deactivate($pack);
-            $this->info(__('language_packs.commands.deactivate.done', ['identifier' => $identifier]));
+            $this->info("언어팩 비활성화 완료: {$identifier}");
 
             return self::SUCCESS;
         } catch (Throwable $e) {
-            $this->error(__('language_packs.commands.deactivate.failed', ['error' => $e->getMessage()]));
+            $this->error('언어팩 비활성화 실패: '.$e->getMessage());
 
             return self::FAILURE;
         }

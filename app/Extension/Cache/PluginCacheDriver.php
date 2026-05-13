@@ -36,6 +36,6 @@ class PluginCacheDriver extends AbstractCacheDriver
      */
     protected function getPrefix(): string
     {
-        return 'g7:plugin.'.$this->identifier;
+        return 'g7:plugin.' . $this->identifier;
     }
 }

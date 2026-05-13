@@ -1,5 +1,10 @@
 {
   "no_content": "No content available.",
+  "published_at": "Published",
+  "status": {
+    "active": "Currently Active"
+  },
+  "back_to_home": "Back to Home",
   "terms": {
     "title": "Terms of Service"
   },
@@ -92,7 +97,7 @@
     "info": {
       "title": "Contact",
       "email_label": "Email:",
-      "email": "jjh621@sir.kr",
+      "email": "minsup@sir.kr",
       "hours_label": "Hours:",
       "hours": "Mon-Fri 09:00 - 18:00"
     },

@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 /**
  * LanguageSelector Props
  */
@@ -8,7 +7,7 @@ export interface LanguageSelectorProps {
     availableLocales?: string[];
     /** 언어 설정 텍스트 */
     languageText?: string;
-    /** 언어 변경 API 엔드포인트 (G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다) */
+    /** 언어 변경 API 엔드포인트 */
     apiEndpoint?: string;
     /** 언어 변경 후 콜백 */
     onLanguageChange?: (locale: string) => void;
@@ -16,17 +15,6 @@ export interface LanguageSelectorProps {
     className?: string;
     /** 인라인 모드 (드롭다운 메뉴 내에서 사용) */
     inline?: boolean;
-    /**
-     * 독립 모드 버튼에 현재 선택 언어 코드를 globe 아이콘 옆에 표시한다.
-     * 유저 템플릿 헤더 언어 버튼과 동일한 표기(아이콘 + 로케일 코드)를 위해 사용.
-     */
-    showCode?: boolean;
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * LanguageSelector 컴포넌트

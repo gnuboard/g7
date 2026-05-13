@@ -26,8 +26,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 테스트 게시판 slug
-     *
-     * @return string 테스트 게시판 slug
      */
     protected function getTestBoardSlug(): string
     {
@@ -36,9 +34,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 기본 게시판 속성
-     *
-     * @param  string  $slug  게시판 slug
-     * @return array<string, mixed> 게시판 생성 속성
      */
     protected function getDefaultBoardAttributes(string $slug): array
     {
@@ -51,11 +46,6 @@ class PostResourcePermissionTest extends BoardTestCase
         ];
     }
 
-    /**
-     * 관리자·일반 사용자·작성자를 만들고 게시판 권한을 설정합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -69,8 +59,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 테스트 사용자 생성
-     *
-     * @return void 반환값 없음
      */
     private function createTestUsers(): void
     {
@@ -81,8 +69,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 권한 설정
-     *
-     * @return void 반환값 없음
      */
     private function setupPermissions(): void
     {
@@ -107,12 +93,6 @@ class PostResourcePermissionTest extends BoardTestCase
             );
             $adminPermissions[] = $permission->id;
         }
-
-        // 관리자 진입 링크(can_access_admin)는 관리자 게시판 화면의 레이아웃 권한(boards.read)도 요구한다(7.1.0 abilities 게이트)
-        $adminPermissions[] = Permission::firstOrCreate(
-            ['identifier' => 'sirsoft-board.boards.read'],
-            ['name' => ['ko' => '게시판 조회', 'en' => 'Boards Read'], 'type' => 'admin']
-        )->id;
 
         $adminRole = Role::firstOrCreate(
             ['identifier' => "{$slug}-admin"],
@@ -151,12 +131,6 @@ class PostResourcePermissionTest extends BoardTestCase
         $userRole->permissions()->syncWithoutDetaching($userPermissions);
         $this->regularUser->roles()->attach($userRole->id);
         $this->postAuthor->roles()->attach($userRole->id);
-
-        // 관리자도 유저 라우트를 열려면 user 타입 권한이 필요하다.
-        // 유저 게시글 상세는 `permission:user,sirsoft-board.{slug}.posts.read` 로 가드되므로
-        // admin 타입 권한만으로는 403 이다 (실제 운영에서도 관리자는 두 역할을 함께 보유).
-        // can_access_admin 게이트는 이 라우트를 통과한 뒤 admin.manage 보유 여부로 판정된다.
-        $this->adminUser->roles()->attach($userRole->id);
     }
 
     // ==========================================
@@ -165,12 +139,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * Admin 페이지에서는 admin_* 권한만 반환
-     *
-     * @scenario context=admin_detail
-     *
-     * @effects admin_post_detail_reports_unified_can_abilities
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function admin_page_returns_admin_permissions_only(): void
@@ -203,12 +171,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * Admin 페이지에서 User 권한 미반환
-     *
-     * @scenario context=admin_detail
-     *
-     * @effects admin_post_detail_omits_legacy_user_permission_keys
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function admin_page_excludes_user_permissions(): void
@@ -241,12 +203,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * User 페이지에서는 posts_*, comments_* 권한만 반환
-     *
-     * @scenario context=user_detail
-     *
-     * @effects user_post_detail_reports_unified_can_abilities
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function user_page_returns_user_permissions_only(): void
@@ -281,12 +237,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * User 페이지에서 Admin 권한 미반환
-     *
-     * @scenario context=user_detail
-     *
-     * @effects user_post_detail_omits_legacy_admin_permission_keys
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function user_page_excludes_admin_permissions(): void
@@ -313,151 +263,11 @@ class PostResourcePermissionTest extends BoardTestCase
     }
 
     // ==========================================
-    // can_access_admin 게이트 테스트 (#450)
-    // 유저 화면에서 관리자 게시판 화면 진입 크로스링크 노출 여부
-    // ==========================================
-
-    /**
-     * User 상세: admin.manage(Admin 타입) 권한 보유자는 can_access_admin = true
-     *
-     * @scenario link=user_board_to_admin, permitted=true
-     *
-     * @effects board_admin_gate_true_shows_link
-     *
-     * @return void 반환값 없음
-     */
-    #[Test]
-    public function user_detail_returns_can_access_admin_true_for_admin_permission_holder(): void
-    {
-        // Given: 게시글 + admin.manage 권한 보유 사용자
-        $postId = $this->createPost([
-            'user_id' => $this->postAuthor->id,
-            'title' => 'Test Post',
-            'content' => 'Test Content',
-        ]);
-
-        // When: 관리 권한 보유자가 유저 라우트로 상세 조회
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}");
-
-        // Then: 유저 컨텍스트에도 can_access_admin 노출 + true
-        $response->assertStatus(200);
-        $abilities = $response->json('data.abilities');
-
-        $this->assertArrayHasKey('can_access_admin', $abilities);
-        $this->assertTrue($abilities['can_access_admin']);
-    }
-
-    /**
-     * User 상세: 일반 사용자(admin.manage 미보유)는 can_access_admin = false
-     *
-     * @scenario link=user_board_to_admin, permitted=false
-     *
-     * @effects board_admin_gate_false_hides_link
-     *
-     * @return void 반환값 없음
-     */
-    #[Test]
-    public function user_detail_returns_can_access_admin_false_for_regular_user(): void
-    {
-        // Given
-        $postId = $this->createPost([
-            'user_id' => $this->postAuthor->id,
-            'title' => 'Test Post',
-            'content' => 'Test Content',
-        ]);
-
-        // When: user 권한만 보유한 사용자가 유저 라우트로 상세 조회
-        $response = $this->actingAs($this->regularUser, 'sanctum')
-            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}");
-
-        // Then: can_access_admin 은 노출되나 false
-        $response->assertStatus(200);
-        $abilities = $response->json('data.abilities');
-
-        $this->assertArrayHasKey('can_access_admin', $abilities);
-        $this->assertFalse($abilities['can_access_admin']);
-    }
-
-    /**
-     * User 목록: 컬렉션 abilities 에도 can_access_admin 노출
-     *
-     * @scenario context=user_list
-     *
-     * @effects user_post_list_collection_reports_can_access_admin
-     *
-     * @return void 반환값 없음
-     */
-    #[Test]
-    public function user_list_collection_exposes_can_access_admin(): void
-    {
-        // Given
-        $this->createPost([
-            'user_id' => $this->postAuthor->id,
-            'title' => 'List Post',
-            'content' => 'List Content',
-        ]);
-
-        // When: 관리 권한 보유자가 유저 라우트로 목록 조회
-        $response = $this->actingAs($this->adminUser, 'sanctum')
-            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts");
-
-        // Then: 컬렉션 abilities 에 can_access_admin = true
-        $response->assertStatus(200);
-        $abilities = $response->json('data.abilities');
-
-        $this->assertArrayHasKey('can_access_admin', $abilities);
-        $this->assertTrue($abilities['can_access_admin']);
-    }
-
-    /**
-     * User 목록/상세 응답의 board 정보에 id 가 포함된다 (#450)
-     *
-     * "게시판 관리" 크로스링크가 /admin/boards/:id/edit 로 이동하려면 board id 필요.
-     *
-     * @scenario context=user_list
-     *
-     * @effects user_post_list_and_detail_board_info_include_id
-     *
-     * @return void 반환값 없음
-     */
-    #[Test]
-    public function user_response_board_info_includes_id(): void
-    {
-        // Given
-        $postId = $this->createPost([
-            'user_id' => $this->postAuthor->id,
-            'title' => 'Board Id Post',
-            'content' => 'Board Id Content',
-        ]);
-
-        // When: 목록
-        $listResponse = $this->actingAs($this->regularUser, 'sanctum')
-            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts");
-        // And: 상세
-        $detailResponse = $this->actingAs($this->regularUser, 'sanctum')
-            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}");
-
-        // Then: 목록/상세 board 정보 모두 실제 게시판 id 노출
-        $listResponse->assertStatus(200);
-        $this->assertSame($this->board->id, $listResponse->json('data.board.id'));
-
-        $detailResponse->assertStatus(200);
-        $this->assertSame($this->board->id, $detailResponse->json('data.board.id'));
-    }
-
-    // ==========================================
     // 소유권 플래그 테스트
     // ==========================================
 
     /**
      * 본인 글: is_author = true
-     *
-     * @scenario context=ownership_flags
-     *
-     * @effects post_is_author_true_for_own_post
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function is_author_true_for_own_post(): void
@@ -481,12 +291,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 타인 글: is_author = false
-     *
-     * @scenario context=ownership_flags
-     *
-     * @effects post_is_author_false_for_others_post
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function is_author_false_for_others_post(): void
@@ -510,12 +314,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 비회원 글: is_guest_post = true
-     *
-     * @scenario context=ownership_flags
-     *
-     * @effects post_is_guest_post_true_for_guest_post
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function is_guest_post_true_for_guest_post(): void
@@ -540,12 +338,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 회원 글: is_guest_post = false
-     *
-     * @scenario context=ownership_flags
-     *
-     * @effects post_is_guest_post_false_for_member_post
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function is_guest_post_false_for_member_post(): void
@@ -572,12 +364,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 비회원: guest_permissions에 따라 권한 체크
-     *
-     * @scenario context=permission_source
-     *
-     * @effects guest_abilities_follow_guest_role_permissions
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function guest_permissions_respected_for_non_authenticated_user(): void
@@ -605,12 +391,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 로그인 사용자: Gate로 권한 체크
-     *
-     * @scenario context=permission_source
-     *
-     * @effects member_abilities_follow_gate_permissions
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function authenticated_user_permissions_check_via_gate(): void
@@ -643,12 +423,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 일반 사용자는 답글 섹션에서 삭제된 답글을 볼 수 없다
-     *
-     * @scenario context=deleted_reply_visibility
-     *
-     * @effects regular_user_post_detail_hides_deleted_reply
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function regular_user_cannot_see_deleted_reply_in_post_detail(): void
@@ -692,12 +466,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 관리자는 답글 섹션에서 삭제된 답글을 볼 수 있다
-     *
-     * @scenario context=deleted_reply_visibility
-     *
-     * @effects admin_post_detail_shows_deleted_reply
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function admin_user_can_see_deleted_reply_in_post_detail(): void
@@ -744,9 +512,6 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 게시글 생성 헬퍼
-     *
-     * @param  array<string, mixed>  $attributes  게시글 속성 (기본값을 덮어쓴다)
-     * @return int 생성된 게시글 ID
      */
     private function createPost(array $attributes): int
     {

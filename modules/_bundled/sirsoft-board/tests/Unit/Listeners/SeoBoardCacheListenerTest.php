@@ -2,12 +2,8 @@
 
 namespace Modules\Sirsoft\Board\Tests\Unit\Listeners;
 
-use App\Contracts\Extension\CacheInterface;
-use App\Jobs\GenerateSitemapJob;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SeoCacheRegenerator;
-use App\Seo\SitemapIndexer;
-use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
@@ -32,11 +28,6 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
 
     private SeoCacheRegenerator $regeneratorMock;
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,37 +38,19 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
         $this->regeneratorMock = Mockery::mock(SeoCacheRegenerator::class);
         $this->app->instance(SeoCacheRegenerator::class, $this->regeneratorMock);
 
-        // 사이트맵 색인 경로는 이 테스트 범위 밖 — spy 로 대체하고 잡을 fake 하여 DB/큐 부작용을 차단
-        $this->app->instance(SitemapIndexer::class, Mockery::spy(SitemapIndexer::class));
-        Bus::fake([GenerateSitemapJob::class]);
-
         $this->listener = new SeoBoardCacheListener;
     }
 
-    /**
-     * 테스트가 바꾼 상태를 정리합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 
     // ─── 훅 구독 등록 ──────────────────────────────────────
 
     /**
      * 훅 구독이 올바르게 등록되어 있는지 확인합니다.
-     *
-     * @scenario listener=seo_board, queue=sync
-     *
-     * @effects shared_cache_invalidated_without_worker
-     *
-     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_returns_correct_mapping(): void
     {
@@ -98,118 +71,23 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
         $this->assertEquals(20, $hooks['sirsoft-board.post.after_delete']['priority']);
     }
 
-    /**
-     * 게시판 수정 훅(board.after_update) 구독이 등록되어 있는지 확인합니다. (#413-17)
-     *
-     * 이 훅 미구독이 "게시판 정보 수정 후 SEO 메타 캐시 미무효화" 버그의 원인이었습니다.
-     *
-     * @scenario name_changed=no, description_changed=no
-     *
-     * @effects board_after_update_hook_subscribed
-     *
-     * @return void 반환값 없음
-     */
-    public function test_subscribes_board_after_update_hook(): void
-    {
-        $hooks = SeoBoardCacheListener::getSubscribedHooks();
-
-        $this->assertArrayHasKey('sirsoft-board.board.after_update', $hooks);
-        $this->assertEquals('onBoardUpdate', $hooks['sirsoft-board.board.after_update']['method']);
-        $this->assertEquals(20, $hooks['sirsoft-board.board.after_update']['priority']);
-    }
-
-    // ─── onBoardUpdate (#413-17) ───────────────────────────
-
-    /**
-     * 게시판 수정 시 해당 게시판 SEO 캐시가 무효화되는지 확인합니다. (#413-17)
-     *
-     * 게시판 이름/설명 변경은 게시판 목록(/board/{slug})과 인덱스(/boards)
-     * 메타에 노출되므로, 이 두 URL + 전역 레이아웃(home, search/index) +
-     * sitemap 캐시를 무효화해야 합니다. (게시글 상세는 board name 미노출이라 제외)
-     *
-     * @scenario name_changed=yes, description_changed=no
-     *
-     * @effects board_update_invalidates_board_list_url, board_update_invalidates_boards_index_url, board_update_invalidates_home_and_search_layouts, board_update_invalidates_sitemap_cache
-     *
-     * @return void 반환값 없음
-     */
-    public function test_on_board_update_invalidates_board_seo_caches(): void
-    {
-        $this->assertBoardUpdateInvalidatesAll('free');
-    }
-
-    /**
-     * 이름만 미변경·설명만 변경된 경우에도 동일하게 무효화된다. (cross product 커버)
-     *
-     * @scenario name_changed=no, description_changed=yes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_on_board_update_invalidates_when_only_description_changed(): void
-    {
-        $this->assertBoardUpdateInvalidatesAll('notice');
-    }
-
-    /**
-     * 이름·설명 모두 변경된 경우에도 동일하게 무효화된다. (cross product 커버)
-     *
-     * @scenario name_changed=yes, description_changed=yes
-     *
-     * @return void 반환값 없음
-     */
-    public function test_on_board_update_invalidates_when_both_changed(): void
-    {
-        $this->assertBoardUpdateInvalidatesAll('qna');
-    }
-
-    /**
-     * 게시판 수정 무효화 중 예외 발생 시 graceful하게 처리되는지 확인합니다. (#413-17)
-     *
-     * @effects board_update_invalidation_graceful_on_exception
-     *
-     * @scenario listener=seo_board, queue=sync
-     *
-     * @effects shared_cache_invalidated_without_worker
-     *
-     * @return void 반환값 없음
-     */
-    public function test_on_board_update_handles_exceptions_gracefully(): void
-    {
-        $board = (object) ['id' => 1, 'slug' => 'free'];
-
-        $this->cacheMock->shouldReceive('invalidateByUrl')
-            ->andThrow(new \RuntimeException('Cache service unavailable'));
-        $this->cacheMock->shouldReceive('invalidateByLayout')->andReturn(1);
-
-        Log::shouldReceive('warning')->once();
-        Log::shouldReceive('debug')->zeroOrMoreTimes();
-
-        // 예외가 외부로 전파되지 않아야 함
-        $this->listener->onBoardUpdate($board, [], []);
-
-        $this->addToAssertionCount(1);
-    }
-
     // ─── onPostCreate ──────────────────────────────────────
 
     /**
-     * 게시글 생성 시 해당 게시판의 캐시만 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다, #724).
-     *
-     * @scenario listener=seo_board, queue=sync
-     *
-     * @effects shared_cache_invalidated_without_worker
-     *
-     * @return void 반환값 없음
+     * 게시글 생성 시 해당 게시판의 캐시만 무효화 + 단건 재생성이 수행되는지 확인합니다.
      */
-    public function test_on_post_create_invalidates_caches_without_regeneration(): void
+    public function test_on_post_create_invalidates_caches_and_regenerates_detail(): void
     {
         $post = (object) ['id' => 42];
         $slug = 'free';
 
         $this->expectPerBoardInvalidations($post, $slug);
 
-        // 상세 재생성은 SeoBoardRegenerateListener(큐)가 맡는다
-        $this->regeneratorMock->shouldNotReceive('renderAndCache');
+        // 단건 재생성 호출 확인
+        $this->regeneratorMock->shouldReceive('renderAndCache')
+            ->once()
+            ->with('/board/free/42')
+            ->andReturn(true);
 
         Log::shouldReceive('debug')->atLeast()->once();
 
@@ -221,23 +99,20 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
     // ─── onPostUpdate ──────────────────────────────────────
 
     /**
-     * 게시글 수정 시 해당 게시판의 캐시만 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다, #724).
-     *
-     * @scenario listener=seo_board, queue=sync
-     *
-     * @effects shared_cache_invalidated_without_worker
-     *
-     * @return void 반환값 없음
+     * 게시글 수정 시 해당 게시판의 캐시만 무효화 + 단건 재생성이 수행되는지 확인합니다.
      */
-    public function test_on_post_update_invalidates_caches_without_regeneration(): void
+    public function test_on_post_update_invalidates_caches_and_regenerates_detail(): void
     {
         $post = (object) ['id' => 10];
         $slug = 'notice';
 
         $this->expectPerBoardInvalidations($post, $slug);
 
-        // 상세 재생성은 SeoBoardRegenerateListener(큐)가 맡는다
-        $this->regeneratorMock->shouldNotReceive('renderAndCache');
+        // 단건 재생성 호출 확인
+        $this->regeneratorMock->shouldReceive('renderAndCache')
+            ->once()
+            ->with('/board/notice/10')
+            ->andReturn(true);
 
         Log::shouldReceive('debug')->atLeast()->once();
 
@@ -248,12 +123,6 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
 
     /**
      * 게시글 수정 시 home과 search/index 전역 캐시도 무효화되는지 확인합니다.
-     *
-     * @scenario listener=seo_board, queue=sync
-     *
-     * @effects shared_cache_invalidated_without_worker
-     *
-     * @return void 반환값 없음
      */
     public function test_on_post_update_invalidates_home_and_search(): void
     {
@@ -277,7 +146,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
                 return 1;
             });
 
-        $this->regeneratorMock->shouldNotReceive('renderAndCache');
+        $this->regeneratorMock->shouldReceive('renderAndCache')->once()->andReturn(true);
         Log::shouldReceive('debug')->atLeast()->once();
 
         $this->listener->onPostUpdate($post, $slug);
@@ -297,12 +166,6 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
 
     /**
      * 다른 게시판(notice)의 게시글 수정 시 해당 게시판 URL만 무효화되는지 확인합니다.
-     *
-     * @scenario listener=seo_board, queue=sync
-     *
-     * @effects shared_cache_invalidated_without_worker
-     *
-     * @return void 반환값 없음
      */
     public function test_on_post_update_only_invalidates_own_board(): void
     {
@@ -319,7 +182,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
             });
 
         $this->cacheMock->shouldReceive('invalidateByLayout')->andReturn(1);
-        $this->regeneratorMock->shouldNotReceive('renderAndCache');
+        $this->regeneratorMock->shouldReceive('renderAndCache')->once()->andReturn(true);
         Log::shouldReceive('debug')->atLeast()->once();
 
         $this->listener->onPostUpdate($post, $slug);
@@ -338,12 +201,6 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
 
     /**
      * 게시글 삭제 시 해당 게시판 캐시만 무효화되고 재생성은 하지 않는지 확인합니다.
-     *
-     * @scenario listener=seo_board, queue=sync
-     *
-     * @effects shared_cache_invalidated_without_worker
-     *
-     * @return void 반환값 없음
      */
     public function test_on_post_delete_invalidates_caches_without_regeneration(): void
     {
@@ -366,12 +223,6 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
 
     /**
      * 캐시 무효화 중 예외 발생 시 graceful하게 처리되는지 확인합니다.
-     *
-     * @scenario listener=seo_board, queue=sync
-     *
-     * @effects shared_cache_invalidated_without_worker
-     *
-     * @return void 반환값 없음
      */
     public function test_handles_invalidation_exceptions_gracefully(): void
     {
@@ -381,19 +232,42 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
         $this->cacheMock->shouldReceive('invalidateByUrl')
             ->andThrow(new \RuntimeException('Cache service unavailable'));
 
-        // 상세 재생성은 큐 리스너가 맡는다 — 무효화 실패와 무관하게 여기서는 다시 그리지 않는다
-        $this->regeneratorMock->shouldNotReceive('renderAndCache');
+        // invalidateByUrl 예외 후에도 regeneration은 시도됨
+        $this->regeneratorMock->shouldReceive('renderAndCache')->once()->andReturn(true);
 
         Log::shouldReceive('warning')
             ->once()
             ->with('[SEO] Board post cache invalidation failed', Mockery::on(function ($context) {
                 return $context['error'] === 'Cache service unavailable';
             }));
-        // 무효화가 실패하면 성공 debug 로그는 남지 않는다 (예전 debug 는 재생성 성공 로그였다)
-        Log::shouldReceive('debug')->zeroOrMoreTimes();
+        Log::shouldReceive('debug')->atLeast()->once();
 
         // 예외가 외부로 전파되지 않아야 함
         $this->listener->onPostUpdate($post, $slug);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 재생성 중 예외 발생 시 graceful하게 처리되는지 확인합니다.
+     */
+    public function test_handles_regeneration_exceptions_gracefully(): void
+    {
+        $post = (object) ['id' => 10];
+        $slug = 'free';
+
+        $this->expectPerBoardInvalidations($post, $slug);
+
+        $this->regeneratorMock->shouldReceive('renderAndCache')
+            ->andThrow(new \RuntimeException('Render failed'));
+
+        Log::shouldReceive('debug')->atLeast()->once();
+        Log::shouldReceive('warning')
+            ->once()
+            ->with('[SEO] Board post detail cache regeneration failed', Mockery::type('array'));
+
+        // 예외가 외부로 전파되지 않아야 함
+        $this->listener->onPostCreate($post, $slug);
 
         $this->addToAssertionCount(1);
     }
@@ -402,12 +276,6 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
 
     /**
      * handle 메서드가 존재하는지 확인합니다 (HookListenerInterface 준수).
-     *
-     * @scenario listener=seo_board, queue=sync
-     *
-     * @effects shared_cache_invalidated_without_worker
-     *
-     * @return void 반환값 없음
      */
     public function test_handle_method_exists(): void
     {
@@ -418,64 +286,13 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
     // ─── 헬퍼 ──────────────────────────────────────────────
 
     /**
-     * 게시판 수정 시 해당 게시판 SEO 캐시 전체가 무효화되는지 단언합니다. (#413-17)
-     *
-     * 무효화 대상: /board/{slug}(쪽 변종·글 상세 포함) · /boards URL + home·search/index 레이아웃 + seo.sitemap 캐시.
-     *
-     * @param  string  $slug  대상 게시판 슬러그
-     * @return void 반환값 없음
-     */
-    private function assertBoardUpdateInvalidatesAll(string $slug): void
-    {
-        $board = (object) ['id' => 1, 'slug' => $slug];
-
-        $invokedUrls = [];
-        $invokedLayouts = [];
-
-        $this->cacheMock->shouldReceive('invalidateByUrl')
-            ->andReturnUsing(function (string $url) use (&$invokedUrls) {
-                $invokedUrls[] = $url;
-
-                return 1;
-            });
-
-        $this->cacheMock->shouldReceive('invalidateByLayout')
-            ->andReturnUsing(function (string $layout) use (&$invokedLayouts) {
-                $invokedLayouts[] = $layout;
-
-                return 1;
-            });
-
-        // sitemap 캐시(seo.sitemap) forget 검증 — CacheInterface
-        $cacheInterfaceMock = Mockery::mock(CacheInterface::class);
-        $cacheInterfaceMock->shouldReceive('forget')->once()->with('seo.sitemap');
-        $this->app->instance(CacheInterface::class, $cacheInterfaceMock);
-
-        Log::shouldReceive('debug')->atLeast()->once();
-
-        $this->listener->onBoardUpdate($board, [], []);
-
-        // 게시판 목록 + 인덱스 URL 무효화 (정확 매칭 + 쿼리스트링 변종 와일드카드)
-        $this->assertContains("/board/{$slug}", $invokedUrls);
-        $this->assertContains("/board/{$slug}?*", $invokedUrls);
-        $this->assertContains('/boards', $invokedUrls);
-        $this->assertContains('/boards?*', $invokedUrls);
-        $this->assertContains("/board/{$slug}/*", $invokedUrls, '글 상세도 게시판 이름을 렌더한다');
-
-        // 전역 레이아웃 무효화 (게시판명이 목록/검색에 노출될 수 있음)
-        $this->assertContains('home', $invokedLayouts);
-        $this->assertContains('search/index', $invokedLayouts);
-    }
-
-    /**
      * 게시판별 캐시 무효화 기대값을 설정합니다.
      *
-     * URL 기반 무효화: 해당 게시글 상세 + 해당 게시판 목록(쪽 변종 포함)
+     * URL 기반 무효화: 해당 게시글 상세 + 해당 게시판 목록
      * 레이아웃 기반 무효화: home, search/index (전역)
      *
      * @param  object  $post  게시글 객체
      * @param  string  $slug  게시판 슬러그
-     * @return void 반환값 없음
      */
     private function expectPerBoardInvalidations(object $post, string $slug): void
     {
@@ -484,13 +301,10 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
             ->once()
             ->with("/board/{$slug}/{$post->id}");
 
-        // 해당 게시판 목록 URL만 무효화 (쪽 변종 포함)
+        // 해당 게시판 목록 URL만 무효화
         $this->cacheMock->shouldReceive('invalidateByUrl')
             ->once()
             ->with("/board/{$slug}");
-        $this->cacheMock->shouldReceive('invalidateByUrl')
-            ->once()
-            ->with("/board/{$slug}?*");
 
         // 전역 레이아웃 무효화
         $this->cacheMock->shouldReceive('invalidateByLayout')

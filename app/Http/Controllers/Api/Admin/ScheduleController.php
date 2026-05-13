@@ -2,17 +2,10 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Enums\ScheduleDispatchMode;
-use App\Enums\ScheduleResultStatus;
-use App\Enums\ScheduleType;
-use App\Exceptions\ScheduleAlreadyRunningException;
-use App\Exceptions\ScheduleExecutionException;
-use App\Exceptions\ScheduleRunLockUnavailableException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Schedule\BulkDeleteScheduleRequest;
 use App\Http\Requests\Schedule\BulkUpdateScheduleStatusRequest;
 use App\Http\Requests\Schedule\CreateScheduleRequest;
-use App\Http\Requests\Schedule\DeleteScheduleRequest;
 use App\Http\Requests\Schedule\ScheduleHistoryListRequest;
 use App\Http\Requests\Schedule\ScheduleListRequest;
 use App\Http\Requests\Schedule\UpdateScheduleRequest;
@@ -20,13 +13,7 @@ use App\Http\Resources\ScheduleCollection;
 use App\Http\Resources\ScheduleHistoryCollection;
 use App\Http\Resources\ScheduleHistoryResource;
 use App\Http\Resources\ScheduleResource;
-use App\Http\Resources\ScheduleSecurityResource;
-use App\Http\Resources\ScheduleStatusResource;
 use App\Models\Schedule;
-use App\Services\JobQueueService;
-use App\Services\Schedule\ScheduleHeartbeat;
-use App\Services\Schedule\ScheduleLookupService;
-use App\Services\Schedule\ScheduleSecurityPolicy;
 use App\Services\ScheduleService;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -40,12 +27,6 @@ use Illuminate\Validation\ValidationException;
  */
 class ScheduleController extends AdminBaseController
 {
-    /**
-     * 스케줄 서비스를 주입받습니다.
-     *
-     * @param  ScheduleService  $scheduleService  스케줄 서비스
-     * @return void 반환값 없음
-     */
     public function __construct(
         private ScheduleService $scheduleService
     ) {
@@ -145,13 +126,10 @@ class ScheduleController extends AdminBaseController
     /**
      * 스케줄을 삭제합니다.
      *
-     * 코어·확장 소유 행은 DeleteScheduleRequest 가 422 로 거절한다.
-     *
-     * @param  DeleteScheduleRequest  $request  삭제 요청(소유 행 거부)
      * @param  Schedule  $schedule  삭제할 스케줄 모델
      * @return JsonResponse 삭제 결과 JSON 응답
      */
-    public function destroy(DeleteScheduleRequest $request, Schedule $schedule): JsonResponse
+    public function destroy(Schedule $schedule): JsonResponse
     {
         try {
             $scheduleId = $schedule->id;
@@ -178,32 +156,17 @@ class ScheduleController extends AdminBaseController
     public function run(Schedule $schedule): JsonResponse
     {
         try {
-            $history = $this->scheduleService->runNow($schedule, Auth::id());
-        } catch (ScheduleAlreadyRunningException|ScheduleRunLockUnavailableException $e) {
-            // 「중복 실행 방지」 스케줄이 이미 실행 중(409)이거나 실행 잠금 저장소 오류(503) — #161 F4
-            return $this->error($e->getMessageKey(), $e->getStatusCode());
-        } catch (ScheduleExecutionException $e) {
-            // 소유 확장 비활성 — 실행 자체를 시작하지 않았다
-            return $this->error('schedule.run_failed', 422, ['general' => [$e->getMessage()]]);
+            $history = $this->scheduleService->runSchedule($schedule, Auth::id());
+
+            return $this->successWithResource(
+                'schedule.run_success',
+                new ScheduleHistoryResource($history)
+            );
+        } catch (ValidationException $e) {
+            return $this->error('schedule.run_failed', 422, $e->errors());
         } catch (Exception $e) {
             return $this->error('schedule.run_failed', 500, $e->getMessage());
         }
-
-        if ($history === null) {
-            // 큐로 보낸 행은 워커가 처리해야 결과가 생긴다(202). job 유형은 실행기가 Job 을 직접
-            // 큐에 넣고 이력을 돌려주므로 여기 오지 않는다. 실패만 기록하는 행의 성공은 이력이 없다(200).
-            $queued = $schedule->dispatch_mode === ScheduleDispatchMode::Queue && $schedule->type !== ScheduleType::Job;
-
-            return $queued
-                ? $this->success('schedule.run_queued', ['queued' => true, 'status' => null], 202)
-                : $this->success('schedule.run_success', ['queued' => false, 'status' => ScheduleResultStatus::Success->value, 'recorded' => false]);
-        }
-
-        // 바로 실행은 실패도 예외 없이 실패 이력으로 온다 — 창이 결과(실패·오류 출력)를 그대로 보여 준다
-        return $this->successWithResource(
-            $history->status === ScheduleResultStatus::Failed ? 'schedule.run_failed' : 'schedule.run_success',
-            new ScheduleHistoryResource($history)
-        );
     }
 
     /**
@@ -286,73 +249,6 @@ class ScheduleController extends AdminBaseController
             return $this->success('schedule.statistics_success', $statistics);
         } catch (Exception $e) {
             return $this->error('schedule.statistics_failed', 500, $e->getMessage());
-        }
-    }
-
-    /**
-     * 스케줄 소유 필터 옵션(코어·확장·직접 등록별 스케줄 수)을 조회합니다.
-     *
-     * 확장 이름은 현재 로케일로 해석해 내려준다 — 필터의 확장 선택 상자가 그대로 표시한다.
-     *
-     * @param  ScheduleLookupService  $lookupService  스케줄 조회 서비스
-     * @return JsonResponse 소유자 요약 목록을 포함한 JSON 응답
-     */
-    public function owners(ScheduleLookupService $lookupService): JsonResponse
-    {
-        try {
-            return $this->success(
-                'schedule.owners_fetch_success',
-                $lookupService->ownersSummary(app()->getLocale())
-            );
-        } catch (Exception $e) {
-            return $this->error('schedule.owners_fetch_failed', 500, $e->getMessage());
-        }
-    }
-
-    /**
-     * 스케줄러 하트비트와 큐 요약(상태 카드용)을 조회합니다.
-     *
-     * 의존 서비스는 이 경로에서만 쓰므로 생성자가 아니라 메서드로 주입한다.
-     *
-     * @param  ScheduleHeartbeat  $heartbeat  스케줄러 하트비트
-     * @param  JobQueueService  $jobQueueService  큐 서비스
-     * @param  ScheduleSecurityPolicy  $securityPolicy  스케줄 보안 유효 정책(Shell 사용 여부)
-     * @return JsonResponse 하트비트·큐 요약·Shell 사용 여부를 포함한 JSON 응답
-     */
-    public function status(ScheduleHeartbeat $heartbeat, JobQueueService $jobQueueService, ScheduleSecurityPolicy $securityPolicy): JsonResponse
-    {
-        try {
-            return $this->successWithResource(
-                'schedule.status_fetch_success',
-                new ScheduleStatusResource([
-                    'last_tick' => $heartbeat->lastTick(),
-                    'queue' => $jobQueueService->summary(),
-                    'shell_enabled' => $securityPolicy->shellEnabled(),
-                ])
-            );
-        } catch (Exception $e) {
-            return $this->error('schedule.status_fetch_failed', 500, $e->getMessage());
-        }
-    }
-
-    /**
-     * 스케줄 실행 보안 유효 정책(읽기 전용)을 조회합니다.
-     *
-     * 코어 정책(config)에 서버 관리자 덮어쓰기 파일을 더한 결과를 항목별 출처와 함께 돌려준다.
-     * 화면에서 바꾸는 경로는 없다 — 서버 관리자가 덮어쓰기 파일과 .env 로 바꾼다.
-     *
-     * @param  ScheduleSecurityPolicy  $securityPolicy  스케줄 보안 유효 정책
-     * @return JsonResponse 유효 정책을 포함한 JSON 응답
-     */
-    public function security(ScheduleSecurityPolicy $securityPolicy): JsonResponse
-    {
-        try {
-            return $this->successWithResource(
-                'schedule.security_fetch_success',
-                new ScheduleSecurityResource($securityPolicy->describe())
-            );
-        } catch (Exception $e) {
-            return $this->error('schedule.security_fetch_failed', 500, $e->getMessage());
         }
     }
 

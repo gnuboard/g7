@@ -36,14 +36,6 @@ class SettingsResource extends BaseApiResource
     {
         return [
             'can_update' => 'core.settings.update',
-            // audit:allow abilitymap-permission-matches-route-ssot reason: 코어 교체 권한은
-            // 설정 리소스의 것이 아니다 (#609 D4) — 라우트 SSoT 도 `core.system.update` 이고,
-            // 이 값은 설정 화면이 **업데이트 탭을 보여 줄지**를 정하는 표시 게이트다. 설정
-            // 수정 권한만 위임받은 관리자에게 이 영역이 감춰지는 것이 의도된 동작이므로,
-            // 룰이 막으려는 「원 리소스 권한만 가진 액터에게 정당한 조작이 감춰지는」 형태가
-            // 아니다. 이 값이 거짓이면 화면은 업데이트 영역을 **비활성이 아니라 미표시**로
-            // 다룬다 — 누를 수 없는 버튼을 남겨 두면 그 권한이 있는 줄 알고 기다리게 된다.
-            'can_core_update' => 'core.system.update',
         ];
     }
 }

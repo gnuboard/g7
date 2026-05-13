@@ -3,8 +3,6 @@
 namespace App\Extension;
 
 use App\Contracts\Extension\UpgradeStepInterface;
-use App\Extension\Exceptions\UpgradeStepClassMissingException;
-use App\Extension\Support\UpgradeStepFileLoader;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\Upgrade\DataSnapshot;
 use ReflectionClass;
@@ -33,25 +31,9 @@ use ReflectionClass;
 abstract class AbstractUpgradeStep implements UpgradeStepInterface
 {
     /**
-     * 이 스텝이 하는 일을 사람이 읽을 한 줄로 설명합니다 — `g7:migrate-plan` 이 실행 전에 보여 준다 (7.2.0, 선택 구현).
-     *
-     * 구현하지 않으면 null 이고 계획에는 「설명 없음」으로 나온다. `destructive` 는 데이터를 지우거나 되돌릴 수 없게 바꾸면 true.
-     * 실행 없이 불리므로 DB·파일을 읽거나 바꾸지 않는다.
-     *
-     * @return array{summary: string, destructive: bool}|null 설명 (없으면 null)
-     */
-    public function describe(): ?array
-    {
-        return null;
-    }
-
-    /**
      * data/{currentStep}/manifest.json 을 로드 + Applier 동적 로드.
      *
      * 카탈로그 변동이 없는 스텝은 manifest 파일 없이 자동 빈 스냅샷 반환.
-     *
-     * @param  UpgradeContext  $context  업그레이드 컨텍스트 (현재 단계 버전)
-     * @return DataSnapshot 카탈로그 스냅샷 (manifest 없으면 빈 스냅샷)
      */
     protected function dataSnapshot(UpgradeContext $context): DataSnapshot
     {
@@ -66,7 +48,6 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
      * prefix 는 정규식 `^\d{2,}_` 로 클래스명 매핑 시 제거되며, 클래스명 자체는 prefix 없이
      * 선언한다 (PHP 식별자 제약). 파일 정렬 결과가 실행 순서 — 명시적 순서가 필요하면 prefix 사용.
      *
-     * @param  UpgradeContext  $context  업그레이드 컨텍스트 (현재 단계 버전)
      * @return array<int, DataMigration>
      */
     protected function dataMigrations(UpgradeContext $context): array
@@ -76,28 +57,21 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
             return [];
         }
 
-        // `glob` 은 하드닝 프로필의 표준 차단 대상이다. 막힌 호스팅에서 PHP 8 은 그 함수를
-        // 함수 테이블에서 제거하므로 이 호출은 `Error`(치명)이고, **업그레이드 스텝 전체가
-        // 그 자리에서 죽는다** — 이 안이 대상으로 삼은 제약 호스팅에서 정리가 한 번도
-        // 실행되지 않는다는 뜻이다. 로더가 사각이면 개별 마이그레이션이 `scandir` 로
-        // 회피한 것도 무의미하므로(`01_MovePublicStorage…` 가 정확히 그 근거를 적고 있다)
-        // 같은 규율로 정렬한다.
-        $files = ExtensionManager::listDirectoryFiles($dir, '.php');
+        $files = glob($dir.'/*.php') ?: [];
+        sort($files);
 
         $migrations = [];
         $namespace = DataSnapshot::versionedNamespace($context, $dir).'\\Migrations';
 
         foreach ($files as $file) {
+            require_once $file;
             $baseName = basename($file, '.php');
             $className = preg_replace('/^\d{2,}_/', '', $baseName);
             $fqcn = $namespace.'\\'.$className;
 
-            // 활성·번들 동일 사본이 이미 선언한 클래스는 다시 싣지 않는다(재선언 Fatal 방지, 7.1.5)
-            UpgradeStepFileLoader::load($file, $fqcn);
-
-            // 파일이 있는데 클래스가 없거나 DataMigration 미구현이면 업데이트 실패 (7.1.3 — 예전엔 조용히 건너뜀)
-            UpgradeStepClassMissingException::assertUsable($file, $fqcn, DataMigration::class);
-            $migrations[] = new $fqcn;
+            if (class_exists($fqcn) && is_subclass_of($fqcn, DataMigration::class)) {
+                $migrations[] = new $fqcn;
+            }
         }
 
         return $migrations;
@@ -110,9 +84,6 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
      * 미래에 *모든 버전 공통* 인 부수 작업이 필요하면 override.
      *
      * default: no-op.
-     *
-     * @param  UpgradeContext  $context  업그레이드 컨텍스트
-     * @return void 반환값 없음
      */
     protected function postRun(UpgradeContext $context): void {}
 
@@ -120,9 +91,6 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
      * 업그레이드 스텝 실행 — 순서: dataSnapshot → dataMigrations → postRun.
      *
      * 본 메서드는 final — 하위 클래스가 순서 무력화 못 함.
-     *
-     * @param  UpgradeContext  $context  업그레이드 컨텍스트
-     * @return void 반환값 없음
      */
     final public function run(UpgradeContext $context): void
     {
@@ -158,9 +126,6 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
 
     /**
      * data/{currentStep}/ 절대 경로 계산. 스텝 파일 위치 기반 — 코어/확장 무관.
-     *
-     * @param  UpgradeContext  $context  업그레이드 컨텍스트 (현재 단계 버전)
-     * @return string data/{currentStep} 절대 경로
      */
     protected function dataDir(UpgradeContext $context): string
     {

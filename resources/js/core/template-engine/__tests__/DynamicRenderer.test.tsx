@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import DynamicRenderer, { ComponentDefinition } from '../DynamicRenderer';
 import { ComponentRegistry } from '../ComponentRegistry';
@@ -101,8 +101,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
   });
 
   describe('1. $t:key 형식의 텍스트 번역', () => {
-    // @scenario area=translation
-    // @effects renderer_translates_text_and_props
     it('text 속성의 $t:key가 번역되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'button-1',
@@ -127,8 +125,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByRole('button')).toHaveTextContent('저장');
     });
 
-    // @scenario area=translation
-    // @effects renderer_translates_text_and_props
     it('번역 키가 존재하지 않으면 키 자체를 반환해야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'button-2',
@@ -155,8 +151,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
   });
 
   describe('2. Props 내 번역 키 처리', () => {
-    // @scenario area=translation
-    // @effects renderer_translates_text_and_props
     it('props의 $t:key가 번역되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'card-1',
@@ -182,8 +176,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByRole('heading')).toHaveTextContent('대시보드');
     });
 
-    // @scenario area=translation
-    // @effects renderer_translates_text_and_props
     it('여러 props에서 동시에 번역되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'button-3',
@@ -214,8 +206,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
   });
 
   describe('3. 중첩된 컴포넌트에서 translations 전달', () => {
-    // @scenario area=translation
-    // @effects renderer_translates_text_and_props
     it('자식 컴포넌트에도 번역이 적용되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'card-2',
@@ -259,8 +249,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getAllByRole('button')[1]).toHaveTextContent('취소');
     });
 
-    // @scenario area=translation
-    // @effects renderer_translates_text_and_props
     it('깊이 중첩된 컴포넌트에도 번역이 적용되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'card-3',
@@ -305,8 +293,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
   });
 
   describe('4. 일반 텍스트 렌더링 (번역 키 없음)', () => {
-    // @scenario area=translation
-    // @effects renderer_translates_text_and_props
     it('$t: 접두사가 없는 텍스트는 그대로 렌더링되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'button-7',
@@ -331,8 +317,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByRole('button')).toHaveTextContent('일반 텍스트');
     });
 
-    // @scenario area=translation
-    // @effects renderer_translates_text_and_props
     it('번역 키와 일반 텍스트가 혼용된 경우', () => {
       const componentDef: ComponentDefinition = {
         id: 'card-5',
@@ -380,8 +364,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
   });
 
   describe('5. 번역 + 데이터 바인딩 조합 (보너스)', () => {
-    // @scenario area=translation
-    // @effects renderer_translates_text_and_props
     it('번역 텍스트 내 파라미터가 데이터 컨텍스트로 치환되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'button-10',
@@ -412,8 +394,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
   });
 
   describe('6. Lifecycle 핸들러 (onMount/onUnmount)', () => {
-    // @scenario area=lifecycle
-    // @effects renderer_runs_lifecycle_actions
     it('onMount 액션이 컴포넌트 마운트 시 실행되어야 함', async () => {
       // 커스텀 핸들러 mock
       const mockOnMount = vi.fn();
@@ -455,8 +435,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(mockOnMount).toHaveBeenCalled();
     });
 
-    // @scenario area=lifecycle
-    // @effects renderer_runs_lifecycle_actions
     it('여러 onMount 액션이 순차적으로 실행되어야 함', async () => {
       const executionOrder: string[] = [];
 
@@ -501,8 +479,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(executionOrder).toEqual(['handler1', 'handler2']);
     });
 
-    // @scenario area=lifecycle
-    // @effects renderer_runs_lifecycle_actions
     it('onMount 액션에서 데이터 컨텍스트에 접근할 수 있어야 함', async () => {
       let receivedContext: any = null;
 
@@ -545,8 +521,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(receivedContext?.data?.testValue).toBe('context-data');
     });
 
-    // @scenario area=lifecycle
-    // @effects renderer_runs_lifecycle_actions
     it('onUnmount 액션이 컴포넌트 언마운트 시 실행되어야 함', async () => {
       const mockOnUnmount = vi.fn();
       actionDispatcher.registerHandler('testOnUnmount', mockOnUnmount);
@@ -589,8 +563,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(mockOnUnmount).toHaveBeenCalled();
     });
 
-    // @scenario area=lifecycle
-    // @effects renderer_runs_lifecycle_actions
     it('lifecycle이 없는 컴포넌트는 정상적으로 렌더링되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'no-lifecycle',
@@ -617,8 +589,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
   });
 
   describe('7. text 속성 복합 바인딩', () => {
-    // @scenario area=text_binding
-    // @effects renderer_binds_text_expressions
     it('text 속성에서 {{}} 바인딩이 처리되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'text-binding-1',
@@ -643,8 +613,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByRole('button')).toHaveTextContent('홍길동님 환영합니다');
     });
 
-    // @scenario area=text_binding
-    // @effects renderer_binds_text_expressions
     it('text 속성에서 복잡한 표현식 (||)이 처리되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'text-binding-2',
@@ -669,8 +637,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByRole('button')).toHaveTextContent('기본 메시지');
     });
 
-    // @scenario area=text_binding
-    // @effects renderer_binds_text_expressions
     it('text 속성에서 표현식 결과가 $t:인 경우 번역되어야 함 (따옴표 없이)', () => {
       const componentDef: ComponentDefinition = {
         id: 'text-binding-3',
@@ -696,8 +662,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByRole('button')).toHaveTextContent('저장');
     });
 
-    // @scenario area=text_binding
-    // @effects renderer_binds_text_expressions
     it('text 속성에서 _global 값이 있으면 해당 값이 표시되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'text-binding-4',
@@ -738,8 +702,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       };
     });
 
-    // @scenario area=class_name
-    // @effects renderer_evaluates_class_name_expressions
     it('className에서 삼항 연산자 표현식이 평가되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'className-test-1',
@@ -767,8 +729,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(div).toHaveClass('bg-green-100', 'text-green-800');
     });
 
-    // @scenario area=class_name
-    // @effects renderer_evaluates_class_name_expressions
     it('className에서 중첩된 삼항 연산자가 평가되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'className-test-2',
@@ -823,8 +783,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByTestId('test-div')).toHaveClass('bg-gray-100');
     });
 
-    // @scenario area=class_name
-    // @effects renderer_evaluates_class_name_expressions
     it('className에서 논리 연산자(||)가 평가되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'className-test-3',
@@ -851,8 +809,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByTestId('test-div')).toHaveClass('default-class');
     });
 
-    // @scenario area=class_name
-    // @effects renderer_evaluates_class_name_expressions
     it('className에서 문자열 리터럴 내 특수문자가 처리되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'className-test-4',
@@ -895,8 +851,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       };
     });
 
-    // @scenario area=blur
-    // @effects renderer_applies_blur_until_loaded
     it('blur_until_loaded가 true이고 isTransitioning이 true일 때 blur 래퍼가 적용되어야 함', () => {
       // useTransitionState 모킹 - isTransitioning: true
       vi.spyOn(TransitionContextModule, 'useTransitionState').mockReturnValue({
@@ -931,8 +885,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(blurWrapper).toHaveClass('opacity-50', 'blur-sm', 'pointer-events-none');
     });
 
-    // @scenario area=blur
-    // @effects renderer_applies_blur_until_loaded
     it('blur_until_loaded가 true이고 isTransitioning이 false일 때 blur 래퍼가 적용되지 않아야 함', () => {
       // useTransitionState 모킹 - isTransitioning: false
       vi.spyOn(TransitionContextModule, 'useTransitionState').mockReturnValue({
@@ -969,8 +921,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(parent).not.toHaveClass('blur-sm');
     });
 
-    // @scenario area=blur
-    // @effects renderer_applies_blur_until_loaded
     it('blur_until_loaded가 없으면 isTransitioning 상태와 관계없이 blur가 적용되지 않아야 함', () => {
       // useTransitionState 모킹 - isTransitioning: true
       vi.spyOn(TransitionContextModule, 'useTransitionState').mockReturnValue({
@@ -1006,8 +956,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(parent).not.toHaveClass('blur-sm');
     });
 
-    // @scenario area=blur
-    // @effects renderer_applies_blur_until_loaded
     it('blur_until_loaded가 false이면 blur가 적용되지 않아야 함', () => {
       // useTransitionState 모킹 - isTransitioning: true
       vi.spyOn(TransitionContextModule, 'useTransitionState').mockReturnValue({
@@ -1054,7 +1002,7 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
   describe('10. onComponentEvent 구독 패턴', () => {
     // G7Core.componentEvent 모킹
     let mockOn: ReturnType<typeof vi.fn>;
-    let mockEmit: Mock;
+    let mockEmit: ReturnType<typeof vi.fn>;
     let mockOff: ReturnType<typeof vi.fn>;
     let subscribers: Map<string, Array<(data?: any) => any>>;
 
@@ -1112,8 +1060,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       subscribers.clear();
     });
 
-    // @scenario area=component_event
-    // @effects renderer_subscribes_component_events
     it('onComponentEvent가 있는 컴포넌트가 마운트되면 이벤트가 구독되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'event-subscribe-test',
@@ -1146,8 +1092,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(mockOn).toHaveBeenCalledWith('upload:site_logo', expect.any(Function));
     });
 
-    // @scenario area=component_event
-    // @effects renderer_subscribes_component_events
     it('여러 이벤트가 정의된 경우 모두 구독되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'multi-event-test',
@@ -1181,8 +1125,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(mockOn).toHaveBeenCalledWith('event:three', expect.any(Function));
     });
 
-    // @scenario area=component_event
-    // @effects renderer_subscribes_component_events
     it('이벤트가 발생하면 핸들러가 실행되어야 함', async () => {
       const mockHandler = vi.fn();
       actionDispatcher.registerHandler('testEventHandler', mockHandler);
@@ -1221,8 +1163,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(mockHandler).toHaveBeenCalled();
     });
 
-    // @scenario area=component_event
-    // @effects renderer_subscribes_component_events
     it('이벤트 데이터가 _eventData 컨텍스트로 핸들러에 전달되어야 함', async () => {
       let receivedContext: any = null;
 
@@ -1265,8 +1205,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(receivedContext?.data?._eventData).toEqual({ eventPayload: 'test-payload' });
     });
 
-    // @scenario area=component_event
-    // @effects renderer_subscribes_component_events
     it('컴포넌트 언마운트 시 이벤트 구독이 해제되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'event-unsubscribe-test',
@@ -1301,8 +1239,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(subscribers.get('cleanup:event')?.length).toBe(0);
     });
 
-    // @scenario area=component_event
-    // @effects renderer_subscribes_component_events
     it('onComponentEvent가 없는 컴포넌트는 정상적으로 렌더링되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'no-event-test',
@@ -1330,8 +1266,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(mockOn).not.toHaveBeenCalled();
     });
 
-    // @scenario area=component_event
-    // @effects renderer_subscribes_component_events
     it('event 이름이 없는 정의는 무시되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'empty-event-test',
@@ -1365,7 +1299,7 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
 
   /**
    * Regression Tests
-   * @see 트러블슈팅 가이드 troubleshooting-state-closure.md
+   * @see docs/frontend/troubleshooting-state-closure.md
    */
   describe('Regression Tests - Stale Closure Prevention', () => {
     /**
@@ -1375,8 +1309,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
      * 해결: getter 함수 패턴 적용 (parentComponentContext)
      */
     describe('[TS-CLOSURE-1] componentContext getter 함수 패턴', () => {
-      // @scenario area=stale_closure
-      // @effects renderer_reads_latest_state_refs
       it('DynamicRenderer가 렌더링될 때 componentContext가 올바른 구조를 가져야 함', () => {
         // 컴포넌트 정의 - 상태를 사용하는 간단한 컴포넌트
         const componentDef: ComponentDefinition = {
@@ -1419,8 +1351,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
      * @see DataBindingEngine.test.ts [TS-CACHE-8] 캐시 무효화 테스트
      */
     describe('[TS-CLOSURE-2] stateRef를 통한 최신 _local 상태 참조', () => {
-      // @scenario area=stale_closure
-      // @effects renderer_reads_latest_state_refs
       it('캐시 무효화 후 새로운 _local 상태가 반영되어야 함', () => {
         // 첫 번째 렌더링
         const componentDef1: ComponentDefinition = {
@@ -1475,8 +1405,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
         expect(container2.querySelector('button')?.textContent).toBe('두 번째 값');
       });
 
-      // @scenario area=stale_closure
-      // @effects renderer_reads_latest_state_refs
       it('동일한 컴포넌트 ID에서 _local 바인딩이 정상 해석되어야 함', () => {
         const componentDef: ComponentDefinition = {
           id: 'stateref-binding-test',
@@ -1511,8 +1439,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
      * 해결: computedRef.current를 사용하여 항상 최신 computed 값 참조
      */
     describe('[TS-CLOSURE-3] computedRef를 통한 최신 _computed 상태 참조', () => {
-      // @scenario area=stale_closure
-      // @effects renderer_reads_latest_state_refs
       it('dataContext._computed가 변경되어도 리렌더링이 발생해야 함', () => {
         const componentDef: ComponentDefinition = {
           id: 'computedref-test',
@@ -1568,8 +1494,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
      * 여기서는 DynamicRenderer의 중첩 컴포넌트 바인딩 기본 기능만 테스트합니다.
      */
     describe('중첩 컴포넌트에서의 상태 전파', () => {
-      // @scenario area=stale_closure
-      // @effects renderer_reads_latest_state_refs
       it('캐시 무효화 후 중첩 컴포넌트도 새로운 _local 상태가 반영되어야 함', () => {
         // 첫 번째 렌더링 (중첩 컴포넌트)
         const componentDef1: ComponentDefinition = {
@@ -1651,8 +1575,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
         expect(container2.querySelector('button')?.textContent).toBe('변경된 버튼');
       });
 
-      // @scenario area=stale_closure
-      // @effects renderer_reads_latest_state_refs
       it('동일 컴포넌트에서 초기 _local 값이 정상 바인딩되어야 함', () => {
         const componentDef: ComponentDefinition = {
           id: 'nested-initial-binding-test',
@@ -1707,8 +1629,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       };
     });
 
-    // @scenario area=pipe
-    // @effects renderer_applies_text_pipes
     it('text에서 date 파이프가 정상 동작해야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'pipe-test-date',
@@ -1732,8 +1652,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByTestId('test-span').textContent).toBe('2024-06-15');
     });
 
-    // @scenario area=pipe
-    // @effects renderer_applies_text_pipes
     it('text에서 datetime 파이프가 정상 동작해야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'pipe-test-datetime',
@@ -1759,8 +1677,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(text).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
     });
 
-    // @scenario area=pipe
-    // @effects renderer_applies_text_pipes
     it('text에서 nullish coalescing과 파이프 조합이 정상 동작해야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'pipe-test-nullish',
@@ -1785,8 +1701,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByTestId('test-span').textContent).toBe('2024-01-15');
     });
 
-    // @scenario area=pipe
-    // @effects renderer_applies_text_pipes
     it('text에서 optional chaining과 파이프 조합이 정상 동작해야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'pipe-test-optional',
@@ -1810,8 +1724,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByTestId('test-span').textContent).toBe('2024-03-20');
     });
 
-    // @scenario area=pipe
-    // @effects renderer_applies_text_pipes
     it('text에서 number 파이프가 정상 동작해야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'pipe-test-number',
@@ -1836,8 +1748,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByTestId('test-span').textContent).toBe('1,234,567');
     });
 
-    // @scenario area=pipe
-    // @effects renderer_applies_text_pipes
     it('text에서 truncate 파이프가 정상 동작해야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'pipe-test-truncate',
@@ -1861,8 +1771,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByTestId('test-span').textContent).toBe('This is a ...');
     });
 
-    // @scenario area=pipe
-    // @effects renderer_applies_text_pipes
     it('text에서 파이프 체인이 정상 동작해야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'pipe-test-chain',
@@ -1888,8 +1796,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
   });
 
   describe('JSON 구조 문자열 내 $t: 토큰 보존', () => {
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
     it('JSON 객체 문자열 내부의 $t: 토큰이 번역되지 않아야 함', () => {
       // CodeEditor value prop 시나리오: 레이아웃 JSON 문자열에 $t: 토큰 포함
       const jsonContent = JSON.stringify({
@@ -1927,8 +1833,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(button.textContent).not.toContain('대시보드');
     });
 
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
     it('JSON 배열 문자열 내부의 $t: 토큰이 번역되지 않아야 함', () => {
       const jsonContent = JSON.stringify([
         { label: '$t:common.save' },
@@ -1961,8 +1865,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(button.textContent).toContain('$t:common.cancel');
     });
 
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
     it('일반 $t: 토큰은 여전히 정상 번역되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'btn-normal',
@@ -1988,8 +1890,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByRole('button').textContent).toBe('저장');
     });
 
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
     it('접두사가 있는 $t: 토큰도 정상 번역되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'btn-prefix',
@@ -2017,8 +1917,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
   });
 
   describe('raw: 바인딩 번역 면제 (engine-v1.27.0)', () => {
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
     it('{{raw:path}} 바인딩 결과의 $t: 토큰이 번역되지 않아야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'raw-1',
@@ -2045,8 +1943,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByRole('button').textContent).toBe('$t:admin.dashboard');
     });
 
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
     it('raw: 없는 바인딩의 $t: 토큰은 정상 번역되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'raw-2',
@@ -2073,8 +1969,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(screen.getByRole('button').textContent).toBe('저장');
     });
 
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
     it('혼합 보간 — raw 마커 영역은 보호되고 외부 $t:는 번역되어야 함', () => {
       const componentDef: ComponentDefinition = {
         id: 'raw-3',
@@ -2104,8 +1998,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       expect(text).toContain('저장');
     });
 
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
     it('$t: 패턴이 없는 raw 바인딩은 정상 표시', () => {
       const componentDef: ComponentDefinition = {
         id: 'raw-4',
@@ -2129,86 +2021,6 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
       );
 
       expect(screen.getByRole('button').textContent).toBe('일반 제목 텍스트');
-    });
-  });
-
-  describe('노드 text 키의 raw: 접두사 (engine-v1.54.4 회귀)', () => {
-    // 배경: props.text 는 raw: 를 벗겼지만 노드 레벨 `text` 키 경로는 접두사를
-    // 그대로 evaluateExpression 에 넘겨 `Unexpected token ':'` 로 던졌다.
-    // 결과적으로 레이아웃 편집 화면의 파일 목록 텍스트가 통째로 빈 값이 되었다.
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
-    it('노드 text 의 {{raw:복합식}} 이 평가되어 표시되어야 함', () => {
-      const componentDef: ComponentDefinition = {
-        id: 'raw-text-node-1',
-        type: 'basic',
-        name: 'Button',
-        text: '{{raw:file.description || file.name}}',
-      };
-
-      render(
-        <DynamicRenderer
-          componentDef={componentDef}
-          dataContext={{ file: { description: '', name: 'admin_module_list.json' } }}
-          translationContext={translationContext}
-          registry={registry}
-          bindingEngine={bindingEngine}
-          translationEngine={translationEngine}
-          actionDispatcher={actionDispatcher}
-        />
-      );
-
-      expect(screen.getByRole('button').textContent).toBe('admin_module_list.json');
-    });
-
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
-    it('노드 text 의 {{raw:단순경로}} 결과의 $t: 토큰은 번역 면제되어야 함', () => {
-      const componentDef: ComponentDefinition = {
-        id: 'raw-text-node-2',
-        type: 'basic',
-        name: 'Button',
-        text: '{{raw:post.title}}',
-      };
-
-      render(
-        <DynamicRenderer
-          componentDef={componentDef}
-          dataContext={{ post: { title: '$t:admin.dashboard' } }}
-          translationContext={translationContext}
-          registry={registry}
-          bindingEngine={bindingEngine}
-          translationEngine={translationEngine}
-          actionDispatcher={actionDispatcher}
-        />
-      );
-
-      expect(screen.getByRole('button').textContent).toBe('$t:admin.dashboard');
-    });
-
-    // @scenario area=raw_tokens
-    // @effects renderer_preserves_raw_and_json_tokens
-    it('노드 text 의 raw: 없는 복합식은 종전대로 평가되어야 함 (비회귀)', () => {
-      const componentDef: ComponentDefinition = {
-        id: 'raw-text-node-3',
-        type: 'basic',
-        name: 'Button',
-        text: "{{file.description || file.name}}",
-      };
-
-      render(
-        <DynamicRenderer
-          componentDef={componentDef}
-          dataContext={{ file: { description: '', name: '저장' } }}
-          translationContext={translationContext}
-          registry={registry}
-          bindingEngine={bindingEngine}
-          translationEngine={translationEngine}
-          actionDispatcher={actionDispatcher}
-        />
-      );
-
-      expect(screen.getByRole('button').textContent).toBe('저장');
     });
   });
 });

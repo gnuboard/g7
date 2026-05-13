@@ -18,43 +18,31 @@ import {
 
 describe('FormContext 유틸리티', () => {
   describe('parseDataKey', () => {
-    // @scenario area=parse_data_key
-    // @effects form_data_key_scope_parsed
     it('should parse _global prefix correctly', () => {
       const result = parseDataKey('_global.settings');
       expect(result).toEqual({ scope: 'global', path: 'settings' });
     });
 
-    // @scenario area=parse_data_key
-    // @effects form_data_key_scope_parsed
     it('should parse _isolated prefix correctly', () => {
       const result = parseDataKey('_isolated.miniForm');
       expect(result).toEqual({ scope: 'isolated', path: 'miniForm' });
     });
 
-    // @scenario area=parse_data_key
-    // @effects form_data_key_scope_parsed
     it('should parse _local prefix correctly', () => {
       const result = parseDataKey('_local.formData');
       expect(result).toEqual({ scope: 'local', path: 'formData' });
     });
 
-    // @scenario area=parse_data_key
-    // @effects form_data_key_scope_parsed
     it('should default to local scope when no prefix', () => {
       const result = parseDataKey('formData');
       expect(result).toEqual({ scope: 'local', path: 'formData' });
     });
 
-    // @scenario area=parse_data_key
-    // @effects form_data_key_scope_parsed
     it('should handle nested paths with _global prefix', () => {
       const result = parseDataKey('_global.user.profile');
       expect(result).toEqual({ scope: 'global', path: 'user.profile' });
     });
 
-    // @scenario area=parse_data_key
-    // @effects form_data_key_scope_parsed
     it('should handle nested paths with _isolated prefix', () => {
       const result = parseDataKey('_isolated.form.fields.email');
       expect(result).toEqual({ scope: 'isolated', path: 'form.fields.email' });
@@ -62,28 +50,20 @@ describe('FormContext 유틸리티', () => {
   });
 
   describe('getNestedValue', () => {
-    // @scenario area=nested_value
-    // @effects form_nested_value_rw
     it('should get value at simple path', () => {
       const obj = { formData: { email: 'test@example.com' } };
       expect(getNestedValue(obj, 'formData.email')).toBe('test@example.com');
     });
 
-    // @scenario area=nested_value
-    // @effects form_nested_value_rw
     it('should return undefined for non-existent path', () => {
       const obj = { formData: {} };
       expect(getNestedValue(obj, 'formData.email')).toBeUndefined();
     });
 
-    // @scenario area=nested_value
-    // @effects form_nested_value_rw
     it('should return undefined when obj is undefined', () => {
       expect(getNestedValue(undefined, 'any.path')).toBeUndefined();
     });
 
-    // @scenario area=nested_value
-    // @effects form_nested_value_rw
     it('should handle deeply nested paths', () => {
       const obj = { a: { b: { c: { d: 'value' } } } };
       expect(getNestedValue(obj, 'a.b.c.d')).toBe('value');
@@ -91,8 +71,6 @@ describe('FormContext 유틸리티', () => {
   });
 
   describe('setNestedValue', () => {
-    // @scenario area=nested_value
-    // @effects form_nested_value_rw
     it('should set value at simple path', () => {
       const obj = { formData: { name: '' } };
       const result = setNestedValue(obj, 'formData.email', 'test@example.com');
@@ -100,8 +78,6 @@ describe('FormContext 유틸리티', () => {
       expect(result.formData.name).toBe(''); // 기존 값 유지
     });
 
-    // @scenario area=nested_value
-    // @effects form_nested_value_rw
     it('should preserve immutability', () => {
       const obj = { formData: { email: '' } };
       const result = setNestedValue(obj, 'formData.email', 'new@example.com');
@@ -109,16 +85,12 @@ describe('FormContext 유틸리티', () => {
       expect(result.formData.email).toBe('new@example.com');
     });
 
-    // @scenario area=nested_value
-    // @effects form_nested_value_rw
     it('should handle single key path', () => {
       const obj = { email: '' };
       const result = setNestedValue(obj, 'email', 'test@example.com');
       expect(result.email).toBe('test@example.com');
     });
 
-    // @scenario area=nested_value
-    // @effects form_nested_value_rw
     it('should create nested structure if not exists', () => {
       const obj = {};
       const result = setNestedValue(obj, 'a.b.c', 'value');
@@ -143,8 +115,6 @@ describe('FormContext 유틸리티', () => {
       };
     });
 
-    // @scenario area=update_scope
-    // @effects form_update_routes_by_scope
     it('should update isolated state when scope is isolated', () => {
       updateByScope('_isolated.miniForm', 'email', 'test@example.com', context);
 
@@ -154,8 +124,6 @@ describe('FormContext 유틸리티', () => {
       expect(context.setState).not.toHaveBeenCalled();
     });
 
-    // @scenario area=update_scope
-    // @effects form_update_routes_by_scope
     it('should handle empty path', () => {
       updateByScope('_isolated.miniForm', '', { email: 'test@example.com' }, context);
 
@@ -177,8 +145,6 @@ describe('FormContext 유틸리티', () => {
       };
     });
 
-    // @scenario area=update_scope
-    // @effects form_update_routes_by_scope
     it('should update local state when scope is local', () => {
       updateByScope('formData', 'email', 'test@example.com', context);
 
@@ -187,8 +153,6 @@ describe('FormContext 유틸리티', () => {
       });
     });
 
-    // @scenario area=update_scope
-    // @effects form_update_routes_by_scope
     it('should handle _local prefix', () => {
       updateByScope('_local.formData', 'email', 'test@example.com', context);
 
@@ -214,8 +178,6 @@ describe('FormContext 유틸리티', () => {
       (window as any).G7Core = originalG7Core;
     });
 
-    // @scenario area=update_scope
-    // @effects form_update_routes_by_scope
     it('should update global state when scope is global', () => {
       const context: FormContextValue = {
         dataKey: '_global.settings',
@@ -233,19 +195,14 @@ describe('FormContext 유틸리티', () => {
   });
 
   describe('getValueByScope - isolated', () => {
-    // @scenario area=read_scope
-    // @effects form_read_routes_by_scope
     it('should get value from isolated state', () => {
-      const isolatedState = { miniForm: { email: 'test@example.com' } };
       const context: FormContextValue = {
         dataKey: '_isolated.miniForm',
         isolatedContext: {
-          state: isolatedState,
+          state: { miniForm: { email: 'test@example.com' } },
           setState: vi.fn(),
           getState: vi.fn(),
           mergeState: vi.fn(),
-          stateRef: { current: isolatedState },
-          scopeId: 'mini-form',
         },
         state: {},
       };
@@ -254,8 +211,6 @@ describe('FormContext 유틸리티', () => {
       expect(value).toBe('test@example.com');
     });
 
-    // @scenario area=read_scope
-    // @effects form_read_routes_by_scope
     it('should return undefined when isolatedContext is null', () => {
       const context: FormContextValue = {
         dataKey: '_isolated.miniForm',
@@ -269,8 +224,6 @@ describe('FormContext 유틸리티', () => {
   });
 
   describe('getValueByScope - local', () => {
-    // @scenario area=read_scope
-    // @effects form_read_routes_by_scope
     it('should get value from local state', () => {
       const context: FormContextValue = {
         dataKey: 'formData',
@@ -283,8 +236,6 @@ describe('FormContext 유틸리티', () => {
   });
 
   describe('isAutoBindingEnabled', () => {
-    // @scenario area=auto_binding
-    // @effects form_auto_binding_path
     it('should return true when all conditions met', () => {
       const context: FormContextValue = {
         dataKey: 'formData',
@@ -293,8 +244,6 @@ describe('FormContext 유틸리티', () => {
       expect(isAutoBindingEnabled(context, 'email')).toBe(true);
     });
 
-    // @scenario area=auto_binding
-    // @effects form_auto_binding_path
     it('should return false when dataKey is missing', () => {
       const context: FormContextValue = {
         setState: vi.fn(),
@@ -302,8 +251,6 @@ describe('FormContext 유틸리티', () => {
       expect(isAutoBindingEnabled(context, 'email')).toBe(false);
     });
 
-    // @scenario area=auto_binding
-    // @effects form_auto_binding_path
     it('should return false when name is missing', () => {
       const context: FormContextValue = {
         dataKey: 'formData',
@@ -312,8 +259,6 @@ describe('FormContext 유틸리티', () => {
       expect(isAutoBindingEnabled(context, undefined)).toBe(false);
     });
 
-    // @scenario area=auto_binding
-    // @effects form_auto_binding_path
     it('should return false when setState is missing', () => {
       const context: FormContextValue = {
         dataKey: 'formData',
@@ -323,14 +268,10 @@ describe('FormContext 유틸리티', () => {
   });
 
   describe('getAutoBindingPath', () => {
-    // @scenario area=auto_binding
-    // @effects form_auto_binding_path
     it('should combine dataKey and name', () => {
       expect(getAutoBindingPath('formData', 'email')).toBe('formData.email');
     });
 
-    // @scenario area=auto_binding
-    // @effects form_auto_binding_path
     it('should work with isolated prefix', () => {
       expect(getAutoBindingPath('_isolated.miniForm', 'email')).toBe('_isolated.miniForm.email');
     });

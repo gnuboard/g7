@@ -21,79 +21,10 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:FileUploader')) ?? 
 import imageCompression from 'browser-image-compression';
 
 import type { Attachment, PendingFile, FileUploaderProps, ApiEndpoints } from './types';
-import { formatFileSize, extractErrorMessage, isFileAccepted, t, detectAnimatedImageFormat } from './utils';
-import { isDirectAssetUrl } from '../assetOrigin';
-import { attachmentThumbUrl } from '../../../support/thumbnail';
-import { routePath } from '../../../support/apiUrl';
-
-/** 동봉한 browser-image-compression 버전 */
-const IMAGE_COMPRESSION_VERSION = '2.0.2';
-
-/**
- * 웹 워커가 불러올 압축 라이브러리 URL 을 돌려줍니다.
- *
- * `useWebWorker: true` 일 때 라이브러리는 워커 안에서 자기 사본을 다시 받는데, 기본값이
- * 외부 CDN 이다. 그 요청이 실패하면 라이브러리가 메인 스레드로 폴백하므로 기능이 깨지지는
- * 않지만, 폐쇄망에서 매 업로드마다 외부로 나가는 요청이 남는다. 템플릿이 함께 담은
- * 사본을 가리켜 그 왕복을 없앤다.
- *
- * URL 을 만들 수 없으면(구 코어) `undefined` 를 돌려주어 종전 동작을 유지한다.
- *
- * @returns 압축 라이브러리 URL 또는 undefined
- */
-function resolveCompressionLibUrl(): string | undefined {
-    const asset = (window as any)?.G7Core?.asset;
-
-    if (typeof asset?.template !== 'function') {
-        return undefined;
-    }
-
-    return asset.template(
-        'sirsoft-admin_basic',
-        `vendor/browser-image-compression/${IMAGE_COMPRESSION_VERSION}/browser-image-compression.js`
-    );
-}
-
+import { formatFileSize, extractErrorMessage, t } from './utils';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
-
-/**
- * 이 화면에서 서버 삭제까지 끝난 첨부 ID — 모든 업로더 인스턴스가 함께 본다.
- *
- * 같은 배열을 넓은 화면 표와 좁은 화면 카드가 함께 편집하는 화면(게시판 환경설정 반응 유형 아이콘)에서는
- * 한 인스턴스가 첨부를 지운 직후 폭 전환·반복 행 재마운트로 새로 생긴 인스턴스가 지우기 전 값을 initialFiles 로
- * 한 번 받는다. 지운 기록이 인스턴스마다 따로면 새 인스턴스는 지운 첨부를 목록에 올리고 썸네일을 내려받다
- * 404 를 남긴다(7.1.0 실측). 서버에서 지운 첨부는 어느 인스턴스에서도 다시 그릴 수 없으므로 함께 기록한다.
- */
-const sessionDeletedAttachmentIds = new Set<number>();
-
-/**
- * 이 화면에서 이미 지운 첨부를 뺍니다.
- *
- * @param files 첨부 목록
- * @returns 지운 첨부를 뺀 목록 (뺄 것이 없으면 같은 참조)
- */
-function withoutSessionDeleted(files: Attachment[]): Attachment[] {
-  if (sessionDeletedAttachmentIds.size === 0 || !files.some((f) => sessionDeletedAttachmentIds.has(f.id))) {
-    return files;
-  }
-  return files.filter((f) => !sessionDeletedAttachmentIds.has(f.id));
-}
-
-/**
- * 썸네일로 그리는 기존 첨부를 확대 보기에서 blob 없이 열 수 있는 원본 주소.
- *
- * 미리보기 주소(`preview_url`)는 서버가 열람 규칙(비밀글 서명·공개 여부)을 담아 낸 주소라 그대로 연다. 다운로드
- * 주소만 있는 첨부는 권한이 걸려 있을 수 있어(인증 헤더가 있어야 열린다) 주소로 열지 않는다 — 업로더가 인증 요청으로
- * 받아 둔 blob 을 쓴다. 종전에는 이 경우에도 인증 없는 원본 주소를 열어 권한 첨부의 확대 보기가 깨졌다.
- *
- * @param file 기존 첨부
- * @returns 바로 열 주소 (없으면 undefined)
- */
-export function directZoomSource(file: Attachment): string | undefined {
-  return typeof file.preview_url === 'string' && file.preview_url !== '' ? file.preview_url : undefined;
-}
 
 export interface UseFileUploaderOptions {
   attachmentableType?: string;
@@ -159,8 +90,6 @@ export interface UseFileUploaderReturn {
 
   // 인증된 이미지 URL 캐시
   authenticatedImageUrls: Map<number, string>;
-  /** 썸네일로 그리는 첨부도 원본 blob 을 받아 두게 한다 (썸네일 실패·확대 보기) */
-  requestAuthenticatedImage: (ids: number[]) => void;
 
   // 초기화
   clear: () => void;
@@ -192,26 +121,8 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   } = options;
 
   // 상태
-  const [existingFiles, setExistingFiles] = useState<Attachment[]>(() => withoutSessionDeleted(initialFiles));
-  // 언어 전환은 화면을 새로 마운트한다 — 저장 전에 고른 대기 파일은 엔진의 언어 전환 인계 저장소에 맡겼다가
-  // 새 인스턴스가 되찾는다(G7Core.locale.handoff, engine-v1.79.0). 키는 화면 경로 + 컬렉션 + 업로드 트리거.
-  // 경로는 앱 기준(마운트 접두사를 벗긴 값) — 엔진의 언어 전환 재진입 대조와 같은 기준이다.
-  const localeHandoffKey = `FileUploader:${typeof window !== 'undefined' ? routePath(window.location.pathname) : ''}:${collection ?? ''}:${uploadTriggerEvent ?? ''}`;
-  // 맡긴 값은 { pending, order, reordered } — 드래그로 정한 순서도 함께 넘긴다. 올리던 중(압축·업로드)에 넘어온
-  // 항목은 옛 인스턴스의 요청 결과를 받을 수 없으므로 대기로 되돌려 저장 때 다시 올린다.
-  const [localeHandoff] = useState<{ pending: PendingFile[]; order: (string | number)[]; reordered: boolean } | null>(() => {
-    const taken = (window as any).G7Core?.locale?.handoff?.take?.(localeHandoffKey);
-    if (!taken) return null;
-    const rawPending: PendingFile[] = Array.isArray(taken) ? taken : (taken.pending ?? []);
-    return {
-      pending: rawPending.map((f) => (f.status === 'uploading' || f.status === 'compressing' ? { ...f, status: 'pending' as const, progress: 0 } : f)),
-      order: Array.isArray(taken) ? [] : (taken.order ?? []),
-      reordered: Array.isArray(taken) ? false : taken.reordered === true,
-    };
-  });
-  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>(() => localeHandoff?.pending ?? []);
-  const pendingFilesForLocaleHandoffRef = useRef<PendingFile[]>(pendingFiles);
-  pendingFilesForLocaleHandoffRef.current = pendingFiles;
+  const [existingFiles, setExistingFiles] = useState<Attachment[]>(initialFiles);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeUploadsRef = useRef(0);
@@ -219,21 +130,15 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const deletedIdsRef = useRef<Set<number | string>>(new Set());
   // 세션 중 업로드된 파일을 추적하여 initialFiles 동기화 시 유지
   const uploadedFilesRef = useRef<Map<number, Attachment>>(new Map());
-  // 업로드 트리거 직후 최종 이미지 목록(기존+신규, 드래그 순서 반영)을 담는 ref.
-  // 업로드 listener 가 stale 클로저(existingFiles)가 아닌 이 ref 를 읽어
-  // 저장 sequence 가 정확한 form.images 를 PUT body 에 실을 수 있게 한다.
-  const lastUploadOrderedRef = useRef<Attachment[] | null>(null);
 
   // 삭제 확인 모달 상태
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Attachment | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   // 순서가 변경되었는지 추적 (변경 후에는 initialFiles 동기화 무시)
-  const hasReorderedRef = useRef(localeHandoff?.reordered ?? false);
+  const hasReorderedRef = useRef(false);
   // 드래그 순서 유지: 기존/신규 파일 간 섞인 순서를 보존하기 위한 ID 배열
-  const [customOrder, setCustomOrder] = useState<(string | number)[]>(() => localeHandoff?.order ?? []);
-  const customOrderForLocaleHandoffRef = useRef<(string | number)[]>(customOrder);
-  customOrderForLocaleHandoffRef.current = customOrder;
+  const [customOrder, setCustomOrder] = useState<(string | number)[]>([]);
 
   // 이미지 갤러리 상태
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -244,17 +149,6 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const [authenticatedImageUrls, setAuthenticatedImageUrls] = useState<Map<number, string>>(new Map());
   // ref로 URL 캐시 추적 (stale closure 방지 — cleanup/has 체크에서 항상 최신 참조)
   const authenticatedImageUrlsRef = useRef<Map<number, string>>(new Map());
-  // 썸네일로 그리지만 원본 blob 이 필요한 첨부 id — 썸네일이 실패한 칸(권한 거부 등)과, 미리보기 주소 없이 확대 보기를
-  // 연 첨부. 칸이 따로 받으면 그 blob 이 칸 안에만 있어 확대 보기가 인증 없는 원본 주소를 열었다.
-  const [blobRequestedIds, setBlobRequestedIds] = useState<ReadonlySet<number>>(() => new Set());
-  const requestAuthenticatedImage = useCallback((ids: number[]) => {
-    setBlobRequestedIds((prev) => (ids.every((id) => prev.has(id)) ? prev : new Set([...prev, ...ids])));
-  }, []);
-  // 받는 중인 첨부 id — 마운트 직후 initialFiles 동기화로 이 effect 가 한 번 더 돌 때 같은 원본을 다시 받지 않게 한다
-  const loadingImageIdsRef = useRef<Set<number>>(new Set());
-  // 지금 목록에 있는 이미지 첨부 id (앞 회차가 받아 온 결과를 쓸지 판정)
-  const currentImageIdsRef = useRef<Set<number>>(new Set());
-  const unmountedRef = useRef(false);
 
   // onFilesChange를 ref로 관리하여 useEffect 의존성에서 제거
   // (Form 자동 바인딩이 매 렌더링마다 새 함수 참조를 생성하므로
@@ -262,13 +156,8 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const onFilesChangeRef = useRef(onFilesChange);
   onFilesChangeRef.current = onFilesChange;
 
-  // 대기 파일 변경 시 콜백 — 처음 그려질 때의 빈 목록은 알리지 않는다.
-  // 레이아웃이 이 이벤트를 「변경 있음」으로 받으므로, 마운트에서 부르면 폼 데이터 초기화(initLocal)
-  // 뒤에 마운트된 업로더가 수정 화면을 열자마자 저장 버튼을 켠다. 목록이 실제로 바뀐 때만 부른다.
-  const reportedPendingFilesRef = useRef(pendingFiles);
+  // 대기 파일 변경 시 콜백
   useEffect(() => {
-    if (reportedPendingFilesRef.current === pendingFiles) return;
-    reportedPendingFilesRef.current = pendingFiles;
     onFilesChangeRef.current?.(pendingFiles);
   }, [pendingFiles]);
 
@@ -278,7 +167,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     if (hasReorderedRef.current) {
       return;
     }
-    const filteredFiles = withoutSessionDeleted(initialFiles).filter(
+    const filteredFiles = initialFiles.filter(
       (file) => !deletedIdsRef.current.has(file.id) && (!file.hash || !deletedIdsRef.current.has(file.hash))
     );
 
@@ -288,10 +177,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
       (f) => !initialIds.has(f.id) && !deletedIdsRef.current.has(f.id)
     );
 
-    const next = [...filteredFiles, ...sessionUploaded];
-    // 같은 항목이 같은 순서로 있으면 상태를 바꾸지 않는다 — 부모가 렌더마다 새 빈 배열(같은 내용의 새 배열)을
-    // 넘겨도 다시 그리기가 이어지지 않게 한다(7.1.0)
-    setExistingFiles((prev) => (prev.length === next.length && prev.every((f, i) => f === next[i]) ? prev : next));
+    setExistingFiles([...filteredFiles, ...sessionUploaded]);
   }, [initialFiles]);
 
   // 이미지 압축
@@ -301,7 +187,6 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         maxSizeMB: compressionOptions?.maxSizeMB ?? 1,
         maxWidthOrHeight: compressionOptions?.maxWidthOrHeight ?? 1920,
         useWebWorker: true,
-        libURL: resolveCompressionLibUrl(),
       };
       return await imageCompression(file, compressionOpts);
     },
@@ -312,37 +197,27 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const handleFiles = useCallback(
     async (selectedFiles: FileList) => {
       const totalCount = existingFiles.length + pendingFiles.length;
-      const remainingSlots = Math.max(0, maxFiles - totalCount);
+      const remainingSlots = maxFiles - totalCount;
       const filesToAdd = Array.from(selectedFiles).slice(0, remainingSlots);
 
-      // 개수 상한 초과분은 조용히 절단하지 않고 안내 (개수 초과 silent 무시 방지)
-      if (selectedFiles.length > remainingSlots) {
-        const overflow = Array.from(selectedFiles).slice(remainingSlots);
-        const message = t('attachment.upload_limit_exceeded', { max: maxFiles, count: maxFiles });
-        // 잘린 첫 파일을 대표로 콜백에 전달 (없으면 무시)
-        onUploadError?.(message, overflow[0] ?? selectedFiles[0]);
-      }
-
       for (const file of filesToAdd) {
-        // 빈 파일(0바이트) — 서버가 받지 않으므로(코어 AttachmentFileContent) 고르는 자리에서 걸러 안내한다(7.1.0 실측).
-        if (file.size === 0) {
-          onUploadError?.(t('attachment.empty_file', { name: file.name }), file);
-          continue;
-        }
-
-        // 크기 검증 — 문구는 번역 키로 만든다(한국어 리터럴이면 다른 언어 화면에 한국어가 섞인다).
+        // 크기 검증
         if (file.size > maxSize * 1024 * 1024) {
           onUploadError?.(
-            t('attachment.file_too_large', { name: file.name, size: formatFileSize(file.size), max: maxSize }),
+            `[${file.name}] 파일 크기(${formatFileSize(file.size)})가 최대 허용 크기(${maxSize}MB)를 초과합니다.`,
             file
           );
           continue;
         }
 
-        // 형식 검증 — accept 의 확장자·MIME·와일드카드 표기를 파일 선택창과 같은 규칙으로 판정한다
-        if (accept && !isFileAccepted(file, accept)) {
-          onUploadError?.(t('attachment.type_not_allowed', { name: file.name, accept }), file);
-          continue;
+        // 확장자 검증
+        if (accept) {
+          const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+          const acceptedExts = accept.split(',').map((e) => e.trim().toLowerCase());
+          if (!acceptedExts.includes(ext)) {
+            onUploadError?.(`[${file.name}] 허용되지 않는 파일 형식입니다. (허용: ${accept})`, file);
+            continue;
+          }
         }
 
         const pendingFile: PendingFile = {
@@ -363,26 +238,22 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
         setPendingFiles((prev) => [...prev, pendingFile]);
 
-        // 이미지인 경우 압축 처리 — 움직이는 GIF·WebP·APNG 는 건너뛰고 원본을 올린다. 압축기는 첫 프레임만 다시
-        // 인코딩해 정지 그림이 올라갔다(#869 P4). 움직임은 MIME 이 아니라 파일 바이트로 가린다.
-        if (file.type.startsWith('image/') && compressionOptions && (await detectAnimatedImageFormat(file)) === null) {
+        // 이미지인 경우 압축 처리
+        if (file.type.startsWith('image/') && compressionOptions) {
           setPendingFiles((prev) =>
             prev.map((f) => (f.id === pendingFile.id ? { ...f, status: 'compressing' } : f))
           );
 
           try {
             const compressedBlob = await compressImage(file);
-            // 압축본이 원본보다 작을 때만 쓴다 — 줄인 PNG 가 원본보다 커지는 일이 있었다(2400→2000px, 22,273→28,823바이트,
-            // #869 브라우저 실측). 크거나 같으면 원본을 올린다.
-            const useCompressed = compressedBlob.size < file.size;
             setPendingFiles((prev) =>
               prev.map((f) =>
                 f.id === pendingFile.id
                   ? {
                       ...f,
-                      ...(useCompressed
-                        ? { compressedBlob, size: compressedBlob.size, size_formatted: formatFileSize(compressedBlob.size) }
-                        : {}),
+                      compressedBlob,
+                      size: compressedBlob.size,
+                      size_formatted: formatFileSize(compressedBlob.size),
                       status: 'pending',
                       progress: 0,
                     }
@@ -393,7 +264,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
             setPendingFiles((prev) =>
               prev.map((f) =>
                 f.id === pendingFile.id
-                  ? { ...f, status: 'error', error: t('attachment.compression_failed', { name: file.name }) }
+                  ? { ...f, status: 'error', error: '이미지 압축 실패' }
                   : f
               )
             );
@@ -461,40 +332,16 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   );
 
   // 모든 파일 업로드
-  // 마지막 업로드에서 실패한 파일 수 — 업로드 신호 리스너가 결과에 실어, 저장 흐름이 실패를 보고 멈춘다(#869 브라우저 실측).
-  // 실패 문구는 onUploadError 가 이미 알린다.
-  const lastUploadFailedRef = useRef<number>(0);
-
   const handleUploadAll = useCallback(async (): Promise<Attachment[]> => {
-    // 화면 순서(고른 순서, 드래그했으면 드래그 순서)대로 올린다.
-    // 서버가 도착 순서로 번호를 매기는 화면(페이지·게시판 첨부)에서는 이 순서가 곧 저장 순서다.
-    const visualIndex = new Map(customOrder.map((id, idx) => [String(id), idx]));
-    const filesToUpload = pendingFiles
-      .filter((f) => f.status === 'pending' || f.status === 'error')
-      .map((f, idx) => ({ f, idx }))
-      .sort((a, b) =>
-        customOrder.length === 0
-          ? a.idx - b.idx
-          : (visualIndex.get(String(a.f.id)) ?? pendingFiles.length + a.idx) -
-            (visualIndex.get(String(b.f.id)) ?? pendingFiles.length + b.idx)
-      )
-      .map(({ f }) => f);
-    // 대기 파일 → 고른 순서 위치. 동시 업로드에서 먼저 끝난 파일이 앞에 서지 않게 결과를 이 위치로 정렬한다.
-    const selectionPosition = new Map(filesToUpload.map((f, idx) => [String(f.id), idx]));
+    const filesToUpload = pendingFiles.filter(
+      (f) => f.status === 'pending' || f.status === 'error'
+    );
 
     if (filesToUpload.length === 0) {
-
-      lastUploadFailedRef.current = 0;
-      // 업로드할 신규 파일이 없어도 현재 기존 목록(삭제/순서변경 반영)을 최종 목록으로 기록.
-      // 저장 listener 가 이 값을 form.images SSoT 로 반환한다.
-      lastUploadOrderedRef.current = existingFiles;
       return [];
     }
 
-    // 고른 순서 위치에 담는다(완료 순서와 무관)
-    const uploadedByPosition: (Attachment | undefined)[] = [];
-    // 업로드된 첨부 ID → 고른 순서 위치 (화면 목록에 끼워 넣을 자리 계산용)
-    const batchPositionById = new Map<number, number>();
+    const uploadedAttachments: Attachment[] = [];
     // 드래그 순서 복원용: pending ID → 업로드된 hash 매핑
     const pendingToHashMap = new Map<string, string>();
     const uploadQueue = [...filesToUpload];
@@ -511,39 +358,13 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         try {
           const attachment = await uploadSingleFile(pendingFile);
           if (attachment) {
-            const position = selectionPosition.get(String(pendingFile.id)) ?? uploadedByPosition.length;
-            uploadedByPosition[position] = attachment;
-            batchPositionById.set(attachment.id, position);
+            uploadedAttachments.push(attachment);
             // 드래그 순서 복원용: pending ID → 업로드된 hash 매핑
             pendingToHashMap.set(String(pendingFile.id), String(attachment.hash));
             // 세션 중 업로드된 파일 추적 (initialFiles 동기화 시 유지)
             uploadedFilesRef.current.set(attachment.id, attachment);
-
-            // 방금 올린 그림은 브라우저에 이미 있는 파일로 보여 준다. 서버에서 다시 받으면, 저장이 임시 첨부를
-            // 본경로로 옮기는 사이에 내려받기가 404 로 실패하고 콘솔 오류가 남는다. 이 주소는 목록에서 빠지거나
-            // 언마운트될 때 함께 해제된다.
-            const keepLocalPreview = Boolean(attachment.is_image && pendingFile.preview && attachment.id);
-            if (keepLocalPreview) {
-              authenticatedImageUrlsRef.current.set(attachment.id, pendingFile.preview as string);
-              setAuthenticatedImageUrls(new Map(authenticatedImageUrlsRef.current));
-            }
-
             setPendingFiles((prev) => prev.filter((f) => f.id !== pendingFile.id));
-            // 이번 묶음의 첨부는 완료 순서가 아니라 고른 순서 자리에 선다
-            setExistingFiles((prev) => {
-              const next = [...prev, attachment];
-              const slots: number[] = [];
-              next.forEach((item, idx) => {
-                if (batchPositionById.has(item.id)) slots.push(idx);
-              });
-              const batchItems = slots
-                .map((idx) => next[idx])
-                .sort((a, b) => (batchPositionById.get(a.id) ?? 0) - (batchPositionById.get(b.id) ?? 0));
-              slots.forEach((slot, k) => {
-                next[slot] = batchItems[k];
-              });
-              return next;
-            });
+            setExistingFiles((prev) => [...prev, attachment]);
 
             // customOrder에 pending ID가 있으면 즉시 hash로 교체
             // → allItems useMemo가 올바른 순서로 E를 표시 (UI 플래시 방지)
@@ -555,8 +376,8 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
               return prev.map((id) => String(id) === pendingId ? String(attachment.hash) : id);
             });
 
-            // 미리보기 URL 해제 (썸네일로 계속 쓰는 그림은 남긴다)
-            if (pendingFile.preview && !keepLocalPreview) {
+            // 미리보기 URL 해제
+            if (pendingFile.preview) {
               URL.revokeObjectURL(pendingFile.preview);
             }
           } else {
@@ -595,21 +416,16 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
     await Promise.all(workers);
 
-    const uploadedAttachments = uploadedByPosition.filter((item): item is Attachment => Boolean(item));
-    lastUploadFailedRef.current = filesToUpload.length - uploadedAttachments.length;
-
     if (uploadedAttachments.length > 0) {
       onUploadComplete?.(uploadedAttachments);
-
-      // 기존 + 신규 업로드 이미지를 합친 최종 목록(드래그 순서 반영).
-      // 저장 listener 가 이 목록을 form.images SSoT 로 반환한다.
-      const allExisting = [...existingFiles, ...uploadedAttachments];
 
       // 편집 모드(reorder 엔드포인트 존재)에서 드래그 순서가 있는 경우에만 onReorder 호출
       // → form.images를 올바른 순서로 덮어쓰기 (onUploadComplete의 append 순서를 교정)
       // 복사/생성 모드에서는 호출하지 않음 (linkTempImages가 별도 처리하므로 중복 방지)
       // NOTE: customOrder의 pending ID→hash 교체는 processQueue 내에서 즉시 처리됨
-      if (customOrder.length > 0) {
+      if (endpoints.reorder && customOrder.length > 0 && onReorder) {
+        const allExisting = [...existingFiles, ...uploadedAttachments];
+
         // pending ID를 업로드된 hash로 교체 (이미 setCustomOrder로 갱신되었지만, 클로저 값 기준 재계산)
         const updatedOrder = customOrder.map((id) => {
           const hash = pendingToHashMap.get(String(id));
@@ -625,23 +441,8 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
           })
           .map((item, idx) => ({ ...item, sort_order: idx, order: idx + 1 }));
 
-        lastUploadOrderedRef.current = ordered;
-
-        // 편집 모드(reorder 엔드포인트 존재)에서만 서버 순서 동기화 콜백 호출
-        if (endpoints.reorder && onReorder) {
-          onReorder(ordered);
-        }
-      } else {
-        // 드래그 없이 추가만 한 경우: 기존 뒤에 신규를 append 한 순서가 최종 순서
-        lastUploadOrderedRef.current = allExisting.map((item, idx) => ({
-          ...item,
-          sort_order: idx,
-          order: idx + 1,
-        }));
+        onReorder(ordered);
       }
-    } else {
-      // 업로드할 신규 파일이 없으면 현재 기존 목록이 최종 순서
-      lastUploadOrderedRef.current = existingFiles;
     }
 
     return uploadedAttachments;
@@ -654,16 +455,10 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     const unsubscribe = G7Core.componentEvent.on(uploadTriggerEvent, async () => {
       // 업로드할 파일이 있으면 업로드, 없으면 기존 파일 ID 반환
       const uploadedAttachments = await handleUploadAll();
-      // allFiles 는 stale 클로저(existingFiles)가 아니라 handleUploadAll 이 갱신한
-      // lastUploadOrderedRef(기존+신규, 드래그 순서 반영)에서 읽는다.
-      // 저장 sequence 가 이 값을 form.images SSoT 로 PUT body 에 실어 백엔드 syncImages 가
-      // 방금 업로드한 이미지를 삭제하지 않게 한다.
-      const allFiles = lastUploadOrderedRef.current ?? [...existingFiles, ...uploadedAttachments];
       return {
         uploadedAttachments,
         existingFiles,
-        allFiles,
-        failedCount: lastUploadFailedRef.current,
+        allFiles: [...existingFiles, ...uploadedAttachments],
       };
     });
 
@@ -687,15 +482,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         // id가 있는 경우만 서버 API 삭제 호출 (복사 모드 등 id 없는 이미지는 로컬 제거만)
         if (item.id && endpoints.delete) {
           const deleteUrl = endpoints.delete.replace(':id', String(item.id));
-          // 요청을 보내기 전에 기록한다 — 서버가 지운 뒤 응답이 오기 전 사이에 새로 마운트된 인스턴스도
-          // 그 첨부를 내려받지 않게 한다. 삭제가 실패하면 기록을 되돌린다.
-          sessionDeletedAttachmentIds.add(item.id);
-          try {
-            await G7Core.api.delete(deleteUrl);
-          } catch (error) {
-            sessionDeletedAttachmentIds.delete(item.id);
-            throw error;
-          }
+          await G7Core.api.delete(deleteUrl);
         }
         // 삭제 추적 — id와 hash 모두 기록 (복사 모드 이미지는 id 없이 hash만 존재)
         const itemKey = item.hash || item.id;
@@ -859,17 +646,9 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
         galleryKeyRef.current += 1;
         setGalleryStartIndex(imageIndex);
         setGalleryOpen(true);
-        // 썸네일로 그리던 첨부 중 바로 열 주소(미리보기 주소)가 없는 것은 지금 원본을 받는다 — 확대 보기는 같은 본문의
-        // 이미지를 오가므로 누른 것 하나가 아니라 전부.
-        const needed = existingFiles
-          .filter((f) => f.is_image && attachmentThumbUrl(f, 'sm') && !directZoomSource(f))
-          .map((f) => f.id);
-        if (needed.length > 0) {
-          requestAuthenticatedImage(needed);
-        }
       }
     },
-    [imageFiles, existingFiles, requestAuthenticatedImage]
+    [imageFiles]
   );
 
   // 기존 첨부파일 인증된 이미지 URL 로드 (갤러리용)
@@ -877,16 +656,11 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     let cancelled = false;
 
     const loadAuthenticatedUrls = async () => {
-      // is_image 필드 사용 (imageFiles 필터와 일치). 썸네일을 <img> 로 바로 그리는 첨부(미리보기 주소가 서빙 경로)는
-      // 원본을 받지 않는다 — 칸이 sm 썸네일을 그리고, 확대 보기는 미리보기 주소를 직접 연다. 썸네일이 실패했거나
-      // 미리보기 주소 없이 확대 보기를 연 첨부(blobRequestedIds)는 여기서 받아 칸과 확대 보기가 함께 쓴다.
-      const existingImageFiles = existingFiles.filter(
-        (f) => f.is_image && (!attachmentThumbUrl(f, 'sm') || blobRequestedIds.has(f.id)),
-      );
+      // is_image 필드 사용 (imageFiles 필터와 일치)
+      const existingImageFiles = existingFiles.filter((f) => f.is_image);
 
       // existingFiles에서 제거된 파일의 URL 정리
       const currentIds = new Set(existingImageFiles.map((f) => f.id));
-      currentImageIdsRef.current = currentIds;
       for (const [id, url] of authenticatedImageUrlsRef.current) {
         if (!currentIds.has(id)) {
           URL.revokeObjectURL(url);
@@ -897,34 +671,19 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
       for (const file of existingImageFiles) {
         if (cancelled) break;
         // ref 기반 has 체크 (stale closure 방지)
-        if (authenticatedImageUrlsRef.current.has(file.id) || loadingImageIdsRef.current.has(file.id)) continue;
+        if (authenticatedImageUrlsRef.current.has(file.id)) continue;
 
-        // 공개 자산 디스크(S3/CDN)의 교차 출처 URL 은 공개 자산이므로 XHR 없이 직접 사용한다.
-        // (CORS 미설정 CDN 에서의 실패 방지 + 제3자 origin 으로의 토큰 노출 차단)
-        // 문서 안에 담긴 data:·blob: URL(편집기 표본 그림 등)도 요청 대상이 아니라 그대로 쓴다.
-        if (isDirectAssetUrl(file.download_url)) {
-          authenticatedImageUrlsRef.current.set(file.id, file.download_url);
-          setAuthenticatedImageUrls(new Map(authenticatedImageUrlsRef.current));
-          continue;
-        }
-
-        loadingImageIdsRef.current.add(file.id);
         try {
           const blob = await G7Core.api.get(file.download_url, {
             responseType: 'blob',
           });
-          // 앞 회차가 취소됐어도 받아 온 원본은 버리지 않는다 — 버리면 다음 회차가 같은 원본을 다시 받는다
-          // (종전: 마운트 직후 initialFiles 동기화로 effect 가 두 번 돌아 첨부마다 원본 2회). 목록에서 빠진 첨부와
-          // 언마운트 뒤 결과만 버린다.
-          if (blob && !unmountedRef.current && currentImageIdsRef.current.has(file.id)) {
+          if (!cancelled && blob) {
             const objectUrl = URL.createObjectURL(blob);
             authenticatedImageUrlsRef.current.set(file.id, objectUrl);
             setAuthenticatedImageUrls(new Map(authenticatedImageUrlsRef.current));
           }
         } catch (error) {
           logger.error('Failed to load authenticated image:', error);
-        } finally {
-          loadingImageIdsRef.current.delete(file.id);
         }
       }
     };
@@ -934,24 +693,11 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
     return () => {
       cancelled = true;
     };
-  }, [existingFiles, blobRequestedIds]);
-
-  // 언어 전환으로 언마운트되면 아직 올리지 않은 대기 파일을 인계 저장소에 맡긴다 (engine-v1.79.0)
-  useEffect(() => {
-    return () => {
-      const handoff = (window as any).G7Core?.locale?.handoff;
-      const waiting = pendingFilesForLocaleHandoffRef.current.filter((f) => f.status !== 'done');
-      if (handoff?.isSwitching?.() && waiting.length > 0) {
-        handoff.stash(localeHandoffKey, { pending: waiting, order: customOrderForLocaleHandoffRef.current, reordered: hasReorderedRef.current });
-      }
-    };
-  }, [localeHandoffKey]);
+  }, [existingFiles]);
 
   // 언마운트 시에만 모든 인증된 이미지 URL 해제
   useEffect(() => {
-    unmountedRef.current = false;
     return () => {
-      unmountedRef.current = true;
       authenticatedImageUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
       authenticatedImageUrlsRef.current.clear();
     };
@@ -1031,7 +777,6 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
     // 인증된 이미지 URL 캐시
     authenticatedImageUrls,
-    requestAuthenticatedImage,
 
     // 초기화
     clear,

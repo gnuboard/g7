@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createLayoutTest, screen } from '../utils/layoutTestUtils';
 import { ComponentRegistry } from '../../ComponentRegistry';
 
@@ -237,8 +237,6 @@ describe('레이아웃 테스트 유틸리티', () => {
   });
 
   describe('기본 렌더링', () => {
-    // @scenario area=basic_render
-    // @effects layout_test_renders_layout
     it('레이아웃이 렌더링된다', async () => {
       testUtils.mockApi('products', {
         response: { data: [] },
@@ -250,8 +248,6 @@ describe('레이아웃 테스트 유틸리티', () => {
       expect(screen.getByText('테스트 페이지')).toBeInTheDocument();
     });
 
-    // @scenario area=basic_render
-    // @effects layout_test_renders_layout
     it('버튼이 렌더링된다', async () => {
       testUtils.mockApi('products', {
         response: { data: [] },
@@ -265,8 +261,6 @@ describe('레이아웃 테스트 유틸리티', () => {
   });
 
   describe('상태 관리', () => {
-    // @scenario area=state
-    // @effects layout_test_manages_state
     it('초기 상태가 올바르게 설정된다', async () => {
       testUtils.mockApi('products', { response: { data: [] } });
       await testUtils.render();
@@ -275,8 +269,6 @@ describe('레이아웃 테스트 유틸리티', () => {
       expect(testUtils.getState()._local.filterVisible).toBeUndefined();
     });
 
-    // @scenario area=state
-    // @effects layout_test_manages_state
     it('setState로 상태를 변경할 수 있다', async () => {
       testUtils.mockApi('products', { response: { data: [] } });
       await testUtils.render();
@@ -288,8 +280,6 @@ describe('레이아웃 테스트 유틸리티', () => {
       expect(testUtils.getState()._local.filterVisible).toBe(true);
     });
 
-    // @scenario area=state
-    // @effects layout_test_manages_state
     it('중첩 경로로 상태를 설정할 수 있다', async () => {
       testUtils.mockApi('products', { response: { data: [] } });
       await testUtils.render();
@@ -305,8 +295,6 @@ describe('레이아웃 테스트 유틸리티', () => {
   });
 
   describe('Mock API', () => {
-    // @scenario area=mock_api
-    // @effects layout_test_mocks_api
     it('mockApi로 응답을 설정할 수 있다', async () => {
       testUtils.mockApi('products', {
         response: { data: [{ id: 1, name: '상품1' }] },
@@ -318,8 +306,6 @@ describe('레이아웃 테스트 유틸리티', () => {
       expect(testUtils.mockNavigate).not.toHaveBeenCalled();
     });
 
-    // @scenario area=mock_api
-    // @effects layout_test_mocks_api
     it('mockApiError로 에러를 시뮬레이션할 수 있다', async () => {
       testUtils.mockApiError('products', 500, '서버 에러');
 
@@ -331,8 +317,6 @@ describe('레이아웃 테스트 유틸리티', () => {
   });
 
   describe('네비게이션', () => {
-    // @scenario area=navigation
-    // @effects layout_test_tracks_navigation
     it('네비게이션 이력이 추적된다', async () => {
       testUtils.mockApi('products', { response: { data: [] } });
       await testUtils.render();
@@ -351,8 +335,6 @@ describe('레이아웃 테스트 유틸리티', () => {
   });
 
   describe('토스트 알림', () => {
-    // @scenario area=toast
-    // @effects layout_test_collects_toasts
     it('G7Core.toast로 토스트가 표시된다', async () => {
       testUtils.mockApi('products', { response: { data: [] } });
       await testUtils.render();
@@ -368,8 +350,6 @@ describe('레이아웃 테스트 유틸리티', () => {
       });
     });
 
-    // @scenario area=toast
-    // @effects layout_test_collects_toasts
     it('여러 토스트가 축적된다', async () => {
       testUtils.mockApi('products', { response: { data: [] } });
       await testUtils.render();
@@ -385,8 +365,6 @@ describe('레이아웃 테스트 유틸리티', () => {
   });
 
   describe('모달', () => {
-    // @scenario area=modal
-    // @effects layout_test_manages_modals
     it('모달 스택이 관리된다', async () => {
       testUtils.mockApi('products', { response: { data: [] } });
       await testUtils.render();
@@ -400,8 +378,6 @@ describe('레이아웃 테스트 유틸리티', () => {
       expect(testUtils.getModalStack()).not.toContain('confirm-modal');
     });
 
-    // @scenario area=modal
-    // @effects layout_test_manages_modals
     it('G7Core.modal.open으로 모달이 열린다', async () => {
       testUtils.mockApi('products', { response: { data: [] } });
       await testUtils.render();
@@ -422,8 +398,6 @@ describe('인증 테스트', () => {
     registry = setupTestRegistry();
   });
 
-  // @scenario area=auth
-  // @effects layout_test_renders_authenticated
   it('인증된 상태로 렌더링할 수 있다', async () => {
     const testUtils = createLayoutTest(simpleLayoutJson, {
       auth: {
@@ -451,8 +425,6 @@ describe('iteration 테스트', () => {
     registry = setupTestRegistry();
   });
 
-  // @scenario area=iteration
-  // @effects layout_test_iteration_binds_rows
   it('[TS-CACHE-1] iteration에서 각 행이 올바른 데이터를 참조한다', async () => {
     const testUtils = createLayoutTest(iterationLayoutJson, {
       translations: { test: { title: '상품 목록' } },
@@ -491,8 +463,6 @@ describe('유틸리티 함수', () => {
     registry = setupTestRegistry();
   });
 
-  // @scenario area=utility
-  // @effects layout_test_utility_resets_and_sets_state
   it('cleanup이 상태를 초기화한다', async () => {
     const testUtils = createLayoutTest(simpleLayoutJson, {
       translations: { test: { title: '테스트' } },
@@ -522,8 +492,6 @@ describe('유틸리티 함수', () => {
     newTestUtils.cleanup();
   });
 
-  // @scenario area=utility
-  // @effects layout_test_utility_resets_and_sets_state
   it('global 상태를 설정할 수 있다', async () => {
     const testUtils = createLayoutTest(simpleLayoutJson, {
       translations: { test: { title: '테스트' } },

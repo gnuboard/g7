@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Board\Models;
 
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,9 +23,7 @@ class Report extends Model
     public ?array $reportableData = null;
 
     /**
-     * 모델의 팩토리 인스턴스를 생성합니다.
-     *
-     * @return Factory 신고 모델 팩토리 (ReportFactory)
+     * Create a new factory instance for the model.
      */
     protected static function newFactory(): Factory
     {
@@ -85,8 +82,6 @@ class Report extends Model
 
     /**
      * 게시판과의 관계를 정의합니다 (nullable).
-     *
-     * @return BelongsTo<Board, Report> board_id 기준 게시판 관계
      */
     public function board(): BelongsTo
     {
@@ -95,8 +90,6 @@ class Report extends Model
 
     /**
      * 작성자와의 관계를 정의합니다 (nullable).
-     *
-     * @return BelongsTo<User, Report> author_id 기준 작성자 관계
      */
     public function author(): BelongsTo
     {
@@ -115,8 +108,6 @@ class Report extends Model
 
     /**
      * 처리자와의 관계를 정의합니다 (nullable).
-     *
-     * @return BelongsTo<User, Report> processed_by 기준 처리자 관계
      */
     public function processor(): BelongsTo
     {
@@ -125,8 +116,6 @@ class Report extends Model
 
     /**
      * 신고 상태 라벨을 반환합니다.
-     *
-     * @return string 번역된 신고 상태 라벨
      */
     public function getStatusLabelAttribute(): string
     {
@@ -135,8 +124,6 @@ class Report extends Model
 
     /**
      * 신고 대상 타입 라벨을 반환합니다.
-     *
-     * @return string 번역된 신고 대상 타입 라벨
      */
     public function getTargetTypeLabelAttribute(): string
     {
@@ -146,9 +133,8 @@ class Report extends Model
     /**
      * 특정 상태의 신고만 조회하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
-     * @param  ReportStatus|string  $status  조회할 신고 상태 (문자열이면 Enum 으로 변환)
-     * @return Builder 상태 조건이 추가된 쿼리 빌더
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByStatus($query, ReportStatus|string $status)
     {
@@ -162,9 +148,8 @@ class Report extends Model
     /**
      * 특정 타입의 신고만 조회하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
-     * @param  ReportType|string  $type  조회할 신고 대상 타입 (문자열이면 Enum 으로 변환)
-     * @return Builder 대상 타입 조건이 추가된 쿼리 빌더
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByType($query, ReportType|string $type)
     {
@@ -178,9 +163,8 @@ class Report extends Model
     /**
      * 특정 게시판의 신고만 조회하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
-     * @param  int  $boardId  조회할 게시판 ID
-     * @return Builder 게시판 조건이 추가된 쿼리 빌더
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByBoard($query, int $boardId)
     {
@@ -190,10 +174,8 @@ class Report extends Model
     /**
      * 날짜 범위로 신고를 조회하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
-     * @param  string  $from  시작 일시 (created_at 하한, 포함)
-     * @param  string  $to  종료 일시 (created_at 상한, 포함)
-     * @return Builder 생성일 범위 조건이 추가된 쿼리 빌더
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByDateRange($query, string $from, string $to)
     {

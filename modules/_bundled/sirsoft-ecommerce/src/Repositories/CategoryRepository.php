@@ -11,32 +11,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryRepositoryInterface
  */
 class CategoryRepository implements CategoryRepositoryInterface
 {
-    /**
-     * 카테고리 저장소를 생성합니다.
-     *
-     * @param  Category  $model  카테고리 모델
-     */
     public function __construct(
         protected Category $model
     ) {}
-
-    /**
-     * Sitemap 용으로 활성 카테고리를 스트리밍 조회합니다.
-     *
-     * lazyById 는 id 기준 키셋 페이징으로 청크를 순차 조회하므로,
-     * 결과셋 전체가 메모리(및 DB 드라이버 버퍼)에 적재되지 않습니다.
-     *
-     * @param  int  $chunkSize  청크 크기
-     * @return iterable<Category> 활성 카테고리 순회자 (id, slug, updated_at 만 조회)
-     */
-    public function streamActiveForSitemap(int $chunkSize = 500): iterable
-    {
-        return $this->model->newQuery()
-            ->where('is_active', true)
-            ->select(['id', 'slug', 'updated_at'])
-            ->orderBy('id')
-            ->lazyById($chunkSize);
-    }
 
     /**
      * {@inheritDoc}
@@ -95,35 +72,18 @@ class CategoryRepository implements CategoryRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function findById(int $id, array $with = [], bool $withCounts = false): ?Category
+    public function findById(int $id, array $with = []): ?Category
     {
         $query = $this->model->newQuery();
 
-        if (! empty($with)) {
+        if (!empty($with)) {
             $query->with($with);
         }
 
-        // 상품 수 및 자식 수 카운트는 화면에서만 쓴다. 재정렬 같은 쓰기 루프는 이 값을
-        // 읽지 않으므로, 무조건 계산하면 항목마다 집계 서브쿼리가 두 개씩 따라붙는다.
-        if ($withCounts) {
-            $query->withCount(['products', 'children']);
-        }
+        // 상품 수 및 자식 수 카운트 추가
+        $query->withCount(['products', 'children']);
 
         return $query->find($id);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function findByIdsKeyed(array $ids): Collection
-    {
-        $ids = array_values(array_unique(array_filter($ids)));
-
-        if (empty($ids)) {
-            return new Collection;
-        }
-
-        return $this->model->newQuery()->whereIn('id', $ids)->get()->keyBy('id');
     }
 
     /**
@@ -139,11 +99,8 @@ class CategoryRepository implements CategoryRepositoryInterface
      */
     public function update(int $id, array $data): Category
     {
-        // 재정렬은 항목 수만큼 이 메서드를 부른다. 집계를 켜 두면 항목마다 상품 수·자식 수
-        // 서브쿼리가 두 개씩 붙지만 쓰기 경로는 그 값을 읽지 않는다.
-        $category = $this->findById($id, withCounts: false);
+        $category = $this->findById($id);
         $category->update($data);
-
         return $category->fresh();
     }
 
@@ -152,8 +109,7 @@ class CategoryRepository implements CategoryRepositoryInterface
      */
     public function delete(int $id): bool
     {
-        $category = $this->findById($id, withCounts: false);
-
+        $category = $this->findById($id);
         return $category->delete();
     }
 
@@ -170,9 +126,7 @@ class CategoryRepository implements CategoryRepositoryInterface
      */
     public function getProductCount(int $id): int
     {
-        // 아래에서 products()->count() 를 직접 세므로 withCount 집계는 버려진다
-        $category = $this->findById($id, withCounts: false);
-
+        $category = $this->findById($id);
         return $category->products()->count();
     }
 
@@ -205,7 +159,7 @@ class CategoryRepository implements CategoryRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function findBySlug(string $slug, array $with = [], bool $withCounts = false): ?Category
+    public function findBySlug(string $slug, array $with = []): ?Category
     {
         $query = $this->model->newQuery();
 
@@ -213,54 +167,9 @@ class CategoryRepository implements CategoryRepositoryInterface
             $query->with($with);
         }
 
-        if ($withCounts) {
-            $query->withCount(['products', 'children']);
-        }
+        $query->withCount(['products', 'children']);
 
         return $query->where('slug', $slug)->first();
-    }
-
-    /**
-     * slug 목록으로 카테고리를 한 번에 조회하고 slug 키 맵으로 반환합니다(관계와 집계 없음).
-     *
-     * @param  array<int, string>  $slugs  카테고리 slug 목록
-     * @return Collection<string, Category> slug => 카테고리(같은 slug 가 여럿이면 id 가 가장 작은 행)
-     */
-    public function findBySlugsKeyed(array $slugs): Collection
-    {
-        $slugs = array_values(array_unique(array_filter($slugs, fn ($slug) => is_string($slug) && $slug !== '')));
-        if ($slugs === []) {
-            return new Collection;
-        }
-
-        // id 내림차순으로 읽어 keyBy 가 마지막(가장 작은 id) 행을 남기게 한다
-        return $this->model->newQuery()->whereIn('slug', $slugs)->orderByDesc('id')->get()->keyBy('slug');
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function findPublicBySlug(string $slug): ?Category
-    {
-        // 상품 수는 공개 상품 목록과 같은 기준(전시 상품)으로 센다 — 숨긴 상품이 메뉴 숫자에 남지 않게(자신·자식 모두)
-        $visibleProducts = ['products' => fn ($products) => $products->visible()];
-
-        return $this->model->newQuery()
-            ->with([
-                'activeChildren' => fn ($query) => $query->withCount($visibleProducts)->orderBy('sort_order'),
-                'images',
-            ])
-            ->withCount([...$visibleProducts, 'children'])
-            ->where('slug', $slug)
-            ->first();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getTree(?int $parentId = null, bool $onlyActive = false, bool $visibleProductsOnly = false): Collection
-    {
-        return Category::getTree($parentId, $onlyActive, $visibleProductsOnly);
     }
 
     /**

@@ -8,7 +8,6 @@
  */
 
 import type { ActionContext } from '../types';
-import { guestOrderAuthRequiredMessage, isGuestOrderAuthFailure } from '../utils/guestOrderAuth';
 
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:ConfirmOrder')) ?? {
     log: (...args: unknown[]) => console.log('[Ecom:ConfirmOrder]', ...args),
@@ -20,16 +19,6 @@ interface ActionWithParams<T = Record<string, any>> {
     handler: string;
     params?: T;
     [key: string]: any;
-}
-
-/**
- * 비회원 컨텍스트 식별자 확보 여부 — _global.guestOrderToken 과 dataSource('order').data.order_number 가 모두 있으면 true.
- * 비회원 응답(GuestOrderResource)은 id 미노출이므로 회원 식별자(orderId) 가 비어 있어도 본 값으로 비회원 endpoint 호출 가능.
- */
-function hasGuestOrderContext(G7Core: any): boolean {
-    const token = G7Core?.state?.get?.('_global')?.guestOrderToken;
-    const orderNumber = G7Core?.dataSource?.get?.('order')?.data?.order_number;
-    return Boolean(token && orderNumber);
 }
 
 /**
@@ -54,25 +43,17 @@ export async function confirmOrderOptionHandler(
     if (!G7Core?.state) return;
 
     const { orderId, optionId } = action.params || {};
-    // 회원: orderId+optionId 필수. 비회원: orderId 없어도 토큰+order_number 로 비회원 endpoint 분기, optionId 는 항상 필수.
-    if (!optionId || (!orderId && !hasGuestOrderContext(G7Core))) {
-        logger.error('[confirmOrderOption] optionId 또는 식별자 누락');
+    if (!orderId || !optionId) {
+        logger.error('[confirmOrderOption] orderId 또는 optionId 누락');
         return;
     }
 
     G7Core.state.setLocal({ isConfirming: true });
 
     try {
-        const guestToken = G7Core.state.get?.('_global')?.guestOrderToken;
-        const orderNumber = G7Core.dataSource?.get?.('order')?.data?.order_number;
-        const isGuest = Boolean(guestToken && orderNumber);
-        const url = isGuest
-            ? `/api/modules/sirsoft-ecommerce/guest/orders/${orderNumber}/options/${optionId}/confirm`
-            : `/api/modules/sirsoft-ecommerce/user/orders/${orderId}/options/${optionId}/confirm`;
-        // ApiClient(axios) 인터셉터는 globalHeaders 를 적용하지 않으므로 비회원 endpoint 호출 시 토큰 헤더를 명시적으로 첨부.
-        const config = isGuest ? { headers: { 'X-Guest-Order-Token': guestToken } } : undefined;
-
-        const response = await G7Core.api.post(url, undefined, config);
+        const response = await G7Core.api.post(
+            `/api/modules/sirsoft-ecommerce/user/orders/${orderId}/options/${optionId}/confirm`
+        );
 
         if (response?.success) {
             G7Core.state.setLocal({ isConfirming: false, confirmTarget: null });
@@ -89,9 +70,7 @@ export async function confirmOrderOptionHandler(
     } catch (error: any) {
         logger.error('[confirmOrderOption] 실패:', error);
 
-        // 비회원 주문 조회 토큰이 없거나 만료된 무토큰 401 — 로그인 화면으로 옮기지 않으므로 주문 조회를 다시 하라고 알린다(#883)
-        const errorMessage = (isGuestOrderAuthFailure(error) ? guestOrderAuthRequiredMessage() : null)
-            || error?.response?.data?.message
+        const errorMessage = error?.response?.data?.message
             || error?.data?.message
             || error?.message
             || G7Core.t?.('sirsoft-ecommerce::messages.order.cannot_confirm')

@@ -6,7 +6,6 @@ use App\Enums\PermissionType;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Models\Role;
-use App\Support\GuestRoleResolver;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -15,6 +14,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PermissionMiddleware
 {
+    /**
+     * guest role 캐시
+     *
+     * @var Role|null
+     */
+    protected static $guestRoleCache = null;
+
     /**
      * 특정 권한을 가진 사용자 또는 비회원(guest)의 접근을 허용합니다.
      *
@@ -65,14 +71,9 @@ class PermissionMiddleware
                 ]);
             }
         } else {
-            // 다중 권한은 회원과 같은 규칙(requireAll 기본 true=AND)을 따른다 — 비회원만 OR 로 판정하면
-            // 같은 라우트가 회원에게는 닫히고 비회원에게는 열리는 역전이 생긴다.
-            $guestCheck = fn ($perm) => $this->checkGuestPermission($perm, $permissionType);
             $hasPermission = count($resolvedPermissions) === 1
-                ? $guestCheck($resolvedPermissions[0])
-                : (filter_var($requireAll ?? 'true', FILTER_VALIDATE_BOOLEAN)
-                    ? collect($resolvedPermissions)->every($guestCheck)
-                    : collect($resolvedPermissions)->contains($guestCheck));
+                ? $this->checkGuestPermission($resolvedPermissions[0], $permissionType)
+                : collect($resolvedPermissions)->contains(fn ($perm) => $this->checkGuestPermission($perm, $permissionType));
 
             if (! $hasPermission) {
                 return ResponseHelper::unauthorized('auth.guest_permission_denied', [
@@ -82,10 +83,6 @@ class PermissionMiddleware
         }
 
         // Step 4: scope_type 스코프 체크 (인증된 사용자 + 상세 엔드포인트만)
-        // - 비회원은 권한 범위를 가질 수 없다(7.1.1) — 비회원 역할의 범위 저장은 역할 수정 요청이 422 로 막는다.
-        // - 라우트가 resource_route_key 이름의 파라미터를 Model 로 바인딩할 때만 돈다. {slug}·{id} 처럼
-        //   바인딩하지 않는 라우트는 서비스·저장소가 다시 판정해야 하고, 그 위치를 강제 지점 원장
-        //   (ScopedPermissionEnforcement::LEDGER)에 적는다 — 감사 테스트가 빠진 라우트를 찾는다.
         if ($user) {
             foreach ($resolvedPermissions as $identifier) {
                 $resourceRouteKey = PermissionHelper::getResourceRouteKey($identifier);
@@ -128,9 +125,10 @@ class PermissionMiddleware
             return false;
         }
 
-        // 적재해 둔 권한 컬렉션에서 판정한다. permissions() 로 빌더를 다시 열면
-        // 캐시해 둔 의미가 사라져 판정마다 쿼리가 나간다.
-        return GuestRoleResolver::hasPermission($permission, $type);
+        return $guestRole->permissions()
+            ->where('identifier', $permission)
+            ->where('type', $type)
+            ->exists();
     }
 
     /**
@@ -140,7 +138,13 @@ class PermissionMiddleware
      */
     protected function getGuestRole(): ?Role
     {
-        return GuestRoleResolver::resolve();
+        if (self::$guestRoleCache === null) {
+            self::$guestRoleCache = Role::where('identifier', 'guest')
+                ->with('permissions')
+                ->first();
+        }
+
+        return self::$guestRoleCache;
     }
 
     /**
@@ -154,7 +158,7 @@ class PermissionMiddleware
      */
     public static function clearGuestRoleCache(): void
     {
-        GuestRoleResolver::flush();
+        self::$guestRoleCache = null;
     }
 
     /**

@@ -19,12 +19,6 @@ use Illuminate\Support\Facades\Log;
  */
 class InitiateIdentityChallengeAfterRegister implements HookListenerInterface
 {
-    /**
-     * 리스너를 생성합니다.
-     *
-     * @param  IdentityVerificationService  $service  본인인증 서비스 (challenge 발행)
-     * @param  IdentityPolicyService  $policyService  본인인증 정책 서비스 (가입 후 정책 해석)
-     */
     public function __construct(
         protected IdentityVerificationService $service,
         protected IdentityPolicyService $policyService,
@@ -58,11 +52,6 @@ class InitiateIdentityChallengeAfterRegister implements HookListenerInterface
         $context = is_array($args[1] ?? null) ? $args[1] : [];
 
         if (! $user instanceof User) {
-            return;
-        }
-
-        // 확장 내부 가입이 사유와 함께 정책 생략을 골랐다 — 회원은 이미 Active 로 만들어졌다
-        if (($context['identity_policy'] ?? null) === 'skip') {
             return;
         }
 

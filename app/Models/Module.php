@@ -4,11 +4,9 @@ namespace App\Models;
 
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Module extends Model
 {
@@ -53,9 +51,6 @@ class Module extends Model
         'config',
         'created_by',
         'updated_by',
-        // 설치·업데이트 때 받은 패키지의 서명 검증 결과 (7.2.0)
-        'integrity_status',
-        'integrity_key_id',
     ];
 
     /**
@@ -95,14 +90,12 @@ class Module extends Model
     public function isInstalled(): bool
     {
         return in_array($this->status, [
-            ExtensionStatus::Active->value, ExtensionStatus::Inactive->value,
+            ExtensionStatus::Active->value, ExtensionStatus::Inactive->value
         ]);
     }
 
     /**
      * 모듈을 생성한 사용자와의 관계를 정의합니다.
-     *
-     * @return BelongsTo 생성자 관계
      */
     public function creator()
     {
@@ -111,8 +104,6 @@ class Module extends Model
 
     /**
      * 모듈을 마지막으로 수정한 사용자와의 관계를 정의합니다.
-     *
-     * @return BelongsTo 최종 수정자 관계
      */
     public function updater()
     {
@@ -121,9 +112,6 @@ class Module extends Model
 
     /**
      * 지정된 로케일의 모듈 이름 반환
-     *
-     * @param  string|null  $locale  로케일 (null 이면 현재 로케일)
-     * @return string 로케일의 모듈 이름
      */
     public function getLocalizedName(?string $locale = null): string
     {
@@ -133,15 +121,14 @@ class Module extends Model
             return (string) $this->name;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->name, $locale) ?? '';
+        return $this->name[$locale]
+            ?? $this->name[config('app.fallback_locale')]
+            ?? (! empty($this->name) ? array_values($this->name)[0] : '')
+            ?? '';
     }
 
     /**
      * 지정된 로케일의 모듈 설명 반환
-     *
-     * @param  string|null  $locale  로케일 (null 이면 현재 로케일)
-     * @return string 로케일의 모듈 설명
      */
     public function getLocalizedDescription(?string $locale = null): string
     {
@@ -151,14 +138,14 @@ class Module extends Model
             return (string) $this->description;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->description, $locale) ?? '';
+        return $this->description[$locale]
+            ?? $this->description[config('app.fallback_locale')]
+            ?? (! empty($this->description) ? array_values($this->description)[0] : '')
+            ?? '';
     }
 
     /**
      * 현재 로케일의 모듈 이름 반환
-     *
-     * @return Attribute 현재 로케일 이름 접근자
      */
     protected function localizedName(): Attribute
     {
@@ -169,8 +156,6 @@ class Module extends Model
 
     /**
      * 현재 로케일의 모듈 설명 반환
-     *
-     * @return Attribute 현재 로케일 설명 접근자
      */
     protected function localizedDescription(): Attribute
     {

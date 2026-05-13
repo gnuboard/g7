@@ -5,7 +5,6 @@ namespace Plugins\Gnuboard7\HelloPlugin\Tests;
 use App\Extension\HookManager;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
-use Plugins\Gnuboard7\HelloPlugin\Providers\HelloPluginServiceProvider;
 use Tests\TestCase;
 
 /**
@@ -53,7 +52,7 @@ abstract class PluginTestCase extends TestCase
 
         $this->registerPluginAutoload();
 
-        $this->app->register(HelloPluginServiceProvider::class);
+        $this->app->register(\Plugins\Gnuboard7\HelloPlugin\Providers\HelloPluginServiceProvider::class);
 
         $this->runCoreMigrationIfNeeded();
 
@@ -154,12 +153,8 @@ abstract class PluginTestCase extends TestCase
             $relativeClass = substr($class, $len);
             $file = $pluginBasePath.'/src/'.str_replace('\\', '/', $relativeClass).'.php';
 
-            if (file_exists($file)
-                && ! class_exists($class, false) && ! interface_exists($class, false)
-                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
-                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
-                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
-                require_once $file;
+            if (file_exists($file)) {
+                require $file;
             }
         });
     }
@@ -193,7 +188,7 @@ abstract class PluginTestCase extends TestCase
                 $priority = is_array($config) ? ($config['priority'] ?? 10) : 10;
                 $type = is_array($config) ? ($config['type'] ?? 'action') : 'action';
 
-                $listenerInstance = new $listenerClass;
+                $listenerInstance = new $listenerClass();
                 $callback = [$listenerInstance, $method];
 
                 if ($type === 'filter') {

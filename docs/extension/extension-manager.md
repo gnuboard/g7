@@ -13,8 +13,6 @@
 3. 설치/삭제 시 자동 갱신: updateComposerAutoload() → generateAutoloadFile()
 4. 수동 갱신: php artisan extension:update-autoload
 5. _bundled/_pending 디렉토리 자동 제외 (str_starts_with($name, '_') → skip)
-6. src_classmap: 확장 소스 FQCN→경로 사전 계산 → findFile 파일시스템 stat 제거 (지연 로드·vendor 격리 유지)
-7. ZIP 업로드·GitHub 설치는 패키지 서명을 검증(7.2.0) — GitHub 는 태그 릴리스만, 업로드는 선택 「서명 파일」 칸 (package-signing.md)
 ```
 
 ---
@@ -28,7 +26,6 @@
 5. [관리자 UI 필터링 (hidden 플래그)](#관리자-ui-필터링-hidden-플래그)
 6. [Artisan 커맨드](#artisan-커맨드)
 7. [서비스 등록](#서비스-등록)
-8. [패키지 설치 경로와 서명 검증](#패키지-설치-경로와-서명-검증)
 
 ---
 
@@ -82,10 +79,6 @@ return [
         "modules/sirsoft-ecommerce/module.php",
         "plugins/sirsoft-payment/plugin.php",
     ],
-    'src_classmap' => [
-        "Modules\\Sirsoft\\Ecommerce\\Services\\OrderService" => "modules/sirsoft-ecommerce/src/Services/OrderService.php",
-        "Plugins\\Sirsoft\\Payment\\Providers\\PaymentServiceProvider" => "plugins/sirsoft-payment/src/Providers/PaymentServiceProvider.php",
-    ],
     'files' => [],
     'vendor_autoloads' => [
         "modules/sirsoft-ecommerce/vendor/autoload.php",
@@ -93,18 +86,7 @@ return [
 ];
 ```
 
-- `classmap`: `module.php` / `plugin.php` 등 부트스트랩 파일 목록 — 진입점에서 `require_once` (즉시 로드)
-- `src_classmap`: 확장 **소스** 클래스의 `FQCN → 상대경로` 맵 — 진입점에서 `$loader->addClassMap()` (지연 로드)
 - `vendor_autoloads`: 모듈/플러그인의 `vendor/autoload.php` 경로 목록 (Composer 의존성이 설치된 경우만 포함)
-
-#### src_classmap — findFile 파일시스템 스캔 제거 (성능)
-
-확장 소스 클래스는 `addPsr4()` 로만 등록되면 Composer `findFile()` 이 클래스마다 파일시스템을 스캔(`is_dir`/`file_exists` stat)한다. OPcache 가 cold 이거나 파일시스템이 느린 환경에서는 이 stat 비용이 요청 시간의 큰 비중을 차지할 수 있다. `src_classmap` 은 `generateAutoloadFile()` 이 각 PSR-4 디렉토리를 스캔해 `FQCN → 경로` 를 사전 계산하고, 진입점(`public/index.php` / `CoreServiceProvider` / `ExtensionManager::registerExtensionAutoload`)이 `ClassLoader::addClassMap()` 으로 등록한다. `findFile()` 은 classMap 을 **최우선 조회**하므로 확장 클래스는 파일시스템 접근 0 으로 즉시 경로를 얻는다.
-
-- **지연 로드 유지**: classmap 은 경로만 제공하며 `include` 는 실제 사용 시점에. 매 요청 전량 로드가 아니다.
-- **PSR-4 폴백 보존**: classmap 에 없는 클래스(신규 추가 후 미재생성 등)는 기존 PSR-4 경로로 폴백 — 안전망.
-- **vendor 격리 불변**: `src_classmap` 은 확장 **소스**(`Modules\*`/`Plugins\*`)만 담는다. 확장별 독립 서드파티 vendor 는 각 확장 `vendor/autoload.php`(별도 ClassLoader) 가 담당하므로 여기 포함되지 않는다.
-- **재생성**: `psr4` 와 동일 생명주기 — install / update / uninstall 시 `updateComposerAutoload()`, 코어 업데이트 시 `extension:update-autoload` 가 함께 재생성.
 
 ### 중요 규칙
 
@@ -127,21 +109,15 @@ _bundled/_pending 디렉토리는 활성 확장으로 인식하지 않습니다
 
 ### 로딩 진입점
 
-**public/index.php** 와 **artisan** 은 Laravel 부팅 전에 같은 순서를 **파일 안에서 직접(인라인)** 수행하고 `G7_EXTENSION_AUTOLOAD_REGISTERED` 상수를 세웁니다(`artisan` 은 소스 classmap 을 등록하지 않아 PSR-4 탐색만 씁니다 — 동작은 같고 클래스 탐색 비용만 다릅니다). 진입점이 등록하지 않은 부팅(기본 진입점을 거치지 않는 실행 스크립트 등)에서는 `CoreServiceProvider` 가 `ExtensionManager::registerExtensionAutoload($loader)` 를 호출하고, 설치·업데이트 중 같은 프로세스의 재등록(`reregisterRuntimeAutoload()`)도 이 함수를 씁니다:
+**public/index.php** 및 **artisan**에서 `ExtensionManager::registerExtensionAutoload($loader)` 호출:
 
 ```text
 registerExtensionAutoload($loader)
     ↓ 1. PSR-4 네임스페이스 등록 ($loader->addPsr4())
-    ↓    (소스 classmap 등록 — $loader->addClassMap())
-    ↓ 2. Classmap 파일 로드 (module.php, plugin.php → require_once, 이미 선언된 진입 클래스는 건너뜀)
+    ↓ 2. Classmap 파일 로드 (module.php, plugin.php → require_once)
     ↓ 3. Files 로드 (헬퍼 함수 등 → require_once)
-    ↓ 4. Vendor autoloads 로드 (모듈/플러그인의 vendor/autoload.php → require_once, 이미 선언된 오토로더는 건너뜀)
+    ↓ 4. Vendor autoloads 로드 (모듈/플러그인의 vendor/autoload.php → require_once)
 ```
-
-- **중복 선언 가드**: 같은 확장의 `_bundled`·`_pending`·활성 사본은 진입 클래스명과 vendor 오토로더 클래스명(`ComposerAutoloaderInit…`)이 같습니다. 경로가 달라 `require_once` 가 막지 못하므로, 이미 선언된 클래스의 다른 경로 사본은 읽지 않습니다(7.1.5~ vendor 오토로더 포함).
-- **코어 로더 선택**: 재등록·자기 복구는 `ClassLoader::getRegisteredLoaders()` 의 첫 항목이 아니라 키(vendor 디렉터리)가 코어 `vendor/` 인 로더에 등록합니다. Composer 오토로더는 자신을 맨 앞에 넣으므로 확장 vendor 를 불러온 뒤의 첫 항목은 확장 vendor 로더입니다.
-- **설치 직전 소스 classmap**: 설치·활성화·시더 실행 직전 `registerExtensionAutoloadPaths()` 가 그 확장의 PSR-4 와 함께 소스 classmap 을 등록합니다(확장 `vendor/`·`node_modules/` 제외). Composer 는 classMap 을 「없는 클래스」 기억(missingClasses)보다 먼저 보므로, 같은 프로세스에서 앞서 실패한 조회가 있어도 설치가 이어집니다.
-- **캐시에 없는 활성 폴더**: 부팅의 확장 로드(`loadModules()`·`loadPlugins()`)는 오토로드 캐시에 없는 활성 폴더(설치 기록 없이 남은 사본)만 진입 파일을 읽기 전에 그 확장의 PSR-4·소스 classmap 을 등록합니다(`registerAutoloadIfMissing()`). 캐시에 있는 확장은 추가 비용이 없습니다.
 
 **로딩 순서가 중요합니다**:
 
@@ -199,8 +175,6 @@ updateComposerAutoload() → autoload-extensions.php에 vendor_autoloads 등록
     ↓
 public/index.php / artisan → vendor/autoload.php를 require_once
 ```
-
-> 확장의 진입 파일(module.php·plugin.php)에서 자체 `vendor/autoload.php` 를 직접 불러오지 마세요. 코어가 `vendor_autoloads` 로 불러옵니다. 직접 부르던 확장도 7.1.5 부터는 중복 선언 오류가 나지 않지만 불필요합니다.
 
 ### 주요 메서드
 
@@ -344,17 +318,6 @@ php artisan extension:composer-install
 
 ---
 
-## 확장 아이콘
-
-확장과 언어팩은 자기 아이콘을 담을 수 있습니다. 패키지 루트에 `assets/icon.svg` 를 두거나
-매니페스트에 `"icon"` 경로를 적으면 관리자 확장 관리 목록·상세·확인 창과 설치 마법사에
-그 그림이 나옵니다. 아이콘이 없는 확장은 종류별 기본 그림으로 표시됩니다.
-
-규격(정사각·100KB 이하·스크립트 없는 SVG), 서빙 주소, 언어팩 합성 규칙은
-[확장 아이콘](extension-icons.md)에 있습니다.
-
----
-
 ## 관리자 UI 필터링 (hidden 플래그)
 
 확장 manifest (`module.json` / `plugin.json` / `template.json`) 에 `"hidden": true` 를 설정하면, 관리자 UI 목록 응답과 artisan `*:list` 기본 출력에서 제외됩니다. 학습용 샘플 확장, 내부 운영 전용 확장을 숨길 때 사용합니다.
@@ -384,8 +347,6 @@ GET /api/admin/modules?include_hidden=1
 GET /api/admin/plugins?include_hidden=1
 GET /api/admin/templates?include_hidden=1
 ```
-
-API 의 `include_hidden` 은 최고관리자(`is_super`)에게만 적용됩니다. 다른 관리자가 이 값을 보내면(최고관리자가 공유한 주소로 들어온 경우 등) 요청 단계(`RestrictsHiddenExtensionsToSuperAdmin`)에서 거짓으로 바뀌어 숨김 확장이 빠진 목록을 받습니다.
 
 ### manifest 설정
 
@@ -419,13 +380,14 @@ public function register(): void
         return new ExtensionManager;
     });
 
-    // 모듈·플러그인 매니저는 저장소·레이아웃 동기화기(LayoutRowSynchronizer) 등 여러 의존을 받는다 —
-    // 실제 인자 목록은 CoreServiceProvider 를 보고, 코드에서는 직접 new 하지 말고 컨테이너로 받는다.
+    // 모듈 매니저에 주입
     $this->app->singleton(ModuleManager::class, function ($app) {
-        return new ModuleManager(
-            $app->make(ExtensionManager::class),
-            // … 저장소들 · LayoutExtensionService · LayoutRowSynchronizer · LayoutExtensionRepositoryInterface
-        );
+        return new ModuleManager($app->make(ExtensionManager::class));
+    });
+
+    // 플러그인 매니저에 주입
+    $this->app->singleton(PluginManager::class, function ($app) {
+        return new PluginManager($app->make(ExtensionManager::class));
     });
 }
 ```
@@ -475,32 +437,10 @@ DB 컬럼: `modules/plugins/templates` 테이블의 `deactivated_reason` (string
 
 ---
 
-## 패키지 설치 경로와 서명 검증
-
-모듈·플러그인·템플릿을 새로 설치하는 경로는 셋이고, 7.2.0 부터 바깥에서 받는 두 경로는 패키지 서명을 검증합니다.
-
-| 경로 | 진입점 | 서명 |
-| --- | --- | --- |
-| `_bundled`·`_pending` 원본 | `{type}:install`, 관리자 화면 설치 버튼 | `_bundled` 는 코어 배포본 서명이 덮으므로 따로 보지 않음(기록 `bundled`). 운영자가 `_pending` 에 둔 원본은 기록 없음 |
-| 수동 ZIP 업로드 | 관리자 화면 「수동 설치」 창의 파일 업로드 → `POST /api/admin/{modules,plugins,templates}/install-from-file` | 선택 칸 「서명 파일 (.sig.json)」(`signature`). 업로드 ZIP 은 옆 파일을 자동으로 찾지 않으므로 이 칸으로만 준다 |
-| GitHub 설치 | 관리자 화면 「수동 설치」 창의 GitHub 저장소 → `POST /api/admin/{modules,plugins,templates}/install-from-github` | 태그 릴리스 자산 `{identifier}-{version}.zip` + `.sig.json` 짝 |
-
-- GitHub 설치는 **태그 릴리스만** 받습니다. 최신 릴리스가 없으면 `main`·`master` 브랜치를 받지 않고 실패합니다(7.2.0 변경).
-  서명 자산 짝이 없는 릴리스는 태그 압축본을 미서명으로 다루며, 받기 전에 확인을 묻습니다.
-- 미서명·검증 불가는 409 경고 창의 「미서명으로 계속」으로 진행하고(같은 요청을 `allow_unsigned=1` 로 다시 보냄), 서명 불일치·신뢰하지
-  않는 키는 422 로 멈춥니다. 환경설정 > 보안 「미서명 패키지 차단」이 켜져 있으면 미서명도 진행할 수 없습니다.
-- 검증은 ZIP 을 풀기 전과, 풀어서 `_pending` 에서 활성 디렉토리로 옮기기 전에 합니다. 거절된 패키지는 활성 디렉토리에 파일을 남기지 않습니다.
-- 결과는 설치 행 `integrity_status`·`integrity_key_id` 에 남고 확장 상세 창 「패키지 서명」 배지로 보입니다.
-
-서명 파일 형식·제작자 서명 절차·신뢰 키 등록은 [패키지 서명](package-signing.md) 에 있습니다.
-
----
-
 ## 관련 문서
 
 - [모듈 개발 기초](module-basics.md) - 모듈 구조 및 설정
 - [플러그인 개발](plugin-development.md) - 플러그인 구조 및 설정
 - [모듈 Artisan 커맨드](module-commands.md) - 모듈 관련 커맨드
 - [확장 업데이트 시스템](extension-update-system.md) - _bundled/_pending 및 업데이트
-- [패키지 서명](package-signing.md) - 설치·업데이트 패키지의 서명 검증
-- [인덱스](README.md) - 확장 시스템 전체 문서 목록
+- [인덱스](index.md) - 확장 시스템 전체 문서 목록

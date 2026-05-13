@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\Enums\ScopeType;
 use App\Models\Permission;
 use App\Models\User;
 use App\Providers\AuthServiceProvider;
@@ -24,22 +25,6 @@ class PermissionHelper
      * @var array<string, array{resource_route_key: string|null, owner_key: string|null}>
      */
     protected static array $permissionCache = [];
-
-    /**
-     * 권한 스코프 캐시를 무효화합니다.
-     *
-     * 캐시는 프로세스 수명 동안 유지되므로, 권한 행이 다시 만들어지는 시점
-     * (권한 재시드 · 코어 업데이트 · 확장 install) 에 비워 주어야 한다.
-     * 테스트에서는 매 케이스마다 DB 가 초기화되는데 캐시만 남아, 앞 케이스가 심은
-     * `resource_route_key = null` 이 뒤 케이스로 새어 스코프 검사가 통째로 건너뛰어진다
-     * (개별 실행은 통과하고 스위트에서만 어긋나는 형태로 드러난다).
-     *
-     * @return void 반환값 없음
-     */
-    public static function clearPermissionScopeCache(): void
-    {
-        self::$permissionCache = [];
-    }
 
     /**
      * 단일 권한 체크
@@ -71,8 +56,6 @@ class PermissionHelper
 
     /**
      * 해당 권한의 effective scope를 조회합니다.
-     *
-     * 비회원(user null)은 null(전체)이다 — 비회원은 권한 범위를 가질 수 없다(7.1.1).
      *
      * @param  string  $permission  권한 식별자
      * @param  User|null  $user  사용자 (null이면 현재 인증 사용자)
@@ -118,12 +101,10 @@ class PermissionHelper
     /**
      * 목록 엔드포인트의 쿼리에 권한 스코프 필터를 적용합니다.
      *
-     * 비회원은 필터 없이 지나간다 — 비회원은 권한 범위를 가질 수 없다(7.1.1). 보유 여부는 호출 전에 판정한다.
-     *
      * @param  Builder  $query  Eloquent 쿼리 빌더
      * @param  string  $permission  권한 식별자
      * @param  User|null  $user  사용자 (null이면 현재 인증 사용자)
-     * @return void 반환값 없음
+     * @return void
      */
     public static function applyPermissionScope(Builder $query, string $permission, ?User $user = null): void
     {
@@ -159,9 +140,6 @@ class PermissionHelper
 
     /**
      * 상세 엔드포인트의 모델에 대한 스코프 접근 권한을 체크합니다.
-     *
-     * **권한 보유 판정이 아니다.** 권한이 없는 사용자에게도 범위가 없으니 true 를 준다 — 반드시 보유
-     * 확인(check) 뒤에 부른다. 비회원도 true 다 — 비회원은 권한 범위를 가질 수 없다(7.1.1).
      *
      * @param  Model  $model  대상 모델
      * @param  string  $permission  권한 식별자
@@ -212,40 +190,6 @@ class PermissionHelper
         }
 
         return false;
-    }
-
-    /**
-     * 스코프 접근이 허용되는 모델만 남긴 배열을 반환합니다 (정적 일괄 라우트용).
-     *
-     * 비회원은 전부 통과한다 — 비회원은 권한 범위를 가질 수 없다(7.1.1).
-     *
-     * `PermissionMiddleware` 의 스코프 검사는 라우트에서 모델이 resolve 될 때만
-     * 동작합니다 — 모델이 없으면 목록 엔드포인트로 보아 건너뜁니다. 따라서
-     * `{user}` 같은 파라미터가 없는 **정적 일괄 라우트**(예: `PATCH users/bulk-status`)
-     * 에서는 스코프 검사가 통째로 우회됩니다. 상세 경로가 403 으로 막는 대상을
-     * 일괄 경로로는 바꿀 수 있으면 그 경로가 우회로이므로, 서비스 계층에서
-     * 같은 판정(`checkScopeAccess`)을 재적용해야 합니다.
-     *
-     * 판정은 대상별로 이뤄집니다 — 액터의 유효 스코프가 self 면 자기 소유만,
-     * role 이면 같은 역할 범위까지, 미지정(글로벌)이면 전체가 통과합니다.
-     *
-     * @param  iterable<Model>  $models  검사 대상 모델 목록
-     * @param  string  $permission  권한 식별자
-     * @param  User|null  $user  사용자 (null이면 현재 인증 사용자)
-     * @return array<Model> 스코프 접근이 허용된 모델 목록
-     */
-    public static function filterByScope(iterable $models, string $permission, ?User $user = null): array
-    {
-        $user = $user ?? Auth::user();
-
-        $allowed = [];
-        foreach ($models as $model) {
-            if (self::checkScopeAccess($model, $permission, $user)) {
-                $allowed[] = $model;
-            }
-        }
-
-        return $allowed;
     }
 
     /**

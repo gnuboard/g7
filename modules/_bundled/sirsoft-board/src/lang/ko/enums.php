@@ -14,19 +14,6 @@ return [
         'always' => '필수 사용',
     ],
 
-    // 답글 삭제 정책
-    'reply_delete_policy' => [
-        'block' => '삭제 차단 (답글이 있으면 원글 삭제 불가)',
-        'cascade' => '함께 삭제 (원글 삭제 시 답글도 함께 삭제)',
-    ],
-
-    // 비밀 답변 열람 범위
-    'secret_reply_visibility' => [
-        'thread_path' => '경로 규칙 (기본)',
-        'descendants_only' => '하위만',
-        'per_post' => '답변마다 따로',
-    ],
-
     // 정렬 방향
     'order_direction' => [
         'asc' => '오름차순',
@@ -76,7 +63,6 @@ return [
         'system' => '시스템',
         'auto_hide' => '자동 블라인드',
         'user' => '사용자 직접 삭제',
-        'cascade' => '게시글 삭제',
     ],
 
     // 게시글 상태

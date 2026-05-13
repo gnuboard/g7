@@ -3,19 +3,17 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
-use Illuminate\Http\Request;
-use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
- * 클레임 사유 API 리소스
+ * 클래임 사유 API 리소스
  */
 class ClaimReasonResource extends BaseApiResource
 {
     /**
      * Transform the resource into an array.
      *
-     * @param  Request  $request
-     * @return array<string, mixed> 변환된 배열
+     * @param \Illuminate\Http\Request $request
+     * @return array
      */
     public function toArray($request): array
     {
@@ -36,17 +34,16 @@ class ClaimReasonResource extends BaseApiResource
             'updated_at' => $this->formatDateTimeStringForUser($this->updated_at),
 
             // 관계
-            // 등록자와 수정자의 이름은 표시 이름이다(관리자 화면은 이커머스 관리자 영역). 실명은 회원 조회 권한이 있는 관리자에게만 `real_name` 으로 더해진다.
-            'creator' => $this->whenLoaded('creator', function () use ($request) {
+            'creator' => $this->whenLoaded('creator', function () {
                 return [
                     'id' => $this->creator->id,
-                    ...MemberDisplayName::staffFields($this->creator, $request),
+                    'name' => $this->creator->name,
                 ];
             }),
-            'updater' => $this->whenLoaded('updater', function () use ($request) {
+            'updater' => $this->whenLoaded('updater', function () {
                 return [
                     'id' => $this->updater->id,
-                    ...MemberDisplayName::staffFields($this->updater, $request),
+                    'name' => $this->updater->name,
                 ];
             }),
 

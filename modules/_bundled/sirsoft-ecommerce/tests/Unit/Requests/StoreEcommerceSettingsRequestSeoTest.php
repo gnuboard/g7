@@ -3,14 +3,14 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Requests;
 
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\TestCase;
 
 /**
  * StoreEcommerceSettingsRequest SEO 필드 검증 테스트
  *
  * 코어로 이관된 SEO 필드가 제거되었는지, 이커머스 고유 SEO 필드가 유지되는지 검증합니다.
  */
-class StoreEcommerceSettingsRequestSeoTest extends ModuleTestCase
+class StoreEcommerceSettingsRequestSeoTest extends TestCase
 {
     private StoreEcommerceSettingsRequest $request;
 

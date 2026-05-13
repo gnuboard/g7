@@ -117,14 +117,8 @@ describe('cartHandlers', () => {
       }));
     });
 
-    /**
-     * #131: 선택 개수는 selectedItems 파생 — 별도 카운터를 기록하지 않는다 (공개 이슈 #92).
-     * 화면 카운터가 파생해 쓰는 SSoT 를 핸들러가 실제로 갱신하는지 고정한다.
-     *
-     * @scenario mount_path=initial_load, selection=partial
-     * @effects counter_matches_checked_state
-     */
-    it('#131 선택 변경 시 selectedItems 만 갱신하고 selectedCount 는 기록하지 않는다', () => {
+    // #131: 선택 변경 후 selectedCount 업데이트
+    it('#131 선택 변경 후 selectedCount가 업데이트된다', () => {
       // Given
       mockG7Core.state.get.mockReturnValue({
         cartItems: {
@@ -143,14 +137,10 @@ describe('cartHandlers', () => {
       // When
       toggleCartItemSelectionHandler(action);
 
-      // Then: 선택 목록이 SSoT — 화면 카운터는 여기서 파생한다
-      expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({
-        selectedItems: [2],
-        allSelected: false,
-      });
-      // 파생 가능한 값을 별도 키로 중복 저장하면 최초 마운트 구간에서 비어 보인다 (#92)
-      const payload = mockG7Core.state.setLocal.mock.calls[0][0];
-      expect(payload).not.toHaveProperty('selectedCount');
+      // Then
+      expect(mockG7Core.state.setLocal).toHaveBeenCalledWith(expect.objectContaining({
+        selectedCount: 1,
+      }));
     });
   });
 
@@ -172,6 +162,7 @@ describe('cartHandlers', () => {
       expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({
         selectedItems: [],
         allSelected: false,
+        selectedCount: 0,
       });
     });
 
@@ -192,6 +183,7 @@ describe('cartHandlers', () => {
       expect(mockG7Core.state.setLocal).toHaveBeenCalledWith({
         selectedItems: [1, 2, 3],
         allSelected: true,
+        selectedCount: 3,
       });
     });
   });

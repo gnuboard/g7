@@ -4,8 +4,6 @@ import { Button } from '../basic/Button';
 import { Input } from '../basic/Input';
 import { Icon } from '../basic/Icon';
 import { Span } from '../basic/Span';
-import type { EditorAttrs } from '../../types';
-import { escapeToClose } from '../../support/keyboardActivation';
 
 export interface IconOption {
   value: string;
@@ -23,17 +21,9 @@ export interface IconSelectProps {
   className?: string;
   disabled?: boolean;
   name?: string;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
-// export — editor-spec componentCapabilities 의 IconSelect.nodeEditor.params.defaultItems 와
-// 동기화 가드 테스트가 대조한다.
-export const defaultIconOptions: IconOption[] = [
+const defaultIconOptions: IconOption[] = [
   { value: 'LayoutDashboard', label: 'LayoutDashboard', faIcon: 'tachometer-alt' },
   { value: 'Settings', label: 'Settings', faIcon: 'cog' },
   { value: 'Menu', label: 'Menu', faIcon: 'bars' },
@@ -70,14 +60,10 @@ export const IconSelect: React.FC<IconSelectProps> = ({
   className = '',
   disabled = false,
   name,
-  id,
-  editorAttrs,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
-  // 여는 단추 — 고른 뒤 포커스를 돌려받는다(목록이 사라져 body 로 빠지지 않게, #869 키보드 접근)
-  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // value가 faIcon 형식(fas fa-xxx) 또는 Lucide 형식(IconName)일 수 있음
   const selectedOption = options.find((opt) => {
@@ -115,24 +101,14 @@ export const IconSelect: React.FC<IconSelectProps> = ({
     onChange?.(faValue);
     setIsOpen(false);
     setSearchQuery('');
-    triggerRef.current?.focus();
   };
 
-  // 펼친 목록 안(검색칸, 아이콘 항목) 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
-  const handleEscape = escapeToClose(isOpen, () => {
-    setIsOpen(false);
-    setSearchQuery('');
-  }, triggerRef);
-
   return (
-    <Div ref={dropdownRef} className={`relative ${className}`} id={id} {...editorAttrs} onKeyDown={handleEscape}>
+    <Div ref={dropdownRef} className={`relative ${className}`}>
       <Button
-        ref={triggerRef}
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
         className={`
           w-full flex items-center justify-between px-3 py-2
           bg-white dark:bg-gray-800
@@ -154,7 +130,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
         </Div>
         <Icon
           name="chevron-down"
-          className={`w-4 h-4 text-gray-500 dark:text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </Button>
 
@@ -191,7 +167,7 @@ export const IconSelect: React.FC<IconSelectProps> = ({
                   <Icon name={option.faIcon} className="w-4 h-4" />
                   <Span>{option.label}</Span>
                   {selectedOption?.faIcon === option.faIcon && (
-                    <Icon name="check" className="w-4 h-4 ml-auto text-blue-600 dark:text-blue-500" />
+                    <Icon name="check" className="w-4 h-4 ml-auto text-blue-600" />
                   )}
                 </Button>
               ))

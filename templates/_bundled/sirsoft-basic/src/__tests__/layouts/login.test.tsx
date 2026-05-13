@@ -11,10 +11,11 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   createLayoutTest,
   screen,
+  waitFor,
 } from '@/core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
 
@@ -132,7 +133,7 @@ const TestFragment: React.FC<{ children?: React.ReactNode }> =
 
 /**
  * 로그인 폼 레이아웃 (partial을 해결한 형태)
- * _login_form.g7.html 기반 — 오버레이 제거 후 상태
+ * _login_form.json 기반 — 오버레이 제거 후 상태
  */
 const loginFormFixture = {
   version: '1.0.0',
@@ -165,12 +166,10 @@ const loginFormFixture = {
           ],
         },
         // 이메일 입력 필드
-        // 2단계 인증이 요구되면 자격 증명 입력은 숨는다 — 실제 `_login_form.json` 과 같은 조건.
         {
           id: 'email-field',
           type: 'basic',
           name: 'Div',
-          if: '{{!_global.twoFactor?.required}}',
           props: { 'data-testid': 'email-field' },
           children: [
             {
@@ -198,7 +197,6 @@ const loginFormFixture = {
           id: 'password-field',
           type: 'basic',
           name: 'Div',
-          if: '{{!_global.twoFactor?.required}}',
           props: { 'data-testid': 'password-field' },
           children: [
             {
@@ -226,7 +224,6 @@ const loginFormFixture = {
           id: 'submit-button',
           type: 'basic',
           name: 'Button',
-          if: '{{!_global.twoFactor?.required}}',
           props: {
             type: 'submit',
             className: 'w-full py-3 mt-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2',
@@ -330,8 +327,6 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
   });
 
   describe('기본 렌더링', () => {
-    // @scenario phase=idle
-    // @effects login_form_fields_render
     it('로그인 폼이 이메일, 비밀번호, 제출 버튼과 함께 렌더링된다', async () => {
       // Given
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -352,8 +347,6 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
       testUtils.cleanup();
     });
 
-    // @scenario phase=idle
-    // @effects login_no_error_initially
     it('초기 상태에서 에러 메시지가 표시되지 않는다', async () => {
       // Given: loginError가 없는 초기 상태
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -371,8 +364,6 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
   });
 
   describe('로딩 상태 (isLoggingIn)', () => {
-    // @scenario phase=logging_in
-    // @effects login_no_blur_overlay_while_submitting
     it('로그인 중 블러 오버레이가 표시되지 않는다 (Issue #72 핵심)', async () => {
       // Given: isLoggingIn=true 상태
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -396,8 +387,6 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
       testUtils.cleanup();
     });
 
-    // @scenario phase=logging_in
-    // @effects login_button_spinner_while_submitting
     it('로그인 중 버튼에 스피너와 "로그인 중..." 텍스트가 표시된다', async () => {
       // Given
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -415,8 +404,6 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
       testUtils.cleanup();
     });
 
-    // @scenario phase=logging_in
-    // @effects login_inputs_disabled_while_submitting
     it('로그인 중 입력 필드가 비활성화된다', async () => {
       // Given
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -435,8 +422,6 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
       testUtils.cleanup();
     });
 
-    // @scenario phase=idle
-    // @effects login_no_spinner_when_idle
     it('로그인 중이 아닐 때 스피너가 표시되지 않는다', async () => {
       // Given: isLoggingIn=false (기본)
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -456,8 +441,6 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
   });
 
   describe('에러 표시', () => {
-    // @scenario phase=error
-    // @effects login_error_message_shown
     it('loginError 설정 시 에러 메시지가 표시된다', async () => {
       // Given
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -470,54 +453,6 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
 
       // Then
       expect(screen.getByTestId('login-error')).toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-  });
-
-  // 2단계 인증이 켜진 사이트에서는 로그인 응답이 인증번호 요구로 갈린다. 그때 자격 증명 입력이
-  // 남아 있으면 두 단계가 겹쳐 보이고, 사용자가 이메일·비밀번호를 다시 제출해 새 challenge 를
-  // 발급받는다. 이 fixture 의 `if` 는 실제 `_login_form.json` 과 같은 조건이므로, 한쪽이 바뀌면
-  // 이 케이스가 red 가 된다.
-  describe('2단계 인증 단계 전환', () => {
-    // @scenario phase=idle
-    // @effects login_credentials_shown_without_two_factor
-    it('twoFactor 가 없으면 자격 증명 입력이 보인다', async () => {
-      // Given
-      const testUtils = createLayoutTest(loginFormFixture, {
-        componentRegistry: registry,
-        initialState: { _global: {} },
-      });
-
-      // When
-      await testUtils.render();
-
-      // Then
-      expect(screen.getByTestId('email-field')).toBeInTheDocument();
-      expect(screen.getByTestId('password-field')).toBeInTheDocument();
-      expect(screen.getByTestId('login-submit-btn')).toBeInTheDocument();
-
-      testUtils.cleanup();
-    });
-
-    // @scenario phase=two_factor
-    // @effects login_credentials_hidden_on_two_factor
-    it('인증번호가 요구되면 자격 증명 입력과 제출 버튼이 사라진다', async () => {
-      // Given
-      const testUtils = createLayoutTest(loginFormFixture, {
-        componentRegistry: registry,
-        initialState: {
-          _global: { twoFactor: { required: true, challenge_id: 'c-1', code: '' } },
-        },
-      });
-
-      // When
-      await testUtils.render();
-
-      // Then
-      expect(screen.queryByTestId('email-field')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('password-field')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('login-submit-btn')).not.toBeInTheDocument();
 
       testUtils.cleanup();
     });

@@ -3,10 +3,10 @@
   "routes": [
     {
       "path": "*/admin",
-      "layout": "admin_home",
+      "redirect": "/admin/dashboard",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.base_layout_title"
+        "title": "관리자"
       }
     },
     {
@@ -14,7 +14,7 @@
       "layout": "admin_login",
       "auth_required": false,
       "meta": {
-        "title": "$t:auth.login.title"
+        "title": "관리자 로그인"
       }
     },
     {
@@ -38,7 +38,7 @@
       "layout": "admin_dashboard",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.dashboard.title"
+        "title": "관리자 대시보드"
       }
     },
     {
@@ -46,7 +46,7 @@
       "layout": "admin_user_list",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.users.page_title"
+        "title": "관리자 - 사용자 관리"
       }
     },
     {
@@ -54,7 +54,7 @@
       "layout": "admin_user_form",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.users.form.page_title_create"
+        "title": "관리자 - 사용자 등록"
       }
     },
     {
@@ -62,7 +62,7 @@
       "layout": "admin_user_detail",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.users.detail.page_title"
+        "title": "관리자 - 사용자 상세보기"
       }
     },
     {
@@ -70,7 +70,7 @@
       "layout": "admin_user_form",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.users.form.page_title_edit"
+        "title": "관리자 - 사용자 정보 수정"
       }
     },
     {
@@ -78,7 +78,7 @@
       "layout": "admin_module_list",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.modules.page_title"
+        "title": "모듈 관리"
       }
     },
     {
@@ -86,7 +86,7 @@
       "redirect": "/admin/settings?tab=language_packs",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.language_packs.page_title"
+        "title": "언어팩 관리"
       }
     },
     {
@@ -94,7 +94,7 @@
       "layout": "admin_module_language_packs",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.language_packs.page_title"
+        "title": "모듈 언어팩 관리"
       }
     },
     {
@@ -102,7 +102,7 @@
       "layout": "admin_plugin_language_packs",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.language_packs.page_title"
+        "title": "플러그인 언어팩 관리"
       }
     },
     {
@@ -110,7 +110,7 @@
       "layout": "admin_template_language_packs",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.language_packs.page_title"
+        "title": "템플릿 언어팩 관리"
       }
     },
     {
@@ -118,7 +118,7 @@
       "layout": "admin_plugin_list",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.plugins.page_title"
+        "title": "플러그인 관리"
       }
     },
     {
@@ -126,7 +126,7 @@
       "layout": "admin_menu_list",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.menus.page_title"
+        "title": "메뉴 관리"
       }
     },
     {
@@ -134,7 +134,7 @@
       "redirect": "/admin/templates/user",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.templates.page_title"
+        "title": "템플릿 관리"
       }
     },
     {
@@ -142,7 +142,7 @@
       "layout": "admin_template_layout_edit",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.templates.layout_edit.title"
+        "title": "레이아웃 편집"
       }
     },
     {
@@ -150,7 +150,7 @@
       "layout": "admin_template_list",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.templates.page_title"
+        "title": "템플릿 관리"
       }
     },
     {
@@ -158,7 +158,7 @@
       "layout": "template_partial_test",
       "auth_required": true,
       "meta": {
-        "title": "$t:admin.template_partial_test.title"
+        "title": "템플릿 Partial 시스템 테스트"
       }
     },
     {
@@ -168,141 +168,6 @@
       "meta": {
         "title": "$t:admin.activity_log.page_title",
         "permission": "core.activities.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics",
-      "layout": "admin_analytics_overview",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.overview.title",
-        "permission": "core.analytics.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics/pages",
-      "layout": "admin_analytics_pages",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.pages.title",
-        "permission": "core.analytics.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics/referrers",
-      "layout": "admin_analytics_referrers",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.referrers.title",
-        "permission": "core.analytics.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics/environment",
-      "layout": "admin_analytics_environment",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.environment.title",
-        "permission": "core.analytics.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics/regions",
-      "layout": "admin_analytics_regions",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.regions.title",
-        "permission": "core.analytics.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics/patterns",
-      "layout": "admin_analytics_patterns",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.patterns.title",
-        "permission": "core.analytics.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics/actions",
-      "layout": "admin_analytics_actions",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.actions.title",
-        "permission": "core.analytics.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics/realtime",
-      "layout": "admin_analytics_realtime",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.realtime.title",
-        "permission": "core.analytics.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics/visitors",
-      "layout": "admin_analytics_visitors",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.visitors.title",
-        "permission": "core.analytics.privacy"
-      }
-    },
-    {
-      "path": "*/admin/analytics/visitors/:key",
-      "layout": "admin_analytics_visitor_detail",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.visitor_detail.title",
-        "permission": "core.analytics.privacy"
-      }
-    },
-    {
-      "path": "*/admin/analytics/bots",
-      "layout": "admin_analytics_bots",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.bots.title",
-        "permission": "core.analytics.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics/diagnostics",
-      "layout": "admin_analytics_diagnostics",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.diagnostics.title",
-        "permission": "core.analytics.read"
-      }
-    },
-    {
-      "path": "*/admin/analytics/privacy-requests",
-      "layout": "admin_analytics_privacy_requests",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.privacy_requests.title",
-        "permission": "core.analytics.privacy"
-      }
-    },
-    {
-      "path": "*/admin/analytics/settings",
-      "layout": "admin_analytics_settings",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.analytics.settings.title",
-        "permission": "core.analytics.update"
-      }
-    },
-    {
-      "path": "*/admin/member-notifications",
-      "layout": "admin_member_notification_list",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.member_notification.page_title",
-        "permission": "core.member-notifications.read"
       }
     },
     {
@@ -348,15 +213,6 @@
       "meta": {
         "title": "$t:admin.roles.form.edit_title",
         "permission": "core.permissions.update"
-      }
-    },
-    {
-      "path": "*/admin/schedules/queue",
-      "layout": "admin_schedule_list",
-      "auth_required": true,
-      "meta": {
-        "title": "$t:admin.schedules.page_title",
-        "permission": "core.queue_jobs.read"
       }
     },
     {

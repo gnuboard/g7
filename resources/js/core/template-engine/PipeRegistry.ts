@@ -18,8 +18,6 @@
  */
 
 import { createLogger } from '../utils/Logger';
-import { pickLocalized } from '../support/localeTag';
-import { thumbnailSrcset, withThumbnailSize } from '../support/thumbnailUrl';
 
 const logger = createLogger('PipeRegistry');
 
@@ -458,42 +456,11 @@ const builtInPipes: Record<string, PipeDefinition> = {
       if (typeof value === 'string') return value;
       if (typeof value !== 'object') return String(value);
 
-      // 로케일 우선순위: 인자 > 화면 언어 → 사이트 기본 언어 → en → 첫 번째 값 (engine-v1.81.0 — 종전 인자 없으면 항상 ko)
-      const target = locale || (window as any).__templateApp?.getConfig?.()?.locale;
-      return pickLocalized(value, target) ?? '';
+      // 로케일 우선순위: 인자 > ko > en > 첫 번째 값
+      const targetLocale = locale || 'ko';
+      return value[targetLocale] || value.ko || value.en || Object.values(value)[0] || '';
     },
     description: '다국어 객체에서 로케일에 맞는 값 추출',
-  },
-
-  // ============================================
-  // 이미지 썸네일 파이프 (engine-v1.95.0)
-  // ============================================
-
-  /**
-   * thumb - 이미지 주소에 썸네일 규격을 붙인다
-   *
-   * 같은 출처 + 등록된 서빙 경로(`upload.thumbnail_url_patterns`)만 바꾸고 외부·정적·`data:` 주소는 그대로다.
-   * 기존 쿼리(서명 등)는 원문 그대로 두고 `size` 만 덧붙인다. 봇 화면 짝은 `App\Seo\PipeRegistry` 의 같은 이름.
-   *
-   * @example
-   * "{{product.thumbnail_url | thumb('sm')}}" → "/api/…/image/abc?size=sm"
-   */
-  thumb: {
-    fn: (value: any, preset: string = 'sm'): any => withThumbnailSize(value, preset),
-    description: '이미지 주소에 썸네일 규격 붙이기 (기본: sm)',
-  },
-
-  /**
-   * thumbSrcset - 썸네일 규격의 1x·2x srcset
-   *
-   * 2x 는 같은 맞춤의 규격 중 가로 1.5배 이상인 가장 작은 규격이다. 대상 주소가 아니면 빈 문자열.
-   *
-   * @example
-   * "{{product.thumbnail_url | thumbSrcset('md')}}" → "…?size=md 1x, …?size=lg 2x"
-   */
-  thumbSrcset: {
-    fn: (value: any, preset: string = 'sm'): string => thumbnailSrcset(value, preset),
-    description: '썸네일 규격의 1x·2x srcset (기본: sm)',
   },
 };
 
@@ -926,19 +893,15 @@ export function hasPipes(expr: string): boolean {
  *
  * @param value - 초기 값
  * @param pipes - 파이프 표현식 배열
- * @param env - 렌더 환경 (선택) — `locale` 은 인자 없는 `localized` 의 기본 언어
  * @returns 최종 변환된 값
  */
-export function executePipeChain(value: any, pipes: string[], env?: { locale?: string }): any {
+export function executePipeChain(value: any, pipes: string[]): any {
   const registry = PipeRegistry.getInstance();
   let result = value;
 
   for (const pipeExpr of pipes) {
     const parsed = parsePipeExpression(pipeExpr);
-    // 인자 없는 localized 는 렌더 문맥의 $locale 을 쓴다 — 편집기 미리보기의 콘텐츠 언어가 호스트 화면 언어보다
-    // 먼저다($localized 와 같은 순서, engine-v1.81.0)
-    const args = parsed.name === 'localized' && parsed.args.length === 0 && env?.locale ? [env.locale] : parsed.args;
-    result = registry.execute(parsed.name, result, args);
+    result = registry.execute(parsed.name, result, parsed.args);
   }
 
   return result;

@@ -2,19 +2,13 @@
 
 namespace App\Http\Middleware;
 
-use App\Contracts\Http\DefersIdentityPolicyUntilValidated;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
-use App\Exceptions\IdentityPolicyProviderUnavailableException;
-use App\Exceptions\IdentityVerificationRequiredException;
-use App\Models\IdentityPolicy;
+use App\Enums\IdentityOriginType;
+use App\Models\User;
 use App\Services\IdentityPolicyService;
-use App\Services\IdentityTokenAcceptanceService;
-use App\Support\Auth\SystemOperation;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Route;
-use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -37,26 +31,18 @@ use Symfony\Component\HttpFoundation\Response;
  *   - 토큰 미동봉/무효 → IdentityPolicyService::enforce() 가 grace_minutes 윈도우 검사 후
  *     통과 또는 IdentityVerificationRequiredException throw
  *
- * 컨트롤러가 `DefersIdentityPolicyUntilValidated` 표식을 단 폼 요청을 받으면(가입) 정책을 여기서 강제하지 않고
- * 그 폼 요청이 입력 검증을 통과한 뒤 강제한다 — 입력 오류(422)를 본인 확인 요구(428)보다 먼저 알린다(7.2.0).
- *
  * @since 7.0.0-beta.4
  */
 class EnforceIdentityPolicy
 {
     /**
-     * 본인인증 정책 강제 미들웨어를 생성합니다.
-     *
      * @param  IdentityPolicyService  $policyService  정책 유스케이스 Service
      * @param  IdentityPolicyRepositoryInterface  $policyRepository  정책 Repository
-     * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 이력 Repository (하위 호환 — 판정은 Service 로 옮겼다)
-     * @param  IdentityTokenAcceptanceService  $tokenAcceptance  본인인증 결과 인정 서비스 (실패한 작업의 소비 되돌림 — 7.1.6)
      */
     public function __construct(
         protected IdentityPolicyService $policyService,
         protected IdentityPolicyRepositoryInterface $policyRepository,
         protected IdentityVerificationLogRepositoryInterface $logRepository,
-        protected IdentityTokenAcceptanceService $tokenAcceptance,
     ) {}
 
     /**
@@ -67,54 +53,17 @@ class EnforceIdentityPolicy
      * @param  string|null  $policyKey  정책 키 (identity_policies.key)
      * @return Response
      *
-     * @throws IdentityVerificationRequiredException 정책 위반 시
+     * @throws \App\Exceptions\IdentityVerificationRequiredException 정책 위반 시
      */
     public function handle(Request $request, Closure $next, ?string $policyKey = null): Response
     {
-        // 행위자 없는 시스템 작업 문맥(하위 요청 등)에서는 사람용 관문을 받지 않는다 — 리스너와 같은 규칙.
-        if (SystemOperation::active()) {
-            SystemOperation::logBypass('route:'.($request->route()?->getName() ?? $request->path()));
-
-            return $next($request);
-        }
-
         $policies = $this->resolvePolicies($request, $policyKey);
-        $policies = is_array($policies) ? array_values($policies) : iterator_to_array($policies, false);
 
-        try {
-            if ($this->defersUntilValidated($request, $policies)) {
-                // 입력 검증을 먼저 하는 폼 요청(7.2.0) — 정책은 그 요청이 검증을 통과한 뒤 같은 판정으로 강제한다.
-                // 입력 오류(422)를 본인 확인 요구(428)보다 먼저 알리기 위해서다. 소비 되돌림은 아래 응답 판정이 그대로 맡는다.
-                $request->attributes->set(IdentityPolicyService::DEFERRED_ROUTE_POLICIES_ATTRIBUTE, $policies);
-            } else {
-                foreach ($policies as $policy) {
-                    $this->enforcePolicy($policy, $request);
-                }
-            }
-
-            $response = $next($request);
-        } catch (\Throwable $e) {
-            // 정책·작업이 예외로 끝나면 이 요청이 소비한 본인인증 결과를 돌려준다 — 고쳐서 다시 보낼 수 있게(7.1.6, D2).
-            // 뒤 정책이 지정 수단 사용 불가(503)로 끝난 경우도 같다 — 수단이 복구된 뒤 처음부터 다시 인증하지 않게.
-            if ($e instanceof IdentityVerificationRequiredException
-                || $e instanceof IdentityPolicyProviderUnavailableException
-                || $e instanceof ValidationException) {
-                $this->tokenAcceptance->releaseAccepted($request);
-            }
-
-            throw $e;
+        foreach ($policies as $policy) {
+            $this->enforcePolicy($policy, $request);
         }
 
-        // 작업이 입력 오류(422)나 다른 본인인증 요구(428)로 끝나면 결과를 돌려준다 — 작업 1건에 1번만 인정하되
-        // 실패한 작업은 작업으로 세지 않는다. 컨트롤러 안 훅 정책이 지정 수단 사용 불가(503)로 끝난 경우도
-        // 같다 — 라우터 파이프라인이 `$next` 안 예외를 응답으로 바꿔 위 catch 에 닿지 않으므로 응답에 붙은 예외로 판정한다(V5).
-        $responseException = $response->exception ?? null;
-        if (in_array($response->getStatusCode(), [422, 428], true)
-            || $responseException instanceof IdentityPolicyProviderUnavailableException) {
-            $this->tokenAcceptance->releaseAccepted($request);
-        }
-
-        return $response;
+        return $next($request);
     }
 
     /**
@@ -125,9 +74,7 @@ class EnforceIdentityPolicy
      *
      * 라우트 이름이 없는 요청 (예: 404 / health check) 은 빈 배열 반환 → 미들웨어 즉시 통과.
      *
-     * @param  Request  $request  HTTP 요청 (자동 매핑 모드에서 라우트 이름을 읽는다)
-     * @param  string|null  $policyKey  미들웨어 인자로 지정된 정책 키 (없으면 자동 매핑 모드)
-     * @return iterable<IdentityPolicy> 강제할 정책 목록 (없으면 빈 배열)
+     * @return iterable<\App\Models\IdentityPolicy>
      */
     protected function resolvePolicies(Request $request, ?string $policyKey): iterable
     {
@@ -148,47 +95,123 @@ class EnforceIdentityPolicy
     }
 
     /**
-     * 이 라우트의 정책 강제를 폼 요청의 입력 검증 뒤로 미룰지 판정합니다.
+     * 단일 정책에 대해 enforce 절차를 수행합니다 (token bypass → grace 윈도우 → exception).
      *
-     * 컨트롤러가 `DefersIdentityPolicyUntilValidated` 표식을 단 폼 요청을 받을 때만 미룬다 — 폼 요청은 컨트롤러에 닿기 전에
-     * 반드시 검증되므로, 검증을 통과한 요청은 빠짐없이 정책 판정을 거친다.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @param  array<int, IdentityPolicy>  $policies  강제할 정책 목록
-     * @return bool 미룰지 여부 (강제할 정책이 없으면 false)
+     * @throws \App\Exceptions\IdentityVerificationRequiredException 정책 위반 시
      */
-    protected function defersUntilValidated(Request $request, array $policies): bool
+    protected function enforcePolicy(\App\Models\IdentityPolicy $policy, Request $request): void
     {
-        if ($policies === []) {
-            return false;
+        // verification_token 우회 — IdentityGuardInterceptor 가 verify 직후 토큰을 query/body 에 부착해
+        // 원 요청을 재실행할 때 grace_minutes 윈도우와 무관하게 통과시킨다.
+        // 검사 순서: ① 토큰이 verified + 미소비 + purpose 일치 → ② target_hash 매칭 (요청 email vs 토큰 발급 시 email).
+        $token = (string) $request->input('verification_token', '');
+        if ($token !== '') {
+            $verifiedLog = $this->logRepository->findVerifiedForToken($token, $policy->purpose);
+            if ($verifiedLog !== null && $this->tokenTargetMatches($verifiedLog, $request)) {
+                return;
+            }
         }
 
-        $route = $request->route();
-        if (! $route instanceof Route) {
+        $context = [
+            'http_method' => $request->getMethod(),
+            'user_roles' => $this->collectUserRoles($request),
+            'user_is_admin' => $this->resolveUserIsAdmin($request),
+            'target_email' => $this->resolveTargetEmail($request),
+            'origin_type' => IdentityOriginType::Route->value,
+            'origin_identifier' => $request->route()?->getName() ?: $request->path(),
+            'origin_policy_key' => $policy->key,
+            'return_request' => [
+                'method' => $request->getMethod(),
+                'url' => $request->fullUrl(),
+            ],
+        ];
+
+        $this->policyService->enforce($policy, $request->user(), $context);
+    }
+
+    /**
+     * 토큰이 가리키는 challenge 의 target_hash 가 현재 요청의 식별자(이메일)와 일치하는지 확인합니다.
+     *
+     * 인증 사용자: user.email 우선
+     * 게스트: 요청 body 의 email
+     *
+     * 요청에 식별자가 전혀 없으면(예: 별도 정책에서 email 외 식별자 사용) 검사를 건너뛰고 통과시킵니다 —
+     * 이 경우 다운스트림 listener 가 자기 도메인의 식별자로 매칭을 강제해야 합니다.
+     *
+     * @param  \App\Models\IdentityVerificationLog  $log  토큰이 가리키는 verified 로그
+     * @param  Request  $request  HTTP 요청
+     * @return bool target_hash 일치 여부 (식별자 미존재 시 true)
+     */
+    protected function tokenTargetMatches(\App\Models\IdentityVerificationLog $log, Request $request): bool
+    {
+        $user = $request->user();
+        $email = $user instanceof User && $user->email
+            ? $user->email
+            : (string) $request->input('email', '');
+
+        if ($email === '') {
+            return true;
+        }
+
+        return $log->target_hash === hash('sha256', mb_strtolower($email));
+    }
+
+    /**
+     * 현재 요청 사용자의 역할 식별자 목록을 수집합니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return array<int, string> 역할 식별자 배열
+     */
+    protected function collectUserRoles(Request $request): array
+    {
+        $user = $request->user();
+        if (! $user instanceof User) {
+            return [];
+        }
+
+        if (method_exists($user, 'roles')) {
+            return $user->roles()->pluck('identifier')->all();
+        }
+
+        return [];
+    }
+
+    /**
+     * 현재 요청 사용자의 admin 여부를 permission 기반으로 판정합니다 (User::isAdmin() 위임).
+     * 게스트는 항상 false.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool admin 여부
+     */
+    protected function resolveUserIsAdmin(Request $request): bool
+    {
+        $user = $request->user();
+        if (! $user instanceof User) {
             return false;
         }
 
         try {
-            return $route->signatureParameters(['subClass' => DefersIdentityPolicyUntilValidated::class]) !== [];
-        } catch (\ReflectionException) {
+            return (bool) $user->isAdmin();
+        } catch (\Throwable) {
             return false;
         }
     }
 
     /**
-     * 단일 정책에 대해 enforce 절차를 수행합니다 (token bypass → grace 윈도우 → exception).
+     * 게스트 라우트(register/forgot/reset)에서 폼 입력 email 을 정책 컨텍스트에 노출합니다.
+     * 인증 사용자의 경우는 IdentityPolicyService::resolveTargetHash() 가 user->email 을 우선 사용합니다.
      *
-     * 판정은 `IdentityPolicyService::enforcePolicyForRequest()` 한 곳이 소유한다 — 라우트 밖에서 같은
-     * 정책을 거는 자리(정보수정 API 의 비밀번호 변경)와 판정이 갈리지 않게 한다.
-     *
-     * @param  IdentityPolicy  $policy  강제할 정책
      * @param  Request  $request  HTTP 요청
-     * @return void 반환값 없음
-     *
-     * @throws IdentityVerificationRequiredException 정책 위반 시
+     * @return string|null 요청 input.email 또는 null
      */
-    protected function enforcePolicy(IdentityPolicy $policy, Request $request): void
+    protected function resolveTargetEmail(Request $request): ?string
     {
-        $this->policyService->enforcePolicyForRequest($policy, $request);
+        $email = $request->input('email');
+
+        if (is_string($email) && $email !== '') {
+            return $email;
+        }
+
+        return null;
     }
 }

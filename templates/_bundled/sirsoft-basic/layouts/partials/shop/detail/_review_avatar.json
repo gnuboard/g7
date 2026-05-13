@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "리뷰 작성자 아바타 (sm 사이즈, iteration 내부 review 변수 사용)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "w-8 h-8 rounded-full overflow-hidden flex-shrink-0" },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Img",
+      "if": "{{review?.author?.avatar}}",
+      "props": {
+        "src": "{{review.author.avatar}}",
+        "alt": "{{review.author.name}}",
+        "className": "w-full h-full object-cover"
+      }
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!review?.author?.avatar}}",
+      "props": { "className": "w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm" },
+      "text": "{{(review?.author?.name ?? '?').charAt(0).toUpperCase()}}"
+    }
+  ]
+}

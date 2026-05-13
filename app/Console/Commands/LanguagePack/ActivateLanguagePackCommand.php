@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands\LanguagePack;
 
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -16,15 +14,17 @@ use Throwable;
  */
 class ActivateLanguagePackCommand extends Command
 {
-    use LocalizesDescription;
-    use ReportsLifecycleWarnings;
-
     /**
      * @var string
      */
     protected $signature = 'language-pack:activate
         {identifier : 언어팩 식별자}
         {--force : 의존성/검증 경고를 무시하고 강제 활성화}';
+
+    /**
+     * @var string
+     */
+    protected $description = '언어팩을 활성화합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service
@@ -47,18 +47,18 @@ class ActivateLanguagePackCommand extends Command
 
         $pack = $this->service->findByIdentifier($identifier);
         if (! $pack) {
-            $this->error(__('language_packs.commands.activate.not_found', ['identifier' => $identifier]));
+            $this->error("언어팩을 찾을 수 없습니다: {$identifier}");
 
             return self::FAILURE;
         }
 
         try {
             $this->service->activate($pack, $force);
-            $this->info(__('language_packs.commands.activate.done', ['identifier' => $identifier]));
+            $this->info("언어팩 활성화 완료: {$identifier}");
 
             return self::SUCCESS;
         } catch (Throwable $e) {
-            $this->error(__('language_packs.commands.activate.failed', ['error' => $e->getMessage()]));
+            $this->error('언어팩 활성화 실패: '.$e->getMessage());
 
             return self::FAILURE;
         }

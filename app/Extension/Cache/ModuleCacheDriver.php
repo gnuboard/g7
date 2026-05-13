@@ -36,6 +36,6 @@ class ModuleCacheDriver extends AbstractCacheDriver
      */
     protected function getPrefix(): string
     {
-        return 'g7:module.'.$this->identifier;
+        return 'g7:module.' . $this->identifier;
     }
 }

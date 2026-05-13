@@ -29,39 +29,20 @@ interface CountrySetting {
     charge_policy: string;
     base_fee: number;
     free_threshold: number | null;
-    ranges: { type?: string; tiers?: RangeTier[]; unit_value?: number | null } | null;
+    ranges: { type?: string; tiers?: RangeTier[]; unit_value?: number } | null;
     api_endpoint: string | null;
     api_request_fields: string[] | null;
     api_response_fee_field: string | null;
-    api_config: ApiConfig | null;
     extra_fee_enabled: boolean;
     extra_fee_settings: Array<{ zipcode: string; fee: number; region?: string }> | null;
     extra_fee_multiply: boolean;
     is_active: boolean;
-    /** 클레임 배송비 산정 모드 (fixed 고정액 / original_policy 원 정책 재계산) */
-    claim_fee_mode: string;
-    /** 반품 클레임 배송비 고정액 — 편도 */
-    return_fixed_fee: number;
-    /** 교환 클레임 배송비 고정액 — 왕복 */
-    exchange_fixed_fee: number;
 }
 
 interface RangeTier {
-    /** 시작값 — 직전 구간의 종료값에서 자동 파생되며 화면에서는 읽기전용 표시 */
-    min: number | null;
+    min: number;
     max: number | null;
-    fee: number | null;
-}
-
-interface ApiConfig {
-    http_method?: string;
-    auth_type?: string;
-    auth_token?: string | null;
-    auth_header_name?: string | null;
-    response_type?: string;
-    response_path?: string | null;
-    field_map?: Record<string, string> | null;
-    has_auth_token?: boolean;
+    fee: number;
 }
 
 interface RangeTierError {
@@ -75,10 +56,6 @@ interface RangeTierError {
 /** 기본 배송비가 필요한 정책 */
 const REQUIRES_BASE_FEE = [
     'fixed', 'conditional_free',
-    // 계산 API 정책의 base_fee 는 외부 API 장애 시의 폴백 배송비다. 서버
-    // (ChargePolicyEnum::requiresBaseFee)가 0 을 거절하는데 화면이 입력칸을 감추면
-    // 그 정책은 관리자 화면에서 영영 저장할 수 없다(S17 B4).
-    'api',
     'per_quantity', 'per_weight', 'per_volume', 'per_volume_weight', 'per_amount',
 ];
 
@@ -98,59 +75,6 @@ const REQUIRES_UNIT_VALUE = [
     'per_quantity', 'per_weight', 'per_volume', 'per_volume_weight', 'per_amount',
 ];
 
-/**
- * 구간 경계값이 이산형(정수)인 정책.
- *
- * 수량은 "5개 다음이 6개"(max + 1)로 이어지고, 금액·무게·부피는 연속값이라
- * "5kg 다음은 5kg 초과"(다음 min = max)로 이어진다. 서버 검증(ChargePolicyEnum::
- * hasDiscreteRangeValues)과 같은 판정을 사용해야 화면과 저장 결과가 어긋나지 않는다.
- */
-const DISCRETE_RANGE_POLICIES = ['range_quantity'];
-
-/** 연속형 구간 경계 비교 허용 오차 (서버 검증과 동일) */
-const CONTINUITY_EPSILON = 0.001;
-
-/**
- * 부과정책이 이산형 구간을 쓰는지 판정합니다.
- *
- * @param chargePolicy 부과정책 값
- * @returns 이산형이면 true
- */
-function isDiscreteRangePolicy(chargePolicy: string): boolean {
-    return DISCRETE_RANGE_POLICIES.includes(chargePolicy);
-}
-
-/**
- * 직전 구간의 종료값으로부터 다음 구간의 시작값을 파생합니다.
- *
- * @param previousMax 직전 구간 종료값
- * @param chargePolicy 부과정책 값
- * @returns 파생된 시작값 (종료값 미입력 시 null)
- */
-function deriveNextMin(previousMax: number | null | undefined, chargePolicy: string): number | null {
-    if (previousMax === null || previousMax === undefined || Number.isNaN(previousMax)) {
-        return null;
-    }
-
-    return isDiscreteRangePolicy(chargePolicy) ? previousMax + 1 : previousMax;
-}
-
-/**
- * 구간 배열의 시작값을 직전 구간 종료값 기준으로 전부 재파생합니다.
- *
- * 첫 구간은 항상 0 이며, 이후 구간은 직전 종료값에서 파생됩니다.
- *
- * @param tiers 구간 배열
- * @param chargePolicy 부과정책 값
- * @returns 시작값이 재파생된 새 구간 배열
- */
-function rederiveTierMins(tiers: RangeTier[], chargePolicy: string): RangeTier[] {
-    return tiers.map((tier, index) => ({
-        ...tier,
-        min: index === 0 ? 0 : deriveNextMin(tiers[index - 1]?.max, chargePolicy),
-    }));
-}
-
 // ===== 국가별 기본 설정값 =====
 
 const DEFAULT_COUNTRY_SETTING: Omit<CountrySetting, 'country_code'> = {
@@ -165,16 +89,10 @@ const DEFAULT_COUNTRY_SETTING: Omit<CountrySetting, 'country_code'> = {
     api_endpoint: null,
     api_request_fields: null,
     api_response_fee_field: null,
-    api_config: null,
     extra_fee_enabled: false,
     extra_fee_settings: [],
     extra_fee_multiply: false,
     is_active: true,
-    // 클레임 배송비 축 — DB 컬럼 기본값과 같은 값을 명시로 싣는다. 비워 두면 본 폼 저장의
-    // 승계 판정이 "값 없음" 으로 읽어, 화면이 보여 준 기본값과 저장된 값이 갈린다.
-    claim_fee_mode: 'fixed',
-    return_fixed_fee: 0,
-    exchange_fixed_fee: 0,
 };
 
 // ===== 헬퍼 함수 =====
@@ -266,26 +184,6 @@ export function initShippingPolicyFormHandler(
         const chargePolicy = firstSetting?.charge_policy ?? 'fixed';
         const flags = getVisibilityFlags(chargePolicy);
         Object.assign(stateUpdates, flags);
-
-        // 저장된 구간의 시작값을 현재 계약으로 재파생한다.
-        // 기존 데이터는 "1~5개 / 6개~" 처럼 첫 시작값이 1 인 형태가 있는데, 시작값이
-        // 읽기전용이 된 이상 화면이 정규화하지 않으면 운영자가 고칠 수단이 없고
-        // 그대로 저장하면 "첫 구간의 시작값은 0이어야 합니다" 로 거부된다.
-        const normalized = countrySettings.map((cs: any) => {
-            const tiers = cs?.ranges?.tiers;
-
-            if (!Array.isArray(tiers) || tiers.length === 0) {
-                return cs;
-            }
-
-            return {
-                ...cs,
-                ranges: { ...cs.ranges, tiers: rederiveTierMins(tiers, cs.charge_policy) },
-            };
-        });
-
-        stateUpdates['form.country_settings'] = normalized;
-
         logger.log('[initShippingPolicyForm]', isEdit ? 'Edit' : 'Copy', 'mode, countries:', countrySettings.length, 'first charge_policy:', chargePolicy);
     } else {
         // 등록 모드: 기본 가시성 (fixed 기준)
@@ -488,12 +386,6 @@ export function updateCountryFieldHandler(
     updateLocalState(context, {
         'form.country_settings': countrySettings,
     });
-
-    // 무료배송 기준금액은 비면 배송비가 계산되지 않으므로 저장 전에 화면에서 먼저 알린다
-    if (field === 'free_threshold') {
-        validateChargeSettingRequirements(G7Core, context, index, countrySettings[index]);
-    }
-
     logger.log('[updateCountryField] Updated', field, '=', value, 'at index:', index);
 }
 
@@ -548,18 +440,15 @@ export function onChargePolicyChangeHandler(
         updatedCS.api_endpoint = null;
         updatedCS.api_request_fields = null;
         updatedCS.api_response_fee_field = null;
-        updatedCS.api_config = null;
     }
 
     // ranges 초기화 (구간 정책 선택 시 기본 구조 제공)
-    // 배송비는 빈 값으로 두어 미입력 상태가 required 검증에 걸리도록 한다
-    // (0 으로 채우면 운영자가 입력하지 않은 구간이 무료배송으로 저장된다).
     if (flags.showRanges) {
         if (!updatedCS.ranges || !updatedCS.ranges.tiers) {
             const rangeType = chargePolicy.replace('range_', '');
             updatedCS.ranges = {
                 type: rangeType,
-                tiers: [{ min: 0, max: null, fee: null }],
+                tiers: [{ min: 0, max: null, fee: 0 }],
             };
         }
     }
@@ -582,9 +471,6 @@ export function onChargePolicyChangeHandler(
     };
 
     updateLocalState(context, stateUpdates);
-
-    // 정책이 바뀌면 요구되는 필수값도 바뀐다 — 직전 정책에서 남은 오류를 지우고 새 요구사항을 반영
-    validateChargeSettingRequirements(G7Core, context, countryIndex, updatedCS);
 }
 
 /**
@@ -610,18 +496,19 @@ export function addRangeTierHandler(
         return;
     }
 
-    // 직전까지 마지막이던 구간은 이제 종료값이 필요하다 (무제한은 새 구간이 이어받는다).
-    // 종료값은 비운 상태로 두어 운영자 입력을 기다리고, 새 구간의 시작값은 그 입력 시점에 파생된다.
-    const currentTiers = [
-        ...(cs.ranges?.tiers ?? []),
-        { min: null, max: null, fee: null } as RangeTier,
-    ];
-    const nextTiers = rederiveTierMins(currentTiers, cs.charge_policy);
+    const currentTiers = [...(cs.ranges?.tiers ?? [])];
+
+    // 마지막 tier의 max + 1 값을 새 tier의 min으로 사용 (포함 범위 기준)
+    const lastTier = currentTiers[currentTiers.length - 1];
+    const newMin = lastTier?.max != null ? lastTier.max + 1 : 0;
+
+    const newTier: RangeTier = { min: newMin, max: null, fee: 0 };
+    currentTiers.push(newTier);
 
     // 새 객체 생성 (원본 mutation 방지 — deepMerge 변경 감지를 위해 필수)
     countrySettings[countryIndex] = {
         ...cs,
-        ranges: { ...(cs.ranges ?? {}), tiers: nextTiers },
+        ranges: { ...(cs.ranges ?? {}), tiers: currentTiers },
     };
 
     updateLocalState(context, {
@@ -629,8 +516,8 @@ export function addRangeTierHandler(
     });
 
     // 구간 검증 실행
-    validateRangeTiersInternal(G7Core, context, countryIndex, nextTiers, cs.country_code, cs.charge_policy);
-    logger.log('[addRangeTier] Added tier, total:', nextTiers.length);
+    validateRangeTiersInternal(G7Core, context, countryIndex, currentTiers, cs.country_code);
+    logger.log('[addRangeTier] Added tier, total:', currentTiers.length);
 }
 
 /**
@@ -671,13 +558,10 @@ export function removeRangeTierHandler(
 
     currentTiers.splice(tierIndex, 1);
 
-    // 삭제로 앞뒤 구간이 이어졌으므로 시작값을 다시 파생한다
-    const nextTiers = rederiveTierMins(currentTiers, cs.charge_policy);
-
     // 새 객체 생성 (원본 mutation 방지 — deepMerge 변경 감지를 위해 필수)
     countrySettings[countryIndex] = {
         ...cs,
-        ranges: { ...(cs.ranges ?? {}), tiers: nextTiers },
+        ranges: { ...(cs.ranges ?? {}), tiers: currentTiers },
     };
 
     updateLocalState(context, {
@@ -685,8 +569,8 @@ export function removeRangeTierHandler(
     });
 
     // 구간 검증 실행
-    validateRangeTiersInternal(G7Core, context, countryIndex, nextTiers, cs.country_code, cs.charge_policy);
-    logger.log('[removeRangeTier] Removed tier:', tierIndex, 'remaining:', nextTiers.length);
+    validateRangeTiersInternal(G7Core, context, countryIndex, currentTiers, cs.country_code);
+    logger.log('[removeRangeTier] Removed tier:', tierIndex, 'remaining:', currentTiers.length);
 }
 
 /**
@@ -732,21 +616,20 @@ export function updateRangeTierFieldHandler(
     }
 
     // min/max/fee는 숫자로 변환 (DOM input의 $event.target.value는 string)
-    // 빈 값은 null 로 보존한다 — 0 으로 강제하면 미입력 구간이 무료배송으로 저장된다.
-    const isEmpty = value === '' || value === null || value === undefined;
-    const parsedValue: number | null = isEmpty ? null : Number(value);
+    // max는 빈 값일 경우 null (무제한)
+    let parsedValue: number | null;
+    if (field === 'max') {
+        parsedValue = value === '' || value === null || value === undefined ? null : Number(value);
+    } else {
+        parsedValue = Number(value);
+    }
 
     currentTiers[tierIndex] = { ...currentTiers[tierIndex], [field]: parsedValue };
-
-    // 종료값이 바뀌면 뒤따르는 구간의 시작값을 자동 재파생한다 (시작값은 입력 대상이 아니다)
-    const nextTiers = field === 'max'
-        ? rederiveTierMins(currentTiers, cs.charge_policy)
-        : currentTiers;
 
     // 새 객체 생성 (원본 mutation 방지 — deepMerge 변경 감지를 위해 필수)
     countrySettings[countryIndex] = {
         ...cs,
-        ranges: { ...(cs.ranges ?? {}), tiers: nextTiers },
+        ranges: { ...(cs.ranges ?? {}), tiers: currentTiers },
     };
 
     updateLocalState(context, {
@@ -754,7 +637,7 @@ export function updateRangeTierFieldHandler(
     });
 
     // 구간 검증 실행
-    validateRangeTiersInternal(G7Core, context, countryIndex, nextTiers, cs.country_code, cs.charge_policy);
+    validateRangeTiersInternal(G7Core, context, countryIndex, currentTiers, cs.country_code);
 }
 
 /**
@@ -778,116 +661,73 @@ export function validateRangeTiersHandler(
     if (!cs) return;
 
     const tiers = cs.ranges?.tiers ?? [];
-    validateRangeTiersInternal(G7Core, context, countryIndex, tiers, cs.country_code, cs.charge_policy);
+    validateRangeTiersInternal(G7Core, context, countryIndex, tiers, cs.country_code);
 }
 
 /**
  * 구간 검증 내부 로직
- *
- * 서버(StoreShippingPolicyRequest::validateRangeTiersContinuity)와 동일한 규칙을 적용합니다.
- * 한쪽만 바뀌면 화면에서 통과한 설정이 저장 시 422 로 거부되거나, 그 반대가 됩니다.
  */
 function validateRangeTiersInternal(
     G7Core: any,
     context: ActionContext,
     _countryIndex: number,
     tiers: RangeTier[],
-    countryCode: string,
-    chargePolicy: string
+    countryCode: string
 ): void {
     const localState = G7Core.state.getLocal?.() ?? {};
     const rangeErrors: Record<string, RangeTierError[]> = { ...(localState.rangeErrors ?? {}) };
-    const t = G7Core.t;
 
     if (tiers.length === 0) {
-        // 구간별 정책인데 구간이 하나도 없으면 모든 주문이 0원(무료배송)이 된다
-        rangeErrors[countryCode] = REQUIRES_RANGES.includes(chargePolicy)
-            ? [{
-                max: t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_min_one')
-                    ?? '구간별 배송비 정책은 구간을 1개 이상 등록해야 합니다.',
-            }]
-            : [];
+        // deepMerge에서 delete로 키를 제거할 수 없으므로 빈 배열로 대체
+        rangeErrors[countryCode] = [];
         updateLocalState(context, { rangeErrors });
         return;
     }
 
     const tierErrors: RangeTierError[] = new Array(tiers.length).fill(null).map(() => ({}));
     let hasError = false;
-    const isDiscrete = isDiscreteRangePolicy(chargePolicy);
-    const isUnlimited = (max: number | null | undefined) => max === null || max === undefined;
+
+    const t = G7Core.t;
 
     for (let i = 0; i < tiers.length; i++) {
         const tier = tiers[i];
-        const isLast = i === tiers.length - 1;
 
         // 첫 구간 min은 0이어야 함
-        if (i === 0 && Number(tier.min ?? 0) !== 0) {
-            tierErrors[i].min = t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_first_min')
+        if (i === 0 && tier.min !== 0) {
+            tierErrors[i].min = t?.('sirsoft-ecommerce.validation.shipping_policy.ranges.first_min_zero')
                 ?? '첫 구간의 시작값은 0이어야 합니다.';
             hasError = true;
         }
 
-        // 마지막 구간 max는 비어 있어야 함 (무제한)
-        if (isLast && !isUnlimited(tier.max)) {
-            tierErrors[i].max = t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_last_max')
+        // 마지막 구간 max는 null이어야 함
+        if (i === tiers.length - 1 && tier.max !== null && tier.max !== undefined) {
+            tierErrors[i].max = t?.('sirsoft-ecommerce.validation.shipping_policy.ranges.last_max_unlimited')
                 ?? '마지막 구간의 종료값은 비워야 합니다.';
             hasError = true;
-            continue;
         }
 
-        if (isLast) {
-            // 마지막 구간은 아래 종료값 기반 검사 대상이 아니다
-            if (tier.fee === null || tier.fee === undefined) {
-                tierErrors[i].fee = t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_fee_required')
-                    ?? '구간 배송비를 입력해주세요.';
-                hasError = true;
-            } else if (tier.fee < 0) {
-                tierErrors[i].fee = t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_fee')
-                    ?? '배송비는 0 이상이어야 합니다.';
-                hasError = true;
-            }
-            continue;
-        }
-
-        // 중간 구간의 종료값 누락 금지 (뒤 구간이 영구히 도달 불가해진다)
-        if (isUnlimited(tier.max)) {
-            tierErrors[i].max = t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_middle_max')
-                ?? '마지막 구간을 제외한 구간에는 종료값을 입력해야 합니다.';
-            hasError = true;
-        } else {
-            const max = Number(tier.max);
-
-            // 수량 구간의 경계값은 정수
-            if (isDiscrete && !Number.isInteger(max)) {
-                tierErrors[i].max = t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_integer')
-                    ?? '수량 구간의 시작값과 종료값은 정수여야 합니다.';
-                hasError = true;
-            }
-
-            // min < max
-            if (Number(tier.min ?? 0) >= max) {
-                tierErrors[i].min = t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_min_max')
+        // min < max (마지막 구간 제외)
+        if (i < tiers.length - 1 && tier.max !== null && tier.max !== undefined) {
+            if (tier.min >= tier.max) {
+                tierErrors[i].min = t?.('sirsoft-ecommerce.validation.shipping_policy.ranges.min_less_than_max')
                     ?? '시작값이 종료값보다 작아야 합니다.';
                 hasError = true;
             }
+        }
 
-            // 구간 연속성 (이산형은 max + 1, 연속형은 max 가 다음 min)
-            const expectedNextMin = isDiscrete ? max + 1 : max;
-            const actualNextMin = Number(tiers[i + 1]?.min ?? 0);
-            if (Math.abs(expectedNextMin - actualNextMin) >= CONTINUITY_EPSILON) {
-                tierErrors[i].max = t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_continuity')
+        // 구간 연속성: 현재 max + 1 === 다음 min (포함 범위 기준)
+        if (i < tiers.length - 1) {
+            const nextTier = tiers[i + 1];
+            if (tier.max !== null && tier.max !== undefined && (tier.max + 1) !== nextTier.min) {
+                tierErrors[i].max = t?.('sirsoft-ecommerce.validation.shipping_policy.ranges.continuity')
                     ?? '구간이 연속적이지 않습니다.';
                 hasError = true;
             }
         }
 
-        // 배송비 필수 + 0 이상
-        if (tier.fee === null || tier.fee === undefined) {
-            tierErrors[i].fee = t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_fee_required')
-                ?? '구간 배송비를 입력해주세요.';
-            hasError = true;
-        } else if (tier.fee < 0) {
-            tierErrors[i].fee = t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_fee')
+        // fee >= 0
+        if (tier.fee < 0) {
+            tierErrors[i].fee = t?.('sirsoft-ecommerce.validation.shipping_policy.ranges.fee_non_negative')
                 ?? '배송비는 0 이상이어야 합니다.';
             hasError = true;
         }
@@ -897,66 +737,6 @@ function validateRangeTiersInternal(
     rangeErrors[countryCode] = hasError ? tierErrors : [];
 
     updateLocalState(context, { rangeErrors });
-}
-
-/**
- * 폼 레벨 오류 키를 만듭니다.
- *
- * 서버 422 응답의 키 형태(`country_settings.{index}.{field}`)와 동일해야 레이아웃의 기존
- * 오류 표시가 클라이언트 검증 결과에도 그대로 쓰인다.
- *
- * @param countryIndex 국가 탭 인덱스
- * @param field 필드 경로
- * @returns 오류 맵 키
- */
-function chargeSettingErrorKey(countryIndex: number, field: string): string {
-    return `country_settings.${countryIndex}.${field}`;
-}
-
-/**
- * 부과정책이 요구하는 폼 레벨 필수값(단위값 / 무료배송 기준금액)을 선제 검증합니다.
- *
- * 서버(StoreShippingPolicyRequest::validatePolicyRequiredSettings)와 같은 규칙을 화면에서
- * 먼저 적용해, 저장을 눌러 422 를 받기 전에 빈 값이 드러나게 한다. 이 두 값이 비면 배송비가
- * 계산되지 않아 조용히 0원이 되므로 서버도 저장을 거부한다.
- *
- * 오류 없음은 `null` 로 기록한다 — deepMerge 로는 키를 제거할 수 없고, 빈 배열은 레이아웃의
- * `if` 조건에서 truthy 라 빈 오류 문구가 남는다.
- *
- * @param G7Core G7Core 전역 객체
- * @param context 액션 컨텍스트
- * @param countryIndex 국가 탭 인덱스
- * @param cs 검증 대상 국가별 설정
- */
-function validateChargeSettingRequirements(
-    G7Core: any,
-    context: ActionContext,
-    countryIndex: number,
-    cs: CountrySetting
-): void {
-    const localState = G7Core.state.getLocal?.() ?? {};
-    const errors: Record<string, any> = { ...(localState.errors ?? {}) };
-    const t = G7Core.t;
-
-    const unitValue = cs.ranges?.unit_value;
-    const unitValueMissing = REQUIRES_UNIT_VALUE.includes(cs.charge_policy)
-        && (unitValue === null || unitValue === undefined || Number(unitValue) <= 0);
-
-    errors[chargeSettingErrorKey(countryIndex, 'ranges.unit_value')] = unitValueMissing
-        ? [t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_unit_value_required')
-            ?? '단위당 배송비 정책은 단위값을 입력해야 합니다.']
-        : null;
-
-    const freeThreshold = cs.free_threshold;
-    const freeThresholdMissing = REQUIRES_FREE_THRESHOLD.includes(cs.charge_policy)
-        && (freeThreshold === null || freeThreshold === undefined || String(freeThreshold) === '');
-
-    errors[chargeSettingErrorKey(countryIndex, 'free_threshold')] = freeThresholdMissing
-        ? [t?.('sirsoft-ecommerce.admin.shipping_policy.form.range_error_free_threshold_required')
-            ?? '조건부 무료배송 정책은 무료배송 기준금액을 입력해야 합니다.']
-        : null;
-
-    updateLocalState(context, { errors });
 }
 
 /**
@@ -1102,11 +882,7 @@ export function updateUnitValueHandler(
     context: ActionContext
 ): void {
     const params = action.params || {};
-    const raw = params.value;
-    // 빈 값은 null 로 보존한다 — 1 로 강제하면 미입력이 조용히 유효값이 되어 서버 필수 검증을 우회한다.
-    const isEmpty = raw === '' || raw === null || raw === undefined;
-    const parsed = parseFloat(raw as string);
-    const value: number | null = isEmpty || Number.isNaN(parsed) ? null : parsed;
+    const value = parseFloat(params.value as string) || 1;
 
     const G7Core = getG7Core();
     if (!G7Core) return;
@@ -1126,10 +902,6 @@ export function updateUnitValueHandler(
     updateLocalState(context, {
         'form.country_settings': countrySettings,
     });
-
-    // 단위값이 비거나 0 이하이면 배송비가 계산되지 않으므로 저장 전에 화면에서 먼저 알린다
-    validateChargeSettingRequirements(G7Core, context, countryIndex, countrySettings[countryIndex]);
-
     logger.log('[updateUnitValue] Updated unit_value:', value);
 }
 
@@ -1245,210 +1017,6 @@ export function removeApiRequestFieldHandler(
         'form.country_settings': countrySettings,
     });
     logger.log('[removeApiRequestField] Removed index:', fieldIndex, 'remaining:', currentFields.length);
-}
-
-/**
- * API 요청 참고 필드 후보를 토글합니다 (체크박스 선택/해제).
- *
- * 후보 5종(policy_id/country_code/items/group_total/total_quantity) 중 하나를
- * api_request_fields 배열에 추가하거나 제거합니다. 자유 텍스트 입력을 대체하여
- * 시스템이 지원하지 않는 필드명 입력(silent drop)을 원천 차단합니다.
- *
- * @param action params.field: 토글할 후보 필드 값
- * @param context 액션 컨텍스트
- */
-export function toggleApiRequestFieldHandler(
-    action: ActionWithParams,
-    context: ActionContext
-): void {
-    const params = action.params || {};
-    const field = (params.field ?? '') as string;
-    if (!field) {
-        logger.warn('[toggleApiRequestField] Missing field param');
-        return;
-    }
-
-    const G7Core = getG7Core();
-    if (!G7Core) return;
-
-    const localState = G7Core.state.getLocal?.() ?? {};
-    const countryIndex = Number(localState.activeCountryTab ?? 0);
-    const countrySettings = getCountrySettings(G7Core);
-    const cs = countrySettings[countryIndex];
-    if (!cs) return;
-
-    const currentFields = [...(cs.api_request_fields ?? [])];
-    const existingIndex = currentFields.indexOf(field);
-
-    if (existingIndex >= 0) {
-        currentFields.splice(existingIndex, 1);
-    } else {
-        currentFields.push(field);
-    }
-
-    // 빈 배열은 null 로 정규화 (전체 전송 = 현 동작 유지)
-    const nextFields = currentFields.length > 0 ? currentFields : null;
-
-    // 새 객체 생성 (원본 mutation 방지 — deepMerge 변경 감지를 위해 필수)
-    countrySettings[countryIndex] = { ...cs, api_request_fields: nextFields };
-
-    updateLocalState(context, {
-        'form.country_settings': countrySettings,
-    });
-    logger.log('[toggleApiRequestField] Toggled:', field, 'selected:', nextFields);
-}
-
-/**
- * 계산 API 고급 설정(api_config)의 개별 필드를 업데이트합니다.
- *
- * api_config 는 중첩 객체이므로 updateCountryField(평면 필드)와 별도로 처리합니다.
- *
- * @param action params.field: api_config 하위 키, params.value: 새 값
- * @param context 액션 컨텍스트
- */
-export function updateApiConfigFieldHandler(
-    action: ActionWithParams,
-    context: ActionContext
-): void {
-    const params = action.params || {};
-    const field = (params.field ?? '') as string;
-    if (!field) {
-        logger.warn('[updateApiConfigField] Missing field param');
-        return;
-    }
-
-    const G7Core = getG7Core();
-    if (!G7Core) return;
-
-    const localState = G7Core.state.getLocal?.() ?? {};
-    const index = Number(localState.activeCountryTab ?? 0);
-    const countrySettings = getCountrySettings(G7Core);
-    const cs = countrySettings[index];
-    if (!cs) return;
-
-    const nextConfig: ApiConfig = { ...(cs.api_config ?? {}), [field]: params.value };
-
-    // 새 객체 생성 (deepMerge 변경 감지)
-    countrySettings[index] = { ...cs, api_config: nextConfig };
-
-    updateLocalState(context, {
-        'form.country_settings': countrySettings,
-    });
-    logger.log('[updateApiConfigField] Updated', field, 'at index:', index);
-}
-
-/**
- * 계산 API 요청 필드의 외부 키 매핑(field_map)을 업데이트합니다.
- *
- * @param action params.field: 우리 키(후보), params.value: 외부 키 이름(빈 값이면 매핑 제거)
- * @param context 액션 컨텍스트
- */
-export function updateApiFieldMapHandler(
-    action: ActionWithParams,
-    context: ActionContext
-): void {
-    const params = action.params || {};
-    const field = (params.field ?? '') as string;
-    if (!field) {
-        logger.warn('[updateApiFieldMap] Missing field param');
-        return;
-    }
-
-    const G7Core = getG7Core();
-    if (!G7Core) return;
-
-    const localState = G7Core.state.getLocal?.() ?? {};
-    const index = Number(localState.activeCountryTab ?? 0);
-    const countrySettings = getCountrySettings(G7Core);
-    const cs = countrySettings[index];
-    if (!cs) return;
-
-    const externalKey = (params.value ?? '') as string;
-    const fieldMap: Record<string, string> = { ...(cs.api_config?.field_map ?? {}) };
-
-    if (externalKey.trim() === '') {
-        delete fieldMap[field];
-    } else {
-        fieldMap[field] = externalKey;
-    }
-
-    const nextConfig: ApiConfig = {
-        ...(cs.api_config ?? {}),
-        field_map: Object.keys(fieldMap).length > 0 ? fieldMap : null,
-    };
-
-    countrySettings[index] = { ...cs, api_config: nextConfig };
-
-    updateLocalState(context, {
-        'form.country_settings': countrySettings,
-    });
-    logger.log('[updateApiFieldMap] Mapped', field, '→', externalKey || '(removed)');
-}
-
-/**
- * 현재 입력 중인 계산 API 설정으로 외부 API 를 테스트 호출합니다.
- *
- * 백엔드 test-api-call 엔드포인트로 요청하고 결과를 _global.apiTestResult 에 저장합니다.
- *
- * @param action 액션 정의
- * @param context 액션 컨텍스트
- */
-export function testShippingApiHandler(
-    action: ActionWithParams,
-    context: ActionContext
-): void {
-    const G7Core = getG7Core();
-    if (!G7Core) return;
-
-    const localState = G7Core.state.getLocal?.() ?? {};
-    const index = Number(localState.activeCountryTab ?? 0);
-    const countrySettings = getCountrySettings(G7Core);
-    const cs = countrySettings[index];
-    if (!cs) return;
-
-    if (!cs.api_endpoint) {
-        G7Core.toast?.warning?.(G7Core.t?.('sirsoft-ecommerce.admin.shipping_policy.form.api_test_endpoint_required') ?? 'Endpoint required');
-        return;
-    }
-
-    // 전역 상태 설정은 객체 형태로 넘긴다 (set 의 첫 인자는 updates 객체)
-    G7Core.state.set?.({ apiTestLoading: true, apiTestResult: null });
-
-    // apiCall 구조: URL 은 액션 top-level target, method/body 는 params,
-    // onSuccess/onError 도 top-level (코어 apiCall 규약). 백엔드 test-api-call
-    // 엔드포인트가 사용자가 입력한 설정으로 외부 API 를 대신 호출하고 결과를 서빙한다.
-    G7Core.dispatch({
-        handler: 'apiCall',
-        target: '/api/modules/sirsoft-ecommerce/admin/shipping-policies/test-api-call',
-        auth_required: true,
-        params: {
-            method: 'POST',
-            body: {
-                endpoint: cs.api_endpoint,
-                request_fields: cs.api_request_fields,
-                config: cs.api_config ?? {},
-                sample: {
-                    country_code: cs.country_code,
-                },
-            },
-        },
-        onSuccess: {
-            handler: 'setState',
-            params: {
-                target: 'global',
-                apiTestLoading: false,
-                apiTestResult: '{{response.data}}',
-            },
-        },
-        onError: {
-            handler: 'setState',
-            params: {
-                target: 'global',
-                apiTestLoading: false,
-                apiTestResult: '{{error.errors ?? error}}',
-            },
-        },
-    });
 }
 
 /**

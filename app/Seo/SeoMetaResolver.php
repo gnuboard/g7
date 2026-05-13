@@ -4,25 +4,14 @@ namespace App\Seo;
 
 use App\Seo\Concerns\LocalizesSeoValues;
 use App\Seo\Concerns\SubstitutesSeoVariables;
-use App\Services\SettingsService;
-use App\Support\AssetUrl;
-use App\Thumbnails\ThumbnailPresetRegistry;
-use App\Thumbnails\ThumbnailUrl;
 
 class SeoMetaResolver
 {
     use LocalizesSeoValues;
     use SubstitutesSeoVariables;
 
-    /**
-     * SEO 메타 해석기를 생성합니다.
-     *
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @param  SeoToggleEvaluator  $toggleEvaluator  확장 설정 키 해석기 (SeoRenderer 와 공용)
-     */
     public function __construct(
         private readonly ExpressionEvaluator $evaluator,
-        private readonly SeoToggleEvaluator $toggleEvaluator = new SeoToggleEvaluator,
     ) {}
 
     /**
@@ -33,40 +22,24 @@ class SeoMetaResolver
      * @param  string|null  $moduleIdentifier  모듈 식별자 (이커머스/게시판 등)
      * @param  string|null  $pluginIdentifier  플러그인 식별자
      * @param  array  $routeParams  라우트 파라미터
-     * @param  mixed  $routeTitle  라우트 meta.title(`$t:` 키, 표현식, 다국어 배열) — 다른 제목 단계가 모두 빌 때 쓰는 마지막 대체
      * @return array 해석된 메타 데이터
      */
-    public function resolve(array $seoConfig, array $context, ?string $moduleIdentifier, ?string $pluginIdentifier, array $routeParams, mixed $routeTitle = null): array
+    public function resolve(array $seoConfig, array $context, ?string $moduleIdentifier, ?string $pluginIdentifier, array $routeParams): array
     {
         // Tier 1: 코어 설정 (null 저장값 대비 빈 문자열 보장)
         $coreTitleSuffix = g7_core_settings('seo.meta_title_suffix') ?? '';
         $coreDescription = g7_core_settings('seo.meta_description') ?? '';
         $coreKeywords = g7_core_settings('seo.meta_keywords') ?? '';
 
-        // 제목 — 사람 화면의 브라우저 탭 제목(엔진 DocumentTitle)과 같은 규칙(SeoTitleRule)으로 정한다.
-        // 후보 순서: 리소스 meta_title → 페이지 seo_meta.title → 확장 제목 틀(_seo·하위호환 모듈 틀) →
-        // meta.seo.og.title → 라우트 meta.title. 사이트 이름만 되풀이하는 후보(게시판 목록 기본 틀 `{site_name}` 등)는
-        // 건너뛰고, 사이트 이름은 코어 접미사(비면 ` - {site_name}`)로만 붙인다. 사이트 첫 화면은 사이트 이름만 쓴다.
-        $siteName = trim($this->resolveLocalizedValue(g7_core_settings('general.site_name', '')));
-        $localizedSuffix = $this->resolveLocalizedValue($coreTitleSuffix);
-        $picked = SeoTitleRule::resolve([
-            'tiers' => [
-                fn () => $this->getResourceMetaField($context, 'meta_title'),
-                fn () => $this->getPageSeoMetaField($context, 'title'),
-                fn () => $this->resolveLayoutSeoValue($seoConfig, 'title', $context),
-                fn () => $this->resolveTemplateTitle($seoConfig, $context, $moduleIdentifier, $pluginIdentifier),
-                fn () => $this->resolveLayoutMetaTitle($seoConfig, $context),
-                fn () => ($routeTitle !== null && $routeTitle !== '' && $routeTitle !== []) ? $this->safeEval($routeTitle, $context) : '',
-            ],
-            'site_name' => $siteName,
-            'suffix' => $localizedSuffix,
-            'is_home' => data_get($context, 'route.path') === '/',
-        ]);
-        $title = $picked['title'];
-
+        // 페이지 유형별 타이틀/설명 결정
+        $title = $this->resolveTitle($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams);
         $description = $this->resolveDescription($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams);
         $keywords = $this->resolveKeywords($context, $moduleIdentifier);
 
+        // fallback: 레이아웃 meta → 코어 설정
+        if ($title === '') {
+            $title = $this->resolveLayoutMetaTitle($seoConfig, $context);
+        }
         if ($description === '') {
             $description = $this->resolveLayoutMetaDescription($seoConfig, $context);
         }
@@ -77,17 +50,15 @@ class SeoMetaResolver
             $keywords = $coreKeywords;
         }
 
-        // 접미사 원값(현재 언어) — 기본값(` - {site_name}`)·`{site_name}` 치환·제목과 잇는 조립·중복 방지는 filter 훅 뒤
-        // 최종 제목 기준으로 SeoRenderer 가 SeoTitleRule::assembleSuffix + composeSuffix 로 한다(훅이 보는 값은 종전처럼 설정값).
-        $titleSuffix = $localizedSuffix;
+        // 코어 title suffix 항상 추가
+        $titleSuffix = $coreTitleSuffix !== '' ? $coreTitleSuffix : '';
 
         // null 방어 (OG 태그 string 타입힌트 충족)
         $title = $title ?? '';
         $description = $description ?? '';
 
         // OG / Twitter / Structured Data 배열 해석 (HTML 렌더 지연)
-        // og:title 대체값 — 제목이 비면(사이트 첫 화면 등 사이트 이름이 접미사로만 붙는 화면) 사이트 이름
-        $og = $this->resolveOgData($seoConfig, $context, $title !== '' ? $title : $siteName, $description);
+        $og = $this->resolveOgData($seoConfig, $context, $title, $description);
         $twitter = $this->resolveTwitterData($seoConfig, $context, $og);
         $structuredData = $this->resolveStructuredDataArray($seoConfig, $context);
 
@@ -115,32 +86,49 @@ class SeoMetaResolver
     }
 
     /**
-     * 확장 제목 틀 후보를 해석합니다 (제목 규칙의 세 번째 후보).
-     *
-     * `_seo.{page_type}.title`(SeoRenderer 가 meta.seo.extensions 로 주입) → 하위호환 모듈/플러그인 틀
-     * (extensions 미선언 시 라우트 레이아웃 소속 확장의 `seo.meta_{page_type}_title`) 순이다.
+     * 타이틀을 3계층 캐스케이드로 해석합니다.
      *
      * @param  array  $seoConfig  SEO 설정
      * @param  array  $context  데이터 컨텍스트
      * @param  string|null  $moduleIdentifier  모듈 식별자
      * @param  string|null  $pluginIdentifier  플러그인 식별자
-     * @return string 해석된 제목 틀 (없으면 빈 문자열)
+     * @param  array  $routeParams  라우트 파라미터
+     * @return string 해석된 타이틀
      */
-    private function resolveTemplateTitle(array $seoConfig, array $context, ?string $moduleIdentifier, ?string $pluginIdentifier): string
+    private function resolveTitle(array $seoConfig, array $context, ?string $moduleIdentifier, ?string $pluginIdentifier, array $routeParams): string
     {
+        // Tier 3: 리소스 개별 meta_title
+        $resourceTitle = $this->getResourceMetaField($context, 'meta_title');
+        if ($resourceTitle !== '') {
+            return $resourceTitle;
+        }
+
+        // Tier 3: 페이지 seo_meta.title (sirsoft-page)
+        $pageSeoTitle = $this->getPageSeoMetaField($context, 'title');
+        if ($pageSeoTitle !== '') {
+            return $pageSeoTitle;
+        }
+
+        // Tier 2: _seo context (SeoRenderer가 extensions 기반으로 주입)
         $pageType = $seoConfig['page_type'] ?? null;
         if ($pageType) {
             $seoTitle = data_get($context, "_seo.{$pageType}.title", '');
-            if ($seoTitle !== '' && $seoTitle !== null) {
-                return $this->resolveLocalizedValue($seoTitle);
+            if ($seoTitle !== '') {
+                return $seoTitle;
             }
         }
 
+        // Tier 2 하위호환: moduleIdentifier/pluginIdentifier 기반 (extensions 미선언 시)
         if ($moduleIdentifier) {
-            return $this->resolveModuleTemplate($moduleIdentifier, 'title', $seoConfig, $context);
-        }
-        if ($pluginIdentifier) {
-            return $this->resolvePluginTemplate($pluginIdentifier, 'title', $seoConfig, $context);
+            $templateTitle = $this->resolveModuleTemplate($moduleIdentifier, 'title', $seoConfig, $context);
+            if ($templateTitle !== '') {
+                return $templateTitle;
+            }
+        } elseif ($pluginIdentifier) {
+            $templateTitle = $this->resolvePluginTemplate($pluginIdentifier, 'title', $seoConfig, $context);
+            if ($templateTitle !== '') {
+                return $templateTitle;
+            }
         }
 
         return '';
@@ -168,12 +156,6 @@ class SeoMetaResolver
         $pageSeoDesc = $this->getPageSeoMetaField($context, 'description');
         if ($pageSeoDesc !== '') {
             return $pageSeoDesc;
-        }
-
-        // 레이아웃 편집기 「검색 설명」(meta.seo.description) — 그 화면 하나의 운영자 설정이라 확장 틀보다 앞선다
-        $layoutDesc = $this->resolveLayoutSeoValue($seoConfig, 'description', $context);
-        if ($layoutDesc !== '') {
-            return $this->stripHtml($layoutDesc);
         }
 
         // Tier 2: _seo context (SeoRenderer가 extensions 기반으로 주입)
@@ -271,7 +253,6 @@ class SeoMetaResolver
                 return $this->resolveLocalizedValue($value);
             }
         }
-
         return '';
 
     }
@@ -294,10 +275,9 @@ class SeoMetaResolver
         }
 
         $settingKey = "seo.meta_{$pageType}_{$type}";
-        // 다국어 배열로 저장한 틀도 받는다 — 반환형 string 에 배열이 들어가면 TypeError → SPA 폴백 (공개#154)
-        $template = $this->resolveLocalizedValue(g7_module_settings($moduleIdentifier, $settingKey));
+        $template = g7_module_settings($moduleIdentifier, $settingKey);
 
-        if ($template === '') {
+        if (empty($template)) {
             return '';
         }
 
@@ -332,10 +312,9 @@ class SeoMetaResolver
         }
 
         $settingKey = "seo.meta_{$pageType}_{$type}";
-        // 다국어 배열로 저장한 틀도 현재 로케일 문자열로 받는다 (공개#154)
-        $template = $this->resolveLocalizedValue(g7_plugin_settings($pluginIdentifier, $settingKey));
+        $template = g7_plugin_settings($pluginIdentifier, $settingKey);
 
-        if ($template === '') {
+        if (empty($template)) {
             return '';
         }
 
@@ -391,7 +370,7 @@ class SeoMetaResolver
         // 다국어 JSON 배열 설정값도 안전 처리 (resolveLocalizedValue)
         if (str_starts_with($expr, '$module_settings:')) {
             $rest = substr($expr, strlen('$module_settings:'));
-            [$effectiveId, $key] = $this->toggleEvaluator->parseExtensionSettingsKey($rest, $moduleIdentifier);
+            [$effectiveId, $key] = $this->parseExtensionSettingsKey($rest, $moduleIdentifier);
             if ($effectiveId) {
                 return $this->resolveLocalizedValue(g7_module_settings($effectiveId, $key, ''));
             }
@@ -400,7 +379,7 @@ class SeoMetaResolver
         // $plugin_settings:key 또는 $plugin_settings:plugin-id:key
         if (str_starts_with($expr, '$plugin_settings:')) {
             $rest = substr($expr, strlen('$plugin_settings:'));
-            [$effectiveId, $key] = $this->toggleEvaluator->parseExtensionSettingsKey($rest, $pluginIdentifier);
+            [$effectiveId, $key] = $this->parseExtensionSettingsKey($rest, $pluginIdentifier);
             if ($effectiveId) {
                 return $this->resolveLocalizedValue(g7_plugin_settings($effectiveId, $key, ''));
             }
@@ -427,55 +406,26 @@ class SeoMetaResolver
     }
 
     /**
-     * `<title>` 조립용 접미사를 정규화합니다.
+     * 확장 설정 키를 파싱합니다.
      *
-     * 관리자 저장 경로의 TrimStrings 미들웨어가 접미사의 선행 공백을 제거하므로
-     * ("` | 그누보드7`" 을 입력해도 "`| 그누보드7`" 로 저장된다), blade 의
-     * `{{ $title }}{{ $titleSuffix }}` 단순 연결에서 제목과 구분자가 붙어 버린다.
-     * 이 메서드가 조립 규칙의 SSoT 다:
+     * 'key.path' 형식이면 컨텍스트 식별자를 사용하고,
+     * 'extension-id:key.path' 형식이면 명시된 확장 식별자를 사용합니다.
      *
-     * - 제목이 있고 접미사가 공백으로 시작하지 않으면 공백 하나를 복원해 잇는다.
-     * - 제목이 비어 있으면 매달린 선행 구분자(`|`,`-`,`·`,`:`,`/`,`–`,`—`)를 떼어
-     *   사이트명 부분만 남긴다 (홈처럼 페이지 제목이 없는 화면의 "`| 사이트명`" 방지).
-     *
-     * @param  string  $title  최종 페이지 제목 (filter 훅 적용 후)
-     * @param  string  $suffix  코어 설정의 타이틀 접미사
-     * @return string 조립에 사용할 접미사 (제목이 없으면 접미사가 곧 전체 제목)
+     * @param  string  $rest  접두사 제거 후 나머지 문자열
+     * @param  string|null  $contextIdentifier  라우트 컨텍스트에서 추출한 식별자
+     * @return array{0: string|null, 1: string} [식별자, 설정 키]
      */
-    public static function composeTitleSuffix(string $title, string $suffix): string
+    private function parseExtensionSettingsKey(string $rest, ?string $contextIdentifier): array
     {
-        if (trim($suffix) === '') {
-            return '';
+        // 'extension-id:key.path' 형식 — 명시적 확장 ID 포함
+        if (str_contains($rest, ':')) {
+            [$explicitId, $key] = explode(':', $rest, 2);
+
+            return [$explicitId, $key];
         }
 
-        if ($title === '') {
-            $stripped = (string) preg_replace('/^[\s|·:\/\x{2013}\x{2014}-]+/u', '', $suffix);
-
-            return trim($stripped);
-        }
-
-        return preg_match('/^\s/u', $suffix) === 1 ? $suffix : ' '.$suffix;
-    }
-
-    /**
-     * 레이아웃 편집기 「검색 제목·설명」(meta.seo.title·description)을 해석합니다.
-     *
-     * 페이지 설정에서 저장한 값이다. 식(`{{…}}`)과 다국어 배열을 받고, 식 안에서 `_seo` 도 읽을 수 있다.
-     * 엔진 `DocumentTitle.computeTitleInput` 의 `layoutTitleTier` 와 같은 자리(자체 값 다음·확장 틀 앞)다.
-     *
-     * @param  array  $seoConfig  레이아웃 meta.seo 설정
-     * @param  string  $field  'title' 또는 'description'
-     * @param  array  $context  데이터 컨텍스트
-     * @return string 해석된 값 (없으면 빈 문자열)
-     */
-    private function resolveLayoutSeoValue(array $seoConfig, string $field, array $context): string
-    {
-        $value = $seoConfig[$field] ?? '';
-        if ($value === '' || $value === null || $value === []) {
-            return '';
-        }
-
-        return $this->safeEval($value, $context);
+        // 'key.path' 형식 — 컨텍스트 식별자 사용
+        return [$contextIdentifier, $rest];
     }
 
     /**
@@ -533,19 +483,6 @@ class SeoMetaResolver
         $title = $this->stripHtml($this->safeEval($og['title'] ?? '', $context)) ?: $fallbackTitle;
         $description = $this->stripHtml($this->safeEval($og['description'] ?? '', $context)) ?: $fallbackDescription;
         $image = $this->absoluteUrl($this->safeEval($og['image'] ?? '', $context));
-
-        // 사이트 기본 OG 이미지 폴백 (공개 이슈 #22) — 도메인 콘텐츠 폴백(본문 캐시)은
-        // 각 모듈 레이아웃/훅 바인딩이 공급하므로 코어는 사이트 기본값 한 단만 담당한다.
-        // 체인: 레이아웃 선언(도메인 캐시 포함) → 사이트 기본 이미지 → 빈 값(태그 미출력).
-        // secure_url 파생은 반드시 이 폴백 적용 후의 $image 기준이어야 한다.
-        if ($image === '') {
-            $defaultImage = app(SettingsService::class)->getOgDefaultImageUrl();
-
-            if (is_string($defaultImage) && $defaultImage !== '') {
-                $image = $this->absoluteUrl($defaultImage);
-            }
-        }
-
         $secureUrl = isset($og['image_secure_url'])
             ? $this->absoluteUrl($this->safeEval($og['image_secure_url'], $context))
             : ($image !== '' && str_starts_with($image, 'https://') ? $image : '');
@@ -566,8 +503,6 @@ class SeoMetaResolver
             'image_width' => $this->resolveIntOrSetting($og['image_width'] ?? null, 'seo.og_image_default_width', $context),
             'image_height' => $this->resolveIntOrSetting($og['image_height'] ?? null, 'seo.og_image_default_height', $context),
             'image_type' => $this->safeEval($og['image_type'] ?? '', $context),
-            // 레이아웃이 이미지 크기를 직접 선언했으면 그 이미지는 이미 그 크기다 — 렌더가 og 썸네일로 바꾸지 않는다.
-            'image_size_declared' => isset($og['image_width']) || isset($og['image_height']),
             'image_alt' => $this->stripHtml($this->safeEval($og['image_alt'] ?? $og['title'] ?? '', $context)),
             'site_name' => $explicitSiteName !== '' ? $explicitSiteName : $this->resolveLocalizedValue($siteNameFallback),
             'locale' => $this->safeEval($og['locale'] ?? '', $context) ?: app()->getLocale(),
@@ -610,7 +545,6 @@ class SeoMetaResolver
             'image_alt' => isset($tw['image_alt'])
                 ? $this->stripHtml($this->safeEval($tw['image_alt'], $context))
                 : (string) ($ogData['image_alt'] ?? ''),
-            'image_size_declared' => ! isset($tw['image']) && (bool) ($ogData['image_size_declared'] ?? false),
             'extra' => is_array($tw['extra'] ?? null) ? $tw['extra'] : [],
         ];
     }
@@ -659,11 +593,11 @@ class SeoMetaResolver
             $tags .= '    <meta property="og:description" content="'.e($description).'">'."\n";
         }
 
-        $image = $this->ogThumbnail((string) ($og['image'] ?? ''), $og);
+        $image = (string) ($og['image'] ?? '');
         if ($image !== '') {
             $tags .= '    <meta property="og:image" content="'.e($image).'">'."\n";
 
-            $secure = $this->ogThumbnail((string) ($og['image_secure_url'] ?? ''), $og);
+            $secure = (string) ($og['image_secure_url'] ?? '');
             if ($secure !== '' && str_starts_with($secure, 'https://')) {
                 $tags .= '    <meta property="og:image:secure_url" content="'.e($secure).'">'."\n";
             }
@@ -705,28 +639,6 @@ class SeoMetaResolver
     }
 
     /**
-     * og·twitter 이미지 주소를 og 규격 썸네일 주소로 바꿉니다.
-     *
-     * 모든 og 경로(레이아웃 선언·사이트 기본·모듈 기본값 채우기·`core.seo.filter_og_data`)가 마지막에 이 렌더를
-     * 지나므로 여기 한 곳에서 바꾼다 — 선언한 `og:image:width/height`(SEO 탭 기본 1200×630)와 실제 이미지 크기가
-     * 맞게 된다. 레이아웃이 크기를 직접 선언했으면 바꾸지 않고, 등록된 서빙 경로가 아니면(외부·정적) 그대로다.
-     *
-     * 편집기 미리보기(`SeoOgPreviewService`)도 이 함수로 주소를 내 실제 카드와 같은 주소를 보인다.
-     *
-     * @param  string  $url  이미지 주소
-     * @param  array  $data  og 또는 twitter 데이터
-     * @return string 주소
-     */
-    public function ogThumbnail(string $url, array $data): string
-    {
-        if ($url === '' || (bool) ($data['image_size_declared'] ?? false)) {
-            return $url;
-        }
-
-        return ThumbnailUrl::for($url, ThumbnailPresetRegistry::OG);
-    }
-
-    /**
      * Twitter 데이터 배열을 HTML 메타태그로 렌더합니다.
      *
      * @param  array  $tw  Twitter 데이터 배열
@@ -743,9 +655,6 @@ class SeoMetaResolver
 
         foreach (['site', 'creator', 'title', 'description', 'image'] as $key) {
             $val = (string) ($tw[$key] ?? '');
-            if ($key === 'image') {
-                $val = $this->ogThumbnail($val, $tw);
-            }
             if ($val !== '') {
                 $tags .= '    <meta name="twitter:'.$key.'" content="'.e($val).'">'."\n";
             }
@@ -782,15 +691,7 @@ class SeoMetaResolver
 
         $resolved = array_merge(['@context' => 'https://schema.org'], $structuredData);
 
-        // JSON-LD 는 `<script type="application/ld+json">` 안에 임베드된다. 사용자 제어 값
-        // (검색어·상품명 등)에 포함된 `</script>` 가 스크립트 컨텍스트를 조기 종료하면 그
-        // 뒤의 페이로드가 실행 가능한 script 요소로 재생성된다(반사형 XSS — 봇 UA 는 누구나
-        // 위장할 수 있다). JSON_HEX_TAG 로 `<`·`>` 를 <·>
-        // 로 이스케이프해 브레이크아웃을 차단한다. JSON_HEX_AMP 는 방어 심화.
-        return json_encode(
-            $resolved,
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_HEX_AMP,
-        );
+        return json_encode($resolved, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
     }
 
     /**
@@ -802,10 +703,6 @@ class SeoMetaResolver
      *
      * 'Array to string conversion' / TypeError 회귀 방지 — resolveOgData/resolveTwitterData 에서
      * 모든 표현식 평가 지점은 본 헬퍼를 거쳐야 함.
-     *
-     * @param  mixed  $expr  평가할 표현식 또는 값
-     * @param  array  $context  평가 컨텍스트
-     * @return string 평가 결과 문자열
      */
     private function safeEval(mixed $expr, array $context): string
     {
@@ -818,30 +715,14 @@ class SeoMetaResolver
 
     /**
      * 상대 경로 URL 을 절대 URL 로 변환.
-     *
-     * `url()` 을 쓰지 않는다 — 그 헬퍼는 오리진 **과 마운트 접두사**를 함께 붙이는데,
-     * 이 자리에 오는 값은 레이아웃이 선언한 표현식의 평가 결과이고 그 표현식을
-     * **모듈이 편집기 칩으로 광고한다**(`{{product.data.thumbnail_url}}` ·
-     * `{{post.data.thumbnail}}`). 그 두 값의 생산자는 `AssetUrl::basePrefix()` 를
-     * 이미 실어 주므로, 운영자가 칩을 고르는 순간 `og:image` 가
-     * `https://host/g7/g7/api/…` 로 나가고 그 주소는 404 다 (앞서 게시판 모듈의
-     * *기본값* 경로에서 고친 것과 같은 실패가 한 계층 위에 남아 있었다).
-     *
-     * 반대로 오리진만 붙이면 레이아웃이 리터럴로 적은 사이트 경로(`/img/og.png`)에
-     * 접두사를 붙일 주체가 사라진다. 두 입력이 같은 자리에 오므로 **접두사를 멱등으로
-     * 보정한 뒤 오리진을 붙인다**.
-     *
-     * 그 보정 규칙은 `AssetUrl::siteAbsolute()` 가 소유하고, 절대 주소의 본체는 사이트 주소 기준
-     * `SiteUrl::absolute()`(`SeoUrl::absolute()` 와 같은 출처 — 요청 Host 비의존)다. 종전에는 같은 규칙이
-     * 여기와 `ComponentHtmlMapper` 두 곳에 **세 벌의 독립 사본**으로 살아 있었고, 갈려도
-     * 예외가 나지 않아(그 자산만 404) 대조할 장치가 없었다.
-     *
-     * @param  string  $url  레이아웃 표현식 평가 결과
-     * @return string 절대 URL (판정 대상이 아니면 원본 그대로)
      */
     private function absoluteUrl(string $url): string
     {
-        return AssetUrl::siteAbsolute($url);
+        if ($url === '') {
+            return '';
+        }
+
+        return str_starts_with($url, 'http') ? $url : url($url);
     }
 
     /**
@@ -909,9 +790,9 @@ class SeoMetaResolver
      * 구조화 데이터 하위 객체가 실질적으로 비어있는지 확인합니다.
      *
      * @type 키가 있는 객체에서, @type 외 필드 중 하나라도 빈 문자열이면
-     *              해당 객체를 JSON-LD에서 제거합니다.
-     *              예: aggregateRating의 ratingValue=""이면, bestRating="5"가 있더라도 제거됩니다.
-     *              Google 구조화 데이터 검증에서 필수 필드가 빈 값이면 에러로 처리되기 때문입니다.
+     * 해당 객체를 JSON-LD에서 제거합니다.
+     * 예: aggregateRating의 ratingValue=""이면, bestRating="5"가 있더라도 제거됩니다.
+     * Google 구조화 데이터 검증에서 필수 필드가 빈 값이면 에러로 처리되기 때문입니다.
      *
      * @param  array  $resolved  평가된 구조화 데이터 객체
      * @return bool 비어있으면 true

@@ -5,17 +5,16 @@
 ```text
 1. 다국어 JSON 컬럼(name 등)을 시드하는 확장 entity 시더는 TranslatableSeederInterface 구현 필수
 2. App\Concerns\Seeder\HasTranslatableSeeder trait 사용 → resolveTranslatedDefaults() 가 활성 lang pack 머지 자동 처리
-3. 시더는 getDefaults() 에 ko/en 만 정의, ja 등은 lang pack seed/{entity}.json 에서 자동 빌드
-4. 자동 검증이 누락 검출 (위반 시 차단)
+3. 시더는 getDefaults() 에 ko/en 만 정의, ja 등은 lang pack seed/{entity}.json 자동 빌드 (build-language-pack-ja.cjs)
+4. audit 룰 seeder-translation-filter 가 누락 검출 (error severity)
 5. 코어 시더(NotificationDefinitionSeeder 등)는 별도 LoadsConfigSeedWithLangPackFilter trait 패턴 (config 기반)
-6. 스케줄 명칭·설명(7.2.0)은 seed/schedules.json 을 name 기준으로 주입 — 코어 core.schedules.config, 확장 seed.{id}.schedules.translations
 ```
 
 ## 배경
 
 활성 언어팩의 `seed/{entity}.json` 파일을 entity 시더가 머지하는 인프라가 7.0.0-beta.4 부터 정식화되었으나, 시더가 직접 `HookManager::applyFilters()` 를 호출하는 패턴이라 누락 시 회귀가 발생했다. (예: 7.0.0-beta.4 직전 `ShippingCarrierSeeder` 에서 ja 라벨 fallback 회귀)
 
-7.0.0-beta.5 부터 `TranslatableSeederInterface` + `HasTranslatableSeeder` trait 로 컴파일 타임 / 자동 검증 단계에서 강제하도록 인프라화.
+7.0.0-beta.5 부터 `TranslatableSeederInterface` + `HasTranslatableSeeder` trait 로 컴파일 타임 / audit 단계에서 강제하도록 인프라화.
 
 ## 인터페이스
 
@@ -83,11 +82,11 @@ class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterfac
 - `getMatchKey()` 가 반환하는 키 조합이 시드 항목의 식별자로 사용된다.
 - `getDefaults()` 가 ko 기준 다국어 필드를 반환한다.
 
-## 자동 검증
+## audit 룰
 
-다음을 차단한다:
-- 코어 시더 (NotificationDefinitionSeeder — 본인인증 알림 `identity.*` 포함) — `applyFilters('seed.X.translations', ...)` 발화 필수
-- ModuleManager/PluginManager — `sync*NotificationDefinitions` 본문에 `applyFilters` 발화 필수
+`seeder-translation-filter` (severity: error):
+- 코어 시더 (NotificationDefinitionSeeder/IdentityMessageDefinitionSeeder) — `applyFilters('seed.X.translations', ...)` 발화 필수
+- ModuleManager/PluginManager — `sync*Definitions/*Messages` 본문에 `applyFilters` 발화 필수
 - 확장 entity 시더 (`(modules|plugins)/_bundled/<id>/database/seeders/<X>Seeder.php`) — 다국어 JSON 컬럼 시드 시 `TranslatableSeederInterface` 구현 + `HasTranslatableSeeder` trait 사용 필수
 
 면제 대상 (단일 entity 패턴 미적용):
@@ -98,35 +97,9 @@ class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterfac
 ## 코어 시더와의 차이
 
 - **확장 entity 시더** (BoardType/ShippingCarrier 등): 시더 자체가 데이터 SSoT → `TranslatableSeederInterface` + `HasTranslatableSeeder`
-- **코어 시더** (NotificationDefinition/Permission/Role/Menu): `config/core.php` 가 데이터 SSoT → 시더는 `LoadsConfigSeedWithLangPackFilter` trait 의 `loadConfigSeed(<configKey>, <filterName>)` 호출
+- **코어 시더** (NotificationDefinition/IdentityMessageDefinition/Permission/Role/Menu): `config/core.php` 가 데이터 SSoT → 시더는 `LoadsConfigSeedWithLangPackFilter` trait 의 `loadConfigSeed(<configKey>, <filterName>)` 호출
 
-두 패턴 모두 `seed.{X}.translations` 필터를 발화하므로 자동 검증 결과는 동일.
-
-## 스케줄 명칭·설명 (7.2.0)
-
-스케줄 행(`App\Models\Schedule`)의 `label`·`description` 은 다국어 JSON 컬럼이고, 시더가 아니라 선언 동기화가 행을 만듭니다. ja 등 추가 로케일은 언어팩의 `lang-packs/_bundled/g7-core-ja/seed/schedules.json` 이 채웁니다.
-
-| 소유 | 선언 SSoT | 주입 지점 | 매칭 키 |
-| --- | --- | --- | --- |
-| 코어 | `config/core.php` `schedules` 카탈로그 | `CoreScheduleSeeder` 가 동기화 직전 `core.schedules.config` 필터 발화 → `LanguagePackSeedInjector::injectCoreSchedules()` | 카탈로그 배열 키(= `name`) |
-| 모듈·플러그인 | `getSchedules()` | `Module/PluginManager::sync*Schedules()` 가 옛 형식을 정규화한 뒤 `seed.{식별자}.schedules.translations` 발화 → `injectExtensionEntity(…, 'schedules', 'name')` | `name` (자동 감지 후보에 없어 고정) |
-
-`lang-packs/_bundled/g7-core-ja/seed/schedules.json` 형식 — 코어 언어팩(`g7-core-{locale}`)과 확장 언어팩이 같습니다.
-
-```json
-{
-    "sitemap-generate": {
-        "label": "サイトマップ生成",
-        "description": "…"
-    }
-}
-```
-
-- 선언의 `label`·`description` 이 다국어 배열일 때만 로케일 키가 더해집니다. 선언(카탈로그)에 없는 `name` 은 무시합니다.
-- **언어팩을 켤 때**(`SyncDatabaseTranslations::handleActivated`) 이미 있는 행에도 그 로케일 값을 넣습니다(`LanguagePackTranslationRepository::applySchedules()`). 끌 때는 그 로케일 키를 빼되, 운영자가 고친 로케일(`user_overrides` 의 `label.ja` 등)은 보존합니다.
-- **범위**: 코어 언어팩은 `extension_type=core` 행만, 모듈·플러그인 언어팩은 자기 대상 확장이 소유한 행만 바꿉니다. 운영자가 직접 등록한 행(`extension_type` NULL)은 어느 언어팩도 건드리지 않습니다 — 다른 모델의 코어 범위(core 또는 NULL)와 다릅니다.
-
-선언 형식은 [module-schedules.md](../extension/module-schedules.md), 실행 구조는 [scheduling.md](scheduling.md) 를 봅니다.
+두 패턴 모두 `seed.{X}.translations` 필터를 발화하므로 audit 룰 통과는 동일.
 
 ## 참고
 

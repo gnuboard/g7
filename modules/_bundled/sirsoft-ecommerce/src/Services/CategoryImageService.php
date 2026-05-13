@@ -4,21 +4,12 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
-use App\Helpers\InlineMediaPolicy;
-use App\Support\Files\StoredFileExtension;
-use App\Support\ImageResizer;
-use App\Support\UploadedFileName;
-use App\Thumbnails\DTO\ThumbnailSource;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Models\CategoryImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\BuildsRowThumbnailSource;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\ServesImageWithRowValidators;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -28,15 +19,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class CategoryImageService
 {
-    use BuildsRowThumbnailSource;
-    use ResolvesRowStorage;
-    use ServesImageWithRowValidators;
-
     /**
      * CategoryImageService 생성자
      *
-     * @param  CategoryImageRepositoryInterface  $repository  카테고리 이미지 리포지토리
-     * @param  StorageInterface  $storage  모듈 스토리지 드라이버
+     * @param CategoryImageRepositoryInterface $repository 카테고리 이미지 리포지토리
+     * @param StorageInterface $storage 모듈 스토리지 드라이버
      */
     public function __construct(
         private CategoryImageRepositoryInterface $repository,
@@ -49,11 +36,11 @@ class CategoryImageService
      * category_id가 없는 경우 임시 업로드로 처리합니다.
      * 임시 업로드된 이미지는 temp_key로 식별되며, 카테고리 저장 시 연결됩니다.
      *
-     * @param  UploadedFile  $file  업로드된 파일
-     * @param  int|null  $categoryId  카테고리 ID (새 카테고리 생성 시 null)
-     * @param  string  $collection  컬렉션명
-     * @param  string|null  $tempKey  임시 업로드 키 (새 카테고리 생성 시 사용)
-     * @param  array|null  $altText  대체 텍스트 (다국어 배열)
+     * @param UploadedFile $file 업로드된 파일
+     * @param int|null $categoryId 카테고리 ID (새 카테고리 생성 시 null)
+     * @param string $collection 컬렉션명
+     * @param string|null $tempKey 임시 업로드 키 (새 카테고리 생성 시 사용)
+     * @param array|null $altText 대체 텍스트 (다국어 배열)
      * @return CategoryImage 생성된 이미지
      */
     public function upload(
@@ -64,7 +51,7 @@ class CategoryImageService
         ?array $altText = null
     ): CategoryImage {
         // categoryId와 tempKey 모두 없으면 tempKey 자동 생성
-        if (! $categoryId && ! $tempKey) {
+        if (!$categoryId && !$tempKey) {
             $tempKey = Str::uuid()->toString();
         }
 
@@ -75,31 +62,15 @@ class CategoryImageService
         $file = HookManager::applyFilters('sirsoft-ecommerce.category-image.filter_upload_file', $file);
 
         // 저장 경로 생성 (category + 날짜별 디렉토리)
-        $extension = StoredFileExtension::resolve($file, 'jpg');
-        $storedFilename = Str::uuid().'.'.$extension;
-        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
+        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
         $datePath = date('Y/m/d');
         $path = "category/{$datePath}/{$storedFilename}";
 
         // 스토리지에 파일 저장 (category: 'images')
-        // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
-        app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
-
-        // 축소는 **같은 경로를 제자리에서 갈아 끼운다.** 그 과정이 `is_file()` 로 그 경로를
-        // stat 하므로 PHP 공유 stat 캐시가 채워지고, 뒤따르는 `getSize()` 는 그 캐시를 그대로
-        // 읽어 **축소 전 크기**를 돌려준다. `getimagesize()` 는 파일을 직접 읽으므로
-        // width/height 만 축소본을 가리키고 크기만 어긋난다 — 한 행의 두 값이 서로 다른
-        // 파일을 가리키는 상태다. 형제 넷(코어 2 · 게시판 · 페이지)은 같은 사유로 이미 이
-        // 처리를 갖는다.
-        clearstatcache(true, $file->getRealPath());
-
-        // 공개 자산 디스크를 주입받았어도 「공개 디스크로 내보낼 확장자」 밖이면 모듈 기본 디스크에 저장한다.
-        $storage = $this->storageForUpload($extension);
-
-        $storage->put('images', $path, file_get_contents($file->getRealPath()));
+        $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
         // Disk 정보는 스토리지 드라이버에서 가져옴
-        $disk = $storage->getDisk();
+        $disk = $this->storage->getDisk();
 
         // 현재 컬렉션의 최대 sort_order 조회
         $maxSortOrder = $categoryId
@@ -121,7 +92,7 @@ class CategoryImageService
         $image = $this->repository->create([
             'category_id' => $categoryId,
             'temp_key' => $categoryId ? null : $tempKey,
-            'original_filename' => UploadedFileName::original($file),
+            'original_filename' => $file->getClientOriginalName(),
             'stored_filename' => $storedFilename,
             'disk' => $disk,
             'path' => $path,
@@ -152,8 +123,8 @@ class CategoryImageService
     /**
      * 임시 이미지를 카테고리에 연결합니다.
      *
-     * @param  string  $tempKey  임시 업로드 키
-     * @param  int  $categoryId  카테고리 ID
+     * @param string $tempKey 임시 업로드 키
+     * @param int $categoryId 카테고리 ID
      * @return int 연결된 이미지 수
      */
     public function linkTempImages(string $tempKey, int $categoryId): int
@@ -164,9 +135,9 @@ class CategoryImageService
     /**
      * 임시 이미지 목록을 조회합니다.
      *
-     * @param  string  $tempKey  임시 업로드 키
-     * @param  string|null  $collection  컬렉션 필터
-     * @return Collection
+     * @param string $tempKey 임시 업로드 키
+     * @param string|null $collection 컬렉션 필터
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getTempImages(string $tempKey, ?string $collection = null)
     {
@@ -176,7 +147,7 @@ class CategoryImageService
     /**
      * 해시로 이미지 조회
      *
-     * @param  string  $hash  이미지 해시
+     * @param string $hash 이미지 해시
      * @return CategoryImage|null 이미지 또는 null
      */
     public function getByHash(string $hash): ?CategoryImage
@@ -185,35 +156,12 @@ class CategoryImageService
     }
 
     /**
-     * 이미지 다운로드 응답 생성 (하위호환 표면)
+     * 이미지 다운로드 응답 생성
      *
-     * 캐시 계약(검증자·304)은 이 스트림에 실리지 않는다 — `getFileInfo()` 가 돌려주는 메타를
-     * 컨트롤러가 코어 단일 지점(`streamedFileResponse()`)에 넘겨 입힌다. 이 메서드는 그
-     * 정보의 `response` 만 돌려준다.
-     *
-     * @deprecated 캐시 계약(ETag·304)이 실리지 않는 죽은 통로다 — 컨트롤러는 `getFileInfo()`
-     *             메타를 `streamedFileResponseFromMeta()` 에 넘긴다. 생산 호출부는 0 이고 테스트만
-     *             남아 있다. 새 코드는 `getFileInfo()` 를 쓴다.
-     *
-     * @param  string  $hash  이미지 해시
-     * @return StreamedResponse|null 이미지 스트림 또는 null
+     * @param string $hash 이미지 해시 (12자)
+     * @return StreamedResponse|null 이미지 스트림 또는 없을 경우 null
      */
     public function download(string $hash): ?StreamedResponse
-    {
-        return $this->getFileInfo($hash)['response'] ?? null;
-    }
-
-    /**
-     * 이미지 서빙 정보 조회 (스트림 + 검증자 메타)
-     *
-     * 캐싱 헤더·검증자 비교·304 는 코어 단일 지점이 만든다 — 이 서비스는 코어 형제
-     * (`App\Services\AttachmentService::getFileInfo()`)와 같은 형태의 서빙 정보만
-     * 돌려준다.
-     *
-     * @param  string  $hash  이미지 해시
-     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, filename: string, last_modified: int|null, max_age: int, thumbnail_source: ThumbnailSource|null}|null 서빙 정보 또는 null
-     */
-    public function getFileInfo(string $hash): ?array
     {
         $image = $this->repository->findByHash($hash);
 
@@ -221,48 +169,33 @@ class CategoryImageService
             return null;
         }
 
-        // 서빙 정보(스트림 + 검증자 메타)는 `ServesImageWithRowValidators` 단일 지점이 만든다
-        // (형제 두 이미지 서비스와 같은 계약, 코어 단일 지점 경유).
-        $info = $this->imageServeInfo($image);
+        $response = $this->storage->response(
+            'images',
+            $image->path,
+            $image->original_filename,
+            [
+                'Content-Type' => $image->mime_type,
+                'Cache-Control' => 'public, max-age=31536000',
+            ]
+        );
 
-        if (! $info) {
+        if (! $response) {
             Log::error('카테고리 이미지 스토리지에 없음', [
                 'category_image_id' => $image->id,
                 'path' => $image->path,
-                'disk' => $image->disk ?: $this->storage->getDisk(),
+                'disk' => $this->storage->getDisk(),
             ]);
 
             return null;
         }
 
-        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366).
-        // 서빙 정보의 스트림에 굳혀 두면 코어 지점(`streamedFileResponseFromMeta()`)이 같은 응답 객체에
-        // 캐시 계약을 더해 내보낸다.
-        InlineMediaPolicy::harden($info['response'], $image->mime_type, $image->original_filename);
-
-        // 썸네일 헬퍼가 쓸 원본 — 컨트롤러가 원본 응답 바로 앞에서 `ThumbnailResponder::respond()` 에 넘긴다.
-        // 카테고리 이미지는 완전 공개 원본이라 파생본은 공개 썸네일 디스크에 둔다. 공개 자산 디스크(CDN) 행은
-        // 화면 주소가 이미 직접 URL 이라 이 서빙 경로를 지나지 않는다.
-        $info['thumbnail_source'] = $this->thumbnailSourceFor($image);
-
-        return $info;
-    }
-
-    /**
-     * 카테고리 이미지 행의 썸네일 원본 (공개)
-     *
-     * @param  CategoryImage  $image  카테고리 이미지 행
-     * @return ThumbnailSource|null 원본 (래스터가 아니면 null)
-     */
-    public function thumbnailSourceFor(CategoryImage $image): ?ThumbnailSource
-    {
-        return $this->rowThumbnailSource($image, gated: false);
+        return $response;
     }
 
     /**
      * 이미지 삭제
      *
-     * @param  int  $id  이미지 ID
+     * @param int $id 이미지 ID
      * @return bool 삭제 성공 여부
      */
     public function delete(int $id): bool
@@ -280,12 +213,11 @@ class CategoryImageService
         // Before 훅
         HookManager::doAction('sirsoft-ecommerce.category-image.before_delete', $image);
 
-        // 스토리지에서 파일 삭제 — 행 disk 기준
+        // 스토리지에서 파일 삭제
         // DB에 저장된 경로: category/{date}/{filename}
         // storage->exists/delete에 category를 전달하면 자동으로 images/ 추가됨
-        $rowStorage = $this->storageForRow($image->disk);
-        if ($rowStorage->exists('images', $image->path)) {
-            $rowStorage->delete('images', $image->path);
+        if ($this->storage->exists('images', $image->path)) {
+            $this->storage->delete('images', $image->path);
         }
 
         // DB에서 삭제
@@ -308,106 +240,9 @@ class CategoryImageService
     }
 
     /**
-     * 카테고리에 속한 이미지를 파일까지 함께 삭제합니다.
-     *
-     * 카테고리 삭제 흐름에서 호출합니다. 단건 삭제(delete)와 달리 남은 이미지 재정렬이
-     * 필요 없으므로(카테고리 자체가 사라짐) 재정렬 없이 파일 → 행 순으로 정리합니다.
-     *
-     * 행마다 disk 가 다를 수 있으므로 파일 삭제는 각 행의 disk 를 향해 수행합니다.
-     *
-     * @param  int  $categoryId  카테고리 ID
-     * @return int 삭제된 이미지 행 수
-     */
-    public function deleteByCategoryId(int $categoryId): int
-    {
-        $images = $this->repository->getByCategoryId($categoryId);
-
-        if ($images->isEmpty()) {
-            return 0;
-        }
-
-        foreach ($images as $image) {
-            HookManager::doAction('sirsoft-ecommerce.category-image.before_delete', $image);
-
-            $rowStorage = $this->storageForRow($image->disk);
-
-            if ($rowStorage->exists('images', $image->path)) {
-                $rowStorage->delete('images', $image->path);
-            }
-        }
-
-        $deleted = $this->repository->deleteByCategoryId($categoryId);
-
-        Log::info('카테고리 이미지 일괄 삭제 완료', [
-            'category_id' => $categoryId,
-            'deleted' => $deleted,
-        ]);
-
-        foreach ($images as $image) {
-            HookManager::doAction('sirsoft-ecommerce.category-image.after_delete', $image);
-        }
-
-        return $deleted;
-    }
-
-    /**
-     * 카테고리에 연결되지 않은 채 보존기간이 지난 임시 이미지를 파일째 정리합니다.
-     *
-     * 새 카테고리 폼에서 올리고 저장하지 않고 닫은 업로드는 `temp_key` 만 남고 `category_id` 가
-     * 비어 있다. 카테고리를 저장하면 `linkTempImages()` 가 `temp_key` 를 비우므로 이 상태가
-     * 보존기간 넘게 이어졌다면 끝내 저장되지 않은 것이다. 폼에서 뺀 임시 이미지(소프트 삭제,
-     * 파일은 이미 지워짐)도 같은 조건이라 행까지 함께 걷는다.
-     *
-     * 파일은 행 disk 의 저장소 드라이버로 지운다 — 드라이버가 그 원본의 썸네일도 함께 지운다.
-     * 파일 삭제에 실패한 행은 남겨 다음 회차에 다시 시도한다(행을 먼저 지우면 파일이 고아가 된다).
-     * 날짜 디렉토리(`category/{Y/m/d}`)는 저장된 카테고리 이미지와 함께 쓰므로 지우지 않는다.
-     *
-     * `category-image.before_delete`/`after_delete` 훅은 부르지 않는다 — 그 훅은 카테고리에 속한 이미지를
-     * 운영자가 지울 때의 계약이고, 여기 대상은 어떤 카테고리에도 속한 적 없는 폼 세션 부산물이다(상품 임시
-     * 이미지 정리 `ProductImageService::pruneTempUploads()` 와 같은 판단). 파생본과 원본 공개 주소(CDN) 무효화는
-     * 저장소 드라이버의 삭제 연동(`SyncsThumbnails`, 퍼지 훅 `core.thumbnail.after_purge`)이 맡는다.
-     *
-     * @param  int  $days  보존기간(일)
-     * @param  int  $limit  한 번에 처리할 최대 건수
-     * @param  bool  $dryRun  true 면 대상 건수만 센다
-     * @return array{scanned: int, deleted: int, failed: int} 처리 결과
-     */
-    public function pruneTempUploads(int $days, int $limit, bool $dryRun = false): array
-    {
-        $images = $this->repository->findStaleTempImages(now()->subDays($days), $limit);
-
-        $result = ['scanned' => $images->count(), 'deleted' => 0, 'failed' => 0];
-
-        if ($dryRun) {
-            return $result;
-        }
-
-        foreach ($images as $image) {
-            $rowStorage = $this->storageForRow($image->disk);
-
-            if ($rowStorage->exists('images', $image->path) && ! $rowStorage->delete('images', $image->path)) {
-                Log::warning('임시 카테고리 이미지 파일 삭제 실패 — 기록 보존', [
-                    'image_id' => $image->id,
-                    'disk' => $image->disk,
-                    'path' => $image->path,
-                ]);
-
-                $result['failed']++;
-
-                continue;
-            }
-
-            $this->repository->forceDeleteById($image->id);
-            $result['deleted']++;
-        }
-
-        return $result;
-    }
-
-    /**
      * 순서 변경
      *
-     * @param  array<int, int>  $orders  이미지 ID => sort_order 매핑
+     * @param array<int, int> $orders 이미지 ID => sort_order 매핑
      * @return bool 성공 여부
      */
     public function reorder(array $orders): bool
@@ -426,9 +261,8 @@ class CategoryImageService
     /**
      * 삭제 후 남은 이미지들의 순서를 재정렬합니다.
      *
-     * @param  int  $categoryId  카테고리 ID
-     * @param  string  $collection  컬렉션명
-     * @return void
+     * @param int $categoryId 카테고리 ID
+     * @param string $collection 컬렉션명
      */
     protected function reorderAfterDelete(int $categoryId, string $collection): void
     {
@@ -447,9 +281,9 @@ class CategoryImageService
     /**
      * 카테고리의 이미지 목록을 조회합니다.
      *
-     * @param  int  $categoryId  카테고리 ID
-     * @param  string|null  $collection  컬렉션 필터
-     * @return Collection
+     * @param int $categoryId 카테고리 ID
+     * @param string|null $collection 컬렉션 필터
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getImages(int $categoryId, ?string $collection = null)
     {
@@ -461,7 +295,7 @@ class CategoryImageService
      *
      * 카테고리 저장 실패 시 업로드된 이미지들을 정리하기 위해 사용됩니다.
      *
-     * @param  array<int>  $imageIds  이미지 ID 배열
+     * @param array<int> $imageIds 이미지 ID 배열
      * @return void
      */
     public function rollbackUploadedImages(array $imageIds): void
@@ -474,8 +308,8 @@ class CategoryImageService
     /**
      * 이미지 정보 업데이트 (대체 텍스트 등)
      *
-     * @param  int  $id  이미지 ID
-     * @param  array  $data  업데이트할 데이터
+     * @param int $id 이미지 ID
+     * @param array $data 업데이트할 데이터
      * @return CategoryImage 업데이트된 이미지
      */
     public function update(int $id, array $data): CategoryImage

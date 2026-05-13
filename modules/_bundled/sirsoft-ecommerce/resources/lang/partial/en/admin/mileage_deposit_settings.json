@@ -1,0 +1,84 @@
+{
+  "title": "Mileage/Deposit Settings",
+  "description": "Configure mileage and deposit policies.",
+  "view_mileage_history": "View Mileage History",
+  "view_deposit_history": "View Deposit History",
+  "tabs": {
+    "mileage": "Mileage",
+    "deposit": "Deposit"
+  },
+  "mileage": {
+    "basic_settings": {
+      "title": "Basic Settings",
+      "use_mileage": "Use Mileage",
+      "use_mileage_description": "Enable mileage earning and usage features.",
+      "default_earn_rate": "Default Earn Rate",
+      "purchase_amount": "of purchase amount",
+      "percent_earn": "% earn",
+      "earn_rate_hint": "This will be set as default when registering products.",
+      "earn_timing": "Earn Timing",
+      "earn_timing_delivery_complete": "Delivery Complete",
+      "earn_timing_order_complete": "Order Complete",
+      "after": "after",
+      "days_after_earn": "days earn"
+    },
+    "currency_usage": {
+      "title": "Currency Usage Units",
+      "add_currency": "Add Currency",
+      "currency": "Currency",
+      "point_value": "Value per Point",
+      "min_use_amount": "Min Use Amount",
+      "use_unit": "Use Unit",
+      "max_use_limit": "Max Use Limit",
+      "delete": "Delete",
+      "default_currency": "Default Currency",
+      "point": "pts",
+      "total_payment_percent": "of total payment",
+      "max_amount": "Max amount",
+      "won": ""
+    },
+    "validity": {
+      "title": "Validity Period",
+      "validity_setting": "Validity Setting",
+      "days_expire": "days until expiration",
+      "expiry_notification": "Expiry Notification",
+      "days_before_expiry": "Notify members",
+      "days_before": "days before expiration via email"
+    },
+    "notification": {
+      "title": "Expiry KakaoTalk Notification",
+      "alimtalk_plugin": "KakaoTalk Plugin",
+      "expiry_notification": "Expiry Notification",
+      "days_before_expiry": "Notify members",
+      "days_before": "days before expiration via KakaoTalk",
+      "template_management": "Template Management"
+    }
+  },
+  "deposit": {
+    "basic_settings": {
+      "title": "Basic Settings",
+      "use_deposit": "Use Deposit",
+      "use_deposit_description": "Enable deposit features.",
+      "use_charge": "Enable Charging",
+      "use_charge_description": "Allow users to charge deposit through payment methods in My Page.",
+      "refund_to_deposit": "Refund to Deposit on Cancel/Return",
+      "refund_to_deposit_description": "Allow users to choose automatic deposit of refund amount during cancellation/return request."
+    },
+    "charge_refund_settings": {
+      "title": "Charge/Refund Settings",
+      "description": "Configure conditions for customers to charge and refund deposits.",
+      "min_charge_amount": "Min Charge Amount",
+      "max_charge_amount": "Max Charge Amount",
+      "min_charge_hint": "Minimum amount that can be charged at once",
+      "max_charge_hint": "Maximum amount that can be charged at once",
+      "charge_bonus": "Charge Bonus",
+      "charge_bonus_description": "Grant bonus deposit based on charge amount.",
+      "bonus_threshold": "Bonus Threshold",
+      "bonus_threshold_suffix": "or more",
+      "bonus_rate": "Bonus Rate",
+      "bonus_rate_suffix": "% bonus",
+      "allow_refund": "Allow Refund Request",
+      "allow_refund_description": "Allow withdrawal (refund) request for deposit balance."
+    }
+  }
+}

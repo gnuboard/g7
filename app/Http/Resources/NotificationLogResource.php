@@ -8,9 +8,6 @@ class NotificationLogResource extends BaseApiResource
 {
     /**
      * 리소스를 배열로 변환합니다.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return array<string, mixed> 변환된 배열 데이터
      */
     public function toArray(Request $request): array
     {
@@ -24,22 +21,22 @@ class NotificationLogResource extends BaseApiResource
             'recipient_identifier' => $this->getValue('recipient_identifier'),
             'recipient_name' => $this->getValue('recipient_name'),
             'sender_user_id' => $this->getValue('sender_user_id'),
-            'sender' => $this->whenLoaded('senderUser', function () use ($request) {
+            'sender' => $this->whenLoaded('senderUser', function () {
                 $user = $this->resource->senderUser;
 
                 return $user ? [
                     'uuid' => $user->uuid,
-                    ...$this->memberNameFields($user, $request),
-                    'email' => $this->canExposeMemberEmail(null, $user->id) ? $user->email : null,
+                    'name' => $user->name,
+                    'email' => $user->email,
                 ] : null;
             }),
-            'recipient' => $this->whenLoaded('recipientUser', function () use ($request) {
+            'recipient' => $this->whenLoaded('recipientUser', function () {
                 $user = $this->resource->recipientUser;
 
                 return $user ? [
                     'uuid' => $user->uuid,
-                    ...$this->memberNameFields($user, $request),
-                    'email' => $this->canExposeMemberEmail(null, $user->id) ? $user->email : null,
+                    'name' => $user->name,
+                    'email' => $user->email,
                 ] : null;
             }),
             'subject' => $this->getValue('subject'),

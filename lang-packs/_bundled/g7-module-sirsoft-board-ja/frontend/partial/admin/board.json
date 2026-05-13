@@ -12,23 +12,11 @@
     "empty_description": "登録された掲示板がありません。",
     "filter_all_types": "すべてのタイプ",
     "filter_type_basic": "基本形",
-    "filter_type_gallery": "ギャラリー型",
-    "filter_type_card": "カード型",
+    "filter_type_gallery": "ギャラリー形",
+    "filter_type_card": "カード形",
     "status": "ステータス",
     "active": "有効化",
-    "inactive": "無効化",
-    "reorder": {
-      "button": "並び順を変更",
-      "title": "掲示板の並び順を変更",
-      "description": "ユーザーメニューと掲示板一覧にこの順序で表示されます。無効の掲示板は再び有効にするとこの位置に表示されます。",
-      "drag_handle": "{{name}}をドラッグして移動",
-      "move_up": "{{name}}を上へ移動",
-      "move_down": "{{name}}を下へ移動",
-      "inactive": "無効",
-      "save": "保存",
-      "saving": "保存中…",
-      "cancel": "キャンセル"
-    }
+    "inactive": "無効化"
   },
   "create": {
     "title": "掲示板を作成"

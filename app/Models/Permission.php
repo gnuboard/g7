@@ -4,8 +4,6 @@ namespace App\Models;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
-use App\Support\LocalizedValue;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -81,8 +79,6 @@ class Permission extends Model
 
     /**
      * 상위 권한과의 관계를 정의합니다.
-     *
-     * @return BelongsTo 상위 권한 관계
      */
     public function parent(): BelongsTo
     {
@@ -91,8 +87,6 @@ class Permission extends Model
 
     /**
      * 하위 권한들과의 관계를 정의합니다.
-     *
-     * @return HasMany 하위 권한 관계
      */
     public function children(): HasMany
     {
@@ -101,8 +95,6 @@ class Permission extends Model
 
     /**
      * 재귀적으로 하위 권한들을 로드합니다.
-     *
-     * @return HasMany 하위 권한을 재귀 로드하는 관계
      */
     public function allChildren(): HasMany
     {
@@ -111,8 +103,6 @@ class Permission extends Model
 
     /**
      * 최상위 권한인지 확인합니다.
-     *
-     * @return bool 최상위 권한이면 true
      */
     public function isRoot(): bool
     {
@@ -121,8 +111,6 @@ class Permission extends Model
 
     /**
      * 할당 가능한 권한인지 확인합니다 (리프 노드).
-     *
-     * @return bool 리프 노드(할당 가능)면 true
      */
     public function isAssignable(): bool
     {
@@ -132,8 +120,8 @@ class Permission extends Model
     /**
      * 최상위 권한만 조회하는 스코프
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRoots($query)
     {
@@ -142,8 +130,6 @@ class Permission extends Model
 
     /**
      * 권한을 가진 역할들과의 관계를 정의합니다.
-     *
-     * @return BelongsToMany 역할 관계
      */
     public function roles(): BelongsToMany
     {
@@ -154,8 +140,6 @@ class Permission extends Model
 
     /**
      * 권한을 가진 사용자들과의 관계를 정의합니다 (역할을 통해).
-     *
-     * @return BelongsToMany 역할을 통한 사용자 관계
      */
     public function users(): BelongsToMany
     {
@@ -167,10 +151,10 @@ class Permission extends Model
     /**
      * 확장별 권한을 조회하는 스코프
      *
-     * @param  Builder  $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  ExtensionOwnerType  $type  확장 타입
      * @param  string|null  $identifier  확장 식별자
-     * @return Builder
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByExtension($query, ExtensionOwnerType $type, ?string $identifier = null)
     {
@@ -186,8 +170,8 @@ class Permission extends Model
     /**
      * 코어 권한만 조회하는 스코프
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCoreOnly($query)
     {
@@ -197,8 +181,8 @@ class Permission extends Model
     /**
      * 사용자 정의 권한만 조회하는 스코프
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUserCreatedOnly($query)
     {
@@ -207,8 +191,6 @@ class Permission extends Model
 
     /**
      * 코어 시스템에서 생성된 권한인지 확인합니다.
-     *
-     * @return bool 코어 권한이면 true
      */
     public function isCore(): bool
     {
@@ -217,8 +199,6 @@ class Permission extends Model
 
     /**
      * 확장(모듈/플러그인)이 소유한 권한인지 확인합니다.
-     *
-     * @return bool 모듈·플러그인 소유면 true
      */
     public function isOwnedByExtension(): bool
     {
@@ -248,8 +228,8 @@ class Permission extends Model
     /**
      * 관리자용 권한만 조회합니다.
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeAdminPermissions($query)
     {
@@ -259,8 +239,8 @@ class Permission extends Model
     /**
      * 사용자용 권한만 조회합니다.
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUserPermissions($query)
     {
@@ -269,9 +249,6 @@ class Permission extends Model
 
     /**
      * 지정된 로케일의 권한 이름 반환
-     *
-     * @param  string|null  $locale  로케일 (null 이면 현재 로케일)
-     * @return string 로케일의 권한 이름
      */
     public function getLocalizedName(?string $locale = null): string
     {
@@ -281,15 +258,14 @@ class Permission extends Model
             return (string) $this->name;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->name, $locale) ?? '';
+        return $this->name[$locale]
+            ?? $this->name[config('app.fallback_locale')]
+            ?? (! empty($this->name) ? array_values($this->name)[0] : '')
+            ?? '';
     }
 
     /**
      * 지정된 로케일의 권한 설명 반환
-     *
-     * @param  string|null  $locale  로케일 (null 이면 현재 로케일)
-     * @return string 로케일의 권한 설명
      */
     public function getLocalizedDescription(?string $locale = null): string
     {
@@ -299,14 +275,14 @@ class Permission extends Model
             return (string) $this->description;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->description, $locale) ?? '';
+        return $this->description[$locale]
+            ?? $this->description[config('app.fallback_locale')]
+            ?? (! empty($this->description) ? array_values($this->description)[0] : '')
+            ?? '';
     }
 
     /**
      * 현재 로케일의 권한 이름 반환
-     *
-     * @return Attribute 현재 로케일 이름 접근자
      */
     protected function localizedName(): Attribute
     {
@@ -317,8 +293,6 @@ class Permission extends Model
 
     /**
      * 현재 로케일의 권한 설명 반환
-     *
-     * @return Attribute 현재 로케일 설명 접근자
      */
     protected function localizedDescription(): Attribute
     {
@@ -341,7 +315,6 @@ class Permission extends Model
      * 특정 훅에 이 권한이 매핑되어 있는지 확인
      *
      * @param  string  $hookName  훅 이름
-     * @return bool 매핑되어 있으면 true
      */
     public function isMappedToHook(string $hookName): bool
     {

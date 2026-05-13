@@ -12,8 +12,6 @@ describe('ConfirmDialog', () => {
     onConfirm: vi.fn(),
   };
 
-  // @scenario component=confirm_dialog
-  // @effects confirm_dialog_open_state_controls_render
   it('컴포넌트가 렌더링됨', () => {
     render(<ConfirmDialog {...mockProps} />);
 
@@ -21,16 +19,12 @@ describe('ConfirmDialog', () => {
     expect(screen.getByText('정말 이 항목을 삭제하시겠습니까?')).toBeInTheDocument();
   });
 
-  // @scenario component=confirm_dialog
-  // @effects confirm_dialog_open_state_controls_render
   it('isOpen이 false일 때 렌더링되지 않음', () => {
     render(<ConfirmDialog {...mockProps} isOpen={false} />);
 
     expect(screen.queryByText('삭제 확인')).not.toBeInTheDocument();
   });
 
-  // @scenario component=confirm_dialog
-  // @effects confirm_dialog_buttons_and_message_render
   it('확인과 취소 버튼이 표시됨', () => {
     render(<ConfirmDialog {...mockProps} />);
 
@@ -38,8 +32,6 @@ describe('ConfirmDialog', () => {
     expect(screen.getByText('취소')).toBeInTheDocument();
   });
 
-  // @scenario component=confirm_dialog
-  // @effects confirm_dialog_buttons_and_message_render
   it('커스텀 버튼 텍스트가 표시됨', () => {
     render(
       <ConfirmDialog
@@ -53,8 +45,6 @@ describe('ConfirmDialog', () => {
     expect(screen.getByText('아니오')).toBeInTheDocument();
   });
 
-  // @scenario component=confirm_dialog
-  // @effects confirm_dialog_buttons_fire_callbacks
   it('확인 버튼 클릭 시 onConfirm이 호출됨', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
@@ -75,8 +65,6 @@ describe('ConfirmDialog', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  // @scenario component=confirm_dialog
-  // @effects confirm_dialog_buttons_fire_callbacks
   it('취소 버튼 클릭 시 onCancel과 onClose가 호출됨', async () => {
     const user = userEvent.setup();
     const onCancel = vi.fn();
@@ -97,8 +85,6 @@ describe('ConfirmDialog', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  // @scenario component=confirm_dialog
-  // @effects confirm_dialog_buttons_and_message_render
   it('React 노드를 message로 사용할 수 있음', () => {
     render(
       <ConfirmDialog
@@ -111,8 +97,6 @@ describe('ConfirmDialog', () => {
     expect(screen.getByText('경고')).toBeInTheDocument();
   });
 
-  // @scenario component=confirm_dialog
-  // @effects confirm_dialog_buttons_and_message_render
   it('confirmButtonVariant prop이 적용됨', () => {
     const { container } = render(
       <ConfirmDialog
@@ -126,10 +110,8 @@ describe('ConfirmDialog', () => {
     expect(confirmButton).toBeInTheDocument();
   });
 
-  // @scenario component=confirm_dialog
-  // @effects confirm_dialog_buttons_and_message_render
   it('cancelButtonVariant prop은 현재 고정 스타일 사용', () => {
-    render(
+    const { container } = render(
       <ConfirmDialog
         {...mockProps}
         cancelButtonVariant="ghost"

@@ -8,12 +8,7 @@ export interface DropdownMenuItemProps {
     divider?: boolean;
     className?: string;
     style?: React.CSSProperties;
-    /**
-     * 이동 주소 — 있으면 `<a role="menuitem" href>` 로 그려 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다(#757).
-     * 보통 클릭은 지금처럼 onClick(없으면 SPA 이동), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
-     */
-    href?: string;
-    onClick?: (event?: React.MouseEvent) => void;
+    onClick?: () => void;
 }
 /**
  * DropdownMenuItem 집합 컴포넌트

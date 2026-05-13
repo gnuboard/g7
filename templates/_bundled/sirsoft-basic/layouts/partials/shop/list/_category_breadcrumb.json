@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "카테고리 브레드크럼 경로 (카테고리 선택 시에만 표시, 마지막 항목에 × 삭제)"
+  },
+  "type": "basic",
+  "name": "Div",
+  "if": "{{query.category && query.category !== 'all'}}",
+  "props": { "className": "flex items-center gap-1.5 text-base flex-wrap my-4 px-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg" },
+  "children": [
+    {
+      "comment": "전체 링크",
+      "type": "basic",
+      "name": "Button",
+      "props": { "className": "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" },
+      "text": "$t:shop.category.all",
+      "actions": [
+        { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": {} } }
+      ]
+    },
+    {
+      "comment": "1단계 브레드크럼 (d2 이상 선택 시 - 클릭 가능)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!!query.d1 && !!query.d2}}",
+      "props": { "className": "flex items-center gap-1" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "w-3 h-3 text-gray-400 dark:text-gray-500" } },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": { "className": "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" },
+          "text": "{{(categories?.data ?? []).find(c => c.id == query.d1)?.name_localized ?? ''}}",
+          "actions": [
+            { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": { "category": "{{query.d1}}", "d1": "{{query.d1}}" } } }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "2단계 브레드크럼 (d3 이상 선택 시 - 클릭 가능)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!!query.d2 && !!query.d3}}",
+      "props": { "className": "flex items-center gap-1" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "w-3 h-3 text-gray-400 dark:text-gray-500" } },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": { "className": "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" },
+          "text": "{{((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.name_localized ?? ''}}",
+          "actions": [
+            { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": { "category": "{{query.d2}}", "d1": "{{query.d1}}", "d2": "{{query.d2}}" } } }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "3단계 브레드크럼 (4단계 선택 시 - 클릭 가능)",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{!!query.d3 && query.category != query.d3}}",
+      "props": { "className": "flex items-center gap-1" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "w-3 h-3 text-gray-400 dark:text-gray-500" } },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": { "className": "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" },
+          "text": "{{(((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).find(c => c.id == query.d3)?.name_localized ?? ''}}",
+          "actions": [
+            { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": { "category": "{{query.d3}}", "d1": "{{query.d1}}", "d2": "{{query.d2}}", "d3": "{{query.d3}}" } } }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "현재 카테고리 (마지막 항목, 굵게 + × 삭제 버튼)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex items-center gap-1" },
+      "children": [
+        { "type": "basic", "name": "Icon", "props": { "name": "chevron-right", "className": "w-3 h-3 text-gray-400 dark:text-gray-500" } },
+        {
+          "comment": "1단계 선택 (d1만, d2 없음) - 현재 카테고리명 + × 삭제",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!query.d1 && !query.d2}}",
+          "props": { "className": "flex items-center gap-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white font-semibold" },
+              "text": "{{(categories?.data ?? []).find(c => c.id == query.category)?.name_localized ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": { "className": "ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors" },
+              "text": "×",
+              "actions": [
+                { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": {} } }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "2단계 선택 (d2 있고, d3 없음) - × 클릭 시 1단계로",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!query.d2 && !query.d3}}",
+          "props": { "className": "flex items-center gap-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white font-semibold" },
+              "text": "{{((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.category)?.name_localized ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": { "className": "ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors" },
+              "text": "×",
+              "actions": [
+                { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": { "category": "{{query.d1}}", "d1": "{{query.d1}}" } } }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "3단계 선택 (d3 있고, category == d3) - × 클릭 시 2단계로",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!query.d3 && query.category == query.d3}}",
+          "props": { "className": "flex items-center gap-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white font-semibold" },
+              "text": "{{(((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).find(c => c.id == query.category)?.name_localized ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": { "className": "ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors" },
+              "text": "×",
+              "actions": [
+                { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": { "category": "{{query.d2}}", "d1": "{{query.d1}}", "d2": "{{query.d2}}" } } }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "4단계 선택 (d3 있고, category != d3) - × 클릭 시 3단계로",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!query.d3 && query.category != query.d3}}",
+          "props": { "className": "flex items-center gap-1" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-gray-900 dark:text-white font-semibold" },
+              "text": "{{((((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).find(c => c.id == query.d3)?.children ?? []).find(c => c.id == query.category)?.name_localized ?? ''}}"
+            },
+            {
+              "type": "basic",
+              "name": "Button",
+              "props": { "className": "ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors" },
+              "text": "×",
+              "actions": [
+                { "type": "click", "handler": "navigate", "params": { "path": "{{_global.shopBase}}/products", "query": { "category": "{{query.d3}}", "d1": "{{query.d1}}", "d2": "{{query.d2}}", "d3": "{{query.d3}}" } } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

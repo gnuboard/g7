@@ -53,7 +53,6 @@ export {
 
 export {
   mergeClasses,
-  splitExtensionClassPrefix,
   conditionalClass,
   joinClasses,
 } from './StyleHelpers';
@@ -90,14 +89,6 @@ export {
   type ConditionBranchResult,
   type ActionDefinition,
 } from './ConditionEvaluator';
-
-// ============================================
-// 상태 병합 헬퍼
-// ============================================
-
-export {
-  addMissingLeafKeys,
-} from './StateMerge';
 
 // ============================================
 // 향후 추가 예정 헬퍼 모듈 예시

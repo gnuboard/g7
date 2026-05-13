@@ -3,13 +3,10 @@
 namespace App\Extension\IdentityVerification;
 
 use App\Contracts\Extension\IdentityVerificationInterface;
-use App\Contracts\Extension\UserScopedIdentityProviderInterface;
 use App\Enums\IdentityPolicySourceType;
 use App\Enums\IdentityVerificationChannel;
 use App\Enums\IdentityVerificationPurpose;
-use App\Exceptions\IdentityProviderUnavailableException;
 use App\Extension\HookManager;
-use App\Models\User;
 use InvalidArgumentException;
 
 /**
@@ -41,12 +38,8 @@ class IdentityVerificationManager
     /**
      * 코어 기본 purpose 목록.
      *
-     * `signup` / `password_reset` / `self_update` / `sensitive_action` / `login` — 이 5종은
+     * `signup` / `password_reset` / `self_update` / `sensitive_action` — 이 4종은
      * 코어가 계약으로 보장하며 `MailIdentityProvider` 가 모두 지원합니다.
-     *
-     * `IdentityVerificationPurpose` 에 case 를 추가하면 이 레지스트리에도 반드시 등록해야
-     * 합니다. 등록하지 않으면 `getAllPurposes()` 에서 빠져 관리자가 그 목적의 메시지 템플릿·
-     * 정책을 만들 수 없고, `hasPurpose()` 도 false 가 됩니다.
      *
      * @var array<string, array<string, mixed>>
      */
@@ -83,14 +76,6 @@ class IdentityVerificationManager
             'source_type' => IdentityPolicySourceType::Core->value,
             'source_identifier' => 'core',
         ],
-        IdentityVerificationPurpose::Login->value => [
-            'label' => 'identity.purposes.login.label',
-            'description' => 'identity.purposes.login.description',
-            'default_provider' => null,
-            'allowed_channels' => [IdentityVerificationChannel::Email->value],
-            'source_type' => IdentityPolicySourceType::Core->value,
-            'source_identifier' => 'core',
-        ],
     ];
 
     /**
@@ -102,7 +87,7 @@ class IdentityVerificationManager
      * 프로바이더를 등록합니다.
      *
      * @param  IdentityVerificationInterface  $provider  IDV 프로바이더 인스턴스
-     * @return void 반환값 없음
+     * @return void
      */
     public function register(IdentityVerificationInterface $provider): void
     {
@@ -113,7 +98,7 @@ class IdentityVerificationManager
      * 프로바이더 등록을 해제합니다.
      *
      * @param  string  $id  프로바이더 식별자 (예: g7:core.mail)
-     * @return void 반환값 없음
+     * @return void
      */
     public function unregister(string $id): void
     {
@@ -214,104 +199,19 @@ class IdentityVerificationManager
      * 정책의 provider_id 가 우선되므로 (IdentityPolicyService::resolveRenderHint 참조), 본 메서드는
      * 정책에 provider_id 가 명시되지 않은 경우의 fallback 으로 사용됩니다.
      *
-     * $providerId 를 명시했는데 등록되지 않았거나 purpose 를 지원하지 않으면 다른 수단으로 바꾸지 않고
-     * `IdentityProviderUnavailableException` 을 던진다(7.1.6). 정책이 지정한 수단 대신 메일로 발급하면 받은 결과가
-     * 정책 결박에서 다시 거부되어 사용자가 끝없이 인증을 반복하게 된다. 명시하지 않은 일반 경로는 1~4 단계 폴백을 그대로 쓴다.
-     *
-     * 대상 회원을 알면(7.2.0) 해석된 수단이 그 회원에게 쓸 수 없을 때(`UserScopedIdentityProviderInterface::canChallengeUser()` 거짓 —
-     * 예: 받을 메일이 없는 회원의 메일 수단) 같은 목적을 지원하고 그 회원에게 쓸 수 있는 다음 수단(등록 순서)으로 넘어간다. 그런
-     * 수단이 없으면 해석된 수단을 그대로 돌려준다(기존 동작·기존 오류 경로).
-     *
-     * 넘어갈 수단은 회원별 판정 계약을 구현하고 그 회원에게 참을 답하는 수단뿐이다(회원의 연결 계정으로 다시 로그인, 그 회원이 등록한
-     * 인증 앱 등). 회원별 판정이 없는 수단(휴대폰 본인확인처럼 누구의 신원이든 확인해 주는 수단)은 이 회원에게 맞는 수단인지 알 수 없어
-     * 자동으로 고르지 않는다 — 고르면 그 회원과 무관한 사람의 본인확인으로 재확인이 통과할 수 있다. 그런 수단은 운영자가 목적별 수단·
-     * 정책·기본 수단으로 지정해 위 해석 단계에서 고른 경우에만 쓴다.
+     * $providerId 가 등록되지 않았거나 purpose 미지원이면 silent fallback (1~4 단계 진행).
+     * 운영자가 정책에 명시한 provider 가 비활성화/미설치된 상태에서도 가입 흐름이 중단되지 않도록 한다.
      *
      * @param  string  $purpose  IDV 목적 (signup, password_reset, sensitive_action 등)
      * @param  string|null  $providerId  호출자 명시 provider id (Mode A controller 요청 / Mode B 정책)
-     * @param  User|null  $user  대상 회원 (모르면 null — 회원별 폴백을 하지 않는다)
      * @return IdentityVerificationInterface 해석된 provider
-     *
-     * @throws IdentityProviderUnavailableException 명시한 수단을 이 목적에 쓸 수 없을 때
      */
-    public function resolveForPurpose(string $purpose, ?string $providerId = null, ?User $user = null): IdentityVerificationInterface
-    {
-        $resolved = $this->resolveForPurposeIgnoringUser($purpose, $providerId);
-
-        if ($user === null || $this->canChallenge($resolved, $user)) {
-            return $resolved;
-        }
-
-        foreach ($this->all() as $provider) {
-            // 회원별 판정이 없는 수단은 폴백 대상이 아니다(운영자가 지정했을 때만 위 해석 단계에서 쓰인다)
-            if ($provider === $resolved || ! $provider instanceof UserScopedIdentityProviderInterface) {
-                continue;
-            }
-
-            if ($provider->supportsPurpose($purpose) && $provider->isAvailable() && $provider->canChallengeUser($user)) {
-                return $provider;
-            }
-        }
-
-        return $resolved;
-    }
-
-    /**
-     * 이 회원에게 실제로 challenge 를 낼 수 있는 수단을 해석합니다 — 없으면 null.
-     *
-     * `resolveForPurpose()` 와 같은 순서로 고른 뒤, 고른 수단이 그 회원에게 쓸 수 없으면(폴백할 수단도 없어 해석된 수단이 그대로 남은 경우)
-     * null 을 돌려준다. 화면 안내가 「이 회원의 재확인이 어느 수단으로 가는가」를 실제 시작과 같은 판정으로 알아야 할 때 쓴다
-     * (예: 받을 메일이 없는 회원에게 소셜 다시 로그인 안내를 보일지, 다른 수단으로 확인한다고 안내할지).
-     *
-     * @param  string  $purpose  IDV 목적
-     * @param  User  $user  대상 회원
-     * @param  string|null  $providerId  호출자 명시 provider id
-     * @return IdentityVerificationInterface|null 그 회원에게 쓸 수 있는 수단, 없으면 null
-     *
-     * @since 7.2.0
-     */
-    public function resolveUsableForUser(string $purpose, User $user, ?string $providerId = null): ?IdentityVerificationInterface
-    {
-        try {
-            $provider = $this->resolveForPurpose($purpose, $providerId, $user);
-        } catch (InvalidArgumentException) {
-            return null;
-        }
-
-        return $this->canChallenge($provider, $user) ? $provider : null;
-    }
-
-    /**
-     * 해석된 수단이 이 회원에게 challenge 를 낼 수 있는지 판정합니다 — 보조 계약을 구현하지 않은 수단은 가능으로 본다(운영자 지정 존중).
-     *
-     * @param  IdentityVerificationInterface  $provider  수단
-     * @param  User  $user  대상 회원
-     * @return bool 가능하면 true
-     */
-    private function canChallenge(IdentityVerificationInterface $provider, User $user): bool
-    {
-        return ! $provider instanceof UserScopedIdentityProviderInterface || $provider->canChallengeUser($user);
-    }
-
-    /**
-     * 회원과 무관하게 목적의 수단을 해석합니다 (기존 해석 순서).
-     *
-     * @param  string  $purpose  IDV 목적
-     * @param  string|null  $providerId  호출자 명시 provider id
-     * @return IdentityVerificationInterface 해석된 provider
-     *
-     * @throws InvalidArgumentException 목적을 지원하는 수단이 없을 때
-     */
-    private function resolveForPurposeIgnoringUser(string $purpose, ?string $providerId): IdentityVerificationInterface
+    public function resolveForPurpose(string $purpose, ?string $providerId = null): IdentityVerificationInterface
     {
         $providers = $this->all();
 
-        if ($providerId !== null && $providerId !== '') {
-            if (isset($providers[$providerId]) && $providers[$providerId]->supportsPurpose($purpose)) {
-                return $providers[$providerId];
-            }
-
-            throw new IdentityProviderUnavailableException($providerId, $purpose);
+        if ($providerId !== null && $providerId !== '' && isset($providers[$providerId]) && $providers[$providerId]->supportsPurpose($purpose)) {
+            return $providers[$providerId];
         }
 
         $explicitId = (string) config("settings.identity.purpose_providers.{$purpose}", '');
@@ -349,7 +249,7 @@ class IdentityVerificationManager
      * @param  array<string, array<string, mixed>>  $purposes  key => metadata 매핑
      * @param  string|null  $sourceType  'module' | 'plugin' | 'admin' (미명시 시 'admin' 으로 마킹)
      * @param  string|null  $sourceIdentifier  source 식별자 (module/plugin id; 미명시 시 'admin')
-     * @return void 반환값 없음
+     * @return void
      */
     public function registerDeclaredPurposes(array $purposes, ?string $sourceType = null, ?string $sourceIdentifier = null): void
     {
@@ -384,7 +284,7 @@ class IdentityVerificationManager
      * @param  array<string, mixed>  $meta  label/description/allowed_channels 등 메타데이터
      * @param  string|null  $sourceType  'module' | 'plugin' | 'admin' (미명시 시 'admin')
      * @param  string|null  $sourceIdentifier  source 식별자 (미명시 시 'admin')
-     * @return void 반환값 없음
+     * @return void
      */
     public function registerPurpose(string $key, array $meta, ?string $sourceType = null, ?string $sourceIdentifier = null): void
     {

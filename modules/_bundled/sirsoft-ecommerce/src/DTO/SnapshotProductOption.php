@@ -2,9 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\DTO;
 
-use App\Support\LocalizedValue;
-use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
-
 /**
  * 스냅샷 기반 가상 상품옵션 객체
  *
@@ -16,9 +13,9 @@ class SnapshotProductOption
 {
     public int $id;
 
-    public float $selling_price;
+    public int $selling_price;
 
-    public float $price_adjustment;
+    public int $price_adjustment;
 
     public ?float $weight;
 
@@ -30,17 +27,14 @@ class SnapshotProductOption
 
     public string|array|null $option_name;
 
-    /** @var ProductTaxStatus|null 옵션에 지정한 과세 종류 (null = 상품 따름, 해석 불가도 null) — #612 */
-    public ?ProductTaxStatus $tax_status;
-
-    /** @var float 상품 판매가 (ProductOption::getFinalPrice() = product.selling_price + price_adjustment) */
-    private float $productSellingPrice;
+    /** @var int 상품 판매가 (ProductOption::getFinalPrice() = product.selling_price + price_adjustment) */
+    private int $productSellingPrice;
 
     /**
      * @param  array  $snapshot  ProductOption::toSnapshotArray() 형식의 배열
-     * @param  float  $productSellingPrice  상품의 판매가 (스냅샷 상품의 selling_price)
+     * @param  int  $productSellingPrice  상품의 판매가 (스냅샷 상품의 selling_price)
      */
-    public function __construct(array $snapshot, float $productSellingPrice = 0)
+    public function __construct(array $snapshot, int $productSellingPrice = 0)
     {
         $this->id = $snapshot['id'] ?? 0;
         $this->selling_price = $snapshot['selling_price'] ?? 0;
@@ -50,9 +44,6 @@ class SnapshotProductOption
         $this->mileage_value = $snapshot['mileage_value'] ?? null;
         $this->mileage_type = $snapshot['mileage_type'] ?? null;
         $this->option_name = $snapshot['option_name'] ?? '';
-        $this->tax_status = is_string($snapshot['tax_status'] ?? null)
-            ? ProductTaxStatus::tryFrom($snapshot['tax_status'])
-            : null;
         $this->productSellingPrice = $productSellingPrice;
     }
 
@@ -61,19 +52,19 @@ class SnapshotProductOption
      *
      * ProductOption::getFinalPrice()와 동일하게 상품 판매가 + 옵션 조정액으로 계산합니다.
      *
-     * @return float 스냅샷 기반 판매가
+     * @return int 스냅샷 기반 판매가
      */
-    public function getSellingPrice(): float
+    public function getSellingPrice(): int
     {
-        return (float) $this->productSellingPrice + (float) $this->price_adjustment;
+        return $this->productSellingPrice + $this->price_adjustment;
     }
 
     /**
      * 최종 판매가를 반환합니다 (getSellingPrice 별칭).
      *
-     * @return float 스냅샷 기반 판매가
+     * @return int
      */
-    public function getFinalPrice(): float
+    public function getFinalPrice(): int
     {
         return $this->getSellingPrice();
     }
@@ -86,7 +77,7 @@ class SnapshotProductOption
     public function getLocalizedOptionName(): string
     {
         if (is_array($this->option_name)) {
-            return LocalizedValue::pick($this->option_name) ?? '';
+            return $this->option_name[app()->getLocale()] ?? $this->option_name['ko'] ?? reset($this->option_name) ?: '';
         }
 
         return $this->option_name ?? '';

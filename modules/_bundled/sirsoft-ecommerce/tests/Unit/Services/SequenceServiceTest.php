@@ -3,8 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
-use Mockery\MockInterface;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceAlgorithm;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\SequenceCodeDuplicateException;
@@ -13,25 +13,22 @@ use Modules\Sirsoft\Ecommerce\Exceptions\SequenceOverflowException;
 use Modules\Sirsoft\Ecommerce\Models\Sequence;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\SequenceRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\SequenceService;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PDOException;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 /**
  * SequenceService 단위 테스트
  */
-class SequenceServiceTest extends ModuleTestCase
+class SequenceServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private SequenceService $service;
 
-    /** @var MockInterface&SequenceRepositoryInterface */
+    /** @var \Mockery\MockInterface&SequenceRepositoryInterface */
     private $repository;
 
-    /**
-     * 모의 저장소로 SequenceService 를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,29 +43,12 @@ class SequenceServiceTest extends ModuleTestCase
         $this->service = new SequenceService($this->repository);
     }
 
-    /**
-     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 
-    /**
-     * 하이브리드 알고리즘이 현재 값보다 큰 코드를 문자열로 돌려주고 코드 이력을 한 번 삽입하는지 확인
-     *
-     * @scenario case=hybrid_generate
-     *
-     * @effects sequence_code_generated_and_history_inserted
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_generate_code_returns_string_and_inserts_history(): void
     {
@@ -116,15 +96,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertGreaterThan(1737561234, (int) $result);
     }
 
-    /**
-     * 시퀀스가 없으면 트랜잭션에 들어가기 전에 SequenceNotFoundException 이 발생하는지 확인
-     *
-     * @scenario case=sequence_missing
-     *
-     * @effects sequence_missing_throws_not_found
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_throws_exception_when_sequence_not_found(): void
     {
@@ -142,15 +113,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->service->generateCode(SequenceType::PRODUCT);
     }
 
-    /**
-     * 순환을 끈 시퀀스가 최댓값에 닿으면 SequenceOverflowException 이 발생하는지 확인
-     *
-     * @scenario case=overflow_no_cycle
-     *
-     * @effects sequence_overflow_throws_without_cycle
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_throws_exception_on_overflow_without_cycle(): void
     {
@@ -186,15 +148,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->service->generateCode(SequenceType::PRODUCT);
     }
 
-    /**
-     * 순환을 켠 시퀀스가 최댓값에 닿으면 최솟값으로 돌아가 코드를 내는지 확인
-     *
-     * @scenario case=overflow_cycle
-     *
-     * @effects sequence_overflow_cycles_to_min_value
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_cycles_to_min_value_when_cycle_enabled(): void
     {
@@ -241,15 +194,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertEquals('1', $result);
     }
 
-    /**
-     * 순차 알고리즘이 현재 값에 증가분을 더해 저장하고 그 값으로 코드를 내는지 확인
-     *
-     * @scenario case=sequential_increment
-     *
-     * @effects sequence_sequential_increments_by_step
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_sequential_algorithm_increments_value(): void
     {
@@ -296,15 +240,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertEquals('ORD-00000101', $result);
     }
 
-    /**
-     * 코드가 접두사와 자릿수 채움을 적용한 형식으로 나오는지 확인
-     *
-     * @scenario case=sequential_prefix
-     *
-     * @effects sequence_code_formatted_with_prefix_and_padding
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_format_code_with_prefix(): void
     {
@@ -351,15 +286,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertEquals('ORD-00000101', $result);
     }
 
-    /**
-     * 시퀀스 초기화가 유형의 기본 설정(상품은 NanoID)으로 행을 만드는지 확인
-     *
-     * @scenario case=initialize_default
-     *
-     * @effects sequence_initialized_with_type_default_config
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_initialize_sequence_creates_with_default_config(): void
     {
@@ -395,15 +321,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertEquals(SequenceAlgorithm::NANOID, $result->algorithm);
     }
 
-    /**
-     * 이력 건수가 최대 보관 수를 넘으면 오래된 코드를 보관 수만 남기고 지우는지 확인
-     *
-     * @scenario case=history_over_limit
-     *
-     * @effects sequence_history_trimmed_to_max_count
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_cleanup_old_codes_when_max_history_count_is_set(): void
     {
@@ -465,15 +382,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertEquals('101', $result);
     }
 
-    /**
-     * 최대 보관 수가 0(무제한)이면 이력 건수 조회와 정리를 하지 않는지 확인
-     *
-     * @scenario case=history_unlimited
-     *
-     * @effects sequence_history_untouched_when_unlimited
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_no_cleanup_when_max_history_count_is_zero(): void
     {
@@ -528,15 +436,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertEquals('101', $result);
     }
 
-    /**
-     * 이력 건수가 최대 보관 수 이하면 오래된 코드를 지우지 않는지 확인
-     *
-     * @scenario case=history_within_limit
-     *
-     * @effects sequence_history_untouched_within_limit
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_no_cleanup_when_count_does_not_exceed_limit(): void
     {
@@ -594,15 +493,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertEquals('101', $result);
     }
 
-    /**
-     * 상품 시퀀스의 기본 최대 보관 수가 0 으로 초기화되는지 확인
-     *
-     * @scenario case=initialize_default_history
-     *
-     * @effects sequence_initialized_with_default_history_count
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_initialize_sequence_product_default_max_history_count(): void
     {
@@ -637,15 +527,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertEquals(0, $result->max_history_count);
     }
 
-    /**
-     * 초기화 옵션으로 준 최대 보관 수가 생성 데이터에 실리는지 확인
-     *
-     * @scenario case=initialize_custom_history
-     *
-     * @effects sequence_initialize_accepts_custom_history_count
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_initialize_sequence_with_custom_max_history_count(): void
     {
@@ -682,15 +563,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertEquals(1000, $result->max_history_count);
     }
 
-    /**
-     * 코드 이력 삽입이 UNIQUE 제약 위반(23000)으로 실패하면 SequenceCodeDuplicateException 으로 바뀌는지 확인
-     *
-     * @scenario case=duplicate_code
-     *
-     * @effects sequence_duplicate_insert_throws_duplicate_exception
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_throws_duplicate_exception_on_unique_constraint_violation(): void
     {
@@ -741,15 +613,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->service->generateCode(SequenceType::PRODUCT);
     }
 
-    /**
-     * 중복이 아닌 DB 오류는 QueryException 그대로 전파되는지 확인
-     *
-     * @scenario case=other_query_error
-     *
-     * @effects sequence_other_query_errors_propagate
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_rethrows_query_exception_for_non_duplicate_errors(): void
     {
@@ -804,15 +667,6 @@ class SequenceServiceTest extends ModuleTestCase
     // NanoID 알고리즘 테스트
     // ========================================
 
-    /**
-     * NanoID 알고리즘이 대문자와 숫자로 된 16자 코드를 내는지 확인
-     *
-     * @scenario case=nanoid_generate
-     *
-     * @effects sequence_nanoid_code_is_16_uppercase_alphanumerics
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_nanoid_generates_string_with_correct_length(): void
     {
@@ -849,15 +703,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertMatchesRegularExpression('/^[0-9A-Z]{16}$/', $result);
     }
 
-    /**
-     * NanoID 알고리즘이 행 잠금, 이력 삽입, 현재 값 갱신, 이력 정리를 호출하지 않는지 확인
-     *
-     * @scenario case=nanoid_no_table_writes
-     *
-     * @effects sequence_nanoid_skips_sequence_table_writes
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_nanoid_does_not_use_sequence_table_operations(): void
     {
@@ -894,15 +739,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertIsString($result);
     }
 
-    /**
-     * 접두사가 있는 NanoID 시퀀스가 접두사 뒤에 16자 코드를 붙여 내는지 확인
-     *
-     * @scenario case=nanoid_prefix
-     *
-     * @effects sequence_nanoid_code_carries_prefix
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_nanoid_with_prefix(): void
     {
@@ -934,15 +770,6 @@ class SequenceServiceTest extends ModuleTestCase
         $this->assertMatchesRegularExpression('/^PRD-[0-9A-Z]{16}$/', $result);
     }
 
-    /**
-     * NanoID 코드 100개가 서로 겹치지 않는지 확인
-     *
-     * @scenario case=nanoid_uniqueness
-     *
-     * @effects sequence_nanoid_codes_are_unique
-     *
-     * @return void 반환값 없음
-     */
     #[Test]
     public function test_nanoid_generates_unique_codes(): void
     {
@@ -972,5 +799,22 @@ class SequenceServiceTest extends ModuleTestCase
         // Assert: 모든 코드가 유일함
         $uniqueCodes = array_unique($codes);
         $this->assertCount(100, $uniqueCodes);
+    }
+
+    #[Test]
+    public function test_nanoid_throws_exception_when_sequence_not_found(): void
+    {
+        // Arrange
+        $this->repository
+            ->shouldReceive('findByType')
+            ->once()
+            ->with(SequenceType::PRODUCT)
+            ->andReturn(null);
+
+        // Assert
+        $this->expectException(SequenceNotFoundException::class);
+
+        // Act
+        $this->service->generateCode(SequenceType::PRODUCT);
     }
 }

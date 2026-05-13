@@ -1,33 +1,25 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FileInput } from '../FileInput';
 
 describe('FileInput 컴포넌트', () => {
   describe('기본 렌더링', () => {
-    // @scenario component=file_input
-    // @effects file_input_renders_button_and_placeholder
     it('기본 버튼 텍스트와 placeholder가 렌더링된다', () => {
       render(<FileInput />);
       expect(screen.getByText('Browse')).toBeTruthy();
       expect(screen.getByText('No file selected')).toBeTruthy();
     });
 
-    // @scenario component=file_input
-    // @effects file_input_renders_button_and_placeholder
     it('커스텀 버튼 텍스트가 적용된다', () => {
       render(<FileInput buttonText="파일 선택" />);
       expect(screen.getByText('파일 선택')).toBeTruthy();
     });
 
-    // @scenario component=file_input
-    // @effects file_input_renders_button_and_placeholder
     it('커스텀 placeholder가 적용된다', () => {
       render(<FileInput placeholder="파일을 선택하세요" />);
       expect(screen.getByText('파일을 선택하세요')).toBeTruthy();
     });
 
-    // @scenario component=file_input
-    // @effects file_input_renders_button_and_placeholder
     it('숨겨진 file input이 렌더링된다', () => {
       const { container } = render(<FileInput />);
       const fileInput = container.querySelector('input[type="file"]');
@@ -37,8 +29,6 @@ describe('FileInput 컴포넌트', () => {
   });
 
   describe('파일 선택', () => {
-    // @scenario component=file_input
-    // @effects file_input_selection_reports_file
     it('버튼 클릭 시 file input이 트리거된다', () => {
       const { container } = render(<FileInput />);
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -50,8 +40,6 @@ describe('FileInput 컴포넌트', () => {
       expect(clickSpy).toHaveBeenCalled();
     });
 
-    // @scenario component=file_input
-    // @effects file_input_selection_reports_file
     it('파일 선택 시 onChange 콜백이 호출된다', () => {
       const handleChange = vi.fn();
       const { container } = render(<FileInput onChange={handleChange} />);
@@ -68,8 +56,6 @@ describe('FileInput 컴포넌트', () => {
       expect(handleChange).toHaveBeenCalledWith({ target: { value: file, name: 'test.zip' } });
     });
 
-    // @scenario component=file_input
-    // @effects file_input_selection_reports_file
     it('파일 선택 시 파일명이 표시된다', () => {
       const { container } = render(<FileInput />);
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -87,8 +73,6 @@ describe('FileInput 컴포넌트', () => {
   });
 
   describe('파일 크기 검증', () => {
-    // @scenario component=file_input
-    // @effects file_input_rejects_oversized_file
     it('파일 크기가 maxSize를 초과하면 onError가 호출된다', () => {
       const handleError = vi.fn();
       const handleChange = vi.fn();
@@ -111,8 +95,6 @@ describe('FileInput 컴포넌트', () => {
       expect(handleChange).not.toHaveBeenCalled();
     });
 
-    // @scenario component=file_input
-    // @effects file_input_rejects_oversized_file
     it('파일 크기가 maxSize 이내이면 정상 처리된다', () => {
       const handleError = vi.fn();
       const handleChange = vi.fn();
@@ -137,8 +119,6 @@ describe('FileInput 컴포넌트', () => {
   });
 
   describe('파일 초기화', () => {
-    // @scenario component=file_input
-    // @effects file_input_clear_resets_selection
     it('파일 선택 후 클리어 버튼이 표시된다', () => {
       const { container } = render(<FileInput />);
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -155,8 +135,6 @@ describe('FileInput 컴포넌트', () => {
       expect(clearButton).toBeTruthy();
     });
 
-    // @scenario component=file_input
-    // @effects file_input_clear_resets_selection
     it('클리어 버튼 클릭 시 파일이 초기화된다', () => {
       const handleChange = vi.fn();
       const { container } = render(<FileInput onChange={handleChange} />);
@@ -180,24 +158,18 @@ describe('FileInput 컴포넌트', () => {
   });
 
   describe('비활성화 상태', () => {
-    // @scenario component=file_input
-    // @effects file_input_disabled_blocks_interaction
     it('disabled 상태에서 버튼이 비활성화된다', () => {
       render(<FileInput disabled />);
       const button = screen.getByText('Browse');
       expect(button).toHaveProperty('disabled', true);
     });
 
-    // @scenario component=file_input
-    // @effects file_input_disabled_blocks_interaction
     it('disabled 상태에서 file input이 비활성화된다', () => {
       const { container } = render(<FileInput disabled />);
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
       expect(fileInput.disabled).toBe(true);
     });
 
-    // @scenario component=file_input
-    // @effects file_input_disabled_blocks_interaction
     it('disabled 상태에서 클리어 버튼이 표시되지 않는다', () => {
       const { container } = render(<FileInput disabled />);
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -216,8 +188,6 @@ describe('FileInput 컴포넌트', () => {
   });
 
   describe('accept 속성', () => {
-    // @scenario component=file_input
-    // @effects file_input_attributes_passthrough
     it('accept 속성이 file input에 적용된다', () => {
       const { container } = render(<FileInput accept=".zip,.tar.gz" />);
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -226,8 +196,6 @@ describe('FileInput 컴포넌트', () => {
   });
 
   describe('className 속성', () => {
-    // @scenario component=file_input
-    // @effects file_input_attributes_passthrough
     it('className이 wrapper에 적용된다', () => {
       const { container } = render(<FileInput className="custom-class" />);
       const wrapper = container.firstChild as HTMLElement;
@@ -236,8 +204,6 @@ describe('FileInput 컴포넌트', () => {
   });
 
   describe('빈 파일 선택', () => {
-    // @scenario component=file_input
-    // @effects file_input_selection_reports_file
     it('파일 선택 없이 change 이벤트 발생 시 onChange에 null이 전달된다', () => {
       const handleChange = vi.fn();
       const { container } = render(<FileInput onChange={handleChange} />);
@@ -251,57 +217,6 @@ describe('FileInput 컴포넌트', () => {
       fireEvent.change(fileInput);
 
       expect(handleChange).toHaveBeenCalledWith({ target: { value: null, name: '' } });
-    });
-  });
-
-  // ========================================
-  // 레이아웃 편집기 passthrough
-  // ========================================
-  // 편집 모드에서 basic 컴포넌트에 주입되는 data-editor-* / id 는 시각적 루트(<div>)에
-  // 부착되어야 한다. 숨겨진 <input class="hidden"> (0×0) 에 부착되면 캔버스에서 선택 불가.
-  describe('편집기 passthrough (data-editor-* / id → 시각적 루트 <div>)', () => {
-    // @scenario component=file_input
-    // @effects file_input_editor_markers_on_visual_root
-    it('data-editor-* 표식이 숨겨진 input 이 아닌 루트 div 에 부착된다', () => {
-      const { container } = render(
-        <FileInput
-          data-editor-name="FileInput"
-          data-editor-path="1.children.0"
-          id="fi-root-id"
-        />
-      );
-
-      // 루트는 visible div(파일 input 의 부모 래퍼)
-      const root = container.querySelector('[data-editor-name="FileInput"]') as HTMLElement;
-      expect(root).toBeTruthy();
-      expect(root.tagName.toLowerCase()).toBe('div');
-      expect(root.getAttribute('data-editor-path')).toBe('1.children.0');
-      expect(root.getAttribute('id')).toBe('fi-root-id');
-      // 루트는 버튼(Browse 트리거)을 자식으로 가진다 = 시각적 루트 확인
-      expect(root.querySelector('button')).toBeTruthy();
-    });
-
-    // @scenario component=file_input
-    // @effects file_input_editor_markers_on_visual_root
-    it('숨겨진 file input 에는 편집 표식이 없다', () => {
-      const { container } = render(
-        <FileInput data-editor-name="FileInput" data-editor-path="2.children.1" id="fi-id" />
-      );
-      const hiddenInput = container.querySelector('input[type="file"]') as HTMLElement;
-      expect(hiddenInput).toBeTruthy();
-      expect(hiddenInput.getAttribute('data-editor-name')).toBeNull();
-      expect(hiddenInput.getAttribute('data-editor-path')).toBeNull();
-      expect(hiddenInput.getAttribute('id')).toBeNull();
-    });
-
-    // @scenario component=file_input
-    // @effects file_input_editor_markers_on_visual_root
-    it('기능 prop(name 등)은 file input 에 그대로 전달된다', () => {
-      const { container } = render(
-        <FileInput name="upload_field" data-editor-name="FileInput" />
-      );
-      const hiddenInput = container.querySelector('input[type="file"]') as HTMLInputElement;
-      expect(hiddenInput.getAttribute('name')).toBe('upload_field');
     });
   });
 });

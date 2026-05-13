@@ -2,15 +2,11 @@
 
 namespace Modules\Sirsoft\Board\Models;
 
-use App\Helpers\InlineMediaPolicy;
 use App\Models\User;
-use App\Support\AssetUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 /**
@@ -34,10 +30,9 @@ use Illuminate\Support\Str;
  * @property int $order
  * @property array|null $meta
  * @property int|null $created_by
- * @property string|null $guest_owner_hash
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property Carbon|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read string $download_url
  * @property-read string|null $preview_url
  * @property-read bool $is_image
@@ -46,21 +41,6 @@ use Illuminate\Support\Str;
 class Attachment extends Model
 {
     use HasFactory, SoftDeletes;
-
-    /**
-     * 본문 미디어(편집기 본문에 넣은 이미지·동영상) 컬렉션.
-     *
-     * 첨부 목록에 보이지 않고 첨부 개수 상한에도 세지 않는다. 일반 첨부 업로드(`UploadAttachmentRequest`)는
-     * 이 이름을 쓸 수 없다 — 클라이언트가 컬렉션 이름을 정하면 상한을 피해 갈 수 있다(#883).
-     */
-    public const COLLECTION_CONTENT_MEDIA = 'content_media';
-
-    /**
-     * 일반 첨부 업로드가 쓸 수 없는 예약 컬렉션 — 첨부 개수 상한 집계에서도 뺀다.
-     *
-     * @var array<int, string>
-     */
-    public const RESERVED_COLLECTIONS = [self::COLLECTION_CONTENT_MEDIA];
 
     /**
      * 테이블명
@@ -97,25 +77,10 @@ class Attachment extends Model
         'order',
         'meta',
         'created_by',
-        'guest_owner_hash',
-        'trigger_type',
-    ];
-
-    /**
-     * 직렬화에서 숨길 속성
-     *
-     * 비회원 소유 증명 해시는 응답(첨부 목록·업로드 응답·메타)에 싣지 않는다 — 해시라도 소유 판정 재료다.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'guest_owner_hash',
     ];
 
     /**
      * 속성 캐스팅
-     *
-     * @return array
      */
     protected function casts(): array
     {
@@ -132,8 +97,6 @@ class Attachment extends Model
 
     /**
      * 모델 부트 메서드
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -162,8 +125,6 @@ class Attachment extends Model
 
     /**
      * 게시판과의 관계를 정의합니다.
-     *
-     * @return BelongsTo 게시판 관계
      */
     public function board(): BelongsTo
     {
@@ -172,8 +133,6 @@ class Attachment extends Model
 
     /**
      * 게시글과의 관계를 정의합니다.
-     *
-     * @return BelongsTo 게시글 관계
      */
     public function post(): BelongsTo
     {
@@ -182,8 +141,6 @@ class Attachment extends Model
 
     /**
      * 업로더와의 관계를 정의합니다.
-     *
-     * @return BelongsTo 업로더 사용자 관계
      */
     public function creator(): BelongsTo
     {
@@ -201,14 +158,7 @@ class Attachment extends Model
             ? $this->board->slug
             : Board::find($this->board_id)?->slug;
 
-        // route() 생성은 빈 슬러그(미해석 board)에서 예외가 되므로 문자열 조립을 유지한다
-        // — 빈 슬러그 허용은 AttachmentPreviewUrlTest 가 고정한 기존 계약이다.
-        //
-        // 마운트 접두사는 손조립이 놓치는 축이다. 코어 형제(`App\Models\Attachment`)가
-        // 같은 사유로 이미 `AssetUrl::basePrefix()` 를 붙였는데 이 확장만 빠져 있었다 —
-        // 소비 지점이 `Img.src` 라 라우터를 거치지 않아 접두사를 붙일 주체가 여기밖에
-        // 없고, 하위 폴더 배치에서는 오류 없이 첨부가 전부 깨진다.
-        return AssetUrl::basePrefix().'/api/modules/sirsoft-board/boards/'.$boardSlug.'/attachment/'.$this->hash;
+        return '/api/modules/sirsoft-board/boards/'.$boardSlug.'/attachment/'.$this->hash;
     }
 
     /**
@@ -226,64 +176,17 @@ class Attachment extends Model
             ? $this->board->slug
             : Board::find($this->board_id)?->slug;
 
-        return $this->previewUrlForSlug((string) $boardSlug);
+        return '/api/modules/sirsoft-board/boards/'.$boardSlug.'/attachment/'.$this->hash.'/preview';
     }
 
     /**
-     * 슬러그가 이미 해석된 컨텍스트의 미리보기 URL 조립 단일 지점.
+     * 이미지 여부 확인
      *
-     * 목록 직렬화(PostResource)처럼 slug 를 라우트/관계에서 이미 알고 있어
-     * Board::find() 재조회(N+1)를 피해야 하는 호출측이 사용합니다.
-     *
-     * 브라우저 <img src> 는 Authorization 헤더를 실을 수 없으므로, 비밀글·삭제글
-     * 첨부를 열람 권한자 화면에 표시할 때는 한시 서명 URL 을 발급한다($signed).
-     * 서명 URL 은 게이트를 통과한 응답 직렬화 시점에만 발급되고(PostResource),
-     * 서빙 엔드포인트가 유효 서명을 허용한다 — 무서명 게이트는 종전과 동일.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  bool  $signed  한시 서명 URL 발급 여부 (비밀글·삭제글 <img> 렌더용)
-     * @return string 미리보기 URL
-     */
-    public function previewUrlForSlug(string $slug, bool $signed = false): string
-    {
-        if ($signed) {
-            // 상대 서명 URL 은 요청의 base URL(마운트 접두사)을 벗긴 경로에 서명된다
-            // (`RouteUrlGenerator::to()`). 검증도 base 를 뺀 `'/'.$request->path()` 로 다시
-            // 조립하므로(`UrlGenerator::hasCorrectSignature()`), 접두사는 서명된 값 **밖**에
-            // 붙인다 — 붙여도 서명은 성립하고, 붙이지 않으면 하위 폴더 설치에서 사이트 밖을 가리킨다.
-            return AssetUrl::sitePath(URL::temporarySignedRoute(
-                'api.modules.sirsoft-board.boards.attachment.preview',
-                now()->addMinutes(self::SIGNED_PREVIEW_TTL_MINUTES),
-                ['slug' => $slug, 'hash' => $this->hash],
-                absolute: false
-            ));
-        }
-
-        // route() 생성은 빈 슬러그(미해석 board)에서 예외가 되므로 문자열 조립을 유지한다
-        // — 빈 슬러그 허용은 AttachmentPreviewUrlTest 가 고정한 기존 계약이다.
-        //
-        // 접두사 사유는 위 `getDownloadUrlAttribute` 와 같다.
-        return AssetUrl::basePrefix().'/api/modules/sirsoft-board/boards/'.$slug.'/attachment/'.$this->hash.'/preview';
-    }
-
-    /**
-     * 서명 preview URL 의 유효 시간(분).
-     *
-     * 상세 화면이 열려 있는 동안 썸네일이 유지될 만큼 길고,
-     * URL 유출 시 노출 창을 좁힐 만큼 짧은 값.
-     */
-    public const SIGNED_PREVIEW_TTL_MINUTES = 30;
-
-    /**
-     * 인라인 표시 가능한 이미지 여부 확인
-     *
-     * 스크립트를 품을 수 있는 SVG 는 이미지가 아닌 파일로 취급한다 (InlineMediaPolicy — KVE-2026-2366).
-     *
-     * @return bool 래스터 이미지 여부
+     * @return bool 이미지 여부
      */
     public function getIsImageAttribute(): bool
     {
-        return InlineMediaPolicy::isInlineImage($this->mime_type);
+        return str_starts_with($this->mime_type, 'image/');
     }
 
     /**

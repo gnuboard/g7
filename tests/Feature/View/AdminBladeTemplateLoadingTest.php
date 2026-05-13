@@ -2,23 +2,17 @@
 
 namespace Tests\Feature\View;
 
-use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use App\Services\TemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/**
- * 관리자 화면 HTML(admin.blade.php)이 활성 템플릿 번들·코어 엔진·템플릿 CSS 를 싣는지 검증합니다.
- */
 class AdminBladeTemplateLoadingTest extends TestCase
 {
     use RefreshDatabase;
 
     /**
      * 각 테스트 전에 실행 (템플릿 설치 및 활성화)
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -52,12 +46,6 @@ class AdminBladeTemplateLoadingTest extends TestCase
 
     /**
      * 활성화된 템플릿이 있을 때 템플릿 번들이 로드되는지 테스트
-     *
-     * @scenario template_type=admin, css_declaration=declared_and_built
-     *
-     * @effects template_stylesheet_link_follows_declaration, admin_blade_loads_active_template_bundle
-     *
-     * @return void 반환값 없음
      */
     public function test_admin_blade_loads_template_bundles_when_active_template_exists(): void
     {
@@ -83,18 +71,11 @@ class AdminBladeTemplateLoadingTest extends TestCase
         $response->assertSee('data-template-id="sirsoft-admin_basic"', false);
 
         // 템플릿 엔진 초기화 스크립트 확인
-        // 초기화 설정은 @json 으로 직렬화된다 — 표기는 JSON 형태여야 한다.
-        $response->assertSee('"templateId":"sirsoft-admin_basic"', false);
+        $response->assertSee("templateId: 'sirsoft-admin_basic'", false);
     }
 
     /**
      * 활성화된 템플릿이 없을 때 기본 템플릿 번들이 로드되는지 테스트
-     *
-     * @scenario template_type=admin, css_declaration=declared_and_built
-     *
-     * @effects admin_blade_loads_default_template
-     *
-     * @return void 반환값 없음
      */
     public function test_admin_blade_loads_default_template_when_no_active_template(): void
     {
@@ -124,8 +105,7 @@ class AdminBladeTemplateLoadingTest extends TestCase
         $response->assertSee('data-template-id="sirsoft-admin_basic"', false);
 
         // 템플릿 엔진 초기화 스크립트에 기본값 확인
-        // 초기화 설정은 @json 으로 직렬화된다 — 표기는 JSON 형태여야 한다.
-        $response->assertSee('"templateId":"sirsoft-admin_basic"', false);
+        $response->assertSee("templateId: 'sirsoft-admin_basic'", false);
     }
 
     /**
@@ -133,17 +113,11 @@ class AdminBladeTemplateLoadingTest extends TestCase
      *
      * 활성화된 템플릿이 없으면 Fallback UI가 표시됩니다.
      * Fallback UI에서는 코어 렌더링 엔진이 로드되지 않습니다.
-     *
-     * @scenario template_type=admin
-     *
-     * @effects admin_blade_renders_fallback_without_template
-     *
-     * @return void 반환값 없음
      */
     public function test_admin_blade_renders_without_any_template(): void
     {
         // Arrange: 모든 템플릿 비활성화
-        Template::query()->update(['status' => ExtensionStatus::Inactive->value]);
+        Template::query()->update(['status' => \App\Enums\ExtensionStatus::Inactive->value]);
 
         // Act: admin view 렌더링
         $response = $this->get('/admin');
@@ -167,12 +141,6 @@ class AdminBladeTemplateLoadingTest extends TestCase
 
     /**
      * 코어 렌더링 엔진이 항상 로드되는지 테스트
-     *
-     * @scenario template_type=admin
-     *
-     * @effects admin_blade_loads_core_engine
-     *
-     * @return void 반환값 없음
      */
     public function test_admin_blade_always_loads_core_rendering_engine(): void
     {
@@ -190,36 +158,20 @@ class AdminBladeTemplateLoadingTest extends TestCase
     }
 
     /**
-     * Font Awesome 이 로드되는지 테스트.
-     *
-     * 7.1.0(#616)부터 관리자 템플릿이 Font Awesome 을 자체 제공한다(`externals` 의 `asset`) — 외부 CDN 주소가 아니라
-     * 같은 사이트의 템플릿 자산 주소로 실려야 한다.
-     *
-     * @scenario template_type=admin, css_declaration=declared_and_built
-     *
-     * @effects admin_blade_loads_self_hosted_font_awesome
-     *
-     * @return void 반환값 없음
+     * Font Awesome CDN이 로드되는지 테스트
      */
     public function test_admin_blade_loads_font_awesome_cdn(): void
     {
         // Act: admin view 렌더링
         $response = $this->get('/admin');
 
-        // Assert: 자체 제공 Font Awesome 확인 (외부 CDN 미사용)
+        // Assert: Font Awesome CDN 확인
         $response->assertStatus(200);
-        $response->assertSee('/api/templates/assets/sirsoft-admin_basic/vendor/font-awesome/6.4.0/css/all.inlined.css', false);
-        $response->assertDontSee('cdnjs.cloudflare.com/ajax/libs/font-awesome', false);
+        $response->assertSee('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', false);
     }
 
     /**
      * 템플릿 엔진 초기화 설정이 올바르게 전달되는지 테스트
-     *
-     * @scenario template_type=admin
-     *
-     * @effects admin_blade_initializes_engine_config
-     *
-     * @return void 반환값 없음
      */
     public function test_admin_blade_initializes_template_engine_with_correct_config(): void
     {
@@ -231,20 +183,13 @@ class AdminBladeTemplateLoadingTest extends TestCase
 
         // Assert: 템플릿 엔진 초기화 설정 확인
         $response->assertStatus(200);
-        // 초기화 설정은 @json 으로 직렬화된다 — 표기는 JSON 형태여야 한다.
-        $response->assertSee('"templateId":"sirsoft-admin_basic"', false);
-        $response->assertSee('"locale":', false); // locale 값은 테스트 환경에 따라 'en' 또는 'ko'일 수 있음
-        $response->assertSee('"debug":', false);
+        $response->assertSee("templateId: 'sirsoft-admin_basic'", false);
+        $response->assertSee('locale:', false); // locale 값은 테스트 환경에 따라 'en' 또는 'ko'일 수 있음
+        $response->assertSee('debug:', false);
     }
 
     /**
      * 브라우저 캐시 버스팅을 위한 버전 쿼리 파라미터가 추가되는지 테스트
-     *
-     * @scenario template_type=admin, css_declaration=declared_and_built
-     *
-     * @effects admin_blade_versions_asset_urls
-     *
-     * @return void 반환값 없음
      */
     public function test_admin_blade_includes_cache_busting_version_parameters(): void
     {

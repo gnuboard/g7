@@ -123,7 +123,7 @@ export const ModalDataSourceWrapper: React.FC<ModalDataSourceWrapperProps> = ({
   debug = false,
   children,
 }) => {
-  const [, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
   const prevIsOpenRef = useRef(false);
   const dataSourceManagerRef = useRef<DataSourceManager | null>(null);

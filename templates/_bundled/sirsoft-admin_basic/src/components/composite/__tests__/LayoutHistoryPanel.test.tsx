@@ -42,8 +42,6 @@ describe('LayoutHistoryPanel', () => {
   };
 
   describe('렌더링', () => {
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_renders_list_and_restore_button
     it('VersionList 컴포넌트를 렌더링해야 함', () => {
       render(<LayoutHistoryPanel {...defaultProps} />);
 
@@ -52,8 +50,6 @@ describe('LayoutHistoryPanel', () => {
       expect(screen.getByText('버전 2.0.0')).toBeInTheDocument();
     });
 
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_renders_list_and_restore_button
     it('복원 버튼을 렌더링해야 함', () => {
       render(<LayoutHistoryPanel {...defaultProps} />);
 
@@ -61,8 +57,6 @@ describe('LayoutHistoryPanel', () => {
       expect(restoreButton).toBeInTheDocument();
     });
 
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_renders_list_and_restore_button
     it('region 역할을 가진 컨테이너를 렌더링해야 함', () => {
       render(<LayoutHistoryPanel {...defaultProps} />);
 
@@ -71,8 +65,6 @@ describe('LayoutHistoryPanel', () => {
   });
 
   describe('버전 선택 및 복원 버튼 상태', () => {
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_restore_enabled_after_selection
     it('초기 상태에서 복원 버튼이 비활성화되어야 함', () => {
       render(<LayoutHistoryPanel {...defaultProps} />);
 
@@ -80,8 +72,6 @@ describe('LayoutHistoryPanel', () => {
       expect(restoreButton).toBeDisabled();
     });
 
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_restore_enabled_after_selection
     it('버전 선택 시 복원 버튼이 활성화되어야 함', async () => {
       const user = userEvent.setup();
       render(<LayoutHistoryPanel {...defaultProps} />);
@@ -90,19 +80,17 @@ describe('LayoutHistoryPanel', () => {
       expect(restoreButton).toBeDisabled();
 
       // 첫 번째 버전 선택
-      const versionItems = screen.getAllByRole('option');
+      const versionItems = screen.getAllByRole('listitem');
       await user.click(versionItems[0]);
 
       expect(restoreButton).not.toBeDisabled();
     });
 
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_restore_enabled_after_selection
     it('다른 버전을 선택하면 선택 상태가 변경되어야 함', async () => {
       const user = userEvent.setup();
       render(<LayoutHistoryPanel {...defaultProps} />);
 
-      const versionItems = screen.getAllByRole('option');
+      const versionItems = screen.getAllByRole('listitem');
 
       // 첫 번째 버전 선택
       await user.click(versionItems[0]);
@@ -116,8 +104,6 @@ describe('LayoutHistoryPanel', () => {
   });
 
   describe('복원 기능', () => {
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_restore_passes_selected_version
     it('복원 버튼 클릭 시 선택된 버전 ID로 onRestore 콜백을 호출해야 함', async () => {
       const user = userEvent.setup();
       const onRestore = vi.fn();
@@ -130,7 +116,7 @@ describe('LayoutHistoryPanel', () => {
       );
 
       // 첫 번째 버전 선택
-      const versionItems = screen.getAllByRole('option');
+      const versionItems = screen.getAllByRole('listitem');
       await user.click(versionItems[0]);
 
       // 복원 버튼 클릭
@@ -141,8 +127,6 @@ describe('LayoutHistoryPanel', () => {
       expect(onRestore).toHaveBeenCalledTimes(1);
     });
 
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_restore_passes_selected_version
     it('다른 버전 선택 후 복원 시 해당 버전 ID로 콜백을 호출해야 함', async () => {
       const user = userEvent.setup();
       const onRestore = vi.fn();
@@ -155,7 +139,7 @@ describe('LayoutHistoryPanel', () => {
       );
 
       // 세 번째 버전 선택
-      const versionItems = screen.getAllByRole('option');
+      const versionItems = screen.getAllByRole('listitem');
       await user.click(versionItems[2]);
 
       // 복원 버튼 클릭
@@ -165,9 +149,8 @@ describe('LayoutHistoryPanel', () => {
       expect(onRestore).toHaveBeenCalledWith(3);
     });
 
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_restore_passes_selected_version
     it('버전 미선택 시 복원 버튼을 클릭해도 onRestore가 호출되지 않아야 함', async () => {
+      const user = userEvent.setup();
       const onRestore = vi.fn();
 
       render(
@@ -186,8 +169,6 @@ describe('LayoutHistoryPanel', () => {
   });
 
   describe('엣지 케이스', () => {
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_renders_list_and_restore_button
     it('빈 버전 목록을 전달해도 에러가 발생하지 않아야 함', () => {
       render(
         <LayoutHistoryPanel
@@ -200,8 +181,6 @@ describe('LayoutHistoryPanel', () => {
       expect(restoreButton).toBeDisabled();
     });
 
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_renders_list_and_restore_button
     it('layoutId를 숫자로 전달해도 정상 동작해야 함', () => {
       render(
         <LayoutHistoryPanel
@@ -215,8 +194,6 @@ describe('LayoutHistoryPanel', () => {
   });
 
   describe('접근성', () => {
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_accessible_names
     it('복원 버튼에 적절한 aria-label이 있어야 함', () => {
       render(<LayoutHistoryPanel {...defaultProps} />);
 
@@ -224,8 +201,6 @@ describe('LayoutHistoryPanel', () => {
       expect(restoreButton).toHaveAttribute('aria-label', '선택한 버전으로 복원');
     });
 
-    // @scenario component=layout_history_panel
-    // @effects layout_history_panel_accessible_names
     it('패널 컨테이너에 적절한 aria-label이 있어야 함', () => {
       render(<LayoutHistoryPanel {...defaultProps} />);
 

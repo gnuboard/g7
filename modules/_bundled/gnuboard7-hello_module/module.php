@@ -3,10 +3,8 @@
 namespace Modules\Gnuboard7\HelloModule;
 
 use App\Extension\AbstractModule;
-use Illuminate\Database\Seeder;
 use Modules\Gnuboard7\HelloModule\Database\Seeders\MemoSeeder;
 use Modules\Gnuboard7\HelloModule\Listeners\LogMemoCreatedListener;
-use Modules\Gnuboard7\HelloModule\Listeners\ThumbnailPresetListener;
 
 /**
  * Hello 학습용 샘플 모듈
@@ -117,7 +115,7 @@ class Module extends AbstractModule
     /**
      * 모듈 설치 시 실행할 시더 목록 반환
      *
-     * @return array<class-string<Seeder>>
+     * @return array<class-string<\Illuminate\Database\Seeder>>
      */
     public function getSeeders(): array
     {
@@ -135,7 +133,6 @@ class Module extends AbstractModule
     {
         return [
             LogMemoCreatedListener::class,
-            ThumbnailPresetListener::class,
         ];
     }
 

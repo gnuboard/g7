@@ -2,30 +2,12 @@
 
 namespace App\Extension;
 
-use App\Contracts\Extension\CacheableExtensionInterface;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
-use App\DisplayName\Contracts\DisplayNameKindInterface;
-use App\Extension\Cache\CacheDriverFactory;
-use App\Extension\Exceptions\UpgradeStepClassMissingException;
-use App\Extension\Helpers\ExtensionScheduleSyncHelper;
-use App\Extension\Helpers\FieldDefinitionSyncHelper;
+use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Storage\PluginStorageDriver;
-use App\Extension\Support\UnusableUpgradeStep;
-use App\Extension\Support\UpgradeStepFileLoader;
-use App\Extension\Traits\CollectsFragmentSources;
-use App\Extension\Traits\ReportsLifecycleFailure;
-use App\Extension\Traits\ResolvesLayoutInstallSource;
-use App\Fields\Contracts\FieldTypeInterface;
-use App\Support\ExtensionIntegrations;
-use App\Support\PrivateAttachmentDisk;
-use App\Support\PublicApiManifest;
-use App\Support\PublicAssetDisk;
-use App\Support\SearchScopes;
-use App\Support\StateContracts;
-use App\Support\TrustedStyleHosts;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -36,16 +18,10 @@ use ReflectionClass;
  * getIdentifier(), getVendor()는 디렉토리명에서 자동 추론됩니다.
  * getName(), getVersion(), getDescription()은 plugin.json에서 자동 파싱됩니다.
  *
- * 참고: 플러그인도 관리자 메뉴(getAdminMenus)를 선언할 수 있습니다. 설치·업데이트·활성화가
- * 공통으로 지나는 선언형 산출물 동기화에서 PluginManager 가 자동으로 반영합니다.
+ * 참고: 플러그인은 모듈과 달리 관리자 메뉴(getAdminMenus)를 추가할 수 없습니다.
  */
-abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInterface
+abstract class AbstractPlugin implements PluginInterface
 {
-    use ReportsLifecycleFailure;
-
-    // 설정 레이아웃 소스 우선순위(`.g7.html` → 짝 `.json`)를 저장소 규약 한 곳에서 받는다.
-    use ResolvesLayoutInstallSource;
-
     /**
      * 플러그인 디렉토리 경로 (캐시)
      */
@@ -129,8 +105,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
 
     /**
      * 플러그인 디렉토리 경로 반환
-     *
-     * @return string 플러그인 디렉토리 절대 경로
      */
     protected function getPluginPath(): string
     {
@@ -146,8 +120,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      * 플러그인 식별자 반환 (디렉토리명에서 자동 추론)
      *
      * 디렉토리명이 'sirsoft-sample'이면 식별자도 'sirsoft-sample'
-     *
-     * @return string 플러그인 식별자
      */
     final public function getIdentifier(): string
     {
@@ -202,16 +174,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     {
         return true;
     }
-
-    /**
-     * 「데이터도 함께 삭제」를 고른 제거에서만 부르는 데이터 정리 (7.2.0+).
-     *
-     * `uninstall()` 은 데이터 보존 제거에서도 불린다 — 메뉴·운영자가 고친 템플릿처럼 데이터에 해당하는 것은 여기서 지운다.
-     * 메뉴·권한·역할·알림 정의·본인확인 정책·스케줄은 코어가 지우므로 다시 지우지 않는다.
-     *
-     * @return void 반환값 없음
-     */
-    public function uninstallData(): void {}
 
     /**
      * 플러그인이 런타임에 동적으로 생성한 테이블 목록을 반환합니다.
@@ -282,11 +244,9 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
         }
 
         $steps = [];
+        $files = glob($upgradesPath.'/Upgrade_*.php');
 
-        // 나열은 `glob` 을 쓰지 않는다 — 근거는 `ExtensionManager::listDirectoryFiles()`.
-        $files = ExtensionManager::listDirectoryFiles($upgradesPath, '.php', 'Upgrade_');
-
-        if ($files === []) {
+        if (! $files) {
             return [];
         }
 
@@ -304,23 +264,15 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
                 $version .= '-'.str_replace('_', '.', $matches[4]);
             }
 
+            require_once $file;
+
             // 네임스페이스 추론: 플러그인 네임스페이스 + Upgrades\ClassName
             $namespacePart = ExtensionManager::directoryToNamespace($this->getIdentifier());
             $namespace = 'Plugins\\'.$namespacePart.'\\Upgrades\\'.$filename;
 
-            // 활성·번들 동일 사본이 이미 선언한 클래스는 다시 싣지 않는다(재선언 Fatal 방지, 7.1.5)
-            UpgradeStepFileLoader::load($file, $namespace);
-
-            // 파일이 있는데 클래스가 없거나 인터페이스 미구현이면 자리 표시를 둔다 — 업데이트가 이번 범위로 고른 단계에
-            // 있을 때만 실패한다(7.1.3, 코어와 같은 규칙 — 예전엔 조용히 건너뜀)
-            try {
-                UpgradeStepClassMissingException::assertUsable($file, $namespace, UpgradeStepInterface::class);
-            } catch (UpgradeStepClassMissingException $e) {
-                $steps[$version] = new UnusableUpgradeStep($e);
-
-                continue;
+            if (class_exists($namespace) && is_subclass_of($namespace, UpgradeStepInterface::class)) {
+                $steps[$version] = new $namespace;
             }
-            $steps[$version] = new $namespace;
         }
 
         ksort($steps, SORT_NATURAL);
@@ -481,20 +433,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 매번 계산하는 값이라 설정 파일에 저장하지 않는 설정 키 목록 (7.1.3)
-     *
-     * `getConfigValues()` 가 요청마다 계산해 돌려주는 값(다른 확장의 훅 결과·세션 쿠키 이름 등)은 여기에 선언한다.
-     * 코어는 이 키를 설치 때 설정 파일에 쓰지 않고, 저장 요청·기존 파일에서 빼고, 읽을 때 늘 실시간 값을 쓴다.
-     * 선언하지 않으면 설치 시점 값이 파일에 굳어 이후 실시간 값을 덮는다.
-     *
-     * @return array<int, string> 계산값 키 (도트 표기 가능)
-     */
-    public function getComputedSettingKeys(): array
-    {
-        return [];
-    }
-
-    /**
      * 플러그인이 제공하는 훅 정보 반환
      *
      * 기본적으로 빈 배열 반환
@@ -524,8 +462,7 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      * 브로드캐스트 채널 정의를 반환합니다.
      *
      * 플러그인에서 WebSocket 실시간 채널이 필요한 경우 오버라이드합니다.
-     * 반환된 채널은 플러그인이 활성일 때 채널 인가 요청(`/api/broadcasting/auth`)에서 코어가
-     * Broadcast::channel()에 등록합니다(7.1.5 부터 부팅 때가 아니라 인가 요청 때).
+     * 반환된 채널은 PluginManager가 자동으로 Broadcast::channel()에 등록합니다.
      *
      * 네이밍 규칙: plugin.{identifier}.{resource}.{param}
      *
@@ -543,201 +480,29 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 스케줄 작업 선언 목록을 반환합니다.
+     * 스케줄 작업 목록 반환
      *
-     * 7.2.0 부터 코어는 이 선언을 설치·업데이트·활성화 때 schedules 테이블로 동기화하고
-     * (`PluginManager::syncDeclarativeArtifacts()` → `ExtensionScheduleSyncHelper`), 스케줄러는 DB 행을 읽어 실행한다.
-     * 운영자가 관리 화면(스케줄 관리)에서 바꾼 주기·활성 여부 등은 업데이트 때 보존된다(user_overrides).
-     * 선언에서 뺀 항목의 행은 다음 동기화 때 지워지고(선언이 0건이면 실수로 비운 것일 수 있어 정리를 건너뛴다),
-     * "데이터도 함께 삭제" 로 제거하면 모든 행이 지워진다.
-     * 비활성 플러그인의 행은 남지만 실행되지 않는다.
+     * 플러그인에서 등록하는 스케줄 작업 목록입니다.
+     * 코어에서 이 메서드를 호출하여 플러그인 스케줄러를 등록합니다.
      *
-     * 기본적으로 빈 배열을 반환한다. 스케줄이 필요한 플러그인만 오버라이드한다.
+     * 기본적으로 빈 배열 반환
+     * 플러그인 개발자가 스케줄 작업이 필요한 경우 오버라이드
      *
-     * @return array<int, array<string, mixed>> 스케줄 선언 목록. 항목 형식(코어 `config/core.php` 의 `schedules` 카탈로그와 같은 키):
-     *                                          [
-     *                                          'name' => 'prune-temp-files',              // 필수 권장 — 플러그인 안에서 고유한 기계 식별자(소문자·숫자·-_.)
-     *                                          'type' => 'artisan',                        // artisan(기본) | job (shell·url 은 선언 불가)
-     *                                          'label' => ['ko' => '…', 'en' => '…'],     // 표시 명칭 (ja 는 언어팩 seed/schedules.json)
-     *                                          'description' => ['ko' => '…', 'en' => '…'],
-     *                                          'command' => 'vendor-plugin:prune-temp-files',                   // artisan 명령(옵션 포함) 또는 job 클래스 FQCN
-     *                                          'expression' => '0 4 * * *',                // cron 식 (사이트 시간대 기준)
-     *                                          'frequency' => 'custom',                    // custom(기본) | everyThirtySeconds
-     *                                          'timezone' => null,                         // 시간대 고정이 필요할 때만 (예: Asia/Seoul)
-     *                                          'without_overlapping' => 0,                 // 중복 실행 방지 잠금 분 (0=끔, 최대 10080)
-     *                                          'on_one_server' => true,                    // 다중 서버에서 한 서버만
-     *                                          'dispatch_mode' => 'sync',                  // sync(스케줄러에서 바로) | queue(큐 Job)
-     *                                          'history_mode' => 'all',                    // all | failures_only (잦은 작업용)
-     *                                          'notify_on_failure' => true,                // 실패 시 관리자 알림 (하루 1회)
-     *                                          'timeout' => null,                          // 초
-     *                                          'enabled_condition' => [                    // 실행 조건 (AND) — 미충족이면 그 틱에 실행하지 않음
-     *                                          ['source' => 'plugin_setting', 'key' => 'cleanup.enabled', 'operator' => 'truthy', 'default' => true],
-     *                                          ],
-     *                                          ]
+     * @return array 스케줄 작업 배열
+     *               [
+     *               [
+     *               'command' => 'artisan:command',
+     *               'schedule' => 'daily' | 'hourly' | 'everyMinute' | 'weekly' | cron expression,
+     *               'description' => '작업 설명 (선택)',
+     *               'enabled_config' => 'setting.key' (선택, plugin_setting()으로 조회하여 활성화 여부 결정),
+     *               ],
+     *               ]
      *
-     * 옛 형식(`command`·`schedule`(메서드명|cron)·`description` 문자열·`enabled_config`)도 계속 받는다 —
-     * 동기화 때 name 을 명령에서 만들고 `enabled_config` 를 `plugin_setting` 조건으로 바꾼다(identifier 접두사 자동 제거).
-     * 옛 형식은 `without_overlapping` 을 적지 않으면 중복 실행 방지가 켜진다(1440분 뒤 잠금 만료, 7.1.5) — 이전 회차가 끝나지
-     * 않았으면 다음 회차를 건너뛴다. 같은 작업을 겹쳐 돌려도 되면 `without_overlapping => false` 로 끄고, 분 단위 정수면 그
-     * 시간 뒤 잠금이 만료된다. `on_one_server => false` 는 다중 서버에서 서버마다 실행하게 한다(기본 true — 공유 캐시 스토어 필요).
-     *
-     * @see ExtensionScheduleSyncHelper
+     * enabled_config 형식:
+     *   - 'payment.auto_capture' → plugin_setting($identifier, 'payment.auto_capture')
+     *   - 'sirsoft-payment.payment.auto_capture' → identifier 접두사 자동 제거 후 동일하게 조회
      */
     public function getSchedules(): array
-    {
-        return [];
-    }
-
-    /**
-     * 이 플러그인이 가진 항목 집합 선언을 반환합니다.
-     *
-     * 항목 집합은 입력 항목들이 모이는 자리다(예: 게시판 비회원 작성자, 주문서). 집합을 선언하면 코어의
-     * 항목 엔진(`App\Fields`)이 그 자리의 검증 규칙·저장·운영자 표를 맡고, 다른 확장도 그 집합에 항목을
-     * 기여할 수 있다. 메모리 등록소에만 올라가며 DB 에 저장되지 않는다.
-     *
-     * 각 선언의 키:
-     * - `key` (필수) — 집합 식별자. `{확장 식별자}.{이름}` 형식 (예: `sirsoft-board.guest_author`)
-     * - `label` — 운영자 화면에 보일 이름 (번역 키)
-     * - `owner_types` — 값 소유자 종류 목록 (`field_values.owner_type` 값. 예: `['board_post', 'board_comment']`)
-     * - `surfaces` — 이 집합이 쓰는 표면 이름 목록
-     * - `allowed_types` — 허용 유형 키 목록 (생략하면 전부)
-     * - `accepts_contributions` — 다른 확장의 항목 기여를 받는지 (기본 true)
-     * - `allows_custom` — 운영자가 항목을 추가할 수 있는지 (기본 true)
-     * - `read_permission` / `manage_permission` — 항목 표 조회·수정 권한
-     * - `bundle_key` — 컬럼이 아닌 항목이 들어가는 요청 묶음 키 (예: `guest_fields`)
-     *
-     * @return array<int, array<string, mixed>> 집합 선언 목록
-     *
-     * @since 7.2.0
-     */
-    public function getFieldSets(): array
-    {
-        return [];
-    }
-
-    /**
-     * 이 플러그인이 선언하는 항목 목록을 반환합니다.
-     *
-     * 코어는 이 선언을 설치·업데이트·활성화 때 `field_definitions` 테이블로 동기화한다
-     * (`PluginManager::syncDeclarativeArtifacts()` → `FieldDefinitionSyncHelper`). 운영자가 관리 화면에서 바꾼
-     * 사용·필수·순서 등은 업데이트 때 보존된다(user_overrides). 선언에서 뺀 항목의 행과 값은 다음 동기화 때
-     * 지워지고(선언이 0건이면 실수로 비운 것일 수 있어 정리를 건너뛴다), 운영자가 만든 항목은 건드리지 않는다.
-     *
-     * 자기 집합뿐 아니라 코어 회원 집합(`core.user`)이나 다른 확장의 집합에도 선언할 수 있다. 다른 확장의
-     * 집합에 선언하려면 manifest `dependencies` 에 그 확장을 적는다 — 집합이 없거나 꺼져 있으면 건너뛴다.
-     *
-     * 각 선언의 키:
-     * - `field_set`, `key`, `type`, `name`(다국어 배열) — 필수. `key` 는 영문 소문자로 시작하는 2~50자
-     * - `storage` — `value`(기본, 공용 값 테이블) | `handler`(자기 테이블) | `column`(집합을 가진 쪽만)
-     * - `storage_target` — handler 면 `App\Fields\Contracts\FieldValueHandlerInterface` 구현 클래스명
-     * - `description`, `placeholder`(다국어), `options`(`[{value, label}]`), `constraints`
-     * - `enabled`, `required`, `show_on_signup`, `edit_scope`(self|admin_edit|admin_only), `require_existing_members`
-     * - `public_profile`, `admin_list_column`, `admin_searchable`, `display_name_usable`
-     * - `locks` — 운영자 변경을 막을 속성과 사유 (`['required' => '사유 번역 키']`)
-     * - `legacy_keys` — 수용할 옛 요청 키 목록
-     * - `ui` — `group`, `width`, `surfaces`(받을 표면을 한정)
-     * - `sort_order`
-     *
-     * @return array<int, array<string, mixed>> 항목 선언 목록
-     *
-     * @see FieldDefinitionSyncHelper
-     * @since 7.2.0
-     */
-    public function getFields(): array
-    {
-        return [];
-    }
-
-    /**
-     * 이 플러그인이 제공하는 항목 입력 유형을 반환합니다.
-     *
-     * `App\Fields\Contracts\FieldTypeInterface` 구현 클래스명(또는 인스턴스) 목록이다. 메모리 등록소에만 올라가며,
-     * 이 플러그인이 꺼지면 유형도 빠진다 — 그 유형으로 만든 항목은 사용자 화면에서 숨겨지고 운영자 표에 「사용 불가」로 남는다.
-     *
-     * @return array<int, class-string<FieldTypeInterface>|FieldTypeInterface> 유형 목록
-     *
-     * @since 7.2.0
-     */
-    public function getFieldTypes(): array
-    {
-        return [];
-    }
-
-    /**
-     * 이 플러그인이 제공하는 표시 이름 종류를 반환합니다.
-     *
-     * 표시 이름 종류는 「회원의 어떤 값을 어떤 모양으로 보일지」다(이름, 닉네임, 가린 이름 등).
-     * `App\DisplayName\Contracts\DisplayNameKindInterface` 구현 클래스명(또는 인스턴스) 목록을 돌려준다.
-     * `App\DisplayName\Kinds\AbstractDisplayNameKind` 를 이어받으면 `key()` 와 `compute()` 만 채우면 된다.
-     * 메모리 등록소에만 올라가며, 이 플러그인이 꺼지면 종류도 빠진다. 그 종류를 가리키던 설정은 상위 영역 설정이나 「이름」으로 계산된다.
-     *
-     * 종류 키는 `{확장 식별자}:{이름}` 형식을 권한다. `field:` 로 시작하는 키는 코어가 추가 항목 종류에 쓴다.
-     *
-     * @return array<int, class-string<DisplayNameKindInterface>|DisplayNameKindInterface> 종류 목록
-     *
-     * @since 7.2.0
-     */
-    public function getDisplayNameKinds(): array
-    {
-        return [];
-    }
-
-    /**
-     * 이 플러그인이 등록하는 표시 이름 영역을 반환합니다.
-     *
-     * 영역은 회원 이름이 보이는 자리 한 곳이다(게시판 글, 상품 후기, 확장의 관리자 화면 등). 영역을 등록하면 운영자가
-     * 환경설정의 회원 탭에서 그 자리의 방식(상위 영역 따름, 종류 고정, 회원이 고른 값)을 정할 수 있고,
-     * 확장은 `App\DisplayName\DisplayNameResolver::resolve($user, '{영역 키}')` 로 그 자리의 이름을 얻는다.
-     * 메모리 등록소에만 올라가며 DB 에 저장되지 않는다.
-     *
-     * 각 선언의 키:
-     * - `key` (필수) — 영역 키. `{확장 식별자}:{이름}` 형식. 구분자는 `:` 이고 점은 쓰지 못한다 (예: `sirsoft-board:posts`)
-     * - `label` — 운영자 화면에 보일 이름 (번역 키 또는 다국어 배열)
-     * - `audience` — 보는 사람 `user`(기본) | `admin` | `notification`
-     * - `parent` — 상위 영역 키. 생략하면 `audience` 가 admin 일 때 `core:admin`, 그 밖에는 `core:site`
-     * - `default` — 설정에 없을 때의 값 `['mode' => 'inherit'|'fixed'|'member', 'kind' => '종류 키']` (생략하면 상위 영역 따름)
-     * - `instance_resolver` — 영역 안에서 인스턴스마다 설정이 다를 때(게시판마다 등) 호출 문맥을 받아
-     *   `['mode' => ..., 'kind' => ...]` 또는 null(따름)을 돌려주는 호출체. 클로저, `[클래스, 메서드]`, `__invoke` 클래스명
-     * - `used_kinds_provider` — 인스턴스들이 쓰고 있는 설정 목록 `[['mode' => ..., 'kind' => ..., 'label' => '인스턴스 이름']]` 을
-     *   돌려주는 호출체. 닉네임 항목 잠금 판정과 추가 항목 삭제 차단의 사용처 안내에 쓰인다
-     * - `sort_order` — 운영자 화면의 표시 순서
-     *
-     * @return array<int, array<string, mixed>> 영역 선언 목록
-     *
-     * @since 7.2.0
-     */
-    public function getDisplayNameAreas(): array
-    {
-        return [];
-    }
-
-    /**
-     * 이 플러그인이 등록할 HTTP 미들웨어 선언을 반환합니다.
-     *
-     * 플러그인이 web/api 그룹에 미들웨어를 직접 넣는 대신, 코어의 self-gate 게이트
-     * (`ExtensionMiddlewareGate`)가 요청 시점에 라우트 이름·URI 를 각 선언의 `targets`
-     * 패턴과 대조해 매칭될 때만 해당 미들웨어를 실행합니다. 코어 IDV 정책의 라우트명
-     * 인덱스 조회 모델과 동일합니다. 미들웨어 클래스 자체는 게이트 로직을 갖지 않아도
-     * 됩니다 (순수하게 유지).
-     *
-     * 기본적으로 빈 배열 반환. 미들웨어가 필요한 플러그인만 오버라이드합니다.
-     *
-     * @return array<int, array{class: class-string, groups: array<int, string>, timing?: string, targets: array<int, string>}>
-     *                                                                                                                          [
-     *                                                                                                                          [
-     *                                                                                                                          'class'   => VbankNotifyIpWhitelist::class,  // 미들웨어 FQCN (class_exists 검증)
-     *                                                                                                                          'groups'  => ['web'],       // 등록 그룹 배열: ['web'] | ['api'] | ['web','api']
-     *                                                                                                                          'timing'  => 'after_core',  // 'after_core'(기본, 코어 그룹 미들웨어 뒤) | 'before_core'(코어 전처리보다 먼저)
-     *                                                                                                                          'targets' => ['web.plugins.vendor-plugin.payment.vbank-notify'],  // 라우트명/URI 패턴 배열
-     *                                                                                                                          ],
-     *                                                                                                                          ]
-     *
-     * targets 카탈로그: 'self'(자기 라우트) | 'all_extensions'(모든 확장, 코어 제외) |
-     * 'core'(코어만) | 'everything'·'*'(전부) | 'module:{id}' | 'plugin:{id}' |
-     * 원시 라우트명 glob·brace(`web.plugins.x.*`, `{a,b}`) | '/' 로 시작하는 URI 패턴(무명 라우트용).
-     * targets 누락/빈배열 시 등록 거부. 상세: docs/backend/middleware.md "확장 미들웨어 선언".
-     */
-    public function getMiddleware(): array
     {
         return [];
     }
@@ -795,29 +560,22 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * (deprecated) 이 플러그인이 등록할 본인인증 메시지 선언을 반환합니다 — 7.0.x 계약.
+     * 이 플러그인이 등록할 IDV(본인인증) 메시지 정의/템플릿 선언을 반환합니다.
      *
-     * 7.1.0 부터 본인인증 메시지는 알림 정의(`notification_definitions`, category=identity)다.
-     * 새 선언은 `getNotificationDefinitions()` 에 `category => 'identity'` 로 적는다:
-     * ```php
-     * 'identity.purpose.checkout_verification' => [ // type 규칙: identity.purpose.{목적} / identity.policy.{정책 키}
-     *     'category' => 'identity',
-     *     'hook_prefix' => '{확장 식별자}',
-     *     'hooks' => [],
-     *     'channels' => ['mail'],
-     *     'name' => ['ko' => '...', 'en' => '...'],
-     *     'variables' => IdentityNotificationType::commonVariables(),
-     *     'templates' => [['channel' => 'mail', 'subject' => [...], 'body' => [...]]],
-     * ],
-     * ```
+     * `getIdentityPolicies()` / `getIdentityPurposes()` 와 동일한 패턴으로
+     * `PluginManager` 가 activate/update 시 `IdentityMessageSyncHelper` 를 통해
+     * `identity_message_definitions` / `identity_message_templates` 테이블에 동기화하며,
+     * uninstall(deleteData=true) 시 자동 정리됩니다.
      *
-     * 이 메서드가 비어 있지 않으면 PluginManager 가 알림 정의 동기화 때 변환해 합류시킨다
-     * (scope_type/scope_value → type, 메일 외 provider 는 메일 채널로 흡수, 다른 소유자와 type 이 겹치면
-     * 건너뜀). 옛 표(`identity_message_definitions/templates`)는 7.1.0 업그레이드에서 없어졌다.
+     * 운영자가 관리자 UI 에서 수정한 필드(name/description/subject/body 등) 는
+     * `user_overrides` JSON 으로 보존됩니다.
      *
-     * @deprecated 7.1.0 — 8.0 에서 제거. `getNotificationDefinitions()` 에 category=identity 로 선언한다.
+     * `extension_type='plugin'`, `extension_identifier=$this->getIdentifier()` 는
+     * Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다.
      *
-     * @return array<int, array<string, mixed>> 옛 형식 선언 (provider_id, scope_type, scope_value, name, templates …)
+     * 반환 형식: AbstractModule::getIdentityMessages() 와 동일.
+     *
+     * @return array<int, array<string, mixed>>
      */
     public function getIdentityMessages(): array
     {
@@ -827,7 +585,7 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     /**
      * 이 플러그인이 등록할 알림 정의/템플릿 선언을 반환합니다.
      *
-     * `getIdentityPolicies()` 와 같은 선언형 패턴으로 `PluginManager` 가 activate/update 시
+     * `getIdentityMessages()` 와 동일한 패턴으로 `PluginManager` 가 activate/update 시
      * `NotificationSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
      * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 정리합니다.
      * uninstall(deleteData=true) 시에도 자동 정리됩니다.
@@ -864,89 +622,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      * @return array<int, array<string, mixed>>
      */
     public function getNotificationDefinitions(): array
-    {
-        return [];
-    }
-
-    /**
-     * 성능 계측 프로파일 정의를 반환합니다.
-     *
-     * 이 플러그인이 소유한 목록/화면/저장 경로/배치 중 성능을 재고 싶은 대상을 선언합니다.
-     * `g7:bench` 커맨드가 코어 `config/benchmark.php` 선언과 함께 수집합니다
-     * (`App\Benchmark\BenchmarkProfileRegistry`). 계측 대상을 코어 커맨드에 하드코딩하지
-     * 않는 이유는, 확장이 설치·제거되는 설치본마다 실제로 존재하는 대상이 다르기
-     * 때문입니다. 키는 플러그인 내부에서만 고유하면 되고, 다른 확장과 겹치면 커맨드가
-     * `{식별자}/{키}` 로 지목합니다.
-     *
-     * `write` 축의 `callback` 은 클로저를 쓸 수 없습니다 — 코어 선언과 스키마를 공유하고
-     * 코어 쪽은 `config:cache` 대상이므로, 형식을 `'Fqcn'`(invokable) 또는
-     * `['Fqcn', 'method']` 로 통일합니다.
-     *
-     * @return array<string, array<string, mixed>> 프로파일 키 → 정의
-     *                                             [
-     *                                             'consent_history' => [
-     *                                             'type' => 'list',                       // list | screen | write | batch
-     *                                             'label' => '동의 이력 목록',
-     *                                             'table' => 'gdpr_user_consent_histories',
-     *                                             'columns' => ['*'],
-     *                                             'order' => [['created_at', 'desc']],
-     *                                             'soft_delete' => false,
-     *                                             ],
-     *                                             ]
-     */
-    public function getBenchmarkProfiles(): array
-    {
-        return [];
-    }
-
-    /**
-     * 방문자 통계 전환(목표) 선언을 반환합니다.
-     *
-     * 이 플러그인이 방문자 통계에 공급하는 전환 지점을 미리 선언합니다. 코어는 선언된 목표만
-     * 기록하고(`G7Core.analytics.trackGoal()`·`ConversionRecorderInterface::record()`),
-     * 선언되지 않은 키는 수집 실패 목록에 `unknown_goal` 로 남깁니다. 기록 키는
-     * `{식별자}.{key}` 로 정규화됩니다. 플러그인이 비활성화되면 목표는 등록부에서 빠지고
-     * 이미 쌓인 전환은 남습니다.
-     *
-     * @return array<int, array<string, mixed>> 목표 선언 목록
-     *                                          [[
-     *                                          'key' => 'order_completed',                // 영소문자·숫자·밑줄
-     *                                          'label' => ['ko' => '주문 완료', 'en' => 'Order completed'],
-     *                                          'category' => 'purchase',                  // purchase|signup|engagement|custom
-     *                                          'dedupe' => 'once_per_visit',              // every_time|once_per_visit|once_per_visitor
-     *                                          'attributes' => [
-     *                                          'revenue' => ['type' => 'decimal', 'required' => true, 'min' => 0],
-     *                                          'currency' => ['type' => 'enum', 'required' => true, 'values' => ['KRW', 'USD']],
-     *                                          ],
-     *                                          'attribution_window_days' => 30,
-     *                                          'dimensions' => ['board_id'],              // 이 플러그인이 선언한 차원 키
-     *                                          ]]
-     */
-    public function getAnalyticsGoals(): array
-    {
-        return [];
-    }
-
-    /**
-     * 방문자 통계 분류 기준(dimension) 선언을 반환합니다.
-     *
-     * 브라우저의 `G7Core.analytics.setDimension()` 이나 서버 필터
-     * `core.analytics.resolve_dimensions` 로 넣는 차원 값은 여기 선언된 것만 원장에 남고,
-     * 집계는 `ext:{식별자}:{key}` 차원 행으로 만들어집니다. `pii` 가 참인 차원은 익명
-     * 모드에서 적재하지 않고 소급 익명화 때 지웁니다.
-     *
-     * @return array<int, array<string, mixed>> 차원 선언 목록
-     *                                          [[
-     *                                          'key' => 'board_id',
-     *                                          'scope' => 'action',                       // action|visit
-     *                                          'label' => ['ko' => '게시판', 'en' => 'Board'],
-     *                                          'value_type' => 'int',                     // int|string|enum
-     *                                          'max_cardinality' => 500,                  // 하루 집계 라벨 수 상한
-     *                                          'label_resolver' => 'resolveBoardLabels',  // (array $values): array<값, 이름>
-     *                                          'pii' => false,
-     *                                          ]]
-     */
-    public function getAnalyticsDimensions(): array
     {
         return [];
     }
@@ -1021,23 +696,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 매니페스트에 선언된 아이콘 상대경로 반환
-     *
-     * plugin.json 의 icon 필드 값을 그대로 돌려줍니다. 경로 규칙(확장 루트 기준 상대경로)과
-     * 규격(정사각·100KB 이하·안전한 SVG) 검증은 ExtensionIconResolver·
-     * ExtensionIconValidator 의 몫이며, 여기서는 선언값만 봅니다.
-     * 선언이 없으면 파일 관례(assets/icon.svg → png → webp)로 해석됩니다.
-     *
-     * @return string|null 아이콘 상대경로 (선언이 없으면 null)
-     */
-    public function getIcon(): ?string
-    {
-        $icon = $this->loadManifest()['icon'] ?? null;
-
-        return is_string($icon) && trim($icon) !== '' ? $icon : null;
-    }
-
-    /**
      * 플러그인 메타데이터 반환
      *
      * 기본적으로 빈 배열 반환
@@ -1048,137 +706,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     public function getMetadata(): array
     {
         return [];
-    }
-
-    /**
-     * 이 플러그인이 소유하는 전역 상태 공개 계약을 반환합니다.
-     *
-     * plugin.json 의 `state_contracts` 에서 읽습니다. 다른 확장이 **읽는** 전역 상태만 선언합니다(화면 전용 임시 값은
-     * 선언하지 않는다). 설치·활성화 때 다른 활성 확장이나 코어가 같은 이름을 소유하면 막히고, 프론트에는
-     * `G7Core.stateContracts` 로 공개됩니다({@see StateContracts}).
-     *
-     * @return array<string, array{description: array<string, string>, schema: array<string, mixed>, writers: array<int, string>}>
-     *                                                                                                                             이름 → 계약
-     *
-     * @since 7.1.0
-     */
-    public function getStateContracts(): array
-    {
-        return StateContracts::normalize($this->loadManifest()['state_contracts'] ?? []);
-    }
-
-    /**
-     * 이 플러그인이 선언한 최근 검색어 범위를 반환합니다.
-     *
-     * plugin.json 의 `search_scopes` 에서 읽고, 범위 id 에 `{식별자}.` 를 붙입니다. 같은 범위를 적은 검색창끼리
-     * 최근 검색어 목록을 공유하며, 운영자는 환경설정 > 개인정보 「최근 검색어」 카드에서 범위마다 보관 개수·보관
-     * 기한을 고칩니다. 형식이 틀린 항목은 버립니다({@see SearchScopes}).
-     *
-     * @param  bool  $reportWarnings  설치·활성화·업데이트처럼 운영자에게 알릴 작업이면 true — 틀린 항목을 생명주기 경고로도 남긴다
-     * @return array<string, array{label: string|array<string, string>|null, max_count: int|null, retention_days: int|null}> 범위 id → 선언
-     *
-     * @since 7.1.5
-     */
-    public function getSearchScopes(bool $reportWarnings = false): array
-    {
-        return SearchScopes::normalize($this->loadManifest()['search_scopes'] ?? null, $this->getIdentifier(), $reportWarnings);
-    }
-
-    /**
-     * 함께 쓰면 연동되는(선택) 확장을 반환합니다.
-     *
-     * plugin.json 의 `integrations` 에서 읽습니다. `dependencies` 와 달리 설치·활성화를 막지 않습니다
-     * ({@see ExtensionIntegrations}).
-     *
-     * @return array{modules: array<int, string>, plugins: array<int, string>, templates: array<int, string>} 유형별 확장 식별자
-     *
-     * @since 7.1.0
-     */
-    public function getIntegrations(): array
-    {
-        return ExtensionIntegrations::normalize($this->loadManifest()['integrations'] ?? []);
-    }
-
-    /**
-     * 함께 쓰면 연동되는(선택) 확장을 「식별자 => 버전 제약」 맵으로 반환합니다.
-     *
-     * plugin.json 의 `integrations` 에서 읽습니다. 목록형·버전식이 아닌 값은 `'*'`(버전 무관)입니다. 버전이 모자라도
-     * 설치·활성화를 막지 않고 안내만 합니다 ({@see ExtensionIntegrations::constraints()}).
-     *
-     * @return array{modules: array<string, string>, plugins: array<string, string>, templates: array<string, string>} 유형별 식별자 => 버전 제약
-     *
-     * @since 7.1.4
-     */
-    public function getIntegrationConstraints(): array
-    {
-        return ExtensionIntegrations::constraints($this->loadManifest()['integrations'] ?? []);
-    }
-
-    /**
-     * 다른 확장에 공개하는 PHP 표면을 반환합니다.
-     *
-     * plugin.json 의 `public_api` 에서 읽습니다. 선언한 네임스페이스·클래스만 다른 확장이 import 할 수 있고, `readonly_models` 는
-     * 타입힌트·속성 읽기만 허용됩니다. 자기 네임스페이스 밖 항목은 버립니다({@see PublicApiManifest}).
-     *
-     * @return array{version: int, namespaces: array<int, string>, classes: array<int, string>, readonly_models: array<int, string>}|null 선언이 없으면 null
-     *
-     * @since 7.2.0
-     */
-    public function getPublicApi(): ?array
-    {
-        return PublicApiManifest::normalize(
-            $this->loadManifest()['public_api'] ?? null,
-            'Plugins\\'.ExtensionManager::directoryToNamespace($this->getIdentifier())
-        );
-    }
-
-    /**
-     * 신뢰하는 외부 스크립트 호스트 목록을 반환합니다.
-     *
-     * plugin.json 의 `trusted_script_hosts` 배열에서 읽습니다. 이 플러그인이 레이아웃
-     * `scripts[].src` 로 로드하는 외부 CDN 호스트(예: `cdn.ckeditor.com`)를 선언합니다.
-     * 코어는 이 목록을 집계(AbstractPlugin/AbstractModule → TrustedScriptHosts)해 런타임
-     * 스크립트 로더·저장측 검증·정적 검사가 same-origin 이 아닌 스크립트 중 **선언된
-     * 호스트만** 허용하도록 합니다 (KVE-2026-1915 신뢰 출처 허용목록).
-     *
-     * @return array<int, string> 신뢰 호스트명 목록 (예: ['cdn.ckeditor.com'])
-     */
-    public function getTrustedScriptHosts(): array
-    {
-        $hosts = $this->loadManifest()['trusted_script_hosts'] ?? [];
-
-        if (! is_array($hosts)) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            array_map(fn ($host) => is_string($host) ? trim($host) : '', $hosts),
-            fn ($host) => $host !== ''
-        ));
-    }
-
-    /**
-     * 신뢰하는 외부 스타일시트 호스트 목록을 반환합니다.
-     *
-     * plugin.json 의 `trusted_style_hosts` 배열에서 읽습니다. 이 플러그인이 싣는 외부 스크립트(결제사 결제창 등)가
-     * 자기 호스트에서 불러오는 CSS 파일의 호스트를 선언합니다. 코어는 켜진 확장의 선언을 모아
-     * ({@see TrustedStyleHosts}) 스타일 정책(`style-src`)의 허용 호스트에 더합니다. 확장이 직접 쓰는
-     * CSS 는 선언하지 않고 동봉해 같은 사이트에서 싣습니다.
-     *
-     * @return array<int, string> 신뢰 호스트명 목록 (예: ['stdpay.example.com'])
-     */
-    public function getTrustedStyleHosts(): array
-    {
-        $hosts = $this->loadManifest()['trusted_style_hosts'] ?? [];
-
-        if (! is_array($hosts)) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            array_map(fn ($host) => is_string($host) ? trim($host) : '', $hosts),
-            fn ($host) => $host !== ''
-        ));
     }
 
     /**
@@ -1194,12 +721,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     /**
      * 레이아웃 확장 파일 목록 반환
      *
-     * **`.json` 만 돌려주는 것이 계약이다** — 소스(`.g7.html`) 판별은 여기가 아니라 **호출처**
-     * ({@see CollectsFragmentSources::collectFragmentSources()}) 소관이다.
-     * 호출처가 이 목록 위에 같은 디렉토리의 `.g7.html` 을 얹어 소스 SSoT 를 우선하고, 짝 마크업이
-     * 없는 `.json` 만 남긴다. 여기서 `.g7.html` 까지 반환하도록 바꾸면 확장 공개 표면이 바뀌어
-     * 번들 확장의 `g7_version` 상향 대상이 되고, 호출처의 짝 판별과 이중으로 겹친다.
-     *
      * @return array<string> JSON 파일 경로 목록
      */
     public function getLayoutExtensions(): array
@@ -1210,7 +731,7 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
             return [];
         }
 
-        return ExtensionManager::listDirectoryFiles($path, '.json');
+        return glob($path.'/*.json') ?: [];
     }
 
     /**
@@ -1320,46 +841,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      * @return array Schema.org 형식 (@type 필수). 빈 배열 반환 시 미적용.
      */
     public function seoStructuredData(string $pageType, array $context, array $routeParams = []): array
-    {
-        return [];
-    }
-
-    /**
-     * OG 기본값 키별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
-     *
-     * `seoOgDefaults()` 의 평문값이 어느 데이터에서 왔는지(`{{...}}`)를 편집기 [검색엔진] 탭이
-     * 연결 칩으로 보여주고 교체할 수 있도록, 키별 데이터 경로(표현식)와 사용자용 라벨을 제공합니다.
-     * 운영 렌더링은 본 메서드를 호출하지 않습니다 — 편집기 미리보기만 소비. 미오버라이드면
-     * 종전대로 resolve 된 평문을 보여줍니다(하위호환·평문 폴백). 상세: AbstractModule 동명 메서드.
-     *
-     * @param  string  $pageType  페이지 타입
-     * @return array<string, array{expr: string, label: string|array<string, string>}> 키별 데이터 경로 메타 (label = 번역 키 권장)
-     */
-    public function seoOgDefaultMeta(string $pageType): array
-    {
-        return [];
-    }
-
-    /**
-     * Twitter 카드 기본값 키별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
-     *
-     * @param  string  $pageType  페이지 타입
-     * @return array<string, array{expr: string, label: string|array<string, string>}> 키별 데이터 경로 메타 (label = 번역 키 권장)
-     */
-    public function seoTwitterDefaultMeta(string $pageType): array
-    {
-        return [];
-    }
-
-    /**
-     * 구조화 데이터 속성별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
-     *
-     * `seoStructuredData()` 중첩 객체를 점 경로 키로 평탄화한 기준으로 선언합니다(예: `offers.price`).
-     *
-     * @param  string  $pageType  페이지 타입
-     * @return array<string, array{expr: string, label: array<string, string>|string}> 점 경로 키별 데이터 경로 메타
-     */
-    public function seoStructuredDataMeta(string $pageType): array
     {
         return [];
     }
@@ -1490,53 +971,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 빌드된 에셋의 절대 파일 경로를 반환합니다.
-     *
-     * `getBuiltAssetPaths()` 는 plugin.json 의 상대 output 경로를 돌려주므로
-     * 파일을 실제로 읽으려면 플러그인 루트(`getPluginPath()`: 활성 dir 또는
-     * `_bundled` 실제 위치)를 앞에 붙여야 한다. 서버측 번들 병합
-     * (ExtensionBundleService)이 `getAssetFilePath()` 의
-     * `base_path("plugins/{id}/...")` 하드코딩을 복제하지 않고 `_bundled`
-     * 확장에서도 정확한 경로를 얻도록 이 게터를 SSoT 로 쓴다.
-     *
-     * @return array 빌드된 에셋 절대 경로 배열 ['js' => '...', 'css' => '...']
-     */
-    public function getBuiltAssetAbsolutePaths(): array
-    {
-        $relative = $this->getBuiltAssetPaths();
-        $result = [];
-
-        foreach ($relative as $kind => $output) {
-            $result[$kind] = $this->getPluginPath().'/'.$output;
-        }
-
-        return $result;
-    }
-
-    /**
-     * 매니페스트가 **선언한** 프론트엔드 자산의 절대 경로를 반환합니다 (파일 존재 여부 무관).
-     *
-     * `getBuiltAssetAbsolutePaths()` 는 `file_exists()` 게이트라 소실된 산출물이 목록에서
-     * 사라진다. 배포 중 `dist` 가 잠깐 비는 상태를 "선언은 있는데 파일이 없다" 로 세려면
-     * 선언 축을 그대로 돌려주는 통로가 필요하다 — 이 메서드가 그 축이다.
-     *
-     * @return array<string, string> kind('js'|'css') => 절대 경로 (선언된 kind 만)
-     */
-    public function getDeclaredAssetAbsolutePaths(): array
-    {
-        $assets = $this->getAssets();
-        $result = [];
-
-        foreach (['js', 'css'] as $kind) {
-            if (! empty($assets[$kind]['output'])) {
-                $result[$kind] = $this->getPluginPath().'/'.$assets[$kind]['output'];
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * 플러그인이 설정 페이지를 가지고 있는지 확인합니다.
      *
      * 설정 레이아웃 파일이 존재하면 설정 페이지가 있는 것으로 간주합니다.
@@ -1565,29 +999,17 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     /**
      * 플러그인 설정 페이지 레이아웃 경로를 반환합니다.
      *
-     * 기본적으로 resources/layouts/admin/plugin_settings 의 소스를 반환합니다.
+     * 기본적으로 resources/layouts/admin/plugin_settings.json 경로를 반환합니다.
      * 파일이 존재하지 않으면 null을 반환합니다.
      * 플러그인 개발자가 커스텀 경로가 필요한 경우 오버라이드합니다.
-     *
-     * 소스 우선순위는 저장소 규약과 같다 — `.g7.html`(작성 SSoT) → 짝 `.json`(굽기 산출).
-     * 종전에는 이 메서드만 `.json` 을 하드코딩해, 다른 모든 레이아웃 소비 경로가 쓰는
-     * {@see ResolvesLayoutInstallSource::layoutSourceCandidates()} 규약 밖에 홀로 남아 있었다.
-     * 그 결과 플러그인 설정 UI 만 짝 `.json` 의 **디스크 실재**를 요구했고, 굽기를 빠뜨린
-     * 플러그인은 설정 화면이 통째로 사라졌다(`null` → `hasSettingsLayout()` false).
      *
      * @return string|null 레이아웃 파일 절대 경로 또는 null
      */
     public function getSettingsLayout(): ?string
     {
-        $base = $this->getPluginPath().'/resources/layouts/admin/plugin_settings';
+        $layoutPath = $this->getPluginPath().'/resources/layouts/admin/plugin_settings.json';
 
-        foreach ($this->layoutSourceCandidates($base.'.json') as $candidate) {
-            if (file_exists($candidate['path'])) {
-                return $candidate['path'];
-            }
-        }
-
-        return null;
+        return file_exists($layoutPath) ? $layoutPath : null;
     }
 
     /**
@@ -1655,107 +1077,6 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
-     * 비공개 원본 디스크 선택 전용 바인딩 키 (#916)
-     *
-     * 서비스 프로바이더 `$storageCategoryServices` 에 `서비스 => self::PRIVATE_ATTACHMENT_BINDING` 으로 등록하면 그 서비스에
-     * 관리자가 고른 비공개 첨부 저장소 디스크의 스토리지가 주입된다(「기본」이면 플러그인 기본 디스크 `plugins`). 저장 경로
-     * 카테고리(`attachments` 등)는 서비스 안에서 그대로 쓴다. 기존 `attachments` 키로 묶은 서비스는 동작이 바뀌지 않는다.
-     */
-    public const PRIVATE_ATTACHMENT_BINDING = 'private_attachments';
-
-    /**
-     * 카테고리별 스토리지 인스턴스 캐시 (디스크명 키 memoize)
-     *
-     * @var array<string, StorageInterface>
-     */
-    private array $storageByDisk = [];
-
-    /**
-     * 카테고리별 스토리지 디스크 이름 반환
-     *
-     * 기본값은 getStorageDisk() 와 동일 (현행 동작 100% 보존).
-     * 특정 카테고리(예: 'images')만 다른 디스크를 쓰려면 플러그인이 오버라이드합니다.
-     *
-     * 주의: 오버라이드 구현은 'settings' 카테고리에서 플러그인 설정을 조회하면 안 됩니다 —
-     * 설정 로드가 getStorage()->get('settings', ...) 를 경유하므로 재귀 고리가 생깁니다.
-     * 설정 조회는 'images' 등 설정 저장과 무관한 카테고리에서만 수행합니다.
-     *
-     * @param  string  $category  카테고리 (settings, data, images, temp)
-     * @return string 디스크 이름
-     */
-    public function getStorageDiskFor(string $category): string
-    {
-        // 비공개 원본 디스크 선택 전용 키(#916) — 저장 경로 카테고리가 아니다. 서비스 프로바이더의
-        // $storageCategoryServices 에 이 키로 등록한 서비스만 관리자가 고른 비공개 첨부 저장소를 따른다.
-        if ($category === self::PRIVATE_ATTACHMENT_BINDING) {
-            $pin = $this->getPrivateAttachmentDiskPin();
-
-            return $pin['disk'] ?? PrivateAttachmentDisk::forExtension($this->getStorageDisk());
-        }
-
-        return $this->getStorageDisk();
-    }
-
-    /**
-     * `.env` 로 비공개 원본 디스크를 고정했는지 반환합니다.
-     *
-     * 고정돼 있으면 관리자의 「비공개 첨부 저장소」 선택보다 이 디스크가 우선하고, 환경설정 > 드라이버 화면이
-     * 「.env 로 고정된 확장」으로 안내합니다. 기본은 고정 없음(null). env 로 디스크를 바꿀 수 있는 플러그인이 재정의합니다.
-     *
-     * @return array{env: string, disk: string}|null 고정한 env 이름과 디스크
-     *
-     * @since 7.2.0
-     */
-    public function getPrivateAttachmentDiskPin(): ?array
-    {
-        return null;
-    }
-
-    /**
-     * 카테고리별 스토리지 드라이버 인스턴스 반환
-     *
-     * getStorageDiskFor() 가 결정한 디스크의 드라이버를 디스크 단위로 memoize 하여 반환합니다.
-     * 기본 디스크와 동일하면 getStorage() 인스턴스를 그대로 재사용합니다.
-     *
-     * @param  string  $category  카테고리
-     * @return StorageInterface 스토리지 드라이버 인스턴스
-     */
-    public function getStorageFor(string $category): StorageInterface
-    {
-        $disk = $this->getStorageDiskFor($category);
-
-        if (! isset($this->storageByDisk[$disk])) {
-            $base = $this->getStorage();
-            $this->storageByDisk[$disk] = ($disk === $base->getDisk()) ? $base : $base->withDisk($disk);
-        }
-
-        return $this->storageByDisk[$disk];
-    }
-
-    /**
-     * 공개 자산 디스크 설정값을 해석합니다.
-     *
-     * 우선순위: 확장 개별 설정(override) > 코어 전역 설정(core.storage.public_asset_disk).
-     * 미설정('')/'none'/config 에 존재하지 않는 디스크(고아 플러그인 디스크)는 null 로
-     * 해석되어 호출측이 기존 디스크(스트리밍)로 폴백합니다.
-     *
-     * 저장할 파일의 확장자를 함께 주면 그 확장자가 「공개 디스크로 내보낼 확장자」 안일 때만 디스크
-     * 이름을 돌려줍니다 (7.1.6). 확장자를 주지 않으면 종전과 같습니다.
-     *
-     * @param  string|null  $override  확장 개별 설정값 (''/null 이면 코어 전역 설정 사용)
-     * @param  string|null  $extension  저장할 파일의 확장자 (null 이면 확장자 판정 없음)
-     * @return string|null 사용할 디스크 이름 (스트리밍 유지면 null)
-     */
-    protected function resolvePublicAssetDisk(?string $override = null, ?string $extension = null): ?string
-    {
-        if ($extension !== null) {
-            return PublicAssetDisk::resolveForExtension($extension, $override);
-        }
-
-        return PublicAssetDisk::resolve($override);
-    }
-
-    /**
      * 플러그인 캐시 드라이버 인스턴스 반환
      *
      * 플러그인별로 격리된 캐시를 제공합니다.
@@ -1766,7 +1087,10 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     public function getCache(): CacheInterface
     {
         if ($this->cache === null) {
-            $this->cache = CacheDriverFactory::extension('plugin', $this->getIdentifier(), null, $this->getCacheStore());
+            $this->cache = new PluginCacheDriver(
+                $this->getIdentifier(),
+                $this->getCacheStore()
+            );
         }
 
         return $this->cache;
@@ -1787,30 +1111,26 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     /**
      * 카테고리별 스토리지 기본 경로 반환
      *
-     * 카테고리가 다른 디스크로 배선돼 있으면(getStorageDiskFor 오버라이드) 그 디스크
-     * 기준 경로를 돌려줍니다. 기본 디스크를 보면 배선한 카테고리의 경로가 어긋납니다.
-     *
      * @param  string  $category  카테고리 (settings, data, temp)
      * @return string 전체 파일 시스템 경로
      */
     public function getStorageBasePath(string $category): string
     {
-        return $this->getStorageFor($category)->getBasePath($category);
+        return $this->getStorage()->getBasePath($category);
     }
 
     /**
      * 파일의 공개 URL 반환
      *
-     * 카테고리에 배선된 디스크(getStorageDiskFor)가 직접 URL 을 지원하면 그 URL 을,
-     * 아니면 null 을 반환합니다 (별도 API 엔드포인트 사용). 기본 디스크를 보면
-     * 공개 자산 디스크로 옮긴 카테고리가 항상 null 을 받습니다.
+     * public disk인 경우 직접 URL을 반환하고,
+     * private disk인 경우 null을 반환합니다 (별도 API 엔드포인트 사용).
      *
      * @param  string  $category  카테고리
      * @param  string  $path  파일 경로
-     * @return string|null 파일 URL (직접 URL 불가 디스크인 경우 null)
+     * @return string|null 파일 URL (private disk인 경우 null)
      */
     public function getStorageUrl(string $category, string $path): ?string
     {
-        return $this->getStorageFor($category)->url($category, $path);
+        return $this->getStorage()->url($category, $path);
     }
 }

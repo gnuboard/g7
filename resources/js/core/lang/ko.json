@@ -1,0 +1,14 @@
+{
+  "core": {
+    "errors": {
+      "template_not_found": "활성화된 템플릿이 없습니다",
+      "layout_load_failed": "레이아웃을 불러오는데 실패했습니다",
+      "layout_load_failed_with_id": "레이아웃({layoutId})을 불러오는데 실패했습니다",
+      "component_load_failed": "컴포넌트를 불러오는데 실패했습니다",
+      "component_load_failed_with_name": "컴포넌트({componentName})를 불러오는데 실패했습니다",
+      "translation_load_failed": "다국어 파일을 불러오는데 실패했습니다",
+      "translation_load_failed_with_locale": "{locale} 다국어 파일을 불러오는데 실패했습니다",
+      "template_init_error": "템플릿 엔진을 초기화하는 중 오류가 발생했습니다"
+    }
+  }
+}

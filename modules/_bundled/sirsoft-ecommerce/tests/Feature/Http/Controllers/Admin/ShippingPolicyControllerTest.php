@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Admin;
 
 use App\Models\User;
-use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -29,7 +28,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         parent::setUp();
 
         // ShippingPolicy validation 은 ShippingType DB rows (rules 의 Rule::in) 를 참조
-        $this->seed(ShippingTypeSeeder::class);
+        $this->seed(\Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder::class);
 
         // 관리자 사용자 생성 (배송정책 권한 포함)
         $this->adminUser = $this->createAdminUser([
@@ -47,8 +46,9 @@ class ShippingPolicyControllerTest extends ModuleTestCase
     /**
      * 배송정책 + 국가별 설정을 생성하는 헬퍼
      *
-     * @param  array  $policyOverrides  정책 오버라이드
-     * @param  array  $countrySettings  국가별 설정 배열
+     * @param array $policyOverrides 정책 오버라이드
+     * @param array $countrySettings 국가별 설정 배열
+     * @return ShippingPolicy
      */
     protected function createPolicyWithSettings(
         array $policyOverrides = [],
@@ -78,7 +78,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
     /**
      * 기본 KR 국가 설정 데이터
      *
-     * @param  array  $overrides  오버라이드
+     * @param array $overrides 오버라이드
+     * @return array
      */
     protected function makeKrCountrySetting(array $overrides = []): array
     {
@@ -103,7 +104,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
     /**
      * 기본 US 국가 설정 데이터
      *
-     * @param  array  $overrides  오버라이드
+     * @param array $overrides 오버라이드
+     * @return array
      */
     protected function makeUsCountrySetting(array $overrides = []): array
     {
@@ -128,8 +130,9 @@ class ShippingPolicyControllerTest extends ModuleTestCase
     /**
      * Store API 페이로드를 생성하는 헬퍼
      *
-     * @param  array  $overrides  정책 레벨 오버라이드
-     * @param  array|null  $countrySettings  국가별 설정 (null이면 기본 KR)
+     * @param array $overrides 정책 레벨 오버라이드
+     * @param array|null $countrySettings 국가별 설정 (null이면 기본 KR)
+     * @return array
      */
     protected function makeStorePayload(array $overrides = [], ?array $countrySettings = null): array
     {
@@ -166,7 +169,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         );
 
         // When: 목록 조회
-        $response = $this->actingAs($this->adminUser)->getJson($this->apiBase.'?with_country_settings=true');
+        $response = $this->actingAs($this->adminUser)->getJson($this->apiBase);
 
         // Then: 성공 응답 및 구조 확인
         $response->assertOk()
@@ -211,7 +214,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         );
 
         // When
-        $response = $this->actingAs($this->adminUser)->getJson($this->apiBase.'?with_country_settings=true');
+        $response = $this->actingAs($this->adminUser)->getJson($this->apiBase);
 
         // Then: country_settings 배열 구조 확인
         $response->assertOk();
@@ -284,7 +287,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: parcel만 필터
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'?shipping_methods[]=parcel&with_country_settings=true'
+            $this->apiBase . '?shipping_methods[]=parcel'
         );
 
         // Then: 택배 정책만 반환
@@ -313,7 +316,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: fixed만 필터
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'?charge_policies[]=fixed&with_country_settings=true'
+            $this->apiBase . '?charge_policies[]=fixed'
         );
 
         // Then: 고정 배송비 정책만 반환
@@ -342,7 +345,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: KR만 필터
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'?countries[]=KR&with_country_settings=true'
+            $this->apiBase . '?countries[]=KR'
         );
 
         // Then: 국내 정책만 반환
@@ -370,7 +373,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: '기본' 검색
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'?search='.urlencode('기본')
+            $this->apiBase . '?search=' . urlencode('기본')
         );
 
         // Then
@@ -397,7 +400,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: 활성만 필터
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'?is_active=true'
+            $this->apiBase . '?is_active=true'
         );
 
         // Then
@@ -552,9 +555,9 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $ranges = [
             'type' => 'amount',
             'tiers' => [
-                ['min' => 0, 'max' => 30000, 'fee' => 3000],
-                ['min' => 30000, 'max' => 50000, 'fee' => 2000],
-                ['min' => 50000, 'max' => null, 'fee' => 0],
+                ['min' => 0, 'max' => 29999, 'fee' => 3000, 'unit' => '원'],
+                ['min' => 30000, 'max' => 49999, 'fee' => 2000, 'unit' => '원'],
+                ['min' => 50000, 'max' => null, 'fee' => 0, 'unit' => '원'],
             ],
         ];
 
@@ -586,8 +589,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $ranges = [
             'type' => 'quantity',
             'tiers' => [
-                ['min' => 0, 'max' => 4, 'fee' => 3000],
-                ['min' => 5, 'max' => null, 'fee' => 5000],
+                ['min' => 0, 'max' => 4, 'fee' => 3000, 'unit' => '개'],
+                ['min' => 5, 'max' => null, 'fee' => 5000, 'unit' => '개'],
             ],
         ];
 
@@ -614,8 +617,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $ranges = [
             'type' => 'weight',
             'tiers' => [
-                ['min' => 0, 'max' => 2, 'fee' => 3000],
-                ['min' => 2, 'max' => null, 'fee' => 5000],
+                ['min' => 0, 'max' => 2, 'fee' => 3000, 'unit' => 'kg'],
+                ['min' => 3, 'max' => null, 'fee' => 5000, 'unit' => 'kg'],
             ],
         ];
 
@@ -642,8 +645,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $ranges = [
             'type' => 'volume',
             'tiers' => [
-                ['min' => 0, 'max' => 100, 'fee' => 5000],
-                ['min' => 100, 'max' => null, 'fee' => 10000],
+                ['min' => 0, 'max' => 99, 'fee' => 5000, 'unit' => 'cm³'],
+                ['min' => 100, 'max' => null, 'fee' => 10000, 'unit' => 'cm³'],
             ],
         ];
 
@@ -670,8 +673,8 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $ranges = [
             'type' => 'volume_weight',
             'tiers' => [
-                ['min' => 0, 'max' => 5, 'fee' => 5000],
-                ['min' => 5, 'max' => null, 'fee' => 10000],
+                ['min' => 0, 'max' => 4, 'fee' => 5000, 'unit' => 'kg'],
+                ['min' => 5, 'max' => null, 'fee' => 10000, 'unit' => 'kg'],
             ],
         ];
 
@@ -698,11 +701,9 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $payload = $this->makeStorePayload([], [
             $this->makeKrCountrySetting([
                 'charge_policy' => 'api',
-                // API 정책의 base_fee 는 외부 API 장애 시 폴백 배송비 (0 금지)
-                'base_fee' => 30000,
+                'base_fee' => 0,
                 'api_endpoint' => 'https://api.example.com/shipping/calculate',
-                // 후보 5종(ShippingApiRequestField) SSoT 내 값만 허용 (W3 Rule::in)
-                'api_request_fields' => ['items', 'group_total', 'total_quantity'],
+                'api_request_fields' => ['weight', 'volume', 'zipcode'],
                 'api_response_fee_field' => 'calculated_fee',
             ]),
         ]);
@@ -713,7 +714,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         $cs = $response->json('data.country_settings.0');
         $this->assertEquals('api', $cs['charge_policy']);
         $this->assertEquals('https://api.example.com/shipping/calculate', $cs['api_endpoint']);
-        $this->assertEquals(['items', 'group_total', 'total_quantity'], $cs['api_request_fields']);
+        $this->assertEquals(['weight', 'volume', 'zipcode'], $cs['api_request_fields']);
         $this->assertEquals('calculated_fee', $cs['api_response_fee_field']);
     }
 
@@ -1035,7 +1036,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
                     'type' => 'amount',
                     'tiers' => [
                         ['min' => 0, 'max' => 50000, 'fee' => 3000],
-                        ['min' => 50000, 'max' => null, 'fee' => 0],
+                        ['min' => 50001, 'max' => null, 'fee' => 0],
                     ],
                 ],
             ]),
@@ -1264,7 +1265,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         ];
 
         $response = $this->actingAs($this->adminUser)->putJson(
-            $this->apiBase.'/'.$policy->id,
+            $this->apiBase . '/' . $policy->id,
             $updatePayload
         );
 
@@ -1306,7 +1307,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         ];
 
         $response = $this->actingAs($this->adminUser)->putJson(
-            $this->apiBase.'/'.$policy->id,
+            $this->apiBase . '/' . $policy->id,
             $updatePayload
         );
 
@@ -1342,7 +1343,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
         ];
 
         $response = $this->actingAs($this->adminUser)->putJson(
-            $this->apiBase.'/'.$policy->id,
+            $this->apiBase . '/' . $policy->id,
             $updatePayload
         );
 
@@ -1363,7 +1364,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
     {
         // When
         $response = $this->actingAs($this->adminUser)->putJson(
-            $this->apiBase.'/99999',
+            $this->apiBase . '/99999',
             $this->makeStorePayload()
         );
 
@@ -1377,10 +1378,6 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
     /**
      * 배송정책 상세 조회 - country_settings 포함
-     *
-     * @scenario endpoint=detail,opt_in=default
-     *
-     * @effects detail_still_provides_full_country_settings
      */
     #[Test]
     public function test_show_includes_country_settings_with_labels(): void
@@ -1396,7 +1393,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'/'.$policy->id
+            $this->apiBase . '/' . $policy->id
         );
 
         // Then
@@ -1454,7 +1451,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
     public function test_show_nonexistent_policy_returns_404(): void
     {
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'/99999'
+            $this->apiBase . '/99999'
         );
 
         $response->assertNotFound();
@@ -1481,7 +1478,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When
         $response = $this->actingAs($this->adminUser)->deleteJson(
-            $this->apiBase.'/'.$policyId
+            $this->apiBase . '/' . $policyId
         );
 
         // Then
@@ -1500,7 +1497,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
     public function test_destroy_nonexistent_policy_returns_404(): void
     {
         $response = $this->actingAs($this->adminUser)->deleteJson(
-            $this->apiBase.'/99999'
+            $this->apiBase . '/99999'
         );
 
         $response->assertNotFound();
@@ -1524,7 +1521,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: 비활성으로 토글
         $response = $this->actingAs($this->adminUser)->patchJson(
-            $this->apiBase.'/'.$policy->id.'/toggle-active'
+            $this->apiBase . '/' . $policy->id . '/toggle-active'
         );
 
         // Then
@@ -1533,7 +1530,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: 다시 활성으로 토글
         $response = $this->actingAs($this->adminUser)->patchJson(
-            $this->apiBase.'/'.$policy->id.'/toggle-active'
+            $this->apiBase . '/' . $policy->id . '/toggle-active'
         );
 
         $response->assertOk()
@@ -1566,7 +1563,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: 1, 2번 일괄 삭제
         $response = $this->actingAs($this->adminUser)->deleteJson(
-            $this->apiBase.'/bulk',
+            $this->apiBase . '/bulk',
             ['ids' => [$policy1->id, $policy2->id]]
         );
 
@@ -1603,7 +1600,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: 일괄 비활성화
         $response = $this->actingAs($this->adminUser)->patchJson(
-            $this->apiBase.'/bulk-toggle-active',
+            $this->apiBase . '/bulk-toggle-active',
             ['ids' => [$policy1->id, $policy2->id], 'is_active' => false]
         );
 
@@ -1639,7 +1636,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: 새 정책을 기본으로 설정
         $response = $this->actingAs($this->adminUser)->patchJson(
-            $this->apiBase.'/'.$newDefault->id.'/set-default'
+            $this->apiBase . '/' . $newDefault->id . '/set-default'
         );
 
         // Then
@@ -1685,7 +1682,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'/active'
+            $this->apiBase . '/active'
         );
 
         // Then: 활성 정책만 반환
@@ -1833,7 +1830,7 @@ class ShippingPolicyControllerTest extends ModuleTestCase
 
         // When: parcel + fixed 필터
         $response = $this->actingAs($this->adminUser)->getJson(
-            $this->apiBase.'?shipping_methods[]=parcel&charge_policies[]=fixed'
+            $this->apiBase . '?shipping_methods[]=parcel&charge_policies[]=fixed'
         );
 
         // Then: parcel + fixed인 정책만 반환 (1건)

@@ -190,10 +190,13 @@ await (window as any).G7Core?.locale.change('en');
 // 모달 열기
 (window as any).G7Core?.modal.open('confirm_modal');
 
-// 최상위 모달 닫기 — ID 인자는 무시된다. 액션 밖(타이머·외부 콜백)에서 부르면 열린 창 전체가 닫힌다
+// 모달 닫기 (특정 모달)
+(window as any).G7Core?.modal.close('confirm_modal');
+
+// 최상위 모달 닫기
 (window as any).G7Core?.modal.close();
 
-// 열린 모달 모두 닫기 (engine-v1.95.0+ — closeModal 의 params.all)
+// 모든 모달 닫기
 (window as any).G7Core?.modal.closeAll();
 
 // 모달 열림 상태 확인
@@ -314,7 +317,7 @@ const isStandardEvent = firstArg && typeof firstArg === 'object' && 'preventDefa
 |-----|------|-----------|
 | `G7Core.dispatch` | 액션 실행 | `dispatch(action)` |
 | `G7Core.state` | 전역 상태 관리 | `get()`, `set(updates)`, `subscribe(listener)` |
-| `G7Core.locale` | 로케일 관리 | `current()`, `supported()`, `change(locale)`, `handoff.*`(언어 전환 인계 — g7core-api-advanced.md) |
+| `G7Core.locale` | 로케일 관리 | `current()`, `supported()`, `change(locale)` |
 | `G7Core.toast` | 토스트 알림 | `show()`, `success()`, `error()`, `warning()`, `info()` |
 | `G7Core.modal` | 모달 관리 | `open()`, `close()`, `closeAll()`, `isOpen()`, `getStack()` |
 | `G7Core.navigation` | 페이지 전환 상태 | `isPending()`, `onComplete(callback)` |

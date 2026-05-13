@@ -65,21 +65,21 @@ describe('StatCard', () => {
     render(<StatCard value={100} label="사용자" change={15} trend="up" />);
 
     const changeElement = screen.getByText('15%').parentElement;
-    expect(changeElement).toHaveClass('stats-change', 'stats-trend-up');
+    expect(changeElement).toHaveClass('text-green-600');
   });
 
   it('감소 추세에 빨간색 스타일이 적용됨', () => {
     render(<StatCard value={100} label="사용자" change={10} trend="down" />);
 
     const changeElement = screen.getByText('10%').parentElement;
-    expect(changeElement).toHaveClass('stats-change', 'stats-trend-down');
+    expect(changeElement).toHaveClass('text-red-600');
   });
 
   it('neutral 추세에 회색 스타일이 적용됨', () => {
     render(<StatCard value={100} label="사용자" change={0} trend="neutral" />);
 
     const changeElement = screen.getByText('0%').parentElement;
-    expect(changeElement).toHaveClass('stats-change', 'stats-trend-neutral');
+    expect(changeElement).toHaveClass('text-gray-600');
   });
 
   it('모든 props가 함께 표시됨', () => {
@@ -111,7 +111,7 @@ describe('StatCard', () => {
     const { container } = render(
       <StatCard value={100} label="사용자" style={{ marginTop: '20px' }} />
     );
-    const card = container.querySelector('.stat-card');
+    const card = container.querySelector('.bg-white');
     expect(card).toHaveStyle({ marginTop: '20px' });
   });
 });

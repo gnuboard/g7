@@ -23,7 +23,7 @@
 
 | 문서 | 내용 |
 |------|------|
-| **g7core-api.md** (현재) | 개요, 상태 관리, 토스트 알림, 모달 관리, 네비게이션, 스타일 헬퍼, 주소 조립, 플러그인/모듈 설정, 확장 자산, 방문자 동의, 전역 상태 계약 |
+| **g7core-api.md** (현재) | 개요, 상태 관리, 토스트 알림, 모달 관리, 네비게이션, 스타일 헬퍼, 플러그인/모듈 설정, 위지윅 편집기 |
 | [g7core-api-advanced.md](g7core-api-advanced.md) | 다국어, 액션 실행, 컴포넌트 이벤트, 이벤트 생성 헬퍼, 렌더링 헬퍼, 인증/API, WebSocket, 반응형, React Hooks, 타입 정의 |
 
 ---
@@ -36,14 +36,9 @@
 4. [모달 관리 (G7Core.modal)](#모달-관리-g7coremodal)
 5. [네비게이션 (G7Core.navigation)](#네비게이션-g7corenavigation)
 6. [스타일 헬퍼 (G7Core.style)](#스타일-헬퍼-g7corestyle)
-7. [주소 조립 (G7Core.url)](#주소-조립-g7coreurl)
-   - [이미지 썸네일 주소 (G7Core.thumbnail)](#이미지-썸네일-주소-g7corethumbnail)
-8. [플러그인 설정 (G7Core.plugin)](#플러그인-설정-g7coreplugin)
-9. [모듈 설정 (G7Core.module)](#모듈-설정-g7coremodule)
-10. [확장 자산 (G7Core.asset, G7Core.assets)](#확장-자산-g7coreasset-g7coreassets)
-11. [방문자 동의 (G7Core.consent)](#방문자-동의-g7coreconsent)
-12. [최근 검색어 (G7Core.searchHistory)](#최근-검색어-g7coresearchhistory)
-13. [전역 상태 계약 (G7Core.stateContracts)](#전역-상태-계약-g7corestatecontracts)
+7. [플러그인 설정 (G7Core.plugin)](#플러그인-설정-g7coreplugin)
+8. [모듈 설정 (G7Core.module)](#모듈-설정-g7coremodule)
+9. [위지윅 편집기 (G7Core.wysiwyg)](#위지윅-편집기-g7corewysiwyg)
 
 ---
 
@@ -59,10 +54,7 @@
 | UI 알림 | `G7Core.toast` | 토스트 알림 표시 | 현재 문서 |
 | 모달 | `G7Core.modal` | 모달 열기/닫기 | 현재 문서 |
 | 네비게이션 | `G7Core.navigation` | 페이지 전환 상태 | 현재 문서 |
-| 스타일 | `G7Core.style` | Tailwind 클래스 병합, 런타임 CSS 규칙(`setRules`·`remove`·`has`, engine-v1.91.0) | 현재 문서 |
-| 본문 서식 지연 | `G7Core.inlineStyle` | 본문 HTML 의 `style` 속성을 화면에 붙인 뒤 입히는 장치 — 엄격한 스타일 정책 대응 (engine-v1.91.0) | [확장 자산 — 인라인 스타일](../extension/module-assets.md) |
-| 주소 | `G7Core.url` | 마운트 접두사 붙이기/벗기기 (확장 공용) | 현재 문서 |
-| 썸네일 주소 | `G7Core.thumbnail` | 이미지 서빙 주소에 썸네일 규격·srcset 붙이기 (확장 공용) | 현재 문서 |
+| 스타일 | `G7Core.style` | Tailwind 클래스 병합 | 현재 문서 |
 | 플러그인 | `G7Core.plugin` | 플러그인 설정 조회 | 현재 문서 |
 | 모듈 | `G7Core.module` | 모듈 설정 조회 | 현재 문서 |
 | 다국어 | `G7Core.locale`, `G7Core.t` | 로케일 관리, 번역 | [고급 API](g7core-api-advanced.md) |
@@ -73,13 +65,7 @@
 | 인증 | `G7Core.AuthManager` | 인증 상태 관리 | [고급 API](g7core-api-advanced.md) |
 | API | `G7Core.api` | API 클라이언트 | [고급 API](g7core-api-advanced.md) |
 | WebSocket | `G7Core.websocket` | 실시간 통신 | [고급 API](g7core-api-advanced.md) |
-| 확장 자산 URL | `G7Core.asset` | 템플릿/모듈/플러그인 자산 URL 생성, 재시도 로더 | 현재 문서 |
-| 자산 실패 안내 | `G7Core.assets` | 자산 로드 실패 표면화 및 재시도 | 현재 문서 |
-| 방문자 동의 | `G7Core.consent` | 동의 스냅샷 조회/재조회/구독 | 현재 문서 |
-| 상태 계약 | `G7Core.stateContracts` | 공개 전역 상태의 소유자와 모양 조회 | 현재 문서 |
-| 최근 검색어 | `G7Core.searchHistory`, `G7Core.useSearchHistory` | 검색 범위별 최근 검색어 읽기·기록·삭제·자동 저장 | 현재 문서 |
-| 본문 미디어 업로드 | `G7Core.contentMedia` | 편집기 본문 미디어 업로드 계약 판정(형식·크기·문서당 개수)·업로드·어댑터 교체 (engine-v1.89.0+) | [본문 미디어 계약](../extension/content-media.md#클라이언트-런타임-g7corecontentmedia) |
-| 본문 콘텐츠 규칙 | `G7Core.contentPolicy` | 코어 「본문 콘텐츠」 설정의 허용 태그·속성·미디어 출처·외부 영상 서비스 규칙 조회와 본문 정화 (engine-v1.90.0+) | [본문 미디어 계약](../extension/content-media.md#본문-콘텐츠-규칙-코어-설정-content-g7corecontentpolicy) · [`render_policy` 필드 표](../extension/content-media.md#render_policy-필드) |
+| 위지윅 | `G7Core.wysiwyg` | 레이아웃 편집기 | 현재 문서 |
 | React Hooks | `G7Core.useControllableState` | 상태 패턴 훅 | [고급 API](g7core-api-advanced.md) |
 
 ### 사용 컨텍스트
@@ -98,7 +84,7 @@ const toast = (window as any).G7Core?.toast;
 
 전역 상태를 관리하는 API입니다.
 
-> 상세 내용: [state-management-advanced.md](state-management-advanced.md#g7corestate-javascript-api)
+> 상세 내용: [state-management.md](state-management.md#g7corestate-javascript-api)
 
 ### API 목록
 
@@ -268,21 +254,9 @@ export function categorySelectHandler(action: any, context: any): void {
 
 **레이아웃에서 scopeId 정의**:
 
-```html
-<div>
-  <isolated-state scope-id="category-selector">
-    <field name="selectedCategories" :value="[]"/>
-    <field name="currentStep" :value="1"/>
-  </isolated-state>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
-  "type": "basic",
-  "name": "Div",
+  "type": "Div",
   "isolatedState": {
     "selectedCategories": [],
     "currentStep": 1
@@ -311,35 +285,19 @@ G7Core.state.update(prev => ({
   count: (prev.count || 0) + 1
 }));
 
-// 상태 변경 구독 — 반환값은 구독 해제 함수
+// 상태 변경 구독
 const unsubscribe = G7Core.state.subscribe((state) => {
   console.log('상태 변경:', state);
 });
-unsubscribe();
 
 // 데이터 소스 조회 (deprecated - G7Core.dataSource.get() 사용 권장)
 const users = G7Core.state.getDataSource('users');
 console.log(users?.data);
 ```
 
-컴포넌트에서 구독할 때는 effect 정리 함수로 해제합니다. 해제하지 않으면 화면을 떠난 뒤에도 리스너가 남아 화면을 오갈수록 쌓입니다.
-
-```tsx
-useEffect(() => {
-  const unsubscribe = G7Core.state.subscribe((state) => {
-    setCartCount(state.cart?.count ?? 0);
-  });
-
-  return unsubscribe;
-}, []);
-```
-
 ---
 
 ## 데이터소스 관리 (G7Core.dataSource)
-
-> `G7Core.dataSource.updateData(id, path, items, 'append' | 'prepend')` 로 늘린 데이터소스는 뒤로/앞으로 가기 스크롤 복원의
-> 더보기 스냅샷 대상이 된다(engine-v1.85.0+) — [scroll-restoration.md](scroll-restoration.md#더보기-목록-스냅샷-snapshot).
 
 데이터소스의 조회, 설정, refetch를 관리하는 API입니다.
 
@@ -538,16 +496,10 @@ G7Core.dispatch({
 | 메서드 | 설명 | 파라미터 |
 |--------|------|----------|
 | `open(modalId)` | 모달 열기 | modalId: string |
-| `close(modalId?)` | 맨 위 모달 닫기 | modalId?: string — 전달되지만 `closeModal` 핸들러가 읽지 않는다(아래 「알려진 제약」) |
-| `closeAll()` | 열린 모달 모두 닫기(engine-v1.95.0+, `closeModal` 의 `params.all`) | - |
+| `close(modalId?)` | 모달 닫기 | modalId?: string (생략 시 최상위) |
+| `closeAll()` | 모든 모달 닫기 | - |
 | `isOpen(modalId)` | 모달 열림 확인 | modalId: string |
 | `getStack()` | 모달 스택 반환 | - |
-
-#### 알려진 제약 (engine-v1.75.2 기준)
-
-- `closeAll()` 은 engine-v1.93 까지 엔진에 없는 `closeAllModals` 액션을 보내 아무 창도 닫지 못했다(`Unknown action handler` 오류). engine-v1.95.0 부터 `closeModal` 의 `params.all: true` 로 보내 열린 창을 모두 닫는다. 레이아웃 액션에서는 `<close-modal :all="true"/>` 를 쓴다.
-- `close(modalId)` 의 `modalId` 는 무시된다. 인자와 상관없이 스택 맨 위 창이 닫힌다.
-- 액션 실행 밖(타이머, 외부 SDK 콜백처럼 `__g7ActionContext` 가 없는 곳)에서 `close()` 를 부르면 문맥에 전역 사본이 없어 빈 스택에서 계산한다. 그 결과 **열린 창 전체가 닫힌다**. 같은 자리에서 `open(id)` 를 부르면 스택이 `[id]` 로 바뀌어 아래 창이 사라진다. 종전부터의 동작이며 engine-v1.75.2 도 이 경로는 바꾸지 않았다(`ActionDispatcher.modalStack.test.ts` 가 고정). 부모 창 위에 띄워야 하면 `G7Core.dispatch(action, { componentContext })` 로 문맥을 넘긴다.
 
 ### 사용 예시
 
@@ -555,8 +507,14 @@ G7Core.dispatch({
 // 모달 열기
 G7Core.modal.open('confirm_modal');
 
-// 최상위 모달 닫기 (스택에서 pop) — 인자로 ID 를 줘도 맨 위 창이 닫힌다
+// 특정 모달 닫기
+G7Core.modal.close('confirm_modal');
+
+// 최상위 모달 닫기 (스택에서 pop)
 G7Core.modal.close();
+
+// 모든 모달 닫기
+G7Core.modal.closeAll();
 
 // 모달 열림 상태 확인
 if (G7Core.modal.isOpen('confirm_modal')) {
@@ -602,14 +560,6 @@ G7Core.modal.close();
 |--------|------|--------|
 | `isPending()` | 전환 진행 중 여부 | `boolean` |
 | `onComplete(callback)` | 전환 완료 시 콜백 실행 | 구독 해제 함수 |
-| `isPlainLeftClick(event)` | 「보통 클릭」(왼쪽 단추·수정키 없음·링크면 `target` 없음/`_self`·`download` 없음)인지 — 링크를 그리는 합성 컴포넌트가 참일 때만 기본 동작을 막는다 (engine-v1.80.1) | `boolean` |
-| `mergeQueryIntoHref(href)` | 현재 주소의 쿼리를 링크 주소에 합친다(링크 쪽 키가 이김). 같은 출처가 아니면 그대로 (engine-v1.80.1) | `string` |
-| `subscribeLocationSearch(callback)` | 현재 주소의 쿼리가 바뀔 수 있는 순간(뒤로/앞으로, 같은 화면에서 쿼리만 바꾸는 `navigate` `replace`)에 `callback` 을 부른다. 렌더할 때 `mergeQueryIntoHref` 로 href 를 만드는 컴포넌트가 `useSyncExternalStore(subscribe, () => window.location.search)` 로 구독해 주소만 바뀌어도 링크를 다시 그린다 (engine-v1.82.1). 링크 컴포넌트는 이 함수를 직접 감싸지 말고 아래 `useLocationSearch` 훅을 쓴다(코어 7.1.3) | 구독 해제 함수 |
-| `useLocationSearch(enabled)` | **React 훅.** 주소 검색부를 구독해 쿼리가 바뀌면(뒤로/앞으로, 같은 화면 `navigate` `replace`·`replaceUrl`) 컴포넌트를 다시 그린다. 렌더할 때 현재 쿼리를 href 에 합치는 링크 컴포넌트가 `enabled` 를 참으로 부른다. 거짓이면 구독하지 않는다. 컴포넌트 렌더 중에만 부른다 (engine-v1.83.0) | `string` — 현재 검색부(`?a=1`), 구독하지 않으면 `''` |
-| `resolveInternalHref(href)` | 링크 href 가 이 사이트 안 주소면 「경로?쿼리#해시」. 빈 값·`#…`·실행 스킴·다른 출처·`//host`·백슬래시 변형(`/\host`)·경로가 `//` 로 시작하는 같은 출처 주소는 `null`. 엔진 `navigate` 와 같은 판정이다 — 링크 컴포넌트는 판정을 다시 만들지 않는다 (engine-v1.83.0) | `string \| null` |
-| `mergeRelForTarget(rel, target)` | 새 창 링크의 rel. `target` 이 `_blank` 면 `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 넘겨받은 토큰은 남긴다(대소문자 무시). 새 창이 아니면 받은 값 그대로 (engine-v1.83.0) | `string \| undefined` |
-| `getRouteGeneration()` | 지금 경로 전환 세대 — 경로 전환이 시작될 때마다 1 씩 는다(같은 주소로 다시 들어와도 는다). 진행 중인 이동 뒤에 새 이동이 대기열에 들어와 진행 중인 화면 처리가 밀릴 때도 는다(engine-v1.82.0 — 값은 늘 같은 방향으로만 바뀐다). 엔진이 없으면 `0` (engine-v1.81.1) | `number` |
-| `isLeaveGuarded()` | 지금 화면을 떠나면 이탈 확인 창이 뜨는지 — 레이아웃 `meta.leave_guard` 식을 읽기 전용으로 평가한다. 선언이 없거나 이미 떠나기로 승인된 이동 중이면 `false` (engine-v1.82.0) | `boolean` |
 
 ### 사용 예시
 
@@ -628,48 +578,6 @@ const unsubscribe = G7Core.navigation.onComplete(() => {
 // 구독 해제
 unsubscribe();
 ```
-
-### 비동기 응답 뒤 화면을 바꾸는 핸들러 — getRouteGeneration
-
-자기 API 를 기다린 뒤 오류 화면·상태 쓰기·이동을 하는 확장 핸들러는 시작할 때 세대를 잡아 두고, 응답 뒤 값이 다르면 아무것도 하지 않는다. 사용자가 그사이 다른 화면으로 옮겼다가 **같은 주소로 돌아온 경우**(A → B → A)도 세대가 달라 지난 응답을 새 화면에 쓰지 않는다 — 주소 비교만으로는 가를 수 없다. 엔진의 `showErrorPage` 가 늦은 오류 화면을 거르는 것과 같은 값이다.
-
-```typescript
-export async function loadClaimForEdit(action: any, context: any) {
-  const G7Core = (window as any).G7Core;
-  const generation = G7Core?.navigation?.getRouteGeneration?.() ?? null; // 옛 엔진이면 null
-
-  const response = await fetchClaim(action.params.id);
-
-  if (generation !== null && G7Core.navigation.getRouteGeneration() !== generation) {
-    return; // 이미 다른 화면(같은 주소의 새 진입 포함) — 오류 화면도 상태 쓰기도 하지 않는다
-  }
-  if (!response.ok) {
-    G7Core.dispatch({ handler: 'showErrorPage', params: { errorCode: response.status } });
-    return;
-  }
-  G7Core.state.setLocal({ form: response.data });
-}
-```
-
-- `window.__templateApp` 같은 코어 내부를 읽지 않는다 — 이 API 가 공개 통로다.
-- 쿼리만 바뀌는 같은 화면 안 이동(검색·쪽 번호)은 세대가 바뀌지 않을 수 있다. 쿼리까지 출처로 보려면 주소 비교를 함께 쓴다.
-
-### 저장하지 않은 변경 확인 — isLeaveGuarded
-
-레이아웃이 `meta.leave_guard` 로 이탈 확인을 선언하면([layout-json.md](layout-json.md#metaleave_guard-저장하지-않은-변경-이탈-확인)) 엔진이 SPA 이동·뒤로/앞으로·새로고침·탭 닫기에서 묻는다. 확장 핸들러는 다음처럼 쓴다.
-
-```typescript
-// SPA 밖으로 직접 나가기 전에(예: 외부 결제·인증 창으로 같은 탭 이동) 물을지 판단한다
-if (G7Core.navigation.isLeaveGuarded?.() && !window.confirm(G7Core.t('core.navigation.leave_confirm'))) {
-  return;
-}
-
-// 저장에 성공한 뒤 이동은 확인을 건너뛴다 — 액션의 bypassLeaveGuard 를 쓴다
-G7Core.dispatch({ handler: 'navigate', params: { path: '/board/free', bypassLeaveGuard: true } });
-```
-
-- 핸들러 문맥의 `context.navigate(path)` 는 확인을 거친다(사용자가 머무르면 이동하지 않는다). 확인을 건너뛰어야 하면 위처럼 `navigate` 액션에 `bypassLeaveGuard: true` 를 준다.
-- 저장 성공 뒤에는 상태의 변경 표시(`hasChanges` 등)도 내린다. 내리지 않고 머무르면 다음 이탈에서 다시 묻는다.
 
 ### onComplete 동작 방식
 
@@ -700,38 +608,9 @@ Tailwind CSS 클래스를 런타임에서 병합하는 헬퍼 API입니다.
 
 | 메서드 | 설명 | 반환값 |
 |--------|------|--------|
-| `mergeClasses(base, override)` | 충돌하는 Tailwind 클래스 병합 — 엔진 충돌 그룹 표에 든 클래스만 판정([한계](#지원-범위와-한계)) | `string` |
+| `mergeClasses(base, override)` | 충돌하는 Tailwind 클래스 병합 | `string` |
 | `conditionalClass(conditions)` | 조건부 클래스 적용 | `string` |
 | `joinClasses(...classes)` | 여러 클래스 문자열 결합 | `string` |
-| `setRules(key, css, opts?)` | 런타임 CSS 규칙 묶음을 문서에 붙인다(같은 `key` 는 교체). `<style>` 요소를 만들지 않아 엄격한 스타일 정책에서도 적용된다 (engine-v1.91.0) | `{ key, mode, remove() }` |
-| `remove(key)` | 규칙 묶음 제거 (engine-v1.91.0) | `void` |
-| `has(key)` | 규칙 묶음이 붙어 있는지 (engine-v1.91.0) | `boolean` |
-| `splitExtensionClassPrefix(token)` | 확장 CSS 접두 빌드 앞글자(`ecommerce:`)를 떼어 나눈다 (engine-v1.94.0) | `{ prefix, rest }` |
-
-런타임 규칙 3종은 화면이 뜬 뒤에 정해지는 CSS 규칙(대상 id 가 실행 중에 정해지는 덮개 등)에만 씁니다. 고정된 규칙은 확장의 CSS
-자산(`assets.css`)에, 요소 하나의 값은 `el.style.x = …`·CSS 변수에 둡니다. 규칙은 생성형 스타일시트
-(`document.adoptedStyleSheets`)로 붙고 `<head>` 에 같은 id 의 표식 요소(`<meta id="{key}" data-g7-runtime-style>`)가 남습니다.
-생성형 스타일시트가 없는 구형 브라우저에서는 `<style id="{key}">` 로 붙습니다(이 경우 스타일 정책을 강제하면 적용되지 않습니다).
-`key` 는 확장 식별자로 시작하게 지어 다른 확장·코어(`g7-` 로 시작)와 겹치지 않게 합니다.
-
-```typescript
-const handle = G7Core.style.setRules('my-plugin-overlay', '#my-target::after{content:"";position:absolute;inset:0}');
-handle.remove();
-```
-
-### splitExtensionClassPrefix
-
-클래스 토큰 하나에서 확장 앞글자(접두 빌드의 `{letters}:`)를 떼어 `{ prefix, rest }` 로 돌려줍니다. className 을 Tailwind 이름으로 읽는 템플릿 컴포넌트가 확장이 넘긴 클래스(`ecommerce:md:hidden`)를 앞글자 없는 클래스와 같은 뜻으로 다룰 때 씁니다. `mergeClasses` 도 이 함수로 앞글자를 떼고 충돌을 판정합니다.
-
-```typescript
-G7Core.style.splitExtensionClassPrefix('ecommerce:md:hidden') // { prefix: 'ecommerce:', rest: 'md:hidden' }
-G7Core.style.splitExtensionClassPrefix('md:w-44')             // { prefix: '', rest: 'md:w-44' }
-G7Core.style.splitExtensionClassPrefix('w-44')                // { prefix: '', rest: 'w-44' }
-```
-
-- 앞글자 목록은 서버가 활성 모듈·플러그인의 `assets.css.namespace` 에서 영문 소문자만 남긴 값으로 계산해 화면에 싣습니다(`window.G7Config.extensionClassPrefixes`). 목록에 없는 머리(`md:`·`dark:` 같은 변형, 비활성 확장의 앞글자)는 앞글자로 보지 않습니다.
-- 앞글자가 없거나 목록에 맞지 않으면 `{ prefix: '', rest: token }` — 토큰을 그대로 `rest` 에 둡니다.
-- 앞글자 규약: [module-assets.md 「확장 CSS 자기 공급 규약」](../extension/module-assets.md#확장-css-자기-공급-규약)
 
 ### mergeClasses
 
@@ -751,46 +630,19 @@ G7Core.style.mergeClasses('dark:text-white dark:bg-gray-800', 'dark:text-gray-10
 // 결과: 'dark:bg-gray-800 dark:text-gray-100'
 ```
 
-### 충돌 판정 규칙 (engine-v1.83.0)
+### 지원하는 클래스 그룹
 
-`mergeClasses` 는 Tailwind 전체를 이해하는 병합기가 아니다. 엔진이 가진 **충돌 그룹 표**에 든 클래스만 판정하고, 표에 없는 클래스는 그대로 둔다. 판정은 다음 세 규칙이 전부다.
-
-1. **같은 충돌 그룹 + 같은 변형 접두사**면 base 쪽을 지우고 override 를 남긴다(`justify-center` ↔ `justify-start`). 변형 접두사는 글자 그대로 같아야 같은 것으로 본다(`dark:` 와 접두사 없음은 서로 다르다).
-2. **상위 유틸리티는 하위 축을 함께 지운다** — override 가 `p-0` 이면 base 의 `px-4`·`pt-2` 도 지운다.
-3. **하위 축은 상위를 지우지 않는다** — override `px-2` 는 base `p-4` 를 남긴다(세로 여백 유지). Tailwind 가 축 유틸리티를 전체 유틸리티 뒤에 출력하므로 둘이 함께 있어야 의도대로 그려진다. tailwind-merge 의 「상위가 하위를 덮음」 규칙과 같다.
-
-| 상위 그룹 (override 로 오면 하위도 지움) | 함께 지우는 하위 그룹 |
-|------|------|
-| `p-*` | `px` `py` `ps` `pe` `pt` `pr` `pb` `pl` (`px` 는 `pr`·`pl`, `py` 는 `pt`·`pb`) |
-| `m-*` | `mx` `my` `ms` `me` `mt` `mr` `mb` `ml` (`mx` 는 `mr`·`ml`, `my` 는 `mt`·`mb`) |
-| `inset-*` | `inset-x` `inset-y` `top` `right` `bottom` `left` (`inset-x` 는 `right`·`left`, `inset-y` 는 `top`·`bottom`) |
-| `gap-*` | `gap-x` `gap-y` |
-| `border`(폭) | `border-x` `border-y` `border-s` `border-e` `border-t` `border-r` `border-b` `border-l` |
-| `rounded` | `rounded-s/e/t/r/b/l` 와 모서리(`rounded-tl` 등). 변(`rounded-t`)은 그 변의 두 모서리를 지운다 |
-| `overflow-*` | `overflow-x` `overflow-y` |
-| `overscroll-*` | `overscroll-x` `overscroll-y` |
-| `scale-*` | `scale-x` `scale-y` |
-
-그 밖에 서로 **다른 그룹**이라 지우지 않는 짝:
-
-| 짝 | 이유 |
-|------|------|
-| `flex-row`/`flex-col` ↔ `flex-wrap` ↔ `flex-1`/`flex-auto` ↔ `flex`(display) | 방향·줄바꿈·크기·디스플레이는 각각 다른 속성 |
-| `space-x-4` ↔ `space-x-reverse` | 간격과 방향 반전은 다른 그룹 |
-| `break-after-*`·`break-before-*`·`break-inside-*` ↔ `break-words`·`break-all` | 단 나누기와 단어 줄바꿈(word-break)은 다른 그룹 |
-| `top-4` ↔ `left-0`, `border-t` ↔ `border`(base 쪽), `overflow-x-auto` ↔ `overflow-hidden`(base 쪽) | 축·변이 다르면 다른 그룹(위 규칙 3) |
-
-### 지원 범위와 한계
-
-| 판정함 | 판정하지 않음(그대로 둘 다 남음) |
-|------|------|
-| Tailwind v3 기본 유틸리티 중 표에 든 것 — 정렬(`justify`·`items`·`content`·`self`), flex/grid, display, position·inset, 크기(`w`·`h`·`min-*`·`max-*`), 여백, 글자(크기·굵기·정렬·색·행간·자간 등), 배경, 테두리·둥글기·ring, 그림자·불투명도·필터·변형·전환, 커서·overflow 등 | **커스텀 클래스**(`btn`·`card-header` 같은 템플릿 고유 클래스) — 그룹이 없으므로 충돌로 보지 않는다 |
-| 값 접두사로 판정하는 그룹의 임의값(`w-[320px]`·`p-[3px]`·`gap-[6px]`) | 값 목록으로 판정하는 그룹의 임의값 — 색(`text-[#333]`·`bg-[var(--x)]`·`border-[#ddd]`), 글자 크기(`text-[13px]`), 그림자·둥글기 임의값 |
-| 변형 접두사 `dark:` `hover:` `focus:` `active:` `disabled:` `group-hover:` `sm:` `md:` `lg:` `xl:` `2xl:` 과 그 조합 | 그 밖의 변형 접두사(`focus-visible:`·`aria-*:`·`data-*:`·`peer-*:`·`group-*`(hover 외)·`max-*:` 등) — 접두사를 떼지 못해 그룹을 찾지 못한다 |
-| | **Tailwind v4 신규 유틸리티**(`size-*`·`bg-linear-*`·`shadow-xs`·`rounded-xs`·`inset-shadow-*`·`text-shadow-*` 등)와 v4 에서 바뀐 이름 |
-| | 색 이름 목록 밖의 색 토큰(테마에 추가한 `bg-primary-500` 등) |
-
-판정하지 않는 클래스는 base 와 override 가 **둘 다 남는다**. 그때 어느 쪽이 이기는지는 클래스 순서가 아니라 CSS 출력 순서(레이어·소스 순서)가 정한다 — 원하는 결과가 나오지 않으면 override 를 표에 든 표준 유틸리티로 쓰거나, 템플릿 CSS 에서 우선순위를 정한다([템플릿 고유 CSS 와 기본 컴포넌트 클래스](template-development.md#템플릿-고유-css-와-기본-컴포넌트-클래스)).
+| 그룹 | 설명 | 예시 |
+|------|------|------|
+| justify | Flexbox justify-content | `justify-center`, `justify-between` |
+| items | Flexbox align-items | `items-center`, `items-start` |
+| textAlign | 텍스트 정렬 | `text-left`, `text-center` |
+| display | 디스플레이 속성 | `flex`, `block`, `hidden` |
+| bgColor | 배경색 | `bg-white`, `bg-gray-100` |
+| textColor | 텍스트색 | `text-gray-900`, `text-blue-500` |
+| width/height | 크기 | `w-full`, `h-10` |
+| padding/margin | 여백 | `p-4`, `m-2` |
+| ... | 대부분의 Tailwind 클래스 지원 | - |
 
 ### conditionalClass
 
@@ -830,134 +682,6 @@ export const Button: React.FC<Props> = ({ className = '', ...props }) => {
 
   return <button className={mergedClassName} {...props} />;
 };
-```
-
----
-
-## 주소 조립 (G7Core.url)
-
-> engine-v1.61.2+
-
-사이트가 문서 루트가 아니라 **하위 폴더**에 설치될 수 있다(`https://host/g7/`). 서버가 렌더한 주소에는 그 마운트 접두사(`/g7`)가 이미 붙어 있지만, **브라우저 안에서 만드는 주소**는 루트 상대(`/api/…`)라 접두사가 없다. 같은 화면에서 두 규칙이 공존하면 확장의 요청·이동이 사이트 밖으로 나가고, 증상은 오류가 아니라 **버튼이 조용히 무반응**인 것이다.
-
-확장 프론트엔드는 코어와 **별도 IIFE 번들**이라 코어 함수를 `import` 할 수 없다. `G7Core.url` 이 그 공식 수단이다.
-
-### API 목록
-
-| API | 시그니처 | 설명 |
-|-----|----------|------|
-| `G7Core.url.api(path)` | `(string) => string` | 루트 상대 경로에 마운트 접두사를 붙인다 (멱등) |
-| `G7Core.url.route(path)` | `(string) => string` | 마운트 접두사를 벗겨 라우트 기준 경로로 되돌린다 |
-| `G7Core.url.base()` | `() => string` | 현재 마운트 접두사 (루트 설치면 빈 문자열) |
-
-접두사 값의 SSoT 는 서버가 내려주는 `G7Config.basePath` 다.
-
-### 확장에서의 사용
-
-확장 번들은 코어 초기화 **전**에 실행될 수 있으므로(부트스트랩 순서 역전), 확장마다 같은 SSoT 를 읽는 폴백을 가진 얇은 헬퍼를 둔다. 번들 확장은 이 헬퍼를 `apiUrl.ts` 라는 이름으로 **바이트 동일한 사본**으로 갖는다 (동일성은 계약 테스트가 잰다). 내보내는 이름은 셋이며, 연산이 아니라 **부르는 자리**로 구분한다.
-
-| 헬퍼 | 코어 대응 | 부르는 자리 |
-|------|-----------|-------------|
-| `apiUrl(path)` | `withBasePrefix()` · `G7Core.url.api` | **서버를 부르는** 주소 — `fetch` / `XMLHttpRequest` / `EventSource` 에 넘기는 값 |
-| `sitePath(path)` | `withBasePrefix()` · `G7Core.url.api` | **브라우저가 그대로 여는** 주소 — `location.href` 대입 · `location.assign/replace` · `window.open` · `history.pushState`/`replaceState` 의 세 번째 인자 · 외부 인증기관에 넘기는 복귀 주소 |
-| `routePath(path)` | `stripBasePrefix()` · `G7Core.url.route` | **받아 온 주소를 라우트와 대조할** 때 — `location.pathname` 을 패턴·경로 목록과 비교하기 직전 |
-
-```typescript
-import { apiUrl, routePath, sitePath } from '../apiUrl';
-
-// 서버를 부르는 주소 — 접두사를 붙인다
-const res = await fetch(apiUrl('/api/plugins/vendor-plugin/settings'));
-
-// 화면을 이동하는 주소 — 라우터를 거치지 않으므로 붙일 주체가 호출부밖에 없다
-window.location.href = sitePath('/admin/orders');
-window.open(sitePath(`/admin/orders/${orderNumber}/shipping-label`), '_blank');
-
-// 브라우저가 준 주소를 라우트와 대조 — 여기서는 접두사를 벗긴다
-if (/^\/shop\/orders\/([^/]+)\/complete$/.test(routePath(window.location.pathname))) {
-  mountReceipt();
-}
-```
-
-`apiUrl()` 과 `sitePath()` 는 연산이 같고 부르는 자리가 다르다. `routePath()` 는 그 둘의 **역방향**이다 — 내보내는 주소에는 붙이고, 받아 온 주소는 벗겨서 대조한다. 라우트 패턴은 언제나 접두사 없이 적히므로 벗기지 않으면 하위 폴더 사이트에서 그 대조가 **항상 불일치**가 되고, 그 기능은 오류도 로그도 없이 조용히 사라진다.
-
-붙이는 쪽(요청·이동)과 벗기는 쪽(대조)은 다른 방향이므로, 한쪽만 재는 회귀 테스트는 다른 쪽이 통째로 빠져도 통과한다. 양방향을 함께 잰다.
-
-### 접두사를 붙이지 않는 경우
-
-| 대상 | 이유 |
-|------|------|
-| 절대 URL (`https://…`) · 프로토콜 상대 (`//host/…`) | 사이트 경로가 아니다 — 붙이면 주소가 깨진다 |
-| 이미 접두사가 붙은 경로 | 세 함수 모두 멱등이라 이중 접두(`/g7/g7/…`)나 이중 제거가 생기지 않는다. 「이미 붙어 있다」의 판정은 접두사 뒤가 끝·`/`·`?`·`#` 인 경우다 — `/g7?ref=x`(쿼리가 붙은 하위 폴더 홈) 도 보유이고, `/g7x/foo` 는 경계 없이 이어진 다른 경로라 붙인다. 앞뒤 공백은 판정 전에 걷어낸다 |
-| 외부 시스템(PG 등)이 내려준 주소 | 사이트 경로가 아니다 |
-| `navigate` 핸들러의 `path` | 라우터가 붙인다 — 확장이 직접 붙일 필요가 없다 |
-| 화면 링크(`<a href>`) · 이미지(`<img src>`) · 폼 제출(`<form action>`) | 템플릿 `A` · `Img` · `Form` 컴포넌트가 붙인다 (`sitePath()` 멱등 — 절대 URL · `//` · `data:` · 상대 경로는 그대로). 셋 다 브라우저가 라우터 없이 직접 여는 주소라 붙일 주체가 컴포넌트뿐이다. 날 `<a>`/`<img>`/`<form>` 을 직접 쓰지 않는 것이 그 계층이 성립하는 조건이고, 레이아웃 JSON 의 루트 상대 `href`/`src`/`action` 은 그 세 컴포넌트 위에만 둔다 |
-
-판정할 수 없는 형태(변수·표현식)는 그 줄 바로 위에 `// base-path:allow <사유>` 로 의도를 남긴다.
-
-서버가 만드는 **절대** 주소(알림·메일 링크 · 결제·본인인증의 복귀·통보 주소 · 사이트맵 · 봇 화면)는 브라우저 축이 아니라 서버 축이다 — 사이트 주소 기준의 `App\Support\SiteUrl`(회원이 여는 사용자 화면 주소는 `ScreenUrl`)이 그 단일 지점이고, `url()` 이나 `config('app.url').'/…'` 로 조립하지 않는다. 하위 폴더 설치에서 이미 접두사가 붙은 경로를 넘겨도 `SiteUrl` 은 접두사를 다시 붙이지 않으며, `AssetUrl::siteAbsolute()` 는 그 위임(호환)이다 (상세: [routing.md "절대 URL 은 사이트 주소로 만든다"](../backend/routing.md#절대-url-은-사이트-주소로-만든다) · ["마운트 접두사"](../backend/routing.md#마운트-접두사--라우트는-언제나-접두사-없이-등록된다)).
-
-`routePath()`/`stripBasePrefix()` 의 결과가 `/` 하나로 시작한다는 보장은 없다 — `/g7//evil.com` 을 벗기면 `//evil.com` 이다(접두사 뒤 나머지를 그대로 돌려준다). 그 값을 `navigate` 에 넘기면 사이트 밖 목적지로 판정돼 이동하지 않지만(engine-v1.94.0), `location.href` 대입처럼 라우터를 거치지 않는 통로에 넘기면 그 방어가 없다. 벗긴 값은 대조에만 쓰고 이동 주소로 재사용하지 않는다.
-
-경계 판정의 기대표(입력 24종 × 붙이기/벗기기 + 접두사 정규화 변종)는 `tests/Fixtures/AssetUrl/base-prefix-boundary.json` 하나이며 서버 `AssetUrlTest` 와 프론트 `assetUrl.test.ts` 가 같은 파일을 읽는다. 규칙을 바꾸면 양쪽 구현과 그 표를 함께 바꾼다.
-
----
-
-## 이미지 썸네일 주소 (G7Core.thumbnail)
-
-> engine-v1.95.0+
-
-업로드 이미지 서빙 주소에 `?size={규격}` 을 붙이면 서버가 환경설정의 규격으로 줄인 썸네일을 내준다. 붙여도 되는 주소는 **같은 출처 + 등록된 서빙 경로**(환경설정이 내려 주는 `upload.thumbnail_url_patterns`)뿐이고, 외부·CDN 직접 주소·`/storage/...`·`data:`·`blob:` 는 그대로 둔다. 확장 번들은 코어 모듈을 import 할 수 없으므로 판정과 덧붙임 규칙은 이 API 하나로 쓴다 — 규칙 사본을 두면 서명 주소가 깨지거나 외부 주소에 `size` 가 붙는다.
-
-레이아웃에서는 `<img thumbPreset="sm">`(Img 컴포넌트) 또는 파이프 `{{url | thumb('sm')}}`·`{{url | thumbSrcset('md')}}` 를 쓴다([내장 파이프](data-binding.md#내장-파이프-함수)).
-
-### API 목록
-
-| 메서드 | 반환 | 설명 |
-|--------|------|------|
-| `isThumbnailable(url)` | `boolean` | 같은 출처 + 등록된 서빙 경로인지 (기능이 꺼져 있으면 항상 false) |
-| `url(url, preset)` | `string` | 규격을 붙인 주소. 기존 쿼리는 원문 그대로 두고 `size`·`w` 만 바꾼다(`#` 앞). 대상이 아니면 입력 그대로 |
-| `srcset(url, preset)` | `string` | 1x·2x srcset. 2x 는 같은 맞춤·같은 비율 중 가로 1.5배 이상인 가장 작은 규격(없으면 1x 만). 대상이 아니면 빈 문자열 |
-| `contentSrcset(url)` | `string` | 본문 이미지용 — 숫자 요청 대상 규격 전부를 `w` 기술자로 |
-| `contentSrcsetWithin(url, maxWidth, options?)` | `string` | `contentSrcset` 후보 중 원본 가로(`maxWidth`)를 넘지 않는 것만. 기본은 원본 가로 **이하** 후보, `{ includeOriginal: true }` 면 원본보다 **작은** 후보 + 원본(`{url} {maxWidth}w`). 가로는 내림한 정수로 보고, 가로를 모르거나(1 이상의 유한수가 아님) 남는 후보가 없으면 빈 문자열 |
-| `contentPreset()` | `string` | 환경설정 「본문 이미지 규격」(기본 `lg`) |
-| `strip(url)` | `string` | `size`·`w` 를 걷어낸 원본 주소 (확대 보기용) |
-| `presets()` | `array` | 사용 중인 공개 규격 목록 `{name, width, height, fit, numeric, format}` |
-
-### 확장에서의 사용
-
-```ts
-const thumbnail = (window as any).G7Core?.thumbnail;
-const src = thumbnail ? thumbnail.url(image.download_url, 'sm') : image.download_url;
-const srcSet = thumbnail ? thumbnail.srcset(image.download_url, 'sm') || undefined : undefined;
-```
-
-API 가 없는 코어(구버전)에서는 원 주소를 그대로 쓰면 된다 — 원본이 나가는 것은 종전 동작과 같다.
-
-### 원본 가로를 아는 이미지의 srcset
-
-서버는 원본보다 큰 규격을 키우지 않고 원본을 보낸다. 원본이 750px 인데 후보에 `1280w` 가 있으면 브라우저는 1280px 짜리로 알고 골라 그만큼 작게 그린다. 원본 가로를 아는 자리는 `contentSrcset` 대신 `contentSrcsetWithin` 으로 후보를 원본 가로 안으로 줄인다.
-
-| 자리 | 호출 | 원본 750px, 숫자 규격 md 640·lg 1280·xl 1920 일 때 |
-|------|------|------|
-| 본문 HTML 이미지(`<img width>`) | `contentSrcsetWithin(src, width)` | `…?size=md 640w` (원본 가로 이하. 봇 화면 `HtmlSanitizer` 와 같은 규칙) |
-| 원본을 함께 싣는 이미지(배너·팝업) | `contentSrcsetWithin(src, width, { includeOriginal: true })` | `…?size=md 640w, {src} 750w` (원본과 같은 가로의 후보는 원본과 기술자가 겹쳐 뺀다) |
-
-```ts
-const thumbnail = (window as any).G7Core?.thumbnail;
-const srcSet = typeof thumbnail?.contentSrcsetWithin === 'function'
-  ? thumbnail.contentSrcsetWithin(image.url, image.width, { includeOriginal: true }) || undefined
-  : undefined;
-```
-
-**원본 직접 주소가 따로 오는 이미지(공개 자산 디스크, #878)** — 응답이 썸네일 기준 주소(`url`·`preview_url`, 같은 출처 서빙 경로)와 원본 직접 주소(`direct_url`, CDN·`/storage`)를 함께 주면, 후보는 서빙 경로로 만들고 **마지막 원본 후보와 `src` 만** 직접 주소로 바꾼다. 직접 주소는 등록된 서빙 경로가 아니라 `contentSrcsetWithin` 에 넘기면 빈 문자열이다.
-
-```ts
-const tail = `${image.url.replace(/ /g, '%20')} ${Math.floor(image.width)}w`;
-const base = thumbnail.contentSrcsetWithin(image.url, image.width, { includeOriginal: true }) || '';
-const srcSet = image.direct_url && base.endsWith(tail)
-  ? `${base.slice(0, -tail.length)}${image.direct_url.replace(/ /g, '%20')} ${Math.floor(image.width)}w`
-  : base || undefined;
-const src = image.direct_url || image.url; // 캔버스로 픽셀을 읽는 자리는 같은 출처인 image.url 을 쓴다
 ```
 
 ---
@@ -1067,358 +791,63 @@ const PriceDisplay: React.FC<{ price: number }> = ({ price }) => {
 
 ---
 
-## 확장 자산 (G7Core.asset, G7Core.assets)
+## 위지윅 편집기 (G7Core.wysiwyg)
 
-> **버전**: engine-v1.62.0+
+> **engine-v1.11.0+** 추가
 
-확장(템플릿·모듈·플러그인)이 **자기 자산을 런타임에 불러올 때** 쓰는 API입니다. 확장 번들은
-코어 모듈을 import 할 수 없으므로, 자산 URL 생성과 실패 표면화는 이 전역을 통해 제공됩니다.
-
-구동에 필요한 자산(js·css·웹폰트)은 제3자 CDN 에서 실시간으로 받지 않고 확장이 함께 담아
-`dist/vendor/{라이브러리}/{버전}/` 에서 자체 제공합니다. 자세한 규약은
-[module-assets.md](../extension/module-assets.md)를 참조하세요.
-
-### G7Core.asset — 자산 URL 생성
-
-| 메서드 | 시그니처 | 설명 |
-|--------|----------|------|
-| `template` | `(identifier, path, version?) => string` | 템플릿 자산 URL |
-| `templateDir` | `(identifier, path) => string` | 템플릿 자산 **디렉토리** URL |
-| `module` | `(identifier, path, version?) => string` | 모듈 자산 URL |
-| `plugin` | `(identifier, path, version?) => string` | 플러그인 자산 URL |
-| `convertToCurrentMode` | `(url) => string` | 서버가 확장자 형태로 굳혀 내려준 URL 을 현재 모드로 보정 |
-| `loadScript` | `(url, attrs?, options?) => Promise<void>` | 재시도 계층을 갖춘 스크립트 로더 (출처 게이트 적용) |
-| `loadStylesheet` | `(url, attrs?, options?) => Promise<void>` | 재시도 계층을 갖춘 스타일시트 로더 |
-| `isAllowedScriptSrc` | `(url) => boolean` | 스크립트 URL 이 주입 허용 대상인지 판정 |
-
-`loadScript` 의 `url` 은 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받습니다 — same-origin
-절대 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 하며, 그 밖의
-원격 URL 은 reject 됩니다. 로더를 쓸 수 없는 주입(iframe `document.write` 등)은
-`isAllowedScriptSrc` 로 같은 판정을 재사용하세요.
-상세: [security.md](security.md#외부-스크립트-신뢰-출처-허용목록)
-
-`path` 기준이 확장 타입마다 다릅니다. **템플릿은 서버가 `dist/` 를 자동으로 붙이므로 `path` 에
-`dist/` 를 포함하지 않고**, 모듈·플러그인은 확장 루트 기준이라 `dist/` 를 직접 포함합니다.
-서버측 `App\Support\AssetUrl` 과 같은 비대칭입니다.
-
-```javascript
-// 템플릿 — dist/ 를 붙이지 않는다
-G7Core.asset.template('sirsoft-admin_basic', 'vendor/monaco-editor/0.54.0/vs/loader.js');
-
-// 플러그인 — 확장 루트 기준이라 dist/ 를 포함한다
-G7Core.asset.plugin('sirsoft-ckeditor5', 'dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js');
-
-// 모듈
-G7Core.asset.module('sirsoft-board', 'dist/js/board.js');
-```
-
-### 자산 URL 을 문자열로 조립하지 않습니다
-
-```javascript
-// ❌ 금지 — 확장자를 정적 location 이 가로채는 서버에서 404 가 된다
-const url = '/api/plugins/assets/sirsoft-ckeditor5/dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js';
-
-// ✅ 올바른 사용
-const url = G7Core.asset.plugin('sirsoft-ckeditor5', 'dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js');
-```
-
-자산 URL 은 서버 설정(`general.asset_url_mode`)과 정적 게시 상태에 따라 **확장자 형태**
-(`.../ckeditor5.umd.js`)와 **쿼리 형태**(`...?file=...`), **정적 게시본 경로**
-(`/build/ext/{버전}/...`) 중 하나로 해석됩니다. 문자열로 조립하면 그 판정을 건너뛰어, 정규식
-location 이 확장자를 먼저 가로채는 서버에서 그 자산만 조용히 404 가 됩니다.
-
-### templateDir — 디렉토리 접두가 필요한 소비자
-
-AMD 로더나 워커처럼 **디렉토리 접두 뒤에 파일명을 이어 붙이는** 소비자는 `template()` 대신
-`templateDir()` 을 씁니다. `template()` 의 쿼리 형태는 파일 경로를 인코딩해 뒤에 파일명을 이어 붙일 수 없기 때문입니다.
-
-`templateDir()` 은 정적 게시본이 있으면 그 디렉토리, 확장자 없는 모드면 경로를 인코딩하지 않은
-`?file=` 디렉토리(`/api/templates/assets/{id}?file=vendor/.../vs`), 그 밖에는 경로 형태를 돌려줍니다.
-`?file=` 디렉토리 뒤에 `/loader.js` 를 이어 붙이면 그대로 한 파일의 file 값이 됩니다. AMD 로더는 쿼리가 있는
-URL 의 모듈 id 에 `.js` 를 붙이지 않으므로(`…/editor/editor.main`) 템플릿 자산 서빙이 같은 이름의 `.js` 파일을
-찾아 줍니다. 그래도 자산을 끝내 받지 못하는 환경이 있으므로 **소비자는 폴백을 갖춰야 합니다.**
-
-`?file=` 디렉토리는 **이어 붙이기만** 성립합니다. 상대 경로 해석(CSS 의 `url(../x)`, 워커 안 `importScripts('./x')`,
-`new URL(rel, dir + '/')`)은 쿼리 기준으로 풀려 깨지고, 이어 붙인 뒤 `?v=1` 같은 쿼리를 덧붙여도 깨집니다. 상대
-경로로 다른 파일을 찾는 자산은 정적 게시본이 있을 때만 `templateDir()` 로 넘기세요.
-
-```javascript
-loader.config({
-  paths: { vs: G7Core.asset.templateDir('sirsoft-admin_basic', 'vendor/monaco-editor/0.54.0/vs') },
-});
-```
-
-### G7Core.assets — 자산 실패 표면화
-
-로드에 끝내 실패한 자산을 화면 상단 배너로 알리고 [다시 시도] 를 제공합니다. 실패를
-`console.error` 한 줄로 끝내면 사용자에게는 "빈 자리" 로만 나타나고 자체 서버 로그에도 흔적이
-남지 않아 운영자가 원인을 특정할 수 없습니다.
-
-| 메서드 | 시그니처 | 설명 |
-|--------|----------|------|
-| `notifyFailure` | `(failure: AssetFailure) => void` | 실패 등록 (같은 `id` 는 갱신) |
-| `clearFailure` | `(id: string) => void` | 해당 실패 해제 |
-| `clearAll` | `() => void` | 전체 해제 |
-| `getFailures` | `() => AssetFailure[]` | 현재 등록된 실패 목록 |
-| `retryAll` | `() => Promise<void>` | 등록된 실패 전부 재시도 — 각 `retry` 를 순차 await 하므로 완료를 기다리려면 반환값을 await 한다 |
-
-`AssetFailure` 필드:
-
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| `id` | `string` | 중복 누적을 막는 식별자 (필수) |
-| `label` | `string` | 짧은 항목명 — 여러 건 합산 표시에 쓰인다. **사용자 어휘**여야 한다: 내부 구분 키·식별자를 그대로 넘기면 배너에 「module을(를) 불러오지 못했습니다」처럼 해석 불가한 문구가 노출된다 |
-| `message` | `string?` | 사용자에게 보일 안내 문장. 생략하면 `label` 기반 기본 문구 |
-| `retry` | `() => Promise<void> \| void` | 생략하면 [다시 시도] 버튼을 렌더하지 않는다 |
-
-```javascript
-try {
-  await G7Core.asset.loadStylesheet(url, { id: 'my-plugin-css' });
-  G7Core.assets.clearFailure('my-plugin-css');
-} catch (error) {
-  G7Core.assets.notifyFailure({
-    id: 'my-plugin-css',
-    label: '편집기 스타일',
-    retry: () => G7Core.asset.loadStylesheet(url, { id: 'my-plugin-css' }),
-  });
-}
-```
-
-배너는 독립 레이아웃(`extends` 없음)에서도 떠야 하므로 호스트 컴포넌트에 의존하지 않고
-DOM 에 직접 주입됩니다. Toast 와 달리 **사용자가 닫을 때까지 유지**되며 `role="alert"` 를
-갖습니다. `retry` 가 resolve 되면 그 실패는 자동으로 해제되고, reject 되면 배너를 유지한 채
-재시도 실패를 알립니다.
-
-#### 레이아웃 스크립트 실패 id — `layout-script:{id}`
-
-레이아웃 `scripts`(`<script src="…" id="…">`)를 코어가 끝내 불러오지 못하면 코어가 직접 실패를 등록합니다.
-그 `id` 는 **`layout-script:{스크립트 id}`** 입니다(예: `layout-script:daum_postcode_script`). 항목명은 스크립트의
-`label`(없으면 「화면 기능 스크립트」)이며 스크립트 `id` 원문은 안내에 쓰지 않습니다.
-
-같은 SDK 의 실패를 확장도 자기 `notifyFailure` 로 알리면(직접 입력 안내, 임시 입력창 전환 안내 등) 배너에 두 건이 쌓여
-「2개 항목을 불러오지 못했습니다. …」 묶음 문구가 되고 확장의 `message` 가 보이지 않습니다. 확장 안내의 재시도가 같은
-SDK 를 다시 불러온다면, 확장 안내를 띄운 뒤 `getFailures()` 로 이 id 를 찾아 `clearFailure('layout-script:{id}')` 로
-코어 쪽 건을 걷습니다. 코어 건은 확장 안내보다 늦게 올 수 있으므로 확장 안내가 떠 있는 동안 짧게 다시 살핍니다
-(선례: `sirsoft-daum_postcode` 의 `postcodeSdk.ts`).
-
----
-
-## 방문자 동의 (G7Core.consent)
-
-> **engine-v1.78.0+** 추가
-
-방문자 동의 상태를 읽고 변경을 구독하는 API입니다. 어느 확장이 동의를 관리하는지 몰라도 같은 방법으로 읽습니다. 서버 쪽 동의 제공자 계약은 [동의 제공자](../extension/consent-provider.md)를 참고합니다.
-
-값은 코어 동의 런타임이 들고 있습니다. 런타임은 **사용자 템플릿에서만** 동작합니다. 관리자 화면에서는 `getSnapshot()` 과 `refresh()` 가 `null` 을 반환합니다.
+레이아웃 위지윅 편집기 관련 API입니다.
 
 ### API 목록
 
-`G7Core.consent` 는 동결된 객체입니다.
-
 | 메서드 | 설명 | 반환값 |
 |--------|------|--------|
-| `getSnapshot()` | 현재 스냅샷의 사본 (`_global.consent` 와 같은 모양). 런타임이 없으면 `null` | `ConsentSnapshot \| null` |
-| `refresh()` | `GET /api/consent` 로 다시 조회해 최신 스냅샷 반환. 런타임이 없으면 `null` | `Promise<ConsentSnapshot \| null>` |
-| `subscribe(listener)` | 컴포넌트 이벤트 `consent:changed` 를 구독 | 구독 해제 함수 |
-
-### 스냅샷 모양
-
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| `contractVersion` | `number` | 계약 버전 (현재 `1`) |
-| `status` | `'unknown' \| 'ready' \| 'none'` | 아래 표 참고 |
-| `categories` | `Record<string, boolean>` | 카테고리별 동의 여부. `necessary`, `functional`, `analytics`, `marketing` 을 항상 포함하고 `necessary` 는 언제나 `true` |
-| `needsRenewal` | `boolean` | 동의 정책이 바뀌어 다시 동의를 받아야 하는지 |
-| `policyVersion` | `string \| null` | 현재 동의 정책 버전 |
-
-| `status` | 의미 | 소비자 판정 |
-|----------|------|-------------|
-| `ready` | 동의 제공자가 답했다 | `categories` 와 `needsRenewal` 로 판정 |
-| `unknown` | 부팅 직후, 재조회 중, 조회 실패, 응답 형식 오류 | **동의하지 않은 것으로 본다** (fail-closed) |
-| `none` | 사이트에 동의 관리 제공자가 없다 | 동의 절차가 없는 사이트로 본다 |
-
-`ready` 가 아니면 `categories` 는 `necessary` 만 `true` 이고 `needsRenewal` 은 `false`, `policyVersion` 은 `null` 입니다.
-
-### 동작
-
-- **재조회 공유**: 조회가 진행 중일 때 `refresh()` 를 다시 부르면 같은 요청을 나눠 씁니다 (저장 버튼 연타 등).
-- **로그인과 로그아웃**: 인증 경계를 넘으면 스냅샷을 `unknown` 으로 비우고 `consent:changed` 를 발행한 뒤 다시 조회합니다. 경계 이전에 출발한 응답은 버립니다. 게스트로 보낸 조회가 로그인 뒤에 도착해 회원의 스냅샷을 덮어쓰지 않게 하기 위해서입니다. 상태가 `none` 이면 비우지 않고 다시 조회만 합니다.
-- **변경 시에만 통지**: 값이 같으면 `_global.consent` 도 `consent:changed` 도 건드리지 않습니다.
-- `refresh()` 는 `_global.consent` 갱신과 `consent:changed` 리스너가 모두 끝난 뒤 resolve 합니다.
+| `isEditMode()` | 편집 모드 여부 반환 | `boolean` |
+| `setEditMode(layoutName, templateId)` | 편집 모드 활성화 | `void` |
+| `clearEditMode()` | 편집 모드 비활성화 | `void` |
+| `getCurrentLayoutName()` | 현재 편집 중인 레이아웃명 | `string \| null` |
+| `getCurrentTemplateId()` | 현재 편집 중인 템플릿 ID | `string \| null` |
+| `isEditModeFromUrl()` | URL에서 편집 모드 여부 확인 | `boolean` |
+| `getEditModeUrl(route, templateId)` | 편집 모드 URL 생성 | `string` |
+| `enterEditMode(route, templateId)` | 편집 모드로 페이지 이동 | `void` |
+| `exitEditMode()` | 편집 모드 종료 (일반 페이지로) | `void` |
+| `getVersion()` | 위지윅 모듈 버전 | `string` |
+| `getPhase()` | 현재 구현 Phase | `number` |
 
 ### 사용 예시
 
 ```typescript
-// 현재 값 읽기 — 관리자 화면이면 null
-const snapshot = G7Core.consent.getSnapshot();
-const marketingAllowed =
-  snapshot?.status === 'ready' && !snapshot.needsRenewal && snapshot.categories.marketing === true;
-
-// 변경 구독 — 반환값은 해제 함수
-const unsubscribe = G7Core.consent.subscribe((next) => {
-  console.log('동의 변경:', next.status, next.categories);
-});
-
-// 동의를 저장한 뒤 다시 조회
-await G7Core.consent.refresh();
-```
-
-React 컴포넌트에서는 최초 값을 `getSnapshot()` 으로 읽고, 이후 변경만 구독합니다.
-
-```tsx
-useEffect(() => {
-  setConsent(G7Core.consent.getSnapshot());
-
-  return G7Core.consent.subscribe((next) => setConsent(next));
-}, []);
-```
-
-### 레이아웃에서 쓰기
-
-- 읽기: `{{_global.consent.categories.analytics}}`, `{{_global.consent.status}}`
-- 재조회: 내장 핸들러 `refreshConsent`. 동의를 저장한 화면이 성공 뒤에 부릅니다. 갱신과 `consent:changed` 리스너가 끝난 뒤 다음 동작으로 넘어가므로, 같은 시퀀스의 토스트는 동기화 이후에 뜹니다. 리스너가 3초(`CONSENT_LISTENER_WAIT_MS`) 안에 끝나지 않으면 더 기다리지 않고 넘어갑니다 — 멈춘 구독자 하나가 다음 조회와 판정 대기를 함께 묶지 않게. 런타임이 없는 화면에서는 아무 일도 하지 않습니다.
-
-```html
-<action handler="refreshConsent"/>
-```
-
-`_global.consent` 는 코어 동의 런타임만 씁니다. 확장이나 레이아웃이 직접 쓰지 않습니다.
-
----
-
-## 최근 검색어 (G7Core.searchHistory)
-
-> **engine-v1.87.0+** 추가 (코어 7.1.5)
-
-검색창에 제출한 검색어를 **검색 범위(scope)** 별로 보관하는 API입니다. 범위는 코어 통합검색 `core.site` 와 활성 확장이 manifest
-`search_scopes` 로 선언한 `{확장 식별자}.{이름}` 입니다([최근 검색어 범위](../extension/plugin-development.md#최근-검색어-범위-search_scopes)).
-같은 범위를 쓰는 검색창끼리 목록을 공유합니다. 서버가 셸에 실은 `G7Config.searchScopes`(범위 → `{max_count}`)에 없는 범위
-(선언 안 됨·확장 꺼짐·운영자가 기능을 끔)는 조용히 건너뜁니다.
-
-- **회원**: 서버(`/api/me/search-history`)에 둡니다. 보관 개수·자동 저장은 서버가 판정합니다.
-- **비회원**: 브라우저 localStorage `g7_search_history` 한 칸(`{v:1, autoSave, items:{범위:[{k, t}]}}`, 최신순)에 둡니다.
-  코어 필수 저장 키라 쿠키 동의 전에도 유지됩니다.
-- **로그인**: 비회원 → 회원이 되면(부팅 때 이미 회원이어도) 브라우저 목록을 회원 목록에 시간순으로 합치고(같은 검색어는 하나)
-  성공하면 브라우저 칸을 지웁니다. 실패하면 남겨 다음 로그인 때 다시 보냅니다.
-- **자동 저장 끄기**: 기록을 멈추고 목록을 감춥니다. 저장된 검색어는 남습니다. 범위별이 아니라 사람 단위 하나입니다.
-- **기록 시점**: 검색창 제출 때만 기록합니다. 주소에 검색어를 직접 넣은 검색(`?q=`)은 기록하지 않습니다.
-- 검색어는 연속 공백을 하나로 줄이고 앞뒤 공백을 떼며 100자까지 씁니다. 대소문자만 다른 검색어는 하나로 봅니다.
-
-런타임은 **사용자 템플릿에서만** 동작합니다. 관리자 화면에서는 모든 범위가 `enabled: false` 이고 동작은 `false` 를 돌려줍니다.
-레이아웃 편집기 미리보기(`/preview/{token}`)에서는 읽기만 하고 쓰기(record·remove·clear·setAutoSave·로그인 병합)는 서버·브라우저에 손대지 않고 `false` 를 돌려줍니다.
-
-### API 목록
-
-`G7Core.searchHistory` 는 동결된 객체입니다.
-
-| 메서드 | 설명 | 반환값 |
-|--------|------|--------|
-| `isEnabled(scope)` | 지금 쓸 수 있는 범위인지 | `boolean` |
-| `getSnapshot(scope)` | 지금 상태의 사본(회원 목록을 아직 받지 않았으면 `loading: true`) | `SearchHistoryState` |
-| `list(scope, { force? })` | 목록 읽기(회원은 서버에서 받아 캐시, `force` 면 다시 받음) | `Promise<SearchHistoryState>` |
-| `record(scope, keyword)` | 검색어 기록 | `Promise<boolean>` (기록했으면 `true`) |
-| `remove(scope, target)` | 한 건 삭제 — 항목·id(회원)·검색어 | `Promise<boolean>` |
-| `clear(scope?)` | 범위 전체 삭제(생략하면 전 범위) | `Promise<boolean>` |
-| `getAutoSave()` | 자동 저장 여부 | `boolean` |
-| `setAutoSave(on)` | 자동 저장 켜기/끄기 | `Promise<boolean>` |
-| `subscribe(listener)` | 컴포넌트 이벤트 `searchHistory:changed` 구독 | 구독 해제 함수 |
-
-`SearchHistoryState` 모양:
-
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| `scope` | `string` | 범위 id |
-| `enabled` | `boolean` | 쓸 수 있는 범위인지 |
-| `autoSave` | `boolean` | 자동 저장 여부 |
-| `items` | `Array<{ id: number \| null, keyword: string, searchedAt: number }>` | 최신순. `id` 는 회원 서버 행 id(비회원은 `null`), `searchedAt` 은 밀리초. 자동 저장을 끄면 `[]` |
-| `maxCount` | `number` | 보관 개수 |
-| `loading` | `boolean` | 회원 목록을 받는 중 |
-| `source` | `'member' \| 'guest' \| 'none'` | 저장 위치 |
-
-`searchHistory:changed` 이벤트 값은 `{ scope: string \| null, reason }` 입니다. `scope` 가 `null` 이면 여러 범위가 함께 바뀌었고(로그인·병합·
-자동 저장·전체 삭제), `reason` 은 `record`·`remove`·`clear`·`autoSave`·`auth`·`merge`·`load` 중 하나입니다.
-
-### React 훅 — G7Core.useSearchHistory(scope)
-
-```tsx
-const history = G7Core.useSearchHistory('core.site');
-// history: { items, autoSave, enabled, loading, maxCount, record, remove, clear, setAutoSave, refresh }
-
-if (!history.enabled) return null;           // 범위가 없거나 관리자 화면
-if (!history.autoSave) {
-  // 「검색어 저장 기능이 꺼져 있습니다 · 켜기」 → history.setAutoSave(true)
+// 편집 모드 확인
+if (G7Core.wysiwyg.isEditMode()) {
+  console.log('현재 편집 모드입니다');
+  console.log('레이아웃:', G7Core.wysiwyg.getCurrentLayoutName());
+  console.log('템플릿:', G7Core.wysiwyg.getCurrentTemplateId());
 }
-history.items.map((item) => /* item.keyword, item.searchedAt */ null);
 
-await history.record(keyword);                // 제출 때
-await history.remove(item);                   // 항목 ×
-await history.clear();                        // 이 범위 전체 삭제
+// URL에서 편집 모드 여부 확인 (쿼리 파라미터 기반)
+if (G7Core.wysiwyg.isEditModeFromUrl()) {
+  // ?mode=edit 파라미터가 있는 경우
+}
+
+// 편집 모드 URL 생성
+const editUrl = G7Core.wysiwyg.getEditModeUrl('/shop', 'sirsoft-basic');
+// 결과: 'https://example.com/shop?mode=edit&template=sirsoft-basic'
+
+// 편집 모드로 진입
+G7Core.wysiwyg.enterEditMode('/shop', 'sirsoft-basic');
+
+// 편집 모드 종료
+G7Core.wysiwyg.exitEditMode();
 ```
 
-- 같은 범위를 쓰는 다른 검색창(헤더·모바일 서랍 등)의 변경이 바로 반영됩니다.
-- 늦게 끝난 조회는 그 사이 바뀐 상태(기록·자동 저장 끄기)를 덮지 않습니다.
-- 다른 훅과 같이 조건 밖 최상위에서 부릅니다. `items` 는 바뀔 때마다 새 배열이므로 effect 의존성에 넣고 그 안에서 상태를 바꾸지 않습니다.
-
-### 레이아웃에서 쓰기
-
-내장 핸들러 `recordSearchKeyword` 를 검색 이동 앞에 둡니다. 범위 미선언·빈 검색어·자동 저장 꺼짐·관리자 화면·레이아웃 편집기
-미리보기에서는 아무것도 하지 않고, 실패해도 던지지 않아 다음 이동을 막지 않습니다. 회원은 서버 응답을 기다린 뒤 다음 동작으로 넘어갑니다.
-
-```html
-<sequence>
-  <record-search-keyword scope="core.site" keyword="{{_local.searchQuery}}"/>
-  <navigate path="/search">
-    <query q="{{_local.searchQuery}}"/>
-  </navigate>
-</sequence>
-```
-
----
-
-## 전역 상태 계약 (G7Core.stateContracts)
-
-> **engine-v1.78.0+** 추가
-
-다른 확장이 읽는 전역 상태(`_global.{이름}`)의 소유자, 설명, 모양, 쓰기 허용 주체를 조회하는 읽기 전용 API입니다. 서버가 페이지에 실어 보낸 `G7Config.stateContracts` 를 읽습니다.
-
-계약은 두 가지에서 모입니다.
-
-- **코어 예약 계약**: `consent`, `identityChallenge`, `currentUser`, `settings`, `plugins`, `modules`, `appConfig`, `activeModules`·`activePlugins`(코어 7.1.4+)
-- **활성 확장의 선언**: 모듈, 플러그인, 템플릿 manifest 의 `state_contracts`
-
-### API 목록
-
-`G7Core.stateContracts` 와 반환하는 계약은 모두 동결되어 있습니다.
-
-| 메서드 | 설명 | 반환값 |
-|--------|------|--------|
-| `get(name)` | 계약 하나. 없으면 `null` | `StateContract \| null` |
-| `list()` | 계약 전부 (이름 → 계약) | `Record<string, StateContract>` |
-| `ownerOf(name)` | 소유자 키. 없으면 `null` | `string \| null` |
-
-### 계약 모양
-
-| 필드 | 타입 | 설명 |
-|------|------|------|
-| `owner` | `string` | 소유자 키: `core`, `module:{id}`, `plugin:{id}`, `template:{id}` |
-| `description` | `Record<string, string>` | 로케일별 설명 |
-| `schema` | `object` | 값의 모양 (JSON Schema 형식) |
-| `writers` | `string[]` | 소유자 외에 쓸 수 있는 주체. `@template` 은 활성 템플릿 |
-
-### 사용 예시
+### 편집 모드 상태 관리
 
 ```typescript
-G7Core.stateContracts.ownerOf('consent');
-// 'core'
+// 프로그래밍 방식으로 편집 모드 설정
+G7Core.wysiwyg.setEditMode('home', 'sirsoft-basic');
 
-const contract = G7Core.stateContracts.get('currentUser');
-// { owner: 'core', description: {...}, schema: { type: ['object', 'null'] }, writers: ['@template'] }
-
-Object.keys(G7Core.stateContracts.list());
-// ['consent', 'identityChallenge', 'currentUser', ...]
+// 편집 모드 해제
+G7Core.wysiwyg.clearEditMode();
 ```
-
-확장이 계약을 선언하는 방법은 manifest 의 `state_contracts` 항목입니다. 화면 안에서만 쓰는 임시 값은 선언하지 않습니다.
 
 ---
 

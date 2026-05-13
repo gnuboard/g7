@@ -2,9 +2,7 @@
 
 namespace Modules\Sirsoft\Page\Repositories;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Models\PageVersion;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageVersionRepositoryInterface;
@@ -36,8 +34,7 @@ class PageVersionRepository implements PageVersionRepositoryInterface
     public function getVersionsByPage(Page $page): Collection
     {
         return $page->versions()
-            // 작성자 이름은 관리자 영역 표시 이름이다 — 계산에 필요한 회원 컬럼을 함께 읽는다.
-            ->with('creator:'.User::displayColumns())
+            ->with('creator')
             ->orderByDesc('version')
             ->get();
     }
@@ -62,56 +59,10 @@ class PageVersionRepository implements PageVersionRepositoryInterface
      * @param  int  $id  버전 ID
      * @return PageVersion 버전 모델
      *
-     * @throws ModelNotFoundException
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
     public function findOrFail(int $id): PageVersion
     {
         return PageVersion::findOrFail($id);
-    }
-
-    /**
-     * 페이지에 속한 버전을 ID로 조회하며, 없으면 예외를 발생시킵니다.
-     *
-     * @param  int  $pageId  페이지 ID
-     * @param  int  $id  버전 ID
-     * @return PageVersion 버전 모델
-     *
-     * @throws ModelNotFoundException
-     */
-    public function findForPage(int $pageId, int $id): PageVersion
-    {
-        return PageVersion::where('page_id', $pageId)
-            ->where('id', $id)
-            ->firstOrFail();
-    }
-
-    /**
-     * 페이지의 어느 버전 본문이든 이 본문 미디어 해시를 참조하는지 확인합니다 (#887).
-     *
-     * @param  int  $pageId  페이지 ID
-     * @param  string  $hash  본문 미디어 해시 (12자 영숫자)
-     * @return bool 참조하는 버전이 하나라도 있으면 true
-     */
-    public function referencesHash(int $pageId, string $hash): bool
-    {
-        if ($hash === '') {
-            return false;
-        }
-
-        return PageVersion::query()
-            ->where('page_id', $pageId)
-            ->where('content', 'like', '%'.addcslashes($hash, '\%_').'%')
-            ->exists();
-    }
-
-    /**
-     * 페이지의 버전 이력을 모두 영구 삭제합니다 (페이지 삭제 정리, #888).
-     *
-     * @param  int  $pageId  페이지 ID
-     * @return int 삭제된 버전 수
-     */
-    public function deleteByPageId(int $pageId): int
-    {
-        return PageVersion::query()->where('page_id', $pageId)->delete();
     }
 }

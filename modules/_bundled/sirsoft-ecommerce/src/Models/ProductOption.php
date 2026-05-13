@@ -2,13 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Models;
 
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
-use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
-use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 
 /**
  * 상품 옵션 모델
@@ -27,7 +24,6 @@ class ProductOption extends Model
         'sku' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.sku', 'type' => 'string'],
         'selling_price' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.selling_price', 'type' => 'currency'],
         'list_price' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.list_price', 'type' => 'currency'],
-        'tax_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.tax_status', 'type' => 'enum', 'enum' => ProductTaxStatus::class],
         'price_adjustment' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.price_adjustment', 'type' => 'currency'],
         'stock_quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.stock_quantity', 'type' => 'number'],
         'safe_stock_quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.safe_stock_quantity', 'type' => 'number'],
@@ -35,11 +31,6 @@ class ProductOption extends Model
         'sort_order' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.sort_order', 'type' => 'number'],
     ];
 
-    /**
-     * 모델 팩토리 인스턴스를 생성합니다.
-     *
-     * @return ProductOptionFactory 상품 옵션 팩토리
-     */
     protected static function newFactory()
     {
         return ProductOptionFactory::new();
@@ -55,8 +46,6 @@ class ProductOption extends Model
         'price_adjustment',
         'list_price',
         'selling_price',
-        // 과세 종류 — null 은 상품 기본값을 따른다 (#612)
-        'tax_status',
         'currency_code',
         'stock_quantity',
         'safe_stock_quantity',
@@ -73,33 +62,22 @@ class ProductOption extends Model
     protected $casts = [
         'option_values' => 'array',
         'option_name' => 'array',
-        'price_adjustment' => 'decimal:2',
+        'price_adjustment' => 'integer',
         'stock_quantity' => 'integer',
         'safe_stock_quantity' => 'integer',
         'weight' => 'decimal:2',
         'volume' => 'decimal:2',
         'mileage_value' => 'decimal:2',
         'mileage_type' => 'string',
-        'tax_status' => ProductTaxStatus::class,
         'is_default' => 'boolean',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];
 
     /**
-     * 실제 적용되는 과세 종류를 반환합니다 — 옵션 지정값, 없으면 상품 기본값.
-     *
-     * @return ProductTaxStatus 실효 과세 종류
-     */
-    public function getEffectiveTaxStatus(): ProductTaxStatus
-    {
-        return ProductTaxStatus::resolveEffective($this->tax_status, $this->product?->tax_status);
-    }
-
-    /**
      * 상품 관계
      *
-     * @return BelongsTo 이 옵션이 속한 상품 관계
+     * @return BelongsTo
      */
     public function product(): BelongsTo
     {
@@ -109,31 +87,29 @@ class ProductOption extends Model
     /**
      * 최종 판매가 계산 (상품 판매가 + 옵션 조정액)
      *
-     * 기본통화가 소수 통화(USD 등)일 수 있어 소수 가격을 보존합니다.
-     *
-     * @return float 옵션 최종 판매가 (소수 가격 보존)
+     * @return int
      */
-    public function getFinalPrice(): float
+    public function getFinalPrice(): int
     {
-        return (float) $this->product->selling_price + (float) $this->price_adjustment;
+        return $this->product->selling_price + $this->price_adjustment;
     }
 
     /**
      * 최종 정가 계산 (상품 정가 + 옵션 조정액)
      *
-     * @return float 옵션 최종 정가 (소수 가격 보존)
+     * @return int
      */
-    public function getListPrice(): float
+    public function getListPrice(): int
     {
-        return (float) $this->product->list_price + (float) $this->price_adjustment;
+        return $this->product->list_price + $this->price_adjustment;
     }
 
     /**
      * 최종 판매가 계산 (상품 판매가 + 옵션 조정액) - getFinalPrice의 별칭
      *
-     * @return float 옵션 최종 판매가 (소수 가격 보존)
+     * @return int
      */
-    public function getSellingPrice(): float
+    public function getSellingPrice(): int
     {
         return $this->getFinalPrice();
     }
@@ -141,7 +117,7 @@ class ProductOption extends Model
     /**
      * 안전재고 이하 여부
      *
-     * @return bool 현재 재고가 안전재고 이하이면 true
+     * @return bool
      */
     public function isBelowSafeStock(): bool
     {
@@ -168,7 +144,7 @@ class ProductOption extends Model
             return '';
         }
 
-        return LocalizedText::pick($name, $locale);
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
@@ -193,8 +169,8 @@ class ProductOption extends Model
                 $key = $item['key'] ?? [];
                 $value = $item['value'] ?? [];
 
-                $localizedKey = is_array($key) ? LocalizedText::pick($key, $locale) : $key;
-                $localizedValue = is_array($value) ? LocalizedText::pick($value, $locale) : $value;
+                $localizedKey = is_array($key) ? ($key[$locale] ?? $key[config('app.fallback_locale', 'ko')] ?? array_values($key)[0] ?? '') : $key;
+                $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
 
                 if ($localizedKey !== '') {
                     $result[$localizedKey] = $localizedValue;
@@ -230,7 +206,7 @@ class ProductOption extends Model
                 $parts = [];
                 foreach ($values as $item) {
                     $value = $item['value'] ?? [];
-                    $localizedValue = is_array($value) ? (LocalizedValue::pick($value, $locale, anyAsLast: false) ?? '') : $value;
+                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? '') : $value;
                     if ($localizedValue !== '') {
                         $parts[] = $localizedValue;
                     }
@@ -256,7 +232,7 @@ class ProductOption extends Model
         $locale = $locale ?? app()->getLocale();
         $name = $this->generateOptionName();
 
-        return LocalizedText::pick($name, $locale);
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
@@ -276,8 +252,6 @@ class ProductOption extends Model
             'price_adjustment' => $this->price_adjustment,
             'list_price' => $this->list_price,
             'selling_price' => $this->selling_price,
-            // 옵션에 지정한 과세 종류 (null = 상품 따름) — 클레임 재계산(스냅샷 모드)이 주문 시점 값을 쓴다
-            'tax_status' => $this->tax_status?->value,
             'currency_code' => $this->currency_code,
             'stock_quantity' => $this->stock_quantity,
             'weight' => $this->weight,

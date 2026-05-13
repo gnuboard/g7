@@ -30,11 +30,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     private User $regularUser;
 
-    /**
-     * 역할·권한·사용자 픽스처를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -90,11 +85,6 @@ class LayoutPermissionFilterTest extends TestCase
         AuthServiceProvider::clearGuestRoleCache();
     }
 
-    /**
-     * 게스트 역할 캐시를 비웁니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         AuthServiceProvider::clearGuestRoleCache();
@@ -103,12 +93,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * permissions 없는 컴포넌트는 항상 포함됩니다.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_component_without_permissions_is_always_included(): void
     {
@@ -126,12 +110,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * 단일 permissions — 권한 있으면 포함됩니다.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_component_with_permission_is_included_when_user_has_permission(): void
     {
@@ -154,12 +132,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * 단일 permissions — 권한 없으면 제거됩니다.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_component_with_permission_is_removed_when_user_lacks_permission(): void
     {
@@ -181,12 +153,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * 복수 permissions — AND 조건 (모두 충족해야 포함).
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_multiple_permissions_require_all_and_condition(): void
     {
@@ -208,12 +174,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * 중첩 children 재귀 필터링.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_nested_children_are_recursively_filtered(): void
     {
@@ -248,12 +208,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * 상위 제거 시 하위는 평가하지 않고 전체 제거됩니다.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_parent_removal_removes_all_children(): void
     {
@@ -284,12 +238,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * 상위 통과 + 하위 독립 평가.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_parent_passes_child_evaluated_independently(): void
     {
@@ -322,12 +270,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * modals 자체에 permissions → 모달 항목 전체 제거.
-     *
-     * @scenario case=modal_filter
-     *
-     * @effects layout_modals_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_modal_with_permissions_is_removed_when_user_lacks_permission(): void
     {
@@ -358,12 +300,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * modals 내부 컴포넌트 필터링.
-     *
-     * @scenario case=modal_filter
-     *
-     * @effects layout_modals_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_modal_internal_components_are_filtered(): void
     {
@@ -393,16 +329,7 @@ class LayoutPermissionFilterTest extends TestCase
     }
 
     /**
-     * defines 내 컴포넌트 필터링 — **리스트 형태**(define 객체 목록).
-     *
-     * 권한으로 중간 항목이 빠져도 결과는 구멍 없는 리스트여야 한다. 원래 정수 키를 그대로
-     * 두면 JSON 이 배열이 아니라 객체(`{"1": …}`)로 직렬화된다.
-     *
-     * @scenario case=define_filter
-     *
-     * @effects layout_defines_filtered_by_permission
-     *
-     * @return void 반환값 없음
+     * defines 내 컴포넌트 필터링.
      */
     public function test_defines_are_filtered(): void
     {
@@ -429,132 +356,10 @@ class LayoutPermissionFilterTest extends TestCase
 
         $this->assertCount(1, $result['defines']);
         $this->assertEquals('public_define', $result['defines'][0]['id']);
-        $this->assertTrue(array_is_list($result['defines']), '리스트 입력은 구멍 없는 리스트로 나와야 합니다.');
-    }
-
-    /**
-     * defines 가 **상수 맵**이면 키가 보존된다.
-     *
-     * 저장소의 실제 `defines` 는 전부 이 형태다 — 레이아웃이 `{{_defines.settingsTabs}}` 로
-     * 키를 찍어 참조하므로, 재색인되면 그 표현식이 undefined 를 받고 `?? []` 폴백을 타
-     * 오류 없이 화면 요소만 사라진다.
-     *
-     * @scenario case=define_filter
-     *
-     * @effects layout_named_defines_preserved
-     *
-     * @return void 반환값 없음
-     */
-    public function test_defines_map_preserves_its_keys(): void
-    {
-        $layout = [
-            'components' => [],
-            'defines' => [
-                'settingsTabs' => [
-                    ['id' => 'general', 'label' => '일반'],
-                    ['id' => 'mail', 'label' => '메일'],
-                ],
-                'currencyToFlag' => ['KRW' => 'kr'],
-                'maxItems' => 20,
-                'adminOnlyDefine' => [
-                    'permissions' => ['core.dashboard.edit'],
-                    'children' => [
-                        ['type' => 'basic', 'name' => 'Div', 'text' => '관리자'],
-                    ],
-                ],
-            ],
-        ];
-
-        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
-
-        $this->assertArrayHasKey('settingsTabs', $result['defines']);
-        $this->assertCount(2, $result['defines']['settingsTabs']);
-        $this->assertSame('general', $result['defines']['settingsTabs'][0]['id']);
-
-        // 배열이 아닌 상수와 맵 상수도 그대로 통과한다.
-        $this->assertSame(20, $result['defines']['maxItems']);
-        $this->assertSame(['KRW' => 'kr'], $result['defines']['currencyToFlag']);
-
-        // 권한이 걸린 정의만 빠지고 나머지 키는 그대로다.
-        $this->assertArrayNotHasKey('adminOnlyDefine', $result['defines']);
-    }
-
-    /**
-     * 맵 안의 define 이 권한을 통과하면 그 내부 컴포넌트도 필터링된다.
-     *
-     * @scenario case=define_filter
-     *
-     * @effects layout_defines_filtered_by_permission
-     *
-     * @return void 반환값 없음
-     */
-    public function test_defines_map_still_filters_inner_components(): void
-    {
-        $layout = [
-            'components' => [],
-            'defines' => [
-                'sharedPanel' => [
-                    'children' => [
-                        ['type' => 'basic', 'name' => 'Div', 'text' => '공개'],
-                        [
-                            'type' => 'basic',
-                            'name' => 'Div',
-                            'text' => '관리자',
-                            'permissions' => ['core.dashboard.edit'],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
-
-        $this->assertArrayHasKey('sharedPanel', $result['defines']);
-        $this->assertCount(1, $result['defines']['sharedPanel']['children']);
-        $this->assertSame('공개', $result['defines']['sharedPanel']['children'][0]['text']);
-    }
-
-    /**
-     * 이름 붙은 defines(`<define name="…">` — 레이아웃이 `_defines.이름` 으로 읽는 형태)는 키를 잃지 않는다. 종전에는 필터가 결과를 목록으로 다시 쌓아(`$filtered[] = …`) 이름이 사라졌고, 화면의 `_defines.countryList` 가 undefined 가 되어 국가 선택지·계정 상태 체크박스가 비었다 (#705 브라우저 실측 회귀). 값이 데이터 목록·스칼라 맵인 define 은 필터 대상이 아니다.
-     *
-     * @scenario case=define_filter
-     *
-     * @effects layout_named_defines_preserved
-     *
-     * @return void 반환값 없음
-     */
-    public function test_named_defines_keep_their_names_and_values(): void
-    {
-        $layout = [
-            'components' => [],
-            'defines' => [
-                'countryList' => [
-                    ['code' => 'KR', 'name' => '$t:countries.KR'],
-                    ['code' => 'JP', 'name' => '$t:countries.JP'],
-                ],
-                'currencyToFlag' => ['KRW' => 'kr', 'USD' => 'us'],
-                'adminOnly' => [
-                    'permissions' => ['core.dashboard.edit'],
-                    'children' => [['type' => 'basic', 'name' => 'Div', 'text' => '관리자']],
-                ],
-            ],
-        ];
-
-        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
-
-        $this->assertSame(['countryList', 'currencyToFlag'], array_keys($result['defines']));
-        $this->assertSame('JP', $result['defines']['countryList'][1]['code']);
-        $this->assertSame('us', $result['defines']['currencyToFlag']['USD']);
     }
 
     /**
      * 필터링 후 permissions 속성이 제거되어 클라이언트에 노출되지 않습니다.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_permissions_attribute_is_removed_after_filtering(): void
     {
@@ -595,12 +400,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * guest 사용자 (null) 처리.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_guest_user_filtering(): void
     {
@@ -625,12 +424,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * admin 역할 → 명시 할당된 권한의 컴포넌트만 통과.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_admin_user_passes_assigned_components(): void
     {
@@ -670,12 +463,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * 빈 layout (components, modals, defines 없음) 처리.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_empty_layout_returns_unchanged(): void
     {
@@ -691,12 +478,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * 빈 permissions 배열은 무시됩니다 (권한 요구 없음).
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_empty_permissions_array_is_treated_as_no_requirement(): void
     {
@@ -718,12 +499,6 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * 배열 인덱스가 재정렬됩니다 (중간 요소 제거 후).
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_array_indices_are_reindexed_after_filtering(): void
     {
@@ -748,122 +523,5 @@ class LayoutPermissionFilterTest extends TestCase
         $this->assertArrayHasKey(1, $result['components']);
         $this->assertEquals('first', $result['components'][0]['id']);
         $this->assertEquals('last', $result['components'][1]['id']);
-    }
-
-    /**
-     * 실제 모달 형태(`children`)의 자식 컴포넌트 permissions 도 걸러지고 속성이 지워진다.
-     *
-     * 번들 모달은 `components` 가 아니라 `children` 을 쓴다. 이전 필터는 `components` 만 재귀해서
-     * 모달 자식의 permissions 가 평가도 제거도 되지 않고 클라이언트로 나갔다.
-     *
-     * @scenario case=modal_children_filter
-     *
-     * @effects layout_modal_children_filtered_by_permission
-     *
-     * @return void 반환값 없음
-     */
-    public function test_modal_children_are_filtered(): void
-    {
-        $layout = [
-            'components' => [],
-            'modals' => [
-                [
-                    'id' => 'children_modal',
-                    'type' => 'composite',
-                    'name' => 'Modal',
-                    'children' => [
-                        ['type' => 'basic', 'name' => 'Span', 'text' => '공개'],
-                        ['type' => 'basic', 'name' => 'Button', 'id' => 'secret', 'permissions' => ['core.dashboard.edit']],
-                    ],
-                ],
-            ],
-        ];
-
-        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
-
-        $children = $result['modals'][0]['children'];
-        $this->assertCount(1, $children);
-        $this->assertSame('공개', $children[0]['text']);
-    }
-
-    /**
-     * `children` 에 컴포넌트 모양이 아닌 원소가 섞여도 형제 컴포넌트의 permissions 는 걸러진다.
-     *
-     * 원소가 모두 type·name 을 가진 목록만 컴포넌트 트리로 보면, 모양이 다른 원소 하나 때문에 같은
-     * 목록의 권한 컴포넌트가 평가도 제거도 되지 않고 무권한자에게 나간다.
-     *
-     * @scenario case=modal_children_filter
-     *
-     * @effects layout_children_with_non_component_entry_still_filtered
-     *
-     * @return void 반환값 없음
-     */
-    public function test_children_with_non_component_entry_are_still_filtered(): void
-    {
-        $layout = [
-            'components' => [
-                [
-                    'type' => 'layout',
-                    'name' => 'Container',
-                    'children' => [
-                        ['type' => 'basic', 'text' => '이름 없는 원소'],
-                        ['type' => 'basic', 'name' => 'Button', 'id' => 'secret', 'permissions' => ['core.dashboard.edit']],
-                        ['type' => 'basic', 'name' => 'Span', 'id' => 'open'],
-                    ],
-                ],
-            ],
-        ];
-
-        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
-
-        $ids = array_column($result['components'][0]['children'], 'id');
-        $this->assertNotContains('secret', $ids);
-        $this->assertContains('open', $ids);
-        $this->assertCount(2, $result['components'][0]['children']);
-    }
-
-    /**
-     * 표 셀(`props.columns[].cellChildren`)·노드의 `expandChildren` 안 컴포넌트 permissions 도 걸러진다.
-     *
-     * @scenario case=props_embedded_children_filter
-     *
-     * @effects layout_props_embedded_children_filtered_by_permission
-     *
-     * @return void 반환값 없음
-     */
-    public function test_props_embedded_component_lists_are_filtered(): void
-    {
-        $layout = [
-            'components' => [
-                [
-                    'type' => 'composite',
-                    'name' => 'DataGrid',
-                    'props' => [
-                        'columns' => [
-                            [
-                                'field' => 'name',
-                                'cellChildren' => [
-                                    ['type' => 'basic', 'name' => 'Span', 'text' => '이름'],
-                                    ['type' => 'basic', 'name' => 'Button', 'id' => 'cell_secret', 'permissions' => ['core.dashboard.edit']],
-                                ],
-                            ],
-                        ],
-                    ],
-                    'expandChildren' => [
-                        ['type' => 'basic', 'name' => 'Button', 'id' => 'expand_secret', 'permissions' => ['core.dashboard.edit']],
-                        ['type' => 'basic', 'name' => 'Span', 'text' => '펼침'],
-                    ],
-                ],
-            ],
-        ];
-
-        $result = $this->layoutService->filterComponentsByPermissions($layout, $this->regularUser);
-        $grid = $result['components'][0];
-
-        $this->assertCount(1, $grid['props']['columns'][0]['cellChildren']);
-        $this->assertSame('이름', $grid['props']['columns'][0]['cellChildren'][0]['text']);
-        $this->assertCount(1, $grid['expandChildren']);
-        $this->assertSame('펼침', $grid['expandChildren'][0]['text']);
-        $this->assertStringNotContainsString('core.dashboard.edit', json_encode($result));
     }
 }

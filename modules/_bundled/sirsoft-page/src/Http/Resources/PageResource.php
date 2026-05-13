@@ -2,10 +2,8 @@
 
 namespace Modules\Sirsoft\Page\Http\Resources;
 
-use App\DisplayName\DisplayNameAreaRegistry;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
-use Modules\Sirsoft\Page\Services\PageContentMediaService;
 
 /**
  * 페이지 API 리소스 (관리자용)
@@ -24,9 +22,7 @@ class PageResource extends BaseApiResource
             'id' => $this->id,
             'slug' => $this->slug,
             'title' => $this->title,
-            // 미발행 페이지 본문 미디어는 서명 주소로(관리자 화면의 <img>·<video> 는 인증 헤더가 없다), 발행 페이지는 정식 주소 (#883)
-            // 서명은 이 페이지가 소유한 해시만 — 다른 페이지 소유 해시는 원본 페이지의 게이트를 따른다 (#887)
-            'content' => app(PageContentMediaService::class)->presentContent($this->content, (bool) $this->published, (int) $this->id),
+            'content' => $this->content,
             'content_mode' => $this->content_mode ?? 'html',
             'published' => $this->published,
             'published_at' => $this->published_at
@@ -34,26 +30,15 @@ class PageResource extends BaseApiResource
                 : null,
             'seo_meta' => $this->seo_meta,
             'current_version' => $this->current_version,
-            // 작성자와 수정자 이름은 관리자 영역(`core:admin`) 표시 이름이다. 실명은 회원 조회 권한이 있는 관리자에게,
-            // 표시 이름과 다를 때만 `real_name` 으로 더해진다.
             'creator' => $this->whenLoaded('creator', fn () => [
                 'uuid' => $this->creator->uuid,
-                ...$this->memberNameFields($this->creator, $request, DisplayNameAreaRegistry::AREA_ADMIN),
+                'name' => $this->creator->name,
             ]),
             'updater' => $this->whenLoaded('updater', fn () => [
                 'uuid' => $this->updater->uuid,
-                ...$this->memberNameFields($this->updater, $request, DisplayNameAreaRegistry::AREA_ADMIN),
+                'name' => $this->updater->name,
             ]),
-            // 미발행 페이지 첨부는 한시 서명 preview URL 로 직렬화한다.
-            // 이 리소스는 게이트(pages.read 권한 미들웨어)를 통과한 관리자 응답에만 쓰이므로
-            // 서명 발급이 곧 게이트 통과 자격의 위임이다. 발행 페이지는 무서명 공개 URL 유지.
-            'attachments' => $this->whenLoaded(
-                'attachments',
-                fn () => PageAttachmentResource::collectionFor(
-                    $this->attachments,
-                    signedPreview: ! $this->published
-                )
-            ),
+            'attachments' => PageAttachmentResource::collection($this->whenLoaded('attachments')),
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
         ];
@@ -104,7 +89,7 @@ class PageResource extends BaseApiResource
             'current_version' => $this->current_version,
             'creator' => $this->whenLoaded('creator', fn () => [
                 'uuid' => $this->creator->uuid,
-                ...$this->memberNameFields($this->creator, $request, DisplayNameAreaRegistry::AREA_ADMIN),
+                'name' => $this->creator->name,
             ]),
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),

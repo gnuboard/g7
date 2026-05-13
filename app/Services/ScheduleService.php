@@ -4,65 +4,28 @@ namespace App\Services;
 
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
+use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
-use App\Exceptions\ScheduleAlreadyRunningException;
-use App\Exceptions\ScheduleExecutionException;
-use App\Exceptions\ScheduleRunLockUnavailableException;
+use App\Enums\ScheduleType;
 use App\Extension\HookManager;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
-use App\Services\Schedule\ScheduleDispatcher;
 use Exception;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Validation\ValidationException;
 
 class ScheduleService
 {
-    /**
-     * 저장소와 실행 디스패처를 주입받습니다.
-     *
-     * @param  ScheduleRepositoryInterface  $scheduleRepository  스케줄 저장소
-     * @param  ScheduleHistoryRepositoryInterface  $historyRepository  실행 이력 저장소
-     * @param  ScheduleDispatcher  $dispatcher  실행 디스패처(즉시 실행용)
-     * @return void 반환값 없음
-     */
     public function __construct(
         private ScheduleRepositoryInterface $scheduleRepository,
-        private ScheduleHistoryRepositoryInterface $historyRepository,
-        private ScheduleDispatcher $dispatcher
+        private ScheduleHistoryRepositoryInterface $historyRepository
     ) {}
-
-    /**
-     * 화면의 「즉시 실행」으로 스케줄을 한 번 실행합니다.
-     *
-     * 예약 실행과 같은 실행기·허용목록을 거친다(수동 트리거). 실행 조건이 미충족이어도 실행한다 —
-     * 화면이 미충족 조건을 미리 경고한다.
-     *
-     * @param  Schedule  $schedule  실행할 스케줄
-     * @param  int|null  $userId  실행한 관리자 ID
-     * @return ScheduleHistory|null 바로 실행이면 이력(실패도 이력으로 온다), 큐로 보냈거나
-     *                              실패만 기록하는 행이 성공했으면 null
-     *
-     * @throws ScheduleExecutionException 소유 확장이 비활성일 때
-     * @throws ScheduleAlreadyRunningException 「중복 실행 방지」 스케줄의 앞선 실행이 아직 도는 중일 때 (409)
-     * @throws ScheduleRunLockUnavailableException 실행 잠금 저장소 오류일 때 (503)
-     */
-    public function runNow(Schedule $schedule, ?int $userId = null): ?ScheduleHistory
-    {
-        try {
-            return $this->dispatcher->dispatch($schedule, ScheduleTriggerType::Manual, $userId);
-        } catch (ScheduleExecutionException $e) {
-            // 「지금 실행」이 앞선 실행과 겹치면 409 로 거절한다(#161 F4). 실행기는 틱·큐 경로와 같은 사유 코드로 알리고,
-            // 잠금을 이력 생성보다 먼저 잡으므로 거절된 요청은 이력·last_result 를 남기지 않는다.
-            if ($e->reasonCode === 'already_running') {
-                throw new ScheduleAlreadyRunningException((int) $schedule->id);
-            }
-
-            throw $e;
-        }
-    }
 
     /**
      * 필터링된 스케줄 목록을 페이지네이션으로 조회합니다.
@@ -155,16 +118,13 @@ class ScheduleService
     public function delete(Schedule $schedule): bool
     {
         try {
-            // 이력만 지워지고 스케줄은 남는 상태를 막기 위해 두 단계를 하나로 묶는다.
-            $result = DB::transaction(function () use ($schedule) {
-                // before_delete 훅 실행
-                HookManager::doAction('core.schedule.before_delete', $schedule);
+            // before_delete 훅 실행
+            HookManager::doAction('core.schedule.before_delete', $schedule);
 
-                // 실행 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
-                $schedule->histories()->delete();
+            // 실행 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
+            $schedule->histories()->delete();
 
-                return $this->scheduleRepository->delete($schedule);
-            });
+            $result = $this->scheduleRepository->delete($schedule);
 
             // after_delete 훅 실행
             HookManager::doAction('core.schedule.after_delete', $schedule->id);
@@ -190,6 +150,160 @@ class ScheduleService
     public function getScheduleById(int $id): ?Schedule
     {
         return $this->scheduleRepository->findById($id);
+    }
+
+    /**
+     * 스케줄을 즉시 실행합니다.
+     *
+     * @param  Schedule  $schedule  실행할 스케줄
+     * @param  int|null  $triggeredBy  수동 실행자 ID
+     * @return ScheduleHistory 실행 이력
+     *
+     * @throws ValidationException 실행 실패 시
+     */
+    public function runSchedule(Schedule $schedule, ?int $triggeredBy = null): ScheduleHistory
+    {
+        // before_run 훅 실행
+        HookManager::doAction('core.schedule.before_run', $schedule);
+
+        // 실행 이력 생성
+        $history = $this->historyRepository->create([
+            'schedule_id' => $schedule->id,
+            'started_at' => now(),
+            'status' => ScheduleResultStatus::Running,
+            'trigger_type' => $triggeredBy ? ScheduleTriggerType::Manual : ScheduleTriggerType::Scheduled,
+            'triggered_by' => $triggeredBy,
+        ]);
+
+        // 스케줄 상태 업데이트
+        $this->scheduleRepository->update($schedule, [
+            'last_result' => ScheduleResultStatus::Running,
+            'last_run_at' => now(),
+        ]);
+
+        try {
+            $startTime = microtime(true);
+            $memoryStart = memory_get_usage();
+
+            // 타입별 실행
+            $result = match ($schedule->type) {
+                ScheduleType::Artisan => $this->executeArtisanCommand($schedule),
+                ScheduleType::Shell => $this->executeShellCommand($schedule),
+                ScheduleType::Url => $this->executeUrlCall($schedule),
+            };
+
+            $endTime = microtime(true);
+            $memoryEnd = memory_get_usage();
+
+            // 이력 업데이트 (성공)
+            $this->historyRepository->update($history, [
+                'ended_at' => now(),
+                'duration' => (int) ($endTime - $startTime),
+                'status' => ScheduleResultStatus::Success,
+                'exit_code' => 0,
+                'memory_usage' => $memoryEnd - $memoryStart,
+                'output' => $result['output'] ?? null,
+            ]);
+
+            // 스케줄 상태 업데이트
+            $schedule->last_result = ScheduleResultStatus::Success;
+            $schedule->calculateNextRunAt();
+            $schedule->save();
+
+            // after_run 훅 실행
+            HookManager::doAction('core.schedule.after_run', $schedule, $history);
+
+            return $history->fresh();
+
+        } catch (Exception $e) {
+            // 이력 업데이트 (실패)
+            $this->historyRepository->update($history, [
+                'ended_at' => now(),
+                'status' => ScheduleResultStatus::Failed,
+                'exit_code' => $e->getCode() ?: 1,
+                'error_output' => $e->getMessage(),
+            ]);
+
+            // 스케줄 상태 업데이트
+            $schedule->last_result = ScheduleResultStatus::Failed;
+            $schedule->calculateNextRunAt();
+            $schedule->save();
+
+            Log::error('Schedule execution failed', [
+                'schedule_id' => $schedule->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw ValidationException::withMessages([
+                'general' => [__('schedule.run_failed', ['error' => $e->getMessage()])],
+            ]);
+        }
+    }
+
+    /**
+     * Artisan 커맨드를 실행합니다.
+     *
+     * @param  Schedule  $schedule  스케줄
+     * @return array 실행 결과
+     */
+    private function executeArtisanCommand(Schedule $schedule): array
+    {
+        $output = '';
+
+        Artisan::call($schedule->command, [], new \Symfony\Component\Console\Output\BufferedOutput);
+
+        return [
+            'output' => Artisan::output(),
+            'exit_code' => 0,
+        ];
+    }
+
+    /**
+     * 쉘 명령을 실행합니다.
+     *
+     * @param  Schedule  $schedule  스케줄
+     * @return array 실행 결과
+     *
+     * @throws Exception 실행 실패 시
+     */
+    private function executeShellCommand(Schedule $schedule): array
+    {
+        $timeout = $schedule->timeout ?? 60;
+
+        $result = Process::timeout($timeout)->run($schedule->command);
+
+        if ($result->failed()) {
+            throw new Exception($result->errorOutput() ?: __('schedule.shell_command_failed'), $result->exitCode());
+        }
+
+        return [
+            'output' => $result->output(),
+            'exit_code' => $result->exitCode(),
+        ];
+    }
+
+    /**
+     * URL 호출을 실행합니다.
+     *
+     * @param  Schedule  $schedule  스케줄
+     * @return array 실행 결과
+     *
+     * @throws Exception 호출 실패 시
+     */
+    private function executeUrlCall(Schedule $schedule): array
+    {
+        $timeout = $schedule->timeout ?? 30;
+
+        $response = Http::timeout($timeout)->get($schedule->command);
+
+        if ($response->failed()) {
+            throw new Exception(__('schedule.http_request_failed', ['status' => $response->status()]), $response->status());
+        }
+
+        return [
+            'output' => 'HTTP Status: '.$response->status()."\n".$response->body(),
+            'exit_code' => 0,
+        ];
     }
 
     /**
@@ -239,9 +353,6 @@ class ScheduleService
         HookManager::doAction('core.schedule.before_bulk_delete', $ids);
 
         $deletedCount = DB::transaction(function () use ($ids) {
-            // 실행 이력 삭제 (명시적 삭제 - CASCADE 의존 금지) — 단건 delete() 와 같은 순서
-            $this->historyRepository->deleteByScheduleIds($ids);
-
             return $this->scheduleRepository->bulkDelete($ids);
         });
 
@@ -308,26 +419,6 @@ class ScheduleService
     }
 
     /**
-     * 보존 기간이 지난 실행 이력을 정리합니다 (자동 파기).
-     *
-     * 운영자가 고른 ID 를 지우는 bulkDeleteHistory 와 달리 대상을 기간으로 정하고
-     * 사람 없이 예약 실행되므로 별개의 훅을 발행합니다.
-     *
-     * @param  int  $days  보존 기간 (일)
-     * @return int 삭제된 건수
-     */
-    public function pruneHistory(int $days): int
-    {
-        HookManager::doAction('core.schedule.before_prune_history', $days);
-
-        $deletedCount = $this->historyRepository->deleteOlderThan($days);
-
-        HookManager::doAction('core.schedule.after_prune_history', $days, $deletedCount);
-
-        return $deletedCount;
-    }
-
-    /**
      * 활성화된 스케줄들을 조회합니다.
      *
      * @return Collection 활성화된 스케줄 컬렉션
@@ -335,5 +426,15 @@ class ScheduleService
     public function getActiveSchedules(): Collection
     {
         return $this->scheduleRepository->getActiveSchedules();
+    }
+
+    /**
+     * 실행 대기 중인 스케줄들을 조회합니다.
+     *
+     * @return Collection 실행 대기 중인 스케줄 컬렉션
+     */
+    public function getDueSchedules(): Collection
+    {
+        return $this->scheduleRepository->getDueSchedules();
     }
 }

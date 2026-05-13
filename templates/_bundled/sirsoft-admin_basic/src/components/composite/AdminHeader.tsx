@@ -5,8 +5,6 @@ import { Img } from '../basic/Img';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
-import { useRenderWidth } from '../../hooks/useRenderWidth';
-import { classAtWidth } from '../layout/widthBreakpoints';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -16,10 +14,7 @@ const t = (key: string, params?: Record<string, string | number>) =>
  * 사용자 정보 인터페이스
  */
 export interface AdminUser {
-  /** 실명. 이름 항목을 쓰지 않는 사이트에서는 null 이다 */
-  name: string | null;
-  /** 관리자 화면 영역에서 보이는 이름(표시 이름). 이 값을 먼저 쓴다 */
-  display_name?: string | null;
+  name: string;
   email: string;
   avatar?: string;
   role?: string;
@@ -78,12 +73,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   onLogoutClick,
   className = '',
 }) => {
-  // 사용자 이름 묶음을 보일지 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
-  const renderWidth = useRenderWidth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  // 보일 이름: 표시 이름이 먼저이고, 없으면(옛 응답) 실명, 둘 다 없으면 빈 글자
-  const userShownName = user?.display_name ?? user?.name ?? '';
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -128,7 +119,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         >
           <Icon name={IconName.Bell} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           {unreadCount > 0 && (
-            <Span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-600 dark:bg-red-600 rounded-full">
+            <Span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
               {unreadCount > 9 ? '9+' : unreadCount}
             </Span>
           )}
@@ -170,15 +161,15 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                         <Div className="font-semibold text-gray-900 dark:text-white text-sm">
                           {notification.title}
                         </Div>
-                        <Div className="text-gray-600 dark:text-gray-300 text-sm mt-1">
+                        <Div className="text-gray-600 dark:text-gray-400 text-sm mt-1">
                           {notification.message}
                         </Div>
-                        <Div className="text-gray-600 dark:text-gray-300 text-xs mt-1">
+                        <Div className="text-gray-400 dark:text-gray-500 text-xs mt-1">
                           {notification.time}
                         </Div>
                       </Div>
                       {!notification.read && (
-                        <Span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5" />
+                        <Span className="w-2 h-2 bg-blue-500 rounded-full mt-1.5" />
                       )}
                     </Div>
                   </Button>
@@ -198,19 +189,18 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
           {user.avatar ? (
             <Img
               src={user.avatar}
-              alt={userShownName}
+              alt={user.name}
               className="w-8 h-8 rounded-full object-cover"
-              thumbPreset="xs"
             />
           ) : (
             <Div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-              <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </Div>
           )}
-          <Div className={`${classAtWidth(renderWidth, 'md', 'block', 'hidden')} text-left`}>
-            <Div className="font-semibold text-gray-900 dark:text-white text-sm">{userShownName}</Div>
+          <Div className="hidden md:block text-left">
+            <Div className="font-semibold text-gray-900 dark:text-white text-sm">{user.name}</Div>
             {user.role && (
-              <Div className="text-gray-500 dark:text-gray-300 text-xs">{user.role}</Div>
+              <Div className="text-gray-500 dark:text-gray-400 text-xs">{user.role}</Div>
             )}
           </Div>
           <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-600 dark:text-gray-400" />
@@ -220,7 +210,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
         {showProfileMenu && (
           <Div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
             <Div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-              <Div className="font-semibold text-gray-900 dark:text-white">{userShownName}</Div>
+              <Div className="font-semibold text-gray-900 dark:text-white">{user.name}</Div>
               <Div className="text-gray-500 dark:text-gray-400 text-sm">{user.email}</Div>
             </Div>
             <Div className="py-2">
@@ -239,7 +229,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                   onLogoutClick?.();
                   setShowProfileMenu(false);
                 }}
-                className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-red-600 dark:text-red-300 transition-colors"
+                className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
               >
                 <Icon name={IconName.ArrowRight} className="w-5 h-5" />
                 <Span>{t('common.logout')}</Span>

@@ -6,7 +6,7 @@
  * @since engine-v1.14.0
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { SortableContainer } from '../sortable/SortableContainer';
@@ -15,8 +15,6 @@ import { SortableProvider, useSortableContext } from '../sortable/SortableContex
 
 describe('Sortable 모듈', () => {
   describe('SortableContainer', () => {
-    // @scenario area=container
-    // @effects sortable_container_renders_and_reports_sort
     it('아이템들을 렌더링한다', () => {
       const items = [
         { id: '1', name: 'Item 1' },
@@ -43,8 +41,6 @@ describe('Sortable 모듈', () => {
       expect(screen.getByTestId('item-3')).toBeInTheDocument();
     });
 
-    // @scenario area=container
-    // @effects sortable_container_renders_and_reports_sort
     it('onSortEnd 콜백을 호출할 수 있다', () => {
       const items = [{ id: '1', name: 'Item 1' }];
       const onSortEnd = vi.fn();
@@ -66,8 +62,6 @@ describe('Sortable 모듈', () => {
   });
 
   describe('SortableItemWrapper', () => {
-    // @scenario area=item_wrapper
-    // @effects sortable_item_wrapper_wraps_item
     it('아이템을 sortable-item 래퍼로 감싼다', () => {
       render(
         <SortableItemWrapper id="test-item">
@@ -79,8 +73,6 @@ describe('Sortable 모듈', () => {
       expect(wrapper).toHaveAttribute('data-sortable-item');
     });
 
-    // @scenario area=item_wrapper
-    // @effects sortable_item_wrapper_wraps_item
     it('드래그 중이 아닐 때 opacity가 1이다', () => {
       render(
         <SortableItemWrapper id="test-item">
@@ -103,15 +95,11 @@ describe('Sortable 모듈', () => {
       );
     };
 
-    // @scenario area=context
-    // @effects sortable_context_exposed_inside_provider
     it('Provider 외부에서는 null을 반환한다', () => {
       render(<TestConsumer />);
       expect(screen.getByTestId('consumer')).toHaveTextContent('no-context');
     });
 
-    // @scenario area=context
-    // @effects sortable_context_exposed_inside_provider
     it('Provider 내부에서는 컨텍스트를 반환한다', () => {
       render(
         <SortableProvider value={{ handle: '[data-drag-handle]', isDragging: false }}>
@@ -121,8 +109,6 @@ describe('Sortable 모듈', () => {
       expect(screen.getByTestId('consumer')).toHaveTextContent('has-context');
     });
 
-    // @scenario area=context
-    // @effects sortable_context_exposed_inside_provider
     it('listeners를 전달할 수 있다', () => {
       const mockListeners = {
         onPointerDown: vi.fn(),
@@ -148,8 +134,6 @@ describe('Sortable 모듈', () => {
 });
 
 describe('Sortable 통합 테스트', () => {
-  // @scenario area=integration
-  // @effects sortable_parts_work_together
   it('SortableContainer와 SortableItemWrapper가 함께 동작한다', () => {
     const items = [
       { id: '1', name: 'First' },
@@ -180,8 +164,6 @@ describe('Sortable 통합 테스트', () => {
     expect(second).toHaveAttribute('data-sortable-item');
   });
 
-  // @scenario area=integration
-  // @effects sortable_parts_work_together
   it('handle 옵션이 전달된다', () => {
     const items = [{ id: '1', name: 'Item' }];
 
@@ -196,8 +178,6 @@ describe('Sortable 통합 테스트', () => {
     expect(screen.getByTestId('item-with-handle')).toBeInTheDocument();
   });
 
-  // @scenario area=integration
-  // @effects sortable_parts_work_together
   it('sortVersion 변경 시 DndContext가 리마운트된다', () => {
     const items = [
       { id: '1', name: 'First' },
@@ -243,8 +223,6 @@ describe('Sortable 통합 테스트', () => {
     expect(screen.getByTestId('sv-1')).toHaveTextContent('First');
   });
 
-  // @scenario area=integration
-  // @effects sortable_parts_work_together
   it('빈 배열을 처리할 수 있다', () => {
     const items: any[] = [];
 

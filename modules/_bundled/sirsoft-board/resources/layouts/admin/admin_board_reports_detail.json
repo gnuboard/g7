@@ -1,16 +1,34 @@
 {
-    "comment": "신고 한 건의 상세. 본문은 조각 셋(현재 상태 배너 · 신고 내용 · 처리 이력)이고, 상태 전환은 다섯 갈래(대기·검토·기각·정지·삭제)를 모달 하나가 겸한다 — 어느 갈래인지는 `_global.actionType` 이 들고 있어 제목·문구·버튼색·보낼 값이 그 하나에서 갈린다",
     "version": "1.0.0",
     "layout_name": "admin_board_reports_detail",
+    "permissions": [
+        "sirsoft-board.reports.view"
+    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-board.admin.reports.detail.page_title",
         "description": "$t:sirsoft-board.admin.reports.detail.page_description"
     },
+    "state": {
+        "_local": {
+            "reporters_page": 1,
+            "reporters_loading": false
+        },
+        "_global": {
+            "actionReason": "",
+            "isSaving": false,
+            "actionType": ""
+        }
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "report_detail",
+            "reporters_list"
+        ]
+    },
     "data_sources": [
         {
             "id": "report_detail",
-            "label_key": "$t:sirsoft-board.editor.data_source.report_detail",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/admin/reports/{{route.id}}",
             "method": "GET",
@@ -30,12 +48,10 @@
                         "target": "content"
                     }
                 }
-            },
-            "comment": "신고 본문·대상 글·현재 상태. 없는 신고(404)와 권한 없음(403) 둘 다 화면 자리에 오류 페이지를 세운다 — 이 화면은 신고 하나가 전부라 부분만 비워 둘 수 없다"
+            }
         },
         {
             "id": "reporters_list",
-            "label_key": "$t:sirsoft-board.editor.data_source.reporters_list",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/admin/reports/{{route.id}}/reporters",
             "method": "GET",
@@ -45,45 +61,24 @@
             "params": {
                 "page": "{{_local.reporters_page}}",
                 "per_page": 10
-            },
-            "comment": "같은 대상을 신고한 사람들 — 한 신고에 여럿이 붙을 수 있어 따로 페이지를 넘긴다. `progressive` 라 본문이 먼저 뜨고 이 목록만 늦게 채워진다"
+            }
         }
     ],
-    "initLocal": {
-        "_local": {
-            "reporters_page": 1,
-            "reporters_loading": false
-        },
-        "_global": {
-            "actionReason": "",
-            "isSaving": false,
-            "actionType": ""
-        }
-    },
-    "permissions": [
-        "sirsoft-board.reports.view"
-    ],
-    "transition_overlay": {
-        "wait_for": [
-            "report_detail",
-            "reporters_list"
-        ]
-    },
     "slots": {
         "content": [
             {
                 "id": "report_detail_wrapper",
                 "type": "basic",
                 "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                },
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "board-admin-page-content-fluid-compact"
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
                         }
                     }
-                },
-                "props": {
-                    "className": "board-admin-page-content-fluid"
                 },
                 "children": [
                     {
@@ -99,31 +94,26 @@
                                 "id": "refresh_button",
                                 "type": "basic",
                                 "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
                                 "actions": [
                                     {
-                                        "comment": "같은 신고로 다시 들어가 본문·신고자 목록을 새로 읽는다 — 신고자 페이지도 함께 1 로 돌아간다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/boards/reports/{{route.id}}",
-                                            "mergeQuery": true,
-                                            "query": {}
+                                            "mergeQuery": false
                                         }
                                     }
                                 ],
-                                "props": {
-                                    "type": "button",
-                                    "aria-label": "$t:common.refresh",
-                                    "title": "$t:common.refresh",
-                                    "className": "board-btn-icon"
-                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrows-rotate",
-                                            "className": "board:text-xl"
+                                            "className": "w-5 h-5"
                                         }
                                     }
                                 ]
@@ -131,30 +121,26 @@
                             {
                                 "id": "back_button",
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
                                 "actions": [
                                     {
-                                        "comment": "신고 목록으로. 보던 목록 상태를 이고 간다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "mergeQuery": true,
-                                            "query": {}
+                                            "path": "/admin/boards/reports"
                                         }
                                     }
                                 ],
-                                "props": {
-                                    "href": "/admin/boards/reports",
-                                    "mergeQuery": true,
-                                    "className": "board-button board-flex-center board:gap-2 board-btn board-btn-secondary"
-                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrow-left",
-                                            "className": "board:text-base"
+                                            "className": "w-4 h-4"
                                         }
                                     },
                                     {
@@ -181,145 +167,26 @@
     },
     "modals": [
         {
-            "comment": "상태 전환 확인 — 다섯 갈래를 겸한다. 「기각」이면서 대상이 이미 가려져 있으면 그 글이 다시 공개된다는 것을 별도 문구로 먼저 알린다(기각은 되돌리는 동작이라 눈에 안 띄게 노출이 일어날 수 있다)",
             "id": "status_action_modal",
             "type": "composite",
             "name": "Modal",
             "props": {
                 "title": "{{_global.actionType === 'pending' ? '$t:sirsoft-board.admin.reports.modals.status_change_pending_title' : _global.actionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_title' : _global.actionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_title' : _global.actionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_title' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_title'}}",
-                "size": "medium",
-                "footer": [
-                    {
-                        "type": "basic",
-                        "name": "Button",
-                        "actions": [
-                            {
-                                "type": "click",
-                                "handler": "closeModal"
-                            },
-                            {
-                                "comment": "닫으면서 적어 둔 사유도 비운다 — 남겨 두면 다음에 다른 갈래로 열었을 때 앞선 사유가 그대로 실려 나간다",
-                                "type": "click",
-                                "handler": "setState",
-                                "params": {
-                                    "target": "global",
-                                    "actionReason": ""
-                                }
-                            }
-                        ],
-                        "props": {
-                            "type": "button",
-                            "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
-                            "disabled": "{{_global.isSaving}}"
-                        },
-                        "children": [
-                            {
-                                "type": "basic",
-                                "name": "Span",
-                                "text": "$t:common.cancel"
-                            }
-                        ]
-                    },
-                    {
-                        "type": "basic",
-                        "name": "Button",
-                        "actions": [
-                            {
-                                "comment": "확인 ①  저장 중 표시를 켜 두 번 눌리는 것을 막는다(취소 버튼도 같은 값으로 함께 잠긴다)",
-                                "type": "click",
-                                "handler": "setState",
-                                "params": {
-                                    "target": "global",
-                                    "isSaving": true
-                                }
-                            },
-                            {
-                                "comment": "확인 ②  고른 갈래를 상태 값으로 풀어 보낸다. 성공 뒤 화면에 머무는 대신 같은 주소로 다시 들어가는 이유는 상태·이력·배너가 한꺼번에 달라지기 때문이다",
-                                "type": "click",
-                                "handler": "apiCall",
-                                "target": "/api/modules/sirsoft-board/admin/reports/{{route.id}}/status",
-                                "auth_required": true,
-                                "params": {
-                                    "method": "PATCH",
-                                    "body": {
-                                        "status": "{{_global.actionType === 'pending' ? 'pending' : _global.actionType === 'review' ? 'review' : _global.actionType === 'rejected' ? 'rejected' : _global.actionType === 'deleted' ? 'deleted' : 'suspended'}}",
-                                        "process_note": "{{_global.actionReason}}"
-                                    }
-                                },
-                                "onSuccess": [
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "actionReason": "",
-                                            "isSaving": false
-                                        }
-                                    },
-                                    {
-                                        "handler": "closeModal"
-                                    },
-                                    {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "success",
-                                            "message": "$t:sirsoft-board.admin.reports.modals.status_change_success"
-                                        }
-                                    },
-                                    {
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/boards/reports/{{route.id}}",
-                                            "mergeQuery": true,
-                                            "query": {}
-                                        }
-                                    }
-                                ],
-                                "onError": [
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "isSaving": false
-                                        }
-                                    },
-                                    {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message}}"
-                                        }
-                                    }
-                                ]
-                            }
-                        ],
-                        "props": {
-                            "type": "button",
-                            "className": "board:px-4 board:py-2 board:text-white board:rounded-lg board:disabled:opacity-50 board:disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'board:bg-yellow-700 board:hover:bg-yellow-800' : _global.actionType === 'review' ? 'board:bg-blue-600 board:hover:bg-blue-700' : _global.actionType === 'rejected' ? 'board:bg-purple-600 board:hover:bg-purple-700' : _global.actionType === 'suspended' ? 'board:bg-red-600 board:hover:bg-red-700' : _global.actionType === 'deleted' ? 'board:bg-gray-600 board:hover:bg-gray-700 board:dark:bg-gray-700 board:dark:hover:bg-gray-600' : 'board:bg-blue-600 board:hover:bg-blue-700'}}",
-                            "disabled": "{{_global.isSaving}}"
-                        },
-                        "children": [
-                            {
-                                "type": "basic",
-                                "name": "Span",
-                                "text": "{{_global.isSaving ? $t:common.saving : $t:common.confirm}}"
-                            }
-                        ]
-                    }
-                ]
+                "size": "medium"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "board:py-2"
+                        "className": "py-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "board:text-gray-700 board:dark:text-gray-300 board:mb-4"
+                                "className": "text-gray-700 dark:text-gray-300 mb-4"
                             },
                             "text": "{{_global.actionType === 'pending' ? '$t:sirsoft-board.admin.reports.modals.status_change_pending_confirm_single' : _global.actionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_confirm_single' : _global.actionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_confirm_single' : _global.actionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_confirm_single' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_confirm_single'}}"
                         },
@@ -328,7 +195,7 @@
                             "name": "Div",
                             "if": "{{_global.actionType === 'rejected' && report_detail.data?.target_status === 'blinded'}}",
                             "props": {
-                                "className": "board:mb-4 board-flex-center board:gap-2 board:p-2.5 board:bg-orange-50 board:dark:bg-orange-900/20 board:rounded-md"
+                                "className": "mb-4 flex items-center gap-2 p-2.5 bg-orange-50 dark:bg-orange-900/20 rounded-md"
                             },
                             "children": [
                                 {
@@ -336,14 +203,14 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "eye",
-                                        "className": "board:text-base board:text-orange-600 board:dark:text-orange-400 board:flex-shrink-0"
+                                        "className": "w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "board:text-xs board:text-orange-700 board:dark:text-orange-300"
+                                        "className": "text-xs text-orange-700 dark:text-orange-300"
                                     },
                                     "text": "$t:sirsoft-board.admin.reports.modals.blinded_will_be_public|count=1"
                                 }
@@ -353,16 +220,21 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "board-form-label"
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                             },
                             "text": "$t:sirsoft-board.admin.reports.modals.reason_label"
                         },
                         {
                             "type": "basic",
                             "name": "Textarea",
+                            "props": {
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                "rows": 4,
+                                "placeholder": "$t:sirsoft-board.admin.reports.modals.reason_placeholder",
+                                "value": "{{_global.actionReason || ''}}"
+                            },
                             "actions": [
                                 {
-                                    "comment": "처리 사유를 전역에 담는다 — 아래 확인 버튼이 이 값을 `process_note` 로 보내고, 처리 이력 카드에 그대로 남는다",
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
@@ -370,20 +242,130 @@
                                         "actionReason": "{{$event.target.value}}"
                                     }
                                 }
-                            ],
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
                             "props": {
-                                "className": "board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800",
-                                "rows": 4,
-                                "placeholder": "$t:sirsoft-board.admin.reports.modals.reason_placeholder",
-                                "value": "{{_global.actionReason || ''}}"
-                            }
+                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isSaving}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                },
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "actionReason": ""
+                                    }
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : _global.actionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.actionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.actionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.actionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}",
+                                "disabled": "{{_global.isSaving}}"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isSaving": true
+                                    }
+                                },
+                                {
+                                    "type": "click",
+                                    "handler": "apiCall",
+                                    "auth_required": true,
+                                    "target": "/api/modules/sirsoft-board/admin/reports/{{route.id}}/status",
+                                    "params": {
+                                        "method": "PATCH",
+                                        "body": {
+                                            "status": "{{_global.actionType === 'pending' ? 'pending' : _global.actionType === 'review' ? 'review' : _global.actionType === 'rejected' ? 'rejected' : _global.actionType === 'deleted' ? 'deleted' : 'suspended'}}",
+                                            "process_note": "{{_global.actionReason}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "actionReason": "",
+                                                "isSaving": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-board.admin.reports.modals.status_change_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/boards/reports/{{route.id}}",
+                                                "mergeQuery": false
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isSaving": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.isSaving ? $t:common.saving : $t:common.confirm}}"
+                                }
+                            ]
                         }
                     ]
                 }
-            ],
-            "meta": {
-                "editor_label": "$t:sirsoft-board.admin.reports.modals.status_action_editor_label"
-            }
+            ]
         }
     ]
 }

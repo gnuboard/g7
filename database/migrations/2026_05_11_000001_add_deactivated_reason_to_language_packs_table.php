@@ -40,11 +40,9 @@ return new class extends Migration
             }
         });
 
-        if (! Schema::hasIndex('language_packs', 'language_packs_deactivated_reason_index')) {
-            Schema::table('language_packs', function (Blueprint $table) {
-                $table->index('deactivated_reason', 'language_packs_deactivated_reason_index');
-            });
-        }
+        Schema::table('language_packs', function (Blueprint $table) {
+            $table->index('deactivated_reason', 'language_packs_deactivated_reason_index');
+        });
     }
 
     /**

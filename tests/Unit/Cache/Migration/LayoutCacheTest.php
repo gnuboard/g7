@@ -21,18 +21,11 @@ use Tests\TestCase;
  * 모델/Repository 통합 시나리오는 LayoutServiceCachingTest /
  * ModuleManagerLayoutTest / TemplateManagerOverrideTest 에서 검증되며,
  * 본 파일은 새 키 형식과 키 일관성에 집중합니다.
- *
- * @scenario-manifest tests/scenarios/cache-layout-migration.yaml
  */
 class LayoutCacheTest extends TestCase
 {
     private CoreCacheDriver $cache;
 
-    /**
-     * 각 테스트 전에 캐시를 비우고 array 저장소 코어 캐시 드라이버를 CacheInterface 로 바인딩합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,11 +35,6 @@ class LayoutCacheTest extends TestCase
         $this->app->instance(CacheInterface::class, $this->cache);
     }
 
-    /**
-     * 각 테스트 뒤에 캐시를 비웁니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -59,12 +47,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-1-1: 레이아웃 병합 결과 캐시 키 형식 검증.
-     *
-     * @scenario case=merged_layout
-     *
-     * @effects key_uses_core_prefix, layout_value_cached
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_1_1_merged_layout_cache_key_format(): void
@@ -81,12 +63,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-1-2: 레이아웃 캐시 히트 — 동일 키 재조회 시 동일 값.
-     *
-     * @scenario case=merged_layout
-     *
-     * @effects layout_value_cached
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_1_2_merged_layout_cache_hit(): void
@@ -100,12 +76,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-1-3: 레이아웃 편집 저장 시 캐시 무효화.
-     *
-     * @scenario case=merged_layout
-     *
-     * @effects layout_key_forgotten
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_1_3_layout_edit_invalidates_merged_cache(): void
@@ -120,12 +90,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-1-4: 레이아웃 이름 변경 시 이전 키 삭제.
-     *
-     * @scenario case=layout_rename
-     *
-     * @effects renamed_layout_key_replaced
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_1_4_layout_rename_invalidates_old_key(): void
@@ -143,12 +107,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-1-5: 모듈 레이아웃 sourceHash 포함 키 형식.
-     *
-     * @scenario case=module_source_hash
-     *
-     * @effects key_uses_core_prefix, layout_value_cached
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_1_5_module_layout_source_hash_key(): void
@@ -170,12 +128,6 @@ class LayoutCacheTest extends TestCase
      *
      * InvalidatesLayoutCache Trait 또는 LayoutService.clearLayoutCache 가
      * 자식 레이아웃 캐시도 함께 삭제하는 동작을 키 차원에서 검증.
-     *
-     * @scenario case=extends_cascade
-     *
-     * @effects layout_keys_bulk_forgotten
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_1_6_extends_cascade_invalidation(): void
@@ -200,12 +152,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-2-1: 서빙 캐시 키 형식 — `layout.{identifier}.{name}.v{version}`
-     *
-     * @scenario case=serving
-     *
-     * @effects key_uses_core_prefix, layout_value_cached
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_2_1_serving_cache_key_format(): void
@@ -224,12 +170,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-2-2: 서빙 캐시 히트 — 두 번째 요청은 동일 결과 반환.
-     *
-     * @scenario case=serving
-     *
-     * @effects layout_value_cached
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_2_2_serving_cache_hit(): void
@@ -246,12 +186,6 @@ class LayoutCacheTest extends TestCase
      *
      * InvalidatesLayoutCache::forgetLayoutCacheKeys() 가 동일 키를 삭제하는
      * 패턴을 키 형식 차원에서 검증.
-     *
-     * @scenario case=serving
-     *
-     * @effects layout_key_forgotten
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_2_3_layout_edit_clears_current_version_serving_cache(): void
@@ -273,12 +207,6 @@ class LayoutCacheTest extends TestCase
      *
      * 이전 버전 캐시는 능동 삭제하지 않고 TTL 만료에 의존.
      * 새 버전 키로 새 캐시 생성됨.
-     *
-     * @scenario case=version_bump
-     *
-     * @effects old_version_key_kept
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_2_4_extension_change_creates_new_version_key(): void
@@ -306,12 +234,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-3-1: 모듈 레이아웃 해석 캐시 키 형식.
-     *
-     * @scenario case=resolver
-     *
-     * @effects key_uses_core_prefix, layout_value_cached
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_3_1_resolver_cache_key_format(): void
@@ -328,12 +250,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-3-2: 해석 캐시 히트 — 재조회 시 동일 ID 반환.
-     *
-     * @scenario case=resolver
-     *
-     * @effects layout_value_cached
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_3_2_resolver_cache_hit(): void
@@ -347,12 +263,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-3-3: 레이아웃 편집 시 해석 캐시 무효화.
-     *
-     * @scenario case=resolver
-     *
-     * @effects layout_key_forgotten
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_3_3_layout_edit_invalidates_resolver_cache(): void
@@ -367,12 +277,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-3-4: 모듈 비활성화 시 해석 캐시 무효화 — 모듈의 모든 레이아웃 키 삭제.
-     *
-     * @scenario case=module_deactivate
-     *
-     * @effects layout_keys_bulk_forgotten
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_3_4_module_deactivate_invalidates_all_resolver_keys(): void
@@ -403,12 +307,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-4-1: 모듈 활성화 시 관련 레이아웃 캐시 전체 삭제 (3 레이아웃 × 3 종류 = 9개).
-     *
-     * @scenario case=module_activate
-     *
-     * @effects layout_keys_bulk_forgotten
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_4_1_module_activation_clears_all_layout_caches(): void
@@ -437,12 +335,6 @@ class LayoutCacheTest extends TestCase
 
     /**
      * B-4-2: 템플릿 비활성화 시 해당 템플릿의 모든 레이아웃 캐시 삭제.
-     *
-     * @scenario case=template_deactivate
-     *
-     * @effects layout_keys_bulk_forgotten
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function b_4_2_template_deactivation_clears_template_layouts(): void

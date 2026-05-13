@@ -1,27 +1,20 @@
-export declare const SECRET_VIEW_TOKEN_STORAGE_NAME = "g7_board_secret_view_token";
-export declare const SECRET_VIEW_EXPIRES_AT_STORAGE_NAME = "g7_board_secret_view_expires_at";
 /**
- * 백엔드 API를 통해 Cart Key 발급
+ * 로컬 스토리지 관련 핸들러
  *
- * @returns 발급된 cart_key 또는 null (실패 시)
+ * 비로그인 사용자의 장바구니 키 등 클라이언트 스토리지 관리를 처리합니다.
+ *
+ * 핸들러 시그니처: ActionDispatcher의 ActionHandler 형식을 따름
+ * (action: ActionDefinition, context: ActionContext) => void | Promise<void>
+ *
+ * G7Core API 사용:
+ * - G7Core.state.set() - 전역 상태 설정
+ * - G7Core.state.get()._global?.currentUser - 현재 사용자 확인
  */
-export declare function issueCartKeyFromApi(): Promise<string | null>;
-/**
- * 장바구니 키 발급을 미리 시작한다 — 템플릿 번들이 실릴 때 한 번 부른다 (#879).
- *
- * 종전에는 레이아웃을 받은 뒤 init_actions 의 `initCartKey` 에서야 발급 요청이 나가, 첫 화면 전 PHP 왕복이 레이아웃 → 키로
- * 줄줄이 이어졌다. 저장된 키가 없고 쇼핑몰 모듈이 켜져 있으면 여기서 요청을 시작해 레이아웃 요청과 겹치게 한다. 렌더 전에
- * 키 응답을 끝까지 기다리는 것은 그대로다 — `initCartKey` 가 이 결과를 기다린다(설계 확정 2026-11-10).
- *
- * @returns 진행 중인 발급(시작하지 않았으면 null)
- */
-export declare function prefetchCartKey(): Promise<string | null> | null;
 /**
  * 장바구니 키 초기화
  *
  * 비로그인 사용자의 장바구니를 식별하기 위한 키를 생성/로드합니다.
  * 이미 저장된 키가 있으면 로드하고, 없으면 백엔드 API를 통해 새로 발급합니다.
- * 번들이 실릴 때 시작한 발급({@link prefetchCartKey})이 있으면 새 요청 없이 그 결과를 끝까지 기다린다.
  *
  * ActionDispatcher 핸들러 형식: (action, context) => void | Promise<void>
  *
@@ -48,17 +41,6 @@ export declare function getCartKeyHandler(_action?: any, _context?: any): string
  */
 export declare function clearCartKeyHandler(_action?: any, _context?: any): void;
 /**
- * 장바구니 키가 필요한 동작 앞에서 키를 갖춘다 (#869 ρ J2).
- *
- * 저장된 키가 있으면 그것을 싣고, 없으면(init 의 발급이 실패한 경우) 새로 요청해 응답을 기다린다. 레이아웃은 담기, 바로 구매처럼 키가
- * 필요한 동작의 sequence 맨 앞에 둔다. 받지 못하면 null 로 끝나고 동작은 종전처럼 서버 응답대로 처리된다.
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- * @returns 갖춘 키(받지 못하면 null)
- */
-export declare function ensureCartKeyHandler(_action?: any, _context?: any): Promise<string | null>;
-/**
  * 장바구니 키 새로 생성
  *
  * 기존 키를 삭제하고 백엔드 API를 통해 새로운 키를 발급합니다.
@@ -81,99 +63,3 @@ export declare function saveToStorageHandler(action?: any, _context?: any): void
  * @param _context 액션 컨텍스트 (사용하지 않음)
  */
 export declare function loadFromStorageHandler(action?: any, _context?: any): string | null;
-/**
- * 비회원 주문 조회 토큰 초기화 (init_actions 전용)
- *
- * sessionStorage 의 g7_guest_order_token 을 읽어 `_global.guestOrderToken` 에 설정한다.
- * 표준 loadFromSessionStorage 핸들러는 `context.setState`(React 컴포넌트 state)를 호출해
- * `_local` 에만 영향을 주므로, `_global` 에 토큰을 설정하려면 `G7Core.state.set` 직접 호출이 필요하다.
- * `initCartKey` 와 동일한 패턴.
- *
- * 동작:
- * 1. sessionStorage 에서 토큰/만료시각 로드 (탭 종료 시 자동 소실 — 공유 PC 안전)
- * 2. 만료된 토큰은 자동 폐기 (3개 키 모두 제거)
- * 3. `_global.guestOrderToken` 에 토큰 또는 null 설정
- * 4. `_user_base.globalHeaders` 의 `X-Guest-Order-Token: {{_global.guestOrderToken}}` 패턴이
- *    토큰 있을 때만 `guest/orders/*` 호출에 헤더 자동 주입 (엔진이 null/빈값 자동 제외)
- * 5. `_global.guestOrderNumber` 에 그 토큰이 묶인 주문번호 설정
- *
- * 주문번호를 함께 올리는 이유는 비회원 클레임 화면(`{shopBase}/guest/claims/{번호}` · `.../edit`)
- * 때문이다 — 그 주소에는 주문번호가 없는데 비회원 클레임 API 는 전부 주문 스코프
- * (`guest/orders/{주문번호}/claims/...`)다. 토큰이 주문 하나에 묶여 있으므로 그 짝인 주문번호가
- * 곧 스코프이며, 셸이 이 값으로 API 주소 앞부분을 만든다. 토큰과 같은 자리에서 함께 세워야
- * 한쪽만 남는 상태가 생기지 않는다 — 주문번호만 남으면 셸은 주소를 만들고 요청은 토큰이 없어
- * 404 가 된다.
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export declare function initGuestOrderTokenHandler(_action?: any, _context?: any): void;
-/**
- * 비회원 주문 토큰을 sessionStorage 에 저장하고 _global 에 동기 set 합니다.
- *
- * 토큰/주문번호/만료시각 3개 키를 함께 저장하며, _global.guestOrderToken 과
- * _global.guestOrderNumber 도 즉시 갱신해 직후 호출되는 navigate 의 globalHeaders 자동 주입과
- * 비회원 클레임 화면의 주문 스코프 주소 조립이 동작하도록 한다.
- *
- * @param action params.token, params.orderNumber, params.expiresAt 필수
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export declare function saveGuestOrderTokenHandler(action?: any, _context?: any): void;
-/**
- * 비회원 주문 토큰을 sessionStorage 에서 삭제하고 _global 도 비웁니다.
- *
- * 비회원 주문 취소/구매확정/명시적 로그아웃 등 토큰 무효화 시점에서 호출.
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export declare function clearGuestOrderTokenHandler(_action?: any, _context?: any): void;
-/**
- * 비회원 주문 조회 폼(guest_order_form) 진입 시 sessionStorage 의 비회원 주문 토큰을 초기화한다.
- *
- * 비회원 주문 조회 폼은 매번 새로 본인 확인을 거치는 게 표준 패턴(eBay/Best Buy/카페24/
- * 11번가/G마켓 등). 결제 직후 자동 verify 로 받은 토큰은 완료/상세 화면에서는 유효하지만,
- * 사용자가 헤더 '비회원 주문 조회' 메뉴 등을 통해 조회 폼에 도달했을 때는 의도가
- * "다시 조회" 이므로 토큰을 비워 폼이 정상 노출되도록 한다.
- *
- * 만료된 토큰도 같은 경로로 자연스럽게 정리된다.
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export declare function clearGuestTokenOnEntryHandler(_action?: any, _context?: any): void;
-/**
- * 비밀글 열람 토큰 초기화 (init_actions 전용)
- *
- * 비밀번호로 비밀글을 연 사실은 서버가 토큰 하나에 글별 인증으로 기록하고, 화면은 그 토큰을
- * `_user_base.globalHeaders` 의 `X-Board-Secret-View-Token` 으로 게시판 요청에 싣는다. 토큰이
- * 메모리(`_global.secretViewToken`)에만 있으면 답변 링크(`<a href>` 전체 이동)·새로고침에서 사라져
- * 원글 비밀번호를 맞힌 비회원도 답변 화면에서 다시 잠긴다. 그래서 탭 세션(sessionStorage)에 두고
- * 부팅마다 여기서 `_global` 로 복원한다 — 탭을 닫으면 사라지므로 공용 PC 에 남지 않는다.
- *
- * - 만료됐거나 만료 시각이 날짜가 아니면(NaN) 두 키를 지우고 null 로 둔다.
- * - 저장 토큰이 없는데 같은 화면에서 막 받은 in-memory 토큰이 있으면 덮어쓰지 않는다
- *   (sessionStorage 를 쓸 수 없는 환경 — `initGuestOrderToken` 과 같은 이유).
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export declare function initSecretViewTokenHandler(_action?: any, _context?: any): void;
-/**
- * 비밀글 열람 토큰을 sessionStorage 에 저장하고 `_global.secretViewToken` 에 동기 set 합니다.
- *
- * 비밀번호 확인(글 비밀번호·원글 비밀번호) 성공 응답의 `secret_view_token`·`secret_view_expires_at`
- * 을 받는다. 서버는 같은 탭의 두 번째 인증에 같은 토큰을 다시 돌려주고 그 토큰에 글별 인증만 더하므로,
- * 여기서는 마지막 응답 값으로 덮어쓰면 된다. 토큰이 비면(응답에 없음) 기존 값을 건드리지 않는다.
- *
- * @param action params.token, params.expiresAt
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export declare function saveSecretViewTokenHandler(action?: any, _context?: any): void;
-/**
- * 비밀글 열람 토큰을 sessionStorage 에서 지우고 `_global.secretViewToken` 도 비웁니다.
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export declare function clearSecretViewTokenHandler(_action?: any, _context?: any): void;

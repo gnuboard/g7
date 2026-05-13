@@ -1,19 +1,9 @@
-// e2e:allow편집기 선택 결함#8 수정(빈 데이터 분기에 id/editorAttrs 부착). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 CategoryTree.test.tsx 빈 상태 editorAttrs describe.
 import React, { useCallback, useMemo } from 'react';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Checkbox } from '../basic/Checkbox';
-import type { EditorAttrs } from '../../types';
-import { HighlightText } from '../shared/HighlightText';
-import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
 
 /**
  * 카테고리 노드 인터페이스 (CategoryResource API 응답 기반)
@@ -47,12 +37,32 @@ export interface CategoryTreeProps {
   onToggle?: (expandedIds: number[]) => void;
   /** 선택 변경 콜백: (selectedIds: number[]) => void */
   onSelectionChange?: (selectedIds: number[]) => void;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
+}
+
+/**
+ * 텍스트에서 키워드를 하이라이트하여 렌더링합니다.
+ */
+function HighlightText({ text, keyword }: { text: string; keyword: string }) {
+  if (!keyword || !text) {
+    return <>{text}</>;
+  }
+
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === keyword.toLowerCase() ? (
+          <Span key={i} className="bg-yellow-200 dark:bg-yellow-700 rounded px-0.5">
+            {part}
+          </Span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
 }
 
 /**
@@ -97,8 +107,6 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
   className = '',
   onToggle,
   onSelectionChange,
-  id,
-  editorAttrs,
 }) => {
   /**
    * 노드 펼치기/접기 토글
@@ -189,12 +197,8 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
           {/* 펼치기/접기 토글 */}
           {hasChildren ? (
             <Div
-              className={`flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-500 dark:text-gray-400 rounded ${FOCUS_VISIBLE_RING}`}
+              className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-400 dark:text-gray-500"
               onClick={() => handleToggle(node.id)}
-              // 키보드로도 펼치고 접는다 — 이름 칸은 같은 동작의 마우스 지름길이라 따로 Tab 을 받지 않는다(#869 키보드 접근)
-              {...keyboardActivationProps(() => handleToggle(node.id))}
-              aria-expanded={isExpanded}
-              aria-label={`${isExpanded ? tOr('common.collapse', 'Collapse') : tOr('common.expand', 'Expand')} ${displayName}`}
               data-testid={`toggle-${node.id}`}
             >
               <Icon
@@ -216,8 +220,6 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
               }}
               className="flex-shrink-0"
               data-testid={`checkbox-${node.id}`}
-              // 이름 — 종전에는 「체크박스」만 읽혔다(쿠폰·상품 분류 선택, #757)
-              aria-label={tOr('common.select_item', `Select ${displayName}`, { name: displayName })}
             />
           )}
 
@@ -226,14 +228,14 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
             name={IconName.Folder}
             className={`flex-shrink-0 text-sm ${
               hasChildren
-                ? 'text-yellow-700 dark:text-yellow-400'
-                : 'text-gray-500 dark:text-gray-400'
+                ? 'text-yellow-500 dark:text-yellow-400'
+                : 'text-gray-400 dark:text-gray-500'
             }`}
           />
 
           {/* 카테고리 이름 */}
           <Span
-            className={`text-sm text-gray-700 dark:text-gray-300 select-none${hasChildren ? ' cursor-pointer' : ''}`}
+            className="text-sm text-gray-700 dark:text-gray-300 select-none"
             onClick={() => hasChildren && handleToggle(node.id)}
           >
             <HighlightText text={displayName} keyword={searchKeyword} />
@@ -241,7 +243,7 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
 
           {/* 상품 수 Badge */}
           {showProductCount && node.products_count !== undefined && (
-            <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 ml-1">
+            <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 ml-1">
               {node.products_count}
             </Span>
           )}
@@ -258,21 +260,15 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
   };
 
   if (data.length === 0) {
-    // 빈 상태 분기도 루트에 id/editorAttrs 부착 — 편집기에서 선택 가능해야 함
-    // (모든 렌더 분기 패리티: 빈 데이터로 추가 시 이 분기로 진입)
     return (
-      <Div
-        className={`text-sm text-gray-500 dark:text-gray-400 py-4 text-center ${className}`}
-        id={id}
-        {...editorAttrs}
-      >
+      <Div className={`text-sm text-gray-400 dark:text-gray-500 py-4 text-center ${className}`}>
         데이터가 없습니다.
       </Div>
     );
   }
 
   return (
-    <Div className={`border border-gray-200 dark:border-gray-700 rounded-lg p-2 max-h-80 overflow-y-auto ${className}`} id={id} {...editorAttrs}>
+    <Div className={`border border-gray-200 dark:border-gray-700 rounded-lg p-2 max-h-80 overflow-y-auto ${className}`}>
       {data.map((node) => renderNode(node, 0))}
     </Div>
   );

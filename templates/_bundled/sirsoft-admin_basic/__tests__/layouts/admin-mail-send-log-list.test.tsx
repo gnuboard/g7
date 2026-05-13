@@ -4,8 +4,8 @@
  *
  * 테스트 대상:
  * - templates/.../admin_mail_send_log_list.json
- * - templates/.../partials/admin_mail_send_log_list/_partial_filter.g7.html
- * - templates/.../partials/admin_mail_send_log_list/_partial_datagrid.g7.html
+ * - templates/.../partials/admin_mail_send_log_list/_partial_filter.json
+ * - templates/.../partials/admin_mail_send_log_list/_partial_datagrid.json
  *
  * 검증 항목:
  * - 레이아웃 구조 (extends, permissions, data_sources)
@@ -254,7 +254,7 @@ const mailSendLogListLayout = {
       id: 'mail_send_log_list_content',
       type: 'basic',
       name: 'Div',
-      props: { className: 'admin-page-content' },
+      props: { className: 'p-6 bg-gray-50 dark:bg-gray-900 min-h-screen' },
       children: [
         // page_header
         {

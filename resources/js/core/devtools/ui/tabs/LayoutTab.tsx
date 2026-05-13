@@ -7,7 +7,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { G7DevToolsCore } from '../../G7DevToolsCore';
-import { withBasePrefix } from '../../../support/assetUrl';
 
 export interface LayoutTabProps {
     devTools: G7DevToolsCore;
@@ -34,7 +33,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = ({ devTools }) => {
     useEffect(() => {
         const fetchPermissions = async () => {
             try {
-                const response = await fetch(withBasePrefix('/api/admin/permissions'), {
+                const response = await fetch('/api/admin/permissions', {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
                         'Accept': 'application/json',
@@ -173,13 +172,13 @@ export const LayoutTab: React.FC<LayoutTabProps> = ({ devTools }) => {
                     <div className="g7dt-flex g7dt-gap-4 g7dt-mt-2">
                         <div>
                             <span className="g7dt-text-muted">권한:</span>
-                            {current.layoutJson.permissions && current.layoutJson.permissions.length > 0 ? (
+                            {layoutJson.permissions && layoutJson.permissions.length > 0 ? (
                                 <span className="g7dt-ml-1 g7dt-text-yellow">
-                                    🔒 {current.layoutJson.permissions.map((permId: string) =>
+                                    🔒 {layoutJson.permissions.map((permId: string) =>
                                         permissionNames[permId] || permId
                                     ).join(', ')}
                                 </span>
-                            ) : current.layoutJson.permissions && current.layoutJson.permissions.length === 0 ? (
+                            ) : layoutJson.permissions && layoutJson.permissions.length === 0 ? (
                                 <span className="g7dt-ml-1 g7dt-text-green">🌐 공개</span>
                             ) : (
                                 <span className="g7dt-ml-1 g7dt-text-muted">미정의 (부모 상속)</span>
@@ -231,7 +230,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = ({ devTools }) => {
                     {/* 권한 섹션은 테이블로 표시 */}
                     {selectedSection === 'permissions' && !showFull ? (
                         <div className="g7dt-text-xs">
-                            {current.layoutJson.permissions && current.layoutJson.permissions.length > 0 ? (
+                            {layoutJson.permissions && layoutJson.permissions.length > 0 ? (
                                 <table className="g7dt-table g7dt-w-full">
                                     <thead>
                                         <tr className="g7dt-border-b g7dt-border-gray-700">
@@ -240,7 +239,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = ({ devTools }) => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {current.layoutJson.permissions.map((permId: string) => (
+                                        {layoutJson.permissions.map((permId: string) => (
                                             <tr key={permId} className="g7dt-border-b g7dt-border-gray-800">
                                                 <td className="g7dt-p-2 g7dt-font-mono g7dt-text-blue">{permId}</td>
                                                 <td className="g7dt-p-2 g7dt-text-white">
@@ -250,7 +249,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = ({ devTools }) => {
                                         ))}
                                     </tbody>
                                 </table>
-                            ) : current.layoutJson.permissions && current.layoutJson.permissions.length === 0 ? (
+                            ) : layoutJson.permissions && layoutJson.permissions.length === 0 ? (
                                 <p className="g7dt-text-muted g7dt-p-2">🌐 공개 레이아웃 (permissions: [])</p>
                             ) : (
                                 <p className="g7dt-text-muted g7dt-p-2">권한 미정의 (부모 레이아웃 상속)</p>

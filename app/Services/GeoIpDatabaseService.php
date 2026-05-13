@@ -3,13 +3,8 @@
 namespace App\Services;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
-use App\Extension\ExtensionManager;
-use App\Extension\Helpers\SafeArchiveExtractor;
 use App\Extension\HookManager;
-use App\Helpers\TimezoneHelper;
-use App\Support\ConfigCacheHelper;
-use Carbon\Carbon;
-use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -22,12 +17,6 @@ use Illuminate\Support\Facades\Log;
  */
 class GeoIpDatabaseService
 {
-    /**
-     * 설정 저장소를 주입받습니다.
-     *
-     * @param  ConfigRepositoryInterface  $configRepository  GeoIP 설정(라이선스 키·마지막 갱신 시각) 저장소
-     * @return void 반환값 없음
-     */
     public function __construct(
         private ConfigRepositoryInterface $configRepository
     ) {}
@@ -37,9 +26,9 @@ class GeoIpDatabaseService
      *
      * @param  bool  $force  파일이 이미 존재해도 재다운로드
      * @return array{success: bool, status: string, message?: string, data?: array<string, mixed>}
-     *                                                                                             status: 'updated' | 'skipped' | 'missing_license_key' | 'download_failed' |
-     *                                                                                             'unauthorized' | 'extract_failed' | 'file_not_found' | 'replace_failed' |
-     *                                                                                             'connection_failed' | 'empty_response'
+     *         status: 'updated' | 'skipped' | 'missing_license_key' | 'download_failed' |
+     *                 'unauthorized' | 'extract_failed' | 'file_not_found' | 'replace_failed' |
+     *                 'connection_failed' | 'empty_response'
      */
     public function updateDatabase(bool $force = false): array
     {
@@ -159,10 +148,7 @@ class GeoIpDatabaseService
                     'database_path' => $finalPath,
                     'file_size_bytes' => $finalSize,
                     'elapsed_seconds' => $elapsed,
-                    // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                     'last_updated_at' => date('c', File::lastModified($finalPath)),
-                    // 고급 탭 「최근 갱신」 표시용 — 보는 사람 시간대
-                    'last_updated_at_formatted' => TimezoneHelper::toUserDateTimeString(Carbon::createFromTimestamp(File::lastModified($finalPath))),
                 ],
             ];
 
@@ -192,7 +178,6 @@ class GeoIpDatabaseService
             'exists' => $exists,
             'database_path' => $finalPath,
             'file_size_bytes' => $exists ? File::size($finalPath) : 0,
-            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'last_updated_at' => $exists ? date('c', File::lastModified($finalPath)) : null,
         ];
     }
@@ -263,7 +248,6 @@ class GeoIpDatabaseService
      * @param  string  $geoipDir  GeoIP 최종 디렉토리
      * @param  string  $tmpDir  임시 디렉토리
      * @param  string  $extractPath  추출 경로
-     * @return void 반환값 없음
      */
     private function prepareDirectories(string $geoipDir, string $tmpDir, string $extractPath): void
     {
@@ -300,7 +284,7 @@ class GeoIpDatabaseService
                 ->retry($retryAttempts, $retryDelayMs, null, false)
                 ->sink($archivePath)
                 ->get($url);
-        } catch (ConnectionException $e) {
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
             return [
                 'success' => false,
                 'status' => 'connection_failed',
@@ -345,8 +329,8 @@ class GeoIpDatabaseService
     private function extractArchive(string $archivePath, string $extractPath): array
     {
         try {
-            // 압축 밖 경로 항목 거부 + 역슬래시 경로 정규화
-            SafeArchiveExtractor::extractTarGz($archivePath, $extractPath);
+            $phar = new \PharData($archivePath);
+            $phar->extractTo($extractPath, null, true);
         } catch (\Throwable $e) {
             return [
                 'success' => false,
@@ -369,35 +353,24 @@ class GeoIpDatabaseService
      */
     private function findMmdbFile(string $extractPath, string $editionId): ?string
     {
-        // 나열은 단일 지점을 쓴다 — GeoIP DB 갱신은 예약 작업이고, 무CLI 환경에서 그
-        // 스케줄은 **웹 요청 안에서** 실행되므로 `glob` 이 막힌 호스팅에서는 이 자리가
-        // 치명 오류가 된다.
-        foreach (ExtensionManager::listDirectories($extractPath, $editionId.'_') as $versionDir) {
-            $candidate = $versionDir.DIRECTORY_SEPARATOR.$editionId.'.mmdb';
+        $pattern = $extractPath.DIRECTORY_SEPARATOR.$editionId.'_*'.DIRECTORY_SEPARATOR.$editionId.'.mmdb';
+        $found = glob($pattern);
 
-            if (is_file($candidate)) {
-                return $candidate;
-            }
-        }
-
-        return null;
+        return ! empty($found) ? $found[0] : null;
     }
 
     /**
      * settings의 cache 카테고리에 geoip_last_updated_at을 기록합니다.
-     *
-     * @return void 반환값 없음
      */
     private function updateLastUpdatedAt(): void
     {
         try {
             $current = $this->configRepository->getCategory('geoip');
-            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             $current['last_updated_at'] = now()->toIso8601String();
             $this->configRepository->saveCategory('geoip', $current);
 
-            // config 캐시 재로드 강제 + 즉시 재생성 (clear 만 하면 캐시 비활성 잔존).
-            ConfigCacheHelper::rebuild();
+            // Laravel config 캐시 재로드 강제
+            Artisan::call('config:clear');
         } catch (\Throwable $e) {
             Log::warning('GeoIP last_updated_at 갱신 실패', ['error' => $e->getMessage()]);
         }

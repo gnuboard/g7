@@ -6,7 +6,6 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Ecommerce\Exceptions\ProductLabelOperationException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductLabelListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductLabelStoreRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductLabelUpdateRequest;
@@ -26,7 +25,7 @@ class ProductLabelController extends AdminBaseController
     /**
      * 라벨 목록 조회
      *
-     * @param  ProductLabelListRequest  $request
+     * @param ProductLabelListRequest $request
      * @return JsonResponse
      */
     public function index(ProductLabelListRequest $request): JsonResponse
@@ -34,7 +33,7 @@ class ProductLabelController extends AdminBaseController
         $filters = $request->validated();
 
         // active_only 필터 처리 (기존 호환성 유지)
-        if (! empty($filters['active_only'])) {
+        if (!empty($filters['active_only'])) {
             $filters['is_active'] = true;
         }
 
@@ -50,14 +49,14 @@ class ProductLabelController extends AdminBaseController
     /**
      * 라벨 상세 조회
      *
-     * @param  int  $id
+     * @param int $id
      * @return JsonResponse
      */
     public function show(int $id): JsonResponse
     {
         $label = $this->service->getLabel($id);
 
-        if (! $label) {
+        if (!$label) {
             return ResponseHelper::notFound(
                 'messages.labels.not_found',
                 [],
@@ -75,7 +74,7 @@ class ProductLabelController extends AdminBaseController
     /**
      * 라벨 생성
      *
-     * @param  ProductLabelStoreRequest  $request
+     * @param ProductLabelStoreRequest $request
      * @return JsonResponse
      */
     public function store(ProductLabelStoreRequest $request): JsonResponse
@@ -93,8 +92,8 @@ class ProductLabelController extends AdminBaseController
     /**
      * 라벨 수정
      *
-     * @param  ProductLabelUpdateRequest  $request
-     * @param  int  $id
+     * @param ProductLabelUpdateRequest $request
+     * @param int $id
      * @return JsonResponse
      */
     public function update(ProductLabelUpdateRequest $request, int $id): JsonResponse
@@ -114,11 +113,10 @@ class ProductLabelController extends AdminBaseController
                 'sirsoft-ecommerce'
             );
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.labels.update_failed',
-                500
+                400
             );
         }
     }
@@ -126,7 +124,7 @@ class ProductLabelController extends AdminBaseController
     /**
      * 라벨 상태 토글
      *
-     * @param  int  $id
+     * @param int $id
      * @return JsonResponse
      */
     public function toggleStatus(int $id): JsonResponse
@@ -146,11 +144,10 @@ class ProductLabelController extends AdminBaseController
                 'sirsoft-ecommerce'
             );
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.labels.update_failed',
-                500
+                400
             );
         }
     }
@@ -158,7 +155,7 @@ class ProductLabelController extends AdminBaseController
     /**
      * 라벨 삭제
      *
-     * @param  int  $id
+     * @param int $id
      * @return JsonResponse
      */
     public function destroy(int $id): JsonResponse
@@ -177,22 +174,11 @@ class ProductLabelController extends AdminBaseController
                 [],
                 'sirsoft-ecommerce'
             );
-        } catch (ProductLabelOperationException $e) {
-            // 연결된 상품이 있어 삭제 불가 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
-            $messageKey = $e->getMessageKey();
-
-            return ResponseHelper::error(
-                $messageKey,
-                400,
-                null,
-                $e->getMessageParams()
-            );
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.labels.delete_failed',
-                500
+                400
             );
         }
     }

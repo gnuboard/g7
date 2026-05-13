@@ -7,9 +7,9 @@
 ```text
 1. PHP 8.2+ 필수
 2. MySQL 8.0+ 또는 MariaDB 10.3+ (utf8mb4, utf8mb4_unicode_ci)
-3. PHP 확장: 필수 16개 + 기능별 선택 17개 (설치 단계가 필수 16개를 모두 자동 검사) — 확장이 요구하는 확장은 §1.8
-4. 하드웨어: 최소 2 vCPU·2GB / 권장 4 vCPU·8GB, 디스크: 설치 검사 기준 500MB, 권장 2GB+
-5. 프로덕션: HTTPS 필수(설치는 차단하지 않고 경고), Redis 권장, 큐 워커/스케줄러/Reverb 데몬 필요
+3. PHP 필수 모듈 30개 (ctype, curl, gd, intl, redis, imagick 등)
+4. 디스크 용량: 최소 700MB / 권장 2GB+
+5. 프로덕션: HTTPS 필수, Redis 권장, 큐 워커/스케줄러/Reverb 데몬 필요
 ```
 
 ---
@@ -21,7 +21,6 @@
 | OS | 지원 수준 | 비고 |
 |----|----------|------|
 | Linux (Ubuntu 22.04+, CentOS/RHEL 8+) | 프로덕션 권장 | 가장 안정적 |
-| Windows | 개발 환경 지원 | XAMPP/Laragon 등 (§1.3.1, [INSTALL.md](../INSTALL.md) 참조) |
 
 ### 1.2 웹서버
 
@@ -29,75 +28,16 @@
 |--------|------|------|
 | Nginx | 1.18+ | 프로덕션 권장 |
 | Apache | 2.4+ | `mod_rewrite` 활성화 필수 |
-| LiteSpeed · OpenLiteSpeed | — | 동봉 `.htaccess` 를 Apache 와 같이 읽는다 |
-| IIS | — | **URL Rewrite 2.x 모듈 필수** — 없으면 `web.config` 를 읽지 못해 사이트 전체가 `500.19` 로 멈춘다. 동봉 `web.config` 는 프로젝트 루트용(문서 루트 고정 배치)이고, 표준 배치(`public`)용은 동봉되지 않아 직접 만든다. |
-| Caddy | — | 디렉토리별 설정 파일이 없어 문서 루트 고정 배치는 `deploy/caddy/g7-layout2.caddyfile` 조각을 Caddyfile 에 넣고 reload 한다 |
 
 - Laravel은 `public/index.php`를 진입점으로 사용
 - Apache 사용 시 `.htaccess` 파일이 URL 리라이팅 처리
-- 문서 루트를 `public/` 으로 바꿀 수 없으면 프로젝트 폴더를 문서 루트에 두는 배치를 쓴다 — Apache·LiteSpeed 는 동봉 `.htaccess`, IIS 는 동봉 `web.config`, nginx·Caddy 는 `deploy/` 의 설정 조각이 민감 경로를 막는다 ([INSTALL.md 방법 7](../INSTALL.md#방법-7-문서-루트-고정--심볼릭-링크-불가-호스팅) 「서버별 보호 설정」)
-- 선택: 웹서버 파일 위임(Apache `mod_xsendfile` 또는 nginx `X-Accel-Redirect`)을 쓰면 서버의 파일을 PHP 대신 웹서버가 보낸다 — 기본은 사용 안 함 ([backend/file-serving-delegation.md](backend/file-serving-delegation.md))
-
-#### 1.2.1 `/storage` 와 S3 공개 디스크 하드닝
-
-공개 디스크의 파일(`storage/app/public` → `/storage/…`, 또는 S3 공개 버킷·CDN)은 PHP 를 거치지 않고 웹서버·객체 저장소가 직접 내려보낸다. 그 응답에는 애플리케이션이 헤더를 붙일 수 없으므로, 웹서버·CDN 이 다음을 보장해야 한다.
-
-| 보호 | 내용 |
-| --- | --- |
-| 형식 추측 금지 | 모든 응답에 `X-Content-Type-Options: nosniff` |
-| 비이미지 내려받기 강제 | 래스터 이미지(jpg·jpeg·png·gif·webp·avif) 외의 파일은 `Content-Disposition: attachment` + `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox` |
-| 실행 차단 | `/storage` 아래의 `.php`·`.phtml`·`.phar`·`.pht` 는 실행도 응답도 하지 않는다 |
-
-애플리케이션 쪽 방어는 이것과 별개로 동작한다 — 업로드한 파일의 저장 확장자는 파일 내용으로 정하고, 환경설정 > 드라이버의 「공개 디스크로 내보낼 확장자」 밖의 파일은 공개 디스크에 저장하지 않는다(서버를 거치는 주소로 제공).
-
-**Apache (2.4+)** — 별도 작업이 필요 없다. 공개 디스크 루트에 규칙 파일 `storage/app/public/.htaccess` 가 자동으로 만들어진다(코어 업데이트 시, 환경설정 > 드라이버 저장 시). 전제 조건:
-
-- 사이트 디렉터리에 `AllowOverride All`(최소 `FileInfo`)이 허용돼 있어야 한다([INSTALL.md](../INSTALL.md) 의 가상 호스트 예시). 규칙 파일은 `Header`·`RewriteRule` 만 쓰므로 사이트의 `public/.htaccess` 가 이미 요구하는 범위를 넘지 않는다.
-- `mod_headers` 가 켜져 있어야 헤더가 붙는다. 꺼져 있으면 규칙 파일이 비이미지 파일의 직접 접근을 403 으로 막는다(이미지는 그대로 제공). 이 403 과 PHP 파일 차단은 `mod_rewrite` 규칙으로 낸다.
-- 이 파일은 자동 생성물이다. 직접 고치면 설정 저장 때 다시 만들어진다(손으로 만든 기존 파일은 `.htaccess.g7-backup` 으로 보관).
-- 웹서버 계정이 `storage/app/public` 폴더에 쓸 수 있어야 설정 저장 때 이 파일을 다시 만든다. 코어 업데이트를 root(sudo)로 실행해도 파일은 그 폴더의 소유자·그룹으로 맞춰진다. 다시 만들지 못하면 드라이버 탭에 「웹서버 보호 규칙 파일을 지금 설정으로 바꾸지 못했습니다」 경고가 뜬다.
-
-**Nginx** — `.htaccess` 를 읽지 않으므로 서버 블록에 같은 규칙을 넣는다.
-
-```nginx
-location ^~ /storage/ {
-    # PHP 실행·응답 차단
-    location ~* \.(php\d?|phtml|phar|pht)$ {
-        return 403;
-    }
-
-    # 래스터 이미지는 그대로
-    location ~* \.(jpe?g|png|gif|webp|avif)$ {
-        add_header X-Content-Type-Options "nosniff" always;
-    }
-
-    # 그 밖의 파일은 내려받기로만
-    location ~* ^/storage/.+$ {
-        add_header X-Content-Type-Options "nosniff" always;
-        add_header Content-Disposition "attachment" always;
-        add_header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox" always;
-    }
-}
-```
-
-`^~` 를 빼지 않는다 — 없으면 `.php` 요청을 PHP-FPM 으로 넘기는 서버 수준의 `location ~ \.php$` 블록이 `/storage/` 보다 먼저 일치해 그 안의 PHP 파일이 실행된다. 「공개 디스크로 내보낼 확장자」 에서 이미지 형식을 빼거나 더했다면 두 번째 블록의 목록도 같이 맞춘다.
-
-**S3 공개 버킷·CDN** — 업로드할 때 객체에 `Content-Type`(파일 내용 기준)이 기록되고, 이미지가 아닌 파일에는 `Content-Disposition: attachment` 가 함께 기록된다. `X-Content-Type-Options` 와 `Content-Security-Policy` 는 객체 메타데이터로 줄 수 없으므로 CDN 응답 헤더 정책으로 건다.
-
-- CloudFront: 「응답 헤더 정책」 을 만들어 배포의 동작(behavior)에 연결한다. 보안 헤더에서 `X-Content-Type-Options` 를 켜고, 사용자 지정 헤더에 `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox` 를 추가한다. 이미지에도 같은 CSP 가 붙지만 이미지 표시에는 영향이 없다.
-- 다른 CDN·프록시도 같은 두 헤더를 응답에 덧붙이는 기능을 쓴다.
-
-**적용 확인** — 공개 자산 디스크를 로컬 공개 디스크(`public`)로 두고 환경설정 > 드라이버를 저장하면 `/storage` 직접 주소의 응답 헤더를 자동으로 점검한다. 보호 헤더가 없으면 드라이버 탭에 경고가 표시된다(저장은 그대로 된다). 서버가 자기 사이트 주소에 접속할 수 없는 환경에서는 점검 결과가 표시되지 않는다.
 
 ### 1.3 PHP
 
-| 항목 | 요구사항 |
-|------|---------|
-| 버전 | **8.2 이상** (`^8.2`) |
-| SAPI | FPM (권장) 또는 mod_php (Apache + mod_fcgid 환경은 §1.3.1) |
-| `disable_functions` | `exec`·`proc_open`·`shell_exec` **조건부** — 허용이 표준이다(설치·코어 업데이트가 자식 프로세스를 실행). 셋이 모두 막혀 있어도 동봉된 의존성 묶음(`vendor-bundle.zip`)과 `zip` 확장이 있으면 설치·운영이 성립한다. 그 환경에서 달라지는 것은 §6.1 · [INSTALL.md 방법 6](../INSTALL.md#방법-6-cli-없는-호스팅) |
-| 웹 ↔ CLI 버전 | 메이저·마이너 버전 일치 권장 (설치 프로그램이 확인 후 불일치 시 안내) |
-| OPcache | 활성화 권장 (성능 — 미활성화 시 설치는 진행되고 안내만 표시) |
+| 항목 | 요구사항                                                    |
+|------|-------------------------------------------------------------|
+| 버전 | **8.2 이상** (`^8.2`)                                       |
+| SAPI | FPM (권장) 또는 mod_php (Apache + mod_fcgid 환경은 §1.3.1)  |
 
 #### 1.3.1 Apache + mod_fcgid 환경 추가 설정 (권장)
 
@@ -113,52 +53,43 @@ FcgidOutputBufferSize 0
 - 인스톨러 SSE 호환성 사전 체크가 buffered 환경으로 자동 판정되어 폴링 모드로 fallback
 - 폴링 모드 응답은 코드 레벨 64KB padding 워크어라운드로 동작은 보장되나, SSE 모드가 아닌 1초 간격 폴링으로 진행 상황이 표시됨
 
-### 1.4 PHP 확장 모듈
+### 1.4 PHP 필수 확장 모듈
 
-필수 16개 + 기능별 선택 17개.
-
-| 구분 | 모듈 | 용도 |
-|------|------|------|
-| 필수 | `ctype` | 문자 타입 검사 |
-| 필수 | `curl` | HTTP 클라이언트 |
-| 필수 | `dom` | XML/HTML DOM 처리 (메일 본문 인라인 CSS 등) |
-| 필수 | `fileinfo` | MIME 타입 감지 |
-| 필수 | `filter` | 데이터 필터링/검증 |
-| 필수 | `hash` | 해시 함수 |
-| 필수 | `json` | JSON 인코딩/디코딩 |
-| 필수 | `mbstring` | 멀티바이트 문자열 처리 |
-| 필수 | `openssl` | 암호화/복호화 (AES-256-CBC) |
-| 필수 | `pcre` | 정규 표현식 |
-| 필수 | `pdo` | 데이터베이스 추상화 |
-| 필수 | `pdo_mysql` | MySQL/MariaDB PDO 드라이버 |
-| 필수 | `session` | 세션 관리 |
-| 필수 | `tokenizer` | PHP 토큰 파싱 |
-| 필수 | `xml` | XML 파서 |
-| 필수 | `zip` | 확장·언어팩·코어 업데이트 패키지의 압축 해제 — `unzip` 명령 폴백 없음(7.1.3) |
-| 선택 | `gd` | 이미지 처리 (썸네일·업로드 축소의 기본 엔진). 없으면 썸네일 없이 원본을 내고 업로드 축소도 하지 않는다 |
-| 선택 | `imagick` | 이미지 처리 엔진 선택지 (환경설정 > 드라이버 > 이미지 처리 — 설치된 서버에서만 보인다) |
-| 선택 | `exif` | 이미지 메타데이터 읽기 (GD 엔진의 썸네일이 사진의 촬영 방향을 반영할 때 쓴다) |
-| 선택 | `intl` | 국제화 (다국어 날짜/숫자 포맷). 닉네임 중복 판정(닉네임 중복 금지, 관리자 회원 목록의 닉네임 중복 필터)의 글자 정규화(NFKC)에도 쓴다. 없으면 대문자와 소문자, 공백 차이만 같은 닉네임으로 보고 전각과 반각, 합자 같은 호환 글자 차이는 다른 닉네임으로 본다(7.2.0) |
-| 선택 | `bcmath` | 정밀 수학 연산 (금액 계산 등) |
-| 선택 | `redis` | Redis 캐시/세션/큐 드라이버 (`predis` 동봉 — 확장 없이도 사용 가능) |
-| 선택 | `memcached` | Memcached 캐시 드라이버 |
-| 선택 | `pcntl` | 큐 워커 전체 기능 및 콘솔 시그널 처리 |
-| 선택 | `posix` | 큐 워커 전체 기능 및 코어 업데이트의 파일 소유자 확인 |
-| 선택 | `maxminddb` | GeoIP 데이터베이스 조회 (접속 국가·타임존 감지) |
-| 선택 | `simplexml` | AWS SDK(S3/SES/SQS) 응답 파싱 |
-| 선택 | `libxml` | XML 파싱 기반 라이브러리 (`dom`·`simplexml` 의 토대) |
-| 선택 | `sodium` | 최신 암호화 라이브러리 — 확장·코어 업데이트·언어팩 패키지 서명(Ed25519) 검증에 쓴다. 없으면 서명이 있어도 「서명 검증 불가」로 미서명과 같이 다룬다(설치 마법사 권장 항목) |
-| 선택 | `phar` | Phar 아카이브 (Composer 실행) |
-| 선택 | `xmlwriter` | XML 문서 생성 |
-| 선택 | `zlib` | 데이터 압축 (gzip 응답 압축) |
-| 선택 | `ldap` | LDAP 연동 확장을 사용할 때 (코어 기본 기능은 사용하지 않음) |
-
-설치 프로그램은 위 필수 확장 16개를 설치 단계에서 모두 자동 검사하고 하나라도 없으면 진행을
-막는다. 관리자 환경설정 > 정보 탭과 코어 업데이트 사전점검도 같은 목록을 쓴다 — 목록은 코어의
-한 곳(`app/Support/Requirements/php-extensions.json`)에서 나온다. 선택 확장은 해당 기능을
-사용하는 시점에 필요하며, 없으면 그 기능만 안내와 함께 멈추거나 대체 동작으로 넘어간다(예: 사이트맵
-gzip 압축은 `zlib` 이 없으면 저장 단계에서, GeoIP 데이터베이스 갱신은 `zlib`·`phar` 가 없으면 실행할 때 안내). 자동 검사 항목과
-운영자가 직접 확인해야 하는 항목의 전체 구분은 §9 를 참조한다.
+| 모듈 | 용도 |
+|------|------|
+| `bcmath` | 정밀 수학 연산 (가격 계산 등) |
+| `ctype` | 문자 타입 검사 |
+| `curl` | HTTP 클라이언트 |
+| `dom` | XML/HTML DOM 처리 |
+| `exif` | 이미지 메타데이터 읽기 |
+| `fileinfo` | MIME 타입 감지 |
+| `filter` | 데이터 필터링/검증 |
+| `gd` | 이미지 처리 (썸네일, 리사이징) |
+| `hash` | 해시 함수 |
+| `imagick` | 고급 이미지 처리 (ImageMagick) |
+| `intl` | 국제화 (다국어, 날짜/숫자 포맷) |
+| `json` | JSON 인코딩/디코딩 |
+| `ldap` | LDAP 인증 연동 |
+| `libxml` | XML 파싱 기반 라이브러리 |
+| `maxminddb` | GeoIP 데이터베이스 조회 |
+| `mbstring` | 멀티바이트 문자열 처리 |
+| `memcached` | Memcached 캐시 드라이버 |
+| `openssl` | 암호화/복호화 (AES-256-CBC) |
+| `pcntl` | 프로세스 제어 (큐 워커) |
+| `pcre` | 정규 표현식 |
+| `pdo` | 데이터베이스 추상화 |
+| `pdo_mysql` | MySQL/MariaDB PDO 드라이버 |
+| `phar` | Phar 아카이브 (Composer) |
+| `posix` | POSIX 함수 (프로세스 관리) |
+| `redis` | Redis 캐시/세션/큐 드라이버 |
+| `session` | 세션 관리 |
+| `simplexml` | 간편 XML 파싱 |
+| `sodium` | 최신 암호화 라이브러리 |
+| `tokenizer` | PHP 토큰 파싱 |
+| `xml` | XML 파서 |
+| `xmlwriter` | XML 문서 생성 |
+| `zip` | ZIP 압축/해제 |
+| `zlib` | 데이터 압축 |
 
 ### 1.5 PHP 설정 권장값 (php.ini)
 
@@ -194,8 +125,8 @@ stat -c '%a %U:%G' storage
 
 ```bash
 # 인스톨러 완료 후 운영자가 1회 실행
-sudo chown -R $USER:www-data storage bootstrap/cache vendor modules plugins templates public/build
-sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates public/build
+sudo chown -R $USER:www-data storage bootstrap/cache vendor modules plugins templates
+sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates
 ```
 
 추가로 php-fpm / systemd 의 umask 를 `002` 로 설정하면 cron·composer·수동 SSH artisan 등 외부 프로세스도 동일 권한으로 파일을 만든다.
@@ -210,7 +141,7 @@ sudo chmod -R 775 storage bootstrap/cache vendor modules plugins templates publi
 **방식 B/C (단일 소유자)**:
 
 ```bash
-sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates public/build
+sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates
 ```
 
 그룹 쓰기 비트가 없으므로 코어 자동 umask 동조는 발동하지 않는다 (운영자 의도 존중). 추가 설정 불필요.
@@ -218,50 +149,6 @@ sudo chmod -R 755 storage bootstrap/cache vendor modules plugins templates publi
 #### 인스톨러가 안내하는 기본 권한
 
 인스톨러의 기본 안내 명령은 보수적으로 `chmod -R 755` 를 제시한다. 방식 A 로 운영하려면 인스톨 완료 후 `775` 로 재조정 + 소유자/그룹을 본인 계정 + `www-data` 로 변경. 인스톨러는 `chmod` 를 직접 호출하지 않으므로 운영자가 쉘에서 1회 실행.
-
-### 1.7 개발/빌드 도구
-
-| 도구 | 버전 | 필요한 경우 |
-|------|------|------------|
-| Node.js | 20 이상 | 프론트엔드 소스를 직접 빌드할 때 |
-| Composer | 2.x | Composer 로 의존성을 설치할 때, 확장이 외부 패키지를 요구할 때 |
-
-배포본에는 빌드 산출물과 `vendor` 디렉토리가 동봉되어 있으므로 **일반적인 운영 설치에는
-두 도구 모두 필요하지 않다.** 소스에서 직접 빌드하거나 개발 환경을 구성할 때, 또는
-Composer 설치 방식을 선택할 때만 필요하다.
-
-Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autoloader` 를 쓴다.
-옵션 없는 `composer install` 은 개발용 패키지까지 설치하며, 그 상태로 운영하면
-이후 코어 업데이트가 vendor 를 교체할 때 이전 패키지 목록 캐시와 어긋나 부팅이 깨진다.
-개발용 패키지가 섞여 있으면 설치 마법사의 「설치 환경 확인」 단계가 경고한다.
-
-### 1.8 확장(모듈·플러그인)이 요구하는 PHP 확장
-
-모듈·플러그인은 자기 `composer.json` 에 필요한 PHP 확장을 선언한다. 코어 목록(§1.4)에 없는 확장(`soap` 등)도
-선언할 수 있다.
-
-```json
-{
-    "require": { "php": "^8.2", "ext-soap": "*" },
-    "suggest": { "ext-soap": "모바일 결제(SmartPhone Pay) 승인키 발급에 필요" }
-}
-```
-
-| 선언 | 뜻 | 서버에 없을 때 |
-|------|----|----------------|
-| `require.ext-<이름>` | 필수 — 없으면 확장이 동작하지 않는다 | 설치·활성화를 막는다(오류 안내). 업데이트(코어 업데이트의 번들 일괄 업데이트 포함)는 막지 않고 경고만 남긴다 |
-| `suggest.ext-<이름>` | 권장 — 일부 기능에만 필요하다. 값은 그 이유 | 막지 않는다. 관리자 화면에 「권장 PHP 확장: 이름(미설치)」 배지만 표시한다 |
-
-검사 지점은 다음과 같다.
-
-- 설치 프로그램의 확장 선택 단계: 필수 미충족 확장은 고를 수 없고, 권장 미충족은 경고 문구를 표시한다.
-- 관리자 화면·`module:install`·`plugin:install`: 필수 미충족이면 설치를 막는다.
-- 활성화: 필수 미충족이면 막는다. 강제 활성화와 코어 업데이트 중 활성화는 경고만 남긴다.
-- 업데이트(`module:update`·`plugin:update`·관리자 화면·번들 일괄 업데이트): 막지 않고 경고만 남긴다.
-- 코어 업데이트(`core:update`): 새 코어의 필수 확장(§1.4)이 없으면 업데이트를 시작하지 않는다. 함께 갱신될 확장의 필수 확장 미충족은 경고로 알린다.
-- 이미 켜져 있는 확장은 나중에 서버에서 확장이 빠져도 자동으로 끄지 않는다. 관리자 모듈·플러그인 목록과 환경설정 > 정보 탭에서 표시로 알린다.
-
-확장 README 의 요구사항 표에도 선언한 PHP 확장이 표시된다.
 
 ---
 
@@ -279,51 +166,19 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 | 항목 | 값 | 비고 |
 |------|-----|------|
 | charset | `utf8mb4` | 이모지 등 4바이트 문자 지원 |
-| collation | `utf8mb4_unicode_ci` | 기본값이며 `.env`의 `DB_COLLATION`으로 변경 가능 |
-| 테이블 접두어 | `g7_` (기본값) | `.env`에서 `DB_PREFIX`로 변경 가능 (최대 6자 — 자동 생성 인덱스명이 MySQL 식별자 한도 64자를 넘지 않도록 제한) |
+| collation | `utf8mb4_unicode_ci` | 유니코드 정렬 |
+| 테이블 접두어 | `g7_` (기본값) | `.env`에서 `DB_PREFIX`로 변경 가능 |
 
 **선택 기능**:
 - Write/Read 분리: Master-Replica 구성 지원 (`DB_WRITE_*` / `DB_READ_*` 환경 변수)
 
 ---
 
-## 3. 하드웨어 사양
-
-### 3.1 CPU · 메모리
-
-| 수준 | CPU | 메모리 | 상정 환경 |
-|------|-----|--------|----------|
-| 최소 | 2 vCPU | 2GB | 설치·기능 확인용. 동시 접속이 거의 없는 개발/검토 환경 |
-| 권장 | 4 vCPU | 8GB | 웹서버 + PHP-FPM + MySQL + Redis 를 한 대에 올린 소규모 운영 |
-| 분리 구성 | 웹 2 vCPU / DB 2 vCPU | 각 4GB 이상 | 트래픽이 늘면 DB 를 먼저 분리 |
-
-메모리 배분은 어떤 구성 요소를 같은 서버에 올렸는지에 따라 달라진다. 한 대에 모두 올린
-경우 MySQL 의 `innodb_buffer_pool_size` 가 전체 메모리의 절반을 넘지 않도록 두고, PHP-FPM
-자식 프로세스 수 × `memory_limit` 가 남은 메모리를 넘지 않는지 확인한다.
-
-위 수치는 코어와 번들 확장을 기본 설정으로 운영할 때의 출발점이다. 실제 필요량은 데이터
-규모·동시 접속·설치한 확장에 따라 달라지므로, 운영 전 대상 트래픽으로 직접 측정할 것을
-권한다(`php artisan g7:bench` 로 목록·화면·쓰기·배치 4축을 잰다).
-
-**이 수치의 근거**
-
-- **권장 4 vCPU · 8GB** — 사용자가 4 vCPU · 8GB 가상머신에서 수행한 운영 환경 측정 보고
-  (`gnuboard/g7#82`)에서 코어와 번들 확장을 함께 올린 구성이 동작한 사양이다. 같은 보고에서
-  대량 데이터의 검색·목록 조회는 이 사양에서도 메모리 압박이 관측되었으므로, "이 사양이면
-  어떤 규모든 충분하다" 는 뜻이 아니라 **한 대 구성의 하한선**으로 읽어야 한다.
-- **최소 2 vCPU · 2GB** — 설치와 기능 확인이 가능한 수준으로, 위 보고의 측정 대상이 아니다.
-  동시 접속이 있는 운영에는 적합하지 않다.
-- **분리 구성** — 위 보고에서 부하가 먼저 걸린 지점이 데이터베이스였다는 관측에 따른 순서
-  제안이다. 분리 시점의 트래픽 임계값은 측정하지 않았다.
-
-우리가 직접 측정한 범위는 쿼리 실행 횟수와 조회 구조이며, 특정 사양에서의 동시 접속 한계나
-응답 시간은 측정하지 않았다. 그 값이 필요하면 대상 환경에서 직접 재야 한다.
-
-### 3.2 디스크 용량
+## 3. 디스크 용량
 
 | 수준 | 용량 | 포함 범위 |
 |------|------|----------|
-| 최소 | **500MB** (설치 프로그램 검사 기준) | 설치가 진행되기 위한 여유 공간의 하한. 코어 + 기본 확장의 실사용은 약 700MB 이므로 여유 확보 권장 |
+| 최소 | **700MB** | 코어 + 기본 확장 |
 | 권장 | **2GB 이상** | 코어 + 확장 + 첨부파일 + 캐시 + 로그 |
 
 - 사용자 업로드 파일, 로그, 캐시 등은 별도 용량 산정 필요
@@ -350,8 +205,7 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 | AWS SES | 이메일 발송 | 선택 |
 | AWS SQS | 큐 처리 (대규모 트래픽) | 선택 |
 
-- `aws/aws-sdk-php` · `league/flysystem-aws-s3-v3` 패키지 포함됨 (S3 및 S3 호환 스토리지 — Cloudflare R2, MinIO 등 — 를 별도 설치 없이 사용 가능)
-- `predis/predis` 패키지 포함됨 (phpredis PHP 확장이 없는 서버에서도 Redis 드라이버 사용 가능)
+- `aws/aws-sdk-php` 패키지 포함됨
 
 ### 4.3 메일 서비스
 
@@ -382,38 +236,9 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 | 환경 | 요구사항 |
 |------|---------|
 | 프로덕션 | **HTTPS 필수** |
-| 앞단 종단 구성 (ALB·CloudFront·Cloudflare·nginx·ngrok) | HTTPS + `.env` 의 `TRUSTED_PROXIES` 지정 |
 
-- 설치 단계에서는 HTTPS 여부를 경고로 안내하며 설치를 차단하지 않는다. 정책상 필수라는
-  선언은 유지하되, 자동으로 강제되지는 않으므로 운영자가 직접 확인해야 한다
 - Laravel Reverb WebSocket도 `wss://` 프로토콜 사용 (`REVERB_SCHEME=https`)
-- Sanctum 세션 인증 시 `SESSION_SECURE_COOKIE=true` 설정 권장. 미설정 시 요청 스킴으로
-  자동 판정되므로, 앞단 종단 구성에서는 `TRUSTED_PROXIES` 가 지정되어야 그 판정이 맞는다
-- TLS 를 앞단에서 종단하고 앱에는 HTTP 로 전달하는 구성에서는 `APP_URL` 을 `https://` 로
-  두는 것만으로 부족하다. 신뢰할 프록시를 지정하지 않으면 화면 표시·결제 통보 수신·IP 기록이
-  어긋난다 — [backend/reverse-proxy.md](backend/reverse-proxy.md)
-
----
-
-### 5.2 의존성 보안 버전
-
-의존성 취약점은 `php artisan security:audit-dependencies` 로 전수 점검한다. 저장소의 모든
-잠금파일(npm · composer)을 순회하며, 취약점이 있으면 비-0 으로 종료한다.
-
-메이저 상향을 보류한 패키지는 사유와 **최소 보안 버전**을 아래에 남긴다. 기록 없는 보류는
-그 지점이 잊히는 것과 같다.
-
-| 패키지 | 현재 | 보류 사유 | 최소 보안 버전 |
-|---|---|---|---|
-| `guzzlehttp/guzzle` | 7.16.x | 8.x 는 `aws/aws-sdk-php` · `laravel/framework` · `pusher/pusher-php-server` 의 제약이 막는다. 상위 패키지가 8.x 를 지원하기 전에는 올릴 수 없다 | **7.15.2** |
-| `maxmind-db/reader` | 1.13.x | 1.14.0 부터 PHP `maxminddb` 확장 1.14 미만과 충돌을 선언해, 그 확장 1.13.x 가 켜진 서버에서 코어 업데이트의 Composer 설치가 거부된다. 루트 `composer.json` 의 `conflict` 로 1.14 미만에 고정한다. 서버 배포판의 확장이 1.14 이상으로 올라온 뒤 푼다 | 보안 권고 없음 |
-| `ckeditor5` | 43.3.1 | 다섯 개 메이저를 건너뛰는 상향이라 초기화 설정·툴바 재구성과 글쓰기/이미지 업로드 전 경로 재검수를 수반한다. 별도 작업으로 분리한다. CDN 의존은 이미 자체 서빙으로 해소되어 있다 | 상향 작업에서 확정 |
-| `monaco-editor` 내장 `dompurify` | 3.4.8 | monaco 가 자기 배포 번들에 정화기를 인라인하므로 소비자가 버전을 고를 수 없다. 배포된 최신본(0.56.0)이 담은 것이 3.4.8 이다. 상류가 새 정화기를 담은 판을 내면 함께 올린다 | **3.4.13** (상류 대기) |
-| `vite` (확장 빌드 툴체인) | 5.4.x | 8.x 는 메이저 상향이며 확장 스물넷의 빌드 설정을 동시에 옮겨야 한다. 빌드 도구라 배포 산출물에 실리지 않아 최종 사용자 노출면이 없다 | **8.2.2** |
-| `vitest` (확장 테스트 툴체인) | 2.1.x | 4.x 는 메이저 상향이며 테스트 API 변경으로 확장 열여덟의 테스트를 동시에 손봐야 한다. 테스트 실행기 전용이라 배포·런타임 노출면이 없다 | **4.1.11** |
-
-동봉(vendored) 제3자 자산은 어떤 잠금파일에도 없어 감사 도구가 원리상 볼 수 없다. 점검
-명령이 그 목록을 함께 출력하므로 사람이 확인한다.
+- Sanctum 세션 인증 시 `SESSION_SECURE_COOKIE=true` 설정 권장
 
 ---
 
@@ -423,75 +248,29 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 
 | 프로세스 | 명령어 | 관리 도구 |
 |---------|--------|----------|
-| 큐 워커 | `php artisan queue:work {연결} --queue={큐,…}` (환경설정 → 드라이버 → 「큐 워커」 등록대로. 큐 드라이버가 `sync` 면 등록·워커 모두 필요 없음) | Supervisor 등 |
-| 긴 작업 워커(등록 시) | `php artisan queue:work database-long --queue=long --timeout=3600` | Supervisor 등 (`numprocs=1`) |
-| 사이트맵 워커 | `php artisan queue:work {연결} --queue=sitemap --timeout=1800` (사이트맵 생성 전용 큐 — 등록과 무관하게 늘 필요, 큐 드라이버가 `sync` 면 불필요) | Supervisor 등 (`numprocs=1`) |
+| 큐 워커 | `php artisan queue:work` | Supervisor 등 |
 | 스케줄러 | `php artisan schedule:run` | cron (매분 실행) |
 | WebSocket | `php artisan reverb:start` | Supervisor 등 |
 
 ```bash
-# cron 예시 (스케줄러) — 웹 서버 계정으로 실행 (root crontab 에 그대로 두면 캐시 파일이 root 소유가 된다)
-* * * * * cd /path/to/g7 && sudo -u www-data php artisan schedule:run >> /dev/null 2>&1
+# cron 예시 (스케줄러)
+* * * * * cd /path/to/g7 && php artisan schedule:run >> /dev/null 2>&1
 ```
-
-`php artisan` 명령과 cron 은 웹 서버 실행 계정으로 실행한다 — 캐시·병합 번들·임시 파일이 다른 계정 소유로 남으면 이후 웹 요청이 `Permission denied` 로 실패한다. 예외는 소유권 복원이 내장된 `core:update` 만이다. 상세: [INSTALL.md](../INSTALL.md) 「명령줄·cron 실행 계정」.
-
-### 6.1 cron 을 걸 수 없는 호스팅의 대안 — 웹 크론
-
-서버에 예약 실행을 등록할 수 없거나 CLI 자체를 쓸 수 없는 호스팅에서는 위 스케줄러를 **주소 호출**로
-대체할 수 있다. 관리자 환경설정 > 시스템에서 호출 주소를 발급받아 호스팅 제어판의 예약 실행이나 외부
-크론 서비스에 등록하면, 그 주소를 부를 때마다 밀린 예약 작업이 실행된다.
-
-| 항목 | 내용 |
-| --- | --- |
-| 주소 | `GET /api/system/cron/run?token=…` (번호는 사이트마다 다르며 재발급 가능) |
-| 권장 호출 주기 | 5~15분. 주기가 성겨 정해진 시각을 지나쳐도 그 사이에 돌았어야 할 작업을 따라잡아 실행한다 |
-| 한 번의 실행 시간 | 기본 50초 상한. 남은 작업은 다음 호출로 이어진다 |
-| 서버 cron 과 병행 | 가능하다. 두 진입점이 같은 잠금을 공유해 같은 작업이 겹쳐 돌지 않는다 |
-| CLI 는 되는데 cron 만 없는 경우 | `php artisan g7:schedule-run` — 같은 러너를 CLI 로 부른다 |
-
-예약 실행을 걸 수단이 전혀 없으면 「방문자 접속 시 실행」을 켤 수 있다(기본 꺼짐). 다만 방문자가 없으면
-예약도 돌지 않으므로 마지막 수단으로만 쓴다. 예약이 며칠째 실행되지 않으면 관리자 대시보드가 경고한다.
 
 ---
 
 ## 7. 지원 브라우저
 
-| 브라우저 | 최소 지원 버전 | 검증 방식 |
-|---------|--------------|----------|
-| Chrome / Edge | **111** 이상 | 자동 브라우저 테스트(Chromium)로 상시 검증 |
-| Safari (macOS / iOS) | **16.4** 이상 | 호환 범위 기준 지원 (상시 자동 테스트 대상 아님, 실기기 검증 미수행) |
-| Firefox | **128** 이상 | 호환 범위 기준 지원 (상시 자동 테스트 대상 아님) |
+| 브라우저 | 지원 범위 |
+|---------|----------|
+| Chrome / Edge | 최신 2개 버전 |
+| Firefox | 최신 2개 버전 |
+| Safari | 최신 2개 버전 |
 
-- 지원 하한은 프론트엔드 핵심 의존성(React 19, Tailwind CSS 4)의 공식 지원 브라우저
-  범위를 따른다. 위 세 버전은 2026-08 현재 Tailwind CSS 4 의 공식 하한이며(`@property`
-  등 CSS 기능이 결정한다), 해당 의존성 버전이 변경되면 이 기준도 함께 재검토한다
-- **하한 미만 브라우저에서도 화면 표시와 기본 이용은 가능하도록 유지한다.** 최신 CSS 기능을
-  해석하지 못해 색상·간격 등 스타일이 일부 깨질 수 있으나, 그것이 이용 불가로 이어지지
-  않도록 한다. 이를 위해 배포되는 JavaScript 산출물에는 하한을 넘는 문법·API 를 넣지 않으며,
-  특히 부팅에 필요한 번들에는 다운레벨이 불가능한 정규식 리터럴 문법(lookbehind, `v` 플래그)
-  을 하한과 같은 버전이라도 사용하지 않는다 — 이 번들이 파싱되지 않으면 사이트가 통째로
-  뜨지 않기 때문이다
-- 브라우저가 화면 구성 스크립트를 끝내 실행하지 못하는 경우에는 백지 대신 그 사유를 밝히는
-  안내 화면을 표시한다
-- 자동 테스트는 테스트 도구에 포함된 단일 브라우저 빌드로 수행하므로 특정 버전
-  목록(예: "최신 N개 버전")을 상시 보장하지 않는다
+- React 19 + Tailwind CSS 4 호환 범위 기준
 - Internet Explorer 미지원
 
 ---
-
-## 7-1. 오프라인·폐쇄망 동작 범위
-
-화면 구동에 필요한 자산(아이콘·글꼴·편집기·코드 편집기·국기 아이콘·이미지 압축)은 모두
-설치본에 함께 담겨 사이트 자신의 서버에서 제공됩니다. 외부 인터넷에 나가지 못하는 환경에서도
-관리자·사용자 화면이 정상 동작합니다.
-
-**외부 연결이 필요한 유일한 기능은 주소 검색(우편번호)입니다.** 이 기능은 라이브러리가 아니라
-Daum 이 운영하는 서비스 SDK 를 쓰므로, 자체 호스팅해도 동작하지 않습니다. 연결하지 못하는
-환경에서는 우편번호·주소를 직접 입력할 수 있으며 안내가 표시됩니다.
-
-운영자가 별도로 설정한 외부 서비스(검색엔진 분석 도구 등)는 이 범위와 무관하게 그 설정을
-따릅니다.
 
 ## 8. 호스팅 환경별 제한사항
 
@@ -503,64 +282,10 @@ Daum 이 운영하는 서비스 SDK 를 쓰므로, 자체 호스팅해도 동작
 
 | 제한 항목 | 영향받는 기능 | 대안 |
 | -------- | ----------- | ---- |
-| 데몬 프로세스 (Supervisor) | 큐 워커 상시 실행 불가 | `QUEUE_CONNECTION=sync` (동기 처리) — 명령 실행이 막힌 환경은 설치 프로그램이 이 값을 자동으로 설정한다 |
-| 명령줄 PHP (CLI) 자체 부재 | 설치·코어 업데이트·예약 작업 | 동봉 묶음 설치 + 관리자 화면 업데이트 + §6.1 웹 크론 |
-| cron 최소 간격 | 스케줄러 분 단위 실행 제한 | 호스팅 cPanel cron (지원 간격 확인) 또는 §6.1 웹 크론 (놓친 시각을 따라잡아 실행) |
-| cron 자체 불가 · CLI 부재 | 예약 작업(정리·메일 보고서·주문 자동취소 등)이 오류 없이 실행되지 않음 — 방문자 통계는 관리자가 화면을 열 때 집계로 동작 | §6.1 웹 크론 — 주소 호출로 대체 |
+| 데몬 프로세스 (Supervisor) | 큐 워커 상시 실행 불가 | `QUEUE_CONNECTION=sync` (동기 처리) |
+| cron 최소 간격 | 스케줄러 분 단위 실행 제한 | 호스팅 cPanel cron (지원 간격 확인) |
 | PHP 확장 제한 (`pcntl`, `posix`, `redis`, `imagick` 등) | 큐 워커, 프로세스 관리, Redis 캐시, 이미지 처리 | 파일/DB 캐시, GD 라이브러리 |
 | PHP 설정 변경 (`memory_limit`, `max_execution_time` 등) | 대용량 파일 업로드, 이미지 처리 | 호스팅 관리자에게 변경 요청 |
 | 커스텀 포트 (80/443 외) | Reverb WebSocket (기본 8080 포트) | Pusher 등 외부 WebSocket 서비스 |
-| 파일 권한 (`symlink` 등) | `storage/` 심볼릭 링크 | 링크를 만들 수 없으면 애플리케이션이 공개 파일을 대신 서빙한다 (별도 조치 불필요) |
+| 파일 권한 (`symlink` 등) | `storage/` 심볼릭 링크 | `php artisan storage:link` 대체 방식 확인 |
 | 디스크 용량 | 첨부파일, 로그, 캐시 누적 | 플랜별 용량 확인, 정기 정리 |
-| 문서 루트 변경 불가 (`public/` 지정 불가) | 표준 배치(문서 루트 = `public/`)를 쓸 수 없음 | 프로젝트 폴더를 문서 루트에 두는 배치 — 동봉 보호 규칙(`.htaccess`·`web.config`) 또는 nginx·Caddy 설정 조각으로 민감 경로를 막고, 설치 마법사의 웹 노출 점검이 노출을 확인하면 진행을 막는다 ([INSTALL.md 방법 7](../INSTALL.md#방법-7-문서-루트-고정--심볼릭-링크-불가-호스팅)) |
-| SSH·파일 관리자 없이 FTP 만 제공 | 압축을 풀어 올리면 파일이 수만 개라 오래 걸리고 끊기기 쉬움 | 배포 ZIP 과 진입 파일 `g7-setup.php` 두 개만 올리고 브라우저에서 서버가 직접 풀게 한다 (`zip` 확장 필요, [INSTALL.md 방법 8](../INSTALL.md#방법-8-ftp-만-있는-호스팅--브라우저로-압축-풀기)) |
-| 도메인 루트가 아닌 하위 주소(`https://example.com/g7/`) | — | 지원 — 인스톨러가 하위 주소를 인식하고 사이트 주소(`APP_URL`)를 하위 주소까지 저장한다. ([INSTALL.md 「사이트를 하위 주소에 두는 경우」](../INSTALL.md#사이트를-하위-주소에-두는-경우)) |
-| `uniqid` 함수 차단 (`disable_functions`) | 7.2.0 전에는 코어 업데이트 뒤 번들 확장 일괄 업데이트가 멈췄다 | 별도 조치 불필요 (7.2.0~) — 고유 이름을 차단할 수 없는 방식으로 만든다 |
-
----
-
-## 9. 요구사항 검증 수준
-
-이 문서의 항목은 자동으로 확인되는 것과 운영자가 직접 확인해야 하는 것으로 나뉜다.
-"요구사항" 이라는 표현이 곧 "설치 프로그램이 검사한다" 를 뜻하지는 않는다.
-
-### 9.1 설치 프로그램이 자동 검사
-
-| 항목 | 기준 | 미충족 시 |
-|------|------|----------|
-| PHP 버전 | 8.2 이상 | 설치 차단 |
-| PHP 확장 | §1.4 필수 확장 16개 | 설치 차단 |
-| 차단 함수 | `exec`·`proc_open`·`shell_exec` 사용 가능 **또는** 동봉 묶음(`vendor-bundle.zip`) + `zip` 확장 보유 | 둘 다 아니면 설치 차단. 함수가 막혀 있고 묶음이 있으면 차단이 아니라 **정보 항목**으로 표시하고 그대로 진행 |
-| 디스크 여유 공간 | 500MB | 설치 차단 |
-| 디렉토리 쓰기 권한 | `storage/`, `bootstrap/cache`, `vendor`, 확장 디렉토리 등 | 설치 차단 |
-| `.env` 파일 | 존재 + 쓰기 가능 | 설치 차단 |
-| 웹 노출 점검 | 프로젝트 루트의 설정·의존성 파일(`.env` 계열·`composer.json`·`storage/` 안 점검 파일)이 브라우저에서 열리지 않음 — 판정은 브라우저가 직접 요청해 내린다 | 설치 차단 (노출 확인 시). 판정 불능(네트워크 오류·리다이렉트·대조 파일 미응답)이면 운영자가 주소 목록을 직접 확인했음을 표시해야 진행 |
-| `public/storage` 링크 | `symlink()` 로 실제 생성 시도 | 안내만 (설치 진행) — 불가하면 공개 파일을 애플리케이션 경로로 서빙 |
-| 데이터베이스 접속 | 접속 성공 여부 | 다음 단계 진행 불가 |
-| DB 테이블 접두어 | 최대 6자 | 입력 거부 |
-| 웹 ↔ CLI PHP 버전 | 메이저·마이너 일치 | 안내만 (설치 진행) |
-| OPcache | 활성화 여부 | 안내만 (설치 진행) |
-| HTTPS | 사용 여부 | 안내만 (설치 진행) |
-| 권장 확장 | `sodium` — 패키지 서명(Ed25519) 검증 (§1.4) | 안내만 (설치 진행) — 없을 때만 PHP 확장 카드에 경고와 사유를 표시 |
-
-선택 확장은 설치를 막지 않으며 설치 단계에 표시하지도 않는다 — 설치 뒤 관리자 환경설정 > 정보 탭에서
-설치 여부를 확인한다. 예외는 권장 확장 `sodium` 이다 — 없으면 설치 단계에 경고로 표시하되 설치는 진행한다(7.2.0~). 설치 단계의 확장 선택 화면은 번들 확장이 요구하는 PHP 확장(§1.8)이 없으면 그 확장을
-고를 수 없게 하거나(필수) 경고를 표시한다(권장).
-
-### 9.2 운영자 확인 필요 — 자동 검사 없음
-
-| 항목 | 문서상의 기준 | 확인 방법 |
-|------|--------------|----------|
-| 데이터베이스 버전 | MySQL 8.0+ / MariaDB 10.3+ | `SELECT VERSION()` |
-| DB charset·collation | `utf8mb4` / `utf8mb4_unicode_ci` | 접속 후 스키마 확인 |
-| php.ini 값 | §1.5 의 5개 항목 | `php -i` 또는 관리자 정보 화면 |
-| CPU·메모리 | §3.1 | 서버 사양 확인 |
-| 웹서버 종류·버전 | Nginx 1.18+ / Apache 2.4+ (LiteSpeed·IIS·Caddy 는 §1.2) | 서버 설정 확인 |
-| `mod_rewrite` | Apache 사용 시 활성화 | 서버 설정 확인 |
-| URL Rewrite 모듈 | IIS 사용 시 설치 (없으면 `500.19`) | IIS 관리자의 모듈 목록 |
-| nginx·Caddy 설정 조각 반영 | 문서 루트 고정 배치에서 서버 설정에 넣고 reload — 업데이트로 `deploy/` 조각이 바뀌면 다시 반영 | 설치 마법사의 웹 노출 점검 + [INSTALL.md 방법 7](../INSTALL.md#방법-7-문서-루트-고정--심볼릭-링크-불가-호스팅) 확인 목록 |
-| Redis 버전 | 6.0 이상 | `redis-server --version` |
-| Node.js·Composer 버전 | §1.7 | 소스 빌드·Composer 설치를 할 때만 해당 |
-| 지원 브라우저 | §7 | 자동 브라우저 테스트는 Chromium 만 상시 수행 |
-| 데몬 프로세스 가동 | §6 의 5종 (긴 작업 워커는 등록한 경우, 큐 드라이버가 `sync` 면 워커 불필요) | 프로세스 관리 도구에서 확인 |
-| §1.4 의 선택 확장 | 사용하는 기능에 따라 | 관리자 정보 화면의 확장 목록 |

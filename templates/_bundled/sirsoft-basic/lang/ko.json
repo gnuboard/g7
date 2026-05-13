@@ -23,9 +23,6 @@
   "shop": {
     "$partial": "partial/ko/shop.json"
   },
-  "claim": {
-    "$partial": "partial/ko/claim.json"
-  },
   "mypage": {
     "$partial": "partial/ko/mypage.json"
   },
@@ -61,14 +58,5 @@
   },
   "timezones": {
     "$partial": "partial/ko/timezones.json"
-  },
-  "layout_editor": {
-    "$partial": "partial/ko/layout_editor.json"
-  },
-  "settings": {
-    "$partial": "partial/ko/settings.json"
-  },
-  "member": {
-    "$partial": "partial/ko/member.json"
   }
 }

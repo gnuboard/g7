@@ -22,30 +22,19 @@ return [
         'max_attempts' => '시도 횟수를 초과했습니다. 다시 요청해주세요.',
         'invalid_code' => '인증 코드가 올바르지 않습니다.',
         'invalid_verification_token' => '유효하지 않은 본인인증 토큰입니다.',
-        'provider_policy_mismatch' => '이 작업은 지정된 인증 수단으로만 확인할 수 있습니다.',
-        'policy_provider_unavailable' => '이 작업에 필요한 본인인증 수단을 지금 사용할 수 없습니다. 사이트 관리자에게 문의해 주세요.',
-        'purpose_unknown' => '알 수 없는 인증 목적입니다.',
         'missing_target' => '인증 대상(이메일·전화번호)이 필요합니다.',
-        'claim_denied' => '본인 확인 결과를 받을 수 없습니다. 인증을 다시 시작해 주세요.',
-        'claim_already_used' => '이미 처리된 본인 확인입니다. 인증을 다시 시작해 주세요.',
-        'claim_unavailable' => '본인 확인이 만료되었거나 끝나지 않았습니다. 인증을 다시 시작해 주세요.',
         'target_mismatch' => '인증한 대상과 요청한 대상이 일치하지 않습니다.',
         'purpose_not_supported' => '선택된 프로바이더는 이 목적을 지원하지 않습니다.',
         'provider_unavailable' => '본인인증 프로바이더를 사용할 수 없습니다.',
-        'challenge_dispatch_failed' => '인증 코드를 보내지 못했습니다. 잠시 후 다시 시도하시거나 다른 인증 수단을 이용해주세요.',
-        'challenge_cooldown' => '방금 인증 메일을 보냈습니다. :seconds초 후 다시 요청할 수 있습니다.',
         'generic' => '본인인증에 실패했습니다.',
         'missing_scope_or_target' => '정책 조회를 위해 scope 와 target 이 모두 필요합니다.',
         'admin_policy_has_no_default' => '관리자가 직접 생성한 정책에는 선언 기본값이 없습니다.',
         'reset_field_failed' => '선언 기본값 복원에 실패했습니다. 필드가 유효한지 확인하세요.',
-        'cannot_delete_system_policy' => '시스템이 선언한 정책은 삭제할 수 없습니다. 관리자가 직접 생성한 정책만 삭제할 수 있습니다.',
-        'purpose_not_allowed' => '이 인증 요청은 이 화면에서 처리할 수 없습니다.',
     ],
 
     'messages' => [
         'challenge_requested' => '본인인증 코드를 발송했습니다.',
         'challenge_verified' => '본인 확인이 완료되었습니다.',
-        'challenge_pending' => '메일의 링크로 본인 확인을 기다리고 있습니다.',
         'challenge_cancelled' => '본인인증 요청이 취소되었습니다.',
     ],
 
@@ -76,15 +65,10 @@ return [
             'label' => '민감 작업',
             'description' => '계정 탈퇴·관리자 작업 등 재인증이 필요한 시점.',
         ],
-        'login' => [
-            'label' => '로그인 2단계 인증',
-            'description' => '2단계 인증을 켰을 때 비밀번호 확인 뒤 한 단계를 더 요구.',
-        ],
     ],
 
     'channels' => [
         'email' => '이메일',
-        'app' => '인증 앱',
     ],
 
     'origin_types' => [
@@ -119,10 +103,12 @@ return [
             'admin' => '관리자',
         ],
     ],
-    // `identity:expire-challenges` 명령 출력
-    'console' => [
-        'expire_challenges' => [
-            'done' => '본인인증 challenge :count건이 만료 처리되었습니다.',
+
+    'message' => [
+        'scope_type' => [
+            'provider_default' => 'Provider 기본',
+            'purpose' => 'Purpose 별',
+            'policy' => 'Policy 별',
         ],
     ],
 ];

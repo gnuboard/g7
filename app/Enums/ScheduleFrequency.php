@@ -10,11 +10,6 @@ namespace App\Enums;
 enum ScheduleFrequency: string
 {
     /**
-     * 30초마다 (cron 으로 표현할 수 없어 등록기가 everyThirtySeconds() 로 등록)
-     */
-    case EveryThirtySeconds = 'everyThirtySeconds';
-
-    /**
      * 매분
      */
     case EveryMinute = 'everyMinute';
@@ -57,7 +52,7 @@ enum ScheduleFrequency: string
     /**
      * 유효한 주기 값인지 확인합니다.
      *
-     * @param  string  $value  검증할 주기 값
+     * @param string $value 검증할 주기 값
      * @return bool 유효 여부
      */
     public static function isValid(string $value): bool
@@ -72,7 +67,7 @@ enum ScheduleFrequency: string
      */
     public function label(): string
     {
-        return __('schedule.frequency.'.$this->value);
+        return __('schedule.frequency.' . $this->value);
     }
 
     /**
@@ -83,7 +78,6 @@ enum ScheduleFrequency: string
     public function defaultExpression(): string
     {
         return match ($this) {
-            self::EveryThirtySeconds => '* * * * *',
             self::EveryMinute => '* * * * *',
             self::Hourly => '0 * * * *',
             self::Daily => '0 0 * * *',

@@ -22,18 +22,11 @@ use Tests\TestCase;
  *
  * 실제 CoreCacheDriver(array store)를 사용하여 키 접두사(`g7:core:`)까지
  * 포함한 동작을 end-to-end로 검증합니다.
- *
- * @scenario-manifest tests/scenarios/cache-settings-geoip-migration.yaml
  */
 class SettingsCacheTest extends TestCase
 {
     private CoreCacheDriver $cache;
 
-    /**
-     * 각 테스트 전에 캐시를 비우고 array 저장소 코어 캐시 드라이버를 CacheInterface 로 바인딩합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,11 +36,6 @@ class SettingsCacheTest extends TestCase
         $this->app->instance(CacheInterface::class, $this->cache);
     }
 
-    /**
-     * 각 테스트 뒤에 캐시를 비웁니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -61,12 +49,6 @@ class SettingsCacheTest extends TestCase
     /**
      * E-1-1: 시스템 설정 캐시 생성 — 외부 컴포넌트가 설정값을 직접 캐싱한 뒤
      * SettingsService 가 'settings.system' 키를 읽을 수 있는지 검증한다.
-     *
-     * @scenario case=settings_store
-     *
-     * @effects settings_cached_under_core_key
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function e_1_1_system_settings_cache_can_be_stored_under_new_key(): void
@@ -86,12 +68,6 @@ class SettingsCacheTest extends TestCase
 
     /**
      * E-1-2: 시스템 설정 캐시 히트 — 동일 키 재조회 시 동일 값 반환.
-     *
-     * @scenario case=settings_hit
-     *
-     * @effects settings_cache_hit
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function e_1_2_system_settings_cache_hit_returns_same_value(): void
@@ -103,15 +79,7 @@ class SettingsCacheTest extends TestCase
     }
 
     /**
-     * E-1-3: 메일 탭(mail 카테고리) 저장 시 settings.system 무효화 + config:clear 호출.
-     *
-     * 메서드 이름의 general_tab 은 이관 당시 이름이다 — 시험은 일반 저장 경로를 mail 탭으로 확인한다.
-     *
-     * @scenario case=mail_tab_save
-     *
-     * @effects settings_cache_invalidated_on_save, config_clear_called
-     *
-     * @return void 반환값 없음
+     * E-1-3: 일반 탭 저장 시 settings.system 무효화 + config:clear 호출.
      */
     #[Test]
     public function e_1_3_general_tab_save_invalidates_settings_cache(): void
@@ -139,12 +107,6 @@ class SettingsCacheTest extends TestCase
 
     /**
      * E-1-4: advanced 탭(cache 카테고리) 저장 시 settings.system 무효화.
-     *
-     * @scenario case=advanced_tab_save
-     *
-     * @effects settings_cache_invalidated_on_save, config_clear_called
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function e_1_4_advanced_tab_save_invalidates_settings_cache(): void
@@ -171,16 +133,10 @@ class SettingsCacheTest extends TestCase
     }
 
     /**
-     * E-1-5: SEO 탭 저장 시 설정 캐시 무효화 + config:clear 호출.
+     * E-1-5: SEO 탭 저장 시 설정 캐시 무효화 + after_save 훅 발행.
      *
      * SeoSettingsCacheListener 의 SEO 캐시 삭제 동작은 그룹 C 이관 시 검증한다.
-     * 여기서는 설정 캐시만 삭제되는지 확인한다 — 메서드 이름의 fires_hook(after_save 훅 발행)은 이 시험이 단언하지 않는다.
-     *
-     * @scenario case=seo_tab_save
-     *
-     * @effects settings_cache_invalidated_on_save, config_clear_called
-     *
-     * @return void 반환값 없음
+     * 여기서는 설정 캐시만 삭제되는지 확인한다.
      */
     #[Test]
     public function e_1_5_seo_tab_save_invalidates_settings_cache_and_fires_hook(): void
@@ -208,12 +164,6 @@ class SettingsCacheTest extends TestCase
 
     /**
      * E-1-6: drivers 탭 저장 시 queue:restart 추가 호출.
-     *
-     * @scenario case=drivers_tab_save
-     *
-     * @effects settings_cache_invalidated_on_save, config_clear_called, queue_restart_called
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function e_1_6_drivers_tab_save_triggers_queue_restart(): void
@@ -252,12 +202,6 @@ class SettingsCacheTest extends TestCase
      *
      * 여기서는 캐시 저장 키가 새 접두사(`g7:core:geoip.timezone.{ip}`)로
      * 이관되었는지에 초점을 맞춘다.
-     *
-     * @scenario case=geoip_store
-     *
-     * @effects geoip_cached_under_core_key
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function e_2_1_geoip_cache_uses_new_prefix(): void
@@ -278,12 +222,6 @@ class SettingsCacheTest extends TestCase
 
     /**
      * E-2-2: GeoIP 캐시 히트 — 저장된 타임존이 지원 목록에 있으면 반환.
-     *
-     * @scenario case=geoip_hit
-     *
-     * @effects geoip_cached_timezone_returned
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function e_2_2_geoip_cache_hit_returns_cached_timezone(): void
@@ -301,12 +239,6 @@ class SettingsCacheTest extends TestCase
 
     /**
      * E-2-3: 조회 실패 시 빈 문자열 캐싱 — 다음 조회에서 반복 실패 방지.
-     *
-     * @scenario case=geoip_failure
-     *
-     * @effects geoip_failure_cached_as_empty
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function e_2_3_geoip_failure_caches_empty_string(): void
@@ -328,12 +260,6 @@ class SettingsCacheTest extends TestCase
 
     /**
      * E-2-4: geoip.cache.enabled = false 시 캐시에 저장되지 않음.
-     *
-     * @scenario case=geoip_disabled
-     *
-     * @effects geoip_disabled_not_stored
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function e_2_4_geoip_cache_disabled_does_not_store(): void
@@ -352,12 +278,6 @@ class SettingsCacheTest extends TestCase
     /**
      * E-2-5: TTL 만료 시 캐시 미스로 재조회 — array store 의 경우 TTL 검증은
      * forget 으로 간접 시뮬레이션한다.
-     *
-     * @scenario case=geoip_expired
-     *
-     * @effects geoip_relookup_after_expiry, geoip_failure_cached_as_empty
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function e_2_5_geoip_cache_miss_after_forget_triggers_relookup(): void

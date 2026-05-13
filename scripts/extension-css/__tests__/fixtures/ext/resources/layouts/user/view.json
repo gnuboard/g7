@@ -1,6 +1,0 @@
-{
-    "layout_name": "fixture_user_view",
-    "components": [
-        { "name": "Div", "props": { "className": "input badge md:flex" }, "text": "사용자 화면" }
-    ]
-}

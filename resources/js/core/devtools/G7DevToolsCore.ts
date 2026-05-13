@@ -45,6 +45,7 @@ import type {
     DevToolsConfig,
     ExpressionEvalInfo,
     ExpressionWarning,
+    ExpressionWarningType,
     ExpressionWatcherCallback,
     ExpressionStats,
     DataSourceInfo,
@@ -76,6 +77,7 @@ import type {
     LogStats,
     LogFilterOptions,
     LogInfo,
+    ParsedQueryParams,
     CurrentLayoutInfo,
     LayoutJsonData,
     LayoutHistoryEntry,
@@ -129,7 +131,6 @@ import type {
     NamedActionTrackingInfo,
 } from './types';
 import { parseQueryParams, extractPath } from './types';
-import { breakpointVariantOf } from './TailwindValidator';
 
 /**
  * G7 DevTools 핵심 클래스
@@ -853,9 +854,7 @@ export class G7DevToolsCore {
 
         const actionsByType: Record<string, number> = {};
         for (const action of this.actionHistory) {
-            // type 없는 액션은 종전처럼 'undefined' 키로 센다(객체 키 강제 변환과 같은 값)
-            const typeKey = String(action.type);
-            actionsByType[typeKey] = (actionsByType[typeKey] || 0) + 1;
+            actionsByType[action.type] = (actionsByType[action.type] || 0) + 1;
         }
 
         const totalDuration = successActions.reduce((sum, a) => sum + (a.duration || 0), 0);
@@ -1137,11 +1136,8 @@ export class G7DevToolsCore {
 
     /**
      * 컴포넌트 마운트 추적
-     *
-     * @param componentId 컴포넌트 ID (저장하는 정보의 id 는 이 값으로 정한다)
-     * @param info 컴포넌트 정보 (id 를 넘겨도 componentId 가 우선한다)
      */
-    trackMount(componentId: string, info: Omit<ComponentInfo, 'mountTime' | 'id'> & { id?: string }): void {
+    trackMount(componentId: string, info: Omit<ComponentInfo, 'mountTime'>): void {
         if (!this.config.enabled) return;
 
         // props 간소화: 큰 객체/배열은 요약만 저장
@@ -1799,7 +1795,7 @@ export class G7DevToolsCore {
     /**
      * 스코프 체인 조회
      */
-    getScopeChain(_componentId: string): ScopeVariable[] {
+    getScopeChain(componentId: string): ScopeVariable[] {
         const chain: ScopeVariable[] = [];
 
         // _global
@@ -3337,7 +3333,7 @@ export class G7DevToolsCore {
     private debounceActionHistory: Array<{
         id: string;
         handler: string;
-        type: string | undefined;
+        type: string;
         status: 'pending' | 'success' | 'error' | 'cancelled';
         params?: Record<string, any>;
         debounce?: {
@@ -3371,8 +3367,7 @@ export class G7DevToolsCore {
      */
     trackAction(info: {
         handler: string;
-        /** 액션 타입 (event 만 적은 진입점 액션은 undefined) */
-        type: string | undefined;
+        type: string;
         status: 'pending' | 'success' | 'error' | 'cancelled';
         params?: Record<string, any>;
         debounce?: {
@@ -4871,6 +4866,7 @@ export class G7DevToolsCore {
         const dynamicClasses: string[] = [];
         const usedClasses: string[] = [];
 
+        const responsivePrefixes = ['sm:', 'md:', 'lg:', 'xl:', '2xl:'];
         const dynamicPatterns = [/bg-\w+-\d+/, /text-\w+-\d+/, /border-\w+-\d+/];
 
         for (const cls of classes) {
@@ -4880,9 +4876,11 @@ export class G7DevToolsCore {
                 darkClasses.push(cls);
             }
 
-            // 폭 접두(금지 규정) — 확장 접두·상태 변형·max 짝·임의 값 경계까지 TailwindValidator 와 같은 판정으로 모은다
-            if (breakpointVariantOf(cls)) {
-                responsiveClasses.push(cls);
+            for (const prefix of responsivePrefixes) {
+                if (cls.startsWith(prefix)) {
+                    responsiveClasses.push(cls);
+                    break;
+                }
             }
 
             // 동적 클래스 감지 (숫자로 끝나는 컬러 클래스)
@@ -4968,11 +4966,9 @@ export class G7DevToolsCore {
     }
 
     /**
-     * 스타일 이슈 추가 — 코어 감지와 StyleTracker 가 함께 부른다. id 가 없으면 붙인다.
-     *
-     * @param issue 추가할 이슈(id 는 선택)
+     * 스타일 이슈 추가
      */
-    addStyleIssue(issue: Omit<StyleIssue, 'id'> & { id?: string }): void {
+    private addStyleIssue(issue: StyleIssue): void {
         // 중복 방지
         const exists = this.styleIssues.some(
             i => i.componentId === issue.componentId &&
@@ -4981,8 +4977,7 @@ export class G7DevToolsCore {
         );
 
         if (!exists) {
-            // StyleTracker 는 id 없이 넘기므로 여기서 붙인다(#869)
-            this.styleIssues.push({ ...issue, id: issue.id ?? this.generateId() });
+            this.styleIssues.push(issue);
         }
     }
 
@@ -5106,9 +5101,7 @@ export class G7DevToolsCore {
             let source: 'AuthManager' | 'G7Core.state' | 'unknown' = 'unknown';
 
             // 사용자 정보 - AuthManager의 getUser() 먼저 확인
-            const validUser = (value: any) => value && !Array.isArray(value)
-                && typeof value === 'object' && value.id != null ? value : undefined;
-            let user = validUser(auth?.getUser?.());
+            let user = auth?.getUser?.();
             if (user) {
                 source = 'AuthManager';
             }
@@ -5117,8 +5110,7 @@ export class G7DevToolsCore {
             if (!user) {
                 const state = g7Core?.state?.get?.();
                 // user 또는 currentUser 필드 확인 (Admin: user, User: currentUser)
-                user = [state?._global?.user, state?._global?.currentUser, state?.user, state?.currentUser]
-                    .map(validUser).find(Boolean);
+                user = state?._global?.user || state?._global?.currentUser || state?.user || state?.currentUser;
                 if (user) {
                     source = 'G7Core.state';
                 }
@@ -5136,8 +5128,7 @@ export class G7DevToolsCore {
             }
 
             // 인증 여부: 토큰이 있고 (user가 있거나 AuthManager가 인증됨)
-            const isAuthenticated = !!accessToken && (typeof auth?.isAuthenticated === 'function'
-                ? isAuthManagerAuthenticated : !!user);
+            const isAuthenticated = !!accessToken && (!!user || isAuthManagerAuthenticated);
 
             // 토큰 미리보기 (앞 10자 + ... + 뒤 6자)
             let accessTokenPreview: string | undefined;

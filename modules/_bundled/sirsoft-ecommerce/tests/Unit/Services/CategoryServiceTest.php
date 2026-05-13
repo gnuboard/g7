@@ -2,12 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
 use Modules\Sirsoft\Ecommerce\Services\CategoryService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -24,39 +22,19 @@ class CategoryServiceTest extends ModuleTestCase
 
     protected $mockImageRepository;
 
-    protected $mockImageService;
-
-    /**
-     * 모의 저장소와 모의 이미지 서비스로 CategoryService 를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->mockRepository = Mockery::mock(CategoryRepositoryInterface::class);
         $this->mockImageRepository = Mockery::mock(CategoryImageRepositoryInterface::class);
-        $this->mockImageService = Mockery::mock(CategoryImageService::class);
-        $this->service = new CategoryService(
-            $this->mockRepository,
-            $this->mockImageRepository,
-            $this->mockImageService,
-        );
+        $this->service = new CategoryService($this->mockRepository, $this->mockImageRepository);
     }
 
-    /**
-     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 
     // ========================================
@@ -64,16 +42,7 @@ class CategoryServiceTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 카테고리 삭제 시 이미지가 파일까지 명시적으로 삭제되는지 확인
-     *
-     * 행만 지우면 물리 파일이 디스크에 영구 잔존하므로, 삭제는 파일 삭제를 포함하는
-     * CategoryImageService 경로를 거쳐야 한다.
-     *
-     * @scenario case=delete_with_images
-     *
-     * @effects category_delete_removes_images_through_image_service
-     *
-     * @return void 반환값 없음
+     * 카테고리 삭제 시 이미지가 명시적으로 삭제되는지 확인
      */
     public function test_delete_category_deletes_images(): void
     {
@@ -81,16 +50,13 @@ class CategoryServiceTest extends ModuleTestCase
         $category = Mockery::mock(Category::class)->makePartial();
         $category->shouldReceive('getAttribute')->with('id')->andReturn(1);
 
-        $this->mockImageService
-            ->shouldReceive('deleteByCategoryId')
-            ->with(1)
-            ->once()
-            ->andReturn(1);
+        $mockImages = Mockery::mock(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        $mockImages->shouldReceive('delete')->once();
+        $category->shouldReceive('images')->once()->andReturn($mockImages);
 
         $this->mockRepository
             ->shouldReceive('findById')
-            // 쓰기 경로는 상품 수·자식 수 집계를 읽지 않으므로 withCounts=false 로 조회한다
-            ->with(1, [], false)
+            ->with(1)
             ->once()
             ->andReturn($category);
 
@@ -125,26 +91,19 @@ class CategoryServiceTest extends ModuleTestCase
 
     /**
      * 하위 카테고리가 있는 경우 삭제 시 예외 발생
-     *
-     * @scenario case=blocked_by_children
-     *
-     * @effects category_delete_blocked_when_children_exist
-     *
-     * @return void 반환값 없음
      */
     public function test_delete_category_with_children_throws_exception(): void
     {
         $category = Mockery::mock(Category::class)->makePartial();
         $category->shouldReceive('getAttribute')->with('id')->andReturn(1);
 
-        $mockChildren = Mockery::mock(HasMany::class);
+        $mockChildren = Mockery::mock(\Illuminate\Database\Eloquent\Relations\HasMany::class);
         $mockChildren->shouldReceive('count')->andReturn(2);
         $category->shouldReceive('children')->andReturn($mockChildren);
 
         $this->mockRepository
             ->shouldReceive('findById')
-            // 쓰기 경로는 상품 수·자식 수 집계를 읽지 않으므로 withCounts=false 로 조회한다
-            ->with(1, [], false)
+            ->with(1)
             ->once()
             ->andReturn($category);
 
@@ -161,12 +120,6 @@ class CategoryServiceTest extends ModuleTestCase
 
     /**
      * 연결된 상품이 있는 경우 삭제 시 예외 발생
-     *
-     * @scenario case=blocked_by_products
-     *
-     * @effects category_delete_blocked_when_products_linked
-     *
-     * @return void 반환값 없음
      */
     public function test_delete_category_with_products_throws_exception(): void
     {
@@ -175,8 +128,7 @@ class CategoryServiceTest extends ModuleTestCase
 
         $this->mockRepository
             ->shouldReceive('findById')
-            // 쓰기 경로는 상품 수·자식 수 집계를 읽지 않으므로 withCounts=false 로 조회한다
-            ->with(1, [], false)
+            ->with(1)
             ->once()
             ->andReturn($category);
 

@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { G7DevToolsCore } from '../../G7DevToolsCore';
-import type { StaleClosureTrackingInfo } from '../../types';
+import type { StaleClosureTrackingInfo, StaleClosureWarning } from '../../types';
 
 export interface StaleClosureTabProps {
     devTools: G7DevToolsCore;
@@ -155,7 +155,7 @@ export const StaleClosureTab: React.FC<StaleClosureTabProps> = ({ devTools }) =>
                                     </span>
                                 </div>
                                 <div className="g7dt-text-xs g7dt-text-muted g7dt-mt-1 g7dt-truncate">
-                                    {warning.capturedState.path}
+                                    {warning.statePath}
                                 </div>
                             </div>
                         ))}
@@ -185,20 +185,20 @@ export const StaleClosureTab: React.FC<StaleClosureTabProps> = ({ devTools }) =>
                         <div>
                             <div className="g7dt-text-xs g7dt-text-muted">상태 경로</div>
                             <div className="g7dt-text-sm g7dt-text-yellow g7dt-mono">
-                                {selectedWarningData.capturedState.path}
+                                {selectedWarningData.statePath}
                             </div>
                         </div>
                         <div className="g7dt-grid-2 g7dt-gap-3">
                             <div>
                                 <div className="g7dt-text-xs g7dt-text-muted">캡처된 값</div>
                                 <pre className="g7dt-code-block g7dt-text-red">
-                                    {JSON.stringify(selectedWarningData.capturedState.capturedValue, null, 2)}
+                                    {JSON.stringify(selectedWarningData.capturedValue, null, 2)}
                                 </pre>
                             </div>
                             <div>
                                 <div className="g7dt-text-xs g7dt-text-muted">현재 값</div>
                                 <pre className="g7dt-code-block g7dt-text-green">
-                                    {JSON.stringify(selectedWarningData.currentState.currentValue, null, 2)}
+                                    {JSON.stringify(selectedWarningData.currentValue, null, 2)}
                                 </pre>
                             </div>
                         </div>

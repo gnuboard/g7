@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesBaseCurrencyPrecision;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 
@@ -17,12 +16,10 @@ use Modules\Sirsoft\Ecommerce\Models\ProductOption;
  */
 class BulkUpdateOptionsRequest extends FormRequest
 {
-    use ResolvesBaseCurrencyPrecision;
-
     /**
      * 권한 확인
      *
-     * @return bool 인가 여부 (권한 체크는 미들웨어에 위임)
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -36,8 +33,6 @@ class BulkUpdateOptionsRequest extends FormRequest
      */
     public function rules(): array
     {
-        $priceRule = $this->basePriceRule();
-
         $rules = [
             // 처리 대상 옵션 ID 배열 (필수) - "productId-optionId" 형식
             'ids' => ['required', 'array', 'min:1'],
@@ -46,8 +41,7 @@ class BulkUpdateOptionsRequest extends FormRequest
             // 옵션 일괄 변경 조건 (선택)
             'bulk_changes' => ['nullable', 'array'],
             'bulk_changes.price_adjustment' => ['nullable', 'array'],
-            // subtract = 금액 인하(판매가 일괄 변경 창의 「인하 + 금액」). 인하 결과는 서비스가 옵션 판매가 0 을 하한으로 둔다.
-            'bulk_changes.price_adjustment.method' => ['required_with:bulk_changes.price_adjustment', 'string', 'in:set,add,subtract,percent'],
+            'bulk_changes.price_adjustment.method' => ['required_with:bulk_changes.price_adjustment', 'string', 'in:set,add,percent'],
             'bulk_changes.price_adjustment.value' => ['required_with:bulk_changes.price_adjustment', 'numeric'],
             'bulk_changes.stock_quantity' => ['nullable', 'array'],
             'bulk_changes.stock_quantity.method' => ['required_with:bulk_changes.stock_quantity', 'string', 'in:set,add,subtract'],
@@ -58,11 +52,10 @@ class BulkUpdateOptionsRequest extends FormRequest
             'items.*.product_id' => ['required', 'integer', Rule::exists(Product::class, 'id')],
             'items.*.option_id' => ['required', 'integer', Rule::exists(ProductOption::class, 'id')],
             'items.*.option_name' => ['nullable', 'array'],
-            'items.*.option_name.*' => ['nullable', 'string', 'max:255'],
+            'items.*.option_name.*' => ['string', 'max:255'],
             'items.*.sku' => ['nullable', 'string', 'max:100'],
-            // 단건 등록/수정과 동일한 통화 정밀도 규칙
-            'items.*.list_price' => ['nullable', 'numeric', $priceRule, 'min:0'],
-            'items.*.price_adjustment' => ['nullable', 'numeric', $priceRule],
+            'items.*.list_price' => ['nullable', 'numeric', 'min:0'],
+            'items.*.price_adjustment' => ['nullable', 'numeric'],
             'items.*.stock_quantity' => ['nullable', 'integer', 'min:0'],
             'items.*.safe_stock_quantity' => ['nullable', 'integer', 'min:0'],
             'items.*.is_default' => ['nullable', 'boolean'],

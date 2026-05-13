@@ -2,10 +2,9 @@
 
 namespace Modules\Sirsoft\Page\Http\Resources;
 
-use App\DisplayName\DisplayNameAreaRegistry;
-use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
+use App\Http\Resources\BaseApiCollection;
 
 /**
  * 페이지 목록 API 컬렉션 (관리자용)
@@ -43,9 +42,6 @@ class PageCollection extends BaseApiCollection
      */
     public function toArray(Request $request): array
     {
-        // 작성자 이름은 관리자 영역 표시 이름이다 — 행마다 계산하기 전에 한 페이지의 회원 값을 한 번에 읽어 둔다.
-        $this->preloadMemberDisplayNames($this->collection, ['creator', 'updater'], $request, DisplayNameAreaRegistry::AREA_ADMIN);
-
         return [
             'data' => $this->collection->map(fn (PageResource $resource) => $resource->toListArray($request)),
             'meta' => [

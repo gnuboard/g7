@@ -19,8 +19,6 @@ const roleOptions: TagOption[] = [
 
 describe('TagInput 컴포넌트', () => {
   describe('기본 렌더링', () => {
-    // @scenario area=render
-    // @effects tag_input_renders_values_and_counts
     it('컴포넌트가 렌더링된다', () => {
       const { container } = render(
         <TagInput
@@ -32,8 +30,6 @@ describe('TagInput 컴포넌트', () => {
       expect(container.querySelector('.tag-input__control')).toBeTruthy();
     });
 
-    // @scenario area=render
-    // @effects tag_input_renders_values_and_counts
     it('placeholder가 표시된다', () => {
       render(
         <TagInput
@@ -46,8 +42,6 @@ describe('TagInput 컴포넌트', () => {
       expect(screen.getByText('분류 검색...')).toBeTruthy();
     });
 
-    // @scenario area=render
-    // @effects tag_input_renders_values_and_counts
     it('선택된 값이 태그로 표시된다', () => {
       render(
         <TagInput
@@ -60,8 +54,6 @@ describe('TagInput 컴포넌트', () => {
       expect(screen.getByText('반품')).toBeTruthy();
     });
 
-    // @scenario area=render
-    // @effects tag_input_renders_values_and_counts
     it('count가 있는 옵션은 count가 표시된다', () => {
       render(
         <TagInput
@@ -75,8 +67,6 @@ describe('TagInput 컴포넌트', () => {
   });
 
   describe('비활성화 상태', () => {
-    // @scenario area=disabled
-    // @effects tag_input_disabled_blocks_input
     it('disabled prop이 적용된다', () => {
       const { container } = render(
         <TagInput
@@ -92,8 +82,6 @@ describe('TagInput 컴포넌트', () => {
   });
 
   describe('onChange 콜백', () => {
-    // @scenario area=on_change
-    // @effects tag_input_selection_calls_on_change
     it('옵션 선택 시 onChange가 호출된다', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -124,40 +112,7 @@ describe('TagInput 컴포넌트', () => {
     });
   });
 
-  describe('메뉴 포탈 z-index', () => {
-    // 회귀(게시판 설정 일괄 적용 화면 결함): react-select 는 menuPortal 에
-    // zIndex:1 을 인라인 스타일로 강제 주입하며, 이는 Tailwind classNames
-    // 보다 우선 적용된다. styles.menuPortal 오버라이드가 없으면 드롭다운이
-    // sticky 하단 버튼바(z-10) 등 낮은 요소에도 가려질 수 있었다.
-    // @scenario area=menu_portal
-    // @effects tag_input_menu_portal_above_sticky
-    it('메뉴 포탈이 sticky 요소보다 높은 z-index를 인라인 스타일로 갖는다', async () => {
-      const user = userEvent.setup();
-
-      render(
-        <TagInput
-          value={[]}
-          options={mockOptions}
-          onChange={() => {}}
-        />
-      );
-
-      const input = screen.getByRole('combobox');
-      await user.click(input);
-
-      await screen.findByText('A/S');
-
-      const portal = document.body.querySelector('.tag-input__menu-portal') as HTMLElement | null;
-      expect(portal).toBeTruthy();
-      // react-select(emotion)는 zIndex 를 style 속성이 아닌 생성된 CSS 클래스로 적용하므로
-      // getComputedStyle 로 확인해야 한다 (element.style.zIndex 는 항상 빈 값).
-      expect(Number(getComputedStyle(portal!).zIndex)).toBeGreaterThanOrEqual(9999);
-    });
-  });
-
   describe('onBeforeRemove 콜백', () => {
-    // @scenario area=before_remove
-    // @effects tag_input_before_remove_guards_removal
     it('onBeforeRemove가 true를 반환하면 삭제된다', async () => {
       const handleChange = vi.fn();
       const handleBeforeRemove = vi.fn().mockReturnValue(true);
@@ -186,8 +141,6 @@ describe('TagInput 컴포넌트', () => {
       expect(typeof callArg.stopPropagation).toBe('function');
     });
 
-    // @scenario area=before_remove
-    // @effects tag_input_before_remove_guards_removal
     it('onBeforeRemove가 string을 반환하면 삭제되지 않고 alert 표시', async () => {
       const handleChange = vi.fn();
       const handleBeforeRemove = vi.fn().mockReturnValue('삭제할 수 없습니다.');
@@ -218,8 +171,6 @@ describe('TagInput 컴포넌트', () => {
   });
 
   describe('Creatable 모드', () => {
-    // @scenario area=creatable
-    // @effects tag_input_creates_new_option
     it('creatable 모드에서 새 옵션을 생성할 수 있다', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -237,15 +188,13 @@ describe('TagInput 컴포넌트', () => {
       await user.type(input, '새분류');
 
       // 새 옵션 생성 버튼이 표시되는지 확인
-      // formatCreateLabel 기본 동작: 문장 키 common.tag_input.create_label(번역이 없으면 「Add {값}」)
+      // formatCreateLabel 기본 동작: <strong>{inputValue}</strong> {createLabelSuffix}
       await waitFor(() => {
         expect(screen.getByText('새분류')).toBeTruthy();
-        expect(screen.getByText('Add')).toBeTruthy();
+        expect(screen.getByText('추가')).toBeTruthy();
       });
     });
 
-    // @scenario area=creatable
-    // @effects tag_input_creates_new_option
     it('onCreateOption 콜백이 호출된다', async () => {
       const handleChange = vi.fn();
       const handleCreate = vi.fn();
@@ -265,7 +214,7 @@ describe('TagInput 컴포넌트', () => {
       await user.type(input, '새분류');
 
       // 새 옵션 생성 클릭 - strong 태그 안에 텍스트가 있으므로 getByText로 찾음
-      const createOption = await screen.findByText('Add');
+      const createOption = await screen.findByText('추가');
       await user.click(createOption);
 
       expect(handleCreate).toHaveBeenCalledWith('새분류');
@@ -280,8 +229,6 @@ describe('TagInput 컴포넌트', () => {
   });
 
   describe('Select Only 모드 (역할)', () => {
-    // @scenario area=select_only
-    // @effects tag_input_select_only_blocks_creation
     it('creatable=false일 때 새 옵션 생성 불가', async () => {
       const user = userEvent.setup();
 
@@ -305,8 +252,6 @@ describe('TagInput 컴포넌트', () => {
   });
 
   describe('maxItems 제한', () => {
-    // @scenario area=max_items
-    // @effects tag_input_max_items_enforced
     it('maxItems 이상 선택 불가', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -333,8 +278,6 @@ describe('TagInput 컴포넌트', () => {
   });
 
   describe('검색 필터링', () => {
-    // @scenario area=filter
-    // @effects tag_input_filters_options_by_input
     it('입력 시 옵션이 필터링된다', async () => {
       const user = userEvent.setup();
 
@@ -359,8 +302,6 @@ describe('TagInput 컴포넌트', () => {
   });
 
   describe('접근성', () => {
-    // @scenario area=a11y_role
-    // @effects tag_input_has_combobox_role
     it('combobox role이 있다', () => {
       render(
         <TagInput
@@ -374,8 +315,6 @@ describe('TagInput 컴포넌트', () => {
   });
 
   describe('구분자 기반 자동 태그 분리', () => {
-    // @scenario area=delimiter
-    // @effects tag_input_delimiter_splits_tags
     it('쉼표 입력 시 자동으로 태그가 분리된다', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -401,8 +340,6 @@ describe('TagInput 컴포넌트', () => {
       });
     });
 
-    // @scenario area=delimiter
-    // @effects tag_input_delimiter_splits_tags
     it('커스텀 구분자로 태그가 분리된다', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -427,8 +364,6 @@ describe('TagInput 컴포넌트', () => {
       });
     });
 
-    // @scenario area=delimiter
-    // @effects tag_input_delimiter_splits_tags
     it('중복 태그는 추가되지 않는다', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -457,8 +392,6 @@ describe('TagInput 컴포넌트', () => {
       }
     });
 
-    // @scenario area=delimiter
-    // @effects tag_input_delimiter_splits_tags
     it('creatable=false일 때는 구분자가 동작하지 않는다', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -481,8 +414,6 @@ describe('TagInput 컴포넌트', () => {
       expect(handleChange).not.toHaveBeenCalled();
     });
 
-    // @scenario area=delimiter
-    // @effects tag_input_delimiter_splits_tags
     it('maxItems 제한이 구분자 입력에도 적용된다', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -511,8 +442,6 @@ describe('TagInput 컴포넌트', () => {
   });
 
   describe('options prop 선택적 사용', () => {
-    // @scenario area=no_options_prop
-    // @effects tag_input_creatable_without_options
     it('options 없이도 creatable 모드로 동작한다', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -531,7 +460,7 @@ describe('TagInput 컴포넌트', () => {
       // 새 옵션 생성 가능해야 함
       await waitFor(() => {
         expect(screen.getByText('자유입력')).toBeTruthy();
-        expect(screen.getByText('Add')).toBeTruthy();
+        expect(screen.getByText('추가')).toBeTruthy();
       });
     });
   });
@@ -545,8 +474,6 @@ describe('TagInput 컴포넌트', () => {
       { value: '5', label: '프리미엄 회원', group: '사용자 정의 역할', description: '프리미엄 구독 회원' },
     ];
 
-    // @scenario area=grouping
-    // @effects tag_input_groups_options
     it('group 필드가 있는 옵션은 그룹별로 표시된다', async () => {
       const user = userEvent.setup();
 
@@ -568,8 +495,6 @@ describe('TagInput 컴포넌트', () => {
       });
     });
 
-    // @scenario area=grouping
-    // @effects tag_input_groups_options
     it('description이 옵션과 함께 표시된다', async () => {
       const user = userEvent.setup();
 
@@ -591,8 +516,6 @@ describe('TagInput 컴포넌트', () => {
       });
     });
 
-    // @scenario area=grouping
-    // @effects tag_input_groups_options
     it('group 필드가 없는 옵션은 평탄하게 표시된다', async () => {
       const user = userEvent.setup();
 
@@ -614,8 +537,6 @@ describe('TagInput 컴포넌트', () => {
       });
     });
 
-    // @scenario area=grouping
-    // @effects tag_input_groups_options
     it('그룹화된 옵션에서도 선택이 정상 동작한다', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -643,8 +564,6 @@ describe('TagInput 컴포넌트', () => {
   });
 
   describe('onInputChange 콜백', () => {
-    // @scenario area=input_change
-    // @effects tag_input_input_change_callback
     it('onInputChange가 없으면 기존 동작과 동일하게 작동한다', async () => {
       const handleChange = vi.fn();
       const user = userEvent.setup();
@@ -665,8 +584,6 @@ describe('TagInput 컴포넌트', () => {
       expect(input).toBeTruthy();
     });
 
-    // @scenario area=input_change
-    // @effects tag_input_input_change_callback
     it('onInputChange가 제공되면 입력 시 호출된다', async () => {
       const handleChange = vi.fn();
       const handleInputChange = vi.fn();
@@ -693,8 +610,6 @@ describe('TagInput 컴포넌트', () => {
       expect(callArg).toHaveProperty('target.value');
     });
 
-    // @scenario area=input_change
-    // @effects tag_input_input_change_callback
     it('onInputChange 이벤트에 입력값이 전달된다', async () => {
       const handleChange = vi.fn();
       const handleInputChange = vi.fn();
@@ -719,8 +634,6 @@ describe('TagInput 컴포넌트', () => {
       expect(lastCall.target.value.length).toBeGreaterThan(0);
     });
 
-    // @scenario area=input_change
-    // @effects tag_input_input_change_callback
     it('onInputChange가 있어도 onChange는 정상 동작한다', async () => {
       const handleChange = vi.fn();
       const handleInputChange = vi.fn();
@@ -746,58 +659,6 @@ describe('TagInput 컴포넌트', () => {
       expect(handleChange).toHaveBeenCalled();
       const callArg = handleChange.mock.calls[0][0];
       expect(callArg.target.value).toContain('as');
-    });
-  });
-
-  // 편집기 선택 결함 회귀 가드.
-  // TagInput 은 react-select 를 Fragment 로 직접 렌더해 루트에 id/editorAttrs(편집 모드
-  // data-editor-*)가 도달하지 못해 편집기에서 선택·편집 불가하던 결함을 정정했다.
-  // 4개 렌더 분기(싱글/멀티 × creatable/plain) 모두 루트 Div 에 id+editorAttrs 를 spread.
-  describe('편집기 editorAttrs/id passthrough', () => {
-    const editorAttrs = {
-      'data-editor-name': 'TagInput',
-      'data-editor-path': '1.children.0',
-    } as Record<string, unknown>;
-
-    // @scenario area=editor_attrs
-    // @effects tag_input_editor_attrs_reach_root
-    it('멀티 plain 분기 루트에 id/editorAttrs 가 도달함', () => {
-      const { container } = render(
-        <TagInput value={[]} options={mockOptions} onChange={() => {}} id="tags-1" editorAttrs={editorAttrs} isMulti />
-      );
-      const root = container.querySelector('[data-editor-name="TagInput"]');
-      expect(root).toBeTruthy();
-      expect(root).toHaveAttribute('id', 'tags-1');
-      expect(root).toHaveAttribute('data-editor-path', '1.children.0');
-    });
-
-    // @scenario area=editor_attrs
-    // @effects tag_input_editor_attrs_reach_root
-    it('싱글 plain 분기 루트에 id/editorAttrs 가 도달함', () => {
-      const { container } = render(
-        <TagInput value={null} options={mockOptions} onChange={() => {}} id="tags-2" editorAttrs={editorAttrs} isMulti={false} />
-      );
-      const root = container.querySelector('[data-editor-name="TagInput"]');
-      expect(root).toBeTruthy();
-      expect(root).toHaveAttribute('id', 'tags-2');
-    });
-
-    // @scenario area=editor_attrs
-    // @effects tag_input_editor_attrs_reach_root
-    it('싱글 creatable 분기 루트에 editorAttrs 가 도달함', () => {
-      const { container } = render(
-        <TagInput value={null} options={mockOptions} onChange={() => {}} editorAttrs={editorAttrs} isMulti={false} creatable />
-      );
-      expect(container.querySelector('[data-editor-name="TagInput"]')).toBeTruthy();
-    });
-
-    // @scenario area=editor_attrs
-    // @effects tag_input_editor_attrs_reach_root
-    it('멀티 creatable 분기 루트에 editorAttrs 가 도달함', () => {
-      const { container } = render(
-        <TagInput value={[]} options={mockOptions} onChange={() => {}} editorAttrs={editorAttrs} isMulti creatable />
-      );
-      expect(container.querySelector('[data-editor-name="TagInput"]')).toBeTruthy();
     });
   });
 });

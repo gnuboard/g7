@@ -1,24 +1,17 @@
 <?php
 
-// audit:allow api-doc-coverage 609 후속 — 메서드 PHPDoc(목적 설명, @param, @return)만 더했다. 라우트, 요청, 응답 모양은 그대로라 API 문서에 반영할 표면이 없다.
-
 namespace App\Http\Requests\Public\Plugin;
 
-use App\Http\Requests\Concerns\ResolvesDualModeFilePath;
 use App\Rules\AllowedPluginFileType;
 use App\Rules\SafePluginPath;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ServePluginAssetRequest extends FormRequest
 {
-    use ResolvesDualModeFilePath;
-
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
-     *
-     * @return bool 항상 true (권한은 미들웨어 책임)
      */
     public function authorize(): bool
     {
@@ -28,23 +21,13 @@ class ServePluginAssetRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, mixed> 검증 규칙 배열
+     * @return array<string, mixed>
      */
-    // audit:allow core-formrequest-hook-filter reason: 자산 서빙 경로 검증은 파일시스템
-    // 화이트리스트(SafePluginPath + AllowedPluginFileType)가 유일한 방어선이다.
-    // 확장이 필터로 규칙을 대체할 수 있으면 경로 탈출·임의 파일 읽기가 열린다.
     public function rules(): array
     {
         // 플러그인 식별자로부터 기준 경로 구성 (플러그인 루트)
-        // 식별자는 **검증 전** 값이다. 라우트에 형태 제약이 없고 Laravel 은 매칭·바인딩을
-        // 모두 디코딩된 경로로 하므로 `%2e%2e` 가 `..` 로 들어온다 — 그대로 보간하면
-        // 봉쇄의 **기준선을 요청이 고르게** 된다. 확장 식별자는 `vendor-name` 형태이므로
-        // 그 형태가 아니면 실재할 수 없는 이름으로 접어 기준선이 트리 밖으로 나가지 않게 한다.
         $identifier = $this->route('identifier');
-        $identifier = is_string($identifier) && preg_match('/^[A-Za-z0-9_.-]+$/', $identifier) && ! str_contains($identifier, '..')
-            ? $identifier
-            : '__invalid__';
-        $basePath = base_path('plugins/'.$identifier);
+        $basePath = base_path("plugins/{$identifier}");
 
         return [
             'identifier' => ['required', 'string'],
@@ -52,22 +35,20 @@ class ServePluginAssetRequest extends FormRequest
                 'required',
                 'string',
                 new SafePluginPath($basePath),
-                new AllowedPluginFileType,
+                new AllowedPluginFileType(),
             ],
         ];
     }
 
     /**
      * 검증을 위한 데이터 준비
-     *
-     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
         // 라우트 파라미터를 검증 데이터에 병합
         $this->merge([
             'identifier' => $this->route('identifier'),
-            'path' => $this->dualModeFilePath(),
+            'path' => $this->route('path'),
         ]);
     }
 
