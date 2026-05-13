@@ -11,7 +11,7 @@
  *  - data_sources: identityLogs 가 search/search_type/sort_by/sort_order 파라미터 전달
  *  - 응답 바인딩 경로: identityLogs?.data?.data / identityLogs?.data?.pagination?.*
  *  - named_actions.searchIdentityLogs 정의 + filter partial actionRef 참조
- *  - Provider 탭: TabNavigation tabs prop 표현식 (identityProviders.data concat)
+ *  - Provider 탭 iteration (identityProviders.data)
  *  - Filter partial: searchType select(auto/user_id/target_hash) + status/purpose 멀티 체크박스
  *  - DataGrid composite: serverSidePagination, expandable, selectable=false (감사 로그 무결성)
  *  - transition_overlay_target: identity_log_datagrid__body 부분 로딩
@@ -19,7 +19,6 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const mainLayout = require('../../layouts/admin_identity_logs.json');
 const filterPartial = require('../../layouts/partials/admin_identity_logs/_partial_filter.json');
@@ -94,22 +93,18 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
     });
 
     describe('Provider 탭 (알림 발송 이력의 채널 탭과 동일 패턴)', () => {
-        it('전체 탭 + identityProviders.data 를 concat 한 동적 tabs 표현식으로 탭 렌더', () => {
-            // 채널/Provider 탭은 iteration 이 아니라 TabNavigation 의 tabs prop 표현식으로 구성된다.
-            // [{전체 탭}].concat((identityProviders?.data ?? []).map(...)) 형태.
-            const tabNodes = collectNodes(mainLayout, (n) =>
-                typeof n.props?.tabs === 'string'
-                && /identityProviders\?\.data/.test(n.props.tabs)
-                && /concat/.test(n.props.tabs)
+        it('전체 탭 + identityProviders.data iteration 으로 동적 탭 렌더', () => {
+            const tabIters = collectNodes(mainLayout, (n) =>
+                n.iteration?.source && /identityProviders\?\.data/.test(n.iteration.source)
             );
-            expect(tabNodes.length).toBeGreaterThan(0);
+            expect(tabIters.length).toBeGreaterThan(0);
         });
     });
 
     describe('Filter partial — search type + 상태/Purpose 멀티 체크박스', () => {
         it('searchType select 가 auto/user_id/target_hash 옵션을 가진다', () => {
             const selects = collectNodes(filterPartial, (n) =>
-                n.name === 'Select' && n.props?.name === 'searchType'
+                n.type === 'composite' && n.name === 'Select' && n.props?.name === 'searchType'
             );
             expect(selects.length).toBe(1);
             const values = selects[0].props.options.map((o: any) => o.value);
@@ -170,7 +165,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
         });
 
         it('onPageChange 가 identity_log_datagrid__body 로 부분 로딩', () => {
-            const pageActions = asArray(datagridPartial?.actions).filter(
+            const pageActions = (datagridPartial.actions ?? []).filter(
                 (a: any) => a.event === 'onPageChange'
             );
             expect(pageActions.length).toBe(1);
@@ -189,7 +184,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
     describe('main layout — 정렬/페이지 사이즈 select + refresh + partial 참조', () => {
         it('정렬 select 가 created_at_desc/asc, attempts_desc 옵션 제공', () => {
             const sortSelect = collectNodes(mainLayout, (n) =>
-                n.name === 'Select' && n.props?.name === 'sortBy'
+                n.type === 'composite' && n.name === 'Select' && n.props?.name === 'sortBy'
             );
             expect(sortSelect.length).toBe(1);
             const values = sortSelect[0].props.options.map((o: any) => o.value);
@@ -200,7 +195,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
 
         it('per_page select 가 10/20/50/100 옵션 제공', () => {
             const perPage = collectNodes(mainLayout, (n) =>
-                n.name === 'Select' && n.props?.name === 'perPage'
+                n.type === 'composite' && n.name === 'Select' && n.props?.name === 'perPage'
             );
             expect(perPage.length).toBe(1);
             const values = perPage[0].props.options.map((o: any) => o.value);
@@ -305,208 +300,6 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
         });
     });
 
-    describe('채널 라벨 다국어 변환 회귀 (#415 — 채널 식별자 raw 노출 버그)', () => {
-        // 배경: 채널이 'email'/'ipin' 같은 식별자 그대로 표시되던 버그.
-        // ProviderResource 가 channel_labels(채널키→다국어라벨) 를 내려주고,
-        // 레이아웃 3곳(필터 체크박스 / DataGrid 채널 컬럼 / 상세 모달)이 이를 변환한다.
-        // 각 provider 가 getChannelLabels() 로 자기 채널의 다국어 라벨을 제공(언어팩 활성화 대비).
-
-        it('필터 채널 체크박스가 channel_labels 맵으로 라벨 변환 (raw {{ch}} 직출력 금지)', () => {
-            const channelIters = collectNodes(filterPartial, (n) =>
-                n.iteration?.item_var === 'ch'
-            );
-            expect(channelIters.length).toBe(1);
-            const stringified = JSON.stringify(channelIters[0]);
-            // channel_labels 맵을 병합해 ch 키로 라벨 조회
-            expect(stringified).toContain('channel_labels');
-            // 라벨 부재 시 ch 폴백 유지 (provider 자유 채널 대비)
-            expect(stringified).toMatch(/\]\s*\?\?\s*ch/);
-            // raw 식별자 직출력(text === "{{ch}}") 잔재 없음
-            const rawCh = collectNodes(channelIters[0], (n) => n.text === '{{ch}}');
-            expect(rawCh.length).toBe(0);
-        });
-
-        it('DataGrid 채널 컬럼이 channel_labels 맵으로 라벨 변환 (raw row.channel 직출력 금지)', () => {
-            const channelCol = datagridPartial.props.columns.find((c: any) => c.field === 'channel');
-            expect(channelCol).toBeTruthy();
-            const stringified = JSON.stringify(channelCol);
-            expect(stringified).toContain('channel_labels');
-            // 이전 raw 패턴("{{row.channel ?? '-'}}") 잔재 없음
-            expect(stringified).not.toContain("{{row.channel ?? '-'}}");
-            // 폴백: 라벨 부재 시 row.channel, 채널 없으면 '-'
-            expect(stringified).toContain("'-'");
-        });
-
-        it('상세 모달 채널 필드가 channel_labels 맵으로 라벨 변환', () => {
-            const stringified = JSON.stringify(modalPartial);
-            expect(stringified).toContain('channel_labels');
-            // 이전 raw 패턴 잔재 없음
-            expect(stringified).not.toContain("identity_log_modal_data?.channel ?? '-'");
-        });
-
-        it('상세 모달 인증수단 필드가 provider label 로 변환 (raw provider_id 직출력 금지)', () => {
-            // 배경(라이브 증거): DataGrid 컬럼/필터/탭은 provider_id 를 label("KG이니시스 본인확인")로
-            // 변환하는데, 상세 모달의 "인증 수단" 필드만 raw 'inicis' 를 노출했다.
-            // 모달 채널 필드가 이미 identityProviders?.data 에 접근하므로(모달 스코프에서 부모 데이터소스 가시),
-            // provider_id 도 동일하게 identityProviders 의 label 로 변환해야 한다.
-            const stringified = JSON.stringify(modalPartial);
-            // identityProviders 의 label 로 변환 (DataGrid 컬럼과 동일 규약)
-            expect(stringified).toContain('identityProviders');
-            // 이전 raw 패턴("identity_log_modal_data?.provider_id ?? '-'") 잔재 없음
-            expect(stringified).not.toContain("identity_log_modal_data?.provider_id ?? '-'");
-        });
-    });
-
-    describe('배열 필터 query 키 접근 회귀 (#415 — 상태/목적/채널/발생유형 필터 전부 미적용 버그)', () => {
-        // 배경(라이브 증거): 화면에서 "요청됨" 체크 후 검색 → URL 은 ?statuses[]=requested 로 정상 기록되나,
-        // 데이터소스가 보낸 실제 API 요청에서 statuses 가 누락되어 필터가 전혀 안 걸러짐(108건 그대로).
-        // 근본 원인: DataSourceManager.parseQueryParams 가 배열 URL 파라미터를
-        //   query['statuses[]'] (대괄호 포함 키) 로 파싱한다(이커머스 admin_ecommerce_*_list 가 쓰는 정상 규약).
-        //   그런데 본인인증 이력 레이아웃만 query.statuses (대괄호 없음 → 항상 undefined) 로 읽어 누락됐다.
-        // 영향 4종: statuses / purposes / channels / origin_types (데이터소스 params 4 + init_actions 5).
-
-        const ARRAY_FILTER_QUERY_KEYS = [
-            'statuses[]', 'purposes[]', 'channels[]', 'origin_types[]',
-        ];
-
-        it("데이터소스 identityLogs 가 배열 필터를 query['key[]'] (대괄호 포함 키) 로 읽는다", () => {
-            const ds = mainLayout.data_sources.find((d: any) => d.id === 'identityLogs');
-            const params = ds.params;
-            // 대괄호 포함 키로 접근해야 parseQueryParams 결과와 매칭됨
-            expect(params.statuses).toContain("query['statuses[]']");
-            expect(params.purposes).toContain("query['purposes[]']");
-            expect(params.channels).toContain("query['channels[]']");
-            expect(params.origin_types).toContain("query['origin_types[]']");
-            // 대괄호 없는 깨진 접근(query.statuses 등) 잔재 없음
-            ['statuses', 'purposes', 'channels', 'origin_types'].forEach((k) => {
-                expect(params[k]).not.toMatch(new RegExp(`query\\.${k}(?![\\w'\\[])`));
-            });
-        });
-
-        it("init_actions(필터 상태 복원) 가 배열 필터를 query['key[]'] 로 복원한다", () => {
-            const setStateAction = mainLayout.init_actions.find(
-                (a: any) => a.handler === 'setState' && a.params?.filter
-            );
-            expect(setStateAction).toBeTruthy();
-            const filter = setStateAction.params.filter;
-            // statuses/purposes/channels/originTypes 복원 표현식이 대괄호 포함 키를 참조
-            expect(filter.statuses).toContain("query['statuses[]']");
-            expect(filter.purposes).toContain("query['purposes[]']");
-            expect(filter.channels).toContain("query['channels[]']");
-            expect(filter.originTypes).toContain("query['origin_types[]']");
-            // advancedOpen 도 origin_types 배열 키로 판정
-            expect(filter.advancedOpen).toContain("query['origin_types[]']");
-        });
-
-        it('레이아웃 어디에도 대괄호 없는 배열 필터 query 접근(query.statuses 등) 이 남아있지 않다', () => {
-            const allStr = JSON.stringify(mainLayout);
-            // query.statuses / query.purposes / query.channels / query.origin_types (대괄호/단어경계 직후가 아닌 경우)
-            ['statuses', 'purposes', 'channels', 'origin_types'].forEach((k) => {
-                // query.<key> 뒤에 [ 나 영문/숫자/' 가 아닌 경계 → 대괄호 없는 깨진 접근
-                expect(allStr).not.toMatch(new RegExp(`query\\.${k}(?![\\w'\\[])`));
-            });
-        });
-
-        it('이커머스 정상 규약과 동일하게 || [] 폴백 또는 단일값 처리로 안전하다', () => {
-            // 배열이 비어있을 때(필터 미선택) undefined 가 아닌 안전한 값으로 처리되는지 — params 는 빈값이면 누락(정상)
-            const ds = mainLayout.data_sources.find((d: any) => d.id === 'identityLogs');
-            // init_actions 의 statuses 복원은 Array.isArray 가드를 거쳐 [] 폴백
-            const filter = mainLayout.init_actions.find(
-                (a: any) => a.params?.filter
-            ).params.filter;
-            ARRAY_FILTER_QUERY_KEYS.forEach((qk) => {
-                const accessor = `query['${qk}']`;
-                // 적어도 한 곳(init_actions)에서 이 키를 참조
-                const inFilter = Object.values(filter).some(
-                    (v: any) => typeof v === 'string' && v.includes(accessor)
-                );
-                const inParams = Object.values(ds.params).some(
-                    (v: any) => typeof v === 'string' && v.includes(accessor)
-                );
-                expect(inFilter || inParams).toBe(true);
-            });
-        });
-    });
-
-    describe('인증수단 탭 전환 시 필터 초기화 회귀 (#420-4 — 탭 전환 후 필터 미적용 버그)', () => {
-        // 배경(라이브 증거): 상태 필터(예: '요청됨') 체크 후 인증수단 탭을 전환하면,
-        // 체크박스는 체크된 채로 남는데(=_local.filter 유지) 목록은 필터 없는 전체가 노출된다.
-        // 근본 원인: onTabChange 가 navigate(replace:true)로 URL 쿼리를 {provider_id,page} 로
-        //   전면 교체(→ 조회는 필터 없는 전체)하지만, _local.filter 는 초기화하지 않는다.
-        //   replace:true 경로(G7Core.updateQueryParams)는 컴포넌트 리마운트/init_actions 재실행이
-        //   없어 _local.filter 가 그대로 살아남아 "UI 체크 / 조회 미적용" 불일치가 발생한다.
-        // 수정: onTabChange 를 sequence[ setState(local, filter 리셋) → navigate ] 로 변경
-        //   (admin_settings.g7.html onTabChange 와 동일한 검증된 sequence 패턴).
-
-        const FILTER_RESET_KEYS = [
-            'searchType', 'search', 'statuses', 'purposes', 'channels',
-            'originTypes', 'dateFrom', 'dateTo', 'sourceType',
-            'sourceIdentifier', 'advancedOpen',
-        ];
-
-        function findTabChangeAction(): any {
-            const tabActions = collectNodes(mainLayout, (n) => n.event === 'onTabChange');
-            expect(tabActions.length).toBe(1);
-            return tabActions[0];
-        }
-
-        it('onTabChange 가 sequence 핸들러로 정의된다 (단일 navigate 아님)', () => {
-            const action = findTabChangeAction();
-            expect(action.handler).toBe('sequence');
-            const subActions = action.actions || callbacksOf(action, 'actions');
-            expect(Array.isArray(subActions)).toBe(true);
-            expect(subActions.length).toBeGreaterThanOrEqual(2);
-        });
-
-        it('sequence 첫 단계가 _local.filter 전체를 기본값으로 초기화한다', () => {
-            const action = findTabChangeAction();
-            const subActions = action.actions || callbacksOf(action, 'actions');
-            const resetStep = subActions.find(
-                (a: any) => a.handler === 'setState'
-                    && a.params?.target === 'local'
-                    && a.params?.filter
-            );
-            expect(resetStep).toBeTruthy();
-            const filter = resetStep.params.filter;
-            // 11개 필터 필드 전부 기본값으로 리셋 (체크박스/검색어/날짜/고급 전부)
-            FILTER_RESET_KEYS.forEach((k) => {
-                expect(filter).toHaveProperty(k);
-            });
-            // 배열 필드는 빈 배열, 토글은 false 로 초기화
-            expect(filter.statuses).toEqual([]);
-            expect(filter.purposes).toEqual([]);
-            expect(filter.channels).toEqual([]);
-            expect(filter.originTypes).toEqual([]);
-            expect(filter.advancedOpen).toBe(false);
-        });
-
-        it('sequence 마지막 단계가 provider_id 로 navigate (replace + transition_overlay 유지)', () => {
-            const action = findTabChangeAction();
-            const subActions = action.actions || callbacksOf(action, 'actions');
-            const navStep = subActions.find((a: any) => a.handler === 'navigate');
-            expect(navStep).toBeTruthy();
-            expect(navStep.params.path).toBe('/admin/identity/logs');
-            expect(navStep.params.replace).toBe(true);
-            // 탭 id($args[0])를 provider_id 쿼리로 전달, '전체'(빈 id)면 빈 쿼리
-            expect(navStep.params.query).toContain('$args[0]');
-            expect(navStep.params.query).toContain('provider_id');
-            // 부분 로딩 오버레이 타깃 유지
-            expect(navStep.params.transition_overlay_target).toBe('identity_log_datagrid__body');
-        });
-
-        it('리셋(setState) 이 navigate 보다 먼저 실행된다 (순서 정합)', () => {
-            const action = findTabChangeAction();
-            const subActions = action.actions || callbacksOf(action, 'actions');
-            const resetIdx = subActions.findIndex(
-                (a: any) => a.handler === 'setState' && a.params?.filter
-            );
-            const navIdx = subActions.findIndex((a: any) => a.handler === 'navigate');
-            expect(resetIdx).toBeGreaterThanOrEqual(0);
-            expect(navIdx).toBeGreaterThanOrEqual(0);
-            expect(resetIdx).toBeLessThan(navIdx);
-        });
-    });
-
     describe('금지 패턴 회귀', () => {
         it('Tailwind 디바이스 분기(hidden md:* / md:hidden) 사용 안 함', () => {
             const allStr = JSON.stringify({ mainLayout, filterPartial, datagridPartial, modalPartial });
@@ -516,7 +309,7 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
 
         it('basic Table/Thead/Tr/Td 직접 작성 패턴 제거 (composite DataGrid 사용)', () => {
             const tables = collectNodes({ ...datagridPartial, ...mainLayout }, (n) =>
-                n.name === 'Table'
+                n.type === 'basic' && n.name === 'Table'
             );
             expect(tables.length).toBe(0);
         });

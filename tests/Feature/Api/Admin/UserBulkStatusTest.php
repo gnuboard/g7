@@ -12,8 +12,6 @@ use Tests\TestCase;
 
 /**
  * 사용자 일괄 상태 변경 테스트
- *
- * 시나리오 SSoT: tests/scenarios/admin-user-bulk-status.yaml
  */
 class UserBulkStatusTest extends TestCase
 {
@@ -23,11 +21,6 @@ class UserBulkStatusTest extends TestCase
 
     private string $token;
 
-    /**
-     * 일괄 상태 변경 권한을 가진 관리자와 토큰을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,11 +29,6 @@ class UserBulkStatusTest extends TestCase
         $this->token = $this->admin->createToken('test-token')->plainTextToken;
     }
 
-    /**
-     * 테스트에서 등록한 훅을 정리합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         // 테스트에서 등록한 Hook 정리
@@ -52,8 +40,6 @@ class UserBulkStatusTest extends TestCase
 
     /**
      * 관리자 역할 생성 및 할당
-     *
-     * @return User 관리자
      */
     private function createAdminUser(): User
     {
@@ -67,7 +53,7 @@ class UserBulkStatusTest extends TestCase
                 'description' => json_encode(['ko' => '사용자 정보 수정 권한', 'en' => 'Permission to update users']),
                 'extension_type' => ExtensionOwnerType::Core,
                 'extension_identifier' => 'core',
-                'type' => 'admin',
+                    'type' => 'admin',
             ]
         );
 
@@ -79,7 +65,7 @@ class UserBulkStatusTest extends TestCase
                 'description' => json_encode(['ko' => '시스템 관리자', 'en' => 'System Administrator']),
                 'extension_type' => ExtensionOwnerType::Core,
                 'extension_identifier' => 'core',
-                'type' => 'admin',
+                    'type' => 'admin',
                 'is_active' => true,
             ]
         );
@@ -100,8 +86,6 @@ class UserBulkStatusTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
-     *
-     * @return static 토큰 헤더를 단 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -113,12 +97,6 @@ class UserBulkStatusTest extends TestCase
 
     /**
      * 비활성 사용자들을 활성으로 일괄 변경할 수 있다.
-     *
-     * @scenario status=active, target=normal
-     *
-     * @effects bulk_status_changes_targets
-     *
-     * @return void 반환값 없음
      */
     public function test_bulk_activate_users(): void
     {
@@ -157,41 +135,7 @@ class UserBulkStatusTest extends TestCase
     }
 
     /**
-     * 일괄 상태 변경 응답 메시지의 :count 플레이스홀더가 실제 처리 건수로 치환된다.
-     *
-     * 7.0.7 사전점검 브라우저 실측에서 응답 message 가
-     * ":count명의 사용자 상태가 변경되었습니다." 원문 그대로 내려오는 결함 발견 —
-     * 컨트롤러가 메시지 키만 넘기고 치환 파라미터를 생략한 회귀를 고정한다.
-     *
-     * @scenario status=active, target=normal
-     *
-     * @effects bulk_status_message_counts
-     *
-     * @return void 반환값 없음
-     */
-    public function test_bulk_status_message_substitutes_count_placeholder(): void
-    {
-        $users = User::factory()->count(2)->create(['status' => 'inactive']);
-
-        $response = $this->authRequest()->patchJson('/api/admin/users/bulk-status', [
-            'ids' => $users->pluck('uuid')->toArray(),
-            'status' => 'active',
-        ]);
-
-        $response->assertOk();
-        $message = (string) $response->json('message');
-        $this->assertStringNotContainsString(':count', $message, '응답 메시지에 미치환 플레이스홀더가 남아 있으면 안 됩니다');
-        $this->assertStringContainsString('2', $message, '응답 메시지에 처리 건수가 치환되어야 합니다');
-    }
-
-    /**
      * 활성 사용자들을 비활성으로 일괄 변경할 수 있다.
-     *
-     * @scenario status=inactive, target=normal
-     *
-     * @effects bulk_status_changes_targets
-     *
-     * @return void 반환값 없음
      */
     public function test_bulk_deactivate_users(): void
     {
@@ -223,12 +167,6 @@ class UserBulkStatusTest extends TestCase
 
     /**
      * 권한 없는 사용자의 요청은 403 오류를 반환한다.
-     *
-     * @scenario status=active, target=normal
-     *
-     * @effects bulk_status_requires_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_bulk_status_requires_permission(): void
     {
@@ -252,12 +190,6 @@ class UserBulkStatusTest extends TestCase
 
     /**
      * 잘못된 요청 데이터는 422 오류를 반환한다.
-     *
-     * @scenario status=active, target=normal
-     *
-     * @effects bulk_status_validates_request
-     *
-     * @return void 반환값 없음
      */
     public function test_bulk_status_validates_request(): void
     {
@@ -298,12 +230,6 @@ class UserBulkStatusTest extends TestCase
 
     /**
      * 훅이 올바르게 실행되는지 확인한다.
-     *
-     * @scenario status=active, target=normal
-     *
-     * @effects bulk_status_hooks_fire
-     *
-     * @return void 반환값 없음
      */
     public function test_bulk_status_with_hooks(): void
     {
@@ -314,14 +240,14 @@ class UserBulkStatusTest extends TestCase
         $afterHookCalled = false;
 
         // before_bulk_update 훅 등록
-        app(HookManager::class)->addAction('sirsoft-core.user.before_bulk_update', function ($hookIds, $hookStatus) use (&$beforeHookCalled, $ids) {
+        app(\App\Extension\HookManager::class)->addAction('sirsoft-core.user.before_bulk_update', function ($hookIds, $hookStatus) use (&$beforeHookCalled, $ids) {
             $beforeHookCalled = true;
             $this->assertEquals($ids, $hookIds);
             $this->assertEquals('active', $hookStatus);
         });
 
         // after_bulk_update 훅 등록
-        app(HookManager::class)->addAction('sirsoft-core.user.after_bulk_update', function ($hookIds, $hookStatus, $hookUpdatedCount) use (&$afterHookCalled, $ids) {
+        app(\App\Extension\HookManager::class)->addAction('sirsoft-core.user.after_bulk_update', function ($hookIds, $hookStatus, $hookUpdatedCount) use (&$afterHookCalled, $ids) {
             $afterHookCalled = true;
             $this->assertEquals($ids, $hookIds);
             $this->assertEquals('active', $hookStatus);
@@ -339,45 +265,7 @@ class UserBulkStatusTest extends TestCase
     }
 
     /**
-     * after_bulk_update 훅에는 실제로 바뀐 회원만 실린다 — 등급(최고관리자)·범위로 제외된 회원이 실리면
-     * 활동 로그 리스너가 바뀌지 않은 회원에게 「상태 변경」 기록을 남긴다(#736 영역 C 실측: 제외된 최고관리자에
-     * `user.bulk_update_status {status: inactive}` 가 남음).
-     *
-     * @scenario status=inactive, target=super_admin
-     *
-     * @effects after_hook_carries_changed_users_only
-     *
-     * @return void 반환값 없음
-     */
-    public function test_after_hook_receives_only_changed_users(): void
-    {
-        $normal = User::factory()->create(['status' => 'active']);
-        $super = User::factory()->create(['status' => 'active', 'is_super' => true]);
-
-        $hookIds = null;
-        app(HookManager::class)->addAction('sirsoft-core.user.after_bulk_update', function ($ids) use (&$hookIds) {
-            $hookIds = $ids;
-        });
-
-        $this->authRequest()->patchJson('/api/admin/users/bulk-status', [
-            'ids' => [$normal->uuid, $super->uuid],
-            'status' => 'inactive',
-        ])->assertOk()
-            ->assertJsonPath('data.updated_count', 1)
-            ->assertJsonPath('data.failed_count', 1);
-
-        $this->assertSame('active', $super->fresh()->status);
-        $this->assertSame([$normal->uuid], $hookIds);
-    }
-
-    /**
      * 인증되지 않은 사용자는 401 오류를 반환한다.
-     *
-     * @scenario status=active, target=normal
-     *
-     * @effects bulk_status_requires_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_bulk_update_status(): void
     {

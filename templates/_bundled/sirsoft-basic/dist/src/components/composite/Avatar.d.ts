@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 /**
  * 아바타 크기 타입
  */
@@ -15,7 +14,7 @@ export interface AuthorInfo {
     /** 아바타 URL */
     avatar?: string;
     /** 사용자 상태 */
-    status?: 'active' | 'inactive' | 'blocked' | 'withdrawn' | 'dormant' | 'pending_verification';
+    status?: 'active' | 'inactive' | 'blocked' | 'withdrawn';
     /** 비회원 여부 */
     is_guest?: boolean;
 }
@@ -40,14 +39,6 @@ export interface AvatarProps {
     isWithdrawn?: boolean;
     /** 비회원 여부 (author.is_guest보다 우선) @default false */
     isGuest?: boolean;
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-    id?: string;
-    /**
-       * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-       */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * Avatar 컴포넌트

@@ -4,7 +4,6 @@ namespace App\Http\Requests\Attachment;
 
 use App\Enums\AttachmentSourceType;
 use App\Extension\HookManager;
-use App\Http\Requests\Attachment\Concerns\ValidatesAttachmentFileType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,8 +12,6 @@ use Illuminate\Validation\Rule;
  */
 class UploadBatchAttachmentRequest extends FormRequest
 {
-    use ValidatesAttachmentFileType;
-
     /**
      * 요청 권한 확인
      *
@@ -32,15 +29,11 @@ class UploadBatchAttachmentRequest extends FormRequest
      */
     public function rules(): array
     {
-        // config/attachment.max_file_size 는 KB 단위 (관리자 설정 MB → KB 변환은 SettingsServiceProvider 담당)
-        $maxSize = (int) config('attachment.max_file_size', 10240);
-        // 파일명 확장자(extensions:)와 내용 추론 확장자(AttachmentFileContent)가 모두 허용 목록에 들어야 통과한다.
-        // 목록이 비면 확장자 제한 없음 (탈출구) — ValidatesAttachmentFileType::fileTypeRules()
-        $fileRules = ['file', 'max:'.$maxSize, ...$this->fileTypeRules()];
+        $maxSize = config('attachment.max_size', 10) * 1024; // MB to KB
 
         $rules = [
             'files' => ['required', 'array', 'min:1'],
-            'files.*' => $fileRules,
+            'files.*' => ['file', 'max:' . $maxSize],
             'attachmentable_type' => ['nullable', 'string', 'max:255'],
             'attachmentable_id' => ['nullable', 'integer', 'min:1'],
             'collection' => ['sometimes', 'string', 'max:100'],
@@ -64,8 +57,7 @@ class UploadBatchAttachmentRequest extends FormRequest
             'files.array' => __('attachment.validation.files_array'),
             'files.min' => __('attachment.validation.files_min'),
             'files.*.file' => __('attachment.validation.file_invalid'),
-            'files.*.max' => __('attachment.validation.file_max', ['max' => (int) config('attachment.max_file_size', 10240) / 1024]),
-            'files.*.extensions' => __('attachment.validation.file_extension_invalid', ['extensions' => implode(', ', $this->allowedExtensions())]),
+            'files.*.max' => __('attachment.validation.file_max', ['max' => config('attachment.max_size', 10)]),
             'attachmentable_type.string' => __('attachment.validation.type_invalid'),
             'attachmentable_id.integer' => __('attachment.validation.id_invalid'),
         ];

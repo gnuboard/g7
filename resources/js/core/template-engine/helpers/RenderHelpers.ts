@@ -14,16 +14,8 @@ import { ComponentDefinition } from '../DynamicRenderer';
 import { responsiveManager } from '../ResponsiveManager';
 import { getActionDispatcher } from '../ActionDispatcher';
 import { createLogger } from '../../utils/Logger';
-import { RAW_PREFIX, RAW_MARKER_START, RAW_MARKER_END, RAW_PLACEHOLDER_MARKER, isRawWrapped, unwrapRaw, containsRawMarker, wrapRawDeep, stripRawDeep, stripRawPrefix } from '../rawMarkers';
-import { hasPipes } from '../PipeRegistry';
-import {
-  extractSingleBinding as canonicalExtractSingleBinding,
-  isComplexExpression as canonicalIsComplexExpression,
-  resolveSingleBindingValue,
-} from '../BindingShape';
+import { RAW_PREFIX, RAW_MARKER_START, RAW_MARKER_END, RAW_PLACEHOLDER_MARKER, isRawWrapped, unwrapRaw, containsRawMarker, wrapRawDeep } from '../rawMarkers';
 import type { G7DevToolsInterface } from '../G7CoreGlobals';
-import { resolveRenderEnvironment } from './RenderEnvironment';
-import type { RenderEnvironment } from './RenderEnvironment';
 import {
   evaluateConditionExpression,
   evaluateConditionBranches,
@@ -33,6 +25,24 @@ import {
 } from './ConditionEvaluator';
 
 const logger = createLogger('RenderHelpers');
+
+/**
+ * JavaScript 리터럴 값 매핑
+ *
+ * resolve()가 리터럴을 컨텍스트 경로로 해석하는 것을 방지합니다.
+ * undefined는 Map에서 get() 시 undefined를 반환하므로 별도 센티널 불필요 —
+ * `has()`로 존재 여부를 먼저 확인하지 않고 `get() !== undefined`로 체크합니다.
+ * null은 falsy이므로 undefined와 동일하게 처리됩니다.
+ *
+ * @since engine-v1.29.2
+ */
+const LITERALS = new Map<string, any>([
+  ['true', true],
+  ['false', false],
+  ['null', null],
+  // undefined는 Map.get()의 기본 반환값과 구분 불가하므로 제외
+  // → resolve("undefined")는 context에 없으면 undefined 반환 → Boolean(undefined) = false (정상)
+]);
 
 /**
  * G7Core.devTools 인터페이스 가져오기
@@ -86,36 +96,8 @@ export interface RenderItemChildrenOptions {
    *
    * expandChildren 등에서 부모 컴포넌트의 로컬 상태를 업데이트할 때 사용합니다.
    * 이 컨텍스트가 전달되면 G7Core.state.setLocal()이 부모의 dynamicState를 업데이트합니다.
-   * `renderEnvRef.current` 가 있으면 렌더 환경으로도 쓴다(renderEnv 가 없을 때).
    */
-  componentContext?: ComponentContext;
-
-  /**
-   * responsive 분기를 고를 폭 (명시값 — 렌더 환경보다 우선)
-   *
-   * @since engine-v1.75.2
-   */
-  responsiveWidth?: number;
-
-  /**
-   * 렌더 환경 — 폭·번역 컨텍스트·엔진·dispatcher·편집 모드
-   *
-   * 미리보기처럼 호스트 전역값과 다른 환경에서 그릴 때 넘긴다. 상태(`_local`)는 병합하지 않는
-   * 환경 전용 통로다 — 상태 병합은 `componentContext` 만 한다. 우선순위는 「명시 옵션 > renderEnv >
-   * componentContext.renderEnvRef.current > 호스트 기본값」.
-   *
-   * @since engine-v1.75.2
-   */
-  renderEnv?: RenderEnvironment | null;
-
-  /**
-   * 편집 모드 (명시값) — true 면 액션을 바인딩하지 않는다
-   *
-   * DynamicRenderer 와 같은 규약이다 — 편집 모드의 클릭은 요소 선택만 의미한다.
-   *
-   * @since engine-v1.75.2
-   */
-  isEditMode?: boolean;
+  componentContext?: { state?: any; setState?: (updates: any) => void };
 
   /**
    * remount 키 생성 함수
@@ -133,22 +115,65 @@ export interface RenderItemChildrenOptions {
 /**
  * 복잡한 표현식 여부 감지
  *
- * 판정은 BindingShape 정본에 위임한다 — 이 모듈의 방언이 종전 6종 중 최대집합이었고,
- * 그것이 정본이 되었다. 다른 렌더 경로들이 좁은 집합을 쓰던 것이 비대칭의 원인이었다.
+ * 삼항 연산자(?:), 논리 연산자(&&, ||), 비교 연산자, 함수 호출 등이 포함된 경우 true 반환
  *
- * @since engine-v1.55.0
+ * @param expr - 검사할 표현식
+ * @returns 복잡한 표현식 여부
  */
-const isComplexExpression = canonicalIsComplexExpression;
+function isComplexExpression(expr: string): boolean {
+  // () 추가: $localized(menu.name) 같은 함수 호출 표현식도 복잡한 표현식으로 처리
+  return /[?:|&!+\-*/<>=()]/.test(expr);
+}
 
 /**
  * 단일 바인딩 표현식 추출
  *
- * `{{expression}}` 형태에서 expression 부분만 추출한다.
- * 판정은 BindingShape 정본에 위임한다 (따옴표·이스케이프·중괄호 균형 추적).
+ * `{{expression}}` 형태에서 expression 부분만 추출합니다.
+ * 문자열 리터럴 내부의 `}` 문자를 올바르게 처리합니다.
  *
- * @since engine-v1.55.0
+ * @param value - 검사할 문자열
+ * @returns 추출된 표현식 또는 null (유효하지 않은 경우)
+ *
+ * @example
+ * ```typescript
+ * extractSingleBinding("{{row.name}}") // "row.name"
+ * extractSingleBinding("{{row.status === 'active' ? 'yes' : 'no'}}") // "row.status === 'active' ? 'yes' : 'no'"
+ * extractSingleBinding("hello {{name}}") // null (단일 바인딩이 아님)
+ * ```
  */
-const extractSingleBinding = canonicalExtractSingleBinding;
+function extractSingleBinding(value: string): string | null {
+  if (!value.startsWith('{{') || !value.endsWith('}}')) {
+    return null;
+  }
+
+  const inner = value.slice(2, -2);
+  let inString: string | null = null;
+  let braceCount = 0;
+
+  for (let i = 0; i < inner.length; i++) {
+    const char = inner[i];
+    const prevChar = i > 0 ? inner[i - 1] : '';
+
+    // 이스케이프 문자 처리
+    if (prevChar === '\\') continue;
+
+    // 문자열 시작/종료 감지 (따옴표 추적)
+    if ((char === '"' || char === "'") && !inString) {
+      inString = char;
+    } else if (char === inString) {
+      inString = null;
+    }
+
+    // 문자열 외부에서만 중괄호 카운트
+    if (!inString) {
+      if (char === '{') braceCount++;
+      if (char === '}') braceCount--;
+      if (braceCount < 0) return null;
+    }
+  }
+
+  return braceCount === 0 ? inner.trim() : null;
+}
 
 /**
  * iteration source 표현식을 평가하여 배열을 반환합니다.
@@ -181,19 +206,6 @@ export function resolveIterationSource(
   let normalizedSource = source;
   if (source.startsWith('{{') && source.endsWith('}}')) {
     normalizedSource = source.slice(2, -2).trim();
-  }
-
-  // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 (원본 타입 = 배열 유지).
-  // isComplexExpression 은 `|` 를 연산자로 보므로 그대로 두면 evaluateExpression 이
-  // JS 비트 OR 로 평가해 배열이 아닌 값이 나오고, 그러면 반복 대상이 없어져
-  // 목록 전체가 렌더되지 않는다 (에러 없이 빈 화면). @since engine-v1.54.10
-  if (hasPipes(normalizedSource)) {
-    try {
-      return bindingEngine.evaluatePipeExpression(normalizedSource, context, { skipCache: true });
-    } catch (error) {
-      logger.warn(`resolveIterationSource: 파이프 표현식 평가 실패: ${source}`, error);
-      return undefined;
-    }
   }
 
   // 표현식 여부 확인 (?, :, ||, &&, !, 산술/비교 연산자 등)
@@ -230,16 +242,6 @@ export interface ComponentContext {
   isolatedContext?: IsolatedContextValue | null;
   /** 부모 DynamicRenderer의 전체 데이터 컨텍스트 (데이터소스 포함) @since engine-v1.19.1 */
   parentDataContext?: Record<string, any>;
-  /** 최신 _local 을 가리키는 ref (캐시된 컨텍스트에서도 최신 상태 접근) @since engine-v1.75.2 */
-  stateRef?: { current: Record<string, any> };
-  /** 최신 _computed 를 가리키는 ref @since engine-v1.75.2 */
-  computedRef?: { current: Record<string, any> };
-  /**
-   * 이 컨텍스트를 만든 DynamicRenderer 의 렌더 환경 ref (identity 불변, 매 렌더 갱신)
-   *
-   * @since engine-v1.75.2
-   */
-  renderEnvRef?: { current: RenderEnvironment | null };
 }
 
 /**
@@ -421,22 +423,17 @@ export function evaluateIfCondition(
 
     let resolved: any;
     if (singleBindingPath !== null) {
-      // 리터럴 → 파이프 → 표현식 → 경로 라우팅 (판정은 BindingShape 정본).
-      // 조건은 원본 타입으로 판정한다 — ConditionEvaluator 와 동일 규칙.
-      // @since engine-v1.54.9 / v1.55.0
-      resolved = resolveSingleBindingValue(
-        stripRawPrefix(singleBindingPath),
-        context,
-        bindingEngine,
-        {
-          skipCache: true,
-          onEmpty: () => {
-            logger.warn(
-              `evaluateIfCondition: 빈 바인딩 \`{{}}\` (컴포넌트: ${componentId || 'unknown'}) — undefined 로 해석합니다.`,
-            );
-          },
-        },
-      );
+      // JavaScript 리터럴 값 직접 처리 (resolve 경로 탐색 방지) @since engine-v1.29.2
+      const literal = LITERALS.get(singleBindingPath);
+      if (literal !== undefined) {
+        resolved = literal;
+      } else if (isComplexExpression(singleBindingPath)) {
+        // Optional chaining(?.)이나 복잡한 표현식은 evaluateExpression 사용
+        resolved = bindingEngine.evaluateExpression(singleBindingPath, context);
+      } else {
+        // 단순 경로는 resolve 메서드 사용 (원본 타입 유지)
+        resolved = bindingEngine.resolve(singleBindingPath, context, { skipCache: true });
+      }
     } else {
       // 문자열 보간인 경우 resolveBindings 사용
       resolved = bindingEngine.resolveBindings(ifCondition, context, { skipCache: true });
@@ -587,22 +584,19 @@ export function evaluateRenderCondition(
 /**
  * 컴포넌트 정의에 반응형 오버라이드를 적용합니다.
  *
- * responsive 속성이 있으면 주어진 폭에 맞는 오버라이드를 적용합니다.
+ * responsive 속성이 있으면 현재 화면 너비에 맞는 오버라이드를 적용합니다.
  * DynamicRenderer의 effectiveComponentDef 로직과 동일한 패턴을 사용합니다.
  *
- * 폭은 호출자가 확정한 렌더 환경 폭이다. 종전에는 여기서 전역 싱글톤(브라우저 창 폭)을 직접 읽어,
- * 편집기 미리보기에서 DynamicRenderer 경로(미리보기 폭)와 다른 분기를 골랐다(이슈 #141).
- *
  * @param componentDef - 원본 컴포넌트 정의
- * @param width - responsive 분기를 고를 폭 @since engine-v1.75.2
  * @returns 반응형 오버라이드가 적용된 컴포넌트 정의
  */
-function applyResponsiveOverrides(componentDef: ComponentDefinition, width: number): ComponentDefinition {
+function applyResponsiveOverrides(componentDef: ComponentDefinition): ComponentDefinition {
   if (!componentDef.responsive) {
     return componentDef;
   }
 
-  const matchedKey = responsiveManager.getMatchingKey(componentDef.responsive, width);
+  const currentWidth = responsiveManager.getWidth();
+  const matchedKey = responsiveManager.getMatchingKey(componentDef.responsive, currentWidth);
 
   if (!matchedKey) {
     return componentDef;
@@ -619,50 +613,6 @@ function applyResponsiveOverrides(componentDef: ComponentDefinition, width: numb
     if: override.if ?? componentDef.if,
     iteration: override.iteration ?? componentDef.iteration,
   };
-}
-
-/**
- * 확장점(extension_point) 호스트 `<div>` 의 className·DOM 속성을 정합니다.
- *
- * 확장점의 props 는 통째로 **주입된 자식의** 페이로드다 — 백엔드가 `LayoutExtensionService` 에서
- * 이 props 를 주입 컴포넌트의 `extensionPointProps` 로 복사하고 자식은 `{{extensionPointProps.xxx}}`
- * 로 읽는다. 호스트는 단순 래퍼라 페이로드를 실을 이유가 없으므로 **허용 목록**(`data-*`·`aria-*`·
- * role·title·lang·dir·hidden·tabIndex·style)만 남긴다(engine-v1.68.1 규칙). `layout`·`columns`·`gap`
- * 은 컨테이너 클래스로 접는다.
- *
- * `DynamicRenderer` 의 확장점과 반복 컨텍스트(`renderItemChildren`)의 확장점이 같은 규칙을 쓰도록
- * 한 곳에 둔다.
- *
- * @param props 확장점 노드의 props (없으면 빈 호스트)
- * @returns `className`(없으면 undefined)과 호스트에 실을 DOM 속성
- *
- * @since engine-v1.73.0
- */
-export function buildExtensionPointHostProps(
-  props: Record<string, any> | undefined
-): { className: string | undefined; attrs: Record<string, any> } {
-  const { layout, columns, gap, className, ...restProps } = props || {};
-
-  const attrs: Record<string, any> = {};
-  for (const [key, value] of Object.entries(restProps)) {
-    const isDomAttribute =
-      key.startsWith('data-')
-      || key.startsWith('aria-')
-      || ['role', 'title', 'lang', 'dir', 'hidden', 'tabIndex', 'style'].includes(key);
-
-    if (isDomAttribute) {
-      attrs[key] = value;
-    }
-  }
-
-  let containerClass = className || '';
-  if (layout === 'grid' && columns) {
-    containerClass = `${containerClass} grid grid-cols-${columns} gap-${gap || 4}`.trim();
-  } else if (layout === 'flex') {
-    containerClass = `${containerClass} flex flex-col gap-${gap || 4}`.trim();
-  }
-
-  return { className: containerClass || undefined, attrs };
 }
 
 /**
@@ -711,69 +661,18 @@ export function renderItemChildren(
     return [];
   }
 
-  // 렌더 환경 확정 — 명시 옵션 > renderEnv > componentContext.renderEnvRef.current > 호스트 기본값.
-  // 편집기 미리보기는 렌더 환경에 미리보기 폭·콘텐츠 언어·격리 dispatcher·편집 모드를 싣는다.
-  // 편집기 밖에서는 렌더 환경이 곧 호스트 값이라 결과가 같다. @since engine-v1.75.2 (#141)
-  const env = resolveRenderEnvironment(
-    options,
-    options?.renderEnv ?? options?.componentContext?.renderEnvRef?.current ?? null,
-    { responsiveWidth: responsiveManager.getWidth(), translationContext: { templateId: '', locale: 'ko' } },
-  );
-
-  // 엔진 인스턴스 확인 - 없으면 새로 생성. 재귀 호출에는 확정한 엔진을 넘겨 중첩마다 새로 만들지 않는다
-  // (이 경로의 평가는 모두 skipCache 라 공유해도 행마다 값이 섞이지 않는다).
-  const bindingEngine = env.bindingEngine ?? new DataBindingEngine();
-  const translationEngine = env.translationEngine ?? TranslationEngine.getInstance();
-  const translationContext = env.translationContext!;
-  const responsiveWidth = env.responsiveWidth!;
-
-  // 편집 모드면 액션을 바인딩하지 않는다 — DynamicRenderer 와 같은 규약(편집 모드의 클릭은 요소 선택만)
-  const actionsToBind = (actions: any[] | undefined): any[] | undefined =>
-    env.isEditMode === true ? undefined : actions;
-
-  const childOptions: RenderItemChildrenOptions = {
-    ...options,
-    bindingEngine,
-    translationEngine,
-    translationContext,
-    actionDispatcher: env.actionDispatcher,
-    responsiveWidth,
-    isEditMode: env.isEditMode,
+  // 엔진 인스턴스 확인 - 없으면 새로 생성
+  const bindingEngine = options?.bindingEngine ?? new DataBindingEngine();
+  const translationEngine = options?.translationEngine ?? TranslationEngine.getInstance();
+  const translationContext = options?.translationContext ?? {
+    templateId: '',
+    locale: 'ko',
   };
 
   // Phase 1-1: componentContext가 있으면 자동으로 state를 _local에 병합
   // Phase 2: isolatedContext.state를 _isolated에 포함
   // 이전에는 DataGrid 등에서 수동으로 수행하던 로직
   const effectiveContext = getEffectiveContext(itemContext, options?.componentContext);
-
-  /**
-   * 값의 리프 문자열에 남은 `$t:` 토큰을 번역
-   *
-   * 표현식 평가 결과가 배열/객체인 경우(예: `{{row.badges}}` → `['$t:a', '$t:b']`)에도
-   * 번역이 닿도록 재귀 처리한다. raw 마커가 붙은 문자열은 번역 면제이므로 건드리지 않는다.
-   *
-   * @param value 평가 결과
-   * @param context 항목 컨텍스트
-   * @returns 번역이 적용된 값
-   *
-   * @since engine-v1.56.0
-   */
-  const translateLeafTokens = (value: any, context: Record<string, any>): any => {
-    if (typeof value === 'string') {
-      if (isRawWrapped(value) || containsRawMarker(value)) return value;
-      if (!/\$t:[a-zA-Z0-9._-]+/.test(value)) return value;
-      return translationEngine.resolveTranslations(value, translationContext, context);
-    }
-    if (Array.isArray(value)) {
-      return value.map((item) => translateLeafTokens(item, context));
-    }
-    if (value && typeof value === 'object') {
-      const out: Record<string, any> = {};
-      for (const [k, v] of Object.entries(value)) out[k] = translateLeafTokens(v, context);
-      return out;
-    }
-    return value;
-  };
 
   /**
    * props 값을 바인딩/표현식 평가하여 해석
@@ -831,35 +730,6 @@ export function renderItemChildren(
         );
       }
 
-      // 문자열 **중간**의 `$t:` 토큰 (예: "27$t:admin.roles.form.suffix")
-      //
-      // 종전에는 `startsWith('$t:')` 만 봤기 때문에 반복 렌더 경로에서는 중간 `$t:` 가
-      // 번역되지 않고 원본 키가 그대로 화면에 노출됐다. 일반 컴포넌트 경로
-      // (DynamicRenderer.resolveTranslationsDeep)는 이미 정규식으로 중간 토큰을 처리한다.
-      //
-      // 이 분기는 위의 `$t:defer:` 처리보다 **뒤에** 둔다. 다만 실사용이 실제로 의존하는
-      // 것은 분기 순서가 아니라 **항목 컨텍스트(`context`) 전달**이다 — 반복 서브트리 안의
-      // `$t:defer:` 32건(고유 24종)은 전부 `|param={{row.x}}` 형태이고, `row` 는
-      // DynamicRenderer 시점에 존재하지 않아 이 경로가 항목 컨텍스트와 함께 해소해야 한다.
-      // (순서만 바꾸는 변경은 아래 `{{` 가드 때문에 결과가 같다. 컨텍스트를 떨구면 파라미터
-      //  값만 조용히 사라진다 — `RenderHelpers.repeatParity.test.tsx` 가 그쪽을 잠근다.)
-      //
-      // JSON 구조 문자열(`{...}` / `[...]`) 안의 `$t:` 는 데이터의 일부이므로 번역하지 않는다
-      // (DynamicRenderer 의 동일 가드 이식). @since engine-v1.56.0
-      if (/\$t:[a-zA-Z0-9._-]+/.test(value)) {
-        const trimmed = value.trim();
-        const looksLikeJson =
-          (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-          (trimmed.startsWith('[') && trimmed.endsWith(']'));
-        if (!looksLikeJson && !value.includes('{{')) {
-          return translationEngine.resolveTranslations(
-            value,
-            translationContext,
-            context
-          );
-        }
-      }
-
       // 단일 바인딩 표현식
       const singleBindingPath = extractSingleBinding(value);
       if (singleBindingPath !== null) {
@@ -871,44 +741,29 @@ export function renderItemChildren(
           effectivePath = singleBindingPath.slice(RAW_PREFIX.length);
         }
 
-        // 형태 판정은 `BindingShape` 단일 출처에 맡긴다. 종전에는 이 지점만
-        // `hasPipes → isComplexExpression → 경로 탐색` 3분기를 직접 갈라, 판정 통일
-        // (engine-v1.55.0)이 모아 둔 **리터럴**(`true`/`false`/`null`/`undefined`)을
-        // 이 경로만 몰랐다. 그래서 `{{true}}` 가 조건 자리에서는 `true`, 반복 렌더 prop
-        // 자리에서는 경로 탐색으로 새어 `undefined` 가 됐다 — 통일이 없애려던 바로 그
-        // 비대칭이 여기에만 남아 있었다.
-        //
-        // 실행 정책은 종전과 같다: 파이프는 원본 타입 보존(engine-v1.54.9), 평가 실패는
-        // 경고 후 `undefined`(값 소실이 화면 전체를 깨뜨리지 않도록).
-        // raw: 접두사는 아래 공통 분기(wrapRawDeep)가 담당하므로 제거된 effectivePath 만
-        // 넘긴다 — 원본 value 를 넘기면 raw 마커가 이중으로 감싸진다. @since engine-v1.54.3
-        // @since engine-v1.56.4
-        let evaluationFailed = false;
-        let result = resolveSingleBindingValue(effectivePath, context, bindingEngine, {
-          skipCache: true,
-          onError: (error) => {
+        let result;
+        if (isComplexExpression(effectivePath)) {
+          try {
+            result = bindingEngine.evaluateExpression(effectivePath, context);
+          } catch (error) {
             logger.warn('renderItemChildren: 표현식 평가 실패:', error);
-            evaluationFailed = true;
-
             return undefined;
-          },
-          onEmpty: () => {
-            logger.warn('renderItemChildren: 빈 바인딩 `{{}}` 은 해석하지 않습니다.');
-          },
-        });
-
-        if (evaluationFailed) {
-          return undefined;
+          }
+        } else {
+          // skipCache: true - 반복 렌더링에서 같은 경로가 다른 값을 가져야 함
+          result = bindingEngine.resolve(effectivePath, context, { skipCache: true });
         }
 
         // 표현식 평가 결과가 $t: 접두사 문자열이면 번역 처리
         // 예: {{row.published ? '$t:module.key.published' : '$t:module.key.unpublished'}}
         // → 평가 결과 "$t:module.key.published"를 번역하여 "발행" 반환
         // @since engine-v1.28.1
-        // 결과가 배열/객체면 리프 문자열까지 재귀로 처리한다 — 종전에는 문자열만 보고
-        // 배열/객체 안의 `$t:` 키가 번역되지 않은 채 화면에 노출됐다. @since engine-v1.56.0
-        if (!isRawBinding) {
-          result = translateLeafTokens(result, context);
+        if (!isRawBinding && typeof result === 'string' && /\$t:[a-zA-Z0-9._-]+/.test(result)) {
+          result = translationEngine.resolveTranslations(
+            result,
+            translationContext,
+            context
+          );
         }
 
         return isRawBinding && result != null ? wrapRawDeep(result) : result;
@@ -937,22 +792,6 @@ export function renderItemChildren(
     }
 
     if (value && typeof value === 'object') {
-      // $switch 특수 객체 — 일반 컴포넌트 경로(resolveObject)는 지원하는데 반복 경로에만
-      // 없어서, 같은 작성이 여기서는 `{ $switch: "{{...}}", $cases: {...} }` 객체 그대로
-      // 컴포넌트에 전달됐다(조용한 미동작). 평가는 엔진에 위임한다.
-      // @since engine-v1.56.0
-      if (bindingEngine.isSwitchExpression(value)) {
-        return bindingEngine.resolveSwitch(value as any, context, { skipCache: true });
-      }
-
-      // 액션 정의 객체는 선평가하지 않는다 — 콜백 prop(onAddressSelect 등)에 담긴
-      // 액션 정의를 렌더 시점에 해소하면 내부 `{{_local.xxx}}` 가 그 시점 값으로 고정되고,
-      // 실행 시점의 최신 상태를 보지 못한다. ActionDispatcher 가 실행 시점에 해소한다.
-      // resolveObject 의 동일 규칙을 반복 경로에도 맞춘다. @since engine-v1.56.0
-      if (bindingEngine.isActionDefinition(value)) {
-        return { ...value };
-      }
-
       const resolved: Record<string, any> = {};
       for (const [k, v] of Object.entries(value)) {
         resolved[k] = resolveValue(v, context);
@@ -988,8 +827,8 @@ export function renderItemChildren(
     baseKey: string,
     baseContext: Record<string, any>
   ): React.ReactNode[] => {
-    // 반응형 오버라이드 적용 (렌더 환경 폭)
-    const childDef = applyResponsiveOverrides(originalChildDef, responsiveWidth);
+    // 반응형 오버라이드 적용
+    const childDef = applyResponsiveOverrides(originalChildDef);
 
     const iteration = childDef.iteration as { source: string; item_var: string; index_var?: string } | undefined;
     if (!iteration) return [];
@@ -1055,9 +894,7 @@ export function renderItemChildren(
 
       // remount 지원: getRemountKey가 제공되면 사용, 아니면 기본 키 생성
       // childDef.id의 표현식을 해석 (예: "toggle_{{row.id}}" → "toggle_3")
-      const resolvedIterationId = childDef.id
-        ? String(stripRawDeep(resolveValue(childDef.id, iterationContext)))
-        : undefined;
+      const resolvedIterationId = childDef.id ? String(resolveValue(childDef.id, iterationContext)) : undefined;
       const iterationFallbackKey = `${baseKey}-iter-${itemIndex}`;
       const iterationKey = options?.getRemountKey
         ? options.getRemountKey(resolvedIterationId, iterationFallbackKey)
@@ -1067,8 +904,8 @@ export function renderItemChildren(
       const resolvedProps = resolveProps(childDef.props, iterationContext);
 
       // actions 바인딩 (DynamicRenderer와 동일한 패턴)
-      const finalProps = bindComponentActions(resolvedProps, actionsToBind(childDef.actions), iterationContext, {
-        actionDispatcher: env.actionDispatcher,
+      const finalProps = bindComponentActions(resolvedProps, childDef.actions, iterationContext, {
+        actionDispatcher: options?.actionDispatcher,
         componentContext: options?.componentContext,
       });
 
@@ -1082,7 +919,7 @@ export function renderItemChildren(
           iterationContext,
           componentMap,
           iterationKey,
-          childOptions
+          options
         );
       }
 
@@ -1091,17 +928,7 @@ export function renderItemChildren(
         devTools.trackRender(childDef.name);
       }
 
-      // raw 마커 최종 제거 — 마커는 번역 패스를 건너뛰게 하려는 내부 표식이므로
-      // 화면으로 나가기 전에 벗긴다. 단발 렌더 경로는 resolveTranslationsDeep 안에서
-      // 벗기지만 이 경로에는 그 패스가 없어 Unicode Noncharacter 두 글자가 그대로
-      // DOM 에 실렸다. @since engine-v1.56.3
-      return [
-        React.createElement(
-          Component,
-          { key: iterationKey, ...stripRawDeep(finalProps) },
-          stripRawDeep(childrenNodes)
-        ),
-      ];
+      return [React.createElement(Component, { key: iterationKey, ...finalProps }, childrenNodes)];
     });
   };
 
@@ -1110,14 +937,12 @@ export function renderItemChildren(
    * Phase 1-1: effectiveContext 사용 (componentContext.state가 _local에 자동 병합됨)
    */
   return children.flatMap((originalChildDef, index) => {
-    // 반응형 오버라이드 적용 (렌더 환경 폭)
-    const childDef = applyResponsiveOverrides(originalChildDef, responsiveWidth);
+    // 반응형 오버라이드 적용
+    const childDef = applyResponsiveOverrides(originalChildDef);
 
     // remount 지원: getRemountKey가 제공되면 사용, 아니면 기본 키 생성
     // childDef.id의 표현식을 해석 (예: "toggle_{{row.id}}" → "toggle_3")
-    const resolvedId = childDef.id
-      ? String(stripRawDeep(resolveValue(childDef.id, effectiveContext)))
-      : undefined;
+    const resolvedId = childDef.id ? String(resolveValue(childDef.id, effectiveContext)) : undefined;
     const fallbackKey = keyPrefix ? `${keyPrefix}-${resolvedId || index}` : (resolvedId || `child-${index}`);
     const key = options?.getRemountKey
       ? options.getRemountKey(resolvedId, fallbackKey)
@@ -1150,25 +975,6 @@ export function renderItemChildren(
       return [];
     }
 
-    // 확장점 — 백엔드가 주입한 children 을 이 행 컨텍스트로 그리는 컨테이너다(이름은 컴포넌트가 아니라
-    // 확장점 이름). DynamicRenderer 의 확장점과 같은 호스트 규칙을 쓴다. 이 분기가 없으면 셀 안의
-    // 확장점이 「컴포넌트를 찾을 수 없습니다」 로 통째로 버려진다(#703 B2 결제수단 배지).
-    // @since engine-v1.73.0
-    if ((childDef as { type?: string }).type === 'extension_point') {
-      const host = buildExtensionPointHostProps(resolveProps(childDef.props, effectiveContext));
-      const injected = childDef.children && childDef.children.length > 0
-        ? renderItemChildren(childDef.children as ComponentDefinition[], effectiveContext, componentMap, key, childOptions)
-        : null;
-
-      return [
-        React.createElement(
-          'div',
-          { key, id: resolvedId, className: host.className, ...stripRawDeep(host.attrs) },
-          injected
-        ),
-      ];
-    }
-
     // 컴포넌트 조회
     const Component = componentMap[childDef.name];
     if (!Component) {
@@ -1180,8 +986,8 @@ export function renderItemChildren(
     const resolvedProps = resolveProps(childDef.props, effectiveContext);
 
     // actions 바인딩 (DynamicRenderer와 동일한 패턴)
-    const finalProps = bindComponentActions(resolvedProps, actionsToBind(childDef.actions), effectiveContext, {
-      actionDispatcher: env.actionDispatcher,
+    const finalProps = bindComponentActions(resolvedProps, childDef.actions, effectiveContext, {
+      actionDispatcher: options?.actionDispatcher,
       componentContext: options?.componentContext,
     });
 
@@ -1196,7 +1002,7 @@ export function renderItemChildren(
         effectiveContext,
         componentMap,
         key,
-        childOptions
+        options
       );
     }
 
@@ -1205,10 +1011,7 @@ export function renderItemChildren(
       devTools.trackRender(childDef.name);
     }
 
-    // raw 마커 최종 제거 (iteration 경로와 동일) @since engine-v1.56.3
-    return [
-      React.createElement(Component, { key, ...stripRawDeep(finalProps) }, stripRawDeep(childrenNodes)),
-    ];
+    return [React.createElement(Component, { key, ...finalProps }, childrenNodes)];
   });
 }
 

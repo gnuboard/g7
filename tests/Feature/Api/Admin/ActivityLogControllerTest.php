@@ -58,8 +58,8 @@ class ActivityLogControllerTest extends TestCase
     /**
      * 관리자 역할 생성 및 할당 (스코프 지정 가능)
      *
-     * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
-     * @param  string|null  $scopeType  스코프 타입 (null: 전체, 'self': 본인, 'role': 소유역할)
+     * @param array $permissions 사용자에게 부여할 권한 식별자 목록
+     * @param string|null $scopeType 스코프 타입 (null: 전체, 'self': 본인, 'role': 소유역할)
      * @return User
      */
     private function createAdminUser(array $permissions = ['core.activities.read'], ?string $scopeType = null): User
@@ -158,7 +158,7 @@ class ActivityLogControllerTest extends TestCase
     /**
      * 테스트용 활동 로그 생성
      *
-     * @param  array  $overrides  오버라이드할 속성
+     * @param array $overrides 오버라이드할 속성
      * @return ActivityLog
      */
     private function createActivityLog(array $overrides = []): ActivityLog
@@ -224,21 +224,9 @@ class ActivityLogControllerTest extends TestCase
                         'from',
                         'to',
                         'has_more_pages',
-                        // 활동 로그는 상한을 건 집계라 총 건수가 잘릴 수 있다. 정확도 필드가
-                        // 빠지면 잘린 값이 화면에서 정확한 건수로 읽힌다 (실측: 실제 88,792 건이
-                        // "10000건" 으로 표기). 메타를 손으로 조립하면 이 필드들이 사라지므로
-                        // 표준 메타(BaseApiCollection::paginationMeta)를 쓰는지 여기서 고정한다.
-                        'total_relation',
-                        'total_is_exact',
-                        'result_cap',
                     ],
                 ],
             ]);
-
-        $this->assertTrue(
-            $response->json('data.pagination.total_is_exact'),
-            '작은 표본에서는 총 건수가 정확해야 합니다.'
-        );
     }
 
     public function test_index_data_items_have_correct_fields(): void

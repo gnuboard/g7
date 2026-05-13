@@ -1,4 +1,3 @@
-// e2e:allow 단위 테스트 단언만 신구조(flex-between 시맨틱 토큰)에 재정합 — 레이아웃 동작 무변경, 해당 화면 E2E 는 branch 기존 spec 으로 커버됨
 /**
  * 쿠폰 다운로드 기능 레이아웃 구조 검증 테스트
  *
@@ -20,7 +19,6 @@ import loginRequiredModal from '../../../../../../../templates/_bundled/sirsoft-
 import downloadConfirmModal from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_coupon_download_confirm.json';
 import checkoutLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/shop/checkout.json';
 import showLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/shop/show.json';
-import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ========== 쿠폰 다운로드 모달 구조 검증 ==========
 
@@ -53,24 +51,17 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
 
     it('쿠폰 카드에 iteration이 있다', () => {
         const dataSection = children[2]; // 데이터 상태
-        // U10: 페이지전환 로딩 오버레이 제거 → 그리드 첫 자식이 곧 iteration 카드
-        const iterationEl = dataSection.children[0].children[0];
+        const gridChildren = dataSection.children[0].children; // grid > [loading overlay, iteration wrapper]
+        const iterationEl = gridChildren[1]; // index 1 (0은 로딩 오버레이)
 
         expect(iterationEl.iteration).toBeDefined();
         expect(iterationEl.iteration.source).toContain('downloadableCoupons');
         expect(iterationEl.iteration.item_var).toBe('coupon');
     });
 
-    it('U10: 스크롤 영역(max-h + overflow-y-auto)으로 일원화되어 있다', () => {
-        const dataSection = children[2];
-        const grid = dataSection.children[0];
-        expect(grid.props.className).toContain('max-h-96');
-        expect(grid.props.className).toContain('overflow-y-auto');
-    });
-
     it('쿠폰 카드에 3가지 버튼 상태가 있다 (다운로드완료/진행중/가능)', () => {
         const dataSection = children[2];
-        const cardChildren = dataSection.children[0].children[0].children; // U10: 오버레이 제거 → 카드가 index 0
+        const cardChildren = dataSection.children[0].children[1].children; // index 1 (0은 로딩 오버레이)
 
         // is_downloaded 버튼
         const downloadedBtn = cardChildren.find((c: any) =>
@@ -95,16 +86,16 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
 
     it('다운로드 버튼이 apiCall을 호출한다', () => {
         const dataSection = children[2];
-        const cardChildren = dataSection.children[0].children[0].children; // U10: 오버레이 제거 → 카드가 index 0
+        const cardChildren = dataSection.children[0].children[1].children; // index 1 (0은 로딩 오버레이)
         const downloadBtn = cardChildren.find((c: any) =>
             c.if?.includes('!coupon.is_downloaded') && c.if?.includes('downloadingCouponId !== coupon.id')
         );
 
-        const clickAction = asArray(downloadBtn?.actions)[0];
+        const clickAction = downloadBtn.actions[0];
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sequence');
 
-        const apiCallAction = asArray(clickAction?.actions).find((a: any) => a.handler === 'apiCall');
+        const apiCallAction = clickAction.actions.find((a: any) => a.handler === 'apiCall');
         expect(apiCallAction).toBeDefined();
         expect(apiCallAction.target).toContain('/download');
         expect(apiCallAction.auth_mode).toBe('required');
@@ -113,14 +104,14 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
 
     it('다운로드 성공 시 is_downloaded를 true로 업데이트한다', () => {
         const dataSection = children[2];
-        const cardChildren = dataSection.children[0].children[0].children; // U10: 오버레이 제거 → 카드가 index 0
+        const cardChildren = dataSection.children[0].children[1].children; // index 1 (0은 로딩 오버레이)
         const downloadBtn = cardChildren.find((c: any) =>
             c.if?.includes('!coupon.is_downloaded') && c.if?.includes('downloadingCouponId !== coupon.id')
         );
-        const apiCallAction = asArray(asArray(downloadBtn?.actions)[0]?.actions).find((a: any) => a.handler === 'apiCall');
+        const apiCallAction = downloadBtn.actions[0].actions.find((a: any) => a.handler === 'apiCall');
 
         // onSuccess에서 모달 자체 _local의 downloadableCoupons 업데이트
-        const setStateOnSuccess = asArray(apiCallAction?.onSuccess).find((a: any) =>
+        const setStateOnSuccess = apiCallAction.onSuccess.find((a: any) =>
             a.handler === 'setState' && a.params?.downloadableCoupons
         );
         expect(setStateOnSuccess).toBeDefined();
@@ -128,63 +119,52 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
         expect(setStateOnSuccess.params.downloadableCoupons).toContain('is_downloaded: true');
     });
 
-    it('U10 무한스크롤: 그리드에 scroll 핸들러가 있고 하단 근접 시 다음 페이지를 apiCall 한다', () => {
+    it('페이지네이션이 있다', () => {
         const dataSection = children[2];
-        const grid = dataSection.children[0]; // max-h-96 overflow-y-auto 스크롤 그리드
-        expect(grid.props.className).toContain('overflow-y-auto');
+        const paginationSection = dataSection.children[1]; // 두 번째 자식이 페이지네이션
 
-        const scrollAction = (grid.actions || []).find((a: any) => a.type === 'scroll');
-        expect(scrollAction).toBeDefined();
-        // 연속 스크롤 이벤트 중복 호출 방지 debounce
-        expect(scrollAction.debounce).toBeGreaterThan(0);
+        expect(paginationSection.if).toContain('last_page > 1');
 
-        const branch = asArray(scrollAction?.conditions)[0];
-        // 하단 근접 + 로딩 아님 + 다음 페이지 존재 가드
-        expect(branch.if).toContain('scrollTop');
-        expect(branch.if).toContain('clientHeight');
-        expect(branch.if).toContain('scrollHeight');
-        expect(branch.if).toContain('downloadingMore');
-        expect(branch.if).toContain('current_page');
-        expect(branch.if).toContain('last_page');
-
-        const branchJson = JSON.stringify(branch.then);
-        // 다음 페이지 apiCall (page = current_page + 1)
-        expect(branchJson).toContain('/user/coupons/downloadable');
-        expect(branchJson).toContain('current_page');
-        // 기존 목록에 누적 (append)
-        expect(branchJson).toContain('downloadingMore');
-        const apiCall = asArray(branch.then?.actions).find((a: any) => a.handler === 'apiCall');
-        const appendSetState = asArray(apiCall?.onSuccess).find(
-            (a: any) => a.handler === 'setState' && a.params?.downloadableCoupons
-        );
-        expect(appendSetState.params.downloadableCoupons).toContain('...');
+        // 이전/다음 버튼
+        const buttons = paginationSection.children.filter((c: any) => c.name === 'Button');
+        expect(buttons.length).toBeGreaterThanOrEqual(2);
     });
 
-    it('U10 무한스크롤: 다음 페이지 로딩 인디케이터(스피너)가 downloadingMore 일 때 표시된다', () => {
+    it('페이지네이션 버튼이 모달 자체 _local에 상태를 저장한다 (closeModal 없음)', () => {
         const dataSection = children[2];
-        // 데이터 상태 = 그리드 + 로딩 인디케이터 두 블록
-        const indicator = dataSection.children.find(
-            (c: any) => typeof c.if === 'string' && c.if.includes('downloadingMore')
-        );
-        expect(indicator).toBeDefined();
-        const spinner = JSON.stringify(indicator);
-        expect(spinner).toContain('animate-spin');
-    });
+        const paginationSection = dataSection.children[1];
+        const buttons = paginationSection.children.filter((c: any) => c.name === 'Button');
+        const nextBtn = buttons[1]; // 다음 페이지 버튼
 
-    it('U10 회귀: 페이지전환 로딩 오버레이가 제거되었다 (그리드 첫 자식이 iteration 카드)', () => {
-        const dataSection = children[2];
-        const grid = dataSection.children[0];
-        // 그리드의 첫 자식은 곧바로 iteration 카드여야 함 (오버레이 Div 없음)
-        expect(grid.children[0].iteration).toBeDefined();
+        const clickAction = nextBtn.actions[0];
+        expect(clickAction.handler).toBe('sequence');
+
+        // closeModal이 없어야 함 (모달 열린 상태 유지)
+        const closeModalAction = clickAction.actions.find((a: any) => a.handler === 'closeModal');
+        expect(closeModalAction).toBeUndefined();
+
+        // setState target이 local (모달 자체 상태)
+        const setStateAction = clickAction.actions.find((a: any) => a.handler === 'setState');
+        expect(setStateAction.params.target).toBe('local');
+
+        // apiCall onSuccess에서도 target: local
+        const apiCallAction = clickAction.actions.find((a: any) => a.handler === 'apiCall');
+        expect(apiCallAction).toBeDefined();
+        const successSetState = apiCallAction.onSuccess.find((a: any) => a.handler === 'setState');
+        expect(successSetState.params.target).toBe('local');
+
+        // openModal이 없어야 함
+        const openModalAction = apiCallAction.onSuccess.find((a: any) => a.handler === 'openModal');
+        expect(openModalAction).toBeUndefined();
     });
 
     it('모달 내 상태 참조가 _local ?? $parent._local 패턴을 사용한다', () => {
         // 로딩 상태 if 조건
         expect(children[0].if).toContain('_local.downloadableCouponsLoading ?? $parent._local.downloadableCouponsLoading');
 
-        // 데이터 상태 iteration source (U10: 오버레이 제거 → 카드가 index 0)
+        // 데이터 상태 iteration source
         const dataSection = children[2];
-        const iterationSource = dataSection.children[0].children[0].iteration.source;
+        const iterationSource = dataSection.children[0].children[1].iteration.source; // index 1 (0은 로딩 오버레이)
         expect(iterationSource).toContain('_local.downloadableCoupons ?? $parent._local.downloadableCoupons');
     });
 });
@@ -194,10 +174,8 @@ describe('쿠폰 다운로드 모달 (_modal_coupon_download.json)', () => {
 describe('체크아웃 할인 섹션 쿠폰 다운로드 버튼 (_checkout_discount.json)', () => {
     const sectionHeader = checkoutDiscount.children[0]; // 섹션 헤더
 
-    it('섹션 헤더가 좌우 양끝 정렬 시맨틱 클래스(flex-between)를 사용한다', () => {
-        // 시맨틱화 정책: 원시 Tailwind 'flex items-center justify-between' → 시맨틱 토큰 'flex-between'
-        // (main.css 의 .flex-between = display:flex; align-items:center; justify-content:space-between).
-        expect(sectionHeader.props.className).toContain('flex-between');
+    it('섹션 헤더가 justify-between flex 레이아웃이다', () => {
+        expect(sectionHeader.props.className).toContain('justify-between');
     });
 
     it('쿠폰 다운로드 버튼이 로그인 사용자만 표시된다', () => {
@@ -209,7 +187,7 @@ describe('체크아웃 할인 섹션 쿠폰 다운로드 버튼 (_checkout_disco
 
     it('다운로드 버튼 클릭 시 sequence(setState → apiCall)를 실행하고 onSuccess에서 openModal한다', () => {
         const downloadBtn = sectionHeader.children[1];
-        const clickAction = asArray(downloadBtn?.actions)[0];
+        const clickAction = downloadBtn.actions[0];
 
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sequence');
@@ -223,7 +201,7 @@ describe('체크아웃 할인 섹션 쿠폰 다운로드 버튼 (_checkout_disco
         expect(actions[1].auth_mode).toBe('required');
 
         // openModal은 apiCall onSuccess에서 실행 ($parent._local 스냅샷 이슈 방지)
-        const openModalInSuccess = asArray(actions[1]?.onSuccess).find((a: any) => a.handler === 'openModal');
+        const openModalInSuccess = actions[1].onSuccess.find((a: any) => a.handler === 'openModal');
         expect(openModalInSuccess).toBeDefined();
         expect(openModalInSuccess.target).toBe('coupon_download_modal');
     });
@@ -269,17 +247,17 @@ describe('상품 상세 쿠폰 배지 (_info_summary.json)', () => {
         const iterationEl = badgeContainer.children[1];
         const badge = iterationEl.children[0];
 
-        const clickAction = asArray(badge?.actions)[0];
+        const clickAction = badge.actions[0];
         expect(clickAction.handler).toBe('conditions');
 
         // 로그인 시 다운로드 확인 모달
-        const loggedInCondition = asArray(clickAction?.conditions)[0];
+        const loggedInCondition = clickAction.conditions[0];
         expect(loggedInCondition.if).toContain('_global.currentUser');
         expect(loggedInCondition.then.handler).toBe('sequence');
 
         // 비로그인 fallback (conditions 핸들러는 if 없는 항목을 else 로 처리,
         // 동작 자체는 then 키로 표현)
-        const fallbackCondition = asArray(clickAction?.conditions)[1];
+        const fallbackCondition = clickAction.conditions[1];
         expect(fallbackCondition.then.handler).toBe('openModal');
         expect(fallbackCondition.then.target).toBe('login_required_modal');
     });
@@ -306,10 +284,10 @@ describe('로그인 필요 모달 (_modal_login_required.json)', () => {
         const buttonsDiv = content.children[2]; // buttons container
         const loginBtn = buttonsDiv.children[1]; // 로그인 버튼
 
-        const clickAction = asArray(loginBtn?.actions)[0];
+        const clickAction = loginBtn.actions[0];
         expect(clickAction.handler).toBe('sequence');
 
-        const navigateAction = asArray(clickAction?.actions).find((a: any) => a.handler === 'navigate');
+        const navigateAction = clickAction.actions.find((a: any) => a.handler === 'navigate');
         expect(navigateAction).toBeDefined();
         expect(navigateAction.params.path).toBe('/login');
     });
@@ -336,10 +314,10 @@ describe('쿠폰 다운로드 확인 모달 (_modal_coupon_download_confirm.json
         );
 
         expect(downloadBtn).toBeDefined();
-        const clickAction = asArray(downloadBtn?.actions)[0];
+        const clickAction = downloadBtn.actions[0];
         expect(clickAction.handler).toBe('sequence');
 
-        const apiCallAction = asArray(clickAction?.actions).find((a: any) => a.handler === 'apiCall');
+        const apiCallAction = clickAction.actions.find((a: any) => a.handler === 'apiCall');
         expect(apiCallAction).toBeDefined();
         expect(apiCallAction.target).toContain('/download');
         expect(apiCallAction.auth_mode).toBe('required');
@@ -351,9 +329,9 @@ describe('쿠폰 다운로드 확인 모달 (_modal_coupon_download_confirm.json
         const downloadBtn = buttonsDiv.children.find((c: any) =>
             c.if?.includes('!_local.isDownloading')
         );
-        const apiCallAction = asArray(asArray(downloadBtn?.actions)[0]?.actions).find((a: any) => a.handler === 'apiCall');
+        const apiCallAction = downloadBtn.actions[0].actions.find((a: any) => a.handler === 'apiCall');
 
-        const refreshAction = asArray(apiCallAction?.onSuccess).find((a: any) =>
+        const refreshAction = apiCallAction.onSuccess.find((a: any) =>
             a.handler === 'refetchDataSource'
         );
         expect(refreshAction).toBeDefined();

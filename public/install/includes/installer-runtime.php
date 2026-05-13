@@ -15,15 +15,13 @@
  *
  * @see https://github.com/gnuboard/g7/issues/23
  */
+
 if (! defined('BASE_PATH')) {
     throw new RuntimeException('installer-runtime.php requires BASE_PATH constant.');
 }
 
-// .env 값 직렬화 정책 (개행 주입 차단) — functions.php 와 같은 관문을 공유한다.
-require_once __DIR__.'/env-value.php';
-
 if (! defined('INSTALLER_RUNTIME_PATH')) {
-    define('INSTALLER_RUNTIME_PATH', BASE_PATH.'/storage/installer/runtime.php');
+    define('INSTALLER_RUNTIME_PATH', BASE_PATH . '/storage/installer/runtime.php');
 }
 
 if (! function_exists('readInstallerRuntime')) {
@@ -61,9 +59,9 @@ if (! function_exists('writeInstallerRuntime')) {
             return false;
         }
 
-        $php = "<?php\n\nreturn ".var_export($data, true).";\n";
+        $php = "<?php\n\nreturn " . var_export($data, true) . ";\n";
 
-        $tmp = INSTALLER_RUNTIME_PATH.'.tmp';
+        $tmp = INSTALLER_RUNTIME_PATH . '.tmp';
         if (@file_put_contents($tmp, $php, LOCK_EX) === false) {
             return false;
         }
@@ -109,7 +107,7 @@ if (! function_exists('generateAppKeyInline')) {
      */
     function generateAppKeyInline(): string
     {
-        return 'base64:'.base64_encode(random_bytes(32));
+        return 'base64:' . base64_encode(random_bytes(32));
     }
 }
 
@@ -133,34 +131,24 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
         // DB 자격증명 치환 — state.config 결손 안전망
         $write = $runtime['db']['write'] ?? null;
         if (is_array($write)) {
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_HOST', serializeEnvValue((string) ($write['host'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PORT', serializeEnvValue((string) ($write['port'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_DATABASE', serializeEnvValue((string) ($write['database'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_USERNAME', serializeEnvValue((string) ($write['username'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PASSWORD', serializeEnvValue((string) ($write['password'] ?? '')));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_HOST', (string) ($write['host'] ?? ''));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PORT', (string) ($write['port'] ?? ''));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_DATABASE', (string) ($write['database'] ?? ''));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_USERNAME', (string) ($write['username'] ?? ''));
+            $envContent = replaceEnvLine($envContent, 'DB_WRITE_PASSWORD', escapeEnvValue((string) ($write['password'] ?? '')));
         }
 
-        // Read DB — runtime 에 read 키가 있을 때(use_read_db=true)만 명시 기록한다.
-        // 미지정 시 DB_READ_* 를 빈 값으로 남겨 config/database.php 의 write fallback(Elvis)
-        // 에 위임 → .env 에 write 값이 중복 기록되지 않고, write 변경 시 read stale 위험 제거.
-        // (이슈 #63)
-        $read = $runtime['db']['read'] ?? null;
+        $read = $runtime['db']['read'] ?? $write; // read 미지정 시 write 와 동기화
         if (is_array($read)) {
-            $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', serializeEnvValue((string) ($read['host'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', serializeEnvValue((string) ($read['port'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_DATABASE', serializeEnvValue((string) ($read['database'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_USERNAME', serializeEnvValue((string) ($read['username'] ?? '')));
-            $envContent = replaceEnvLine($envContent, 'DB_READ_PASSWORD', serializeEnvValue((string) ($read['password'] ?? '')));
-        } else {
-            $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', '');
-            $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', '');
-            $envContent = replaceEnvLine($envContent, 'DB_READ_DATABASE', '');
-            $envContent = replaceEnvLine($envContent, 'DB_READ_USERNAME', '');
-            $envContent = replaceEnvLine($envContent, 'DB_READ_PASSWORD', '');
+            $envContent = replaceEnvLine($envContent, 'DB_READ_HOST', (string) ($read['host'] ?? ''));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_PORT', (string) ($read['port'] ?? ''));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_DATABASE', (string) ($read['database'] ?? ''));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_USERNAME', (string) ($read['username'] ?? ''));
+            $envContent = replaceEnvLine($envContent, 'DB_READ_PASSWORD', escapeEnvValue((string) ($read['password'] ?? '')));
         }
 
         if (isset($runtime['db']['prefix'])) {
-            $envContent = replaceEnvLine($envContent, 'DB_PREFIX', serializeEnvValue((string) $runtime['db']['prefix']));
+            $envContent = replaceEnvLine($envContent, 'DB_PREFIX', (string) $runtime['db']['prefix']);
         }
 
         // APP_KEY 치환
@@ -171,7 +159,7 @@ if (! function_exists('mergeRuntimeIntoEnv')) {
 
         // INSTALLER_COMPLETED 플래그 추가 (CachesModuleStatus 등이 사용)
         if (! preg_match('/^INSTALLER_COMPLETED=/m', $envContent)) {
-            $envContent = rtrim($envContent)."\n\n# Installation Status\nINSTALLER_COMPLETED=true\n";
+            $envContent = rtrim($envContent) . "\n\n# Installation Status\nINSTALLER_COMPLETED=true\n";
         }
 
         return $envContent;
@@ -191,8 +179,18 @@ if (! function_exists('escapeEnvValue')) {
      */
     function escapeEnvValue(string $value): string
     {
-        // 직렬화 정책은 serializeEnvValue 단일 관문이 소유한다 (KVE-2026-2042).
-        return serializeEnvValue($value);
+        // CR/LF 제거 — .env 라인 주입 차단 (functions.php 의 정의와 동일 정책)
+        if ($value !== '') {
+            $value = str_replace(["\r", "\n"], '', $value);
+        }
+
+        if ($value === '') {
+            return '""';
+        }
+
+        $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
+
+        return '"' . $escaped . '"';
     }
 }
 
@@ -210,13 +208,13 @@ if (! function_exists('replaceEnvLine')) {
      */
     function replaceEnvLine(string $envContent, string $key, string $value): string
     {
-        $line = $key.'='.$value;
-        $pattern = '/^'.preg_quote($key, '/').'=.*$/m';
+        $line = $key . '=' . $value;
+        $pattern = '/^' . preg_quote($key, '/') . '=.*$/m';
 
         $replaced = preg_replace($pattern, $line, $envContent, 1, $count);
 
         if ($count === 0) {
-            return rtrim($envContent)."\n".$line."\n";
+            return rtrim($envContent) . "\n" . $line . "\n";
         }
 
         return $replaced;
@@ -242,14 +240,6 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
             $appKey = generateAppKeyInline();
         }
 
-        // state.config 에는 더 이상 비밀번호가 기록되지 않으므로(이슈 #465), 세션이 유실된
-        // 재개/재시도 경로에서는 기존 runtime.php 의 값을 보존해야 한다. app.key 보존과
-        // 동일한 패턴.
-        $writePassword = (string) ($stateConfig['db_write_password'] ?? ($stateConfig['db_password'] ?? ''));
-        if ($writePassword === '') {
-            $writePassword = (string) ($existing['db']['write']['password'] ?? '');
-        }
-
         $runtime = [
             'db' => [
                 'write' => [
@@ -257,7 +247,7 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
                     'port' => $stateConfig['db_write_port'] ?? ($stateConfig['db_port'] ?? '3306'),
                     'database' => $stateConfig['db_write_database'] ?? ($stateConfig['db_database'] ?? ''),
                     'username' => $stateConfig['db_write_username'] ?? ($stateConfig['db_username'] ?? ''),
-                    'password' => $writePassword,
+                    'password' => $stateConfig['db_write_password'] ?? ($stateConfig['db_password'] ?? ''),
                 ],
                 'prefix' => $stateConfig['db_prefix'] ?? '',
             ],
@@ -267,84 +257,17 @@ if (! function_exists('buildInstallerRuntimeFromState')) {
             'created_at' => date('c'),
         ];
 
-        // admin 비밀번호는 db_seed 가 소비할 때까지 runtime 에 보존한다. 호출자
-        // (install-process.php) 가 세션 값으로 덮어쓰는 경우를 제외하면, 재시도/재개 시
-        // 기존 runtime 의 값이 유실되지 않아야 한다 (유실 시 db_seed 재실행 불가).
-        if (isset($existing['admin']) && is_array($existing['admin'])) {
-            $runtime['admin'] = $existing['admin'];
-        }
-
-        // 설치 계획 서명 키 — 재시도/재개 사이에 바뀌면 진행 중 워커가 계획 검증에 실패한다.
-        if (is_string($existing['plan_key'] ?? null) && $existing['plan_key'] !== '') {
-            $runtime['plan_key'] = $existing['plan_key'];
-        }
-
-        // Read 커넥션은 use_read_db 플래그가 켜진 경우에만 포함한다 (판정 SSoT).
-        // 플래그가 꺼져 있으면 db_read_host 에 잔존 값이 있어도 무시 → runtime 에 read 키
-        // 미생성 → 하류(mergeRuntimeIntoEnv / InstallerRuntimeServiceProvider)가 write 로
-        // 자동 동기화. (이슈 #63: use_read_db=false 인데 db_read_host 를 참조하던 회귀 차단)
-        if (! empty($stateConfig['use_read_db'])
-            && ! empty($stateConfig['db_read_host'])
-            && $stateConfig['db_read_host'] !== ($stateConfig['db_write_host'] ?? null)) {
-            // read 비밀번호 폴백 순서: state.config → 기존 runtime 의 read 비밀번호 →
-            // write 비밀번호. 기존 runtime 을 건너뛰고 write 값으로 대체하면 read 전용
-            // 계정의 비밀번호가 write 값으로 오염된다 (이슈 #465 부수 수정).
-            $readPassword = (string) ($stateConfig['db_read_password'] ?? '');
-            if ($readPassword === '') {
-                $readPassword = (string) ($existing['db']['read']['password'] ?? '');
-            }
-            if ($readPassword === '') {
-                $readPassword = (string) $runtime['db']['write']['password'];
-            }
-
+        // Read 커넥션이 별도로 지정된 경우만 포함 (그렇지 않으면 Laravel 이 write 사용)
+        if (! empty($stateConfig['db_read_host']) && $stateConfig['db_read_host'] !== ($stateConfig['db_write_host'] ?? null)) {
             $runtime['db']['read'] = [
                 'host' => $stateConfig['db_read_host'],
                 'port' => $stateConfig['db_read_port'] ?? $runtime['db']['write']['port'],
                 'database' => $stateConfig['db_read_database'] ?? $runtime['db']['write']['database'],
                 'username' => $stateConfig['db_read_username'] ?? $runtime['db']['write']['username'],
-                'password' => $readPassword,
+                'password' => $stateConfig['db_read_password'] ?? $runtime['db']['write']['password'],
             ];
         }
 
         return $runtime;
-    }
-}
-
-if (! function_exists('hydrateDbSecretsFromRuntime')) {
-    /**
-     * state.config 에서 제거된 DB 비밀번호를 runtime.php 값으로 채운다 (이슈 #465).
-     *
-     * state.json 은 더 이상 DB 비밀번호를 보관하지 않으므로, state.config 로 DB 에
-     * 접속하던 소비처(db_cleanup / 롤백 seed truncate) 는 이 헬퍼로 자격증명을 복원해야
-     * 한다. 두 소비처 모두 env_update 태스크 이후에 실행되므로 runtime.php 는 항상 존재.
-     *
-     * runtime 부재 또는 config 에 이미 비밀번호가 있으면 원본을 그대로 반환.
-     *
-     * @param  array<string, mixed>  $config  state.config (비밀번호 결손 가능)
-     * @return array<string, mixed> DB 비밀번호가 복원된 config
-     */
-    function hydrateDbSecretsFromRuntime(array $config): array
-    {
-        $runtime = readInstallerRuntime();
-
-        if ($runtime === null) {
-            return $config;
-        }
-
-        if (empty($config['db_write_password'])) {
-            $writePassword = $runtime['db']['write']['password'] ?? '';
-            if ($writePassword !== '') {
-                $config['db_write_password'] = $writePassword;
-            }
-        }
-
-        if (empty($config['db_read_password'])) {
-            $readPassword = $runtime['db']['read']['password'] ?? '';
-            if ($readPassword !== '') {
-                $config['db_read_password'] = $readPassword;
-            }
-        }
-
-        return $config;
     }
 }

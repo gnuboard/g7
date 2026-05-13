@@ -5,8 +5,6 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
 use App\Search\Contracts\FulltextSearchable;
-use App\Support\HtmlImageExtractor;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,7 +19,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
-use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 
 /**
  * 상품 모델
@@ -34,9 +31,9 @@ class Product extends Model implements FulltextSearchable
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
-        'sales_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.sales_status', 'type' => 'enum', 'enum' => ProductSalesStatus::class],
-        'display_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.display_status', 'type' => 'enum', 'enum' => ProductDisplayStatus::class],
-        'tax_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.tax_status', 'type' => 'enum', 'enum' => ProductTaxStatus::class],
+        'sales_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.sales_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus::class],
+        'display_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.display_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus::class],
+        'tax_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.tax_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus::class],
         'tax_rate' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.tax_rate', 'type' => 'number'],
         'list_price' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.list_price', 'type' => 'currency'],
         'selling_price' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.selling_price', 'type' => 'currency'],
@@ -50,11 +47,6 @@ class Product extends Model implements FulltextSearchable
         'max_purchase_qty' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.max_purchase_qty', 'type' => 'number'],
     ];
 
-    /**
-     * 이 모델의 팩토리 인스턴스를 반환합니다.
-     *
-     * @return untyped
-     */
     protected static function newFactory()
     {
         return ProductFactory::new();
@@ -65,7 +57,7 @@ class Product extends Model implements FulltextSearchable
      *
      * @param  mixed  $value  라우트 파라미터 값 (ID 또는 product_code)
      * @param  string|null  $field  검색할 필드명
-     * @return Model|null
+     * @return \Illuminate\Database\Eloquent\Model|null
      */
     public function resolveRouteBinding($value, $field = null)
     {
@@ -101,12 +93,9 @@ class Product extends Model implements FulltextSearchable
         'common_info_id',
         'description',
         'description_mode',
-        'content_thumbnail_url',
         'meta_title',
         'meta_description',
         'meta_keywords',
-        'seo_sync_title',
-        'seo_sync_description',
         'has_options',
         'option_groups',
         'min_purchase_qty',
@@ -122,16 +111,12 @@ class Product extends Model implements FulltextSearchable
     protected $casts = [
         'name' => AsUnicodeJson::class,
         'description' => AsUnicodeJson::class,
-        'meta_title' => AsUnicodeJson::class,
-        'meta_description' => AsUnicodeJson::class,
         'meta_keywords' => 'array',
-        'seo_sync_title' => 'boolean',
-        'seo_sync_description' => 'boolean',
         'option_groups' => 'array',
         'allowed_roles' => 'array',
         'has_options' => 'boolean',
-        'list_price' => 'decimal:2',
-        'selling_price' => 'decimal:2',
+        'list_price' => 'integer',
+        'selling_price' => 'integer',
         'stock_quantity' => 'integer',
         'safe_stock_quantity' => 'integer',
         'min_purchase_qty' => 'integer',
@@ -141,85 +126,6 @@ class Product extends Model implements FulltextSearchable
         'display_status' => ProductDisplayStatus::class,
         'tax_status' => ProductTaxStatus::class,
     ];
-
-    /**
-     * 모델 이벤트 등록
-     *
-     * 설명 첫 내부 이미지 URL 캐시(content_thumbnail_url)는 저장 시점에만 계산한다 —
-     * 목록 쿼리는 description 을 SELECT 하지 않으므로 조회 시점 파싱이 불가하다.
-     * 시더·테스트의 Product::create() 직접 호출까지 커버되는 유일 지점이 모델
-     * saving 이벤트다 (공개 이슈 #22 동종 — board 와 동형).
-     *
-     * @return void
-     */
-    protected static function booted(): void
-    {
-        static::saving(function (Product $product) {
-            if ($product->exists
-                && ! $product->isDirty('description')
-                && ! $product->isDirty('description_mode')) {
-                return;
-            }
-
-            // text 모드 설명은 이스케이프 렌더(이미지 미표시) — 캐시하지 않는다
-            if ($product->description_mode !== 'html') {
-                $product->content_thumbnail_url = null;
-
-                return;
-            }
-
-            // description 은 다국어 JSON — 기본 로케일 우선, 없으면 배열 순서대로
-            // 첫 내부 이미지가 나올 때까지 시도 (레거시 평문 문자열도 수용)
-            $extracted = null;
-            $candidates = [];
-            $description = $product->description;
-            $htmls = is_array($description)
-                ? array_values(array_filter(
-                    [$description[config('app.locale')] ?? null, ...array_values($description)],
-                    fn ($html) => is_string($html) && $html !== ''
-                ))
-                : (is_string($description) && $description !== '' ? [$description] : []);
-
-            foreach ($htmls as $html) {
-                $candidates = array_merge($candidates, HtmlImageExtractor::candidates($html));
-                $extracted ??= HtmlImageExtractor::firstInternal($html);
-
-                if ($extracted !== null) {
-                    break;
-                }
-            }
-
-            // 확장이 후보를 대체(CDN prefix 승격 등)하거나 차단(null)할 수 있는 필터 훅.
-            // 특정 에디터 확장에 의존하지 않는다 — 페이로드는 일반 HTML 파싱 결과뿐이다.
-            $value = HookManager::applyFilters(
-                'sirsoft-ecommerce.product.filter_content_thumbnail',
-                $extracted,
-                $product,
-                $candidates
-            );
-
-            // 필터 반환값 방어 — 비문자열/빈 값/컬럼 상한 초과는 null(후보 없음)로 강등
-            $product->content_thumbnail_url = is_string($value) && $value !== '' && mb_strlen($value) <= 1000
-                ? $value
-                : null;
-        });
-    }
-
-    /**
-     * 전시 중인 상품만 남깁니다 (display_status = visible).
-     *
-     * 「숨김」은 운영자가 상품을 사용자 표면에서 내린 상태다. 품절·판매중지(sales_status)와
-     * 달리 **목록에 남아 있으면 안 되는** 축이라, 카드 오버레이로 덮는 것이 아니라 결과
-     * 집합에서 빼야 한다. 공개 목록들이 이 조건을 각자 리터럴로 적고 있어 한 곳만 빠뜨리면
-     * 그 경로로 숨긴 상품이 그대로 새어나간다 — 판정을 모델 스코프 한 곳에 둔다.
-     *
-     * @param  Builder  $query  대상 쿼리
-     * @return Builder 전시 상품으로 좁혀진 쿼리
-     */
-    public function scopeVisible(Builder $query): Builder
-    {
-        return $query->where('display_status', ProductDisplayStatus::VISIBLE->value);
-    }
 
     /**
      * 이 상품의 옵션 관계 (color/size 등 가변 옵션 정의).
@@ -266,27 +172,14 @@ class Product extends Model implements FulltextSearchable
      *
      * 대표 이미지(`is_thumbnail=true`) 가 없으면 첫 번째 이미지로 폴백.
      *
-     * `images` 가 이미 eager load 된 경우(목록 화면)는 로드된 컬렉션에서 고른다. 관계 빌더를
-     * 다시 태우면 행마다 쿼리가 1~2회 더 나가 eager load 가 무의미해진다. 로드된 컬렉션은
-     * 관계 정의의 `sort_order` 정렬을 그대로 가지므로 선택 결과는 재쿼리와 동일하다.
-     *
      * @return string|null 대표 이미지 download_url 또는 이미지가 없으면 null
      */
     public function getThumbnailUrl(): ?string
     {
-        if ($this->relationLoaded('images')) {
-            $thumbnailImage = $this->images->firstWhere('is_thumbnail', true)
-                ?? $this->images->first();
-
-            // 상품 이미지가 없으면 설명 첫 내부 이미지 캐시로 폴백 (공개 이슈 #22 동종).
-            // 추가 쿼리 없음 — 이미 로드된 속성 읽기만 (쿼리 수 잠금 테스트 준수)
-            return $thumbnailImage?->download_url ?? ($this->content_thumbnail_url ?: null);
-        }
-
         $thumbnailImage = $this->images()->where('is_thumbnail', true)->first()
             ?? $this->images()->first();
 
-        return $thumbnailImage?->download_url ?? ($this->content_thumbnail_url ?: null);
+        return $thumbnailImage?->download_url;
     }
 
     /**
@@ -409,7 +302,7 @@ class Product extends Model implements FulltextSearchable
     /**
      * 상품 리뷰 관계
      *
-     * @return HasMany ProductReview 컬렉션 관계
+     * @return HasMany
      */
     public function reviews(): HasMany
     {
@@ -419,7 +312,7 @@ class Product extends Model implements FulltextSearchable
     /**
      * 전시중(visible) 리뷰만 조회 (withCount/withAvg eager loading용)
      *
-     * @return HasMany 전시중 ProductReview 컬렉션 관계
+     * @return HasMany
      */
     public function visibleReviews(): HasMany
     {
@@ -462,7 +355,7 @@ class Product extends Model implements FulltextSearchable
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return LocalizedText::pick($name, $locale);
+        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
     }
 
     /**
@@ -504,12 +397,12 @@ class Product extends Model implements FulltextSearchable
             $values = $group['values'] ?? [];
 
             // name이 다국어 객체인 경우
-            $localizedName = is_array($name) ? LocalizedText::pick($name, $locale) : $name;
+            $localizedName = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? array_values($name)[0] ?? '') : $name;
 
             // values가 다국어 객체 배열인 경우
             $localizedValues = [];
             foreach ($values as $value) {
-                $localizedValues[] = is_array($value) ? LocalizedText::pick($value, $locale) : $value;
+                $localizedValues[] = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
             }
 
             $result[] = [
@@ -542,12 +435,12 @@ class Product extends Model implements FulltextSearchable
             $values = $group['values'] ?? [];
 
             // name_localized
-            $nameLocalized = is_array($name) ? LocalizedText::pick($name, $locale) : $name;
+            $nameLocalized = is_array($name) ? ($name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? array_values($name)[0] ?? '') : $name;
 
             // values_localized
             $valuesLocalized = [];
             foreach ($values as $value) {
-                $valuesLocalized[] = is_array($value) ? LocalizedText::pick($value, $locale) : $value;
+                $valuesLocalized[] = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? array_values($value)[0] ?? '') : $value;
             }
 
             $result[] = [
@@ -601,20 +494,6 @@ class Product extends Model implements FulltextSearchable
     public function isBelowSafeStock(): bool
     {
         return $this->stock_quantity <= $this->safe_stock_quantity;
-    }
-
-    /**
-     * 상품이 현재 구매 가능한 상태인지 반환합니다.
-     *
-     * 담기/합계/체크아웃의 판매상태 판정을 한 곳으로 통일하는 단일 기준(SSoT).
-     * 판매중(on_sale) + 전시중(visible) 두 조건을 모두 만족해야 구매 가능합니다.
-     *
-     * @return bool 판매중(on_sale) + 전시중(visible) 이면 true
-     */
-    public function isPurchasable(): bool
-    {
-        return $this->sales_status === ProductSalesStatus::ON_SALE
-            && $this->display_status === ProductDisplayStatus::VISIBLE;
     }
 
     /**
@@ -699,7 +578,7 @@ class Product extends Model implements FulltextSearchable
     /**
      * MySQL FULLTEXT 엔진에서는 인덱스 업데이트가 불필요합니다.
      *
-     * @return bool 인덱스 갱신 필요 여부 (항상 false)
+     * @return bool
      */
     public function searchIndexShouldBeUpdated(): bool
     {

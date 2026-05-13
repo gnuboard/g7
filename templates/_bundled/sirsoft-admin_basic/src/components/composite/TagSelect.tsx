@@ -2,13 +2,6 @@ import React, { useMemo, useCallback } from 'react';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Svg } from '../basic/Svg';
-import type { EditorAttrs } from '../../types';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
 
 export interface TagSelectOption {
   value: string | number;
@@ -28,12 +21,6 @@ export interface TagSelectProps {
   disabled?: boolean;
   /** 추가 클래스 */
   className?: string;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 // CSS 클래스 상수 (ui-elements.css의 .tag 클래스 재사용)
@@ -57,14 +44,10 @@ export const TagSelect: React.FC<TagSelectProps> = ({
   options = [],
   value = [],
   onChange,
-  placeholder: placeholderProp,
+  placeholder = 'No items selected',
   disabled = false,
   className = '',
-  id,
-  editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
-  const placeholder = placeholderProp ?? tOr('common.no_items_selected', 'No items selected');
   // 값으로 라벨 찾기
   const getLabel = useCallback(
     (val: string | number): string => {
@@ -95,7 +78,7 @@ export const TagSelect: React.FC<TagSelectProps> = ({
   const containerClassName = `${STYLES.container.base} ${disabled ? STYLES.container.disabled : ''} ${className}`.trim();
 
   return (
-    <Div className={containerClassName} id={id} {...editorAttrs}>
+    <Div className={containerClassName}>
       {selectedItems.length === 0 ? (
         <Span className={STYLES.placeholder}>{placeholder}</Span>
       ) : (
@@ -107,7 +90,7 @@ export const TagSelect: React.FC<TagSelectProps> = ({
                 className={STYLES.tagRemove}
                 onClick={() => handleRemove(item.value)}
                 role="button"
-                aria-label={tOr('common.tag_input.remove', `Remove ${item.label}`, { label: item.label })}
+                aria-label={`Remove ${item.label}`}
               >
                 <Svg
                   className="w-3 h-3"

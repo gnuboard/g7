@@ -4,9 +4,7 @@ namespace App\Contracts\Repositories;
 
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
 
 interface UserRepositoryInterface
 {
@@ -62,21 +60,16 @@ interface UserRepositoryInterface
      * 필터링 및 페이지네이션이 적용된 사용자 목록을 조회합니다.
      *
      * @param  array  $filters  필터 조건 배열
-     * @param  array<int, callable(Builder, array): void>  $extensions  확장이 더한 쿼리 조건 클로저 목록
      * @return LengthAwarePaginator 페이지네이션된 사용자 목록
      */
-    public function getPaginatedUsers(array $filters = [], array $extensions = []): LengthAwarePaginator;
+    public function getPaginatedUsers(array $filters = []): LengthAwarePaginator;
 
     /**
      * 사용자 관련 통계 정보를 조회합니다.
      *
-     * 기본은 현재 사용자의 `core.users.read` 조회 스코프 안에서 셉니다. 사용자와 무관하게
-     * 캐시하는 사이트 전체 집계만 `false` 로 스코프를 끕니다.
-     *
-     * @param  bool  $applyPermissionScope  현재 사용자의 조회 스코프 적용 여부
      * @return array 사용자 통계 데이터 배열
      */
-    public function getStatistics(bool $applyPermissionScope = true): array;
+    public function getStatistics(): array;
 
     /**
      * 키워드로 사용자를 검색합니다. (이름, 닉네임, 이메일)
@@ -112,51 +105,14 @@ interface UserRepositoryInterface
     public function findManyByUuidsKeyed(array $uuids): Collection;
 
     /**
-     * 사용자 번호 목록으로 사용자들을 조회하고 번호 키 맵으로 반환합니다.
-     *
-     * 번호만 들고 있는 목록(방문자 통계의 원장 행 등)이 한 쪽에 실린 회원을 한 번에
-     * 읽을 때 씁니다 — 행마다 읽으면 한 쪽에 쪽 크기만큼 질의가 납니다.
-     *
-     * @param  array<int, int>  $ids  사용자 번호 목록
-     * @return Collection<int, User> id => User 매핑
-     */
-    public function findManyByIdsKeyed(array $ids): Collection;
-
-    /**
-     * UUID 목록으로 사용자들을 조회합니다.
-     *
-     * @param  array<int, string>  $uuids  사용자 UUID 목록
-     * @return Collection<int, User> 조회된 사용자 컬렉션
-     */
-    public function findManyByUuids(array $uuids): Collection;
-
-    /**
-     * 슈퍼관리자 1명을 조회합니다.
-     *
-     * @return User|null 슈퍼관리자 또는 없으면 null
-     */
-    public function findSuperAdmin(): ?User;
-
-    /**
-     * 특정 권한 identifier 를 가진 역할에 소속된 모든 사용자를 조회합니다.
-     *
-     * @param  string  $permissionIdentifier  권한 identifier
-     * @return Collection<int, User> 권한 보유 사용자 컬렉션
-     */
-    public function findManyByPermissionIdentifier(string $permissionIdentifier): Collection;
-
-    /**
      * 사용자의 연속 로그인 실패 카운터를 1 증가시킵니다.
      *
      * `last_failed_login_at` 도 현재 시각으로 갱신하며 새 카운트를 반환합니다.
-     * `$windowMinutes` 가 양수이고 직전 실패가 그보다 오래됐으면 카운터를 1 부터 다시 센다 —
-     * "차단 시간 안의 연속 실패" 만 잠금으로 이어지게 한다. null·0 이하는 기간 제한 없이 누적한다.
      *
      * @param  User  $user  대상 사용자
-     * @param  int|null  $windowMinutes  실패를 연속으로 인정하는 기간(분). null·0 이하는 무기한
      * @return int 증가 후 카운트
      */
-    public function incrementFailedAttempts(User $user, ?int $windowMinutes = null): int;
+    public function incrementFailedAttempts(User $user): int;
 
     /**
      * 사용자의 계정을 지정된 분만큼 잠급니다.
@@ -164,100 +120,30 @@ interface UserRepositoryInterface
      * `locked_until` 을 현재 시각 + $minutes 로 설정하고 `failed_login_attempts` 를
      * 0 으로 리셋합니다 (다음 잠금 윈도우 시작점). 잠금 해제 시각을 반환합니다.
      *
-     * `$minutes <= 0` 은 보안 환경설정의 "0 = 무한대" 규약에 따라 영구 잠금으로 처리하며,
-     * 이때 `locked_until` 은 NULL, `locked_permanently` 는 true 가 되고 null 을 반환합니다.
-     *
      * @param  User  $user  잠글 사용자
-     * @param  int  $minutes  잠금 유지 시간(분). 0 이하는 무기한
-     * @return Carbon|null 잠금 해제 시각 (영구 잠금은 null)
+     * @param  int  $minutes  잠금 유지 시간(분)
+     * @return \Illuminate\Support\Carbon 잠금 해제 시각
      */
-    public function lockAccount(User $user, int $minutes): ?Carbon;
+    public function lockAccount(User $user, int $minutes): \Illuminate\Support\Carbon;
 
     /**
      * 사용자의 모든 로그인 시도 추적 컬럼을 초기화합니다.
      *
-     * 정상 로그인 성공 시 또는 관리자 수동 해제 시 호출됩니다
-     * (`failed_login_attempts=0`, `locked_until=null`, `locked_permanently=false`,
-     * `last_failed_login_at=null`).
+     * 정상 로그인 성공 시 호출됩니다 (`failed_login_attempts=0`,
+     * `locked_until=null`, `last_failed_login_at=null`).
      *
      * @param  User  $user  대상 사용자
-     * @return void 없음
+     * @return void
      */
     public function resetLoginAttempts(User $user): void;
 
     /**
      * 사용자의 계정이 현재 시점에 잠금 상태인지 판정합니다.
      *
-     * `locked_permanently` 가 true 면 항상 true 입니다. 그 외에는 `locked_until` 이
-     * NULL 이거나 현재 시각보다 과거이면 false 를 반환합니다.
+     * `locked_until` 이 NULL 이거나 현재 시각보다 과거이면 false 를 반환합니다.
      *
      * @param  User  $user  대상 사용자
      * @return bool 잠금 여부
      */
     public function isLocked(User $user): bool;
-
-    /**
-     * UUID 로 사용자를 찾습니다.
-     *
-     * @param  string  $uuid  사용자 UUID
-     * @return User|null 찾은 사용자 모델 또는 null
-     */
-    public function findByUuid(string $uuid): ?User;
-
-    /**
-     * UUID 목록에 해당하는 사용자의 정수 ID 배열을 반환합니다.
-     *
-     * @param  array  $uuids  사용자 UUID 배열
-     * @return array<int, int> 사용자 ID 배열
-     */
-    public function getIdsByUuids(array $uuids): array;
-
-    /**
-     * 사용자 ID 목록에 해당하는 이름을 ID 로 색인해 반환합니다.
-     *
-     * 목록 화면이 작성자 이름을 행마다 조회하면 N+1 이 되므로, 표시에 필요한
-     * 이름만 한 번에 모아 오기 위한 배치 조회입니다.
-     *
-     * @param  array  $ids  사용자 ID 배열
-     * @return array<int, string> 사용자 ID => 이름
-     */
-    public function getNamesByIds(array $ids): array;
-
-    /**
-     * 사용자 ID 목록의 지정 컬럼을 일괄 갱신합니다.
-     *
-     * @param  array  $ids  사용자 ID 배열
-     * @param  array  $data  갱신할 컬럼 값
-     * @return int 갱신된 행 수
-     */
-    public function updateManyByIds(array $ids, array $data): int;
-
-    /**
-     * 사용자 ID 목록의 인증 토큰을 모두 삭제합니다.
-     *
-     * @param  array  $ids  사용자 ID 배열
-     * @return int 삭제된 토큰 수
-     */
-    public function deleteTokensByUserIds(array $ids): int;
-
-    /**
-     * 비밀번호 만료 처리 후보 쿼리를 반환합니다 — 활성 회원이면서 관리자 지정 변경 대기가 아닌 회원.
-     *
-     * 적용 범위·날짜 조건은 호출자(`PasswordExpiryService`)가 덧붙인다.
-     *
-     * @return Builder<User> 후보 쿼리
-     *
-     * @since 7.1.0
-     */
-    public function passwordExpiryCandidateQuery(): Builder;
-
-    /**
-     * 회원 ID 목록으로 제한한 쿼리를 반환합니다 (배치 상한으로 고른 대상을 청크 처리할 때).
-     *
-     * @param  array<int, int>  $ids  회원 ID 배열
-     * @return Builder<User> 쿼리
-     *
-     * @since 7.1.0
-     */
-    public function queryByIds(array $ids): Builder;
 }

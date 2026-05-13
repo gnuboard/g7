@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 
 /**
@@ -16,7 +15,7 @@ class BulkUpdateOptionPriceRequest extends FormRequest
     /**
      * 권한 확인
      *
-     * @return bool 인가 여부
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -30,7 +29,7 @@ class BulkUpdateOptionPriceRequest extends FormRequest
      * option_ids: 옵션 ID 배열 ("productId-optionId" 형식, 개별 선택된 옵션)
      * 둘 중 하나 이상 필수
      *
-     * @return array 검증 규칙 배열
+     * @return array
      */
     public function rules(): array
     {
@@ -40,8 +39,7 @@ class BulkUpdateOptionPriceRequest extends FormRequest
             'option_ids' => ['nullable', 'array'],
             'option_ids.*' => ['string', 'regex:/^\d+-\d+$/'],
             'method' => ['required', 'in:increase,decrease,fixed'],
-            // 금액(won) 변경은 기본통화가 소수 통화일 수 있어 소수 허용. 비율(percent)도 소수 허용.
-            'value' => ['required', 'numeric', 'min:0'],
+            'value' => ['required', 'integer', 'min:0'],
             'unit' => ['required', 'in:won,percent'],
         ];
 
@@ -52,7 +50,8 @@ class BulkUpdateOptionPriceRequest extends FormRequest
     /**
      * 추가 유효성 검사
      *
-     * @param  Validator  $validator
+     * @param \Illuminate\Validation\Validator $validator
+     * @return void
      */
     public function withValidator($validator): void
     {
@@ -69,7 +68,7 @@ class BulkUpdateOptionPriceRequest extends FormRequest
     /**
      * 유효성 검사 메시지
      *
-     * @return array 검증 메시지 배열
+     * @return array
      */
     public function messages(): array
     {

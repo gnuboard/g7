@@ -5,20 +5,13 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Extension\HookManager;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
-use Modules\Sirsoft\Ecommerce\Exceptions\CartEmptyException;
-use Modules\Sirsoft\Ecommerce\Exceptions\CartOperationException;
+use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
-use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
-use Modules\Sirsoft\Ecommerce\Exceptions\TempOrderNotFoundException;
-use Modules\Sirsoft\Ecommerce\Models\Cart;
-use Modules\Sirsoft\Ecommerce\Models\Product;
-use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
@@ -38,27 +31,12 @@ class TempOrderService
      */
     protected const EXPIRATION_MINUTES = 30;
 
-    /**
-     * 임시 주문 서비스를 생성합니다.
-     *
-     * @param  TempOrderRepositoryInterface  $tempOrderRepository  임시 주문 저장소
-     * @param  CartRepositoryInterface  $cartRepository  장바구니 저장소
-     * @param  CouponIssueRepositoryInterface  $couponIssueRepository  쿠폰 발급 저장소
-     * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 저장소
-     * @param  OrderCalculationService  $orderCalculationService  주문 금액 계산 서비스
-     * @param  PurchaseEligibilityService  $purchaseEligibilityService  구매 대상 제한 판정 서비스
-     * @param  UserMileageService  $userMileageService  회원 마일리지 서비스
-     * @param  AdditionalOptionSelectionService  $additionalOptionSelectionService  추가옵션 선택 검증 서비스
-     */
     public function __construct(
         protected TempOrderRepositoryInterface $tempOrderRepository,
         protected CartRepositoryInterface $cartRepository,
         protected CouponIssueRepositoryInterface $couponIssueRepository,
         protected ProductOptionRepositoryInterface $productOptionRepository,
-        protected OrderCalculationService $orderCalculationService,
-        protected PurchaseEligibilityService $purchaseEligibilityService,
-        protected UserMileageService $userMileageService,
-        protected AdditionalOptionSelectionService $additionalOptionSelectionService
+        protected OrderCalculationService $orderCalculationService
     ) {}
 
     /**
@@ -83,7 +61,7 @@ class TempOrderService
         int $usePoints = 0
     ): TempOrder {
         if ($cartItems->isEmpty()) {
-            throw new CartEmptyException(__('sirsoft-ecommerce::exceptions.cart_empty'));
+            throw new \Exception(__('sirsoft-ecommerce::exceptions.cart_empty'));
         }
 
         HookManager::doAction('sirsoft-ecommerce.temp_order.before_create', $cartItems, $userId, $cartKey);
@@ -97,15 +75,10 @@ class TempOrderService
         // 주문 계산 실행 (쿠폰 없이)
         $calculationInput = new CalculationInput(
             items: $calculationItems,
-            usePoints: $validatedPoints,
-            userId: $userId,
+            usePoints: $validatedPoints
         );
 
         $calculationResult = $this->orderCalculationService->calculate($calculationInput);
-
-        // 마일리지 사용 정책(최소사용액/사용단위/최대한도) 최종 검증.
-        // 결제금액이 확정된 뒤라야 정률 한도를 판정할 수 있으므로 계산 직후에 둔다.
-        $this->assertPointsWithinUsagePolicy($userId, $validatedPoints, $calculationResult);
 
         // 임시 주문 생성/수정
         $tempOrder = DB::transaction(function () use (
@@ -172,137 +145,10 @@ class TempOrderService
             return $item->cart_key === $cartKey && $item->user_id === null;
         });
 
-        // 재고/판매상태/구매대상제한 검증 (실패 시 CartUnavailableException 발생)
-        $userRoleIds = $this->purchaseEligibilityService->resolveRoleIds(Auth::user());
-        $this->validateCartItemsAvailability($authorizedItems, $userRoleIds);
+        // 재고/판매상태 검증 (실패 시 CartUnavailableException 발생)
+        $this->validateCartItemsAvailability($authorizedItems);
 
         return $this->createTempOrder($authorizedItems, $userId, $cartKey, $usePoints);
-    }
-
-    /**
-     * 바로 구매: 장바구니를 경유하지 않고 직접 항목으로 임시 주문 생성
-     *
-     * 장바구니에 행을 만들지 않고(오염 방지) 선택한 상품/옵션/수량으로 바로 임시 주문을
-     * 생성합니다. 판매상태·재고·구매수량 한도·구매대상제한 검증은 장바구니 담기와 동일하게
-     * 적용하되, 구매수량 한도는 장바구니 기존 수량과 합산하지 않고 이번 선택 수량만으로 판정합니다.
-     *
-     * @param  array  $items  직접 항목 배열 [{product_id, product_option_id?, quantity}]
-     * @param  int|null  $userId  회원 ID
-     * @param  string|null  $cartKey  비회원 장바구니 키
-     * @param  int  $usePoints  사용할 마일리지
-     * @return TempOrder 생성된 임시 주문
-     *
-     * @throws \Exception 상품/옵션 미존재 또는 구매 불가 시
-     */
-    public function createTempOrderFromDirectItems(
-        array $items,
-        ?int $userId,
-        ?string $cartKey,
-        int $usePoints = 0
-    ): TempOrder {
-        // 직접 항목을 미저장 Cart 모델로 변환 (장바구니 행을 만들지 않음)
-        $cartItems = $this->buildTransientCartItems($items, $userId, $cartKey);
-
-        // 재고/판매상태/구매대상제한/구매수량 한도 검증 (담기와 동일 — 단, 합산은 이번 선택 수량만)
-        $userRoleIds = $this->purchaseEligibilityService->resolveRoleIds(Auth::user());
-        $this->validateCartItemsAvailability($cartItems, $userRoleIds);
-
-        return $this->createTempOrder($cartItems, $userId, $cartKey, $usePoints);
-    }
-
-    /**
-     * 직접 항목 배열을 미저장 Cart 모델 컬렉션으로 변환합니다.
-     *
-     * product_option_id 로 옵션을 매칭하고(없으면 첫 번째 활성 옵션), product/productOption 관계를
-     * set 한 미저장 Cart 모델을 만들어 기존 검증/계산/직렬화 로직을 그대로 재사용합니다.
-     *
-     * @param  array  $items  직접 항목 배열 [{product_id, product_option_id?, quantity}]
-     * @param  int|null  $userId  회원 ID
-     * @param  string|null  $cartKey  비회원 장바구니 키
-     * @return Collection<int, Cart> 미저장 Cart 컬렉션
-     *
-     * @throws CartOperationException 지정한 옵션이 없거나(option_not_found), 구매할 수 있는 옵션이 없는 상품일 때(no_purchasable_option)
-     */
-    protected function buildTransientCartItems(array $items, ?int $userId, ?string $cartKey): Collection
-    {
-        $cartItems = new Collection;
-
-        // 항목마다 옵션을 두 번 조회하면 체크아웃 한 번에 항목 수 × 2 만큼 쿼리가 난다.
-        // 상품별 옵션과 확정된 옵션 상세를 각각 한 번씩만 읽어 맵으로 들고 간다.
-        $optionsByProduct = $this->productOptionRepository->getByProductIds(
-            array_map(fn ($item) => (int) ($item['product_id'] ?? 0), $items)
-        );
-
-        $resolvedOptionIds = [];
-
-        foreach ($items as $index => $item) {
-            $productId = (int) ($item['product_id'] ?? 0);
-            $requestedOptionId = $item['product_option_id'] ?? null;
-            $productOptions = $optionsByProduct->get($productId) ?? new Collection;
-
-            if (! empty($requestedOptionId)) {
-                $matchedOption = $productOptions->firstWhere('id', (int) $requestedOptionId);
-
-                if (! $matchedOption) {
-                    throw new CartOperationException('option_not_found');
-                }
-
-                $resolvedOptionIds[$index] = $matchedOption->id;
-
-                continue;
-            }
-
-            // 옵션을 지정하지 않은 항목은 판매 중인(활성) 옵션 중 첫 번째를 쓴다. 옵션 행이 아예 없거나
-            // 전부 비활성이면 구매할 수 있는 옵션이 없는 상품이다 — 서버 오류(500)가 아니라 422 로 거절한다.
-            $defaultOption = $productOptions->first(fn ($option) => (bool) $option->is_active);
-            if (! $defaultOption) {
-                throw new CartOperationException('no_purchasable_option');
-            }
-
-            $resolvedOptionIds[$index] = $defaultOption->id;
-        }
-
-        // product/images 관계를 포함해 확정 옵션을 한 번에 재조회 (검증·계산에 필요)
-        $optionsById = $this->productOptionRepository
-            ->findByIdsWithProduct(array_values($resolvedOptionIds))
-            ->keyBy('id');
-
-        // 추가옵션 검증 자료도 항목 루프 전에 한 번에 적재한다. 이걸 빼면 아래 루프가
-        // 항목마다 선택지·상품·그룹을 다시 읽는다(항목당 3쿼리).
-        $this->additionalOptionSelectionService->prefetchForProducts(
-            $optionsById->pluck('product_id')->all()
-        );
-
-        foreach ($items as $index => $item) {
-            $quantity = max(1, (int) ($item['quantity'] ?? 1));
-
-            $option = $optionsById->get($resolvedOptionIds[$index]);
-            if (! $option || ! $option->product) {
-                throw new CartOperationException('option_not_found');
-            }
-
-            // 추가옵션 선택 검증·정규화 (담기와 동일 서버 SSoT — D9/D12)
-            $additionalSelections = $this->additionalOptionSelectionService->validateAndNormalize(
-                $option->product_id,
-                $item['additional_option_selections'] ?? null
-            );
-
-            // 미저장 Cart 모델 구성 (id 없음 — 장바구니 행 미생성)
-            $cart = new Cart([
-                'cart_key' => $cartKey,
-                'user_id' => $userId,
-                'product_id' => $option->product_id,
-                'product_option_id' => $option->id,
-                'additional_option_selections' => ! empty($additionalSelections) ? $additionalSelections : null,
-                'quantity' => $quantity,
-            ]);
-            $cart->setRelation('product', $option->product);
-            $cart->setRelation('productOption', $option);
-
-            $cartItems->push($cart);
-        }
-
-        return $cartItems;
     }
 
     /**
@@ -312,7 +158,6 @@ class TempOrderService
      *
      * @param  int|null  $userId  회원 ID
      * @param  string|null  $cartKey  비회원 장바구니 키
-     * @return TempOrder|null 유효한 임시 주문 (없거나 만료되면 null)
      */
     public function getTempOrder(?int $userId, ?string $cartKey): ?TempOrder
     {
@@ -341,7 +186,7 @@ class TempOrderService
         $tempOrder = $this->getTempOrder($userId, $cartKey);
 
         if (! $tempOrder) {
-            throw new TempOrderNotFoundException(__('sirsoft-ecommerce::exceptions.temp_order_not_found'));
+            throw new \Exception(__('sirsoft-ecommerce::exceptions.temp_order_not_found'));
         }
 
         // 미전송 필드는 기존 값 유지 (배송 주소만 변경 시 쿠폰/마일리지 초기화 방지)
@@ -395,14 +240,10 @@ class TempOrderService
             couponIssueIds: $couponIssueIds,
             itemCoupons: $validatedItemCoupons,
             usePoints: $validatedPoints,
-            shippingAddress: $shippingAddress,
-            userId: $userId,
+            shippingAddress: $shippingAddress
         );
 
         $calculationResult = $this->orderCalculationService->calculate($calculationInput);
-
-        // 마일리지 사용 정책(최소사용액/사용단위/최대한도) 최종 검증 (생성 경로와 동일 기준)
-        $this->assertPointsWithinUsagePolicy($userId, $validatedPoints, $calculationResult);
 
         // 검증된 프로모션 정보 구성 (프론트 필드명 그대로 저장)
         $validatedPromotions = [
@@ -439,7 +280,7 @@ class TempOrderService
      * @param  int|null  $userId  회원 ID
      * @param  string|null  $cartKey  비회원 장바구니 키
      * @param  ShippingAddress|null  $shippingAddress  배송 주소 (null이면 저장된 주소 사용)
-     * @return array{temp_order: TempOrder, calculation: OrderCalculationResult}|null 임시 주문과 재계산 결과 (임시 주문이 없으면 null)
+     * @return array{temp_order: TempOrder, calculation: OrderCalculationResult}|null
      */
     public function getTempOrderWithCalculation(
         ?int $userId,
@@ -482,15 +323,13 @@ class TempOrderService
             couponIssueIds: $couponIssueIds,
             itemCoupons: $promotions['item_coupons'] ?? [],
             usePoints: $tempOrder->getUsedPoints(),
-            shippingAddress: $effectiveAddress,
-            userId: $userId,
+            shippingAddress: $effectiveAddress
         );
 
         $calculationResult = $this->orderCalculationService->calculate($calculationInput);
 
-        // 재고/판매상태/구매대상제한 검증 (예외 없이 목록 반환)
-        $userRoleIds = $this->purchaseEligibilityService->resolveRoleIds(Auth::user());
-        $unavailableItems = $this->checkTempOrderItemsAvailability($tempOrder, $userRoleIds);
+        // 재고/판매상태 검증 (예외 없이 목록 반환)
+        $unavailableItems = $this->checkTempOrderItemsAvailability($tempOrder);
 
         return [
             'temp_order' => $tempOrder,
@@ -544,32 +383,6 @@ class TempOrderService
     }
 
     /**
-     * 임시 주문 ID 로 삭제
-     *
-     * 비회원 PG 결제 완료 시점처럼 user_id 와 cart_key 를 모두 알 수 없는 경우,
-     * 주문 생성 시 order_meta 에 보관한 temp_order_id 를 기준으로 임시 주문을 정리합니다.
-     *
-     * @param  int  $tempOrderId  임시 주문 ID
-     * @return bool 삭제 성공 여부 (대상 없으면 false)
-     */
-    public function deleteTempOrderById(int $tempOrderId): bool
-    {
-        $tempOrder = $this->tempOrderRepository->find($tempOrderId);
-
-        if (! $tempOrder) {
-            return false;
-        }
-
-        HookManager::doAction('sirsoft-ecommerce.temp_order.before_delete', $tempOrder);
-
-        $result = $this->tempOrderRepository->delete($tempOrder);
-
-        HookManager::doAction('sirsoft-ecommerce.temp_order.after_delete', $tempOrder->user_id, $tempOrder->cart_key);
-
-        return $result;
-    }
-
-    /**
      * 만료된 임시 주문 정리
      *
      * @return int 삭제된 개수
@@ -590,7 +403,6 @@ class TempOrderService
      *
      * @param  int|null  $userId  회원 ID
      * @param  string|null  $cartKey  비회원 장바구니 키
-     * @return OrderCalculationResult|null 계산 결과 (임시 주문 없으면 null)
      */
     public function getCalculationResult(?int $userId, ?string $cartKey): ?OrderCalculationResult
     {
@@ -608,7 +420,6 @@ class TempOrderService
      *
      * @param  int|null  $userId  회원 ID
      * @param  string|null  $cartKey  비회원 장바구니 키
-     * @return bool 유효한 임시 주문 존재 여부
      */
     public function hasTempOrder(?int $userId, ?string $cartKey): bool
     {
@@ -619,7 +430,7 @@ class TempOrderService
      * 장바구니 아이템을 CalculationItem 배열로 변환
      *
      * @param  Collection  $cartItems  장바구니 아이템 컬렉션
-     * @return CalculationItem[] 계산용 아이템 목록
+     * @return CalculationItem[]
      */
     protected function convertCartItemsToCalculationItems(Collection $cartItems): array
     {
@@ -628,8 +439,7 @@ class TempOrderService
                 productId: $cart->product_id,
                 productOptionId: $cart->product_option_id,
                 quantity: $cart->quantity,
-                cartId: $cart->id,
-                additionalOptionSelections: $cart->additional_option_selections,
+                cartId: $cart->id
             );
         })->all();
     }
@@ -638,7 +448,6 @@ class TempOrderService
      * 장바구니 아이템을 저장용 배열로 직렬화
      *
      * @param  Collection  $cartItems  장바구니 아이템 컬렉션
-     * @return array<int, array<string, mixed>> 저장용 항목 배열
      */
     protected function serializeCartItems(Collection $cartItems): array
     {
@@ -647,7 +456,6 @@ class TempOrderService
                 'cart_id' => $cart->id,
                 'product_id' => $cart->product_id,
                 'product_option_id' => $cart->product_option_id,
-                'additional_option_selections' => $cart->additional_option_selections,
                 'quantity' => $cart->quantity,
             ];
         })->all();
@@ -730,72 +538,22 @@ class TempOrderService
     /**
      * 마일리지 사용 검증
      *
-     * 비회원은 마일리지 사용 불가. 보유 잔액(원장 기준)을 초과하는 요청은
-     * 조용히 클램프하지 않고 명시적으로 차단합니다(의도와 다른 금액으로 결제되는 혼란 제거).
+     * 비회원은 마일리지 사용 불가
      *
      * @param  int|null  $userId  사용자 ID
      * @param  int  $usePoints  사용할 마일리지
      * @return int 검증된 사용 마일리지
-     *
-     * @throws MileageValidationException 보유 잔액을 초과하여 사용 요청한 경우
      */
     protected function validatePointsUsage(?int $userId, int $usePoints): int
     {
-        // 비회원은 마일리지 사용 불가 (조용히 0 — 에러 아님, 기존 동작 유지)
+        // 비회원은 마일리지 사용 불가
         if ($userId === null) {
             return 0;
         }
 
-        $usePoints = max(0, $usePoints);
-        if ($usePoints === 0) {
-            return 0;
-        }
-
-        // 보유잔액(원장 기준) 초과 요청은 조용히 클램프하지 않고 명시 차단 (U15).
-        // 최종 방어는 차감 시점(consumeFifo) 원장 FOR UPDATE 재검증 — 본 검증은 사용자 UX용 선차단.
-        // 판정·안내 문구 모두 원장 기준으로 통일(getBalance 캐시 지연으로 인한 어긋남 제거).
-        if (! $this->userMileageService->canUse($userId, $usePoints)) {
-            throw new MileageValidationException(
-                trans_count('sirsoft-ecommerce::exceptions.mileage.use_exceeds_balance', [
-                    'amount' => $balance = $this->userMileageService->availableBalance($userId),
-                    'count' => $balance,
-                ])
-            );
-        }
-
-        return $usePoints;
-    }
-
-    /**
-     * 마일리지 사용 정책 검증 (최소 사용액 / 사용 단위 / 최대 한도)
-     *
-     * validatePointsUsage() 는 계산 전 단계라 결제금액을 알 수 없어 잔액만 판정합니다.
-     * 정률 한도(max_use_percent)는 결제금액이 있어야 판정 가능하므로, 계산이 끝난
-     * 직후(영속화 전)에 이 검증을 수행합니다. 판정 기준 금액은 마일리지 차감 전
-     * 결제금액(summary.paymentAmount)입니다.
-     *
-     * @param  int|null  $userId  사용자 ID (비회원은 null)
-     * @param  int  $usePoints  사용 요청 마일리지
-     * @param  OrderCalculationResult  $calculationResult  주문 계산 결과
-     * @return void 반환값 없음
-     *
-     * @throws MileageValidationException 정책 위반 시
-     */
-    protected function assertPointsWithinUsagePolicy(
-        ?int $userId,
-        int $usePoints,
-        OrderCalculationResult $calculationResult
-    ): void {
-        // 비회원은 validatePointsUsage 에서 이미 0 으로 정규화됨
-        if ($userId === null || $usePoints <= 0) {
-            return;
-        }
-
-        $this->userMileageService->validateUsage(
-            $userId,
-            $usePoints,
-            (int) ($calculationResult->summary->paymentAmount ?? 0)
-        );
+        // TODO: 마일리지 시스템 구현 시 실제 잔액 검증 추가
+        // 현재는 음수 방지만 처리
+        return max(0, $usePoints);
     }
 
     /**
@@ -824,18 +582,12 @@ class TempOrderService
      * 구매 불가능한 상품(재고 부족, 판매중지)이 있으면 예외를 발생시킵니다.
      *
      * @param  Collection  $cartItems  장바구니 아이템 컬렉션 (product, productOption 관계 로드 필요)
-     * @param  array<int, int>  $userRoleIds  현재 사용자의 역할 ID 배열 (비회원은 guest 역할 ID)
-     * @return void 반환값 없음
      *
      * @throws CartUnavailableException 구매 불가능한 상품이 있는 경우
      */
-    protected function validateCartItemsAvailability(Collection $cartItems, array $userRoleIds = []): void
+    protected function validateCartItemsAvailability(Collection $cartItems): void
     {
         $unavailableItems = [];
-
-        // 상품당 총수량 합산 (옵션 분할로 한도 우회 방지) + 대표 라인/상품 보관
-        $quantityByProduct = [];
-        $representativeByProduct = [];
 
         foreach ($cartItems as $item) {
             $product = $item->product;
@@ -843,11 +595,6 @@ class TempOrderService
 
             if (! $product || ! $option) {
                 continue;
-            }
-
-            $quantityByProduct[$product->id] = ($quantityByProduct[$product->id] ?? 0) + $item->quantity;
-            if (! isset($representativeByProduct[$product->id])) {
-                $representativeByProduct[$product->id] = ['item' => $item, 'product' => $product, 'option' => $option];
             }
 
             // 썸네일 URL 추출
@@ -858,26 +605,8 @@ class TempOrderService
             // 옵션 값 포맷 (예: "색상: 빨강, 사이즈: L")
             $formattedOption = $this->formatOptionValues($option->getLocalizedOptionValues());
 
-            // 1. 구매 대상 제한 체크 (역할 기반)
-            if (! $this->purchaseEligibilityService->isPurchasableBy($product, $userRoleIds)) {
-                $unavailableItems[] = [
-                    'cart_id' => $item->id,
-                    'product_id' => $product->id,
-                    'product_option_id' => $option->id,
-                    'name' => $product->getLocalizedName(),
-                    'option' => $formattedOption,
-                    'thumbnail' => $thumbnailImage?->download_url,
-                    'quantity' => $item->quantity,
-                    'stock' => $option->stock_quantity ?? 0,
-                    'reason' => 'restricted',
-                ];
-
-                continue;
-            }
-
-            // 2. 판매상태 체크 (판매중 + 전시중이 아니면 차단 — hidden 포함, isPurchasable 통일).
-            //    옵션이 판매 중지(비활성)여도 같은 사유로 막는다 — 담은 뒤 중지된 옵션·옵션 id 직접 지정 모두.
-            if (! $product->isPurchasable() || ! $option->is_active) {
+            // 1. 판매상태 체크 (sales_status !== 'on_sale')
+            if ($product->sales_status !== ProductSalesStatus::ON_SALE) {
                 $unavailableItems[] = [
                     'cart_id' => $item->id,
                     'product_id' => $product->id,
@@ -893,7 +622,7 @@ class TempOrderService
                 continue;
             }
 
-            // 3. 재고 체크 (quantity > stock_quantity)
+            // 2. 재고 체크 (quantity > stock_quantity)
             $stockQuantity = $option->stock_quantity ?? 0;
             if ($item->quantity > $stockQuantity) {
                 $unavailableItems[] = [
@@ -910,73 +639,15 @@ class TempOrderService
             }
         }
 
-        // 4. 상품당 총수량 기준 최소/최대 구매수량 검증 (옵션 합산, A25)
-        // 이미 차단 사유가 있는 상품은 중복 표기하지 않는다.
-        $flaggedProductIds = array_column($unavailableItems, 'product_id');
-        foreach ($quantityByProduct as $productId => $totalQuantity) {
-            if (in_array($productId, $flaggedProductIds, true)) {
-                continue;
-            }
-
-            $rep = $representativeByProduct[$productId];
-            $quantityIssue = $this->detectPurchaseQuantityIssue($rep['product'], $totalQuantity);
-            if ($quantityIssue === null) {
-                continue;
-            }
-
-            $thumbnailImage = $rep['product']->relationLoaded('images')
-                ? ($rep['product']->images->firstWhere('is_thumbnail', true) ?? $rep['product']->images->first())
-                : null;
-
-            $unavailableItems[] = [
-                'cart_id' => $rep['item']->id,
-                'product_id' => $productId,
-                'product_option_id' => $rep['option']->id,
-                'name' => $rep['product']->getLocalizedName(),
-                'option' => $this->formatOptionValues($rep['option']->getLocalizedOptionValues()),
-                'thumbnail' => $thumbnailImage?->download_url,
-                'quantity' => $totalQuantity,
-                'requested' => $totalQuantity,
-                'limit' => $quantityIssue['limit'],
-                'stock' => $rep['option']->stock_quantity ?? 0,
-                'reason' => $quantityIssue['reason'],
-            ];
-        }
-
         if (! empty($unavailableItems)) {
             throw CartUnavailableException::fromItems($unavailableItems);
         }
     }
 
     /**
-     * 상품 총수량 기준 최소/최대 구매수량 위반 여부를 판정합니다.
-     *
-     * max_purchase_qty = 0 은 무제한(상한 skip), min_purchase_qty 기본 1.
-     *
-     * @param  Product  $product  상품 모델
-     * @param  int  $totalQuantity  상품 총수량 (동일 product 모든 옵션 라인 합산)
-     * @return array{reason: string, limit: int}|null 위반 시 사유/한도, 정상 시 null
-     */
-    protected function detectPurchaseQuantityIssue($product, int $totalQuantity): ?array
-    {
-        $min = (int) ($product->min_purchase_qty ?? 1);
-        $max = (int) ($product->max_purchase_qty ?? 0);
-
-        if ($min > 0 && $totalQuantity < $min) {
-            return ['reason' => 'min_qty', 'limit' => $min];
-        }
-
-        if ($max > 0 && $totalQuantity > $max) {
-            return ['reason' => 'max_qty', 'limit' => $max];
-        }
-
-        return null;
-    }
-
-    /**
      * 옵션 값 배열을 포맷된 문자열로 변환
      *
-     * @param  array  $optionValues  옵션 값 배열 (예: ['색상' => '빨강', '사이즈' => 'L'])
+     * @param array $optionValues 옵션 값 배열 (예: ['색상' => '빨강', '사이즈' => 'L'])
      * @return string|null 포맷된 문자열 (예: "색상: 빨강, 사이즈: L") 또는 빈 경우 null
      */
     protected function formatOptionValues(array $optionValues): ?string
@@ -999,11 +670,10 @@ class TempOrderService
      * 체크아웃 페이지 새로고침 시 현재 재고 상황을 확인하고
      * 구매 불가능한 상품 목록을 반환합니다.
      *
-     * @param  TempOrder  $tempOrder  임시 주문
-     * @param  array<int, int>  $userRoleIds  현재 사용자의 역할 ID 배열 (비회원은 guest 역할 ID)
+     * @param TempOrder $tempOrder 임시 주문
      * @return array 구매불가 상품 목록 (없으면 빈 배열)
      */
-    public function checkTempOrderItemsAvailability(TempOrder $tempOrder, array $userRoleIds = []): array
+    public function checkTempOrderItemsAvailability(TempOrder $tempOrder): array
     {
         $items = $tempOrder->items ?? [];
         if (empty($items)) {
@@ -1028,7 +698,7 @@ class TempOrderService
                 continue;
             }
 
-            /** @var ProductOption $option */
+            /** @var \Modules\Sirsoft\Ecommerce\Models\ProductOption $option */
             $option = $optionsById[$optionId];
             $product = $option->product;
 
@@ -1047,26 +717,8 @@ class TempOrderService
             // 옵션 값 포맷 (예: "색상: 빨강, 사이즈: L")
             $formattedOption = $this->formatOptionValues($option->getLocalizedOptionValues());
 
-            // 1. 구매 대상 제한 체크 (역할 기반)
-            if (! $this->purchaseEligibilityService->isPurchasableBy($product, $userRoleIds)) {
-                $unavailableItems[] = [
-                    'cart_id' => $item['cart_id'] ?? null,
-                    'product_id' => $product->id,
-                    'product_option_id' => $optionId,
-                    'name' => $product->getLocalizedName(),
-                    'option' => $formattedOption,
-                    'thumbnail' => $thumbnailImage?->download_url,
-                    'quantity' => $quantity,
-                    'stock' => $stockQuantity,
-                    'reason' => 'restricted',
-                ];
-
-                continue;
-            }
-
-            // 2. 판매상태 체크 (판매중 + 전시중이 아니면 차단 — hidden 포함, isPurchasable 통일).
-            //    옵션이 판매 중지(비활성)여도 같은 사유로 막는다 — 담은 뒤 중지된 옵션·옵션 id 직접 지정 모두.
-            if (! $product->isPurchasable() || ! $option->is_active) {
+            // 1. 판매상태 체크
+            if ($product->sales_status !== ProductSalesStatus::ON_SALE) {
                 $unavailableItems[] = [
                     'cart_id' => $item['cart_id'] ?? null,
                     'product_id' => $product->id,
@@ -1082,7 +734,7 @@ class TempOrderService
                 continue;
             }
 
-            // 3. 재고 체크
+            // 2. 재고 체크
             if ($quantity > $stockQuantity) {
                 $unavailableItems[] = [
                     'cart_id' => $item['cart_id'] ?? null,

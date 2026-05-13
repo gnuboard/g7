@@ -7,14 +7,6 @@ export type { DataGridProps, DataGridColumn } from './DataGrid';
 
 export { CardGrid } from './CardGrid';
 export type { CardGridProps, CardGridCellChild } from './CardGrid';
-export { ExtensionCardGrid } from './ExtensionCardGrid';
-export type {
-  ExtensionCardGridProps,
-  ExtensionCardItem,
-  ExtensionViewMode,
-  ExtensionBadgeSpec,
-  ExtensionDependency,
-} from './ExtensionCardGrid';
 
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
@@ -97,9 +89,6 @@ export type { AdminFooterProps, QuickLink } from './AdminFooter';
 export { PageHeader } from './PageHeader';
 export type { PageHeaderProps, TabItem, ActionButton } from './PageHeader';
 
-export { SectionHeader } from './SectionHeader';
-export type { SectionHeaderProps } from './SectionHeader';
-
 export { TemplateCard } from './TemplateCard';
 export type { TemplateCardProps, TemplateStatus } from './TemplateCard';
 
@@ -115,18 +104,6 @@ export type { LayoutFileListProps, LayoutFileItem as LayoutFile } from './Layout
 
 export { CodeEditor } from './CodeEditor';
 export type { CodeEditorProps } from './CodeEditor';
-
-export { CodeWorkspace } from './CodeWorkspace';
-export type { CodeWorkspaceProps } from './CodeWorkspace';
-
-export { FileTree } from './FileTree';
-export type { FileTreeProps, FileTreeNode, FileTreeContentMatch, FileTreeReveal } from './FileTree';
-
-export { FileTreePicker } from './FileTreePicker';
-export type { FileTreePickerProps, FileTreePickerMode } from './FileTreePicker';
-
-export { FileTabs } from './FileTabs';
-export type { FileTabsProps, FileTabItem } from './FileTabs';
 
 export { VersionList } from './VersionList';
 export type { VersionListProps, VersionItem } from './VersionList';
@@ -167,9 +144,6 @@ export type { ExtensionBadgeProps, ExtensionType } from './ExtensionBadge';
 export { Badge } from './Badge';
 export type { BadgeProps } from './Badge';
 
-export { BrandMark } from './BrandMark';
-export type { BrandMarkProps, BrandMarkData } from './BrandMark';
-
 // 민섭: 이커머스 레이아웃 작업 도중 추가 {
 export { SearchableDropdown } from './SearchableDropdown';
 export type { SearchableDropdownProps, SearchableDropdownOption } from './SearchableDropdown';
@@ -192,8 +166,6 @@ export type { AccordionProps } from './Accordion';
 
 export { PermissionTree } from './PermissionTree';
 export type { PermissionTreeProps, PermissionNode } from './PermissionTree';
-export { MenuAccessTree } from './MenuAccessTree';
-export type { MenuAccessTreeProps, MenuAccessNode } from './MenuAccessTree';
 
 export { CategoryTree } from './CategoryTree';
 export type { CategoryTreeProps, CategoryNode } from './CategoryTree';
@@ -257,14 +229,3 @@ export type {
   MultilingualLocaleContextValue,
   UseCurrentMultilingualLocaleResult,
 } from './MultilingualLocaleContext';
-
-// Chart 컴포넌트
-export { BarChart } from './BarChart';
-export type { BarChartProps, BarChartDataset } from './BarChart';
-
-export { DonutChart } from './DonutChart';
-export type { DonutChartProps, DonutChartDataItem } from './DonutChart';
-
-// 방문자 통계 추이(선 차트) — 방문자·방문·페이지뷰 세 계열을 시간 축으로 그린다 (#682)
-export { LineChart } from './LineChart';
-export type { LineChartProps, LineChartDataset } from './LineChart';

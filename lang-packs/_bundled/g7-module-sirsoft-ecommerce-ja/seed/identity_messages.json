@@ -1,0 +1,14 @@
+{
+  "mail.purpose.checkout_verification": {
+    "definition": {
+      "name": "決済時の本人確認",
+      "description": "決済進行前の本人/成人確認認証コードメール"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 決済本人確認認証コード",
+        "body": "<h1>決済本人確認</h1><p>決済を進行するために本人確認が必要です。以下の認証コードを入力してください。</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>このコードは<strong>{expire_minutes}分</strong>後に失効します。</p><p><strong>ご本人が決済を進行していない場合は、このメールを無視し、すぐにパスワードを変更してください。</strong></p><p>ありがとうございます。<br><a href=\"{site_url}\">{app_name}</a></p>"
+      }
+    }
+  }
+}

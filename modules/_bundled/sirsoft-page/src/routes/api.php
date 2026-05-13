@@ -30,9 +30,9 @@ use Modules\Sirsoft\Page\Http\Controllers\User\PublicPageController;
 |
 */
 Route::prefix('admin/pages')->middleware(['auth:sanctum', 'throttle:600,1'])->name('admin.pages.')->group(function () {
-    // 슬러그 중복 확인 (/{page} 보다 먼저 등록) — 등록 화면과 수정 화면 모두 쓰므로 등록·수정 어느 권한으로도(OR)
+    // 슬러그 중복 확인 (/{page} 보다 먼저 등록)
     Route::post('/check-slug', [PageController::class, 'checkSlug'])
-        ->middleware('permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false')
+        ->middleware('permission:admin,sirsoft-page.pages.create')
         ->name('check-slug');
 
     // 일괄 발행/미발행 (/{page} 보다 먼저 등록)
@@ -95,16 +95,9 @@ Route::prefix('admin/pages')->middleware(['auth:sanctum', 'throttle:600,1'])->na
 |
 */
 Route::prefix('admin/attachments')->middleware(['auth:sanctum', 'throttle:600,1'])->name('admin.attachments.')->group(function () {
-    // 첨부 상한·허용 형식 (화면 전용 경량 조회 — 신규 작성 화면에는 읽을 상세가 없다)
-    // `/{id}` 보다 먼저 등록한다: 세그먼트가 하나로 같아 순서가 뒤면 삭제 라우트가 가로챈다.
-    Route::get('/settings', [PageAttachmentController::class, 'settings'])
-        ->middleware('permission:admin,sirsoft-page.pages.read')
-        ->name('settings');
-
-    // 첨부파일 업로드 — 등록 화면(임시 첨부)과 수정 화면(page_id) 모두 쓰므로 등록·수정 어느 권한으로도(OR).
-    // page_id 를 붙이면 서비스가 그 페이지의 수정 권한·스코프를 다시 본다
+    // 첨부파일 업로드
     Route::post('/', [PageAttachmentController::class, 'upload'])
-        ->middleware('permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false')
+        ->middleware('permission:admin,sirsoft-page.pages.create')
         ->name('upload');
 
     // 첨부파일 순서 변경
@@ -112,10 +105,21 @@ Route::prefix('admin/attachments')->middleware(['auth:sanctum', 'throttle:600,1'
         ->middleware('permission:admin,sirsoft-page.pages.update')
         ->name('reorder');
 
-    // 첨부파일 삭제 — 등록 화면의 임시 첨부(올린 사람만)와 수정 화면의 연결 첨부(수정 권한 + 부모 페이지 스코프)를
-    // 서비스가 갈라 판정하므로 라우트는 등록·수정 어느 권한으로도(OR)
+    // 첨부파일 다운로드 (해시 기반)
+    Route::get('/download/{hash}', [PageAttachmentController::class, 'download'])
+        ->middleware('permission:admin,sirsoft-page.pages.read')
+        ->where('hash', '[a-zA-Z0-9]{12}')
+        ->name('download');
+
+    // 첨부파일 이미지 미리보기 (해시 기반, inline)
+    Route::get('/preview/{hash}', [PageAttachmentController::class, 'preview'])
+        ->middleware('permission:admin,sirsoft-page.pages.read')
+        ->where('hash', '[a-zA-Z0-9]{12}')
+        ->name('preview');
+
+    // 첨부파일 삭제
     Route::delete('/{id}', [PageAttachmentController::class, 'destroy'])
-        ->middleware('permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false')
+        ->middleware('permission:admin,sirsoft-page.pages.update')
         ->name('destroy');
 });
 
@@ -130,12 +134,12 @@ Route::prefix('admin/attachments')->middleware(['auth:sanctum', 'throttle:600,1'
 */
 // optional.sanctum: Bearer 토큰이 있으면 인증, 없으면 guest로 통과
 Route::prefix('pages')->middleware(['optional.sanctum', 'throttle:600,1'])->name('pages.')->group(function () {
-    // 첨부 다운로드 (해시 기반, 발행 상태에 따라 컨트롤러에서 접근 제어) - /{slug} 보다 먼저 등록
+    // 공개 첨부파일 다운로드 (해시 기반) - /{slug} 보다 먼저 등록
     Route::get('/attachment/{hash}', [PublicPageAttachmentController::class, 'download'])
         ->where('hash', '[a-zA-Z0-9]{12}')
         ->name('attachment.download');
 
-    // 첨부 이미지 미리보기 (해시 기반, 발행 상태에 따라 컨트롤러에서 접근 제어 — download 와 동일 게이트)
+    // 공개 첨부파일 이미지 미리보기 (해시 기반, inline)
     Route::get('/attachment/{hash}/preview', [PublicPageAttachmentController::class, 'preview'])
         ->where('hash', '[a-zA-Z0-9]{12}')
         ->name('attachment.preview');

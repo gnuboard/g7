@@ -11,12 +11,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
  */
 class ProductOptionService
 {
-    /**
-     * ProductOptionService 생성자
-     *
-     * @param  ProductOptionRepositoryInterface  $repository  상품 옵션 리포지토리
-     * @param  ProductRepositoryInterface  $productRepository  상품 리포지토리
-     */
     public function __construct(
         protected ProductOptionRepositoryInterface $repository,
         protected ProductRepositoryInterface $productRepository
@@ -25,7 +19,7 @@ class ProductOptionService
     /**
      * "productId-optionId" 형식의 문자열 배열에서 옵션 ID만 추출
      *
-     * @param  array  $mixedIds  "productId-optionId" 형식의 문자열 배열
+     * @param array $mixedIds "productId-optionId" 형식의 문자열 배열
      * @return array 옵션 ID 배열
      */
     private function parseOptionIdsFromMixed(array $mixedIds): array
@@ -44,8 +38,8 @@ class ProductOptionService
     /**
      * 상품 ID와 옵션 ID를 병합하여 최종 옵션 ID 배열 생성
      *
-     * @param  array  $productIds  상품 ID 배열 (해당 상품의 모든 옵션 포함)
-     * @param  array  $mixedOptionIds  "productId-optionId" 형식의 문자열 배열
+     * @param array $productIds 상품 ID 배열 (해당 상품의 모든 옵션 포함)
+     * @param array $mixedOptionIds "productId-optionId" 형식의 문자열 배열
      * @return array 중복 제거된 옵션 ID 배열
      */
     private function mergeOptionIds(array $productIds, array $mixedOptionIds): array
@@ -66,18 +60,18 @@ class ProductOptionService
     /**
      * 상품 ID 배열과 옵션 ID 배열을 병합하여 옵션 판매가 일괄 변경
      *
-     * @param  array  $productIds  상품 ID 배열 (해당 상품의 모든 옵션 대상)
-     * @param  array  $mixedOptionIds  "productId-optionId" 형식의 문자열 배열 (개별 선택된 옵션)
-     * @param  string  $method  변경 방식 (increase, decrease, fixed)
-     * @param  float  $value  변경 값 (소수 통화 대응)
-     * @param  string  $unit  단위 (won, percent)
+     * @param array $productIds 상품 ID 배열 (해당 상품의 모든 옵션 대상)
+     * @param array $mixedOptionIds "productId-optionId" 형식의 문자열 배열 (개별 선택된 옵션)
+     * @param string $method 변경 방식 (increase, decrease, fixed)
+     * @param int $value 변경 값
+     * @param string $unit 단위 (won, percent)
      * @return array 결과 (updated_count, requested_product_count)
      */
     public function bulkUpdatePriceByMixedIds(
         array $productIds,
         array $mixedOptionIds,
         string $method,
-        float $value,
+        int $value,
         string $unit
     ): array {
         // 1. 옵션 ID 병합
@@ -91,7 +85,8 @@ class ProductOptionService
         }
 
         // 2. 수정 전 스냅샷 캡처 (after 훅에 전달)
-        $snapshots = $this->repository->getSnapshotsByIds($optionIds);
+        $snapshots = \Modules\Sirsoft\Ecommerce\Models\ProductOption::whereIn('id', $optionIds)
+            ->get()->keyBy('id')->map->toArray()->all();
 
         // 3. before 훅
         HookManager::doAction('sirsoft-ecommerce.product_option.before_bulk_price_update', $optionIds, [
@@ -115,10 +110,10 @@ class ProductOptionService
     /**
      * 상품 ID 배열과 옵션 ID 배열을 병합하여 옵션 재고 일괄 변경
      *
-     * @param  array  $productIds  상품 ID 배열 (해당 상품의 모든 옵션 대상)
-     * @param  array  $mixedOptionIds  "productId-optionId" 형식의 문자열 배열 (개별 선택된 옵션)
-     * @param  string  $method  변경 방식 (increase, decrease, set)
-     * @param  int  $value  변경 값
+     * @param array $productIds 상품 ID 배열 (해당 상품의 모든 옵션 대상)
+     * @param array $mixedOptionIds "productId-optionId" 형식의 문자열 배열 (개별 선택된 옵션)
+     * @param string $method 변경 방식 (increase, decrease, set)
+     * @param int $value 변경 값
      * @return array 결과 (updated_count, requested_product_count)
      */
     public function bulkUpdateStockByMixedIds(
@@ -138,7 +133,8 @@ class ProductOptionService
         }
 
         // 2. 수정 전 스냅샷 캡처 (after 훅에 전달)
-        $snapshots = $this->repository->getSnapshotsByIds($optionIds);
+        $snapshots = \Modules\Sirsoft\Ecommerce\Models\ProductOption::whereIn('id', $optionIds)
+            ->get()->keyBy('id')->map->toArray()->all();
 
         // 3. before 훅
         HookManager::doAction('sirsoft-ecommerce.product_option.before_bulk_stock_update', $optionIds, [
@@ -162,14 +158,13 @@ class ProductOptionService
      * 상품 ID 배열로 해당 상품들의 모든 옵션 판매가 일괄 변경
      *
      * @deprecated Use bulkUpdatePriceByMixedIds instead
-     *
-     * @param  array  $productIds  상품 ID 배열
-     * @param  string  $method  변경 방식 (increase, decrease, fixed)
-     * @param  float  $value  변경 값 (소수 통화 대응)
-     * @param  string  $unit  단위 (won, percent)
+     * @param array $productIds 상품 ID 배열
+     * @param string $method 변경 방식 (increase, decrease, fixed)
+     * @param int $value 변경 값
+     * @param string $unit 단위 (won, percent)
      * @return array 결과 (updated_count, requested_product_count)
      */
-    public function bulkUpdatePriceByProductIds(array $productIds, string $method, float $value, string $unit): array
+    public function bulkUpdatePriceByProductIds(array $productIds, string $method, int $value, string $unit): array
     {
         return $this->bulkUpdatePriceByMixedIds($productIds, [], $method, $value, $unit);
     }
@@ -178,10 +173,9 @@ class ProductOptionService
      * 상품 ID 배열로 해당 상품들의 모든 옵션 재고 일괄 변경
      *
      * @deprecated Use bulkUpdateStockByMixedIds instead
-     *
-     * @param  array  $productIds  상품 ID 배열
-     * @param  string  $method  변경 방식 (increase, decrease, set)
-     * @param  int  $value  변경 값
+     * @param array $productIds 상품 ID 배열
+     * @param string $method 변경 방식 (increase, decrease, set)
+     * @param int $value 변경 값
      * @return array 결과 (updated_count, requested_product_count)
      */
     public function bulkUpdateStockByProductIds(array $productIds, string $method, int $value): array
@@ -194,7 +188,7 @@ class ProductOptionService
      *
      * 일괄 변경 조건이 설정된 필드는 우선 적용되며, 나머지는 개별 수정이 적용됩니다.
      *
-     * @param  array  $data  업데이트 데이터 (product_ids/ids, bulk_changes, items)
+     * @param array $data 업데이트 데이터 (product_ids/ids, bulk_changes, items)
      * @return array 업데이트 결과 (options_updated)
      */
     public function bulkUpdate(array $data): array
@@ -218,7 +212,11 @@ class ProductOptionService
         }
 
         // 4. 수정 전 스냅샷 캡처 (after 훅에 전달)
-        $snapshots = $this->repository->getSnapshotsByIds($optionIds);
+        $snapshots = [];
+        if (! empty($optionIds)) {
+            $snapshots = \Modules\Sirsoft\Ecommerce\Models\ProductOption::whereIn('id', $optionIds)
+                ->get()->keyBy('id')->map->toArray()->all();
+        }
 
         if (empty($optionIds)) {
             return ['options_updated' => 0];
@@ -233,7 +231,7 @@ class ProductOptionService
             if (isset($bulkChanges['price_adjustment'])) {
                 $priceChange = $bulkChanges['price_adjustment'];
                 $method = $priceChange['method'] ?? 'set';
-                $value = (float) ($priceChange['value'] ?? 0);
+                $value = (int) ($priceChange['value'] ?? 0);
 
                 foreach ($optionIds as $optionId) {
                     $this->applyPriceAdjustment($optionId, $method, $value);
@@ -308,37 +306,24 @@ class ProductOptionService
     /**
      * 가격 조정 적용
      *
-     * 옵션 판매가는 「상품 판매가 + 조정액」이다. 인하(subtract)·음수 가산·비율 변경 결과가
-     * 옵션 판매가를 0 아래로 끌어내리지 않도록 조정액 하한을 `-상품 판매가` 로 둔다.
-     *
-     * @param  int  $optionId  옵션 ID
-     * @param  string  $method  변경 방식 (set, add, subtract, percent)
-     * @param  float  $value  변경 값 (소수 통화 대응)
+     * @param int $optionId 옵션 ID
+     * @param string $method 변경 방식 (set, add, percent)
+     * @param int $value 변경 값
      * @return void
      */
-    private function applyPriceAdjustment(int $optionId, string $method, float $value): void
+    private function applyPriceAdjustment(int $optionId, string $method, int $value): void
     {
-        $option = $this->repository->findByIdWithProduct($optionId);
+        $option = $this->repository->findById($optionId);
         if (! $option) {
             return;
         }
 
-        $productSellingPrice = (float) ($option->product?->selling_price ?? 0);
-
-        // 소수 통화 대응: 정수 절사 대신 소수 2자리로 반올림 보존.
-        // 비율(percent)은 옵션 판매가(상품 판매가 + 조정액)를 기준으로 계산한 뒤 조정액으로 되돌린다 —
-        // 조정액에만 곱하면 조정액 0 인 옵션은 「판매가 10% 인하」 를 해도 값이 그대로였다(EC-699).
         $newValue = match ($method) {
             'set' => $value,
-            'add' => (float) $option->price_adjustment + $value,
-            'subtract' => (float) $option->price_adjustment - $value,
-            'percent' => round(($productSellingPrice + (float) $option->price_adjustment) * (1 + $value / 100) - $productSellingPrice, 2),
-            default => (float) $option->price_adjustment,
+            'add' => $option->price_adjustment + $value,
+            'percent' => (int) floor($option->price_adjustment * (1 + $value / 100)),
+            default => $option->price_adjustment,
         };
-
-        // 옵션 판매가 하한 0 — 조정액이 상품 판매가만큼 음수가 되면 그 이상 내려가지 않는다
-        $floor = -1 * $productSellingPrice;
-        $newValue = max($newValue, $floor);
 
         $this->repository->update($optionId, ['price_adjustment' => $newValue]);
     }
@@ -346,9 +331,9 @@ class ProductOptionService
     /**
      * 재고 변경 적용
      *
-     * @param  int  $optionId  옵션 ID
-     * @param  string  $method  변경 방식 (set, add, subtract)
-     * @param  int  $value  변경 값
+     * @param int $optionId 옵션 ID
+     * @param string $method 변경 방식 (set, add, subtract)
+     * @param int $value 변경 값
      * @return void
      */
     private function applyStockChange(int $optionId, string $method, int $value): void
@@ -371,8 +356,8 @@ class ProductOptionService
     /**
      * bulk_changes에 설정된 필드를 제외한 데이터 반환
      *
-     * @param  array  $item  개별 수정 데이터
-     * @param  array  $bulkChanges  일괄 변경 조건
+     * @param array $item 개별 수정 데이터
+     * @param array $bulkChanges 일괄 변경 조건
      * @return array bulk_changes 필드가 제외된 데이터
      */
     private function filterBulkFields(array $item, array $bulkChanges): array

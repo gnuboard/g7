@@ -1,7 +1,6 @@
 import React from 'react';
 import { Div } from '../basic/Div';
 import { Label } from '../basic/Label';
-import type { EditorAttrs } from '../../types';
 
 export interface FormFieldProps {
   /** 필드 레이블 */
@@ -22,12 +21,6 @@ export interface FormFieldProps {
   horizontal?: boolean;
   /** 레이블 너비 (수평 레이아웃 시) */
   labelWidth?: string;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -46,8 +39,6 @@ export const FormField: React.FC<FormFieldProps> = ({
   children,
   horizontal = false,
   labelWidth = 'w-1/3',
-  id,
-  editorAttrs,
 }) => {
   const containerClass = horizontal
     ? `flex items-start gap-4 ${className}`
@@ -57,7 +48,7 @@ export const FormField: React.FC<FormFieldProps> = ({
   const contentContainerClass = horizontal ? 'flex-1' : '';
 
   return (
-    <Div className={containerClass} id={id} {...editorAttrs}>
+    <Div className={containerClass}>
       {label && (
         <Div className={labelContainerClass}>
           <Label

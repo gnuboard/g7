@@ -1,4 +1,15 @@
-import { EditorAttrs } from '../../types';
+/**
+ * AvatarUploader 컴포넌트
+ *
+ * 프로필 아바타 이미지 업로드를 위한 컴포넌트입니다.
+ * - 원형 아바타 UI
+ * - 파일 선택 시 즉시 업로드
+ * - 업로드/삭제 API 지원
+ * - 업로드 오류 표시
+ * - 삭제 확인 다이얼로그
+ *
+ * @module composite/AvatarUploader
+ */
 export interface AvatarUploaderProps {
     /** 현재 아바타 URL */
     src?: string;
@@ -6,9 +17,9 @@ export interface AvatarUploaderProps {
     fallbackText?: string;
     /** 아바타 크기 */
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-    /** 업로드 API 엔드포인트 (기본: /api/me/avatar). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
+    /** 업로드 API 엔드포인트 (기본: /api/me/avatar) */
     uploadEndpoint?: string;
-    /** 삭제 API 엔드포인트 (기본: /api/me/avatar). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
+    /** 삭제 API 엔드포인트 (기본: /api/me/avatar) */
     deleteEndpoint?: string;
     /** 업로드 성공 콜백 */
     onUploadSuccess?: (data: {
@@ -51,12 +62,6 @@ export interface AvatarUploaderProps {
     deleteSuccessActions?: Array<Record<string, any>>;
     /** 삭제 실패 시 실행할 액션 배열 */
     deleteErrorActions?: Array<Record<string, any>>;
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
 }
-export declare function AvatarUploader({ src, fallbackText, size, uploadEndpoint, deleteEndpoint, onUploadSuccess, onUploadError, onDeleteSuccess, onDeleteError, showDeleteButton, accept, maxSize, className, uploadButtonText, deleteButtonText, readOnly, confirmDelete, deleteConfirmMessage, confirmUpload, uploadConfirmMessage, uploadSuccessActions, uploadErrorActions, deleteSuccessActions, deleteErrorActions, id, editorAttrs, }: AvatarUploaderProps): import("react/jsx-runtime").JSX.Element;
+export declare function AvatarUploader({ src, fallbackText, size, uploadEndpoint, deleteEndpoint, onUploadSuccess, onUploadError, onDeleteSuccess, onDeleteError, showDeleteButton, accept, maxSize, className, uploadButtonText, deleteButtonText, readOnly, confirmDelete, deleteConfirmMessage, confirmUpload, uploadConfirmMessage, uploadSuccessActions, uploadErrorActions, deleteSuccessActions, deleteErrorActions, }: AvatarUploaderProps): import("react/jsx-runtime").JSX.Element;
 export default AvatarUploader;

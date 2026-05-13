@@ -112,35 +112,6 @@ describe('TagInput 컴포넌트', () => {
     });
   });
 
-  describe('메뉴 포탈 z-index', () => {
-    // 회귀(게시판 설정 일괄 적용 화면 결함): react-select 는 menuPortal 에
-    // zIndex:1 을 인라인 스타일로 강제 주입하며, 이는 Tailwind classNames
-    // 보다 우선 적용된다. styles.menuPortal 오버라이드가 없으면 드롭다운이
-    // sticky 하단 버튼바(z-10) 등 낮은 요소에도 가려질 수 있었다.
-    it('메뉴 포탈이 sticky 요소보다 높은 z-index를 인라인 스타일로 갖는다', async () => {
-      const user = userEvent.setup();
-
-      render(
-        <TagInput
-          value={[]}
-          options={mockOptions}
-          onChange={() => {}}
-        />
-      );
-
-      const input = screen.getByRole('combobox');
-      await user.click(input);
-
-      await screen.findByText('A/S');
-
-      const portal = document.body.querySelector('.tag-input__menu-portal') as HTMLElement | null;
-      expect(portal).toBeTruthy();
-      // react-select(emotion)는 zIndex 를 style 속성이 아닌 생성된 CSS 클래스로 적용하므로
-      // getComputedStyle 로 확인해야 한다 (element.style.zIndex 는 항상 빈 값).
-      expect(Number(getComputedStyle(portal!).zIndex)).toBeGreaterThanOrEqual(9999);
-    });
-  });
-
   describe('onBeforeRemove 콜백', () => {
     it('onBeforeRemove가 true를 반환하면 삭제된다', async () => {
       const handleChange = vi.fn();
@@ -688,50 +659,6 @@ describe('TagInput 컴포넌트', () => {
       expect(handleChange).toHaveBeenCalled();
       const callArg = handleChange.mock.calls[0][0];
       expect(callArg.target.value).toContain('as');
-    });
-  });
-
-  // 편집기 선택 결함 회귀 가드.
-  // TagInput 은 react-select 를 Fragment 로 직접 렌더해 루트에 id/editorAttrs(편집 모드
-  // data-editor-*)가 도달하지 못해 편집기에서 선택·편집 불가하던 결함을 정정했다.
-  // 4개 렌더 분기(싱글/멀티 × creatable/plain) 모두 루트 Div 에 id+editorAttrs 를 spread.
-  describe('편집기 editorAttrs/id passthrough', () => {
-    const editorAttrs = {
-      'data-editor-name': 'TagInput',
-      'data-editor-path': '1.children.0',
-    } as Record<string, unknown>;
-
-    it('멀티 plain 분기 루트에 id/editorAttrs 가 도달함', () => {
-      const { container } = render(
-        <TagInput value={[]} options={mockOptions} onChange={() => {}} id="tags-1" editorAttrs={editorAttrs} isMulti />
-      );
-      const root = container.querySelector('[data-editor-name="TagInput"]');
-      expect(root).toBeTruthy();
-      expect(root).toHaveAttribute('id', 'tags-1');
-      expect(root).toHaveAttribute('data-editor-path', '1.children.0');
-    });
-
-    it('싱글 plain 분기 루트에 id/editorAttrs 가 도달함', () => {
-      const { container } = render(
-        <TagInput value={null} options={mockOptions} onChange={() => {}} id="tags-2" editorAttrs={editorAttrs} isMulti={false} />
-      );
-      const root = container.querySelector('[data-editor-name="TagInput"]');
-      expect(root).toBeTruthy();
-      expect(root).toHaveAttribute('id', 'tags-2');
-    });
-
-    it('싱글 creatable 분기 루트에 editorAttrs 가 도달함', () => {
-      const { container } = render(
-        <TagInput value={null} options={mockOptions} onChange={() => {}} editorAttrs={editorAttrs} isMulti={false} creatable />
-      );
-      expect(container.querySelector('[data-editor-name="TagInput"]')).toBeTruthy();
-    });
-
-    it('멀티 creatable 분기 루트에 editorAttrs 가 도달함', () => {
-      const { container } = render(
-        <TagInput value={[]} options={mockOptions} onChange={() => {}} editorAttrs={editorAttrs} isMulti creatable />
-      );
-      expect(container.querySelector('[data-editor-name="TagInput"]')).toBeTruthy();
     });
   });
 });

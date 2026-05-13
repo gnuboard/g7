@@ -11,7 +11,7 @@
  * @module composite/FileUploader
  */
 
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useImperativeHandle, useMemo } from 'react';
 
 import { Div } from '../../basic/Div';
 import { ConfirmDialog } from '../ConfirmDialog';
@@ -21,14 +21,8 @@ import { FileUploaderProvider } from './FileUploaderContext';
 import { useFileUploader } from './useFileUploader';
 import { FileDropZone } from './FileDropZone';
 import { FileList } from './FileList';
-import { useFocusRecovery } from './useFocusRecovery';
 import type { FileUploaderProps, FileUploaderRef, Attachment, PendingFile } from './types';
 import { t } from './utils';
-
-// 생략된 배열 속성의 기본값 — 렌더마다 새 배열을 만들면 그 값을 의존성으로 쓰는 동기화 effect·콜백이
-// 렌더마다 다시 돌아 상태 갱신이 끝없이 이어진다(7.1.0 O-PD-2). 얼려 두어 공유 상수가 바뀌지 않게 한다.
-const EMPTY_FILES = Object.freeze([]) as unknown as Attachment[];
-const EMPTY_ROLE_IDS = Object.freeze([]) as unknown as number[];
 
 // ========== Main Component ==========
 
@@ -41,20 +35,18 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       collection = 'default',
       maxFiles = 10,
       maxSize = 10,
-      // 기본은 고른 순서대로 하나씩 — 서버가 도착 순서로 첨부 번호를 매기면 동시 업로드는 먼저 끝난 파일이 앞에 선다
-      maxConcurrentUploads = 1,
+      maxConcurrentUploads = 3,
       accept,
       imageCompression: compressionOptions,
-      roleIds = EMPTY_ROLE_IDS,
+      roleIds = [],
       autoUpload = true,
       onFilesChange,
       onUploadComplete,
       onUploadError,
       onRemove,
       onReorder,
-      initialFiles = EMPTY_FILES,
+      initialFiles = [],
       disabled = false,
-      size = 'md',
       className = '',
       confirmBeforeRemove = false,
       confirmRemoveTitle,
@@ -64,8 +56,6 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       enablePrimarySelection = false,
       primaryFileId,
       onPrimaryChange,
-      id,
-      editorAttrs,
     },
     ref
   ) => {
@@ -99,10 +89,6 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       confirmBeforeRemove,
       uploadParams,
     });
-
-    // 항목을 지우거나 파일을 고른 뒤 초점을 쥔 요소가 사라지면 가까운 자리로 초점을 돌린다(7.1.0 P-6)
-    const rootRef = useRef<HTMLDivElement>(null);
-    useFocusRecovery(rootRef);
 
     // 컴포넌트 외부에서 호출 가능한 메서드 노출
     useImperativeHandle(ref, () => ({
@@ -195,7 +181,7 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
 
     return (
       <FileUploaderProvider value={contextValue}>
-        <Div ref={rootRef} id={id} className={className} {...editorAttrs}>
+        <Div className={className}>
           {/* 드롭존 + 파일 목록 통합 영역 */}
           <FileDropZone
             isDragOver={uploader.isDragOver}
@@ -207,7 +193,6 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
             maxFiles={maxFiles}
             maxSize={maxSize}
             disabled={disabled}
-            size={size}
           >
             {/* 파일이 있을 때만 FileList 렌더링 */}
             {uploader.hasFiles && (
@@ -228,7 +213,6 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
                 primaryFileId={primaryFileId}
                 onPrimaryChange={onPrimaryChange}
                 disabled={disabled}
-                size={size}
               />
             )}
           </FileDropZone>

@@ -1,4 +1,3 @@
-// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 이커머스 모듈 필터 named_actions 검증 테스트
  *
@@ -21,7 +20,6 @@ import shippingPolicyFilter from '../../../layouts/admin/partials/admin_ecommerc
 // 주문관리
 import orderList from '../../../layouts/admin/admin_ecommerce_order_list.json';
 import orderFilter from '../../../layouts/admin/partials/admin_ecommerce_order_list/_partial_filter_section.json';
-import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 재귀적으로 JSON 트리에서 특정 조건의 노드를 찾는 유틸리티 */
 function findNodes(node: any, predicate: (n: any) => boolean, results: any[] = []): any[] {
@@ -45,38 +43,6 @@ function findActionRefs(obj: any, refName: string, results: any[] = []): any[] {
         for (const key of Object.keys(obj)) {
             findActionRefs(obj[key], refName, results);
         }
-    }
-    return results;
-}
-
-/**
- * 지정한 actionRef 를 (직접 또는 중첩 sequence 내부에서) 참조하는 액션 노드를 수집합니다.
- *
- * keypress/click 액션이 sequence 핸들러로 setState + actionRef 를 묶는 패턴을 지원합니다.
- */
-function findActionNodesReferencing(obj: any, refName: string, results: any[] = []): any[] {
-    if (!obj || typeof obj !== 'object') return results;
-    if (Array.isArray(obj)) {
-        for (const item of obj) findActionNodesReferencing(item, refName, results);
-        return results;
-    }
-
-    const referencesRef = (node: any): boolean => {
-        if (!node || typeof node !== 'object') return false;
-        if (node.actionRef === refName) return true;
-        if (Array.isArray(node.actions)) {
-            return actionsOf(node).some((a: any) => referencesRef(a));
-        }
-        return false;
-    };
-
-    // 액션처럼 보이는 노드(type 또는 handler 보유)가 ref 를 참조하면 수집
-    if ((obj.type || obj.handler || obj.actionRef) && referencesRef(obj)) {
-        results.push(obj);
-    }
-
-    for (const key of Object.keys(obj)) {
-        findActionNodesReferencing(obj[key], refName, results);
     }
     return results;
 }
@@ -168,15 +134,14 @@ describe('주문관리 named_actions 검증', () => {
     });
 
     it('파샬 필터의 검색 Input에 Enter keypress actionRef가 있어야 함', () => {
-        // keypress/Enter 액션이 sequence 로 setState + actionRef 를 묶는 패턴 지원
-        const nodes = findActionNodesReferencing(orderFilter, 'searchOrders');
-        const enterRef = nodes.find((r: any) => r.type === 'keypress' && r.key === 'Enter');
+        const refs = findActionRefs(orderFilter, 'searchOrders');
+        const enterRef = refs.find((r: any) => r.type === 'keypress' && r.key === 'Enter');
         expect(enterRef).toBeDefined();
     });
 
     it('파샬 필터의 검색 버튼 click이 actionRef를 참조해야 함', () => {
-        const nodes = findActionNodesReferencing(orderFilter, 'searchOrders');
-        const clickRef = nodes.find((r: any) => r.type === 'click');
+        const refs = findActionRefs(orderFilter, 'searchOrders');
+        const clickRef = refs.find((r: any) => r.type === 'click');
         expect(clickRef).toBeDefined();
     });
 });

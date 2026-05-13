@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api\Admin;
 
-use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Models\Permission;
 use App\Models\Role;
@@ -11,7 +10,6 @@ use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -25,29 +23,11 @@ class LayoutControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * 레이아웃/템플릿 요청 경로가 GDPR 정책 테이블을 조회하므로
-     * 해당 플러그인 마이그레이션을 테스트 DB 에 포함시킨다.
-     *
-     * @var array<string>
-     */
-    protected array $requiredExtensions = [
-        'plugins/sirsoft-gdpr',
-    ];
-
     private User $adminUser;
-
     private User $normalUser;
-
     private Template $template;
-
     private string $token;
 
-    /**
-     * 테스트마다 관리자·일반 사용자와 토큰, 테스트용 템플릿을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -71,9 +51,6 @@ class LayoutControllerTest extends TestCase
     /**
      * 관리자 사용자 생성 (필요한 권한 포함)
      * admin 미들웨어를 통과하기 위해 admin 역할도 함께 할당
-     *
-     * @param  array<string>  $permissions  부여할 권한 식별자 목록
-     * @return User 권한을 가진 관리자 사용자
      */
     private function createAdminUser(array $permissions = []): User
     {
@@ -112,7 +89,7 @@ class LayoutControllerTest extends TestCase
                 'description' => json_encode(['ko' => '시스템 관리자', 'en' => 'System Administrator']),
                 'extension_type' => ExtensionOwnerType::Core,
                 'extension_identifier' => 'core',
-                'type' => 'admin',
+                    'type' => 'admin',
                 'is_active' => true,
             ]
         );
@@ -135,8 +112,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
-     *
-     * @return static 인증 헤더를 붙인 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -148,12 +123,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 목록 조회 성공
-     *
-     * @scenario endpoint=layout_index
-     *
-     * @effects layout_index_lists_layout_files
-     *
-     * @return void 반환값 없음
      */
     public function test_can_list_layouts(): void
     {
@@ -167,9 +136,6 @@ class LayoutControllerTest extends TestCase
             ->getJson("/api/admin/templates/{$this->template->identifier}/layouts");
 
         // Assert
-        // 목록은 파일 목록 표시에 필요한 필드만 담는다 — 본문(content) 및 본문 파생 구조
-        // (components/data_sources/metadata/endpoint)는 상세 엔드포인트가 제공한다.
-        // @see LayoutIndexPayloadPruningTest
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
@@ -179,13 +145,10 @@ class LayoutControllerTest extends TestCase
                         'id',
                         'template_id',
                         'name',
-                        'description',
-                        'route_path',
-                        'size',
-                        'size_formatted',
-                        'has_update',
-                        'lock_version',
-                        'updated_at',
+                        'endpoint',
+                        'components',
+                        'data_sources',
+                        'metadata',
                     ],
                 ],
             ]);
@@ -194,165 +157,7 @@ class LayoutControllerTest extends TestCase
     }
 
     /**
-     * 목록 조회가 본문을 응답에 남기지 않고도 크기를 보고하는지 확인합니다.
-     *
-     * 두 가지를 함께 고정한다. ① `getByTemplateId()` 는 `content` 컬럼을 아예 select 하지 않는다
-     * — 이 메서드의 남은 소비처는 캐시 무효화뿐인데 본문까지 hydration 하면 템플릿 전체 레이아웃
-     * JSON 이 메모리에 올라온다. ② 목록 응답의 크기 표기는 그대로 살아 있다 — 목록 경로
-     * (`getListByTemplateId()`)는 본문을 청크로 흘려 읽어 길이만 남기고 본문 자체는 버린다.
-     * 이 대체 경로가 끊기면 화면의 크기 표기가 전부 `0 B` 가 되므로 본문 프루닝과 한 몸이다.
-     *
-     * @effects layout_size_reported_without_reading_content, list_query_does_not_select_content_column
-     *
-     * @return void 반환값 없음
-     */
-    public function test_layout_list_reports_size_without_hydrating_content(): void
-    {
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'size-without-content',
-            'content' => ['components' => [['type' => 'basic', 'name' => 'Div']]],
-        ]);
-
-        $rows = app(LayoutRepositoryInterface::class)
-            ->getByTemplateId($this->template->id);
-
-        $fetched = $rows->firstWhere('id', $layout->id);
-
-        $this->assertNotNull($fetched);
-        $this->assertArrayNotHasKey('content', $fetched->getAttributes(), '목록 쿼리가 본문을 읽었다');
-
-        $response = $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts");
-
-        $response->assertStatus(200);
-
-        $row = collect($response->json('data'))->firstWhere('name', 'size-without-content');
-
-        $this->assertGreaterThan(0, $row['size']);
-        $this->assertNotSame('0 B', $row['size_formatted']);
-    }
-
-    /**
-     * 레이아웃 목록에는 편집 본문과 파싱 결과가 실리지 않는다.
-     *
-     * 목록은 파일 선택 트리를 그리는 화면이라 이름·크기·수정일만 쓴다. 본문(`content`)과
-     * 파싱 결과(`components`/`data_sources`/`metadata`)까지 함께 내려주면 템플릿의 모든 레이아웃
-     * JSON 전문이 한 응답에 담겨, 레이아웃이 수십 개인 템플릿에서는 목록 한 번이 수 MB가 된다.
-     * 편집 본문은 단건 조회가 공급한다.
-     *
-     * @scenario resource=layout,endpoint=list,observation=response_payload
-     *
-     * @effects list_omits_layout_content
-     *
-     * @return void 반환값 없음
-     */
-    public function test_layout_list_omits_content_and_parsed_blocks(): void
-    {
-        TemplateLayout::factory()->count(2)->create([
-            'template_id' => $this->template->id,
-        ]);
-
-        $response = $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts");
-
-        $response->assertStatus(200);
-
-        foreach ($response->json('data') as $row) {
-            foreach (['content', 'components', 'data_sources', 'metadata'] as $heavy) {
-                $this->assertArrayNotHasKey($heavy, $row, "목록 응답에 {$heavy} 가 실리면 안 된다");
-            }
-        }
-    }
-
-    /**
-     * 목록에서 뺀 필드는 단건 조회가 여전히 공급한다 (기능 축소가 아님을 고정).
-     *
-     * @scenario resource=layout,endpoint=detail,observation=response_payload
-     *
-     * @effects detail_still_returns_full_payload
-     *
-     * @return void 반환값 없음
-     */
-    public function test_layout_detail_still_provides_content_and_parsed_blocks(): void
-    {
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'detail-keeps-content',
-        ]);
-
-        $response = $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}");
-
-        $response->assertStatus(200);
-
-        foreach (['content', 'components', 'data_sources', 'metadata'] as $heavy) {
-            $this->assertArrayHasKey($heavy, $response->json('data'), "단건 응답에는 {$heavy} 가 있어야 한다");
-        }
-    }
-
-    /**
-     * 화면이 쓰는 크기 표시는 목록에서도 유지된다.
-     *
-     * @scenario endpoint=layout_index
-     *
-     * @effects layout_index_lists_layout_files
-     *
-     * @return void 반환값 없음
-     */
-    public function test_layout_list_keeps_size_fields_used_by_editor(): void
-    {
-        TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'size-visible',
-        ]);
-
-        $response = $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts");
-
-        $response->assertStatus(200);
-        $this->assertIsInt($response->json('data.0.size'));
-        $this->assertIsString($response->json('data.0.size_formatted'));
-    }
-
-    /**
-     * 레이아웃 목록 응답에 route_path 필드가 포함된다 (코드 편집기 ?route= 동기화용).
-     *
-     * 팩토리 템플릿은 실제 routes.json 이 없어 매핑이 비므로 route_path 는 null 이다.
-     * 실제 routes.json 기반 매핑 검증은 TemplateService 단위 테스트가 담당.
-     *
-     * @scenario endpoint=layout_index
-     *
-     * @effects layout_index_lists_layout_files
-     *
-     * @return void 반환값 없음
-     */
-    public function test_layout_list_includes_route_path_field(): void
-    {
-        // Arrange
-        TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'home',
-        ]);
-
-        // Act
-        $response = $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts");
-
-        // Assert
-        $response->assertStatus(200);
-        $this->assertArrayHasKey('route_path', $response->json('data.0'));
-        $this->assertNull($response->json('data.0.route_path'));
-    }
-
-    /**
      * 인증되지 않은 사용자 접근 거부
-     *
-     * @scenario endpoint=layout_index
-     *
-     * @effects layout_api_rejects_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_list_layouts(): void
     {
@@ -365,12 +170,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자 접근 거부
-     *
-     * @scenario endpoint=layout_index
-     *
-     * @effects layout_api_rejects_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_list_layouts(): void
     {
@@ -384,12 +183,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 빈 목록 조회 (레이아웃이 없을 때)
-     *
-     * @scenario endpoint=layout_index
-     *
-     * @effects layout_index_lists_layout_files
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_empty_array_when_no_layouts(): void
     {
@@ -404,12 +197,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 상세 조회 성공
-     *
-     * @scenario endpoint=layout_show
-     *
-     * @effects layout_show_returns_layout_document
-     *
-     * @return void 반환값 없음
      */
     public function test_can_show_layout(): void
     {
@@ -454,12 +241,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 레이아웃 조회 시 404 응답
-     *
-     * @scenario endpoint=layout_show
-     *
-     * @effects layout_show_returns_layout_document
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_layout(): void
     {
@@ -473,12 +254,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자는 레이아웃 상세 조회 불가
-     *
-     * @scenario endpoint=layout_show
-     *
-     * @effects layout_api_rejects_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_show_layout(): void
     {
@@ -496,12 +271,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 레이아웃 상세 조회 불가
-     *
-     * @scenario endpoint=layout_show
-     *
-     * @effects layout_api_rejects_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_show_layout(): void
     {
@@ -520,12 +289,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 업데이트 성공
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_can_update_layout(): void
     {
@@ -544,7 +307,6 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $updateData = [
-            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test-layout',
@@ -581,20 +343,10 @@ class LayoutControllerTest extends TestCase
             'id' => $layout->id,
             'name' => 'test-layout',
         ]);
-
-        // 현재(최신) 버전 번호 동봉.
-        // 첫 저장은 baseline(v1) + 이번 저장본(v2) 두 버전을 적재하므로 current_version=2.
-        $this->assertSame(2, $response->json('data.current_version'));
     }
 
     /**
      * 레이아웃 업데이트 시 유효성 검증 실패
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_update_layout_validation_fails(): void
     {
@@ -604,7 +356,6 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $invalidData = [
-            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test',
@@ -625,18 +376,11 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 레이아웃 업데이트 시 500 응답
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_update_nonexistent_layout_returns_500(): void
     {
         // Arrange
         $updateData = [
-            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'nonexistent',
@@ -664,12 +408,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 레이아웃 업데이트 불가
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_api_rejects_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_update_layout(): void
     {
@@ -679,7 +417,6 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $updateData = [
-            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test',
@@ -700,12 +437,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 상세 조회 시 민감한 정보 제외
-     *
-     * @scenario endpoint=layout_show
-     *
-     * @effects layout_show_returns_layout_document
-     *
-     * @return void 반환값 없음
      */
     public function test_response_excludes_sensitive_fields(): void
     {
@@ -729,12 +460,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 버전 목록 조회 성공
-     *
-     * @scenario endpoint=layout_versions
-     *
-     * @effects layout_versions_listed_and_shown
-     *
-     * @return void 반환값 없음
      */
     public function test_can_list_layout_versions(): void
     {
@@ -762,8 +487,11 @@ class LayoutControllerTest extends TestCase
                         'id',
                         'layout_id',
                         'version',
+                        'endpoint',
+                        'components',
+                        'data_sources',
+                        'metadata',
                         'changes_summary',
-                        'created_by_name',
                         'created_at',
                     ],
                 ],
@@ -773,188 +501,7 @@ class LayoutControllerTest extends TestCase
     }
 
     /**
-     * 버전 목록에는 레이아웃 본문이 실리지 않는다.
-     *
-     * 버전 행은 저장할 때마다 쌓이며 각 행이 레이아웃 본문 스냅샷을 통째로 갖는다. 목록이
-     * 분해된 본문(`components`/`data_sources`/`metadata`/`endpoint`)까지 내려주면 저장을 반복한
-     * 레이아웃일수록 목록 응답이 버전 수에 비례해 커진다. 본문은 버전 비교 diff 전용이라
-     * 단건 조회가 공급한다.
-     *
-     * @scenario resource=layout_version,endpoint=list,observation=response_payload
-     *
-     * @effects list_omits_layout_content
-     *
-     * @return void 반환값 없음
-     */
-    public function test_version_list_omits_layout_body(): void
-    {
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'versions-light',
-        ]);
-
-        TemplateLayoutVersion::factory()->count(2)->create([
-            'layout_id' => $layout->id,
-        ]);
-
-        $response = $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
-
-        $response->assertStatus(200);
-
-        foreach ($response->json('data') as $row) {
-            foreach (['content', 'full_content', 'components', 'data_sources', 'metadata', 'endpoint'] as $heavy) {
-                $this->assertArrayNotHasKey($heavy, $row, "버전 목록에 {$heavy} 가 실리면 안 된다");
-            }
-        }
-    }
-
-    /**
-     * 목록 배열이 조건부 필드를 빈 객체로 흘리지 않는지 확인합니다.
-     *
-     * `toListArray()` 결과는 컨트롤러가 그대로 응답에 싣기 때문에 Laravel 의 MissingValue 제거
-     * 단계를 거치지 않는다. 버전 모델은 `UPDATED_AT` 이 없어 `updated_at` 이 미충족 상태인데,
-     * 걸러내지 않으면 `"updated_at": {}` 라는 빈 객체가 응답에 남는다.
-     *
-     * @effects list_payload_has_no_empty_object_fields
-     *
-     * @return void 반환값 없음
-     */
-    public function test_version_list_does_not_leak_unfulfilled_conditional_fields(): void
-    {
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'versions-missing-value',
-        ]);
-
-        TemplateLayoutVersion::factory()->create(['layout_id' => $layout->id]);
-
-        $response = $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
-
-        $response->assertStatus(200);
-
-        foreach ($response->json('data') as $row) {
-            foreach ($row as $key => $value) {
-                $this->assertNotSame([], $value, "{$key} 가 미충족 조건부 필드로 빈 값이 실렸다");
-            }
-        }
-    }
-
-    /**
-     * 버전 목록 조회 건수에는 상한이 있다.
-     *
-     * 버전 행은 정리(pruning)되지 않고 무한히 쌓이므로, 상한이 없으면 오래 편집한 레이아웃
-     * 하나가 수천 건을 한 응답에 담게 된다.
-     *
-     * @effects version_list_request_carries_limit
-     *
-     * @return void 반환값 없음
-     */
-    public function test_version_list_is_capped_and_accepts_limit(): void
-    {
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'versions-capped',
-        ]);
-
-        TemplateLayoutVersion::factory()->count(5)->create([
-            'layout_id' => $layout->id,
-        ]);
-
-        $url = "/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions";
-
-        // limit 지정 시 그 수만큼만, 최신순으로
-        $limited = $this->authRequest()->getJson($url.'?limit=2');
-        $limited->assertStatus(200);
-        $this->assertCount(2, $limited->json('data'));
-
-        // 최신순 — 상한이 걸려도 잘려 나가는 것은 오래된 쪽이어야 한다
-        $versions = array_column($limited->json('data'), 'version');
-        $sortedDesc = $versions;
-        rsort($sortedDesc);
-        $this->assertSame($sortedDesc, $versions, '버전 목록은 최신순이어야 한다');
-
-        // 상한을 넘는 limit 은 거부된다
-        $this->authRequest()->getJson($url.'?limit=100000')
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('limit');
-
-        // 미지정이면 기본 상한으로 전체(5건)가 나온다
-        $this->authRequest()->getJson($url)
-            ->assertStatus(200)
-            ->assertJsonCount(5, 'data');
-    }
-
-    /**
-     * 버전 목록에 저장자 이름(created_by_name)이 노출되되 created_by ID 는 제외
-     *
-     * @effects version_resource_exposes_creator_name_not_id, version_row_shows_creator_name_or_unknown_fallback
-     *
-     * @return void 반환값 없음
-     */
-    public function test_layout_versions_expose_creator_name_not_id(): void
-    {
-        // Arrange — 저장자 User 와 버전 생성
-        $author = User::factory()->create(['name' => '버전작성자']);
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'authored-layout',
-        ]);
-        TemplateLayoutVersion::factory()->create([
-            'layout_id' => $layout->id,
-            'created_by' => $author->id,
-        ]);
-
-        // Act
-        $response = $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
-
-        // Assert — 이름은 노출, created_by ID 는 응답에 없음
-        $response->assertStatus(200);
-        $first = $response->json('data.0');
-        $this->assertSame('버전작성자', $first['created_by_name']);
-        $this->assertArrayNotHasKey('created_by', $first);
-    }
-
-    /**
-     * 탈퇴/미상 저장자(created_by null)는 created_by_name 이 null
-     *
-     * @scenario endpoint=layout_versions
-     *
-     * @effects layout_versions_listed_and_shown
-     *
-     * @return void 반환값 없음
-     */
-    public function test_layout_versions_creator_name_null_when_no_creator(): void
-    {
-        // Arrange — created_by null 버전
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'anon-layout',
-        ]);
-        TemplateLayoutVersion::factory()->create([
-            'layout_id' => $layout->id,
-            'created_by' => null,
-        ]);
-
-        // Act
-        $response = $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
-
-        // Assert
-        $response->assertStatus(200);
-        $this->assertNull($response->json('data.0.created_by_name'));
-    }
-
-    /**
      * 존재하지 않는 레이아웃의 버전 조회 시 404 응답
-     *
-     * @scenario endpoint=layout_versions
-     *
-     * @effects layout_versions_listed_and_shown
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_layout_versions(): void
     {
@@ -968,12 +515,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 버전 목록 조회 불가
-     *
-     * @scenario endpoint=layout_versions
-     *
-     * @effects layout_api_rejects_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_list_versions(): void
     {
@@ -992,12 +533,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 특정 버전 조회 성공
-     *
-     * @scenario resource=layout_version,endpoint=detail,observation=response_payload
-     *
-     * @effects detail_still_returns_full_payload
-     *
-     * @return void 반환값 없음
      */
     public function test_can_show_specific_version(): void
     {
@@ -1015,8 +550,6 @@ class LayoutControllerTest extends TestCase
                 'components' => ['component' => 'test'],
                 'data_sources' => [],
                 'metadata' => ['key' => 'value'],
-                // extends 기반 레이아웃처럼 slots 에 실제 컴포넌트가 있는 경우 — 분해 키엔 안 잡힘.
-                'slots' => ['content' => [['name' => 'Div']]],
             ],
             'changes_summary' => ['updated' => 'components'],
         ]);
@@ -1039,9 +572,6 @@ class LayoutControllerTest extends TestCase
                     'data_sources',
                     'metadata',
                     'changes_summary',
-                    'created_by_name',
-                    // 단건 조회는 content 원본 전체(full_content) 노출 — 버전 비교 diff 용
-                    'full_content',
                     'created_at',
                 ],
             ])
@@ -1050,82 +580,10 @@ class LayoutControllerTest extends TestCase
             ]);
 
         $this->assertEquals(2, $response->json('data.version'));
-        // full_content 는 slots 등 분해되지 않는 키까지 원본 그대로 보존해야 한다 (diff 정확성).
-        $this->assertSame(
-            [['name' => 'Div']],
-            $response->json('data.full_content.slots.content')
-        );
-    }
-
-    /**
-     * 단건 버전 조회는 목록 상한 밖의 오래된 버전에도 도달한다
-     *
-     * 목록은 건수 상한이 있는 경량 조회다. 단건이 그 조회를 재사용하면 상한 밖의 오래된
-     * 버전이 404 가 된다 — 단건은 반드시 버전 번호로 직접 조회해야 한다.
-     *
-     * @effects version_detail_reaches_rows_beyond_list_cap
-     *
-     * @return void 반환값 없음
-     */
-    public function test_show_version_reaches_versions_beyond_the_list_cap(): void
-    {
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'deep-history-layout',
-        ]);
-
-        // 버전 1 = 가장 오래된 버전. 최신순 상한(기본 100건) 안에 들지 못한다.
-        for ($version = 1; $version <= 101; $version++) {
-            TemplateLayoutVersion::factory()->create([
-                'layout_id' => $layout->id,
-                'version' => $version,
-            ]);
-        }
-
-        $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions/1")
-            ->assertStatus(200)
-            ->assertJsonPath('data.version', 1);
-    }
-
-    /**
-     * 버전 목록(index)에는 full_content 를 포함하지 않는다 (페이로드 비대화 회피)
-     *
-     * @scenario endpoint=layout_versions
-     *
-     * @effects layout_versions_listed_and_shown
-     *
-     * @return void 반환값 없음
-     */
-    public function test_version_index_excludes_full_content(): void
-    {
-        // Arrange
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'index-no-full',
-        ]);
-        TemplateLayoutVersion::factory()->create([
-            'layout_id' => $layout->id,
-            'content' => ['slots' => ['content' => [['name' => 'Div']]]],
-        ]);
-
-        // Act
-        $response = $this->authRequest()
-            ->getJson("/api/admin/templates/{$this->template->identifier}/layouts/{$layout->name}/versions");
-
-        // Assert — 목록 항목에 full_content 키 없음
-        $response->assertStatus(200);
-        $this->assertArrayNotHasKey('full_content', $response->json('data.0'));
     }
 
     /**
      * 존재하지 않는 버전 조회 시 404 응답
-     *
-     * @scenario endpoint=layout_versions
-     *
-     * @effects layout_versions_listed_and_shown
-     *
-     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_version(): void
     {
@@ -1144,12 +602,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 특정 버전 조회 불가
-     *
-     * @scenario endpoint=layout_versions
-     *
-     * @effects layout_api_rejects_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_show_version(): void
     {
@@ -1173,12 +625,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 버전 응답에 민감한 정보 제외
-     *
-     * @scenario endpoint=layout_versions
-     *
-     * @effects layout_versions_listed_and_shown
-     *
-     * @return void 반환값 없음
      */
     public function test_version_response_excludes_sensitive_fields(): void
     {
@@ -1205,12 +651,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 버전 복원 성공
-     *
-     * @scenario endpoint=layout_restore
-     *
-     * @effects layout_version_restored
-     *
-     * @return void 반환값 없음
      */
     public function test_can_restore_version(): void
     {
@@ -1275,12 +715,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 버전 복원 시 404 응답
-     *
-     * @scenario endpoint=layout_restore
-     *
-     * @effects layout_version_restored
-     *
-     * @return void 반환값 없음
      */
     public function test_restore_nonexistent_version_returns_404(): void
     {
@@ -1299,12 +733,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 레이아웃의 버전 복원 시 404 응답
-     *
-     * @scenario endpoint=layout_restore
-     *
-     * @effects layout_version_restored
-     *
-     * @return void 반환값 없음
      */
     public function test_restore_version_for_nonexistent_layout_returns_404(): void
     {
@@ -1318,12 +746,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 버전 복원 불가
-     *
-     * @scenario endpoint=layout_restore
-     *
-     * @effects layout_api_rejects_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_restore_version(): void
     {
@@ -1347,12 +769,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 버전 복원 후 새 버전이 생성되는지 확인
-     *
-     * @scenario endpoint=layout_restore
-     *
-     * @effects layout_version_restored
-     *
-     * @return void 반환값 없음
      */
     public function test_restore_creates_new_version(): void
     {
@@ -1392,19 +808,15 @@ class LayoutControllerTest extends TestCase
         // Assert
         $response->assertStatus(200);
 
-        // 버전 3이 생성되었는지 확인 (복원 결과 = 복원된 content 를 저장)
+        // 버전 3이 생성되었는지 확인 (복원 전의 content를 저장)
         $newVersion = TemplateLayoutVersion::where('layout_id', $layout->id)
             ->where('version', 3)
             ->first();
 
         $this->assertNotNull($newVersion);
-        // 새 버전은 복원된 content (v1)를 담는다 — "현재 상태가 v1 으로 돌아갔음"을 표현.
-        // (종전엔 복원 전 content 를 저장해 복원인데 "추가"로 표기되던 결함 수정.)
-        $this->assertEquals('/api/v1', $newVersion->content['endpoint']);
-        $this->assertEquals(['version' => '1'], $newVersion->content['components']);
-
-        // changes_summary 는 복원 직전(레이아웃의 v3 content) 대비 변경 — 복원으로 줄거나 바뀐다.
-        $this->assertNotNull($newVersion->changes_summary);
+        // 새 버전은 복원 전의 content (v3)를 저장하여 히스토리 보존
+        $this->assertEquals('/api/v3', $newVersion->content['endpoint']);
+        $this->assertEquals(['version' => '3'], $newVersion->content['components']);
 
         // 레이아웃이 v1으로 복원되었는지 확인
         $layout->refresh();
@@ -1414,12 +826,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 다른 레이아웃의 버전으로 복원 시도 시 404 응답
-     *
-     * @scenario endpoint=layout_restore
-     *
-     * @effects layout_version_restored
-     *
-     * @return void 반환값 없음
      */
     public function test_cannot_restore_version_from_different_layout(): void
     {
@@ -1453,12 +859,6 @@ class LayoutControllerTest extends TestCase
      * 저장 시 2개의 버전이 생성되어야 함:
      * 1. 이전 버전 (롤백용)
      * 2. 현재 저장 버전 (최신 상태 기록)
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_update_layout_creates_both_old_and_new_versions(): void
     {
@@ -1485,7 +885,6 @@ class LayoutControllerTest extends TestCase
         $this->assertEquals(0, $initialVersionCount);
 
         $updateData = [
-            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test-layout',
@@ -1523,12 +922,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 연속 업데이트 시 버전 히스토리가 올바르게 누적되는지 확인
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_multiple_updates_accumulate_version_history_correctly(): void
     {
@@ -1550,10 +943,9 @@ class LayoutControllerTest extends TestCase
             ],
         ]);
 
-        // Act - 첫 번째 업데이트 (factory 초기 lock_version=0)
+        // Act - 첫 번째 업데이트
         $response1 = $this->authRequest()
             ->putJson("/api/admin/templates/{$userTemplate->identifier}/layouts/{$layout->name}", [
-                'expected_lock_version' => 0,
                 'content' => [
                     'version' => '1.0.0',
                     'layout_name' => 'test-layout',
@@ -1565,10 +957,9 @@ class LayoutControllerTest extends TestCase
             ]);
         $response1->assertStatus(200);
 
-        // Act - 두 번째 업데이트 (첫 저장으로 lock_version=1 로 증가)
+        // Act - 두 번째 업데이트
         $response2 = $this->authRequest()
             ->putJson("/api/admin/templates/{$userTemplate->identifier}/layouts/{$layout->name}", [
-                'expected_lock_version' => 1,
                 'content' => [
                     'version' => '1.0.0',
                     'layout_name' => 'test-layout',
@@ -1585,12 +976,12 @@ class LayoutControllerTest extends TestCase
             ->orderBy('version', 'asc')
             ->get();
 
-        // 첫 번째 업데이트: baseline(v1: initial) + 수정본(v2: first_update)
-        // 두 번째 업데이트: 수정본(v3: second_update) — baseline 은 이미 있어 추가 안 함
-        // 총 3개 버전 (PUT 당 1건 + 최초 1회 baseline)
-        $this->assertCount(3, $versions);
+        // 첫 번째 업데이트: 2개 버전 (v1: old, v2: new)
+        // 두 번째 업데이트: 2개 버전 추가 (v3: old, v4: new)
+        // 총 4개 버전
+        $this->assertCount(4, $versions);
 
-        // 버전 1: 수정 전 원본 baseline (initial)
+        // 버전 1: 최초 content
         $this->assertEquals(1, $versions[0]->version);
         $this->assertEquals('initial', $versions[0]->content['metadata']['step']);
 
@@ -1598,9 +989,13 @@ class LayoutControllerTest extends TestCase
         $this->assertEquals(2, $versions[1]->version);
         $this->assertEquals('first_update', $versions[1]->content['metadata']['step']);
 
-        // 버전 3: 두 번째 업데이트된 content
+        // 버전 3: 두 번째 업데이트 전 content (first_update)
         $this->assertEquals(3, $versions[2]->version);
-        $this->assertEquals('second_update', $versions[2]->content['metadata']['step']);
+        $this->assertEquals('first_update', $versions[2]->content['metadata']['step']);
+
+        // 버전 4: 두 번째 업데이트된 content
+        $this->assertEquals(4, $versions[3]->version);
+        $this->assertEquals('second_update', $versions[3]->content['metadata']['step']);
     }
 
     /**
@@ -1608,12 +1003,6 @@ class LayoutControllerTest extends TestCase
      *
      * meta 필드가 validated() 결과에 포함되어 저장되는지 확인
      * (이전에는 rules에 없어서 meta가 사라지는 버그가 있었음)
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_update_layout_preserves_meta_field(): void
     {
@@ -1635,7 +1024,6 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $updateData = [
-            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test-layout',
@@ -1666,12 +1054,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 업데이트 시 modals, state, init_actions 필드 포함
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_update_layout_preserves_additional_fields(): void
     {
@@ -1689,7 +1071,6 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $updateData = [
-            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test-layout',
@@ -1740,269 +1121,7 @@ class LayoutControllerTest extends TestCase
     }
 
     /**
-     * 레이아웃 업데이트 시 meta 하위의 비-SEO 메타 키 보존 (guest_only / is_error_layout / error_code / keywords)
-     *
-     * validated() 는 rules() 에 명시된 키만 반환하므로, content.meta 가 'array' 규칙이고
-     * 하위에 title/description 등 일부 키만 명시돼 있으면 명시되지 않은 meta 하위 키는 저장 시
-     * 누락된다. guest_only 가 사라지면 비로그인 전용 레이아웃(로그인/회원가입/비번찾기/재설정)이
-     * 편집기 저장 후 reload 시 "이미 로그인" 가드가 오발화한다.
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
-     */
-    public function test_update_layout_preserves_non_seo_meta_keys(): void
-    {
-        // Arrange
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'auth/forgot_password',
-            'content' => [
-                'version' => '1.0.0',
-                'layout_name' => 'auth/forgot_password',
-                'meta' => [
-                    'title' => '$t:auth.forgot_password.title',
-                    'guest_only' => true,
-                ],
-                'endpoint' => '/api/test',
-                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
-                'data_sources' => [],
-            ],
-        ]);
-
-        $updateData = [
-            'expected_lock_version' => 0,
-            'content' => [
-                'version' => '1.0.0',
-                'layout_name' => 'auth/forgot_password',
-                'meta' => [
-                    'title' => '$t:auth.forgot_password.title',
-                    'guest_only' => true,
-                    'is_error_layout' => true,
-                    'error_code' => 404,
-                    'keywords' => '{{page?.data?.keywords ?? \'\'}}',
-                ],
-                'endpoint' => '/api/admin/test',
-                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
-                'data_sources' => [],
-            ],
-        ];
-
-        // Act
-        $response = $this->authRequest()
-            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/auth/forgot_password", $updateData);
-
-        // Assert
-        $response->assertStatus(200);
-
-        $layout->refresh();
-        $this->assertTrue($layout->content['meta']['guest_only'], 'guest_only 가 저장 시 유실됨');
-        $this->assertTrue($layout->content['meta']['is_error_layout'], 'is_error_layout 가 저장 시 유실됨');
-        $this->assertEquals(404, $layout->content['meta']['error_code'], 'error_code 가 저장 시 유실됨');
-        $this->assertEquals('{{page?.data?.keywords ?? \'\'}}', $layout->content['meta']['keywords'], 'keywords 가 저장 시 유실됨');
-    }
-
-    /**
-     * 레이아웃 업데이트 시 meta.seo 하위의 비표준 키 보존 (vars / page_type / extensions / toggle_setting)
-     *
-     * content.meta.seo 도 'array' 규칙이고 enabled/data_sources/priority 등 일부 하위 키만
-     * 명시돼 있어, 명시되지 않은 seo 하위 키(SEO 페이지 생성기가 소비하는 vars/page_type 등)가
-     * 저장 시 누락된다.
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
-     */
-    public function test_update_layout_preserves_non_standard_seo_keys(): void
-    {
-        // Arrange
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'board/index',
-            'content' => [
-                'version' => '1.0.0',
-                'layout_name' => 'board/index',
-                'endpoint' => '/api/test',
-                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
-                'data_sources' => [],
-            ],
-        ]);
-
-        $updateData = [
-            'expected_lock_version' => 0,
-            'content' => [
-                'version' => '1.0.0',
-                'layout_name' => 'board/index',
-                'meta' => [
-                    'title' => 'Board',
-                    'seo' => [
-                        'enabled' => true,
-                        'page_type' => 'board',
-                        'toggle_setting' => '$module_settings:sirsoft-board:seo.seo_board',
-                        'vars' => [
-                            'site_name' => '$core_settings:general.site_name',
-                            'board_name' => '{{posts.data.board.name ?? \'\'}}',
-                        ],
-                        'extensions' => [
-                            ['type' => 'module', 'id' => 'sirsoft-board'],
-                        ],
-                    ],
-                ],
-                'endpoint' => '/api/admin/test',
-                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
-                'data_sources' => [],
-            ],
-        ];
-
-        // Act
-        $response = $this->authRequest()
-            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/board/index", $updateData);
-
-        // Assert
-        $response->assertStatus(200);
-
-        $layout->refresh();
-        $seo = $layout->content['meta']['seo'];
-        $this->assertEquals('board', $seo['page_type'], 'seo.page_type 가 저장 시 유실됨');
-        $this->assertEquals('$module_settings:sirsoft-board:seo.seo_board', $seo['toggle_setting'], 'seo.toggle_setting 가 저장 시 유실됨');
-        $this->assertArrayHasKey('vars', $seo, 'seo.vars 가 저장 시 유실됨');
-        $this->assertEquals('$core_settings:general.site_name', $seo['vars']['site_name']);
-        $this->assertArrayHasKey('extensions', $seo, 'seo.extensions 가 저장 시 유실됨');
-        $this->assertEquals('sirsoft-board', $seo['extensions'][0]['id']);
-    }
-
-    /**
-     * 레이아웃 업데이트 시 content 직속 상태/액션 키 보존 (initLocal / initGlobal / errorHandling / global_state / actions)
-     *
-     * 이 키들은 엔진이 상태 초기화/에러 처리/액션에 소비하지만 rules() 에 없어 validated() 에서
-     * 누락된다. 저장 시마다 레이아웃 동작 정의가 사라지는 손상.
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
-     */
-    public function test_update_layout_preserves_content_top_state_action_keys(): void
-    {
-        // Arrange
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'test-layout',
-            'content' => [
-                'version' => '1.0.0',
-                'layout_name' => 'test-layout',
-                'endpoint' => '/api/test',
-                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
-                'data_sources' => [],
-            ],
-        ]);
-
-        $updateData = [
-            'expected_lock_version' => 0,
-            'content' => [
-                'version' => '1.0.0',
-                'layout_name' => 'test-layout',
-                'endpoint' => '/api/admin/test',
-                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
-                'data_sources' => [],
-                'initLocal' => ['driverTestResults' => [], 'activeChannel' => null],
-                'initGlobal' => ['reviewImagePreview' => null],
-                'errorHandling' => [
-                    '404' => ['handler' => 'showErrorPage', 'params' => ['target' => 'content']],
-                ],
-                'global_state' => ['searchActiveTab' => 'all'],
-                'actions' => [
-                    ['id' => 'selectBank', 'handler' => 'setState', 'params' => ['target' => '_local.bank', 'value' => 'x']],
-                ],
-            ],
-        ];
-
-        // Act
-        $response = $this->authRequest()
-            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/test-layout", $updateData);
-
-        // Assert
-        $response->assertStatus(200);
-
-        $layout->refresh();
-        $this->assertArrayHasKey('initLocal', $layout->content, 'initLocal 이 저장 시 유실됨');
-        $this->assertArrayHasKey('initGlobal', $layout->content, 'initGlobal 이 저장 시 유실됨');
-        $this->assertArrayHasKey('errorHandling', $layout->content, 'errorHandling 이 저장 시 유실됨');
-        $this->assertArrayHasKey('global_state', $layout->content, 'global_state 가 저장 시 유실됨');
-        $this->assertArrayHasKey('actions', $layout->content, 'actions 가 저장 시 유실됨');
-        $this->assertEquals('all', $layout->content['global_state']['searchActiveTab']);
-        $this->assertEquals('showErrorPage', $layout->content['errorHandling']['404']['handler']);
-        $this->assertEquals('selectBank', $layout->content['actions'][0]['id']);
-    }
-
-    /**
-     * 레이아웃 업데이트 시 플러그인 settings 전용 키 보존 (pageConfig / schema)
-     *
-     * 플러그인 설정 레이아웃이 content 직속에 두는 pageConfig/schema 키도 저장 시 누락된다.
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
-     */
-    public function test_update_layout_preserves_plugin_settings_keys(): void
-    {
-        // Arrange
-        $layout = TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'plugin_settings',
-            'content' => [
-                'version' => '1.0.0',
-                'layout_name' => 'plugin_settings',
-                'endpoint' => '/api/test',
-                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
-                'data_sources' => [],
-            ],
-        ]);
-
-        $updateData = [
-            'expected_lock_version' => 0,
-            'content' => [
-                'version' => '1.0.0',
-                'layout_name' => 'plugin_settings',
-                'endpoint' => '/api/admin/test',
-                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
-                'data_sources' => [],
-                'pageConfig' => ['notice' => '$t:plugin.notice'],
-                'schema' => [
-                    'is_test_mode' => ['type' => 'boolean', 'default' => true],
-                ],
-            ],
-        ];
-
-        // Act
-        $response = $this->authRequest()
-            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/plugin_settings", $updateData);
-
-        // Assert
-        $response->assertStatus(200);
-
-        $layout->refresh();
-        $this->assertArrayHasKey('pageConfig', $layout->content, 'pageConfig 가 저장 시 유실됨');
-        $this->assertArrayHasKey('schema', $layout->content, 'schema 가 저장 시 유실됨');
-        $this->assertEquals('$t:plugin.notice', $layout->content['pageConfig']['notice']);
-        $this->assertTrue($layout->content['schema']['is_test_mode']['default']);
-    }
-
-    /**
      * 레이아웃 업데이트 시 extends 레이아웃도 모든 필드 보존
-     *
-     * @scenario endpoint=layout_update
-     *
-     * @effects layout_update_saves_and_keeps_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_update_extends_layout_preserves_all_fields(): void
     {
@@ -2056,7 +1175,6 @@ class LayoutControllerTest extends TestCase
         ]);
 
         $updateData = [
-            'expected_lock_version' => 0,
             'content' => [
                 'version' => '1.0.0',
                 'layout_name' => 'test-child-layout',
@@ -2102,12 +1220,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 미리보기 생성 성공
-     *
-     * @scenario endpoint=layout_preview
-     *
-     * @effects layout_preview_token_issued
-     *
-     * @return void 반환값 없음
      */
     public function test_can_store_preview(): void
     {
@@ -2138,9 +1250,7 @@ class LayoutControllerTest extends TestCase
 
         $token = $response->json('data.token');
         $this->assertNotEmpty($token);
-        // 팩토리 템플릿 종류는 무작위다 — 관리자 템플릿이면 관리자 셸 주소다(아래 종류별 테스트 참고).
-        $expectedPrefix = $this->template->type === 'admin' ? '/admin/preview/' : '/preview/';
-        $this->assertSame($expectedPrefix.$token, $response->json('data.preview_url'));
+        $this->assertStringStartsWith('/preview/', $response->json('data.preview_url'));
 
         // DB에 저장 확인
         $this->assertDatabaseHas('template_layout_previews', [
@@ -2153,12 +1263,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 슬래시 포함 레이아웃 이름으로 미리보기 생성 성공
-     *
-     * @scenario endpoint=layout_preview
-     *
-     * @effects layout_preview_token_issued
-     *
-     * @return void 반환값 없음
      */
     public function test_can_store_preview_with_slash_in_layout_name(): void
     {
@@ -2188,55 +1292,7 @@ class LayoutControllerTest extends TestCase
     }
 
     /**
-     * 미리보기 주소는 템플릿 종류의 화면 셸을 가리킨다 (7.1.0 O-G3-6).
-     *
-     * 관리자 템플릿 레이아웃을 사용자 셸(`/preview/{token}`)로 열면 활성 사용자 템플릿의 컴포넌트·다국어·라우트로
-     * 그려졌다. 관리자 템플릿은 `/admin/preview/{token}`, 사용자 템플릿은 `/preview/{token}` 이다.
-     *
-     * @scenario endpoint=layout_preview
-     *
-     * @effects preview_url_shell_matches_template_type
-     *
-     * @param  string  $type  템플릿 종류(admin|user)
-     * @param  string  $prefix  기대하는 미리보기 주소 접두
-     * @return void 반환값 없음
-     */
-    #[DataProvider('previewShellProvider')]
-    public function test_store_preview_url_matches_template_type_shell(string $type, string $prefix): void
-    {
-        $template = Template::factory()->create(['type' => $type]);
-        TemplateLayout::factory()->create(['template_id' => $template->id, 'name' => 'main']);
-
-        $response = $this->authRequest()
-            ->postJson("/api/admin/templates/{$template->identifier}/layouts/main/preview", [
-                'content' => ['version' => '1.0.0', 'layout_name' => 'main', 'components' => []],
-            ]);
-
-        $response->assertStatus(200);
-        $this->assertSame($prefix.$response->json('data.token'), $response->json('data.preview_url'));
-    }
-
-    /**
-     * 템플릿 종류별 기대 미리보기 주소 접두를 제공합니다.
-     *
-     * @return array<string, array{0: string, 1: string}> 데이터셋 이름별 [템플릿 종류, 기대 주소 접두]
-     */
-    public static function previewShellProvider(): array
-    {
-        return [
-            'admin 템플릿' => ['admin', '/admin/preview/'],
-            'user 템플릿' => ['user', '/preview/'],
-        ];
-    }
-
-    /**
      * 미리보기 생성 시 content 필수 검증
-     *
-     * @scenario endpoint=layout_preview
-     *
-     * @effects layout_preview_token_issued
-     *
-     * @return void 반환값 없음
      */
     public function test_store_preview_requires_content(): void
     {
@@ -2251,12 +1307,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 동일 조합으로 미리보기 재생성 시 이전 미리보기 삭제
-     *
-     * @scenario endpoint=layout_preview
-     *
-     * @effects layout_preview_token_issued
-     *
-     * @return void 반환값 없음
      */
     public function test_store_preview_replaces_existing_preview(): void
     {
@@ -2285,12 +1335,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿으로 미리보기 생성 시 404
-     *
-     * @scenario endpoint=layout_preview
-     *
-     * @effects layout_preview_token_issued
-     *
-     * @return void 반환값 없음
      */
     public function test_store_preview_with_nonexistent_template_returns_404(): void
     {
@@ -2306,12 +1350,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 미인증 사용자 미리보기 생성 불가
-     *
-     * @scenario endpoint=layout_preview
-     *
-     * @effects layout_api_rejects_unauthorized
-     *
-     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_store_preview(): void
     {
@@ -2326,12 +1364,6 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 슬래시 포함 레이아웃 이름 조회 성공
-     *
-     * @scenario endpoint=layout_show
-     *
-     * @effects layout_show_returns_layout_document
-     *
-     * @return void 반환값 없음
      */
     public function test_can_show_layout_with_slash_in_name(): void
     {

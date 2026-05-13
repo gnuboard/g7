@@ -2,12 +2,10 @@
 
 namespace App\Providers;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
 use App\Contracts\Repositories\LanguagePackTranslationRepositoryInterface;
 use App\Enums\LanguagePackScope;
 use App\Extension\HookManager;
-use App\Listeners\LanguagePack\MergeCustomTranslations;
 use App\Listeners\LanguagePack\MergeFrontendLanguage;
 use App\Listeners\LanguagePack\RunSeedersOnLanguagePackLifecycle;
 use App\Listeners\LanguagePack\SyncDatabaseTranslations;
@@ -18,7 +16,6 @@ use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
 use App\Services\LanguagePack\LanguagePackTranslator;
-use App\Support\InstallerContext;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\File;
@@ -41,7 +38,7 @@ class LanguagePackServiceProvider extends ServiceProvider
     /**
      * 컨테이너 바인딩을 등록합니다.
      *
-     * @return void 반환값 없음
+     * @return void
      */
     public function register(): void
     {
@@ -71,7 +68,7 @@ class LanguagePackServiceProvider extends ServiceProvider
             return new LanguagePackBundledRegistrar(
                 $app->make(LanguagePackRepositoryInterface::class),
                 $app->make(LanguagePackRegistry::class),
-                $app->make(CacheInterface::class),
+                $app->make(\App\Contracts\Extension\CacheInterface::class),
             );
         });
 
@@ -83,7 +80,7 @@ class LanguagePackServiceProvider extends ServiceProvider
      *
      * DB 가 준비되지 않았거나(설치 전) language_packs 테이블이 없으면 조용히 건너뜁니다.
      *
-     * @return void 반환값 없음
+     * @return void
      */
     public function boot(): void
     {
@@ -114,7 +111,7 @@ class LanguagePackServiceProvider extends ServiceProvider
      *
      * 시더가 applyFilters() 를 호출하면 활성 코어 언어팩의 seed/*.json 으로 다국어 키가 보강됩니다.
      *
-     * @return void 반환값 없음
+     * @return void
      */
     private function registerSeedFilters(): void
     {
@@ -136,20 +133,17 @@ class LanguagePackServiceProvider extends ServiceProvider
             return $injector->injectNotifications(is_array($definitions) ? $definitions : []);
         });
 
+        HookManager::addFilter('seed.identity_messages.translations', function ($definitions) use ($injector) {
+            return $injector->injectIdentityMessages(is_array($definitions) ? $definitions : []);
+        });
+
         $this->registerExtensionSeedFilters($injector);
 
         // 프론트엔드 다국어 데이터 병합 (TemplateService::getLanguageDataWithModules 의 마지막 단계)
         $merger = $this->app->make(MergeFrontendLanguage::class);
         HookManager::addFilter('template.language.merge', function ($data, $templateIdentifier = '', $locale = 'ko') use ($merger) {
             return $merger(is_array($data) ? $data : [], (string) $templateIdentifier, (string) $locale);
-        }, 10);
-
-        // 커스텀 다국어 키 병합 — 언어팩 병합 다음(priority 20)에 실행되어
-        // template_custom_translations 의 활성 키가 언어팩 위에 덮어쓰도록 우선순위를 높게 둔다.
-        $customMerger = $this->app->make(MergeCustomTranslations::class);
-        HookManager::addFilter('template.language.merge', function ($data, $templateIdentifier = '', $locale = 'ko') use ($customMerger) {
-            return $customMerger(is_array($data) ? $data : [], (string) $templateIdentifier, (string) $locale);
-        }, 20);
+        });
     }
 
     /**
@@ -160,15 +154,14 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 우선순위로 자동 감지합니다. 후보 미발견 시 'code' 를 기본값으로 사용합니다.
      *
      * @param  LanguagePackSeedInjector  $injector  주입기
-     * @return void 반환값 없음
+     * @return void
      */
     public function registerExtensionSeedFilters(LanguagePackSeedInjector $injector): void
     {
         $registry = $this->app->make(LanguagePackRegistry::class);
         $candidates = collect()
             ->merge($registry->getActivePacks(LanguagePackScope::Module->value))
-            ->merge($registry->getActivePacks(LanguagePackScope::Plugin->value))
-            ->merge($registry->getActivePacks(LanguagePackScope::Template->value));
+            ->merge($registry->getActivePacks(LanguagePackScope::Plugin->value));
 
         foreach ($candidates as $pack) {
             $seedDir = $pack->resolveDirectory().DIRECTORY_SEPARATOR.'seed';
@@ -188,12 +181,17 @@ class LanguagePackServiceProvider extends ServiceProvider
 
                     continue;
                 }
+                if ($entity === 'identity_messages') {
+                    HookManager::addFilter("seed.{$target}.identity_messages.translations", function ($definitions) use ($injector, $target) {
+                        return $injector->injectExtensionIdentityMessages(is_array($definitions) ? $definitions : [], $target);
+                    });
+
+                    continue;
+                }
                 if ($entity === 'menus') {
-                    // 모듈·플러그인 admin_menus 동기화 시 Manager 가 발행하는 필터에 팩의 범위로 결선한다.
-                    // 종전엔 `module.` 에만 붙어 플러그인 메뉴 이름에는 언어팩 번역이 들어가지 않았다.
-                    $scopeStr = $pack->scope;
-                    HookManager::addFilter("{$scopeStr}.{$target}.admin_menus.translations", function ($menus) use ($injector, $target, $scopeStr) {
-                        return $injector->injectExtensionMenus(is_array($menus) ? $menus : [], $target, $scopeStr);
+                    // 모듈 admin_menus 동기화 시 ModuleManager 가 발행하는 필터에 결선 (모듈 전용).
+                    HookManager::addFilter("module.{$target}.admin_menus.translations", function ($menus) use ($injector, $target) {
+                        return $injector->injectExtensionMenus(is_array($menus) ? $menus : [], $target);
                     });
 
                     continue;
@@ -212,15 +210,6 @@ class LanguagePackServiceProvider extends ServiceProvider
                     $scopeStr = $pack->scope;
                     HookManager::addFilter("{$scopeStr}.{$target}.permissions.translations", function ($config) use ($injector, $target, $scopeStr) {
                         return $injector->injectExtensionPermissions(is_array($config) ? $config : [], $target, $scopeStr);
-                    });
-
-                    continue;
-                }
-                if ($entity === 'manifest') {
-                    // 모듈/플러그인/템플릿 manifest(name/description) 동기화 시 Manager 가 발행하는 필터에 결선.
-                    $scopeStr = $pack->scope;
-                    HookManager::addFilter("{$scopeStr}.{$target}.manifest.translations", function ($manifest) use ($injector, $target, $scopeStr) {
-                        return $injector->injectExtensionManifest(is_array($manifest) ? $manifest : [], $target, $scopeStr);
                     });
 
                     continue;
@@ -263,7 +252,7 @@ class LanguagePackServiceProvider extends ServiceProvider
      * G7 표준 훅 메커니즘(HookManager::doAction → addAction) 으로 일원화 — 별도 Event 클래스 사용 안 함.
      * 훅 명명은 모듈/플러그인/템플릿 (`core.{type}.activated/deactivated/installed/updated/uninstalled`) 와 동일.
      *
-     * @return void 반환값 없음
+     * @return void
      */
     private function registerEventListeners(): void
     {
@@ -295,9 +284,9 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 확장(모듈/플러그인/템플릿) 설치/제거/업데이트 후크에 가상 등록 리스너를 연결합니다.
      *
      * 모듈 설치 후 모듈의 lang 디렉토리를 스캔하여 `bundled_with_extension` 가상 레코드를
-     * `language_packs` 테이블에 자동 등록합니다 (계획서).
+     * `language_packs` 테이블에 자동 등록합니다 (계획서 §3.6).
      *
-     * @return void 반환값 없음
+     * @return void
      */
     private function registerBundledRegistrarHooks(): void
     {
@@ -306,7 +295,10 @@ class LanguagePackServiceProvider extends ServiceProvider
         $syncFor = function (string $scope, string $identifier, ?array $info, string $relativeBase) use ($registrar) {
             $vendor = $this->resolveVendor($identifier, $info);
             $version = (string) ($info['version'] ?? '1.0.0');
-            $langDir = $this->resolveExtensionLangDir($scope, $identifier, $relativeBase);
+            $langDir = $relativeBase.'/'.$identifier.'/lang';
+            if (! \Illuminate\Support\Facades\File::isDirectory(base_path($langDir))) {
+                $langDir = $relativeBase.'/'.$identifier.'/resources/lang';
+            }
             $registrar->syncFromExtension($scope, $identifier, $vendor, $version, $langDir);
         };
 
@@ -336,11 +328,11 @@ class LanguagePackServiceProvider extends ServiceProvider
         HookManager::addAction('core.templates.after_install', function ($identifier, $info = null) use ($syncFor) {
             $syncFor('template', (string) $identifier, is_array($info) ? $info : null, 'templates');
         });
-        // 템플릿 버전 업데이트는 after_version_update 다. after_update 는 템플릿 **레코드 수정**
-        // 훅이라 버전 업데이트에 반응하지 않았고, 넘어오는 $data 에 version 키가 없어
-        // 언어팩 버전이 늘 '1.0.0' 으로 폴백됐다(#138).
-        HookManager::addAction('core.templates.after_version_update', function ($identifier, $result = null, $info = null) use ($syncFor) {
-            $syncFor('template', (string) $identifier, is_array($info) ? $info : null, 'templates');
+        HookManager::addAction('core.templates.after_update', function ($templateOrId, $data = null) use ($syncFor) {
+            $identifier = is_object($templateOrId) ? ($templateOrId->identifier ?? '') : (string) $templateOrId;
+            if ($identifier !== '') {
+                $syncFor('template', $identifier, is_array($data) ? $data : null, 'templates');
+            }
         });
         HookManager::addAction('core.templates.after_uninstall', function ($identifier) use ($registrar) {
             $registrar->cleanupForExtension('template', (string) $identifier);
@@ -356,52 +348,6 @@ class LanguagePackServiceProvider extends ServiceProvider
         HookManager::addAction('core.templates.after_deactivate', function ($identifier) use ($registrar) {
             $registrar->deactivateForExtension('template', (string) $identifier);
         });
-
-        // 호스트 확장 활성화 시, 꺼진 채 설치돼 「대상 켜짐 대기」인 언어팩을 함께 켠다 (설치 창에서 함께 고른 언어팩 등).
-        // 호스트를 끌 때 함께 꺼진 팩(inactive)은 여기서 켜지 않는다 — 「언어팩 다시 켜기」 창이 따로 묻는다.
-        HookManager::addAction('core.modules.after_activate', function ($identifier) use ($registrar) {
-            $registrar->activateAwaitingForExtension('module', (string) $identifier);
-        });
-        HookManager::addAction('core.plugins.after_activate', function ($identifier) use ($registrar) {
-            $registrar->activateAwaitingForExtension('plugin', (string) $identifier);
-        });
-        // 템플릿 after_activate 는 식별자 대신 정보 배열 1개를 넘긴다(TemplateManager::activateTemplate 계약).
-        HookManager::addAction('core.templates.after_activate', function ($info) use ($registrar) {
-            $identifier = is_array($info) ? (string) ($info['identifier'] ?? '') : (string) $info;
-            $registrar->activateAwaitingForExtension('template', $identifier);
-        });
-    }
-
-    /**
-     * 확장의 백엔드 다국어 디렉토리를 반환합니다.
-     *
-     * **런타임이 실제로 로드하는 경로와 같아야 한다** (`TranslationServiceProvider`).
-     * 모듈은 `src/lang`, 플러그인은 `lang` 이며, 코어의 확장 설치 검증
-     * (`ValidatesTranslationPath`)도 같은 규칙을 강제한다. 여기서 다른 경로를 잡으면
-     * 언어팩에 등록된 키와 화면에 나오는 문구의 출처가 어긋난다.
-     *
-     * 존재하지 않으면 관례 경로들을 순서대로 확인해 실제 있는 디렉토리를 돌려준다
-     * (제3자 확장이 다른 배치를 쓰는 경우 대비).
-     *
-     * @param  string  $scope  확장 스코프 (module|plugin|template)
-     * @param  string  $identifier  확장 식별자
-     * @param  string  $relativeBase  base_path 기준 상위 디렉토리 (modules|plugins|templates)
-     * @return string base_path 기준 상대 lang 디렉토리
-     */
-    private function resolveExtensionLangDir(string $scope, string $identifier, string $relativeBase): string
-    {
-        $primary = $scope === 'module' ? 'src/lang' : 'lang';
-        $candidates = array_unique([$primary, 'lang', 'src/lang', 'resources/lang']);
-
-        foreach ($candidates as $candidate) {
-            $dir = $relativeBase.'/'.$identifier.'/'.$candidate;
-
-            if (File::isDirectory(base_path($dir))) {
-                return $dir;
-            }
-        }
-
-        return $relativeBase.'/'.$identifier.'/'.$primary;
     }
 
     /**
@@ -429,7 +375,7 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 'translation.loader' 를 등록하는 시점 이후에 본 메서드가 호출되어야 하므로,
      * 부트스트랩 순서상 본 ServiceProvider 는 TranslationServiceProvider 다음에 등록됩니다.
      *
-     * @return void 반환값 없음
+     * @return void
      */
     private function registerTranslatorOverride(): void
     {
@@ -448,7 +394,7 @@ class LanguagePackServiceProvider extends ServiceProvider
      * 활성 언어팩 1건을 Translator 에 등록합니다.
      *
      * @param  LanguagePack  $pack  활성 언어팩
-     * @return void 반환값 없음
+     * @return void
      */
     private function registerActivePack(LanguagePack $pack): void
     {
@@ -497,7 +443,7 @@ class LanguagePackServiceProvider extends ServiceProvider
      * config('app.supported_locales') / locale_names / translatable_locales 를 갱신합니다.
      *
      * @param  LanguagePackRegistry  $registry  레지스트리
-     * @return void 반환값 없음
+     * @return void
      */
     private function refreshSupportedLocales(LanguagePackRegistry $registry): void
     {
@@ -527,7 +473,8 @@ class LanguagePackServiceProvider extends ServiceProvider
             return false;
         }
 
-        if (InstallerContext::isSchemaMutatingCommand()) {
+        if ($this->app->runningInConsole()
+            && in_array($_SERVER['argv'][1] ?? null, ['migrate', 'migrate:fresh', 'migrate:rollback', 'migrate:reset', 'db:wipe'], true)) {
             return false;
         }
 
@@ -560,7 +507,7 @@ class LanguagePackServiceProvider extends ServiceProvider
     /**
      * Laravel 기본 TranslationServiceProvider 클래스 참조 (참고용).
      *
-     * @return string TranslationServiceProvider FQCN
+     * @return string
      */
     public static function dependsOn(): string
     {

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\AttachmentSourceType;
-use App\Helpers\InlineMediaPolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -63,8 +62,6 @@ class Attachment extends Model
 
     /**
      * 모델 부팅 시 해시 자동 생성
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -93,8 +90,6 @@ class Attachment extends Model
 
     /**
      * 다형성 관계 - 첨부 대상
-     *
-     * @return MorphTo
      */
     public function attachmentable(): MorphTo
     {
@@ -103,8 +98,6 @@ class Attachment extends Model
 
     /**
      * 업로더 관계
-     *
-     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -118,7 +111,6 @@ class Attachment extends Model
      */
     public function getFullPathAttribute(): string
     {
-        // audit:allow no-storage-disk-direct reason: 행 disk 의 파일시스템 절대경로 해석 — 코어 첨부 path 는 카테고리 없는 원 경로라 StorageInterface(카테고리/경로) 계약과 형태가 다르고, 모델 accessor 는 DI 지점이 없다 (기존 동작 유지)
         return Storage::disk($this->disk)->path($this->path);
     }
 
@@ -129,33 +121,17 @@ class Attachment extends Model
      */
     public function getDownloadUrlAttribute(): string
     {
-        return self::urlForHash($this->hash);
+        return '/api/attachment/'.$this->hash;
     }
 
     /**
-     * 해시 기반 다운로드 URL 조립 단일 지점.
+     * 이미지 여부 확인
      *
-     * 조인 결과 행처럼 모델 hydration 없이 hash 만 손에 있는 호출측
-     * (예: 게시판 인기 게시물 목록의 아바타 URL)이 사용합니다.
-     *
-     * @param  string  $hash  첨부파일 해시
-     * @return string 다운로드 URL
-     */
-    public static function urlForHash(string $hash): string
-    {
-        return '/api/attachment/'.$hash;
-    }
-
-    /**
-     * 인라인 표시 가능한 이미지 여부 확인
-     *
-     * 스크립트를 품을 수 있는 SVG 는 이미지가 아닌 파일로 취급한다 (InlineMediaPolicy — KVE-2026-2366).
-     *
-     * @return bool 래스터 이미지 여부
+     * @return bool 이미지 여부
      */
     public function getIsImageAttribute(): bool
     {
-        return InlineMediaPolicy::isInlineImage($this->mime_type);
+        return str_starts_with($this->mime_type, 'image/');
     }
 
     /**

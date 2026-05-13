@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Div } from '../basic/Div';
 import { Label } from '../basic/Label';
 import { Span } from '../basic/Span';
-import type { EditorAttrs } from '../../types';
 
 export interface RadioOption {
   /** 라디오 버튼의 값 */
@@ -34,12 +33,6 @@ export interface RadioGroupProps {
   label?: string;
   /** 에러 메시지 */
   error?: string;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -59,8 +52,6 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
   size = 'md',
   label,
   error,
-  id,
-  editorAttrs,
 }) => {
   // 내부 상태로 관리
   const [value, setValue] = useState(() => valueProp ?? '');
@@ -107,7 +98,7 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
   const layoutClass = inline ? 'flex flex-wrap items-center gap-4' : 'flex flex-col gap-2';
 
   return (
-    <Div className={className} id={id} {...editorAttrs}>
+    <Div className={className}>
       {/* 그룹 라벨 */}
       {label && (
         <Span

@@ -8,7 +8,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 필수 파일: template.json, routes.json, _base.g7.html, errors/{404,403,500}.g7.html
+1. 필수 파일: template.json, routes.json, _base.json, errors/{404,403,500}.json
 2. 빌드 설정: package.json, vite.config.ts (IIFE 빌드, terser 대신 esbuild)
 3. 검증 순서: JSON 파싱 → layout_name 필수 → error_config → 에러 레이아웃 파일 존재
 4. 컴포넌트: 템플릿에 실제 존재하는 것만 import (없는 컴포넌트 import 시 빌드 실패)
@@ -40,12 +40,6 @@
 
 ---
 
-## 확장 컴포넌트 오버라이드
-
-확장이 제공한 컴포넌트를 이 템플릿의 서식으로 갈아끼우려면 `src/components/overrides/{확장식별자}/{이름}.tsx` + `components.json` 의 `overrides[]` 선언을 함께 둔다. 레이아웃 오버라이드(`layouts/overrides/`)와 같은 규약이며, 비호환 버전이면 원본으로 폴백한다.
-
-규약 전문: **[extension-components.md](extension-components.md)**
-
 ## 템플릿 생성 체크리스트
 
 새 템플릿 생성 시 아래 체크리스트를 순서대로 완료합니다:
@@ -53,22 +47,22 @@
 ```
 Phase 1: 필수 메타데이터
 □ template.json 생성 (error_config 포함)
-□ template.json externals 점검 (icon 컴포넌트 사용 시 Font Awesome 항목 필수)
 □ routes.json 생성 (layout_name 필수)
 
 Phase 2: 레이아웃 파일
-□ layouts/_user_base.g7.html 또는 layouts/_admin_base.g7.html 생성
-□ layouts/home.g7.html (또는 dashboard.g7.html) 생성
-□ layouts/errors/404.g7.html 생성
-□ layouts/errors/403.g7.html 생성
-□ layouts/errors/500.g7.html 생성
+□ layouts/_user_base.json 또는 layouts/_admin_base.json 생성
+□ layouts/home.json (또는 dashboard.json) 생성
+□ layouts/errors/404.json 생성
+□ layouts/errors/403.json 생성
+□ layouts/errors/500.json 생성
 
 Phase 3: 빌드 설정
 □ package.json 생성 (build 스크립트 포함)
 □ vite.config.ts 생성 (IIFE 빌드, esbuild minify)
 □ tsconfig.json 생성
 □ tsconfig.node.json 생성
-□ postcss.config.js 생성 (Tailwind v4 — @tailwindcss/postcss)
+□ tailwind.config.js 생성
+□ postcss.config.js 생성
 
 Phase 4: 컴포넌트 설정
 □ src/index.ts 생성 (실제 존재하는 컴포넌트만 import)
@@ -132,14 +126,7 @@ Phase 6: 빌드 및 설치
       "403": "403",
       "500": "500"
     }
-  },
-  "externals": [
-    {
-      "id": "fontawesome",
-      "type": "style",
-      "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
-    }
-  ]
+  }
 }
 ```
 
@@ -148,15 +135,6 @@ Phase 6: 빌드 및 설치
 - `type`: "admin" 또는 "user"
 - `locales`: 지원 언어 배열
 - `error_config.layouts`: 404, 403, 500 매핑
-
-**`externals` (선택, 단 icon 사용 시 사실상 필수)**:
-
-- 최초 HTML 문서에 정적으로 필요한 외부 스타일·웹폰트·스크립트를 선언한다.
-- `components.basic` 에 `icon` 을 등록하면 Icon 컴포넌트가 생성하는
-  `<i class="fas fa-...">` 를 렌더링할 Font Awesome CSS 가 반드시 필요하므로
-  위 `fontawesome` 항목을 함께 둔다. 누락 시 활성 템플릿에서 아이콘이 표시되지
-  않는다. icon 을 쓰지 않으면 `"externals": []` 로 두거나 필드를 생략한다.
-- 속성/타입 상세: [template-basics.md "외부 리소스 (externals)"](template-basics.md)
 
 ### 1.1.1 hidden 필드 (선택)
 
@@ -174,7 +152,6 @@ Phase 6: 빌드 및 설치
 주의: layout_name 필드가 없으면 설치 실패!
 ```
 
-<!-- pair:skip routes.json 은 라우트 선언 파일이라 .g7.html 작성 대상이 아니다 -->
 ```json
 {
   "version": "1.0.0",
@@ -208,33 +185,18 @@ Phase 6: 빌드 및 설치
 ```
 templates/_bundled/vendor-template/
 └── layouts/
-    ├── _user_base.g7.html    # 베이스 레이아웃 (user 템플릿)
-    ├── _admin_base.g7.html   # 베이스 레이아웃 (admin 템플릿)
-    ├── home.g7.html          # 홈 레이아웃
-    ├── routes.json           # 라우트 정의 (레이아웃이 아니라 라우트 설정 — `.json` 그대로)
+    ├── _user_base.json       # 베이스 레이아웃 (user 템플릿)
+    ├── _admin_base.json      # 베이스 레이아웃 (admin 템플릿)
+    ├── home.json             # 홈 레이아웃
+    ├── routes.json           # 라우트 정의
     ├── errors/               # 필수 디렉토리
-    │   ├── 404.g7.html       # 필수
-    │   ├── 403.g7.html       # 필수
-    │   └── 500.g7.html       # 필수
+    │   ├── 404.json          # 필수
+    │   ├── 403.json          # 필수
+    │   └── 500.json          # 필수
     └── partials/             # partial 파일 (DB 저장 안됨)
 ```
 
-레이아웃 소스 SSoT 는 `.g7.html` 마크업이다 ([layout-markup.md](../frontend/layout-markup.md)). 설치 시 서버가 각 `.g7.html` 을 메모리로 JSON 컴파일해 DB(`template_layouts`)에 등록한다. 아래 예시들의 JSON 은 그 **산출 런타임 계약 키**([layout-json.md](../frontend/layout-json.md))로, `.g7.html` 이 이 키로 컴파일된다.
-
-### 2.2 베이스 레이아웃 (`_user_base.g7.html`)
-
-산출 런타임 계약:
-
-```html
-<layout name="_user_base" version="1.0.0">
-  <meta :is_base="true"/>
-  <slot name="header"/>
-  <slot name="content"/>
-  <slot name="footer"/>
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+### 2.2 베이스 레이아웃 (_user_base.json)
 
 ```json
 {
@@ -254,28 +216,7 @@ templates/_bundled/vendor-template/
 
 ### 2.3 에러 레이아웃
 
-**`404.g7.html` 예시** (아래는 산출 런타임 계약):
-```html
-<layout name="404" version="1.0.0" extends="_user_base">
-  <meta title="$t:errors.404.title" :is_error_layout="true" :error_code="404"/>
-  <slot name="content">
-    <div data-ref="error_container" class="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
-      <h1 data-ref="error_code" class="text-6xl font-bold text-gray-900 dark:text-white mb-4">404</h1>
-      <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.404.title</h2>
-      <p data-ref="error_message" class="text-gray-500 dark:text-gray-400 mb-8">$t:errors.404.message</p>
-      <button data-ref="back_button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-        <on type="click">
-          <navigate path="/"/>
-        </on>
-        $t:errors.back_home
-      </button>
-    </div>
-  </slot>
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
+**404.json 예시**:
 ```json
 {
   "version": "1.0.0",
@@ -347,7 +288,7 @@ templates/_bundled/vendor-template/
 }
 ```
 
-**`403.g7.html`, `500.g7.html`**도 동일한 구조로 생성 (error_code와 아이콘만 다름)
+**403.json, 500.json**도 동일한 구조로 생성 (error_code와 아이콘만 다름)
 
 ---
 
@@ -364,22 +305,22 @@ templates/_bundled/vendor-template/
     "build": "vite build",
     "dev": "vite build --watch"
   },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@tailwindcss/vite": "^4.0.0",
-    "@vitejs/plugin-react": "^5.1.0",
-    "tailwindcss": "^4.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.24",
+    "tailwindcss": "^3.3.2",
     "typescript": "^5.0.0",
-    "vite": "^7.0.4"
+    "vite": "^5.0.0"
   }
 }
 ```
-
-> **`react`/`react-dom` 을 dependencies 에 넣지 않는다** — 번들 템플릿 2종 모두 선언하지 않는다(실측).
-> 런타임 React 는 코어가 `window.G7Core.__runtime` 으로 제공하고 vite 가 external→window 로 매핑하므로,
-> 템플릿이 자기 사본을 번들하면 인스턴스가 둘이 되어 "Invalid hook call"·컨텍스트 미매칭이 난다.
-> 타입만 `@types/react`·`@types/react-dom` 로 받는다.
 
 ### 3.2 vite.config.ts
 
@@ -446,37 +387,25 @@ export default defineConfig({
 }
 ```
 
-### 3.4 Tailwind 스캔 설정 (v4 — `tailwind.config.js` 없음)
+### 3.4 tailwind.config.js
 
-Tailwind v4 는 JS config 파일을 쓰지 않는다(`tailwind.config.js` 실재 0건). 스캔 대상은 CSS 의
-`@source` 로 선언하고, 실제 파일은 [4.3 src/styles/main.css](#43-srcstylesmaincss) 에서 만든다.
-
-플러그인 배선은 번들 템플릿 2종이 서로 다르며 **둘 다 유효**하다 — 신규 템플릿은 ⓐ 를 쓴다.
-
-| 배선 | 사용 템플릿 | 구성 |
-| --- | --- | --- |
-| ⓐ Vite 플러그인 (권장) | `sirsoft-basic` | `@tailwindcss/vite` 를 `vite.config.ts` `plugins` 에 등록. `postcss.config.js` 불요 |
-| ⓑ PostCSS 플러그인 | `sirsoft-admin_basic` | `@tailwindcss/postcss` + [3.5 postcss.config.js](#35-postcssconfigjs). `vite.config.ts` 에는 tailwind 플러그인을 넣지 않는다 |
-
-스캔 소스 선언 방식도 둘로 갈린다 — `sirsoft-admin_basic` 은 레이아웃 글롭을 직접 앵커하고,
-`sirsoft-basic` 은 사전 생성한 `safelist.txt` 를 앵커한다(`@source "./safelist.txt"`).
-**글롭을 쓰는 경우 아래 규정이 적용된다.**
-
-```text
-필수: 레이아웃 스캔은 `.g7.html` 과 `.json` 을 **둘 다** 앵커한다.
-`.g7.html` 이 소스 SSoT 이자 설치 우선 소스므로, `.json` 만 스캔하면
-소스에만 있는 클래스가 조용히 purge 된다 — 빌드도 단위 테스트도 통과하는데
-화면만 무너지는 형태라 jsdom 으로 검출되지 않는다.
+```javascript
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./src/**/*.{js,ts,jsx,tsx}', './layouts/**/*.json'],
+  darkMode: 'class',
+  theme: { extend: {} },
+  plugins: [],
+};
 ```
 
 ### 3.5 postcss.config.js
 
-> 배선 ⓑ(`@tailwindcss/postcss`) 를 택한 경우에만 만든다. ⓐ(`@tailwindcss/vite`) 는 이 파일이 없다.
-
 ```javascript
 export default {
   plugins: {
-    '@tailwindcss/postcss': {},
+    tailwindcss: {},
+    autoprefixer: {},
   },
 };
 ```
@@ -537,42 +466,10 @@ export type HandlerName = keyof typeof handlerMap;
 ### 4.3 src/styles/main.css
 
 ```css
-@import "tailwindcss";
-
-@variant dark (.dark &);
-
-/**
- * 레이아웃 스캔 (Tailwind v4). 경로는 이 CSS 파일 기준 상대 경로다.
- * 두 표기를 모두 앵커한다 — `.g7.html` 이 소스 SSoT 이자 설치 우선 소스므로(D38)
- * `.json` 만 스캔하면 소스에만 있는 클래스가 조용히 purge 된다.
- */
-@source "../../layouts/**/*.g7.html";
-@source "../../layouts/**/*.json";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 ```
-
-### 4.4 레이아웃 편집기 확장점 등록 (선택)
-
-템플릿이 자기 컴포넌트의 커스텀 속성 위젯(예 아이콘 피커)·노드 에디터·캔버스 인플레이스 오버레이를 레이아웃 편집기에 추가하려면 `G7Core.layoutEditor` 확장점에 등록한다. 등록은 `src/index.ts` **최상위(module-load)에서 호출**한다 — `initTemplate`/`window.load` 게이트 안에 두면 편집기 직접 진입 시 위젯이 누락되는 회귀가 발생한다(코어 stub 예약 접수함이 큐로 보존하므로 module-load 시점 등록이 안전).
-
-```typescript
-import { registerMyTemplateEditorWidgets } from './layout-editor/registerEditorWidgets';
-
-// index.ts 최상위 — initTemplate/window.load 밖
-registerMyTemplateEditorWidgets();
-```
-
-```typescript
-// layout-editor/registerEditorWidgets.ts
-export function registerMyTemplateEditorWidgets(): void {
-  if (typeof window === 'undefined') return;
-  const le = (window as any).G7Core?.layoutEditor;
-  if (!le?.registerWidget) return; // stub 부재 → 큐가 보존
-  le.registerWidget('icon-picker', IconPickerWidget);
-  le.registerCanvasOverlay?.('tabnav', TabNavInplaceOverlay);
-}
-```
-
-확장점 API·등록 시점·작성 규약 상세: [editor-spec.md "편집기 확장점"](editor-spec.md). identity launcher 등록(`G7Core.identity.setLauncher`)과 동일한 옵셔널 체이닝 가드 패턴이다.
 
 ---
 
@@ -670,10 +567,9 @@ php artisan template:activate vendor-template
 
 ```php
 // 스캔 대상 디렉토리
-layouts/*.{g7.html,json}          // ✅ 스캔 (DB 저장)
-layouts/errors/*.{g7.html,json}   // ✅ 스캔 (DB 저장)
-layouts/partials/*.{g7.html,json} // ❌ 스캔 안 함 (extends로만 참조)
-// `.g7.html` 소스가 있으면 그것을 설치 시점에 컴파일하고, 짝 마크업이 없는 `.json` 만 직접 읽는다
+layouts/*.json          // ✅ 스캔 (DB 저장)
+layouts/errors/*.json   // ✅ 스캔 (DB 저장)
+layouts/partials/*.json // ❌ 스캔 안 함 (extends로만 참조)
 ```
 
 ### TemplateManager::validateErrorLayouts()
@@ -685,7 +581,7 @@ $requiredErrorCodes = [404, 403, 500];
 // 검증 항목
 1. error_config.layouts 섹션 존재
 2. 404, 403, 500 키 존재
-3. layouts/errors/{code}.g7.html (또는 짝 없는 `.json`) 파일 존재
+3. layouts/errors/{code}.json 파일 존재
 ```
 
 ---
@@ -701,14 +597,6 @@ $requiredErrorCodes = [404, 403, 500];
 **원인**: routes.json 또는 레이아웃 파일에 `layout_name` 필드 없음
 
 **해결**:
-```html
-<layout name="routes" version="1.0.0">
-  …
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "layout_name": "routes",  // 추가
@@ -722,11 +610,11 @@ $requiredErrorCodes = [404, 403, 500];
 ❌ 오류: 404 에러 레이아웃 파일을 찾을 수 없습니다
 ```
 
-**원인**: `layouts/errors/404.g7.html` 파일 없음
+**원인**: `layouts/errors/404.json` 파일 없음
 
 **해결**:
 1. `layouts/errors/` 디렉토리 생성
-2. `404.g7.html`, `403.g7.html`, `500.g7.html` 파일 생성
+2. `404.json`, `403.json`, `500.json` 파일 생성
 
 ### 오류 3: terser not found
 

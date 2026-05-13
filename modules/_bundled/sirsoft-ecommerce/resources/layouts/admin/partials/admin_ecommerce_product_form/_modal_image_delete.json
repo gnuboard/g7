@@ -1,0 +1,59 @@
+{
+  "id": "image_delete_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:sirsoft-ecommerce.common.confirm",
+    "show": "{{_local.ui.showImageDeleteModal}}",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "text-center" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "props": { "name": "trash", "className": "w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" }
+        },
+        {
+          "type": "basic",
+          "name": "P",
+          "props": { "className": "text-gray-600 dark:text-gray-400" },
+          "text": "$t:sirsoft-ecommerce.admin.product.image_delete_confirm"
+        }
+      ]
+    }
+  ],
+  "slots": {
+    "footer": [
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": { "variant": "secondary", "className": "btn btn-outline" },
+        "text": "$t:sirsoft-ecommerce.common.cancel",
+        "actions": [
+          {
+            "type": "click",
+            "handler": "setState",
+            "params": { "target": "global", "ui.showImageDeleteModal": false }
+          }
+        ]
+      },
+      {
+        "type": "basic",
+        "name": "Button",
+        "props": { "variant": "danger", "className": "btn btn-danger" },
+        "text": "$t:sirsoft-ecommerce.common.delete",
+        "actions": [
+          {
+            "type": "click",
+            "handler": "sirsoft-ecommerce.confirmDeleteImage"
+          }
+        ]
+      }
+    ]
+  }
+}

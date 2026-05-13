@@ -3,13 +3,10 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Enums\ExtensionStatus;
-use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
-use App\Support\LayoutEmptyObjects;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
@@ -20,8 +17,6 @@ use Illuminate\Http\Response;
  */
 class PublicLayoutController extends PublicBaseController
 {
-    use ClearsTemplateCaches;
-
     /**
      * 레이아웃 캐시 TTL (초)
      */
@@ -29,9 +24,6 @@ class PublicLayoutController extends PublicBaseController
 
     /**
      * TemplateService 및 LayoutService 주입
-     *
-     * @param  TemplateService  $templateService  템플릿 서비스 (활성 템플릿 조회)
-     * @param  LayoutService  $layoutService  레이아웃 서비스 (병합·확장 적용·권한 필터)
      */
     public function __construct(
         private TemplateService $templateService,
@@ -67,46 +59,14 @@ class PublicLayoutController extends PublicBaseController
         }
 
         try {
-            // 서버 캐시 키는 **서버 현재** 확장 캐시 버전으로만 조립한다. 클라이언트 `?v=` 는 브라우저
-            // HTTP 캐시 우회용 좌표일 뿐 서버 키의 근거가 아니다.
-            //
-            // 종전엔 `?v` 의 정수부를 키에 썼다(#588 — nonce 제거). 그런데 레이아웃 편집기는 부팅
-            // 시점 `window.G7Config.cache_version` 에 nonce 만 붙여 계속 요청하고, 저장·복원은
-            // `ext.cache_version` 을 `time()` 으로 올리며 `clearPublicServingCache` 는 **현재** 버전
-            // 키만 지운다. 그래서 두 번째 bump 부터 부팅 버전 키가 영영 지워지지 않아 초기화·복원·
-            // 409 「최신 불러오기」가 옛 content 를 받았고(실측: 초기화 직후 lock 4 응답, DB 는 lock 7),
-            // 그 화면을 다시 저장하면 옛 내용이 최신을 덮을 수 있었다. 서버 버전으로 키를 고정하면
-            // 무효화(현재 버전 키 forget)와 굽기(현재 버전 키 remember)가 같은 키를 본다. `?v` 가 어떤
-            // 값이든 결과는 같고, 이전 버전 키는 bump 로 자연 이탈한다(TTL 만료).
-            $cacheVersion = self::getExtensionCacheVersion();
+            // 캐시 버전을 키에 포함하여 모듈/플러그인 변경 시 캐시 무효화
+            $cacheVersion = request()->query('v', 0);
 
-            // 편집기 출처 메타 옵션
-            // - 옵션이 truthy 면 각 노드에 `__source` 메타를 부여한 응답을 반환
-            // - 일반 사이트 렌더는 옵션을 전달하지 않으므로 응답 형식 종전과 100% 동일
-            $withSourceMeta = (bool) request()->query('with_source_meta', false);
-
-            // 출처 메타 요청은 편집 권한 필요 — 일반 사용자가 메타를 보면 안 됨
-            // @since engine-v1.50.0
-            if ($withSourceMeta) {
-                $user = request()->user();
-                if ($user === null) {
-                    return $this->unauthorized('auth.layout_guest_permission_denied', [
-                        'required_permissions' => 'core.templates.layouts.edit',
-                    ]);
-                }
-                if (! PermissionHelper::check('core.templates.layouts.edit', $user)) {
-                    return $this->forbidden('auth.layout_permission_denied', [
-                        'required_permissions' => 'core.templates.layouts.edit',
-                    ]);
-                }
-            }
-
-            // 서버 측 캐싱 (1시간 유효) — 메타 포함/미포함은 별도 캐시 키
+            // 서버 측 캐싱 (1시간 유효)
             // getLayout()을 사용하여 레이아웃 로드, 병합, 확장 적용을 한 번에 수행
-            $metaSuffix = $withSourceMeta ? '.meta' : '';
             $mergedLayout = $this->cached(
-                "layout.{$templateIdentifier}.{$layoutName}.v{$cacheVersion}{$metaSuffix}",
-                fn () => $this->layoutService->getLayout($templateIdentifier, $layoutName, $withSourceMeta),
+                "layout.{$templateIdentifier}.{$layoutName}.v{$cacheVersion}",
+                fn () => $this->layoutService->getLayout($templateIdentifier, $layoutName),
                 self::CACHE_TTL
             );
 
@@ -122,16 +82,13 @@ class PublicLayoutController extends PublicBaseController
                 request()->user()
             );
 
-            // 비어 있는 맵 섹션(meta, initLocal 등)은 `{}` 로 낸다 — 배열로 읽은 탓에 `[]` 가 되지 않게
-            $mergedLayout = LayoutEmptyObjects::restoreRootMapSections($mergedLayout);
-
             // ETag 및 Cache-Control 헤더와 함께 응답 반환
             return $this->successWithCache(
                 'templates.messages.layout_served',
                 $mergedLayout,
                 self::CACHE_TTL
             );
-        } catch (ModelNotFoundException $e) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             // 레이아웃 또는 부모 레이아웃을 찾을 수 없음 - 예외 메시지 전달
             return $this->notFound($e->getMessage());
         }

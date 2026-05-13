@@ -13,7 +13,6 @@
 4. 다국어 필드: JSON 구조 {"ko": "한글", "en": "English"}
 5. 시더: 콘솔 메시지 필수, truncate() 대신 delete() 사용
 6. 모듈/플러그인 down(): 테이블/컬럼/인덱스 존재 확인 후 삭제 (방어적 코딩 필수)
-7. 삭제는 Service 에서 명시적으로 (DB CASCADE 에 의존한 삭제 금지 — 마이그레이션의 CASCADE 는 안전망)
 ```
 
 ---
@@ -35,7 +34,6 @@
 - enum/boolean은 값 설명 포함
 - 외래키 제약조건 명시
 - down() 메서드 구현
-- 모듈/플러그인의 DB 변경은 마이그레이션만으로 끝나지 않는다 — 업그레이드 스텝(`upgrades/Upgrade_X_Y_Z.php`) 필요 여부를 함께 확인한다 ([extension-update-system.md](extension/extension-update-system.md))
 
 **파일명 네이밍 규칙**:
 
@@ -128,39 +126,6 @@ return new class extends Migration
 };
 ```
 
-### 컬럼 comment 와 FK 체인 순서
-
-`->comment()` 는 `->constrained()` / `->references()` / `->on()` **앞**에 둔다. 뒤에 체인하면 comment 가 컬럼이 아니라 외래키 정의에 부착되어 DB 에 방출되지 않는다.
-
-```php
-// ✅ comment 가 컬럼에 부착된다
-$table->foreignId('user_id')
-    ->nullable()
-    ->comment('사용자 ID')
-    ->constrained('users')
-    ->nullOnDelete();
-
-// ❌ comment 가 사라진다 — COLUMN_COMMENT 가 빈 문자열로 생성된다
-$table->foreignId('user_id')
-    ->nullable()
-    ->constrained('users')
-    ->nullOnDelete()
-    ->comment('사용자 ID');
-```
-
-원인은 반환 타입 전이다. `ForeignIdColumnDefinition::constrained()` 는 `$this->references(...)->on(...)` 을 반환하며 이것은 `ColumnDefinition` 이 아니라 `ForeignKeyDefinition` 이다. `ForeignKeyDefinition` 은 `Fluent` 라서 `->comment()` 호출이 예외 없이 통과하지만, 그 값은 외래키 커맨드의 속성으로만 남고 MySQL grammar 의 `compileForeign` 은 comment 를 다루지 않는다. 그래서 **에러도 경고도 없이 조용히 사라진다.**
-
-```sql
--- 잘못된 순서로 생성된 테이블의 실측 결과
-SELECT COLUMN_NAME, COLUMN_COMMENT FROM information_schema.COLUMNS ...
-g7_menus  name        [메뉴 이름 (다국어 JSON)]
-g7_menus  created_by  []          ← 소스에는 comment 가 적혀 있다
-```
-
-이미 `migrate` 를 마친 설치본은 마이그레이션을 다시 실행하지 않으므로, 소스를 교정해도 기존 DB 의 comment 는 비어 있는 채로 남는다. 소스 교정과 **업그레이드 스텝 백필**을 함께 수행한다. 백필은 comment 가 비어 있을 때만 채워 운영자가 직접 넣은 값을 보존하고, 자료형·NULL 허용·기본값을 현재 스키마에서 읽어 그대로 재적용해 설명 외에는 아무 것도 바꾸지 않는다.
-
-면제: `// audit:allow migration-fk-comment-order <사유>` 인라인 주석 (해당 구문에 부착)
-
 ### 마이그레이션 멱등성
 
 ```
@@ -223,61 +188,9 @@ public function up(): void
 }
 ```
 
-#### 가드는 한 단계가 아니라 전 단계에 건다
-
-MySQL 은 DDL 을 트랜잭션으로 되돌리지 않는다. `up()` 이 중간에 실패하면 앞 단계는 커밋된 채 남고 마이그레이션 기록만 남지 않아, 다음 실행이 같은 `up()` 을 처음부터 다시 돈다. 컬럼에만 가드를 걸어 두면 그 다음 인덱스·외래키 단계가 `Duplicate key name` 으로 실패하고, 재실행할 때마다 같은 지점에서 멈추므로 사람이 손으로 정리하기 전에는 복구되지 않는다.
-
-한 마이그레이션이 컬럼·인덱스·외래키를 함께 추가한다면 세 단계 모두 가드를 갖는다. 정적 검사는 컬럼 단계만 보므로, 인덱스·외래키 가드는 작성자와 리뷰어가 확인한다.
-
-외래키는 `Schema::hasIndex` 에 해당하는 헬퍼가 없어 제약 이름으로 조회한다:
-
-```php
-Schema::table($table, function (Blueprint $blueprint) use ($table) {
-    if (! Schema::hasIndex($table, 'orders_source_index')) {
-        $blueprint->index(['source_type', 'source_id'], 'orders_source_index');
-    }
-    if (! $this->hasForeignKey($table, 'fk_orders_requested_by')) {
-        $blueprint->foreign('requested_by', 'fk_orders_requested_by')
-            ->references('id')->on('users')->nullOnDelete();
-    }
-});
-
-private function hasForeignKey(string $table, string $name): bool
-{
-    foreach (Schema::getForeignKeys($table) as $foreignKey) {
-        if (($foreignKey['name'] ?? null) === $name) {
-            return true;
-        }
-    }
-
-    return false;
-}
-```
-
-외래키에 이름을 명시하는 이유도 여기에 있다 — 자동 생성 이름에 의존하면 존재 확인의 기준이 사라진다.
-
-#### 정렬을 덮는 복합 인덱스의 선행 컬럼
-
-인덱스가 `ORDER BY` 를 덮으려면 **선행 컬럼이 모두 등치로 고정**되고 그 다음 컬럼이 정렬 컬럼이어야 한다. 선택적 필터 컬럼을 선행에 두면, 그 필터를 걸지 않은 기본 진입에서 정렬을 못 덮어 filesort 가 그대로 남는다.
-
-```php
-// ❌ status 는 선택적 필터 — 필터 없는 기본 목록에서 created_at 정렬을 못 덮는다
-$table->index(['status', 'created_at']);
-
-// ✅ SoftDeletes 가 항상 `deleted_at IS NULL` 을 붙이므로 선행 컬럼이 고정된다
-$table->index(['deleted_at', 'created_at']);
-```
-
-필터 조합이 다양한 목록은 단일 최적 인덱스가 없다. **항상 걸리는 조건**을 선행에 두고 하나만 추가한다 — 조합마다 인덱스를 추가하면 쓰기 비용만 늘어난다.
-
-카디널리티가 극히 낮은 컬럼(`deleted_at` 처럼 대부분 NULL)의 **단독** 인덱스는 옵티마이저가 좁은 range 로 오판해 index_merge 후보로 올리므로 거의 항상 해롭다. 다만 기존 단독 인덱스를 제거할 때는 다른 쿼리가 그것에 의존할 수 있으므로, 제거 전 해당 컬럼을 쓰는 쿼리를 전수 확인한다.
-
-> 후속 검토 항목: `g7_board_posts_deleted_at_index`(단독) — 지연 조인 전환으로 index_merge 는 사라졌으나 인덱스 자체는 남아 있다. 의존 쿼리 전수 확인 후 제거 여부를 별도로 판단한다.
-> `board_posts` 에 정렬 전용 복합 인덱스를 **추가하지 않기로** 판정한 근거: 지연 조인 적용 후 재측정에서 index_merge 가 소멸했고 inner 가 기존 `idx_board_posts_list_count` 를 커버링으로 사용한다. 후보 인덱스 `(board_id, is_notice, parent_id, deleted_at, id)` 를 실제로 만들어 강제 비교했을 때의 이득이 1.6배에 그쳐 쓰기 비용 대비 근거가 부족하다. 계측 데이터가 단일 게시판·공지 없음·답글 없음의 균일 분포라 두 후보의 선택도가 같아지는 한계가 있어, 실데이터 분포에서 재확인이 필요하다.
-
 #### `->change()` 패턴의 멱등성
 
-`->change()` 는 이미 존재하는 컬럼의 타입/제약 변경이므로 컬럼 부재 fatal 위험은 없다. 단, MariaDB/MySQL 의 일부 ALTER 가 비-멱등인 경우 (예: enum 값 추가 후 재실행) 가 있으므로 마이그레이션 작성자가 의도 검증 필요. 자동 검증은 `->change()` 라인을 자동 제외하므로 false positive 미발생.
+`->change()` 는 이미 존재하는 컬럼의 타입/제약 변경이므로 컬럼 부재 fatal 위험은 없다. 단, MariaDB/MySQL 의 일부 ALTER 가 비-멱등인 경우 (예: enum 값 추가 후 재실행) 가 있으므로 마이그레이션 작성자가 의도 검증 필요. audit rule `migration-idempotency-guard` 는 `->change()` 라인을 자동 제외하므로 false positive 미발생.
 
 #### 검증 절차
 
@@ -288,26 +201,6 @@ php artisan migrate --pretend --path=database/migrations/2026_05_05_172526_add_l
 ```
 
 신규 마이그레이션 작성 후에는 같은 마이그레이션을 두 번 실행하는 시나리오를 PHPUnit Feature 테스트로 작성해 SQL error 미발생을 검증한다 (`tests/Feature/Upgrades/MultiVersionUpgradePathTest.php` 의 `hasColumn_가드된_마이그레이션은_두_번_적용해도_SQL_error_없다` 사례 참조).
-
----
-
-### 긴 문자열 컬럼의 unique — 해시 컬럼 패턴 (sitemap_urls 사례)
-
-utf8mb4(4 byte/char) 긴 문자열 컬럼을 unique 인덱스에 직접 넣으면 InnoDB 키 길이 제한(3072 byte)을 넘겨 마이그레이션이 실패한다. 예: `sitemap_urls` 의 identity 는 `(resource_type, resource_id, loc)` 인데 `loc string(2048)` 을 넣으면 `256+256+8192 = 8704 byte` 로 초과한다.
-
-해결: **identity 문자열의 고정 길이 해시 컬럼**을 두고 그것을 unique 에 넣는다.
-
-```php
-$table->string('loc', 2048);                 // 실제 값 (utf8mb4)
-$table->char('loc_hash', 64)->charset('ascii'); // sha256(loc) — ascii 64 byte
-$table->unique(['resource_type', 'resource_id', 'loc_hash']); // 64+256+256 = 576 byte
-```
-
-- 해시는 app 레벨(`hash('sha256', $loc)`)에서 계산한다 — raw SQL/DB 함수 비의존(다국어·DB 이식성 규율).
-- `loc` 는 실제 서빙/표시에 쓰고, `loc_hash` 는 오직 identity 매칭용이다.
-- upsert 는 delete-후-insert 로 멱등을 보장하고, 이 unique 가 중복 삽입(1062)을 차단한다.
-
-`sitemap_urls` 스키마: `resource_type(64,index)` · `resource_id(64,nullable)` · `loc(2048)` · `loc_hash(64,ascii)` · `lastmod` · `changefreq(16)` · `priority(2,1)` · `contributor(64,index)` · `is_visible(bool,index)` + `unique(resource_type, resource_id, loc_hash)` + `index(contributor, is_visible, id)`(리빌드 스트리밍 커서). 모든 컬럼 한국어 `->comment()`, `down()` 구현, `Schema::hasTable` 멱등 가드.
 
 ---
 
@@ -574,38 +467,6 @@ public function checkCanDelete(Product $product): array
 }
 ```
 
-### 다형(polymorphic) 타입 컬럼
-
-다형 관계의 타입 컬럼에 FQCN 대신 짧은 별칭을 저장하려면 `Relation::morphMap()` 으로 별칭 ↔ 모델 대응을 등록한다. 별칭은 저장값이 짧고 읽히며, 네임스페이스가 바뀌어도 기존 행이 깨지지 않는다.
-
-`enforceMorphMap()` 은 쓰지 않는다 — 등록 목록 밖의 별칭을 전부 거부하므로, 코어나 다른 확장이 등록한 다형 관계가 조용히 깨진다. 확장은 자기 별칭만 추가한다.
-
-```php
-// modules/{vendor-module}/src/Providers/{X}ServiceProvider.php::boot()
-Relation::morphMap([
-    ClaimTypeEnum::EXCHANGE->value => OrderExchange::class,
-    ClaimTypeEnum::RETURN->value => OrderReturn::class,
-]);
-```
-
-타입 컬럼의 값 집합에 **대응 모델이 없는 값**이 하나라도 있으면 (`direct` / `manual` / `system` 처럼 "출처 없음" 을 뜻하는 값) `morphTo()` 를 쓰지 않는다. Eloquent 는 매핑되지 않은 값을 클래스명으로 간주해 그 이름으로 인스턴스화를 시도하다 fatal 이 난다. 그 값이 실제로 저장되기 전까지는 아무 증상이 없어 운영 중에 처음 드러난다.
-
-```php
-// ✅ 명시 해석기 — 대응 모델이 없는 값은 null 로 끝난다
-public function resolveRefundSource(): ?Model
-{
-    $modelClass = $this->refund_source_type?->sourceModelClass();
-
-    if ($modelClass === null || $this->refund_source_id === null) {
-        return null;
-    }
-
-    return $modelClass::find($this->refund_source_id);
-}
-```
-
-타입 컬럼은 Enum 으로 캐스팅하고, 별칭 → 모델 대응은 그 Enum 의 메서드(`sourceModelClass()`)에 둔다. 저장 가능한 값과 그 해석이 한 파일에 모여 있어야 값이 늘 때 해석이 함께 늘어난다.
-
 ### 시더
 
 **규칙**:
@@ -731,8 +592,6 @@ php artisan module:seed sirsoft-ecommerce --sample
 php artisan db:seed --class="Database\Seeders\Sample\DummyUserSeeder"
 php artisan module:seed sirsoft-ecommerce --class=Sample\\ProductSeeder
 ```
-
-설치가 끝난 사이트에서 `db:seed`(`--sample` 포함)를 다시 실행해도 관리자 시더(`AdminUserSeeder`)는 최고관리자가 이미 있거나 `INSTALLER_ADMIN_EMAIL`·`INSTALLER_ADMIN_PASSWORD` 환경변수가 없으면 안내만 하고 건너뛴다 — 기존 회원은 그대로 두고 나머지 설치·샘플 시더는 계속 실행된다. 첫 관리자 계정은 설치 마법사가 두 환경변수를 넣고 만든다.
 
 **패턴**:
 ```php

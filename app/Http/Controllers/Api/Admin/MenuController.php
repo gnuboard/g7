@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\ExtensionOwnerType;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use App\Http\Requests\Menu\BulkUpdateMenuRolesRequest;
 use App\Http\Requests\Menu\CreateMenuRequest;
 use App\Http\Requests\Menu\MenuListRequest;
 use App\Http\Requests\Menu\UpdateMenuOrderRequest;
@@ -12,9 +11,7 @@ use App\Http\Requests\Menu\UpdateMenuRequest;
 use App\Http\Resources\MenuCollection;
 use App\Http\Resources\MenuResource;
 use App\Models\Menu;
-use App\Models\User;
 use App\Services\MenuService;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -26,33 +23,24 @@ use Illuminate\Validation\ValidationException;
  */
 class MenuController extends AdminBaseController
 {
-    /**
-     * 메뉴 컨트롤러를 생성합니다.
-     *
-     * @param  MenuService  $menuService  메뉴 서비스
-     */
     public function __construct(
         private MenuService $menuService
     ) {
         parent::__construct();
     }
 
-    /**
-     * 관리용 메뉴 목록을 조회합니다.
-     *
-     * @param  MenuListRequest  $request  목록 필터·정렬 요청
-     * @return JsonResponse 메뉴 컬렉션을 담은 JSON 응답
-     */
     public function index(MenuListRequest $request): JsonResponse
     {
         try {
             $filters = $request->validated();
             $user = Auth::user();
 
-            // 필터 유무와 무관하게 같은 경로로 조회한다. 예전에는 필터가 없으면 filters 를
-            // 받지 않는 메서드로 분기했는데, 그 경로는 sort_by/sort_order 를 통째로 버려
-            // "필터를 하나라도 걸어야 정렬이 먹는" 상태가 됐다 (#492 D-22).
-            $menus = $this->menuService->getFilteredMenusForManagement($filters, $user);
+            // 필터가 있으면 필터링된 메뉴 조회, 없으면 전체 조회
+            if (isset($filters['is_active']) || ! empty($filters['filters'])) {
+                $menus = $this->menuService->getFilteredMenusForManagement($filters, $user);
+            } else {
+                $menus = $this->menuService->getTopLevelMenusForManagement($user);
+            }
 
             return $this->successWithResource(
                 'menu.fetch_success',
@@ -84,26 +72,23 @@ class MenuController extends AdminBaseController
     }
 
     /**
-     * 사이드바용으로 현재 사용자의 역할에 지정된 활성 메뉴를 반환합니다.
-     *
-     * 메뉴 관리 권한(core.menus.read) 없이 관리자 영역 접근만으로 부른다 — 「접근 가능 메뉴」로
-     * 메뉴를 지정받은 역할의 사이드바가 그 권한 유무에 따라 비지 않게 하기 위해서다.
+     * 활성화된 메뉴들을 네비게이션용으로 반환합니다.
      *
      * @return JsonResponse 네비게이션용 메뉴 데이터를 포함한 JSON 응답
      */
     public function active(): JsonResponse
     {
         try {
-            // 이 엔드포인트는 메뉴 관리 권한을 요구하지 않으므로(관리자 영역 접근만) 응답을
-            // 반드시 내 역할에 지정된 메뉴로 좁힌다. 인증 사용자가 없을 때 전체 메뉴를 내주던
-            // 대체 경로는 두지 않는다 — 인증 미들웨어 밖에서 불려도 빈 목록이다.
+            // 현재 사용자 정보 가져오기
             $user = Auth::user();
 
-            if (! $user instanceof User) {
-                return $this->success('menu.fetch_success', []);
+            if ($user) {
+                // 사용자가 접근 가능한 메뉴만 조회
+                $navigationMenus = $this->menuService->getAccessibleNavigationMenus($user);
+            } else {
+                // 사용자 정보가 없으면 모든 활성화된 메뉴 조회 (fallback)
+                $navigationMenus = $this->menuService->getNavigationMenus();
             }
-
-            $navigationMenus = $this->menuService->getAccessibleNavigationMenus($user);
 
             $collection = new MenuCollection($navigationMenus);
 
@@ -233,39 +218,8 @@ class MenuController extends AdminBaseController
             }
         } catch (ValidationException $e) {
             return $this->error('menu.order_update_failed', 422, $e->errors());
-        } catch (AuthorizationException $e) {
-            // 스코프 밖 메뉴가 포함된 경우. 제네릭 catch 보다 앞에 둬야 인가 거부가 500 으로
-            // 뭉개지지 않고 상세 경로(403)와 같은 응답이 된다.
-            return $this->error('auth.scope_denied', 403, $e->getMessage());
         } catch (\Exception $e) {
             return $this->error('menu.update_error', 500, $e->getMessage());
-        }
-    }
-
-    /**
-     * 여러 메뉴에 역할을 한꺼번에 더하거나 뺍니다.
-     *
-     * @param  BulkUpdateMenuRolesRequest  $request  메뉴·역할·작업(add|remove) 요청
-     * @return JsonResponse 변경 메뉴 수와 자동으로 함께 처리된 부모·자식 메뉴 ID
-     */
-    public function bulkUpdateRoles(BulkUpdateMenuRolesRequest $request): JsonResponse
-    {
-        try {
-            $validated = $request->validated();
-            $result = $this->menuService->bulkUpdateRoles(
-                $validated['menu_ids'],
-                $validated['role_ids'],
-                $validated['mode'],
-            );
-
-            return $this->success('menu.bulk_roles_success', $result, 200, ['count' => $result['updated_count']]);
-        } catch (ValidationException $e) {
-            return $this->error('menu.bulk_roles_failed', 422, $e->errors());
-        } catch (AuthorizationException $e) {
-            // 범위 밖 메뉴가 섞인 경우 — 순서 변경과 같은 이유로 제네릭 catch 보다 앞에 둔다.
-            return $this->error('auth.scope_denied', 403, $e->getMessage());
-        } catch (\Exception $e) {
-            return $this->error('menu.bulk_roles_failed', 500, $e->getMessage());
         }
     }
 

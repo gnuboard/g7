@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Extension;
 
-use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
@@ -11,7 +10,6 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\ExtensionManager;
-use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -43,9 +41,7 @@ class HiddenFlagTest extends TestCase
     use RefreshDatabase;
 
     private string $modulesPath;
-
     private string $pluginsPath;
-
     private string $templatesPath;
 
     /**
@@ -54,8 +50,6 @@ class HiddenFlagTest extends TestCase
      * - test-hidden-mod (hidden=true) / test-visible-mod (hidden=false)
      * - test-hidden-plg (hidden=true) / test-visible-plg (hidden=false)
      * - test-hidden-tpl (hidden=true) / test-visible-tpl (hidden=false)
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -86,8 +80,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * 테스트 fixture 를 정리합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -118,7 +110,6 @@ class HiddenFlagTest extends TestCase
      *
      * @param  string  $identifier  모듈 식별자
      * @param  bool  $hidden  hidden 플래그 값
-     * @return void 반환값 없음
      */
     private function createBundledModule(string $identifier, bool $hidden): void
     {
@@ -140,7 +131,6 @@ class HiddenFlagTest extends TestCase
      *
      * @param  string  $identifier  플러그인 식별자
      * @param  bool  $hidden  hidden 플래그 값
-     * @return void 반환값 없음
      */
     private function createBundledPlugin(string $identifier, bool $hidden): void
     {
@@ -162,7 +152,6 @@ class HiddenFlagTest extends TestCase
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  bool  $hidden  hidden 플래그 값
-     * @return void 반환값 없음
      */
     private function createBundledTemplate(string $identifier, bool $hidden): void
     {
@@ -182,8 +171,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * ModuleManager 를 생성합니다.
-     *
-     * @return ModuleManager 목 저장소를 주입한 모듈 관리자
      */
     private function makeModuleManager(): ModuleManager
     {
@@ -203,15 +190,11 @@ class HiddenFlagTest extends TestCase
             pluginRepository: Mockery::mock(PluginRepositoryInterface::class),
             layoutRepository: Mockery::mock(LayoutRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
-            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
-            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
     }
 
     /**
      * PluginManager 를 생성합니다.
-     *
-     * @return PluginManager 목 저장소를 주입한 플러그인 관리자
      */
     private function makePluginManager(): PluginManager
     {
@@ -230,15 +213,11 @@ class HiddenFlagTest extends TestCase
             moduleRepository: Mockery::mock(ModuleRepositoryInterface::class),
             layoutRepository: Mockery::mock(LayoutRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
-            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
-            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
     }
 
     /**
      * TemplateManager 를 생성합니다.
-     *
-     * @return TemplateManager 목 저장소를 주입한 템플릿 관리자
      */
     private function makeTemplateManager(): TemplateManager
     {
@@ -254,8 +233,6 @@ class HiddenFlagTest extends TestCase
             moduleRepository: Mockery::mock(ModuleRepositoryInterface::class),
             pluginRepository: Mockery::mock(PluginRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
-            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
-            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
     }
 
@@ -265,12 +242,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * _bundled 모듈의 hidden 플래그가 ModuleManager 출력에 반영되는지 검증
-     *
-     * @scenario ext_type=module, surface=manager_listing
-     *
-     * @effects manager_listing_exposes_hidden_field
-     *
-     * @return void 반환값 없음
      */
     public function test_module_manager_exposes_hidden_field(): void
     {
@@ -288,12 +259,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * artisan module:list 가 기본적으로 hidden 모듈을 제외하는지 검증
-     *
-     * @scenario ext_type=module, surface=list_command_default
-     *
-     * @effects list_command_omits_hidden_by_default
-     *
-     * @return void 반환값 없음
      */
     public function test_module_list_command_hides_hidden_by_default(): void
     {
@@ -305,12 +270,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * artisan module:list --hidden 이 hidden 모듈을 포함해 출력하는지 검증
-     *
-     * @scenario ext_type=module, surface=list_command_hidden_option
-     *
-     * @effects list_command_hidden_option_includes_hidden
-     *
-     * @return void 반환값 없음
      */
     public function test_module_list_command_includes_hidden_with_flag(): void
     {
@@ -326,12 +285,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * _bundled 플러그인의 hidden 플래그가 PluginManager 출력에 반영되는지 검증
-     *
-     * @scenario ext_type=plugin, surface=manager_listing
-     *
-     * @effects manager_listing_exposes_hidden_field
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_manager_exposes_hidden_field(): void
     {
@@ -349,12 +302,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * artisan plugin:list 가 기본적으로 hidden 플러그인을 제외하는지 검증
-     *
-     * @scenario ext_type=plugin, surface=list_command_default
-     *
-     * @effects list_command_omits_hidden_by_default
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_list_command_hides_hidden_by_default(): void
     {
@@ -366,12 +313,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * artisan plugin:list --hidden 이 hidden 플러그인을 포함해 출력하는지 검증
-     *
-     * @scenario ext_type=plugin, surface=list_command_hidden_option
-     *
-     * @effects list_command_hidden_option_includes_hidden
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_list_command_includes_hidden_with_flag(): void
     {
@@ -387,12 +328,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * _bundled 템플릿의 hidden 플래그가 TemplateManager 출력에 반영되는지 검증
-     *
-     * @scenario ext_type=template, surface=manager_listing
-     *
-     * @effects manager_listing_exposes_hidden_field
-     *
-     * @return void 반환값 없음
      */
     public function test_template_manager_exposes_hidden_field(): void
     {
@@ -410,12 +345,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * artisan template:list 가 기본적으로 hidden 템플릿을 제외하는지 검증
-     *
-     * @scenario ext_type=template, surface=list_command_default
-     *
-     * @effects list_command_omits_hidden_by_default
-     *
-     * @return void 반환값 없음
      */
     public function test_template_list_command_hides_hidden_by_default(): void
     {
@@ -427,12 +356,6 @@ class HiddenFlagTest extends TestCase
 
     /**
      * artisan template:list --hidden 이 hidden 템플릿을 포함해 출력하는지 검증
-     *
-     * @scenario ext_type=template, surface=list_command_hidden_option
-     *
-     * @effects list_command_hidden_option_includes_hidden
-     *
-     * @return void 반환값 없음
      */
     public function test_template_list_command_includes_hidden_with_flag(): void
     {

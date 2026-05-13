@@ -4,11 +4,6 @@ namespace App\Http\Resources;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
-use App\Extension\CoreVersionChecker;
-use App\Extension\Helpers\DependencyEnricher;
-use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
-use App\Services\ExtensionStaticCacheService;
-use App\Support\TemplateExternals;
 use Composer\Semver\Semver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -20,8 +15,6 @@ use Illuminate\Support\Facades\App;
  */
 class TemplateResource extends BaseApiResource
 {
-    use ExposesUpdateCoreCompatibility;
-
     /**
      * 템플릿 목록용 리소스를 배열로 변환합니다 (간소화된 정보).
      *
@@ -39,10 +32,7 @@ class TemplateResource extends BaseApiResource
             'status' => $this->getValue('status'),
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getDependenciesSummary(),
-            'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integrations', [])),
             'dependencies_met' => $this->areDependenciesMet(),
-            'icon_url' => $this->getValue('icon_url'),
-            'icon_source' => $this->getValue('icon_source', 'none'),
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
@@ -57,17 +47,6 @@ class TemplateResource extends BaseApiResource
             'deactivated_reason' => $this->getDeactivatedReasonValue(),
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
-            // 현재 매니페스트의 코어 요구 버전(g7_version) 충족 여부 — 설치·활성 가드
-            // (CoreVersionChecker::validateExtension)와 같은 판정이다. 화면은 이 값으로 설치 버튼과
-            // 켜기 스위치를 잠근다(안 잠그면 누른 뒤 422 core_version_mismatch 로 끝난다).
-            'core_compatible' => CoreVersionChecker::isCompatible(
-                is_string($this->getValue('requires_core')) ? $this->getValue('requires_core') : null
-            ),
-            // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
-            ...$this->updateCoreCompatibilityFields(),
-            // 설치·레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712).
-            // `when()` 대신 펼침으로 둔다 — 리소스를 `toArray()` 로 직접 부르는 경로에서 MissingValue 가 새지 않게.
-            ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),
             ...$this->resourceMeta($request),
         ];
     }
@@ -75,7 +54,7 @@ class TemplateResource extends BaseApiResource
     /**
      * deactivated_reason 을 항상 string|null 로 직렬화합니다.
      *
-     * @return string|null 비활성화 사유 문자열 (없으면 null)
+     * @return string|null
      */
     protected function getDeactivatedReasonValue(): ?string
     {
@@ -91,7 +70,7 @@ class TemplateResource extends BaseApiResource
     /**
      * 리소스별 권한 매핑을 반환합니다.
      *
-     * @return array<string, string> 능력 키 → 권한 식별자 맵
+     * @return array<string, string>
      */
     protected function abilityMap(): array
     {
@@ -133,35 +112,16 @@ class TemplateResource extends BaseApiResource
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
             // 상세 정보
-            // 상세 응답은 목록이 골라 둔 전역 자리를 통째로 덮는다(상세 창의 initGlobal).
-            // 여기서 빠뜨리면 창이 열린 뒤 아이콘만 사라지므로 목록과 같은 두 필드를 싣는다.
-            'icon_url' => $this->getValue('icon_url'),
-            'icon_source' => $this->getValue('icon_source', 'none'),
             'locales' => $this->getValue('locales', []),
             'layouts_count' => $this->getValue('layouts_count', 0),
             'components' => $this->getValue('components', ['basic' => [], 'composite' => []]),
             'license' => $this->getValue('license'),
             'metadata' => $this->getValue('metadata', []),
-            // 외부 리소스 (template.json externals) — 정규화 책임은 TemplateExternals 에 위임.
-            // `asset` 항목의 URL 해석에는 식별자와 캐시 버전이 필요하므로 뷰 컴포저
-            // (CollectsTemplateExternals) 와 같은 인자를 넘긴다 — 빠뜨리면 `asset` 항목이
-            // "식별자 미상" 으로 조용히 버려져 응답에서 사라진다.
-            'externals' => TemplateExternals::normalize(
-                $this->getValue('externals', []),
-                $this->getValue('identifier'),
-                // 트레이트를 사용하는 클래스 경유로 호출한다 — 트레이트 정적 메서드
-                // 직접 호출(`ClearsTemplateCaches::`)은 PHP 8.1+ E_DEPRECATED 라
-                // 템플릿 상세 응답마다 로그를 남긴다 (AssetUrl::staticExtBase 와 동형).
-                ExtensionStaticCacheService::getExtensionCacheVersion(),
-            ),
             // 의존성 상세 정보
             'dependencies' => $this->getDetailedDependencies(),
-            'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integrations', [])),
             // 타임스탬프
             'created_at' => $this->getValue('created_at'),
             'updated_at' => $this->getValue('updated_at'),
-            // 상세 창이 목록 행(abilities 포함)을 담던 전역을 이 응답으로 덮어쓰므로 권한 메타도 함께 싣는다.
-            ...$this->resourceMeta(request()),
         ];
     }
 
@@ -255,8 +215,7 @@ class TemplateResource extends BaseApiResource
                 $module = $moduleRepository->findByIdentifier($moduleIdentifier);
                 $modules[] = [
                     'identifier' => $moduleIdentifier,
-                    // 이름이 비어 있으면(null·빈 문자열) 식별자로 대신한다 — 목록 카드는 이 값을 글자로 그린다(#727 React #31).
-                    'name' => ($module ? $this->getExtensionName($module) : null) ?: $moduleIdentifier,
+                    'name' => $module ? $this->getExtensionName($module) : $moduleIdentifier,
                     'type' => 'module',
                 ];
             }
@@ -268,8 +227,7 @@ class TemplateResource extends BaseApiResource
                 $plugin = $pluginRepository->findByIdentifier($pluginIdentifier);
                 $plugins[] = [
                     'identifier' => $pluginIdentifier,
-                    // 이름이 비어 있으면(null·빈 문자열) 식별자로 대신한다 — 목록 카드는 이 값을 글자로 그린다(#727 React #31).
-                    'name' => ($plugin ? $this->getExtensionName($plugin) : null) ?: $pluginIdentifier,
+                    'name' => $plugin ? $this->getExtensionName($plugin) : $pluginIdentifier,
                     'type' => 'plugin',
                 ];
             }

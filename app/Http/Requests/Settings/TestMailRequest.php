@@ -3,8 +3,6 @@
 namespace App\Http\Requests\Settings;
 
 use App\Extension\HookManager;
-use App\Support\EnvPriority;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -27,7 +25,7 @@ class TestMailRequest extends FormRequest
     /**
      * 검증 규칙을 반환합니다.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -58,31 +56,7 @@ class TestMailRequest extends FormRequest
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
-        $rules = HookManager::applyFilters('core.settings.test_mail_validation_rules', $rules, $this);
-
-        return $this->relaxEnvLockedRules($rules);
-    }
-
-    /**
-     * `.env` 로 잠긴 메일 키는 요청에서 요구하지 않습니다.
-     *
-     * 잠긴 민감 키(비밀번호·Mailgun 시크릿·SES 키)는 화면에 값을 싣지 않아 폼이 빈 칸으로
-     * 보냅니다. 발송은 그 키에 `.env` 유효값을 쓰므로(`SettingsService::sendTestMail`) 요청이
-     * 값을 공급할 필요가 없습니다 — 필수로 두면 테스트 메일이 늘 422 로 끝납니다.
-     * 이 요청의 필드명은 `mail` 카테고리 저장소 키와 같습니다(`mail.{필드}`).
-     *
-     * @param  array<string, mixed>  $rules  검증 규칙
-     * @return array<string, mixed> 잠긴 키의 규칙을 완화한 검증 규칙
-     */
-    private function relaxEnvLockedRules(array $rules): array
-    {
-        foreach (array_keys($rules) as $field) {
-            if ($field !== 'to_email' && EnvPriority::isLocked('mail.'.$field)) {
-                $rules[$field] = ['sometimes', 'nullable'];
-            }
-        }
-
-        return $rules;
+        return HookManager::applyFilters('core.settings.test_mail_validation_rules', $rules, $this);
     }
 
     /**
@@ -98,31 +72,13 @@ class TestMailRequest extends FormRequest
             'to_email.max' => __('settings.invalid_email'),
             'from_address.required' => __('validation.required', ['attribute' => __('validation.attributes.from_address')]),
             'from_name.required' => __('validation.required', ['attribute' => __('validation.attributes.from_name')]),
-            'host.required' => __('validation.required', ['attribute' => __('validation.attributes.smtp_host')]),
-            'port.required' => __('validation.required', ['attribute' => __('validation.attributes.smtp_port')]),
+            'host.required' => __('validation.required', ['attribute' => __('validation.attributes.host')]),
+            'port.required' => __('validation.required', ['attribute' => __('validation.attributes.port')]),
             'mailgun_domain.required' => __('validation.required', ['attribute' => __('validation.attributes.mailgun_domain')]),
             'mailgun_secret.required' => __('validation.required', ['attribute' => __('validation.attributes.mailgun_secret')]),
             'ses_key.required' => __('validation.required', ['attribute' => __('validation.attributes.ses_key')]),
             'ses_secret.required' => __('validation.required', ['attribute' => __('validation.attributes.ses_secret')]),
             'ses_region.required' => __('validation.required', ['attribute' => __('validation.attributes.ses_region')]),
-        ];
-    }
-
-    /**
-     * 검증 속성명을 반환합니다.
-     *
-     * 범용 필드명(host/port/username/password)은 전역 라벨이 범용 문구이므로,
-     * SMTP 전용 라벨을 이 요청에서만 명시 매핑합니다.
-     *
-     * @return array<string, string>
-     */
-    public function attributes(): array
-    {
-        return [
-            'host' => __('validation.attributes.smtp_host'),
-            'port' => __('validation.attributes.smtp_port'),
-            'username' => __('validation.attributes.smtp_username'),
-            'password' => __('validation.attributes.smtp_password'),
         ];
     }
 }

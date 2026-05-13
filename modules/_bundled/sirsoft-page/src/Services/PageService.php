@@ -4,17 +4,10 @@ namespace Modules\Sirsoft\Page\Services;
 
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
-use App\Search\SearchPagePolicy;
-use App\Support\Query\BoundedCount;
-use App\Support\Query\BoundedPage;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Page\Models\Page;
-use Modules\Sirsoft\Page\Models\PageVersion;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageVersionRepositoryInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -26,22 +19,6 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class PageService
 {
-    /**
-     * 검색 정렬 이름 → [실제 컬럼, 방향] 선언
-     *
-     * 코어({@see SearchPagePolicy})가 이 선언을 읽어 커서 적용 여부를 판정한다.
-     * 여기에 없는 정렬 이름(관련도순 등)은 커서로 처리하지 않고 offset 을 유지한다.
-     */
-    public const SEARCH_SORT_MAP = [
-        'latest' => ['created_at', 'desc'],
-        'oldest' => ['created_at', 'asc'],
-    ];
-
-    /**
-     * 커서(키셋) 경계로 쓸 수 있는 실제 컬럼 선언
-     */
-    public const SEARCH_CURSOR_COLUMNS = ['created_at'];
-
     public function __construct(
         private PageRepositoryInterface $pageRepository,
         private PageVersionRepositoryInterface $pageVersionRepository,
@@ -55,7 +32,7 @@ class PageService
      * @param  int  $perPage  페이지당 항목 수
      * @return LengthAwarePaginator 페이지 목록
      */
-    public function getPages(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    public function getPages(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $filters = HookManager::applyFilters('sirsoft-page.page.filter_list_query', $filters);
 
@@ -95,12 +72,9 @@ class PageService
             // 버전 1 스냅샷 저장
             $this->saveVersionSnapshot($page, $userId);
 
-            // temp_key 첨부파일 연결 및 파일 이동 (업로드 순서대로 order 부여)
+            // temp_key 첨부파일 연결 및 파일 이동
             if (! empty($data['temp_key'])) {
-                $this->pageAttachmentService->linkTempAttachmentsWithMove(
-                    $data['temp_key'],
-                    $page->id
-                );
+                $this->pageAttachmentService->linkTempAttachmentsWithMove($data['temp_key'], $page->id);
             }
 
             HookManager::doAction('sirsoft-page.page.after_create', $page, $data);
@@ -148,12 +122,9 @@ class PageService
             // 버전 스냅샷 저장
             $this->saveVersionSnapshot($page, $userId);
 
-            // temp_key 첨부파일 연결 및 파일 이동 (업로드 순서대로 order 부여)
+            // temp_key 첨부파일 연결 및 파일 이동
             if (! empty($data['temp_key'])) {
-                $this->pageAttachmentService->linkTempAttachmentsWithMove(
-                    $data['temp_key'],
-                    $page->id
-                );
+                $this->pageAttachmentService->linkTempAttachmentsWithMove($data['temp_key'], $page->id);
             }
 
             HookManager::doAction('sirsoft-page.page.after_update', $page, $data, $snapshot);
@@ -234,49 +205,16 @@ class PageService
      */
     public function bulkChangePublishStatus(array $ids, bool $published): int
     {
-        if (empty($ids)) {
-            return 0;
+        $updateData = [
+            'published' => $published,
+            'updated_by' => Auth::id(),
+        ];
+
+        if ($published) {
+            $updateData['published_at'] = now();
         }
 
-        return DB::transaction(function () use ($ids, $published) {
-            $userId = Auth::id();
-            $count = 0;
-
-            foreach ($ids as $id) {
-                // 존재하지 않는 페이지가 섞이면 예외 → 트랜잭션 전체 롤백 (all-or-nothing)
-                $page = $this->pageRepository->findOrFail((int) $id);
-
-                // 일괄 라우트(`PATCH admin/pages/bulk-publish`)에는 `{page}` 파라미터가 없어
-                // PermissionMiddleware 의 스코프 검사가 통째로 스킵된다. 단건 경로
-                // (updatePage/deletePage 등)는 전부 이 검사를 하는데 일괄만 비어 있으면
-                // 그 경로가 우회로다 — 같은 판정을 여기서 재적용한다.
-                // 예외는 위 findOrFail 과 같은 all-or-nothing 롤백을 탄다.
-                if (! PermissionHelper::checkScopeAccess($page, 'sirsoft-page.pages.update')) {
-                    throw new AccessDeniedHttpException(__('auth.scope_denied'));
-                }
-
-                HookManager::doAction('sirsoft-page.page.before_publish', $page, $published);
-
-                $updateData = [
-                    'published' => $published,
-                    'updated_by' => $userId,
-                ];
-
-                // 발행 시 published_at 갱신
-                if ($published) {
-                    $updateData['published_at'] = now();
-                }
-
-                $page = $this->pageRepository->update($page, $updateData);
-
-                // 페이지별 after_publish 발화 → 활동로그 per-item 기록
-                HookManager::doAction('sirsoft-page.page.after_publish', $page, $published);
-
-                $count++;
-            }
-
-            return $count;
-        });
+        return $this->pageRepository->bulkUpdatePublished($ids, $updateData);
     }
 
     /**
@@ -288,8 +226,6 @@ class PageService
      * @param  Page  $page  페이지 모델
      * @param  int  $versionId  복원할 버전 ID
      * @return Page 복원된 페이지 모델
-     *
-     * @throws ModelNotFoundException 버전이 해당 페이지에 속하지 않을 때
      */
     public function restoreVersion(Page $page, int $versionId): Page
     {
@@ -297,10 +233,13 @@ class PageService
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
         }
 
-        // 상위 페이지 스코프를 Repository where 절에 반영한다 (SSoT).
-        // 사후 비교로 처리하면 예외 타입이 컨트롤러 catch 사슬과 어긋나 500 이 되고,
-        // 같은 위반에 404 를 내는 조회(getVersion)와 계약이 갈린다.
-        $version = $this->pageVersionRepository->findForPage($page->id, $versionId);
+        $version = $this->pageVersionRepository->findOrFail($versionId);
+
+        if ($version->page_id !== $page->id) {
+            throw new \InvalidArgumentException(
+                __('sirsoft-page::messages.errors.version_belongs_to_different_page')
+            );
+        }
 
         return DB::transaction(function () use ($page, $version) {
             $userId = Auth::id();
@@ -331,7 +270,7 @@ class PageService
      * @param  int  $id  페이지 ID
      * @return Page 페이지 모델
      *
-     * @throws ModelNotFoundException
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
     public function getPage(int $id): Page
     {
@@ -347,48 +286,38 @@ class PageService
     /**
      * 슬러그로 발행된 페이지를 조회합니다.
      *
-     * $allowUnpublished 가 true 이면 미발행 페이지도 반환합니다. 관리자 미리보기
-     * (사용자 화면에서 발행 전 페이지 확인)를 위한 것으로, 권한 판정은 호출부(컨트롤러)가
-     * 담당하고 이 메서드는 허용 여부만 플래그로 전달받습니다.
-     *
      * @param  string  $slug  페이지 슬러그
-     * @param  bool  $allowUnpublished  미발행 페이지 반환 허용 여부 (관리자 미리보기)
-     * @return Page|null 페이지 모델 또는 null
+     * @return Page|null 발행된 페이지 모델 또는 null
      */
-    public function getPublishedPageBySlug(string $slug, bool $allowUnpublished = false): ?Page
+    public function getPublishedPageBySlug(string $slug): ?Page
     {
         $page = $this->pageRepository->findBySlug($slug);
 
-        if (! $page) {
-            return null;
-        }
-
-        return ($page->published || $allowUnpublished) ? $page : null;
+        return ($page && $page->published) ? $page : null;
     }
 
     /**
      * 페이지 버전 이력을 조회합니다.
      *
      * @param  Page  $page  페이지 모델
-     * @return Collection 버전 목록 (최신순)
+     * @return \Illuminate\Database\Eloquent\Collection 버전 목록 (최신순)
      */
-    public function getVersions(Page $page): Collection
+    public function getVersions(Page $page): \Illuminate\Database\Eloquent\Collection
     {
         return $this->pageVersionRepository->getVersionsByPage($page);
     }
 
     /**
-     * 페이지에 속한 버전을 조회합니다.
+     * 버전 ID로 페이지 버전을 조회합니다.
      *
-     * @param  int  $pageId  페이지 ID
      * @param  int  $versionId  버전 ID
-     * @return PageVersion 버전 모델
+     * @return \Modules\Sirsoft\Page\Models\PageVersion 버전 모델
      *
-     * @throws ModelNotFoundException
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
-    public function getVersion(int $pageId, int $versionId): PageVersion
+    public function getVersion(int $versionId): \Modules\Sirsoft\Page\Models\PageVersion
     {
-        return $this->pageVersionRepository->findForPage($pageId, $versionId);
+        return $this->pageVersionRepository->findOrFail($versionId);
     }
 
     /**
@@ -409,56 +338,21 @@ class PageService
      * @param  string  $keyword  검색 키워드
      * @param  string  $orderBy  정렬 컬럼
      * @param  string  $direction  정렬 방향 (asc, desc)
-     * @param  int  $perPage  페이지당 항목 수
-     * @param  int  $page  페이지 번호
-     * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
+     * @param  int  $limit  조회할 최대 항목 수
+     * @return array{total: int, items: \Illuminate\Database\Eloquent\Collection}
      */
-    public function searchByKeyword(
-        string $keyword,
-        string $orderBy = 'created_at',
-        string $direction = 'desc',
-        int $perPage = 10,
-        int $page = 1
-    ): BoundedPage {
-        return $this->pageRepository->searchByKeyword($keyword, $orderBy, $direction, $perPage, $page);
-    }
-
-    /**
-     * 키워드로 페이지를 커서(키셋)로 검색합니다.
-     *
-     * 커서 적용 가능 여부는 코어({@see SearchPagePolicy})가 판정한다. 이 서비스는
-     * 정렬 선언({@see self::SEARCH_SORT_MAP})만 제공하고 규칙을 다시 쓰지 않는다.
-     *
-     * @param  string  $keyword  검색 키워드
-     * @param  string  $sort  정렬 옵션
-     * @param  int  $perPage  페이지당 항목 수
-     * @param  string|null  $cursor  인코딩된 커서 (첫 페이지면 null)
-     * @param  int  $page  요청 페이지 번호 (커서 없이 깊은 페이지를 지목했는지 판정용)
-     * @return CursorPaginator|null 커서 페이지 결과 (커서 적용 불가 시 null)
-     */
-    public function searchByKeywordWithCursor(
-        string $keyword,
-        string $sort = 'latest',
-        int $perPage = 10,
-        ?string $cursor = null,
-        int $page = 1
-    ): ?CursorPaginator {
-        $sortKeys = SearchPagePolicy::sortKeys($sort, self::SEARCH_SORT_MAP);
-
-        if (! SearchPagePolicy::usesCursor($cursor, $sortKeys, self::SEARCH_CURSOR_COLUMNS, $page)) {
-            return null;
-        }
-
-        return $this->pageRepository->searchByKeywordWithCursor($keyword, $sortKeys, $perPage, $cursor);
+    public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', int $limit = 10): array
+    {
+        return $this->pageRepository->searchByKeyword($keyword, $orderBy, $direction, $limit);
     }
 
     /**
      * 키워드와 일치하는 발행된 페이지 수를 조회합니다.
      *
      * @param  string  $keyword  검색 키워드
-     * @return BoundedCount 일치하는 페이지 수 (정확도 포함)
+     * @return int 일치하는 페이지 수
      */
-    public function countByKeyword(string $keyword): BoundedCount
+    public function countByKeyword(string $keyword): int
     {
         return $this->pageRepository->countByKeyword($keyword);
     }

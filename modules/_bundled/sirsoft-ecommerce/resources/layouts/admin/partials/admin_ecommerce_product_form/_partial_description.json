@@ -1,146 +1,161 @@
 {
-    "comment": "상품 폼 — 상세설명 구획. 편집기는 플러그인이 갈아 끼울 수 있는 자리(`extension-point`)로 두고,\n  설치된 플러그인이 없으면 기본 편집기가 선다. 본문은 언어별로 나뉘고, 글/HTML 중 어느 모드로\n  저장할지도 함께 기억한다.",
-    "meta": {
-        "is_partial": true,
-        "description": "Product Form - Description Section"
-    },
+  "meta": {
+    "is_partial": true,
+    "description": "Product Form - Description Section"
+  },
+  "id": "section_description",
+  "type": "basic",
+  "name": "Section",
+  "props": {
     "id": "description",
-    "type": "basic",
-    "name": "Div",
-    "props": {
-        "className": "admin-card-accordion"
-    },
-    "children": [
+    "className": "scroll-mt-32"
+  },
+  "children": [
+    {
+      "id": "description_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card-accordion mb-6"
+      },
+      "children": [
         {
-            "type": "basic",
-            "name": "Div",
-            "actions": [
+          "id": "description_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-accordion-header"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "ui.descriptionExpanded": "{{!_local.ui.descriptionExpanded}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
                 {
-                    "comment": "구획 접기/펼치기. 편 상태를 폼 상태에 두어 다른 구획과 함께 기억한다",
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.descriptionExpanded": "{{!_local.ui.descriptionExpanded}}"
-                    }
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "file-lines",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "card-accordion-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.sections.description"
                 }
-            ],
-            "props": {
-                "className": "card-header"
+              ]
             },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                        "name": "file-lines",
-                        "className": "text-gray-500 dark:text-gray-400"
-                    }
-                },
-                {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                        "className": "card-title"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.product.sections.description"
-                },
-                {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                        "name": "chevron-down",
-                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.descriptionExpanded !== false ? 'rotate-180' : ''}}"
-                    }
-                }
-            ]
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-down",
+                "className": "card-accordion-icon transition-transform duration-200 {{_local.ui.descriptionExpanded !== false ? 'rotate-180' : ''}}"
+              }
+            }
+          ]
         },
         {
-            "id": "description_body",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{_local.ui.descriptionExpanded !== false}}",
-            "props": {
-                "className": "row-stack"
-            },
-            "children": [
+          "id": "description_body",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.ui.descriptionExpanded !== false}}",
+          "props": {
+            "className": "card-accordion-body p-6"
+          },
+          "children": [
+            {
+              "id": "description_editor_wrapper",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "{{_local.errors?.description ? 'border border-red-500 dark:border-red-500 rounded-lg overflow-hidden' : ''}}"
+              },
+              "children": [
                 {
-                    "id": "description_editor_wrapper",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "{{_local.errors?.description ? 'border border-red-500 dark:border-red-500 rounded-lg overflow-hidden' : ''}}"
-                    },
-                    "children": [
+                  "id": "description_editor",
+                  "type": "extension_point",
+                  "name": "html_editor",
+                  "props": {
+                    "name": "description",
+                    "multilingual": true,
+                    "value": "{{_local.form?.description ?? ''}}",
+                    "rows": 15,
+                    "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
+                    "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
+                    "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                    "showHtmlModeToggle": true,
+                    "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
+                  },
+                  "default": [
+                    {
+                      "type": "composite",
+                      "name": "HtmlEditor",
+                      "props": {
+                        "name": "description",
+                        "multilingual": true,
+                        "value": "{{_local.form?.description ?? ''}}",
+                        "rows": 15,
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
+                        "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
+                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                        "showHtmlModeToggle": true,
+                        "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
+                      },
+                      "actions": [
                         {
-                            "id": "description_editor",
-                            "type": "extension_point",
-                            "name": "html_editor",
-                            "props": {
-                                "multilingual": true,
-                                "value": "{{_local.form?.description ?? ''}}",
-                                "rows": 15,
-                                "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
-                                "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
-                                "disabled": "{{_computed.isReadOnly}}",
-                                "showHtmlModeToggle": true,
-                                "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}",
-                                "name": "description"
-                            },
-                            "default": [
-                                {
-                                    "type": "composite",
-                                    "name": "HtmlEditor",
-                                    "actions": [
-                                        {
-                                            "comment": "본문이 바뀌면 변경 표시를 세운다 — 저장 버튼이 이 표시를 보고 열린다",
-                                            "type": "change",
-                                            "event": "onChange",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "form.description": "{{$event.target.value}}",
-                                                "hasChanges": true
-                                            }
-                                        },
-                                        {
-                                            "comment": "글/HTML 모드 전환도 저장 대상이다 — 앞단이 이 값을 보고 본문을 그대로 뿌릴지 escape 할지 가른다",
-                                            "type": "change",
-                                            "event": "onIsHtmlChange",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "form.description_mode": "{{$args[0].target.checked ? 'html' : 'text'}}",
-                                                "hasChanges": true
-                                            }
-                                        }
-                                    ],
-                                    "props": {
-                                        "name": "description",
-                                        "multilingual": true,
-                                        "value": "{{_local.form?.description ?? ''}}",
-                                        "rows": 15,
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
-                                        "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "showHtmlModeToggle": true,
-                                        "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
-                                    }
-                                }
-                            ]
+                          "event": "onChange",
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "form.description": "{{$event.target.value}}",
+                            "hasChanges": true
+                          }
+                        },
+                        {
+                          "event": "onIsHtmlChange",
+                          "type": "change",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "form.description_mode": "{{$args[0].target.checked ? 'html' : 'text'}}",
+                            "hasChanges": true
+                          }
                         }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{_local.errors?.description || _local.errors?.['description.ko']}}",
-                    "props": {
-                        "className": "form-error-xs mt-1"
-                    },
-                    "text": "{{_local.errors?.description?.[0] ?? _local.errors?.['description.ko']?.[0]}}"
+                      ]
+                    }
+                  ]
                 }
-            ]
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.errors?.description || _local.errors?.['description.ko']}}",
+              "props": { "className": "text-red-500 dark:text-red-400 text-xs mt-1" },
+              "text": "{{_local.errors?.description?.[0] ?? _local.errors?.['description.ko']?.[0]}}"
+            }
+          ]
         }
-    ]
+      ]
+    }
+  ]
 }

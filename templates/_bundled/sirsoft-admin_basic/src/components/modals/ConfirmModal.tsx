@@ -1,4 +1,3 @@
-// audit:allow extension-dist-source-literal-sync 미등록(components.json 부재)·미참조 컴포넌트 — 배럴(modals/index.ts)만 재수출할 뿐 소비처가 없어 tree-shake 된다
 import React, { useEffect, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
@@ -28,7 +27,7 @@ export interface ConfirmModalProps {
   /** 모달 열림 상태 */
   isOpen: boolean;
   /** 모달 닫기 핸들러 */
-  onClose: (event?: Event | React.SyntheticEvent) => void;
+  onClose: () => void;
   /** 모달 제목 (기본값: common.confirm) */
   title?: string;
   /** 확인 메시지 */
@@ -103,8 +102,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen && !isLoading) {
-        // 닫기 처리기가 엔진 액션 처리기일 수 있어 원본 이벤트를 넘긴다(Modal 의 Esc 처리와 같은 이유).
-        onClose(event);
+        onClose();
       }
     };
 

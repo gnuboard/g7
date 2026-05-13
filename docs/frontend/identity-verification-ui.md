@@ -53,25 +53,19 @@
 
 ## Extension Point 슬롯 명명 규칙
 
-코어 모달 파셜(`_identity_challenge_modal.g7.html`)에 외부 IDV provider 플러그인이 자기 UI 와 SDK 를 주입할 수 있는 **단일 슬롯**이 박혀 있습니다:
+코어 모달 파셜(`_identity_challenge_modal.json`)에 다음 슬롯이 박혀있어 외부 IDV provider 플러그인이 자기 UI 와 SDK 를 주입할 수 있습니다:
 
-| 슬롯 이름 | 용도 | if 가드 |
+| 슬롯 이름 | 용도 | 기본 콘텐츠 |
 | --- | --- | --- |
-| `identity_provider_ui:provider` | 외부 IDV provider UI 주입 단일 슬롯 | `provider_id` 가 truthy 이면서 코어 mail 이 아닐 때만 마운트 |
+| `identity_provider_ui:text_code` | OTP 코드 입력 UI 슬롯 | 코어 default — 6자리 코드 입력 + 카운트다운 |
+| `identity_provider_ui:link` | 링크 안내 UI 슬롯 | 코어 default — 메일 안내 + 스팸함 점검 안내 |
+| `identity_provider_ui:provider` | provider 별 SDK 주입 슬롯 | 비어있음 (플러그인 미주입 시 렌더 없음) |
 
-**코어 mail / provider 미지정 케이스의 OTP 입력 / 링크 안내 UI 는 모달 파셜의 plain Div** (Extension Point 아님) 로 정의되어 있습니다. 즉 외부 plugin 이 `mode: replace` 를 써도 코어 default UI 가 사라지지 않습니다.
-
-### 외부 plugin 가 슬롯에 콘텐츠 주입
-
-플러그인은 다음 우편번호 / CKEditor5 와 동일한 G7 표준 패턴(`scripts` + `extension_point` + `callExternalEmbed`)으로 자기 콘텐츠를 주입합니다. **반드시 `mode: append`** 를 사용하여 다른 IDV plugin 과 공존 가능하게 합니다.
-
-`scripts[].src` 의 외부 호스트는 그 레이아웃을 가진 확장·템플릿이 매니페스트의 `trusted_script_hosts` 로 선언합니다([module-assets.md](../extension/module-assets.md) 「`trusted_script_hosts`」). 런타임·저장·점검 커맨드는 활성 확장·템플릿의 선언 집계(개발 커맨드는 문서 소유 확장의 선언, 운영자 설정 `config/template.php` 의 `layout_markup.script_src_allowlist` 도 더함)에 없는 호스트를 거부합니다(`script_src_not_allowed`). 코어 설정 기본값은 비어 있고, 설치 경로의 컴파일은 JSON 설치처럼 호스트를 대조하지 않습니다. 아래 예시의 `kcp-cdn.example.com` 은 자리표시자이므로, 실제 provider 도입 시 그 호스트를 provider 플러그인 매니페스트에 먼저 선언합니다.
+플러그인은 다음 우편번호 / CKEditor5 와 동일한 G7 표준 패턴(`scripts` + `extension_point` + `callExternalEmbed`)으로 자기 콘텐츠를 주입합니다 — 코어 신규 인프라 도입 불필요.
 
 ```json
 {
   "extension_point": "identity_provider_ui:provider",
-  "mode": "append",
-  "priority": 100,
   "scripts": [
     { "src": "https://kcp-cdn.example.com/sdk.js", "id": "kcp_sdk" }
   ],
@@ -79,41 +73,26 @@
     {
       "name": "Button",
       "if": "{{_global.identityChallenge?.provider_id === 'plugin.kcp'}}",
-      "actions": [
-        {
-          "type": "click",
-          "handler": "callExternalEmbed",
-          "params": {
-            "constructor": "KCP.IdentitySDK",
-            "config": { "siteCode": "...", "purpose": "{{_global.identityChallenge.purpose}}" },
-            "callbackAction": [
-              { "handler": "resolveIdentityChallenge", "params": { "result": "verified", "token": "{{result.token}}" } }
-            ]
-          }
+      "events": {
+        "onClick": {
+          "actions": [
+            {
+              "handler": "callExternalEmbed",
+              "params": {
+                "constructor": "KCP.IdentitySDK",
+                "config": { "siteCode": "...", "purpose": "{{_global.identityChallenge.purpose}}" },
+                "callbackAction": [
+                  { "handler": "resolveIdentityChallenge", "params": { "result": "verified", "token": "{{result.token}}" } }
+                ]
+              }
+            }
+          ]
         }
-      ]
+      }
     }
   ]
 }
 ```
-
-### 코어 mail 케이스 가드 패턴 (모달 / 풀페이지 공통)
-
-모달의 코어 OTP UI · 재전송 버튼 · 확인 버튼은 다음 가드 패턴으로 노출 분기:
-
-```
-if: "(!_global.identityChallenge?.provider_id || _global.identityChallenge?.provider_id === 'g7:core.mail')"
-```
-
-코어 default provider (`g7:core.mail`) 가 환경설정의 default_provider 로 자동 채워질 수 있으므로 (정책 NULL provider_id fallback), `!provider_id` 만으로 가드하면 mail 인증 시 버튼/UI 가 사라지는 회귀가 발생합니다. 반드시 `|| === 'g7:core.mail'` 을 함께 검사할 것.
-
-### 잘못된 패턴 (DO NOT)
-
-| ❌ 금지 | ✅ 올바른 사용 |
-| --- | --- |
-| `extension_point: "identity_provider_ui:text_code"` | `extension_point: "identity_provider_ui:provider"` — text_code/link 슬롯은 plain Div 로 이동했으므로 외부 plugin 은 provider 슬롯만 사용 |
-| `mode: "replace"` | `mode: "append"` — replace 는 다른 plugin 의 UI 까지 잠식하여 공존 불가 |
-| `if: "{{!_global.identityChallenge?.provider_id}}"` (재전송/확인 버튼) | `if: "{{!provider_id || provider_id === 'g7:core.mail'}}"` — default fallback 으로 mail 이 채워지는 케이스 대비 |
 
 ## `_global.identityChallenge` 네임스페이스 스키마 (CONTRACT)
 
@@ -128,14 +107,14 @@ if: "(!_global.identityChallenge?.provider_id || _global.identityChallenge?.prov
 | `challenge_id` | string | challenge 응답 | verify / cancel API 의 path param |
 | `expires_at` | ISO8601 string | challenge 응답 | 카운트다운 만료 기준 |
 | `public_payload` | object | challenge 응답 | 코드 길이 / 링크 힌트 등 provider 가 공개한 메타 |
-| **`target`** | **`{ email?, phone? } \| null`** | **흐름이 apiCall `identity_target` 으로 선언 → launcher 가 payload.target 에서 사용 (없으면 로그인 세션 폴백)** | **모달 재전송 시 동일 target 으로 challenge 재요청 — 누락 시 백엔드 422 `missing_target`** |
+| **`target`** | **`{ email?, phone? } \| null`** | **launcher 가 폼/세션에서 추출** | **모달 재전송 시 동일 target 으로 challenge 재요청 — 누락 시 백엔드 422 `missing_target`** |
 | `code` | string | 모달 입력 | text_code 모드 OTP 입력값 |
 | `error` | string \| null | 모달 onError | 사용자에게 보일 에러 메시지 |
 | `attempts` / `maxAttempts` | number | 모달 onError / launcher 초기값 | 시도 횟수 표시 + verify 버튼 비활성화 조건 |
 | `remainingSeconds` | number | launcher 카운트다운 | 분/초 표시 + verify 버튼 비활성화 조건 |
 | `resendCooldown` | number | 모달 재전송 onSuccess / launcher 카운트다운 | 재전송 버튼 비활성화 조건 (30초) |
 
-> 🛑 `target` 필드 누락은 흔한 회귀입니다. 비로그인(게스트) 흐름은 428 을 유발하는 apiCall 에 `identity_target` 을 선언해야 합니다(engine-v1.51.0+) — 서버 428 payload 에는 target 이 없고(서버는 화면 입력값을 모름) 흐름이 선언해야 launcher 가 받습니다. launcher 는 첫 challenge 시작에 사용한 target 을 같은 객체(`identityChallenge.target`)에 저장하세요 — 모달 재전송 액션이 다른 곳에서 폼 값을 읽을 수 없습니다(모달 컨텍스트는 페이지 _local 과 분리). 로그인 사용자는 선언이 없어도 서버 세션이 도출합니다.
+> 🛑 `target` 필드 누락은 흔한 회귀입니다. launcher 가 첫 challenge 시작에 사용한 target 을 반드시 같은 객체에 저장하세요 — 모달 재전송 액션이 다른 곳에서 폼 값을 읽을 수 없습니다(모달 컨텍스트는 페이지 _local 과 분리).
 
 ### launcher 가 채워야 하는 필드 vs 모달이 갱신하는 필드
 
@@ -214,26 +193,6 @@ if: "(!_global.identityChallenge?.provider_id || _global.identityChallenge?.prov
 
 코어가 등록한 표준 핸들러 — 모달 / 풀페이지 / 외부 SDK callback 모두 동일 이름으로 호출.
 
-순서대로 verify 성공 · 사용자 취소 · verify 실패(422 `onError` 에서) ·
-비동기 검증(Stripe Identity / 토스인증 push 등 — 인터페이스 예약) 이다.
-
-```html
-<on type="click">
-  <resolve-identity-challenge result="verified" token="{{response.data.verification_token}}"/>
-</on>
-<on type="click">
-  <resolve-identity-challenge result="cancelled"/>
-</on>
-<on type="click">
-  <resolve-identity-challenge result="failed" failureCode="INVALID_CODE"/>
-</on>
-<on type="click">
-  <resolve-identity-challenge result="pending" pollUrl="/api/identity/challenges/{{id}}" :pollIntervalMs="2000" expiresAt="{{}}"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 // verify 성공
 { "handler": "resolveIdentityChallenge", "params": { "result": "verified", "token": "{{response.data.verification_token}}" } }
@@ -268,7 +227,7 @@ type VerificationResult =
 
 ## 모달 파셜 작성 시 필수 규칙 (회귀 방지)
 
-IDV 모달 파셜 (`_identity_challenge_modal.g7.html`) 및 동일 패턴을 따르는 OTP/코드 입력 모달 작성 시 아래 규칙을 위반하면 **확인 버튼이 영구 비활성** 또는 **재전송 시 입력값이 초기화되지 않는** 회귀가 발생합니다.
+IDV 모달 파셜 (`_identity_challenge_modal.json`) 및 동일 패턴을 따르는 OTP/코드 입력 모달 작성 시 아래 규칙을 위반하면 **확인 버튼이 영구 비활성** 또는 **재전송 시 입력값이 초기화되지 않는** 회귀가 발생합니다.
 
 ### 1. Input 이벤트는 표준 actions 패턴만 사용
 
@@ -282,16 +241,6 @@ IDV 모달 파셜 (`_identity_challenge_modal.g7.html`) 및 동일 패턴을 따
 ### 2. controlled Input 은 `value` + `onChange` 한 쌍을 반드시 함께 정의
 
 `name="code"` 만으로는 `_global.identityChallenge.code` 같은 외부 네임스페이스에 자동 바인딩되지 않습니다. 모달 내부 (`_global` 사용 강제 컨텍스트)에서는 다음을 모두 명시해야 합니다.
-
-```html
-<input name="code" value="{{_global.identityChallenge?.code ?? ''}}">
-  <on event="onChange">
-    <set-state target="global" identityChallenge.code="{{$event.target.value}}"/>
-  </on>
-</input>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -316,15 +265,6 @@ IDV 모달 파셜 (`_identity_challenge_modal.g7.html`) 및 동일 패턴을 따
 ### 3. 재전송 등 재발급 액션은 즉시 입력값 초기화 (apiCall 응답 대기 금지)
 
 재전송 클릭 시 `code` 초기화를 `apiCall.onSuccess` 안에만 넣으면, 네트워크 지연 동안 사용자가 이전 코드를 그대로 보면서 재입력 상황을 인지하지 못합니다. sequence 의 첫 setState (resendCooldown 30 설정과 함께) 에서 `identityChallenge.code: ""` 도 같이 넣어야 합니다.
-
-```html
-<sequence>
-  <set-state target="global" :identityChallenge.resendCooldown="30" :identityChallenge.error="null" identityChallenge.code=""/>
-  …
-</sequence>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -353,17 +293,6 @@ IDV 모달 파셜 (`_identity_challenge_modal.g7.html`) 및 동일 패턴을 따
 - code Input 에 `events` 키가 존재하지 않을 것 (비표준 래퍼 차단)
 - code Input 의 `actions[]` 에 `event:"onChange"` + `handler:"setState"` + `target:"global"` 항목이 존재할 것
 - 재전송 setState (resendCooldown=30) 의 params 에 `identityChallenge.code: ""` 가 포함될 것
-
-로그인 2단계 인증 화면도 같은 규칙을 따르며, 회귀 테스트는
-`templates/_bundled/{template}/__tests__/layouts/{admin-,}login-two-factor-step.test.tsx` 가 담당합니다.
-
-### 5. 로그인 challenge 는 이 화면으로 처리하지 않는다
-
-`purpose = login` challenge 는 로그인 전용 엔드포인트(`POST /api/auth/login/two-factor`,
-`.../resend`)만 사용합니다. 공개 본인인증 엔드포인트(`POST /api/identity/challenges/{id}/verify`,
-`.../cancel`)는 이 목적을 `403 PURPOSE_NOT_ALLOWED` 로 거부합니다 — 여기서 검증·취소되면 그
-challenge 로는 더 이상 로그인을 마칠 수 없게 되고(자기 DoS), 이 화면은 로그인 흐름을 모르므로
-되돌릴 방법도 없기 때문입니다.
 
 ## 관련 문서
 

@@ -23,14 +23,6 @@ interface MenuRepositoryInterface
      */
     public function getTopLevelMenus(): Collection;
 
-    /**
-     * 관리 화면용 최상위 메뉴(자식 포함)를 조회합니다.
-     *
-     * @param  array  $activeModuleIdentifiers  활성 모듈 식별자 목록
-     * @param  array  $activePluginIdentifiers  활성 플러그인 식별자 목록
-     * @param  User|null  $user  접근 권한 판정 대상 사용자 (null 이면 역할 필터 미적용)
-     * @return Collection 최상위 메뉴 컬렉션 (자식 메뉴 포함)
-     */
     public function getTopLevelMenusForManagement(array $activeModuleIdentifiers = [], array $activePluginIdentifiers = [], ?User $user = null): Collection;
 
     /**
@@ -49,31 +41,12 @@ interface MenuRepositoryInterface
     public function findById(int $id): ?Menu;
 
     /**
-     * 여러 ID로 메뉴를 한 번에 조회합니다.
-     *
-     * 정적 라우트(`PUT menus/order`)에서 스코프 게이트를 재적용할 때 대상 전체를 한 번에
-     * 확인하기 위한 조회입니다. 관계는 로드하지 않습니다(소유자 판정에 불필요).
-     *
-     * @param  array<int, int>  $ids  메뉴 ID 목록
-     * @return Collection 메뉴 컬렉션
-     */
-    public function findByIds(array $ids): Collection;
-
-    /**
      * 슬러그로 메뉴를 찾습니다.
      *
      * @param  string  $slug  메뉴 슬러그
      * @return Menu|null 찾은 메뉴 모델 또는 null
      */
     public function findBySlug(string $slug): ?Menu;
-
-    /**
-     * URL 로 메뉴를 찾습니다.
-     *
-     * @param  string  $url  메뉴 URL
-     * @return Menu|null 찾은 메뉴 모델 또는 null
-     */
-    public function findByUrl(string $url): ?Menu;
 
     /**
      * 새로운 메뉴를 생성합니다.
@@ -184,22 +157,5 @@ interface MenuRepositoryInterface
      */
     public function getMaxOrder(?int $parentId = null): int;
 
-    /**
-     * 필터 조건이 적용된 최상위 메뉴 목록을 조회합니다.
-     *
-     * @param  array  $filters  필터 조건 배열 (sort_by/sort_order/검색 필드)
-     * @param  array  $activeModuleIdentifiers  활성 모듈 식별자 목록
-     * @param  array  $activePluginIdentifiers  활성 플러그인 식별자 목록
-     * @param  User|null  $user  접근 권한 판정 대상 사용자 (null 이면 역할 필터 미적용)
-     * @return Collection 최상위 메뉴 컬렉션 (자식 메뉴 포함)
-     */
     public function getFilteredTopLevelMenus(array $filters, array $activeModuleIdentifiers = [], array $activePluginIdentifiers = [], ?User $user = null): Collection;
-
-    /**
-     * 메뉴별로 부여된 역할 ID 를 한 번에 조회합니다(목록 역할 배지용, 역할 객체 없이 ID 만).
-     *
-     * @param  array<int>  $menuIds  조회할 메뉴 ID 목록
-     * @return array<int, array<int>> 메뉴 ID => 역할 ID 목록 (역할이 없는 메뉴는 빈 배열)
-     */
-    public function getRoleIdsByMenuIds(array $menuIds): array;
 }

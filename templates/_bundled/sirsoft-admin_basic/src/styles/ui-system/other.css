@@ -1,0 +1,63 @@
+/**
+ * G7 Admin Template - Design Guide
+ * Other - 페이지네이션, 디바이더, 이미지, 아바타 등 기타 스타일
+ */
+
+@layer components {
+  /* ========================================
+   * 1. PAGINATION
+   * ======================================== */
+
+  /* Pagination Container */
+  .pagination {
+    @apply flex items-center gap-1;
+  }
+
+  /* Pagination Button */
+  .pagination-btn {
+    @apply w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-sm text-gray-600 cursor-pointer;
+    @apply hover:bg-gray-50;
+    @apply dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700;
+  }
+  .pagination-btn.active {
+    @apply bg-gray-900 text-white border-gray-900;
+    @apply dark:bg-white dark:text-gray-900 dark:border-white;
+  }
+  .pagination-btn:disabled {
+    @apply text-gray-300 cursor-not-allowed hover:bg-transparent;
+    @apply dark:text-gray-600;
+  }
+
+  /* ========================================
+   * 2. MISCELLANEOUS
+   * ======================================== */
+
+  /* Divider */
+  .divider {
+    @apply border-t border-gray-200;
+    @apply dark:border-gray-700;
+  }
+
+  /* Product Image */
+  .product-image {
+    @apply w-12 h-12 rounded-lg object-cover bg-gray-100;
+    @apply dark:bg-gray-800;
+  }
+
+  /* User Avatar */
+  .avatar {
+    @apply w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-600;
+    @apply dark:bg-gray-700 dark:text-gray-300;
+  }
+}
+
+/* ========================================
+ * MEDIA QUERIES
+ * ======================================== */
+
+/* Card Account - 오버플로우 방지 */
+@media (max-width: 640px) {
+  .card-account {
+    width: 100%;
+  }
+}

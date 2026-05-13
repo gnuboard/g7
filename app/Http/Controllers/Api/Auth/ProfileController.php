@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Enums\AttachmentSourceType;
-use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Http\Requests\Auth\VerifyPasswordRequest;
 use App\Http\Requests\User\ChangePasswordRequest;
@@ -12,13 +11,10 @@ use App\Http\Requests\User\UploadAvatarRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AttachmentService;
-use App\Services\IdentityPolicyService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -28,17 +24,9 @@ use Illuminate\Validation\ValidationException;
  */
 class ProfileController extends AuthBaseController
 {
-    /**
-     * 프로필 컨트롤러를 생성합니다.
-     *
-     * @param  UserService  $userService  회원 서비스
-     * @param  AttachmentService  $attachmentService  첨부파일 서비스 (아바타)
-     * @param  IdentityPolicyService  $identityPolicyService  본인인증 정책 서비스 (정보수정 API 의 비밀번호 변경)
-     */
     public function __construct(
         private UserService $userService,
-        private AttachmentService $attachmentService,
-        private IdentityPolicyService $identityPolicyService
+        private AttachmentService $attachmentService
     ) {
         parent::__construct();
     }
@@ -83,19 +71,8 @@ class ProfileController extends AuthBaseController
                 return $this->unauthorized('auth.unauthenticated');
             }
 
-            $validated = $request->validated();
-
-            // 이 경로로 비밀번호를 함께 바꾸면 전용 변경 경로(`PUT /api/me/password`)와 같은 본인인증 정책을
-            // 건다(D18) — 그러지 않으면 정책을 켠 사이트에서도 이 경로가 우회로가 된다. 판정은 라우트
-            // 미들웨어와 같은 한 곳(`enforceForRequest`)이고, 위반이면 428 로 끊겨 아래 저장에 닿지 않는다.
-            if (! empty($validated['password'])) {
-                $this->identityPolicyService->enforceForRequest('core.profile.password_change', $request);
-            }
-
-            $updatedUser = $this->userService->updateUser($user, $validated);
-
-            // 비밀번호 3종(새 값·확인·현재 값)은 원문이라 로그에 남기지 않는다.
-            $this->logUserActivity('profile.update', Arr::except($validated, ['password', 'password_confirmation', 'current_password']));
+            $updatedUser = $this->userService->updateUser($user, $request->validated());
+            $this->logUserActivity('profile.update', $request->validated());
 
             return $this->successWithResource(
                 'user.update_success',
@@ -325,28 +302,14 @@ class ProfileController extends AuthBaseController
                 return $this->unauthorized('auth.unauthenticated');
             }
 
+            $this->logUserActivity('profile.withdraw');
+
             // 사용자 탈퇴 처리 (아바타, 토큰 삭제 및 익명화)
             $this->userService->withdrawUser($user);
 
-            // 활동 로그는 성공한 뒤에만 남긴다 — 실패한 탈퇴가 기록으로 남으면
-            // 이력만 보고는 탈퇴한 것으로 읽힌다.
-            $this->logUserActivity('profile.withdraw');
-
             return $this->success('user.withdraw_success');
-        } catch (ValidationException $e) {
-            // 관리자/수퍼관리자 탈퇴 차단은 요청이 잘못된 것이지 서버 오류가 아니다.
-            return $this->validationError($e->errors(), 'user.withdraw_failed');
-        } catch (CannotDeleteSuperAdminException $e) {
-            // 이 예외는 ValidationException 을 상속하지 않으므로 별도 매핑이 필요하다.
-            return $this->validationError(
-                ['general' => [$e->getMessage()]],
-                'user.withdraw_failed'
-            );
         } catch (\Exception $e) {
-            // 원본 예외는 로그로만 남기고, 사용자 응답에는 원문을 싣지 않는다.
-            Log::error('User withdraw failed (profile)', ['exception' => $e]);
-
-            return $this->error('user.withdraw_failed', 500);
+            return $this->error('user.withdraw_failed', 500, null, ['error' => $e->getMessage()]);
         }
     }
 }

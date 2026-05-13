@@ -22,11 +22,5 @@
   },
   "extensions": {
     "$partial": "partial/ko/extensions.json"
-  },
-  "layout_editor": {
-    "$partial": "partial/ko/layout_editor.json"
-  },
-  "editor": {
-    "$partial": "partial/ko/editor.json"
   }
 }

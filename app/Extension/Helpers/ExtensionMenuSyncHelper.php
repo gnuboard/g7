@@ -2,7 +2,6 @@
 
 namespace App\Extension\Helpers;
 
-use App\Contracts\Extension\UpgradeStepInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
@@ -102,13 +101,9 @@ class ExtensionMenuSyncHelper
             return false;
         };
 
-        $updateData = [];
-
-        // parent_id 도 운영자가 옮겼으면(user_overrides 에 기록) 보존한다 — 종전엔 무조건 정의값으로 덮어
-        // 옮긴 메뉴가 업데이트마다 원위치됐다(#727 D5-③).
-        if (! $isFieldOverridden('parent_id')) {
-            $updateData['parent_id'] = $parentId;
-        }
+        $updateData = [
+            'parent_id' => $parentId,
+        ];
 
         // is_active 는 운영자가 user_overrides 로 마킹한 경우 보존, 아니면 정의값으로 갱신
         if (! $isFieldOverridden('is_active')) {
@@ -131,17 +126,7 @@ class ExtensionMenuSyncHelper
             $updateData['url'] = $newAttributes['url'] ?? null;
         }
 
-        // user_overrides 자동 마킹 비활성화 — 시스템 sync 컨텍스트는 사용자 변경이 아님.
-        // HasUserOverrides::bootHasUserOverrides 의 updating 이벤트 hook 이 'seeding' 플래그를
-        // 보고 자동 마킹을 건너뛴다. 미설정 시 동일한 module.php 정의값을 적용해도 icon/name/order
-        // 등 trackable 필드가 dirty 로 잡혀 user_overrides 에 자동 추가되어, 이후 sync 가 차단되는
-        // 결함이 발생한다.
-        app()->instance('user_overrides.seeding', true);
-        try {
-            $this->menuRepository->update($existing, $updateData);
-        } finally {
-            app()->forgetInstance('user_overrides.seeding');
-        }
+        $this->menuRepository->update($existing, $updateData);
 
         return $existing->fresh();
     }
@@ -207,7 +192,6 @@ class ExtensionMenuSyncHelper
      * 신규 메뉴에 관리자 역할과 현재 사용자(설치자) 역할을 자동 부여합니다.
      *
      * @param  Menu  $menu  생성된 메뉴
-     * @return void 반환값 없음
      */
     private function grantDefaultRoles(Menu $menu): void
     {
@@ -265,7 +249,7 @@ class ExtensionMenuSyncHelper
      * @param  array  $currentSlugs  현재 유효한 메뉴 슬러그 목록
      * @return int 삭제된 메뉴 수
      *
-     * @see UpgradeStepInterface
+     * @see \App\Contracts\Extension\UpgradeStepInterface
      */
     public function cleanupStaleMenus(
         ExtensionOwnerType $extensionType,

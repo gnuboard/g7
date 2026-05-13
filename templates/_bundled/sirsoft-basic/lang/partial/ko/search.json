@@ -7,7 +7,6 @@
   "results_count": "{{count}}개의 결과",
   "result_summary": "검색 결과 {{count}}건",
   "result_count_suffix": "건",
-  "result_count_suffix_at_least": "건 이상",
   "no_results": "검색 결과가 없습니다.",
   "try_different": "다른 검색어로 시도해보세요.",
   "tabs": {
@@ -39,10 +38,6 @@
     "pages_in_all": "페이지 검색 결과가 없습니다",
     "suggestion": "다른 검색어로 시도해 보세요"
   },
-  "failed": {
-    "title": "검색 중 오류가 발생했습니다",
-    "suggestion": "잠시 후 다시 시도해 주세요"
-  },
   "page_published_at": "발행일: {{date}}",
   "view_more": "더보기",
   "view_all": "전체보기",
@@ -52,6 +47,5 @@
     "hint_title": "검색 팁",
     "hint_1": "두 단어 이상을 입력하면 더 정확한 결과를 얻을 수 있습니다",
     "hint_2": "검색어는 제목과 내용에서 함께 검색됩니다"
-  },
-  "refine_query_hint": "검색어를 더 구체적으로 입력하면 정확한 건수와 마지막 페이지를 볼 수 있습니다."
+  }
 }

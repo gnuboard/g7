@@ -15,7 +15,6 @@ import path from 'path';
 import fs from 'fs';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
-import { asArray, findByIdPrefix } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ==============================
 // 실제 admin_dashboard.json 로드
@@ -160,14 +159,10 @@ function setupDefaultMocks(testUtils: ReturnType<typeof createLayoutTest>) {
   });
 }
 
-// 레이아웃 트리에서 id 로 노드 찾기.
-//
-// iteration template 안의 노드는 HTML id 유일성을 위해 `{{$idx}}` 접미가 붙는다(#421).
-// 따라서 정확 일치뿐 아니라 `<id>_{{$idx}}` 형태도 같은 노드로 인정한다.
-// 정확 일치만 쓰면 iteration id 보간 도입 시 조용히 null 이 되어 테스트가 깨진다.
+// 레이아웃 트리에서 id 로 노드 찾기
 function findById(node: any, id: string): any | null {
   if (!node || typeof node !== 'object') return null;
-  if (node.id === id || node.id === `${id}_{{$idx}}`) return node;
+  if (node.id === id) return node;
   if (Array.isArray(node.children)) {
     for (const c of node.children) {
       const r = findById(c, id);
@@ -216,7 +211,6 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
       response: {
         data: [
           {
-            type: 'info',
             subtype: 'recovery_available',
             extension_type: 'plugin',
             identifier: 'sirsoft-payment',
@@ -239,13 +233,11 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
   });
 
   it('recover 버튼 액션이 alert.recover_endpoint 를 POST 로 호출하도록 정의되어 있다', () => {
-    const recoverBtn = findByIdPrefix(dashboardLayout, 'alert_recover_button');
+    const recoverBtn = findById(dashboardLayout, 'alert_recover_button');
     expect(recoverBtn).not.toBeNull();
-    // 버튼 조건은 subtype 이 아니라 **복구 엔드포인트의 존재**다 — 정적 게시 실패 알림처럼
-    // 다른 subtype 의 알림도 recover_endpoint 만 싣으면 같은 배선으로 복구된다 (#651 D11)
-    expect(recoverBtn.if).toBe('{{!!alert.recover_endpoint}}');
+    expect(recoverBtn.if).toBe("{{alert.subtype === 'recovery_available'}}");
 
-    const action = asArray(recoverBtn?.actions)[0];
+    const action = recoverBtn.actions[0];
     expect(action.type).toBe('click');
     expect(action.handler).toBe('apiCall');
     expect(action.auth_required).toBe(true);
@@ -254,17 +246,15 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
   });
 
   it('recover 호출 성공 시 dashboard_alerts 데이터소스가 재조회되고 toast 가 발화된다', () => {
-    const recoverBtn = findByIdPrefix(dashboardLayout, 'alert_recover_button');
-    const action = asArray(recoverBtn?.actions)[0];
+    const recoverBtn = findById(dashboardLayout, 'alert_recover_button');
+    const action = recoverBtn.actions[0];
 
-    expect(asArray(action?.onSuccess).length > 0).toBe(true);
-    const toastAction = asArray(action?.onSuccess).find((a: any) => a.handler === 'toast');
+    expect(Array.isArray(action.onSuccess)).toBe(true);
+    const toastAction = action.onSuccess.find((a: any) => a.handler === 'toast');
     expect(toastAction).toBeDefined();
     expect(toastAction.params.type).toBe('success');
-    // 성공 문구는 알림이 실어 준 것을 우선하고, 없으면 재호환 기본 문구로 떨어진다
-    expect(toastAction.params.message).toBe("{{alert.recover_success_message ?? $t('extensions.alerts.recovered_success')}}");
 
-    const refetch = asArray(action?.onSuccess).find(
+    const refetch = action.onSuccess.find(
       (a: any) => a.handler === 'refetchDataSource',
     );
     expect(refetch).toBeDefined();
@@ -272,11 +262,11 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
   });
 
   it('recover 실패 시 onError 에 toast 가 정의되어 있다', () => {
-    const recoverBtn = findByIdPrefix(dashboardLayout, 'alert_recover_button');
-    const action = asArray(recoverBtn?.actions)[0];
+    const recoverBtn = findById(dashboardLayout, 'alert_recover_button');
+    const action = recoverBtn.actions[0];
 
-    expect(asArray(action?.onError).length > 0).toBe(true);
-    const errorToast = asArray(action?.onError).find((a: any) => a.handler === 'toast');
+    expect(Array.isArray(action.onError)).toBe(true);
+    const errorToast = action.onError.find((a: any) => a.handler === 'toast');
     expect(errorToast).toBeDefined();
     expect(errorToast.params.type).toBe('error');
     expect(errorToast.params.message).toBe('{{error.message}}');
@@ -294,7 +284,6 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
       response: {
         data: [
           {
-            type: 'info',
             subtype: 'recovery_available',
             extension_type: 'plugin',
             identifier: 'sirsoft-payment',
@@ -311,49 +300,5 @@ describe('어드민 대시보드 - 재호환 알림 (recovery_available)', () =>
 
     expect(screen.getByTestId('recover-btn')).toBeTruthy();
     expect(screen.getByTestId('dismiss-btn')).toBeTruthy();
-  });
-  // @scenario permission=granted, publishable=production_enabled, outcome=publish_failed_marker
-  // @effects dashboard_alert_points_to_admin_republish
-  it('recover_endpoint 가 없는 알림에는 버튼이 없고, 있는 알림(정적 게시 실패)에는 그 라벨로 버튼이 있다', async () => {
-    testUtils = createLayoutTest(dashboardLayout, {
-      translations,
-      locale: 'ko',
-      componentRegistry: registry,
-      auth: { isAuthenticated: true, user: { id: 1, name: 'Admin' }, authType: 'admin' },
-    });
-    setupDefaultMocks(testUtils);
-    testUtils.mockApi('dashboard_alerts', {
-      response: {
-        data: [
-          {
-            type: 'warning',
-            subtype: 'static_publish_parent_not_writable',
-            title: '초기 화면 파일 생성 실패',
-            message: '폴더에 쓸 수 없습니다',
-            time: '방금 전',
-            icon: 'exclamation-triangle',
-            recover_endpoint: '/api/admin/settings/static-cache/republish',
-            recover_label: '다시 만들기',
-            recover_success_message: '초기 화면 파일을 다시 만들었습니다.',
-          },
-          {
-            type: 'warning',
-            subtype: 'incompatible_deactivated',
-            title: '복구 불가 알림',
-            message: '엔드포인트 없음',
-            time: '방금 전',
-            icon: 'exclamation-triangle',
-          },
-        ],
-      },
-    });
-
-    await testUtils.render();
-
-    expect(screen.getByText('초기 화면 파일 생성 실패')).toBeTruthy();
-    expect(screen.getByText('복구 불가 알림')).toBeTruthy();
-    // 정적 게시 실패 알림은 자기 라벨로 버튼을 갖고, 엔드포인트 없는 알림은 버튼이 없다
-    expect(screen.getAllByTestId('recover-btn').length).toBe(1);
-    expect(screen.getByText('다시 만들기')).toBeTruthy();
   });
 });

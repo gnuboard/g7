@@ -1,32 +1,4 @@
 {
-  "editor": {
-    "data_source": {
-      "availableChannels": "利用可能なチャネル",
-      "boardIdentityPolicies": "掲示板本人認証ポリシー",
-      "boardIdentityPurposes": "掲示板本人認証目的",
-      "boardNotificationDefinitions": "掲示板通知定義",
-      "board_list_for_inquiry": "お問い合わせ掲示板一覧",
-      "board_types": "掲示板タイプ",
-      "boards": "掲示板一覧",
-      "boards_list": "掲示板一覧",
-      "form_data": "フォームデータ",
-      "form_meta": "フォームメタ",
-      "identityProviders": "本人認証プロバイダー",
-      "post": "投稿",
-      "posts": "投稿一覧",
-      "report_detail": "通報詳細",
-      "reporters_list": "通報者一覧",
-      "reports": "通報一覧",
-      "roles": "ロール一覧",
-      "settings": "掲示板設定",
-      "scraps": "スクラップ一覧",
-      "reactionTypes": "レスポンスタイプ",
-      "reactions": "リアクション一覧",
-      "boardPrivacyRetentionPreview": "掲示板 個人情報保有期間 対象件数",
-      "privacyTargets": "保有期間処理対象リスト (作成IP·非会員)",
-      "privacyManualRuns": "個人情報措置職権実行状態"
-    }
-  },
   "common": {
     "$partial": "partial/common.json"
   },
@@ -57,15 +29,6 @@
     },
     "ecommerce_settings": {
       "$partial": "partial/admin/ecommerce_settings.json"
-    },
-    "dashboard": {
-      "$partial": "partial/admin/dashboard.json"
-    },
-    "scraps": {
-      "$partial": "partial/admin/scraps.json"
-    },
-    "reactions": {
-      "$partial": "partial/admin/reactions.json"
     }
   },
   "board": {

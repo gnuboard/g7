@@ -11,12 +11,6 @@ import {
     addOptionInputHandler,
     updateOptionInputHandler,
     generateOptionsHandler,
-    addAdditionalOptionHandler,
-    clearAdditionalOptionsHandler,
-    addAdditionalOptionValueHandler,
-    updateAdditionalOptionValueHandler,
-    removeAdditionalOptionValueHandler,
-    deleteOptionHandler,
 } from '../optionHandlers';
 import type { ActionContext } from '../../types';
 
@@ -39,7 +33,11 @@ const createMockG7Core = (initialState = {}) => {
         },
         // 다국어 번역 함수 mock - 키를 그대로 반환 (폴백 테스트용)
         t: vi.fn((key: string, _params?: Record<string, any>) => key),
-        locale: { current: () => 'ko', supported: () => ['ko', 'en'] },
+        config: vi.fn((key: string) => {
+            if (key === 'app.supported_locales') return ['ko', 'en'];
+            if (key === 'app.locale') return 'ko';
+            return undefined;
+        }),
         createLogger: vi.fn(() => ({
             log: vi.fn(),
             warn: vi.fn(),
@@ -59,10 +57,6 @@ describe('optionHandlers', () => {
     });
 
     describe('addOptionInputHandler', () => {
-        /**
-         * @scenario case=c01
-         * @effects option_handlers_behavior
-         */
         it('빈 다국어 객체로 name을 초기화해야 한다', () => {
             mockG7Core = createMockG7Core({ ui: { optionInputs: [] } });
             (window as any).G7Core = mockG7Core;
@@ -81,10 +75,6 @@ describe('optionHandlers', () => {
             expect(newInput.name.en).toBe('');
         });
 
-        /**
-         * @scenario case=c02
-         * @effects option_handlers_behavior
-         */
         it('최대 3개까지만 추가 가능해야 한다', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -111,10 +101,6 @@ describe('optionHandlers', () => {
          * 예: { ..."테스트" } → { '0': '테', '1': '스', '2': '트' }
          *
          * 이 테스트는 해당 버그가 수정되었는지 검증합니다.
-         */
-        /**
-         * @scenario case=c03
-         * @effects option_handlers_behavior
          */
         it('name이 문자열일 때 문자 분해 없이 객체로 변환해야 한다', () => {
             // 문제 상황: name이 이미 문자열로 저장된 경우
@@ -145,10 +131,6 @@ describe('optionHandlers', () => {
             expect(updatedName).toHaveProperty('en');
         });
 
-        /**
-         * @scenario case=c04
-         * @effects option_handlers_behavior
-         */
         it('name이 객체일 때 정상적으로 업데이트해야 한다', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -171,10 +153,6 @@ describe('optionHandlers', () => {
             expect(updatedName.en).toBe('existing'); // 다른 로케일 값 유지
         });
 
-        /**
-         * @scenario case=c05
-         * @effects option_handlers_behavior
-         */
         it('name이 undefined일 때 새 객체를 생성해야 한다', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -197,10 +175,6 @@ describe('optionHandlers', () => {
             expect(updatedName.ko).toBe('새값');
         });
 
-        /**
-         * @scenario case=c06
-         * @effects option_handlers_behavior
-         */
         it('name이 배열일 때 새 객체를 생성해야 한다 (배열도 객체이므로 명시적 체크)', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -225,10 +199,6 @@ describe('optionHandlers', () => {
             expect(updatedName.ko).toBe('새값');
         });
 
-        /**
-         * @scenario case=c07
-         * @effects option_handlers_behavior
-         */
         it('values 필드 업데이트는 영향받지 않아야 한다', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -253,10 +223,6 @@ describe('optionHandlers', () => {
     });
 
     describe('generateOptionsHandler - 문자열/객체 호환성', () => {
-        /**
-         * @scenario case=c08
-         * @effects option_handlers_behavior
-         */
         it('name이 객체일 때 정상적으로 옵션을 생성해야 한다', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -284,10 +250,6 @@ describe('optionHandlers', () => {
             ]);
         });
 
-        /**
-         * @scenario case=c09
-         * @effects option_handlers_behavior
-         */
         it('name이 문자열일 때도 정상적으로 옵션을 생성해야 한다 (하위 호환성)', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -312,10 +274,6 @@ describe('optionHandlers', () => {
             ]);
         });
 
-        /**
-         * @scenario case=c10
-         * @effects option_handlers_behavior
-         */
         it('name이 빈 문자열이면 유효하지 않은 입력으로 처리해야 한다', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -334,10 +292,6 @@ describe('optionHandlers', () => {
             expect(mockG7Core.toast.success).not.toHaveBeenCalled();
         });
 
-        /**
-         * @scenario case=c11
-         * @effects option_handlers_behavior
-         */
         it('name 객체의 기본 로케일 값이 빈 문자열이면 유효하지 않은 입력으로 처리해야 한다', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -355,10 +309,6 @@ describe('optionHandlers', () => {
             expect(mockG7Core.toast.error).toHaveBeenCalledWith('sirsoft-ecommerce.admin.product.options.messages.name_value_required');
         });
 
-        /**
-         * @scenario case=c12
-         * @effects option_handlers_behavior
-         */
         it('option_groups에 문자열 name을 객체로 정규화하여 저장해야 한다', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -382,10 +332,6 @@ describe('optionHandlers', () => {
             expect(optionGroup.name).toHaveProperty('en');
         });
 
-        /**
-         * @scenario case=c13
-         * @effects option_handlers_behavior
-         */
         it('여러 옵션 그룹으로 카테시안 곱을 생성해야 한다', () => {
             mockG7Core = createMockG7Core({
                 ui: {
@@ -407,132 +353,6 @@ describe('optionHandlers', () => {
         });
     });
 
-    describe('generateOptionsHandler - 신규 등록 시 재고 기본값 1', () => {
-        const buildInputs = () => ({
-            ui: { optionInputs: [{ name: { ko: '색상', en: '' }, values: ['빨강', '파랑'] }] },
-            form: { options: [] },
-        });
-
-        /**
-         * @scenario case=c14
-         * @effects option_handlers_behavior
-         */
-        it('등록 모드(isCreate=true)에서는 생성된 모든 옵션의 재고가 1이다', () => {
-            mockG7Core = createMockG7Core(buildInputs());
-            (window as any).G7Core = mockG7Core;
-            mockContext = { datasources: { currencies: { data: { list: [] } } } };
-
-            generateOptionsHandler({ params: { isCreate: true } }, mockContext);
-
-            const setLocalCall = mockG7Core.state.setLocal.mock.calls[0][0];
-            expect(setLocalCall.form.options.length).toBe(2);
-            setLocalCall.form.options.forEach((opt: any) => {
-                expect(opt.stock_quantity).toBe(1);
-            });
-        });
-
-        /**
-         * @scenario case=c15
-         * @effects option_handlers_behavior
-         */
-        it('isCreate가 문자열 "true"여도 재고 기본값은 1이다 (표현식 boolean 캐스팅 호환)', () => {
-            mockG7Core = createMockG7Core(buildInputs());
-            (window as any).G7Core = mockG7Core;
-            mockContext = { datasources: { currencies: { data: { list: [] } } } };
-
-            generateOptionsHandler({ params: { isCreate: 'true' } }, mockContext);
-
-            const setLocalCall = mockG7Core.state.setLocal.mock.calls[0][0];
-            setLocalCall.form.options.forEach((opt: any) => {
-                expect(opt.stock_quantity).toBe(1);
-            });
-        });
-
-        /**
-         * @scenario case=c16
-         * @effects option_handlers_behavior
-         */
-        it('수정 모드(isCreate 미전달)에서는 재고 기본값이 0이다 (기존 동작 유지)', () => {
-            mockG7Core = createMockG7Core(buildInputs());
-            (window as any).G7Core = mockG7Core;
-            mockContext = { datasources: { currencies: { data: { list: [] } } } };
-
-            generateOptionsHandler({}, mockContext);
-
-            const setLocalCall = mockG7Core.state.setLocal.mock.calls[0][0];
-            setLocalCall.form.options.forEach((opt: any) => {
-                expect(opt.stock_quantity).toBe(0);
-            });
-        });
-
-        /**
-         * @scenario case=c17
-         * @effects option_handlers_behavior
-         */
-        it('등록 모드에서 옵션 2개 생성 시 상품 재고가 옵션 합계(2)로 동기화된다', () => {
-            mockG7Core = createMockG7Core(buildInputs());
-            (window as any).G7Core = mockG7Core;
-            mockContext = { datasources: { currencies: { data: { list: [] } } } };
-
-            generateOptionsHandler({ params: { isCreate: true } }, mockContext);
-
-            const setLocalCall = mockG7Core.state.setLocal.mock.calls[0][0];
-            // 옵션당 기본 재고 1 × 2개 = 상품 재고 2 (사용자 조작 없이 즉시)
-            expect(setLocalCall.form.stock_quantity).toBe(2);
-        });
-    });
-
-    describe('deleteOptionHandler - 삭제 시 상품 재고 재동기화', () => {
-        const buildOptions = () => ({
-            form: {
-                stock_quantity: 3,
-                has_options: true,
-                options: [
-                    { option_code: 'OPT-001', stock_quantity: 1, is_active: true, is_default: true },
-                    { option_code: 'OPT-002', stock_quantity: 2, is_active: true },
-                ],
-            },
-        });
-
-        /**
-         * @scenario case=c18
-         * @effects option_handlers_behavior
-         */
-        it('옵션 삭제 시 상품 재고가 남은 활성 옵션 합계로 재계산된다', () => {
-            mockG7Core = createMockG7Core(buildOptions());
-            (window as any).G7Core = mockG7Core;
-
-            // 재고 2짜리 두 번째 옵션 삭제 → 남은 재고 1
-            deleteOptionHandler({ params: { rowIndex: 1 } }, mockContext);
-
-            const setLocalCall = mockG7Core.state.setLocal.mock.calls[0][0];
-            expect(setLocalCall.form.options.length).toBe(1);
-            expect(setLocalCall.form.stock_quantity).toBe(1);
-            expect(setLocalCall.form.has_options).toBe(true);
-        });
-
-        /**
-         * @scenario case=c19
-         * @effects option_handlers_behavior
-         */
-        it('마지막 옵션까지 삭제하면 has_options 가 false 로 해제된다', () => {
-            mockG7Core = createMockG7Core({
-                form: {
-                    stock_quantity: 1,
-                    has_options: true,
-                    options: [{ option_code: 'OPT-001', stock_quantity: 1, is_active: true, is_default: true }],
-                },
-            });
-            (window as any).G7Core = mockG7Core;
-
-            deleteOptionHandler({ params: { rowIndex: 0 } }, mockContext);
-
-            const setLocalCall = mockG7Core.state.setLocal.mock.calls[0][0];
-            expect(setLocalCall.form.options.length).toBe(0);
-            expect(setLocalCall.form.has_options).toBe(false);
-        });
-    });
-
     describe('회귀 테스트 - spread 연산자 문자열 분해 버그', () => {
         /**
          * 실제 버그 시나리오 재현:
@@ -540,10 +360,6 @@ describe('optionHandlers', () => {
          * 2. 레이아웃이 name을 문자열로 저장 → name: "테스트"
          * 3. 핸들러에서 {...name}으로 spread → {'0':'테','1':'스','2':'트'}
          * 4. name.ko가 undefined → 유효성 검증 실패
-         */
-        /**
-         * @scenario case=c20
-         * @effects option_handlers_behavior
          */
         it('실제 버그 시나리오: 문자열 name → spread → 유효성 검증이 정상 동작해야 한다', () => {
             // Step 1: 초기 상태 (빈 객체로 시작)
@@ -575,304 +391,6 @@ describe('optionHandlers', () => {
             // 핵심 검증: 에러 없이 옵션이 생성되어야 함
             expect(mockG7Core.toast.error).not.toHaveBeenCalled();
             expect(mockG7Core.toast.success).toHaveBeenCalled();
-        });
-    });
-
-    describe('clearAdditionalOptionsHandler — §13-D-FAIL 토글 미갱신 회귀', () => {
-        /**
-         * @scenario case=c21
-         * @effects option_handlers_behavior
-         */
-        it('form 객체를 새 참조로 통째 교체하여 additional_options 를 [] 로 비운다', () => {
-            // 기존 1행 보유 상태 (EDIT 폼 진입 시뮬레이션)
-            const originalForm = {
-                product_name: { ko: '상품', en: 'Product' },
-                additional_options: [{ id: 'x1', name: { ko: '각인', en: 'Engrave' }, is_required: false, sort_order: 0 }],
-            };
-            mockG7Core = createMockG7Core({ form: originalForm });
-            (window as any).G7Core = mockG7Core;
-
-            clearAdditionalOptionsHandler({}, mockContext);
-
-            expect(mockG7Core.state.setLocal).toHaveBeenCalled();
-            const setLocalCall = mockG7Core.state.setLocal.mock.calls[0][0];
-            // 비워짐
-            expect(setLocalCall.form.additional_options).toEqual([]);
-            // form 은 새 참조 (dot-path 부분 갱신이 아니라 객체 교체 → 파생 표현식 리렌더 보장)
-            expect(setLocalCall.form).not.toBe(originalForm);
-            // 다른 form 필드는 보존
-            expect(setLocalCall.form.product_name).toEqual(originalForm.product_name);
-            // 변경 플래그
-            expect(setLocalCall.hasChanges).toBe(true);
-        });
-
-        /**
-         * @scenario case=c22
-         * @effects option_handlers_behavior
-         */
-        it('add 핸들러와 동일한 form-replace 패턴을 사용한다 (참조 교체 일관성)', () => {
-            mockG7Core = createMockG7Core({ form: { additional_options: [] } });
-            (window as any).G7Core = mockG7Core;
-            addAdditionalOptionHandler({}, mockContext);
-            const addCall = mockG7Core.state.setLocal.mock.calls[0][0];
-            // add 도 form 객체를 새로 만든다 — clear 와 동일 패턴임을 명문화
-            expect(addCall.form.additional_options.length).toBe(1);
-            expect(addCall.hasChanges).toBe(true);
-        });
-
-        /**
-         * @scenario case=c23
-         * @effects option_handlers_behavior
-         */
-        it('G7Core.state 부재 시 안전하게 무시한다', () => {
-            (window as any).G7Core = {};
-            expect(() => clearAdditionalOptionsHandler({}, mockContext)).not.toThrow();
-        });
-    });
-
-    describe('추가옵션 선택지(values) 핸들러 — 세션 B', () => {
-        const groupWith = (values: any[]) => ({
-            form: {
-                additional_options: [
-                    { id: 'g0', name: { ko: '각인', en: 'Engraving' }, is_required: true, sort_order: 0, values },
-                ],
-            },
-        });
-
-        describe('addAdditionalOptionHandler — values 초기화', () => {
-            /**
-             * @scenario case=c24
-             * @effects option_handlers_behavior
-             */
-            it('새 그룹은 선택지 1개로 시작한다 (빈 그룹 저장 차단 D11)', () => {
-                mockG7Core = createMockG7Core({ form: { additional_options: [] } });
-                (window as any).G7Core = mockG7Core;
-
-                addAdditionalOptionHandler({}, mockContext);
-
-                const setLocalCall = mockG7Core.state.setLocal.mock.calls[0][0];
-                const group = setLocalCall.form.additional_options[0];
-                expect(Array.isArray(group.values)).toBe(true);
-                expect(group.values.length).toBe(1);
-                // 첫 선택지는 기본 선택지 + 활성 + 추가금 0
-                expect(group.values[0].is_default).toBe(true);
-                expect(group.values[0].is_active).toBe(true);
-                expect(group.values[0].price_adjustment).toBe(0);
-                expect(group.values[0].name).toHaveProperty('ko');
-            });
-        });
-
-        describe('addAdditionalOptionValueHandler', () => {
-            /**
-             * @scenario case=c25
-             * @effects option_handlers_behavior
-             */
-            it('그룹에 선택지를 추가한다', () => {
-                mockG7Core = createMockG7Core(groupWith([
-                    { id: 'v0', name: { ko: '없음' }, price_adjustment: 0, is_default: true, is_active: true, sort_order: 0 },
-                ]));
-                (window as any).G7Core = mockG7Core;
-
-                addAdditionalOptionValueHandler({ params: { groupIndex: 0 } }, mockContext);
-
-                const setLocalCall = mockG7Core.state.setLocal.mock.calls[0][0];
-                const values = setLocalCall.form.additional_options[0].values;
-                expect(values.length).toBe(2);
-                // 추가된 선택지는 기본 선택지가 아니다 (sort_order > 0)
-                expect(values[1].is_default).toBe(false);
-                expect(values[1].sort_order).toBe(1);
-            });
-
-            /**
-             * @scenario case=c26
-             * @effects option_handlers_behavior
-             */
-            it('그룹당 20개 초과 시 경고하고 추가하지 않는다 (D11)', () => {
-                const twenty = Array.from({ length: 20 }, (_, i) => ({
-                    id: `v${i}`, name: { ko: `v${i}` }, price_adjustment: 0, is_default: i === 0, is_active: true, sort_order: i,
-                }));
-                mockG7Core = createMockG7Core(groupWith(twenty));
-                (window as any).G7Core = mockG7Core;
-
-                addAdditionalOptionValueHandler({ params: { groupIndex: 0 } }, mockContext);
-
-                expect(mockG7Core.toast.warning).toHaveBeenCalledWith('sirsoft-ecommerce.admin.product.options.messages.additional_value_max_20');
-                expect(mockG7Core.state.setLocal).not.toHaveBeenCalled();
-            });
-        });
-
-        describe('updateAdditionalOptionValueHandler', () => {
-            /**
-             * @scenario case=c27
-             * @effects option_handlers_behavior
-             */
-            it('name 다국어 객체를 그대로 유지한다 (문자 분해 없음)', () => {
-                mockG7Core = createMockG7Core(groupWith([
-                    { id: 'v0', name: { ko: '', en: '' }, price_adjustment: 0, is_default: true, is_active: true, sort_order: 0 },
-                ]));
-                (window as any).G7Core = mockG7Core;
-
-                updateAdditionalOptionValueHandler(
-                    { params: { groupIndex: 0, valueIndex: 0, field: 'name', value: { ko: '각인 추가', en: 'Add' } } },
-                    mockContext
-                );
-
-                const v = mockG7Core.state.setLocal.mock.calls[0][0].form.additional_options[0].values[0];
-                expect(v.name).toEqual({ ko: '각인 추가', en: 'Add' });
-                expect(v.name).not.toHaveProperty('0');
-            });
-
-            /**
-             * @scenario case=c28
-             * @effects option_handlers_behavior
-             */
-            it('price_adjustment 음수는 0으로 보정한다 (D16)', () => {
-                mockG7Core = createMockG7Core(groupWith([
-                    { id: 'v0', name: { ko: 'x' }, price_adjustment: 0, is_default: true, is_active: true, sort_order: 0 },
-                ]));
-                (window as any).G7Core = mockG7Core;
-
-                updateAdditionalOptionValueHandler(
-                    { params: { groupIndex: 0, valueIndex: 0, field: 'price_adjustment', value: '-500' } },
-                    mockContext
-                );
-
-                const v = mockG7Core.state.setLocal.mock.calls[0][0].form.additional_options[0].values[0];
-                expect(v.price_adjustment).toBe(0);
-            });
-
-            /**
-             * @scenario case=c29
-             * @effects option_handlers_behavior
-             */
-            it('price_adjustment 양수는 숫자로 저장한다', () => {
-                mockG7Core = createMockG7Core(groupWith([
-                    { id: 'v0', name: { ko: 'x' }, price_adjustment: 0, is_default: true, is_active: true, sort_order: 0 },
-                ]));
-                (window as any).G7Core = mockG7Core;
-
-                updateAdditionalOptionValueHandler(
-                    { params: { groupIndex: 0, valueIndex: 0, field: 'price_adjustment', value: '5000' } },
-                    mockContext
-                );
-
-                const v = mockG7Core.state.setLocal.mock.calls[0][0].form.additional_options[0].values[0];
-                expect(v.price_adjustment).toBe(5000);
-            });
-
-            /**
-             * @scenario case=c30
-             * @effects option_handlers_behavior
-             */
-            it('is_default 라디오 — 선택 시 그룹 내 다른 선택지는 해제된다', () => {
-                mockG7Core = createMockG7Core(groupWith([
-                    { id: 'v0', name: { ko: 'a' }, price_adjustment: 0, is_default: true, is_active: true, sort_order: 0 },
-                    { id: 'v1', name: { ko: 'b' }, price_adjustment: 0, is_default: false, is_active: true, sort_order: 1 },
-                ]));
-                (window as any).G7Core = mockG7Core;
-
-                updateAdditionalOptionValueHandler(
-                    { params: { groupIndex: 0, valueIndex: 1, field: 'is_default', value: true } },
-                    mockContext
-                );
-
-                const values = mockG7Core.state.setLocal.mock.calls[0][0].form.additional_options[0].values;
-                expect(values[0].is_default).toBe(false);
-                expect(values[1].is_default).toBe(true);
-            });
-
-            /**
-             * @scenario case=c31
-             * @effects option_handlers_behavior
-             */
-            it('is_active 토글을 직접 반영한다', () => {
-                mockG7Core = createMockG7Core(groupWith([
-                    { id: 'v0', name: { ko: 'a' }, price_adjustment: 0, is_default: true, is_active: true, sort_order: 0 },
-                ]));
-                (window as any).G7Core = mockG7Core;
-
-                updateAdditionalOptionValueHandler(
-                    { params: { groupIndex: 0, valueIndex: 0, field: 'is_active', value: false } },
-                    mockContext
-                );
-
-                const v = mockG7Core.state.setLocal.mock.calls[0][0].form.additional_options[0].values[0];
-                expect(v.is_active).toBe(false);
-            });
-
-            /**
-             * @scenario case=c32
-             * @effects option_handlers_behavior
-             */
-            it('allow_custom_text 토글을 boolean 으로 반영한다 (직접입력 허용)', () => {
-                mockG7Core = createMockG7Core(groupWith([
-                    { id: 'v0', name: { ko: 'a' }, price_adjustment: 0, is_default: true, is_active: true, allow_custom_text: false, sort_order: 0 },
-                ]));
-                (window as any).G7Core = mockG7Core;
-
-                updateAdditionalOptionValueHandler(
-                    { params: { groupIndex: 0, valueIndex: 0, field: 'allow_custom_text', value: true } },
-                    mockContext
-                );
-
-                const v = mockG7Core.state.setLocal.mock.calls[0][0].form.additional_options[0].values[0];
-                expect(v.allow_custom_text).toBe(true);
-            });
-        });
-
-        describe('removeAdditionalOptionValueHandler', () => {
-            /**
-             * @scenario case=c33
-             * @effects option_handlers_behavior
-             */
-            it('선택지를 삭제하고 sort_order 를 재정렬한다', () => {
-                mockG7Core = createMockG7Core(groupWith([
-                    { id: 'v0', name: { ko: 'a' }, price_adjustment: 0, is_default: true, is_active: true, sort_order: 0 },
-                    { id: 'v1', name: { ko: 'b' }, price_adjustment: 0, is_default: false, is_active: true, sort_order: 1 },
-                    { id: 'v2', name: { ko: 'c' }, price_adjustment: 0, is_default: false, is_active: true, sort_order: 2 },
-                ]));
-                (window as any).G7Core = mockG7Core;
-
-                removeAdditionalOptionValueHandler({ params: { groupIndex: 0, valueIndex: 1 } }, mockContext);
-
-                const values = mockG7Core.state.setLocal.mock.calls[0][0].form.additional_options[0].values;
-                expect(values.length).toBe(2);
-                expect(values.map((v: any) => v.sort_order)).toEqual([0, 1]);
-            });
-
-            /**
-             * @scenario case=c34
-             * @effects option_handlers_behavior
-             */
-            it('기본 선택지를 삭제하면 첫 선택지가 기본이 된다', () => {
-                mockG7Core = createMockG7Core(groupWith([
-                    { id: 'v0', name: { ko: 'a' }, price_adjustment: 0, is_default: true, is_active: true, sort_order: 0 },
-                    { id: 'v1', name: { ko: 'b' }, price_adjustment: 0, is_default: false, is_active: true, sort_order: 1 },
-                ]));
-                (window as any).G7Core = mockG7Core;
-
-                removeAdditionalOptionValueHandler({ params: { groupIndex: 0, valueIndex: 0 } }, mockContext);
-
-                const values = mockG7Core.state.setLocal.mock.calls[0][0].form.additional_options[0].values;
-                expect(values.length).toBe(1);
-                expect(values[0].is_default).toBe(true);
-            });
-
-            /**
-             * @scenario case=c35
-             * @effects option_handlers_behavior
-             */
-            it('마지막 선택지 1개는 삭제하지 않고 경고한다 (빈 그룹 차단 D11)', () => {
-                mockG7Core = createMockG7Core(groupWith([
-                    { id: 'v0', name: { ko: 'a' }, price_adjustment: 0, is_default: true, is_active: true, sort_order: 0 },
-                ]));
-                (window as any).G7Core = mockG7Core;
-
-                removeAdditionalOptionValueHandler({ params: { groupIndex: 0, valueIndex: 0 } }, mockContext);
-
-                expect(mockG7Core.toast.warning).toHaveBeenCalledWith('sirsoft-ecommerce.admin.product.options.messages.additional_value_min_1');
-                expect(mockG7Core.state.setLocal).not.toHaveBeenCalled();
-            });
         });
     });
 });

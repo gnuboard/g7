@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Extension;
 
-use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
@@ -13,12 +12,10 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\ExtensionManager;
 use App\Extension\Helpers\ExtensionPendingHelper;
-use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Models\Module;
-use App\Models\Plugin;
 use App\Models\Template;
 use App\Services\LayoutExtensionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -64,8 +61,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * 테스트용 _pending/_bundled 디렉토리와 Manager 인스턴스를 초기화합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -87,8 +82,6 @@ class ExtensionPendingBundledTest extends TestCase
             pluginRepository: Mockery::mock(PluginRepositoryInterface::class),
             layoutRepository: Mockery::mock(LayoutRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
-            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
-            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
 
         // _pending 테스트 모듈 생성
@@ -110,8 +103,6 @@ class ExtensionPendingBundledTest extends TestCase
             moduleRepository: Mockery::mock(ModuleRepositoryInterface::class),
             layoutRepository: Mockery::mock(LayoutRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
-            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
-            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
 
         // _pending 테스트 플러그인 생성
@@ -132,8 +123,6 @@ class ExtensionPendingBundledTest extends TestCase
             moduleRepository: Mockery::mock(ModuleRepositoryInterface::class),
             pluginRepository: Mockery::mock(PluginRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
-            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
-            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
 
         // _pending 테스트 템플릿 생성
@@ -148,8 +137,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * 테스트용 디렉토리를 모두 정리합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -191,7 +178,6 @@ class ExtensionPendingBundledTest extends TestCase
      * @param  string  $subDir  하위 디렉토리 (_pending, _bundled)
      * @param  string  $identifier  모듈 식별자
      * @param  string  $version  모듈 버전
-     * @return void 반환값 없음
      */
     private function createTestModule(string $subDir, string $identifier, string $version): void
     {
@@ -211,7 +197,6 @@ class ExtensionPendingBundledTest extends TestCase
      * Module mock을 생성합니다.
      *
      * @param  array  $attributes  모델 속성
-     * @return Module|Mockery\MockInterface 속성을 채운 모듈 부분 목
      */
     private function createModuleMock(array $attributes): Module|Mockery\MockInterface
     {
@@ -229,7 +214,6 @@ class ExtensionPendingBundledTest extends TestCase
      * @param  string  $subDir  하위 디렉토리 (_pending, _bundled)
      * @param  string  $identifier  플러그인 식별자
      * @param  string  $version  플러그인 버전
-     * @return void 반환값 없음
      */
     private function createTestPlugin(string $subDir, string $identifier, string $version): void
     {
@@ -252,7 +236,6 @@ class ExtensionPendingBundledTest extends TestCase
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $version  템플릿 버전
      * @param  string  $type  템플릿 타입 (admin, user)
-     * @return void 반환값 없음
      */
     private function createTestTemplate(string $subDir, string $identifier, string $version, string $type = 'admin'): void
     {
@@ -273,7 +256,6 @@ class ExtensionPendingBundledTest extends TestCase
      * Template mock을 생성합니다.
      *
      * @param  array  $attributes  모델 속성
-     * @return Template|Mockery\MockInterface 속성을 채운 템플릿 부분 목
      */
     private function createTemplateMock(array $attributes): Template|Mockery\MockInterface
     {
@@ -291,12 +273,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending 디렉토리의 모듈이 미설치 목록에 is_pending: true로 표시되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=pending, stage=uninstalled_listing
-     *
-     * @effects pending_listed_as_uninstalled
-     *
-     * @return void 반환값 없음
      */
     public function test_pending_modules_appear_in_uninstalled_list(): void
     {
@@ -321,12 +297,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _bundled 디렉토리의 모듈이 미설치 목록에 is_bundled: true로 표시되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=bundled, stage=uninstalled_listing
-     *
-     * @effects bundled_listed_as_uninstalled
-     *
-     * @return void 반환값 없음
      */
     public function test_bundled_modules_appear_in_uninstalled_list(): void
     {
@@ -351,12 +321,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * installModule 시 _pending에서 활성 디렉토리로 복사되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=pending, stage=install_copy
-     *
-     * @effects install_copies_source_to_active
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_pending_copies_to_active_directory(): void
     {
@@ -383,12 +347,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending에 없는 모듈은 _bundled에서 활성 디렉토리로 복사되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=bundled, stage=install_copy
-     *
-     * @effects install_copies_source_to_active
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_bundled_copies_to_active_directory(): void
     {
@@ -415,12 +373,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * 설치 후 _pending 원본이 보존되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=pending, stage=install_copy
-     *
-     * @effects install_preserves_source_copy
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_pending_preserves_pending_copy(): void
     {
@@ -445,12 +397,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * 설치 후 _bundled 원본이 보존되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=bundled, stage=install_copy
-     *
-     * @effects install_preserves_source_copy
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_bundled_preserves_bundled_copy(): void
     {
@@ -475,12 +421,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * uninstall 후 활성 디렉토리가 삭제되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=pending, stage=uninstall
-     *
-     * @effects uninstall_deletes_active_directory
-     *
-     * @return void 반환값 없음
      */
     public function test_uninstall_deletes_active_directory(): void
     {
@@ -503,12 +443,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * uninstall 후 _pending 디렉토리가 보존되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=pending, stage=uninstall
-     *
-     * @effects uninstall_preserves_source_directory
-     *
-     * @return void 반환값 없음
      */
     public function test_uninstall_preserves_pending_directory(): void
     {
@@ -536,12 +470,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * uninstall 후 _bundled 디렉토리가 보존되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=bundled, stage=uninstall
-     *
-     * @effects uninstall_preserves_source_directory
-     *
-     * @return void 반환값 없음
      */
     public function test_uninstall_preserves_bundled_directory(): void
     {
@@ -569,12 +497,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * collectModuleAutoloads가 _pending 디렉토리를 건너뛰는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=pending, stage=load_skip
-     *
-     * @effects source_dirs_skipped_in_autoload_collection
-     *
-     * @return void 반환값 없음
      */
     public function test_pending_skip_in_autoload_collection(): void
     {
@@ -604,12 +526,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * collectModuleAutoloads가 _bundled 디렉토리를 건너뛰는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=bundled, stage=load_skip
-     *
-     * @effects source_dirs_skipped_in_autoload_collection
-     *
-     * @return void 반환값 없음
      */
     public function test_bundled_skip_in_autoload_collection(): void
     {
@@ -642,12 +558,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * loadModules가 _pending 내부 모듈을 활성 모듈로 로드하지 않는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=pending, stage=load_skip
-     *
-     * @effects source_dirs_not_loaded_as_active
-     *
-     * @return void 반환값 없음
      */
     public function test_pending_skip_in_load_modules(): void
     {
@@ -662,12 +572,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * loadModules가 _bundled 내부 모듈을 활성 모듈로 로드하지 않는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=bundled, stage=load_skip
-     *
-     * @effects source_dirs_not_loaded_as_active
-     *
-     * @return void 반환값 없음
      */
     public function test_bundled_skip_in_load_modules(): void
     {
@@ -686,12 +590,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending은 임시 스테이징 디렉토리이므로 버전 비교 대상이 아님을 확인
-     *
-     * @scenario ext_type=module, source_dir=pending, stage=update_detection
-     *
-     * @effects pending_ignored_for_update_detection
-     *
-     * @return void 반환값 없음
      */
     public function test_pending_is_not_used_for_update_detection(): void
     {
@@ -724,12 +622,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * 설치된 v1.0.0 + _bundled에 v1.5.0 → update_available=true, update_source='bundled' 확인
-     *
-     * @scenario ext_type=module, source_dir=bundled, stage=update_detection
-     *
-     * @effects bundled_used_as_update_source
-     *
-     * @return void 반환값 없음
      */
     public function test_update_detection_from_bundled(): void
     {
@@ -763,12 +655,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending v2.0.0 + _bundled v1.5.0 → _bundled만 업데이트 소스로 사용됨
-     *
-     * @scenario ext_type=module, source_dir=bundled, stage=update_detection
-     *
-     * @effects bundled_used_as_update_source, pending_ignored_for_update_detection
-     *
-     * @return void 반환값 없음
      */
     public function test_only_bundled_used_for_update_detection_even_with_pending(): void
     {
@@ -804,12 +690,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * loadPendingModules에서 이미 활성 모듈이면 pending 목록에서 제외되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=pending, stage=uninstalled_listing
-     *
-     * @effects listing_excludes_active_or_pending_duplicates
-     *
-     * @return void 반환값 없음
      */
     public function test_pending_excludes_already_active_modules(): void
     {
@@ -827,12 +707,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * loadBundledModules에서 이미 _pending에 있는 모듈이면 bundled 목록에서 제외되는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=bundled, stage=uninstalled_listing
-     *
-     * @effects listing_excludes_active_or_pending_duplicates
-     *
-     * @return void 반환값 없음
      */
     public function test_bundled_excludes_already_pending_modules(): void
     {
@@ -850,12 +724,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending과 _bundled 메타데이터가 올바른 필드를 포함하는지 테스트
-     *
-     * @scenario ext_type=module, source_dir=pending, stage=uninstalled_listing
-     *
-     * @effects source_metadata_contains_required_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_pending_metadata_contains_required_fields(): void
     {
@@ -893,12 +761,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending 디렉토리의 플러그인이 미설치 목록에 is_pending: true로 표시되는지 테스트
-     *
-     * @scenario ext_type=plugin, source_dir=pending, stage=uninstalled_listing
-     *
-     * @effects pending_listed_as_uninstalled
-     *
-     * @return void 반환값 없음
      */
     public function test_pending_plugins_appear_in_uninstalled_list(): void
     {
@@ -922,12 +784,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _bundled 디렉토리의 플러그인이 미설치 목록에 is_bundled: true로 표시되는지 테스트
-     *
-     * @scenario ext_type=plugin, source_dir=bundled, stage=uninstalled_listing
-     *
-     * @effects bundled_listed_as_uninstalled
-     *
-     * @return void 반환값 없음
      */
     public function test_bundled_plugins_appear_in_uninstalled_list(): void
     {
@@ -951,12 +807,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending에서 플러그인이 활성 디렉토리로 복사되는지 테스트 (ExtensionPendingHelper 직접 사용)
-     *
-     * @scenario ext_type=plugin, source_dir=pending, stage=install_copy
-     *
-     * @effects install_copies_source_to_active
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_install_from_pending_copies_to_active_directory(): void
     {
@@ -980,12 +830,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _bundled에서 플러그인이 활성 디렉토리로 복사되는지 테스트 (ExtensionPendingHelper 직접 사용)
-     *
-     * @scenario ext_type=plugin, source_dir=bundled, stage=install_copy
-     *
-     * @effects install_copies_source_to_active
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_install_from_bundled_copies_to_active_directory(): void
     {
@@ -1009,12 +853,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * uninstall 후 _pending 플러그인 디렉토리가 보존되는지 테스트
-     *
-     * @scenario ext_type=plugin, source_dir=pending, stage=uninstall
-     *
-     * @effects uninstall_preserves_source_directory
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_uninstall_preserves_pending_directory(): void
     {
@@ -1033,12 +871,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * uninstall 후 _bundled 플러그인 디렉토리가 보존되는지 테스트
-     *
-     * @scenario ext_type=plugin, source_dir=bundled, stage=uninstall
-     *
-     * @effects uninstall_preserves_source_directory
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_uninstall_preserves_bundled_directory(): void
     {
@@ -1061,12 +893,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * loadPlugins가 _pending 플러그인을 활성 로드하지 않는지 테스트
-     *
-     * @scenario ext_type=plugin, source_dir=pending, stage=load_skip
-     *
-     * @effects source_dirs_not_loaded_as_active
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_pending_skip_in_load_plugins(): void
     {
@@ -1080,12 +906,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * loadPlugins가 _bundled 플러그인을 활성 로드하지 않는지 테스트
-     *
-     * @scenario ext_type=plugin, source_dir=bundled, stage=load_skip
-     *
-     * @effects source_dirs_not_loaded_as_active
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_bundled_skip_in_load_plugins(): void
     {
@@ -1103,18 +923,12 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending은 임시 스테이징 디렉토리이므로 버전 비교 대상이 아님을 확인
-     *
-     * @scenario ext_type=plugin, source_dir=pending, stage=update_detection
-     *
-     * @effects pending_ignored_for_update_detection
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_pending_is_not_used_for_update_detection(): void
     {
         $this->pluginManager->loadPlugins();
 
-        $record = Mockery::mock(Plugin::class)->makePartial();
+        $record = Mockery::mock(\App\Models\Plugin::class)->makePartial();
         $record->identifier = 'test-pending-plg';
         $record->version = '1.0.0';
         $record->status = ExtensionStatus::Active->value;
@@ -1138,18 +952,12 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * 설치된 v1.0.0 + _bundled에 v1.5.0 → update_available=true, update_source='bundled' 확인
-     *
-     * @scenario ext_type=plugin, source_dir=bundled, stage=update_detection
-     *
-     * @effects bundled_used_as_update_source
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_update_detection_from_bundled(): void
     {
         $this->pluginManager->loadPlugins();
 
-        $record = Mockery::mock(Plugin::class)->makePartial();
+        $record = Mockery::mock(\App\Models\Plugin::class)->makePartial();
         $record->identifier = 'test-bundled-plg';
         $record->version = '1.0.0';
         $record->status = ExtensionStatus::Active->value;
@@ -1174,12 +982,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending v2.0.0 + _bundled v1.5.0 → _bundled만 업데이트 소스로 사용됨
-     *
-     * @scenario ext_type=plugin, source_dir=bundled, stage=update_detection
-     *
-     * @effects bundled_used_as_update_source, pending_ignored_for_update_detection
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_only_bundled_used_for_update_detection_even_with_pending(): void
     {
@@ -1187,7 +989,7 @@ class ExtensionPendingBundledTest extends TestCase
 
         $this->pluginManager->loadPlugins();
 
-        $record = Mockery::mock(Plugin::class)->makePartial();
+        $record = Mockery::mock(\App\Models\Plugin::class)->makePartial();
         $record->identifier = 'test-bundled-plg';
         $record->version = '1.0.0';
         $record->status = ExtensionStatus::Active->value;
@@ -1211,12 +1013,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending 플러그인 메타데이터가 올바른 필드를 포함하는지 테스트
-     *
-     * @scenario ext_type=plugin, source_dir=pending, stage=uninstalled_listing
-     *
-     * @effects source_metadata_contains_required_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_pending_metadata_contains_required_fields(): void
     {
@@ -1254,12 +1050,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending 디렉토리의 템플릿이 미설치 목록에 source: 'pending'으로 표시되는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=pending, stage=uninstalled_listing
-     *
-     * @effects pending_listed_as_uninstalled
-     *
-     * @return void 반환값 없음
      */
     public function test_pending_templates_appear_in_uninstalled_list(): void
     {
@@ -1280,12 +1070,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _bundled 디렉토리의 템플릿이 미설치 목록에 source: 'bundled'로 표시되는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=bundled, stage=uninstalled_listing
-     *
-     * @effects bundled_listed_as_uninstalled
-     *
-     * @return void 반환값 없음
      */
     public function test_bundled_templates_appear_in_uninstalled_list(): void
     {
@@ -1306,12 +1090,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * copyToActiveFromSource가 _pending에서 활성 디렉토리로 복사하는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=pending, stage=install_copy
-     *
-     * @effects install_copies_source_to_active
-     *
-     * @return void 반환값 없음
      */
     public function test_template_copy_from_pending_to_active(): void
     {
@@ -1340,12 +1118,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * copyToActiveFromSource가 _bundled에서 활성 디렉토리로 복사하는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=bundled, stage=install_copy
-     *
-     * @effects install_copies_source_to_active
-     *
-     * @return void 반환값 없음
      */
     public function test_template_copy_from_bundled_to_active(): void
     {
@@ -1374,12 +1146,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * copyToActiveFromSource 후 _pending 원본이 보존되는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=pending, stage=install_copy
-     *
-     * @effects install_preserves_source_copy
-     *
-     * @return void 반환값 없음
      */
     public function test_template_copy_preserves_pending_source(): void
     {
@@ -1402,12 +1168,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * copyToActiveFromSource 후 _bundled 원본이 보존되는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=bundled, stage=install_copy
-     *
-     * @effects install_preserves_source_copy
-     *
-     * @return void 반환값 없음
      */
     public function test_template_copy_preserves_bundled_source(): void
     {
@@ -1434,12 +1194,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * uninstall 후 _pending 템플릿 디렉토리가 보존되는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=pending, stage=uninstall
-     *
-     * @effects uninstall_preserves_source_directory
-     *
-     * @return void 반환값 없음
      */
     public function test_template_uninstall_preserves_pending_directory(): void
     {
@@ -1459,12 +1213,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * uninstall 후 _bundled 템플릿 디렉토리가 보존되는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=bundled, stage=uninstall
-     *
-     * @effects uninstall_preserves_source_directory
-     *
-     * @return void 반환값 없음
      */
     public function test_template_uninstall_preserves_bundled_directory(): void
     {
@@ -1488,12 +1236,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * loadTemplates가 _pending 템플릿을 활성 목록에 로드하지 않는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=pending, stage=load_skip
-     *
-     * @effects source_dirs_not_loaded_as_active
-     *
-     * @return void 반환값 없음
      */
     public function test_template_pending_skip_in_load_templates(): void
     {
@@ -1507,12 +1249,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * loadTemplates가 _bundled 템플릿을 활성 목록에 로드하지 않는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=bundled, stage=load_skip
-     *
-     * @effects source_dirs_not_loaded_as_active
-     *
-     * @return void 반환값 없음
      */
     public function test_template_bundled_skip_in_load_templates(): void
     {
@@ -1530,12 +1266,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending은 임시 스테이징 디렉토리이므로 버전 비교 대상이 아님을 확인
-     *
-     * @scenario ext_type=template, source_dir=pending, stage=update_detection
-     *
-     * @effects pending_ignored_for_update_detection
-     *
-     * @return void 반환값 없음
      */
     public function test_template_pending_is_not_used_for_update_detection(): void
     {
@@ -1566,12 +1296,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * 설치된 v1.0.0 + _bundled에 v1.5.0 → update_available=true, update_source='bundled' 확인
-     *
-     * @scenario ext_type=template, source_dir=bundled, stage=update_detection
-     *
-     * @effects bundled_used_as_update_source
-     *
-     * @return void 반환값 없음
      */
     public function test_template_update_detection_from_bundled(): void
     {
@@ -1603,12 +1327,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending v2.0.0 + _bundled v1.5.0 → _bundled만 업데이트 소스로 사용됨
-     *
-     * @scenario ext_type=template, source_dir=bundled, stage=update_detection
-     *
-     * @effects bundled_used_as_update_source, pending_ignored_for_update_detection
-     *
-     * @return void 반환값 없음
      */
     public function test_template_only_bundled_used_for_update_detection_even_with_pending(): void
     {
@@ -1642,12 +1360,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * loadPendingTemplates에서 이미 활성 템플릿이면 pending 목록에서 제외되는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=pending, stage=uninstalled_listing
-     *
-     * @effects listing_excludes_active_or_pending_duplicates
-     *
-     * @return void 반환값 없음
      */
     public function test_template_pending_excludes_already_active(): void
     {
@@ -1671,12 +1383,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * loadBundledTemplates에서 이미 _pending에 있는 템플릿이면 bundled 목록에서 제외되는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=bundled, stage=uninstalled_listing
-     *
-     * @effects listing_excludes_active_or_pending_duplicates
-     *
-     * @return void 반환값 없음
      */
     public function test_template_bundled_excludes_already_pending(): void
     {
@@ -1697,12 +1403,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * _pending 템플릿 메타데이터가 올바른 필드를 포함하는지 테스트
-     *
-     * @scenario ext_type=template, source_dir=pending, stage=uninstalled_listing
-     *
-     * @effects source_metadata_contains_required_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_template_pending_metadata_contains_required_fields(): void
     {
@@ -1732,12 +1432,6 @@ class ExtensionPendingBundledTest extends TestCase
 
     /**
      * 템플릿이 template.json을 메타데이터 파일로 사용하는지 검증
-     *
-     * @scenario ext_type=template, source_dir=pending, stage=uninstalled_listing
-     *
-     * @effects template_manifest_read_from_template_json
-     *
-     * @return void 반환값 없음
      */
     public function test_template_uses_template_json_manifest(): void
     {

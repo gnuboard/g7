@@ -99,27 +99,8 @@
 | `getGithubUrl()` | `?string` | `github_url` | `null` |
 | `getAssets()` | `array` | `assets` | `[]` |
 | `getAssetLoadingConfig()` | `array` | `loading` | strategy: global, priority: 100 |
-| `getIcon()` | `?string` | `icon` | `null` |
 
 > **`license` 필드**: `module.json`에 `"license": "MIT"` 등의 라이선스 정보를 포함합니다. 이 값은 API 리소스의 `license` 필드로 노출됩니다. 또한 각 모듈 루트에 `LICENSE` 파일을 포함하여 라이선스 전문을 제공해야 합니다.
-
-### icon 필드 (선택)
-
-패키지에 아이콘을 담으면 관리자 확장 관리 화면과 설치 마법사에 그 그림이 나옵니다.
-보통은 파일만 두면 되고(`assets/icon.svg`), 다른 경로를 쓸 때만 `icon` 을 적습니다.
-
-```json
-{
-  "icon": "assets/brand/mark.svg"
-}
-```
-
-`getIcon()` 은 **적힌 값만** 돌려줍니다 — 경로가 올바른지, 그림이 규격에 맞는지는 코어가
-따로 판정합니다. 선언이 없으면 `null` 이고 파일 관례로 해석됩니다.
-
-규격(정사각·100KB 이하·스크립트 없는 SVG)과 언어팩 합성 규칙은
-[확장 아이콘](extension-icons.md)에 있습니다. 아이콘을 넣지 않아도 되며, 그때는 종류별
-기본 그림으로 표시됩니다.
 
 ### hidden 필드 (선택)
 
@@ -130,14 +111,6 @@
 - 슈퍼관리자는 "숨김 포함" 토글로 일시 조회 가능 (`?include_hidden=1`)
 - artisan CLI 에서도 기본 목록에서는 숨기고, `php artisan module:list --hidden` 으로 숨김 포함 목록을 조회할 수 있습니다
 - 사용 사례: 학습용 샘플 모듈(예: `gnuboard7-hello_module`), 내부 전용 통합 모듈
-
-### state_contracts · integrations 필드 (선택)
-
-`module.json` 의 `state_contracts` 는 다른 확장이 읽으라고 내놓는 전역 상태(`_global.{이름}`)의 이름·모양·쓰기 허용 주체이고,
-`integrations` 는 「있으면 연동되고 없어도 동작하는」 확장 목록입니다(`dependencies` 와 달리 설치를 막지 않음). 각각
-`getStateContracts()`·`getIntegrations()` 로 자동 파싱됩니다. 형식과 규칙은
-[전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts)과
-[선택 연동](plugin-development.md#2-의존성-dependency)을 따릅니다.
 
 ### 자동 추론 메서드 (final - 오버라이드 불가)
 
@@ -168,33 +141,7 @@
 | `getHookListeners()` | `[]` | 훅 리스너 |
 | `getDependencies()` | `[]` | 의존성 |
 | `getMetadata()` | `[]` | 메타데이터 |
-| `getMiddleware()` | `[]` | 확장 미들웨어 선언 (self-gate targets) — `{class, groups, timing?, targets}` ([middleware.md](../backend/middleware.md)) |
-| `getBenchmarkProfiles()` | `[]` | 성능 계측 대상 선언 (`g7:bench` 가 수집) — 목록/화면/쓰기/배치 4축 ([benchmark.md](../backend/benchmark.md)) |
-| `getAnalyticsGoals()` | `[]` | 방문자 통계 전환(목표) 선언 — 선언된 목표만 기록된다 ([analytics-extension-points.md](analytics-extension-points.md)) |
-| `getAnalyticsDimensions()` | `[]` | 방문자 통계 분류 기준(dimension) 선언 — 선언된 분류 기준의 값만 원장·집계에 남는다 ([analytics-extension-points.md](analytics-extension-points.md)) |
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 모듈은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `ModuleManager::runUpgradeSteps` 가 `RuntimeException` throw |
-
-#### 수명주기 훅이 실패를 알리는 방법
-
-`install()` / `activate()` / `deactivate()` / `uninstall()` 은 bool 만 돌려주므로, 그냥 `false` 를
-반환하면 **왜 거부했는지가 코어에 전달되지 않는다.** 그 결과 운영자는 원인이 빠진 실패 문구만 본다.
-
-사유를 남기려면 `failWith()` 로 반환한다. 코어가 그 사유를 응답 문구의 원인 자리에 싣는다.
-
-```php
-public function activate(): bool
-{
-    if (! extension_loaded('gd')) {
-        return $this->failWith(__('my-module::messages.gd_required'));
-    }
-
-    return true;
-}
-```
-
-- 사유는 **이미 번역된 문장**이어야 한다 — 확장의 언어 파일 키는 코어가 해석할 수 없다.
-- 사유를 남기지 않고 `false` 만 돌려주면 코어가 일반 문구로 대체한다(동작은 그대로).
-- 같은 규칙이 플러그인(`AbstractPlugin`)에도 동일하게 적용된다.
 
 #### 동적 권한/역할/메뉴 보존 규칙
 
@@ -527,14 +474,6 @@ php artisan extension:update-autoload
 
 ---
 
-## 화면 컴포넌트 제공
-
-모듈은 자기 화면 컴포넌트를 제공할 수 있다. 소스는 `resources/js/components/{basic,composite,layout}/` 에 두고, 이름은 `{모듈식별자}.{이름}` 으로 등록하며(마크업 태그는 `<sirsoft-ecommerce-product-card>` 처럼 식별자 프리픽스가 붙는다), 등록은 모듈 번들이 스스로 한다.
-
-모듈은 **다른 확장의 컴포넌트를 대체할 수 없다** — 그 권한은 템플릿 전용이다. 자기 컴포넌트를 특정 템플릿에서만 다르게 내려면 `resources/js/components/for/{템플릿식별자}/` 를 쓴다. `resources/js/components/overrides/` 를 두면 audit 이 차단한다.
-
-규약 전문(디렉토리·이름·등록 API·판본 선택·오버라이드 폴백): **[extension-components.md](extension-components.md)**
-
 ## 모듈 디렉토리 구조
 
 ```
@@ -542,15 +481,12 @@ modules/_bundled/sirsoft-ecommerce/
 ├── module.json                  # 메타데이터 (이름, 버전, 설명 등 SSoT)
 ├── module.php                    # ModuleInterface 구현
 ├── LICENSE                      # 라이선스 전문 (MIT)
-├── composer.json                 # 오토로딩 + 외부 패키지 의존성 설정 (Git 추적)
-├── composer.lock                 # Composer 락 파일 (Git 추적 — vendor-bundle.json 의 composer_lock_sha256 가 이 파일을 검증)
-├── vendor-bundle.json            # 번들 메타파일: SHA256, 패키지 목록 (Git 추적)
-├── vendor-bundle.zip             # 압축된 vendor 디렉토리 (Git 추적)
+├── composer.json                 # 오토로딩 + 외부 패키지 의존성 설정
 ├── package.json                 # npm 패키지 정의 (에셋 모듈만)
 ├── vite.config.ts               # Vite 빌드 설정 (에셋 모듈만)
 ├── tsconfig.json                # TypeScript 설정 (에셋 모듈만)
 ├── vendor/                      # Composer 의존성 (자동 생성, gitignore 대상)
-├── dist/                        # 프론트엔드 빌드 출력 (에셋 모듈만 — _bundled 은 Git 추적, `*.map` 만 ignore)
+├── dist/                        # 프론트엔드 빌드 출력 (에셋 모듈만, gitignore 대상)
 │   ├── js/module.iife.js
 │   └── css/module.css
 ├── upgrades/                    # 버전 업그레이드 스텝 (AbstractUpgradeStep 상속 — g7_version >= 7.0.0-beta.5 모듈 의무)
@@ -581,7 +517,7 @@ modules/_bundled/sirsoft-ecommerce/
 │   ├── lang/                    # 프론트엔드 다국어 (JSON)
 │   │   ├── ko.json             # 한국어 프론트엔드 다국어
 │   │   └── en.json             # 영어 프론트엔드 다국어
-│   ├── layouts/                 # 레이아웃 소스 SSoT = .g7.html 마크업 (짝 .json 은 런타임 계약)
+│   ├── layouts/                 # 레이아웃 JSON
 │   │   ├── admin/               # admin 템플릿 레이아웃
 │   │   └── user/                # user 템플릿 레이아웃 (선택)
 │   ├── routes/                  # 프론트엔드 라우트 정의
@@ -621,7 +557,7 @@ modules/_bundled/sirsoft-ecommerce/
 | `package.json` | npm 패키지 정의 (에셋 모듈만 해당) |
 | `vite.config.ts` | Vite IIFE 빌드 설정 (에셋 모듈만 해당) |
 | `vendor/` | Composer 의존성 디렉토리 (자동 생성, gitignore 대상) |
-| `dist/` | 프론트엔드 빌드 출력 (에셋 모듈만 해당 — `_bundled` 소스는 Git 추적되는 배포 산출물, `*.map` 만 ignore. 소스 변경 시 `--production` 재빌드 산출물을 함께 커밋한다) |
+| `dist/` | 프론트엔드 빌드 출력 (에셋 모듈만 해당, gitignore 대상) |
 | `config/` | 모듈별 설정 파일 |
 | `database/factories/` | 테스트용 Factory (autoload 등록 필수) |
 | `database/migrations/` | 데이터베이스 마이그레이션 |
@@ -630,7 +566,7 @@ modules/_bundled/sirsoft-ecommerce/
 | `resources/js/` | 프론트엔드 JS/TS 소스 — 핸들러 정의 등 (에셋 모듈만 해당) |
 | `resources/css/` | CSS 소스 (에셋 모듈만 해당) |
 | `resources/lang/` | 프론트엔드 다국어 (JSON) |
-| `resources/layouts/` | 레이아웃 소스 SSoT `.g7.html` + 짝 런타임 계약 `.json` (admin/, user/ 하위) |
+| `resources/layouts/` | 레이아웃 JSON (admin/, user/ 하위) |
 | `resources/routes/admin.json` | admin 템플릿 전용 프론트엔드 라우트 |
 | `resources/routes/user.json` | user 템플릿 전용 프론트엔드 라우트 (선택) |
 | `src/Http/Controllers/` | 컨트롤러 |
@@ -807,7 +743,7 @@ protected function registerBundledModuleInstance(): void
 | 환경설정 구조 변경 | ✅ (SettingsMigrator) | 설정 키 이름/구조 변경 |
 | 기존 데이터 변환 | ✅ | 데이터 형식 변환, 기본값 |
 | 권한/역할/메뉴 추가·수정 | ❌ (자동 동기화) | Module.php에서 정의 |
-| 정적 권한/메뉴 제거 | ✅ (cleanup 명시 호출) | 동적 메뉴/권한 보존 |
+| 정적 권한/메뉴 제거 | ✅ (cleanup 명시 호출) | #135: 동적 메뉴/권한 보존 |
 | 레이아웃 JSON 변경 | ❌ (자동 갱신) | refresh-layout에서 처리 |
 | PHP 코드만 변경 | ❌ | 버전만 올리면 됨 |
 
@@ -864,19 +800,6 @@ public function seoVariables(): array
 
 레이아웃 JSON의 `meta.seo.extensions`에 모듈을 선언하면 `seoVariables()`가 자동 호출됩니다.
 
-```html
-<meta>
-  <seo page_type="product">
-    <extensions>
-      <item type="module" id="sirsoft-ecommerce"/>
-    </extensions>
-    <vars product_name="{{product.data.name ?? ''}}" product_description="{{product.data.short_description ?? ''}}"/>
-  </seo>
-</meta>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
     "meta": {
@@ -902,7 +825,7 @@ public function seoVariables(): array
 
 ## 관련 문서
 
-- [README.md](./README.md) - 확장 시스템 개요
+- [index.md](./index.md) - 확장 시스템 개요
 - [hooks.md](./hooks.md) - 훅 시스템
 - [module-routing.md](./module-routing.md) - 모듈 라우트 규칙
 - [module-layouts.md](./module-layouts.md) - 모듈 레이아웃 시스템

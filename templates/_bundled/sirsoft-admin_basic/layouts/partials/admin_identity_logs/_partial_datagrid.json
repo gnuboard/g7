@@ -1,5 +1,4 @@
 {
-    "comment": "본인인증 기록 표. **줄을 고를 수 없다** — 이 기록은 감사 자료라 한 건씩 골라 지우는 길을\n  두지 않았고, 정리는 화면 머리의 보존기간 삭제 하나로만 한다.\n  줄을 펼치면 목록에 못 싣는 것들이 나온다(대상 해시 전문, 인증을 건 자리, 제공자가 남긴\n  부가 정보). 부가 정보 두 덩이는 정해진 모양이 없어 원문 그대로 펼쳐 보여 준다.",
     "meta": {
         "is_partial": true,
         "description": "Identity Logs DataGrid"
@@ -7,30 +6,12 @@
     "id": "identity_log_datagrid",
     "type": "composite",
     "name": "DataGrid",
-    "actions": [
-        {
-            "comment": "쪽 번호만 주소에 갈아 끼우고 걸어 둔 조건은 그대로 물려받는다. 표 몸통에 덮개를 씌워 새 쪽이 올 때까지 이전 내용이 깜박이지 않게 한다.",
-            "type": "change",
-            "event": "onPageChange",
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/identity/logs",
-                "replace": true,
-                "mergeQuery": true,
-                "transition_overlay_target": "identity_log_datagrid__body",
-                "query": {
-                    "page": "{{$args[0]}}"
-                }
-            }
-        }
-    ],
     "props": {
         "data": "{{identityLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
         "serverCurrentPage": "{{identityLogs?.data?.pagination?.current_page ?? 1}}",
-        "serverTotalPages": "{{identityLogs?.data?.pagination?.last_page ?? null}}",
-        "serverHasMorePages": "{{identityLogs?.data?.pagination?.has_more_pages ?? false}}",
+        "serverTotalPages": "{{identityLogs?.data?.pagination?.last_page ?? 1}}",
         "pageSize": "{{+(query.per_page || 20)}}",
         "alwaysShowPagination": true,
         "idField": "id",
@@ -49,7 +30,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "grid-2col-responsive"
+                            "className": "grid grid-cols-1 md:grid-cols-2 gap-3"
                         },
                         "children": [
                             {
@@ -90,7 +71,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "block text-body mt-0.5"
+                                            "className": "block text-sm text-gray-700 dark:text-gray-300 mt-0.5"
                                         },
                                         "text": "{{(row.origin_type ? $t('admin.identity.logs.origin_type.' + row.origin_type) : '-') + ' / ' + (row.origin_identifier ?? '-')}}"
                                     }
@@ -116,7 +97,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "block text-body font-mono break-all mt-0.5"
+                                            "className": "block text-sm font-mono text-gray-700 dark:text-gray-300 break-all mt-0.5"
                                         },
                                         "text": "{{row.origin_policy_key}}"
                                     }
@@ -141,7 +122,7 @@
                                 "type": "basic",
                                 "name": "Pre",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto max-h-40"
                                 },
                                 "text": "{{JSON.stringify(row.properties ?? {}, null, 2)}}"
                             }
@@ -164,7 +145,7 @@
                                 "type": "basic",
                                 "name": "Pre",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto max-h-40"
                                 },
                                 "text": "{{JSON.stringify(row.metadata ?? {}, null, 2)}}"
                             }
@@ -180,31 +161,32 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "actions": [
-                                    {
-                                        "comment": "펼친 줄을 통째로 전역에 옮겨 담고 상세 창을 연다 — 창은 이 값만 읽으므로 서버를 다시 부르지 않는다(펼친 자리와 같은 내용에 시각·시도 횟수 등이 더 붙는다).",
-                                        "type": "click",
-                                        "handler": "sequence",
-                                        "actions": [
-                                            {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "identity_log_modal_data": "{{row}}"
-                                                }
-                                            },
-                                            {
-                                                "handler": "openModal",
-                                                "target": "identity_log_detail_modal"
-                                            }
-                                        ]
-                                    }
-                                ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-3 py-1.5 text-body font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    "className": "px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                 },
-                                "text": "$t:admin.identity.logs.detail_title"
+                                "text": "$t:admin.identity.logs.detail_title",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "params": {
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "identity_log_modal_data": "{{row}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "identity_log_detail_modal"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -222,7 +204,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-label whitespace-nowrap"
+                            "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
                         },
                         "text": "{{row.created_at ?? '-'}}"
                     }
@@ -234,12 +216,12 @@
                 "width": "140px",
                 "cellChildren": [
                     {
-                        "type": "composite",
-                        "name": "Badge",
+                        "type": "basic",
+                        "name": "Span",
                         "props": {
-                            "color": "indigo",
-                            "text": "{{(identityProviders?.data ?? []).find(p => p.id === row.provider_id)?.label ?? row.provider_id ?? '-'}}"
-                        }
+                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300"
+                        },
+                        "text": "{{(identityProviders?.data ?? []).find(p => p.id === row.provider_id)?.label ?? row.provider_id ?? '-'}}"
                     }
                 ]
             },
@@ -252,7 +234,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-body"
+                            "className": "text-sm text-gray-700 dark:text-gray-300"
                         },
                         "text": "{{(identityPurposes?.data ?? []).find(p => p.id === row.purpose)?.label ?? row.purpose ?? '-'}}"
                     }
@@ -264,12 +246,12 @@
                 "width": "100px",
                 "cellChildren": [
                     {
-                        "type": "composite",
-                        "name": "Badge",
+                        "type": "basic",
+                        "name": "Span",
                         "props": {
-                            "color": "blue",
-                            "text": "{{row.channel ? (((identityProviders?.data ?? []).reduce((acc, p) => Object.assign(acc, p.channel_labels || {}), {}))[row.channel] ?? row.channel) : '-'}}"
-                        }
+                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                        },
+                        "text": "{{row.channel ?? '-'}}"
                     }
                 ]
             },
@@ -298,7 +280,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-body font-mono"
+                            "className": "text-sm font-mono text-gray-700 dark:text-gray-300"
                         },
                         "text": "{{row.user_id ?? '-'}}"
                     }
@@ -329,12 +311,28 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-body text-center block"
+                            "className": "text-sm text-gray-700 dark:text-gray-300 text-center block"
                         },
                         "text": "{{(row.attempts ?? 0) + ' / ' + (row.max_attempts ?? 5)}}"
                     }
                 ]
             }
         ]
-    }
+    },
+    "actions": [
+        {
+            "event": "onPageChange",
+            "type": "change",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/identity/logs",
+                "replace": true,
+                "mergeQuery": true,
+                "query": {
+                    "page": "{{$args[0]}}"
+                },
+                "transition_overlay_target": "identity_log_datagrid__body"
+            }
+        }
+    ]
 }

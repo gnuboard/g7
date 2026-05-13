@@ -71,8 +71,7 @@
     "errors": {
       "delete_failed": "ページの削除に失敗しました。",
       "restore_failed": "バージョン復元に失敗しました。",
-      "publish_change_failed": "公開状態の変更に失敗しました。",
-      "download_failed": "添付ファイルをダウンロードできませんでした。"
+      "publish_change_failed": "公開状態の変更に失敗しました。"
     },
     "form": {
       "page_title_create": "ページを登録",
@@ -118,8 +117,7 @@
       "create_success": "ページが登録されました。",
       "update_success": "ページが編集されました。",
       "validation_error": "入力情報を確認してください。",
-      "read_only_message": "編集権限がないため、読み取り専用として表示されます。",
-      "read_only_message_create": "登録権限がないため、読み取り専用として表示されます。"
+      "read_only_message": "編集権限がないため、読み取り専用として表示されます。"
     },
     "attachment": {
       "download": "ダウンロード"
@@ -161,14 +159,7 @@
         "initial": "初期作成",
         "changed_fields": "変更: {{fields}}",
         "restored_from": "v{{version}}から復元",
-        "restore_guide": "表示ボタンをクリックすると、内容を確認して復元できます。添付ファイルはバージョン管理に含まれていません。",
-        "preview_modal_editor_label": "バージョンプレビュー",
-        "field_labels": {
-          "title": "タイトル",
-          "content": "内容",
-          "seo_meta": "SEO情報",
-          "content_mode": "編集モード"
-        }
+        "restore_guide": "表示ボタンをクリックすると、内容を確認して復元できます。添付ファイルはバージョン管理に含まれていません。"
       }
     }
   }

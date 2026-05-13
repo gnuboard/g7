@@ -7,40 +7,18 @@ use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\ExtensionStatus;
-use App\Enums\LayoutSourceType;
 use App\Exceptions\CircularReferenceException;
-use App\Exceptions\ConcurrentModificationException;
-use App\Exceptions\LayoutIncludeException;
 use App\Extension\HookManager;
-use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
 use App\Models\TemplateLayout;
 use App\Models\User;
-use App\Support\LayoutEmptyObjects;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Log;
 
 class LayoutService
 {
-    use ClearsTemplateCaches;
-
-    /**
-     * 컴포넌트 권한 필터가 내려가지 않는 노드 키 — 동작·데이터 정의라 컴포넌트를 담지 않는다.
-     *
-     * @var array<int, string>
-     */
-    private const NON_COMPONENT_KEYS = ['actions', 'params', 'data_sources', 'errorHandling', 'lifecycle', 'init_actions', 'computed', 'meta'];
-
     /**
      * LayoutRepository, LayoutVersionRepository, TemplateRepository, LayoutResolverService 및 LayoutExtensionService 주입
-     *
-     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 저장소
-     * @param  LayoutVersionRepositoryInterface  $versionRepository  레이아웃 버전 저장소
-     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 저장소
-     * @param  LayoutResolverService  $layoutResolverService  레이아웃 해석 서비스
-     * @param  LayoutExtensionService  $layoutExtensionService  레이아웃 확장 서비스
-     * @param  CacheInterface  $cache  캐시 드라이버
      */
     public function __construct(
         private LayoutRepositoryInterface $layoutRepository,
@@ -53,8 +31,6 @@ class LayoutService
 
     /**
      * 최대 레이아웃 중첩 깊이를 반환합니다.
-     *
-     * @return int 최대 레이아웃 중첩 깊이
      */
     private function getMaxDepth(): int
     {
@@ -65,8 +41,6 @@ class LayoutService
      * 병합된 레이아웃 캐시 TTL을 반환합니다.
      *
      * g7_core_settings('cache.layout_ttl') 우선, 없으면 config('template.layout.cache_ttl').
-     *
-     * @return int 병합 레이아웃 캐시 TTL(초)
      */
     private function getCacheTtl(): int
     {
@@ -91,14 +65,10 @@ class LayoutService
      *
      * @param  array  $parentLayout  부모 레이아웃 데이터
      * @param  array  $childLayout  자식 레이아웃 데이터
-     * @param  array|null  $sourceMeta  ['kind' => 'base', 'layout' => '부모 레이아웃명'] (편집 모드 전용)
-     * @return array 부모-자식이 병합된 레이아웃 데이터
      *
      * @throws \Exception 병합 중 오류 발생 시
-     *
-     * @since engine-v1.50.0 `$sourceMeta` 옵션 추가 — 편집 모드 출처 메타 부여
      */
-    public function mergeLayouts(array $parentLayout, array $childLayout, ?array $sourceMeta = null): array
+    public function mergeLayouts(array $parentLayout, array $childLayout): array
     {
         // Before 훅 - 병합 전 데이터 검증/변환
         HookManager::doAction('core.layout.before_merge', $parentLayout, $childLayout);
@@ -121,8 +91,7 @@ class LayoutService
         // 3. components 병합 (부모의 slot을 자식 slots로 교체)
         $mergedComponents = $this->mergeComponents(
             $parentLayout['components'] ?? [],
-            $childLayout['slots'] ?? [],
-            $sourceMeta
+            $childLayout['slots'] ?? []
         );
 
         // 4. modals 병합 (자식 우선, 부모와 자식 모두 포함)
@@ -133,16 +102,9 @@ class LayoutService
 
         // 5. init_actions/initActions 병합 (부모 먼저, 자식 나중에 실행)
         // initActions와 init_actions 둘 다 지원 (하위 호환)
-        // 편집 모드($sourceMeta 비-null)면 항목별 __source 출처 부착.
-        $childLayoutName = $childLayout['layout_name'] ?? $childLayout['name'] ?? null;
         $parentInitActions = $parentLayout['initActions'] ?? $parentLayout['init_actions'] ?? [];
         $childInitActions = $childLayout['initActions'] ?? $childLayout['init_actions'] ?? [];
-        $mergedInitActions = $this->mergeInitActions(
-            $parentInitActions,
-            $childInitActions,
-            $sourceMeta,
-            $childLayoutName,
-        );
+        $mergedInitActions = $this->mergeInitActions($parentInitActions, $childInitActions);
 
         // 6. defines 병합 (부모 + 자식, 자식 우선)
         $mergedDefines = $this->mergeDefines(
@@ -155,13 +117,6 @@ class LayoutService
             $parentLayout['computed'] ?? [],
             $childLayout['computed'] ?? []
         );
-        // 편집 모드($sourceMeta 비-null)면 키별 출처 맵을 레이아웃 최상위에 부착.
-        $computedSourceMap = $sourceMeta !== null
-            ? $this->buildComputedSourceMap(
-                $parentLayout['computed'] ?? [],
-                $childLayout['computed'] ?? []
-            )
-            : [];
 
         // 8. initLocal 병합 (부모 + 자식, 자식 우선, 얕은 병합)
         // state는 initLocal의 deprecated alias
@@ -235,12 +190,6 @@ class LayoutService
         // computed가 있으면 추가 (빈 배열이 아닌 경우만)
         if (! empty($mergedComputed)) {
             $result['computed'] = $mergedComputed;
-        }
-
-        // 편집 모드 computed 출처 맵 — 레이아웃 최상위(computed 객체 외부)에 부착.
-        // 운영 렌더는 $sourceMeta=null 이라 빈 맵 → 미부착(응답 형식 종전과 동일).
-        if (! empty($computedSourceMap)) {
-            $result['__computedSource'] = $computedSourceMap;
         }
 
         // initLocal이 있으면 추가 (빈 배열이 아닌 경우만)
@@ -360,11 +309,6 @@ class LayoutService
     /**
      * data_sources 병합 - ID 중복 체크 후 부모와 자식 모두 포함
      *
-     *
-     * @param  array  $parentDataSources  부모 레이아웃의 데이터소스 목록
-     * @param  array  $childDataSources  자식 레이아웃의 데이터소스 목록
-     * @return array 병합된 데이터소스 목록
-     *
      * @throws \Exception ID 중복 시
      */
     private function mergeDataSources(array $parentDataSources, array $childDataSources): array
@@ -374,7 +318,7 @@ class LayoutService
 
         foreach ($childDataSources as $childDataSource) {
             if (in_array($childDataSource['id'], $existingIds, true)) {
-                throw new LayoutIncludeException(
+                throw new \Exception(
                     __('exceptions.layout.duplicate_data_source_id', ['id' => $childDataSource['id']])
                 );
             }
@@ -388,18 +332,10 @@ class LayoutService
 
     /**
      * components 병합 - 부모의 slot 속성을 자식 slots 데이터로 교체
-     *
-     * @param  array|null  $sourceMeta  ['kind' => 'base', 'layout' => '부모 레이아웃명'] 또는 null (편집 모드 전용)
-     *
-     * @since engine-v1.50.0 `$sourceMeta` 옵션 추가
-     *
-     * @param  array  $parentComponents  부모 레이아웃의 컴포넌트 트리
-     * @param  array  $childSlots  자식 레이아웃이 채우는 슬롯 정의
-     * @return array 슬롯이 채워진 컴포넌트 트리
      */
-    private function mergeComponents(array $parentComponents, array $childSlots, ?array $sourceMeta = null): array
+    private function mergeComponents(array $parentComponents, array $childSlots): array
     {
-        return $this->replaceSlots($parentComponents, $childSlots, $sourceMeta);
+        return $this->replaceSlots($parentComponents, $childSlots);
     }
 
     /**
@@ -432,50 +368,13 @@ class LayoutService
     /**
      * init_actions 병합 - 부모 액션 먼저, 자식 액션 나중에 실행
      *
-     * 편집 모드(`$sourceMeta` 비-null)에서는 각 항목에 `__source` 출처 메타를 부착한다
-     * 부모 항목 = `$sourceMeta`(kind:'base'), 자식 항목
-     * = `['kind'=>'route', 'layout'=>$childLayoutName]`. [화면 동작] 탭이 부모/자식
-     * 동작을 출처 배지로 구분하고 부모 항목을 읽기전용으로 표시하는 근거가 된다.
-     * dispatch 는 항목에서 화이트리스트 키만 추출(TemplateApp.ts:4014-4029)하므로
-     * `__source` 부착은 런타임 무영향이고, 저장 시 `stripInheritedFromLayoutContent` 가
-     * `__editor.original` 로 부모분·`__source` 를 제거(기존 경로). 운영 렌더
-     * (`$sourceMeta` null)는 부착하지 않아 응답 형식이 종전과 100% 동일하다.
-     *
      * @param  array  $parentActions  부모 레이아웃의 init_actions 배열
      * @param  array  $childActions  자식 레이아웃의 init_actions 배열
-     * @param  array|null  $sourceMeta  부모(base) 출처 메타 — null 이면 운영 렌더(부착 안 함)
-     * @param  string|null  $childLayoutName  자식 레이아웃명 — 자식 항목 `__source.layout` 에 사용
      * @return array 병합된 init_actions 배열
      */
-    private function mergeInitActions(
-        array $parentActions,
-        array $childActions,
-        ?array $sourceMeta = null,
-        ?string $childLayoutName = null,
-    ): array {
-        if ($sourceMeta === null) {
-            // 운영 렌더 경로 — 종전과 동일(부착 없음).
-            return array_merge($parentActions, $childActions);
-        }
-
-        $childMeta = ['kind' => 'route', 'layout' => $childLayoutName];
-
-        $stamp = static function (array $items, array $meta): array {
-            $out = [];
-            foreach ($items as $item) {
-                if (is_array($item)) {
-                    $item['__source'] = $meta;
-                }
-                $out[] = $item;
-            }
-
-            return $out;
-        };
-
-        return array_merge(
-            $stamp($parentActions, $sourceMeta),
-            $stamp($childActions, $childMeta),
-        );
+    private function mergeInitActions(array $parentActions, array $childActions): array
+    {
+        return array_merge($parentActions, $childActions);
     }
 
     /**
@@ -497,7 +396,8 @@ class LayoutService
     /**
      * computed 병합 - 자식 값이 부모를 오버라이드
      *
-     * 파생 상태 표현식을 병합합니다. 동일한 키가 있으면 자식 레이아웃의 표현식이 우선합니다.
+     * 파생 상태 표현식을 병합합니다.
+     * 동일한 키가 있으면 자식 레이아웃의 표현식이 우선합니다.
      *
      * @param  array  $parentComputed  부모 레이아웃의 computed 객체
      * @param  array  $childComputed  자식 레이아웃의 computed 객체
@@ -507,39 +407,6 @@ class LayoutService
     {
         // 자식 값이 부모를 오버라이드 (array_merge는 동일 키 시 뒤의 값이 우선)
         return array_merge($parentComputed, $childComputed);
-    }
-
-    /**
-     * computed 키별 출처 맵을 만든다.
-     *
-     * 키 출처를 3종으로 구분한다:
-     *   - 'base'           : 부모(공통)만 선언 — 〔공통〕배지
-     *   - 'route'          : 자식(이 페이지)만 선언 — 무배지
-     *   - 'route-override' : 부모+자식 동시 선언(자식이 부모를 덮음) — 〔이 페이지에서 덮음〕
-     *                        승격 배지 + 공통값 되돌리기
-     *
-     * [자동 계산] 탭이 부모/자식 computed 를 배지로 구분하고 덮어쓰기 안내를 표시하는 근거.
-     * 'route'(순수 자식)와 'route-override'(덮음)를 구분해야 ComputedForm 이 되돌리기 버튼을
-     * 덮은 키에만 노출할 수 있다. 본 맵은 **레이아웃 최상위 `__computedSource`** 에 부착되며
-     * (computed 객체 내부 아님), 그래야 calculateComputed/ActionDispatcher/DynamicRenderer 의
-     * computed 키 순회가 메타 키를 표현식으로 오평가하지 않는다(편집 모드 한정 부착).
-     *
-     * @param  array  $parentComputed  부모 computed 객체
-     * @param  array  $childComputed  자식 computed 객체
-     * @return array<string,string> 키 → 'base'|'route'|'route-override'
-     */
-    private function buildComputedSourceMap(array $parentComputed, array $childComputed): array
-    {
-        $map = [];
-        foreach (array_keys($parentComputed) as $key) {
-            $map[$key] = 'base';
-        }
-        foreach (array_keys($childComputed) as $key) {
-            // 부모에도 있던 키를 자식이 다시 선언 = 덮음(override).
-            $map[$key] = isset($map[$key]) ? 'route-override' : 'route';
-        }
-
-        return $map;
     }
 
     /**
@@ -673,17 +540,11 @@ class LayoutService
      *   (슬롯 래퍼 컴포넌트의 id, name, props 등은 유지됨)
      * - 해당 slot에 대한 데이터가 없으면 slot 속성 유지 (다음 상속에서 사용)
      *
-     * $sourceMeta 가 전달되면 각 노드에 `__source` 출처 메타를 부여한다
-     * 일반 사이트 렌더는 null 전달 → 메타 미부여.
-     *
      * @param  array  $components  컴포넌트 배열
      * @param  array  $slots  슬롯 데이터 (슬롯명 => 컴포넌트 배열)
-     * @param  array|null  $sourceMeta  ['kind' => 'base'|'route', 'layout' => '레이아웃명'] 또는 null
      * @return array 슬롯이 교체된 컴포넌트 배열
-     *
-     * @since engine-v1.50.0 `$sourceMeta` 옵션 추가
      */
-    private function replaceSlots(array $components, array $slots, ?array $sourceMeta = null): array
+    private function replaceSlots(array $components, array $slots): array
     {
         $result = [];
 
@@ -719,15 +580,6 @@ class LayoutService
                     $resultComponent['children'] = [$slotComponents];
                 }
 
-                // 슬롯 래퍼 자체는 base 출처(레이아웃이 정의한 컴포넌트). slot children 은 route 출처
-                if ($sourceMeta !== null) {
-                    $resultComponent['__source'] = $sourceMeta;
-                    $resultComponent['children'] = $this->markSourceMeta(
-                        $resultComponent['children'],
-                        ['kind' => 'route', 'layout' => $sourceMeta['layout'] ?? '']
-                    );
-                }
-
                 $result[] = $resultComponent;
             } else {
                 // slot이 없거나 교체할 데이터가 없으면 그대로 유지 (base 컴포넌트)
@@ -737,62 +589,13 @@ class LayoutService
                 // @since engine-v1.24.8
                 $resultComponent['_fromBase'] = true;
 
-                if ($sourceMeta !== null) {
-                    $resultComponent['__source'] = $sourceMeta;
-                }
-
                 // children이 있으면 재귀적으로 처리
                 if (isset($component['children']) && is_array($component['children'])) {
-                    $resultComponent['children'] = $this->replaceSlots(
-                        $component['children'],
-                        $slots,
-                        $sourceMeta
-                    );
+                    $resultComponent['children'] = $this->replaceSlots($component['children'], $slots);
                 }
 
                 $result[] = $resultComponent;
             }
-        }
-
-        return $result;
-    }
-
-    /**
-     * 컴포넌트 트리에 단일 출처 메타를 재귀적으로 부여합니다.
-     *
-     * `replaceSlots` 의 slot children(라우트 콘텐츠) 트리 전체에 같은 출처 메타를
-     * 부착할 때 사용합니다. 이미 `__source` 가 설정된 노드는 보존(`applyExtensions`
-     * 가 부여한 extension 메타 덮어쓰기 방지).
-     *
-     * @param  array  $components  컴포넌트 배열
-     * @param  array  $sourceMeta  부여할 메타 (예: ['kind' => 'route', 'layout' => 'index'])
-     * @return array 메타가 부여된 컴포넌트 배열
-     *
-     * @since engine-v1.50.0
-     */
-    private function markSourceMeta(array $components, array $sourceMeta): array
-    {
-        $result = [];
-
-        foreach ($components as $component) {
-            if (! is_array($component)) {
-                $result[] = $component;
-
-                continue;
-            }
-
-            $resultComponent = $component;
-
-            // 이미 출처 메타가 있으면 보존 (확장 주입 노드 등)
-            if (! isset($resultComponent['__source'])) {
-                $resultComponent['__source'] = $sourceMeta;
-            }
-
-            if (isset($component['children']) && is_array($component['children'])) {
-                $resultComponent['children'] = $this->markSourceMeta($component['children'], $sourceMeta);
-            }
-
-            $result[] = $resultComponent;
         }
 
         return $result;
@@ -803,9 +606,6 @@ class LayoutService
      *
      * 주의: slot 속성은 replaceSlots에서 사용된 것만 제거되므로
      * 여기서는 사용되지 않은 slot을 유지합니다 (다음 상속에서 사용될 수 있음)
-     *
-     * @param  array  $layout  레이아웃 데이터
-     * @return array 서빙에 불필요한 필드를 걷어낸 레이아웃
      */
     private function removeUnnecessaryFields(array $layout): array
     {
@@ -818,20 +618,10 @@ class LayoutService
     /**
      * 레이아웃을 로드하고 상속 구조를 병합합니다. (캐싱 적용)
      *
-     * `$withSourceMeta` 가 true 면 각 노드에 `__source` 출처 메타를 부여하고,
-     * 메타 포함/미포함 결과는 별도 캐시 키로 분리한다.
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @param  string  $layoutName  대상 레이아웃 이름
-     * @param  bool  $withSourceMeta  편집 모드 출처 메타 부여 여부
-     * @return array 부모/자식 상속 병합이 적용된 레이아웃 데이터
-     *
      * @throws CircularReferenceException 순환 참조 감지 시
      * @throws \Exception 최대 깊이 초과 시
-     *
-     * @since engine-v1.50.0 `$withSourceMeta` 옵션 추가
      */
-    public function loadAndMergeLayout(int $templateId, string $layoutName, bool $withSourceMeta = false): array
+    public function loadAndMergeLayout(int $templateId, string $layoutName): array
     {
         // Before 훅 - 로드 전
         HookManager::doAction('core.layout.before_load', $templateId, $layoutName);
@@ -840,19 +630,13 @@ class LayoutService
 
         // 캐시 비활성 시 매번 병합 실행
         if (! $cacheEnabled) {
-            $merged = $this->loadAndMergeLayoutInternal($templateId, $layoutName, $withSourceMeta);
-
-            // 공개 서빙 응답에서 개발자용 comment 필드 제거 (편집 모드는 보존)
-            if (! $withSourceMeta) {
-                $merged = $this->stripDeveloperComments($merged);
-            }
-
+            $merged = $this->loadAndMergeLayoutInternal($templateId, $layoutName);
             HookManager::doAction('core.layout.after_load', $merged, $templateId, $layoutName, false);
 
             return $merged;
         }
 
-        $cacheKey = $this->getMergedLayoutCacheKey($templateId, $layoutName, $withSourceMeta);
+        $cacheKey = $this->getMergedLayoutCacheKey($templateId, $layoutName);
 
         // 캐시에서 시도
         $cached = $this->cache->get($cacheKey);
@@ -882,13 +666,7 @@ class LayoutService
         ]);
 
         // 병합된 레이아웃 생성
-        $mergedLayout = $this->loadAndMergeLayoutInternal($templateId, $layoutName, $withSourceMeta);
-
-        // 공개 서빙 응답에서 개발자용 comment 필드 제거 (편집 모드는 보존).
-        // withSourceMeta 가 캐시 키에 반영되므로 공개/편집 캐시가 분리되어 안전.
-        if (! $withSourceMeta) {
-            $mergedLayout = $this->stripDeveloperComments($mergedLayout);
-        }
+        $mergedLayout = $this->loadAndMergeLayoutInternal($templateId, $layoutName);
 
         // 캐시에 저장
         $cacheTtl = $this->getCacheTtl();
@@ -910,18 +688,10 @@ class LayoutService
     /**
      * 레이아웃을 로드하고 상속 구조를 병합합니다. (내부 메서드, 캐싱 없음)
      *
-     *
-     * @since engine-v1.50.0 `$withSourceMeta` 옵션 추가
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  레이아웃 이름
-     * @param  bool  $withSourceMeta  편집기용 출처 메타 포함 여부
-     * @return array 상속을 모두 병합한 레이아웃
-     *
      * @throws CircularReferenceException 순환 참조 감지 시
      * @throws \Exception 최대 깊이 초과 시
      */
-    private function loadAndMergeLayoutInternal(int $templateId, string $layoutName, bool $withSourceMeta = false): array
+    private function loadAndMergeLayoutInternal(int $templateId, string $layoutName): array
     {
         // 1. 순환 참조 감지
         if (in_array($layoutName, $this->loadStack, true)) {
@@ -942,10 +712,8 @@ class LayoutService
                 'max_depth' => $maxDepth,
             ]);
 
-            throw new LayoutIncludeException(
-                __('exceptions.max_depth_exceeded', ['max' => $maxDepth]),
-                $layoutName,
-                $this->loadStack,
+            throw new \Exception(
+                __('exceptions.max_depth_exceeded', ['max' => $maxDepth])
             );
         }
 
@@ -962,9 +730,7 @@ class LayoutService
                 );
             }
 
-            // 저장 원문을 다시 읽어 값 자리의 빈 객체 `{}` 를 보존한다 — 배열 캐스트는 `{}` 를 `[]` 로
-            // 바꿔 응답에서 화면 상태(initLocal 값·액션 인자)가 배열이 된다(7.1.0 실측 O-K3-4)
-            $layoutData = LayoutEmptyObjects::decode($layout->getAttributes()['content'] ?? null, $layout->content ?? []);
+            $layoutData = $layout->content;
 
             // 5. 상속 처리 (extends가 있는 경우)
             if (isset($layoutData['extends'])) {
@@ -989,53 +755,13 @@ class LayoutService
                 }
 
                 // 부모 레이아웃 재귀적으로 로드 및 병합 (캐싱 버전 호출)
-                $parentLayout = $this->loadAndMergeLayout($templateId, $parentLayoutName, $withSourceMeta);
+                $parentLayout = $this->loadAndMergeLayout($templateId, $parentLayoutName);
 
                 // 부모와 자식 병합 (기존 mergeLayouts 메서드 재사용)
-                // 편집 모드에서는 base 출처 메타를 부여한다 — 부모 레이아웃에서 온 노드 식별
-                $sourceMeta = $withSourceMeta
-                    ? ['kind' => 'base', 'layout' => $parentLayoutName]
-                    : null;
-                $mergedLayout = $this->mergeLayouts($parentLayout, $layoutData, $sourceMeta);
-
-                // 상속 체인 보존 — 자식 서빙 시 base 를 target_layout 으로 하는 overlay
-                // (예: 헤더 통화 슬롯 주입)가 매칭되도록 부모 이름을 비-렌더 메타로 남긴다.
-                // `LayoutExtensionService::applyExtensions` 가 [layoutName] + __extends_chain 을
-                // overlay 매칭 대상에 포함하고, 최종 응답 직전 이 키를 제거하므로 일반/편집 응답
-                // 형식은 종전과 동일하다. 부모가 다단계 상속이면 부모 체인을 이어받아 누적한다.
-                $parentChain = is_array($parentLayout['__extends_chain'] ?? null)
-                    ? $parentLayout['__extends_chain']
-                    : [];
-                $mergedLayout['__extends_chain'] = array_values(array_unique(
-                    array_merge([$parentLayoutName], $parentChain)
-                ));
-
-                // 편집 모드 응답에는 자식 원본(`$layoutData`) 을 별도 컨테이너로 보존한다
-                // 저장 시 클라이언트가 머지된 트리에서 원본을
-                // 추측 복원하지 않고, 본 메타에서 원본 그대로 가져다 PUT 한다.
-                if ($withSourceMeta) {
-                    $mergedLayout['__editor'] = [
-                        'original' => $layoutData,
-                    ];
-                }
+                $mergedLayout = $this->mergeLayouts($parentLayout, $layoutData);
             } else {
                 // 상속이 없으면 현재 레이아웃 그대로 반환
                 $mergedLayout = $layoutData;
-
-                // extends 가 없는 레이아웃의 컴포넌트는 모두 자기 출처 — 'route' 메타 부여
-                // 편집 모드에서만, 일반 사이트 렌더는 메타 미부여
-                if ($withSourceMeta && isset($mergedLayout['components']) && is_array($mergedLayout['components'])) {
-                    $mergedLayout['components'] = $this->markSourceMeta(
-                        $mergedLayout['components'],
-                        ['kind' => 'route', 'layout' => $layoutName]
-                    );
-
-                    // 편집 모드: 독립 레이아웃도 원본 컨테이너를 보존해 저장 시 SSoT 로 사용.
-                    // 합본/원본이 같지만 클라이언트의 저장 경로를 단일화하기 위해 항상 부착.
-                    $mergedLayout['__editor'] = [
-                        'original' => $layoutData,
-                    ];
-                }
             }
 
             return $mergedLayout;
@@ -1051,10 +777,6 @@ class LayoutService
      * 모듈 레이아웃 이름 패턴인 경우 LayoutResolverService를 통해
      * 오버라이드 여부를 확인하고 적절한 레이아웃을 반환합니다.
      * 일반 레이아웃은 기존 방식대로 처리합니다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  레이아웃 이름
-     * @return ?TemplateLayout 찾은 레이아웃 (없으면 null)
      */
     private function resolveLayout(int $templateId, string $layoutName): ?TemplateLayout
     {
@@ -1086,9 +808,6 @@ class LayoutService
      * 모듈 레이아웃 이름은 vendor-module.path 또는 vendor-module_path 형식입니다.
      * 예: sirsoft-ecommerce.admin_products_index (DOT 포맷)
      *     sirsoft-ecommerce_admin_products_index (UNDERSCORE 포맷, 하위 호환)
-     *
-     * @param  string  $layoutName  레이아웃 이름
-     * @return bool 모듈 레이아웃 이름 형식이면 true
      */
     private function isModuleLayoutName(string $layoutName): bool
     {
@@ -1104,20 +823,9 @@ class LayoutService
      * 병합된 레이아웃 캐시 키 생성
      *
      * 모듈 레이아웃의 경우 소스 해시를 포함하여 오버라이드 정보를 반영합니다.
-     * `$withSourceMeta` 가 true 면 캐시 키에 `.with_source_meta` 접미사를 붙여
-     * 일반 응답 캐시와 분리합니다.
-     *
-     * @since engine-v1.50.0 `$withSourceMeta` 옵션 추가
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  레이아웃 이름
-     * @param  bool  $withSourceMeta  편집기용 출처 메타 포함 여부
-     * @return string 병합 레이아웃 캐시 키
      */
-    private function getMergedLayoutCacheKey(int $templateId, string $layoutName, bool $withSourceMeta = false): string
+    private function getMergedLayoutCacheKey(int $templateId, string $layoutName): string
     {
-        $metaSuffix = $withSourceMeta ? '.with_source_meta' : '';
-
         // 모듈 레이아웃인 경우 소스 정보를 캐시 키에 포함
         if ($this->isModuleLayoutName($layoutName)) {
             // 해석 결과를 기반으로 소스 해시 생성
@@ -1126,29 +834,23 @@ class LayoutService
             if ($resolved) {
                 $sourceHash = md5($resolved->source_type?->value.$resolved->source_identifier);
 
-                return "template.{$templateId}.layout.{$layoutName}.{$sourceHash}{$metaSuffix}";
+                return "template.{$templateId}.layout.{$layoutName}.{$sourceHash}";
             }
         }
 
-        return "template.{$templateId}.layout.{$layoutName}{$metaSuffix}";
+        return "template.{$templateId}.layout.{$layoutName}";
     }
 
     /**
      * 특정 레이아웃의 캐시를 무효화합니다.
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @param  string  $layoutName  대상 레이아웃 이름
-     * @return void 반환값 없음
      */
     public function clearLayoutCache(int $templateId, string $layoutName): void
     {
         // Before 훅 - 캐시 무효화 전
         HookManager::doAction('core.layout.before_cache_clear', $templateId, $layoutName);
 
-        // 일반 응답과 편집 모드(`with_source_meta=1`) 응답 두 캐시 키 모두 무효화
-        $cacheKey = $this->getMergedLayoutCacheKey($templateId, $layoutName, false);
+        $cacheKey = $this->getMergedLayoutCacheKey($templateId, $layoutName);
         $this->cache->forget($cacheKey);
-        $this->cache->forget($this->getMergedLayoutCacheKey($templateId, $layoutName, true));
 
         // PublicLayoutController 서빙 캐시도 무효화
         // PublicLayoutController::serve()에서 "layout.{identifier}.{name}.v{version}" 키로 별도 캐싱
@@ -1177,7 +879,6 @@ class LayoutService
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string  $layoutName  레이아웃 이름
-     * @return void 반환값 없음
      */
     private function clearPublicServingCache(int $templateId, string $layoutName): void
     {
@@ -1188,24 +889,12 @@ class LayoutService
         }
 
         $identifier = $template->identifier;
-        // 원시 키 읽기는 `cache:clear` 직후 0 을 돌려주어 `.v0` 키를 지우고 실제 키는 남긴다 —
-        // 트레이트 게터는 부재 시 재생성하므로 실제 서빙 키와 같은 버전을 본다.
-        $cacheVersion = self::getExtensionCacheVersion();
-
-        // PublicLayoutController::serve() 가 일반 응답과 편집 모드(`with_source_meta=1`) 응답을
-        // 별도 캐시 키로 저장한다 (`.meta` 접미사). 본 PR Phase 3 S5a-1 에서 편집 모드 응답 캐시
-        // 키가 추가되었으나 그 무효화는 누락 — 본 결함은 편집기가 저장 후 새로고침해도 stale
-        // 응답을 받는 현상으로 표출된다. 일반/편집 모드 두 키 모두 무효화한다.
+        $cacheVersion = (int) $this->cache->get('ext.cache_version', 0);
         $this->cache->forget("layout.{$identifier}.{$layoutName}.v{$cacheVersion}");
-        $this->cache->forget("layout.{$identifier}.{$layoutName}.v{$cacheVersion}.meta");
     }
 
     /**
      * 특정 레이아웃을 extends하는 모든 자식 레이아웃의 캐시를 재귀적으로 무효화합니다.
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @param  string  $layoutName  변경된 부모 레이아웃 이름
-     * @return void 반환값 없음
      */
     public function clearDependentLayoutsCache(int $templateId, string $layoutName): void
     {
@@ -1255,8 +944,6 @@ class LayoutService
 
     /**
      * 캐시 통계 초기화
-     *
-     * @return void 반환값 없음
      */
     public function resetCacheStats(): void
     {
@@ -1269,19 +956,9 @@ class LayoutService
     /**
      * 템플릿 identifier와 레이아웃 이름으로 병합된 레이아웃 조회
      *
-     * `$withSourceMeta` 가 true 면 응답의 각 노드 및 data_source 에 `__source` 출처
-     * 메타를 부여한다. 옵션 미사용 시 응답 형식은 종전과 100% 동일.
-     *
-     * @param  string  $templateIdentifier  템플릿 identifier
-     * @param  string  $layoutName  레이아웃 이름
-     * @param  bool  $withSourceMeta  편집 모드 출처 메타 부여 여부
-     * @return array 병합 + 확장 + (옵션 시) 출처 메타가 부여된 레이아웃 데이터
-     *
      * @throws ModelNotFoundException 템플릿을 찾을 수 없거나 비활성화된 경우
-     *
-     * @since engine-v1.50.0 `$withSourceMeta` 옵션 추가
      */
-    public function getLayout(string $templateIdentifier, string $layoutName, bool $withSourceMeta = false): array
+    public function getLayout(string $templateIdentifier, string $layoutName): array
     {
         // Before 훅 - 레이아웃 조회 전
         HookManager::doAction('core.layout.before_get', $templateIdentifier, $layoutName);
@@ -1306,47 +983,10 @@ class LayoutService
         }
 
         // 레이아웃 로드 및 병합 (캐싱 포함)
-        $layout = $this->loadAndMergeLayout($template->id, $layoutName, $withSourceMeta);
+        $layout = $this->loadAndMergeLayout($template->id, $layoutName);
 
         // 모듈/플러그인 Extension 적용 (Overlay, Extension Point)
-        $layout = $this->layoutExtensionService->applyExtensions($layout, $template->id, $withSourceMeta);
-
-        // 확장이 **방금 얹은** 조각의 개발자 주석 제거 (편집 모드는 보존).
-        //
-        // `loadAndMergeLayout` 안에서도 같은 제거를 하지만 그것은 병합 시점이라, 그 뒤에 붙는
-        // 확장 주입 조각(`resources/extensions/`)은 지나친다. 이 누출은 주입 단락이 만든 것이
-        // 아니라 이미 있던 것이다 — 공개 릴리스 7.0.5(`origin/main`) 시점에 확장 조각 41개 중
-        // 19파일·도달 지점 주석 110건이 그대로 응답에 실려 나가고 있었다. S21.3 이 이 경로에
-        // 주석을 늘리며 표본이 커져 드러났을 뿐이다.
-        // 두 번 도는 비용보다 「브라우저가 보는 값이 주입 전후로 같다」는 계약이 우선이다.
-        if (! $withSourceMeta) {
-            $layout = $this->stripDeveloperComments($layout);
-        }
-
-        // 편집 모드 응답에 자식 레이아웃의 실제 DB lock_version 동봉.
-        // PublicLayoutController 가 LayoutResource 를 거치지 않고 머지된 배열을 그대로 반환하므로,
-        // 낙관적 잠금 흐름에 필요한 lock_version 을 응답 본문에 직접 부착해야 한다. 일반 사이트
-        // 렌더(`withSourceMeta=false`)는 부착하지 않아 응답 형식이 종전과 100% 동일.
-        if ($withSourceMeta) {
-            $childRow = $this->layoutRepository->findByName($template->id, $layoutName);
-            if ($childRow !== null) {
-                $layout['lock_version'] = (int) ($childRow->lock_version ?? 0);
-            }
-        }
-
-        // 편집 모드: data_sources 에 출처 메타(`__source`) 부여.
-        // 같은 data_source id 를 여러 확장이 서로 다른 shape 로 정의할 때, 편집기 캔버스의
-        // 샘플 데이터 해소(sampleDataProvider)가 그 데이터소스의 출처 스펙 샘플을 우선 선택해
-        // 전역 id 충돌을 해소하도록 한다(계획서). 일반 렌더는 부여하지 않아
-        // 운영 화면 영향 0. 이미 __source 가 있는 항목(확장 주입)은 보존.
-        if ($withSourceMeta && isset($layout['data_sources']) && is_array($layout['data_sources'])) {
-            $dsSourceMeta = $this->deriveDataSourceSourceMeta($layoutName, $template->id);
-            foreach ($layout['data_sources'] as $idx => $dataSource) {
-                if (is_array($dataSource) && ! isset($dataSource['__source'])) {
-                    $layout['data_sources'][$idx]['__source'] = $dsSourceMeta;
-                }
-            }
-        }
+        $layout = $this->layoutExtensionService->applyExtensions($layout, $template->id);
 
         // After 훅 - 레이아웃 조회 후
         HookManager::doAction('core.layout.after_get', $layout, $templateIdentifier, $layoutName, $template);
@@ -1355,60 +995,7 @@ class LayoutService
     }
 
     /**
-     * 편집 모드 data_source 출처 메타 판정.
-     *
-     * 확장 prefix(`{vendor-ext}.{layout}`)를 가진 레이아웃은 소유 확장의 실제
-     * `source_type`(`LayoutResolverService::resolve`)으로 module/plugin 을 구분한다.
-     * - 모듈 레이아웃 → `['kind' => 'module', 'identifier' => 'vendor-ext']`
-     * - 플러그인 레이아웃 → `['kind' => 'plugin', 'identifier' => 'vendor-ext']`
-     * - prefix 없음(템플릿 자체 레이아웃) → `['kind' => 'route', 'identifier' => null]`
-     *
-     * 엔진 `resolveSampleData.resolveSourceKey` 는 module/plugin 만 `{kind}:{identifier}` 로
-     * bySource 를 조회한다. editorSpecLoader 도 동일하게 module 스펙은 `module:{id}`,
-     * plugin 스펙은 `plugin:{id}` 키로 보존하므로, kind 가 정확해야 그 확장의 샘플이
-     * 매칭된다. 이름 패턴만으로는 plugin 레이아웃이 모듈로 오분류되어(둘 다 `{ext}.{layout}`
-     * 형태) `plugin:{id}` 스펙을 빗나가므로,
-     * 해석 결과의 source_type 을 SSoT 로 삼는다. 해석 실패 시 이름 패턴으로 폴백.
-     *
-     * @param  string  $layoutName  레이아웃 이름 (예: 'sirsoft-gdpr.plugin_settings', 'admin_dashboard')
-     * @param  int  $templateId  편집 대상 템플릿 ID (source_type 해석용)
-     * @return array{kind: string, identifier: string|null} 출처 메타
-     */
-    private function deriveDataSourceSourceMeta(string $layoutName, int $templateId): array
-    {
-        // 확장 prefix 추출 — '{vendor-ext}.{layout}' 형태에서 첫 '.' 앞부분
-        $dotPos = strpos($layoutName, '.');
-        if ($dotPos === false) {
-            // prefix 없음 → 템플릿 자체 레이아웃 (엔진에서 'template' 키로 폴백)
-            return ['kind' => 'route', 'identifier' => null];
-        }
-
-        $extensionId = substr($layoutName, 0, $dotPos);
-
-        // 소유 확장의 실제 source_type 으로 module/plugin 정확 분류 (이름 패턴은 둘을 구분 못 함).
-        // `LayoutResolverService::resolve` 는 plugin 행을 반환하지 않으므로(fromModules 스코프가
-        // source_type=Module 만 조회) 레이아웃 행을 직접 조회해 source_type 을 읽는다.
-        $row = $this->layoutRepository->findByName($templateId, $layoutName);
-        $sourceType = $row?->source_type;
-
-        if ($sourceType === LayoutSourceType::Plugin) {
-            return ['kind' => 'plugin', 'identifier' => $extensionId];
-        }
-        if ($sourceType === LayoutSourceType::Module) {
-            return ['kind' => 'module', 'identifier' => $extensionId];
-        }
-
-        // 행/소스타입 부재 — 이름 패턴 폴백 (모듈 패턴이면 module, 아니면 plugin)
-        $kind = $this->isModuleLayoutName($layoutName) ? 'module' : 'plugin';
-
-        return ['kind' => $kind, 'identifier' => $extensionId];
-    }
-
-    /**
      * 특정 템플릿의 모든 레이아웃 조회
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @return Collection<int, TemplateLayout> 템플릿 소속 레이아웃 컬렉션
      */
     public function getLayoutsByTemplateId(int $templateId)
     {
@@ -1424,33 +1011,7 @@ class LayoutService
     }
 
     /**
-     * 목록 표시용 경량 레이아웃 행을 조회합니다.
-     *
-     * 본문을 반환에 담지 않으므로 파일 목록 화면이 편집 대상이 아닌 레이아웃의 본문까지
-     * 내려받는 일이 없다. 편집 대상 본문은 {@see getLayoutByName()} 이 제공한다.
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @return \Illuminate\Support\Collection<int, array> 목록 행 배열 컬렉션
-     */
-    public function getLayoutListByTemplateId(int $templateId)
-    {
-        // Before 훅 - 레이아웃 목록 조회 전
-        HookManager::doAction('core.layout.before_index', $templateId);
-
-        $rows = $this->layoutRepository->getListByTemplateId($templateId);
-
-        // After 훅 - 레이아웃 목록 조회 후
-        HookManager::doAction('core.layout.after_index', $rows, $templateId);
-
-        return $rows;
-    }
-
-    /**
      * 특정 레이아웃 조회 (이름으로)
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @return TemplateLayout|null 조회된 레이아웃 또는 null
      */
     public function getLayoutByName(int $templateId, string $name): ?TemplateLayout
     {
@@ -1467,11 +1028,6 @@ class LayoutService
 
     /**
      * 레이아웃 업데이트
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @param  array  $data  업데이트할 레이아웃 데이터 (content 키 또는 평면 배열)
-     * @return TemplateLayout 업데이트된 레이아웃 모델
      *
      * @throws ModelNotFoundException 레이아웃을 찾을 수 없을 때
      */
@@ -1492,50 +1048,24 @@ class LayoutService
             );
         }
 
-        // 낙관적 잠금 — expected_lock_version 검증
-        // FormRequest 가 의무화하므로 누락 시 422 에서 차단되지만, 직접 호출 안전망으로 가드.
-        $expectedVersion = isset($data['expected_lock_version'])
-            ? (int) $data['expected_lock_version']
-            : null;
-        $currentVersion = (int) ($layout->lock_version ?? 0);
-
-        if ($expectedVersion !== null && $expectedVersion !== $currentVersion) {
-            throw new ConcurrentModificationException(
-                currentVersion: $currentVersion,
-                expectedVersion: $expectedVersion,
-                resource: "template_layouts:{$layout->id}",
-            );
-        }
-
         // content 키가 있으면 추출 (UpdateLayoutContentRequest 사용 시)
         $updateData = $data['content'] ?? $data;
 
+        // 버전 저장 (user 템플릿인 경우에만)
+        $template = $layout->template;
         $oldContent = $layout->content;
 
-        // 레이아웃 업데이트 (lock_version 1 증가)
-        $layout = $this->layoutRepository->updateContent($layout->id, $updateData, $currentVersion + 1);
+        // 레이아웃 업데이트
+        $layout = $this->layoutRepository->update($layout->id, $updateData);
 
-        // 버전 히스토리 저장 — 저장 시점 content 스냅샷. 모든 템플릿 유형(admin/user)이 대상이다.
-        // (종전엔 user 템플릿만 버전을 남겼으나, admin/user 구분 없이 모든 템플릿이 편집 가능해진
-        //  현 정책에 맞춰 제한을 제거한다.)
-        // changes_summary 는 직전 저장본 대비 이번 저장본의 변경을 기록한다.
-        // (종전엔 버전 2건을 만들고 그중 하나가 자기 자신과 비교돼 changes_summary 가 항상 0 이었다 —
-        //  최신 버전의 변경 요약이 0 으로 보여 수정 전/후 구분이 불가했던 결함 수정.)
-        // 첫 수정 시 수정 전 원본을 baseline 버전으로 먼저 백업한다(이력이 하나도 없을 때만).
-        // 이게 없으면 첫 수정본만 v1 으로 남아 "수정 전 상태"로 복원할 수 없다.
-        // baseline 의 changes_summary 는 비교 대상이 없어 0(빈 요약) — 최초 원본 표식.
-        $hasHistory = $this->versionRepository->getNextVersion($layout->id) > 1;
-        if (! $hasHistory) {
-            $this->versionRepository->saveVersion($layout->id, $oldContent, null);
+        // user 템플릿인 경우 버전 히스토리 저장 (이전 버전 + 현재 저장 버전)
+        if ($template->type === 'user') {
+            // 1. 이전 버전 저장 (롤백용)
+            $this->versionRepository->saveVersion($layout->id, $oldContent, $updateData);
+
+            // 2. 현재 저장 버전 저장 (최신 상태 기록)
+            $this->versionRepository->saveVersion($layout->id, $updateData, $updateData);
         }
-
-        // 이번 저장본을 새 버전으로 적재 — 직전(oldContent) 대비 변경 요약 기록.
-        $savedVersion = $this->versionRepository->saveVersion($layout->id, $updateData, $oldContent);
-
-        // 저장 응답에 현재(최신) 버전 번호 동봉 — 편집기 라우트 트리 버전
-        // 배지가 저장 직후 재fetch 없이 동기화되도록 transient 속성으로 부착한다
-        // (LayoutResource 가 current_version 으로 직렬화 — DB 컬럼 아님).
-        $layout->setAttribute('current_version', $savedVersion->version);
 
         // 캐시 무효화
         $this->clearDependentLayoutsCache($templateId, $name);
@@ -1543,9 +1073,7 @@ class LayoutService
         // 프론트엔드 브라우저 캐시 무효화를 위해 ext.cache_version 증가
         // PublicLayoutController가 ?v={version} 기반 HTTP 캐시를 사용하므로
         // 버전 변경 시 브라우저가 새 URL로 인식하여 캐시를 우회합니다.
-        // 쓰기는 트레이트 단일 지점(고정 CoreCacheDriver + 메모이즈 스토어) 경유 —
-        // 주입 CacheInterface 직접 put 은 재바인딩/스토어 상이 시 read 와 어긋난다.
-        $this->incrementExtensionCacheVersion();
+        $this->cache->put('ext.cache_version', time());
 
         // After 훅 - 레이아웃 업데이트 후
         HookManager::doAction('core.layout.after_update', $layout, $templateId, $name, $data);
@@ -1554,17 +1082,9 @@ class LayoutService
     }
 
     /**
-     * 특정 레이아웃의 최근 버전 목록 조회 (최신순)
-     *
-     * 버전 행은 저장할 때마다 쌓이고 정리되지 않으므로 조회 건수에 상한을 둡니다.
-     * 더 오래된 이력이 필요하면 호출자가 `$limit` 을 넓힙니다.
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @param  int  $limit  조회할 최대 버전 수
-     * @return Collection 버전 컬렉션
+     * 특정 레이아웃의 모든 버전 조회
      */
-    public function getLayoutVersions(int $templateId, string $name, int $limit = 100)
+    public function getLayoutVersions(int $templateId, string $name)
     {
         // Before 훅 - 버전 목록 조회 전
         HookManager::doAction('core.layout.before_versions_index', $templateId, $name);
@@ -1579,7 +1099,7 @@ class LayoutService
         }
 
         // 버전 목록 조회
-        $versions = $this->layoutRepository->getVersionsByLayoutId($layout->id, $limit);
+        $versions = $this->layoutRepository->getVersionsByLayoutId($layout->id);
 
         // After 훅 - 버전 목록 조회 후
         HookManager::doAction('core.layout.after_versions_index', $versions, $templateId, $name);
@@ -1589,11 +1109,6 @@ class LayoutService
 
     /**
      * 특정 버전의 레이아웃 조회
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @param  int  $version  버전 번호
-     * @return mixed 조회된 버전 모델
      */
     public function getLayoutVersion(int $templateId, string $name, int $version)
     {
@@ -1627,11 +1142,6 @@ class LayoutService
     /**
      * 버전 복원
      *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @param  int  $versionId  복원할 버전 ID
-     * @return mixed 새로 저장된 버전 모델
-     *
      * @throws ModelNotFoundException 레이아웃 또는 버전을 찾을 수 없을 때
      */
     public function restoreVersion(int $templateId, string $name, int $versionId)
@@ -1654,8 +1164,8 @@ class LayoutService
         // 캐시 무효화
         $this->clearDependentLayoutsCache($templateId, $name);
 
-        // 프론트엔드 브라우저 캐시 무효화 (트레이트 단일 지점 경유)
-        $this->incrementExtensionCacheVersion();
+        // 프론트엔드 브라우저 캐시 무효화
+        $this->cache->put('ext.cache_version', time());
 
         // After 훅 - 버전 복원 후
         HookManager::doAction('core.layout.after_version_restore', $newVersion, $templateId, $name, $versionId);
@@ -1665,9 +1175,6 @@ class LayoutService
 
     /**
      * 레이아웃 JSON에서 XSS 및 악의적인 코드를 제거합니다.
-     *
-     * @param  array  $layout  검증 전 레이아웃 데이터
-     * @return array sanitize 가 적용된 레이아웃 데이터
      */
     public function sanitizeLayoutJson(array $layout): array
     {
@@ -1692,9 +1199,6 @@ class LayoutService
 
     /**
      * 컴포넌트 배열을 재귀적으로 sanitize합니다.
-     *
-     * @param  array  $components  컴포넌트 목록
-     * @return array XSS 위험 값을 걸러 낸 컴포넌트 목록
      */
     private function sanitizeComponents(array $components): array
     {
@@ -1715,40 +1219,6 @@ class LayoutService
 
             return $component;
         }, $components);
-    }
-
-    /**
-     * 병합된 레이아웃에서 개발자용 comment 필드를 재귀적으로 제거합니다.
-     *
-     * 레이아웃 JSON 의 `comment` / `_comment` 키는 편집기(layout-editor)와 개발자를 위한
-     * 설명 주석으로, 프론트엔드 런타임 렌더러(DynamicRenderer)는 이를 참조하지 않는다.
-     * 공개 서빙 응답에서만 제거하여 전송 크기를 줄이며, 편집 모드(withSourceMeta)에서는
-     * 호출하지 않아 보존한다. 배열/객체 노드를 재귀 순회하며 두 키만 unset 한다.
-     *
-     * 화면 렌더용 JSON 을 내보내는 소비자는 이 서비스 밖에도 있다(`LayoutPreviewService` 의
-     * 미리보기 서빙). 그 경로도 같은 계약을 지어야 하므로 public 이다 — 각자 재귀 제거를
-     * 새로 짜면 한쪽만 키를 늘렸을 때 조용히 갈린다.
-     *
-     * @param  array  $node  정리 대상 레이아웃(또는 하위) 배열
-     * @return array comment 필드가 제거된 배열
-     */
-    public function stripDeveloperComments(array $node): array
-    {
-        unset($node['comment'], $node['_comment']);
-
-        // 화면 조각(partial)의 `meta.description` 은 마크업 `<partial description="…">` 이 컴파일된 개발자용 설명이다
-        // (런타임 렌더러 미사용). 레이아웃 최상단 `meta.description` 은 화면 설명(SEO)이므로 조각 표식이 있는 meta 만 지운다.
-        if (isset($node['meta']) && is_array($node['meta']) && ($node['meta']['is_partial'] ?? false) === true) {
-            unset($node['meta']['description']);
-        }
-
-        foreach ($node as $key => $value) {
-            if (is_array($value)) {
-                $node[$key] = $this->stripDeveloperComments($value);
-            }
-        }
-
-        return $node;
     }
 
     /**
@@ -1785,9 +1255,6 @@ class LayoutService
 
     /**
      * 문자열에서 위험한 패턴을 제거합니다.
-     *
-     * @param  string  $value  정리할 문자열
-     * @return string 정리된 문자열
      */
     private function sanitizeString(string $value): string
     {
@@ -1814,9 +1281,6 @@ class LayoutService
 
     /**
      * data_sources 배열을 sanitize합니다.
-     *
-     * @param  array  $dataSources  데이터소스 목록
-     * @return array 정리된 데이터소스 목록
      */
     private function sanitizeDataSources(array $dataSources): array
     {
@@ -1836,9 +1300,6 @@ class LayoutService
 
     /**
      * URL을 sanitize합니다. (안전한 프로토콜만 허용)
-     *
-     * @param  string  $url  정리할 URL
-     * @return string 허용된 형식으로 정리된 URL
      */
     private function sanitizeUrl(string $url): string
     {
@@ -1901,13 +1362,6 @@ class LayoutService
         $filtered = [];
 
         foreach ($components as $component) {
-            // 컴포넌트 모양이 아닌 원소는 그대로 둔다(평가할 permissions 가 없다)
-            if (! is_array($component)) {
-                $filtered[] = $component;
-
-                continue;
-            }
-
             // permissions 속성 확인
             $permissions = $component['permissions'] ?? [];
 
@@ -1921,71 +1375,15 @@ class LayoutService
                 unset($component['permissions']);
             }
 
-            // children 과 props 안에 든 컴포넌트 목록(DataGrid cellChildren·expandChildren 등)까지 재귀 필터링
-            $filtered[] = $this->filterNestedComponentLists($component, $user);
+            // children 재귀 필터링
+            if (! empty($component['children'])) {
+                $component['children'] = $this->filterComponentTree($component['children'], $user);
+            }
+
+            $filtered[] = $component;
         }
 
         return $filtered;
-    }
-
-    /**
-     * 노드 안의 모든 컴포넌트 목록에 권한 필터를 적용합니다.
-     *
-     * 컴포넌트는 `children` 에만 있지 않다 — DataGrid 열의 `cellChildren`, 노드의 `expandChildren`·
-     * `subRowChildren`·`footerCardChildren`, 모달의 `children` 처럼 props·노드 키 아래에도 놓인다.
-     * 그 자리의 `permissions` 가 평가도 제거도 되지 않으면 무권한자에게 컴포넌트와 권한 식별자가 그대로
-     * 나간다. 키 이름을 열거하지 않고, 원소가 모두 컴포넌트 모양(type·name 문자열)인 목록이면
-     * 컴포넌트 트리로 걸러 새 키가 생겨도 빠지지 않게 한다.
-     *
-     * @param  array<string, mixed>  $node  노드(컴포넌트·모달·props 하위 배열)
-     * @param  User|null  $user  현재 사용자
-     * @param  int  $depth  재귀 깊이 (비정상 입력 방어)
-     * @return array<string, mixed> 필터링된 노드
-     */
-    private function filterNestedComponentLists(array $node, ?User $user, int $depth = 0): array
-    {
-        if ($depth > 32) {
-            return $node;
-        }
-
-        foreach ($node as $key => $value) {
-            // 액션·데이터 소스 같은 동작 정의 안에는 컴포넌트가 없다 — 그 안의 데이터 필드(`permissions` 등)를
-            // 권한 구조로 오인해 걸러내지 않도록 내려가지 않는다.
-            if (! is_array($value) || $value === [] || in_array($key, self::NON_COMPONENT_KEYS, true)) {
-                continue;
-            }
-
-            // `children` 목록은 원소 모양과 상관없이 늘 컴포넌트 트리로 거른다 — 모양이 다른 원소 하나가
-            // 섞였다고 형제 컴포넌트의 permissions 가 평가되지 않으면 무권한자에게 그대로 나간다.
-            $isChildrenList = $key === 'children' && array_is_list($value);
-
-            $node[$key] = $isChildrenList || $this->isComponentList($value)
-                ? $this->filterComponentTree($value, $user)
-                : $this->filterNestedComponentLists($value, $user, $depth + 1);
-        }
-
-        return $node;
-    }
-
-    /**
-     * 배열이 컴포넌트 목록(원소가 모두 type·name 문자열을 가진 배열)인지 판정합니다.
-     *
-     * @param  array<int|string, mixed>  $list  검사할 배열
-     * @return bool 컴포넌트 목록이면 true
-     */
-    private function isComponentList(array $list): bool
-    {
-        if (! array_is_list($list)) {
-            return false;
-        }
-
-        foreach ($list as $item) {
-            if (! is_array($item) || ! is_string($item['type'] ?? null) || ! is_string($item['name'] ?? null)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -2014,9 +1412,12 @@ class LayoutService
                 unset($modal['permissions']);
             }
 
-            // 모달 내부 컴포넌트 필터링 — 번들 모달은 `children` 을 쓰고 옛 형태는 `components` 를 쓴다.
-            // 두 형태와 props 안 컴포넌트 목록을 같은 규칙으로 거른다.
-            $filtered[] = $this->filterNestedComponentLists($modal, $user);
+            // 모달 내부 컴포넌트 필터링
+            if (! empty($modal['components'])) {
+                $modal['components'] = $this->filterComponentTree($modal['components'], $user);
+            }
+
+            $filtered[] = $modal;
         }
 
         return $filtered;
@@ -2031,42 +1432,31 @@ class LayoutService
      */
     private function filterDefines(array $defines, ?User $user): array
     {
-        // 레이아웃의 defines 는 `이름 => 값` 맵이다(화면이 `_defines.이름` 으로 읽는다). 목록으로 다시
-        // 쌓으면 이름이 사라져 `_defines.countryList` 같은 참조가 전부 undefined 가 된다(#705 회귀).
-        // 목록형(이름 없는 컴포넌트 정의 묶음)으로 들어온 경우만 종전처럼 재색인한다.
-        $isList = array_is_list($defines);
         $filtered = [];
 
-        foreach ($defines as $name => $define) {
-            // 컴포넌트 정의(연관 배열)만 권한 필터 대상이다 — 데이터 목록·스칼라 맵 값은 그대로 둔다.
-            if (is_array($define) && ! array_is_list($define)) {
-                // define 자체에 permissions가 있으면 전체 제거 여부 판단
-                $permissions = $define['permissions'] ?? [];
+        foreach ($defines as $define) {
+            // define 자체에 permissions가 있으면 전체 제거 여부 판단
+            $permissions = $define['permissions'] ?? [];
 
-                if (! empty($permissions) && is_array($permissions)) {
-                    if (! PermissionHelper::checkWithLogic($permissions, $user)) {
-                        continue;
-                    }
-
-                    unset($define['permissions']);
+            if (! empty($permissions)) {
+                if (! PermissionHelper::checkWithLogic($permissions, $user)) {
+                    continue;
                 }
 
-                // define 내부 컴포넌트 필터링
-                if (! empty($define['components']) && is_array($define['components'])) {
-                    $define['components'] = $this->filterComponentTree($define['components'], $user);
-                }
-
-                // define 내부 children 필터링
-                if (! empty($define['children']) && is_array($define['children'])) {
-                    $define['children'] = $this->filterComponentTree($define['children'], $user);
-                }
+                unset($define['permissions']);
             }
 
-            if ($isList) {
-                $filtered[] = $define;
-            } else {
-                $filtered[$name] = $define;
+            // define 내부 컴포넌트 필터링
+            if (! empty($define['components'])) {
+                $define['components'] = $this->filterComponentTree($define['components'], $user);
             }
+
+            // define 내부 children 필터링
+            if (! empty($define['children'])) {
+                $define['children'] = $this->filterComponentTree($define['children'], $user);
+            }
+
+            $filtered[] = $define;
         }
 
         return $filtered;

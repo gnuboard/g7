@@ -9,9 +9,6 @@ return [
     'unauthorized' => 'Authentication is required.',
     'forbidden' => 'Access denied.',
     'validation_failed' => 'Input validation failed.',
-    'created' => 'Created successfully.',
-    'updated' => 'Updated successfully.',
-    'deleted' => 'Deleted successfully.',
 
     // Button states
     'saving' => 'Saving...',
@@ -20,9 +17,6 @@ return [
 
     // System labels
     'system' => 'System',
-    'system_cli' => 'System (CLI)',
-    // Key for echoing an already-translated failure reason from a lower layer (pass the reason as a replacement)
-    'failure_reason' => ':reason',
     'yes' => 'Yes',
     'no' => 'No',
     'unknown' => 'Unknown',

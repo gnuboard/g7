@@ -3,12 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Database\Seeders\Sample;
 
 use Illuminate\Database\Seeder;
-use Modules\Sirsoft\Ecommerce\Enums\ClaimShippingFeeModeEnum;
-use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
-use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyClaimAddress;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
-use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 
 /**
  * 배송정책 시더
@@ -17,8 +13,6 @@ class ShippingPolicySeeder extends Seeder
 {
     /**
      * 배송정책 시더를 실행합니다.
-     *
-     * @return void 반환값 없음
      */
     public function run(): void
     {
@@ -35,12 +29,8 @@ class ShippingPolicySeeder extends Seeder
             $policy = ShippingPolicy::create($policyData);
 
             foreach ($countrySettings as $cs) {
-                // 통화 라벨을 설정의 기본 통화로 맞춤 (KRW 하드코딩 제거 — base 추종, mc 정합)
-                $cs['currency_code'] = $this->defaultCurrency();
-                $policy->countrySettings()->create($cs + $this->claimFeeDefaults($cs, (int) $policyData['sort_order']));
+                $policy->countrySettings()->create($cs);
             }
-
-            $this->createClaimAddresses($policy);
 
             $this->command->line("  - 배송정책 생성: {$policyData['name']['ko']} ({$policyData['name']['en']})");
         }
@@ -50,86 +40,17 @@ class ShippingPolicySeeder extends Seeder
     }
 
     /**
-     * 설정의 기본 통화 코드 캐시
-     */
-    private ?string $defaultCurrencyCode = null;
-
-    /**
-     * 설정의 기본 통화 코드를 반환합니다 (KRW 하드코딩 제거 — base 추종).
-     *
-     * @return string 기본 통화 코드
-     */
-    private function defaultCurrency(): string
-    {
-        if ($this->defaultCurrencyCode === null) {
-            $this->defaultCurrencyCode = app(CurrencyConversionService::class)
-                ->getDefaultCurrency();
-        }
-
-        return $this->defaultCurrencyCode;
-    }
-
-    /**
      * 기존 배송정책 데이터를 삭제합니다.
-     *
-     * @return void 반환값 없음
      */
     private function deleteExistingPolicies(): void
     {
         $deletedCount = ShippingPolicy::count();
 
         if ($deletedCount > 0) {
-            // 국가별 설정·클레임 회수지 먼저 명시적 삭제 (DB CASCADE에 의존하지 않음)
-            ShippingPolicyClaimAddress::query()->delete();
+            // 국가별 설정 먼저 명시적 삭제 (DB CASCADE에 의존하지 않음)
             ShippingPolicyCountrySetting::query()->delete();
             ShippingPolicy::query()->delete();
             $this->command->warn("기존 배송정책 {$deletedCount}건을 삭제했습니다.");
-        }
-    }
-
-    /**
-     * 국가별 설정의 클레임(반품·교환) 배송비 기본값을 돌려줍니다.
-     *
-     * 국내 유료 정책은 반품 3,000 · 교환 6,000(왕복) 고정액이고, 조건부 무료·금액 구간 정책은
-     * 「원 배송정책 재계산」으로 둬 두 방식이 모두 화면에 보이게 한다. 해외 설정은 클레임 배송비를 두지 않는다.
-     *
-     * @param  array  $countrySetting  국가별 설정 데이터
-     * @param  int  $sortOrder  정책 순번 (어느 정책인지 구분)
-     * @return array<string, mixed> 클레임 배송비 필드
-     */
-    private function claimFeeDefaults(array $countrySetting, int $sortOrder): array
-    {
-        if (($countrySetting['country_code'] ?? null) !== 'KR') {
-            return [];
-        }
-
-        return [
-            'claim_fee_mode' => in_array($sortOrder, [3, 4], true)
-                ? ClaimShippingFeeModeEnum::ORIGINAL_POLICY
-                : ClaimShippingFeeModeEnum::FIXED,
-            'return_fixed_fee' => 3000,
-            'exchange_fixed_fee' => 6000,
-        ];
-    }
-
-    /**
-     * 배송정책마다 교환·반품 회수지를 한 건씩 만듭니다 (클레임 신청 화면의 회수지 안내·스냅샷 출처).
-     *
-     * @param  ShippingPolicy  $policy  배송정책
-     * @return void 반환값 없음
-     */
-    private function createClaimAddresses(ShippingPolicy $policy): void
-    {
-        foreach ([ClaimTypeEnum::EXCHANGE, ClaimTypeEnum::RETURN] as $type) {
-            $policy->claimAddresses()->create([
-                'claim_type' => $type,
-                'recipient_name' => '샘플상점 물류센터',
-                'phone' => '02-1234-5678',
-                'zipcode' => '08390',
-                'address1' => '서울특별시 구로구 디지털로 300',
-                'address2' => $type === ClaimTypeEnum::EXCHANGE ? '교환 접수 창구' : '반품 접수 창구',
-                'country_code' => 'KR',
-            ]);
         }
     }
 
@@ -218,13 +139,12 @@ class ShippingPolicySeeder extends Seeder
                         'base_fee' => 0,
                         'ranges' => [
                             'type' => 'amount',
-                            // 연속형(금액) 구간: 다음 시작값 = 직전 종료값, 종료값은 포함
                             'tiers' => [
-                                ['min' => 0, 'max' => 10000, 'fee' => 5000],
-                                ['min' => 10000, 'max' => 30000, 'fee' => 3000],
-                                ['min' => 30000, 'max' => 50000, 'fee' => 2000],
-                                ['min' => 50000, 'max' => 100000, 'fee' => 1000],
-                                ['min' => 100000, 'max' => null, 'fee' => 0],
+                                ['min' => 0, 'max' => 10000, 'unit' => '원', 'fee' => 5000],
+                                ['min' => 10000, 'max' => 30000, 'unit' => '원', 'fee' => 3000],
+                                ['min' => 30000, 'max' => 50000, 'unit' => '원', 'fee' => 2000],
+                                ['min' => 50000, 'max' => 100000, 'unit' => '원', 'fee' => 1000],
+                                ['min' => 100000, 'max' => null, 'unit' => '원', 'fee' => 0],
                             ],
                         ],
                         'extra_fee_enabled' => false,
@@ -247,10 +167,9 @@ class ShippingPolicySeeder extends Seeder
                         'base_fee' => 0,
                         'ranges' => [
                             'type' => 'quantity',
-                            // 이산형(수량) 구간: 다음 시작값 = 직전 종료값 + 1, 종료값은 포함
                             'tiers' => [
-                                ['min' => 0, 'max' => 5, 'fee' => 3000],
-                                ['min' => 6, 'max' => null, 'fee' => 5000],
+                                ['min' => 1, 'max' => 5, 'unit' => '개', 'fee' => 3000],
+                                ['min' => 6, 'max' => null, 'unit' => '개', 'fee' => 5000],
                             ],
                         ],
                         'extra_fee_enabled' => false,
@@ -273,12 +192,11 @@ class ShippingPolicySeeder extends Seeder
                         'base_fee' => 0,
                         'ranges' => [
                             'type' => 'weight',
-                            // 무게 구간은 kg 단위 (상품 옵션의 g 값은 배송비 계산 시점에 환산된다)
                             'tiers' => [
-                                ['min' => 0, 'max' => 2, 'fee' => 3000],
-                                ['min' => 2, 'max' => 5, 'fee' => 4000],
-                                ['min' => 5, 'max' => 10, 'fee' => 6000],
-                                ['min' => 10, 'max' => null, 'fee' => 8000],
+                                ['min' => 0, 'max' => 2, 'unit' => 'kg', 'fee' => 3000],
+                                ['min' => 2, 'max' => 5, 'unit' => 'kg', 'fee' => 4000],
+                                ['min' => 5, 'max' => 10, 'unit' => 'kg', 'fee' => 6000],
+                                ['min' => 10, 'max' => null, 'unit' => 'kg', 'fee' => 8000],
                             ],
                         ],
                         'extra_fee_enabled' => false,
@@ -301,11 +219,10 @@ class ShippingPolicySeeder extends Seeder
                         'base_fee' => 0,
                         'ranges' => [
                             'type' => 'volume',
-                            // 부피 구간은 L 단위 (상품 옵션의 cm³ 값은 배송비 계산 시점에 환산된다)
                             'tiers' => [
-                                ['min' => 0, 'max' => 50, 'fee' => 5000],
-                                ['min' => 50, 'max' => 100, 'fee' => 10000],
-                                ['min' => 100, 'max' => null, 'fee' => 20000],
+                                ['min' => 0, 'max' => 50, 'unit' => 'L', 'fee' => 5000],
+                                ['min' => 50, 'max' => 100, 'unit' => 'L', 'fee' => 10000],
+                                ['min' => 100, 'max' => null, 'unit' => 'L', 'fee' => 20000],
                             ],
                         ],
                         'extra_fee_enabled' => false,
@@ -328,12 +245,11 @@ class ShippingPolicySeeder extends Seeder
                         'base_fee' => 0,
                         'ranges' => [
                             'type' => 'volume_weight',
-                            // 부피무게 구간은 kg 단위 (실무게 kg 과 부피무게 kg 중 큰 값으로 매칭)
                             'tiers' => [
-                                ['min' => 0, 'max' => 5, 'fee' => 3500],
-                                ['min' => 5, 'max' => 10, 'fee' => 5000],
-                                ['min' => 10, 'max' => 20, 'fee' => 8000],
-                                ['min' => 20, 'max' => null, 'fee' => 12000],
+                                ['min' => 0, 'max' => 5, 'unit' => 'kg', 'fee' => 3500],
+                                ['min' => 5, 'max' => 10, 'unit' => 'kg', 'fee' => 5000],
+                                ['min' => 10, 'max' => 20, 'unit' => 'kg', 'fee' => 8000],
+                                ['min' => 20, 'max' => null, 'unit' => 'kg', 'fee' => 12000],
                             ],
                         ],
                         'extra_fee_enabled' => false,
@@ -351,84 +267,36 @@ class ShippingPolicySeeder extends Seeder
                     [
                         'country_code' => 'US',
                         'shipping_method' => 'parcel',
-                        'currency_code' => 'KRW',
+                        'currency_code' => 'USD',
                         'charge_policy' => 'api',
-                        // 외부 API 장애 시 폴백 배송비 (0 이면 장애가 곧 무음 무료배송이 된다)
-                        'base_fee' => 30000,
+                        'base_fee' => 0,
                         'api_endpoint' => 'https://api.example.com/shipping/calculate',
-                        'api_request_fields' => ['group_total', 'total_quantity', 'country_code'],
+                        'api_request_fields' => ['order_amount', 'weight', 'zipcode'],
                         'api_response_fee_field' => 'shipping_fee',
-                        // 계산 API 연동 상세 설정 (MP12 — A13) — api_config JSON
-                        'api_config' => [
-                            'http_method' => 'POST',
-                            'auth_type' => 'bearer',
-                            'auth_token' => 'sample-demo-token',
-                            'auth_header_name' => 'Authorization',
-                            'response_type' => 'json',
-                            'response_path' => 'data.shipping_fee',
-                            // 키는 실제 요청 필드(api_request_fields) 이름이어야 리네임된다
-                            'field_map' => [
-                                'group_total' => 'orderAmount',
-                                'total_quantity' => 'itemCount',
-                                'country_code' => 'countryCode',
-                            ],
-                        ],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],
                     [
                         'country_code' => 'CN',
                         'shipping_method' => 'parcel',
-                        'currency_code' => 'KRW',
+                        'currency_code' => 'USD',
                         'charge_policy' => 'api',
-                        // 외부 API 장애 시 폴백 배송비 (0 이면 장애가 곧 무음 무료배송이 된다)
-                        'base_fee' => 30000,
+                        'base_fee' => 0,
                         'api_endpoint' => 'https://api.example.com/shipping/calculate',
-                        'api_request_fields' => ['group_total', 'total_quantity', 'country_code'],
+                        'api_request_fields' => ['order_amount', 'weight', 'zipcode'],
                         'api_response_fee_field' => 'shipping_fee',
-                        // 계산 API 연동 상세 설정 (MP12 — A13) — api_config JSON
-                        'api_config' => [
-                            'http_method' => 'POST',
-                            'auth_type' => 'bearer',
-                            'auth_token' => 'sample-demo-token',
-                            'auth_header_name' => 'Authorization',
-                            'response_type' => 'json',
-                            'response_path' => 'data.shipping_fee',
-                            // 키는 실제 요청 필드(api_request_fields) 이름이어야 리네임된다
-                            'field_map' => [
-                                'group_total' => 'orderAmount',
-                                'total_quantity' => 'itemCount',
-                                'country_code' => 'countryCode',
-                            ],
-                        ],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],
                     [
                         'country_code' => 'JP',
                         'shipping_method' => 'parcel',
-                        'currency_code' => 'KRW',
+                        'currency_code' => 'USD',
                         'charge_policy' => 'api',
-                        // 외부 API 장애 시 폴백 배송비 (0 이면 장애가 곧 무음 무료배송이 된다)
-                        'base_fee' => 30000,
+                        'base_fee' => 0,
                         'api_endpoint' => 'https://api.example.com/shipping/calculate',
-                        'api_request_fields' => ['group_total', 'total_quantity', 'country_code'],
+                        'api_request_fields' => ['order_amount', 'weight', 'zipcode'],
                         'api_response_fee_field' => 'shipping_fee',
-                        // 계산 API 연동 상세 설정 (MP12 — A13) — api_config JSON
-                        'api_config' => [
-                            'http_method' => 'POST',
-                            'auth_type' => 'bearer',
-                            'auth_token' => 'sample-demo-token',
-                            'auth_header_name' => 'Authorization',
-                            'response_type' => 'json',
-                            'response_path' => 'data.shipping_fee',
-                            // 키는 실제 요청 필드(api_request_fields) 이름이어야 리네임된다
-                            'field_map' => [
-                                'group_total' => 'orderAmount',
-                                'total_quantity' => 'itemCount',
-                                'country_code' => 'countryCode',
-                            ],
-                        ],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],
@@ -465,7 +333,7 @@ class ShippingPolicySeeder extends Seeder
                         'currency_code' => 'KRW',
                         'charge_policy' => 'per_quantity',
                         'base_fee' => 3000,
-                        'ranges' => ['type' => 'per_quantity', 'unit_value' => 3],
+                        'ranges' => ['unit_value' => 3],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],
@@ -484,7 +352,7 @@ class ShippingPolicySeeder extends Seeder
                         'currency_code' => 'KRW',
                         'charge_policy' => 'per_weight',
                         'base_fee' => 1000,
-                        'ranges' => ['type' => 'per_weight', 'unit_value' => 1],
+                        'ranges' => ['unit_value' => 1],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],
@@ -503,7 +371,7 @@ class ShippingPolicySeeder extends Seeder
                         'currency_code' => 'KRW',
                         'charge_policy' => 'per_volume',
                         'base_fee' => 2000,
-                        'ranges' => ['type' => 'per_volume', 'unit_value' => 10],
+                        'ranges' => ['unit_value' => 10],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],
@@ -522,23 +390,22 @@ class ShippingPolicySeeder extends Seeder
                         'currency_code' => 'KRW',
                         'charge_policy' => 'per_volume_weight',
                         'base_fee' => 3000,
-                        'ranges' => ['type' => 'per_volume_weight', 'unit_value' => 5],
+                        'ranges' => ['unit_value' => 5],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],
                     [
                         'country_code' => 'US',
                         'shipping_method' => 'parcel',
-                        'currency_code' => 'KRW',
+                        'currency_code' => 'USD',
                         'charge_policy' => 'range_weight',
                         'base_fee' => 0,
                         'ranges' => [
                             'type' => 'weight',
-                            // 배송비는 기본 통화(KRW) 기준 금액이다 — 국가만 US 일 뿐 통화가 바뀌지 않는다
                             'tiers' => [
-                                ['min' => 0, 'max' => 2, 'fee' => 25000],
-                                ['min' => 2, 'max' => 5, 'fee' => 40000],
-                                ['min' => 5, 'max' => null, 'fee' => 60000],
+                                ['min' => 0, 'max' => 2, 'unit' => 'kg', 'fee' => 25],
+                                ['min' => 2, 'max' => 5, 'unit' => 'kg', 'fee' => 40],
+                                ['min' => 5, 'max' => null, 'unit' => 'kg', 'fee' => 60],
                             ],
                         ],
                         'extra_fee_enabled' => false,
@@ -559,7 +426,7 @@ class ShippingPolicySeeder extends Seeder
                         'currency_code' => 'KRW',
                         'charge_policy' => 'per_amount',
                         'base_fee' => 500,
-                        'ranges' => ['type' => 'per_amount', 'unit_value' => 10000],
+                        'ranges' => ['unit_value' => 10000],
                         'extra_fee_enabled' => false,
                         'is_active' => true,
                     ],

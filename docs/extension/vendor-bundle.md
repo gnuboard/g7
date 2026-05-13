@@ -28,36 +28,6 @@ G7 코어와 모듈/플러그인은 PHP 의존성 관리에 Composer를 사용�
 └── vendor-bundle.json      (메타파일: SHA256, 패키지 목록 등)
 ```
 
-이 네 파일(`composer.json` / `composer.lock` / `vendor-bundle.json` / `vendor-bundle.zip`)은 코어 루트 및 각 `_bundled` 확장 루트에 함께 존재하며 모두 Git 으로 추적한다. 추출 결과인 `vendor/` 디렉토리만 `.gitignore` 대상이다. `composer.lock` 이 누락되면 `VendorIntegrityChecker` 가 `composer_lock_sha256` 을 검증할 수 없으므로, `composer update` 직후 생성된 `composer.lock` 과 재빌드된 번들 두 파일을 같은 커밋에 함께 포함한다.
-
-### 1.1 빌드가 보는 composer.json / composer.lock
-
-확장의 번들 빌드는 산출물을 `_bundled` 에 쓰지만(활성 디렉토리 오염 방지), **입력으로 삼는 `composer.json` / `composer.lock` 도 `_bundled` 를 기준으로 한다**. 출력 디렉토리에 해당 파일이 없을 때만 활성 디렉토리로 폴백하며, 코어는 소스와 출력이 같은 경로(`base_path()`)이므로 언제나 동일한 파일을 본다. 이 규칙은 `VendorBundler::resolveHashTarget()` 한 곳에 있고, 빌드의 네 가지 판단이 모두 그것을 쓴다.
-
-| 판단 | 사용처 |
-|------|------|
-| 외부 의존성 유무 (번들링 대상인가) | `build()`, `isStale()` |
-| `composer install` 입력 (스테이징에 복사할 파일) | `build()` |
-| manifest 해시 (`composer_{json,lock}_sha256`) | `build()` |
-| stale 판정 (재빌드 필요한가) | `isStale()` |
-
-빌드는 활성 디렉토리의 `vendor/` 를 읽지 않는다. 스테이징 디렉토리에서 `composer install --no-dev` 를 새로 실행해 dev 의존성이 섞이지 않은 `vendor/` 를 만들고 그것을 압축한다.
-
-네 판단이 같은 파일을 보아야 하는 이유는 두 가지다.
-
-**첫째, 검증자의 대조 위치.** `VendorIntegrityChecker::verify($sourceDir)` 의 `$sourceDir` 은 zip 과 manifest 가 놓인 디렉토리를 뜻하고, 실제 호출 경로는 모두 `_bundled` 계열을 넘긴다.
-
-| 경로 | verify 에 넘기는 디렉토리 |
-|------|--------------------------|
-| 신규 설치 | `_pending/{id}` (`_bundled` 복사본) |
-| 업데이트 | `_pending/{id}_updating_*` (`_bundled` 복사본) |
-| 코어 업데이트 | pending 경로 (소스 = 출력) |
-| `vendor-bundle:verify-all` | `_bundled/{id}` |
-
-해시를 활성에서 계산하면 생성 기준과 검증 기준이 어긋난다. 두 `composer.json` 의 내용이 같을 때만 우연히 통과하며, `_bundled` 의 `composer.json` 만 변경된 상태(버전 bump 직후 등)에서는 manifest 가 영구히 불일치하여 `module:update` 가 `composer_json_sha_mismatch` 로 차단된다. 그 오류를 해소할 유일한 명령이 `module:update` 이므로 순환이 발생한다. `isStale()` 이 활성만 보면 `--check` 가 stale 을 `up-to-date` 로 오보하는 것도 같은 뿌리다.
-
-**둘째, 개발자가 `_bundled` 에서만 작업한다는 규정.** 새 패키지를 추가하면 `_bundled` 의 `composer.json` / `composer.lock` 에만 반영되고 활성 디렉토리는 다음 `{module|plugin}:update` 전까지 구버전으로 남는다. 이때 `composer install` 의 입력만 활성에서 가져오면, **구버전 lock 으로 설치한 zip 에 신버전 해시를 붙인 manifest** 가 만들어진다. 해시는 정합하므로 무결성 검증은 통과하는데 정작 새 패키지가 번들에서 빠져, 설치 후 런타임에 클래스 not found 로 터진다. 설치 입력과 해시 기준이 같은 파일을 보면 이 어긋남 자체가 성립하지 않는다.
-
 `vendor-bundle.json` 스키마 (v1.0):
 
 ```json
@@ -240,11 +210,11 @@ Content-Type: application/json
 
 ### 7.1 SHA256 검증
 
-`VendorIntegrityChecker::verify($sourceDir)` 가 다음을 검증합니다. `$sourceDir` 은 zip 과 manifest 가 놓인 디렉토리이며, 확장의 경우 `_bundled` 또는 그 복사본(`_pending`)입니다 (§1.1).
+`VendorIntegrityChecker::verify()` 가 다음을 검증합니다:
 
 - vendor-bundle.zip 파일의 실제 SHA256 vs manifest 기록 값
-- composer.json SHA256 (해당 디렉토리에 존재 시)
-- composer.lock SHA256 (해당 디렉토리에 존재 시)
+- composer.json SHA256 (소스에 존재 시)
+- composer.lock SHA256 (소스에 존재 시)
 
 검증 실패 시 `VendorInstallException` 이 발생하며 설치가 중단됩니다.
 
@@ -258,9 +228,6 @@ Content-Type: application/json
 ## 8. 자동 트리거
 
 `composer.json` 또는 `composer.lock` 파일이 변경되면 번들이 stale 상태가 됩니다.
-확장의 경우 판정 기준은 `_bundled` 디렉토리의 두 파일이다 (§1.1). 확장 버전을 올려
-`_bundled/composer.json` 의 `version` 만 바뀐 경우에도 stale 이 되므로 재빌드가 필요하다.
-
 다음 명령으로 재빌드해야 합니다:
 
 ```bash
@@ -300,11 +267,9 @@ CI 통합 예시:
 | `composer_not_available` | composer 모드 강제했으나 실행 불가 | --vendor-mode=auto 또는 bundled로 변경 |
 | `no_vendor_strategy_available` | composer 불가 + 번들 없음 | vendor-bundle.zip 업로드 또는 호스팅 변경 |
 | `bundle_contains_unsafe_path` | 외부 zip 파일이 zip slip 시도 | 신뢰할 수 있는 소스에서만 다운로드 |
-| `bundle_build_promote_failed` | 빌드 산출물을 최종 경로로 원자적 교체 실패 | 디스크 공간/권한 확인 후 재빌드 (원본 번들은 promoteAtomic 으로 보존됨) |
-| 빌드가 `Generating optimized autoload files` 직후 무한 대기 (Windows) | composer autoload dump 의 async 손자 프로세스가 부모 파이프 핸들을 상속·점유 | 코어 반영됨 — stdout/stderr 를 파이프가 아닌 파일 descriptor 로 실행 (`VendorBundler::composerOutputDescriptors`). 최신 코어에서는 재발하지 않음 |
 
 ## 11. 참고
 
 - 본 문서는 vendor 번들 시스템의 사용자 가이드입니다.
-- 코어 및 번들 확장의 `composer.json` / `composer.lock` / `vendor-bundle.json` / `vendor-bundle.zip` 은 Git 으로 추적합니다. 추출 결과인 `vendor/` 디렉토리만 `.gitignore` 대상입니다.
+- Bundle 자체는 .gitignore 에 등록되어 Git 추적되지 않습니다 (Release asset 형태로 배포 권장).
 - 확장 설치 모드는 `modules.vendor_mode` / `plugins.vendor_mode` 컬럼에 기록되며, 업데이트 시 자동 상속됩니다.

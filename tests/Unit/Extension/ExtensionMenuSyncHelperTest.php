@@ -9,8 +9,8 @@ use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Models\Menu;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Auth;
 use Mockery;
-use Mockery\MockInterface;
 use Tests\TestCase;
 
 /**
@@ -19,7 +19,7 @@ use Tests\TestCase;
  * 확장 메뉴 동기화 헬퍼의 핵심 로직을 검증합니다.
  * user_overrides 기반 필드 보호 동작을 검증합니다:
  * - 필드별 독립 보호 (name, icon, order, url 각각)
- * - parent_id, is_active 도 운영자 수정 표식이 없을 때만 갱신 (#727 D5-③ — 종전엔 항상 갱신)
+ * - parent_id, is_active는 항상 갱신
  * - stale 메뉴 정리 (자식 포함, UpgradeStep 전용 — 자동 호출 폐기 #135)
  * - 재귀 메뉴 동기화
  */
@@ -31,11 +31,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     private ExtensionMenuSyncHelper $helper;
 
-    /**
-     * 메뉴·역할 저장소 목과 테스트 대상 메뉴 동기화 헬퍼를 준비한다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -52,9 +47,9 @@ class ExtensionMenuSyncHelperTest extends TestCase
      *
      * @param  string  $modelClass  모델 클래스명
      * @param  array  $attributes  설정할 속성
-     * @return MockInterface 속성이 설정된 부분 목 모델
+     * @return \Mockery\MockInterface
      */
-    private function createModelMock(string $modelClass, array $attributes = []): MockInterface
+    private function createModelMock(string $modelClass, array $attributes = []): \Mockery\MockInterface
     {
         $mock = Mockery::mock($modelClass)->makePartial();
         foreach ($attributes as $key => $value) {
@@ -68,12 +63,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * 신규 메뉴 생성 시 user_overrides 없이 생성되는지 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_creates_new_menu_without_user_overrides(): void
     {
@@ -120,12 +109,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * user_overrides에 "name"이 있으면 name 갱신을 건너뛰는지 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_skips_user_modified_name(): void
     {
@@ -178,12 +161,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * user_overrides에 "icon"이 있으면 icon 갱신을 건너뛰는지 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_skips_user_modified_icon(): void
     {
@@ -235,12 +212,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * user_overrides에 "order"가 있으면 order 갱신을 건너뛰는지 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_skips_user_modified_order(): void
     {
@@ -292,12 +263,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * user_overrides에 "url"이 있으면 url 갱신을 건너뛰는지 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_skips_user_modified_url(): void
     {
@@ -349,12 +314,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * user_overrides에 없는 필드만 갱신되는지 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_updates_unmodified_fields(): void
     {
@@ -405,80 +364,9 @@ class ExtensionMenuSyncHelperTest extends TestCase
     }
 
     /**
-     * sync 호출 시 update 시점에 user_overrides.seeding 플래그가 true 로 설정되는지 테스트.
-     *
-     * HasUserOverrides::bootHasUserOverrides 의 updating 이벤트 hook 이 이 플래그를 보고
-     * 자동 마킹을 건너뛴다. 미설정 시 동일 정의값을 적용해도 trackable 필드 (icon 포함) 가 dirty
-     * 로 잡혀 user_overrides 에 자동 추가되어 이후 sync 가 차단되는 결함이 발생.
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
+     * parent_id와 is_active는 항상 확장 정의값으로 업데이트되는지 테스트
      */
-    public function test_sync_menu_disables_user_overrides_auto_marking_during_update(): void
-    {
-        $existingMenu = $this->createModelMock(Menu::class, [
-            'id' => 1,
-            'name' => ['ko' => '게시판 관리', 'en' => 'Board Management'],
-            'icon' => 'fas fa-list',
-            'order' => 10,
-            'url' => '/admin/boards',
-            'user_overrides' => [],
-        ]);
-
-        $this->menuRepository
-            ->shouldReceive('findBySlugAndExtension')
-            ->once()
-            ->andReturn($existingMenu);
-
-        $seedingFlagDuringUpdate = null;
-        $this->menuRepository
-            ->shouldReceive('update')
-            ->once()
-            ->andReturnUsing(function () use (&$seedingFlagDuringUpdate) {
-                $seedingFlagDuringUpdate = app()->bound('user_overrides.seeding')
-                    && app('user_overrides.seeding') === true;
-
-                return true;
-            });
-
-        $freshMenu = $this->createModelMock(Menu::class, ['id' => 1]);
-        $existingMenu->shouldReceive('fresh')->once()->andReturn($freshMenu);
-
-        $this->helper->syncMenu(
-            slug: 'board-management',
-            extensionType: ExtensionOwnerType::Module,
-            extensionIdentifier: 'sirsoft-board',
-            newAttributes: [
-                'name' => ['ko' => '게시판 관리', 'en' => 'Board Management'],
-                'icon' => 'fas fa-list',
-                'order' => 10,
-                'url' => '/admin/boards',
-            ],
-        );
-
-        $this->assertTrue(
-            $seedingFlagDuringUpdate,
-            'update 시점에 user_overrides.seeding 플래그가 true 여야 자동 마킹 hook 이 skip 된다.'
-        );
-        $this->assertFalse(
-            app()->bound('user_overrides.seeding'),
-            'syncMenu 종료 후 seeding 플래그는 컨테이너에서 정리되어야 한다.'
-        );
-    }
-
-    /**
-     * 운영자 수정 표식이 없으면 parent_id 와 is_active 가 확장 정의값으로 업데이트되는지 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
-     */
-    public function test_sync_menu_updates_parent_and_active_without_overrides(): void
+    public function test_sync_menu_always_updates_parent_and_active(): void
     {
         $name = ['ko' => '게시판 관리', 'en' => 'Board Management'];
 
@@ -540,12 +428,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
      * 회귀: ExtensionMenuSyncHelper 가 hardcoded `is_active=true` 로 강제하여 개발 중인
      * 메뉴(예: config/core.php 의 admin-schedules `is_active: false`) 가 운영 환경에서
      * 자동 활성화되던 결함 차단.
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_honors_is_active_false_from_definition_on_create(): void
     {
@@ -583,12 +465,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
      * config 정의의 is_active=false 가 기존 메뉴 업데이트 시에도 적용되는지 테스트
      *
      * 운영자가 user_overrides 로 마킹하지 않았다면 정의값이 우선.
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_honors_is_active_false_from_definition_on_update(): void
     {
@@ -634,12 +510,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
      *
      * 시나리오: 정의는 is_active=false 지만 운영자가 UI 에서 활성화 후 user_overrides 에 마킹.
      * 재시드 시 운영자 선택이 보존되어야 한다.
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_preserves_user_overridden_is_active(): void
     {
@@ -681,12 +551,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * syncMenuRecursive 가 menuData 의 is_active 를 newAttributes 로 전달하는지 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_recursive_passes_is_active_to_sync_menu(): void
     {
@@ -724,12 +588,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * 다국어 문자열 name을 배열로 역호환 변환하는지 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_recursive_converts_string_name_to_array(): void
     {
@@ -770,12 +628,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * children 재귀 처리 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_sync_menu_recursive_handles_children(): void
     {
@@ -840,12 +692,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * stale 메뉴가 삭제되는지 테스트 (자식 포함)
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_cleanup_stale_menus_deletes_stale_menus_with_children(): void
     {
@@ -908,12 +754,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * 현재 유효한 메뉴는 보존되는지 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_cleanup_stale_menus_preserves_current_menus(): void
     {
@@ -941,12 +781,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * 재귀 slug 수집 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_slugs_recursive(): void
     {
@@ -982,12 +816,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * slug 없는 경우 name에서 slug 추출 테스트
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_slugs_recursive_falls_back_to_name(): void
     {
@@ -1006,12 +834,6 @@ class ExtensionMenuSyncHelperTest extends TestCase
 
     /**
      * 문자열 name에서 slug 추출 (역호환성)
-     *
-     * @scenario surface=menu
-     *
-     * @effects extension_menu_sync_respects_operator_edits
-     *
-     * @return void 반환값 없음
      */
     public function test_collect_slugs_recursive_with_string_name(): void
     {

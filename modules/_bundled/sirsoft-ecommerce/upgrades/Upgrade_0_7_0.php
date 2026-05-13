@@ -6,7 +6,6 @@ use App\Contracts\Extension\UpgradeStepInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\Helpers\SettingsMigrator;
 use App\Extension\UpgradeContext;
-
 /**
  * v0.7.0 업그레이드 스텝
  *

@@ -3,19 +3,15 @@
 namespace Tests\Feature\Api\Admin;
 
 use App\Contracts\Extension\CacheInterface;
-use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Models\Attachment;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\AttachmentService;
-use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -435,65 +431,6 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * 본인인증 탭 — purpose id 에 점(.)이 포함된 목적별 프로바이더 매핑 저장 성공.
-     *
-     * 회귀 방지: KG이니시스 플러그인이 선언한 purpose id `inicis.adult_verification` 처럼
-     * 점을 포함하는 purpose 를 매핑하면, 프론트엔드 폼 바인딩이 dot-notation name
-     * (`identity.purpose_providers.inicis.adult_verification`) 을 중첩 객체로 풀어
-     * `purpose_providers.inicis = { adult_verification: '...' }` 형태로 전송한다.
-     * 백엔드 조회(IdentityVerificationManager::resolveForPurpose)는 config dot-path 라
-     * 이 중첩 구조가 정상이지만, validation rule 이 1단계 깊이만 string 으로 허용하면
-     * 중첩된 `inicis` 가 배열이 되어 422 ("문자열이어야 합니다.") 가 발생했던 사례.
-     * 환경설정 > 본인인증 > 목적별 프로바이더 저장이 전면 차단됐음.
-     */
-    public function test_store_saves_identity_purpose_providers_with_dotted_purpose_id(): void
-    {
-        $response = $this->authRequest()->postJson('/api/admin/settings', [
-            '_tab' => 'identity',
-            'identity' => [
-                'default_provider' => 'g7:core.mail',
-                'purpose_providers' => [
-                    'signup' => '',
-                    'password_reset' => null,
-                    // 점(.)을 포함한 purpose id → 폼 바인딩이 중첩 객체로 풀어 전송
-                    'inicis' => [
-                        'adult_verification' => 'inicis',
-                    ],
-                ],
-                'challenge_ttl_minutes' => 15,
-                'max_attempts' => 5,
-            ],
-        ]);
-
-        $response->assertStatus(200)
-            ->assertJson(['success' => true]);
-    }
-
-    /**
-     * 본인인증 탭 — 점 포함 purpose 매핑 값이 max:100 을 초과하면 중첩 경로로 검증 실패.
-     *
-     * nested 허용으로 완화하되, 값 길이 제약(string|max:100)은 임의 깊이에서도 유지되어야 한다.
-     */
-    public function test_store_validates_nested_purpose_provider_value_length(): void
-    {
-        $response = $this->authRequest()->postJson('/api/admin/settings', [
-            '_tab' => 'identity',
-            'identity' => [
-                'purpose_providers' => [
-                    'inicis' => [
-                        'adult_verification' => str_repeat('x', 101), // max:100 초과
-                    ],
-                ],
-                'challenge_ttl_minutes' => 15,
-                'max_attempts' => 5,
-            ],
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['identity.purpose_providers.inicis.adult_verification']);
-    }
-
-    /**
      * 본인인증 탭 — challenge_ttl_minutes 범위(1~1440) 검증.
      */
     public function test_store_validates_identity_challenge_ttl_range(): void
@@ -736,10 +673,6 @@ class SettingsControllerTest extends TestCase
 
     /**
      * 시스템 정보 응답 구조 검증
-     *
-     * @scenario probe_item=cpu_info,probe_outcome=success,auth_state=authenticated_with_permission
-     *
-     * @effects all_probes_success_returns_full_payload
      */
     public function test_system_info_returns_correct_structure(): void
     {
@@ -758,7 +691,7 @@ class SettingsControllerTest extends TestCase
      * 메모리 사용량은 디스크 사용량과 동일한 구조(total/used/free/percentage)로 반환된다.
      *
      * 회귀 테스트: memory_get_usage(true)는 PHP 프로세스 메모리만 반환하여
-     * 서버 물리 RAM과 무관한 값(6~12MB)이 노출되던 이슈 방지.
+     * 서버 물리 RAM과 무관한 값(6~12MB)이 노출되던 이슈(#298) 방지.
      */
     public function test_system_info_memory_usage_has_disk_like_structure(): void
     {
@@ -783,7 +716,7 @@ class SettingsControllerTest extends TestCase
      * 그대로 노출되지 않는다.
      *
      * 회귀 테스트: Windows 11/Server 2025에서 wmic 제거로 인해
-     * "operable program or batch file."가 그대로 노출되던 이슈 방지.
+     * "operable program or batch file."가 그대로 노출되던 이슈(#298) 방지.
      */
     public function test_system_info_cpu_info_is_not_shell_error_tail(): void
     {
@@ -802,7 +735,7 @@ class SettingsControllerTest extends TestCase
      * 두 번째 호출부터는 하드웨어 정보가 캐시에서 제공된다.
      *
      * 회귀 테스트: PowerShell(CIM) 호출이 수백ms ~ 수초 걸려 탭 전환
-     * UX 를 저해하던 이슈 방지. server_time 은 캐시 제외이므로
+     * UX 를 저해하던 이슈(#298) 방지. server_time 은 캐시 제외이므로
      * 매 호출마다 갱신됨도 함께 검증한다.
      */
     public function test_system_info_caches_hardware_payload_but_refreshes_server_time(): void
@@ -1229,7 +1162,7 @@ class SettingsControllerTest extends TestCase
      * site_logo가 Attachment 객체 배열로 전송되어도 검증 통과
      *
      * initLocal로 복사된 Attachment 객체가 폼 데이터에 포함되어
-     * 정수 검증 실패하는 버그 회귀 방지
+     * 정수 검증 실패하는 버그 회귀 방지 (#225)
      */
     public function test_store_general_accepts_site_logo_as_attachment_objects(): void
     {
@@ -1372,394 +1305,5 @@ class SettingsControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson(['success' => true]);
-    }
-
-    /**
-     * 드라이버 탭 저장 왕복에 S3 신규 키(s3_endpoint/s3_use_path_style)가 포함되어야 합니다 (#563).
-     */
-    public function test_store_drivers_roundtrip_includes_new_s3_keys(): void
-    {
-        $response = $this->authRequest()->postJson('/api/admin/settings', [
-            '_tab' => 'drivers',
-            'drivers' => [
-                'storage_driver' => 's3',
-                's3_bucket' => 'roundtrip-bucket',
-                's3_region' => 'auto',
-                's3_access_key' => 'roundtrip-key',
-                's3_secret_key' => 'roundtrip-secret',
-                's3_endpoint' => 'https://roundtrip.r2.cloudflarestorage.com',
-                's3_use_path_style' => true,
-                'cache_driver' => 'file',
-                'session_driver' => 'file',
-                'queue_driver' => 'database',
-                'log_driver' => 'daily',
-                'log_level' => 'error',
-                'websocket_enabled' => false,
-            ],
-        ]);
-
-        $response->assertStatus(200)
-            ->assertJson(['success' => true]);
-
-        $drivers = $this->authRequest()->getJson('/api/admin/settings')
-            ->assertStatus(200)
-            ->json('data.drivers');
-
-        $this->assertSame('auto', $drivers['s3_region'] ?? null);
-        $this->assertSame('https://roundtrip.r2.cloudflarestorage.com', $drivers['s3_endpoint'] ?? null);
-        $this->assertTrue((bool) ($drivers['s3_use_path_style'] ?? false));
-    }
-
-    // ========================================================================
-    // 시스템 정보 probe 실패 격리 테스트 — gnuboard/g7#59
-    // (구조/캐시/정상값은 위 systemInfo 테스트가 이미 커버. 여기서는 호스팅
-    //  disable_functions/open_basedir 로 probe 가 실패해도 전체 200 을 유지하는지 검증)
-    // ========================================================================
-
-    /**
-     * 인증 없이 시스템 정보 조회 시 401 반환 (probe 실행 전 인증 가드 차단)
-     *
-     * @scenario probe_item=cpu_info,probe_outcome=success,auth_state=unauthenticated
-     *
-     * @effects unauthenticated_returns_401
-     */
-    public function test_system_info_returns_401_without_authentication(): void
-    {
-        $response = $this->getJson('/api/admin/settings/system-info');
-
-        $response->assertStatus(401);
-    }
-
-    /**
-     * read 권한 없이 시스템 정보 조회 시 403 반환 (probe 실행 전 권한 가드 차단)
-     *
-     * @scenario probe_item=cpu_info,probe_outcome=success,auth_state=authenticated_without_permission
-     *
-     * @effects without_permission_returns_403
-     */
-    public function test_system_info_returns_403_without_permission(): void
-    {
-        $user = User::factory()->create();
-        $adminRole = Role::firstOrCreate(
-            ['identifier' => 'admin'],
-            [
-                'name' => json_encode(['ko' => '관리자', 'en' => 'Administrator']),
-                'description' => json_encode(['ko' => '시스템 관리자', 'en' => 'System Administrator']),
-                'extension_type' => ExtensionOwnerType::Core,
-                'extension_identifier' => 'core',
-                'is_active' => true,
-            ]
-        );
-
-        $readPermission = Permission::where('identifier', 'core.settings.read')->first();
-        if ($adminRole && $readPermission) {
-            $adminRole->permissions()->detach($readPermission->id);
-        }
-
-        $user->roles()->attach($adminRole->id, [
-            'assigned_at' => now(),
-            'assigned_by' => null,
-        ]);
-
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer '.$token,
-            'Accept' => 'application/json',
-        ])->getJson('/api/admin/settings/system-info');
-
-        $response->assertStatus(403);
-    }
-
-    /**
-     * probe 실패 격리(핵심 회귀 #59): 개별 항목 수집이 예외/Error 를 던져도
-     * API 전체는 500 이 아니라 200 을 반환하고, 실패 항목만 'unknown' 폴백으로 채운다.
-     *
-     * disable_functions/open_basedir 호스팅에서 php_uname·shell_exec·disk_*_space 가
-     * Error 를 던지는 상황을 getCpuInfo() 로 시뮬레이션한다. safeSystemProbe 가 이를
-     * 격리하지 못하면 buildSystemInfo → getSystemInfo → 컨트롤러로 전파되어 500 이 난다.
-     *
-     * @scenario probe_item=cpu_info,probe_outcome=throws_error,auth_state=authenticated_with_permission
-     *
-     * @effects failing_probe_isolated_and_api_returns_200
-     * @effects failed_item_filled_with_unknown_fallback
-     */
-    public function test_system_info_isolates_failing_probe_and_returns_200(): void
-    {
-        // 캐시된 정상 페이로드가 있으면 buildSystemInfo 가 재실행되지 않으므로 먼저 비운다.
-        $cache = $this->app->make(CacheInterface::class);
-        $cache->forget('settings.system_info.'.app()->getLocale());
-
-        $service = new class($this->app) extends SettingsService
-        {
-            public function __construct($app)
-            {
-                parent::__construct(
-                    $app->make(ConfigRepositoryInterface::class),
-                    $app->make(AttachmentRepositoryInterface::class),
-                    $app->make(CacheInterface::class),
-                    $app->make(AttachmentService::class),
-                );
-            }
-
-            protected function getCpuInfo(): string
-            {
-                throw new \Error('Call to undefined function shell_exec() (disable_functions)');
-            }
-        };
-        $this->app->instance(SettingsService::class, $service);
-
-        $response = $this->authRequest()->getJson('/api/admin/settings/system-info');
-
-        // 실패한 cpu_info 만 unknown 폴백, 나머지 항목은 정상 수집되어 전체 200 유지.
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'data' => [
-                    'cpu_info' => __('common.unknown'),
-                ],
-            ])
-            ->assertJsonStructure([
-                'data' => [
-                    'memory_usage' => ['total', 'used', 'free', 'percentage'],
-                    'disk_usage' => ['total', 'used', 'free', 'percentage'],
-                    'php_extensions' => ['required', 'optional'],
-                    'server_time',
-                ],
-            ]);
-    }
-
-    /**
-     * OPcache 상태가 시스템 정보 페이로드에 포함된다.
-     *
-     * 관리자 환경설정 > 정보 탭이 이 값으로 상태 행과 성능 저하 경고 블록을 렌더한다.
-     * enabled 는 true/false 외에 null("확인 불가" — ini_get 차단 환경)을 가질 수 있다.
-     *
-     * @scenario probe_item=opcache,probe_outcome=success,auth_state=authenticated_with_permission
-     *
-     * @effects opcache_status_exposed_in_system_info
-     */
-    public function test_system_info_includes_opcache_status(): void
-    {
-        $cache = $this->app->make(CacheInterface::class);
-        $cache->forget('settings.system_info.'.app()->getLocale());
-
-        $response = $this->authRequest()->getJson('/api/admin/settings/system-info');
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
-                    'opcache' => ['loaded', 'enabled'],
-                ],
-            ]);
-
-        $opcache = $response->json('data.opcache');
-
-        $this->assertIsBool($opcache['loaded']);
-        $this->assertTrue(
-            $opcache['enabled'] === null || is_bool($opcache['enabled']),
-            'opcache.enabled 는 true/false/null 중 하나여야 합니다.'
-        );
-    }
-
-    // 아래 test_system_info_reports_each_opcache_state 의 DataProvider 가 함께 검증하는
-    // 나머지 3개 조합 (docblock 은 @scenario 를 1건만 인식하므로 라인 주석으로 병기).
-    // @scenario opcache_state=loaded_but_disabled, surface=system_info_api
-    // @effects opcache_status_exposed_in_system_info
-    // @scenario opcache_state=not_loaded, surface=system_info_api
-    // @effects opcache_status_exposed_in_system_info
-    // @scenario opcache_state=ini_get_blocked, surface=system_info_api
-    // @effects opcache_status_exposed_in_system_info
-
-    /**
-     * OPcache 판정 결과가 API 페이로드에 그대로 실려 나온다.
-     *
-     * 관리자 정보 탭이 이 값으로 상태 행과 경고 블록을 렌더하므로, 네 가지 상태가
-     * 각각 구별되어 전달되어야 한다. 특히 loaded_but_disabled(확장은 로드됐으나
-     * opcache.enable=0)와 ini_get_blocked(null)이 뭉개지면 화면 판단이 무너진다.
-     *
-     * @scenario opcache_state=enabled, surface=system_info_api
-     *
-     * @effects opcache_status_exposed_in_system_info
-     */
-    #[DataProvider('opcacheStateProvider')]
-    public function test_system_info_reports_each_opcache_state(array $probe): void
-    {
-        $cache = $this->app->make(CacheInterface::class);
-        $cache->forget('settings.system_info.'.app()->getLocale());
-
-        $service = new class($this->app, $probe) extends SettingsService
-        {
-            private array $stub;
-
-            public function __construct($app, array $stub)
-            {
-                parent::__construct(
-                    $app->make(ConfigRepositoryInterface::class),
-                    $app->make(AttachmentRepositoryInterface::class),
-                    $app->make(CacheInterface::class),
-                    $app->make(AttachmentService::class),
-                );
-                $this->stub = $stub;
-            }
-
-            protected function getOpcacheStatus(): array
-            {
-                return $this->stub;
-            }
-        };
-        $this->app->instance(SettingsService::class, $service);
-
-        $response = $this->authRequest()->getJson('/api/admin/settings/system-info');
-
-        $response->assertStatus(200);
-        $this->assertSame($probe, $response->json('data.opcache'));
-    }
-
-    /**
-     * @return array<string, array{0: array{loaded: bool, enabled: bool|null}}>
-     */
-    public static function opcacheStateProvider(): array
-    {
-        return [
-            'enabled' => [['loaded' => true, 'enabled' => true]],
-            'loaded_but_disabled' => [['loaded' => true, 'enabled' => false]],
-            'not_loaded' => [['loaded' => false, 'enabled' => false]],
-            'ini_get_blocked' => [['loaded' => true, 'enabled' => null]],
-        ];
-    }
-
-    /**
-     * OPcache probe 가 실패해도 격리되어 전체 200 이 유지된다.
-     *
-     * ini_get 이 disable_functions 로 차단된 호스팅에서 probe 하나가 죽어
-     * system-info API 전체가 500 이 나는 것을 방지한다.
-     *
-     * @scenario probe_item=opcache,probe_outcome=throws_error,auth_state=authenticated_with_permission
-     *
-     * @effects failing_probe_isolated_and_api_returns_200
-     * @effects failed_item_filled_with_unknown_fallback
-     */
-    public function test_system_info_isolates_failing_opcache_probe(): void
-    {
-        $cache = $this->app->make(CacheInterface::class);
-        $cache->forget('settings.system_info.'.app()->getLocale());
-
-        $service = new class($this->app) extends SettingsService
-        {
-            public function __construct($app)
-            {
-                parent::__construct(
-                    $app->make(ConfigRepositoryInterface::class),
-                    $app->make(AttachmentRepositoryInterface::class),
-                    $app->make(CacheInterface::class),
-                    $app->make(AttachmentService::class),
-                );
-            }
-
-            protected function getOpcacheStatus(): array
-            {
-                throw new \Error('Call to undefined function ini_get() (disable_functions)');
-            }
-        };
-        $this->app->instance(SettingsService::class, $service);
-
-        $response = $this->authRequest()->getJson('/api/admin/settings/system-info');
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'data' => [
-                    'opcache' => ['loaded' => false, 'enabled' => null],
-                ],
-            ]);
-    }
-
-    /**
-     * 사용량 조회 실패 시 폴백 배열 구조 검증: unknownUsage 는 total/used/free 를
-     * 'unknown' 으로, percentage 를 0 으로 채워 memory_usage·disk_usage 형식을 유지한다.
-     *
-     * @scenario probe_item=memory_usage,probe_outcome=throws_error,auth_state=authenticated_with_permission
-     *
-     * @effects usage_array_fallback_keeps_total_used_free_unknown_and_percentage_zero
-     */
-    public function test_unknown_usage_fallback_keeps_usage_array_shape(): void
-    {
-        $service = $this->app->make(SettingsService::class);
-
-        $ref = new \ReflectionMethod($service, 'unknownUsage');
-        $ref->setAccessible(true);
-
-        $fallback = $ref->invoke($service);
-
-        $this->assertSame(
-            ['total', 'used', 'free', 'percentage'],
-            array_keys($fallback)
-        );
-        $this->assertSame(__('common.unknown'), $fallback['total']);
-        $this->assertSame(__('common.unknown'), $fallback['used']);
-        $this->assertSame(__('common.unknown'), $fallback['free']);
-        $this->assertSame(0, $fallback['percentage']);
-    }
-
-    /**
-     * safeSystemProbe 단위 검증: 콜백이 \Error 를 던지면 전파하지 않고 폴백을 반환한다.
-     */
-    public function test_safe_system_probe_returns_fallback_on_error(): void
-    {
-        $service = $this->app->make(SettingsService::class);
-
-        $ref = new \ReflectionMethod($service, 'safeSystemProbe');
-        $ref->setAccessible(true);
-
-        $result = $ref->invoke($service, 'cpu_info', function () {
-            throw new \Error('disable_functions');
-        }, 'FALLBACK');
-
-        $this->assertSame('FALLBACK', $result);
-    }
-
-    // ========================================================================
-    // 설정 복원 (restore) 검증 — RestoreSettingsRequest 이전 회귀
-    // ========================================================================
-
-    /**
-     * 인증 없이 설정 복원 요청 시 401 반환
-     */
-    public function test_restore_returns_401_without_authentication(): void
-    {
-        $response = $this->postJson('/api/admin/settings/restore', ['backup_path' => 'foo']);
-
-        $response->assertStatus(401);
-    }
-
-    /**
-     * update 권한 없이 설정 복원 요청 시 403 반환
-     */
-    public function test_restore_returns_403_without_update_permission(): void
-    {
-        $user = $this->createAdminUser(['core.settings.read']);
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer '.$token,
-            'Accept' => 'application/json',
-        ])->postJson('/api/admin/settings/restore', ['backup_path' => 'foo']);
-
-        $response->assertStatus(403);
-    }
-
-    /**
-     * backup_path 누락 시 FormRequest 검증으로 422 반환
-     *
-     * 회귀: 검증을 컨트롤러 내 empty() 체크에서 RestoreSettingsRequest 로 이전한 뒤에도
-     * 백업 경로 미입력이 422 로 차단되는지 확인한다.
-     */
-    public function test_restore_returns_422_when_backup_path_missing(): void
-    {
-        $response = $this->authRequest()->postJson('/api/admin/settings/restore', []);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['backup_path']);
     }
 }

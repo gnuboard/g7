@@ -15,64 +15,28 @@ description: |
 
   구성 (정책 결정 2026-05-11):
     1. `spawn_failure_mode` 기본값 `abort` — 4분기 모두 UpgradeHandoffException throw.
-    2. `[STEPS_EXECUTED]` stdout 라인 프로토콜 — 자식이 실행한 step 수(count) + 범위 내
-       발견된 스텝 파일 수(discovered) 명시. 부모는 신호 미수신 또는 executed=0 &&
-       discovered>0 (스텝 파일이 있는데 실행 못함) 을 silent skip 으로 판정. executed=0 &&
-       discovered=0 (스텝 파일 부재) 은 정상 통과 — from<to 여도 실패 아님 (스텝 불필요 릴리즈).
+    2. `[STEPS_EXECUTED]` stdout 라인 프로토콜 — 자식이 실행한 step 수 명시.
+       부모가 신호 미수신 또는 step 0건 실행 (from<to) 감지 시 silent skip 으로 판정.
     3. `runUpgradeSteps` 진입 직후 stale 메모리 가드 — config('app.version') < toVersion
        이면 mode=abort 시 throw, mode=fallback 시 warning log.
     4. V-1 안전 작성 패턴 docs + audit rule `upgrade-step-vone-safety` (warning) —
        upgrade step 안의 `app(*Service|*Manager|*Repository::class)` 호출을 reviewer 에게 surface.
 
-  분기 개정 (discovered 축 세분화): `child_silent_skip_zero_steps` 를 discovered 축으로
-  세분화. 범위 내 스텝 파일이 애초에 없어 0건인 경우(discovered=0)를 정상 통과로 재분류하여,
-  스텝이 필요 없는 패치 릴리즈(예: 7.0.0→7.0.1) 를 실패로 오판하던 결함을 차단.
-
-  재실행 권한 안내 (§8, resume_exec_context 축): spawn 자식 실패로 스텝이 미실행 상태로
-  남으면 운영자에게 `core:execute-upgrade-steps` 재실행을 안내한다. sudo(root) 로 실행 중이면
-  안내받은 명령을 root 로 그대로 재실행할 경우 스텝 생성 파일이 root 소유가 되어 이후 웹서버
-  요청이 쓰기 실패한다. 실행 사용자(root 여부) × 웹서버 계정 식별성으로 4분기 안내:
-  non_root(명령만) / root_web_known(sudo -u {계정} + 경고) / root_web_symmetric(root 서비스
-  구성, 명령만) / root_web_unknown(placeholder + 계정명 미상 경고). 공유 호스팅에서 웹서버·
-  PHP·실행 유저가 동일하면 non_root 로 처리된다.
-
 axes:
-  spawn_branch: [proc_open_disabled, proc_open_resource_fail, child_abnormal_exit, child_silent_skip_no_signal, child_zero_steps_with_discovered, child_zero_steps_no_step_files]
+  spawn_branch: [proc_open_disabled, proc_open_resource_fail, child_abnormal_exit, child_silent_skip_no_signal, child_silent_skip_zero_steps]
   spawn_failure_mode: [abort, fallback]
   from_to_relation: [from_lt_to, from_eq_to_forced]                # version_compare 분기
   parent_memory_version: [equal_to_to, less_than_to, greater_than_to]  # stale 가드 트리거 조건
-  memory_version_source: [env_app_version, config_only_env_absent]  # 가드 판독 출처 — env 우선(spawn 자식 계약), env 부재 시 config 폴백
-  child_config_cache_state: [cached_from_version, no_cache]        # 자식이 이전 버전 config 캐시로 부팅하는가 (7.0.9→7.0.10 실사례)
-  steps_executed_signal: [present_positive, present_zero, absent]   # 자식의 [STEPS_EXECUTED] count 발행 상태
-  steps_discovered_signal: [discovered_positive, discovered_zero, absent]  # 범위 내 발견된 스텝 파일 수 (신버전 자식만 발행, 구버전=absent)
+  steps_executed_signal: [present_positive, present_zero, absent]   # 자식의 [STEPS_EXECUTED] 발행 상태
   child_process_origin: [beta_5_plus, beta_4_or_earlier]            # 이전 버전 자식 (silent skip 시뮬레이션)
   upgrade_step_v_one_pattern: [app_service_call, app_manager_call, app_repository_call, local_only]
   audit_allow_inline: [present, absent]                              # 면제 주석 적용 여부
   symlink_target_state: [valid, broken, windows_no_privilege]        # symlink 보존 분기 (§1 연동)
-  staging_source_shape: [inner_extracted_root, staging_root_itself, external_source_dir]  # cleanupPending 이 받는 경로 형태 — ZIP·GitHub / --local·--source 복제 / --source 외부
-  staging_leftover_content: [empty_skeleton, has_files, non_core_dir]  # 자식 청소 술어 — 빈 껍데기만 대상
-  resume_exec_context: [non_root, root_web_known, root_web_symmetric, root_web_unknown]  # 핸드오프 재실행 권한 안내 분기 (실행 사용자 × 웹서버 계정 식별성)
-  package_manifest_state: [fresh, stale_dev_provider]                # bootstrap/cache/packages.php 가 이전 설치본(dev composer)의 provider 를 담고 있는가
-  parent_generation: [pre_7_0_11, 7_0_11_plus]                       # 부모가 spawn 직전 매니페스트를 비우는 세대인가 (이미 배포된 7.0.9·7.0.10 은 비우지 않는다)
-  child_self_heal_flag: [present, absent]                            # 자식이 G7_UPDATE_IN_PROGRESS 를 물려받았는가 (자가 치유 게이트)
-  process_context: [update_tree, long_lived_outside_update]          # 버전 판독 범위 — 상주 프로세스(artisan serve·큐 워커)는 트리 밖이다
-  argv_sapi: [console, web_with_forged_query_argv]                   # argv 보조 판정을 읽는 SAPI — CGI/FPM 은 register_argc_argv=On 이면 `?x+core:update` 로 argv 를 위조할 수 있다
-  manifest_unlink_result: [removed, left_by_permission]              # spawn 직전 매니페스트 삭제 결과 — 지우지 못한 파일은 업그레이드 로그에 남긴다
-  vendor_dev_packages: [present, absent, unknown]                    # 운영 vendor 에 require-dev 가 섞여 있는가 (installed.json 판정)
-  composer_step_branch: [reinstalled, skipped_unchanged]             # Step 6 이 vendor 를 교체했는가 스킵했는가
 
 exclusions:
   - { spawn_branch: proc_open_disabled, parent_memory_version: equal_to_to, reason: "proc_open 비활성 시점에 부모는 항상 fromVersion 메모리 — equal 케이스 시뮬 불가" }
-  - { from_to_relation: from_eq_to_forced, spawn_branch: child_zero_steps_with_discovered, reason: "from==to + force 케이스는 step 0건이 정상 동작이므로 silent skip 가드 미트리거" }
+  - { from_to_relation: from_eq_to_forced, spawn_branch: child_silent_skip_zero_steps, reason: "from==to + force 케이스는 step 0건이 정상 동작이므로 silent skip 가드 미트리거" }
   - { child_process_origin: beta_4_or_earlier, steps_executed_signal: present_positive, reason: "beta.5 이전 자식은 [STEPS_EXECUTED] 신호 자체를 모름 — present_positive 시뮬 불가" }
-  - { child_process_origin: beta_4_or_earlier, steps_discovered_signal: discovered_positive, reason: "discovered 필드는 신버전 자식만 발행 — 구버전 자식은 항상 absent" }
-  - { child_process_origin: beta_4_or_earlier, steps_discovered_signal: discovered_zero, reason: "동일 — 구버전 자식은 discovered 필드 미발행(absent)" }
-  - { spawn_branch: child_zero_steps_no_step_files, steps_discovered_signal: discovered_positive, reason: "스텝 파일 부재 브랜치는 정의상 discovered=0 — positive 모순" }
-  - { spawn_branch: child_zero_steps_with_discovered, steps_discovered_signal: discovered_zero, reason: "스텝 파일 존재 브랜치는 정의상 discovered>0 — zero 모순" }
-  - { parent_generation: 7_0_11_plus, package_manifest_state: stale_dev_provider, reason: "7.0.11+ 부모는 spawn 직전에 매니페스트를 비우므로 자식이 stale 을 보는 상태 자체가 성립하지 않는다 — 계층 ② 검증은 pre_7_0_11 부모에서만 의미가 있다" }
-  - { process_context: long_lived_outside_update, child_self_heal_flag: present, reason: "플래그를 물고 있으면 정의상 업데이트 트리 안이다 — 모순" }
-  - { vendor_dev_packages: unknown, composer_step_branch: skipped_unchanged, reason: "판정 불가(installed.json 부재)에서는 감지 로그 자체가 출력되지 않아 분기가 구분되지 않는다" }
-  - { argv_sapi: web_with_forged_query_argv, child_self_heal_flag: present, reason: "env 플래그는 웹 요청으로 주입할 수 없다 — 위조 argv 축은 플래그 부재 상태에서만 의미가 있다" }
 
 effects:
   # §2 spawn_failure_mode + failSpawnWithMode
@@ -81,32 +45,17 @@ effects:
   - spawnUpgradeStepsProcess_proc_open_disabled_dispatches_to_failSpawnWithMode
   - spawnUpgradeStepsProcess_proc_open_resource_fail_dispatches_to_failSpawnWithMode
   - spawnUpgradeStepsProcess_child_abnormal_exit_dispatches_to_failSpawnWithMode
-  # §2.1 [STEPS_EXECUTED] silent skip 가드 (count + discovered)
-  - ExecuteUpgradeStepsCommand_emits_STEPS_EXECUTED_with_count_and_discovered_on_normal_completion
+  # §2.1 [STEPS_EXECUTED] silent skip 가드
+  - ExecuteUpgradeStepsCommand_emits_STEPS_EXECUTED_with_count_on_normal_completion
   - ExecuteUpgradeStepsCommand_does_not_emit_STEPS_EXECUTED_on_handoff_exit
   - spawnUpgradeStepsProcess_parses_STEPS_EXECUTED_with_positive_count_returns_true
   - spawnUpgradeStepsProcess_missing_STEPS_EXECUTED_dispatches_to_failSpawnWithMode
-  # discovered 기반 분기 — executed=0 을 discovered 로 구분
-  - handleSpawnExit_zero_executed_zero_discovered_returns_true          # 케이스 B: 스텝 파일 부재 정상 통과
-  - handleSpawnExit_zero_executed_positive_discovered_dispatches_to_failSpawnWithMode  # 케이스 A: gnuboard/g7#28 silent skip
-  - handleSpawnExit_zero_executed_null_discovered_from_lt_to_dispatches_to_failSpawnWithMode  # 구버전 자식 레거시 판정
-  - spawnUpgradeStepsProcess_no_step_files_returns_true_even_when_from_lt_to  # 7.0.0→7.0.1 실증
-  - runUpgradeSteps_notifies_discovered_zero_when_no_step_in_range
+  - spawnUpgradeStepsProcess_zero_steps_with_from_lt_to_dispatches_to_failSpawnWithMode
   - spawnUpgradeStepsProcess_zero_steps_with_from_eq_to_forced_returns_true
   # §6 stale 메모리 가드
   - runUpgradeSteps_throws_UpgradeHandoffException_when_memory_lt_to_with_abort_mode
   - runUpgradeSteps_logs_warning_when_memory_lt_to_with_fallback_mode
   - runUpgradeSteps_proceeds_silently_when_memory_eq_or_gt_to
-  - runUpgradeSteps_reads_env_APP_VERSION_before_config_so_spawn_child_with_stale_config_cache_passes_guard
-  - runUpgradeSteps_falls_back_to_config_version_when_env_APP_VERSION_absent
-  # config 캐시 부팅 자식 (2026-09-06 전수조사) — 부모는 spawn 전에 캐시를 비우고, 자식은 캐시 부팅이면 디스크 config 를 읽는다
-  - spawnUpgradeStepsProcess_clears_config_cache_before_proc_open
-  - execute_upgrade_steps_child_reads_update_config_from_disk_when_config_is_cached
-  # 부모 프로세스 stale config 우회 — Step 9 재동기화는 디스크 config 를 다시 읽은 뒤 수행한다
-  - reloadCoreConfigAndResync_restores_stale_memory_config_from_disk
-  - reloadCoreConfigAndResync_invokes_all_core_domain_seeders
-  - CoreUpdateCommand_resyncs_via_reloadCoreConfigAndResync_not_direct_sync
-  - route_cache_rebuild_preserves_container_instance
   - runUpgradeSteps_resume_command_format_matches_execute_upgrade_steps_signature
   # §1 symlink 보존 (CoreBackupHelper 위임 경로 포함)
   - copyDirectory_preserves_symlink_target_pointer_on_linux
@@ -118,55 +67,12 @@ effects:
   - upgrade_step_vone_safety_warns_on_app_manager_call_in_upgrade_step
   - upgrade_step_vone_safety_warns_on_app_repository_call_in_upgrade_step
   - upgrade_step_vone_safety_skips_when_audit_allow_inline_present
-  # §8 핸드오프 재실행 권한 안내 (sudo/root × 웹서버 계정 식별성 4분기)
-  - renderResumeGuidance_non_root_prints_command_verbatim_without_permission_warning
-  - renderResumeGuidance_root_web_known_prefixes_sudo_u_and_warns_with_account_name
-  - renderResumeGuidance_root_web_symmetric_prints_command_verbatim
-  - renderResumeGuidance_root_web_unknown_uses_placeholder_and_generic_warning
-  # §9 격리 디렉토리 정리 3층 (부모 루트째 삭제 / 자식 빈 껍데기 청소 / 스냅샷 제외) + 완료 안내문
-  - cleanupPending_removes_whole_staging_root_when_given_inner_source_path
-  - sweepEmptyStagingDirectories_removes_empty_core_dirs_and_keeps_dirs_with_files
-  - snapshotOwnershipDetailed_excludes_current_run_staging_root
-  - execute_bundled_updates_child_sweeps_empty_staging_directories_left_by_parent
-  - apply_mode_incremental_prune_hint_does_not_reference_rollback_command
-  # #658 stale 패키지 매니페스트 3계층 (부모 선정리 / 자식 자가 치유 / 버전 판독 범위)
-  - spawnUpgradeStepsProcess_clears_package_manifests_before_proc_open
-  - spawn_child_boots_with_regenerated_package_manifest_when_parent_left_stale_dev_manifest
-  - bootstrap_app_unlinks_stale_package_manifest_when_update_flag_present
-  - bootstrap_app_leaves_package_manifest_untouched_without_update_flag
-  - PackageManifestCacheHelper_clear_unlinks_packages_and_services_at_configured_paths
-  - clearAllCaches_rebuilds_package_manifest_via_helper
-  - CoreUpdateContext_isInProgress_detects_env_flag_or_update_argv
-  - CoreUpdateContext_ignores_argv_outside_console_sapi
-  - CoreUpdateContext_env_flag_is_honored_regardless_of_sapi
-  - PackageManifestCacheHelper_clear_returns_paths_it_could_not_remove
-  - spawnUpgradeStepsProcess_logs_manifest_files_it_could_not_remove
-  - getCoreVersion_prefers_env_APP_VERSION_only_inside_update_tree
-  - getCoreVersion_ignores_env_APP_VERSION_outside_update_tree
-  - extension_required_core_version_is_validated
-  - getCoreVersion_falls_back_to_config_when_env_absent_inside_update_tree
-  # #658 상주 큐 워커 재시작 신호
-  - core_update_step11_signals_queue_restart
 
 test_files:
   - tests/Feature/Console/CoreUpdateCommandSpawnFailureTest.php
-  - tests/Feature/Console/Commands/ExecuteUpgradeStepsStandaloneTest.php
-  - tests/Unit/Services/CoreUpdateServiceFreshDiskConfigTest.php
-  - tests/Unit/Services/CoreUpdateServiceReloadResyncTest.php
-  - tests/Unit/Support/RouteCacheHelperContainerTest.php
-  - tests/Unit/Support/ConfigCacheHelperContainerTest.php
   - tests/Feature/Console/CoreUpdateCommandHandoffTest.php
-  - tests/Feature/Console/CoreUpdateResumeGuidanceTest.php
   - tests/Feature/Upgrades/MultiVersionUpgradePathTest.php
   - tests/Unit/Extension/Helpers/FilePermissionHelperSymlinkTest.php
-  - tests/Unit/Services/CoreUpdateServiceStagingCleanupTest.php
-  - tests/Feature/Console/ExecuteBundledUpdatesCommandTest.php
-  - tests/Feature/Console/CoreUpdateCommandStalePackageManifestTest.php
-  - tests/Unit/Support/PackageManifestCacheHelperTest.php
-  - tests/Unit/Support/CoreUpdateContextTest.php
-  - tests/Unit/Extension/CoreVersionCheckerEnvPriorityTest.php
-  - tests/Unit/Extension/PluginManagerVersionCheckTest.php
-  - tests/Unit/Services/CoreUpdateServiceQueueRestartTest.php
 
 # 본 매니페스트의 axes cross product 는 800+ 케이스이나, 실제 회귀 가드는 test_files 의
 # 통과 테스트들이 SSoT — 매니페스트는 매트릭스 SSoT 역할.

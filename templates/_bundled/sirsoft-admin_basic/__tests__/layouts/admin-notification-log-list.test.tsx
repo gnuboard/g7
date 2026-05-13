@@ -3,7 +3,7 @@
  * @description 알림 발송 이력 관리자 페이지 레이아웃 렌더링 테스트
  *
  * 테스트 대상:
- * - templates/.../admin_notification_log_list.g7.html
+ * - templates/.../admin_notification_log_list.json
  *
  * 검증 항목:
  * - 레이아웃 구조 (extends, permissions, data_sources)
@@ -105,7 +105,7 @@ function setupTestRegistry(): ComponentRegistry {
 }
 
 // ==============================
-// 테스트용 레이아웃 (admin_notification_log_list.g7.html 기반)
+// 테스트용 레이아웃 (admin_notification_log_list.json 기반)
 // ==============================
 
 const notificationLogListLayout = {
@@ -155,7 +155,7 @@ const notificationLogListLayout = {
       id: 'notification_log_content',
       type: 'basic',
       name: 'Div',
-      props: { className: 'admin-page-content' },
+      props: { className: 'p-6 bg-gray-50 dark:bg-gray-900 min-h-screen' },
       children: [
         {
           id: 'page_header',

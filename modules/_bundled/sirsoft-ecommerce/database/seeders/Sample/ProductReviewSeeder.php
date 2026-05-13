@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Traits\HasSeederCounts;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\Client\Pool;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -93,8 +92,6 @@ class ProductReviewSeeder extends Seeder
 
     /**
      * 시더 실행
-     *
-     * @return void 반환값 없음
      */
     public function run(): void
     {
@@ -115,7 +112,7 @@ class ProductReviewSeeder extends Seeder
     /**
      * 기존 리뷰 삭제
      *
-     * @return void 반환값 없음
+     * @return void
      */
     private function deleteExistingReviews(): void
     {
@@ -140,7 +137,7 @@ class ProductReviewSeeder extends Seeder
     /**
      * 리뷰 생성
      *
-     * @return void 반환값 없음
+     * @return void
      */
     private function createReviews(): void
     {
@@ -169,7 +166,6 @@ class ProductReviewSeeder extends Seeder
             // 리뷰 작성 비율에 따라 스킵
             if (rand(1, 100) > $reviewRate) {
                 $progressBar->advance();
-
                 continue;
             }
 
@@ -180,7 +176,6 @@ class ProductReviewSeeder extends Seeder
 
             if ($exists) {
                 $progressBar->advance();
-
                 continue;
             }
 
@@ -188,16 +183,11 @@ class ProductReviewSeeder extends Seeder
 
             if (! $user) {
                 $progressBar->advance();
-
                 continue;
             }
 
             $rating = $this->getRandomRating();
             $status = ReviewStatus::VISIBLE;
-
-            // 리뷰는 구매확정(없으면 배송완료) 1~7일 뒤에 쓴다 — 주문 시각 사슬 이후, 현재 시각 이전
-            $base = $orderOption->confirmed_at ?? $orderOption->delivered_at ?? $orderOption->updated_at ?? now()->subDays(14);
-            $createdAt = $base->copy()->addMinutes(rand(60, 7 * 24 * 60))->min(now());
 
             // 낮은 별점(1~2)은 숨김 처리 30% 확률
             if ($rating <= 2 && rand(1, 100) <= 30) {
@@ -211,11 +201,9 @@ class ProductReviewSeeder extends Seeder
                 'rating' => $rating,
                 'content' => $this->getRandomContent($rating),
                 'content_mode' => 'text',
-                // 모델이 array 캐스트라 배열을 그대로 넘긴다 (json_encode 하면 JSON 문자열이 한 번 더 감싸져 저장된다)
-                'option_snapshot' => $orderOption->option_snapshot ?? [],
+                'option_snapshot' => json_encode($orderOption->option_snapshot ?? []),
                 'status' => $status,
-                'created_at' => $createdAt,
-                'updated_at' => $createdAt,
+                'created_at' => $orderOption->updated_at?->addDays(rand(1, 14)) ?? now()->subDays(rand(1, 30)),
             ];
 
             // 관리자 답변 (REPLY_RATE % 확률)
@@ -223,15 +211,12 @@ class ProductReviewSeeder extends Seeder
                 $reviewData['reply_content'] = $this->replyContents[array_rand($this->replyContents)];
                 $reviewData['reply_content_mode'] = 'text';
                 $reviewData['reply_admin_id'] = $admin->id;
-                // 답변은 리뷰 뒤에 달린다 (리뷰 작성 1시간~3일 뒤, 현재 시각을 넘지 않음)
-                $repliedAt = $createdAt->copy()->addMinutes(rand(60, 3 * 24 * 60))->min(now());
-                $reviewData['replied_at'] = $repliedAt;
-                // 50% 확률로 답변 수정 이력 생성 (답변 뒤)
-                $reviewData['reply_updated_at'] = rand(0, 1) ? $repliedAt->copy()->addMinutes(rand(10, 24 * 60))->min(now()) : null;
+                $reviewData['replied_at'] = now()->subDays(rand(1, 7));
+                // 50% 확률로 답변 수정 이력 생성
+                $reviewData['reply_updated_at'] = rand(0, 1) ? now()->subDays(rand(0, 3)) : null;
             }
 
-            // created_at 은 fillable 이 아니라 create() 가 버린다 — 리뷰 시각을 지키려고 가드를 풀고 만든다
-            $review = ProductReview::unguarded(fn () => ProductReview::create($reviewData));
+            $review = ProductReview::create($reviewData);
 
             // 포토 리뷰 생성 (PHOTO_RATE % 확률, 1~3장)
             if (rand(1, 100) <= self::PHOTO_RATE) {
@@ -252,7 +237,7 @@ class ProductReviewSeeder extends Seeder
      *
      * @param  ProductReview  $review  리뷰 모델
      * @param  int  $userId  업로더 사용자 ID
-     * @return void 반환값 없음
+     * @return void
      */
     private function createReviewImages(ProductReview $review, int $userId): void
     {
@@ -278,8 +263,7 @@ class ProductReviewSeeder extends Seeder
         foreach ($seeds as $item) {
             $response = $responses[(string) $item['index']] ?? null;
 
-            // 연결 실패·시간 초과는 ConnectionException 객체로 온다 — 응답이 아니면 그 이미지만 건너뛴다
-            if (! $response instanceof Response || ! $response->successful()) {
+            if (! $response || ! $response->successful()) {
                 continue;
             }
 

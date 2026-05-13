@@ -5,7 +5,6 @@ namespace Tests\Feature\Api\Admin;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\IdentityVerificationStatus;
 use App\Enums\PermissionType;
-use App\Extension\HookManager;
 use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
 use App\Models\Permission;
@@ -14,7 +13,6 @@ use App\Models\User;
 use Database\Seeders\IdentityPolicySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -239,62 +237,5 @@ class UserControllerDeleteTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonPath('success', true);
         $response->assertJsonPath('message', __('user.delete_success'));
-    }
-
-    // ========================================================================
-    // 삭제 실패 응답 — placeholder 미노출 + 예외 원문 비노출
-    // ========================================================================
-
-    /**
-     * 회귀 — 삭제 실패 시 응답 message 에 `:error` placeholder 가 그대로 남지 않고,
-     * 동시에 예외 원문(내부 사정)이 사용자 응답에 실리지 않아야 한다.
-     *
-     * 이력: #415 는 토스트에 `사용자 삭제에 실패했습니다: :error` 가 그대로 노출되던 것을
-     * 고치면서 구체 사유를 message 에 실었다. 이후 보안 정정(#577)이 그 방향을 뒤집어,
-     * UserService::deleteUser 는 원본 예외를 로그로만 남기고 응답에는 일반 안내만 싣는다.
-     * 두 요구는 양립한다 — placeholder 가 남지 않으면서 원문도 새지 않으면 된다.
-     *
-     * 검증: message 에 `:error` 가 없고, 훅이 던진 예외 원문도 응답 어디에도 없다.
-     * 그리고 사용자가 읽을 수 있는 일반 안내 문구가 온다.
-     */
-    public function test_delete_failure_message_has_no_placeholder_and_no_raw_exception_detail(): void
-    {
-        $target = User::factory()->create(['is_super' => false]);
-
-        $hookName = 'core.user.before_delete';
-        $reason = '연결된 외부 데이터가 있어 삭제할 수 없습니다 (regression-marker)';
-
-        // UserService::deleteUser 의 before_delete 훅에서 예외를 던져 삭제 실패를 강제.
-        // Service 가 이를 잡아 __('user.delete_failed', ['error' => ...]) ValidationException 으로 변환.
-        HookManager::addAction($hookName, function () use ($reason) {
-            throw new RuntimeException($reason);
-        });
-
-        try {
-            $response = $this->authRequest()
-                ->deleteJson("/api/admin/users/{$target->uuid}");
-        } finally {
-            HookManager::clearAction($hookName);
-        }
-
-        $response->assertStatus(422);
-        $response->assertJsonPath('success', false);
-
-        $message = (string) $response->json('message');
-        $body = (string) $response->getContent();
-
-        // 핵심 1: placeholder 가 그대로 노출되면 안 된다 (#415 회귀 방지)
-        $this->assertStringNotContainsString(':error', $message, 'message 에 미치환 :error 가 남으면 안 된다');
-        $this->assertStringNotContainsString(':error', $body, '응답 어디에도 미치환 :error 가 남으면 안 된다');
-
-        // 핵심 2: 예외 원문(내부 사정)이 응답에 실리면 안 된다 (#577 보안 정정)
-        $this->assertStringNotContainsString(
-            $reason,
-            $body,
-            '예외 원문이 응답에 실리면 안 된다 — 원본은 로그로만 남긴다'
-        );
-
-        // 사용자가 읽을 수 있는 일반 안내가 온다
-        $this->assertSame(__('user.delete_failed'), $message);
     }
 }

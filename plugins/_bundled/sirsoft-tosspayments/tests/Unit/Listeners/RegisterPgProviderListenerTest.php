@@ -2,22 +2,20 @@
 
 namespace Plugins\Sirsoft\Tosspayments\Tests\Unit\Listeners;
 
+use PHPUnit\Framework\TestCase;
 use Plugins\Sirsoft\Tosspayments\Listeners\RegisterPgProviderListener;
-use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
 
 /**
  * RegisterPgProviderListener 단위 테스트
- *
- * @effects toss_provider_registered_with_payment_handler
  */
-class RegisterPgProviderListenerTest extends PluginTestCase
+class RegisterPgProviderListenerTest extends TestCase
 {
     private RegisterPgProviderListener $listener;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->listener = new RegisterPgProviderListener;
+        $this->listener = new RegisterPgProviderListener();
     }
 
     /**
@@ -60,12 +58,6 @@ class RegisterPgProviderListenerTest extends PluginTestCase
         $this->assertIsString($toss['name']);
         $this->assertEquals('credit-card', $toss['icon']);
         $this->assertContains('card', $toss['supported_methods']);
-        // S4: 결제수단 4종으로 확장
-        $this->assertContains('virtual_account', $toss['supported_methods']);
-        $this->assertContains('bank_transfer', $toss['supported_methods']);
-        $this->assertContains('mobile', $toss['supported_methods']);
-        // S4: payment_handler 선언 (PG 분기 발화 정공법)
-        $this->assertSame('sirsoft-tosspayments.requestPayment', $toss['payment_handler']);
     }
 
     /**

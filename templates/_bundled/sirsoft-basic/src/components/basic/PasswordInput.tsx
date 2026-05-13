@@ -7,13 +7,6 @@ const t = (key: string, params?: Record<string, string | number>) =>
     .G7Core?.t?.(key, params) ?? key;
 
 /**
- * 특수문자 판정 — 백엔드(`PasswordPolicy` 의 `symbols()`·`PasswordComposition`)와 같은 집합이다.
- * 구두점(P)·기호(S)·공백 구분자(Z) 유니코드 범주라 이모지·전각 기호도 특수문자로 센다.
- * 종전의 `[!@#$%^&*(),.?":{}|<>]` 는 `-`·`_`·`~` 등을 빠뜨려 서버는 통과시키는 비밀번호를 화면이 미충족으로 그렸다(#736).
- */
-const SPECIAL_CHAR = /[\p{Z}\p{S}\p{P}]/u;
-
-/**
  * 비밀번호 검증 규칙 정의
  */
 export interface PasswordRule {
@@ -64,26 +57,23 @@ export const availablePasswordRules: Record<string, PasswordRule> = {
   hasSpecial: {
     key: 'hasSpecial',
     labelKey: 'auth.password_input.rules.hasSpecial',
-    validate: (value: string) => SPECIAL_CHAR.test(value),
+    validate: (value: string) => /[!@#$%^&*(),.?":{}|<>]/.test(value),
   },
   noSpaces: {
     key: 'noSpaces',
     labelKey: 'auth.password_input.rules.noSpaces',
     validate: (value: string) => !/\s/.test(value),
   },
-  /**
-   * 영문·숫자·특수문자 세 종류 중 몇 가지를 섞었는지 — 백엔드 「문자 종류 조합」 규칙(`PasswordComposition`)과 같은 셈법이다.
-   * 대·소문자는 한 종류(영문)로 센다. 종전에는 대문자·소문자·숫자·특수 네 종류로 세어 서버 판정과 어긋났다(#736).
-   */
   minTypes: {
     key: 'minTypes',
     labelKey: 'auth.password_input.rules.minTypes',
-    defaultParam: 2,
-    validate: (value: string, param = 2) => {
+    defaultParam: 3,
+    validate: (value: string, param = 3) => {
       let types = 0;
-      if (/[a-zA-Z]/.test(value)) types++;
+      if (/[A-Z]/.test(value)) types++;
+      if (/[a-z]/.test(value)) types++;
       if (/[0-9]/.test(value)) types++;
-      if (SPECIAL_CHAR.test(value)) types++;
+      if (/[!@#$%^&*(),.?":{}|<>]/.test(value)) types++;
       return types >= param;
     },
   },
@@ -330,22 +320,8 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     // HTML 표준 속성이 아닌 것들을 필터링 (타입 안전성 개선)
     const { loadingactions, formdata, ...validProps } = props as typeof props & NonStandardProps;
 
-    // 레이아웃 편집기 표식/핸들러(data-editor-*, onMouseMove/Leave 등)는 시각적
-    // 루트(wrapper div)에 부착해야 캔버스 선택/드래그가 컴포넌트 전체를 잡는다.
-    // 내부 input 에만 spread 하면 선택 박스가 input 으로 한정되고 error/검증/토글이
-    // 선택 영역 밖이 된다.
-    const editorRootProps: Record<string, unknown> = {};
-    const inputRestProps: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(validProps as Record<string, unknown>)) {
-      if (k.startsWith('data-editor-') || k === 'onMouseMove' || k === 'onMouseLeave') {
-        editorRootProps[k] = v;
-      } else {
-        inputRestProps[k] = v;
-      }
-    }
-
     return (
-      <div className={`relative ${wrapperClassName}`} {...editorRootProps}>
+      <div className={`relative ${wrapperClassName}`}>
         {/* 입력 필드 wrapper */}
         <div className="relative">
           <input
@@ -358,7 +334,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             onKeyDown={handleKeyEvent}
             onKeyUp={handleKeyEvent}
             disabled={disabled}
-            {...inputRestProps}
+            {...validProps}
           />
 
           {/* 비밀번호 보기/숨기기 버튼 */}

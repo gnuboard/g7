@@ -2,7 +2,7 @@
     "_meta": {
         "version": "1.0.0",
         "description": "그누보드7 환경설정 기본값 및 프론트엔드 스키마",
-        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity", "pagination", "analytics", "privacy"]
+        "categories": ["general", "security", "mail", "upload", "seo", "cache", "debug", "drivers", "core_update", "geoip", "notifications", "identity"]
     },
     "defaults": {
         "general": {
@@ -14,8 +14,7 @@
             "language": "ko",
             "currency": "KRW",
             "maintenance_mode": false,
-            "site_logo": [],
-            "asset_url_mode": "extension"
+            "site_logo": []
         },
         "security": {
             "force_https": false,
@@ -24,30 +23,8 @@
             "max_login_attempts": 5,
             "login_lockout_time": 5,
             "two_factor_auth": false,
-            "two_factor_scope": "all",
             "password_min_length": 8,
-            "require_password_special_char": false,
-            "password_require_char_types": false,
-            "password_block_identifier": false,
-            "password_block_repeated_chars": false,
-            "password_repeated_chars_length": 4,
-            "password_block_sequential_chars": false,
-            "password_sequential_chars_length": 4,
-            "password_reuse_prevention_enabled": false,
-            "password_reuse_count": 3,
-            "password_expiry_enabled": false,
-            "password_expiry_days": 90,
-            "password_expiry_notice_days": 7,
-            "password_expiry_scope": "all",
-            "password_expiry_action": "force",
-            "password_expiry_remind_days": 30,
-            "password_expiry_batch_size": 1000,
-            "password_expiry_started_at": null,
-            "activity_log_retention_days": 365,
-            "allow_internal_outbound_urls": false,
-            "ip_restriction_enabled": false,
-            "admin_allowed_ips": [],
-            "ip_restriction_rules": []
+            "require_password_special_char": false
         },
         "mail": {
             "mailer": "smtp",
@@ -70,9 +47,7 @@
             "allowed_extensions": ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "zip"],
             "image_max_width": 2000,
             "image_max_height": 2000,
-            "image_quality": 85,
-            "orphan_cleanup_enabled": false,
-            "orphan_retention_days": 30
+            "image_quality": 85
         },
         "seo": {
             "meta_title_suffix": "",
@@ -85,20 +60,14 @@
             "bot_detection_enabled": true,
             "bot_detection_library_enabled": true,
             "og_default_site_name": "",
-            "og_image_default": [],
             "og_image_default_width": 1200,
             "og_image_default_height": 630,
             "twitter_default_card": "summary_large_image",
             "twitter_default_site": "",
-            "cache_enabled": null,
-            "cache_ttl": null,
+            "cache_enabled": true,
+            "cache_ttl": 7200,
             "sitemap_enabled": true,
-            "sitemap_cache_ttl": null,
-            "sitemap_urls_per_file": 50000,
-            "sitemap_gzip": false,
-            "sitemap_serve_stale_on_miss": true,
-            "sitemap_max_urls_per_contributor": 0,
-            "sitemap_hreflang_enabled": true,
+            "sitemap_cache_ttl": 86400,
             "sitemap_schedule": "daily",
             "sitemap_schedule_time": "02:00",
             "sitemap_last_updated_at": "",
@@ -124,9 +93,7 @@
         "debug": {
             "mode": false,
             "sql_query_log": false,
-            "log_level": "error",
-            "outbound_proxy": "",
-            "outbound_proxy_bypass": []
+            "log_level": "error"
         },
         "core_update": {
             "github_url": "",
@@ -138,20 +105,13 @@
             "auto_update_enabled": true,
             "last_updated_at": ""
         },
-        "pagination": {
-            "result_cap": 10000,
-            "max_page": 1000
-        },
         "drivers": {
             "storage_driver": "local",
-            "public_asset_disk": "none",
             "s3_bucket": "",
             "s3_region": "ap-northeast-2",
             "s3_access_key": "",
             "s3_secret_key": "",
             "s3_url": "",
-            "s3_endpoint": "",
-            "s3_use_path_style": false,
             "cache_driver": "file",
             "redis_host": "127.0.0.1",
             "redis_port": 6379,
@@ -189,102 +149,31 @@
             "purpose_providers": {
                 "password_reset": null,
                 "self_update": null,
-                "sensitive_action": null,
-                "login": null
+                "sensitive_action": null
             },
             "challenge_ttl_minutes": 15,
             "max_attempts": 5
-        },
-        "analytics": {
-            "enabled": true,
-            "privacy_mode": "full",
-            "respect_dnt": true,
-            "ip_mask_octets": 0,
-            "geo_before_mask": true,
-            "anonymize_referrer": "none",
-            "pseudonymize_user_id": false,
-            "visit_timeout_minutes": 30,
-            "max_actions_per_visit": 500,
-            "excluded_url_patterns": ["/admin*", "/_boost*", "/health*"],
-            "excluded_ips": [],
-            "excluded_user_agents": [],
-            "block_headless": true,
-            "block_cloud_ip_ranges": false,
-            "cloud_ip_ranges_updated_at": "",
-            "country_filter_mode": "none",
-            "country_filter_codes": [],
-            "ip_allowlist": [],
-            "exclude_prefetch": true,
-            "bot_detector_enabled": true,
-            "bot_tracking_enabled": true,
-            "site_search_enabled": true,
-            "track_downloads": true,
-            "track_outlinks": true,
-            "download_extensions": ["pdf", "zip", "hwp", "hwpx", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "7z", "rar", "tar", "gz", "exe", "dmg", "apk", "mp3", "mp4", "avi", "mov"],
-            "retention_days": 90,
-            "hourly_retention_days": 90,
-            "bot_hits_retention_days": 30,
-            "failure_log_retention_days": 30,
-            "ledger_warning_actions": 2000000,
-            "ledger_warning_visits": 500000,
-            "archive_chunk_size": 5000,
-            "archive_on_view_enabled": true,
-            "archive_on_view_max_visits": 50000,
-            "duration_bucket_bounds": "10,30,60,180,600,1800",
-            "pages_bucket_bounds": "1,2,3,4,5,7,10,14,20",
-            "realtime_poll_seconds": 30,
-            "realtime_window_minutes": 5,
-            "top_n_overview": 5,
-            "top_n_dashboard": 5,
-            "top_n_detail": 25,
-            "report_weekly_enabled": false,
-            "report_monthly_enabled": false,
-            "public_summary_enabled": true,
-            "visitor_cookie_days": 395
-        },
-        "privacy": {
-            "consent_provider": "",
-            "withdrawn_retention_enabled": false,
-            "withdrawn_retention_days": 365,
-            "dormant_enabled": false,
-            "dormant_days": 730,
-            "dormant_notice_days": 30,
-            "dormant_withdraw_enabled": false,
-            "dormant_withdraw_days": 365
         }
     },
     "frontend_schema": {
         "_description": "프론트엔드에 노출할 설정 필드 정의. 각 카테고리별로 노출할 필드와 타입 캐스팅, 민감 정보 여부를 정의합니다.",
         "general": {
             "expose": true,
-            "_comment": "site_url, admin_email, language는 프론트엔드에서 미참조하므로 expose: false. timezone 은 관리자 빠른 기간·통계 기간이 「오늘」을 계정·사이트 시간대로 정하는 데 쓰므로 노출(민감 정보 아님)",
+            "_comment": "site_url, admin_email, language, timezone는 프론트엔드에서 미참조하므로 expose: false",
             "fields": {
                 "site_name": { "type": "string", "sensitive": false },
                 "site_url": { "type": "string", "sensitive": false, "expose": false },
                 "site_description": { "type": "string", "sensitive": false },
                 "admin_email": { "type": "string", "sensitive": false, "expose": false },
                 "language": { "type": "string", "sensitive": false, "expose": false },
-                "timezone": { "type": "string", "sensitive": false },
+                "timezone": { "type": "string", "sensitive": false, "expose": false },
                 "site_logo": { "type": "array", "sensitive": false, "transform": "attachments" },
-                "site_logo_url": { "type": "string", "sensitive": false, "computed": true, "source": "site_logo", "transform": "first_image_url" },
-                "asset_url_mode": { "type": "string", "sensitive": false }
+                "site_logo_url": { "type": "string", "sensitive": false, "computed": true, "source": "site_logo", "transform": "first_image_url" }
             }
         },
         "security": {
-            "expose": true,
-            "_comment": "비밀번호 작성·재사용 규칙만 노출한다(가입·변경·재설정 화면 안내용). 만료·IP·2FA·토큰·잠금 키는 fields 에 선언하지 않아 내보내지 않는다 — 공격자에게 정책 정보 제공 위험",
-            "fields": {
-                "password_min_length": { "type": "integer", "sensitive": false },
-                "require_password_special_char": { "type": "boolean", "sensitive": false },
-                "password_require_char_types": { "type": "boolean", "sensitive": false },
-                "password_block_identifier": { "type": "boolean", "sensitive": false },
-                "password_block_repeated_chars": { "type": "boolean", "sensitive": false },
-                "password_repeated_chars_length": { "type": "integer", "sensitive": false },
-                "password_block_sequential_chars": { "type": "boolean", "sensitive": false },
-                "password_sequential_chars_length": { "type": "integer", "sensitive": false },
-                "password_reuse_prevention_enabled": { "type": "boolean", "sensitive": false },
-                "password_reuse_count": { "type": "integer", "sensitive": false }
-            }
+            "expose": false,
+            "_comment": "보안 정책은 프론트엔드에서 미참조 — 노출 시 공격자에게 정보 제공 위험"
         },
         "mail": {
             "expose": false,
@@ -298,9 +187,7 @@
                 "allowed_extensions_formatted": { "type": "string", "sensitive": false, "computed": true, "source": "allowed_extensions", "transform": "format_extensions" },
                 "image_max_width": { "type": "integer", "sensitive": false },
                 "image_max_height": { "type": "integer", "sensitive": false },
-                "image_quality": { "type": "integer", "sensitive": false, "expose": false },
-                "orphan_cleanup_enabled": { "type": "boolean", "sensitive": false, "expose": false },
-                "orphan_retention_days": { "type": "integer", "sensitive": false, "expose": false }
+                "image_quality": { "type": "integer", "sensitive": false, "expose": false }
             }
         },
         "seo": {
@@ -317,8 +204,6 @@
                 "bot_detection_enabled": { "type": "boolean", "sensitive": false },
                 "bot_detection_library_enabled": { "type": "boolean", "sensitive": false },
                 "og_default_site_name": { "type": "string", "sensitive": false },
-                "og_image_default": { "type": "array", "sensitive": false, "transform": "attachments" },
-                "og_image_default_url": { "type": "string", "sensitive": false, "computed": true, "source": "og_image_default", "transform": "first_image_url" },
                 "og_image_default_width": { "type": "integer", "sensitive": false },
                 "og_image_default_height": { "type": "integer", "sensitive": false },
                 "twitter_default_card": { "type": "string", "sensitive": false },
@@ -327,11 +212,6 @@
                 "cache_ttl": { "type": "integer", "sensitive": false },
                 "sitemap_enabled": { "type": "boolean", "sensitive": false },
                 "sitemap_cache_ttl": { "type": "integer", "sensitive": false },
-                "sitemap_urls_per_file": { "type": "integer", "sensitive": false },
-                "sitemap_gzip": { "type": "boolean", "sensitive": false },
-                "sitemap_serve_stale_on_miss": { "type": "boolean", "sensitive": false },
-                "sitemap_max_urls_per_contributor": { "type": "integer", "sensitive": false },
-                "sitemap_hreflang_enabled": { "type": "boolean", "sensitive": false },
                 "sitemap_schedule": { "type": "string", "sensitive": false },
                 "sitemap_schedule_time": { "type": "string", "sensitive": false },
                 "sitemap_last_updated_at": { "type": "string", "sensitive": false },
@@ -366,9 +246,7 @@
             "_comment": "debug 설정은 advanced 카테고리에 병합",
             "fields": {
                 "mode": { "type": "boolean", "sensitive": false, "frontend_key": "debug_mode" },
-                "sql_query_log": { "type": "boolean", "sensitive": false, "expose": false },
-                "outbound_proxy": { "type": "string", "sensitive": true },
-                "outbound_proxy_bypass": { "type": "array", "sensitive": false, "expose": false }
+                "sql_query_log": { "type": "boolean", "sensitive": false, "expose": false }
             }
         },
         "core_update": {
@@ -391,28 +269,16 @@
                 "last_updated_at": { "type": "string", "sensitive": false, "frontend_key": "geoip_last_updated_at" }
             }
         },
-        "pagination": {
-            "expose": true,
-            "merge_into": "advanced",
-            "_comment": "목록 한계값 — advanced 카테고리에 병합",
-            "fields": {
-                "result_cap": { "type": "integer", "sensitive": false, "frontend_key": "pagination_result_cap" },
-                "max_page": { "type": "integer", "sensitive": false, "frontend_key": "pagination_max_page" }
-            }
-        },
         "drivers": {
             "expose": false,
             "_comment": "드라이버 설정 — 프론트엔드 미노출 (admin_settings에서 API 원본값 기반 비교로 변경)",
             "fields": {
                 "storage_driver": { "type": "string", "sensitive": false },
-                "public_asset_disk": { "type": "string", "sensitive": false },
                 "s3_bucket": { "type": "string", "sensitive": false },
                 "s3_region": { "type": "string", "sensitive": false },
                 "s3_access_key": { "type": "string", "sensitive": true },
                 "s3_secret_key": { "type": "string", "sensitive": true },
                 "s3_url": { "type": "string", "sensitive": false },
-                "s3_endpoint": { "type": "string", "sensitive": false },
-                "s3_use_path_style": { "type": "boolean", "sensitive": false },
                 "cache_driver": { "type": "string", "sensitive": false },
                 "redis_host": { "type": "string", "sensitive": false },
                 "redis_port": { "type": "integer", "sensitive": false },
@@ -436,8 +302,7 @@
                 "websocket_verify_ssl": { "type": "boolean", "sensitive": false },
                 "websocket_server_host": { "type": "string", "sensitive": false },
                 "websocket_server_port": { "type": "integer", "sensitive": false },
-                "websocket_server_scheme": { "type": "string", "sensitive": false },
-                "search_engine_driver": { "type": "string", "sensitive": false }
+                "websocket_server_scheme": { "type": "string", "sensitive": false }
             }
         },
         "notifications": {
@@ -450,66 +315,11 @@
             "expose": true,
             "_comment": "본인인증 인프라 provider 기술 파라미터 — signup/enabled 등 정책 분기 키는 IdentityPolicy 로 흡수됨",
             "fields": {
-                "default_provider": { "type": "string", "sensitive": false, "expose": false, "_comment": "저장값을 그대로 SSR 로 내보내면 제거된 플러그인의 provider ID 가 전 공개 페이지에 남는다. 소비처 0 이므로 미노출 — 프론트가 provider 를 알아야 하는 지점(428 응답 / 정책 프리페치)은 레지스트리 대조를 거친 값을 따로 받는다" },
+                "default_provider": { "type": "string", "sensitive": false },
                 "purpose_providers": { "type": "array", "sensitive": false, "expose": false },
                 "challenge_ttl_minutes": { "type": "integer", "sensitive": false, "expose": false },
                 "max_attempts": { "type": "integer", "sensitive": false, "expose": false }
             }
-        },
-        "analytics": {
-            "expose": true,
-            "_comment": "방문자 통계. 트래커와 공개 위젯이 실제로 읽는 키만 노출한다. 보존일·임계치·차단 목록·솔트 성격의 키는 공개 페이지에 실리면 운영 정보가 새므로 expose: false 를 하나씩 명시한다(생략하면 전부 노출된다)",
-            "fields": {
-                "enabled": { "type": "boolean", "sensitive": false },
-                "privacy_mode": { "type": "string", "sensitive": false },
-                "respect_dnt": { "type": "boolean", "sensitive": false },
-                "ip_mask_octets": { "type": "integer", "sensitive": false, "expose": false },
-                "geo_before_mask": { "type": "boolean", "sensitive": false, "expose": false },
-                "anonymize_referrer": { "type": "string", "sensitive": false, "expose": false },
-                "pseudonymize_user_id": { "type": "boolean", "sensitive": false, "expose": false },
-                "visit_timeout_minutes": { "type": "integer", "sensitive": false, "expose": false },
-                "max_actions_per_visit": { "type": "integer", "sensitive": false, "expose": false },
-                "excluded_url_patterns": { "type": "array", "sensitive": false, "_comment": "트래커가 서버와 같은 규칙으로 선제 제외하려면 읽어야 한다" },
-                "excluded_ips": { "type": "array", "sensitive": false, "expose": false },
-                "excluded_user_agents": { "type": "array", "sensitive": false, "expose": false },
-                "block_headless": { "type": "boolean", "sensitive": false, "expose": false },
-                "block_cloud_ip_ranges": { "type": "boolean", "sensitive": false, "expose": false },
-                "cloud_ip_ranges_updated_at": { "type": "string", "sensitive": false, "expose": false },
-                "country_filter_mode": { "type": "string", "sensitive": false, "expose": false },
-                "country_filter_codes": { "type": "array", "sensitive": false, "expose": false },
-                "ip_allowlist": { "type": "array", "sensitive": false, "expose": false },
-                "exclude_prefetch": { "type": "boolean", "sensitive": false },
-                "bot_detector_enabled": { "type": "boolean", "sensitive": false, "expose": false },
-                "bot_tracking_enabled": { "type": "boolean", "sensitive": false, "expose": false },
-                "site_search_enabled": { "type": "boolean", "sensitive": false, "expose": false },
-                "track_downloads": { "type": "boolean", "sensitive": false },
-                "track_outlinks": { "type": "boolean", "sensitive": false },
-                "download_extensions": { "type": "array", "sensitive": false },
-                "retention_days": { "type": "integer", "sensitive": false, "expose": false },
-                "hourly_retention_days": { "type": "integer", "sensitive": false, "expose": false },
-                "bot_hits_retention_days": { "type": "integer", "sensitive": false, "expose": false },
-                "failure_log_retention_days": { "type": "integer", "sensitive": false, "expose": false },
-                "ledger_warning_actions": { "type": "integer", "sensitive": false, "expose": false },
-                "ledger_warning_visits": { "type": "integer", "sensitive": false, "expose": false },
-                "archive_chunk_size": { "type": "integer", "sensitive": false, "expose": false },
-                "archive_on_view_enabled": { "type": "boolean", "sensitive": false, "expose": false },
-                "archive_on_view_max_visits": { "type": "integer", "sensitive": false, "expose": false },
-                "duration_bucket_bounds": { "type": "string", "sensitive": false, "expose": false },
-                "pages_bucket_bounds": { "type": "string", "sensitive": false, "expose": false },
-                "realtime_poll_seconds": { "type": "integer", "sensitive": false, "_comment": "관리자 실시간 화면이 폴링 주기로 읽는다" },
-                "realtime_window_minutes": { "type": "integer", "sensitive": false },
-                "top_n_overview": { "type": "integer", "sensitive": false, "expose": false },
-                "top_n_dashboard": { "type": "integer", "sensitive": false, "expose": false },
-                "top_n_detail": { "type": "integer", "sensitive": false, "expose": false },
-                "report_weekly_enabled": { "type": "boolean", "sensitive": false, "expose": false },
-                "report_monthly_enabled": { "type": "boolean", "sensitive": false, "expose": false },
-                "public_summary_enabled": { "type": "boolean", "sensitive": false, "_comment": "사용자 화면 방문자 카운터가 렌더 여부를 판단한다" },
-                "visitor_cookie_days": { "type": "integer", "sensitive": false, "expose": false }
-            }
-        },
-        "privacy": {
-            "expose": false,
-            "_comment": "보유기간·휴면 정책은 공개 화면이 참조하지 않는다 — 노출하면 어떤 회원이 언제 휴면·파기 대상이 되는지 밖에서 역산할 수 있다. 휴면 해제 안내는 로그인 응답이 직접 알려준다"
         }
     }
 }

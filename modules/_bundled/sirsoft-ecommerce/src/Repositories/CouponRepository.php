@@ -3,15 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Helpers\PermissionHelper;
-use App\Helpers\TimezoneHelper;
-use App\Repositories\Concerns\FiltersByDateRange;
-use App\Repositories\Concerns\PaginatesWithDeferredJoin;
-use App\Repositories\Concerns\ResolvesSortSpec;
-use App\Search\KeywordSearch;
-use App\Support\Query\BoundedPaginator;
-use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
@@ -25,19 +17,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
  */
 class CouponRepository implements CouponRepositoryInterface
 {
-    use FiltersByDateRange;
-    use PaginatesWithDeferredJoin;
-    use ResolvesSortSpec;
-
-    /** 허용 정렬 컬럼 (CouponListRequest 와 동일 집합) */
-    private const SORTABLE_COLUMNS = ['created_at', 'name', 'discount_value', 'issued_count', 'valid_to'];
-
-    /**
-     * 쿠폰 저장소를 생성합니다.
-     *
-     * @param  Coupon  $model  쿠폰 모델
-     * @param  CouponIssue  $issueModel  쿠폰 발급 모델
-     */
     public function __construct(
         protected Coupon $model,
         protected CouponIssue $issueModel
@@ -64,28 +43,45 @@ class CouponRepository implements CouponRepositoryInterface
             $keyword = $filters['search_keyword'];
             $searchField = $filters['search_field'] ?? 'all';
 
-            // all → FULLTEXT(name+description) + creator 보조필드 union (Scout queryCallback total
-            // 재계산 시 orWhereHas('creator') 가 MATCH 절 없이 재적용되어 total=0 이 되는 결함 회피)
-            if ($searchField === 'all') {
-                // FULLTEXT 매칭과 작성자 보조 매칭을 하나의 WHERE 그룹으로 묶어 페이지 쿼리에
-                // 직접 넣는다. 종전에는 매칭 ID 전량을 PHP 로 끌어와 whereIn 으로 되먹여,
-                // 매칭이 많을수록 메모리와 IN(...) 목록이 함께 커졌다.
-                $query->where(function ($group) use ($keyword) {
-                    // 정제는 코어 헬퍼가 단독 수행 — BOOLEAN MODE 연산자 입력이 500 이 되지 않는다.
-                    // 쿠폰 테이블도 컬럼별 단일 FULLTEXT 인덱스다 — 복합 MATCH 는 쓸 수 없다.
-                    KeywordSearch::applyAny($group, ['name', 'description'], $keyword);
+            // FULLTEXT 대상 필드인 경우 Scout 사용
+            if (in_array($searchField, ['all', 'name', 'description'])) {
+                return Coupon::search($keyword)
+                    ->query(function ($q) use ($filters, $keyword, $searchField, $with, $perPage) {
+                        // 권한 스코프 필터링
+                        PermissionHelper::applyPermissionScope($q, 'sirsoft-ecommerce.promotion-coupon.read');
 
-                    $group->orWhereHas('creator', function ($creatorQuery) use ($keyword) {
-                        $creatorQuery->where('name', 'like', "%{$keyword}%")
-                            ->orWhere('email', 'like', "%{$keyword}%");
-                    });
-                });
-            } elseif ($searchField === 'name') {
-                // 컬럼 한정 검색 — Scout(FULLTEXT)는 컬럼 한정 미지원이므로 단일컬럼 LIKE
-                $query->where('name', 'like', "%{$keyword}%");
-            } elseif ($searchField === 'description') {
-                $query->where('description', 'like', "%{$keyword}%");
-            } elseif ($searchField === 'created_by') {
+                        // 발급내역 카운트 추가
+                        $q->withCount('issues');
+
+                        // 필터 적용
+                        $this->applyCouponFilters($q, $filters);
+
+                        // FULLTEXT 외 필드 OR 조건 (created_by — all인 경우)
+                        if ($searchField === 'all') {
+                            $q->orWhereHas('creator', function ($creatorQuery) use ($keyword) {
+                                $creatorQuery->where('name', 'like', "%{$keyword}%")
+                                    ->orWhere('email', 'like', "%{$keyword}%");
+                            });
+                        }
+
+                        // 정렬
+                        $sortBy = $filters['sort_by'] ?? 'created_at';
+                        $sortOrder = $filters['sort_order'] ?? 'desc';
+                        $q->orderBy($sortBy, $sortOrder)->orderBy('id', $sortOrder);
+
+                        // Eager loading
+                        if (! empty($with)) {
+                            $q->with($with);
+                        }
+
+                        // 기본 관계 로드
+                        $q->with(['creator:id,uuid,name,email']);
+                    })
+                    ->paginate($perPage);
+            }
+
+            // FULLTEXT 미대상 필드 (created_by) → LIKE 직접
+            if ($searchField === 'created_by') {
                 $query->whereHas('creator', function ($creatorQuery) use ($keyword) {
                     $creatorQuery->where('name', 'like', "%{$keyword}%")
                         ->orWhere('email', 'like', "%{$keyword}%");
@@ -93,25 +89,10 @@ class CouponRepository implements CouponRepositoryInterface
             }
         }
 
-        return $this->finalizeListQuery($query, $filters, $with, $perPage);
-    }
-
-    /**
-     * 목록 쿼리의 정렬·eager loading 을 적용하고 페이지네이션 결과를 반환합니다.
-     *
-     * 검색 분기별로 중복되던 정렬/eager/paginate 를 단일 진입점으로 모았습니다.
-     *
-     * @param  Builder  $query  적용 대상 쿼리(권한/필터/검색 조건이 이미 적용된 상태)
-     * @param  array  $filters  정렬 필터(sort_by/sort_order)
-     * @param  array  $with  추가 eager loading 관계
-     * @param  int  $perPage  페이지당 항목 수
-     * @return LengthAwarePaginator 페이지네이션된 쿠폰 목록
-     */
-    private function finalizeListQuery(Builder $query, array $filters, array $with, int $perPage): LengthAwarePaginator
-    {
-        // 정렬 (허용 컬럼 화이트리스트로 해석)
-        $sort = $this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'created_at')[0];
-        $query->orderBy($sort['column'], $sort['direction'])->orderBy('id', $sort['direction']);
+        // 정렬
+        $sortBy = $filters['sort_by'] ?? 'created_at';
+        $sortOrder = $filters['sort_order'] ?? 'desc';
+        $query->orderBy($sortBy, $sortOrder)->orderBy('id', $sortOrder);
 
         // Eager loading
         if (! empty($with)) {
@@ -121,16 +102,7 @@ class CouponRepository implements CouponRepositoryInterface
         // 기본 관계 로드
         $query->with(['creator:id,uuid,name,email']);
 
-        // audit:allow repository-paginate-column-pruning reason: 쿠폰 "정의" 목록 —
-        // 행 수가 운영자가 만든 쿠폰 수에 묶인다(발급 이력은 별도 테이블). description 외에 넓은 컬럼이 없다
-        //
-        // 키워드 검색은 FULLTEXT + creator 보조 매칭이라 매칭 수가 데이터 증가에 비례한다.
-        // 총 건수는 상한까지만 세고, "다음" 이동은 per_page + 1 실측으로 끝까지 열어 둔다.
-        return BoundedPaginator::paginate(
-            $query,
-            perPage: $perPage,
-            resultCap: PaginationLimits::resultCap('ecommerce.coupons'),
-        );
+        return $query->paginate($perPage);
     }
 
     /**
@@ -206,20 +178,13 @@ class CouponRepository implements CouponRepositoryInterface
             $query->where('status', $filters['status']);
         }
 
-        // 지연 조인: 쿠폰 1건의 발급 이력은 대량 발급 시 수십만 건이 될 수 있어
-        // 뒤쪽 페이지에서 OFFSET 비용이 그대로 누적된다. inner 는 id 만 훑는다.
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: [
-                ['column' => 'issued_at', 'direction' => 'desc'],
-                ['column' => 'id', 'direction' => 'desc'],
-            ],
-            perPage: $perPage,
-            // 관계 로드 (사용처 주문번호 표시를 위해 order 도 로드)
-            relations: ['user:id,uuid,name', 'order:id,order_number'],
-            resultCap: PaginationLimits::resultCap('ecommerce.coupon_issues'),
-        );
+        // 기본 정렬: 발급일 최신순
+        $query->orderBy('issued_at', 'desc')->orderBy('id', 'desc');
+
+        // 관계 로드
+        $query->with(['user:id,uuid,name']);
+
+        return $query->paginate($perPage);
     }
 
     /**
@@ -228,17 +193,6 @@ class CouponRepository implements CouponRepositoryInterface
     public function incrementIssuedCount(int $couponId, int $count = 1): void
     {
         $this->model->where('id', $couponId)->increment('issued_count', $count);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function decrementIssuedCount(int $couponId, int $count = 1): void
-    {
-        // 음수 방지: 현재 발급 수량을 초과해 감소하지 않도록 GREATEST(0, ...) 처리
-        $this->model->where('id', $couponId)
-            ->where('issued_count', '>=', $count)
-            ->decrement('issued_count', $count);
     }
 
     /**
@@ -281,13 +235,9 @@ class CouponRepository implements CouponRepositoryInterface
             ->where(fn ($q) => $q->whereNull('total_quantity')->orWhereColumn('issued_count', '<', 'total_quantity'))
             ->where(fn ($q) => $q->whereNull('valid_to')->orWhere('valid_to', '>=', now()))
             ->with(['includedProducts', 'excludedProducts', 'includedCategories', 'excludedCategories'])
-            // 정렬 마지막의 기본키는 전순서 보장용이다 (일괄 등록된 쿠폰의 created_at 동률 대비)
-            ->orderBy('created_at', 'desc')
-            ->orderBy('id', 'desc');
+            ->orderBy('created_at', 'desc');
 
         if ($perPage !== null) {
-            // audit:allow repository-paginate-column-pruning reason: 다운로드 가능 쿠폰 "정의" 목록 —
-            // 발급중 상태의 쿠폰만 남는 좁은 집합이라 OFFSET 이 깊어질 수 없다
             return $query->paginate($perPage);
         }
 
@@ -305,9 +255,9 @@ class CouponRepository implements CouponRepositoryInterface
     /**
      * 쿠폰 필터 조건을 쿼리에 적용합니다.
      *
-     * @param  Builder  $query  Eloquent 쿼리 빌더
-     * @param  array  $filters  필터 배열
-     * @return void 반환값 없음
+     * @param \Illuminate\Database\Eloquent\Builder $query Eloquent 쿼리 빌더
+     * @param array $filters 필터 배열
+     * @return void
      */
     private function applyCouponFilters($query, array $filters): void
     {
@@ -337,30 +287,41 @@ class CouponRepository implements CouponRepositoryInterface
         }
 
         // 혜택금액 범위 필터
-        // 0 은 유효한 경계값이다. empty() 로 거르면 0 이 "미입력"이 되어 필터가 무시된다.
-        if (isset($filters['min_benefit_amount']) && $filters['min_benefit_amount'] !== '') {
+        if (! empty($filters['min_benefit_amount'])) {
             $query->where('discount_value', '>=', $filters['min_benefit_amount']);
         }
-        if (isset($filters['max_benefit_amount']) && $filters['max_benefit_amount'] !== '') {
+        if (! empty($filters['max_benefit_amount'])) {
             $query->where('discount_value', '<=', $filters['max_benefit_amount']);
         }
 
-        // 최소주문금액 필터 (0 = 최소주문금액 제한 없는 쿠폰까지 포함하는 유효 경계)
-        if (isset($filters['min_order_amount']) && $filters['min_order_amount'] !== '') {
+        // 최소주문금액 필터
+        if (! empty($filters['min_order_amount'])) {
             $query->where('min_order_amount', '>=', $filters['min_order_amount']);
         }
 
-        // 등록일 필터 — 목록이 등록일을 보는 사람의 시간대로 그리므로 그 하루로 자른다.
-        $this->applyViewerDateRangeFilter($query, 'created_at', $filters['created_start_date'] ?? null, $filters['created_end_date'] ?? null);
+        // 등록일 필터
+        if (! empty($filters['created_start_date'])) {
+            $query->whereDate('created_at', '>=', $filters['created_start_date']);
+        }
+        if (! empty($filters['created_end_date'])) {
+            $query->whereDate('created_at', '<=', $filters['created_end_date']);
+        }
 
-        // 유효기간·발급기간 필터 — 두 기간은 입력(`fromSiteDateStartOfDay`·`fromSiteDateTime`)과
-        // 표시(`formatDateStringForSite`) 모두 사이트 표준시라, 보는 사람 시간대와 무관하게
-        // 사이트 하루로 잘라야 목록에 보이는 날짜와 맞는다.
-        $siteTimezone = TimezoneHelper::getSiteTimezone();
-        $this->applyDateRangeFilterInTimezone($query, 'valid_from', $filters['valid_start_date'] ?? null, null, $siteTimezone);
-        $this->applyDateRangeFilterInTimezone($query, 'valid_to', null, $filters['valid_end_date'] ?? null, $siteTimezone);
-        $this->applyDateRangeFilterInTimezone($query, 'issue_from', $filters['issue_start_date'] ?? null, null, $siteTimezone);
-        $this->applyDateRangeFilterInTimezone($query, 'issue_to', null, $filters['issue_end_date'] ?? null, $siteTimezone);
+        // 유효기간 필터
+        if (! empty($filters['valid_start_date'])) {
+            $query->whereDate('valid_from', '>=', $filters['valid_start_date']);
+        }
+        if (! empty($filters['valid_end_date'])) {
+            $query->whereDate('valid_to', '<=', $filters['valid_end_date']);
+        }
+
+        // 발급기간 필터
+        if (! empty($filters['issue_start_date'])) {
+            $query->whereDate('issue_from', '>=', $filters['issue_start_date']);
+        }
+        if (! empty($filters['issue_end_date'])) {
+            $query->whereDate('issue_to', '<=', $filters['issue_end_date']);
+        }
 
         // 등록자 필터 (UUID → 정수 FK 변환)
         if (! empty($filters['created_by'])) {
@@ -372,12 +333,12 @@ class CouponRepository implements CouponRepositoryInterface
      * ID 목록으로 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  ID 목록
-     * @return Collection ID 를 키로 하는 쿠폰 컬렉션
+     * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function findByIdsKeyed(array $ids): Collection
+    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection
     {
         if (empty($ids)) {
-            return new Collection;
+            return new \Illuminate\Database\Eloquent\Collection();
         }
 
         return Coupon::whereIn('id', $ids)->get()->keyBy('id');

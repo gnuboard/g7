@@ -6,7 +6,6 @@ use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Rules\ExcludeCurrentUser;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,20 +13,17 @@ class BulkUpdateUserStatusRequest extends FormRequest
 {
     /**
      * 요청 권한을 확인합니다.
-     *
-     * 권한 검사는 라우트의 `permission:admin,core.users.update` 미들웨어가 담당합니다.
-     *
-     * @return bool 항상 true (미들웨어에서 권한 제어)
      */
     public function authorize(): bool
     {
-        return true;
+        // 사용자 업데이트 권한 확인
+        return $this->user()->can('core.users.update');
     }
 
     /**
      * 검증 규칙을 정의합니다.
      *
-     * @return array<string, ValidationRule|array<mixed>|string> 필드별 검증 규칙
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -44,35 +40,19 @@ class BulkUpdateUserStatusRequest extends FormRequest
     /**
      * 검증 오류 메시지를 정의합니다.
      *
-     * @return array<string, string> 규칙별 오류 메시지
+     * @return array<string, string>
      */
     public function messages(): array
     {
         return [
-            'ids.required' => __('validation.required', ['attribute' => __('validation.attributes.user_ids')]),
-            'ids.array' => __('validation.array', ['attribute' => __('validation.attributes.user_ids')]),
-            'ids.min' => trans_choice('validation.min.array', 1, ['attribute' => __('validation.attributes.user_ids'), 'min' => 1]),
+            'ids.required' => __('validation.required', ['attribute' => __('validation.attributes.ids')]),
+            'ids.array' => __('validation.array', ['attribute' => __('validation.attributes.ids')]),
+            'ids.min' => __('validation.min.array', ['attribute' => __('validation.attributes.ids'), 'min' => 1]),
             'ids.*.required' => __('validation.required', ['attribute' => __('validation.attributes.user_id')]),
             'ids.*.uuid' => __('validation.uuid', ['attribute' => __('validation.attributes.user_id')]),
             'ids.*.exists' => __('validation.exists', ['attribute' => __('validation.attributes.user_id')]),
             'status.required' => __('validation.required', ['attribute' => __('validation.attributes.status')]),
             'status.in' => __('validation.in', ['attribute' => __('validation.attributes.status')]),
-        ];
-    }
-
-    /**
-     * 검증 속성명을 반환합니다.
-     *
-     * 범용 필드명 ids 는 전역 라벨이 범용 문구이므로,
-     * 사용자 대상 라벨을 이 요청에서만 명시 매핑합니다.
-     *
-     * @return array<string, string> 필드별 표시명
-     */
-    public function attributes(): array
-    {
-        return [
-            'ids' => __('validation.attributes.user_ids'),
-            'ids.*' => __('validation.attributes.user_id'),
         ];
     }
 }

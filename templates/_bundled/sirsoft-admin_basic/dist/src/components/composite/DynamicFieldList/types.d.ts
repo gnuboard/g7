@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../../types';
 /**
  * 컬럼 타입
  */
@@ -108,8 +107,6 @@ export interface DynamicFieldListProps {
     name?: string;
     /** 읽기 전용 모드 */
     readOnly?: boolean;
-    /** 비활성 — readOnly 와 같이 다룬다(레이아웃 읽기 전용 게이트가 넘기는 값) */
-    disabled?: boolean;
     /** 새 항목 기본값 팩토리 */
     createDefaultItem?: () => Record<string, unknown>;
     /** 계층 구조 지원 - 자식 키 */
@@ -118,10 +115,6 @@ export interface DynamicFieldListProps {
     itemIdKey?: string;
     /** 검증 에러 객체 (예: {"fields.0.name.ko": ["에러 메시지"], "fields.1.content.ko": ["에러 메시지"]}) */
     errors?: Record<string, string[]>;
-    /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID) */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * DynamicFieldListItem Props

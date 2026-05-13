@@ -6,7 +6,6 @@ use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Services\LayoutService;
 use App\Services\PluginSettingsService;
-use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\Crypt;
 use Mockery;
 use Tests\Helpers\MocksExtensions;
@@ -32,11 +31,6 @@ class PluginSettingsServiceTest extends TestCase
 
     private string $testSettingsDir;
 
-    /**
-     * 테스트 준비 — 필요한 서비스와 임시 자원을 만듭니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -52,7 +46,7 @@ class PluginSettingsServiceTest extends TestCase
         );
 
         // 테스트용 설정 디렉토리 경로
-        $this->testSettingsDir = dirname(ExtensionStoragePath::plugin('placeholder'));
+        $this->testSettingsDir = storage_path('app/plugins');
     }
 
     // ========================================================================
@@ -61,10 +55,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 존재하지 않는 플러그인 조회 시 기본값 반환
-     *
-     * @effects get_returns_default_when_plugin_not_found
-     *
-     * @return void 반환값 없음
      */
     public function test_get_returns_default_when_plugin_not_found(): void
     {
@@ -75,10 +65,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 존재하지 않는 플러그인에 기본값 지정 시 해당 기본값 반환
-     *
-     * @effects get_returns_custom_default_when_plugin_not_found
-     *
-     * @return void 반환값 없음
      */
     public function test_get_returns_custom_default_when_plugin_not_found(): void
     {
@@ -90,10 +76,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 플러그인 전체 설정 조회 성공
-     *
-     * @effects get_returns_all_settings_when_key_is_null
-     *
-     * @return void 반환값 없음
      */
     public function test_get_returns_all_settings_when_key_is_null(): void
     {
@@ -129,10 +111,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 특정 키의 설정값 조회 성공
-     *
-     * @effects get_returns_specific_key_value
-     *
-     * @return void 반환값 없음
      */
     public function test_get_returns_specific_key_value(): void
     {
@@ -163,10 +141,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 존재하지 않는 키 조회 시 기본값 반환
-     *
-     * @effects get_returns_default_for_missing_key
-     *
-     * @return void 반환값 없음
      */
     public function test_get_returns_default_for_missing_key(): void
     {
@@ -194,10 +168,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 중첩된 키 값 조회 (dot notation)
-     *
-     * @effects get_returns_nested_key_value
-     *
-     * @return void 반환값 없음
      */
     public function test_get_returns_nested_key_value(): void
     {
@@ -236,10 +206,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 존재하지 않는 플러그인 저장 시 false 반환
-     *
-     * @effects save_returns_false_when_plugin_not_found
-     *
-     * @return void 반환값 없음
      */
     public function test_save_returns_false_when_plugin_not_found(): void
     {
@@ -250,10 +216,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 플러그인 설정 저장 성공
-     *
-     * @effects save_stores_settings_successfully
-     *
-     * @return void 반환값 없음
      */
     public function test_save_stores_settings_successfully(): void
     {
@@ -290,10 +252,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 기존 설정과 병합되는지 확인
-     *
-     * @effects save_merges_with_existing_settings
-     *
-     * @return void 반환값 없음
      */
     public function test_save_merges_with_existing_settings(): void
     {
@@ -341,10 +299,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 플러그인 인스턴스가 없으면 null 반환
-     *
-     * @effects get_layout_returns_null_when_plugin_instance_not_found
-     *
-     * @return void 반환값 없음
      */
     public function test_get_layout_returns_null_when_plugin_instance_not_found(): void
     {
@@ -355,10 +309,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 레이아웃 파일이 없으면 null 반환
-     *
-     * @effects get_layout_returns_null_when_layout_file_not_exists
-     *
-     * @return void 반환값 없음
      */
     public function test_get_layout_returns_null_when_layout_file_not_exists(): void
     {
@@ -386,15 +336,11 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 실제 Daum 우편번호 플러그인 레이아웃 조회 테스트
-     *
-     * @effects get_layout_returns_layout_for_daum_postcode_plugin
-     *
-     * @return void 반환값 없음
      */
     public function test_get_layout_returns_layout_for_daum_postcode_plugin(): void
     {
         // Daum 우편번호 플러그인이 설치되어 있는지 확인
-        $pluginPath = base_path('plugins/sirsoft-daum_postcode/resources/layouts/admin/plugin_settings.json');
+        $pluginPath = base_path('plugins/sirsoft-daum_postcode/resources/layouts/settings.json');
 
         if (! file_exists($pluginPath)) {
             $this->markTestSkipped('Daum postcode plugin layout file not found');
@@ -422,17 +368,11 @@ class PluginSettingsServiceTest extends TestCase
         $this->assertIsArray($result);
         $this->assertArrayHasKey('version', $result);
         $this->assertArrayHasKey('meta', $result);
-        // `schema` 는 소비처 없는 사어 키라 #476 에서 걷혔다 — 이 설정 화면은 `_admin_base` 를 확장해 본문을 slots 로 채운다.
-        $this->assertSame('_admin_base', $result['extends'] ?? null);
-        $this->assertArrayHasKey('slots', $result);
+        $this->assertArrayHasKey('schema', $result);
     }
 
     /**
      * 레이아웃 파일 파싱 실패 시 null 반환
-     *
-     * @effects get_layout_returns_null_on_invalid_json
-     *
-     * @return void 반환값 없음
      */
     public function test_get_layout_returns_null_on_invalid_json(): void
     {
@@ -466,10 +406,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 레이아웃이 sanitize 되는지 확인 (components, data_sources 대상)
-     *
-     * @effects get_layout_sanitizes_layout_content
-     *
-     * @return void 반환값 없음
      */
     public function test_get_layout_sanitizes_layout_content(): void
     {
@@ -535,10 +471,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 민감한 필드가 암호화되어 저장되는지 확인
-     *
-     * @effects save_encrypts_sensitive_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_save_encrypts_sensitive_fields(): void
     {
@@ -587,10 +519,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 민감한 필드가 복호화되어 조회되는지 확인
-     *
-     * @effects get_decrypts_sensitive_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_get_decrypts_sensitive_fields(): void
     {
@@ -644,10 +572,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 복호화 실패 시 원래 값 유지 (레거시 데이터 호환)
-     *
-     * @effects get_preserves_value_on_decrypt_failure
-     *
-     * @return void 반환값 없음
      */
     public function test_get_preserves_value_on_decrypt_failure(): void
     {
@@ -693,10 +617,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * 이미 암호화된 값은 다시 암호화하지 않음
-     *
-     * @effects save_does_not_double_encrypt
-     *
-     * @return void 반환값 없음
      */
     public function test_save_does_not_double_encrypt(): void
     {
@@ -743,10 +663,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * reset() 메서드가 설정 파일을 삭제하는지 확인
-     *
-     * @effects reset_deletes_settings_file
-     *
-     * @return void 반환값 없음
      */
     public function test_reset_deletes_settings_file(): void
     {
@@ -778,10 +694,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * clearCache() 메서드가 캐시를 초기화하는지 확인
-     *
-     * @effects clear_cache_clears_settings_cache
-     *
-     * @return void 반환값 없음
      */
     public function test_clear_cache_clears_settings_cache(): void
     {
@@ -821,10 +733,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * frontend_schema가 있는 defaults.json이 있을 때 스키마 기반 필터링
-     *
-     * @effects get_all_active_settings_uses_frontend_schema_when_defaults_exists
-     *
-     * @return void 반환값 없음
      */
     public function test_get_all_active_settings_uses_frontend_schema_when_defaults_exists(): void
     {
@@ -882,10 +790,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * defaults.json이 없을 때 기존 동작 유지 (sensitive만 제외)
-     *
-     * @effects get_all_active_settings_falls_back_to_exclude_sensitive_when_no_defaults
-     *
-     * @return void 반환값 없음
      */
     public function test_get_all_active_settings_falls_back_to_exclude_sensitive_when_no_defaults(): void
     {
@@ -927,10 +831,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * hasSettings()=false인 플러그인은 결과에 미포함
-     *
-     * @effects get_all_active_settings_skips_plugins_without_settings
-     *
-     * @return void 반환값 없음
      */
     public function test_get_all_active_settings_skips_plugins_without_settings(): void
     {
@@ -958,10 +858,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * frontend_schema로 카테고리 구조 필터링 (카테고리 expose:false → 전체 제외)
-     *
-     * @effects get_all_active_settings_filters_by_category_expose
-     *
-     * @return void 반환값 없음
      */
     public function test_get_all_active_settings_filters_by_category_expose(): void
     {
@@ -1015,10 +911,6 @@ class PluginSettingsServiceTest extends TestCase
 
     /**
      * frontend_schema로 필드 레벨 필터링 (필드 expose:false → 해당 필드만 제외)
-     *
-     * @effects get_all_active_settings_filters_by_field_expose
-     *
-     * @return void 반환값 없음
      */
     public function test_get_all_active_settings_filters_by_field_expose(): void
     {
@@ -1083,11 +975,6 @@ class PluginSettingsServiceTest extends TestCase
         @unlink($tempDefaultsPath);
     }
 
-    /**
-     * 테스트 정리 — 만든 임시 자원을 지웁니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         Mockery::close();

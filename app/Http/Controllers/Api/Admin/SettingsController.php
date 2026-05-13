@@ -2,31 +2,18 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Contracts\Extension\ConsentProviderInterface;
-use App\Extension\Consent\ConsentManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use App\Http\Requests\Settings\PasswordExpiryPreviewRequest;
-use App\Http\Requests\Settings\PrivacyPreviewRequest;
 use App\Http\Requests\Settings\RegenerateAppKeyRequest;
-use App\Http\Requests\Settings\RestoreSettingsRequest;
 use App\Http\Requests\Settings\SaveSettingsRequest;
 use App\Http\Requests\Settings\TestDriverConnectionRequest;
 use App\Http\Requests\Settings\TestMailRequest;
-use App\Http\Requests\Settings\TestOutboundProxyRequest;
 use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Http\Resources\SettingsResource;
-use App\Privacy\DormantAccountService;
-use App\Privacy\PrivacyRetentionManager;
 use App\Services\DriverConnectionTester;
 use App\Services\DriverRegistryService;
-use App\Services\ExtensionStaticCacheService;
-use App\Services\OutboundProxyTester;
-use App\Services\PasswordExpiryService;
 use App\Services\SettingsService;
-use App\Support\EnvPriority;
-use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -36,62 +23,12 @@ use Illuminate\Validation\ValidationException;
  */
 class SettingsController extends AdminBaseController
 {
-    /**
-     * 설정 컨트롤러를 생성합니다.
-     *
-     * @param  SettingsService  $settingsService  설정 조회·저장 서비스
-     * @param  DriverConnectionTester  $driverConnectionTester  드라이버 연결 테스트
-     * @param  DriverRegistryService  $driverRegistryService  사용 가능 드라이버 카탈로그
-     * @param  OutboundProxyTester  $outboundProxyTester  아웃바운드 프록시 테스트
-     * @param  ExtensionStaticCacheService  $staticCacheService  초기 화면 정적 게시
-     * @param  PrivacyRetentionManager  $privacyRetentionManager  개인정보 보유기간 처리 진입점
-     * @param  DormantAccountService  $dormantAccountService  휴면 계정 생명주기 서비스
-     * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
-     */
     public function __construct(
         private SettingsService $settingsService,
         private DriverConnectionTester $driverConnectionTester,
-        private DriverRegistryService $driverRegistryService,
-        private OutboundProxyTester $outboundProxyTester,
-        private ExtensionStaticCacheService $staticCacheService,
-        private PrivacyRetentionManager $privacyRetentionManager,
-        private DormantAccountService $dormantAccountService,
-        private PasswordExpiryService $passwordExpiryService
+        private DriverRegistryService $driverRegistryService
     ) {
         parent::__construct();
-    }
-
-    /**
-     * 설정 응답에 동봉할 `_meta` 를 만듭니다.
-     *
-     * 조회와 저장 두 응답이 같은 모양이어야 화면이 저장 직후에도 같은 판정을 이어갑니다 —
-     * 한쪽만 필드가 늘면 저장 후 잠금 표시가 조용히 사라집니다.
-     *
-     * - `limits`: 입력 한계값 (core.settings_limits)
-     * - `env_priority_enabled`: `.env` 우선 모드 활성 여부 (안내 배너 표시 판정)
-     * - `env_locked`: `.env` 로 잠긴 필드 목록 (프론트엔드 키 기준)
-     * - `consent_providers`: 등록된 동의 관리 제공자 `[{id, label}]` (개인정보 탭의 선택 목록, 수집을 꺼 둔 제공자 포함)
-     * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
-     *
-     * @return array<string, mixed> 응답 메타 배열
-     */
-    private function buildSettingsMeta(): array
-    {
-        $consent = app(ConsentManager::class);
-
-        return [
-            'limits' => config('core.settings_limits', []),
-            'env_priority_enabled' => EnvPriority::enabled(),
-            'env_locked' => $this->settingsService->envLockedMeta(),
-            'consent_providers' => array_values(array_map(
-                static fn (ConsentProviderInterface $provider): array => [
-                    'id' => $provider->getId(),
-                    'label' => $provider->getLabel(),
-                ],
-                $consent->registered(),
-            )),
-            'consent_selection' => $consent->selection()->toArray(),
-        ];
     }
 
     /**
@@ -104,7 +41,6 @@ class SettingsController extends AdminBaseController
         try {
             $settings = $this->settingsService->getAllSettings();
             $settings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
-            $settings['_meta'] = $this->buildSettingsMeta();
 
             return $this->success('settings.fetch_success',
                 (new SettingsResource($settings))->toArray(request())
@@ -132,7 +68,6 @@ class SettingsController extends AdminBaseController
                 // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
                 $allSettings = $this->settingsService->getAllSettings();
                 $allSettings['available_drivers'] = $this->driverRegistryService->getAllAvailableDrivers();
-                $allSettings['_meta'] = $this->buildSettingsMeta();
 
                 return $this->success('settings.save_success', [
                     'settings' => $allSettings,
@@ -202,115 +137,9 @@ class SettingsController extends AdminBaseController
             $systemInfo = $this->settingsService->getSystemInfo();
 
             return $this->success('common.success', $systemInfo);
-        } catch (\Throwable $e) {
-            Log::error('시스템 정보 조회 실패', ['error' => $e->getMessage()]);
-
+        } catch (\Exception $e) {
             return $this->error('common.error_occurred', 500, $e->getMessage());
         }
-    }
-
-    /**
-     * 신뢰 프록시(리버스 프록시) 설정 진단 결과를 조회합니다 (#124).
-     *
-     * 읽기 전용이다 — 값 편집 엔드포인트는 두지 않는다. 이 값은 "앱이 프록시 없이 도달
-     * 가능한가" 라는 배포 구조 지식이 있어야 정할 수 있고, 웹에서 편집 가능해지면 관리자
-     * 계정 탈취가 곧 X-Forwarded-For 위조 경로가 된다. 편집은 `.env` 전용이다.
-     *
-     * 판정 대상은 관리자 브라우저의 **실제 요청**이므로 현재 요청을 그대로 쓴다.
-     * 입력을 받지 않는 읽기 전용 조회라 FormRequest 를 두지 않는다.
-     *
-     * @return JsonResponse 진단 결과 JSON 응답
-     */
-    public function trustedProxy(): JsonResponse
-    {
-        return $this->success('common.success', TrustedProxyDiagnostic::forRequest(request()));
-    }
-
-    /**
-     * 개인정보 보유기간·휴면의 처리 대상 건수를 미리 조회합니다 (#636).
-     *
-     * 화면의 「대상 N건」 배지가 쓰는 값이며, 커맨드의 `--dry-run` 과 **같은 조건식**을 지납니다 —
-     * 화면에서 본 숫자와 실제 처리 건수가 어긋나면 운영자가 규모를 오판한 채 켜게 됩니다.
-     *
-     * **기능이 꺼져 있어도 건수를 돌려줍니다** — 켜기 전에 규모와 명단을 확인하는 자리이기
-     * 때문입니다(2026-09-23 확정). "꺼짐" 과 "대상 0건" 은 `enabled` 로 구분합니다.
-     * `can_view_targets` 는 요청 관리자가 「더보기」 목록을 볼 권한(설정 읽기 + 도메인 읽기)을
-     * 가졌는지다 — 없으면 화면이 버튼을 그리지 않는다.
-     *
-     * 읽기 전용이며 입력은 없습니다 — FormRequest 는 요청 관리자를 얻는 자리입니다.
-     *
-     * @param  PrivacyPreviewRequest  $request  현재 요청 (목록 권한 판정용, 입력 없음)
-     * @return JsonResponse 핸들러별·휴면 단계별 대상 건수 JSON 응답
-     */
-    public function privacyPreview(PrivacyPreviewRequest $request): JsonResponse
-    {
-        $user = $request->user();
-        $retention = [];
-
-        foreach ($this->privacyRetentionManager->preview() as $id => $row) {
-            $handler = $this->privacyRetentionManager->handler($id);
-            $retention[$id] = $row + [
-                'can_view_targets' => $handler !== null && $this->privacyRetentionManager->canViewTargets($handler, $user),
-            ];
-        }
-
-        return $this->success('common.success', [
-            'retention' => $retention,
-            'dormant' => [
-                'enabled' => $this->dormantAccountService->isEnabled(),
-                'withdraw_enabled' => $this->dormantAccountService->isWithdrawEnabled(),
-                'can_view_targets' => $this->privacyRetentionManager->canViewTargetList(DormantAccountService::TARGET_PERMISSIONS, $user),
-                ...$this->dormantAccountService->preview(),
-            ],
-        ]);
-    }
-
-    /**
-     * 비밀번호 만료 처리 대상 건수를 미리 봅니다 (#736 — 데이터를 바꾸지 않음).
-     *
-     * 배치가 실제로 쓰는 것과 **같은 쿼리**로 사전 안내·만료 처리 대상을 센다. 기능이 꺼져 있어도
-     * 저장값으로 센다 — 켜기 전에 규모를 보는 자리다. "꺼짐" 과 "대상 0건" 은 `enabled` 로 구분하고,
-     * `can_view_targets` 는 요청 관리자가 명단(설정 읽기 + 회원 읽기, 전체 범위)을 볼 수 있는지다.
-     *
-     * @param  PasswordExpiryPreviewRequest  $request  현재 요청 (명단 권한 판정용, 입력 없음)
-     * @return JsonResponse {enabled, started_at, notice, expire, batch_size, can_view_targets}
-     */
-    public function passwordExpiryPreview(PasswordExpiryPreviewRequest $request): JsonResponse
-    {
-        return $this->success('common.success', $this->passwordExpiryService->preview($request->user()));
-    }
-
-    /**
-     * 초기 화면 정적 파일(부트스트랩 리소스 정적 게시) 상태를 조회합니다 (#651).
-     *
-     * CLI `ext-static:status` 와 **같은 판정**(`ExtensionStaticCacheService::statusReport`)을 돌려준다.
-     * 읽기 전용이며 입력이 없어 FormRequest 를 두지 않는다 (`trustedProxy` 와 동형).
-     *
-     * @return JsonResponse 상태 보고서 JSON 응답
-     */
-    public function staticCacheStatus(): JsonResponse
-    {
-        return $this->success('settings.static_cache_status_loaded', $this->staticCacheService->statusReport());
-    }
-
-    /**
-     * 초기 화면 정적 파일을 지금 다시 만듭니다 (관리자 수동 복구, #651).
-     *
-     * 캐시 버전을 올리고 현재 버전을 강제 재게시한다. 게시 실패·게시가 쓰이지 않는 환경은
-     * 요청 처리 실패가 아니라 **진단 결과**라 HTTP 200 으로 돌려주고 성공 여부는 페이로드
-     * (`republished`)가 말한다 — 연결 테스트·드라이버 테스트와 같은 규약. 사이트는 어느 경우에도
-     * API 폴백으로 정상이다.
-     *
-     * @return JsonResponse 재게시 결과 + 상태 보고서 JSON 응답
-     */
-    public function republishStaticCache(): JsonResponse
-    {
-        $result = $this->staticCacheService->republish();
-
-        return $this->success(
-            ($result['republished'] ?? false) ? 'settings.static_cache_republished' : 'settings.static_cache_republish_failed',
-            $result
-        );
     }
 
     /**
@@ -354,21 +183,23 @@ class SettingsController extends AdminBaseController
     }
 
     /**
-     * 데이터베이스 백업 — 아직 제공하지 않는 기능임을 알립니다.
+     * 데이터베이스를 백업합니다.
      *
-     * 코어에는 DB 덤프 수단이 없어 이 엔드포인트는 구현된 적이 없다.
-     * 종전에는 존재하지 않는 `SettingsService::backupDatabase()` 를 호출했고,
-     * PHP 가 던지는 `Error` 는 `catch (\Exception)` 에 걸리지 않아 그대로 500 이 되면서
-     * 내부 메서드 이름까지 응답에 실려 나갔다 (공개 #115 부록 B3).
-     *
-     * 기능 부재는 서버 고장이 아니므로 501(Not Implemented)로 답한다.
-     * 설정 파일 백업은 `POST /api/admin/settings/backup` 이 담당한다.
-     *
-     * @return JsonResponse 미제공 안내 JSON 응답 (501)
+     * @return JsonResponse 백업 결과 JSON 응답
      */
     public function backupDatabase(): JsonResponse
     {
-        return $this->error('settings.database_backup_unavailable', 501);
+        try {
+            $result = $this->settingsService->backupDatabase();
+
+            if ($result) {
+                return $this->success('settings.backup_success');
+            } else {
+                return $this->error('settings.backup_failed');
+            }
+        } catch (\Exception $e) {
+            return $this->error('settings.backup_error', 500, $e->getMessage());
+        }
     }
 
     /**
@@ -433,13 +264,16 @@ class SettingsController extends AdminBaseController
     /**
      * 백업에서 설정을 복원합니다.
      *
-     * @param  RestoreSettingsRequest  $request  복원 요청 데이터 (백업 경로)
      * @return JsonResponse 복원 결과 JSON 응답
      */
-    public function restore(RestoreSettingsRequest $request): JsonResponse
+    public function restore(Request $request): JsonResponse
     {
         try {
-            $backupPath = $request->validated('backup_path');
+            $backupPath = $request->input('backup_path');
+
+            if (empty($backupPath)) {
+                return $this->error('settings.backup_path_required', 422);
+            }
 
             $result = $this->settingsService->restoreSettings($backupPath);
 
@@ -505,31 +339,5 @@ class SettingsController extends AdminBaseController
         } catch (\Exception $e) {
             return $this->error('settings.driver_test_error', 500, $e->getMessage());
         }
-    }
-
-    /**
-     * 아웃바운드 프록시 연결을 테스트합니다.
-     *
-     * 저장하기 전에 프록시가 실제로 동작하는지, 그리고 그 프록시를 거쳐 나갔을 때 상대편에
-     * 어떤 IP 로 보이는지 확인합니다. 출발지 IP 는 운영자가 결제사·외부 서비스에 등록해야
-     * 하는 값이라 결과의 핵심입니다.
-     *
-     * 검사 대상은 저장된 설정이 아니라 이번 요청이 제출한 값입니다.
-     *
-     * @param  TestOutboundProxyRequest  $request  검증된 요청
-     * @return JsonResponse 검사 결과
-     */
-    public function testOutboundProxy(TestOutboundProxyRequest $request): JsonResponse
-    {
-        $validated = $request->validated();
-
-        $result = $this->outboundProxyTester->test(
-            (string) $validated['outbound_proxy'],
-            (array) ($validated['outbound_proxy_bypass'] ?? [])
-        );
-
-        // 연결 실패는 요청 처리 실패가 아니라 진단 결과다 — 200 으로 결과를 돌려주고
-        // 성공 여부는 페이로드가 말한다 (드라이버 연결 테스트와 같은 규약).
-        return $this->success($result['message_key'], $result);
     }
 }

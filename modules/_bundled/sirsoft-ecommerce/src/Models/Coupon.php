@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
-use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Search\Contracts\FulltextSearchable;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +20,6 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
-use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 
 /**
  * 쿠폰 모델
@@ -34,14 +32,14 @@ class Coupon extends Model implements FulltextSearchable
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
-        'target_type' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.target_type', 'type' => 'enum', 'enum' => CouponTargetType::class],
-        'discount_type' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.discount_type', 'type' => 'enum', 'enum' => CouponDiscountType::class],
+        'target_type' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.target_type', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\CouponTargetType::class],
+        'discount_type' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.discount_type', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType::class],
         'discount_value' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.discount_value', 'type' => 'currency'],
         'discount_max_amount' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.discount_max_amount', 'type' => 'currency'],
         'min_order_amount' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.min_order_amount', 'type' => 'currency'],
-        'issue_method' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_method', 'type' => 'enum', 'enum' => CouponIssueMethod::class],
-        'issue_condition' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_condition', 'type' => 'enum', 'enum' => CouponIssueCondition::class],
-        'issue_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_status', 'type' => 'enum', 'enum' => CouponIssueStatus::class],
+        'issue_method' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_method', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod::class],
+        'issue_condition' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_condition', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition::class],
+        'issue_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.issue_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus::class],
         'total_quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.total_quantity', 'type' => 'number'],
         'per_user_limit' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.per_user_limit', 'type' => 'number'],
         'valid_type' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.valid_type', 'type' => 'text'],
@@ -258,75 +256,28 @@ class Coupon extends Model implements FulltextSearchable
     }
 
     /**
-     * 통화별 혜택 금액 포맷 맵을 반환합니다.
-     *
-     * benefit_formatted 와 동일한 i18n 템플릿을 쓰되, 정액 할인액·정률 최대금액을
-     * 통화별 환산값으로 렌더한다(정률 % 자체는 통화 무관). 상품상세 쿠폰 칩·모달이
-     * 선택 통화로 베네핏을 표시할 때 사용한다(KRW 고정 결함 D4 해소).
-     *
-     * @param  CurrencyConversionService  $converter  통화 환산 서비스
-     * @return array<string, string> 통화코드 => 포맷 문자열 (예: {'KRW': '1,000원 할인', 'USD': '$0.85 할인'})
-     */
-    public function buildMultiCurrencyBenefitFormatted(CurrencyConversionService $converter): array
-    {
-        $result = [];
-
-        if ($this->discount_type === CouponDiscountType::FIXED) {
-            // 정액: 할인액을 통화별 환산(환율 미설정 통화는 convertToMultiCurrency 가 자동 제외)
-            foreach ($converter->convertToMultiCurrency((int) ($this->discount_value ?? 0)) as $code => $amount) {
-                $result[$code] = __('sirsoft-ecommerce::messages.coupons.benefit_fixed_format', [
-                    'amount' => $amount['formatted'],
-                ]);
-            }
-
-            return $result;
-        }
-
-        // 정률: % 는 통화 무관. 최대 할인 금액만 통화별 환산.
-        if ($this->discount_max_amount) {
-            foreach ($converter->convertToMultiCurrency((int) $this->discount_max_amount) as $code => $max) {
-                $result[$code] = __('sirsoft-ecommerce::messages.coupons.benefit_rate_with_max_format', [
-                    'rate' => $this->discount_value,
-                    'max' => $max['formatted'],
-                ]);
-            }
-
-            return $result;
-        }
-
-        // 정률(최대금액 없음): 전 통화 동일 문자열. 기본 통화 코드 1건만 채워 폴백 기준 제공.
-        $result[$converter->getDefaultCurrency()] = __('sirsoft-ecommerce::messages.coupons.benefit_rate_format', [
-            'rate' => $this->discount_value,
-        ]);
-
-        return $result;
-    }
-
-    /**
      * 유효기간 포맷팅 반환
-     *
-     * 저장값은 UTC 라 그대로 찍으면 사이트 자정으로 받은 시작일이 하루 이르게 보인다 — 사이트 시간대 날짜로 찍는다.
      *
      * @return string 포맷팅된 유효기간
      */
     public function getValidPeriodFormattedAttribute(): string
     {
         if ($this->valid_type === 'days_from_issue') {
-            return trans_choice('sirsoft-ecommerce::messages.coupons.valid_days_format', (int) $this->valid_days, [
+            return __('sirsoft-ecommerce::messages.coupons.valid_days_format', [
                 'days' => $this->valid_days,
             ]);
         }
 
         if ($this->valid_from && $this->valid_to) {
-            return TimezoneHelper::toSiteDateString($this->valid_from).' ~ '.TimezoneHelper::toSiteDateString($this->valid_to);
+            return $this->valid_from->format('Y-m-d').' ~ '.$this->valid_to->format('Y-m-d');
         }
 
         if ($this->valid_from) {
-            return TimezoneHelper::toSiteDateString($this->valid_from).' ~';
+            return $this->valid_from->format('Y-m-d').' ~';
         }
 
         if ($this->valid_to) {
-            return '~ '.TimezoneHelper::toSiteDateString($this->valid_to);
+            return '~ '.$this->valid_to->format('Y-m-d');
         }
 
         return '-';
@@ -340,15 +291,15 @@ class Coupon extends Model implements FulltextSearchable
     public function getIssuePeriodFormattedAttribute(): string
     {
         if ($this->issue_from && $this->issue_to) {
-            return TimezoneHelper::toSiteDateString($this->issue_from).' ~ '.TimezoneHelper::toSiteDateString($this->issue_to);
+            return $this->issue_from->format('Y-m-d').' ~ '.$this->issue_to->format('Y-m-d');
         }
 
         if ($this->issue_from) {
-            return TimezoneHelper::toSiteDateString($this->issue_from).' ~';
+            return $this->issue_from->format('Y-m-d').' ~';
         }
 
         if ($this->issue_to) {
-            return '~ '.TimezoneHelper::toSiteDateString($this->issue_to);
+            return '~ '.$this->issue_to->format('Y-m-d');
         }
 
         return __('sirsoft-ecommerce::messages.coupons.issue_period_unlimited');
@@ -369,24 +320,6 @@ class Coupon extends Model implements FulltextSearchable
     }
 
     /**
-     * 유효기간 설정이 만료일을 계산할 수 있는 상태인지 확인
-     *
-     * valid_days 는 nullable 컬럼이라 (valid_type=days_from_issue, valid_days=NULL) 조합이
-     * 저장될 수 있습니다. 그대로 발급하면 만료일이 발급 시각과 같아져 사실상 즉시 만료된
-     * 쿠폰이 조용히 나갑니다. 발급 전에 이 조합을 걸러내기 위한 판정입니다.
-     *
-     * @return bool 만료일 계산이 가능한 설정이면 true
-     */
-    public function hasResolvableValidity(): bool
-    {
-        if ($this->valid_type !== 'days_from_issue') {
-            return true;
-        }
-
-        return is_numeric($this->valid_days) && (int) $this->valid_days > 0;
-    }
-
-    /**
      * 발급 가능 여부 확인
      *
      * @return bool 발급 가능 여부
@@ -400,11 +333,6 @@ class Coupon extends Model implements FulltextSearchable
 
         // 발급 수량 초과
         if ($this->total_quantity !== null && $this->issued_count >= $this->total_quantity) {
-            return false;
-        }
-
-        // 유효기간 미설정 (발급일 기준인데 일수가 비어 있음)
-        if (! $this->hasResolvableValidity()) {
             return false;
         }
 
@@ -485,7 +413,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * FULLTEXT 검색 대상 컬럼 목록을 반환합니다.
      *
-     * @return array<string> 검색 대상 컬럼 이름 목록
+     * @return array<string>
      */
     public function searchableColumns(): array
     {
@@ -495,7 +423,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 컬럼별 검색 가중치를 반환합니다.
      *
-     * @return array<string, float> 컬럼별 검색 가중치
+     * @return array<string, float>
      */
     public function searchableWeights(): array
     {
@@ -508,7 +436,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * MySQL FULLTEXT 엔진에서는 인덱스 업데이트가 불필요합니다.
      *
-     * @return bool 검색 인덱스를 갱신해야 하면 true
+     * @return bool
      */
     public function searchIndexShouldBeUpdated(): bool
     {
@@ -524,7 +452,7 @@ class Coupon extends Model implements FulltextSearchable
     /**
      * 검색 인덱스용 배열을 반환합니다.
      *
-     * @return array<string, mixed> 검색 인덱스에 넣을 값
+     * @return array<string, mixed>
      */
     public function toSearchableArray(): array
     {

@@ -127,7 +127,7 @@ public function isAdmin(): bool
     [
         'identifier' => 'core.users',
         'category' => 'users',
-        'order' => 100,                             // ← 정수. 코어 카테고리는 100 단위
+        'order' => 1,
         'type' => 'admin',                          // ← 카테고리 타입 명시
         'permissions' => [
             ['identifier' => 'core.users.read', 'type' => 'admin', ...],   // ← 권한 타입 명시
@@ -137,7 +137,7 @@ public function isAdmin(): bool
     [
         'identifier' => 'core.user-notifications',
         'category' => 'user-notifications',
-        'order' => 760,
+        'order' => 7.6,
         'type' => 'user',                           // ← 사용자 컨텍스트 카테고리
         'permissions' => [
             ['identifier' => 'core.user-notifications.read', 'type' => 'user', ...],
@@ -148,7 +148,6 @@ public function isAdmin(): bool
 
 ```text
 ✅ 필수: 신규 코어 권한 정의 시 카테고리/개별 권한 모두에 `type` 명시 (가독성 + 의도 명확화)
-✅ 필수: `order` 는 정수 — 권한 행의 정렬 칸이 정수라 `7.65` 같은 소수는 반올림되어 이웃과 같은 순위가 됩니다. 코어 카테고리는 100 단위(100, 200, … 760)로 두어 사이에 새 카테고리를 끼울 자리를 남깁니다
 ✅ 카테고리 type은 (1) 명시 필드 (2) 하위 권한이 모두 동일 type일 때 추론 (3) admin 기본값 우선순위로 결정됨
 ✅ 권한 type 미지정 시 카테고리 type을 상속
 ```
@@ -395,18 +394,6 @@ core.users.view
 core.users.manage
 ```
 
-`[entity]` 가 특정 확장 타입이 아니라 `extensions` 인 권한은 **템플릿·모듈·플러그인 세 타입이 공유**한다.
-타입별로 쪼개면 운영자가 같은 성격의 권한을 셋 다 부여해야 하고, "모듈 CSS 는 되는데 템플릿 CSS 는
-안 되는" 상태가 실질적 의미 없이 생긴다.
-
-```text
-core.extensions.custom_assets.manage
-```
-
-이 권한은 그룹 `core.extensions`(확장 공통) 에 속한다. 레이아웃 편집 권한
-(`core.templates.layouts.edit`) 과 분리한 이유는 여기서 올린 스크립트가 레이아웃 한 장이 아니라
-**사이트 전 화면에서 실행**되기 때문이다 — 레이아웃을 고칠 수 있다는 것이 곧 그 권한이 될 수 없다.
-
 ### 모듈 권한
 
 ```text
@@ -495,18 +482,11 @@ G7은 기능 레벨 권한 외에 **리소스 레벨 권한**을 지원합니다
 
 레이아웃 JSON에서 `abilities.can_*` 키로 접근합니다:
 
-```html
-<button data-if="{{item.abilities.can_update}}">수정</button>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
     "if": "{{item.abilities.can_update}}",
-    "type": "basic",
-    "name": "Button",
-    "text": "수정"
+    "type": "Button",
+    "props": { "text": "수정" }
 }
 ```
 
@@ -644,47 +624,6 @@ PermissionHelper::applyPermissionScope($query, 'core.users.read');
 // ... 기존 필터/정렬/페이지네이션
 ```
 
-**같은 권한으로 열리는 조회 경로는 전부 같은 스코프를 건다.** 목록에만 걸고 최근 항목·통계·검색
-(한 건 조회 포함)·대시보드 카드 같은 보조 경로에 빠뜨리면, 본인 것만 보도록 제한된 역할이 그
-경로로 전체 데이터를 받는다. 한 저장소 안에서는 스코프를 건 기본 쿼리를 만드는 메서드 하나를 두고
-모든 조회 메서드가 그것에서 출발하게 하면 경로마다 다시 거는 누락을 막을 수 있다. 쿼리 조건을 걸
-수 없는 한 건 조회(uuid·id 로 집는 검색 등)는 찾은 뒤 `checkScopeAccess()` 로 판정하고, 범위 밖이면
-「없음」으로 답한다. 사용자와 무관하게 캐시하는 사이트 전체 집계만 스코프를 끄고 센다 — 스코프를
-건 숫자가 공용 캐시에 앉으면 다른 방문자에게 그 사람 기준 숫자가 나간다.
-
-### 쿼리 스코프가 정본인 권한
-
-소유 컬럼이 둘 이상이라 단일 `owner_key` 로 표현할 수 없는 권한(예: 발신자·수신자가 모두 당사자인
-`core.notification-logs.read`)은 `resource_route_key`/`owner_key` 를 두지 않고, 그 권한으로 열리는
-**모든** 조회 경로의 Repository 가 직접 self·role 조건을 건다. 이런 권한은 라우트 미들웨어의 상세
-스코프 검사를 받지 못하므로 쿼리 스코프가 유일한 강제 수단이다.
-
-확장이 이런 권한을 추가하면 `core.permission.query_scoped_permissions` 필터 훅으로 식별자를 등록한다.
-권한 시드와 코어 업데이트는 스코프(self·role)가 붙었는데 `resource_route_key`+`owner_key` 도 없고 이
-목록에도 없는 역할-권한 부여를 찾아 경고로 남긴다 — 그런 부여는 설정 화면에 「본인만」으로 보여도
-실제로는 아무것도 좁히지 않는다.
-
-```php
-// 확장의 훅 리스너 — 쿼리 스코프가 정본인 권한 등록
-public static function getSubscribedHooks(): array
-{
-    return [
-        'core.permission.query_scoped_permissions' => [
-            'method' => 'registerQueryScopedPermissions',
-            'priority' => 10,
-            'type' => 'filter',
-        ],
-    ];
-}
-
-public function registerQueryScopedPermissions(array $identifiers): array
-{
-    $identifiers[] = 'vendor-module.messages.read'; // 발신자·수신자 두 소유 컬럼
-
-    return $identifiers;
-}
-```
-
 ### 소유자 식별 전체 매핑
 
 | Permission prefix | resource_route_key | owner_key | 비고 |
@@ -700,7 +639,7 @@ public function registerQueryScopedPermissions(array $identifiers): array
 | sirsoft-ecommerce.orders.* | order | user_id | |
 | sirsoft-page.pages.* | page | created_by | |
 
-> resource_route_key/owner_key가 null → scope_type UI 미표시, 설정해도 무시 (단, 위 「쿼리 스코프가 정본인 권한」 은 Repository 가 스코프를 건다)
+> resource_route_key/owner_key가 null → scope_type UI 미표시, 설정해도 무시
 
 ### getPermissions() 포맷 (모듈)
 
@@ -771,24 +710,12 @@ public function registerQueryScopedPermissions(array $identifiers): array
 
 ### 상위-하위 중복 선언
 
-```html
-<div>
-  <permissions>
-    <permission>core.users.read</permission>
-  </permissions>
-  <button><permissions><permission>core.users.delete</permission></permissions>삭제</button>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
-  "type": "basic",
-  "name": "Div",
+  "type": "Div",
   "permissions": ["core.users.read"],
   "children": [
-    { "type": "basic", "name": "Button", "permissions": ["core.users.delete"], "text": "삭제" }
+    { "type": "Button", "permissions": ["core.users.delete"], "text": "삭제" }
   ]
 }
 ```
@@ -987,7 +914,7 @@ generateIdentifier(name)
 - [menus.md](./menus.md) - 메뉴 권한 시스템
 - [hooks.md](./hooks.md) - 훅 권한 시스템
 - [module-basics.md](./module-basics.md) - 모듈 기본 구조
-- [README.md](./README.md) - 확장 시스템 인덱스
+- [index.md](./index.md) - 확장 시스템 인덱스
 - [../backend/core-config.md](../backend/core-config.md#완전-동기화-원칙) - 완전 동기화 원칙
 - [../backend/data-sync-helpers.md](../backend/data-sync-helpers.md) - 데이터 동기화 Helper
 - [../backend/user-overrides.md](../backend/user-overrides.md) - 사용자 수정 보존

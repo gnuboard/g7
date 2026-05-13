@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit;
 
-use App\Extension\ModuleManager;
 use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -19,7 +18,7 @@ class EcommerceModuleSeoTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->module = app(ModuleManager::class)->getModule('sirsoft-ecommerce')
+        $this->module = app(\App\Extension\ModuleManager::class)->getModule('sirsoft-ecommerce')
             ?? new Module(base_path('modules/sirsoft-ecommerce'));
     }
 
@@ -70,57 +69,6 @@ class EcommerceModuleSeoTest extends ModuleTestCase
     }
 
     /**
-     * 카테고리 og:image 출력 레벨 — thumbnail_url 이 있으면 image 가 절대 URL 로 방출된다.
-     *
-     * @scenario product-content-thumbnail-fallback
-     *
-     * @effects category_og_image_emitted_from_thumbnail_url
-     */
-    public function test_category_seo_og_defaults_emits_image_from_thumbnail_url(): void
-    {
-        $context = [
-            'category' => [
-                'data' => [
-                    'name' => ['ko' => '아우터', 'en' => 'Outer'],
-                    'thumbnail_url' => '/api/modules/sirsoft-ecommerce/category-image/cat123',
-                ],
-            ],
-        ];
-
-        $og = $this->module->seoOgDefaults('category', $context);
-
-        $this->assertArrayHasKey('image', $og);
-        $this->assertStringStartsWith('http', $og['image'], 'og:image 는 절대 URL 이어야 공유 카드가 인식합니다');
-        $this->assertStringContainsString('/api/modules/sirsoft-ecommerce/category-image/cat123', $og['image']);
-        $this->assertSame('아우터', $og['image_alt']);
-    }
-
-    /**
-     * 카테고리 og:image 출력 레벨 — 이미지 없는 카테고리는 image 키 자체가 미출력된다
-     * (빈 값은 array_filter 로 제거 → 코어 사이트 기본 OG 이미지 폴백에 위임).
-     *
-     * @scenario product-content-thumbnail-fallback
-     *
-     * @effects category_og_image_omitted_without_thumbnail
-     */
-    public function test_category_seo_og_defaults_omits_image_without_thumbnail(): void
-    {
-        $context = [
-            'category' => [
-                'data' => [
-                    'name' => '아우터',
-                    'thumbnail_url' => null,
-                ],
-            ],
-        ];
-
-        $og = $this->module->seoOgDefaults('category', $context);
-
-        $this->assertArrayNotHasKey('image', $og);
-        $this->assertSame('website', $og['type']);
-    }
-
-    /**
      * 회귀: 상품 structured_data 도 다국어 array 안전 처리.
      */
     public function test_product_structured_data_handles_multilingual_array(): void
@@ -134,7 +82,7 @@ class EcommerceModuleSeoTest extends ModuleTestCase
                     'description' => ['ko' => '한국어 설명', 'en' => 'English description'],
                     'thumbnail_url' => 'https://example.com/p.jpg',
                     'selling_price' => 129000,
-                    'sales_status' => 'on_sale',
+                    'in_stock' => true,
                 ],
             ],
         ];
@@ -145,124 +93,5 @@ class EcommerceModuleSeoTest extends ModuleTestCase
         $this->assertSame('에어맥스', $schema['name']);
         $this->assertSame('한국어 설명', $schema['description']);
         $this->assertSame('129000', $schema['offers']['price']);
-    }
-
-    /**
-     * seoOgDefaultMeta 가 데이터 경로(연결 칩) + 다국어 라벨을 선언한다.
-     */
-    public function test_product_seo_og_default_meta_declares_data_path_and_label(): void
-    {
-        $meta = $this->module->seoOgDefaultMeta('product');
-
-        // label 은 번역 키(언어팩 대응) — __() 로 해석돼 한국어로 표시된다.
-        $this->assertSame('{{product.data.thumbnail_url}}', $meta['image']['expr']);
-        $this->assertSame('sirsoft-ecommerce::seo.auto_value.product_image', $meta['image']['label']);
-        $this->assertSame('상품 대표 이미지', __($meta['image']['label'], [], 'ko'));
-        $this->assertSame('Product image', __($meta['image']['label'], [], 'en'));
-        $this->assertSame('{{product.data.name}}', $meta['image_alt']['expr']);
-
-        // category 도 자기 데이터 경로 선언.
-        $catMeta = $this->module->seoOgDefaultMeta('category');
-        $this->assertSame('{{category.data.thumbnail_url}}', $catMeta['image']['expr']);
-
-        // 도메인 외 page_type 은 빈 배열(평문 폴백).
-        $this->assertSame([], $this->module->seoOgDefaultMeta('shop_index'));
-    }
-
-    /**
-     * seoStructuredDataMeta 가 점 경로 키별 데이터 경로를 선언한다.
-     */
-    public function test_product_structured_data_meta_declares_dotted_paths(): void
-    {
-        $meta = $this->module->seoStructuredDataMeta('product');
-
-        // 제목/설명은 사용자 입력 meta(다국어) 우선 + 상품 필드 폴백 구조다.
-        // $localized() 로 현재 로케일 문자열을 뽑으므로 언어별 SEO 분기가 성립한다.
-        $this->assertSame(
-            '{{$localized(product.data.meta_title) ?? $localized(product.data.name)}}',
-            $meta['name']['expr']
-        );
-        $this->assertSame(
-            '{{$localized(product.data.meta_description) ?? $localized(product.data.short_description)}}',
-            $meta['description']['expr']
-        );
-
-        // 다국어 대상이 아닌 값은 점 경로를 그대로 선언한다.
-        $this->assertSame('{{product.data.selling_price}}', $meta['offers.price']['expr']);
-        $this->assertSame('{{product.data.sku}}', $meta['sku']['expr']);
-    }
-
-    /**
-     * 정합성: 메타가 선언한 키는 운영 declaration 이 산출 가능한 키여야 한다(키 드리프트 차단).
-     * og.image/image_alt 는 declaration 키 집합에 존재해야 하고, structured 점 경로는 평탄화한
-     * declaration 키에 존재해야 한다(파생값 제외는 허용 — 메타 ⊆ declaration).
-     */
-    public function test_meta_keys_are_subset_of_declaration_keys(): void
-    {
-        $context = [
-            'product' => [
-                'data' => [
-                    'name' => '키정합 상품',
-                    'short_description' => '설명',
-                    'thumbnail_url' => 'https://example.com/p.jpg',
-                    'sku' => 'SKU-1',
-                    'selling_price' => 1000,
-                ],
-            ],
-        ];
-
-        $ogKeys = array_keys($this->module->seoOgDefaults('product', $context));
-        foreach (array_keys($this->module->seoOgDefaultMeta('product')) as $metaKey) {
-            $this->assertContains($metaKey, $ogKeys, "og 메타 키 '{$metaKey}' 는 declaration 키여야 합니다");
-        }
-
-        $flatStructured = $this->flattenKeys($this->module->seoStructuredData('product', $context));
-        foreach (array_keys($this->module->seoStructuredDataMeta('product')) as $metaKey) {
-            $this->assertContains($metaKey, $flatStructured, "structured 메타 키 '{$metaKey}' 는 declaration 평탄 키여야 합니다");
-        }
-    }
-
-    /**
-     * 결함(라이브 검수 2026-06-14): structured offers.availability 가 존재하지 않는 'in_stock' 키를
-     * 참조해 **모든 상품이 OutOfStock** 으로 출력됨. ProductResource 실제 키는 sales_status(enum value)
-     * 와 stock_quantity. sales_status='on_sale' → InStock 이어야 한다.
-     */
-    public function test_product_structured_availability_uses_sales_status_not_missing_in_stock_key(): void
-    {
-        $base = [
-            'name' => '재고 상품',
-            'selling_price' => 1000,
-        ];
-
-        // 판매중(on_sale) → InStock.
-        $onSale = $this->module->seoStructuredData('product', ['product' => ['data' => $base + ['sales_status' => 'on_sale', 'stock_quantity' => 320]]]);
-        $this->assertSame('https://schema.org/InStock', $onSale['offers']['availability'], '판매중 상품은 InStock');
-
-        // 품절(sold_out) → OutOfStock.
-        $soldOut = $this->module->seoStructuredData('product', ['product' => ['data' => $base + ['sales_status' => 'sold_out', 'stock_quantity' => 0]]]);
-        $this->assertSame('https://schema.org/OutOfStock', $soldOut['offers']['availability'], '품절 상품은 OutOfStock');
-
-        // 판매중지(suspended) → OutOfStock.
-        $suspended = $this->module->seoStructuredData('product', ['product' => ['data' => $base + ['sales_status' => 'suspended']]]);
-        $this->assertSame('https://schema.org/OutOfStock', $suspended['offers']['availability'], '판매중지 상품은 OutOfStock');
-    }
-
-    /** 중첩 배열을 점 경로 키 목록으로 평탄화(@type/@context 제외). */
-    private function flattenKeys(array $block, string $prefix = ''): array
-    {
-        $out = [];
-        foreach ($block as $k => $v) {
-            if ($k === '@type' || $k === '@context') {
-                continue;
-            }
-            $path = $prefix === '' ? (string) $k : "{$prefix}.{$k}";
-            if (is_array($v) && ! array_is_list($v)) {
-                $out = array_merge($out, $this->flattenKeys($v, $path));
-            } else {
-                $out[] = $path;
-            }
-        }
-
-        return $out;
     }
 }

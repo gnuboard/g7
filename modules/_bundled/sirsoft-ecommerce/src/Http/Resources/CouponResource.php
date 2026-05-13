@@ -3,22 +3,16 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
-use Illuminate\Http\Request;
-use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
-use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 
 /**
  * 쿠폰 API 리소스
  */
 class CouponResource extends BaseApiResource
 {
-    use HasMultiCurrencyPrices;
-
     /**
      * Transform the resource into an array.
      *
-     * @param  Request  $request
-     * @return array<string, mixed> 쿠폰 리소스 배열 (다통화 환산 필드 포함)
+     * @param  \Illuminate\Http\Request  $request
      */
     public function toArray($request): array
     {
@@ -37,26 +31,10 @@ class CouponResource extends BaseApiResource
             // 할인 정보
             'discount_type' => $this->discount_type?->value,
             'discount_type_label' => $this->discount_type?->label(),
-            // 정액 할인은 통화 금액이므로 기본 통화 자릿수로 정규화 (정률은 % 값이라 그대로)
-            'discount_value' => $this->discount_type === CouponDiscountType::FIXED
-                ? $this->roundToBaseCurrency($this->discount_value)
-                : $this->discount_value,
-            'discount_max_amount' => $this->discount_max_amount !== null
-                ? $this->roundToBaseCurrency($this->discount_max_amount) : null,
-            'min_order_amount' => $this->min_order_amount !== null
-                ? $this->roundToBaseCurrency($this->min_order_amount) : null,
+            'discount_value' => $this->discount_value,
+            'discount_max_amount' => $this->discount_max_amount,
+            'min_order_amount' => $this->min_order_amount,
             'benefit_formatted' => $this->benefit_formatted,
-
-            // 다통화 환산 (A1-④) — 정액(fixed)만 환산, 정률(rate)은 통화 무관 → null
-            'multi_currency_discount_value' => $this->discount_type === CouponDiscountType::FIXED
-                ? $this->buildMultiCurrencyPrices($this->discount_value ?? 0)
-                : null,
-            'multi_currency_min_order_amount' => ($this->min_order_amount ?? 0) > 0
-                ? $this->buildMultiCurrencyPrices($this->min_order_amount)
-                : null,
-            'multi_currency_discount_max_amount' => ($this->discount_max_amount ?? 0) > 0
-                ? $this->buildMultiCurrencyPrices($this->discount_max_amount)
-                : null,
 
             // 발급 설정
             'issue_method' => $this->issue_method?->value,
@@ -119,7 +97,7 @@ class CouponResource extends BaseApiResource
                     'product_code' => $product->product_code,
                     'name' => $product->getLocalizedName(),
                     'name_localized' => $product->getLocalizedName(),
-                    'selling_price_formatted' => $this->formatBaseCurrency($product->selling_price ?? 0),
+                    'selling_price_formatted' => number_format($product->selling_price ?? 0).'원',
                 ]);
             }),
             'excluded_products' => $this->whenLoaded('excludedProducts', function () {
@@ -128,7 +106,7 @@ class CouponResource extends BaseApiResource
                     'product_code' => $product->product_code,
                     'name' => $product->getLocalizedName(),
                     'name_localized' => $product->getLocalizedName(),
-                    'selling_price_formatted' => $this->formatBaseCurrency($product->selling_price ?? 0),
+                    'selling_price_formatted' => number_format($product->selling_price ?? 0).'원',
                 ]);
             }),
             'included_categories' => $this->whenLoaded('includedCategories', function () {

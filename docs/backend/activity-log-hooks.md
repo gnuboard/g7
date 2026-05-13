@@ -5,7 +5,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 코어 74훅 + 확장 167훅 = 총 241훅 (확장별 목록은 그 확장이 소유)
+1. 코어 66훅 + 이커머스 92훅 + 게시판 32훅 + 페이지 8훅 = 총 198훅
 2. Listener에서 Log::channel('activity')->info() 직접 호출 (Monolog → ActivityLogHandler → DB)
 3. 스냅샷 패턴: before_update(priority 5) → 캡처, after_update → ChangeDetector로 비교
 4. 사용자 행위: ActivityLogType::User (장바구니/위시리스트/쿠폰 다운로드/주문/결제)
@@ -18,9 +18,11 @@
 
 1. [아키텍처 개요](#1-아키텍처-개요)
 2. [코어 훅 (CoreActivityLogListener)](#2-코어-훅-coreactivityloglistener)
-3. [확장 모듈 훅](#3-확장-모듈-훅)
-4. [스냅샷/변경감지 패턴](#4-스냅샷변경감지-패턴)
-5. [새 모듈에 ActivityLog 추가하기](#5-새-모듈에-activitylog-추가하기)
+3. [이커머스 모듈 훅](#3-이커머스-모듈-훅)
+4. [게시판 모듈 훅 (BoardActivityLogListener)](#4-게시판-모듈-훅-boardactivityloglistener)
+5. [페이지 모듈 훅 (PageActivityLogListener)](#5-페이지-모듈-훅-pageactivityloglistener)
+6. [스냅샷/변경감지 패턴](#6-스냅샷변경감지-패턴)
+7. [새 모듈에 ActivityLog 추가하기](#7-새-모듈에-activitylog-추가하기)
 
 ---
 
@@ -41,12 +43,13 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 ## 2. 코어 훅 (CoreActivityLogListener)
 
 **파일**: `app/Listeners/CoreActivityLogListener.php`
-**총 74훅**
+**총 66훅** (스냅샷 캡처용 before 훅 포함)
 
-### User (10훅)
+### User (9훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
+| `core.user.before_update` | `captureUserSnapshot` | _(스냅샷 캡처)_ | - | - |
 | `core.user.after_create` | `handleUserAfterCreate` | `user.create` | Admin | User |
 | `core.user.after_update` | `handleUserAfterUpdate` | `user.update` | Admin | User |
 | `core.user.after_delete` | `handleUserAfterDelete` | `user.delete` | Admin | User |
@@ -55,59 +58,34 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.user.after_list` | `handleUserAfterList` | `user.list` | Admin | - |
 | `core.user.after_search` | `handleUserAfterSearch` | `user.search` | Admin | - |
 | `sirsoft-core.user.after_bulk_update` | `handleUserAfterBulkUpdate` | `user.bulk_update` | Admin | - |
-| `core.user.after_bulk_update_roles` | `handleUserAfterBulkUpdateRoles` | `user.bulk_roles` | Admin | User |
-| `core.user.after_update_roles` | `handleUserAfterUpdateRoles` | `user.roles_update` | Admin | User |
 
-`user.bulk_roles`·`user.roles_update` 는 권한 부여·변경 기록이라 활동 로그 보관 기간과 관계없이 최소 3년 보관한다 — [activity-log.md](activity-log.md) 「보관 기간」.
-
-### Auth (11훅)
+### Auth (6훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.auth.after_login` | `handleAuthAfterLogin` | `auth.login`(설명 키: 관리자 로그인 경로 `api/auth/admin/*` 면 `auth_admin_login`, 그 외 `auth_login`) | User | User |
-| `core.auth.logout` | `handleAuthLogout` | `auth.logout`(설명 키: 관리자 경로 `api/admin/*` 면 `auth_admin_logout`, 그 외 `auth_logout`) | 관리자 경로면 Admin, 그 외 User | User |
-| `core.auth.after_register` | `handleAuthRegister` | `auth.register` | User | User |
-| `core.auth.after_reset_password_request` (sync — 인자에 재설정 토큰) | `handleAuthForgotPassword` | `auth.forgot_password` | User | - |
-| `core.auth.password_change_recorded` | `handlePasswordChangeRecorded` | `source=reset` 이면 `auth.reset_password`, 그 외 `auth.password_change`(설명 키 `auth_password_change_self` · `_by_admin` · `_on_login_expired` · `_on_login_admin_assigned`) | `admin` 이면 Admin, 그 외 User | User (행위자: 훅 인자 `actor_id`) |
-| `core.auth.password_change_postponed` | `handlePasswordChangePostponed` | `auth.password_change_postpone` | User | User |
-| `core.auth.password_expired` | `handlePasswordExpired` | `auth.password_expiry_logout` (토큰을 폐기한 경우만 — '변경해야 로그인' 모드) | System | User |
+| `core.auth.after_login` | `handleAuthAfterLogin` | `auth.login` | User | User |
+| `core.auth.logout` | `handleAuthLogout` | `auth.logout` | User | User |
+| `core.auth.register` | `handleAuthRegister` | `auth.register` | User | User |
+| `core.auth.forgot_password` | `handleAuthForgotPassword` | `auth.forgot_password` | User | - |
+| `core.auth.reset_password` | `handleAuthResetPassword` | `auth.reset_password` | User | - |
 | `core.auth.record_consents` | `handleAuthRecordConsents` | `auth.record_consents` | User | User |
-| `core.auth.login_failed` | `handleAuthLoginFailed` | `auth.login_failed` | User | - |
-| `core.auth.account_locked` | `handleAuthAccountLocked` | `auth.account_locked` | User | User |
-| `core.auth.account_unlocked` | `handleAuthAccountUnlocked` | `auth.account_unlocked` (관리자 해제·비밀번호 재설정 — `context.reason=password_reset` 이면 설명 키 `auth_account_unlocked_by_password_reset`) | User | User |
 
-### Identity (3훅)
-
-본인인증(IDV) 훅은 DTO(`VerificationChallenge`/`VerificationResult`)를 인자로 받으므로 `sync => true` 로 등록된다 — 큐 직렬화 대상에 POPO 가 포함되지 않아 큐로 넘기면 `null` 이 전달된다.
+### Role (6훅, 스냅샷 포함)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.identity.after_request` | `handleIdentityRequested` | `identity.request` | User | - |
-| `core.identity.after_verify` | `handleIdentityVerified` | `identity.verify` / `identity.verify_failed` | User | - |
-| `core.identity.challenge_expired` | `handleIdentityExpired` | `identity.expired` | User | - |
-
-### Member Notification (1훅)
-
-관리자가 회원 알림함의 알림을 일괄 삭제한 기록이다. 삭제된 알림은 모델이 사라지므로 대상 없이 요청·삭제 건수와 uuid 를 `properties` 로 남긴다.
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
-| `core.member_notification.after_bulk_delete` | `handleMemberNotificationAfterBulkDelete` | `member_notification.bulk_delete` | Admin | - |
-
-### Role (5훅)
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
+| `core.role.before_update` | `captureRoleSnapshot` | _(스냅샷 캡처)_ | - | - |
 | `core.role.after_create` | `handleRoleAfterCreate` | `role.create` | Admin | Role |
 | `core.role.after_update` | `handleRoleAfterUpdate` | `role.update` | Admin | Role |
 | `core.role.after_delete` | `handleRoleAfterDelete` | `role.delete` | Admin | Role |
 | `core.role.after_sync_permissions` | `handleRoleAfterSyncPermissions` | `role.sync_permissions` | Admin | Role |
 | `core.role.after_toggle_status` | `handleRoleAfterToggleStatus` | `role.toggle_status` | Admin | Role |
 
-### Menu (6훅)
+### Menu (7훅, 스냅샷 포함)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
+| `core.menu.before_update` | `captureMenuSnapshot` | _(스냅샷 캡처)_ | - | - |
 | `core.menu.after_create` | `handleMenuAfterCreate` | `menu.create` | Admin | Menu |
 | `core.menu.after_update` | `handleMenuAfterUpdate` | `menu.update` | Admin | Menu |
 | `core.menu.after_delete` | `handleMenuAfterDelete` | `menu.delete` | Admin | Menu |
@@ -122,10 +100,11 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.settings.after_save` | `handleSettingsAfterSave` | `settings.save` | Admin | - |
 | `core.settings.after_set` | `handleSettingsAfterSet` | `settings.set` | Admin | - |
 
-### Schedule (6훅)
+### Schedule (7훅, 스냅샷 포함)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
+| `core.schedule.before_update` | `captureScheduleSnapshot` | _(스냅샷 캡처)_ | - | - |
 | `core.schedule.after_create` | `handleScheduleAfterCreate` | `schedule.create` | Admin | Schedule |
 | `core.schedule.after_update` | `handleScheduleAfterUpdate` | `schedule.update` | Admin | Schedule |
 | `core.schedule.after_delete` | `handleScheduleAfterDelete` | `schedule.delete` | Admin | Schedule |
@@ -141,61 +120,44 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 | `core.attachment.after_delete` | `handleAttachmentAfterDelete` | `attachment.delete` | Admin | Attachment |
 | `core.attachment.after_bulk_delete` | `handleAttachmentAfterBulkDelete` | `attachment.bulk_delete` | Admin | - |
 
-> **확장 생명주기 훅의 LogType**: 설치·활성화·비활성화·업데이트·제거 훅은 Manager 가 발화하므로 어드민 UI 와
-> Artisan 커맨드(`module:install` 등) 양쪽에서 기록된다. 어드민 UI 는 `Admin`, CLI 는 요청 경로가 없어 `System` 으로
-> 기록되고 `properties.via = 'cli'` 가 붙어 관리자 화면 행위자 칸에 "시스템(CLI)" 로 보인다.
-
 ### Module (6훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.modules.after_install` | `handleModuleAfterInstall` | `module.install` | Admin / System(CLI) | - |
-| `core.modules.after_activate` | `handleModuleAfterActivate` | `module.activate` | Admin / System(CLI) | - |
-| `core.modules.after_deactivate` | `handleModuleAfterDeactivate` | `module.deactivate` | Admin / System(CLI) | - |
-| `core.modules.after_uninstall` | `handleModuleAfterUninstall` | `module.uninstall` | Admin / System(CLI) | - |
-| `core.modules.after_update` | `handleModuleAfterUpdate` | `module.update` | Admin / System(CLI) | - |
+| `core.modules.after_install` | `handleModuleAfterInstall` | `module.install` | Admin | - |
+| `core.modules.after_activate` | `handleModuleAfterActivate` | `module.activate` | Admin | - |
+| `core.modules.after_deactivate` | `handleModuleAfterDeactivate` | `module.deactivate` | Admin | - |
+| `core.modules.after_uninstall` | `handleModuleAfterUninstall` | `module.uninstall` | Admin | - |
+| `core.modules.after_update` | `handleModuleAfterUpdate` | `module.update` | Admin | - |
 | `core.modules.after_refresh_layouts` | `handleModuleAfterRefreshLayouts` | `module.refresh_layouts` | Admin | - |
 
 ### Plugin (5훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.plugins.after_install` | `handlePluginAfterInstall` | `plugin.install` | Admin / System(CLI) | - |
-| `core.plugins.after_activate` | `handlePluginAfterActivate` | `plugin.activate` | Admin / System(CLI) | - |
-| `core.plugins.after_deactivate` | `handlePluginAfterDeactivate` | `plugin.deactivate` | Admin / System(CLI) | - |
-| `core.plugins.after_uninstall` | `handlePluginAfterUninstall` | `plugin.uninstall` | Admin / System(CLI) | - |
-| `core.plugins.after_update` | `handlePluginAfterUpdate` | `plugin.update` | Admin / System(CLI) | - |
+| `core.plugins.after_install` | `handlePluginAfterInstall` | `plugin.install` | Admin | - |
+| `core.plugins.after_activate` | `handlePluginAfterActivate` | `plugin.activate` | Admin | - |
+| `core.plugins.after_deactivate` | `handlePluginAfterDeactivate` | `plugin.deactivate` | Admin | - |
+| `core.plugins.after_uninstall` | `handlePluginAfterUninstall` | `plugin.uninstall` | Admin | - |
+| `core.plugins.after_update` | `handlePluginAfterUpdate` | `plugin.update` | Admin | - |
 
 ### Template (6훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
-| `core.templates.after_install` | `handleTemplateAfterInstall` | `template.install` | Admin / System(CLI) | - |
-| `core.templates.after_activate` | `handleTemplateAfterActivate` | `template.activate` | Admin / System(CLI) | - |
-| `core.templates.after_deactivate` | `handleTemplateAfterDeactivate` | `template.deactivate` | Admin / System(CLI) | - |
-| `core.templates.after_uninstall` | `handleTemplateAfterUninstall` | `template.uninstall` | Admin / System(CLI) | - |
-| `core.templates.after_version_update` | `handleTemplateAfterVersionUpdate` | `template.version_update` | Admin / System(CLI) | - |
+| `core.templates.after_install` | `handleTemplateAfterInstall` | `template.install` | Admin | - |
+| `core.templates.after_activate` | `handleTemplateAfterActivate` | `template.activate` | Admin | - |
+| `core.templates.after_deactivate` | `handleTemplateAfterDeactivate` | `template.deactivate` | Admin | - |
+| `core.templates.after_uninstall` | `handleTemplateAfterUninstall` | `template.uninstall` | Admin | - |
+| `core.templates.after_version_update` | `handleTemplateAfterVersionUpdate` | `template.version_update` | Admin | - |
 | `core.templates.after_refresh_layouts` | `handleTemplateAfterRefreshLayouts` | `template.refresh_layouts` | Admin | - |
 
-> **업데이트 기록의 레이아웃 처리 결과** — `module.update`·`plugin.update`·`template.version_update` 는 훅 `$result` 의 `layout_strategy`·`layout_sync` 를 읽어 `properties.layout_strategy`, `properties.layout_sync`(카운트만 — `applied_count`·`conflict_count`·`kept_*_count`·`modified_count`, entries 제외), `properties.layout_sync_conflicts`(겹친 단위 최대 50건 `{layout, unit, reason}`)를 싣는다. `changes` 에는 운영자 관련 화면마다 한 줄 — `field`·`label` = `{템플릿 식별자} · {화면 이름}`, `type: enum`, `old: operator_modified` → `new: {verdict}`, 라벨 키 `activity_log.layout_sync.operator_modified` / `extensions.layout_sync.verdict.{verdict}` — 이라 목록에서 행을 펼치면 변경 내역 표에 번역된 결과가 보인다. 보고할 화면이 없으면(덮어쓰기, 운영자 수정 없음) 붙지 않는다. 병합 규칙: [extension-update-system.md §10](../extension/extension-update-system.md#10-레이아웃-충돌-전략-3종-공통)
-
-### Extension 공통 (1훅)
-
-템플릿·모듈·플러그인 세 타입이 같은 훅을 공유한다 (권한도 `core.extensions.custom_assets.manage` 하나다).
-
-| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
-|---------|----------------|-------------|---------|----------|
-| `core.custom_assets.after_change` | `handleCustomAssetAfterChange` | `custom_asset.{save\|upload\|delete\|rename}` | Admin | 운영자 CSS·JS 는 사이트 전 화면에서 실행되므로 변경 이력이 남아야 한다 |
-
-### Layout (5훅)
+### Layout (2훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
 | `core.layout.after_update` | `handleLayoutAfterUpdate` | `layout.update` | Admin | - |
 | `core.layout.after_version_restore` | `handleLayoutAfterVersionRestore` | `layout.version_restore` | Admin | - |
-| `core.layout.after_create` | `handleLayoutAfterCreate` | `layout.create` | Admin | TemplateLayout |
-| `core.layout.after_rename` | `handleLayoutAfterRename` | `layout.rename` | Admin | TemplateLayout — `properties.from/to` |
-| `core.layout.after_delete` | `handleLayoutAfterDelete` | `layout.delete` | Admin | TemplateLayout(soft delete 라 행은 남는다) — 파괴적 연산의 되돌림 근거 |
 
 ### Module Settings (2훅)
 
@@ -213,30 +175,344 @@ Service → doAction('hook.name') → ActivityLogListener → Log::channel('acti
 
 ---
 
-## 3. 확장 모듈 훅
+## 3. 이커머스 모듈 훅
 
-확장이 구독하는 활동 로그 훅 목록은 **그 확장이 소유**합니다(#601). 확장이 훅을 추가할 때
-코어 문서를 고쳐야 하는 역방향 의존을 없애기 위해서이며, 코어에는 아래 총계와 링크만 남습니다.
+**모듈**: `sirsoft-ecommerce`
+**총 92훅** (7개 Listener)
 
-| 확장 | 훅 수 | 문서 |
-|------|------|------|
-| `sirsoft-ecommerce` | 138 | [docs/extension-points.md](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md) |
-| `sirsoft-board` | 30 | [docs/extension-points.md](../../modules/_bundled/sirsoft-board/docs/extension-points.md) |
-| `sirsoft-page` | 7 | [docs/extension-points.md](../../modules/_bundled/sirsoft-page/docs/extension-points.md) |
-| `sirsoft-pay_kginicis` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_kginicis/docs/extension-points.md) |
-| `sirsoft-pay_nhnkcp` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/extension-points.md) |
-| `sirsoft-pay_nicepayments` | 1 | [docs/extension-points.md](../../plugins/_bundled/sirsoft-pay_nicepayments/docs/extension-points.md) |
-| **합계** | **178** | |
+### 3.1 OrderActivityLogListener (21훅)
 
-코어 71훅 + 확장 167훅 = **총 238훅**입니다.
+**파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/OrderActivityLogListener.php`
 
-확장에 새 활동 로그 항목을 추가할 때는 **그 확장의 lang 파일**(`src/lang/{ko,en}/activity_log.php`)에
-action 라벨과 description 본문을 정의합니다. description 은 리스너가 `{확장}::activity_log.description.*`
-키로 남기므로 확장 lang 에서 해석되고, action 라벨은 `ActivityLog::getActionLabelAttribute()` 가 확장 lang 을
-먼저 찾은 뒤 없을 때만 코어 `lang/{ko,en}/activity_log.php` 로 내려갑니다. 번들 일본어 팩도 같은 작업 단위에서
-동기화합니다.
+#### OrderService (8훅)
 
-## 4. 스냅샷/변경감지 패턴
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.order.before_update` | `captureOrderSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.order.after_update` | `handleOrderAfterUpdate` | `order.update` | Admin | Order |
+| `sirsoft-ecommerce.order.after_delete` | `handleOrderAfterDelete` | `order.delete` | Admin | Order |
+| `sirsoft-ecommerce.order.after_bulk_update` | `handleOrderAfterBulkUpdate` | `order.bulk_update` | Admin | - |
+| `sirsoft-ecommerce.order.after_bulk_status_update` | `handleOrderAfterBulkStatusUpdate` | `order.bulk_status_update` | Admin | - |
+| `sirsoft-ecommerce.order.after_bulk_shipping_update` | `handleOrderAfterBulkShippingUpdate` | `order.bulk_shipping_update` | Admin | - |
+| `sirsoft-ecommerce.order.after_update_shipping_address` | `handleOrderAfterUpdateShippingAddress` | `order.update_shipping_address` | Admin | Order |
+| `sirsoft-ecommerce.order.after_send_email` | `handleOrderAfterSendEmail` | `order.send_email` | Admin | - |
+
+#### OrderOptionService (2훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.order_option.after_status_change` | `handleOrderOptionAfterStatusChange` | `order_option.status_change` | Admin | OrderOption |
+| `sirsoft-ecommerce.order_option.after_bulk_status_change` | `handleOrderOptionAfterBulkStatusChange` | `order_option.bulk_status_change` | Admin | - |
+
+#### OrderCancellationService (5훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.order.before_cancel` | `captureOrderCancelSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.order.after_cancel` | `handleOrderAfterCancel` | `order.cancel` | Admin | Order |
+| `sirsoft-ecommerce.order.after_partial_cancel` | `handleOrderAfterPartialCancel` | `order.partial_cancel` | Admin | Order |
+| `sirsoft-ecommerce.coupon.restore` | `handleCouponRestore` | `coupon.restore` | Admin | Order |
+| `sirsoft-ecommerce.mileage.restore` | `handleMileageRestore` | `mileage.restore` | Admin | Order |
+
+#### OrderProcessingService (6훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.order.after_create` | `handleOrderAfterCreate` | `order.create` | **User** | Order |
+| `sirsoft-ecommerce.order.after_payment_complete` | `handleOrderAfterPaymentComplete` | `order.payment_complete` | **User** | Order |
+| `sirsoft-ecommerce.order.payment_failed` | `handleOrderAfterPaymentFailed` | `order.payment_failed` | **User** | Order |
+| `sirsoft-ecommerce.coupon.use` | `handleCouponUse` | `coupon.use` | **User** | Order |
+| `sirsoft-ecommerce.mileage.use` | `handleMileageUse` | `mileage.use` | **User** | Order |
+| `sirsoft-ecommerce.mileage.earn` | `handleMileageEarn` | `mileage.earn` | **User** | Order |
+
+### 3.2 ProductActivityLogListener (10훅)
+
+**파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/ProductActivityLogListener.php`
+
+> 이 리스너는 `ProductLogService`를 사용하는 별도 패턴입니다 (Log::channel 대신).
+
+| 훅 이름 | Listener 메서드 | Priority | 비고 |
+|---------|----------------|----------|------|
+| `sirsoft-ecommerce.product.after_create` | `logCreated` | 50 | 상품 생성 로그 |
+| `sirsoft-ecommerce.product.before_update` | `captureSnapshot` | 5 | 스냅샷 캡처 |
+| `sirsoft-ecommerce.product.after_update` | `logUpdated` | 50 | 변경사항 비교 후 로그 |
+| `sirsoft-ecommerce.product.before_delete` | `logDeleted` | 50 | 삭제 전 로그 기록 |
+| `sirsoft-ecommerce.product.before_bulk_update` | `captureProductBulkUpdateSnapshot` | 5 | 일괄 수정 전 스냅샷 |
+| `sirsoft-ecommerce.product.after_bulk_update` | `handleProductAfterBulkUpdate` | 20 | 일괄 수정 로그 |
+| `sirsoft-ecommerce.product.before_bulk_price_update` | `captureProductBulkPriceSnapshot` | 5 | 일괄 가격 수정 전 스냅샷 |
+| `sirsoft-ecommerce.product.after_bulk_price_update` | `handleProductAfterBulkPriceUpdate` | 20 | 일괄 가격 수정 로그 |
+| `sirsoft-ecommerce.product.before_bulk_stock_update` | `captureProductBulkStockSnapshot` | 5 | 일괄 재고 수정 전 스냅샷 |
+| `sirsoft-ecommerce.product.after_bulk_stock_update` | `handleProductAfterBulkStockUpdate` | 20 | 일괄 재고 수정 로그 |
+
+### 3.3 CouponActivityLogListener (6훅)
+
+**파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/CouponActivityLogListener.php`
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.coupon.after_create` | `handleAfterCreate` | `coupon.create` | Admin | Coupon |
+| `sirsoft-ecommerce.coupon.before_update` | `captureCouponSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.coupon.after_update` | `handleAfterUpdate` | `coupon.update` | Admin | Coupon |
+| `sirsoft-ecommerce.coupon.after_delete` | `handleAfterDelete` | `coupon.delete` | Admin | - |
+| `sirsoft-ecommerce.coupon.before_bulk_status` | `captureCouponBulkStatusSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.coupon.after_bulk_status` | `handleAfterBulkStatus` | `coupon.bulk_status` | Admin | - |
+
+### 3.4 ShippingPolicyActivityLogListener (8훅)
+
+**파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/ShippingPolicyActivityLogListener.php`
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.shipping_policy.after_create` | `handleAfterCreate` | `shipping_policy.create` | Admin | ShippingPolicy |
+| `sirsoft-ecommerce.shipping_policy.before_update` | `captureSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.shipping_policy.after_update` | `handleAfterUpdate` | `shipping_policy.update` | Admin | ShippingPolicy |
+| `sirsoft-ecommerce.shipping_policy.after_delete` | `handleAfterDelete` | `shipping_policy.delete` | Admin | - |
+| `sirsoft-ecommerce.shipping_policy.after_toggle_active` | `handleAfterToggleActive` | `shipping_policy.toggle_active` | Admin | ShippingPolicy |
+| `sirsoft-ecommerce.shipping_policy.after_set_default` | `handleAfterSetDefault` | `shipping_policy.set_default` | Admin | ShippingPolicy |
+| `sirsoft-ecommerce.shipping_policy.after_bulk_delete` | `handleAfterBulkDelete` | `shipping_policy.bulk_delete` | Admin | - |
+| `sirsoft-ecommerce.shipping_policy.after_bulk_toggle_active` | `handleAfterBulkToggleActive` | `shipping_policy.bulk_toggle_active` | Admin | - |
+
+### 3.5 CategoryActivityLogListener (6훅)
+
+**파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/CategoryActivityLogListener.php`
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.category.after_create` | `handleAfterCreate` | `category.create` | Admin | Category |
+| `sirsoft-ecommerce.category.before_update` | `captureCategorySnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.category.after_update` | `handleAfterUpdate` | `category.update` | Admin | Category |
+| `sirsoft-ecommerce.category.after_delete` | `handleAfterDelete` | `category.delete` | Admin | - |
+| `sirsoft-ecommerce.category.after_toggle_status` | `handleAfterToggleStatus` | `category.toggle_status` | Admin | Category |
+| `sirsoft-ecommerce.category.after_reorder` | `handleAfterReorder` | `category.reorder` | Admin | - |
+
+### 3.6 EcommerceAdminActivityLogListener (51훅)
+
+**파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/EcommerceAdminActivityLogListener.php`
+
+#### Brand (5훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.brand.after_create` | `handleBrandAfterCreate` | `brand.create` | Admin | Brand |
+| `sirsoft-ecommerce.brand.before_update` | `captureBrandSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.brand.after_update` | `handleBrandAfterUpdate` | `brand.update` | Admin | Brand |
+| `sirsoft-ecommerce.brand.after_delete` | `handleBrandAfterDelete` | `brand.delete` | Admin | Brand |
+| `sirsoft-ecommerce.brand.after_toggle_status` | `handleBrandAfterToggleStatus` | `brand.toggle_status` | Admin | Brand |
+
+#### ProductLabel (5훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.label.after_create` | `handleLabelAfterCreate` | `label.create` | Admin | ProductLabel |
+| `sirsoft-ecommerce.label.before_update` | `captureLabelSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.label.after_update` | `handleLabelAfterUpdate` | `label.update` | Admin | ProductLabel |
+| `sirsoft-ecommerce.label.after_delete` | `handleLabelAfterDelete` | `label.delete` | Admin | ProductLabel |
+| `sirsoft-ecommerce.label.after_toggle_status` | `handleLabelAfterToggleStatus` | `label.toggle_status` | Admin | ProductLabel |
+
+#### ProductCommonInfo (4훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.product-common-info.after_create` | `handleCommonInfoAfterCreate` | `common_info.create` | Admin | ProductCommonInfo |
+| `sirsoft-ecommerce.product-common-info.before_update` | `captureCommonInfoSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.product-common-info.after_update` | `handleCommonInfoAfterUpdate` | `common_info.update` | Admin | ProductCommonInfo |
+| `sirsoft-ecommerce.product-common-info.after_delete` | `handleCommonInfoAfterDelete` | `common_info.delete` | Admin | ProductCommonInfo |
+
+#### ProductNoticeTemplate (5훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.product-notice-template.after_create` | `handleNoticeTemplateAfterCreate` | `notice_template.create` | Admin | ProductNoticeTemplate |
+| `sirsoft-ecommerce.product-notice-template.before_update` | `captureNoticeTemplateSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.product-notice-template.after_update` | `handleNoticeTemplateAfterUpdate` | `notice_template.update` | Admin | ProductNoticeTemplate |
+| `sirsoft-ecommerce.product-notice-template.after_delete` | `handleNoticeTemplateAfterDelete` | `notice_template.delete` | Admin | ProductNoticeTemplate |
+| `sirsoft-ecommerce.product-notice-template.after_copy` | `handleNoticeTemplateAfterCopy` | `notice_template.copy` | Admin | ProductNoticeTemplate |
+
+#### ExtraFeeTemplate (10훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.extra_fee_template.after_create` | `handleExtraFeeAfterCreate` | `extra_fee_template.create` | Admin | ExtraFeeTemplate |
+| `sirsoft-ecommerce.extra_fee_template.before_update` | `captureExtraFeeSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.extra_fee_template.after_update` | `handleExtraFeeAfterUpdate` | `extra_fee_template.update` | Admin | ExtraFeeTemplate |
+| `sirsoft-ecommerce.extra_fee_template.after_delete` | `handleExtraFeeAfterDelete` | `extra_fee_template.delete` | Admin | ExtraFeeTemplate |
+| `sirsoft-ecommerce.extra_fee_template.after_toggle_active` | `handleExtraFeeAfterToggleActive` | `extra_fee_template.toggle_active` | Admin | ExtraFeeTemplate |
+| `sirsoft-ecommerce.extra_fee_template.before_bulk_delete` | `captureExtraFeeBulkDeleteSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.extra_fee_template.after_bulk_delete` | `handleExtraFeeAfterBulkDelete` | `extra_fee_template.bulk_delete` | Admin | - |
+| `sirsoft-ecommerce.extra_fee_template.before_bulk_toggle_active` | `captureExtraFeeBulkToggleSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.extra_fee_template.after_bulk_toggle_active` | `handleExtraFeeAfterBulkToggleActive` | `extra_fee_template.bulk_toggle_active` | Admin | - |
+| `sirsoft-ecommerce.extra_fee_template.after_bulk_create` | `handleExtraFeeAfterBulkCreate` | `extra_fee_template.bulk_create` | Admin | - |
+
+#### ShippingCarrier (5훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.shipping_carrier.after_create` | `handleCarrierAfterCreate` | `shipping_carrier.create` | Admin | ShippingCarrier |
+| `sirsoft-ecommerce.shipping_carrier.before_update` | `captureCarrierSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.shipping_carrier.after_update` | `handleCarrierAfterUpdate` | `shipping_carrier.update` | Admin | ShippingCarrier |
+| `sirsoft-ecommerce.shipping_carrier.after_delete` | `handleCarrierAfterDelete` | `shipping_carrier.delete` | Admin | ShippingCarrier |
+| `sirsoft-ecommerce.shipping_carrier.after_toggle_status` | `handleCarrierAfterToggleStatus` | `shipping_carrier.toggle_status` | Admin | ShippingCarrier |
+
+#### ProductImage (3훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.product-image.after_upload` | `handleImageAfterUpload` | `product_image.upload` | Admin | ProductImage |
+| `sirsoft-ecommerce.product-image.after_delete` | `handleImageAfterDelete` | `product_image.delete` | Admin | ProductImage |
+| `sirsoft-ecommerce.product-image.after_reorder` | `handleImageAfterReorder` | `product_image.reorder` | Admin | - |
+
+#### ShippingPolicy Bulk (4훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.shipping_policy.before_bulk_delete` | `captureShippingPolicyBulkDeleteSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.shipping_policy.after_bulk_delete` | `handleShippingPolicyAfterBulkDelete` | `shipping_policy.bulk_delete` | Admin | - |
+| `sirsoft-ecommerce.shipping_policy.before_bulk_toggle_active` | `captureShippingPolicyBulkToggleSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.shipping_policy.after_bulk_toggle_active` | `handleShippingPolicyAfterBulkToggleActive` | `shipping_policy.bulk_toggle_active` | Admin | - |
+
+#### ProductOption (6훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.product_option.before_bulk_price_update` | `captureOptionBulkPriceSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.product_option.after_bulk_price_update` | `handleOptionAfterBulkPriceUpdate` | `product_option.bulk_price_update` | Admin | - |
+| `sirsoft-ecommerce.product_option.before_bulk_stock_update` | `captureOptionBulkStockSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.product_option.after_bulk_stock_update` | `handleOptionAfterBulkStockUpdate` | `product_option.bulk_stock_update` | Admin | - |
+| `sirsoft-ecommerce.option.before_bulk_update` | `captureOptionBulkUpdateSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.option.after_bulk_update` | `handleOptionAfterBulkUpdate` | `product_option.bulk_update` | Admin | - |
+
+#### ProductReview (4훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.product-review.after_create` | `handleReviewAfterCreate` | `review.create` | Admin | ProductReview |
+| `sirsoft-ecommerce.product-review.after_delete` | `handleReviewAfterDelete` | `review.delete` | Admin | ProductReview |
+| `sirsoft-ecommerce.product-review.before_bulk_delete` | `captureReviewBulkDeleteSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-ecommerce.product-review.after_bulk_delete` | `handleReviewAfterBulkDelete` | `product_review.bulk_delete` | Admin | - |
+
+### 3.7 EcommerceUserActivityLogListener (7훅)
+
+**파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/EcommerceUserActivityLogListener.php`
+
+#### Cart (5훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.cart.after_add` | `handleCartAfterAdd` | `cart.add` | **User** | Cart |
+| `sirsoft-ecommerce.cart.after_update_quantity` | `handleCartAfterUpdateQuantity` | `cart.update_quantity` | **User** | Cart |
+| `sirsoft-ecommerce.cart.after_change_option` | `handleCartAfterChangeOption` | `cart.change_option` | **User** | Cart |
+| `sirsoft-ecommerce.cart.after_delete` | `handleCartAfterDelete` | `cart.delete` | **User** | - |
+| `sirsoft-ecommerce.cart.after_delete_all` | `handleCartAfterDeleteAll` | `cart.delete_all` | **User** | - |
+
+#### Wishlist (1훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.wishlist.after_toggle` | `handleWishlistAfterToggle` | `wishlist.add` / `wishlist.remove` | **User** | Product |
+
+#### User Coupon (1훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.user_coupon.after_download` | `handleUserCouponAfterDownload` | `user_coupon.download` | **User** | CouponIssue |
+
+---
+
+## 4. 게시판 모듈 훅 (BoardActivityLogListener)
+
+**파일**: `modules/_bundled/sirsoft-board/src/Listeners/BoardActivityLogListener.php`
+**총 32훅**
+
+### Board (6훅, 스냅샷 포함)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-board.board.after_create` | `handleBoardAfterCreate` | `board.create` | Admin | Board |
+| `sirsoft-board.board.before_update` | `captureBoardSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-board.board.after_update` | `handleBoardAfterUpdate` | `board.update` | Admin | Board |
+| `sirsoft-board.board.after_delete` | `handleBoardAfterDelete` | `board.delete` | Admin | Board |
+| `sirsoft-board.board.after_add_to_menu` | `handleBoardAfterAddToMenu` | `board.add_to_menu` | Admin | Board |
+| `sirsoft-board.settings.after_bulk_apply` | `handleSettingsAfterBulkApply` | `board_settings.bulk_apply` | Admin | - |
+
+### BoardType (4훅, 스냅샷 포함)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-board.board_type.after_create` | `handleBoardTypeAfterCreate` | `board_type.create` | Admin | BoardType |
+| `sirsoft-board.board_type.before_update` | `captureBoardTypeSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-board.board_type.after_update` | `handleBoardTypeAfterUpdate` | `board_type.update` | Admin | BoardType |
+| `sirsoft-board.board_type.after_delete` | `handleBoardTypeAfterDelete` | `board_type.delete` | Admin | BoardType |
+
+### Post (6훅, 스냅샷 포함)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-board.post.after_create` | `handlePostAfterCreate` | `post.create` | Admin | Post |
+| `sirsoft-board.post.before_update` | `capturePostSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-board.post.after_update` | `handlePostAfterUpdate` | `post.update` | Admin | Post |
+| `sirsoft-board.post.after_delete` | `handlePostAfterDelete` | `post.delete` | Admin | Post |
+| `sirsoft-board.post.after_blind` | `handlePostAfterBlind` | `post.blind` | Admin | Post |
+| `sirsoft-board.post.after_restore` | `handlePostAfterRestore` | `post.restore` | Admin | Post |
+
+### Comment (6훅, 스냅샷 포함)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-board.comment.after_create` | `handleCommentAfterCreate` | `comment.create` | Admin | Comment |
+| `sirsoft-board.comment.before_update` | `captureCommentSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-board.comment.after_update` | `handleCommentAfterUpdate` | `comment.update` | Admin | Comment |
+| `sirsoft-board.comment.after_delete` | `handleCommentAfterDelete` | `comment.delete` | Admin | Comment |
+| `sirsoft-board.comment.after_blind` | `handleCommentAfterBlind` | `comment.blind` | Admin | Comment |
+| `sirsoft-board.comment.after_restore` | `handleCommentAfterRestore` | `comment.restore` | Admin | Comment |
+
+### Attachment (2훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-board.attachment.after_upload` | `handleAttachmentAfterUpload` | `attachment.upload` | Admin | Attachment |
+| `sirsoft-board.attachment.after_delete` | `handleAttachmentAfterDelete` | `attachment.delete` | Admin | Attachment |
+
+### Report (8훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-board.report.after_create` | `handleReportAfterCreate` | `report.create` | Admin | Report |
+| `sirsoft-board.report.after_update_status` | `handleReportAfterUpdateStatus` | `report.update_status` | Admin | Report |
+| `sirsoft-board.report.before_bulk_update_status` | `captureReportBulkStatusSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-board.report.after_bulk_update_status` | `handleReportAfterBulkUpdateStatus` | `report.bulk_update_status` | Admin | - |
+| `sirsoft-board.report.after_delete` | `handleReportAfterDelete` | `report.delete` | Admin | Report |
+| `sirsoft-board.report.after_restore_content` | `handleReportAfterRestoreContent` | `report.restore_content` | Admin | Report |
+| `sirsoft-board.report.after_blind_content` | `handleReportAfterBlindContent` | `report.blind_content` | Admin | Report |
+| `sirsoft-board.report.after_delete_content` | `handleReportAfterDeleteContent` | `report.delete_content` | Admin | Report |
+
+---
+
+## 5. 페이지 모듈 훅 (PageActivityLogListener)
+
+**파일**: `modules/_bundled/sirsoft-page/src/Listeners/PageActivityLogListener.php`
+**총 8훅**
+
+### Page (6훅, 스냅샷 포함)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-page.page.after_create` | `handlePageAfterCreate` | `page.create` | Admin | Page |
+| `sirsoft-page.page.before_update` | `capturePageSnapshot` | _(스냅샷 캡처)_ | - | - |
+| `sirsoft-page.page.after_update` | `handlePageAfterUpdate` | `page.update` | Admin | Page |
+| `sirsoft-page.page.after_delete` | `handlePageAfterDelete` | `page.delete` | Admin | Page |
+| `sirsoft-page.page.after_publish` | `handlePageAfterPublish` | `page.publish` / `page.unpublish` | Admin | Page |
+| `sirsoft-page.page.after_restore` | `handlePageAfterRestore` | `page.restore` | Admin | Page |
+
+### PageAttachment (2훅)
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-page.attachment.after_upload` | `handleAttachmentAfterUpload` | `page_attachment.upload` | Admin | PageAttachment |
+| `sirsoft-page.attachment.after_delete` | `handleAttachmentAfterDelete` | `page_attachment.delete` | Admin | PageAttachment |
+
+---
+
+## 6. 스냅샷/변경감지 패턴
 
 ActivityLog에서 수정(update) 작업의 변경 이력을 기록하려면 **스냅샷 패턴**을 사용합니다.
 
@@ -299,31 +575,16 @@ public function handleAfterUpdate(Model $entity): void
 - `BackedEnum` 자동 변환 지원
 - 스냅샷이 `null`이면 `null` 반환 (변경 없음)
 
-### 스냅샷은 Service 가 잡아 넘긴다
+### ProductActivityLogListener의 별도 패턴
 
-리스너는 `before_*` 훅을 구독해 스냅샷을 잡지 않습니다. **Service 가 수정 직전에 스냅샷을
-만들어 `after_*` 훅의 인자로 넘기고**, 리스너는 그것을 `ChangeDetector::detect()` 에 그대로
-전달합니다:
-
-```php
-// Service (예: ProductService::update())
-HookManager::doAction('sirsoft-ecommerce.product.after_update', $product, $snapshot);
-
-// Listener
-public function handleProductAfterUpdate(Product $product, ?array $snapshot = null): void
-{
-    $changes = ChangeDetector::detect($product, $snapshot);
-    // ...
-}
-```
-
-`before_*` 훅 자체는 발행되므로 다른 확장이 구독할 수 있습니다 — 다만 **활동 로그 리스너의
-구독 대상은 아닙니다.** 확장별 구독 목록에서 `before_*` 가 보이지 않는 것은 누락이 아니라
-이 구조 때문입니다.
+`ProductActivityLogListener`는 `ProductLogService`를 주입받아 사용하는 별도 패턴입니다:
+- `ChangeDetector` 대신 자체 `detectChanges()` 메서드로 변경 감지
+- 해시 비교로 옵션/추가옵션/이미지 변경 감지
+- `Log::channel('activity')` 대신 `ProductLogService`를 통해 처리로그 테이블에 기록
 
 ---
 
-## 5. 새 모듈에 ActivityLog 추가하기
+## 7. 새 모듈에 ActivityLog 추가하기
 
 ### Step 1: Listener 클래스 생성
 

@@ -3,8 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature;
 
 use App\Extension\ExtensionManager;
-use Modules\Sirsoft\Ecommerce\Listeners\OrderActivityLogListener;
-use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -22,7 +20,7 @@ class ActivityLogActionLabelTest extends ModuleTestCase
 {
     public function test_listener_fqcn_resolves_to_ecommerce_identifier(): void
     {
-        $listenerClass = OrderActivityLogListener::class;
+        $listenerClass = \Modules\Sirsoft\Ecommerce\Listeners\OrderActivityLogListener::class;
         $this->assertTrue(class_exists($listenerClass));
         $this->assertSame(
             'sirsoft-ecommerce',
@@ -34,7 +32,7 @@ class ActivityLogActionLabelTest extends ModuleTestCase
     {
         $this->assertSame(
             'sirsoft-ecommerce',
-            ExtensionManager::resolveExtensionByFqcn(Order::class)
+            ExtensionManager::resolveExtensionByFqcn(\Modules\Sirsoft\Ecommerce\Models\Order::class)
         );
     }
 
@@ -47,11 +45,7 @@ class ActivityLogActionLabelTest extends ModuleTestCase
         $this->assertArrayHasKey('action', $lang, '모듈 lang 에 action 배열이 신설되어야 함 (이슈 #317)');
 
         // 이커머스 specific 키들 — 코어 lang 에서 제거되었으므로 모듈 lang 에 정의 필수
-        // 클레임(S7) last segment — 코어 lang 에 없어 모듈 lang 이 유일 출처다.
-        $required = [
-            'confirm', 'partial_cancel', 'payment_complete', 'earn', 'use', 'change_option', 'update_quantity',
-            'status_change', 'option_status_change', 'update_amounts', 'execute', 'complete', 'refund',
-        ];
+        $required = ['confirm', 'partial_cancel', 'payment_complete', 'earn', 'use', 'change_option', 'update_quantity'];
         foreach ($required as $key) {
             $this->assertArrayHasKey($key, $lang['action'], "ko: action.{$key} 누락");
             $this->assertNotEmpty($lang['action'][$key], "ko: action.{$key} 라벨 비어있음");
@@ -66,11 +60,7 @@ class ActivityLogActionLabelTest extends ModuleTestCase
         $lang = require $langFile;
         $this->assertArrayHasKey('action', $lang, 'Module lang must define action array (#317)');
 
-        // 클레임(S7) last segment — 코어 lang 에 없어 모듈 lang 이 유일 출처다.
-        $required = [
-            'confirm', 'partial_cancel', 'payment_complete', 'earn', 'use', 'change_option', 'update_quantity',
-            'status_change', 'option_status_change', 'update_amounts', 'execute', 'complete', 'refund',
-        ];
+        $required = ['confirm', 'partial_cancel', 'payment_complete', 'earn', 'use', 'change_option', 'update_quantity'];
         foreach ($required as $key) {
             $this->assertArrayHasKey($key, $lang['action'], "en: action.{$key} missing");
             $this->assertNotEmpty($lang['action'][$key], "en: action.{$key} empty");

@@ -1,9 +1,4 @@
 {
-  "editor": {
-    "data_source": {
-      "settings": "Address Search Settings"
-    }
-  },
   "search_address": "Search Address",
   "postcode": {
     "search": "Search Address",
@@ -19,8 +14,7 @@
     "selected": "Address has been selected.",
     "error": {
       "load_failed": "Failed to load postcode service.",
-      "search_failed": "Address search failed.",
-      "sdk_unavailable": "Could not load address search. Please enter the address manually."
+      "search_failed": "Address search failed."
     }
   },
   "settings": {
@@ -42,17 +36,16 @@
       },
       "popup_width": {
         "label": "Popup Width (px)",
-        "hint": "Window width used in popup mode. (100–2000)"
+        "hint": "Window width used in popup mode."
       },
       "popup_height": {
         "label": "Popup Height (px)",
-        "hint": "Window height used in popup mode. (100–2000)"
+        "hint": "Window height used in popup mode."
       },
       "theme_color": {
         "label": "Theme Color",
         "hint": "Theme color for the postcode search window. (e.g., #1D4ED8)"
       }
     }
-  },
-  "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
+  }
 }

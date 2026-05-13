@@ -1,20 +1,5 @@
 import { default as React } from 'react';
 /**
- * 슬롯에 주입된 컴포넌트의 root id 를 컨테이너 id 로 스코프해 고유화한다.
- *
- * 같은 슬롯 컴포넌트가 여러 SlotContainer(예: 헤더 데스크톱/모바일)에서 렌더되면 주입
- * 컴포넌트의 정적 root id 가 컨테이너마다 같은 값으로 중복 출력되어 HTML id 유일성을
- * 위반한다. 컨테이너 고유 id 가 있고 컴포넌트가 root id 를 가지면 `{id}__{containerId}`
- * 로 스코프한다. 둘 중 하나라도 없으면 원본 그대로(무영향).
- *
- * @param componentDef 주입 컴포넌트 정의
- * @param containerId 이 SlotContainer 의 DOM id (없으면 스코프 안 함)
- * @returns 스코프된(또는 원본) 컴포넌트 정의
- */
-export declare function scopeSlotChildDef<T extends {
-    id?: unknown;
-}>(componentDef: T, containerId: string | undefined): T;
-/**
  * SlotContainer Props
  */
 export interface SlotContainerProps {
@@ -46,27 +31,6 @@ export interface SlotContainerProps {
      * 자식 컴포넌트 (children을 통한 fallback 또는 slot 컴포넌트가 아닌 정적 컨텐츠)
      */
     children?: React.ReactNode;
-    /**
-     * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트
-     *
-     * 등록 항목에 렌더 환경이 없을 때 이 SlotContainer 를 그린 렌더러의 렌더 환경을 쓴다(#141).
-     * @internal 템플릿 엔진 내부 사용
-     */
-    __componentContext?: {
-        renderEnvRef?: {
-            current: SlotRenderEnvironment | null;
-        };
-    };
-}
-/**
- * 렌더 환경 (코어 RenderEnvironment 와 호환되는 부분집합)
- */
-interface SlotRenderEnvironment {
-    componentRegistry?: any;
-    bindingEngine?: any;
-    translationEngine?: any;
-    actionDispatcher?: any;
-    isEditMode?: boolean;
 }
 /**
  * SlotContainer 컴포넌트

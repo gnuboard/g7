@@ -2,40 +2,22 @@
 
 namespace App\Http\Controllers\Api\Public;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
-use App\Extension\Helpers\EditorSpecAssembler;
 use App\Extension\Traits\ClearsTemplateCaches;
-use App\Helpers\InlineMediaPolicy;
 use App\Http\Controllers\Api\Base\PublicBaseController;
-use App\Http\Controllers\Concerns\ServesRewritableCssAssets;
 use App\Http\Requests\Public\Template\ServeTemplateAssetRequest;
-use App\Models\TemplateLayoutAttachment;
-use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 공개 템플릿 API 컨트롤러
  */
 class PublicTemplateController extends PublicBaseController
 {
-    use ClearsTemplateCaches;
-    use ServesRewritableCssAssets;
-
-    /**
-     * PublicTemplateController 생성자
-     *
-     * @param  TemplateService  $templateService  템플릿 서비스
-     * @param  TemplateLayoutAttachmentService  $layoutAttachmentService  레이아웃 첨부 서비스
-     */
     public function __construct(
-        private TemplateService $templateService,
-        private TemplateLayoutAttachmentService $layoutAttachmentService,
+        private TemplateService $templateService
     ) {
         parent::__construct();
     }
@@ -44,51 +26,31 @@ class PublicTemplateController extends PublicBaseController
      * 템플릿 라우트 정보 조회 (활성화된 모듈의 routes 포함)
      *
      * @param  string  $identifier  템플릿 식별자 (vendor-name 형식)
-     * @return JsonResponse|Response 라우트 정보 응답 (`?v` 명시 + If-None-Match 일치 시 304)
      */
-    public function getRoutes(string $identifier): JsonResponse|Response
+    public function getRoutes(string $identifier): JsonResponse
     {
         // API 사용량 기록
         $this->logApiUsage('templates.routes', ['identifier' => $identifier]);
 
-        // 서버 캐시 키는 **서버 현재** 확장 캐시 버전으로만 조립한다 (#588 레이아웃 서빙과 같은 규율).
-        // 클라이언트 `?v` 를 키에 넣으면 미인증 요청이 `?v=1,2,3,…` 로 서버 캐시 엔트리를 무한히
-        // 늘려 디스크를 고갈시킨다 (KVE-2026-2336). `?v` 는 아래 HTTP 캐시 정책 판단에만 쓴다.
-        $rawVersion = request()->query('v');
-        $cacheVersion = self::getExtensionCacheVersion();
+        // 캐시 버전을 키에 포함하여 모듈/플러그인 변경 시 캐시 무효화
+        $cacheVersion = request()->query('v', 0);
 
-        // 확장 업데이트 중에는 활성 디렉토리가 잠시 비어 그 모듈의 라우트가 통째로 빠진다.
-        // 그 순간의 응답을 버전 키에 캐시하면 업데이트가 끝난 뒤에도 캐시가 만료될 때까지
-        // 해당 모듈의 모든 화면이 404 로 남는다 — 버전은 이미 올라간 뒤라 스스로 회복되지 않는다.
-        // 따라서 열화 스냅샷은 그대로 응답하되 캐시에 남기지 않는다.
-        $buildRoutes = function () use ($identifier) {
-            $result = $this->templateService->getRoutesDataWithModules($identifier);
+        // 캐싱된 응답 반환 (1시간 유효)
+        $routesData = $this->cached(
+            "template.routes.{$identifier}.v{$cacheVersion}",
+            function () use ($identifier) {
+                // Service에서 템플릿 + 모듈 routes 데이터 병합 조회
+                $result = $this->templateService->getRoutesDataWithModules($identifier);
 
-            if (! $result['success']) {
-                return ['error' => $result['error']];
-            }
+                // 에러 처리
+                if (! $result['success']) {
+                    return ['error' => $result['error']];
+                }
 
-            return ['success' => true, 'data' => $result['data']];
-        };
-
-        $cacheKey = "template.routes.{$identifier}.v{$cacheVersion}";
-        $cache = app(CacheInterface::class);
-        $routesData = $cache->get($cacheKey);
-
-        if ($routesData === null) {
-            $routesData = $buildRoutes();
-
-            if ($this->templateService->lastRouteMergeWasDegraded()) {
-                Log::warning('라우트 병합이 열화 상태여서 캐시하지 않습니다 (확장 업데이트 진행 중 추정)', [
-                    'template' => $identifier,
-                    'cache_version' => $cacheVersion,
-                ]);
-            } elseif (! isset($routesData['error'])) {
-                // 에러 결과(미존재 식별자 등)는 캐시하지 않는다 — cached() 헬퍼와 같은 규율.
-                // 임의 식별자 요청이 에러 스텁 엔트리를 쌓지 않고, 일시적 상태의 에러가 박제되지 않는다.
-                $cache->put($cacheKey, $routesData, 3600);
-            }
-        }
+                return ['success' => true, 'data' => $result['data']];
+            },
+            3600
+        );
 
         // 에러 응답 처리
         if (isset($routesData['error'])) {
@@ -112,15 +74,6 @@ class PublicTemplateController extends PublicBaseController
             return $this->error(__('templates.errors.invalid_cache_data'), 500);
         }
 
-        // 버전 키드 URL(`?v` 명시)은 bump 시 URL 자체가 바뀌므로 조건부 공개 캐시가 안전하다.
-        // 무버전 요청(핸드셰이크 폴백 등)은 종전대로 캐시 헤더 없이 신선 응답 (#122 작업 D).
-        // 열화 스냅샷은 공개 캐시 금지 — 서버측 캐시 회피(#493)와 동일 규율로, 같은 `?v`
-        // URL 에 public max-age 가 붙으면 브라우저/CDN 이 열화 응답을 1시간 박제한다
-        // (버전은 이미 올라간 뒤라 스스로 회복되지 않음. 정적 게시의 열화 제외와 대칭).
-        if ($rawVersion !== null && ! $this->templateService->lastRouteMergeWasDegraded()) {
-            return $this->successWithCache('templates.messages.routes_retrieved', $routesData['data'], 3600);
-        }
-
         return $this->success(
             __('templates.messages.routes_retrieved'),
             $routesData['data']
@@ -129,17 +82,9 @@ class PublicTemplateController extends PublicBaseController
 
     /**
      * 템플릿 정적 파일 서빙
-     *
-     * @param  ServeTemplateAssetRequest  $request  요청 (FormRequest 검증, 파일 경로 `path` 포함)
-     * @param  string  $identifier  템플릿 식별자
-     * @return BinaryFileResponse|JsonResponse|Response 파일 응답 또는 에러
      */
-    public function serveAsset(ServeTemplateAssetRequest $request, string $identifier): BinaryFileResponse|JsonResponse|Response
+    public function serveAsset(ServeTemplateAssetRequest $request, string $identifier, string $path): BinaryFileResponse|JsonResponse|Response
     {
-        // 파일 경로는 FormRequest 에서 받는다 — 확장자 모드는 `{path}` 라우트 세그먼트,
-        // 확장자 없는 모드는 `?file=` 쿼리로 오며 prepareForValidation() 이 이를 흡수한다.
-        $path = (string) $request->validated('path');
-
         // FormRequest에서 이미 보안 검증 완료
         // API 사용량 기록
         $this->logApiUsage('templates.assets', ['identifier' => $identifier, 'path' => $path]);
@@ -157,26 +102,16 @@ class PublicTemplateController extends PublicBaseController
             };
         }
 
-        // 파일 반환 (ETag 및 환경별 캐싱 헤더 포함).
-        // CSS 는 안의 상대 참조를 절대 자산 URL 로 치환해 내보낸다 — 확장자 없는 모드에서
-        // 상대 해석이 어긋나 글꼴·아이콘이 404 가 되기 때문이다.
-        return $this->rewritableAssetResponse(
-            $result['filePath'],
-            $result['mimeType'],
-            'templates',
-            $identifier,
-            $path,
-            31536000
-        );
+        // 파일 반환 (ETag 및 환경별 캐싱 헤더 포함)
+        return $this->fileResponse($result['filePath'], $result['mimeType'], 31536000);
     }
 
     /**
      * 컴포넌트 정의 파일 서빙
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return JsonResponse|Response 컴포넌트 정의 응답 (If-None-Match 일치 시 304)
      */
-    public function serveComponents(string $identifier): JsonResponse|Response
+    public function serveComponents(string $identifier): JsonResponse
     {
         // API 사용량 기록
         $this->logApiUsage('templates.components', ['identifier' => $identifier]);
@@ -205,7 +140,6 @@ class PublicTemplateController extends PublicBaseController
      * error_config 등 템플릿 메타데이터를 프론트엔드에 제공합니다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return JsonResponse 템플릿 설정 응답
      */
     public function serveConfig(string $identifier): JsonResponse
     {
@@ -260,7 +194,7 @@ class PublicTemplateController extends PublicBaseController
 
         // 캐시 버전을 응답에 포함하여 프론트엔드가 API 호출 시 사용하도록 함
         $responseData = $configData['data'];
-        $responseData['cache_version'] = self::getExtensionCacheVersion();
+        $responseData['cache_version'] = ClearsTemplateCaches::getExtensionCacheVersion();
 
         return $this->success(
             __('templates.messages.config_retrieved'),
@@ -273,9 +207,8 @@ class PublicTemplateController extends PublicBaseController
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  string  $locale  로케일 (ko, en 등)
-     * @return JsonResponse|Response 다국어 데이터 응답 (If-None-Match 일치 시 304)
      */
-    public function serveLanguage(string $identifier, string $locale): JsonResponse|Response
+    public function serveLanguage(string $identifier, string $locale): JsonResponse
     {
         // API 사용량 기록
         $this->logApiUsage('templates.language', [
@@ -283,9 +216,8 @@ class PublicTemplateController extends PublicBaseController
             'locale' => $locale,
         ]);
 
-        // 서버 캐시 키는 서버 현재 확장 캐시 버전으로만 조립한다 (getRoutes 와 동일 — KVE-2026-2336).
-        // 클라이언트 `?v` 는 브라우저 HTTP 캐시 좌표일 뿐 서버 키의 근거가 아니다.
-        $cacheVersion = self::getExtensionCacheVersion();
+        // 캐시 버전을 키에 포함하여 모듈/플러그인 변경 시 캐시 무효화
+        $cacheVersion = request()->query('v', 0);
 
         // 캐싱된 응답 반환 (1시간 유효)
         $languageData = $this->cached(
@@ -329,73 +261,5 @@ class PublicTemplateController extends PublicBaseController
 
         // 성공 응답 (JSON 데이터 직접 반환, 래핑 없음)
         return $this->cachedJsonResponse($languageData['data'], 3600);
-    }
-
-    /**
-     * 편집기 스펙 조회 — 템플릿 editor-spec.json 파일 반환
-     *
-     * Phase 3 S5a-1 에서 `nesting` 블록이 추가되었다. 본 엔드포인트는
-     * 설치본의 editor-spec.json 만 읽어 반환한다(배포 원본 폴백 없음).
-     * 파일 미존재 시 spec=null 로 폴백 (편집기는 spec 미제공 안내).
-     *
-     * @param  string  $identifier  템플릿 식별자
-     * @return JsonResponse 편집기 스펙 응답
-     */
-    public function serveEditorSpec(string $identifier): JsonResponse
-    {
-        $this->logApiUsage('templates.editor_spec', ['identifier' => $identifier]);
-
-        // 분할 editor-spec.json 은 manifest + `$include` 블록으로 구성된다.
-        // 활성 디렉토리만 기준으로 합본한 단일 spec 을 반환한다(_bundled 폴백 없음).
-        // 합본 결과는 분할 전 단일 파일과 동일 형태(프론트엔드 로더 무영향).
-        // 미분할 파일은 원본 반환(하위 호환), 미존재 시 null.
-        $spec = EditorSpecAssembler::assemble(
-            base_path("templates/{$identifier}/editor-spec.json")
-        );
-
-        $message = $spec === null
-            ? __('templates.messages.editor_spec_empty')
-            : __('templates.messages.editor_spec_retrieved');
-
-        return $this->success(
-            $message,
-            [
-                'identifier' => $identifier,
-                'spec' => $spec,
-            ]
-        );
-    }
-
-    /**
-     * 레이아웃 첨부 이미지 파일 서빙.
-     *
-     * 발행된 배경 이미지는 일반 사이트 방문자에게도 로드되어야 하므로 인증 불필요한
-     * 공개 엔드포인트로 둔다. 첨부는 비공개 `attachments` 디스크에 저장되므로 직접
-     * 공개 URL 이 없어, 본 라우트가 파일을 캐싱 헤더와 함께 인라인 스트림한다.
-     * 첨부가 경로의 템플릿 소속이 아니거나 파일이 없으면 404.
-     *
-     * @param  string  $identifier  템플릿 식별자
-     * @param  TemplateLayoutAttachment  $attachment  라우트 모델 바인딩된 첨부
-     * @return StreamedResponse|Response|JsonResponse 파일 응답 또는 404
-     */
-    public function serveFile(string $identifier, TemplateLayoutAttachment $attachment): StreamedResponse|Response|JsonResponse
-    {
-        $serveInfo = $this->layoutAttachmentService->getServableResponse($identifier, $attachment);
-
-        if ($serveInfo === null) {
-            return $this->notFound('templates.layout_attachments.errors.not_found');
-        }
-
-        // 캐싱 헤더와 함께 응답 (레이아웃 캐시 TTL, 기본 24시간).
-        // PublicAttachmentController 의 이미지 서빙과 동일한 streamedFileResponse(ETag/Cache-Control) 사용
-        // — 행 disk 를 따르는 스토리지 스트림이라 S3 등 원격 디스크 행에서도 성립한다 (#99).
-        // 인라인은 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366).
-        $response = $this->streamedFileResponse(
-            $serveInfo['response'],
-            $serveInfo['etag_source'],
-            (int) g7_core_settings('cache.layout_ttl', 86400)
-        );
-
-        return InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_name);
     }
 }

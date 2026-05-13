@@ -10,11 +10,10 @@ export { default as MobileNav } from './MobileNav';
 export { NotificationCenter } from './NotificationCenter';
 export type { NotificationCenterProps, NotificationItem } from './NotificationCenter';
 export { default as ProductCard } from './ProductCard';
-export { BrandMark } from './BrandMark';
-export type { BrandMarkProps, BrandMarkData } from './BrandMark';
 export { default as ImageGallery } from './ImageGallery';
 export { default as ProductImageViewer } from './ProductImageViewer';
 export { default as QuantitySelector } from './QuantitySelector';
+export { default as PostReactions } from './PostReactions';
 export { default as RichTextEditor } from './RichTextEditor';
 export { HtmlContent } from './HtmlContent';
 export { HtmlEditor } from './HtmlEditor';
@@ -31,13 +30,10 @@ export { default as ThemeToggle } from './ThemeToggle';
 export { Pagination } from './Pagination';
 export { SearchBar } from './SearchBar';
 export { Avatar } from './Avatar';
-export { VisitorCounter } from './VisitorCounter';
-export type { VisitorCounterProps, VisitorCounterLabels } from './VisitorCounter';
 export { AvatarUploader } from './AvatarUploader';
 export { UserInfo } from './UserInfo';
 export { Modal } from './Modal';
 export { TabNavigation } from './TabNavigation';
-export { SlotContainer } from './SlotContainer';
 /**
  * 컴포넌트 등록 맵
  *
@@ -56,13 +52,12 @@ export declare const compositeComponents: {
     Header: () => Promise<typeof import("./Header")>;
     Footer: () => Promise<typeof import("./Footer")>;
     MobileNav: () => Promise<typeof import("./MobileNav")>;
-    SlotContainer: () => Promise<typeof import("./SlotContainer")>;
     NotificationCenter: () => Promise<typeof import("./NotificationCenter")>;
     ProductCard: () => Promise<typeof import("./ProductCard")>;
-    BrandMark: () => Promise<typeof import("./BrandMark")>;
     ImageGallery: () => Promise<typeof import("./ImageGallery")>;
     ProductImageViewer: () => Promise<typeof import("./ProductImageViewer")>;
     QuantitySelector: () => Promise<typeof import("./QuantitySelector")>;
+    PostReactions: () => Promise<typeof import("./PostReactions")>;
     RichTextEditor: () => Promise<typeof import("./RichTextEditor")>;
     HtmlContent: () => Promise<typeof import("./HtmlContent")>;
     HtmlEditor: () => Promise<typeof import("./HtmlEditor")>;
@@ -79,7 +74,6 @@ export declare const compositeComponents: {
     Pagination: () => Promise<typeof import("./Pagination")>;
     SearchBar: () => Promise<typeof import("./SearchBar")>;
     Avatar: () => Promise<typeof import("./Avatar")>;
-    VisitorCounter: () => Promise<typeof import("./VisitorCounter")>;
     AvatarUploader: () => Promise<typeof import("./AvatarUploader")>;
     UserInfo: () => Promise<typeof import("./UserInfo")>;
     Modal: () => Promise<typeof import("./Modal")>;

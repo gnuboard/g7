@@ -71,9 +71,6 @@ class UpgradeStepsTest extends TestCase
             '2.0.0' => $step_2_0,
         ]);
         $module->shouldReceive('getIdentifier')->andReturn('test-module');
-        // ExtensionUpgradeGuardHelper::resolveSinceVersion 가 본 두 메서드를 조회 (a9432939f #347)
-        $module->shouldReceive('getRequiredCoreVersion')->andReturn(null);
-        $module->shouldReceive('getVersion')->andReturn('1.0.0');
 
         $manager = $this->createModuleManagerWithMocks();
         $method = new \ReflectionMethod($manager, 'runUpgradeSteps');
@@ -114,9 +111,6 @@ class UpgradeStepsTest extends TestCase
             '1.2.0' => $step_1_2,
         ]);
         $module->shouldReceive('getIdentifier')->andReturn('test-module');
-        // ExtensionUpgradeGuardHelper::resolveSinceVersion 가 본 두 메서드를 조회 (a9432939f #347)
-        $module->shouldReceive('getRequiredCoreVersion')->andReturn(null);
-        $module->shouldReceive('getVersion')->andReturn('1.0.0');
 
         $manager = $this->createModuleManagerWithMocks();
         $method = new \ReflectionMethod($manager, 'runUpgradeSteps');
@@ -145,9 +139,6 @@ class UpgradeStepsTest extends TestCase
             '1.1.0' => $callableStep,
         ]);
         $module->shouldReceive('getIdentifier')->andReturn('test-module');
-        // ExtensionUpgradeGuardHelper::resolveSinceVersion 가 본 두 메서드를 조회 (a9432939f #347)
-        $module->shouldReceive('getRequiredCoreVersion')->andReturn(null);
-        $module->shouldReceive('getVersion')->andReturn('1.0.0');
 
         $manager = $this->createModuleManagerWithMocks();
         $method = new \ReflectionMethod($manager, 'runUpgradeSteps');
@@ -175,9 +166,6 @@ class UpgradeStepsTest extends TestCase
             '1.1.0' => $failingStep,
         ]);
         $module->shouldReceive('getIdentifier')->andReturn('test-module');
-        // ExtensionUpgradeGuardHelper::resolveSinceVersion 가 본 두 메서드를 조회 (a9432939f #347)
-        $module->shouldReceive('getRequiredCoreVersion')->andReturn(null);
-        $module->shouldReceive('getVersion')->andReturn('1.0.0');
 
         $manager = $this->createModuleManagerWithMocks();
         $method = new \ReflectionMethod($manager, 'runUpgradeSteps');
@@ -251,9 +239,6 @@ class UpgradeStepsTest extends TestCase
             '1.1.0' => $otherStep,
         ]);
         $module->shouldReceive('getIdentifier')->andReturn('test-module');
-        // ExtensionUpgradeGuardHelper::resolveSinceVersion 가 본 두 메서드를 조회 (a9432939f #347)
-        $module->shouldReceive('getRequiredCoreVersion')->andReturn(null);
-        $module->shouldReceive('getVersion')->andReturn('1.0.0');
 
         $manager = $this->createModuleManagerWithMocks();
         $method = new \ReflectionMethod($manager, 'runUpgradeSteps');
@@ -285,9 +270,6 @@ class UpgradeStepsTest extends TestCase
             '1.0.0-beta.2' => $step_beta2,
         ]);
         $module->shouldReceive('getIdentifier')->andReturn('test-module');
-        // ExtensionUpgradeGuardHelper::resolveSinceVersion 가 본 두 메서드를 조회 (a9432939f #347)
-        $module->shouldReceive('getRequiredCoreVersion')->andReturn(null);
-        $module->shouldReceive('getVersion')->andReturn('1.0.0');
 
         $manager = $this->createModuleManagerWithMocks();
         $method = new \ReflectionMethod($manager, 'runUpgradeSteps');
@@ -325,9 +307,6 @@ class UpgradeStepsTest extends TestCase
             '1.2.0' => $step_1_2,
         ]);
         $module->shouldReceive('getIdentifier')->andReturn('test-module');
-        // ExtensionUpgradeGuardHelper::resolveSinceVersion 가 본 두 메서드를 조회 (a9432939f #347)
-        $module->shouldReceive('getRequiredCoreVersion')->andReturn(null);
-        $module->shouldReceive('getVersion')->andReturn('1.0.0');
 
         $manager = $this->createModuleManagerWithMocks();
         $method = new \ReflectionMethod($manager, 'runUpgradeSteps');
@@ -432,9 +411,6 @@ class UpgradeStepsTest extends TestCase
             '7.0.0-beta.2' => $step_beta2,
         ]);
         $module->shouldReceive('getIdentifier')->andReturn('test-module');
-        // ExtensionUpgradeGuardHelper::resolveSinceVersion 가 본 두 메서드를 조회 (a9432939f #347)
-        $module->shouldReceive('getRequiredCoreVersion')->andReturn(null);
-        $module->shouldReceive('getVersion')->andReturn('1.0.0');
 
         $manager = $this->createModuleManagerWithMocks();
         $method = new \ReflectionMethod($manager, 'runUpgradeSteps');

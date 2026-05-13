@@ -24,6 +24,7 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class ChecksBoardPermissionTest extends ModuleTestCase
 {
+
     /**
      * Trait을 사용하는 테스트용 클래스
      */
@@ -47,12 +48,12 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         {
             use ChecksBoardPermission;
 
-            public function invokeCheckPermissionByIdentifier(string $identifier): bool
+            public function testCheckPermissionByIdentifier(string $identifier): bool
             {
                 return $this->checkPermissionByIdentifier($identifier);
             }
 
-            public function invokeCheckBoardPermission(string $slug, string $action, PermissionType $type = PermissionType::User): bool
+            public function testCheckBoardPermission(string $slug, string $action, PermissionType $type = PermissionType::User): bool
             {
                 return $this->checkBoardPermission($slug, $action, $type);
             }
@@ -64,7 +65,16 @@ class ChecksBoardPermissionTest extends ModuleTestCase
      */
     private function resetPermissionMiddlewareCache(): void
     {
-        PermissionMiddleware::clearGuestRoleCache();
+        try {
+            $reflection = new \ReflectionClass(PermissionMiddleware::class);
+            if ($reflection->hasProperty('guestRoleCache')) {
+                $prop = $reflection->getProperty('guestRoleCache');
+                $prop->setAccessible(true);
+                $prop->setValue(null, null);
+            }
+        } catch (\ReflectionException $e) {
+            // 무시
+        }
     }
 
     /**
@@ -101,7 +111,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         request()->setUserResolver(fn () => $user);
 
         // When: 권한 체크
-        $result = $this->traitObject->invokeCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
+        $result = $this->traitObject->testCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
 
         // Then: true 반환
         $this->assertTrue($result);
@@ -130,7 +140,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         Auth::login($user);
 
         // When: 권한 체크
-        $result = $this->traitObject->invokeCheckPermissionByIdentifier('sirsoft-board.notice.posts.write');
+        $result = $this->traitObject->testCheckPermissionByIdentifier('sirsoft-board.notice.posts.write');
 
         // Then: false 반환
         $this->assertFalse($result);
@@ -158,7 +168,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         Auth::logout();
 
         // When: 권한 체크
-        $result = $this->traitObject->invokeCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
+        $result = $this->traitObject->testCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
 
         // Then: true 반환
         $this->assertTrue($result);
@@ -185,7 +195,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         Auth::logout();
 
         // When: 다른 권한 체크 (guest role에 없는 권한)
-        $result = $this->traitObject->invokeCheckPermissionByIdentifier('sirsoft-board.notice.posts.delete');
+        $result = $this->traitObject->testCheckPermissionByIdentifier('sirsoft-board.notice.posts.delete');
 
         // Then: false 반환
         $this->assertFalse($result);
@@ -201,7 +211,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         Auth::logout();
 
         // When: 권한 체크
-        $result = $this->traitObject->invokeCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
+        $result = $this->traitObject->testCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
 
         // Then: false 반환 (전체 허용도 없음)
         $this->assertFalse($result);
@@ -223,7 +233,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         Auth::logout();
 
         // When: 권한 체크
-        $result = $this->traitObject->invokeCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
+        $result = $this->traitObject->testCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
 
         // Then: false 반환 (역할 할당 필수)
         $this->assertFalse($result);
@@ -233,7 +243,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
      * checkBoardPermission 메서드가 올바른 권한 식별자를 생성하는지 테스트
      */
     #[Test]
-    public function check_board_permission_메서드_올바른_식별자_생성(): void
+    public function checkBoardPermission_메서드_올바른_식별자_생성(): void
     {
         // Given: 권한 생성 + guest role에 할당
         $permission = Permission::factory()->create([
@@ -249,7 +259,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         Auth::logout();
 
         // When: checkBoardPermission 호출
-        $result = $this->traitObject->invokeCheckBoardPermission('notice', 'posts.read');
+        $result = $this->traitObject->testCheckBoardPermission('notice', 'posts.read');
 
         // Then: 올바른 식별자로 권한 체크됨 (guest role 권한 보유)
         $this->assertTrue($result);
@@ -265,7 +275,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         Auth::logout();
 
         // When: 존재하지 않는 권한 체크
-        $result = $this->traitObject->invokeCheckPermissionByIdentifier('sirsoft-board.nonexistent.permission');
+        $result = $this->traitObject->testCheckPermissionByIdentifier('sirsoft-board.nonexistent.permission');
 
         // Then: false 반환
         $this->assertFalse($result);
@@ -275,7 +285,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
      * 회원 권한 체크 우선순위 테스트 (회원이 로그인하면 Gate 먼저 체크)
      */
     #[Test]
-    public function 회원_로그인_시_gate_우선_체크(): void
+    public function 회원_로그인_시_Gate_우선_체크(): void
     {
         // Given: guest role에도 권한 부여, 회원에게도 권한 부여
         $guestRole = Role::firstOrCreate(
@@ -302,7 +312,7 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         request()->setUserResolver(fn () => $user);
 
         // When: 권한 체크
-        $result = $this->traitObject->invokeCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
+        $result = $this->traitObject->testCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
 
         // Then: true 반환 (회원 권한으로 체크됨)
         $this->assertTrue($result);
@@ -329,51 +339,9 @@ class ChecksBoardPermissionTest extends ModuleTestCase
         Auth::logout();
 
         // When: 권한 체크
-        $result = $this->traitObject->invokeCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
+        $result = $this->traitObject->testCheckPermissionByIdentifier('sirsoft-board.notice.posts.read');
 
         // Then: false 반환 (guest role에 권한 미할당)
         $this->assertFalse($result);
-    }
-
-    /**
-     * Admin 요청 판정(컨트롤러 네임스페이스 스니핑)은 트레이트 단일 지점이어야 한다
-     *
-     * 판정 규칙이 Resource/게이트마다 사설 복제되면 규칙 변경 시 한 곳만 누락되어
-     * 경로별 판정이 갈린다. 모듈 src 전체를 스캔하여 `getController()` 호출이
-     * ChecksBoardPermission 트레이트에만 존재함을 고정한다 (열거가 아닌 조건 스캔).
-     */
-    #[Test]
-    public function admin_요청_판정은_트레이트_단일_지점이다(): void
-    {
-        $srcDir = dirname(__DIR__, 3).'/src';
-        $allowed = str_replace('\\', '/', realpath($srcDir.'/Traits/ChecksBoardPermission.php'));
-        $violations = [];
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($srcDir, \FilesystemIterator::SKIP_DOTS)
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->getExtension() !== 'php') {
-                continue;
-            }
-
-            $path = str_replace('\\', '/', $file->getRealPath());
-
-            if ($path === $allowed) {
-                continue;
-            }
-
-            if (str_contains((string) file_get_contents($path), 'getController(')) {
-                $violations[] = $path;
-            }
-        }
-
-        $this->assertSame(
-            [],
-            $violations,
-            'Admin 요청 판정 사설 복제본 발견 — ChecksBoardPermission::isAdminRequest() 를 사용할 것: '
-            .implode(', ', $violations)
-        );
     }
 }

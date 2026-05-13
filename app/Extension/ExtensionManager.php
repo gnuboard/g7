@@ -5,9 +5,6 @@ namespace App\Extension;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Extension\Helpers\GithubHelper;
-use App\Rules\ValidExtensionIdentifier;
-use App\Support\ConfigCacheHelper;
-use Composer\Autoload\ClassLoader;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -31,12 +28,6 @@ class ExtensionManager
      */
     protected string $autoloadFilePath;
 
-    /**
-     * 확장 관리자를 생성합니다.
-     *
-     * @param  ModuleRepositoryInterface  $moduleRepository  설치된 모듈 조회 리포지토리
-     * @param  PluginRepositoryInterface  $pluginRepository  설치된 플러그인 조회 리포지토리
-     */
     public function __construct(
         protected ModuleRepositoryInterface $moduleRepository,
         protected PluginRepositoryInterface $pluginRepository
@@ -47,9 +38,12 @@ class ExtensionManager
     }
 
     /**
-     * 확장 오토로드 파일을 다시 만들고 현재 프로세스·훅 캐시·config 캐시에 반영합니다.
+     * 설치된 모듈/플러그인의 오토로드 파일을 생성합니다.
      *
-     * @return void 반환값 없음
+     * composer.json을 수정하지 않고, bootstrap/cache/autoload-extensions.php 파일을 생성하여
+     * 런타임에 Composer ClassLoader에 PSR-4 네임스페이스를 등록합니다.
+     *
+     * 테스트 환경(APP_ENV=testing)에서는 자동으로 스킵됩니다.
      */
     public function updateComposerAutoload(): void
     {
@@ -67,47 +61,6 @@ class ExtensionManager
         // 신규 네임스페이스(beta 업그레이드로 추가된 Seeder/Model 등) 의 autoload 가
         // 실패하지 않도록 런타임 재등록을 수행한다.
         $this->reregisterRuntimeAutoload();
-
-        // 정적 훅 매핑 캐시도 오토로드 캐시와 나란히 재생성.
-        // 훅 매핑은 확장 install/activate/deactivate/uninstall/update 시에만 바뀌므로
-        // 이 지점에 편승하면 별도 무효화 발굴 없이 오토로드 캐시와 동일 생명주기를 갖는다.
-        $this->regenerateHookCache();
-
-        // config 캐시도 함께 재생성. 확장 설치/삭제/업데이트는 활성 확장 목록을 바꾸므로
-        // (optimizeSystem 이 config:cache 를 만든 시점의 스냅샷이 stale 해짐), 오토로드/훅
-        // 캐시와 동일 생명주기로 config 캐시를 재빌드해 캐시가 비활성 상태로 남지 않게 한다.
-        // activate/deactivate 는 이 메서드를 거치지 않으므로 각 Manager 에서 별도 호출한다.
-        ConfigCacheHelper::rebuild();
-    }
-
-    /**
-     * 정적 훅 매핑 캐시(bootstrap/cache/hooks.php)를 재생성합니다.
-     *
-     * 모듈/플러그인 리스너 수집을 위해 각 Manager 를 (재)로드한 뒤 HookCacheManager 에 위임한다.
-     * 생성 실패는 부팅 시 스캔 폴백으로 흡수되므로 확장 업데이트 흐름을 중단시키지 않는다.
-     *
-     * 확장 수명주기에서 상태를 되돌린 뒤 다시 부를 수 있도록 public 이다 —
-     * Updating 창 안에서 구워진 훅 캐시는 그 확장의 리스너가 빠진 채 남고,
-     * 훅 캐시 폴백은 파일 부재/손상에만 작동해 stale 한 내용은 조용히 통과하기 때문이다.
-     *
-     * @return void 반환값 없음
-     */
-    public function regenerateHookCache(): void
-    {
-        try {
-            $moduleManager = app(ModuleManager::class);
-            $moduleManager->loadModules();
-
-            $pluginManager = app(PluginManager::class);
-            $pluginManager->loadPlugins();
-
-            app(HookCacheManager::class)->generate($moduleManager, $pluginManager);
-        } catch (\Throwable $e) {
-            // 훅 캐시 생성 실패는 치명적이지 않다 — 부팅 시 스캔 폴백이 안전망.
-            Log::warning('훅 매핑 캐시 재생성 실패 (스캔 폴백으로 동작)', [
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 
     /**
@@ -122,12 +75,10 @@ class ExtensionManager
      * 프로세스에 등록된 ClassLoader 를 조회하여 `addPsr4()` 를 다시 호출해 신규
      * 매핑을 즉시 유효화한다. 기존 매핑에 경로가 추가되거나 새 네임스페이스가
      * 등록되며, 동일 매핑은 중복 없이 merge 된다.
-     *
-     * @return void 반환값 없음
      */
-    public function reregisterRuntimeAutoload(): void
+    protected function reregisterRuntimeAutoload(): void
     {
-        if (! class_exists(ClassLoader::class, false)) {
+        if (! class_exists(\Composer\Autoload\ClassLoader::class, false)) {
             return;
         }
 
@@ -135,13 +86,13 @@ class ExtensionManager
             return;
         }
 
-        $loaders = ClassLoader::getRegisteredLoaders();
+        $loaders = \Composer\Autoload\ClassLoader::getRegisteredLoaders();
         if (empty($loaders)) {
             return;
         }
 
         foreach ($loaders as $loader) {
-            self::registerExtensionAutoload($loader, $this->autoloadFilePath);
+            self::registerExtensionAutoload($loader);
             break;
         }
     }
@@ -151,19 +102,9 @@ class ExtensionManager
      *
      * bootstrap/cache/autoload-extensions.php 파일에
      * 설치된 모듈/플러그인의 PSR-4 매핑과 classmap을 저장합니다.
-     *
-     * @return void 반환값 없음
      */
     public function generateAutoloadFile(): void
     {
-        // 테스트 환경에서는 실 캐시 파일을 재생성하지 않는다.
-        // testing DB 의 활성 확장 구성은 개발 DB 와 다르므로, 어떤 경로로든 실 캐시가
-        // 재생성되면 개발 환경 PSR-4 매핑이 testing 기준으로 교체되어 모든 모듈/플러그인
-        // 라우트가 500 이 된다. 생성 로직 자체를 검증하는 테스트는 경로를 치환해 사용한다.
-        if ($this->writesRealCacheFileDuringTests()) {
-            return;
-        }
-
         // 모듈별 오토로드 수집
         $moduleAutoloads = $this->collectModuleAutoloads();
 
@@ -194,31 +135,8 @@ class ExtensionManager
             $pluginAutoloads['vendor_autoloads']
         );
 
-        // 확장 소스 classmap 생성 (FQCN → 상대경로).
-        // 런타임에 ClassLoader::addClassMap() 으로 등록되어 findFile 이 파일시스템 스캔 없이
-        // 즉시 경로를 반환하도록 한다(성능). 클래스 로딩은 여전히 lazy — 사용 시점에만 include.
-        $srcClassmap = $this->buildSourceClassmap($psr4);
-
-        // 공집합 산출물로 정상 매핑을 덮어쓰지 않는다.
-        // 이 매핑은 "DB 설치 목록 × 디스크 활성 디렉토리" 교집합이라, DB 쪽만 일시적으로
-        // 비어도(테이블 부재 · 설치 실패로 행 미기록 · 다른 DB 접속) 교집합이 공집합이 된다.
-        // 디스크에 설치 형태의 확장 디렉토리가 남아 있는데 매핑이 0건이면 DB 쪽 조회를
-        // 신뢰할 수 없다는 뜻이므로, 기존 파일을 보존하고 경고만 남긴다.
-        // (정상적인 0건 — 신규 설치 직후 · 마지막 확장 삭제 — 은 디스크도 함께 비어 통과)
-        $extensionDirectories = empty($psr4) ? $this->findInstalledExtensionDirectories() : [];
-
-        if (empty($psr4) && ! empty($extensionDirectories)) {
-            Log::warning('확장 오토로드 매핑이 0건으로 산출되어 기존 캐시를 보존합니다', [
-                'path' => $this->autoloadFilePath,
-                'extension_directories' => $extensionDirectories,
-                'hint' => '확장 테이블(modules/plugins) 조회 결과가 비어 있습니다. DB 연결·마이그레이션 상태를 확인한 뒤 extension:update-autoload 를 다시 실행하세요.',
-            ]);
-
-            return;
-        }
-
         // 파일 내용 생성
-        $content = $this->buildAutoloadFileContent($psr4, $classmap, $files, $vendorAutoloads, $srcClassmap);
+        $content = $this->buildAutoloadFileContent($psr4, $classmap, $files, $vendorAutoloads);
 
         // 디렉토리 확인
         $dir = dirname($this->autoloadFilePath);
@@ -233,56 +151,9 @@ class ExtensionManager
             'path' => $this->autoloadFilePath,
             'psr4_count' => count($psr4),
             'classmap_count' => count($classmap),
-            'src_classmap_count' => count($srcClassmap),
             'files_count' => count($files),
             'vendor_autoloads_count' => count($vendorAutoloads),
         ]);
-    }
-
-    /**
-     * 현재 호출이 테스트 환경에서 실 캐시 파일을 건드리는지 판정합니다.
-     *
-     * 경로가 치환된(임시 경로) 인스턴스는 생성 로직 검증용이므로 통과시킨다.
-     *
-     * @return bool 테스트 환경에서 실 캐시 파일을 쓰려는 경우 true
-     */
-    protected function writesRealCacheFileDuringTests(): bool
-    {
-        return app()->environment('testing')
-            && $this->autoloadFilePath === base_path('bootstrap/cache/autoload-extensions.php');
-    }
-
-    /**
-     * 디스크에서 설치 형태를 갖춘 확장 디렉토리를 찾습니다.
-     *
-     * `_bundled` / `_pending` 등 내부 디렉토리는 제외하고, composer.json 을 가진
-     * 활성 디렉토리만 센다 (설치된 확장이 남긴 흔적).
-     *
-     * @return array<int, string> 확장 식별자 목록 (예: `modules/sirsoft-board`)
-     */
-    protected function findInstalledExtensionDirectories(): array
-    {
-        $found = [];
-
-        foreach (['modules' => $this->modulesPath, 'plugins' => $this->pluginsPath] as $type => $basePath) {
-            if (! File::isDirectory($basePath)) {
-                continue;
-            }
-
-            foreach (File::directories($basePath) as $dir) {
-                $name = basename($dir);
-
-                if (str_starts_with($name, '_')) {
-                    continue;
-                }
-
-                if (File::exists($dir.'/composer.json')) {
-                    $found[] = $type.'/'.$name;
-                }
-            }
-        }
-
-        return $found;
     }
 
     /**
@@ -291,11 +162,9 @@ class ExtensionManager
      * @param  array  $psr4  PSR-4 네임스페이스 매핑
      * @param  array  $classmap  클래스맵 파일 목록
      * @param  array  $files  헬퍼 파일 목록
-     * @param  array  $vendorAutoloads  확장 vendor/autoload.php 경로 목록
-     * @param  array  $srcClassmap  확장 소스 classmap (FQCN => 상대 경로)
      * @return string PHP 파일 내용
      */
-    protected function buildAutoloadFileContent(array $psr4, array $classmap, array $files = [], array $vendorAutoloads = [], array $srcClassmap = []): string
+    protected function buildAutoloadFileContent(array $psr4, array $classmap, array $files = [], array $vendorAutoloads = []): string
     {
         $generatedAt = now()->toDateTimeString();
 
@@ -304,14 +173,12 @@ class ExtensionManager
         $classmapJson = json_encode($classmap, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $filesJson = json_encode($files, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $vendorAutoloadsJson = json_encode($vendorAutoloads, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        $srcClassmapJson = json_encode($srcClassmap, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         // JSON을 PHP 배열 문법으로 변환
         $psr4Php = $this->jsonToPhpArray($psr4Json, 1);
         $classmapPhp = $this->jsonToPhpArray($classmapJson, 1);
         $filesPhp = $this->jsonToPhpArray($filesJson, 1);
         $vendorAutoloadsPhp = $this->jsonToPhpArray($vendorAutoloadsJson, 1);
-        $srcClassmapPhp = $this->jsonToPhpArray($srcClassmapJson, 1);
 
         return <<<PHP
 <?php
@@ -328,7 +195,6 @@ class ExtensionManager
 return [
     'psr4' => {$psr4Php},
     'classmap' => {$classmapPhp},
-    'src_classmap' => {$srcClassmapPhp},
     'files' => {$filesPhp},
     'vendor_autoloads' => {$vendorAutoloadsPhp},
 ];
@@ -374,13 +240,11 @@ PHP;
      *
      * public/index.php 및 artisan에서 호출됩니다.
      *
-     * @param  ClassLoader  $loader  Composer ClassLoader 인스턴스
-     * @param  string|null  $autoloadFile  오토로드 파일 경로 (null 이면 bootstrap/cache/autoload-extensions.php)
-     * @return void 반환값 없음
+     * @param  \Composer\Autoload\ClassLoader  $loader  Composer ClassLoader 인스턴스
      */
-    public static function registerExtensionAutoload($loader, ?string $autoloadFile = null): void
+    public static function registerExtensionAutoload($loader): void
     {
-        $autoloadFile ??= base_path('bootstrap/cache/autoload-extensions.php');
+        $autoloadFile = base_path('bootstrap/cache/autoload-extensions.php');
 
         if (! file_exists($autoloadFile)) {
             return;
@@ -402,24 +266,11 @@ PHP;
             }
         }
 
-        // 확장 소스 classmap 등록 (FQCN → 절대경로).
-        // findFile 이 파일시스템 스캔 없이 즉시 반환하도록 in-memory 맵에 추가한다(lazy include).
-        // PSR-4 등록은 위에서 유지되므로 classmap 에 없는 클래스는 PSR-4 폴백(안전망).
-        if (! empty($autoloads['src_classmap'])) {
-            $absoluteClassmap = [];
-            foreach ($autoloads['src_classmap'] as $fqcn => $relPath) {
-                $absoluteClassmap[$fqcn] = base_path($relPath);
-            }
-            $loader->addClassMap($absoluteClassmap);
-        }
-
         // Classmap 파일 로드 (module.php, plugin.php)
-        // 진입 클래스가 이미 선언돼 있으면 건너뛴다 — 다른 경로 사본(_bundled/_pending)에서 먼저 선언됐으면
-        // 경로가 달라 require_once 의 중복 제거가 통하지 않아 "Cannot declare class" 로 프로세스가 죽는다.
         if (! empty($autoloads['classmap'])) {
             foreach ($autoloads['classmap'] as $file) {
                 $absolutePath = base_path($file);
-                if (file_exists($absolutePath) && ! self::isEntryClassDeclared($file)) {
+                if (file_exists($absolutePath)) {
                     require_once $absolutePath;
                 }
             }
@@ -621,130 +472,6 @@ PHP;
     }
 
     /**
-     * PSR-4 매핑을 기반으로 확장 소스 클래스의 classmap 을 생성합니다.
-     *
-     * 각 PSR-4 네임스페이스 디렉토리를 재귀 스캔하여 PHP 파일마다 FQCN → 상대경로 를
-     * 산출한다. 이 classmap 은 런타임에 `ClassLoader::addClassMap()` 으로 등록되어
-     * `findFile()` 이 파일시스템 스캔 없이 즉시 경로를 반환하도록 한다(성능: cold OPcache /
-     * 느린 파일시스템 환경에서 findFile stat 비용 제거). 클래스 로딩은 여전히 지연(lazy)이다.
-     *
-     * 확장 **소스** 클래스만 대상으로 하며, 확장별 독립 vendor(서드파티)는 각 확장의
-     * `vendor/autoload.php`(별도 ClassLoader) 가 담당하므로 여기서 다루지 않는다
-     * (vendor 격리 불변조건 보존).
-     *
-     * @param  array<string, string|array<int, string>>  $psr4  네임스페이스 → base_path 상대경로(들)
-     * @return array<string, string> FQCN → base_path 상대경로 (.php 포함)
-     */
-    protected function buildSourceClassmap(array $psr4): array
-    {
-        $classmap = [];
-
-        foreach ($psr4 as $namespace => $paths) {
-            foreach ((array) $paths as $relativePath) {
-                $absoluteDir = base_path($relativePath);
-
-                if (! is_dir($absoluteDir)) {
-                    continue;
-                }
-
-                $iterator = new \RecursiveIteratorIterator(
-                    new \RecursiveDirectoryIterator($absoluteDir, \RecursiveDirectoryIterator::SKIP_DOTS)
-                );
-
-                foreach ($iterator as $file) {
-                    if ($file->getExtension() !== 'php') {
-                        continue;
-                    }
-
-                    $fqcn = $this->extractFqcnFromFile($file->getPathname());
-                    if ($fqcn === null) {
-                        continue;
-                    }
-
-                    // PSR-4 계약상 이 파일의 네임스페이스는 $namespace 로 시작해야 한다.
-                    // (다른 네임스페이스 파일은 다른 PSR-4 항목이 담당 — 중복 방지)
-                    if (! str_starts_with($fqcn, rtrim($namespace, '\\'))) {
-                        continue;
-                    }
-
-                    // base_path 상대경로로 정규화 (autoload-extensions.php 의 다른 경로와 일관)
-                    $rel = str_replace('\\', '/', substr($file->getPathname(), strlen(base_path()) + 1));
-                    $classmap[$fqcn] = $rel;
-                }
-            }
-        }
-
-        ksort($classmap);
-
-        return $classmap;
-    }
-
-    /**
-     * PHP 파일에서 FQCN(네임스페이스 + 클래스/인터페이스/트레이트/enum 명)을 추출합니다.
-     *
-     * 토큰 기반 파싱으로 파일당 최상위 선언 1개의 FQCN 을 반환한다. 선언이 없으면 null.
-     *
-     * @param  string  $filePath  PHP 파일 절대경로
-     * @return string|null FQCN 또는 null
-     */
-    protected function extractFqcnFromFile(string $filePath): ?string
-    {
-        $contents = @file_get_contents($filePath);
-        if ($contents === false) {
-            return null;
-        }
-
-        $tokens = token_get_all($contents);
-        $namespace = '';
-        $count = count($tokens);
-
-        for ($i = 0; $i < $count; $i++) {
-            $token = $tokens[$i];
-            if (! is_array($token)) {
-                continue;
-            }
-
-            // 네임스페이스 수집
-            if ($token[0] === T_NAMESPACE) {
-                $namespace = '';
-                for ($j = $i + 1; $j < $count; $j++) {
-                    $t = $tokens[$j];
-                    if ($t === ';' || $t === '{') {
-                        break;
-                    }
-                    if (is_array($t) && in_array($t[0], [T_STRING, T_NS_SEPARATOR], true)) {
-                        $namespace .= $t[1];
-                    } elseif (is_array($t) && defined('T_NAME_QUALIFIED') && $t[0] === T_NAME_QUALIFIED) {
-                        $namespace .= $t[1];
-                    }
-                }
-
-                continue;
-            }
-
-            // 최상위 선언(class/interface/trait/enum) 감지
-            if (in_array($token[0], [T_CLASS, T_INTERFACE, T_TRAIT], true)
-                || (defined('T_ENUM') && $token[0] === T_ENUM)) {
-                // ::class, new class 등 익명/상수 사용 배제: 다음 유효 토큰이 T_STRING 이어야 함
-                for ($j = $i + 1; $j < $count; $j++) {
-                    $t = $tokens[$j];
-                    if (is_array($t) && $t[0] === T_WHITESPACE) {
-                        continue;
-                    }
-                    if (is_array($t) && $t[0] === T_STRING) {
-                        $class = $t[1];
-
-                        return $namespace !== '' ? $namespace.'\\'.$class : $class;
-                    }
-                    break;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * 모듈 identifier를 네임스페이스로 변환합니다.
      *
      * 예: 'sirsoft-ecommerce' → 'Modules\Sirsoft\Ecommerce\'
@@ -811,32 +538,6 @@ PHP;
         }, $parts);
 
         return implode('\\', $namespace);
-    }
-
-    /**
-     * 오토로드 classmap 의 진입 파일(module.php·plugin.php)이 선언하는 클래스가 이미 메모리에 있는지 확인합니다.
-     *
-     * ZIP·GitHub 설치는 "이미 설치됐는가" 를 확인하며 `_bundled` 사본의 진입 파일로 진짜 클래스명을 선언하고,
-     * 설치 뒤 런타임 오토로드 재등록이 활성 사본의 진입 파일을 다시 읽는다. 두 파일은 경로가 달라
-     * `require_once` 가 막지 못하므로, 매니저의 로드({@see ModuleManager::loadModules()})와 같이 클래스 존재로 거른다.
-     * 진입 파일이 아닌 경로는 판정하지 않는다(false).
-     *
-     * @param  string  $relativePath  base_path 기준 진입 파일 경로 (예: modules/sirsoft-board/module.php)
-     * @return bool 진입 클래스가 이미 선언돼 있으면 true
-     */
-    public static function isEntryClassDeclared(string $relativePath): bool
-    {
-        $normalized = str_replace('\\', '/', $relativePath);
-
-        if (! preg_match('#(?:^|/)([^/]+)/(module|plugin)\.php$#', $normalized, $matches)) {
-            return false;
-        }
-
-        $class = $matches[2] === 'module'
-            ? 'Modules\\'.self::directoryToNamespace($matches[1]).'\\Module'
-            : 'Plugins\\'.self::directoryToNamespace($matches[1]).'\\Plugin';
-
-        return class_exists($class, false);
     }
 
     /**
@@ -931,7 +632,6 @@ PHP;
      * 실패 시 InvalidArgumentException을 throw합니다.
      *
      * @param  string  $identifier  확장 식별자
-     * @return void 반환값 없음
      *
      * @throws \InvalidArgumentException 식별자 형식이 올바르지 않을 때
      */
@@ -940,7 +640,7 @@ PHP;
         $failed = false;
         $message = '';
 
-        (new ValidExtensionIdentifier)->validate(
+        (new \App\Rules\ValidExtensionIdentifier)->validate(
             'identifier',
             $identifier,
             function ($msg) use (&$failed, &$message) {
@@ -962,7 +662,6 @@ PHP;
      *
      * @param  string  $type  확장 타입 ('modules' 또는 'plugins')
      * @param  string  $dirName  확장 디렉토리명 (예: 'sirsoft-ecommerce')
-     * @return void 반환값 없음
      */
     public static function registerExtensionAutoloadPaths(string $type, string $dirName): void
     {
@@ -1018,6 +717,7 @@ PHP;
     {
         return ! empty($this->getComposerDependenciesAt($path));
     }
+
 
     /**
      * 확장의 composer.json에서 외부 패키지 의존성 목록을 반환합니다.
@@ -1310,7 +1010,7 @@ PHP;
             return $pharPath;
         }
 
-        throw new \RuntimeException(__('exceptions.vendor.composer_binary_not_found'));
+        throw new \RuntimeException(__('exceptions.extension.composer_binary_not_found'));
     }
 
     /**
@@ -1396,7 +1096,7 @@ PHP;
      *
      * @param  string  $zipPath  ZIP 파일 경로
      * @param  string  $extractDir  추출 대상 디렉토리
-     * @return void 반환값 없음
+     * @return void
      *
      * @throws \RuntimeException 추출 실패 시
      */
@@ -1416,7 +1116,7 @@ PHP;
      *
      * @param  string  $zipPath  ZIP 파일 경로
      * @param  string  $extractDir  추출 대상 디렉토리
-     * @return void 반환값 없음
+     * @return void
      *
      * @throws \RuntimeException 추출 실패 시
      */
@@ -1438,7 +1138,7 @@ PHP;
     /**
      * unzip 명령어 사용 가능 여부를 확인합니다.
      *
-     * @return bool unzip 실행 파일이 PATH 에 존재하면 true
+     * @return bool
      */
     public function isUnzipAvailable(): bool
     {

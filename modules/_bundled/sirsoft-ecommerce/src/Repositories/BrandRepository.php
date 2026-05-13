@@ -3,8 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Helpers\PermissionHelper;
-use App\Search\KeywordSearch;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\BrandRepositoryInterface;
@@ -36,21 +34,39 @@ class BrandRepository implements BrandRepositoryInterface
             $query->where('is_active', $filters['is_active']);
         }
 
-        // 검색 키워드 — 이름(FULLTEXT) / slug / website 중 하나만 맞아도 나와야 한다.
-        //
-        // Scout 의 `search()->query(fn)` 로는 이 형태를 만들 수 없다. 그 콜백은 검색 엔진이
-        // 이미 맞힌 결과를 **좁히는** 자리라, slug·website 를 OR 로 덧붙여도 실제로는 AND 로
-        // 걸린다. 이름만 일치하고 slug·website 에는 키워드가 없는 브랜드(대부분)가 전부
-        // 걸러져 검색 결과가 항상 비었다. 같은 함정을 이미 겪은 페이지 검색과 동일하게
-        // whereFulltext 헬퍼로 한 쿼리 안에서 OR 로 묶는다.
+        // 검색 키워드가 있으면 Scout 사용
         if (! empty($filters['search'])) {
             $keyword = $filters['search'];
 
-            $query->where(function ($q) use ($keyword) {
-                KeywordSearch::apply($q, 'name', $keyword, 'and');
-                $q->orWhere('slug', 'like', "%{$keyword}%")
-                    ->orWhere('website', 'like', "%{$keyword}%");
-            });
+            return Brand::search($keyword)
+                ->query(function ($query) use ($filters, $keyword, $with) {
+                    // 권한 스코프 필터링
+                    PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.brands.read');
+
+                    // 상품 수 조회
+                    $query->withCount('products');
+
+                    // 활성 상태 필터
+                    if (isset($filters['is_active'])) {
+                        $query->where('is_active', $filters['is_active']);
+                    }
+
+                    // FULLTEXT 외 필드 OR 조건 (slug, website)
+                    $query->where(function ($q) use ($keyword) {
+                        $q->orWhere('slug', 'like', "%{$keyword}%")
+                            ->orWhere('website', 'like', "%{$keyword}%");
+                    });
+
+                    // 정렬 처리
+                    $locale = $filters['locale'] ?? app()->getLocale();
+                    $this->applySorting($query, $filters, $locale);
+
+                    // Eager loading
+                    if (! empty($with)) {
+                        $query->with($with);
+                    }
+                })
+                ->get();
         }
 
         // 정렬 처리
@@ -72,7 +88,7 @@ class BrandRepository implements BrandRepositoryInterface
     {
         $query = $this->model->newQuery();
 
-        if (! empty($with)) {
+        if (!empty($with)) {
             $query->with($with);
         }
 
@@ -97,7 +113,6 @@ class BrandRepository implements BrandRepositoryInterface
     {
         $brand = $this->findById($id);
         $brand->update($data);
-
         return $brand->fresh();
     }
 
@@ -107,7 +122,6 @@ class BrandRepository implements BrandRepositoryInterface
     public function delete(int $id): bool
     {
         $brand = $this->findById($id);
-
         return $brand->delete();
     }
 
@@ -117,7 +131,6 @@ class BrandRepository implements BrandRepositoryInterface
     public function getProductCount(int $id): int
     {
         $brand = $this->findById($id);
-
         return $brand->products()->count();
     }
 
@@ -138,9 +151,10 @@ class BrandRepository implements BrandRepositoryInterface
     /**
      * 정렬 조건을 쿼리에 적용합니다.
      *
-     * @param  Builder  $query  Eloquent 쿼리 빌더
-     * @param  array  $filters  필터 배열
-     * @param  string  $locale  로케일
+     * @param \Illuminate\Database\Eloquent\Builder $query Eloquent 쿼리 빌더
+     * @param array $filters 필터 배열
+     * @param string $locale 로케일
+     * @return void
      */
     private function applySorting($query, array $filters, string $locale): void
     {

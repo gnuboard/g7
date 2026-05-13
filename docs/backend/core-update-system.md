@@ -9,8 +9,7 @@
 2. 마이그레이션 = 스키마 변경만, 데이터 백필/변환 = 업그레이드 스텝 (역할 분리 필수)
 3. 업데이트 실행 흐름: 11단계 (감지 → 다운로드 → 백업 → 적용 → 마이그레이션 → 동기화 → 업그레이드 → 마무리)
 4. 롤백: CoreBackupHelper로 백업 생성, 실패 시 자동 복원
-5. 부트스트랩 호환성 검증: 코어 버전 < 확장 g7_version 시 자동 비활성화 (1시간 캐시)
-6. vendor 를 교체한 뒤 새 프로세스를 띄우기 전에는 패키지 매니페스트를 비운다 (3계층 — 부모 선정리 / 자식 자가 치유 / 버전 판독 범위)
+5. 부트스트랩 호환성 검증: .env의 APP_VERSION < 확장 g7_version 시 자동 비활성화 (1시간 캐시)
 ```
 
 ---
@@ -73,7 +72,6 @@
 
 ```text
 1. CoreVersionChecker::getCoreVersion() → config('app.version') 읽기
-   (코어 업데이트 트리 안에서만 env APP_VERSION 우선 — CoreUpdateContext::isInProgress())
 2. CoreUpdateService::checkForUpdates() → GitHub API로 최신 릴리스 조회
 3. version_compare(current, latest) → 업데이트 가용 여부 판단
 4. 원격 CHANGELOG 캐시 → storage/app/temp/core_remote_changelog.md
@@ -113,8 +111,7 @@
 ├─ Step 4:  다운로드 (GitHub zipball 또는 --source/--local에서 복사)
 ├─ Step 5:  백업 생성 (--no-backup 시 스킵)
 ├─ Step 6:  Composer install (_pending에서 실행, 변경 없으면 스킵)
-├─ Step 6.5: 신규 파일 manifest 생성 + 증분 적용 대상(3-way) 산출 (백업 있을 때)
-├─ Step 7:  파일 적용 (_pending → base_path, 기본=코어 변경분만 / --prune=전체 덮어쓰기)
+├─ Step 7:  파일 적용 (_pending → base_path 선택적 덮어쓰기)
 ├─ Step 8:  vendor 복사 (_pending/vendor → base_path/vendor, Step 6 스킵 시 함께 스킵)
 ├─ Step 9:  마이그레이션 + 동기화 (migrate, roles, permissions, menus, mail templates)
 ├─ Step 10: 업그레이드 스텝 실행 (upgrades/Upgrade_X_Y_Z.php)
@@ -170,9 +167,6 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
    - composer.json + composer.lock 의 MD5 비교 (_pending vs base_path)
    - 동일 → "composer 의존성 변경 없음 — 스킵" (Step 6 + Step 8 모두 스킵)
    - 변경됨 → composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
-   - 운영 vendor 의 개발용(require-dev) 패키지 감지 → 로그 기록
-     · 재설치 분기: "--no-dev vendor 로 교체합니다" (정보)
-     · 스킵 분기: "그대로 남습니다 … composer install --no-dev 실행 권장" (경고)
 
 3. Bundled 모드 (신규, 공유 호스팅 대응):
    - _pending/vendor-bundle.zip 무결성 검증 (SHA256)
@@ -184,62 +178,15 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 > Vendor 번들 시스템 상세: [docs/extension/vendor-bundle.md](../extension/vendor-bundle.md)
 
-### Step 6.5: 신규 파일 manifest + 증분 적용 대상 산출
-
-```text
-백업이 있을 때(--no-backup 아님)만 수행:
-
-1. writeNewFilesManifest() — 자동 롤백용 `_new_files_manifest.json` 기록
-   (base=백업 vs theirs=_pending: 신 버전이 추가한 파일/디렉토리 목록)
-
-2. computeApplyList() — 기본(증분) 모드의 3-way 적용 대상 산출 (--prune 시 스킵)
-   · base   = 구버전 원본 = 백업 스냅샷
-   · theirs = 신 버전     = _pending
-   · base 없음 → added / size·md5 다름 → changed / 동일 → 제외(스킵)
-   · size 선필터 후 size 동일할 때만 md5 (mtime 비교 안 함 — _pending 은 추출 시각)
-   · symlink / excludes / protected_paths 하위 → 목록 제외
-   · 단, targets 에 더 구체적으로 명시된 경로는 상위 protected 를 오버라이드(아래 주석)
-```
-
-> **protected_paths 오버라이드 (공개 #64 / 내부 #452)**: `protected_paths` 에는 확장 부모(`modules`·`plugins`·`templates`·`lang-packs`)가 포함되지만, `targets` 에는 `{domain}/_bundled` 가 명시된다. 3-way 산출(`computeApplyList`)과 신규 파일 manifest(`writeNewFilesManifest`)는 "targets 에 더 구체적(하위)으로 명시된 경로가 상위 protected 를 오버라이드"하도록 판정한다. 이로써 코어 배포본에 포함된 번들 확장의 갱신 파일(`_bundled/{id}/composer.json`·`vendor-bundle.json` 등)이 코어 업데이트로 정상 반영된다. 오버라이드는 target 이 protected 보다 **더 깊을 때만** 적용되므로, `storage`(target) == `storage`(protected) 같은 동일 경로는 여전히 제외된다. 확장 부모를 protected 에 둔 원래 의도(자동 발견 폴백이 활성 서브디렉토리 `modules/sirsoft-*` 를 삭제하는 #347 방어)는 그대로 유지된다 — 자동 발견 폴백은 targets 순회가 아니므로 오버라이드 영향을 받지 않는다.
-
 ### Step 7: 파일 적용
 
 ```text
-기본(증분) 모드 — --prune 미지정 + 백업 있음:
-- Step 6.5 의 applyList(코어가 실제 변경/추가한 파일)에 있는 파일만 적용
-- 코어가 건드리지 않은 파일은 복사·chmod·chown·mtime 갱신을 전부 스킵 → 현재 디스크
-  상태(사용자 수정 포함 가능)를 그대로 보존
-- orphan(소스에 없는 대상 파일) 삭제 안 함 → 사용자가 추가한 신규 파일 보존
-
---prune 모드 (또는 백업 부재 fallback):
-- targets 전체 무조건 덮어쓰기 + orphan 삭제 (기존 동작)
-- 백업 부재 시 base 가 없어 3-way 불가 → 안전하게 전체 덮어쓰기로 회귀 + 안내 출력
-- `public/storage` symlink 는 orphan 삭제에서 보호됨 — `public` 타깃 정리 시
-  `preserveLinkPaths: ['storage']` 화이트리스트로 링크/junction 을 보존 (#43, 아래 §참조)
-
-공통:
+- _pending 소스에서 config('app.update.targets') 에 해당하는 파일/디렉토리 선택적 덮어쓰기
 - 자동 발견 폴백: targets 에 미등재된 source 최상위 항목도 스캔하여 적용
   (config('app.update.protected_paths') 와 config('app.update.excludes') 매치 시 스킵)
 - FilePermissionHelper::copyDirectory() 사용 → 원본 파일 권한 보존
 - ExtensionPendingHelper::copyToActive() 미사용 (권한 유실 방지)
 ```
-
-> **기본 동작 변경 배경 (공개 #64)**: 이전에는 Step 7 이 targets 전체를 무조건 재복사하고 orphan 을 삭제하여, 사용자가 수정한 `public/.htaccess` 커스텀 블록이나 `_bundled/` 아래 커스텀 확장이 소실되는 사고가 반복 제보되었다. 기본 동작을 "코어가 실제로 변경/추가한 파일만 적용(3-way)"으로 전환해 발생 표면을 제거했다. 전체 덮어쓰기 + 정리를 원하면 `--prune` 을 지정한다. "코어도 바꾸고 사용자도 바꾼" 파일은 코어 버전으로 갱신되지만 백업에 원본이 보존되어 복구 가능하다.
-
-> **증분 모드 잔존 stale 파일 정리**: 기본(증분) 모드는 orphan 을 삭제하지 않으므로, 신 버전에서 제거된 파일이 활성 디렉토리에 잔존할 수 있다. 완료 요약이 잔존을 안내하며, 정리하려면 같은 업데이트를 `--prune` 으로 다시 실행한다. 단발성 정리 도구 `php artisan hotfix:rollback-stale-files --prune` 은 **자동 롤백 뒤**(백업 디렉토리와 `_new_files_manifest.json` 이 남아 있는 상태) 전용이다 — 성공한 업데이트는 Step 11 에서 백업을 지우므로 그 뒤에 실행하면 "사용 가능한 백업이 없습니다" 로 끝난다. 완료 안내문이 이 명령을 가리키던 것은 7.0.10 에서 걷어냈다. 상세 사용법: [docs/cheatsheet.md](../cheatsheet.md) "단발성 결함 보정 (hotfix)".
-
-> **격리 디렉토리는 루트째 지우고, 이번 실행이 만든 것은 소유권 기준에서 뺀다 (7.0.10)**: 업데이트 소스는 `storage/app/core_pending/core_{Ymd_His}/` 격리 디렉토리 안에 놓이는데, ZIP·GitHub 경로는 그 안쪽 `extracted/{루트}/` 를, `--local` 은 `local_source/` 를 소스 경로로 돌려준다. 7.0.9 까지의 정리 단계는 그 소스 경로만 지워 `core_{ts}/extracted/` 껍데기가 업데이트마다 남았고, sudo 실행이면 root 소유(0770)라 운영자·웹서버 계정이 지울 수 없었다(같은 서버의 7.0.0 부터의 설치본마다 하나씩 실측). 세 층으로 닫았다.
->
-> - **부모 정리**: `cleanupPending()` 이 `resolveStagingRoot()` 로 격리 디렉토리 루트까지 올라가 통째로 지운다. pending 기준 디렉토리 밖 경로(`--source` 외부 디렉토리)는 올라가지 않는다.
-> - **자식 청소**: 부모는 구버전 클래스를 메모리에 들고 있어 이 수정이 다음 업데이트부터 효력이 있으므로, 신버전 코드로 도는 두 자식(`core:execute-upgrade-steps`, `core:execute-bundled-updates`)이 종료 직전 `sweepEmptyStagingDirectories()` 로 **파일이 하나도 없는** `core_*` 디렉토리만 치운다. 부모가 쓰는 중인 격리 디렉토리는 파일을 갖고 있어 술어상 제외된다. 구버전 부모에서 올라오는 업데이트(7.0.9→7.0.10)는 번들 일괄 업데이트 자식이 부모 정리 뒤에 돌므로 그 자리에서 껍데기가 사라진다.
-> - **스냅샷 제외**: 항목별 소유권 스냅샷은 격리 디렉토리가 생긴 **뒤에** 찍힌다. 제외하지 않으면 root 가 만든 추출본이 "원본 소유권" 으로 기록되고 복원이 잔존물을 다시 root 로 되돌리므로, 부모는 `snapshotOwnershipDetailed(..., excludes: [격리 디렉토리 루트])` 로 이번 실행의 것을 뺀다. 그러면 잔존물이 생겨도 상위 `storage/app/core_pending` 의 재귀 chown 이 운영자 계정·웹서버 그룹으로 맞춰 지울 수 있다.
-
-> **`public/storage` symlink 보존 + 종료 시 복구 (#43)**: 심층 방어 2층 구조로 `--prune` 실행 후에도 `public/storage` symlink 가 정상 유지된다.
-> - **층 1 (예방)**: `--prune` 은 `public` 타깃에서 orphan(릴리즈 소스에 없는 항목)을 삭제하는데, 런타임 symlink 인 `public/storage` 는 릴리즈 소스에 없어 orphan 으로 판정되어 삭제되던 결함이 있었다(업로드 파일 404). `applyUpdate` 가 `public` 타깃 처리 시 `FilePermissionHelper::copyDirectory(..., preserveLinkPaths: ['storage'])` 로 화이트리스트를 전달해, 매칭되는 orphan symlink/junction 만 삭제에서 제외한다. 화이트리스트 밖 orphan 링크는 기존대로 삭제된다(정밀 보호 — 무조건 보존 아님).
-> - **층 2 (복구)**: 업데이트 종료 시점(정상 Step 11 + 핸드오프 catch)에 `StorageLinkHelper::ensurePublicStorageLink()` 를 호출해 `public/storage` 가 정상 링크인지 확인하고, 부재/손상이면 `storage/app/public` 을 가리키는 링크를 (필요 시 `.broken.{YmdHis}` rename 백업 후) 재생성한다. 버전 무관 매 업데이트 실행. Windows `SeCreateSymbolicLink` 권한 부족 시 junction(`mklink /J`) 폴백까지 시도하고, 그래도 실패하면 rename 원복 + 수동 `storage:link` 안내(데이터 손실 없음). 롤백 catch 경로는 백업 복원이 링크를 원상 회복하므로 대상 아님.
->   - **소유권 상속**: `symlink()` 은 소유권 인자가 없어 sudo 실행 시 링크가 root:root 로 생성된다. 재생성 직후 부모 `public/` 의 owner/group 을 기준으로 `lchown`/`lchgrp`(링크 자체 대상 — `chown` 은 target 을 따라감) 보정해 원래 앱 실행 유저 소유를 유지한다. 이 프로젝트의 "신규 항목은 부모 소유권 상속"(`FilePermissionHelper`) 컨벤션과 일치. 비-POSIX/함수 부재/권한 부족 시 무해하게 skip.
-> - 이 복구 로직은 beta.5 DataMigration `RecoverPublicStorageSymlink` 와 `StorageLinkHelper` 로 일원화되어 있다(부재→재생성 케이스까지 상위호환).
 
 > **자동 발견 폴백의 배경 (engine-v / beta.4 이후)**: Step 7 은 부모 프로세스의 `config('app.update.targets')` 를 사용한다. 부모는 업그레이드 *직전* 의 코드/메모리 상태이므로 신버전이 도입한 신규 최상위 디렉토리(예: beta.4 의 `lang-packs/`) 가 부모의 stale targets 에서 누락된다. 폴백은 이 결함을 안전망으로 차단하며, `config/app.php` 의 `update.protected_paths` 가 런타임 데이터(`storage`)·로컬 환경(`.env*`)·별도 파이프라인 산출물(`vendor`)·개발 메타(`.git`/`.claude`/`.serena` 등) 의 의도치 않은 덮어쓰기를 방지한다.
 
@@ -270,58 +217,18 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 
 > **단독 실행 안전성 (beta.6 이후)**: `core:execute-upgrade-steps` 는 HANDOFF 안내 또는 수동 복구 목적으로 운영자가 직접 호출되는 경로가 있다. 단독 실행 시 자식은 기본값으로 부모 Step 9 (`runMigrations` + `reloadCoreConfigAndResync`), Step 11 (`updateVersionInEnv` + `clearAllCaches`), Step 12 (번들 확장 일괄 업데이트) 를 자체적으로 수행해 단일 명령으로 업그레이드를 완결한다. 부모 `CoreUpdateCommand::spawnUpgradeStepsProcess()` 는 자식 명령 라인에 `--skip-migrations`, `--skip-resync`, `--skip-version-env`, `--skip-cache-clear`, `--skip-bundled-updates` 5개를 무조건 추가해 중복 회피한다 — 부모가 자식 종료 후 동일 단계를 직접 수행하기 때문이다.
 
-> **spawn 자식은 이전 버전의 config 캐시로 부팅한다**: 7.0.9 이하 부모는 Step 10(spawn) 전에 config 캐시를 비우지 않았다 — `clearAllCaches()` 는 Step 11 이다. 그래서 이전 버전 설치본에 `bootstrap/cache/config.php` 가 있으면(설치 마법사·설정 저장·확장 업데이트가 만든다) 자식은 그 캐시로 부팅하고, 자식의 `config('app.version')` 은 부모가 env 로 넘긴 `APP_VERSION={toVersion}` 이 아니라 캐시에 박힌 fromVersion 이다. 업데이트 흐름 안에서 "지금 프로세스의 코어 버전" 을 판정하는 코드는 `config('app.version')` 을 직접 읽지 않고 `CoreVersionChecker::getCoreVersion()`(env 우선, config 폴백)을 쓴다. `runUpgradeSteps()` 의 stale 메모리 가드가 config 만 읽던 시절에는 정상 spawn 자식을 stale 부모로 오판해 스텝이 0건인 릴리즈에서도 핸드오프로 중단됐다(7.0.9→7.0.10). 부모 in-process fallback 에서는 env 가 `.env` 의 fromVersion 이므로 가드는 그대로 발동한다.
->
-> 같은 이유로 자식이 `config('app.update.*')` 로 읽는 목록(쓰기 권한 디렉토리 등)도 캐시에 박힌 옛 목록이다 — 신버전이 항목을 추가해도 자식에게 보이지 않는다. 방어는 두 겹이다: ① 부모(7.0.10+)는 `spawnUpgradeStepsProcess()` 가 `proc_open` 직전에 `ConfigCacheHelper::clear()` 로 캐시를 비워 자식이 디스크 config + `.env` + spawn env 로 부팅하게 한다(캐시는 Step 11 이 다시 만든다). ② 자식(7.0.10+)은 이전 버전 부모가 캐시를 남겨 둔 경우를 위해, 캐시 파일이 있으면 `CoreUpdateService::freshDiskUpdateConfig()` 로 디스크의 `config/app.php` 를 직접 읽는다 — 캐시 부팅에서는 `.env` 도 로드되지 않으므로 그 안에서 `.env` 를 먼저 불변 로드한다(프로세스 env 의 `APP_VERSION` 은 덮어쓰지 않는다).
-
-#### spawn 전 캐시 정리 계약 (3계층)
-
-config 캐시와 같은 문제가 **패키지 매니페스트**(`bootstrap/cache/packages.php` · `services.php`)에도 있고, 이쪽은 결과가 더 무겁다. Laravel 의 `PackageManifest` 는 `packages.php` 가 있으면 stale 여부를 검사하지 않고 그대로 읽고, `ProviderRepository` 가 거기 등재된 eager provider 를 `new` 한다. Step 6/8 이 vendor 를 `--no-dev` 로 교체해도 두 파일은 Step 11 까지 이전 설치본의 것이 남으므로, 이전 설치본이 `composer install`(옵션 없음)로 깔린 개발용 설치였다면 자식은 새 vendor 에 없는 provider 를 찾다 **부팅 단계에서** 죽는다. 예외는 앱 로그가 열리기 전이라 남지 않고, 부모에게는 자식의 비정상 종료로만 보인다 (7.0.9 → 7.0.10 실사례).
-
-| 계층 | 위치 | 막는 실패 | 잠그는 테스트 |
-|------|------|-----------|--------------|
-| ① 부모 선정리 | `CoreUpdateCommand::spawnUpgradeStepsProcess()` 가 `proc_open` 직전 `PackageManifestCacheHelper::clear()`. 지우지 못한 파일이 있으면 그 경로를 업그레이드 로그에 경고로 남긴다 — 권한·소유권 불일치면 자식의 계층 ② 도 같은 이유로 실패해 증상은 제보와 같은 「Class not found」 인데, 이 경고가 원인을 가리키는 유일한 흔적이다 | 7.0.11+ 부모가 띄우는 자식의 부팅 실패 | `CoreUpdateCommandStalePackageManifestTest` |
-| ② 자식 자가 치유 | `bootstrap/app.php` 가 `G7_UPDATE_IN_PROGRESS=1`(또는 명령줄 SAPI 에서의 업데이트 argv)이면 두 파일을 스스로 삭제 | **이미 배포된** 7.0.9·7.0.10 부모 아래에서 도는 신버전 자식 — 그 부모 코드는 고칠 수 없다 | 같은 테스트 (플래그 유·무 대조군 포함) |
-| ③ 버전 판독 범위 | `CoreVersionChecker::getCoreVersion()` 의 env 우선은 `CoreUpdateContext::isInProgress()` 트리 안에서만 | 업데이트 **전에** 뜬 `php artisan serve`·큐 워커가 옛 `APP_VERSION` 을 물고 확장을 `incompatible_core` 로 끄는 것 | `CoreVersionCheckerEnvPriorityTest` · `CoreUpdateContextTest` |
-
-계층 ②는 `config:cache`/`route:cache` 가 만드는 in-process 일회용 앱에도 발동한다 — 그 부팅도 `bootstrap/app.php` 를 다시 require 하고 플래그를 상속하기 때문이다. 웹 요청·`queue:work`·운영자 셸은 플래그가 없어 no-op 이다.
-
-argv 채널은 명령줄 SAPI(`cli`·`phpdbg`)에서만 읽는다. CGI/FPM 은 `register_argc_argv=On` 이면 `$_SERVER['argv']` 를 쿼리스트링을 `+` 로 쪼갠 값으로 채우므로(`GET /?x+core:update` → `argv[1] === 'core:update'`), 그 게이트가 없으면 비인증 웹 요청이 요청마다 매니페스트를 지우고 다시 만들게 된다. env 플래그 채널은 웹 요청으로 주입할 수 없어 그대로 두며, 웹 요청 안에서 시작되는 업데이트 흐름은 그 플래그를 프로세스 안에서 세워 판정된다.
-
-계층 ③의 판정은 `App\Support\CoreUpdateContext` 가 단독으로 소유하고 `CoreServiceProvider::isCoreUpdateInProgress()` 가 그리로 위임한다. 자동 비활성화 로그의 `core_version` 도 같은 게터를 쓴다 — 로그가 `config('app.version')` 을 적고 판정은 env 로 하면 운영자가 보는 근거와 실제 판정이 어긋난다.
-
-#### 재실행 안내의 권한 분기 (핸드오프 catch)
-
-spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)하고 `spawn_failure_mode=abort`(기본값) 이면, 파일·버전은 이미 `toVersion` 으로 반영되지만 업그레이드 스텝이 미실행 상태로 남아 운영자에게 `core:execute-upgrade-steps` 재실행을 안내한다. 이때 **sudo(root) 로 `core:update` 를 실행한 경우**, 안내받은 명령을 root 로 그대로 재실행하면 스텝이 만드는 파일·캐시가 root 소유로 생성되어 이후 웹서버(php-fpm www-data 등) 요청이 그 경로에 쓰기 실패한다.
-
-`CoreUpdateCommand::surfaceResumeCommandWithPermissionGuidance()` 는 실행 환경을 4가지로 분류(`classifyResumeExecutionContext()`)하여 안내를 분기한다:
-
-| 모드 | 조건 | 안내 |
-|------|------|------|
-| `non_root` | root 아님(일반 SSH 사용자 = 파일 소유자) / posix 미지원(Windows) / 공유 호스팅(웹서버·PHP·실행 유저 동일) | 명령만 그대로 출력 |
-| `root_web_known` | root 실행 + 웹서버 계정 식별 가능 + 실행 사용자와 다름 | `sudo -u {계정} {명령}` + 계정명 명시 경고 |
-| `root_web_symmetric` | root 실행 + 웹서버 계정이 root 로 추정 (root 서비스 구성) | 명령만 그대로 출력 |
-| `root_web_unknown` | root 실행 + 웹서버 계정 추정 실패 | `sudo -u <웹서버계정>` placeholder + 계정 확인 안내 |
-
-웹서버 계정은 `FilePermissionHelper::inferWebServerOwnership()` 이 `storage/*`·`bootstrap/cache` 쓰기 영역 소유자로 추정한다.
-
 ### Step 11: 마무리
 
 ```text
 1. .env의 APP_VERSION 갱신
-2. 캐시 클리어: config, cache, route, view (spawn 직전에도 config + 패키지 매니페스트 선정리)
+2. 캐시 클리어: config, cache, route, view
 3. bootstrap/cache 파일 삭제 (services.php, packages.php)
 4. php artisan package:discover 재실행
 5. php artisan extension:update-autoload (코어 업데이트로 _bundled 변경 가능)
-6. _pending 격리 디렉토리(core_{ts}) 루트째 삭제
-7. 성공 시 백업 삭제 (이후 `hotfix:rollback-stale-files` 는 대상이 없다)
+6. _pending 디렉토리 삭제
+7. 성공 시 백업 삭제
 8. 유지보수 모드 해제
-9. 큐 워커 재시작 신호 (queue:restart)
 ```
-
-> 3~4 는 `PackageManifestCacheHelper::rebuild()` 한 호출이다 — spawn 직전 선정리(계층 ①)와 같은 삭제 로직을 공유한다.
->
-> 9 는 상주 큐 워커가 부팅 시점의 코어 코드·config 를 계속 쓰는 것을 막는다. 워커는 옛 코드로도 잡을 정상 처리하므로 오류가 나지 않고, 운영자가 손수 재시작할 때까지 조용히 어긋난 채 돈다. 핸드오프 cleanup 과 `core:execute-upgrade-steps` 단독 실행의 사후 단계도 같은 신호를 보낸다. 롤백 catch 는 제외다 — 백업으로 되돌린 옛 코드가 다시 도는 자리라 재기동시킬 이유가 없다.
 
 ### Step 12: _bundled 확장 일괄 업데이트 프롬프트 (인터랙티브)
 
@@ -345,7 +252,7 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
 
 > **spawn 위임의 배경 (beta.4 이후)**: 부모(`core:update`) 프로세스는 코어 업그레이드 *직전* 버전의 메모리 상태를 보유한다. 부모가 직접 `ModuleManager::updateModule()` 등을 호출하면 신버전 코어가 도입한 sync 메서드(예: `syncModuleIdentityPolicies` `@since beta.4`)가 메모리에 부재해 호출 자체가 누락된다. `executeBulkUpdate` 는 사용자 선택만 매니페스트로 직렬화한 뒤 `proc_open` 으로 `core:execute-bundled-updates` 를 spawn — 자식은 fresh PHP 프로세스라 디스크의 신버전 코어 코드를 메모리에 로드한 상태에서 update 메서드 호출. proc_open 미지원 환경에서는 in-process fallback 으로 안전 전환. 자식 stdout 은 부모 콘솔로 forwarding 하며, 종료 직전 `[BUNDLED-RESULT]` 표식 라인으로 결과 카운트를 회신한다.
 
-> **선언형 산출물 일괄 sync — `syncDeclarativeArtifacts`**: `ModuleManager::syncDeclarativeArtifacts(ModuleInterface)` / `PluginManager::syncDeclarativeArtifacts(PluginInterface)` 는 모듈/플러그인의 모든 declarative 데이터(역할·권한·메뉴·cleanup·IDV 정책·알림 정의 — 본인인증 알림 포함) 를 한 묶음으로 동기화하는 public 진입점이다. `installModule` / `updateModule` 트랜잭션이 내부적으로 호출하며, 코어 업그레이드 사후 보정(`Upgrade_7_0_0_beta_4` 등) 도 활성 모듈/플러그인을 순회하며 이 메서드를 호출해 일회성 회복을 수행한다. 각 sync 메서드는 helper 의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출 무해 (멱등).
+> **선언형 산출물 일괄 sync — `syncDeclarativeArtifacts`**: `ModuleManager::syncDeclarativeArtifacts(ModuleInterface)` / `PluginManager::syncDeclarativeArtifacts(PluginInterface)` 는 모듈/플러그인의 모든 declarative 데이터(역할·권한·메뉴·cleanup·IDV 정책·IDV 메시지·알림 정의) 를 한 묶음으로 동기화하는 public 진입점이다. `installModule` / `updateModule` 트랜잭션이 내부적으로 호출하며, 코어 업그레이드 사후 보정(`Upgrade_7_0_0_beta_4` 등) 도 활성 모듈/플러그인을 순회하며 이 메서드를 호출해 일회성 회복을 수행한다. 각 sync 메서드는 helper 의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출 무해 (멱등).
 
 ---
 
@@ -612,8 +519,6 @@ public function withCurrentStep(string $stepVersion): self  // 불변 복제
 
 ```php
 CoreVersionChecker::getCoreVersion()  // → config('app.version')
-                                      // (코어 업데이트 트리 안에서만 env APP_VERSION 우선
-                                      //  — CoreUpdateContext::isInProgress())
 ```
 
 ### 버전 갱신 (Step 11)
@@ -711,14 +616,12 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 |--------|---------|------|
 | `createBackup()` | `(?Closure $onProgress): string` | CoreBackupHelper로 백업 생성 |
 | `restoreFromBackup()` | `(string $backupPath, ?Closure $onProgress): void` | 백업에서 파일 복원 |
-| `CoreBackupHelper::computeApplyList()` | `(string $backupPath, string $sourcePath, array $targets, array $protectedPaths, array $excludes): array` | 3-way 판정으로 증분 적용 대상(added/changed) 산출 (`apply`, `added_count`, `changed_count`, `has_symlink`). targets 에 명시된 `{domain}/_bundled` 는 상위 protected(`modules` 등)를 오버라이드해 목록에 포함 (공개 #64 / 내부 #452) |
 
 ### 적용 및 설치
 
 | 메서드 | 시그니처 | 설명 |
 |--------|---------|------|
-| `applyUpdate()` | `(string $sourcePath, ?Closure $onProgress, bool $prune = false, ?array $applyList = null): void` | _pending → base_path 적용. `$applyList` 지정 + `!$prune` 이면 증분(코어 변경분만), 그 외 전체 덮어쓰기 + orphan 삭제. `public` 타깃은 `copyDirectory(..., preserveLinkPaths: ['storage'])` 로 `public/storage` symlink/junction 을 orphan 삭제에서 보호 (#43) |
-| `StorageLinkHelper::ensurePublicStorageLink()` | `(?\Psr\Log\LoggerInterface $logger = null): void` | `public/storage` 멱등 복구. 정상 링크면 no-op, 부재/손상이면 `storage/app/public` 링크 재생성(부재 시 신규, 손상 디렉토리는 `.broken.{YmdHis}` 백업 후). 재생성 링크는 부모 `public/` 의 소유자/그룹을 `lchown`/`lchgrp` 상속(sudo 후 root:root 잔존 차단). Windows junction 폴백. `CoreUpdateCommand` 종료 시점 + migration 05 가 호출 (#43) |
+| `applyUpdate()` | `(string $sourcePath, ?Closure $onProgress): void` | _pending → base_path 선택적 덮어쓰기 |
 | `runComposerInstallInPending()` | `(string $pendingPath, ?Closure $onProgress): void` | _pending에서 composer install (--no-scripts) |
 | `isComposerUnchangedForCore()` | `(string $pendingPath): bool` | composer.json/lock MD5 비교 |
 | `runComposerInstall()` | `(?Closure $onProgress): void` | base_path에서 composer install |
@@ -738,8 +641,7 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 |--------|---------|------|
 | `runUpgradeSteps()` | `(string $from, string $to, ?Closure $onStep): void` | upgrades/ 자동 발견 + 실행 |
 | `updateVersionInEnv()` | `(string $version): void` | .env의 APP_VERSION 갱신 |
-| `clearAllCaches()` | `(): void` | config/cache/route/view 클리어 + 패키지 매니페스트 재생성(`PackageManifestCacheHelper::rebuild()`) |
-| `signalQueueRestart()` | `(): void` | 상주 큐 워커에 재시작 신호 (실패는 경고만 — 업데이트를 되돌리지 않는다) |
+| `clearAllCaches()` | `(): void` | config/cache/route/view 클리어 + package:discover |
 
 ### 유지보수 모드
 
@@ -761,14 +663,13 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 ### core:update
 
 ```bash
-php artisan core:update [--force] [--no-backup] [--prune] [--no-maintenance] [--local] [--source={path}]
+php artisan core:update [--force] [--no-backup] [--no-maintenance] [--local] [--source={path}]
 ```
 
 | 옵션 | 설명 |
 |------|------|
 | `--force` | 버전 비교 스킵, 동일 버전이어도 강제 업데이트 |
-| `--no-backup` | 백업 생성 스킵 (Step 5). 증분 적용 불가 → 전체 덮어쓰기로 회귀 |
-| `--prune` | 코어가 제거한 파일 정리 + targets 전체 덮어쓰기(기존 방식). 미지정 시 코어가 실제 변경/추가한 파일만 적용(3-way)하고 나머지는 보존 |
+| `--no-backup` | 백업 생성 스킵 (Step 5) |
 | `--no-maintenance` | 유지보수 모드 스킵 (Step 3) |
 | `--local` | 현재 코드베이스를 소스로 사용 (GitHub 스킵) |
 | `--source={path}` | 지정 디렉토리를 소스로 사용 (GitHub 스킵) |
@@ -820,14 +721,8 @@ php artisan core:check-updates
     'backup_only'   => ['vendor'],         // 백업/복원 전용 (applyUpdate 제외)
     'backup_extra'  => [...],              // 추가 백업 대상
     'excludes'      => [...],              // 제외 패턴
-    'restore_ownership'                => [...], // sudo 실행 후 소유권을 원상 복원할 경로 (Step 11)
-    'restore_ownership_group_writable' => [...], // 복원 직후 그룹 쓰기(g+w)까지 동기화할 경로
 ],
 ```
-
-`restore_ownership` 복원은 흐름 **중간**(Step 11)이므로 그 뒤에 만들어지는 런타임 산출물은 흐름 **마지막**의 런타임 소유권 정상화가 덮는다. 대상은 다섯 곳이다: `storage/framework/cache`(캐시 키 인덱스·락 샤드), `bootstrap/cache`, `storage/app/ext-bundles`(병합 번들), `storage/app/temp`(확장 업데이트 임시 폴더 — 부모가 root 로 최초 생성되면 이후 관리자 화면의 확장 업데이트가 실패한다), `storage/logs`(daily 롤오버·신규 로그 파일). `storage/app/{modules,plugins}` 는 사용자 데이터 영역이라 의도적으로 제외되어 있으므로, 그 아래에 파일·디렉토리를 만드는 코드(설정 시드·업그레이드 마이그레이션)는 스스로 부모 소유권을 상속시킨다.
-
-`.env` 에서 `G7_UPDATE_EXCLUDES` · `G7_UPDATE_TARGETS` · `G7_UPDATE_PROTECTED_PATHS` · `G7_UPDATE_RESTORE_OWNERSHIP` · `G7_UPDATE_RESTORE_OWNERSHIP_GROUP_WRITABLE` 로 재정의할 수 있다. 재정의 값은 기본 목록을 **통째로 대체**하므로 전체 목록을 다시 적는다 — 예를 들어 `G7_UPDATE_EXCLUDES` 에서 `build/ext` 가 빠지면 `--prune` 업데이트가 정적 게시본을 지운다. 기본값은 `.env.example` 에 주석으로 실려 있다.
 
 ---
 

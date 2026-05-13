@@ -2,13 +2,9 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Extension\PluginManager;
-use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\UpdatePluginSettingsRequest;
-use App\Services\DriverRegistryService;
 use App\Services\PluginSettingsService;
-use App\Support\SensitiveSettingMask;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -22,73 +18,11 @@ class PluginSettingsController extends AdminBaseController
      * PluginSettingsController 생성자
      *
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
-     * @param  PluginManager  $pluginManager  설정 스키마(sensitive 플래그) 조회용
      */
     public function __construct(
-        private PluginSettingsService $pluginSettingsService,
-        private PluginManager $pluginManager
+        private PluginSettingsService $pluginSettingsService
     ) {
         parent::__construct();
-    }
-
-    /**
-     * 응답에 실을 설정에서 민감값을 마스크로 치환한다.
-     *
-     * 이 응답은 관리자 화면으로 나가므로 암호화 키·시크릿의 평문이 브라우저·개발자 도구·프록시
-     * 로그에 남지 않아야 한다. 값이 저장되어 있다는 사실만 마스크로 알린다. 운영자가 값을 건드리지
-     * 않으면 화면이 마스크를 그대로 되돌려 보내고, 저장 단계가 그것을 걸러 기존 값을 보존한다.
-     *
-     * @param  string  $identifier  플러그인 식별자
-     * @param  array<string, mixed>  $settings  복호화된 설정
-     * @return array<string, mixed> 마스킹된 설정
-     */
-    private function maskSensitive(string $identifier, array $settings): array
-    {
-        $plugin = $this->pluginManager->getPlugin($identifier);
-
-        return $plugin === null
-            ? $settings
-            : SensitiveSettingMask::apply($settings, $plugin->getSettingsSchema());
-    }
-
-    /**
-     * 설정 스키마가 public_asset_disk 키를 선언한 플러그인의 응답에
-     * 공개 자산 디스크 카탈로그(available_public_asset_disks)를 부착합니다.
-     *
-     * 화면이 /api/admin/settings(core.settings.read)를 따로 조회하게 두면 이
-     * 화면의 권한(core.plugins.read)과 표면이 갈려, 커스텀 역할에서 카탈로그만
-     * 조용히 비는 비대칭이 생깁니다. 설정 응답 단일 표면에서 함께 내려 권한 축을
-     * 일치시킵니다 (ecommerce 모듈 설정 응답의 동명 키와 동형 계약).
-     * 저장 시에는 스키마 기반 검증 whitelist 가 이 키를 걸러 설정에 남지 않습니다.
-     *
-     * 저장값이 카탈로그에 없으면(그 디스크를 등록하던 확장이 꺼진 경우) 실제 동작인
-     * 스트리밍(`none`)으로 바꿔 싣고, 사라진 디스크 이름을 `public_asset_disk_unavailable`
-     * 로 알립니다. 저장값을 그대로 실으면 화면의 선택 칸이 어떤 선택지와도 맞지 않은 채
-     * 보이고, 폼 전체를 보내는 저장이 매번 카탈로그 검증(422)에 막힙니다. 런타임도 이미
-     * 고아 디스크를 스트리밍으로 폴백하므로(PublicAssetDisk::resolve) 표시가 동작과 같아집니다.
-     *
-     * @param  string  $identifier  플러그인 식별자
-     * @param  array<string, mixed>  $settings  응답에 실을 설정
-     * @return array<string, mixed> 카탈로그가 부착된 설정
-     */
-    private function withPublicAssetCatalog(string $identifier, array $settings): array
-    {
-        $plugin = $this->pluginManager->getPlugin($identifier);
-
-        if ($plugin === null || ! array_key_exists('public_asset_disk', $plugin->getSettingsSchema())) {
-            return $settings;
-        }
-
-        $catalog = app(DriverRegistryService::class)->getAvailableDrivers('public_asset');
-        $settings['available_public_asset_disks'] = $catalog;
-
-        $stored = $settings['public_asset_disk'] ?? '';
-        if (is_string($stored) && $stored !== '' && ! in_array($stored, array_column($catalog, 'id'), true)) {
-            $settings['public_asset_disk'] = 'none';
-            $settings['public_asset_disk_unavailable'] = $stored;
-        }
-
-        return $settings;
     }
 
     /**
@@ -105,31 +39,7 @@ class PluginSettingsController extends AdminBaseController
             return $this->notFound('plugins.not_found');
         }
 
-        return $this->success(
-            'common.success',
-            $this->withAbilities(
-                $this->withPublicAssetCatalog($identifier, $this->maskSensitive($identifier, $settings))
-            )
-        );
-    }
-
-    /**
-     * 응답 설정에 화면이 읽기 전용 여부를 정할 권한 값(abilities)을 싣는다.
-     *
-     * 설정 화면은 조회 권한(core.plugins.read)으로 열리지만 저장은 core.plugins.update 가
-     * 필요하다. 이 값이 없으면 화면이 쓰기 권한을 알 수 없어 읽기만 가진 운영자에게도
-     * 입력·저장이 살아 있다. 판정 식별자는 저장 라우트의 permission 미들웨어와 같다.
-     *
-     * @param  array<string, mixed>  $settings  응답에 실을 설정
-     * @return array<string, mixed> abilities 가 붙은 설정
-     */
-    private function withAbilities(array $settings): array
-    {
-        $settings['abilities'] = [
-            'can_update' => PermissionHelper::check('core.plugins.update', request()->user()),
-        ];
-
-        return $settings;
+        return $this->success('messages.success', $settings);
     }
 
     /**
@@ -141,34 +51,22 @@ class PluginSettingsController extends AdminBaseController
      */
     public function update(UpdatePluginSettingsRequest $request, string $identifier): JsonResponse
     {
-        // 검증을 통과한 필드만 저장한다. 과거에는 validated() 가 비면 all() 로 폴백했으나,
-        // 그 명분이던 "PluginManager 미등록 플러그인" 은 PluginSettingsService::save() 가
-        // 이미 false 로 차단하므로 도달할 수 없었고, 실제로는 설정 스키마 밖의 키가
-        // 그대로 설정 파일에 병합되는 경로로만 동작했다 (mass-assignment).
+        // validated()가 빈 배열이면 all()에서 설정값을 가져옴
+        // (PluginManager에 등록되지 않은 플러그인의 경우)
         $settings = $request->validated();
-
-        // 화면은 조회 응답을 폼에 담아 그대로 되돌려 보내므로 abilities 가 섞여 온다.
-        // 권한 값은 요청마다 서버가 계산하는 것이라 설정으로 저장하지 않는다.
-        unset($settings['abilities']);
-
-        $result = $this->pluginSettingsService->save($identifier, $settings, $failureReason);
-
-        if (! $result) {
-            return $this->error('plugins.settings.update_failed', 500, null, [
-                'error' => $failureReason ?? __('plugins.errors.unknown_error'),
-            ]);
+        if (empty($settings)) {
+            $settings = $request->all();
         }
 
-        // 저장 응답에도 카탈로그 재부착 — 화면 폼 상태가 응답으로 갱신되므로
-        // 누락 시 저장 직후 선택지가 비어 보인다 (ecommerce 저장 응답과 동형)
+        $result = $this->pluginSettingsService->save($identifier, $settings);
+
+        if (! $result) {
+            return $this->error('plugins.settings.update_failed', 500);
+        }
+
         return $this->success(
             'plugins.settings.updated',
-            $this->withAbilities(
-                $this->withPublicAssetCatalog(
-                    $identifier,
-                    $this->maskSensitive($identifier, $this->pluginSettingsService->get($identifier) ?? [])
-                )
-            )
+            $this->pluginSettingsService->get($identifier)
         );
     }
 
@@ -188,6 +86,6 @@ class PluginSettingsController extends AdminBaseController
             return $this->notFound('plugins.not_found');
         }
 
-        return $this->success('common.success', $layout);
+        return $this->success('messages.success', $layout);
     }
 }

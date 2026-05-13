@@ -1,0 +1,1079 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "주문 취소 모달 - 부분취소/전체취소 지원, 환불 예상금액 표시"
+  },
+  "type": "composite",
+  "name": "Modal",
+  "id": "modal_cancel_order",
+  "props": {
+    "width": "750px",
+    "className": "max-w-full",
+    "title": "$t:mypage.order_detail.cancel_modal.title"
+  },
+  "actions": [
+    {
+      "event": "onClose",
+      "type": "click",
+      "handler": "sequence",
+      "params": {
+        "actions": [
+          {
+            "handler": "sirsoft-ecommerce.clearUserCancelOrderTimers"
+          },
+          {
+            "handler": "setState",
+            "params": {
+              "target": "_local",
+              "showCancelModal": false,
+              "cancelItems": [],
+              "cancelSelectAll": false,
+              "cancelReason": "",
+              "refundPriority": "pg_first",
+              "refundEstimate": null,
+              "refundLoading": false,
+              "isCancelling": false,
+              "cancelError": null,
+              "cancelValidationErrors": null
+            }
+          },
+          {
+            "handler": "closeModal"
+          }
+        ]
+      }
+    }
+  ],
+  "children": [
+    {
+      "comment": "Flex Column 컨테이너 (스크롤 영역 + 고정 푸터 분리)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex flex-col max-h-[70vh]" },
+      "children": [
+    {
+      "comment": "모달 내용 (스크롤 영역)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex-1 overflow-y-auto min-h-0 p-4 space-y-4" },
+      "children": [
+        {
+          "comment": "에러 알림",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{!!_local.cancelError}}",
+          "props": { "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm font-medium text-red-800 dark:text-red-200" },
+              "text": "$t:mypage.order_detail.cancel_modal.error_title"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm text-red-600 dark:text-red-300 mt-1" },
+              "text": "{{_local.cancelError ?? ''}}"
+            }
+          ]
+        },
+        {
+          "comment": "Validation 에러 요약",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.cancelValidationErrors && Object.keys(_local.cancelValidationErrors).length > 0}}",
+          "props": { "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-2 text-red-700 dark:text-red-400 font-medium text-sm mb-2" },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "size": "sm" } },
+                { "type": "basic", "name": "Span", "text": "$t:mypage.order_detail.cancel_modal.validation_error_title" }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Ul",
+              "props": { "className": "list-disc list-inside space-y-1" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Li",
+                  "iteration": {
+                    "source": "Object.entries(_local.cancelValidationErrors ?? {}).flatMap(([k, v]) => Array.isArray(v) ? v : [v])",
+                    "item_var": "errMsg",
+                    "index_var": "errIdx"
+                  },
+                  "props": { "className": "text-xs text-red-600 dark:text-red-400" },
+                  "text": "{{errMsg}}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "안내 메시지",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-gray-900 dark:text-white font-medium" },
+              "text": "$t:mypage.order_detail.cancel_modal.message"
+            },
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-gray-500 dark:text-gray-400 text-sm mt-1" },
+              "text": "$t:mypage.order_detail.cancel_modal.description"
+            }
+          ]
+        },
+        {
+          "comment": "상품 선택 영역",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden" },
+          "children": [
+            {
+              "comment": "전체 선택 헤더",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Input",
+                  "props": {
+                    "type": "checkbox",
+                    "checked": "{{_local.cancelSelectAll}}",
+                    "className": "w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sirsoft-ecommerce.toggleUserCancelSelectAll",
+                      "params": {
+                        "orderId": "{{order.data.id ?? ''}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300" },
+                  "text": "$t:mypage.order_detail.cancel_modal.select_all"
+                }
+              ]
+            },
+            {
+              "comment": "상품 목록",
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "divide-y divide-gray-200 dark:divide-gray-700" },
+              "children": [
+                {
+                  "comment": "개별 상품 행",
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "_local.cancelItems",
+                    "item_var": "cancelItem",
+                    "index_var": "cancelIdx"
+                  },
+                  "props": { "className": "flex items-start gap-3 p-4" },
+                  "children": [
+                    {
+                      "comment": "체크박스",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "pt-1" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "checkbox",
+                            "checked": "{{cancelItem.selected}}",
+                            "className": "w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500"
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "sirsoft-ecommerce.toggleUserCancelItem",
+                              "params": {
+                                "optionId": "{{cancelItem.id}}",
+                                "orderId": "{{order.data.id ?? ''}}"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "상품 썸네일",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "w-14 h-14 flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Img",
+                          "if": "{{!!cancelItem.thumbnail_url}}",
+                          "props": {
+                            "src": "{{cancelItem.thumbnail_url}}",
+                            "alt": "{{cancelItem.product_name ?? ''}}",
+                            "className": "w-full h-full object-cover"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "comment": "상품 정보 + 수량",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "flex-1 min-w-0" },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "props": { "className": "text-sm font-medium text-gray-900 dark:text-white truncate" },
+                          "text": "{{cancelItem.product_name ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "P",
+                          "if": "{{!!cancelItem.product_option_name}}",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate" },
+                          "text": "{{cancelItem.product_option_name ?? ''}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "mt-1" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-sm text-gray-700 dark:text-gray-300" },
+                              "text": "{{(cancelItem.unit_price ?? 0).toLocaleString()}}$t:common.currency_unit × {{cancelItem.quantity ?? 0}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                              "text": "$t:mypage.order_detail.cancel_modal.product_subtotal: {{((cancelItem.unit_price ?? 0) * (cancelItem.quantity ?? 0)).toLocaleString()}}$t:common.currency_unit"
+                            }
+                          ]
+                        },
+                        {
+                          "comment": "취소 수량 입력",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{cancelItem.selected}}",
+                          "props": { "className": "flex items-center gap-2 mt-2" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
+                              "text": "$t:mypage.order_detail.cancel_modal.cancel_quantity_col"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "number",
+                                "value": "{{cancelItem.cancel_quantity ?? 1}}",
+                                "min": "1",
+                                "max": "{{cancelItem.quantity ?? 1}}",
+                                "className": "w-16 px-2 py-1 text-sm text-center border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-red-500 focus:border-red-500"
+                              },
+                              "actions": [
+                                {
+                                  "type": "change",
+                                  "handler": "sirsoft-ecommerce.updateUserCancelQuantity",
+                                  "params": {
+                                    "optionId": "{{cancelItem.id}}",
+                                    "maxQuantity": "{{cancelItem.quantity ?? 1}}",
+                                    "orderId": "{{order.data.id ?? ''}}",
+                                    "value": "{{$event.target.value}}"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "text": "/ {{cancelItem.quantity ?? 0}}"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "주문금액 비교 영역",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H4",
+              "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mb-3" },
+              "text": "$t:mypage.order_detail.cancel_modal.comparison_title"
+            },
+            {
+              "comment": "로딩 상태",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.refundLoading}}",
+              "props": { "className": "flex items-center justify-center py-3" },
+              "children": [
+                { "type": "basic", "name": "Icon", "props": { "name": "spinner", "className": "animate-spin", "size": "sm" } },
+                { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-500 dark:text-gray-400 ml-2" }, "text": "$t:mypage.order_detail.cancel_modal.refund_loading" }
+              ]
+            },
+            {
+              "comment": "비교 테이블 + 환불 요약",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_local.refundEstimate && !_local.refundLoading}}",
+              "props": { "className": "space-y-3" },
+              "children": [
+                {
+                  "comment": "비교 테이블 헤더",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 pb-2 border-b border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 dark:text-gray-400" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "text": "" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right" }, "text": "$t:mypage.order_detail.cancel_modal.col_before" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right" }, "text": "$t:mypage.order_detail.cancel_modal.col_after" }
+                  ]
+                },
+                {
+                  "comment": "상품수량",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.item_count" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.item_count ?? 0)}}$t:mypage.order_detail.cancel_modal.count_unit" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.item_count ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.item_count ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.item_count ?? 0)}}$t:mypage.order_detail.cancel_modal.count_unit" }
+                  ]
+                },
+                {
+                  "comment": "총 정가금액 (+ 다통화)",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.list_price_amount" },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "text-right" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted}}",
+                          "props": { "className": "mt-0.5" },
+                          "children": [{
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
+                            "iteration": {
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "item_var": "mc"
+                            },
+                            "text": "{{mc[1]}}"
+                          }]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "text-right" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.total_list_price_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_list_price_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted}}",
+                          "props": { "className": "mt-0.5" },
+                          "children": [{
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
+                            "iteration": {
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "item_var": "mc"
+                            },
+                            "text": "{{mc[1]}}"
+                          }]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "총 판매가 금액 (+ 다통화)",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.subtotal_amount" },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "text-right" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted}}",
+                          "props": { "className": "mt-0.5" },
+                          "children": [{
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
+                            "iteration": {
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "item_var": "mc"
+                            },
+                            "text": "{{mc[1]}}"
+                          }]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "text-right" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.subtotal_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.subtotal_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted}}",
+                          "props": { "className": "mt-0.5" },
+                          "children": [{
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block" },
+                            "iteration": {
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "item_var": "mc"
+                            },
+                            "text": "{{mc[1]}}"
+                          }]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "상품쿠폰 할인",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "py-1.5" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.product_coupon_discount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_product_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                      ]
+                    },
+                    {
+                      "comment": "상품쿠폰 상세",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'product_amount' || c.target_type === 'category_amount').length > 0}}",
+                      "props": { "className": "grid grid-cols-3 gap-2 mt-0.5" },
+                      "children": [
+                        { "type": "basic", "name": "Span" },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "text-right" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "iteration": {
+                                "source": "(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'product_amount' || c.target_type === 'category_amount')",
+                                "item_var": "pc",
+                                "index_var": "pcIdx"
+                              },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "text": "{{pc.name}} -{{(pc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "text-right" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "iteration": {
+                                "source": "(_local.refundEstimate?.recalculated_coupons ?? []).filter(c => c.target_type === 'product_amount' || c.target_type === 'category_amount')",
+                                "item_var": "rpc",
+                                "index_var": "rpcIdx"
+                              },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "text": "{{rpc.name}} -{{(rpc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "주문쿠폰 할인",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "py-1.5" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.order_coupon_discount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_order_coupon_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                      ]
+                    },
+                    {
+                      "comment": "주문쿠폰 상세",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}",
+                      "props": { "className": "grid grid-cols-3 gap-2 mt-0.5" },
+                      "children": [
+                        { "type": "basic", "name": "Span" },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "text-right" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "iteration": {
+                                "source": "(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'order_amount')",
+                                "item_var": "oc",
+                                "index_var": "ocIdx"
+                              },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "text": "{{oc.name}} -{{(oc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "text-right" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "iteration": {
+                                "source": "(_local.refundEstimate?.recalculated_coupons ?? []).filter(c => c.target_type === 'order_amount')",
+                                "item_var": "roc",
+                                "index_var": "rocIdx"
+                              },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "text": "{{roc.name}} -{{(roc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "할인코드 할인",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.code_discount" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_code_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_code_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                  ]
+                },
+                {
+                  "comment": "배송비쿠폰 할인",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "py-1.5" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "grid grid-cols-3 gap-2 text-sm" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.shipping_coupon_discount" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.shipping_discount_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.shipping_discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                      ]
+                    },
+                    {
+                      "comment": "배송비쿠폰 상세",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}",
+                      "props": { "className": "grid grid-cols-3 gap-2 mt-0.5" },
+                      "children": [
+                        { "type": "basic", "name": "Span" },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "text-right" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "iteration": {
+                                "source": "(_local.refundEstimate?.original_coupons ?? []).filter(c => c.target_type === 'shipping_fee')",
+                                "item_var": "sc",
+                                "index_var": "scIdx"
+                              },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "text": "{{sc.name}} -{{(sc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": { "className": "text-right" },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "P",
+                              "iteration": {
+                                "source": "(_local.refundEstimate?.recalculated_coupons ?? []).filter(c => c.target_type === 'shipping_fee')",
+                                "item_var": "rsc",
+                                "index_var": "rscIdx"
+                              },
+                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500" },
+                              "text": "{{rsc.name}} -{{(rsc.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "기본배송비",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.base_shipping" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.base_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.base_shipping_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                  ]
+                },
+                {
+                  "comment": "추가배송비",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.extra_shipping" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.extra_shipping_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.extra_shipping_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                  ]
+                },
+                {
+                  "comment": "포인트 사용",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.points_used" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "-{{(_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_points_used_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "-{{(_local.refundEstimate?.recalculated_snapshot?.total_points_used_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                  ]
+                },
+                {
+                  "comment": "과세금액",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.taxable_amount" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_tax_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_tax_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                  ]
+                },
+                {
+                  "comment": "부가세",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.vat_amount" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                  ]
+                },
+                {
+                  "comment": "실결제금액 (+ 다통화)",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm border-t border-gray-200 dark:border-gray-700 font-semibold" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "$t:mypage.order_detail.cancel_modal.total_paid" },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "text-right" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted}}",
+                          "props": { "className": "mt-0.5" },
+                          "children": [{
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block font-normal" },
+                            "iteration": {
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "item_var": "mc"
+                            },
+                            "text": "{{mc[1]}}"
+                          }]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": { "className": "text-right" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "{{(_local.refundEstimate?.original_snapshot?.total_paid_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_paid_amount ?? 0).toLocaleString()}}$t:common.currency_unit" },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted}}",
+                          "props": { "className": "mt-0.5" },
+                          "children": [{
+                            "type": "basic",
+                            "name": "Span",
+                            "props": { "className": "text-xs text-gray-400 dark:text-gray-500 block font-normal" },
+                            "iteration": {
+                              "source": "{{Object.entries(_local.refundEstimate?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? 'KRW'))}}",
+                              "item_var": "mc"
+                            },
+                            "text": "{{mc[1]}}"
+                          }]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "적립예정포인트",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "grid grid-cols-3 gap-2 py-1.5 text-sm" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "$t:mypage.order_detail.cancel_modal.earned_points" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right text-gray-900 dark:text-white" }, "text": "{{(_local.refundEstimate?.original_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_earned_points_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_earned_points_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}" }, "text": "{{(_local.refundEstimate?.recalculated_snapshot?.total_earned_points_amount ?? 0).toLocaleString()}}P" }
+                  ]
+                },
+                {
+                  "comment": "취소 불가 경고 배너 — 쿠폰 조건 미달로 결제금액 증가 시",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{_local.refundEstimate?.cancel_blocked}}",
+                  "props": { "className": "flex items-start gap-2 p-3 mt-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" },
+                  "children": [
+                    { "type": "basic", "name": "Icon", "props": { "name": "circle-exclamation", "className": "text-red-600 dark:text-red-400 mt-0.5", "size": "sm" } },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-xs text-red-700 dark:text-red-300" }, "text": "{{_local.refundEstimate?.cancel_blocked_reason ?? ''}}" }
+                  ]
+                },
+                {
+                  "comment": "구분선 + 최종 환불 예정액",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex justify-between text-sm font-semibold pt-3 mt-2 border-t-2 border-gray-300 dark:border-gray-600" },
+                  "children": [
+                    { "type": "basic", "name": "Span", "props": { "className": "text-gray-900 dark:text-white" }, "text": "$t:mypage.order_detail.cancel_modal.refund_total" },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-red-600 dark:text-red-400 text-base" }, "text": "{{(_local.refundEstimate?.refund_total ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                  ]
+                },
+                {
+                  "comment": "환불 후 잔액 정보",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(_local.refundEstimate?.remaining_pg_balance ?? null) !== null || (_local.refundEstimate?.remaining_points_balance ?? null) !== null}}",
+                  "props": { "className": "space-y-1 pt-2 border-t border-gray-200 dark:border-gray-700" },
+                  "children": [
+                    {
+                      "comment": "환불 후 PG 잔액",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(_local.refundEstimate?.remaining_pg_balance ?? null) !== null}}",
+                      "props": { "className": "flex justify-between text-xs" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:mypage.order_detail.cancel_modal.remaining_pg_balance" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{(_local.refundEstimate?.remaining_pg_balance ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                      ]
+                    },
+                    {
+                      "comment": "환불 후 마일리지 잔액",
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{(_local.refundEstimate?.remaining_points_balance ?? null) !== null}}",
+                      "props": { "className": "flex justify-between text-xs" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-500 dark:text-gray-500" }, "text": "$t:mypage.order_detail.cancel_modal.remaining_points_balance" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{(_local.refundEstimate?.remaining_points_balance ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "복원될 쿠폰 목록",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(_local.refundEstimate?.restored_coupons ?? []).length > 0}}",
+                  "props": { "className": "pt-2 border-t border-gray-200 dark:border-gray-700" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1" },
+                      "text": "$t:mypage.order_detail.cancel_modal.restored_coupons_label"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "iteration": {
+                        "source": "_local.refundEstimate?.restored_coupons ?? []",
+                        "item_var": "coupon",
+                        "index_var": "couponIdx"
+                      },
+                      "props": { "className": "flex justify-between text-xs py-0.5" },
+                      "children": [
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-600 dark:text-gray-400" }, "text": "{{coupon.coupon_name ?? ''}}" },
+                        { "type": "basic", "name": "Span", "props": { "className": "text-gray-700 dark:text-gray-300" }, "text": "{{(coupon.discount_amount ?? 0).toLocaleString()}}$t:common.currency_unit" }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-1" },
+                      "text": "$t:mypage.order_detail.cancel_modal.restored_coupons_notice"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "comment": "미선택 시",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!_local.refundLoading && !_local.refundEstimate}}",
+              "props": { "className": "text-center py-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": { "className": "text-sm text-gray-400 dark:text-gray-500" },
+                  "text": "-"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "환불 우선순위 라디오 (마일리지 사용 주문일 때만 표시)",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{(_local.refundEstimate?.refund_points_amount ?? 0) > 0}}",
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mb-2" },
+              "text": "$t:mypage.order_detail.cancel_modal.refund_priority_label"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "space-y-2" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.refundPriority === 'pg_first' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}" },
+                  "children": [
+                    { "type": "basic", "name": "Input", "props": { "type": "radio", "name": "refundPriority", "value": "pg_first", "checked": "{{_local.refundPriority === 'pg_first'}}", "className": "text-blue-600" }, "actions": [{ "type": "change", "handler": "sirsoft-ecommerce.changeUserRefundPriority", "params": { "priority": "pg_first", "orderId": "{{order.data.id ?? ''}}" } }] },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "$t:mypage.order_detail.cancel_modal.refund_priority_pg_first" }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_local.refundPriority === 'points_first' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}" },
+                  "children": [
+                    { "type": "basic", "name": "Input", "props": { "type": "radio", "name": "refundPriority", "value": "points_first", "checked": "{{_local.refundPriority === 'points_first'}}", "className": "text-blue-600" }, "actions": [{ "type": "change", "handler": "sirsoft-ecommerce.changeUserRefundPriority", "params": { "priority": "points_first", "orderId": "{{order.data.id ?? ''}}" } }] },
+                    { "type": "basic", "name": "Span", "props": { "className": "text-sm text-gray-700 dark:text-gray-300" }, "text": "$t:mypage.order_detail.cancel_modal.refund_priority_points_first" }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "comment": "취소 사유 라디오 버튼 그룹",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "mb-8"},
+          "children": [
+            {
+              "type": "basic",
+              "name": "P",
+              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mb-2" },
+              "text": "$t:mypage.order_detail.cancel_modal.reason_label"
+            },
+            {
+              "type": "basic",
+              "name": "Select",
+              "props": {
+                "className": "{{_local.cancelValidationErrors?.reason ? 'w-full px-3 py-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}",
+                "value": "{{_local.cancelReason ?? ''}}"
+              },
+              "actions": [
+                {
+                  "type": "change",
+                  "handler": "setState",
+                  "params": {
+                    "target": "_local",
+                    "cancelReason": "{{$event.target.value}}",
+                    "cancelValidationErrors": null,
+                    "cancelError": null
+                  }
+                }
+              ],
+              "children": [
+                { "type": "basic", "name": "Option", "props": { "value": "" }, "text": "$t:mypage.order_detail.cancel_modal.reason_placeholder" },
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "iteration": {
+                    "source": "refundReasons?.data?.data ?? refundReasons?.data ?? []",
+                    "item_var": "reason"
+                  },
+                  "props": { "value": "{{reason.code}}" },
+                  "text": "{{reason.localized_name}}"
+                }
+              ]
+            },
+            {
+              "comment": "취소 사유 필드 에러",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{_local.cancelValidationErrors?.reason}}",
+              "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-1 block" },
+              "text": "{{Array.isArray(_local.cancelValidationErrors?.reason) ? _local.cancelValidationErrors.reason[0] : _local.cancelValidationErrors?.reason}}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "모달 푸터 (하단 고정)",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex gap-3 pt-4 pb-1 sticky bottom-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 -mx-6 px-6 -mb-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          },
+          "text": "$t:mypage.order_detail.cancel_modal.close",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "closeModal"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{!_local.cancelReason || _local.isCancelling || _local.refundLoading || _local.refundEstimate?.cancel_blocked}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sirsoft-ecommerce.executeUserCancelOrder",
+              "params": {
+                "orderId": "{{order.data.id ?? ''}}",
+                "cancelReason": "{{_local.cancelReason ?? ''}}",
+                "refundPriority": "{{_local.refundPriority ?? 'pg_first'}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_local.isCancelling}}",
+              "props": { "name": "spinner", "className": "animate-spin", "size": "sm" }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_local.isCancelling ? '$t:common.processing' : '$t:mypage.order_detail.cancel_modal.confirm'}}"
+            }
+          ]
+        }
+      ]
+    }
+      ]
+    }
+  ]
+}

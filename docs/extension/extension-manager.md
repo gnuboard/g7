@@ -13,7 +13,6 @@
 3. 설치/삭제 시 자동 갱신: updateComposerAutoload() → generateAutoloadFile()
 4. 수동 갱신: php artisan extension:update-autoload
 5. _bundled/_pending 디렉토리 자동 제외 (str_starts_with($name, '_') → skip)
-6. src_classmap: 확장 소스 FQCN→경로 사전 계산 → findFile 파일시스템 stat 제거 (지연 로드·vendor 격리 유지)
 ```
 
 ---
@@ -80,10 +79,6 @@ return [
         "modules/sirsoft-ecommerce/module.php",
         "plugins/sirsoft-payment/plugin.php",
     ],
-    'src_classmap' => [
-        "Modules\\Sirsoft\\Ecommerce\\Services\\OrderService" => "modules/sirsoft-ecommerce/src/Services/OrderService.php",
-        "Plugins\\Sirsoft\\Payment\\Providers\\PaymentServiceProvider" => "plugins/sirsoft-payment/src/Providers/PaymentServiceProvider.php",
-    ],
     'files' => [],
     'vendor_autoloads' => [
         "modules/sirsoft-ecommerce/vendor/autoload.php",
@@ -91,18 +86,7 @@ return [
 ];
 ```
 
-- `classmap`: `module.php` / `plugin.php` 등 부트스트랩 파일 목록 — 진입점에서 `require_once` (즉시 로드)
-- `src_classmap`: 확장 **소스** 클래스의 `FQCN → 상대경로` 맵 — 진입점에서 `$loader->addClassMap()` (지연 로드)
 - `vendor_autoloads`: 모듈/플러그인의 `vendor/autoload.php` 경로 목록 (Composer 의존성이 설치된 경우만 포함)
-
-#### src_classmap — findFile 파일시스템 스캔 제거 (성능)
-
-확장 소스 클래스는 `addPsr4()` 로만 등록되면 Composer `findFile()` 이 클래스마다 파일시스템을 스캔(`is_dir`/`file_exists` stat)한다. OPcache 가 cold 이거나 파일시스템이 느린 환경에서는 이 stat 비용이 요청 시간의 큰 비중을 차지할 수 있다. `src_classmap` 은 `generateAutoloadFile()` 이 각 PSR-4 디렉토리를 스캔해 `FQCN → 경로` 를 사전 계산하고, 진입점(`public/index.php` / `CoreServiceProvider` / `ExtensionManager::registerExtensionAutoload`)이 `ClassLoader::addClassMap()` 으로 등록한다. `findFile()` 은 classMap 을 **최우선 조회**하므로 확장 클래스는 파일시스템 접근 0 으로 즉시 경로를 얻는다.
-
-- **지연 로드 유지**: classmap 은 경로만 제공하며 `include` 는 실제 사용 시점에. 매 요청 전량 로드가 아니다.
-- **PSR-4 폴백 보존**: classmap 에 없는 클래스(신규 추가 후 미재생성 등)는 기존 PSR-4 경로로 폴백 — 안전망.
-- **vendor 격리 불변**: `src_classmap` 은 확장 **소스**(`Modules\*`/`Plugins\*`)만 담는다. 확장별 독립 서드파티 vendor 는 각 확장 `vendor/autoload.php`(별도 ClassLoader) 가 담당하므로 여기 포함되지 않는다.
-- **재생성**: `psr4` 와 동일 생명주기 — install / update / uninstall 시 `updateComposerAutoload()`, 코어 업데이트 시 `extension:update-autoload` 가 함께 재생성.
 
 ### 중요 규칙
 
@@ -334,17 +318,6 @@ php artisan extension:composer-install
 
 ---
 
-## 확장 아이콘
-
-확장과 언어팩은 자기 아이콘을 담을 수 있습니다. 패키지 루트에 `assets/icon.svg` 를 두거나
-매니페스트에 `"icon"` 경로를 적으면 관리자 확장 관리 목록·상세·확인 창과 설치 마법사에
-그 그림이 나옵니다. 아이콘이 없는 확장은 종류별 기본 그림으로 표시됩니다.
-
-규격(정사각·100KB 이하·스크립트 없는 SVG), 서빙 주소, 언어팩 합성 규칙은
-[확장 아이콘](extension-icons.md)에 있습니다.
-
----
-
 ## 관리자 UI 필터링 (hidden 플래그)
 
 확장 manifest (`module.json` / `plugin.json` / `template.json`) 에 `"hidden": true` 를 설정하면, 관리자 UI 목록 응답과 artisan `*:list` 기본 출력에서 제외됩니다. 학습용 샘플 확장, 내부 운영 전용 확장을 숨길 때 사용합니다.
@@ -374,8 +347,6 @@ GET /api/admin/modules?include_hidden=1
 GET /api/admin/plugins?include_hidden=1
 GET /api/admin/templates?include_hidden=1
 ```
-
-API 의 `include_hidden` 은 최고관리자(`is_super`)에게만 적용됩니다. 다른 관리자가 이 값을 보내면(최고관리자가 공유한 주소로 들어온 경우 등) 요청 단계(`RestrictsHiddenExtensionsToSuperAdmin`)에서 거짓으로 바뀌어 숨김 확장이 빠진 목록을 받습니다.
 
 ### manifest 설정
 
@@ -409,13 +380,14 @@ public function register(): void
         return new ExtensionManager;
     });
 
-    // 모듈·플러그인 매니저는 저장소·레이아웃 동기화기(LayoutRowSynchronizer) 등 여러 의존을 받는다 —
-    // 실제 인자 목록은 CoreServiceProvider 를 보고, 코드에서는 직접 new 하지 말고 컨테이너로 받는다.
+    // 모듈 매니저에 주입
     $this->app->singleton(ModuleManager::class, function ($app) {
-        return new ModuleManager(
-            $app->make(ExtensionManager::class),
-            // … 저장소들 · LayoutExtensionService · LayoutRowSynchronizer · LayoutExtensionRepositoryInterface
-        );
+        return new ModuleManager($app->make(ExtensionManager::class));
+    });
+
+    // 플러그인 매니저에 주입
+    $this->app->singleton(PluginManager::class, function ($app) {
+        return new PluginManager($app->make(ExtensionManager::class));
     });
 }
 ```
@@ -471,4 +443,4 @@ DB 컬럼: `modules/plugins/templates` 테이블의 `deactivated_reason` (string
 - [플러그인 개발](plugin-development.md) - 플러그인 구조 및 설정
 - [모듈 Artisan 커맨드](module-commands.md) - 모듈 관련 커맨드
 - [확장 업데이트 시스템](extension-update-system.md) - _bundled/_pending 및 업데이트
-- [인덱스](README.md) - 확장 시스템 전체 문서 목록
+- [인덱스](index.md) - 확장 시스템 전체 문서 목록

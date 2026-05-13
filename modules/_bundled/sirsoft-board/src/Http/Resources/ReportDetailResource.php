@@ -4,9 +4,8 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Http\Request;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
@@ -144,7 +143,7 @@ class ReportDetailResource extends BaseApiResource
                 'title' => $reportable['title'] ?? ($firstSnapshot['title'] ?? null),
                 'content' => $reportable['content'] ?? ($firstSnapshot['content'] ?? ''),
                 'content_mode' => $reportable['content_mode'] ?? 'text',
-                'created_at' => $createdAtRaw ? $this->formatDateTimeStringForUser(Carbon::parse($createdAtRaw)) : null,
+                'created_at' => $createdAtRaw ? $this->formatDateTimeStringForUser(\Carbon\Carbon::parse($createdAtRaw)) : null,
                 'author' => $this->buildAuthorInfo($reportable, $firstSnapshot['author_name'] ?? ''),
             ];
         }
@@ -167,12 +166,12 @@ class ReportDetailResource extends BaseApiResource
                 'id' => $reportable['post']['id'] ?? null,
                 'title' => $reportable['post']['title'] ?? null,
                 'content' => null,
-                'created_at' => $postCreatedAtRaw ? $this->formatDateTimeStringForUser(Carbon::parse($postCreatedAtRaw)) : null,
+                'created_at' => $postCreatedAtRaw ? $this->formatDateTimeStringForUser(\Carbon\Carbon::parse($postCreatedAtRaw)) : null,
                 'author' => isset($reportable['post']['author'])
                     ? [
                         'uuid' => $reportable['post']['author']['uuid'] ?? null,
                         'name' => $reportable['post']['author']['name'] ?? null,
-                        'email' => $this->canExposeMemberEmail() ? ($reportable['post']['author']['email'] ?? null) : null,
+                        'email' => $reportable['post']['author']['email'] ?? null,
                     ]
                     : null,
             ];
@@ -201,7 +200,7 @@ class ReportDetailResource extends BaseApiResource
         return [
             'id' => $report->target_id,
             'content' => $reportable['content'] ?? ($firstSnapshot['content'] ?? ''),
-            'created_at' => $commentCreatedAtRaw ? $this->formatDateTimeStringForUser(Carbon::parse($commentCreatedAtRaw)) : null,
+            'created_at' => $commentCreatedAtRaw ? $this->formatDateTimeStringForUser(\Carbon\Carbon::parse($commentCreatedAtRaw)) : null,
             'author' => $this->buildAuthorInfo($reportable, $firstSnapshot['author_name'] ?? ''),
         ];
     }
@@ -220,9 +219,7 @@ class ReportDetailResource extends BaseApiResource
         return [
             'uuid' => $reportable['author_uuid'] ?? null,
             'name' => $reportable['author_name'] ?? $snapshotName ?: __('sirsoft-board::messages.common.guest'),
-            'email' => $this->canExposeMemberEmail(null, $authorId !== null ? (int) $authorId : null)
-                ? ($reportable['author_email'] ?? null)
-                : null,
+            'email' => $reportable['author_email'] ?? null,
             'is_guest' => $authorId === null,
         ];
     }
@@ -245,7 +242,7 @@ class ReportDetailResource extends BaseApiResource
                 ? [
                     'uuid' => $log->reporter->uuid,
                     'name' => $log->reporter->name,
-                    'email' => $this->canExposeMemberEmail(null, $log->reporter->id) ? $log->reporter->email : null,
+                    'email' => $log->reporter->email,
                 ]
                 : null,
             'reason_type' => $log->reason_type?->value ?? null,
@@ -275,17 +272,15 @@ class ReportDetailResource extends BaseApiResource
             $processorId = $history['processor_id'] ?? null;
             $processor = $processorId ? User::find($processorId) : null;
 
-            // reported/re_reported/report_cancelled 는 신고자 측 이벤트 — 처리자 없음
-            // (report_cancelled 는 마이페이지 「내 신고」의 취소로 생기며 관리자가 아니라
-            //  신고자 본인이 일으킨다 — 처리자 칸에 「시스템」이 찍히면 사실과 다르다)
-            $isReportEvent = in_array($type, ['reported', 're_reported', 'report_cancelled']);
+            // reported/re_reported는 신고자 접수 이벤트 — 처리자 없음
+            $isReportEvent = in_array($type, ['reported', 're_reported']);
             $processorName = $isReportEvent
                 ? null
                 : ($processor?->name ?? __('sirsoft-board::messages.common.system'));
             $processorEmail = $isReportEvent ? '' : ($processor?->email ?? '');
 
             $createdAtRaw = $history['created_at'] ?? null;
-            $createdAt = $createdAtRaw ? Carbon::parse($createdAtRaw) : null;
+            $createdAt = $createdAtRaw ? \Carbon\Carbon::parse($createdAtRaw) : null;
 
             return [
                 'id' => $index + 1,
@@ -310,10 +305,10 @@ class ReportDetailResource extends BaseApiResource
      *
      * 상위 2개 사유를 보여주고 나머지는 "외 N건" 형식으로 표시합니다.
      *
-     * @param  Collection  $reporters  신고자 로그 컬렉션
+     * @param  \Illuminate\Support\Collection  $reporters  신고자 로그 컬렉션
      * @return string 신고 사유 요약
      */
-    private function buildReasonSummary(Collection $reporters): string
+    private function buildReasonSummary(\Illuminate\Support\Collection $reporters): string
     {
         $reasonCounts = $reporters
             ->filter(fn ($log) => $log->reason_type !== null)

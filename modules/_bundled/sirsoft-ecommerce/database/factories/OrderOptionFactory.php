@@ -19,6 +19,8 @@ class OrderOptionFactory extends Factory
 
     /**
      * 기본 정의
+     *
+     * @return array
      */
     public function definition(): array
     {
@@ -35,11 +37,7 @@ class OrderOptionFactory extends Factory
             'order_id' => Order::factory(),
             'parent_option_id' => null,
             'product_id' => Product::factory(),
-            // 연결 옵션의 재고는 아래 option_snapshot 이 적는 값(100)과 맞춘다.
-            // ProductOption 기본 정의는 재고를 0~100 난수로 뽑는데, 주문 수량(1~5)보다 작게
-            // 뽑히면 결제 완료 시 재고 차감이 실패해 주문 상태를 다루는 테스트가 재고 부족으로
-            // 무작위 실패한다. 재고 부족 시나리오는 그 상태를 명시하는 테스트가 따로 지정한다.
-            'product_option_id' => ProductOption::factory()->state(['stock_quantity' => 100]),
+            'product_option_id' => ProductOption::factory(),
             'option_status' => OrderStatusEnum::PENDING_ORDER,
             'source_type' => 'order',
             'source_option_id' => null,
@@ -74,7 +72,7 @@ class OrderOptionFactory extends Factory
                 'brand_id' => null,
                 'list_price' => $unitPrice,
                 'selling_price' => $unitPrice,
-                'currency_code' => $this->defaultCurrency(),
+                'currency_code' => 'KRW',
                 'stock_quantity' => 100,
                 'tax_status' => 'taxable',
                 'tax_rate' => 10,
@@ -90,7 +88,7 @@ class OrderOptionFactory extends Factory
                 'price_adjustment' => 0,
                 'list_price' => $unitPrice,
                 'selling_price' => $unitPrice,
-                'currency_code' => $this->defaultCurrency(),
+                'currency_code' => 'KRW',
                 'stock_quantity' => 100,
                 'weight' => 0.5,
                 'volume' => 0.01,
@@ -117,6 +115,9 @@ class OrderOptionFactory extends Factory
 
     /**
      * 특정 주문의 옵션
+     *
+     * @param  Order  $order
+     * @return static
      */
     public function forOrder(Order $order): static
     {
@@ -127,6 +128,8 @@ class OrderOptionFactory extends Factory
 
     /**
      * 배송 중 상태
+     *
+     * @return static
      */
     public function shipped(): static
     {
@@ -137,6 +140,8 @@ class OrderOptionFactory extends Factory
 
     /**
      * 취소 상태
+     *
+     * @return static
      */
     public function cancelled(): static
     {
@@ -147,6 +152,9 @@ class OrderOptionFactory extends Factory
 
     /**
      * 교환 상품
+     *
+     * @param  OrderOption  $sourceOption
+     * @return static
      */
     public function exchangedFrom(OrderOption $sourceOption): static
     {
@@ -158,20 +166,10 @@ class OrderOptionFactory extends Factory
     }
 
     /**
-     * 설정의 기본 통화 코드를 반환합니다 (KRW 하드코딩 제거 — base 추종).
-     *
-     * @return string 기본 통화 코드
-     */
-    private function defaultCurrency(): string
-    {
-        return app(CurrencyConversionService::class)->getDefaultCurrency();
-    }
-
-    /**
      * CurrencyConversionService를 사용하여 다중 통화 금액을 생성합니다.
-     * 서비스 사용 불가 시 기본 통화 단일 값으로 fallback합니다.
+     * 서비스 사용 불가 시 KRW 단일 통화로 fallback합니다.
      *
-     * @param  float  $amount  기본 통화 기준 금액
+     * @param  float  $amount  KRW 기준 금액
      * @return array 다중 통화 데이터
      */
     private function buildMcAmount(float $amount): array
@@ -185,9 +183,9 @@ class OrderOptionFactory extends Factory
                 $result[$code] = $data['price'];
             }
 
-            return ! empty($result) ? $result : [$service->getDefaultCurrency() => $amount];
+            return ! empty($result) ? $result : ['KRW' => $amount];
         } catch (\Exception $e) {
-            return [app(CurrencyConversionService::class)->getDefaultCurrency() => $amount];
+            return ['KRW' => $amount];
         }
     }
 }

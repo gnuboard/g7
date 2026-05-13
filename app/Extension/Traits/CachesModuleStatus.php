@@ -6,7 +6,6 @@ use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Models\Module;
-use App\Support\InstallerContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -29,47 +28,14 @@ trait CachesModuleStatus
             return [];
         }
 
-        return self::rememberNonEmpty(
+        return self::resolveStatusCache()->remember(
             'ext.modules.active_identifiers',
             fn () => Module::where('status', ExtensionStatus::Active->value)
                 ->pluck('identifier')
-                ->toArray()
+                ->toArray(),
+            (int) g7_core_settings('cache.extension_status_ttl', 86400),
+            ['ext.status', 'ext.modules']
         );
-    }
-
-    /**
-     * 목록 캐시를 조회하되, 빈 결과는 캐시에 남기지 않습니다.
-     *
-     * 확장 상태는 install/activate/update 도중 잠시 active 가 아닌 값으로 바뀐다. 그 창에서
-     * 누가 이 목록을 읽으면 빈 배열이 TTL(기본 하루) 동안 굳어, 작업이 끝난 뒤에도 모든 확장이
-     * 꺼진 것처럼 동작한다 — 관리자 화면이 통째로 404 가 되고 스스로 회복되지 않는다.
-     * 빈 결과는 재계산 비용이 사실상 없는 단순 조회이므로 캐시하지 않는 편이 안전하다.
-     *
-     * @param  string  $key  캐시 키
-     * @param  \Closure  $resolver  목록 계산 클로저
-     * @return array<string> 조회된 identifier 배열
-     */
-    private static function rememberNonEmpty(string $key, \Closure $resolver): array
-    {
-        $cache = self::resolveStatusCache();
-        $cached = $cache->get($key);
-
-        if (is_array($cached) && $cached !== []) {
-            return $cached;
-        }
-
-        $fresh = $resolver();
-
-        if ($fresh !== []) {
-            $cache->put(
-                $key,
-                $fresh,
-                (int) g7_core_settings('cache.extension_status_ttl', 86400),
-                ['ext.status', 'ext.modules']
-            );
-        }
-
-        return $fresh;
     }
 
     /**
@@ -83,18 +49,22 @@ trait CachesModuleStatus
             return [];
         }
 
-        return self::rememberNonEmpty(
+        return self::resolveStatusCache()->remember(
             'ext.modules.installed_identifiers',
             fn () => Module::whereIn('status', [
                 ExtensionStatus::Active->value,
                 ExtensionStatus::Inactive->value,
-            ])->pluck('identifier')->toArray()
+            ])->pluck('identifier')->toArray(),
+            (int) g7_core_settings('cache.extension_status_ttl', 86400),
+            ['ext.status', 'ext.modules']
         );
     }
 
     /**
      * 모듈 상태 캐시를 무효화합니다.
      * 모듈 상태 변경 시 (install, activate, deactivate, uninstall) 호출해야 합니다.
+     *
+     * @return void
      */
     public static function invalidateModuleStatusCache(): void
     {
@@ -109,14 +79,10 @@ trait CachesModuleStatus
      * 설치 완료 상태(`config('app.installer_completed')`)일 때는 테이블 존재를
      * 전제로 하여 `Schema::hasTable()` 호출을 건너뜁니다. 인스톨러 이전 환경이나
      * 테스트에서는 기존 체크 경로로 폴백합니다.
-     *
-     * 단, 마이그레이션 계열 명령 실행 중에는 `INSTALLER_COMPLETED=true` 라도 테이블이
-     * 아직 없을 수 있으므로(빈 DB 새 서버에 .env 복사 후 migrate 전) fast-path 를
-     * 신뢰하지 않고 실제 `Schema::hasTable()` 폴백으로 진입합니다.
      */
     private static function isExtensionTableReady(string $table): bool
     {
-        if (! InstallerContext::isSchemaMutatingCommand() && config('app.installer_completed')) {
+        if (config('app.installer_completed')) {
             return true;
         }
 

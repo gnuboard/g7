@@ -3,7 +3,6 @@
 namespace App\Console\Commands\Plugin;
 
 use App\Contracts\Repositories\PluginRepositoryInterface;
-use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Extension\PluginManager;
 use Illuminate\Console\Command;
@@ -23,9 +22,6 @@ class DeactivatePluginCommand extends Command
 
     /**
      * 플러그인 관리자 및 리포지토리
-     *
-     * @param  PluginManager  $pluginManager  플러그인 관리자
-     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 리포지토리
      */
     public function __construct(
         private PluginManager $pluginManager,
@@ -36,8 +32,6 @@ class DeactivatePluginCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
@@ -64,8 +58,7 @@ class DeactivatePluginCommand extends Command
 
             // 플러그인 비활성화
             $force = $this->option('force');
-            // 운영자가 직접 실행한 비활성화다 — 시스템 자동 비활성화와 구분되도록 사유를 명시한다.
-            $result = $this->pluginManager->deactivatePlugin($identifier, $force, DeactivationReason::Manual->value);
+            $result = $this->pluginManager->deactivatePlugin($identifier, $force);
 
             // 경고 응답인 경우 (의존 확장 존재)
             if (isset($result['warning']) && $result['warning'] === true) {
@@ -104,7 +97,7 @@ class DeactivatePluginCommand extends Command
 
             if ($result['success']) {
                 $this->info('✅ '.__('plugins.commands.deactivate.success', ['plugin' => $identifier]));
-                $this->info('   - '.trans_choice('plugins.commands.deactivate.layouts_deleted', (int) ($result['layouts_deleted'] ?? 0)));
+                $this->info('   - '.__('plugins.commands.deactivate.layouts_deleted', ['count' => $result['layouts_deleted']]));
                 $this->warn('⚠️  '.__('plugins.commands.deactivate.warning'));
                 Log::info(__('plugins.commands.deactivate.success', ['plugin' => $identifier]));
 

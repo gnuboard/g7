@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Services;
 
-use App\Extension\HookManager;
 use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -107,52 +106,11 @@ class SettingsServiceAppConfigTest extends TestCase
     }
 
     /**
-     * getAppConfigForFrontend()가 core.frontend.filter_app_config 훅으로 확장이 주입한 값을
-     * appConfig 에 반영하는지 테스트합니다. (예: 이커머스 모듈이 요청 기기 유형 isIos 를 주입)
-     *
-     * 체크아웃 브랜드 마크 시나리오의 iOS 게이팅 체인 중 "모듈이 감지한 기기 정보가 코어
-     * appConfig 를 거쳐 프론트로 전달되는" 구간을 이 테스트가 떠받친다.
-     *
-     * @scenario requires_ios=true, device=ios
-     *
-     * @effects is_ios_flows_to_global_appconfig
+     * config/frontend.php가 없는 경우 빈 배열을 반환하는지 테스트합니다.
      */
-    public function test_get_app_config_applies_frontend_filter_hook(): void
+    public function test_get_app_config_returns_empty_when_no_config(): void
     {
-        // 우선순위 100 — 이커머스 모듈이 등록한 InjectAppConfigDeviceListener(priority 20)보다
-        // 뒤에 실행되어, 전체 스위트에서 그 리스너가 함께 등록돼 있어도 이 테스트의 주입값이
-        // 최종적으로 반영됨을 검증한다(훅 적용 메커니즘 자체 검증, 스위트 순서 비의존).
-        HookManager::addFilter(
-            'core.frontend.filter_app_config',
-            function (array $appConfig): array {
-                $appConfig['isIos'] = true;
-                $appConfig['__testHookMarker'] = 'applied';
-
-                return $appConfig;
-            },
-            100
-        );
-
-        $service = app(SettingsService::class);
-
-        $result = $service->getAppConfigForFrontend();
-
-        $this->assertTrue($result['isIos']);
-        // 훅이 실제로 적용됐음을 별도 마커로도 확인(다른 리스너 간섭과 무관).
-        $this->assertSame('applied', $result['__testHookMarker'] ?? null);
-        // 기존 정적 값은 그대로 유지된다.
-        $this->assertArrayHasKey('supportedLocales', $result);
-    }
-
-    /**
-     * config/frontend.php의 app_config 스키마가 비면 config 파생 키가 없는지 테스트합니다.
-     *
-     * 참고: core.frontend.filter_app_config 훅으로 확장(예: 이커머스 isIos)이 값을 주입할 수
-     * 있으므로 결과가 완전히 비어 있음을 단정하지 않고, config 스키마 파생 키의 부재만 확인한다.
-     */
-    public function test_get_app_config_has_no_config_derived_keys_when_schema_empty(): void
-    {
-        // config 스키마를 비움
+        // config를 비움
         config(['frontend.app_config' => []]);
 
         $service = app(SettingsService::class);
@@ -160,10 +118,7 @@ class SettingsServiceAppConfigTest extends TestCase
         $result = $service->getAppConfigForFrontend();
 
         $this->assertIsArray($result);
-        // 스키마 파생 키(config_key 기반)는 없어야 한다.
-        $this->assertArrayNotHasKey('supportedTimezones', $result);
-        $this->assertArrayNotHasKey('supportedLocales', $result);
-        $this->assertArrayNotHasKey('version', $result);
+        $this->assertEmpty($result);
     }
 
     /**

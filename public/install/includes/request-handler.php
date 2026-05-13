@@ -1,34 +1,23 @@
 <?php
 
-use App\Support\PrivilegedDatabaseAccounts;
-
 /**
  * 그누보드7 웹 인스톨러 요청 처리 핸들러
  *
  * 모든 POST 요청 및 비즈니스 로직을 처리합니다.
+ *
+ * @package G7\Installer
  */
-
-require_once __DIR__.'/installer-ownership.php';
 
 /**
  * 설치 흐름 검증 및 리다이렉트
  *
- * @param  int  $currentStep  현재 단계
- * @param  array  $state  설치 상태
+ * @param int $currentStep 현재 단계
+ * @param array $state 설치 상태
  */
 function validateInstallationFlow(int $currentStep, array $state): void
 {
     // 설치 완료 시 홈으로 리다이렉트
     if (isInstallationCompleted()) {
-        // 세션에 남은 설치 config (DB/관리자 비밀번호 포함) 를 정리한다 (이슈 #465).
-        // 설치가 끝나면 세션 config 는 소비처가 없으므로 세션 파일에 평문이 잔존할 이유가
-        // 없다. 완료 후 인스톨러에 재접근하는 모든 경로가 이 지점을 통과한다.
-        unset(
-            $_SESSION['install_config'],
-            $_SESSION['db_write_tested'],
-            $_SESSION['db_read_tested']
-        );
-
         $translations = loadTranslations(getCurrentLanguage());
         showInstallationCompletedAlert();
     }
@@ -53,14 +42,14 @@ function validateInstallationFlow(int $currentStep, array $state): void
 /**
  * 잘못된 단계 접근 시 알림 표시
  *
- * @param  int  $correctStep  올바른 단계 번호
+ * @param int $correctStep 올바른 단계 번호
  */
 function showInvalidStepAccessAlert(int $correctStep): void
 {
     global $translations;
 
     // 번역이 로드되지 않은 경우 로드
-    if (! isset($translations)) {
+    if (!isset($translations)) {
         $translations = loadTranslations(getCurrentLanguage());
     }
 
@@ -70,7 +59,7 @@ function showInvalidStepAccessAlert(int $correctStep): void
     showAlertAndRedirect(
         lang('error_invalid_step_access'),
         lang('error_invalid_step_access_message'),
-        INSTALLER_BASE_URL.'/'
+        INSTALLER_BASE_URL . '/'
     );
 }
 
@@ -84,7 +73,7 @@ function handleStep0Post(): void
     }
 
     // 다음 버튼 클릭 시 (언어 선택 변경이 아닌 경우)
-    if (! isset($_POST['language_change_only'])) {
+    if (!isset($_POST['language_change_only'])) {
         unset($_SESSION['license_agreed']);
         updateStepStatus(0, 1);
         redirectToStep(1);
@@ -96,16 +85,14 @@ function handleStep0Post(): void
 /**
  * Step 1 POST 처리 (라이선스 동의)
  *
- * @param  string  $currentLang  현재 언어
- * @param  string|null  &$error  에러 메시지 (참조)
+ * @param string $currentLang 현재 언어
+ * @param string|null &$error 에러 메시지 (참조)
  */
 function handleStep1Post(string $currentLang, ?string &$error = null): void
 {
-    // lang() 은 전역 번역 테이블을 읽는다 — 지역 변수에 담으면 화면 오류가 번역 키 원문으로 나간다.
-    global $translations;
     $translations = loadTranslations($currentLang);
 
-    if (! isset($_POST['agree']) || $_POST['agree'] !== '1') {
+    if (!isset($_POST['agree']) || $_POST['agree'] !== '1') {
         $error = lang('must_agree');
     } else {
         $_SESSION['license_agreed'] = true;
@@ -126,52 +113,17 @@ function handleStep2Post(): void
 }
 
 /**
- * DB 사용자명을 검증해 에러 배열에 결과를 기록합니다.
- *
- * 빈 값(설정 누락)과 DB 최고권한 계정을 모두 거부합니다. 최고권한 계정 자격증명이
- * 유출되면 데이터베이스 전체가 위험해지므로 설치 단계에서 차단합니다.
- * 판정은 App\Support\PrivilegedDatabaseAccounts 가 SSoT 입니다.
- *
- * @param  string  $username  입력된 DB 사용자명
- * @param  string  $field  에러 배열에 사용할 필드명 (db_write_username 등)
- * @param  array  &$errors  에러 배열 (참조)
- */
-function validateDbUsername(string $username, string $field, array &$errors): void
-{
-    $username = trim($username);
-
-    if ($username === '') {
-        $errors[$field] = lang('error_db_username_required');
-
-        return;
-    }
-
-    if (PrivilegedDatabaseAccounts::isBlocked($username)) {
-        $errors[$field] = lang('error_db_username_privileged', ['username' => $username]);
-    }
-}
-
-/**
  * Step 3 POST 처리 (데이터베이스 및 사이트 설정)
  *
- * @param  string  $currentLang  현재 언어
- * @param  array  &$formData  폼 데이터 (참조)
- * @param  array  &$errors  에러 배열 (참조)
+ * @param string $currentLang 현재 언어
+ * @param array &$formData 폼 데이터 (참조)
+ * @param array &$errors 에러 배열 (참조)
  */
 function handleStep3Post(string $currentLang, array &$formData, array &$errors): void
 {
-    // lang() 은 전역 번역 테이블을 읽는다 — 지역 변수에 담으면 화면 오류가 번역 키 원문으로 나간다.
-    global $translations;
     $translations = loadTranslations($currentLang);
 
-    // Step 3 저장은 소유권을 최초로 주장하고 state.config 를 바꾸는 상태변경이다.
-    // 조기 반환하지 않는다 — 필드 오류도 함께 보여주고, 저장은 오류가 하나도 없을 때만 일어난다.
-    if (! installer_csrf_is_valid(installer_request_csrf_token())) {
-        $errors['csrf'] = lang('error_csrf_invalid');
-    }
-
     $formData = array_merge($formData, $_POST);
-    unset($formData['csrf_token']);
     $formData['use_read_db'] = isset($_POST['use_read_db']) ? true : false;
 
     // Write DB 검증
@@ -181,24 +133,22 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     if (empty($formData['db_write_database'])) {
         $errors['db_write_database'] = lang('error_db_name_required');
     }
-    validateDbUsername($formData['db_write_username'] ?? '', 'db_write_username', $errors);
 
     // Read DB 검증 (사용하는 경우)
-    if (! empty($formData['use_read_db'])) {
+    if (!empty($formData['use_read_db'])) {
         if (empty($formData['db_read_host'])) {
             $errors['db_read_host'] = lang('error_db_host_required');
         }
         if (empty($formData['db_read_database'])) {
             $errors['db_read_database'] = lang('error_db_name_required');
         }
-        validateDbUsername($formData['db_read_username'] ?? '', 'db_read_username', $errors);
     }
 
     // 관리자 정보 검증
-    if (empty($formData['admin_email']) || ! filter_var($formData['admin_email'], FILTER_VALIDATE_EMAIL)) {
+    if (empty($formData['admin_email']) || !filter_var($formData['admin_email'], FILTER_VALIDATE_EMAIL)) {
         $errors['admin_email'] = lang('error_admin_email_invalid');
     }
-    if (! array_key_exists($formData['admin_language'] ?? '', SUPPORTED_LANGUAGES)) {
+    if (!array_key_exists($formData['admin_language'] ?? '', SUPPORTED_LANGUAGES)) {
         $errors['admin_language'] = lang('error_admin_language_invalid');
     }
     if (empty($formData['admin_password']) || strlen($formData['admin_password']) < 8) {
@@ -208,30 +158,10 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         $errors['admin_password_confirm'] = lang('error_password_mismatch');
     }
 
-    // PHP CLI / Composer 경로 처리 — 저장 시점에 허용 형태를 강제한다.
-    // 이 값들은 설치 워커에서 실제 명령의 실행 바이너리가 되므로, 형태 위반 값이
-    // 애초에 .env / 설치 상태에 기록되지 않게 여기서 막는다.
-    require_once __DIR__.'/binary-path-policy.php';
-
+    // PHP CLI / Composer 경로 처리
     $phpBinary = trim($formData['php_binary'] ?? 'php');
-    $phpBinary = $phpBinary !== '' ? $phpBinary : 'php';
-    if ($phpBinary !== 'php' && ! installer_binary_path_shape_ok($phpBinary)) {
-        $errors['php_binary'] = lang('error_php_binary_path_not_allowed', ['path' => $phpBinary]);
-    }
-    $formData['php_binary'] = $phpBinary;
-
-    $composerBinary = trim($formData['composer_binary'] ?? '');
-    if ($composerBinary !== '' && $composerBinary !== 'composer') {
-        // 단일 토큰이면 Composer 자리 규칙, 공백 분리 입력이면 (PHP, Composer) 쌍 해석.
-        $allowed = str_contains($composerBinary, ' ')
-            ? installer_resolve_php_composer_pair($composerBinary) !== null
-            : installer_is_composer_binary_path($composerBinary);
-
-        if (! $allowed) {
-            $errors['composer_binary'] = lang('error_composer_binary_path_not_allowed', ['path' => $composerBinary]);
-        }
-    }
-    $formData['composer_binary'] = $composerBinary;
+    $formData['php_binary'] = $phpBinary !== '' ? $phpBinary : 'php';
+    $formData['composer_binary'] = trim($formData['composer_binary'] ?? '');
 
     // Vendor 설치 모드 처리 (auto|composer|bundled)
     $vendorMode = trim($formData['vendor_mode'] ?? 'auto');
@@ -240,117 +170,40 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     }
     $formData['vendor_mode'] = $vendorMode;
 
-    // 자산 URL 방식 (이슈 #486) — Step 3 의 브라우저 프로브가 채운 hidden 필드.
-    // 정적 최적화 블록이 있는 서버는 확장자 붙은 동적 응답이 PHP 에 도달하지 못하므로
-    // 설치 시점에 확장자 없는 형태로 확정해야 첫 화면부터 정상 동작한다.
-    // 판정 불가(프로브 실패·JS 미실행)면 키를 비워 defaults.json 기본값을 따르게 한다.
-    $assetUrlMode = trim($formData['asset_url_mode'] ?? '');
-    $formData['asset_url_mode'] = in_array($assetUrlMode, ['extension', 'extensionless'], true)
-        ? $assetUrlMode
-        : '';
-
-    // .env 로 기록되는 사용자 입력의 사전 거부 (KVE-2026-2042)
-    // 직렬화기가 최종 관문이지만, 그 단계의 실패는 설치 진행 중에 예외로 드러나 운영자가
-    // 어느 입력이 문제인지 알기 어렵다. 여기서 필드별로 거부해 화면에 사유를 표시한다.
-    require_once __DIR__.'/env-value.php';
-
-    foreach (['app_name', 'app_url', 'core_update_github_url'] as $envField) {
-        if (! installer_env_value_is_single_line((string) ($formData[$envField] ?? ''))) {
-            $errors[$envField] = lang('error_env_value_line_break');
-        }
-    }
-
-    // URL 필드는 형태까지 확인한다 — 개행이 없어도 스킴이 없는 값이 그대로 기록되면
-    // 배포 후 절대 URL 생성이 어긋난다.
-    foreach (['app_url', 'core_update_github_url'] as $urlField) {
-        $urlValue = trim((string) ($formData[$urlField] ?? ''));
-        if ($urlValue === '' || isset($errors[$urlField])) {
-            continue;
-        }
-
-        // FILTER_VALIDATE_URL 은 호스트명의 밑줄(예: g7_3.dev)을 거부하므로 쓰지 않는다 —
-        // 로컬 개발 도메인에 흔한 형태라 스킴·호스트 존재와 공백 부재만 확인한다.
-        $parts = parse_url($urlValue);
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        $host = (string) ($parts['host'] ?? '');
-        if (! in_array($scheme, ['http', 'https'], true) || $host === '' || preg_match('/\s/', $urlValue)) {
-            $errors[$urlField] = lang('error_env_value_invalid_url', ['value' => $urlValue]);
-        }
-    }
-
     // 코어 업데이트 _pending 경로 검증 (입력된 경우만)
     $corePendingPath = trim($formData['core_update_pending_path'] ?? '');
     if ($corePendingPath !== '') {
         // 절대 경로 변환
         $absolutePath = str_starts_with($corePendingPath, '/')
             ? $corePendingPath
-            : BASE_PATH.'/'.$corePendingPath;
+            : BASE_PATH . '/' . $corePendingPath;
 
-        if (file_exists($absolutePath) && ! is_dir($absolutePath)) {
+        if (file_exists($absolutePath) && !is_dir($absolutePath)) {
             $errors['core_update_pending_path'] = lang('error_core_pending_not_directory');
         }
     }
 
-    // DB 테스트 완료 확인 — 통과 기록(`=== true`)과 함께, 이 세션이 검사한 연결설정과
-    // 지금 제출한 연결설정이 같은지 지문으로 대조한다. 실패 기록·미검사·검사 후 설정 변경은 모두 거부.
-    if (empty($errors)) {
-        $connections = installer_step3_db_connections($formData);
-        $testStatus = installer_db_test_status('write', $connections['write']);
+    // DB 테스트 완료 확인
+    if (empty($errors) && !isset($_SESSION['db_write_tested'])) {
+        $errors['db_test'] = lang('error_db_not_tested');
+    }
 
-        if ($testStatus === 'ok' && $connections['read'] !== null) {
-            $testStatus = installer_db_test_status('read', $connections['read']);
-        }
-
-        if ($testStatus !== 'ok') {
-            $errors['db_test'] = lang($testStatus === 'changed' ? 'error_db_config_changed' : 'error_db_not_tested');
-        }
+    if (empty($errors) && !empty($formData['use_read_db']) && !isset($_SESSION['db_read_tested'])) {
+        $errors['db_test'] = lang('error_db_not_tested');
     }
 
     // 검증 통과 시 다음 단계로 이동
     if (empty($errors)) {
-        $state = getInstallationState();
-        $generation = (int) ($state['generation'] ?? 0);
-        $isFirstClaim = ! installer_state_is_claimed($state);
+        $_SESSION['install_config'] = $formData;
 
-        // 이미 다른 세션이 소유한 설치면 덮어쓰지 않는다 (index.php 가 비소유 세션을 잠그는 것의 이중 방어).
-        if (! $isFirstClaim && ! installer_session_is_owner($state)) {
-            $errors['ownership'] = lang('error_ownership_conflict');
+        // state.json에는 비밀번호를 저장하지 않음 (보안)
+        $safeFormData = $formData;
+        unset($safeFormData['db_write_password'], $safeFormData['db_read_password']);
 
-            return;
-        }
-
-        // state.json 에는 비밀(DB/관리자 비밀번호) 을 저장하지 않는다 (이슈 #465).
-        // read 필드 정리(이슈 #63 2단계 방어) 도 sanitizeConfigForState 가 함께 수행.
-        $state['config'] = sanitizeConfigForState($formData);
-        $state['installation_status'] = 'ready';
-        $state['current_step'] = 4;
-        $state['step_status'][3] = 'completed';
-        // 기존 테이블 삭제 확인은 이 세션의 DB 테스트가 발급한 것만 설치 계획에 싣는다.
-        $state['drop_confirm'] = is_array($_SESSION['drop_confirm'] ?? null) ? $_SESSION['drop_confirm'] : null;
-
-        if ($isFirstClaim) {
-            // 소유자가 없던 설치에 남은 runtime.php 는 이전 시도(다른 세션)의 비밀이다 —
-            // 새 소유자의 설치에 섞이지 않도록 폐기한다 (자격증명 혼합 차단).
-            require_once __DIR__.'/installer-runtime.php';
-            deleteInstallerRuntime();
-            $state = installer_claim_owner($state);
-        }
-
-        if (! saveInstallationStateCas($state, $generation)) {
-            $errors['state'] = lang('error_state_conflict');
-
-            return;
-        }
-
-        if ($isFirstClaim) {
-            addLog(lang('log_ownership_claimed'));
-        }
-
-        // 세션에는 비밀번호를 유지한다 (install-process.php 가 runtime.php 로 이송).
-        // 단 admin_password_confirm 은 검증 이후 소비처가 전무한 순수 잔여물이므로 제거.
-        $sessionConfig = $formData;
-        unset($sessionConfig['admin_password_confirm']);
-        $_SESSION['install_config'] = $sessionConfig;
+        updateStepStatus(3, 4, [
+            'config' => $safeFormData,
+            'installation_status' => 'ready'
+        ]);
 
         redirectToStep(4);
     }
@@ -359,21 +212,21 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
 /**
  * POST 요청 라우팅
  *
- * @param  int  $currentStep  현재 단계
- * @param  string  $currentLang  현재 언어
- * @param  array  &$formData  폼 데이터 (참조)
- * @param  array  &$errors  에러 배열 (참조)
- * @param  string|null  &$error  에러 메시지 (참조)
+ * @param int $currentStep 현재 단계
+ * @param string $currentLang 현재 언어
+ * @param array &$formData 폼 데이터 (참조)
+ * @param array &$errors 에러 배열 (참조)
+ * @param string|null &$error 에러 메시지 (참조)
  */
 function handlePostRequest(int $currentStep, string $currentLang, array &$formData = [], array &$errors = [], ?string &$error = null): void
 {
     // 단계 이동 처리 (go_to_step POST 파라미터)
     if (isset($_POST['go_to_step'])) {
-        $step = (int) $_POST['go_to_step'];
+        $step = (int)$_POST['go_to_step'];
         if ($step >= 0 && $step <= 5) {
             $_SESSION['installer_current_step'] = $step;
         }
-        header('Location: '.INSTALLER_BASE_URL.'/');
+        header('Location: ' . INSTALLER_BASE_URL . '/');
         exit;
     }
 
@@ -385,7 +238,7 @@ function handlePostRequest(int $currentStep, string $currentLang, array &$formDa
     }
 
     // Step별 POST 처리
-    match ($currentStep) {
+    match($currentStep) {
         0 => handleStep0Post(),
         1 => handleStep1Post($currentLang, $error),
         2 => handleStep2Post(),

@@ -5,32 +5,17 @@
         "ko": "페이지",
         "en": "Page"
     },
-    "version": "1.2.0",
+    "version": "1.0.0-beta.3",
     "license": "MIT",
     "description": {
         "ko": "정적 페이지(정보/정책/안내) 관리 모듈",
         "en": "Static page (info/policy/guide) management module"
     },
-    "g7_version": ">=7.1.0",
+    "g7_version": ">=7.0.0-beta.2",
     "dependencies": {
         "modules": {},
         "plugins": {}
     },
     "github_url": "https://github.com/gnuboard/g7-module-sirsoft-page",
-    "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-page/blob/main/CHANGELOG.md",
-    "assets": {
-        "js": {
-            "entry": "resources/js/index.ts",
-            "output": "dist/js/module.iife.js"
-        },
-        "css": {
-            "entry": "resources/css/main.css",
-            "output": "dist/css/module.css"
-        },
-        "handlers": true
-    },
-    "loading": {
-        "strategy": "global",
-        "priority": 100
-    }
+    "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-page/blob/main/CHANGELOG.md"
 }

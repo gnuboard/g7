@@ -4,18 +4,12 @@ namespace App\Seo;
 
 use App\Seo\Concerns\LocalizesSeoValues;
 use App\Seo\Concerns\SubstitutesSeoVariables;
-use App\Services\SettingsService;
 
 class SeoMetaResolver
 {
     use LocalizesSeoValues;
     use SubstitutesSeoVariables;
 
-    /**
-     * SEO 메타 해석기를 생성합니다.
-     *
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     */
     public function __construct(
         private readonly ExpressionEvaluator $evaluator,
     ) {}
@@ -28,10 +22,9 @@ class SeoMetaResolver
      * @param  string|null  $moduleIdentifier  모듈 식별자 (이커머스/게시판 등)
      * @param  string|null  $pluginIdentifier  플러그인 식별자
      * @param  array  $routeParams  라우트 파라미터
-     * @param  mixed  $routeTitle  라우트 meta.title(`$t:` 키, 표현식, 다국어 배열) — 다른 제목 단계가 모두 빌 때 쓰는 마지막 대체
      * @return array 해석된 메타 데이터
      */
-    public function resolve(array $seoConfig, array $context, ?string $moduleIdentifier, ?string $pluginIdentifier, array $routeParams, mixed $routeTitle = null): array
+    public function resolve(array $seoConfig, array $context, ?string $moduleIdentifier, ?string $pluginIdentifier, array $routeParams): array
     {
         // Tier 1: 코어 설정 (null 저장값 대비 빈 문자열 보장)
         $coreTitleSuffix = g7_core_settings('seo.meta_title_suffix') ?? '';
@@ -43,18 +36,9 @@ class SeoMetaResolver
         $description = $this->resolveDescription($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams);
         $keywords = $this->resolveKeywords($context, $moduleIdentifier);
 
-        // 사이트 이름만 되풀이하는 제목(게시판 목록 기본 틀 `{site_name}` 등)은 화면 정보가 없고
-        // 접미사가 사이트 이름을 이미 붙이므로 「사이트 이름 | 사이트 이름」 이 된다 — 다음 단계로 넘긴다
-        if ($title !== '' && $this->isSiteNameOnlyTitle($title, $coreTitleSuffix)) {
-            $title = '';
-        }
-
-        // fallback: 레이아웃 meta → 라우트 meta.title → 코어 설정
+        // fallback: 레이아웃 meta → 코어 설정
         if ($title === '') {
             $title = $this->resolveLayoutMetaTitle($seoConfig, $context);
-        }
-        if ($title === '' && $routeTitle !== null && $routeTitle !== '' && $routeTitle !== []) {
-            $title = $this->stripHtml($this->safeEval($routeTitle, $context));
         }
         if ($description === '') {
             $description = $this->resolveLayoutMetaDescription($seoConfig, $context);
@@ -269,7 +253,6 @@ class SeoMetaResolver
                 return $this->resolveLocalizedValue($value);
             }
         }
-
         return '';
 
     }
@@ -446,61 +429,6 @@ class SeoMetaResolver
     }
 
     /**
-     * `<title>` 조립용 접미사를 정규화합니다.
-     *
-     * 관리자 저장 경로의 TrimStrings 미들웨어가 접미사의 선행 공백을 제거하므로
-     * ("` | 그누보드7`" 을 입력해도 "`| 그누보드7`" 로 저장된다), blade 의
-     * `{{ $title }}{{ $titleSuffix }}` 단순 연결에서 제목과 구분자가 붙어 버린다.
-     * 이 메서드가 조립 규칙의 SSoT 다:
-     *
-     * - 제목이 있고 접미사가 공백으로 시작하지 않으면 공백 하나를 복원해 잇는다.
-     * - 제목이 비어 있으면 매달린 선행 구분자(`|`,`-`,`·`,`:`,`/`,`–`,`—`)를 떼어
-     *   사이트명 부분만 남긴다 (홈처럼 페이지 제목이 없는 화면의 "`| 사이트명`" 방지).
-     *
-     * @param  string  $title  최종 페이지 제목 (filter 훅 적용 후)
-     * @param  string  $suffix  코어 설정의 타이틀 접미사
-     * @return string 조립에 사용할 접미사 (제목이 없으면 접미사가 곧 전체 제목)
-     */
-    public static function composeTitleSuffix(string $title, string $suffix): string
-    {
-        if (trim($suffix) === '') {
-            return '';
-        }
-
-        if ($title === '') {
-            $stripped = (string) preg_replace('/^[\s|·:\/\x{2013}\x{2014}-]+/u', '', $suffix);
-
-            return trim($stripped);
-        }
-
-        return preg_match('/^\s/u', $suffix) === 1 ? $suffix : ' '.$suffix;
-    }
-
-    /**
-     * 제목이 사이트 이름만 되풀이하는지 판정합니다.
-     *
-     * 코어 사이트 이름(`general.site_name`)이나 제목 접미사에서 구분자를 뗀 이름과 같으면
-     * 화면 정보가 없는 제목이다. 이런 제목에 접미사를 붙이면 사이트 이름이 두 번 나간다.
-     *
-     * @param  string  $title  해석된 제목
-     * @param  string  $suffix  코어 설정의 제목 접미사
-     * @return bool 사이트 이름만 되풀이하면 true
-     */
-    private function isSiteNameOnlyTitle(string $title, string $suffix): bool
-    {
-        $normalized = trim($title);
-        if ($normalized === '') {
-            return false;
-        }
-
-        $siteName = trim($this->resolveLocalizedValue(g7_core_settings('general.site_name', '')));
-        $suffixName = self::composeTitleSuffix('', $suffix);
-
-        return ($siteName !== '' && $normalized === $siteName)
-            || ($suffixName !== '' && $normalized === $suffixName);
-    }
-
-    /**
      * 레이아웃 meta의 title을 해석합니다 (fallback용).
      *
      * @param  array  $seoConfig  SEO 설정
@@ -555,19 +483,6 @@ class SeoMetaResolver
         $title = $this->stripHtml($this->safeEval($og['title'] ?? '', $context)) ?: $fallbackTitle;
         $description = $this->stripHtml($this->safeEval($og['description'] ?? '', $context)) ?: $fallbackDescription;
         $image = $this->absoluteUrl($this->safeEval($og['image'] ?? '', $context));
-
-        // 사이트 기본 OG 이미지 폴백 (공개 이슈 #22) — 도메인 콘텐츠 폴백(본문 캐시)은
-        // 각 모듈 레이아웃/훅 바인딩이 공급하므로 코어는 사이트 기본값 한 단만 담당한다.
-        // 체인: 레이아웃 선언(도메인 캐시 포함) → 사이트 기본 이미지 → 빈 값(태그 미출력).
-        // secure_url 파생은 반드시 이 폴백 적용 후의 $image 기준이어야 한다.
-        if ($image === '') {
-            $defaultImage = app(SettingsService::class)->getOgDefaultImageUrl();
-
-            if (is_string($defaultImage) && $defaultImage !== '') {
-                $image = $this->absoluteUrl($defaultImage);
-            }
-        }
-
         $secureUrl = isset($og['image_secure_url'])
             ? $this->absoluteUrl($this->safeEval($og['image_secure_url'], $context))
             : ($image !== '' && str_starts_with($image, 'https://') ? $image : '');
@@ -776,15 +691,7 @@ class SeoMetaResolver
 
         $resolved = array_merge(['@context' => 'https://schema.org'], $structuredData);
 
-        // JSON-LD 는 `<script type="application/ld+json">` 안에 임베드된다. 사용자 제어 값
-        // (검색어·상품명 등)에 포함된 `</script>` 가 스크립트 컨텍스트를 조기 종료하면 그
-        // 뒤의 페이로드가 실행 가능한 script 요소로 재생성된다(반사형 XSS — 봇 UA 는 누구나
-        // 위장할 수 있다). JSON_HEX_TAG 로 `<`·`>` 를 <·>
-        // 로 이스케이프해 브레이크아웃을 차단한다. JSON_HEX_AMP 는 방어 심화.
-        return json_encode(
-            $resolved,
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_HEX_AMP,
-        );
+        return json_encode($resolved, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
     }
 
     /**
@@ -796,10 +703,6 @@ class SeoMetaResolver
      *
      * 'Array to string conversion' / TypeError 회귀 방지 — resolveOgData/resolveTwitterData 에서
      * 모든 표현식 평가 지점은 본 헬퍼를 거쳐야 함.
-     *
-     * @param  mixed  $expr  평가할 표현식 또는 값
-     * @param  array  $context  평가 컨텍스트
-     * @return string 평가 결과 문자열
      */
     private function safeEval(mixed $expr, array $context): string
     {
@@ -811,10 +714,7 @@ class SeoMetaResolver
     }
 
     /**
-     * 상대 경로 URL 을 사이트 주소 기준 절대 URL 로 변환 (요청 Host 비의존 — SeoUrl 참고).
-     *
-     * @param  string  $url  URL 또는 상대 경로
-     * @return string 절대 URL (빈 값이면 빈 문자열)
+     * 상대 경로 URL 을 절대 URL 로 변환.
      */
     private function absoluteUrl(string $url): string
     {
@@ -822,7 +722,7 @@ class SeoMetaResolver
             return '';
         }
 
-        return str_starts_with($url, 'http') ? $url : SeoUrl::absolute($url);
+        return str_starts_with($url, 'http') ? $url : url($url);
     }
 
     /**
@@ -890,9 +790,9 @@ class SeoMetaResolver
      * 구조화 데이터 하위 객체가 실질적으로 비어있는지 확인합니다.
      *
      * @type 키가 있는 객체에서, @type 외 필드 중 하나라도 빈 문자열이면
-     *              해당 객체를 JSON-LD에서 제거합니다.
-     *              예: aggregateRating의 ratingValue=""이면, bestRating="5"가 있더라도 제거됩니다.
-     *              Google 구조화 데이터 검증에서 필수 필드가 빈 값이면 에러로 처리되기 때문입니다.
+     * 해당 객체를 JSON-LD에서 제거합니다.
+     * 예: aggregateRating의 ratingValue=""이면, bestRating="5"가 있더라도 제거됩니다.
+     * Google 구조화 데이터 검증에서 필수 필드가 빈 값이면 에러로 처리되기 때문입니다.
      *
      * @param  array  $resolved  평가된 구조화 데이터 객체
      * @return bool 비어있으면 true

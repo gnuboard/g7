@@ -2,10 +2,8 @@
 
 namespace App\Console\Commands\Module;
 
-use App\Console\Commands\Concerns\PrunesBuildOutput;
 use App\Extension\ModuleManager;
 use App\Extension\Traits\ClearsTemplateCaches;
-use App\Extension\Traits\GeneratesComponentManifest;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
@@ -13,8 +11,6 @@ use Symfony\Component\Process\Process;
 class BuildModuleCommand extends Command
 {
     use ClearsTemplateCaches;
-    use GeneratesComponentManifest;
-    use PrunesBuildOutput;
 
     /**
      * The name and signature of the console command.
@@ -191,35 +187,14 @@ class BuildModuleCommand extends Command
             $this->info("🔨 빌드 시작: {$identifier}".($productionMode ? ' (프로덕션)' : ''));
         }
 
-        // 이전 산출물 정리 (동봉 vendor 는 보존 — vite emptyOutDir 대체)
-        if (! $watchMode) {
-            $removed = $this->pruneBuildOutput($buildPath);
-
-            if ($removed !== []) {
-                $this->line('   🧹 이전 산출물 정리: '.implode(', ', $removed));
-            }
-        }
-        // 빌드 실행 (감시 모드에는 소스맵 억제를 주입하지 않는다 — 개발 중 디버깅 필요)
-        $result = $this->runNpmCommand(
-            $buildCommand,
-            $buildPath,
-            ! $watchMode,
-            $watchMode ? [] : $this->buildEnv($productionMode)
-        );
+        // 빌드 실행
+        $result = $this->runNpmCommand($buildCommand, $buildPath, ! $watchMode);
 
         if ($result === Command::SUCCESS && ! $watchMode) {
             $this->info("✅ 빌드 완료: {$identifier}");
 
             // 빌드 결과 파일 확인
             $this->displayBuildResults($buildPath, $identifier);
-
-            // 편집기 컴포넌트 매니페스트(components.json) 생성
-            $manifestResult = $this->generateComponentManifest($buildPath, $identifier);
-            if ($manifestResult['written']) {
-                $this->line("   - components.json 생성됨 (컴포넌트 {$manifestResult['count']}개)");
-            } else {
-                $this->warn('   - components.json 생성 실패 (편집 모드 컨트롤 노출 제한)');
-            }
 
             // 캐시 버전 증가 (브라우저 캐시 무효화)
             $this->incrementExtensionCacheVersion();
@@ -354,29 +329,14 @@ class BuildModuleCommand extends Command
     }
 
     /**
-     * 빌드 프로세스에 주입할 환경변수를 구성합니다.
-     *
-     * 프로덕션 빌드에서는 소스맵을 생성하지 않습니다. 배포 산출물에 원본 코드가
-     * 포함되는 것을 막기 위함이며, 각 vite config 가 이 값을 읽습니다.
-     *
-     * @param  bool  $productionMode  프로덕션 빌드 여부
-     * @return array<string, string> Process 에 주입할 환경변수
-     */
-    private function buildEnv(bool $productionMode): array
-    {
-        return $productionMode ? ['G7_BUILD_SOURCEMAP' => '0'] : [];
-    }
-
-    /**
      * npm 명령 실행
      *
      * @param  array  $command  실행할 명령
      * @param  string  $cwd  작업 디렉토리
      * @param  bool  $waitForCompletion  완료 대기 여부
-     * @param  array<string, string>  $env  추가로 주입할 환경변수 (부모 환경에 병합됨)
      * @return int 명령 실행 결과 코드
      */
-    private function runNpmCommand(array $command, string $cwd, bool $waitForCompletion = true, array $env = []): int
+    private function runNpmCommand(array $command, string $cwd, bool $waitForCompletion = true): int
     {
         // Windows 환경에서는 cmd /c 사용
         if (PHP_OS_FAMILY === 'Windows') {
@@ -385,11 +345,6 @@ class BuildModuleCommand extends Command
 
         $process = new Process($command);
         $process->setWorkingDirectory($cwd);
-
-        // Symfony Process 는 지정한 env 를 부모 환경에 병합하므로(PATH 등 유지) 추가분만 넘긴다.
-        if ($env !== []) {
-            $process->setEnv($env);
-        }
         $process->setTimeout(null); // 타임아웃 없음
 
         if ($waitForCompletion) {

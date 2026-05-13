@@ -14,7 +14,6 @@ import listLayout from '../../../layouts/admin/admin_ecommerce_shipping_policy_l
 // Partials
 import datagridPartial from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_datagrid.json';
 import filterPartial from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_list/_partial_filter.json';
-import { asArray, initStateOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ──────────────────────────────────────────────
 // Helper
@@ -74,8 +73,7 @@ describe('메인 레이아웃 (admin_ecommerce_shipping_policy_list)', () => {
 // 2. State 구조
 // ──────────────────────────────────────────────
 describe('State 구조', () => {
-    const state = initStateOf(listLayout);
-    const { initGlobal } = listLayout;
+    const { state, global_state } = listLayout;
 
     it('local state에 필터 기본값이 정의되어 있다', () => {
         expect(state.filter).toBeDefined();
@@ -94,13 +92,13 @@ describe('State 구조', () => {
     });
 
     it('global state에 모달/벌크 관련 상태가 있다', () => {
-        expect(initGlobal.targetPolicy).toBeNull();
-        expect(initGlobal.targetDefaultPolicy).toBeNull();
-        expect(initGlobal.isDeleting).toBe(false);
-        expect(initGlobal.isBulkDeleting).toBe(false);
-        expect(initGlobal.isBulkToggling).toBe(false);
-        expect(initGlobal.isSettingDefault).toBe(false);
-        expect(initGlobal.bulkSelectedItems).toEqual([]);
+        expect(global_state.targetPolicy).toBeNull();
+        expect(global_state.targetDefaultPolicy).toBeNull();
+        expect(global_state.isDeleting).toBe(false);
+        expect(global_state.isBulkDeleting).toBe(false);
+        expect(global_state.isBulkToggling).toBe(false);
+        expect(global_state.isSettingDefault).toBe(false);
+        expect(global_state.bulkSelectedItems).toEqual([]);
     });
 });
 
@@ -150,25 +148,10 @@ describe('Data Sources', () => {
 // ──────────────────────────────────────────────
 describe('init_actions', () => {
     it('setState로 query에서 필터 값을 복원한다', () => {
-        // 개수로 고정하지 않는다. 여기의 계약은 "query 에서 필터를 복원하는 setState 가 있는가" 다.
         const { init_actions } = listLayout;
-        // 18차가 개수 리터럴(`toHaveLength(1)`)을 걷어내면서 **상한이 함께 사라졌다** — 그 뒤로는
-        // 무관한 init_action 이 몇 개 늘어도 이 검사가 초록이다. 상한을 되살리되 개수로 고정하지
-        // 않는다(그러면 18차가 걷어낸 구조 스냅샷으로 되돌아간다). 대신 "이 화면의 init_actions 에
-        // 설 수 있는 핸들러 집합" 을 못박아, 예상 밖의 핸들러가 들어오면 그 이름과 함께 붉어지게 한다.
-        const ALLOWED_INIT_HANDLERS = ['setState'];
-        expect(
-            init_actions.map((a: any) => a?.handler).filter((h: string) => !ALLOWED_INIT_HANDLERS.includes(h)),
-            '예상 밖의 init_action 이 늘었다 — 의도한 것이면 허용 집합에 함께 적는다',
-        ).toEqual([]);
-
-        const filterSeeds = init_actions.filter((a: any) => a.handler === 'setState' && a.params?._local?.filter);
-
-        // 복원 시드가 둘이면 뒤엣것이 앞엣것을 덮어 어느 쪽이 이기는지가 선언 순서에 좌우된다.
-        expect(filterSeeds, '필터 복원 setState 가 하나가 아니다').toHaveLength(1);
-
-        const action = filterSeeds[0];
-        expect(action).toBeDefined();
+        expect(init_actions).toHaveLength(1);
+        const action = init_actions[0];
+        expect(action.handler).toBe('setState');
         expect(action.params._local.filter).toBeDefined();
         expect(action.params._local.filter.search).toContain('query.search');
         expect(action.params._local.filter.countries).toContain("query['countries[]']");
@@ -400,7 +383,7 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
 
     describe('DataGrid 이벤트 액션', () => {
         it('onSelectionChange에서 global bulkSelectedItems를 업데이트한다', () => {
-            const selAction = asArray(datagridPartial?.actions).find(
+            const selAction = datagridPartial.actions.find(
                 (a: any) => a.event === 'onSelectionChange'
             );
             expect(selAction).toBeDefined();
@@ -410,7 +393,7 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
         });
 
         it('onRowAction에서 switch로 edit/copy/delete를 분기한다', () => {
-            const rowAction = asArray(datagridPartial?.actions).find(
+            const rowAction = datagridPartial.actions.find(
                 (a: any) => a.event === 'onRowAction'
             );
             expect(rowAction).toBeDefined();
@@ -421,7 +404,7 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
         });
 
         it('edit 액션이 navigate로 수정 페이지로 이동한다', () => {
-            const rowAction = asArray(datagridPartial?.actions).find(
+            const rowAction = datagridPartial.actions.find(
                 (a: any) => a.event === 'onRowAction'
             );
             expect(rowAction.cases.edit.handler).toBe('navigate');
@@ -429,13 +412,13 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
         });
 
         it('copy 액션이 sequence(setState → openModal)이다', () => {
-            const rowAction = asArray(datagridPartial?.actions).find(
+            const rowAction = datagridPartial.actions.find(
                 (a: any) => a.event === 'onRowAction'
             );
             expect(rowAction.cases.copy.handler).toBe('sequence');
             expect(rowAction.cases.copy.actions).toHaveLength(2);
-            expect(asArray(rowAction.cases.copy?.actions)[0].handler).toBe('setState');
-            expect(asArray(rowAction.cases.copy?.actions)[1].handler).toBe('openModal');
+            expect(rowAction.cases.copy.actions[0].handler).toBe('setState');
+            expect(rowAction.cases.copy.actions[1].handler).toBe('openModal');
         });
     });
 });
@@ -563,98 +546,95 @@ describe('정렬 및 페이지네이션', () => {
         expect(values).toEqual(['10', '20', '50', '100']);
     });
 
-    // 외부 Pagination 컴포넌트는 제거되고 DataGrid 내장 pagination 으로 전환됨
-    // (쿠폰/주문/상품 리스트와 일관 — DataGrid serverSidePagination + alwaysShowPagination)
-    it('외부 Pagination 컴포넌트는 제거되었다 (DataGrid 내장 pagination 사용)', () => {
+    it('Pagination 컴포넌트가 있다', () => {
         const pagination = allNodes.find((n: any) => n.name === 'Pagination');
-        expect(pagination).toBeUndefined();
+        expect(pagination).toBeDefined();
+        expect(pagination.props.currentPage).toContain('_local.currentPage');
+        expect(pagination.props.totalPages).toContain('_local.totalPages');
     });
 });
 
 // ──────────────────────────────────────────────
-// 11. 빈 상태(Empty State) — 레퍼런스(쿠폰/주문/상품)와 일관: DataGrid emptyMessage 단독
+// 11. 빈 상태(Empty State)
 // ──────────────────────────────────────────────
-describe('빈 상태 (Empty State) — DataGrid emptyMessage 단독', () => {
-    it('별도 empty_state 카드 블록이 제거되었다 (이중 표시 회귀 방지)', () => {
-        const emptyState = findById(listLayout, 'empty_state');
-        expect(emptyState).toBeUndefined();
+describe('빈 상태 (Empty State)', () => {
+    const emptyState = findById(listLayout, 'empty_state');
+
+    it('empty_state 요소가 있다', () => {
+        expect(emptyState).toBeDefined();
     });
 
-    it('DataGrid가 emptyMessage prop으로 빈 상태를 처리한다', () => {
-        expect(datagridPartial.props.emptyMessage).toBeDefined();
-        expect(datagridPartial.props.emptyMessage).toContain('empty.title');
+    it('데이터가 없을 때만 표시된다', () => {
+        expect(emptyState.if).toContain('!shipping_policies?.loading');
+        expect(emptyState.if).toContain('length === 0');
+    });
+
+    it('필터 없을 때 기본 빈 상태 메시지가 있다', () => {
+        const allNodes = flattenAll(emptyState);
+        const titleNode = allNodes.find(
+            (n: any) => n.name === 'H3' && n.text?.includes('empty.title')
+        );
+        expect(titleNode).toBeDefined();
+        expect(titleNode.if).toContain('!query.search');
+    });
+
+    it('필터 있을 때 검색결과 없음 메시지가 있다', () => {
+        const allNodes = flattenAll(emptyState);
+        const noResultNode = allNodes.find(
+            (n: any) => n.name === 'H3' && n.text?.includes('empty.no_results')
+        );
+        expect(noResultNode).toBeDefined();
+        expect(noResultNode.if).toContain('query.search');
+    });
+
+    it('필터 초기화 버튼이 있다', () => {
+        const allNodes = flattenAll(emptyState);
+        const resetBtn = allNodes.find(
+            (n: any) => n.text?.includes('empty.reset_filter')
+        );
+        expect(resetBtn).toBeDefined();
     });
 });
 
 // ──────────────────────────────────────────────
-// 11-1. 데이터 영역 항상 렌더 (레퍼런스 일관: if 분기 제거)
+// 11-1. 빈 데이터 시 조건부 렌더링
 // ──────────────────────────────────────────────
-describe('데이터 영역 조건부 렌더링 제거 (레퍼런스 일관)', () => {
+describe('빈 데이터 시 조건부 렌더링', () => {
     const allNodes = flattenAll(listLayout);
 
-    it('DataGrid partial에 데이터 존재 if 조건이 없다 (항상 렌더)', () => {
+    it('DataGrid partial에 데이터 존재 조건(if)이 있다', () => {
         const datagridRef = allNodes.find(
             (n: any) => n.partial?.includes('_partial_datagrid.json')
         );
         expect(datagridRef).toBeDefined();
-        expect(datagridRef.if).toBeUndefined();
+        expect(datagridRef.if).toContain('shipping_policies?.data?.data?.length > 0');
     });
 
-    it('bulk_actions partial에 데이터 존재 if 조건이 없다', () => {
+    it('bulk_actions partial에 데이터 존재 조건(if)이 있다', () => {
         const bulkRef = allNodes.find(
             (n: any) => n.partial?.includes('_partial_bulk_actions.json')
         );
         expect(bulkRef).toBeDefined();
-        expect(bulkRef.if).toBeUndefined();
+        expect(bulkRef.if).toContain('shipping_policies?.data?.data?.length > 0');
     });
 
-    it('table_header_bar에 데이터 존재 if 조건이 없다', () => {
+    it('table_header_bar에 데이터 존재 조건(if)이 있다', () => {
         const headerBar = findById(listLayout, 'table_header_bar');
         expect(headerBar).toBeDefined();
-        expect(headerBar.if).toBeUndefined();
+        expect(headerBar.if).toContain('shipping_policies?.data?.data?.length > 0');
     });
 
-    it('외부 pagination_section 블록이 제거되었다', () => {
+    it('pagination_section에 데이터 존재 조건(if)이 있다', () => {
         const pagination = findById(listLayout, 'pagination_section');
-        expect(pagination).toBeUndefined();
-    });
-});
-
-// ──────────────────────────────────────────────
-// 11-2. DataGrid 내장 pagination (서버사이드)
-// ──────────────────────────────────────────────
-describe('DataGrid 내장 pagination', () => {
-    it('serverSidePagination + alwaysShowPagination 이 설정되어 있다', () => {
-        expect(datagridPartial.props.pagination).toBe(true);
-        expect(datagridPartial.props.serverSidePagination).toBe(true);
-        expect(datagridPartial.props.alwaysShowPagination).toBe(true);
+        expect(pagination).toBeDefined();
+        expect(pagination.if).toContain('shipping_policies?.data?.data?.length > 0');
     });
 
-    it('serverCurrentPage/serverTotalPages 가 데이터소스 pagination을 참조한다', () => {
-        expect(datagridPartial.props.serverCurrentPage).toContain('shipping_policies?.data?.pagination?.current_page');
-        expect(datagridPartial.props.serverTotalPages).toContain('shipping_policies?.data?.pagination?.last_page');
-    });
-
-    it('onPageChange 액션이 navigate replace + mergeQuery 로 page를 갱신한다', () => {
-        const onPageChange = (datagridPartial.actions || []).find(
-            (a: any) => a.event === 'onPageChange'
-        );
-        expect(onPageChange).toBeDefined();
-        expect(onPageChange.handler).toBe('navigate');
-        expect(onPageChange.params.replace).toBe(true);
-        expect(onPageChange.params.mergeQuery).toBe(true);
-        expect(onPageChange.params.query.page).toContain('$args[0]');
-    });
-});
-
-// ──────────────────────────────────────────────
-// 11-3. 데이터소스 initLocal 제거 (검색 후 _localInit 트리거 차단)
-// ──────────────────────────────────────────────
-describe('데이터소스 initLocal 제거 (검색 후 필터 보존 방어)', () => {
-    it('shipping_policies 데이터소스에 initLocal이 없다', () => {
-        const ds = (listLayout.data_sources || []).find((d: any) => d.id === 'shipping_policies');
-        expect(ds).toBeDefined();
-        expect(ds.initLocal).toBeUndefined();
+    it('empty_state는 데이터 없을 때만 표시된다 (반대 조건)', () => {
+        const emptyState = findById(listLayout, 'empty_state');
+        expect(emptyState).toBeDefined();
+        expect(emptyState.if).toContain('length === 0');
+        expect(emptyState.if).toContain('!shipping_policies?.loading');
     });
 });
 
@@ -669,8 +649,8 @@ describe('다국어 키 경로 무결성', () => {
         const allKeys = new Set([...keys, ...datagridKeys, ...filterKeys]);
 
         allKeys.forEach(key => {
-            // admin / enums / editor(데이터소스 라벨) 네임스페이스 허용
-            expect(key).toMatch(/^\$t:sirsoft-ecommerce\.(admin|enums|editor)\./);
+            // admin 또는 enums 네임스페이스 허용
+            expect(key).toMatch(/^\$t:sirsoft-ecommerce\.(admin|enums)\./);
         });
     });
 

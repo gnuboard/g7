@@ -5,19 +5,14 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
-use Modules\Sirsoft\Ecommerce\Exceptions\ReviewNotWritableException;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
-use Modules\Sirsoft\Ecommerce\Support\ReviewWritePolicy;
-use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
  * 상품 리뷰 서비스
@@ -26,9 +21,6 @@ use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
  */
 class ProductReviewService
 {
-    use ReappliesPermissionScope;
-    use ResolvesRowStorage;
-
     /**
      * ProductReviewService 생성자
      *
@@ -36,14 +28,12 @@ class ProductReviewService
      * @param  OrderOptionRepositoryInterface  $orderOptionRepository  주문 옵션 리포지토리
      * @param  StorageInterface  $storage  모듈 스토리지 드라이버
      * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
-     * @param  ProductReviewImageRepositoryInterface  $imageRepository  리뷰 이미지 리포지토리
      */
     public function __construct(
         protected ProductReviewRepositoryInterface $repository,
         protected OrderOptionRepositoryInterface $orderOptionRepository,
         protected StorageInterface $storage,
-        protected EcommerceSettingsService $settingsService,
-        protected ProductReviewImageRepositoryInterface $imageRepository
+        protected EcommerceSettingsService $settingsService
     ) {}
 
     /**
@@ -51,7 +41,7 @@ class ProductReviewService
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 개수
-     * @return LengthAwarePaginator 페이지네이션된 리뷰 목록
+     * @return LengthAwarePaginator
      */
     public function getAdminList(array $filters, int $perPage = 20): LengthAwarePaginator
     {
@@ -102,9 +92,17 @@ class ProductReviewService
             return ['can_write' => false, 'reason' => 'not_confirmed'];
         }
 
-        // 작성 기간 확인 (판정 규칙은 ReviewWritePolicy 단일 SSoT)
-        if (ReviewWritePolicy::isDeadlinePassed($orderOption->confirmed_at)) {
-            return ['can_write' => false, 'reason' => 'deadline_passed'];
+        // 작성 기간 확인
+        $deadlineDays = (int) $this->settingsService->getSetting(
+            'review.write_deadline_days',
+            config('ecommerce.review.write_deadline_days', 90)
+        );
+
+        if ($orderOption->confirmed_at && $deadlineDays > 0) {
+            $deadline = $orderOption->confirmed_at->addDays($deadlineDays);
+            if (now()->gt($deadline)) {
+                return ['can_write' => false, 'reason' => 'deadline_passed'];
+            }
         }
 
         // 중복 작성 확인
@@ -121,32 +119,26 @@ class ProductReviewService
      *
      * @param  int  $userId  작성자 ID
      * @param  array  $data  리뷰 데이터
-     * @return ProductReview 생성된 리뷰 모델
-     *
-     * @throws ReviewNotWritableException 작성 자격이 없는 경우
+     * @return ProductReview
      */
     public function createReview(int $userId, array $data): ProductReview
     {
         // canWrite 사전 검증
         $eligibility = $this->canWrite($userId, $data['order_option_id']);
         if (! $eligibility['can_write']) {
-            throw new ReviewNotWritableException((string) $eligibility['reason']);
+            throw new \RuntimeException(
+                __('sirsoft-ecommerce::messages.reviews.cannot_write', ['reason' => $eligibility['reason']])
+            );
         }
 
         // option_snapshot: 주문 옵션에서 복사
         $orderOption = $this->orderOptionRepository->findOrFail($data['order_option_id']);
         $optionSnapshot = $orderOption->option_snapshot ?? [];
 
-        // product_id 는 클라이언트 payload 가 아니라 확정된 주문 옵션에서 도출한다(SSoT).
-        // canWrite 가 옵션 소유권/확정만 검증하므로, payload 의 product_id 를 그대로 신뢰하면
-        // 소유하지 않은 상품에 리뷰를 붙일 수 있다. 도출값이 유일한 진실이므로 payload 값은
-        // 옵션과 일치하든 아니든 무시한다.
-        $resolvedProductId = (int) $orderOption->product_id;
-
         HookManager::doAction('sirsoft-ecommerce.product-review.before_create', $data);
 
         $review = $this->repository->create([
-            'product_id' => $resolvedProductId,
+            'product_id' => $data['product_id'],
             'order_option_id' => $data['order_option_id'],
             'user_id' => $userId,
             'rating' => $data['rating'],
@@ -172,12 +164,10 @@ class ProductReviewService
      *
      * @param  ProductReview  $review  리뷰 모델
      * @param  string  $status  변경할 상태값
-     * @return ProductReview 변경된 리뷰 모델
+     * @return ProductReview
      */
     public function updateStatus(ProductReview $review, string $status): ProductReview
     {
-        $this->assertWithinScope($review, 'sirsoft-ecommerce.reviews.update');
-
         return $this->repository->update($review, ['status' => $status]);
     }
 
@@ -187,7 +177,7 @@ class ProductReviewService
      * @param  ProductReview  $review  리뷰 모델
      * @param  int  $adminId  답변 관리자 ID
      * @param  array  $data  답변 데이터
-     * @return ProductReview 답변이 반영된 리뷰 모델
+     * @return ProductReview
      */
     public function saveReply(ProductReview $review, int $adminId, array $data): ProductReview
     {
@@ -206,12 +196,10 @@ class ProductReviewService
      * 판매자 답변 삭제
      *
      * @param  ProductReview  $review  리뷰 모델
-     * @return ProductReview 답변이 삭제된 리뷰 모델
+     * @return ProductReview
      */
     public function deleteReply(ProductReview $review): ProductReview
     {
-        $this->assertWithinScope($review, 'sirsoft-ecommerce.reviews.update');
-
         return $this->repository->update($review, [
             'reply_content' => null,
             'reply_content_mode' => 'text',
@@ -225,20 +213,17 @@ class ProductReviewService
      * 리뷰 삭제 (이미지 파일 포함)
      *
      * @param  ProductReview  $review  리뷰 모델 (images 관계 로드됨)
-     * @return bool 삭제 성공 여부
+     * @return bool
      */
     public function deleteReview(ProductReview $review): bool
     {
-        $this->assertWithinScope($review, 'sirsoft-ecommerce.reviews.delete');
-
         HookManager::doAction('sirsoft-ecommerce.product-review.before_delete', $review);
 
         return DB::transaction(function () use ($review) {
-            // 이미지 파일 삭제 (StorageInterface 사용) — 행 disk 기준
+            // 이미지 파일 삭제 (StorageInterface 사용)
             foreach ($review->images as $image) {
-                $rowStorage = $this->storageForRow($image->disk);
-                if ($rowStorage->exists('images', $image->path)) {
-                    $rowStorage->delete('images', $image->path);
+                if ($this->storage->exists('images', $image->path)) {
+                    $this->storage->delete('images', $image->path);
                 }
             }
 
@@ -257,36 +242,6 @@ class ProductReviewService
     }
 
     /**
-     * 주문 옵션들에 연결된 리뷰를 이미지 파일째 영구 삭제합니다 (개인정보 보유기간 삭제 모드, 이슈 #636).
-     *
-     * 리뷰는 주문 옵션에 NOT NULL 로 묶여 있어 주문을 삭제하면 남을 수 없다. DB CASCADE 에
-     * 기대지 않고 명시 삭제하며, 이미지 파일도 함께 지운다(행만 지우면 파일이 고아로 남는다).
-     * 무인 배치가 부르는 시스템 삭제라 관리자 스코프 판정을 두지 않는다.
-     *
-     * @param  array<int, int>  $orderOptionIds  주문 옵션 ID 목록
-     * @return int 삭제한 리뷰 수
-     */
-    public function purgeForOrderOptions(array $orderOptionIds): int
-    {
-        $deleted = 0;
-
-        foreach ($this->repository->getWithTrashedByOrderOptionIds($orderOptionIds) as $review) {
-            foreach ($review->images as $image) {
-                $rowStorage = $this->storageForRow($image->disk);
-                if ($rowStorage->exists('images', $image->path)) {
-                    $rowStorage->delete('images', $image->path);
-                }
-            }
-
-            if ($this->repository->forceDeleteWithImages($review)) {
-                $deleted++;
-            }
-        }
-
-        return $deleted;
-    }
-
-    /**
      * 리뷰 일괄 상태 변경
      *
      * @param  array  $ids  리뷰 ID 배열
@@ -295,8 +250,6 @@ class ProductReviewService
      */
     public function bulkUpdateStatus(array $ids, string $status): int
     {
-        $this->assertAllWithinScope($this->repository->getByIdsWithImages($ids), 'sirsoft-ecommerce.reviews.update');
-
         return $this->repository->bulkUpdateStatus($ids, $status);
     }
 
@@ -310,20 +263,17 @@ class ProductReviewService
     {
         $reviews = $this->repository->getByIdsWithImages($ids);
 
-        $this->assertAllWithinScope($reviews, 'sirsoft-ecommerce.reviews.delete');
-
         // 삭제 전 스냅샷 캡처 (after_bulk_delete 훅에 전달)
         $snapshots = $reviews->keyBy('id')->map->toArray()->all();
 
         HookManager::doAction('sirsoft-ecommerce.product-review.before_bulk_delete', $ids, $reviews);
 
         return DB::transaction(function () use ($reviews, $ids, $snapshots) {
-            // 이미지 파일 일괄 삭제 — 행 disk 기준
+            // 이미지 파일 일괄 삭제
             foreach ($reviews as $review) {
                 foreach ($review->images as $image) {
-                    $rowStorage = $this->storageForRow($image->disk);
-                    if ($rowStorage->exists('images', $image->path)) {
-                        $rowStorage->delete('images', $image->path);
+                    if ($this->storage->exists('images', $image->path)) {
+                        $this->storage->delete('images', $image->path);
                     }
                 }
             }
@@ -331,11 +281,11 @@ class ProductReviewService
             // 이미지 레코드 일괄 삭제 (명시적, CASCADE 의존 금지)
             $reviewImageIds = $reviews->flatMap(fn ($r) => $r->images->pluck('id'))->all();
             if (! empty($reviewImageIds)) {
-                $this->imageRepository->deleteByIds($reviewImageIds);
+                \Modules\Sirsoft\Ecommerce\Models\ProductReviewImage::whereIn('id', $reviewImageIds)->delete();
             }
 
             // 리뷰 일괄 소프트 삭제
-            $count = $this->repository->bulkSoftDeleteByIds($ids);
+            $count = ProductReview::whereIn('id', $ids)->delete();
 
             HookManager::doAction('sirsoft-ecommerce.product-review.after_bulk_delete', $ids, $snapshots);
 
