@@ -193,7 +193,7 @@ class ValidationApi
             }
 
             // 에러 로깅
-            logInstallationError(lang('error_db_connection_failed'), $e);
+            logInstallationError(lang('error_db_connection_failed', ['error' => $e->getMessage()]), $e);
 
             // 에러 응답 (200 OK + success: false)
             echo json_encode([
