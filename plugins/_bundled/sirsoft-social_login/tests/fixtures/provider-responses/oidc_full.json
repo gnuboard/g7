@@ -1,8 +1,0 @@
-{
-    "sub": "oidc-user-1",
-    "email": "oidc.user@example.test",
-    "email_verified": true,
-    "name": "OIDC User",
-    "preferred_username": "oidcuser",
-    "picture": "https://example.test/avatar.png"
-}

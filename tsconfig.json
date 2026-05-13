@@ -1,9 +1,39 @@
 {
-  // 해법형 루트 설정 (#869). 직접 검사하는 파일은 없고 두 설정을 잇기만 한다.
-  //  - tsconfig.app.json  브라우저 코드(시험 제외). Node 타입 없음 — `npx tsc -p tsconfig.app.json`
-  //  - tsconfig.test.json 시험 파일과 고정물. Node 타입과 Vitest 전역 — `npx tsc -p tsconfig.test.json`
-  // 둘 다: `npx tsc -b`. IDE(tsserver)와 Vitest(esbuild 의 tsconfig 탐색)는 이 references 로 파일마다 맞는 설정을 찾는다.
-  // 주의: `npx tsc -p tsconfig.json` 은 아무 파일도 검사하지 않는다.
-  "files": [],
-  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.test.json" }]
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Path mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./resources/js/*"]
+    },
+
+    /* Testing */
+    "types": ["vitest/globals"]
+  },
+  "include": [
+    "resources/js/**/*.ts",
+    "resources/js/**/*.tsx",
+    "templates/**/src/**/*.ts",
+    "templates/**/src/**/*.tsx"
+  ],
+  "exclude": ["node_modules"]
 }

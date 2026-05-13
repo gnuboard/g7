@@ -56,6 +56,11 @@ enum ReportStatus: string
     }
 
     /**
+     * 상태의 다국어 라벨을 반환합니다.
+     *
+     * @return string 번역된 상태 라벨
+     */
+    /**
      * 활동 로그용 다국어 라벨 키를 반환합니다.
      *
      * @return string
@@ -65,11 +70,6 @@ enum ReportStatus: string
         return 'sirsoft-board::enums.report_status.'.$this->value;
     }
 
-    /**
-     * 상태의 다국어 라벨을 반환합니다.
-     *
-     * @return string 번역된 상태 라벨
-     */
     public function label(): string
     {
         return __($this->labelKey());

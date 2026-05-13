@@ -33,11 +33,6 @@ class LayoutComponentPermissionTest extends TestCase
 
     private User $regularUser;
 
-    /**
-     * 활성 관리자 템플릿, 관리자(조회와 편집 권한)와 일반 사용자(조회 권한만) 역할, 두 사용자를 만들고 레이아웃 캐시와 게스트 역할 캐시를 비운다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -102,11 +97,6 @@ class LayoutComponentPermissionTest extends TestCase
         AuthServiceProvider::clearGuestRoleCache();
     }
 
-    /**
-     * 게스트 역할 캐시를 비워 다음 테스트로 권한 판정이 새지 않게 한다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         AuthServiceProvider::clearGuestRoleCache();
@@ -115,14 +105,6 @@ class LayoutComponentPermissionTest extends TestCase
 
     /**
      * admin 사용자는 모든 컴포넌트를 포함한 레이아웃을 받습니다.
-     *
-     * 권한이 걸린 노드도 남고, 남은 노드의 permissions 속성은 응답에서 지워졌는지 함께 본다.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission, layout_permissions_attribute_stripped_from_served_json
-     *
-     * @return void 반환값 없음
      */
     public function test_admin_receives_all_components(): void
     {
@@ -144,12 +126,6 @@ class LayoutComponentPermissionTest extends TestCase
 
     /**
      * 권한 없는 사용자는 해당 컴포넌트가 제거된 레이아웃을 받습니다.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_user_without_permission_receives_filtered_components(): void
     {
@@ -169,12 +145,6 @@ class LayoutComponentPermissionTest extends TestCase
 
     /**
      * guest 사용자는 권한이 필요한 모든 컴포넌트가 제거됩니다.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects layout_components_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_guest_receives_only_unrestricted_components(): void
     {
@@ -193,14 +163,6 @@ class LayoutComponentPermissionTest extends TestCase
 
     /**
      * 캐시된 레이아웃에서도 사용자별 필터링이 정상 동작합니다.
-     *
-     * 관리자 요청으로 캐시가 만들어진 뒤 일반 사용자가 같은 레이아웃을 받으면 권한 노드가 빠져야 한다.
-     *
-     * @scenario case=component_filter
-     *
-     * @effects served_layout_cache_is_filtered_per_user
-     *
-     * @return void 반환값 없음
      */
     public function test_cached_layout_is_filtered_per_user(): void
     {
@@ -221,14 +183,6 @@ class LayoutComponentPermissionTest extends TestCase
 
     /**
      * modals 내 컴포넌트도 필터링됩니다.
-     *
-     * 권한이 걸린 모달은 일반 사용자 응답에서 통째로 빠지고 공개 모달만 남는지 확인한다.
-     *
-     * @scenario case=modal_filter
-     *
-     * @effects layout_modals_filtered_by_permission
-     *
-     * @return void 반환값 없음
      */
     public function test_modals_are_filtered_in_served_layout(): void
     {
@@ -270,73 +224,7 @@ class LayoutComponentPermissionTest extends TestCase
     }
 
     /**
-     * `defines` 맵은 **서빙된 응답에서도 키를 유지**한다.
-     *
-     * 레이아웃은 `{{_defines.settingsTabs}}` 처럼 키로 참조한다. 권한 필터가 맵을 리스트로
-     * 재색인하면 그 표현식이 undefined 를 받고 `?? []` 폴백을 타 **오류 없이 화면 요소만
-     * 사라진다** — 환경설정 탭 13개가 0개가 된 실측 경로다. 레이아웃 JSON 만 읽는 프론트
-     * 테스트는 이 구간을 지나지 않으므로, 서빙 응답을 직접 재는 이 테스트가 그 축을 잠근다.
-     *
-     * @scenario case=define_filter
-     *
-     * @effects layout_named_defines_preserved, layout_defines_filtered_by_permission
-     *
-     * @return void 반환값 없음
-     */
-    public function test_defines_map_keeps_its_keys_in_the_served_layout(): void
-    {
-        TemplateLayout::create([
-            'template_id' => $this->template->id,
-            'name' => 'test_defines',
-            'content' => [
-                'meta' => ['title' => 'Test Defines'],
-                'data_sources' => [],
-                'defines' => [
-                    'settingsTabs' => [
-                        ['id' => 'general', 'label' => '일반'],
-                        ['id' => 'mail', 'label' => '메일'],
-                    ],
-                    'currencyToFlag' => ['KRW' => 'kr', 'USD' => 'us'],
-                    'maxItems' => 20,
-                    'adminOnlyDefine' => [
-                        'permissions' => ['core.dashboard.edit'],
-                        'children' => [
-                            ['type' => 'basic', 'name' => 'Div', 'text' => '관리자'],
-                        ],
-                    ],
-                ],
-                'components' => [
-                    ['type' => 'basic', 'name' => 'Div', 'id' => 'main'],
-                ],
-            ],
-        ]);
-
-        $response = $this->actingAs($this->regularUser, 'sanctum')
-            ->getJson("/api/layouts/{$this->template->identifier}/test_defines.json");
-
-        $response->assertStatus(200);
-
-        $defines = $response->json('data.defines');
-
-        $this->assertIsArray($defines);
-        $this->assertArrayHasKey('settingsTabs', $defines, 'defines 맵의 키가 서빙에서 사라졌습니다.');
-        $this->assertCount(2, $defines['settingsTabs']);
-        $this->assertSame('general', $defines['settingsTabs'][0]['id']);
-
-        // 값이 배열이 아닌 상수도, 값이 맵인 상수도 그대로 통과한다.
-        $this->assertSame(20, $defines['maxItems']);
-        $this->assertSame(['KRW' => 'kr', 'USD' => 'us'], $defines['currencyToFlag']);
-
-        // 권한이 걸린 정의는 종전대로 제거되고, 남은 항목의 키는 영향을 받지 않는다.
-        $this->assertArrayNotHasKey('adminOnlyDefine', $defines);
-    }
-
-    /**
      * 테스트용 레이아웃 생성 헬퍼
-     *
-     * 공개 노드 하나와 core.dashboard.edit 권한이 걸린 관리자 위젯 하나를 가진 test_dashboard 레이아웃을 저장한다.
-     *
-     * @return TemplateLayout 저장된 test_dashboard 레이아웃
      */
     private function createTestLayout(): TemplateLayout
     {

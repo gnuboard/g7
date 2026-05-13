@@ -2,55 +2,27 @@
 
 namespace App\Services;
 
+use App\Exceptions\ModuleOperationException;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionStatus;
-use App\Enums\LayoutSyncMode;
-use App\Exceptions\ExtensionOperationLockException;
-use App\Exceptions\ModuleOperationException;
-use App\Exceptions\PackageIntegrityException;
 use App\Extension\Helpers\ChangelogParser;
-use App\Extension\Helpers\EditorSpecAssembler;
-use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
-use App\Extension\Integrity\ExtensionIntegrityRecorder;
-use App\Extension\Integrity\PackageAcquirer;
-use App\Extension\Integrity\PackageExpectation;
-use App\Extension\Integrity\PackageIntegrityOptions;
-use App\Extension\Layout\LayoutSyncOptions;
-use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Models\Module;
-use App\Rules\AllowedModuleFileType;
-use App\Services\Concerns\ResolvesExtensionAssetType;
-use App\Services\Concerns\SecuresExtensionAssetPath;
-use App\Services\Extension\ExtensionIconResolver;
-use App\Support\LocalizedValue;
-use App\Support\SafeExceptionMessage;
-use App\Support\UploadedFileName;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
 
 class ModuleService
 {
-    use ResolvesExtensionAssetType;
-    use SecuresExtensionAssetPath;
-
     /**
      * 검색 가능한 필드 목록
      */
     private const SEARCHABLE_FIELDS = ['name', 'identifier', 'description', 'vendor'];
 
-    /**
-     * 모듈 서비스를 생성합니다.
-     *
-     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 저장소
-     * @param  ModuleManagerInterface  $moduleManager  모듈 매니저
-     */
     public function __construct(
         private ModuleRepositoryInterface $moduleRepository,
         private ModuleManagerInterface $moduleManager
@@ -115,21 +87,6 @@ class ModuleService
     }
 
     /**
-     * 설치·의존 판정용 모듈 정보를 조회합니다 — 미설치 모듈은 진입 파일을 실행하지 않고 manifest 만 읽습니다.
-     *
-     * 같은 프로세스에서 이어서 설치할 때 쓴다(명령줄·연쇄 설치, 설치 미리보기). 상세 화면은 {@see getModuleInfo()}.
-     *
-     * @param  string  $moduleName  모듈명
-     * @return array<string, mixed>|null 모듈 정보 또는 null
-     */
-    public function getModuleManifestInfo(string $moduleName): ?array
-    {
-        $this->moduleManager->loadModules();
-
-        return $this->moduleManager->getModuleManifestInfo($moduleName);
-    }
-
-    /**
      * 모듈 삭제 시 삭제될 데이터 정보를 조회합니다.
      *
      * @param  string  $moduleName  모듈명
@@ -145,7 +102,7 @@ class ModuleService
     /**
      * 설치된 모듈 목록을 조회합니다.
      *
-     * @return Collection 설치된 모듈 목록
+     * @return \Illuminate\Database\Eloquent\Collection 설치된 모듈 목록
      */
     public function getInstalledModules()
     {
@@ -155,7 +112,7 @@ class ModuleService
     /**
      * 마켓플레이스에서 이용 가능한 모듈 목록을 조회합니다.
      *
-     * @return Collection 마켓플레이스 모듈 목록
+     * @return \Illuminate\Database\Eloquent\Collection 마켓플레이스 모듈 목록
      */
     public function getMarketplaceModules()
     {
@@ -165,7 +122,7 @@ class ModuleService
     /**
      * 의존성 정보가 포함된 모든 모듈을 조회합니다.
      *
-     * @return Collection 의존성 정보가 포함된 모듈 목록
+     * @return \Illuminate\Database\Eloquent\Collection 의존성 정보가 포함된 모듈 목록
      */
     public function getAllModulesWithDependencies()
     {
@@ -203,7 +160,7 @@ class ModuleService
             return $result;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'modules' => [__('modules.check_updates_failed', ['error' => SafeExceptionMessage::for($e)])],
+                'modules' => [__('modules.check_updates_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }
@@ -212,23 +169,21 @@ class ModuleService
      * 지정된 모듈을 업데이트합니다.
      *
      * @param  string  $moduleName  업데이트할 모듈 identifier
-     * @param  VendorMode  $vendorMode  Vendor 설치 모드
+     * @param  \App\Extension\Vendor\VendorMode  $vendorMode  Vendor 설치 모드
      * @param  string  $layoutStrategy  레이아웃 전략 (overwrite|keep)
-     * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
-     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
+     * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
+     *
      * @throws ValidationException 업데이트 실패 시
-     * @throws PackageIntegrityException 받은 패키지의 서명 검증이 업데이트를 멈췄을 때
      */
     public function updateModule(
         string $moduleName,
-        VendorMode $vendorMode = VendorMode::Auto,
+        \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
         string $layoutStrategy = 'overwrite',
         bool $force = false,
-        ?PackageIntegrityOptions $integrity = null,
     ): array {
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        HookManager::doAction('core.modules.before_update', $moduleName);
 
         try {
             $this->moduleManager->loadModules();
@@ -238,28 +193,19 @@ class ModuleService
                 null,
                 $vendorMode,
                 $layoutStrategy,
-                integrity: $integrity,
             );
 
             $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
-            // after_update 훅은 ModuleManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
-            // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
+            HookManager::doAction('core.modules.after_update', $moduleName, $result, $moduleInfo);
 
             return array_merge($result, [
                 'module_info' => $moduleInfo,
             ]);
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
-        } catch (PackageIntegrityException $e) {
-            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 422 로 감싸지 않고 그대로 올린다(7.2.0)
-            throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로
             // getPrevious()로 원본 에러를 추출하여 이중 래핑 방지
-            $rawError = SafeExceptionMessage::for(SafeExceptionMessage::isInternal($e) ? $e : ($e->getPrevious() ?? $e));
+            $rawError = $e->getPrevious() ? $e->getPrevious()->getMessage() : $e->getMessage();
 
             throw ValidationException::withMessages([
                 'module_name' => [__('modules.errors.update_failed', ['module' => $moduleName, 'error' => $rawError])],
@@ -283,7 +229,7 @@ class ModuleService
             return $this->moduleManager->hasModifiedLayouts($moduleName);
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'module_name' => [__('modules.check_modified_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
+                'module_name' => [__('modules.check_modified_layouts_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }
@@ -292,45 +238,36 @@ class ModuleService
      * 모듈을 시스템에 설치합니다.
      *
      * @param  string  $moduleName  설치할 모듈명
-     * @param  VendorMode  $vendorMode  Vendor 설치 모드
+     * @param  \App\Extension\Vendor\VendorMode  $vendorMode  Vendor 설치 모드
      * @param  bool  $force  Updating/Failed 등 진행 중 상태도 무시하고 강제 설치 여부
-     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
      * @return array|null 설치된 모듈 정보 또는 null
      *
      * @throws ValidationException 모듈 설치 실패 시
      */
     public function installModule(
         string $moduleName,
-        VendorMode $vendorMode = VendorMode::Auto,
+        \App\Extension\Vendor\VendorMode $vendorMode = \App\Extension\Vendor\VendorMode::Auto,
         bool $force = false,
-        ?string &$failureReason = null,
     ): ?array {
-        $failureReason = null;
-
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        HookManager::doAction('core.modules.before_install', $moduleName);
 
         try {
             $this->moduleManager->loadModules();
-            $result = $this->moduleManager->installModule($moduleName, null, $vendorMode, $force, $failureReason);
+            $result = $this->moduleManager->installModule($moduleName, null, $vendorMode, $force);
 
             if ($result) {
                 // 설치 후 모듈 정보 반환
                 $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
-                // after_install 훅은 ModuleManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
-                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
+                HookManager::doAction('core.modules.after_install', $moduleName, $moduleInfo);
 
                 return $moduleInfo;
             }
 
             return null;
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'module_name' => [__('modules.installation_failed', ['error' => SafeExceptionMessage::for($e)])],
+                'module_name' => [__('modules.installation_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }
@@ -346,7 +283,7 @@ class ModuleService
      */
     public function activateModule(string $moduleName, bool $force = false): array
     {
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        HookManager::doAction('core.modules.before_activate', $moduleName, $force);
 
         try {
             $this->moduleManager->loadModules();
@@ -360,27 +297,18 @@ class ModuleService
             if ($result['success']) {
                 $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
-                // after_activate 훅은 ModuleManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
-                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
+                HookManager::doAction('core.modules.after_activate', $moduleName, $moduleInfo);
 
                 return [
                     'success' => true,
                     'module_info' => $moduleInfo,
-                    // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
-                    'layout_warnings' => $result['layout_warnings'] ?? [],
                 ];
             }
 
-            // 실패 사유(reason)를 그대로 전달한다 — 여기서 떨어뜨리면 관리자 화면의
-            // 실패 문구에 원인 자리가 비어 자리표시자가 그대로 노출된다.
-            return $result;
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
+            return ['success' => false];
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'module_name' => [__('modules.activation_failed', ['error' => SafeExceptionMessage::for($e)])],
+                'module_name' => [__('modules.activation_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }
@@ -396,7 +324,7 @@ class ModuleService
      */
     public function deactivateModule(string $moduleName, bool $force = false): array
     {
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+        HookManager::doAction('core.modules.before_deactivate', $moduleName, $force);
 
         try {
             $this->moduleManager->loadModules();
@@ -417,13 +345,9 @@ class ModuleService
             }
 
             return $result;
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'module_name' => [__('modules.deactivation_failed', ['error' => SafeExceptionMessage::for($e)])],
+                'module_name' => [__('modules.deactivation_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }
@@ -433,54 +357,34 @@ class ModuleService
      *
      * @param  string  $moduleName  제거할 모듈명
      * @param  bool  $deleteData  모듈 데이터(테이블) 삭제 여부
-     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
-     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups
-     *                                                                                        삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터
      * @return bool 제거 성공 여부
      *
      * @throws ValidationException 모듈 제거 실패 시
      */
-    public function uninstallModule(
-        string $moduleName,
-        bool $deleteData = false,
-        ?string &$failureReason = null,
-        ?array &$preservedBackups = null,
-    ): bool {
-        $failureReason = null;
-        $preservedBackups = [];
-
-        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
+    public function uninstallModule(string $moduleName, bool $deleteData = false): bool
+    {
+        HookManager::doAction('core.modules.before_uninstall', $moduleName, $deleteData);
 
         try {
+            // 제거 전 모듈 정보 보존
             $this->moduleManager->loadModules();
+            $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
-            $result = $this->moduleManager->uninstallModule(
-                $moduleName,
-                $deleteData,
-                null,
-                $failureReason,
-                $preservedBackups
-            );
+            $result = $this->moduleManager->uninstallModule($moduleName, $deleteData);
 
             if ($result) {
-                // 방어용 — Manager 가 이미 deleteByIdentifier() 로 행을 지웠으므로 통상 no-op 이다.
                 $module = $this->moduleRepository->findByName($moduleName);
                 if ($module) {
                     $this->moduleRepository->delete($module);
                 }
 
-                // after_uninstall 훅은 ModuleManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
-                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
+                HookManager::doAction('core.modules.after_uninstall', $moduleName, $moduleInfo, $deleteData);
             }
 
             return $result;
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'module_name' => [__('modules.uninstallation_failed', ['error' => SafeExceptionMessage::for($e)])],
+                'module_name' => [__('modules.uninstallation_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }
@@ -503,21 +407,6 @@ class ModuleService
     public function getActiveModuleIdentifiers(): array
     {
         return $this->moduleRepository->getActiveModuleIdentifiers();
-    }
-
-    /**
-     * 이 서버가 불러온(활성 디렉터리에 파일이 있어 로드된) 모듈의 identifier 목록을 반환합니다.
-     *
-     * DB 상태와 무관하다 — 같은 DB 를 쓰는 다른 서버가 설치한 모듈은 DB 에 활성으로 있어도 이 서버에 파일이 없으면 빠진다.
-     *
-     * @return array<int, string> 로드된 모듈 identifier 배열
-     */
-    public function getLoadedModuleIdentifiers(): array
-    {
-        return array_values(array_map(
-            static fn ($module): string => (string) $module->getIdentifier(),
-            $this->moduleManager->getAllModules(),
-        ));
     }
 
     /**
@@ -784,8 +673,10 @@ class ModuleService
 
         // 다국어 필드인 경우 (name, description)
         if (is_array($value)) {
-            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-            return LocalizedValue::pick($value);
+            // 현재 로케일 우선, 없으면 ko, 그 다음 en
+            $locale = app()->getLocale();
+
+            return $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? reset($value) ?: null;
         }
 
         return (string) $value;
@@ -814,23 +705,17 @@ class ModuleService
         $extractPath = $tempPath.'/preview-'.uniqid('module_');
         $manifest = null;
         $errors = [];
-        $icon = null;
 
         try {
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'module.json', 'modules', UploadedFileName::original($file)
+                $file->getRealPath(), $extractPath, 'module.json', 'modules'
             );
 
             $manifest = $result['config'];
-
-            // 추출본은 finally 에서 지워지므로 아이콘 검사는 여기(try 안)에서 끝낸다.
-            // 아이콘 규격 위반은 설치를 막지 않는다 — 경고만 보이고 화면은 유형 글리프로 떨어진다.
-            $icon = app(ExtensionIconResolver::class)
-                ->inspectRootForApi($result['sourcePath'], $manifest['icon'] ?? null);
         } catch (\Throwable $e) {
-            $errors[] = SafeExceptionMessage::for($e);
+            $errors[] = $e->getMessage();
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -843,7 +728,6 @@ class ModuleService
 
         return [
             'manifest' => $manifest,
-            'icon' => $icon,
             'validation' => [
                 'errors' => $errors,
                 'is_valid' => $errors === [] && $manifest !== null,
@@ -852,39 +736,25 @@ class ModuleService
             ],
         ];
     }
-
     /**
      * 업로드된 ZIP 파일로부터 모듈을 추출/검증하고 _pending 으로 이동 후 설치합니다.
      *
      * `module.json` 검증 → identifier 충돌 검사 → _pending 이동 → 설치 파이프라인 진입.
      *
      * @param  UploadedFile  $file  사용자가 업로드한 모듈 ZIP 파일
-     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 설치 결과 (identifier/version/installed_at 포함)
      */
-    public function installFromZipFile(UploadedFile $file, ?PackageIntegrityOptions $integrity = null): array
+    public function installFromZipFile(UploadedFile $file): array
     {
-        $integrity ??= PackageIntegrityOptions::none();
         $tempPath = storage_path('app/temp/modules');
         $extractPath = $tempPath.'/'.uniqid('module_');
 
         try {
             File::ensureDirectoryExists($tempPath);
 
-            // 서명 검증(해제 전 바이트) — 업로드 임시 파일은 옆 서명 파일을 자동으로 찾지 않는다(서명 파일 칸으로만, 7.2.0)
-            $acquirer = app(PackageAcquirer::class);
-            $verification = $acquirer->verifyLocalZip($file->getRealPath(), PackageExpectation::forExtension('module'), $integrity, autoSidecar: false);
-
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'module.json', 'modules', UploadedFileName::original($file)
+                $file->getRealPath(), $extractPath, 'module.json', 'modules'
             );
-
-            // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전과 실제 manifest 가 같아야 한다
-            $verification = $acquirer->confirmManifest($verification, $result['config'], $integrity);
-
-            // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
-            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
-            $operationLock = ExtensionOperationLock::acquire('module', $result['identifier'], 'install');
 
             $this->ensureModuleNotInstalled($result['identifier']);
 
@@ -893,11 +763,7 @@ class ModuleService
             );
 
             try {
-                $info = $this->executeModuleInstall($result['identifier']);
-                // 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지
-                app(ExtensionIntegrityRecorder::class)->record('module', $result['identifier'], $verification);
-
-                return array_merge($info, $verification->toInstallColumns());
+                return $this->executeModuleInstall($result['identifier']);
             } catch (\Throwable $e) {
                 $pendingPath = base_path('modules/_pending/'.$result['identifier']);
                 if (File::exists($pendingPath)) {
@@ -905,20 +771,6 @@ class ModuleService
                 }
                 throw $e;
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
-        } catch (PackageIntegrityException $e) {
-            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
-            throw $e;
-        } catch (ModuleOperationException $e) {
-            throw $e;
-        } catch (\RuntimeException $e) {
-            // ZipInstallHelper 등 설치 원본 처리의 raw RuntimeException(깨진 zip·manifest
-            // 누락 같은 사용자 입력 오류)을 도메인 예외로 승격한다 — 컨트롤러의 좁혀진
-            // catch 가 인프라 예외와 구분해 종전 422 계약을 유지하고, 사유는 :error 로 보존.
-            throw new ModuleOperationException('modules.errors.install_failed', ['error' => SafeExceptionMessage::for($e)], $e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -930,18 +782,15 @@ class ModuleService
      * GitHub 저장소에서 모듈을 설치합니다.
      *
      * @param  string  $githubUrl  GitHub 저장소 URL
-     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 설치된 모듈 정보
      *
      * @throws \RuntimeException 설치 실패 시
      */
-    public function installFromGithub(string $githubUrl, ?PackageIntegrityOptions $integrity = null): array
+    public function installFromGithub(string $githubUrl): array
     {
-        $integrity ??= PackageIntegrityOptions::none();
         $tempPath = storage_path('app/temp/modules');
         $extractPath = $tempPath.'/'.uniqid('module_');
         $zipPath = null;
-        $downloadDir = $tempPath.'/'.uniqid('download_');
 
         try {
             File::ensureDirectoryExists($tempPath);
@@ -954,23 +803,11 @@ class ModuleService
                 throw new ModuleOperationException('modules.errors.github_repo_not_found');
             }
 
-            // 태그 릴리스만 받는다(브랜치 폴백 없음) — 서명 자산이 있으면 검증하고, 없으면 미서명 정책(운영자 확인)을 거친다 (7.2.0)
-            $acquirer = app(PackageAcquirer::class);
-            $acquired = $acquirer->fromGithubRelease(
-                $owner, $repo, null, $token, PackageExpectation::forExtension('module'), $integrity, $downloadDir
-            );
-            $zipPath = $acquired->zipPath;
+            $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath, $token);
 
             $result = ZipInstallHelper::extractAndValidate(
                 $zipPath, $extractPath, 'module.json', 'modules'
             );
-
-            // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전과 실제 manifest 가 같아야 한다
-            $verification = $acquirer->confirmManifest($acquired->verification, $result['config'], $integrity);
-
-            // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
-            // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
-            $operationLock = ExtensionOperationLock::acquire('module', $result['identifier'], 'install');
 
             $this->ensureModuleNotInstalled($result['identifier']);
 
@@ -979,11 +816,7 @@ class ModuleService
             );
 
             try {
-                $info = $this->executeModuleInstall($result['identifier']);
-                // 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지
-                app(ExtensionIntegrityRecorder::class)->record('module', $result['identifier'], $verification);
-
-                return array_merge($info, $verification->toInstallColumns());
+                return $this->executeModuleInstall($result['identifier']);
             } catch (\Throwable $e) {
                 $pendingPath = base_path('modules/_pending/'.$result['identifier']);
                 if (File::exists($pendingPath)) {
@@ -991,28 +824,12 @@ class ModuleService
                 }
                 throw $e;
             }
-        } catch (ExtensionOperationLockException $e) {
-            // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
-            // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
-            throw $e;
-        } catch (PackageIntegrityException $e) {
-            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
-            throw $e;
-        } catch (ModuleOperationException $e) {
-            throw $e;
-        } catch (\RuntimeException $e) {
-            // GithubHelper·ZipInstallHelper 의 raw RuntimeException(잘못된 URL·다운로드
-            // 실패·manifest 오류)을 도메인 예외로 승격한다 — 종전 422 계약 유지, 사유 보존.
-            throw new ModuleOperationException('modules.errors.install_failed', ['error' => SafeExceptionMessage::for($e)], $e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
             }
             if ($zipPath && File::exists($zipPath)) {
                 File::delete($zipPath);
-            }
-            if (File::isDirectory($downloadDir)) {
-                File::deleteDirectory($downloadDir);
             }
         }
     }
@@ -1023,15 +840,13 @@ class ModuleService
      * _bundled/_pending에만 존재하는 경우(is_installed=false)는 설치 허용합니다.
      *
      * @param  string  $identifier  모듈 식별자
-     * @return void 반환값 없음
      *
      * @throws \RuntimeException 이미 설치된 경우
      */
     private function ensureModuleNotInstalled(string $identifier): void
     {
         $this->moduleManager->loadModules();
-        // 같은 요청에서 곧 설치하므로 `_bundled`·`_pending` 사본의 진입 파일을 실행하지 않는다 (#159)
-        $existingModule = $this->moduleManager->getModuleManifestInfo($identifier);
+        $existingModule = $this->moduleManager->getModuleInfo($identifier);
 
         if ($existingModule && $existingModule['is_installed']) {
             throw new ModuleOperationException('modules.errors.already_installed');
@@ -1049,14 +864,10 @@ class ModuleService
     private function executeModuleInstall(string $identifier): array
     {
         $this->moduleManager->loadModules();
-        $result = $this->moduleManager->installModule($identifier, null, VendorMode::Auto, false, $failureReason);
+        $result = $this->moduleManager->installModule($identifier);
 
         if (! $result) {
-            // 사유를 실어 올리지 않으면 'modules.errors.install_failed' 의 치환 자리가
-            // 비어 관리자 화면에 리터럴 ':error' 가 그대로 노출된다.
-            throw new ModuleOperationException('modules.errors.install_failed', [
-                'error' => $failureReason ?? __('modules.errors.unknown_error'),
-            ]);
+            throw new ModuleOperationException('modules.errors.install_failed');
         }
 
         return $this->moduleManager->getModuleInfo($identifier);
@@ -1065,79 +876,23 @@ class ModuleService
     /**
      * 모듈의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
-     * 기본은 keep — 운영자가 고친 화면을 지킨다. 덮어쓰기는 `$mode = Overwrite` 로 명시할 때만이다.
-     *
      * @param  string  $moduleName  모듈명
-     * @param  LayoutSyncMode  $mode  갱신 전략 (기본 keep)
-     * @param  array<string, string>  $decisions  화면별 결정 ({@see LayoutSyncOptions})
-     * @return array|null 갱신 결과 또는 null (모듈 정보 + `layout_sync`·`layout_preview`·`layout_warnings`)
-     *
-     * @throws ValidationException 레이아웃 갱신 실패 시
-     */
-    public function refreshModuleLayouts(string $moduleName, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): ?array
-    {
-        return $this->refreshModuleLayoutsWith($moduleName, $mode, $decisions);
-    }
-
-    /**
-     * 레이아웃 갱신을 미리 봅니다 — 실제 갱신과 같은 코드로 판정만 계산하고 DB·캐시는 그대로 둡니다.
-     *
-     * @param  string  $moduleName  모듈명
-     * @param  LayoutSyncMode  $mode  갱신 전략
-     * @param  array<string, string>  $decisions  화면별 결정
-     * @return array{strategy: string, entries: list<array<string, mixed>>, summary: array<string, int>, has_conflicts: bool, conflict_screens: list<string>} 미리보기
-     *
-     * @throws ValidationException 모듈을 찾을 수 없거나 레이아웃을 읽지 못할 때
-     */
-    public function previewModuleLayoutRefresh(string $moduleName, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): array
-    {
-        try {
-            $this->moduleManager->loadModules();
-            $result = LayoutSyncOptions::run(
-                new LayoutSyncOptions(true, $decisions, null, 'refresh'),
-                fn () => $this->moduleManager->refreshModuleLayouts($moduleName, $mode)
-            );
-
-            return $result['layout_preview'];
-        } catch (\Exception $e) {
-            throw ValidationException::withMessages([
-                'module_name' => [__('modules.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
-            ]);
-        }
-    }
-
-    /**
-     * 레이아웃 갱신 본체 — 전략·결정을 실행 범위로 걸고 매니저를 부릅니다.
-     *
-     * @param  string  $moduleName  모듈명
-     * @param  LayoutSyncMode  $mode  갱신 전략
-     * @param  array<string, string>  $decisions  화면별 결정
      * @return array|null 갱신 결과 또는 null
      *
      * @throws ValidationException 레이아웃 갱신 실패 시
      */
-    private function refreshModuleLayoutsWith(string $moduleName, LayoutSyncMode $mode, array $decisions): ?array
+    public function refreshModuleLayouts(string $moduleName): ?array
     {
         HookManager::doAction('core.modules.before_refresh_layouts', $moduleName);
 
         try {
             $this->moduleManager->loadModules();
-            $result = LayoutSyncOptions::run(
-                new LayoutSyncOptions(false, $decisions, null, 'refresh'),
-                fn () => $this->moduleManager->refreshModuleLayouts($moduleName, $mode)
-            );
+            $result = $this->moduleManager->refreshModuleLayouts($moduleName);
 
             if ($result['success']) {
                 $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
 
                 HookManager::doAction('core.modules.after_refresh_layouts', $moduleName, $result);
-
-                // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
-                if (is_array($moduleInfo)) {
-                    $moduleInfo['layout_warnings'] = $result['layout_warnings'] ?? [];
-                    $moduleInfo['layout_sync'] = $result['layout_sync'] ?? null;
-                    $moduleInfo['layout_preview'] = $result['layout_preview'] ?? null;
-                }
 
                 return $moduleInfo;
             }
@@ -1145,7 +900,7 @@ class ModuleService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'module_name' => [__('modules.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
+                'module_name' => [__('modules.refresh_layouts_failed', ['error' => $e->getMessage()])],
             ]);
         }
     }
@@ -1171,21 +926,10 @@ class ModuleService
             ];
         }
 
-        // 2. Path Traversal 2차 봉쇄 — 요청 규칙이 1차이고 이것이 2차다.
-        //    형제 통로(템플릿)는 이 계층을 갖고 있었는데 여기만 없어, 규칙 한 줄이
-        //    무력해지면 이 통로에는 남는 방어선이 없었다.
-        $safePath = $this->sanitizeExtensionAssetPath($path);
+        // 2. 파일 경로 구성 (모듈 루트 기준)
+        $filePath = base_path("modules/{$identifier}/{$path}");
 
-        // 3. 파일 경로 구성 (모듈 루트 기준)
-        $basePath = base_path('modules/'.$identifier);
-        // 구분자는 `/` 로 잇는다 — Windows 에서 `DIRECTORY_SEPARATOR` 로 이으면
-        // `base_path()` 가 돌려준 `/` 구간과 섞여 `modules/x\dist/js/a.js` 같은 혼합
-        // 경로가 되고, 그 값을 그대로 돌려받는 소비처·계약 테스트가 어긋난다.
-        // 봉쇄 판정(`extensionAssetPathIsContained`)은 `realpath()` 로 정규화한 뒤
-        // 비교하므로 이 자리의 구분자에 영향받지 않는다.
-        $filePath = $basePath.'/'.$safePath;
-
-        // 4. 파일 존재 확인
+        // 3. 파일 존재 확인
         if (! file_exists($filePath) || ! is_file($filePath)) {
             return [
                 'success' => false,
@@ -1195,34 +939,8 @@ class ModuleService
             ];
         }
 
-        // 정제만으로는 심볼릭 링크 경유 탈출을 걸러내지 못한다 — 해석된 절대 경로가
-        // 기준 안인지 재확인한다.
-        if (! $this->extensionAssetPathIsContained($filePath, $basePath)) {
-            return [
-                'success' => false,
-                'filePath' => null,
-                'mimeType' => null,
-                'error' => 'file_not_found',
-            ];
-        }
-
-        // 5. 보안 검증 (허용된 확장자만) — 요청 규칙이 1차이고 이것이 2차다.
-        //    형제 통로(템플릿)는 이 계층을 갖고 있었는데 여기만 없어, 세 컨트롤러가 공통으로
-        //    갖는 `file_type_not_allowed` 403 분기가 이 통로에서는 도달 불가였다. 「요청
-        //    규칙이 이미 막으니 무해하다」는 방어가 되지 않는다 — 서비스는 확장에 열려 있어
-        //    요청 규칙을 거치지 않는 호출부가 생기면 그 순간 남는 방어선이 없다.
-        //    목록은 규칙 클래스가 SSoT 다(운영에서 소스맵을 차단하는 환경 분기가 거기 있다).
-        if (! $this->extensionAssetExtensionIsAllowed($filePath, AllowedModuleFileType::getAllowedExtensions())) {
-            return [
-                'success' => false,
-                'filePath' => null,
-                'mimeType' => null,
-                'error' => 'file_type_not_allowed',
-            ];
-        }
-
-        // 6. MIME 타입 감지
-        $mimeType = $this->extensionAssetMimeType($filePath);
+        // 4. MIME 타입 감지
+        $mimeType = $this->getMimeType($filePath);
 
         return [
             'success' => true,
@@ -1233,76 +951,36 @@ class ModuleService
     }
 
     /**
-     * 모듈 편집기 스펙(editor-spec.json) 디코드 결과를 반환합니다.
+     * MIME 타입 감지
      *
-     * 활성 모듈만 대상으로 하며, 설치본(`modules/{id}`)만 읽습니다(배포 원본 폴백 없음).
-     * editor-spec.json 은 수작업 작성 파일로 모듈 루트(module.json 옆)에 둡니다.
-     * 파일 미존재/미작성 시 spec=null 로 폴백합니다(편집 컨트롤 부재).
-     *
-     * @param  string  $identifier  모듈 식별자 (vendor-module 형식)
-     * @return array{success: bool, spec: array<string, mixed>|null, error: string|null}
+     * @param  string  $filePath  파일 경로
+     * @return string MIME 타입
      */
-    public function getEditorSpec(string $identifier): array
+    private function getMimeType(string $filePath): string
     {
-        $module = $this->moduleRepository->findByIdentifier($identifier);
+        $mimeTypes = [
+            'js' => 'application/javascript',
+            'mjs' => 'application/javascript',
+            'css' => 'text/css',
+            'json' => 'application/json',
+            'map' => 'application/json',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'svg' => 'image/svg+xml',
+            'webp' => 'image/webp',
+            'gif' => 'image/gif',
+            'ico' => 'image/x-icon',
+            'woff' => 'font/woff',
+            'woff2' => 'font/woff2',
+            'ttf' => 'font/ttf',
+            'otf' => 'font/otf',
+            'eot' => 'application/vnd.ms-fontobject',
+        ];
 
-        if (! $module || $module->status !== ExtensionStatus::Active->value) {
-            return ['success' => false, 'spec' => null, 'error' => 'module_not_found'];
-        }
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
 
-        // 분할 editor-spec.json 은 manifest + `$include` 블록으로 구성되므로
-        // 단순 디코드가 아닌 합본이 필요하다. 활성 디렉토리만 기준으로 합본한다
-        // (_bundled 폴백 없음). _bundled 작업분은 module:update 로 활성에
-        // 반영된 뒤에만 런타임에 보인다. 미분할 파일은 원본 그대로(하위 호환).
-        $spec = EditorSpecAssembler::assemble(
-            base_path("modules/{$identifier}/editor-spec.json")
-        );
-
-        return ['success' => true, 'spec' => $spec, 'error' => null];
-    }
-
-    /**
-     * 모듈 컴포넌트 매니페스트(components.json) 디코드 결과를 반환합니다.
-     *
-     * components.json 은 module:build 산출물로 모듈 루트에 둡니다.
-     * 설치본(`modules/{id}/components.json`)만 읽으며, 설치본에 없으면(구버전 모듈 등)
-     * 배포 원본을 대신 읽지 않고 components=null 로 둡니다(무손실 보존 디그레이드 — 원칙 4.6).
-     *
-     * @param  string  $identifier  모듈 식별자
-     * @return array{success: bool, components: array<string, mixed>|null, error: string|null}
-     */
-    public function getComponents(string $identifier): array
-    {
-        $module = $this->moduleRepository->findByIdentifier($identifier);
-
-        if (! $module || $module->status !== ExtensionStatus::Active->value) {
-            return ['success' => false, 'components' => null, 'error' => 'module_not_found'];
-        }
-
-        $components = $this->readInstalledJson("modules/{$identifier}/components.json");
-
-        return ['success' => true, 'components' => $components, 'error' => null];
-    }
-
-    /**
-     * 설치본의 JSON 파일을 읽어 디코드합니다.
-     *
-     * 배포 원본(`modules/_bundled/{id}`)은 대신 읽지 않는다 — 런타임·편집기는 실제로 돌아가는
-     * 설치본만 기준으로 삼는다.
-     *
-     * @param  string  $relativePath  base_path 기준 상대 경로 (modules/{id}/file.json)
-     * @return array<string, mixed>|null 디코드된 배열, 미존재/파싱 실패 시 null
-     */
-    private function readInstalledJson(string $relativePath): ?array
-    {
-        $path = base_path($relativePath);
-        if (! is_file($path)) {
-            return null;
-        }
-
-        $decoded = json_decode((string) file_get_contents($path), true);
-
-        return is_array($decoded) ? $decoded : null;
+        return $mimeTypes[$extension] ?? 'application/octet-stream';
     }
 
     /**

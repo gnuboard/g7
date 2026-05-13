@@ -14,8 +14,14 @@ interface LayoutComponent {
         index_var?: string;
     };
     if?: string;
-    /** 엔진 responsive — 프리셋(mobile·tablet·desktop·portable)·커스텀 구간(min-max·min-·-max) 키 */
-    responsive?: Record<string, Partial<LayoutComponent>>;
+    responsive?: {
+        desktop?: {
+            props?: Record<string, any>;
+        };
+        tablet?: {
+            props?: Record<string, any>;
+        };
+    };
 }
 /**
  * 스켈레톤 컴포넌트 Props (엔진에서 전달)

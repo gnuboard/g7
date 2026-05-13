@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Tests\Unit;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use Mockery;
-use Mockery\MockInterface;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
@@ -14,33 +13,28 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Services\CommentService;
-use Modules\Sirsoft\Board\Tests\ModuleTestCase;
+use Tests\TestCase;
 
 /**
  * CommentService 단위 테스트
  *
  * 블라인드/삭제 상태 게시글에 대한 댓글 작성 제한 검증
  */
-class CommentServiceTest extends ModuleTestCase
+class CommentServiceTest extends TestCase
 {
     private CommentService $service;
 
-    /** @var MockInterface&BoardRepositoryInterface */
+    /** @var \Mockery\MockInterface&BoardRepositoryInterface */
     private $boardRepository;
 
-    /** @var MockInterface&CommentRepositoryInterface */
+    /** @var \Mockery\MockInterface&CommentRepositoryInterface */
     private $commentRepository;
 
-    /** @var MockInterface&PostRepositoryInterface */
+    /** @var \Mockery\MockInterface&PostRepositoryInterface */
     private $postRepository;
 
     private string $slug = 'test_board';
 
-    /**
-     * 저장소 목으로 댓글 서비스를 만듭니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,28 +61,14 @@ class CommentServiceTest extends ModuleTestCase
         );
     }
 
-    /**
-     * 목을 닫고 부모 정리를 합니다 — 목 기대가 어긋나 예외가 나도 시험 트랜잭션 롤백은 건너뛰지 않는다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 
     /**
      * 블라인드 게시글에 댓글 작성 시 예외 발생 테스트
-     *
-     * @scenario entity=board_comment, post_state=blinded
-     *
-     * @effects service_rejects_comment_on_blinded_post
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_post_for_comment_throws_exception_when_post_is_blinded(): void
     {
@@ -110,12 +90,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 삭제된 게시글에 댓글 작성 시 예외 발생 테스트
-     *
-     * @scenario entity=board_comment, post_state=deleted
-     *
-     * @effects service_rejects_comment_on_deleted_post
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_post_for_comment_throws_exception_when_post_is_deleted(): void
     {
@@ -137,12 +111,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * soft-deleted 게시글에 댓글 작성 시 예외 발생 테스트
-     *
-     * @scenario entity=board_comment, post_state=soft_deleted
-     *
-     * @effects service_rejects_comment_on_deleted_post
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_post_for_comment_throws_exception_when_post_is_soft_deleted(): void
     {
@@ -164,12 +132,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 정상 게시글에 댓글 작성 가능 테스트
-     *
-     * @scenario entity=board_comment, post_state=published
-     *
-     * @effects service_allows_comment_on_published_post
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_post_for_comment_passes_when_post_is_published(): void
     {
@@ -190,12 +152,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 블라인드 게시글에 createComment 호출 시 예외 발생 테스트
-     *
-     * @scenario entity=board_comment, post_state=blinded
-     *
-     * @effects service_rejects_comment_on_blinded_post, service_rejected_comment_is_not_persisted
-     *
-     * @return void 반환값 없음
      */
     public function test_create_comment_throws_exception_when_post_is_blinded(): void
     {
@@ -226,12 +182,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 삭제된 게시글에 createComment 호출 시 예외 발생 테스트
-     *
-     * @scenario entity=board_comment, post_state=deleted
-     *
-     * @effects service_rejects_comment_on_deleted_post, service_rejected_comment_is_not_persisted
-     *
-     * @return void 반환값 없음
      */
     public function test_create_comment_throws_exception_when_post_is_deleted(): void
     {
@@ -262,12 +212,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 정상 게시글에 댓글 생성 성공 테스트
-     *
-     * @scenario entity=board_comment, post_state=published
-     *
-     * @effects service_allows_comment_on_published_post
-     *
-     * @return void 반환값 없음
      */
     public function test_create_comment_succeeds_when_post_is_published(): void
     {
@@ -308,12 +252,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 블라인드 게시글에 답글 작성 시 예외 발생 테스트
-     *
-     * @scenario entity=board_comment, post_state=blinded
-     *
-     * @effects service_rejects_comment_on_blinded_post, service_rejected_comment_is_not_persisted
-     *
-     * @return void 반환값 없음
      */
     public function test_create_reply_throws_exception_when_post_is_blinded(): void
     {
@@ -350,12 +288,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 비회원 댓글 — 비로그인 상태에서 올바른 비밀번호로 수정 허용
-     *
-     * @scenario case=guest_comment_update_correct_password_by_guest
-     *
-     * @effects guest_comment_update_allowed_with_correct_password
-     *
-     * @return void 반환값 없음
      */
     public function test_can_update_guest_comment_with_correct_password_as_guest(): void
     {
@@ -368,12 +300,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 비회원 댓글 — 비로그인 상태에서 틀린 비밀번호로 수정 거부
-     *
-     * @scenario case=guest_comment_update_wrong_password_by_guest
-     *
-     * @effects guest_comment_update_denied_with_wrong_password
-     *
-     * @return void 반환값 없음
      */
     public function test_can_update_guest_comment_with_wrong_password_as_guest(): void
     {
@@ -386,12 +312,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 비회원 댓글 — 로그인한 일반 회원이 올바른 비밀번호로 수정 허용
-     *
-     * @scenario case=guest_comment_update_correct_password_by_member
-     *
-     * @effects guest_comment_update_allowed_with_correct_password
-     *
-     * @return void 반환값 없음
      */
     public function test_can_update_guest_comment_with_correct_password_as_logged_in_user(): void
     {
@@ -404,12 +324,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 비회원 댓글 — 로그인한 일반 회원이 틀린 비밀번호로 수정 거부
-     *
-     * @scenario case=guest_comment_update_wrong_password_by_member
-     *
-     * @effects guest_comment_update_denied_with_wrong_password
-     *
-     * @return void 반환값 없음
      */
     public function test_can_update_guest_comment_with_wrong_password_as_logged_in_user(): void
     {
@@ -422,12 +336,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 회원 댓글 — 본인이 수정 허용
-     *
-     * @scenario case=member_comment_update_by_author
-     *
-     * @effects member_comment_update_allowed_for_author
-     *
-     * @return void 반환값 없음
      */
     public function test_can_update_member_comment_as_author(): void
     {
@@ -440,12 +348,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 회원 댓글 — 타인이 수정 거부
-     *
-     * @scenario case=member_comment_update_by_other_member
-     *
-     * @effects member_comment_update_denied_for_other_member
-     *
-     * @return void 반환값 없음
      */
     public function test_cannot_update_member_comment_as_other_user(): void
     {
@@ -458,12 +360,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 비회원 댓글 — 비로그인 상태에서 올바른 비밀번호로 삭제 허용
-     *
-     * @scenario case=guest_comment_delete_correct_password_by_guest
-     *
-     * @effects guest_comment_delete_allowed_with_correct_password
-     *
-     * @return void 반환값 없음
      */
     public function test_can_delete_guest_comment_with_correct_password_as_guest(): void
     {
@@ -476,12 +372,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 비회원 댓글 — 로그인한 일반 회원이 올바른 비밀번호로 삭제 허용
-     *
-     * @scenario case=guest_comment_delete_correct_password_by_member
-     *
-     * @effects guest_comment_delete_allowed_with_correct_password
-     *
-     * @return void 반환값 없음
      */
     public function test_can_delete_guest_comment_with_correct_password_as_logged_in_user(): void
     {
@@ -494,12 +384,6 @@ class CommentServiceTest extends ModuleTestCase
 
     /**
      * 비회원 댓글 — 로그인한 일반 회원이 틀린 비밀번호로 삭제 거부
-     *
-     * @scenario case=guest_comment_delete_wrong_password_by_member
-     *
-     * @effects guest_comment_delete_denied_with_wrong_password
-     *
-     * @return void 반환값 없음
      */
     public function test_cannot_delete_guest_comment_with_wrong_password_as_logged_in_user(): void
     {
@@ -515,7 +399,7 @@ class CommentServiceTest extends ModuleTestCase
      *
      * @param  int|null  $userId  작성자 user_id (null이면 비회원)
      * @param  string|null  $password  해시된 비밀번호
-     * @return MockInterface&Comment Mock 댓글 객체
+     * @return \Mockery\MockInterface&Comment Mock 댓글 객체
      */
     private function createMockComment(?int $userId, ?string $password)
     {
@@ -531,7 +415,7 @@ class CommentServiceTest extends ModuleTestCase
      *
      * @param  PostStatus  $status  게시글 상태
      * @param  string|null  $deletedAt  삭제 일시
-     * @return MockInterface&Post Mock 게시글 객체
+     * @return \Mockery\MockInterface&Post Mock 게시글 객체
      */
     private function createMockPost(PostStatus $status, ?string $deletedAt = null)
     {

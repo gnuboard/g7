@@ -5,8 +5,6 @@
  * 테스트 대상:
  * - 환영 카드가 렌더링됨
  * - 환영 제목(H1)과 메시지(Span)가 다국어 키로 노출됨
- *
- * @scenario-manifest tests/scenarios/dashboard-layout.yaml
  */
 
 import React from 'react';
@@ -68,10 +66,6 @@ describe('admin_dashboard layout (gnuboard7-hello_admin_template)', () => {
     }
   });
 
-  /**
-   * @scenario case=render
-   * @effects dashboard_layout_renders_welcome_card
-   */
   it('환영 카드가 렌더링된다', async () => {
     setupTestRegistry();
 

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api\Auth;
 
-use App\Listeners\NotificationHookListener;
 use App\Models\PasswordResetToken;
 use App\Models\Permission;
 use App\Models\Role;
@@ -24,41 +23,19 @@ class UserAuthControllerTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * 테스트 환경 준비
-     *
-     * 이 클래스는 가입 환영/비밀번호 재설정 등 메일 발송을 단언하므로 mail 채널을
-     * 준비 완료 상태로 만든다. 기본 테스트 설정은 from_address 가 플레이스홀더라
-     * ChannelReadinessService 가 not-ready 로 판정해 mail 채널이 제외된다.
-     *
-     * @return void 반환값 없음
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->enableMailChannelReadiness();
-    }
-
-    /**
      * 알림 시스템은 notification_definitions 시드 + 동적 훅 재등록 필요
      *
      * 부팅 시점에 DB 가 비어있어 registerDynamicHooks 가 실행되었지만 아무것도 등록하지 못했으므로
      * 테스트 시 시드 후 수동 재등록이 필요 (이 시점엔 중복 등록 없음).
-     *
-     * @return void 반환값 없음
      */
     private function seedNotificationDefinitions(): void
     {
         $this->artisan('db:seed', ['--class' => 'NotificationDefinitionSeeder']);
-        app(NotificationHookListener::class)->registerDynamicHooks();
+        app(\App\Listeners\NotificationHookListener::class)->registerDynamicHooks();
     }
 
     /**
      * 권한이 부여된 사용자 생성 헬퍼
-     *
-     * @param  array  $attributes  사용자 속성
-     * @param  array  $permissions  부여할 권한 식별자 목록
-     * @return User 생성된 사용자
      */
     private function createUserWithPermissions(array $attributes = [], array $permissions = []): User
     {
@@ -96,8 +73,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * JSON 요청 헬퍼 메서드
-     *
-     * @return static JSON 헤더가 설정된 테스트 인스턴스
      */
     private function jsonRequest(): static
     {
@@ -108,9 +83,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
-     *
-     * @param  User  $user  요청을 보낼 사용자
-     * @return static 인증 헤더가 설정된 테스트 인스턴스
      */
     private function authRequest(User $user): static
     {
@@ -128,12 +100,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 유효한 자격 증명으로 로그인 성공
-     *
-     * @scenario endpoint=login
-     *
-     * @effects user_auth_login_succeeds_with_valid_credentials
-     *
-     * @return void 반환값 없음
      */
     public function test_login_succeeds_with_valid_credentials(): void
     {
@@ -153,12 +119,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 로그인 성공 시 토큰과 사용자 정보 반환
-     *
-     * @scenario endpoint=login
-     *
-     * @effects user_auth_login_returns_token_and_user
-     *
-     * @return void 반환값 없음
      */
     public function test_login_returns_token_and_user(): void
     {
@@ -189,12 +149,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 잘못된 이메일로 로그인 실패
-     *
-     * @scenario endpoint=login
-     *
-     * @effects user_auth_login_fails_with_invalid_email
-     *
-     * @return void 반환값 없음
      */
     public function test_login_fails_with_invalid_email(): void
     {
@@ -213,12 +167,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 잘못된 비밀번호로 로그인 실패
-     *
-     * @scenario endpoint=login
-     *
-     * @effects user_auth_login_fails_with_invalid_password
-     *
-     * @return void 반환값 없음
      */
     public function test_login_fails_with_invalid_password(): void
     {
@@ -237,12 +185,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 이메일 필수 검증
-     *
-     * @scenario endpoint=login
-     *
-     * @effects user_auth_login_validates_email_required
-     *
-     * @return void 반환값 없음
      */
     public function test_login_validates_email_required(): void
     {
@@ -256,12 +198,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 비밀번호 필수 검증
-     *
-     * @scenario endpoint=login
-     *
-     * @effects user_auth_login_validates_password_required
-     *
-     * @return void 반환값 없음
      */
     public function test_login_validates_password_required(): void
     {
@@ -275,12 +211,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 이메일 형식 검증
-     *
-     * @scenario endpoint=login
-     *
-     * @effects user_auth_login_validates_email_format
-     *
-     * @return void 반환값 없음
      */
     public function test_login_validates_email_format(): void
     {
@@ -299,12 +229,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 회원가입 성공
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_creates_user_successfully
-     *
-     * @return void 반환값 없음
      */
     public function test_register_creates_user_successfully(): void
     {
@@ -327,12 +251,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 회원가입 시 user_consents 테이블에 동의 이력이 기록되는지 확인
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_stores_consent_records
-     *
-     * @return void 반환값 없음
      */
     public function test_register_stores_consent_records(): void
     {
@@ -369,12 +287,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 버전 미전달 시 version=0으로 동의 이력이 기록되는지 확인
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_stores_consent_without_version
-     *
-     * @return void 반환값 없음
      */
     public function test_register_stores_consent_without_version(): void
     {
@@ -406,12 +318,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 회원가입 시 동의 이력에 IP 주소가 기록되는지 확인
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_stores_ip_address_in_consent
-     *
-     * @return void 반환값 없음
      */
     public function test_register_stores_ip_address_in_consent(): void
     {
@@ -440,12 +346,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 회원가입 시 닉네임이 선택 사항인지 확인
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_nickname_is_optional
-     *
-     * @return void 반환값 없음
      */
     public function test_register_nickname_is_optional(): void
     {
@@ -468,12 +368,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 회원가입 시 언어 설정이 저장되는지 확인
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_stores_language_preference
-     *
-     * @return void 반환값 없음
      */
     public function test_register_stores_language_preference(): void
     {
@@ -495,101 +389,7 @@ class UserAuthControllerTest extends TestCase
     }
 
     /**
-     * 회원가입 시 휴대폰/전화번호가 저장되는지 확인
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_stores_mobile_and_phone
-     *
-     * @return void 반환값 없음
-     */
-    public function test_register_stores_mobile_and_phone(): void
-    {
-        $response = $this->jsonRequest()->postJson('/api/auth/register', [
-            'name' => '테스트 사용자',
-            'email' => 'contact@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'mobile' => '010-1234-5678',
-            'phone' => '02-123-4567',
-            'agree_terms' => true,
-            'agree_privacy' => true,
-        ]);
-
-        $response->assertStatus(201);
-
-        $this->assertDatabaseHas('users', [
-            'email' => 'contact@example.com',
-            'mobile' => '010-1234-5678',
-            'phone' => '02-123-4567',
-        ]);
-    }
-
-    /**
-     * 휴대폰/전화번호는 선택 항목이므로 미입력 시에도 가입에 성공한다
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_mobile_and_phone_are_optional
-     *
-     * @return void 반환값 없음
-     */
-    public function test_register_mobile_and_phone_are_optional(): void
-    {
-        $response = $this->jsonRequest()->postJson('/api/auth/register', [
-            'name' => '테스트 사용자',
-            'email' => 'nocontact@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'agree_terms' => true,
-            'agree_privacy' => true,
-        ]);
-
-        $response->assertStatus(201);
-
-        $user = User::where('email', 'nocontact@example.com')->first();
-        $this->assertNotNull($user);
-        $this->assertNull($user->mobile);
-        $this->assertNull($user->phone);
-    }
-
-    /**
-     * 휴대폰번호 형식 위반 시 검증 실패(422)
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_validates_mobile_format
-     *
-     * @return void 반환값 없음
-     */
-    public function test_register_validates_mobile_format(): void
-    {
-        $response = $this->jsonRequest()->postJson('/api/auth/register', [
-            'name' => '테스트 사용자',
-            'email' => 'badmobile@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'mobile' => '휴대폰없음',
-            'agree_terms' => true,
-            'agree_privacy' => true,
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['mobile']);
-
-        $this->assertDatabaseMissing('users', [
-            'email' => 'badmobile@example.com',
-        ]);
-    }
-
-    /**
      * 회원가입 시 'user' 역할 자동 할당
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_assigns_user_role_automatically
-     *
-     * @return void 반환값 없음
      */
     public function test_register_assigns_user_role_automatically(): void
     {
@@ -614,12 +414,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 이름 필수 검증
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_validates_name_required
-     *
-     * @return void 반환값 없음
      */
     public function test_register_validates_name_required(): void
     {
@@ -637,12 +431,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 이용약관 동의 필수 검증
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_validates_agree_terms_required
-     *
-     * @return void 반환값 없음
      */
     public function test_register_validates_agree_terms_required(): void
     {
@@ -660,12 +448,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 개인정보처리방침 동의 필수 검증
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_validates_agree_privacy_required
-     *
-     * @return void 반환값 없음
      */
     public function test_register_validates_agree_privacy_required(): void
     {
@@ -683,12 +465,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 이메일 고유성 검증
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_validates_email_unique
-     *
-     * @return void 반환값 없음
      */
     public function test_register_validates_email_unique(): void
     {
@@ -711,12 +487,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 비밀번호 확인 검증
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_validates_password_confirmed
-     *
-     * @return void 반환값 없음
      */
     public function test_register_validates_password_confirmed(): void
     {
@@ -735,12 +505,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 비밀번호 최소 길이 검증 (8자 미만 실패)
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_validates_password_min_length
-     *
-     * @return void 반환값 없음
      */
     public function test_register_validates_password_min_length(): void
     {
@@ -759,12 +523,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 비밀번호 7자는 실패 (최소 8자 경계값 테스트)
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_validates_password_min_8_characters
-     *
-     * @return void 반환값 없음
      */
     public function test_register_validates_password_min_8_characters(): void
     {
@@ -783,12 +541,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 비밀번호 8자는 성공 (최소 8자 경계값 테스트)
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_accepts_password_with_exactly_8_characters
-     *
-     * @return void 반환값 없음
      */
     public function test_register_accepts_password_with_exactly_8_characters(): void
     {
@@ -806,12 +558,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 회원가입 시 country 필드가 Accept-Language 헤더로부터 자동 저장되는지 확인
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_stores_country_from_accept_language
-     *
-     * @return void 반환값 없음
      */
     public function test_register_stores_country_from_accept_language(): void
     {
@@ -836,12 +582,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 회원가입 시 ip_address가 자동 저장되는지 확인
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_stores_ip_address
-     *
-     * @return void 반환값 없음
      */
     public function test_register_stores_ip_address(): void
     {
@@ -866,12 +606,6 @@ class UserAuthControllerTest extends TestCase
      *
      * 알림 시스템은 DB 기반 동적 훅 구독(NotificationHookListener::registerDynamicHooks)
      * 이므로 notification_definitions + notification_templates 시딩 필수.
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_sends_welcome_notification
-     *
-     * @return void 반환값 없음
      */
     public function test_register_sends_welcome_notification(): void
     {
@@ -899,12 +633,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * Accept-Language 헤더가 빈 문자열일 때 country가 null인지 확인
-     *
-     * @scenario endpoint=register
-     *
-     * @effects user_auth_register_stores_null_country_with_empty_accept_language
-     *
-     * @return void 반환값 없음
      */
     public function test_register_stores_null_country_with_empty_accept_language(): void
     {
@@ -933,16 +661,10 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 현재 토큰만 무효화하여 로그아웃
-     *
-     * @scenario endpoint=logout
-     *
-     * @effects user_auth_logout_invalidates_current_token
-     *
-     * @return void 반환값 없음
      */
     public function test_logout_invalidates_current_token(): void
     {
-        $user = $this->createUserWithPermissions();
+        $user = $this->createUserWithPermissions([], ['core.auth.logout']);
 
         $response = $this->authRequest($user)->postJson('/api/user/auth/logout');
 
@@ -952,12 +674,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 인증 없이 로그아웃 시 401 반환
-     *
-     * @scenario endpoint=logout
-     *
-     * @effects user_auth_logout_returns_401_without_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_logout_returns_401_without_authentication(): void
     {
@@ -972,16 +688,10 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 모든 디바이스에서 로그아웃
-     *
-     * @scenario endpoint=logout
-     *
-     * @effects user_auth_logout_all_devices_invalidates_all_tokens
-     *
-     * @return void 반환값 없음
      */
     public function test_logout_all_devices_invalidates_all_tokens(): void
     {
-        $user = $this->createUserWithPermissions();
+        $user = $this->createUserWithPermissions([], ['core.auth.logout']);
 
         // 여러 토큰 생성
         $user->createToken('device-1');
@@ -1007,16 +717,10 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 토큰 갱신 시 새 토큰 반환
-     *
-     * @scenario endpoint=refresh
-     *
-     * @effects user_auth_refresh_returns_new_token
-     *
-     * @return void 반환값 없음
      */
     public function test_refresh_returns_new_token(): void
     {
-        $user = $this->createUserWithPermissions();
+        $user = $this->createUserWithPermissions([], ['core.auth.refresh']);
 
         $response = $this->authRequest($user)->postJson('/api/user/auth/refresh');
 
@@ -1033,12 +737,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 인증 없이 토큰 갱신 시 401 반환
-     *
-     * @scenario endpoint=refresh
-     *
-     * @effects user_auth_refresh_returns_401_without_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_refresh_returns_401_without_authentication(): void
     {
@@ -1053,19 +751,13 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 인증된 사용자 정보 반환
-     *
-     * @scenario endpoint=current_user
-     *
-     * @effects user_auth_user_returns_authenticated_user_info
-     *
-     * @return void 반환값 없음
      */
     public function test_user_returns_authenticated_user_info(): void
     {
         $user = $this->createUserWithPermissions([
             'name' => '테스트 사용자',
             'email' => 'test@example.com',
-        ]);
+        ], ['core.auth.user']);
 
         $response = $this->authRequest($user)->getJson('/api/user/auth/user');
 
@@ -1076,12 +768,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 인증 없이 사용자 정보 조회 시 401 반환
-     *
-     * @scenario endpoint=current_user
-     *
-     * @effects user_auth_user_returns_401_without_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_user_returns_401_without_authentication(): void
     {
@@ -1096,12 +782,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * /api/auth/user 공용 라우트로 인증된 사용자 정보 반환
-     *
-     * @scenario endpoint=current_user
-     *
-     * @effects user_auth_auth_user_returns_authenticated_user_info
-     *
-     * @return void 반환값 없음
      */
     public function test_auth_user_returns_authenticated_user_info(): void
     {
@@ -1119,12 +799,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * /api/auth/user 공용 라우트 - 인증 없이 접근 시 401 반환
-     *
-     * @scenario endpoint=current_user
-     *
-     * @effects user_auth_auth_user_returns_401_without_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_auth_user_returns_401_without_authentication(): void
     {
@@ -1135,12 +809,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * /api/auth/logout 공용 라우트로 로그아웃 성공
-     *
-     * @scenario endpoint=logout
-     *
-     * @effects user_auth_auth_logout_invalidates_token
-     *
-     * @return void 반환값 없음
      */
     public function test_auth_logout_invalidates_token(): void
     {
@@ -1154,12 +822,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * /api/auth/logout 공용 라우트 - 인증 없이 접근 시 401 반환
-     *
-     * @scenario endpoint=logout
-     *
-     * @effects user_auth_auth_logout_returns_401_without_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_auth_logout_returns_401_without_authentication(): void
     {
@@ -1170,12 +832,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * /api/auth/user 응답에 is_admin 필드 포함 확인 (일반 사용자)
-     *
-     * @scenario endpoint=current_user
-     *
-     * @effects user_auth_auth_user_returns_is_admin_false_for_regular_user
-     *
-     * @return void 반환값 없음
      */
     public function test_auth_user_returns_is_admin_false_for_regular_user(): void
     {
@@ -1189,12 +845,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * /api/auth/user 응답에 is_admin 필드 포함 확인 (관리자)
-     *
-     * @scenario endpoint=current_user
-     *
-     * @effects user_auth_auth_user_returns_is_admin_true_for_admin_user
-     *
-     * @return void 반환값 없음
      */
     public function test_auth_user_returns_is_admin_true_for_admin_user(): void
     {
@@ -1204,7 +854,7 @@ class UserAuthControllerTest extends TestCase
         $user = User::factory()->create();
 
         // admin 역할 할당
-        $adminRole = Role::where('identifier', 'admin')->first();
+        $adminRole = \App\Models\Role::where('identifier', 'admin')->first();
         if ($adminRole) {
             $user->roles()->sync([$adminRole->id]);
         }
@@ -1221,12 +871,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 비밀번호 찾기 요청 시 이메일 발송 성공
-     *
-     * @scenario endpoint=forgot_password
-     *
-     * @effects user_auth_forgot_password_sends_email
-     *
-     * @return void 반환값 없음
      */
     public function test_forgot_password_sends_email(): void
     {
@@ -1254,33 +898,20 @@ class UserAuthControllerTest extends TestCase
     }
 
     /**
-     * 미등록 이메일로 비밀번호 찾기를 요청해도 가입 주소와 같은 200 을 받는다 (계정 존재 비노출, 7.1.6)
-     *
-     * @scenario endpoint=forgot_password
-     *
-     * @effects user_auth_forgot_password_returns_same_success_for_unregistered_email
-     *
-     * @return void 반환값 없음
+     * 미등록 이메일로 비밀번호 찾기 요청 시 실패
      */
-    public function test_forgot_password_returns_same_success_for_unregistered_email(): void
+    public function test_forgot_password_fails_with_unregistered_email(): void
     {
         $response = $this->jsonRequest()->postJson('/api/auth/forgot-password', [
             'email' => 'nonexistent@example.com',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJson(['success' => true]);
-        $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'nonexistent@example.com']);
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
     }
 
     /**
      * 비밀번호 찾기 요청 시 이메일 형식 검증
-     *
-     * @scenario endpoint=forgot_password
-     *
-     * @effects user_auth_forgot_password_validates_email_format
-     *
-     * @return void 반환값 없음
      */
     public function test_forgot_password_validates_email_format(): void
     {
@@ -1294,12 +925,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 중복 비밀번호 찾기 요청 시 토큰 갱신
-     *
-     * @scenario endpoint=forgot_password
-     *
-     * @effects user_auth_forgot_password_updates_existing_token
-     *
-     * @return void 반환값 없음
      */
     public function test_forgot_password_updates_existing_token(): void
     {
@@ -1318,8 +943,7 @@ class UserAuthControllerTest extends TestCase
         $firstToken = PasswordResetToken::where('email', 'test@example.com')->first();
         $firstCreatedAt = $firstToken->created_at;
 
-        // 시간을 앞으로 — 같은 주소의 재요청 대기 시간(60초)이 정확히 끝나는 경계다. 이보다 짧으면
-        // 토큰이 갱신되지 않고 메일도 다시 가지 않는다(7.1.6).
+        // 시간을 약간 앞으로
         $this->travel(1)->minutes();
 
         // 두 번째 요청
@@ -1339,12 +963,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 비밀번호 찾기 요청 시 redirect_prefix=admin 전달 성공
-     *
-     * @scenario endpoint=forgot_password
-     *
-     * @effects user_auth_forgot_password_accepts_redirect_prefix_admin
-     *
-     * @return void 반환값 없음
      */
     public function test_forgot_password_accepts_redirect_prefix_admin(): void
     {
@@ -1368,12 +986,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 비밀번호 찾기 요청 시 잘못된 redirect_prefix 거부
-     *
-     * @scenario endpoint=forgot_password
-     *
-     * @effects user_auth_forgot_password_rejects_invalid_redirect_prefix
-     *
-     * @return void 반환값 없음
      */
     public function test_forgot_password_rejects_invalid_redirect_prefix(): void
     {
@@ -1392,12 +1004,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 비밀번호 찾기 요청 시 redirect_prefix 없이도 정상 동작 (하위 호환성)
-     *
-     * @scenario endpoint=forgot_password
-     *
-     * @effects user_auth_forgot_password_works_without_redirect_prefix
-     *
-     * @return void 반환값 없음
      */
     public function test_forgot_password_works_without_redirect_prefix(): void
     {
@@ -1424,12 +1030,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 비밀번호 재설정 성공
-     *
-     * @scenario endpoint=reset_password
-     *
-     * @effects user_auth_reset_password_succeeds
-     *
-     * @return void 반환값 없음
      */
     public function test_reset_password_succeeds(): void
     {
@@ -1468,12 +1068,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 잘못된 토큰으로 비밀번호 재설정 실패
-     *
-     * @scenario endpoint=reset_password
-     *
-     * @effects user_auth_reset_password_fails_with_invalid_token
-     *
-     * @return void 반환값 없음
      */
     public function test_reset_password_fails_with_invalid_token(): void
     {
@@ -1502,12 +1096,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 만료된 토큰으로 비밀번호 재설정 실패
-     *
-     * @scenario endpoint=reset_password
-     *
-     * @effects user_auth_reset_password_fails_with_expired_token
-     *
-     * @return void 반환값 없음
      */
     public function test_reset_password_fails_with_expired_token(): void
     {
@@ -1541,13 +1129,7 @@ class UserAuthControllerTest extends TestCase
     }
 
     /**
-     * 미등록 이메일의 비밀번호 재설정은 토큰이 틀린 것과 같은 필드(token)로 실패한다 (계정 존재 비노출, 7.1.6)
-     *
-     * @scenario endpoint=reset_password
-     *
-     * @effects user_auth_reset_password_fails_with_unregistered_email
-     *
-     * @return void 반환값 없음
+     * 미등록 이메일로 비밀번호 재설정 실패
      */
     public function test_reset_password_fails_with_unregistered_email(): void
     {
@@ -1559,18 +1141,11 @@ class UserAuthControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['token'])
-            ->assertJsonMissingValidationErrors(['email']);
+            ->assertJsonValidationErrors(['email']);
     }
 
     /**
      * 비밀번호 확인 불일치 시 실패
-     *
-     * @scenario endpoint=reset_password
-     *
-     * @effects user_auth_reset_password_fails_with_password_mismatch
-     *
-     * @return void 반환값 없음
      */
     public function test_reset_password_fails_with_password_mismatch(): void
     {
@@ -1591,12 +1166,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 토큰이 존재하지 않을 때 비밀번호 재설정 실패
-     *
-     * @scenario endpoint=reset_password
-     *
-     * @effects user_auth_reset_password_fails_when_no_token_exists
-     *
-     * @return void 반환값 없음
      */
     public function test_reset_password_fails_when_no_token_exists(): void
     {
@@ -1623,12 +1192,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 유효한 토큰으로 검증 성공
-     *
-     * @scenario endpoint=validate_reset_token
-     *
-     * @effects user_auth_validate_reset_token_succeeds_with_valid_token
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_reset_token_succeeds_with_valid_token(): void
     {
@@ -1660,12 +1223,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 잘못된 토큰으로 검증 실패
-     *
-     * @scenario endpoint=validate_reset_token
-     *
-     * @effects user_auth_validate_reset_token_fails_with_invalid_token
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_reset_token_fails_with_invalid_token(): void
     {
@@ -1692,12 +1249,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 만료된 토큰으로 검증 실패
-     *
-     * @scenario endpoint=validate_reset_token
-     *
-     * @effects user_auth_validate_reset_token_fails_with_expired_token
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_reset_token_fails_with_expired_token(): void
     {
@@ -1730,12 +1281,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 미등록 이메일로 토큰 검증 실패
-     *
-     * @scenario endpoint=validate_reset_token
-     *
-     * @effects user_auth_validate_reset_token_fails_with_unregistered_email
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_reset_token_fails_with_unregistered_email(): void
     {
@@ -1750,12 +1295,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 토큰이 존재하지 않을 때 검증 실패
-     *
-     * @scenario endpoint=validate_reset_token
-     *
-     * @effects user_auth_validate_reset_token_fails_when_no_token_exists
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_reset_token_fails_when_no_token_exists(): void
     {
@@ -1776,12 +1315,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 토큰 필수 검증
-     *
-     * @scenario endpoint=validate_reset_token
-     *
-     * @effects user_auth_validate_reset_token_validates_token_required
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_reset_token_validates_token_required(): void
     {
@@ -1795,12 +1328,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 이메일 필수 검증
-     *
-     * @scenario endpoint=validate_reset_token
-     *
-     * @effects user_auth_validate_reset_token_validates_email_required
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_reset_token_validates_email_required(): void
     {
@@ -1814,12 +1341,6 @@ class UserAuthControllerTest extends TestCase
 
     /**
      * 이메일 형식 검증
-     *
-     * @scenario endpoint=validate_reset_token
-     *
-     * @effects user_auth_validate_reset_token_validates_email_format
-     *
-     * @return void 반환값 없음
      */
     public function test_validate_reset_token_validates_email_format(): void
     {

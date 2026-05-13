@@ -14,19 +14,6 @@ return [
         'always' => 'Always Required',
     ],
 
-    // 답글 삭제 정책
-    'reply_delete_policy' => [
-        'block' => 'Block deletion (cannot delete posts with replies)',
-        'cascade' => 'Delete together (replies are deleted with the post)',
-    ],
-
-    // 비밀 답변 열람 범위
-    'secret_reply_visibility' => [
-        'thread_path' => 'Thread path (default)',
-        'descendants_only' => 'Descendants only',
-        'per_post' => 'Per post',
-    ],
-
     // Order Direction
     'order_direction' => [
         'asc' => 'Ascending',
@@ -76,7 +63,6 @@ return [
         'system' => 'System',
         'auto_hide' => 'Auto Hide',
         'user' => 'User Deleted',
-        'cascade' => 'Post Deleted',
     ],
 
     // Post Status

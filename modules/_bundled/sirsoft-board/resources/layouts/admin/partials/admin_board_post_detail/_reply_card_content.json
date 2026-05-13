@@ -1,521 +1,471 @@
 {
-    "comment": "원글 아래 딸린 답글 한 장(읽기 전용 요약). 본문 카드와 달리 이 조각은 반복 안에서 쓰여 대상이 `post.data` 가 아니라 반복 변수 `item` 이고, 그래서 펼침 상태도 하나가 아니라 «답글 id 별 표»로 든다 — 본문은 `expandedReplies`, 첨부는 `expandedReplyAttachments` 로 서로 다른 표를 쓴다(한 표를 나눠 쓰면 본문을 펴는 순간 첨부까지 따라 열린다)",
-    "meta": {
-        "is_partial": true,
-        "description": "Admin Board Reply Card Content - Simplified View Only"
-    },
-    "type": "basic",
-    "name": "Div",
-    "children": [
+  "meta": {
+    "is_partial": true,
+    "description": "Admin Board Reply Card Content - Simplified View Only"
+  },
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "id": "reply_header",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "p-6 border-b border-gray-200 dark:border-gray-700"
+      },
+      "children": [
         {
-            "id": "reply_header_{{item.id}}",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "board:p-6 board:border-b board:border-gray-200 board:dark:border-gray-700"
-            },
-            "children": [
+          "id": "title_row",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex flex-row items-start justify-between gap-4 mb-4"
+          },
+          "responsive": {
+            "portable": {
+              "props": {
+                "className": "flex flex-col gap-3 mb-4"
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "title_with_badges",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex-1 min-w-0"
+              },
+              "children": [
                 {
-                    "id": "title_row_{{item.id}}",
-                    "type": "basic",
-                    "name": "Div",
-                    "responsive": {
-                        "portable": {
-                            "props": {
-                                "className": "board-row-stack board:mb-4"
-                            }
-                        }
+                  "id": "title_with_prefix",
+                  "type": "basic",
+                  "name": "H2",
+                  "props": {
+                    "className": "text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "reply_arrow_icon",
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "arrow-right",
+                        "className": "w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0"
+                      }
                     },
-                    "props": {
-                        "className": "board-flex-start board:flex-row board:justify-between board:gap-4 board:mb-4"
+                    {
+                      "id": "category_badge_prefix",
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      },
+                      "text": "{{item.category}}",
+                      "if": "{{item.category}}"
                     },
-                    "children": [
-                        {
-                            "id": "title_with_badges_{{item.id}}",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "board:flex-1 board:min-w-0"
-                            },
-                            "children": [
-                                {
-                                    "id": "title_with_prefix_{{item.id}}",
-                                    "type": "basic",
-                                    "name": "H2",
-                                    "responsive": {
-                                        "portable": {
-                                            "props": {
-                                                "className": "board-section-heading board-flex-center board:gap-2 board:flex-wrap"
-                                            }
-                                        }
-                                    },
-                                    "props": {
-                                        "className": "board-text-primary board:text-xl board:font-semibold board-flex-center board:gap-2 board:flex-wrap"
-                                    },
-                                    "children": [
-                                        {
-                                            "id": "reply_arrow_icon_{{item.id}}",
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "arrow-right",
-                                                "className": "board:text-base board:text-blue-600 board:dark:text-blue-400 board:flex-shrink-0"
-                                            }
-                                        },
-                                        {
-                                            "id": "category_badge_prefix_{{item.id}}",
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{item.category}}",
-                                            "props": {
-                                                "className": "board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200"
-                                            },
-                                            "text": "{{item.category}}"
-                                        },
-                                        {
-                                            "id": "notice_prefix_{{item.id}}",
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{item.is_notice}}",
-                                            "props": {
-                                                "className": "board:text-blue-600 board:dark:text-blue-400"
-                                            },
-                                            "text": "$t:sirsoft-board.admin.posts.badge.notice"
-                                        },
-                                        {
-                                            "id": "title_text_{{item.id}}",
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "text": "{{item.title}}"
-                                        },
-                                        {
-                                            "id": "reply_attachment_icon_{{item.id}}",
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "if": "{{item.has_attachment}}",
-                                            "props": {
-                                                "name": "paperclip",
-                                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
-                                            }
-                                        },
-                                        {
-                                            "id": "new_badge_{{item.id}}",
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{item.is_new}}",
-                                            "props": {
-                                                "className": "board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-bold board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200"
-                                            },
-                                            "text": "$t:sirsoft-board.common.new"
-                                        },
-                                        {
-                                            "id": "secret_icon_{{item.id}}",
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "if": "{{item.is_secret}}",
-                                            "props": {
-                                                "name": "lock",
-                                                "className": "board:text-xl board:text-yellow-700 board:dark:text-yellow-400 board:flex-shrink-0"
-                                            }
-                                        },
-                                        {
-                                            "id": "status_badge_blinded_{{item.id}}",
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{item.status === 'blinded'}}",
-                                            "props": {
-                                                "className": "board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-orange-100 board:text-orange-800 board:dark:bg-orange-900 board:dark:text-orange-200"
-                                            },
-                                            "text": "$t:sirsoft-board.admin.posts.detail.status_blinded"
-                                        },
-                                        {
-                                            "id": "status_badge_deleted_{{item.id}}",
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{item.deleted_at}}",
-                                            "props": {
-                                                "className": "board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-gray-800 board:text-white board:dark:bg-gray-600 board:dark:text-gray-100"
-                                            },
-                                            "text": "$t:sirsoft-board.admin.posts.detail.status_deleted"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "id": "detail_button_{{item.id}}",
-                            "type": "basic",
-                            "name": "A",
-                            "if": "{{item.id != route.id}}",
-                            "actions": [
-                                {
-                                    "comment": "이 답글의 상세 화면으로. 보던 목록 상태를 이고 간다",
-                                    "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "mergeQuery": true,
-                                        "query": {}
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "href": "/admin/board/{{route.slug}}/post/{{item.id}}",
-                                "mergeQuery": true,
-                                "className": "board-button board-flex-center board:gap-1.5 board:px-3 board:py-1.5 board:text-sm board:bg-gray-800 board:dark:bg-gray-700 board:text-white board:rounded-lg board:hover:bg-gray-900 board:dark:hover:bg-gray-600 board:transition-colors"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-board.admin.posts.detail.view_detail_button"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "reply_meta_{{item.id}}",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "board-flex-center board:flex-wrap board:gap-2 board-text-label"
+                    {
+                      "id": "notice_prefix",
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-blue-600 dark:text-blue-400"
+                      },
+                      "text": "$t:sirsoft-board.admin.posts.badge.notice",
+                      "if": "{{item.is_notice}}"
                     },
-                    "children": [
-                        {
-                            "id": "author_name_menu_{{item.id}}",
-                            "type": "composite",
-                            "name": "ActionMenu",
-                            "if": "{{!item.author?.is_guest && item.author?.uuid}}",
-                            "actions": [
-                                {
-                                    "comment": "답글 쓴 사람의 관리자 상세로 — 대상이 반복 변수 `item` 이라 여러 답글이 각자 자기 글쓴이를 가리킨다",
-                                    "type": "click",
-                                    "event": "onItemClick",
-                                    "handler": "switch",
-                                    "cases": {
-                                        "view_user_info": {
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/users/{{item.author?.uuid}}"
-                                            }
-                                        }
-                                    }
-                                }
-                            ],
-                            "props": {
-                                "triggerLabel": "{{item.author?.name}}",
-                                "triggerIconName": "",
-                                "triggerClassName": "board:font-medium board:text-gray-900 board:dark:text-white",
-                                "position": "right",
-                                "items": [
-                                    {
-                                        "href": "/admin/users/{{item.author?.uuid}}",
-                                        "id": "view_user_info",
-                                        "label": "$t:sirsoft-board.admin.posts.detail.user_info",
-                                        "iconName": "user"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{item.author?.is_guest || !item.author?.uuid}}",
-                            "props": {
-                                "className": "board-text-heading"
-                            },
-                            "text": "{{item.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
-                        },
-                        {
-                            "comment": "실명 보조 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{!!item.author?.real_name}}",
-                            "props": {
-                                "data-testid": "author-real-name",
-                                "className": "board-text-label-subtle",
-                                "aria-label": "{{$t('sirsoft-board.common.real_name_label', { name: item.author?.real_name })}}"
-                            },
-                            "text": "{{$t('sirsoft-board.common.real_name_label', { name: item.author?.real_name })}}"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{item.author?.email}}",
-                            "props": {
-                                "className": "board-text-label-subtle"
-                            },
-                            "text": "({{item.author?.email}})"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{item.author?.is_guest}}",
-                            "props": {
-                                "className": "board:inline-flex board:items-center board:px-1.5 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-600 board:dark:bg-gray-700 board:dark:text-gray-300"
-                            },
-                            "text": "$t:sirsoft-board.admin.posts.guest"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "·"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{item.created_at}}"
-                        },
-                        {
-                            "id": "comment_count_separator_{{item.id}}",
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{(item.comment_count ?? 0) > 0}}",
-                            "text": "·"
-                        },
-                        {
-                            "id": "comment_count_{{item.id}}",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{(item.comment_count ?? 0) > 0}}",
-                            "props": {
-                                "className": "board-flex-center board:gap-1"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                        "name": "comment",
-                                        "className": "board:text-base"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-board.admin.posts.detail.comments_title|count={{item.comment_count}}"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{item.ip_address}}",
-                            "text": "·"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "if": "{{item.ip_address}}",
-                            "props": {
-                                "className": "board-text-tertiary"
-                            },
-                            "text": "IP: {{item.ip_address}}"
-                        }
-                    ]
+                    {
+                      "id": "title_text",
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "{{item.title}}"
+                    },
+                    {
+                      "id": "attachment_icon",
+                      "type": "composite",
+                      "name": "Icon",
+                      "if": "{{item.has_attachment}}",
+                      "props": {
+                        "name": "paperclip",
+                        "className": "w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0"
+                      }
+                    },
+                    {
+                      "id": "new_badge",
+                      "type": "basic",
+                      "name": "Span",
+                      "if": "{{item.is_new}}",
+                      "props": {
+                        "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                      },
+                      "text": "$t:sirsoft-board.common.new"
+                    },
+                    {
+                      "id": "secret_icon",
+                      "type": "composite",
+                      "name": "Icon",
+                      "props": {
+                        "name": "lock",
+                        "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                      },
+                      "if": "{{item.is_secret}}"
+                    },
+                    {
+                      "id": "status_badge_blinded",
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+                      },
+                      "text": "$t:sirsoft-board.admin.posts.detail.status_blinded",
+                      "if": "{{item.status === 'blinded'}}"
+                    },
+                    {
+                      "id": "status_badge_deleted",
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100"
+                      },
+                      "text": "$t:sirsoft-board.admin.posts.detail.status_deleted",
+                      "if": "{{item.deleted_at}}"
+                    }
+                  ]
                 }
-            ]
+              ]
+            },
+            {
+              "id": "detail_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors"
+              },
+              "if": "{{item.id != route.id}}",
+              "actions": [
+                {
+                  "type": "click",
+                  "handler": "navigate",
+                  "params": {
+                    "path": "/admin/board/{{route.slug}}/post/{{item.id}}"
+                  }
+                }
+              ],
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.posts.detail.view_detail_button"
+                }
+              ]
+            }
+          ]
         },
         {
-            "id": "reply_attachments_section_{{item.id}}",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{item.has_attachment}}",
-            "props": {
-                "className": "board-panel-header-row"
-            },
-            "children": [
+          "id": "reply_meta",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+          },
+          "children": [
+            {
+              "id": "author_name_menu",
+              "type": "composite",
+              "name": "ActionMenu",
+              "if": "{{!item.author?.is_guest}}",
+              "props": {
+                "triggerLabel": "{{item.author?.name}}",
+                "triggerIconName": "",
+                "triggerClassName": "font-medium text-gray-900 dark:text-white",
+                "position": "right",
+                "items": [
+                  {
+                    "id": "view_user_info",
+                    "label": "$t:sirsoft-board.admin.posts.detail.user_info",
+                    "iconName": "user"
+                  }
+                ]
+              },
+              "actions": [
                 {
-                    "id": "reply_attachments_toggle_{{item.id}}",
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "이 답글의 첨부 목록을 폈다 접었다 한다. 이 조각은 반복 안에서 쓰이므로 상태를 하나로 두면 모든 답글이 함께 열린다 — 바로 아래 본문 펼침과 같이 «답글 id 별 표»를 통째로 다시 지어 그 답글의 값만 뒤집는다",
-                            "type": "click",
-                            "handler": "setState",
-                            "params": {
-                                "target": "local",
-                                "expandedReplyAttachments": "{{Object.assign({}, _local.expandedReplyAttachments || {}, {[item.id]: !_local.expandedReplyAttachments?.[item.id]})}}"
-                            }
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "board-flex-between board:w-full board:text-left board:cursor-pointer",
-                        "aria-expanded": "{{!!_local.expandedReplyAttachments?.[item.id]}}",
-                        "aria-controls": "reply_attachments_list_{{item.id}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "board-flex-center board:gap-2 board-text-body board:font-medium"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                        "name": "paperclip",
-                                        "className": "board:text-base"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:sirsoft-board.admin.posts.detail.attachments|count={{item.attachment_count ?? 0}}"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "{{_local.expandedReplyAttachments?.[item.id] ? 'chevron-up' : 'chevron-down'}}",
-                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400"
-                            }
-                        }
-                    ]
+                  "event": "onItemClick",
+                  "type": "click",
+                  "handler": "switch",
+                  "value": "{{$args[0]}}",
+                  "cases": {
+                    "view_user_info": {
+                      "handler": "navigate",
+                      "params": {
+                        "path": "/admin/users/{{item.author?.uuid}}"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{item.author?.is_guest}}",
+              "props": {
+                "className": "text-sm font-medium text-gray-900 dark:text-white"
+              },
+              "text": "{{item.author?.name}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400"
+              },
+              "text": "({{item.author?.email}})",
+              "if": "{{item.author?.email}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+              },
+              "text": "$t:sirsoft-board.admin.posts.guest",
+              "if": "{{item.author?.is_guest}}"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "·"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{item.created_at}}"
+            },
+            {
+              "id": "comment_count_separator",
+              "type": "basic",
+              "name": "Span",
+              "if": "{{(item.comment_count ?? 0) > 0}}",
+              "text": "·"
+            },
+            {
+              "id": "comment_count",
+              "type": "basic",
+              "name": "Div",
+              "if": "{{(item.comment_count ?? 0) > 0}}",
+              "props": {
+                "className": "flex items-center gap-1"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "comment",
+                    "className": "w-4 h-4"
+                  }
                 },
                 {
-                    "comment": "펼침 토글의 aria-controls 가 가리키는 목록 묶음. 이 조각은 답글마다 반복되므로 id 에 답글 식별자를 넣어 답글끼리 겹치지 않게 한다",
-                    "id": "reply_attachments_list_{{item.id}}",
-                    "type": "basic",
-                    "name": "Div",
-                    "children": [
-                        {
-                            "id": "reply_{{item.id}}_attachments_list_{{index}}",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{_local.expandedReplyAttachments?.[item.id]}}",
-                            "iteration": {
-                                "source": "item.attachments ?? []",
-                                "item_var": "attachment",
-                                "index_var": "index"
-                            },
-                            "props": {
-                                "className": "board:mt-3 board:ml-4 board:grid board:grid-cols-1 board:gap-2"
-                            },
-                            "children": [
-                                {
-                                    "id": "attachment_card_{{index}}_{{item.id}}",
-                                    "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "comment": "답글 첨부 내려받기 — 카드가 단추라 Tab·Enter·Space 로도 받는다(7.1.1). 관리자 다운로드 라우트로 받고 그 권한(can_download)이 없으면 실행하지 않는다. 올린 이름 그대로 저장되도록 파일명을 함께 넘긴다. 게시글 카드와 같이 이 모듈의 핸들러로 로그인 토큰을 실어 받는다",
-                                            "type": "click",
-                                            "handler": "sirsoft-board.downloadAttachment",
-                                            "if": "{{post?.data?.abilities?.can_download === true}}",
-                                            "params": {
-                                                "url": "{{'/api/modules/sirsoft-board/admin/board/' + route?.slug + '/attachments/download/' + attachment.hash}}",
-                                                "filename": "{{attachment.original_filename}}"
-                                            },
-                                            "onError": {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "error",
-                                                    "message": "$t:sirsoft-board.admin.posts.detail.download_failed"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "props": {
-                                        "type": "button",
-                                        "className": "board-flex-center board:justify-start board:w-full board:text-left board:gap-2 board:px-3 board:py-2 board:bg-gray-50 board:dark:bg-gray-800/50 board:rounded board:hover:bg-gray-100 board:dark:hover:bg-gray-800 board:transition-colors board:cursor-pointer board:group"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Icon",
-                                            "props": {
-                                                "name": "download",
-                                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400 board:group-hover:text-blue-600 board-attachment-icon board:transition-colors board:flex-shrink-0"
-                                            }
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "board-text-primary board:text-sm board:truncate board:flex-1"
-                                            },
-                                            "text": "{{attachment.original_filename}} ({{attachment.size_formatted}})"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.posts.detail.comments_title|count={{item.comment_count}}"
                 }
-            ]
-        },
-        {
-            "id": "reply_content_{{item.id}}",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "board:p-6"
+              ]
             },
-            "children": [
-                {
-                    "id": "reply_html_content_{{item.id}}",
-                    "type": "extension_point",
-                    "name": "html_content",
-                    "props": {
-                        "content": "{{item?.content}}",
-                        "isHtml": "{{(item?.content_mode ?? 'text') === 'html'}}",
-                        "className": "{{_local.expandedReplies?.[item.id] ? (item?.content_mode === 'html' ? 'board:prose board:dark:prose-invert board:prose-p:my-2 board:prose-headings:font-bold board:prose-headings:mt-6 board:prose-headings:mb-4 board:prose-h1:text-2xl board:prose-h2:text-xl board:prose-h3:text-lg board:prose-a:text-blue-600 board:dark:prose-a:text-blue-400 board:prose-a:no-underline board:hover:prose-a:underline board:prose-blockquote:border-l-4 board:prose-blockquote:border-gray-300 board:dark:prose-blockquote:border-gray-600 board:prose-blockquote:pl-4 board:prose-blockquote:italic board:prose-code:bg-gray-100 board:dark:prose-code:bg-gray-800 board:prose-code:px-1 board:prose-code:py-0.5 board:prose-code:rounded board:prose-pre:bg-gray-100 board:dark:prose-pre:bg-gray-800 board:prose-pre:p-4 board:prose-pre:rounded-lg board:prose-pre:overflow-x-auto board:max-w-none' : 'board:prose board:dark:prose-invert board:max-w-none') : 'board:line-clamp-3'}} board:text-gray-900 board:dark:text-gray-100"
-                    },
-                    "default": [
-                        {
-                            "type": "composite",
-                            "name": "HtmlContent",
-                            "props": {
-                                "content": "{{item?.content}}",
-                                "isHtml": "{{(item?.content_mode ?? 'text') === 'html'}}",
-                                "className": "{{_local.expandedReplies?.[item.id] ? (item?.content_mode === 'html' ? 'board:prose board:dark:prose-invert board:prose-p:my-2 board:prose-headings:font-bold board:prose-headings:mt-6 board:prose-headings:mb-4 board:prose-h1:text-2xl board:prose-h2:text-xl board:prose-h3:text-lg board:prose-a:text-blue-600 board:dark:prose-a:text-blue-400 board:prose-a:no-underline board:hover:prose-a:underline board:prose-blockquote:border-l-4 board:prose-blockquote:border-gray-300 board:dark:prose-blockquote:border-gray-600 board:prose-blockquote:pl-4 board:prose-blockquote:italic board:prose-code:bg-gray-100 board:dark:prose-code:bg-gray-800 board:prose-code:px-1 board:prose-code:py-0.5 board:prose-code:rounded board:prose-pre:bg-gray-100 board:dark:prose-pre:bg-gray-800 board:prose-pre:p-4 board:prose-pre:rounded-lg board:prose-pre:overflow-x-auto board:max-w-none' : 'board:prose board:dark:prose-invert board:max-w-none') : 'board:line-clamp-3'}} board:text-gray-900 board:dark:text-gray-100"
-                            }
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "if": "{{(item?.content?.length ?? 0) > 150}}",
-                    "actions": [
-                        {
-                            "comment": "이 답글의 본문을 세 줄에서 전문으로 펼친다 — 답글이 여럿이라 id 별 표를 통째로 새로 지어 넣는다(첨부 토글과 달리 여기서는 한 줄만 펼쳐진다). 버튼은 본문이 150자를 넘을 때만 나온다",
-                            "type": "click",
-                            "handler": "setState",
-                            "params": {
-                                "target": "local",
-                                "expandedReplies": "{{Object.assign({}, _local.expandedReplies || {}, {[item.id]: !_local.expandedReplies?.[item.id]})}}"
-                            }
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "board-flex-center board:mt-2 board:text-xs board:text-blue-600 board:dark:text-blue-400 board:hover:text-blue-700 board:dark:hover:text-blue-300 board:font-medium board:transition-colors board:gap-1"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_local.expandedReplies?.[item.id] ? '$t:sirsoft-board.admin.posts.form.hide_content' : '$t:sirsoft-board.admin.posts.form.show_full_content'}}"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "{{_local.expandedReplies?.[item.id] ? 'chevron-up' : 'chevron-down'}}",
-                                "className": "board:text-xs"
-                            }
-                        }
-                    ]
-                }
-            ]
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{item.ip_address}}",
+              "text": "·"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "if": "{{item.ip_address}}",
+              "props": {
+                "className": "text-xs text-gray-500 dark:text-gray-400"
+              },
+              "text": "IP: {{item.ip_address}}"
+            }
+          ]
         }
-    ]
+      ]
+    },
+    {
+      "id": "attachments_section",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "px-6 py-4 border-b border-gray-200 dark:border-gray-700"
+      },
+      "if": "{{item.has_attachment}}",
+      "children": [
+        {
+          "id": "attachments_toggle",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between cursor-pointer"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "showAttachments": "{{!_local.showAttachments}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "paperclip",
+                    "className": "w-4 h-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-board.admin.posts.detail.attachments|count={{item.attachment_count ?? 0}}"
+                }
+              ]
+            },
+            {
+              "type": "composite",
+              "name": "Icon",
+              "props": {
+                "name": "{{_local.showAttachments ? 'chevron-up' : 'chevron-down'}}",
+                "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
+              }
+            }
+          ]
+        },
+        {
+          "id": "attachments_list",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "mt-3 ml-4 grid grid-cols-1 gap-2"
+          },
+          "if": "{{_local.showAttachments}}",
+          "iteration": {
+            "source": "item.attachments ?? []",
+            "item_var": "attachment",
+            "index_var": "index"
+          },
+          "children": [
+            {
+              "id": "attachment_card",
+              "type": "basic",
+              "name": "A",
+              "props": {
+                "href": "{{attachment.download_url}}",
+                "className": "flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500 transition-all cursor-pointer group no-underline"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Icon",
+                  "props": {
+                    "name": "download",
+                    "className": "w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:text-blue-400 dark:group-hover:text-blue-400 transition-colors flex-shrink-0"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "text-sm text-gray-900 dark:text-white truncate flex-1"
+                  },
+                  "text": "{{attachment.original_filename}} ({{attachment.size_formatted}})"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reply_content",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "p-6"
+      },
+      "children": [
+        {
+          "id": "reply_html_content",
+          "type": "extension_point",
+          "name": "html_content",
+          "props": {
+            "content": "{{item?.content}}",
+            "isHtml": "{{(item?.content_mode ?? 'text') === 'html'}}",
+            "className": "{{_local.expandedReplies?.[item.id] ? 'prose dark:prose-invert max-w-none' : 'line-clamp-3'}} text-gray-900 dark:text-gray-100"
+          },
+          "default": [
+            {
+              "type": "composite",
+              "name": "HtmlContent",
+              "props": {
+                "content": "{{item?.content}}",
+                "isHtml": "{{(item?.content_mode ?? 'text') === 'html'}}",
+                "className": "{{_local.expandedReplies?.[item.id] ? 'prose dark:prose-invert max-w-none' : 'line-clamp-3'}} text-gray-900 dark:text-gray-100"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{(item?.content?.length ?? 0) > 150}}",
+          "props": {
+            "type": "button",
+            "className": "mt-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors flex items-center gap-1"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": {
+                "target": "local",
+                "expandedReplies": "{{Object.assign({}, _local.expandedReplies || {}, {[item.id]: !_local.expandedReplies?.[item.id]})}}"
+              }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_local.expandedReplies?.[item.id] ? '$t:sirsoft-board.admin.posts.form.hide_content' : '$t:sirsoft-board.admin.posts.form.show_full_content'}}"
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "{{_local.expandedReplies?.[item.id] ? 'chevron-up' : 'chevron-down'}}",
+                "className": "w-3 h-3"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

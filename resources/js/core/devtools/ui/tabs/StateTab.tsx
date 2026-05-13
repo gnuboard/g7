@@ -47,7 +47,7 @@ export const StateTab: React.FC<StateTabProps> = ({ state, devTools }) => {
     const getTriggerIcon = (trigger: ComputedRecalcTrigger) => {
         switch (trigger) {
             case 'state-change': return '📊';
-            case 'datasource-update': return '📥';
+            case 'prop-change': return '📥';
             case 'dependency-change': return '🔗';
             case 'manual': return '👆';
             case 'initial': return '🚀';

@@ -1,224 +1,152 @@
 {
-    "comment": "내 정보 수정 — 보기 화면(`profile`)과 짝을 이루는 별도 화면이다.",
-    "version": "1.0.0",
-    "layout_name": "mypage/profile-edit",
-    "extends": "_user_base",
-    "data_sources": [
-        {
-            "id": "user",
-            "label_key": "$t:editor.data_source.user",
-            "type": "api",
-            "endpoint": "/api/me",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "initLocal": "profileEditForm",
-            "blur_until_loaded": true,
-            "refetchOnMount": true,
-            "errorHandling": {
-                "default": {
-                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
-                    "handler": "conditions",
-                    "conditions": [
-                        {
-                            "if": "{{error.refetch}}",
-                            "then": {
-                                "handler": "toast",
-                                "params": {
-                                    "type": "error",
-                                    "message": "$t:core.errors.refresh_failed"
-                                }
-                            }
-                        },
-                        {
-                            "then": {
-                                "handler": "showErrorPage",
-                                "params": {
-                                    "errorCode": "{{error.status}}",
-                                    "target": "content"
-                                }
-                            }
-                        }
-                    ]
-                }
-            },
-            "comment": "본인 정보를 받아 `initLocal` 로 폼 초깃값까지 채운다. `refetchOnMount` 라 다른 화면을 다녀와도\n       화면에 남아 있던 낡은 값이 아니라 서버 값으로 다시 시작한다"
-        },
-        {
-            "id": "profileFields",
-            "label_key": "$t:editor.data_source.profileFields",
-            "type": "api",
-            "endpoint": "/api/me/fields",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "refetchOnMount": true,
-            "errorHandling": {
-                "default": {
-                    "comment": "처음 받기 실패는 본문 오류 화면, 다시 받기 실패는 받아 둔 항목을 그대로 두고 알린다.",
-                    "handler": "conditions",
-                    "conditions": [
-                        {
-                            "if": "{{error.refetch}}",
-                            "then": {
-                                "handler": "toast",
-                                "params": {
-                                    "type": "error",
-                                    "message": "$t:core.errors.refresh_failed"
-                                }
-                            }
-                        },
-                        {
-                            "then": {
-                                "handler": "showErrorPage",
-                                "params": {
-                                    "errorCode": "{{error.status}}",
-                                    "target": "content"
-                                }
-                            }
-                        }
-                    ]
-                }
-            },
-            "comment": "내 정보 항목 — 운영자가 환경설정 > 회원에서 정한 항목 계약(순서, 필수, 유형, 선택지)에 본인 기준 잠금(readonly, locked_reason, locked_until)과 파일 항목의 올라간 파일(files), 업로드 제한(file_rules)이 붙어 온다.\n       값은 싣지 않는다(값은 위 `user` 소스가 준다) — 폼 상태 전체가 저장 본문으로 나가므로 정의를 폼 상태에 섞지 않으려고 소스를 가른다. `user` 와 같은 수명이라 재확인을 통과해 폼이 열릴 때 이미 와 있다.\n       아래 computed 넷이 이 응답을 읽는다(profileExtensionGroups 는 모듈과 플러그인이 선언한 항목을 확장마다 묶은 목록이고, 묶음 제목은 그 확장의 이름이다): profileFieldGroups 는 카드별 묶음 목록이고(항목이 있는 묶음만. basic, contact, location, profile 은 항목의 ui.group, extra 는 묶음이 없는 운영자 추가 항목),\n       memberFieldCtx 는 공용 항목 조각(partials/member/_member_fields)에 넘기는 문맥이며, profileOrphanErrors 는 화면에 그린 어느 항목에도 속하지 않는 오류 문구 목록이다(폼 위쪽 상자가 이것만 보여 준다).\n       파일 항목을 올리거나 지우면 공용 조각이 이 소스를 다시 받는다.\n       같은 응답의 display_name 묶음은 표시 이름 종류 선택 칸이 쓴다(고를 권한이 있고 고를 종류가 둘 이상일 때만 can_choose 가 true 다). displayNameSelected 는 지금 적용될 종류의 선택지다 —\n       폼에 담긴 종류가 고를 수 있는 종류면 그것, 아니면(고르지 않았거나 전에 고른 종류가 허용에서 빠졌으면) 회원 기본 종류. 표시 이름 종류 칸의 오류는 그 칸 아래에 뜨므로 위쪽 상자에서 뺀다."
-        }
+  "version": "1.0.0",
+  "layout_name": "mypage/profile-edit",
+  "extends": "_user_base",
+  "permissions": [],
+  "data_sources": [
+    {
+      "id": "user",
+      "type": "api",
+      "endpoint": "/api/me",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true,
+      "loading_strategy": "progressive",
+      "initLocal": "profileEditForm",
+      "blur_until_loaded": true,
+      "refetchOnMount": true
+    }
+  ],
+  "init_actions": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "isPasswordVerified": false,
+        "verifyPassword": "",
+        "isVerifyingPassword": false,
+        "verifyPasswordError": false
+      }
+    }
+  ],
+  "defines": {
+    "countryList": [
+        { "code": "KR", "name": "countries.KR" },
+        { "code": "US", "name": "countries.US" },
+        { "code": "JP", "name": "countries.JP" },
+        { "code": "CN", "name": "countries.CN" },
+        { "code": "GB", "name": "countries.GB" },
+        { "code": "DE", "name": "countries.DE" },
+        { "code": "FR", "name": "countries.FR" },
+        { "code": "CA", "name": "countries.CA" },
+        { "code": "AU", "name": "countries.AU" },
+        { "code": "IN", "name": "countries.IN" },
+        { "code": "BR", "name": "countries.BR" },
+        { "code": "RU", "name": "countries.RU" },
+        { "code": "IT", "name": "countries.IT" },
+        { "code": "ES", "name": "countries.ES" },
+        { "code": "MX", "name": "countries.MX" },
+        { "code": "NL", "name": "countries.NL" },
+        { "code": "SE", "name": "countries.SE" },
+        { "code": "CH", "name": "countries.CH" },
+        { "code": "SG", "name": "countries.SG" },
+        { "code": "HK", "name": "countries.HK" },
+        { "code": "TW", "name": "countries.TW" },
+        { "code": "TH", "name": "countries.TH" },
+        { "code": "VN", "name": "countries.VN" },
+        { "code": "PH", "name": "countries.PH" },
+        { "code": "MY", "name": "countries.MY" },
+        { "code": "ID", "name": "countries.ID" },
+        { "code": "NZ", "name": "countries.NZ" },
+        { "code": "AT", "name": "countries.AT" },
+        { "code": "BE", "name": "countries.BE" },
+        { "code": "DK", "name": "countries.DK" },
+        { "code": "FI", "name": "countries.FI" },
+        { "code": "NO", "name": "countries.NO" },
+        { "code": "PL", "name": "countries.PL" },
+        { "code": "PT", "name": "countries.PT" },
+        { "code": "IE", "name": "countries.IE" },
+        { "code": "GR", "name": "countries.GR" },
+        { "code": "CZ", "name": "countries.CZ" },
+        { "code": "HU", "name": "countries.HU" },
+        { "code": "TR", "name": "countries.TR" },
+        { "code": "IL", "name": "countries.IL" },
+        { "code": "AE", "name": "countries.AE" },
+        { "code": "SA", "name": "countries.SA" },
+        { "code": "ZA", "name": "countries.ZA" },
+        { "code": "EG", "name": "countries.EG" },
+        { "code": "AR", "name": "countries.AR" },
+        { "code": "CL", "name": "countries.CL" },
+        { "code": "CO", "name": "countries.CO" },
+        { "code": "PE", "name": "countries.PE" }
     ],
-    "computed": {
-        "profileFieldGroups": "{{['basic', 'contact', 'location', 'profile', 'extra'].map(function(g) { return { key: g, fields: (profileFields?.data?.fields ?? []).filter(function(f) { return g === 'extra' ? (!f.ui?.group && f.owner === 'custom') : f.ui?.group === g; }) }; }).filter(function(g) { return g.fields.length > 0; })}}",
-        "profileExtensionGroups": "{{(profileFields?.data?.fields ?? []).filter(function(f) { return f.owner_type === 'module' || f.owner_type === 'plugin'; }).map(function(f) { return f.owner; }).filter(function(owner, index, owners) { return owners.indexOf(owner) === index; }).map(function(owner) { return { key: 'ext_' + owner, title: ((profileFields?.data?.fields ?? []).filter(function(f) { return f.owner === owner; })[0]?.source_label ?? owner), fields: (profileFields?.data?.fields ?? []).filter(function(f) { return f.owner === owner; }), includeAgreements: true }; })}}",
-        "displayNameSelected": "{{(function(dn, chosen) { return (dn?.options ?? []).find(function(o) { return o.value === chosen; }) ?? (dn?.options ?? []).find(function(o) { return o.value === dn?.default_kind; }) ?? null; })(profileFields?.data?.display_name, _local.profileEditForm?.display_name_kind)}}",
-        "memberFieldCtx": "{{({ formKey: 'profileEditForm', errors: _local.profileErrors ?? {}, disabled: !!_local.isSavingProfile })}}",
-        "profileOrphanErrors": "{{Object.entries(_local.profileErrors ?? {}).filter(function(entry) { return entry[0] !== 'display_name_kind' && !(profileFields?.data?.fields ?? []).some(function(f) { return (['basic', 'contact', 'location', 'profile'].indexOf(f.ui?.group) !== -1 || (!f.ui?.group && f.owner === 'custom') || f.owner_type === 'module' || f.owner_type === 'plugin') && (entry[0] === f.name || entry[0].indexOf(f.name + '.') === 0 || Object.values(f.parts ?? {}).indexOf(entry[0]) !== -1); }); }).flatMap(function(entry) { return Array.isArray(entry[1]) ? entry[1] : [entry[1]]; })}}"
-    },
-    "permissions": [],
-    "defines": {
-        "languageList": [
-            {
-                "code": "ko",
-                "name": "languages.ko"
-            },
-            {
-                "code": "en",
-                "name": "languages.en"
-            }
-        ]
-    },
-    "init_actions": [
-        {
-            "handler": "setState",
-            "params": {
-                "target": "local",
-                "isPasswordVerified": false,
-                "verifyPassword": "",
-                "isVerifyingPassword": false,
-                "verifyPasswordError": false,
-                "verifyPasswordErrorMessage": "",
-                "displayNamePreviews": null
-            }
+    "languageList": [
+        { "code": "ko", "name": "languages.ko" },
+        { "code": "en", "name": "languages.en" }
+    ]
+  },
+  "slots": {
+    "content": [
+      {
+        "type": "basic",
+        "name": "Div",
+        "props": {
+          "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
         },
-        {
-            "comment": "외부 수단(회사 계정 다시 로그인 등)으로 재확인하고 돌아왔다(7.2.0) — 받은 확인 토큰으로 재확인을 마치고 주소에서 토큰을 지운다",
-            "handler": "sequence",
-            "if": "{{!!query?.verification_token}}",
-            "actions": [
-                {
-                    "handler": "apiCall",
-                    "target": "/api/me/verify-password",
-                    "auth_required": true,
-                    "params": {
-                        "method": "POST",
-                        "body": {
-                            "verification_token": "{{query.verification_token}}"
-                        }
-                    },
-                    "onSuccess": {
-                        "handler": "setState",
-                        "params": {
-                            "target": "local",
-                            "isPasswordVerified": true
-                        }
-                    },
-                    "onError": {
-                        "handler": "setState",
-                        "params": {
-                            "target": "local",
-                            "reauthError": "{{error.message}}"
-                        }
-                    }
-                },
-                {
-                    "handler": "replaceUrl",
-                    "params": {
-                        "path": "/mypage/profile/edit"
-                    }
+        "children": [
+          {
+            "type": "layout",
+            "name": "Container",
+            "props": {
+              "className": "py-8"
+            },
+            "responsive": {
+              "portable": {
+                "props": {
+                  "className": "py-4"
                 }
-            ]
-        }
-    ],
-    "slots": {
-        "content": [
-            {
+              }
+            },
+            "children": [
+              {
+                "comment": "페이지 제목",
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+                  "className": "flex items-center gap-2 mb-6"
                 },
                 "children": [
-                    {
-                        "type": "layout",
-                        "name": "Container",
-                        "responsive": {
-                            "portable": {
-                                "props": {
-                                    "className": "py-4"
-                                }
-                            }
-                        },
-                        "props": {
-                            "className": "py-8"
-                        },
-                        "children": [
-                            {
-                                "comment": "페이지 제목",
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                    "className": "flex items-center gap-2 mb-6"
-                                },
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "props": {
-                                            "name": "pen-to-square",
-                                            "size": "xl",
-                                            "className": "text-gray-900 dark:text-white"
-                                        }
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "H1",
-                                        "props": {
-                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                                        },
-                                        "text": "$t:mypage.profile_edit_title"
-                                    }
-                                ]
-                            },
-                            {
-                                "comment": "비밀번호 검증 섹션",
-                                "partial": "partials/mypage/profile/_password_verify_section.json"
-                            },
-                            {
-                                "comment": "프로필 편집 폼",
-                                "partial": "partials/mypage/profile/_edit.json"
-                            }
-                        ]
+                  {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                      "name": "pen-to-square",
+                      "size": "xl",
+                      "className": "text-gray-900 dark:text-white"
                     }
+                  },
+                  {
+                    "type": "basic",
+                    "name": "H1",
+                    "props": {
+                      "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:mypage.profile_edit_title"
+                  }
                 ]
-            }
+              },
+              {
+                "comment": "비밀번호 검증 섹션",
+                "partial": "partials/mypage/profile/_password_verify_section.json"
+              },
+              {
+                "comment": "프로필 편집 폼",
+                "partial": "partials/mypage/profile/_edit.json"
+              }
+            ]
+          }
         ]
-    }
+      }
+    ]
+  }
 }

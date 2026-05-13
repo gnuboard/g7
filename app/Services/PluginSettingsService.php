@@ -2,17 +2,9 @@
 
 namespace App\Services;
 
-use App\Extension\Consent\ConsentManager;
 use App\Extension\HookManager;
 use App\Extension\PluginManager;
-use App\Extension\Support\ComputedSettingKeys;
 use App\Extension\TemplateManager;
-use App\Support\ExtensionSettingsMirror;
-use App\Support\LayoutMarkup\EmptyMap;
-use App\Support\LayoutMarkup\LayoutMarkupCompiler;
-use App\Support\LayoutMarkup\MarkupCompileContextResolver;
-use App\Support\SensitiveSettingMask;
-use App\Support\SettingsVersion;
 use App\Traits\FiltersFrontendSchema;
 use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
@@ -43,16 +35,6 @@ class PluginSettingsService
      * @var array<string, array>
      */
     private array $settingsCache = [];
-
-    /**
-     * 복호화 전 설정 캐시 (identifier => 기본값+저장값 병합, 계산값 키 제외)
-     *
-     * 설정 미러는 민감 필드를 버리므로 복호화가 필요 없다. 미러가 먼저 읽어도 파일은 한 번만 읽고,
-     * 뒤이어 `get()` 이 불리면 이 값을 복호화해 쓴다(#860).
-     *
-     * @var array<string, array>
-     */
-    private array $rawSettingsCache = [];
 
     /**
      * PluginSettingsService 생성자
@@ -97,8 +79,11 @@ class PluginSettingsService
         // 기본값 로드
         $defaults = $pluginInstance->getConfigValues();
 
-        // 기본값과 저장된 설정 병합 (복호화 전 원값 — 미러가 먼저 읽었으면 그 값을 쓴다)
-        $settings = $this->rawSettings($identifier, $pluginInstance, $defaults);
+        // 저장된 설정 파일 로드
+        $savedSettings = $this->loadSettingsFromFile($identifier);
+
+        // 기본값과 저장된 설정 병합
+        $settings = array_merge($defaults, $savedSettings);
 
         // 스키마 기반으로 민감한 필드 복호화
         $schema = $pluginInstance->getSettingsSchema();
@@ -115,48 +100,6 @@ class PluginSettingsService
         }
 
         return Arr::get($settings, $key, $default);
-    }
-
-    /**
-     * 설정 미러에 담을 값을 반환합니다 — 민감 필드를 복호화하지 않고 키째 뺀 값.
-     *
-     * 미러는 봇 전용 화면 생성기가 키 제한 없이 읽는 경로라 민감값을 담지 않는다. 담지 않을 값을 복호화했다가
-     * 버리던 낭비를 없앤다(#860). 반환 형태는 `get()` 에서 민감 키를 뺀 것과 같다.
-     *
-     * @param  string  $identifier  플러그인 식별자
-     * @return array<string, mixed> 민감 필드를 뺀 설정 (플러그인이 없으면 빈 배열)
-     */
-    public function getForMirror(string $identifier): array
-    {
-        $pluginInstance = $this->pluginManager->getPlugin($identifier);
-        if (! $pluginInstance) {
-            return [];
-        }
-
-        $defaults = $pluginInstance->getConfigValues();
-        $settings = $this->normalizeCategoryData($this->rawSettings($identifier, $pluginInstance, $defaults), $defaults);
-
-        return SensitiveSettingMask::strip($settings, $pluginInstance->getSettingsSchema());
-    }
-
-    /**
-     * 기본값과 저장된 설정을 병합한 복호화 전 값을 반환합니다 (요청 안에서 파일은 한 번만 읽는다).
-     *
-     * @param  string  $identifier  플러그인 식별자
-     * @param  object  $pluginInstance  플러그인 인스턴스
-     * @param  array<string, mixed>  $defaults  플러그인 기본값
-     * @return array<string, mixed> 병합 값 (민감 필드는 저장된 암호문 그대로)
-     */
-    private function rawSettings(string $identifier, object $pluginInstance, array $defaults): array
-    {
-        if (! isset($this->rawSettingsCache[$identifier])) {
-            // 저장된 설정 파일 로드 — 계산값 키는 파일에 남아 있어도 무시하고 늘 실시간 값(기본값)을 쓴다 (7.1.3)
-            $savedSettings = ComputedSettingKeys::strip($this->loadSettingsFromFile($identifier), ComputedSettingKeys::of($pluginInstance));
-
-            $this->rawSettingsCache[$identifier] = array_merge($defaults, $savedSettings);
-        }
-
-        return $this->rawSettingsCache[$identifier];
     }
 
     /**
@@ -197,22 +140,8 @@ class PluginSettingsService
         return $settings ?? [];
     }
 
-    /**
-     * 플러그인 설정을 저장합니다.
-     *
-     * 스키마의 sensitive 필드는 암호화하여 보관하며, 화면이 마스크를 그대로 되돌려 보낸 항목은
-     * "변경 없음" 으로 보아 기존 값을 유지합니다. 저장은 기존 설정 위 병합이므로 요청에 없는
-     * 키는 종전 값이 남습니다.
-     *
-     * @param  string  $identifier  플러그인 식별자
-     * @param  array<string, mixed>  $settings  저장할 설정 (검증 통과분)
-     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
-     * @return bool 저장 성공 여부
-     */
-    public function save(string $identifier, array $settings, ?string &$failureReason = null): bool
+    public function save(string $identifier, array $settings): bool
     {
-        $failureReason = null;
-
         // Before 훅
         HookManager::doAction('core.plugin_settings.before_save', $identifier, $settings);
 
@@ -222,8 +151,6 @@ class PluginSettingsService
         // 플러그인 인스턴스 확인
         $pluginInstance = $this->pluginManager->getPlugin($identifier);
         if (! $pluginInstance) {
-            $failureReason = __('plugins.errors.not_found', ['plugin' => $identifier]);
-
             return false;
         }
 
@@ -235,39 +162,18 @@ class PluginSettingsService
 
         // 스키마 기반으로 민감한 필드 암호화
         $schema = $pluginInstance->getSettingsSchema();
-        // 화면이 마스크를 그대로 되돌려 보낸 sensitive 필드는 "변경 없음" 이다 — 병합에서 기존 값이
-        // 유지되도록 요청에서 제거한다. 빈 문자열은 제거하지 않는다(지우겠다는 명시적 의사).
-        $settings = SensitiveSettingMask::stripUnchanged($settings, $schema);
         $settings = $this->encryptSensitiveFields($settings, $schema);
 
-        // 기존 설정과 병합 — 계산값 키는 요청에서도 기존 파일에서도 빼고 쓴다(옛 파일에 굳은 값도 이번 저장에서 지운다, 7.1.3)
-        $computedKeys = ComputedSettingKeys::of($pluginInstance);
-        $existingSettings = ComputedSettingKeys::strip($this->loadSettingsFromFile($identifier), $computedKeys);
-        $mergedSettings = array_merge($existingSettings, ComputedSettingKeys::strip($settings, $computedKeys));
+        // 기존 설정과 병합
+        $existingSettings = $this->loadSettingsFromFile($identifier);
+        $mergedSettings = array_merge($existingSettings, $settings);
 
         // 파일에 저장
         $result = $this->saveSettingsToFile($identifier, $mergedSettings);
 
-        if (! $result && $failureReason === null) {
-            // 파일 쓰기 실패 — 스토리지 드라이버가 사유를 돌려주지 않으므로 일반 문구로 대체한다.
-            $failureReason = __('plugins.errors.unknown_error');
-        }
-
         // 캐시 초기화
         if ($result) {
-            unset($this->settingsCache[$identifier], $this->rawSettingsCache[$identifier]);
-
-            // 같은 프로세스의 config 미러도 즉시 다시 채운다 (공개이슈 #109) —
-            // 이 호출이 없으면 상주 프로세스가 저장 후에도 옛 값을 계속 읽는다.
-            app(ExtensionSettingsMirror::class)->refreshPlugin($identifier);
-
-            // 큐 워커가 바뀐 것을 알 수 있도록 설정 버전을 올린다 — 워커는 작업 시작 전에 비교해 다시 읽는다(#724).
-            SettingsVersion::bump();
-
-            // 동의 제공자의 수집 여부가 플러그인 설정에 달려 있을 수 있다 — 같은 요청의 선택 상태 메모를 비운다(#860)
-            if (app()->resolved(ConsentManager::class)) {
-                app(ConsentManager::class)->forgetSelection();
-            }
+            unset($this->settingsCache[$identifier]);
         }
 
         // After 훅
@@ -296,14 +202,6 @@ class PluginSettingsService
         return $storage->put('settings', self::SETTINGS_FILENAME, $content);
     }
 
-    /**
-     * 플러그인 설정을 기본값으로 되돌립니다.
-     *
-     * 설정 파일을 삭제하고 캐시를 비웁니다 — 이후 조회는 플러그인이 선언한 기본값을 돌려줍니다.
-     *
-     * @param  string  $identifier  플러그인 식별자
-     * @return bool 초기화 성공 여부
-     */
     public function reset(string $identifier): bool
     {
         // Before 훅
@@ -312,7 +210,7 @@ class PluginSettingsService
         $pluginInstance = $this->pluginManager->getPlugin($identifier);
         if (! $pluginInstance) {
             // 캐시만 초기화
-            unset($this->settingsCache[$identifier], $this->rawSettingsCache[$identifier]);
+            unset($this->settingsCache[$identifier]);
 
             return true;
         }
@@ -324,16 +222,7 @@ class PluginSettingsService
         }
 
         // 캐시 초기화
-        unset($this->settingsCache[$identifier], $this->rawSettingsCache[$identifier]);
-
-        // 초기화도 값을 바꾸는 쓰기다 — 미러를 두면 같은 프로세스가 초기화 전 값을
-        // 계속 읽는다 (저장 경로와 동일 결함, 공개이슈 #109).
-        app(ExtensionSettingsMirror::class)->refreshPlugin($identifier);
-        SettingsVersion::bump();
-
-        if (app()->resolved(ConsentManager::class)) {
-            app(ConsentManager::class)->forgetSelection();
-        }
+        unset($this->settingsCache[$identifier]);
 
         // After 훅
         HookManager::doAction('core.plugin_settings.after_reset', $identifier);
@@ -341,14 +230,6 @@ class PluginSettingsService
         return true;
     }
 
-    /**
-     * 플러그인 설정 디렉토리를 통째로 삭제합니다.
-     *
-     * 플러그인 삭제 시 남은 설정 파일을 정리하는 용도입니다.
-     *
-     * @param  string  $identifier  플러그인 식별자
-     * @return bool 삭제 성공 여부
-     */
     public function deleteSettingsDirectory(string $identifier): bool
     {
         // Before 훅
@@ -358,13 +239,12 @@ class PluginSettingsService
         if ($pluginInstance) {
             $storage = $pluginInstance->getStorage();
 
-            // 설정 카테고리 디렉토리 삭제 ({identifier}/settings) — 확장 루트는 드라이버가
-            // 파괴 작업 대상으로 허용하지 않으므로 카테고리 전체 삭제 API 로만 정리한다
-            $storage->deleteAll('settings');
+            // 플러그인 전체 스토리지 디렉토리 삭제 ({identifier}/)
+            $storage->deleteDirectory('', '');
         }
 
         // 캐시 초기화
-        unset($this->settingsCache[$identifier], $this->rawSettingsCache[$identifier]);
+        unset($this->settingsCache[$identifier]);
 
         // After 훅
         HookManager::doAction('core.plugin_settings.after_delete_directory', $identifier);
@@ -376,15 +256,13 @@ class PluginSettingsService
      * 설정 캐시를 초기화합니다.
      *
      * @param  string|null  $identifier  특정 플러그인만 초기화 (null이면 전체)
-     * @return void
      */
     public function clearCache(?string $identifier = null): void
     {
         if ($identifier !== null) {
-            unset($this->settingsCache[$identifier], $this->rawSettingsCache[$identifier]);
+            unset($this->settingsCache[$identifier]);
         } else {
             $this->settingsCache = [];
-            $this->rawSettingsCache = [];
         }
     }
 
@@ -422,12 +300,6 @@ class PluginSettingsService
                 // frontend_schema가 없으면 기존 동작 유지 (하위 호환성)
                 $schema = $plugin->getSettingsSchema();
                 $settings = $this->excludeSensitiveFields($settings, $schema);
-            }
-
-            // 확장이 공개 설정에서 키를 더 뺄 수 있는 지점 (배열이 아닌 반환값은 버린다)
-            $filtered = HookManager::applyFilters('core.plugin_settings.filter_frontend_settings', $settings, $identifier);
-            if (is_array($filtered)) {
-                $settings = $filtered;
             }
 
             if (! empty($settings)) {
@@ -534,39 +406,15 @@ class PluginSettingsService
     /**
      * 레이아웃 파일을 파싱합니다.
      *
-     * `.g7.html`(작성 SSoT)이면 메모리에서 컴파일하고, `.json`(굽기 산출)이면 그대로 디코드한다.
-     * 다른 레이아웃 소비 경로가 설치 시점에 하는 것과 같은 처리이며, 이 경로만 종전에 `.json`
-     * 디스크 실재를 요구해 굽기를 빠뜨린 플러그인의 설정 화면이 통째로 사라졌다.
-     *
-     * @param  string  $path  파일 경로 (`.g7.html` 또는 `.json`)
+     * @param  string  $path  파일 경로
      * @return array|null 파싱된 레이아웃 또는 null
      */
     private function parseLayoutFile(string $path): ?array
     {
         $content = File::get($path);
+        $layout = json_decode($content, true);
 
-        if (preg_match('/\.g7\.html$/i', $path) === 1) {
-            try {
-                // 템플릿과 무관하게 컴파일한다(설치 경로와 같은 규칙).
-                return (new LayoutMarkupCompiler)->compile(
-                    $content,
-                    $path,
-                    (new MarkupCompileContextResolver)->installContextFor($path),
-                )->json;
-            } catch (\Throwable $error) {
-                Log::error('플러그인 설정 레이아웃 마크업 컴파일 실패', [
-                    'path' => $path,
-                    'error' => $error->getMessage(),
-                ]);
-
-                return null;
-            }
-        }
-
-        // 빈 객체 `{}` 를 보존해 읽는다 — 응답에서 `[]` 로 나가지 않게 (#758)
-        $layout = EmptyMap::decodePreserving($content);
-
-        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($layout)) {
+        if (json_last_error() !== JSON_ERROR_NONE) {
             Log::error('플러그인 설정 레이아웃 JSON 파싱 실패', [
                 'path' => $path,
                 'error' => json_last_error_msg(),

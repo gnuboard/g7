@@ -1,0 +1,91 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "중복 불가 쿠폰 적용 확인 모달"
+    },
+    "id": "exclusiveCouponConfirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:shop.checkout.exclusive_coupon_title",
+        "size": "medium"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": { "className": "text-base text-gray-700 dark:text-gray-300" },
+            "text": "$t:shop.checkout.exclusive_coupon_message"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "flex justify-end gap-3 mt-6" },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    },
+                    "text": "$t:common.cancel",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    },
+                    "text": "$t:common.confirm",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "checkout": "{{Object.assign({}, _local.checkout, { order_coupon_issue_id: _global.pendingExclusiveCoupon?.id })}}"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pendingExclusiveCoupon": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/checkout",
+                                    "params": {
+                                        "method": "PUT",
+                                        "body": "{{_local.checkout}}"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "updateDataSource",
+                                            "params": { "dataSourceId": "checkoutData", "data": "{{response}}" }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

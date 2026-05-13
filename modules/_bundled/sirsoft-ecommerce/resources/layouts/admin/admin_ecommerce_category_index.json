@@ -1,17 +1,40 @@
 {
-    "comment": "상품 분류 관리 (운영자) — 왼쪽 트리에서 고른 분류를 오른쪽 패널에서 보고 고치며, 등록도 같은\n  패널을 등록 모드로 바꿔서 처리한다. 하위 분류·소속 상품이 있으면 삭제가 막히므로 그 수까지 함께 받는다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_category_index",
+    "permissions": [
+        "sirsoft-ecommerce.categories.read"
+    ],
     "extends": "_admin_base",
     "meta": {
-        "leave_guard": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}",
         "title": "$t:sirsoft-ecommerce.admin.category.title",
         "description": "$t:sirsoft-ecommerce.admin.category.description"
+    },
+    "state": {
+        "selectedCategoryId": null,
+        "selectedCategory": null,
+        "panelMode": "view",
+        "tempKey": null,
+        "deleteModal": {
+            "isOpen": false,
+            "categoryId": null,
+            "categoryName": "",
+            "hasChildren": false,
+            "productsCount": 0
+        },
+        "imagePreview": {
+            "isOpen": false,
+            "imageUrl": "",
+            "imageAlt": ""
+        }
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "categories"
+        ]
     },
     "data_sources": [
         {
             "id": "categories",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.categories",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/categories",
             "method": "GET",
@@ -30,90 +53,56 @@
                     }
                 },
                 "default": {
-                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
-                    "handler": "conditions",
-                    "conditions": [
-                        {
-                            "if": "{{error.refetch}}",
-                            "then": {
-                                "handler": "toast",
-                                "params": {
-                                    "type": "error",
-                                    "message": "$t:core.errors.refresh_failed"
-                                }
-                            }
-                        },
-                        {
-                            "then": {
-                                "handler": "showErrorPage",
-                                "params": {
-                                    "errorCode": "{{error.status}}",
-                                    "target": "content"
-                                }
-                            }
-                        }
-                    ]
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
                 }
             },
-            "comment": "트리 전체를 계층 형태로 한 번에 받아 목록·상세가 나눠 쓴다. 저장·삭제 뒤에는 새로고침 버튼이 이 소스만 다시 태운다(주소는 그대로 둔다). 폼(form) 초기값은 여기 init-local 로 두지 않는다 — 데이터 소스의 init-local 은 기본값이 아니라 「응답 경로 → 폼 경로」 매핑이라 빈 값(\"\")이 응답 전체로 읽혀, 목록을 받을 때마다 입력 중인 이름 칸을 목록 응답으로 덮었다. 빈 폼은 「추가」 버튼이 심는다"
+            "initLocal": {
+                "form": {
+                    "name": {
+                        "ko": "",
+                        "en": ""
+                    },
+                    "description": {
+                        "ko": "",
+                        "en": ""
+                    }
+                }
+            }
         }
     ],
-    "initLocal": {
-        "selectedCategoryId": null,
-        "selectedCategory": null,
-        "panelMode": "view",
-        "tempKey": null,
-        "deleteModal": {
-            "isOpen": false,
-            "categoryId": null,
-            "categoryName": "",
-            "hasChildren": false,
-            "productsCount": 0
-        },
-        "imagePreview": {
-            "isOpen": false,
-            "imageUrl": "",
-            "imageAlt": ""
-        }
-    },
-    "permissions": [
-        "sirsoft-ecommerce.categories.read"
-    ],
-    "transition_overlay": {
-        "wait_for": [
-            "categories"
-        ]
-    },
     "slots": {
         "content": [
             {
                 "id": "category_page_content",
                 "type": "basic",
                 "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "ecommerce-admin-page-content-compact"
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900 min-h-screen"
                         }
                     }
-                },
-                "props": {
-                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
+                        "props": {
+                            "className": "flex items-start justify-between gap-4 mb-6"
+                        },
                         "responsive": {
                             "portable": {
                                 "props": {
-                                    "className": "ecommerce-row-stack ecommerce:mb-6"
+                                    "className": "flex flex-col gap-4 mb-6"
                                 }
                             }
-                        },
-                        "props": {
-                            "className": "ecommerce-flex-start ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -124,15 +113,8 @@
                                     {
                                         "type": "basic",
                                         "name": "H1",
-                                        "responsive": {
-                                            "640-": {
-                                                "props": {
-                                                    "className": "ecommerce:text-2xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
-                                                }
-                                            }
-                                        },
                                         "props": {
-                                            "className": "ecommerce:text-xl ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-1"
+                                            "className": "page-title mb-1"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.category.title"
                                     },
@@ -140,7 +122,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "ecommerce-text-secondary ecommerce:text-sm"
+                                            "className": "text-secondary text-sm"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.category.description"
                                     }
@@ -151,13 +133,17 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0"
+                                    "className": "flex items-center gap-2 flex-shrink-0"
                                 },
                                 "children": [
                                     {
                                         "id": "refresh_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "props": {
+                                            "className": "p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-800 transition-colors",
+                                            "aria-label": "$t:common.refresh"
+                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -167,11 +153,6 @@
                                                 }
                                             }
                                         ],
-                                        "props": {
-                                            "type": "button",
-                                            "className": "ecommerce-btn-icon",
-                                            "aria-label": "$t:common.refresh"
-                                        },
                                         "children": [
                                             {
                                                 "id": "refresh_icon",
@@ -179,7 +160,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "refresh",
-                                                    "className": "ecommerce:text-xl"
+                                                    "className": "w-5 h-5"
                                                 }
                                             }
                                         ]
@@ -188,9 +169,12 @@
                                         "id": "add_category_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "props": {
+                                            "disabled": "{{categories?.data?.abilities?.can_create !== true}}",
+                                            "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        },
                                         "actions": [
                                             {
-                                                "comment": "오른쪽 패널을 등록 모드로 전환. `tempKey` 는 아직 id 가 없는 신규 분류의 이미지 업로드를 서버에서 묶어 두는 임시 식별자라 등록을 누를 때마다 새로 만든다",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -201,7 +185,7 @@
                                                             "selectedCategoryId": null,
                                                             "selectedCategory": null,
                                                             "panelMode": "create",
-                                                            "tempKey": "{{$uuid()}}"
+                                                            "tempKey": "{{'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)}}"
                                                         }
                                                     },
                                                     {
@@ -235,18 +219,13 @@
                                                 ]
                                             }
                                         ],
-                                        "props": {
-                                            "type": "button",
-                                            "disabled": "{{categories?.data?.abilities?.can_create !== true}}",
-                                            "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
-                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "plus",
-                                                    "className": "ecommerce:text-base"
+                                                    "className": "w-4 h-4"
                                                 }
                                             },
                                             {
@@ -261,25 +240,20 @@
                         ]
                     },
                     {
-                        "id": "panel_layout",
+                        "id": "main_content",
                         "type": "basic",
                         "name": "Div",
                         "blur_until_loaded": true,
-                        "responsive": {
-                            "1024-": {
-                                "props": {
-                                    "className": "ecommerce:grid ecommerce:gap-6 ecommerce:grid-cols-3"
-                                }
-                            }
-                        },
                         "props": {
-                            "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-6"
+                            "className": "grid-cols-1-lg-3"
                         },
                         "children": [
                             {
+                                "id": "left_panel",
                                 "partial": "partials/admin_ecommerce_category_index/_panel_category_list.json"
                             },
                             {
+                                "id": "right_panel",
                                 "partial": "partials/admin_ecommerce_category_index/_panel_detail.json"
                             }
                         ]
@@ -290,16 +264,10 @@
     },
     "modals": [
         {
-            "comment": "분류 이미지 원본 확대 — 상세 패널의 썸네일을 눌렀을 때 뜬다",
             "partial": "partials/admin_ecommerce_category_index/_modal_image_preview.json"
         },
         {
-            "comment": "삭제 확인 — 하위 분류나 소속 상품이 있으면 삭제 불가 안내로 문구가 바뀐다",
             "partial": "partials/admin_ecommerce_category_index/_modal_delete_confirm.json"
-        },
-        {
-            "comment": "편집·등록 중 다른 분류를 고를 때, 저장하지 않은 입력을 버리고 그 분류로 갈지 묻는다",
-            "partial": "partials/admin_ecommerce_category_index/_modal_editing_confirm.json"
         }
     ]
 }

@@ -1,17 +1,12 @@
-// e2e:allow편집기 선택 결함#8 수정(빈 데이터 분기에 가시 placeholder + id/editorAttrs 부착). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 PermissionTree.editorAttrs.test.tsx.
-import React, { useState, useCallback, useEffect, useMemo, useRef, useId } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Input } from '../basic/Input';
 import { Span } from '../basic/Span';
 import { Label } from '../basic/Label';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
-import type { EditorAttrs } from '../../types';
 import { Accordion } from './Accordion';
 import { ExtensionBadge, ExtensionInfo } from './ExtensionBadge';
-import { useRenderWidth } from '../../hooks/useRenderWidth';
-import { gridColsClass, resolveGridCols } from '../layout/gridColumns';
-import { activateOnKey, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 // G7Core 전역 객체에서 createChangeEvent 가져오기
 const G7Core = (window as any).G7Core;
@@ -46,15 +41,6 @@ export interface ScopeOption {
 const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
 
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
-
-/** React useId 값을 id 속성에 쓸 수 있는 글자로 줄인다 */
-const useDomId = (): string => useId().replace(/[^a-zA-Z0-9_-]/g, '');
-
 /**
  * 스코프 옵션별 설명 다국어 키 매핑
  */
@@ -75,17 +61,10 @@ const ScopeDropdown: React.FC<{
   value: string | null;
   onChange: (value: string | null) => void;
   disabled?: boolean;
-  /** 권한 이름 — 단추가 「{권한명} 적용 범위 {현재 값}」으로 읽힌다 */
-  permissionName: string;
-}> = ({ options, value, onChange, disabled = false, permissionName }) => {
+}> = ({ options, value, onChange, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const domId = useDomId();
-  const nameId = `${domId}-scope-name`;
-  const valueId = `${domId}-scope-value`;
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLDivElement>(null);
-  // 여는 칸 — 고르거나 Esc 로 닫은 뒤 포커스를 돌려받는다(선택지가 사라져 body 로 빠지지 않게, #869 키보드 접근)
-  const buttonRef = useRef<HTMLDivElement>(null);
 
   const currentOption = options.find((opt) => opt.value === value) ?? options[0];
 
@@ -133,17 +112,9 @@ const ScopeDropdown: React.FC<{
 
   return (
     <Div ref={triggerRef} className="relative flex-shrink-0">
-      {/* 이름 — 종전에는 현재 값(「전체」)만 읽혀 어느 권한의 범위인지 알 수 없었다(#757) */}
-      <Span id={nameId} className="sr-only">
-        {tOr('common.scope_of', `${permissionName} scope`, { name: permissionName })}
-      </Span>
       <Div
-        ref={buttonRef}
         role="button"
         tabIndex={0}
-        aria-labelledby={`${nameId} ${valueId}`}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
         onClick={(e: React.MouseEvent) => {
           e.stopPropagation();
           e.preventDefault();
@@ -162,8 +133,8 @@ const ScopeDropdown: React.FC<{
           disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-400 dark:hover:border-blue-500'
         }`}
       >
-        <Span id={valueId}>{currentOption?.label ?? ''}</Span>
-        <Icon name={IconName.ChevronDown} className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+        <Span>{currentOption?.label ?? ''}</Span>
+        <Icon name={IconName.ChevronDown} className="w-3 h-3 text-gray-400 dark:text-gray-500" />
       </Div>
 
       {isOpen && (
@@ -187,26 +158,9 @@ const ScopeDropdown: React.FC<{
                   e.preventDefault();
                   onChange(option.value);
                   setIsOpen(false);
-                  buttonRef.current?.focus();
                 }}
                 onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
-                // 펼친 선택지도 Tab 으로 닿고 Enter·Space 로 고른다 — 종전에는 여는 단추만 키보드를 받았다(#869 키보드 접근)
-                tabIndex={0}
-                onKeyDown={(e: React.KeyboardEvent) => {
-                  if (e.key === 'Escape') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsOpen(false);
-                    buttonRef.current?.focus();
-                    return;
-                  }
-                  activateOnKey(() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                    buttonRef.current?.focus();
-                  })(e);
-                }}
-                className={`px-3 py-2 cursor-pointer transition-colors ${FOCUS_VISIBLE_RING} ${
+                className={`px-3 py-2 cursor-pointer transition-colors ${
                   isSelected
                     ? 'bg-blue-50 dark:bg-blue-900/30'
                     : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
@@ -223,7 +177,7 @@ const ScopeDropdown: React.FC<{
                   )}
                 </Div>
                 {description && (
-                  <Span className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                  <Span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {description}
                   </Span>
                 )}
@@ -259,11 +213,6 @@ export interface PermissionNode {
   leaf_count: number;
   resource_route_key?: string | null;
   owner_key?: string | null;
-  /**
-   * 범위(스코프)를 적용할 수 있는 권한인지 — 서버가 `resource_route_key && owner_key` 로 판정해 싣는다.
-   * 없으면(구버전 서버) 두 키로 같은 판정을 폴백한다.
-   */
-  scope_supported?: boolean;
   children: PermissionNode[];
 }
 
@@ -276,11 +225,6 @@ export interface PermissionTreeProps {
   onChange?: (e: { target: { value: PermissionValue[] } }) => void;
   /** 스코프 옵션 (드롭다운 선택지) */
   scopeOptions?: ScopeOption[];
-  /**
-   * 역할 단위로 범위 선택을 끈다 — 비회원 역할처럼 소유자를 가릴 수 없어 범위가 적용되지 않는 역할.
-   * 켜면 체크한 권한에도 범위 드롭다운을 그리지 않는다(저장 값 정규화는 레이아웃 몫).
-   */
-  scopeDisabled?: boolean;
   /** 추가 클래스명 */
   className?: string;
   /** 비활성화 여부 */
@@ -291,12 +235,6 @@ export interface PermissionTreeProps {
   installedModules?: ExtensionInfo[];
   /** 설치된 플러그인 목록 (_global.installedPlugins에서 전달) */
   installedPlugins?: ExtensionInfo[];
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -313,8 +251,7 @@ export interface PermissionTreeProps {
  *   "props": {
  *     "data": "{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}",
  *     "value": "{{_local.form.permission_values ?? []}}",
- *     "scopeOptions": "{{permissions?.data?.data?.scope_options ?? []}}",
- *     "scopeDisabled": "{{!!route?.id && _local.form?.supports_permission_scope === false}}"
+ *     "scopeOptions": "{{permissions?.data?.data?.scope_options ?? []}}"
  *   },
  *   "actions": [
  *     {
@@ -335,19 +272,12 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
   value = [],
   onChange,
   scopeOptions = [],
-  scopeDisabled = false,
   className = '',
   disabled = false,
   desktopColumns = 2,
   installedModules = [],
   installedPlugins = [],
-  id,
-  editorAttrs,
 }) => {
-  const domId = useDomId();
-  // 권한 격자 열 수를 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
-  const renderWidth = useRenderWidth();
-
   // onChange를 이벤트 객체 형식으로 변환하는 핸들러
   const handleChange = useCallback((newValue: PermissionValue[]) => {
     if (onChange) {
@@ -508,11 +438,9 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
    */
   const renderLeafPermission = (permission: PermissionNode) => {
     const isChecked = selectedIdSet.has(permission.id);
-    // 소유자 컬럼(owner_key)이 없는 권한은 범위를 골라도 적용되지 않으므로 드롭다운을 그리지 않는다.
-    const scopeSupported = permission.scope_supported ?? (!!permission.resource_route_key && !!permission.owner_key);
-    const showScopeDropdown = isChecked && !scopeDisabled && scopeSupported && scopeOptions.length > 0;
+    const hasResourceRouteKey = !!permission.resource_route_key;
+    const showScopeDropdown = isChecked && hasResourceRouteKey && scopeOptions.length > 0;
     const currentScopeType = selectedValues.find((v) => v.id === permission.id)?.scope_type ?? null;
-    const descriptionId = permission.description ? `${domId}-perm-${permission.id}-desc` : undefined;
 
     return (
       <Label
@@ -531,9 +459,6 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
             handleLeafChange(permission.id, e.target.checked);
           }}
           disabled={disabled}
-          // 이름은 권한 이름만 — 감싼 Label 이 설명·범위 값까지 품어 이름이 길게 섞였다(#757). 설명은 부가 설명으로 잇는다
-          aria-label={permission.name}
-          aria-describedby={descriptionId}
           className="w-4 h-4 mt-0.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
         />
         <Div className="flex-1 min-w-0">
@@ -547,12 +472,11 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
                 value={currentScopeType}
                 onChange={(val) => handleScopeTypeChange(permission.id, val)}
                 disabled={disabled}
-                permissionName={permission.name}
               />
             )}
           </Div>
           {permission.description && (
-            <Span id={descriptionId} className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+            <Span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               {permission.description}
             </Span>
           )}
@@ -578,8 +502,12 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
     // 하위에 카테고리가 더 있는 경우 재귀 렌더링
     const hasSubCategories = category.children.some((child) => !child.is_assignable);
 
-    // 768 미만은 1열, 768 이상은 desktopColumns 열 — 렌더 폭으로 골라 접두 없는 클래스 하나만 낸다
-    const leafGridColsClass = gridColsClass(resolveGridCols(1, { md: desktopColumns }, renderWidth));
+    const gridColsClass =
+      desktopColumns === 1
+        ? 'grid-cols-1'
+        : desktopColumns === 3
+          ? 'grid-cols-1 md:grid-cols-3'
+          : 'grid-cols-1 md:grid-cols-2';
 
     return (
       <Accordion key={category.id} defaultOpen={false} className="border-0 rounded-none">
@@ -598,21 +526,20 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
             disabled={disabled}
-            aria-label={tOr('common.select_all_in', `Select all in ${category.name}`, { name: category.name })}
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
           />
-          <Icon name={IconName.Folder} className="w-4 h-4 text-gray-500 dark:text-gray-500" />
+          <Icon name={IconName.Folder} className="w-4 h-4 text-gray-400 dark:text-gray-500" />
           <Span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {category.name}
           </Span>
           <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 ml-1">
             {selectedCount}/{category.leaf_count}
           </Span>
-          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-500 dark:text-gray-500 ml-auto" />
+          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-400 dark:text-gray-500 ml-auto" />
         </Div>
 
         {/* Content */}
-        <Div slot="content" className={`pl-8 grid ${leafGridColsClass} gap-2 py-2`}>
+        <Div slot="content" className={`pl-8 grid ${gridColsClass} gap-2 py-2`}>
           {hasSubCategories
             ? // 하위 카테고리가 있으면 재귀 렌더링
               category.children.map((child) =>
@@ -674,13 +601,11 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
             disabled={disabled}
-            // 이름 — 원시 체크박스라 「체크박스」만 읽혔다(역할 추가 61칸, #757). 아코디언 단추 안 배치는 별도 이슈
-            aria-label={tOr('common.select_all_in', `Select all in ${moduleNode.name}`, { name: moduleNode.name })}
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
           />
           <Icon
             name={extensionType === 'core' ? IconName.Cog : IconName.Cube}
-            className="w-5 h-5 text-gray-500 dark:text-gray-500"
+            className="w-5 h-5 text-gray-400 dark:text-gray-500"
           />
           <Span className="font-medium text-gray-900 dark:text-white">{moduleNode.name}</Span>
           {extensionType !== 'core' && (
@@ -694,7 +619,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
           <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 ml-2">
             {selectedCount}/{moduleNode.leaf_count}
           </Span>
-          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-500 dark:text-gray-500 ml-auto" />
+          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-400 dark:text-gray-500 ml-auto" />
         </Div>
 
         {/* Content */}
@@ -709,22 +634,8 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
     );
   };
 
-  // 빈 데이터일 때도 시각적으로 렌더 + 루트에 id/editorAttrs 부착
-  // (편집기에서 0×0 비가시 노드로 선택 불가하던 문제 — 모든 분기 패리티)
-  if (data.length === 0) {
-    return (
-      <Div
-        className={`text-sm text-gray-500 dark:text-gray-400 py-4 text-center ${className}`}
-        id={id}
-        {...editorAttrs}
-      >
-        {t('common.no_data') ?? '데이터가 없습니다.'}
-      </Div>
-    );
-  }
-
   return (
-    <Div className={`space-y-2 ${className}`} id={id} {...editorAttrs}>
+    <Div className={`space-y-2 ${className}`}>
       {data.map((moduleNode) => renderModule(moduleNode))}
     </Div>
   );

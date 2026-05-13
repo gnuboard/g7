@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 import { ExtensionInfo } from './ExtensionBadge';
 /**
  * 권한 값 인터페이스 (id + scope_type)
@@ -30,11 +29,6 @@ export interface PermissionNode {
     leaf_count: number;
     resource_route_key?: string | null;
     owner_key?: string | null;
-    /**
-     * 범위(스코프)를 적용할 수 있는 권한인지 — 서버가 `resource_route_key && owner_key` 로 판정해 싣는다.
-     * 없으면(구버전 서버) 두 키로 같은 판정을 폴백한다.
-     */
-    scope_supported?: boolean;
     children: PermissionNode[];
 }
 export interface PermissionTreeProps {
@@ -50,11 +44,6 @@ export interface PermissionTreeProps {
     }) => void;
     /** 스코프 옵션 (드롭다운 선택지) */
     scopeOptions?: ScopeOption[];
-    /**
-     * 역할 단위로 범위 선택을 끈다 — 비회원 역할처럼 소유자를 가릴 수 없어 범위가 적용되지 않는 역할.
-     * 켜면 체크한 권한에도 범위 드롭다운을 그리지 않는다(저장 값 정규화는 레이아웃 몫).
-     */
-    scopeDisabled?: boolean;
     /** 추가 클래스명 */
     className?: string;
     /** 비활성화 여부 */
@@ -65,12 +54,6 @@ export interface PermissionTreeProps {
     installedModules?: ExtensionInfo[];
     /** 설치된 플러그인 목록 (_global.installedPlugins에서 전달) */
     installedPlugins?: ExtensionInfo[];
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * PermissionTree 집합 컴포넌트
@@ -86,8 +69,7 @@ export interface PermissionTreeProps {
  *   "props": {
  *     "data": "{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}",
  *     "value": "{{_local.form.permission_values ?? []}}",
- *     "scopeOptions": "{{permissions?.data?.data?.scope_options ?? []}}",
- *     "scopeDisabled": "{{!!route?.id && _local.form?.supports_permission_scope === false}}"
+ *     "scopeOptions": "{{permissions?.data?.data?.scope_options ?? []}}"
  *   },
  *   "actions": [
  *     {

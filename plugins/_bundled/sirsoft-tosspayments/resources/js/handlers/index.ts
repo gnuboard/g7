@@ -1,5 +1,4 @@
 import { requestPaymentHandler } from './requestPayment';
-import { copyToClipboardHandler } from './copyToClipboard';
 
 /**
  * 토스페이먼츠 플러그인 핸들러 맵
@@ -9,5 +8,4 @@ import { copyToClipboardHandler } from './copyToClipboard';
  */
 export const handlerMap: Record<string, (...args: unknown[]) => unknown> = {
     requestPayment: requestPaymentHandler,
-    copyToClipboard: copyToClipboardHandler,
 } as const;

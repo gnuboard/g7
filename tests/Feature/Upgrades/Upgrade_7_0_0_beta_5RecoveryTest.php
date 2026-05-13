@@ -33,11 +33,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     private ?string $originalPendingPath = null;
 
-    /**
-     * beta.5 복구 마이그레이션 클래스를 불러오고 업그레이드 컨텍스트와 원래 경로 설정을 기록합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -58,11 +53,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
         $this->originalPendingPath = config('app.update.pending_path');
     }
 
-    /**
-     * 바꾼 base_path 와 pending_path 를 되돌리고 시험이 만든 임시 디렉토리를 지웁니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         if ($this->originalBasePath !== null) {
@@ -83,12 +73,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * 활성 디렉토리 부재 + DB active + `_bundled` 존재 → 활성 디렉토리 자동 복원.
-     *
-     * @scenario domain=templates, bundled_presence=present, active_subdir_state=absent, hotfix_filesystem_state=broken_active_dir
-     *
-     * @effects recoverActiveExtensionDirs_restores_from_bundled_when_active_missing
-     *
-     * @return void 반환값 없음
      */
     public function test_recover_active_dir_when_bundled_exists(): void
     {
@@ -119,12 +103,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * 활성 디렉토리 정상 존재 시 silent skip (멱등).
-     *
-     * @scenario domain=templates, bundled_presence=present, active_subdir_state=present, hotfix_filesystem_state=healthy
-     *
-     * @effects recoverActiveExtensionDirs_skips_when_active_present_and_nonempty, recoverActiveExtensionDirs_does_not_overwrite_user_modified_active_content
-     *
-     * @return void 반환값 없음
      */
     public function test_recover_skips_when_active_dir_present(): void
     {
@@ -157,12 +135,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * 외부 확장 (DB active + `_bundled` 부재) → DB row 단발성 비활성화.
-     *
-     * @scenario domain=modules, bundled_presence=missing, source_url_column=present_value, deactivated_columns=present, hotfix_filesystem_state=broken_active_dir
-     *
-     * @effects recoverActiveExtensionDirs_marks_external_extension_inactive_with_reason
-     *
-     * @return void 반환값 없음
      */
     public function test_external_extension_marked_deactivated_when_bundled_missing(): void
     {
@@ -192,12 +164,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * `_pending/.gitignore` 와 `_pending/.gitkeep` 가 부재 시 stub 재생성.
-     *
-     * @scenario domain=modules, domain=plugins, domain=templates, domain=language_packs, pending_stub_state=both_missing, hotfix_filesystem_state=broken_pending_stub
-     *
-     * @effects recoverPendingStubFiles_creates_gitignore_and_gitkeep_when_absent, pending_stub_regenerated
-     *
-     * @return void 반환값 없음
      */
     public function test_pending_stub_files_recreated_when_missing(): void
     {
@@ -222,12 +188,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * `_pending/.gitignore` 가 이미 존재하면 덮어쓰지 않음 (멱등).
-     *
-     * @scenario domain=modules, pending_stub_state=both_present, hotfix_filesystem_state=healthy
-     *
-     * @effects recoverPendingStubFiles_preserves_existing_stubs_idempotently
-     *
-     * @return void 반환값 없음
      */
     public function test_pending_stub_files_preserved_when_present(): void
     {
@@ -245,12 +205,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * 4개 도메인 (modules/plugins/templates/language_packs) 일괄 복구.
-     *
-     * @scenario domain=modules, domain=plugins, domain=templates, domain=language_packs, bundled_presence=present, active_subdir_state=absent, hotfix_filesystem_state=broken_active_dir
-     *
-     * @effects four_domain_active_directories_recovered, recoverActiveExtensionDirs_restores_from_bundled_when_active_missing
-     *
-     * @return void 반환값 없음
      */
     public function test_all_four_domains_recovered_in_one_pass(): void
     {
@@ -330,12 +284,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
      * Step 11 `restoreOwnership` 의 재귀 chown 이 마커가 있으면 skip 하므로, 본 step 이
      * 우발적으로 마커를 만들면 영구 권한 비대칭 위험. `_bundled` 에 마커가 없으면 활성도
      * 마커 없이 복원되어야 한다.
-     *
-     * @scenario domain=templates, bundled_presence=present, active_subdir_state=absent, hotfix_filesystem_state=broken_active_dir
-     *
-     * @effects recoverActiveExtensionDirs_does_not_write_preserve_ownership_marker_to_restored_dir
-     *
-     * @return void 반환값 없음
      */
     public function test_recover_does_not_create_preserve_ownership_marker(): void
     {
@@ -364,12 +312,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * lang-packs/_bundled 정상 존재 시 fallback skip (멱등 확인).
-     *
-     * @scenario domain=language_packs, hotfix_filesystem_state=healthy
-     *
-     * @effects verifyBundledLangPacksFallback_skips_when_active_bundled_present
-     *
-     * @return void 반환값 없음
      */
     public function test_lang_packs_fallback_skipped_when_already_present(): void
     {
@@ -386,12 +328,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * lang-packs/_bundled 부재 + _pending 에 소스 존재 시 fallback 복원.
-     *
-     * @scenario domain=language_packs, lang_packs_pending_depth=depth_5, hotfix_filesystem_state=broken_langpacks_bundled
-     *
-     * @effects verifyBundledLangPacksFallback_recovers_from_deep_pending_source_unbounded_depth, lang_packs_bundled_fallback_applied
-     *
-     * @return void 반환값 없음
      */
     public function test_lang_packs_fallback_recovers_from_deep_pending_source(): void
     {
@@ -416,12 +352,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * 정상 symlink 상태면 silent skip (멱등).
-     *
-     * @scenario public_storage_link_state=symlink, storage_link_source=present, hotfix_filesystem_state=healthy
-     *
-     * @effects public_storage_symlink_preserved_when_already_symlink
-     *
-     * @return void 반환값 없음
      */
     public function test_recover_public_storage_symlink_skips_when_already_symlink(): void
     {
@@ -443,12 +373,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * 일반 디렉토리 + Laravel storage:link source 존재 → rename 보존 + symlink 재생성.
-     *
-     * @scenario public_storage_link_state=plain_directory, storage_link_source=present, hotfix_filesystem_state=broken_storage_symlink
-     *
-     * @effects public_storage_symlink_restored, public_storage_corrupted_directory_backed_up_as_broken_timestamp
-     *
-     * @return void 반환값 없음
      */
     public function test_recover_public_storage_symlink_recovers_corrupted_directory(): void
     {
@@ -485,12 +409,6 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
 
     /**
      * Laravel storage:link source (storage/app/public) 부재 → 운영자 의도적 구성으로 보고 skip.
-     *
-     * @scenario public_storage_link_state=plain_directory, storage_link_source=absent, hotfix_filesystem_state=healthy
-     *
-     * @effects public_storage_left_untouched_when_link_source_absent
-     *
-     * @return void 반환값 없음
      */
     public function test_recover_public_storage_symlink_skips_when_source_absent(): void
     {
@@ -516,63 +434,23 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
     }
 
     /**
-     * public/storage 자체가 부재 (prune 삭제 또는 storage:link 미실행) → 재생성 (#43).
-     *
-     * `StorageLinkHelper` 위임 이후 동작이 상위호환으로 확장됐다 — 기존 스텝은 "부재" 를
-     * skip 했지만, 헬퍼는 Laravel storage:link source 가 존재하면 symlink 를 신규 생성한다.
-     * 이는 `--prune` 이 orphan 으로 삭제한 갭을 복구하는 핵심 케이스다.
-     *
-     * @scenario public_storage_link_state=absent, storage_link_source=present, hotfix_filesystem_state=broken_storage_symlink
-     *
-     * @effects public_storage_symlink_restored
-     *
-     * @return void 반환값 없음
+     * public/storage 자체가 부재 (storage:link 미실행 환경) → skip.
      */
-    public function test_recover_public_storage_symlink_recreates_when_public_storage_absent(): void
+    public function test_recover_public_storage_symlink_skips_when_public_storage_absent(): void
     {
         $fakeBase = $this->arrangeFakeBase();
         File::ensureDirectoryExists($fakeBase.'/public');
         File::ensureDirectoryExists($fakeBase.'/storage/app/public');
-        // public/storage 의도적 미생성 — prune 이 삭제했거나 storage:link 미실행 환경
-
-        // symlink 생성 권한 확인 (Windows 일반 사용자면 skip)
-        if (! @symlink($fakeBase.'/storage/app/public', $fakeBase.'/symlink_probe')) {
-            $this->markTestSkipped('symlink 생성 권한 부족 (Windows SeCreateSymbolicLink)');
-        }
-        @unlink($fakeBase.'/symlink_probe');
+        // public/storage 의도적 미생성 — storage:link 가 한 번도 실행되지 않은 환경
 
         $this->invokeRecoverPublicStorageSymlink();
 
-        $this->assertTrue(is_link($fakeBase.'/public/storage'), 'source 존재 시 부재 public/storage 를 symlink 로 재생성해야 한다 (#43)');
-        $this->assertSame($fakeBase.'/storage/app/public', readlink($fakeBase.'/public/storage'));
-    }
-
-    /**
-     * public/storage 부재 + Laravel storage:link source(storage/app/public) 도 부재 →
-     * 표준 미사용 환경으로 보고 skip (false positive 차단).
-     *
-     * @scenario public_storage_link_state=absent, storage_link_source=absent, hotfix_filesystem_state=healthy
-     *
-     * @effects public_storage_left_untouched_when_link_source_absent
-     *
-     * @return void 반환값 없음
-     */
-    public function test_recover_public_storage_symlink_skips_when_both_absent(): void
-    {
-        $fakeBase = $this->arrangeFakeBase();
-        File::ensureDirectoryExists($fakeBase.'/public');
-        // public/storage 와 storage/app/public 모두 의도적 미생성
-
-        $this->invokeRecoverPublicStorageSymlink();
-
-        $this->assertFalse(is_link($fakeBase.'/public/storage'), 'source 부재 시 자동 생성 안 함');
+        $this->assertFalse(is_link($fakeBase.'/public/storage'), 'public/storage 부재 시 자동 생성 안 함');
         $this->assertFalse(file_exists($fakeBase.'/public/storage'), 'public/storage 자체가 생성되지 않아야 한다');
     }
 
     /**
      * 격리된 base_path + pending_path 구성.
-     *
-     * @return string 시험용으로 만든 가짜 base_path 절대 경로
      */
     private function arrangeFakeBase(): string
     {
@@ -585,52 +463,27 @@ class Upgrade_7_0_0_beta_5RecoveryTest extends TestCase
         File::ensureDirectoryExists($fakePending);
         config(['app.update.pending_path' => $fakePending]);
 
-        // 링크 복구의 대상 경로는 `PublicStorageService::rootPath()` 가 정하고, 그 값은 부팅 때 굳은
-        // `filesystems.disks.public.root`(실제 프로젝트의 storage/app/public) 다. base_path 만 바꾸면 복구기가
-        // 실제 저장소를 원본으로 보고 가짜 base 의 public/storage 를 백업, 재생성해 「원본 부재 → 건너뜀」 시험이 깨진다.
-        config(['filesystems.disks.public.root' => $fakeBase.'/storage/app/public']);
-
         return $fakeBase;
     }
 
-    /**
-     * 활성 확장 디렉토리 복구 마이그레이션(RecoverActiveExtensionDirs)을 실행합니다.
-     *
-     * @return void 반환값 없음
-     */
     private function invokeRecover(): void
     {
         $class = 'App\\Upgrades\\Data\\V7_0_0_beta_5\\Migrations\\RecoverActiveExtensionDirs';
         (new $class)->run($this->context);
     }
 
-    /**
-     * _pending stub 파일 복구 마이그레이션(RecoverPendingStubFiles)을 실행합니다.
-     *
-     * @return void 반환값 없음
-     */
     private function invokeRecoverPendingStubs(): void
     {
         $class = 'App\\Upgrades\\Data\\V7_0_0_beta_5\\Migrations\\RecoverPendingStubFiles';
         (new $class)->run($this->context);
     }
 
-    /**
-     * public/storage 링크 복구 마이그레이션(RecoverPublicStorageSymlink)을 실행합니다.
-     *
-     * @return void 반환값 없음
-     */
     private function invokeRecoverPublicStorageSymlink(): void
     {
         $class = 'App\\Upgrades\\Data\\V7_0_0_beta_5\\Migrations\\RecoverPublicStorageSymlink';
         (new $class)->run($this->context);
     }
 
-    /**
-     * 번들 언어팩 fallback 검증 마이그레이션(VerifyBundledLangPacksFallback)을 실행합니다.
-     *
-     * @return void 반환값 없음
-     */
     private function invokeLangPacksFallback(): void
     {
         $class = 'App\\Upgrades\\Data\\V7_0_0_beta_5\\Migrations\\VerifyBundledLangPacksFallback';

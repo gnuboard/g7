@@ -6,9 +6,15 @@
  * @since engine-v1.10.0
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import React from 'react';
+import { render, screen } from '@testing-library/react';
 import { evaluateRenderCondition } from '../template-engine/helpers/RenderHelpers';
 import { DataBindingEngine } from '../template-engine/DataBindingEngine';
+
+// Mock 컴포넌트들
+const MockDiv = ({ children, ...props }: any) => <div {...props}>{children}</div>;
+const MockSpan = ({ children, ...props }: any) => <span {...props}>{children}</span>;
 
 // DataBindingEngine 인스턴스
 let bindingEngine: DataBindingEngine;
@@ -19,8 +25,6 @@ beforeEach(() => {
 
 describe('evaluateRenderCondition', () => {
   describe('기존 if 속성 (하위 호환)', () => {
-    // @scenario area=if_legacy
-    // @effects render_condition_if_legacy
     it('if 속성이 없으면 true를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         {},
@@ -30,8 +34,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(true);
     });
 
-    // @scenario area=if_legacy
-    // @effects render_condition_if_legacy
     it('if 속성이 truthy 표현식이면 true를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         { if: '{{user.isAdmin}}' },
@@ -41,8 +43,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(true);
     });
 
-    // @scenario area=if_legacy
-    // @effects render_condition_if_legacy
     it('if 속성이 falsy 표현식이면 false를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         { if: '{{user.isAdmin}}' },
@@ -52,8 +52,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(false);
     });
 
-    // @scenario area=if_legacy
-    // @effects render_condition_if_legacy
     it('if 속성의 비교 연산이 올바르게 동작해야 함', () => {
       const result = evaluateRenderCondition(
         { if: "{{status === 'active'}}" },
@@ -72,8 +70,6 @@ describe('evaluateRenderCondition', () => {
   });
 
   describe('conditions - 단순 문자열', () => {
-    // @scenario area=string
-    // @effects render_condition_conditions_evaluated
     it('단순 문자열 조건이 truthy면 true를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         { conditions: '{{user.isLoggedIn}}' },
@@ -83,8 +79,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(true);
     });
 
-    // @scenario area=string
-    // @effects render_condition_conditions_evaluated
     it('단순 문자열 조건이 falsy면 false를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         { conditions: '{{user.isLoggedIn}}' },
@@ -96,8 +90,6 @@ describe('evaluateRenderCondition', () => {
   });
 
   describe('conditions - AND 그룹', () => {
-    // @scenario area=and_group
-    // @effects render_condition_conditions_evaluated
     it('모든 조건이 true면 true를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -114,8 +106,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(true);
     });
 
-    // @scenario area=and_group
-    // @effects render_condition_conditions_evaluated
     it('하나라도 false면 false를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -132,8 +122,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(false);
     });
 
-    // @scenario area=and_group
-    // @effects render_condition_conditions_evaluated
     it('빈 배열이면 true를 반환해야 함 (vacuous truth)', () => {
       const result = evaluateRenderCondition(
         {
@@ -147,8 +135,6 @@ describe('evaluateRenderCondition', () => {
   });
 
   describe('conditions - OR 그룹', () => {
-    // @scenario area=or_group
-    // @effects render_condition_conditions_evaluated
     it('하나라도 true면 true를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -164,8 +150,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(true);
     });
 
-    // @scenario area=or_group
-    // @effects render_condition_conditions_evaluated
     it('모든 조건이 false면 false를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -181,8 +165,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(false);
     });
 
-    // @scenario area=or_group
-    // @effects render_condition_conditions_evaluated
     it('빈 배열이면 false를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -196,8 +178,6 @@ describe('evaluateRenderCondition', () => {
   });
 
   describe('conditions - 중첩 AND/OR', () => {
-    // @scenario area=nested
-    // @effects render_condition_conditions_evaluated
     it('OR 안에 AND가 중첩된 조건을 평가할 수 있어야 함', () => {
       // user.isSuperAdmin OR (user.isAdmin AND user.department === 'sales')
       const result = evaluateRenderCondition(
@@ -246,8 +226,6 @@ describe('evaluateRenderCondition', () => {
   });
 
   describe('conditions - if/else 체인 (ConditionBranch[])', () => {
-    // @scenario area=branch_chain
-    // @effects render_condition_conditions_evaluated
     it('첫 번째 조건이 true면 true를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -262,8 +240,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(true);
     });
 
-    // @scenario area=branch_chain
-    // @effects render_condition_conditions_evaluated
     it('두 번째 조건이 true면 true를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -278,8 +254,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(true);
     });
 
-    // @scenario area=branch_chain
-    // @effects render_condition_conditions_evaluated
     it('모든 조건이 false면 false를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -294,8 +268,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(false);
     });
 
-    // @scenario area=branch_chain
-    // @effects render_condition_conditions_evaluated
     it('else 브랜치가 있으면 항상 true를 반환해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -313,8 +285,6 @@ describe('evaluateRenderCondition', () => {
   });
 
   describe('우선순위: if vs conditions', () => {
-    // @scenario area=if_precedence
-    // @effects render_condition_if_takes_precedence
     it('if와 conditions가 둘 다 있으면 if가 우선되어야 함', () => {
       // if: false, conditions: true → false 반환 (if 우선)
       const result = evaluateRenderCondition(
@@ -341,8 +311,6 @@ describe('evaluateRenderCondition', () => {
   });
 
   describe('표현식 호환성', () => {
-    // @scenario area=expression_compat
-    // @effects render_condition_expression_compat
     it('Optional Chaining을 지원해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -363,8 +331,6 @@ describe('evaluateRenderCondition', () => {
       expect(result2).toBe(true);
     });
 
-    // @scenario area=expression_compat
-    // @effects render_condition_expression_compat
     it('논리 연산자를 지원해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -385,8 +351,6 @@ describe('evaluateRenderCondition', () => {
       expect(result2).toBe(true);
     });
 
-    // @scenario area=expression_compat
-    // @effects render_condition_expression_compat
     it('삼항 연산자를 지원해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -398,8 +362,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(true);
     });
 
-    // @scenario area=expression_compat
-    // @effects render_condition_expression_compat
     it('Nullish Coalescing을 지원해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -411,8 +373,6 @@ describe('evaluateRenderCondition', () => {
       expect(result).toBe(true);
     });
 
-    // @scenario area=expression_compat
-    // @effects render_condition_expression_compat
     it('함수 호출을 지원해야 함', () => {
       const result = evaluateRenderCondition(
         {
@@ -432,8 +392,6 @@ describe('evaluateRenderCondition', () => {
 
 describe('실제 사용 사례', () => {
   describe('관리자 전용 영역 렌더링', () => {
-    // @scenario area=usage_scenario
-    // @effects render_condition_conditions_evaluated
     it('admin 또는 manager 역할일 때만 렌더링해야 함', () => {
       const conditions = {
         conditions: {
@@ -462,8 +420,6 @@ describe('실제 사용 사례', () => {
   });
 
   describe('저자 정보 영역 렌더링', () => {
-    // @scenario area=usage_scenario
-    // @effects render_condition_conditions_evaluated
     it('route.id와 form_data.data.author가 둘 다 있을 때만 렌더링해야 함', () => {
       const conditions = {
         conditions: {
@@ -501,8 +457,6 @@ describe('실제 사용 사례', () => {
   });
 
   describe('복합 권한 체크', () => {
-    // @scenario area=usage_scenario
-    // @effects render_condition_conditions_evaluated
     it('superAdmin이거나 (admin + sales 부서)일 때 렌더링해야 함', () => {
       const conditions = {
         conditions: {

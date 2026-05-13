@@ -3,14 +3,11 @@
 namespace App\Contracts\Extension;
 
 use App\Enums\DeactivationReason;
-use App\Enums\LayoutSyncMode;
 
 interface ModuleManagerInterface
 {
     /**
      * 모든 모듈을 로드하고 초기화합니다.
-     *
-     * @return void 반환값 없음
      */
     public function loadModules(): void;
 
@@ -106,26 +103,15 @@ interface ModuleManagerInterface
     public function getModuleInfo(string $moduleName): ?array;
 
     /**
-     * 설치·의존 판정용 모듈 정보를 반환합니다 — 미설치 모듈은 진입 파일을 실행하지 않고 manifest 만 읽습니다.
-     *
-     * @param  string  $moduleName  모듈명
-     * @return array<string, mixed>|null 모듈 정보 배열 또는 null
-     *
-     * @since 7.1.5
-     */
-    public function getModuleManifestInfo(string $moduleName): ?array;
-
-    /**
      * 모듈의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $moduleName  모듈명
-     * @param  bool|LayoutSyncMode  $preserveModified  동기화 모드 — 기본 keep(운영자가 고친 화면은 조각 단위로 병합해 고친 부분 유지). bool 은 호환용(true = keep)
-     * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준
-     * @return array{success: bool, layouts_refreshed: int, layout_sync?: array<string, mixed>} 갱신 결과 (layout_sync = 운영자 관련 행 보고)
+     * @param  bool  $preserveModified  true 시 사용자가 UI에서 수정한 레이아웃은 덮어쓰지 않음
+     * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
      *
      * @throws \Exception 모듈을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshModuleLayouts(string $moduleName, bool|LayoutSyncMode $preserveModified = LayoutSyncMode::Keep, ?string $backupPath = null): array;
+    public function refreshModuleLayouts(string $moduleName, bool $preserveModified = false): array;
 
     /**
      * 모듈 삭제 시 삭제될 데이터 정보를 반환합니다.

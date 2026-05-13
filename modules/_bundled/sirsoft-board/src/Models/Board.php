@@ -3,23 +3,16 @@
 namespace Modules\Sirsoft\Board\Models;
 
 use App\Casts\AsUnicodeJson;
-use App\DisplayName\NicknameRequirement;
-use App\Models\Permission;
 use App\Models\User;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Modules\Sirsoft\Board\Casts\AsAllowedExtensions;
 use Modules\Sirsoft\Board\Database\Factories\BoardFactory;
-use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\BoardOrderBy;
 use Modules\Sirsoft\Board\Enums\OrderDirection;
-use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Enums\SecretMode;
-use Modules\Sirsoft\Board\Enums\SecretReplyVisibility;
 
 class Board extends Model
 {
@@ -30,51 +23,22 @@ class Board extends Model
         'is_active' => ['label_key' => 'sirsoft-board::activity_log.fields.is_active', 'type' => 'boolean'],
         'per_page' => ['label_key' => 'sirsoft-board::activity_log.fields.per_page', 'type' => 'number'],
         'per_page_mobile' => ['label_key' => 'sirsoft-board::activity_log.fields.per_page_mobile', 'type' => 'number'],
-        'order_by' => ['label_key' => 'sirsoft-board::activity_log.fields.order_by', 'type' => 'enum', 'enum' => BoardOrderBy::class],
-        'order_direction' => ['label_key' => 'sirsoft-board::activity_log.fields.order_direction', 'type' => 'enum', 'enum' => OrderDirection::class],
+        'order_by' => ['label_key' => 'sirsoft-board::activity_log.fields.order_by', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Board\Enums\BoardOrderBy::class],
+        'order_direction' => ['label_key' => 'sirsoft-board::activity_log.fields.order_direction', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Board\Enums\OrderDirection::class],
         'type' => ['label_key' => 'sirsoft-board::activity_log.fields.type', 'type' => 'text'],
         'show_view_count' => ['label_key' => 'sirsoft-board::activity_log.fields.show_view_count', 'type' => 'boolean'],
-        'secret_mode' => ['label_key' => 'sirsoft-board::activity_log.fields.secret_mode', 'type' => 'enum', 'enum' => SecretMode::class],
+        'secret_mode' => ['label_key' => 'sirsoft-board::activity_log.fields.secret_mode', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Board\Enums\SecretMode::class],
         'use_comment' => ['label_key' => 'sirsoft-board::activity_log.fields.use_comment', 'type' => 'boolean'],
         'use_reply' => ['label_key' => 'sirsoft-board::activity_log.fields.use_reply', 'type' => 'boolean'],
         'max_reply_depth' => ['label_key' => 'sirsoft-board::activity_log.fields.max_reply_depth', 'type' => 'number'],
-        'reply_delete_policy' => ['label_key' => 'sirsoft-board::activity_log.fields.reply_delete_policy', 'type' => 'enum', 'enum' => ReplyDeletePolicy::class],
-        'secret_reply_visibility' => ['label_key' => 'sirsoft-board::activity_log.fields.secret_reply_visibility', 'type' => 'enum', 'enum' => SecretReplyVisibility::class],
         'use_report' => ['label_key' => 'sirsoft-board::activity_log.fields.use_report', 'type' => 'boolean'],
-        'use_scrap' => ['label_key' => 'sirsoft-board::activity_log.fields.use_scrap', 'type' => 'boolean'],
-        'use_comment_reaction' => ['label_key' => 'sirsoft-board::activity_log.fields.use_comment_reaction', 'type' => 'boolean'],
         'use_file_upload' => ['label_key' => 'sirsoft-board::activity_log.fields.use_file_upload', 'type' => 'boolean'],
         'max_file_size' => ['label_key' => 'sirsoft-board::activity_log.fields.max_file_size', 'type' => 'number'],
         'max_file_count' => ['label_key' => 'sirsoft-board::activity_log.fields.max_file_count', 'type' => 'number'],
     ];
 
     /**
-     * 라우트 모델 바인딩 시 슬러그(slug) 또는 숫자 ID로 게시판을 조회합니다.
-     *
-     * 관리자 게시판 URL 은 slug 기준(/admin/boards/:slug/edit)이며,
-     * 숫자 ID 도 하위호환으로 허용합니다.
-     *
-     * @param  mixed  $value  라우트 파라미터 값 (slug 또는 ID)
-     * @param  string|null  $field  검색할 필드명
-     * @return Model|null
-     */
-    public function resolveRouteBinding($value, $field = null)
-    {
-        if ($field) {
-            return $this->where($field, $value)->firstOrFail();
-        }
-
-        if (is_numeric($value)) {
-            return $this->where('id', $value)->firstOrFail();
-        }
-
-        return $this->where('slug', $value)->firstOrFail();
-    }
-
-    /**
      * 팩토리 생성
-     *
-     * @return BoardFactory 게시판 팩토리
      */
     protected static function newFactory(): BoardFactory
     {
@@ -98,8 +62,6 @@ class Board extends Model
 
     /**
      * 모델 부트
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -111,19 +73,6 @@ class Board extends Model
                 $board->slug = $board->getOriginal('slug');
             }
         });
-
-        // 게시판의 표시 이름 설정이 바뀌면 요청 안에서 읽어 둔 게시판별 설정과 닉네임 항목 잠금 판정을 버린다.
-        // (어떤 게시판이 닉네임 종류로 고정되면 회원 항목의 닉네임이 사용, 필수로 잠긴다.)
-        // 아직 만들어지지 않은 메모는 버릴 것이 없다 — 만들지 않는다(모듈 공급자가 부팅되지 않은 자리에서는 저장소 바인딩이 없어 만들 수도 없다).
-        $forgetDisplayNameMemo = function (): void {
-            foreach ([BoardDisplayNames::class, NicknameRequirement::class] as $memo) {
-                if (app()->resolved($memo)) {
-                    app($memo)->flush();
-                }
-            }
-        };
-        static::saved($forgetDisplayNameMemo);
-        static::deleted($forgetDisplayNameMemo);
     }
 
     /**
@@ -134,7 +83,6 @@ class Board extends Model
         'name',
         'slug',
         'is_active',
-        'display_order',
         'description',
 
         // 게시글 설정
@@ -153,13 +101,7 @@ class Board extends Model
         'use_comment',
         'use_reply',
         'max_reply_depth',
-        'reply_delete_policy',
-        'secret_reply_visibility',
         'use_report',
-        'use_scrap',
-        'use_reaction',
-        'use_comment_reaction',
-        'active_reaction_types',
         'new_display_hours',
 
         // 입력 제한 설정
@@ -175,15 +117,6 @@ class Board extends Model
         'max_file_size',
         'max_file_count',
         'allowed_extensions',
-
-        // 본문 미디어 정책 (null: 첨부 정책을 따름, #883)
-        'content_media_policy',
-
-        // 작성자 표시 이름 설정 (null: 회원 설정의 게시판 영역을 따름)
-        'display_name_setting',
-
-        // 비회원 작성자 항목의 사용, 필수 설정 (null: 게시판 환경설정 기본값을 따름)
-        'guest_author_fields',
 
         // 댓글 설정
         'comment_order',
@@ -207,8 +140,6 @@ class Board extends Model
 
     /**
      * 속성 캐스팅
-     *
-     * @return array<string, mixed> 캐스팅 정의
      */
     protected function casts(): array
     {
@@ -216,29 +147,14 @@ class Board extends Model
             'name' => AsUnicodeJson::class,
             'description' => AsUnicodeJson::class,
             'categories' => 'array',
-            // 빈 배열을 NULL 로 정규화해 "확장자 미지정" 표현을 하나로 유지합니다.
-            'allowed_extensions' => AsAllowedExtensions::class,
-            'content_media_policy' => 'array',
-            'display_name_setting' => 'array',
-            'guest_author_fields' => 'array',
+            'allowed_extensions' => 'array',
             'blocked_keywords' => 'array',
             'is_active' => 'boolean',
-            'display_order' => 'integer',
             'show_view_count' => 'boolean',
             'use_comment' => 'boolean',
             'use_reply' => 'boolean',
             'max_reply_depth' => 'integer',
-            'reply_delete_policy' => ReplyDeletePolicy::class,
-            'secret_reply_visibility' => SecretReplyVisibility::class,
-            // Post::isNew() 가 Carbon 시간 연산에 넘기는 값 — 조회 시점과 무관하게 정수를 보장한다.
-            'new_display_hours' => 'integer',
             'use_report' => 'boolean',
-            'use_scrap' => 'boolean',
-            'use_reaction' => 'boolean',
-            // 댓글 반응 사용 여부 — use_reaction 의 하위 토글(둘 다 켜져야 댓글 반응이 열린다)
-            'use_comment_reaction' => 'boolean',
-            // 활성 반응 유형 code 목록 (문자열 배열, 예: ["like","dislike"])
-            'active_reaction_types' => 'array',
             'use_file_upload' => 'boolean',
             'notify_author' => 'boolean',
             'notify_admin_on_post' => 'boolean',
@@ -254,8 +170,6 @@ class Board extends Model
 
     /**
      * 생성자와의 관계를 정의합니다.
-     *
-     * @return BelongsTo 생성자 관계
      */
     public function creator(): BelongsTo
     {
@@ -264,8 +178,6 @@ class Board extends Model
 
     /**
      * 수정자와의 관계를 정의합니다.
-     *
-     * @return BelongsTo 수정자 관계
      */
     public function updater(): BelongsTo
     {
@@ -274,8 +186,6 @@ class Board extends Model
 
     /**
      * 게시글 목록과의 관계를 정의합니다.
-     *
-     * @return HasMany 게시글 관계
      */
     public function posts(): HasMany
     {
@@ -284,8 +194,6 @@ class Board extends Model
 
     /**
      * 댓글 목록과의 관계를 정의합니다.
-     *
-     * @return HasMany 댓글 관계
      */
     public function comments(): HasMany
     {
@@ -294,8 +202,6 @@ class Board extends Model
 
     /**
      * 첨부파일 목록과의 관계를 정의합니다.
-     *
-     * @return HasMany 첨부파일 관계
      */
     public function attachments(): HasMany
     {
@@ -304,8 +210,6 @@ class Board extends Model
 
     /**
      * 신고 목록과의 관계를 정의합니다.
-     *
-     * @return HasMany 신고 관계
      */
     public function reports(): HasMany
     {
@@ -314,9 +218,6 @@ class Board extends Model
 
     /**
      * 지정된 로케일의 게시판명 반환
-     *
-     * @param  string|null  $locale  로케일 (null 이면 현재 로케일)
-     * @return string 해당 로케일의 게시판명
      */
     public function getLocalizedName(?string $locale = null): string
     {
@@ -326,14 +227,14 @@ class Board extends Model
             return (string) $this->name;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->name, $locale) ?? '';
+        return $this->name[$locale]
+            ?? $this->name[config('app.fallback_locale')]
+            ?? (! empty($this->name) ? array_values($this->name)[0] : '')
+            ?? '';
     }
 
     /**
      * 현재 로케일의 게시판명 반환
-     *
-     * @return Attribute 로케일 폴백이 적용된 게시판명 접근자
      */
     protected function localizedName(): Attribute
     {
@@ -356,14 +257,14 @@ class Board extends Model
             return (string) $this->description;
         }
 
-        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($this->description, $locale) ?? '';
+        return $this->description[$locale]
+            ?? $this->description[config('app.fallback_locale')]
+            ?? (! empty($this->description) ? array_values($this->description)[0] : '')
+            ?? '';
     }
 
     /**
      * 현재 로케일의 게시판 설명 반환
-     *
-     * @return Attribute 로케일 폴백이 적용된 게시판 설명 접근자
      */
     protected function localizedDescription(): Attribute
     {
@@ -387,9 +288,8 @@ class Board extends Model
      *
      * g7_permissions 및 role_permissions 테이블에서 권한 정보를 조회하여
      * 각 권한별로 할당된 역할 identifier 배열을 반환합니다.
-     * (접근자 결과: 키 permission_key, 값 [role_identifiers] 또는 null=전체 허용)
      *
-     * @return Attribute 권한 정보 접근자
+     * @return array 권한 정보 (키: permission_key, 값: [role_identifiers] or null)
      */
     protected function permissions(): Attribute
     {
@@ -402,7 +302,7 @@ class Board extends Model
                     $identifier = "sirsoft-board.{$this->slug}.{$key}";
 
                     // 권한 조회
-                    $permission = Permission::where('identifier', $identifier)->first();
+                    $permission = \App\Models\Permission::where('identifier', $identifier)->first();
 
                     if (! $permission) {
                         // 권한이 없으면 null (전체 허용)

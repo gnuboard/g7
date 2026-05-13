@@ -32,8 +32,6 @@ return [
 
     // ChangeDetector field labels
     'fields' => [
-        'title' => 'Title',
-        'content' => 'Content',
         'slug' => 'Slug',
         'content_mode' => 'Content Mode',
         'published' => 'Published',

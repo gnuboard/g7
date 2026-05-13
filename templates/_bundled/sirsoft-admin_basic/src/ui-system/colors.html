@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colors - 그누보드7 Admin Design Guide</title>
+  <link rel="stylesheet" href="../../dist/css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    .preview-section {
+      margin-bottom: 3rem;
+    }
+    .preview-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #111827;
+    }
+    .dark .preview-title {
+      color: #f9fafb;
+    }
+    .preview-subtitle {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+      color: #374151;
+    }
+    .dark .preview-subtitle {
+      color: #d1d5db;
+    }
+    .preview-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+    .preview-breadcrumb a {
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .preview-breadcrumb a:hover {
+      color: #3b82f6;
+    }
+    .dark .preview-breadcrumb a {
+      color: #9ca3af;
+    }
+    .dark .preview-breadcrumb a:hover {
+      color: #60a5fa;
+    }
+    .preview-breadcrumb span {
+      color: #9ca3af;
+    }
+    .dark .preview-breadcrumb span {
+      color: #6b7280;
+    }
+
+    /* Color Palette Styles */
+    .preview-color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
+    }
+    .preview-color-swatch {
+      border-radius: 0.75rem;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+      background: white;
+    }
+    .dark .preview-color-swatch {
+      border-color: #374151;
+      background: #1f2937;
+    }
+    .preview-swatch-color {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .preview-swatch-color-text {
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .preview-swatch-info {
+      padding: 0.75rem;
+    }
+    .preview-swatch-name {
+      display: block;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #111827;
+      margin-bottom: 0.25rem;
+    }
+    .dark .preview-swatch-name {
+      color: #f9fafb;
+    }
+    .preview-swatch-value {
+      display: block;
+      font-size: 0.75rem;
+      color: #6b7280;
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    }
+    .dark .preview-swatch-value {
+      color: #9ca3af;
+    }
+    .preview-swatch-hex {
+      display: block;
+      font-size: 0.625rem;
+      color: #9ca3af;
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+      margin-top: 0.125rem;
+    }
+    .dark .preview-swatch-hex {
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <!-- Dark Mode Toggle -->
+  <div class="fixed top-4 right-4 z-50">
+    <button id="darkModeToggle" class="btn btn-secondary">
+      <i class="fas fa-moon dark:hidden"></i>
+      <i class="fas fa-sun hidden dark:inline"></i>
+      <span class="dark:hidden">다크모드</span>
+      <span class="hidden dark:inline">라이트모드</span>
+    </button>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-8">
+    <div class="preview-breadcrumb">
+      <a href="index.html"><i class="fas fa-home"></i></a>
+      <span>/</span>
+      <span class="text-gray-900 dark:text-white">Colors</span>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Colors</h1>
+
+    <!-- Primary Colors -->
+    <section class="preview-section">
+      <h2 class="preview-title">Primary Colors</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">버튼, 체크박스, 토글 등 주요 인터랙션 요소에 사용되는 색상</p>
+
+      <div class="preview-color-grid">
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-gray-900 dark:bg-white">
+            <span class="preview-swatch-color-text text-white dark:text-gray-900">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Primary</span>
+            <span class="preview-swatch-value">gray-900</span>
+            <span class="preview-swatch-hex">#111827</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-gray-800 dark:bg-gray-100">
+            <span class="preview-swatch-color-text text-white dark:text-gray-900">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Primary Hover</span>
+            <span class="preview-swatch-value">gray-800</span>
+            <span class="preview-swatch-hex">#1f2937</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Text Colors -->
+    <section class="preview-section">
+      <h2 class="preview-title">Text Colors</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">텍스트 계층 구조를 나타내는 색상</p>
+
+      <div class="preview-color-grid">
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-gray-900 dark:bg-white">
+            <span class="preview-swatch-color-text text-white dark:text-gray-900">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Primary</span>
+            <span class="preview-swatch-value">.text-primary</span>
+            <span class="preview-swatch-hex">gray-900 / white</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-gray-600 dark:bg-gray-400">
+            <span class="preview-swatch-color-text text-white dark:text-gray-900">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Secondary</span>
+            <span class="preview-swatch-value">.text-secondary</span>
+            <span class="preview-swatch-hex">gray-600 / gray-400</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-gray-500">
+            <span class="preview-swatch-color-text text-white">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Muted</span>
+            <span class="preview-swatch-value">.text-muted</span>
+            <span class="preview-swatch-hex">gray-500</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Status Colors -->
+    <section class="preview-section">
+      <h2 class="preview-title">Status Colors</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">상태 뱃지 및 필터 버튼에 사용되는 색상</p>
+
+      <div class="preview-color-grid">
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-success-solid">
+            <span class="preview-swatch-color-text text-success-light">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Success</span>
+            <span class="preview-swatch-value">.bg-success-solid</span>
+            <span class="preview-swatch-hex">성공, 완료</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-info-solid">
+            <span class="preview-swatch-color-text text-info-light">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Info</span>
+            <span class="preview-swatch-value">.bg-info-solid</span>
+            <span class="preview-swatch-hex">정보, 준비</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-ready-solid">
+            <span class="preview-swatch-color-text text-ready-light">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Ready</span>
+            <span class="preview-swatch-value">.bg-ready-solid</span>
+            <span class="preview-swatch-hex">배송준비</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-progress-solid">
+            <span class="preview-swatch-color-text text-progress-light">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Progress</span>
+            <span class="preview-swatch-value">.bg-progress-solid</span>
+            <span class="preview-swatch-hex">배송중</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-complete-solid">
+            <span class="preview-swatch-color-text text-complete-light">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Complete</span>
+            <span class="preview-swatch-value">.bg-complete-solid</span>
+            <span class="preview-swatch-hex">배송완료</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-error-solid">
+            <span class="preview-swatch-color-text text-error-light">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Error</span>
+            <span class="preview-swatch-value">.bg-error-solid</span>
+            <span class="preview-swatch-hex">오류, 취소</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-warning-solid">
+            <span class="preview-swatch-color-text text-warning-light">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Warning</span>
+            <span class="preview-swatch-value">.bg-warning-solid</span>
+            <span class="preview-swatch-hex">경고, 보류</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-hold-solid">
+            <span class="preview-swatch-color-text text-hold-light">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Hold</span>
+            <span class="preview-swatch-value">.bg-hold-solid</span>
+            <span class="preview-swatch-hex">비활성, 대기</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Status Text Colors -->
+    <section class="preview-section">
+      <h2 class="preview-title">Status Text Colors</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">상태를 나타내는 텍스트 색상</p>
+
+      <div class="preview-color-grid">
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <span class="preview-swatch-color-text text-success text-lg font-medium">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Success</span>
+            <span class="preview-swatch-value">.text-success</span>
+            <span class="preview-swatch-hex">green-600 / green-400</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <span class="preview-swatch-color-text text-error text-lg font-medium">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Error</span>
+            <span class="preview-swatch-value">.text-error</span>
+            <span class="preview-swatch-hex">red-600 / red-400</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <span class="preview-swatch-color-text text-warning text-lg font-medium">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Warning</span>
+            <span class="preview-swatch-value">.text-warning</span>
+            <span class="preview-swatch-hex">yellow-600 / yellow-400</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <span class="preview-swatch-color-text text-info text-lg font-medium">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Info</span>
+            <span class="preview-swatch-value">.text-info</span>
+            <span class="preview-swatch-hex">blue-600 / blue-400</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <span class="preview-swatch-color-text text-ready text-lg font-medium">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Ready</span>
+            <span class="preview-swatch-value">.text-ready</span>
+            <span class="preview-swatch-hex">cyan-600 / cyan-400</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <span class="preview-swatch-color-text text-progress text-lg font-medium">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Progress</span>
+            <span class="preview-swatch-value">.text-progress</span>
+            <span class="preview-swatch-hex">indigo-600 / indigo-400</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <span class="preview-swatch-color-text text-complete text-lg font-medium">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Complete</span>
+            <span class="preview-swatch-value">.text-complete</span>
+            <span class="preview-swatch-hex">pink-600 / pink-400</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <span class="preview-swatch-color-text text-hold text-lg font-medium">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Hold</span>
+            <span class="preview-swatch-value">.text-hold</span>
+            <span class="preview-swatch-hex">gray-500 / gray-400</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Background Colors -->
+    <section class="preview-section">
+      <h2 class="preview-title">Background Colors</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">배경 및 표면에 사용되는 색상</p>
+
+      <div class="preview-color-grid">
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <span class="preview-swatch-color-text text-gray-900 dark:text-white">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Surface</span>
+            <span class="preview-swatch-value">카드, 모달</span>
+            <span class="preview-swatch-hex">white / gray-800</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-gray-50 dark:bg-gray-900">
+            <span class="preview-swatch-color-text text-gray-900 dark:text-white">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Background</span>
+            <span class="preview-swatch-value">페이지 배경</span>
+            <span class="preview-swatch-hex">gray-50 / gray-900</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-gray-100 dark:bg-gray-800">
+            <span class="preview-swatch-color-text text-gray-900 dark:text-white">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Input</span>
+            <span class="preview-swatch-value">입력 필드</span>
+            <span class="preview-swatch-hex">gray-100 / gray-800</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Border Colors -->
+    <section class="preview-section">
+      <h2 class="preview-title">Border Colors</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">테두리 및 구분선에 사용되는 색상</p>
+
+      <div class="preview-color-grid">
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-gray-200 dark:bg-gray-700">
+            <span class="preview-swatch-color-text text-gray-700 dark:text-gray-300">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Default</span>
+            <span class="preview-swatch-value">카드, 테이블</span>
+            <span class="preview-swatch-hex">gray-200 / gray-700</span>
+          </div>
+        </div>
+        <div class="preview-color-swatch">
+          <div class="preview-swatch-color bg-gray-100 dark:bg-gray-800">
+            <span class="preview-swatch-color-text text-gray-600 dark:text-gray-400">Aa</span>
+          </div>
+          <div class="preview-swatch-info">
+            <span class="preview-swatch-name">Light</span>
+            <span class="preview-swatch-value">디바이더</span>
+            <span class="preview-swatch-hex">gray-100 / gray-800</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/preview.js"></script>
+</body>
+</html>

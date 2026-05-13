@@ -1,0 +1,1265 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Order Detail - Claim History - Refund Tab Content"
+  },
+  "id": "tab_content_refund",
+  "type": "basic",
+  "name": "Div",
+  "children": [
+    {
+      "id": "refund_toolbar",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "btn btn-outline w-full md:w-auto"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.view_refund_management"
+            },
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "external-link",
+                "className": "w-4 h-4 ml-2"
+              }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center gap-3"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.sort.label:"
+            },
+            {
+              "type": "basic",
+              "name": "Select",
+              "props": {
+                "className": "select text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "props": {
+                    "value": "request_date_desc"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.sort.request_date_desc"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-gray-300 dark:text-gray-600"
+              },
+              "text": "|"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": {
+                "className": "text-sm text-gray-500 dark:text-gray-400"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.per_page:"
+            },
+            {
+              "type": "basic",
+              "name": "Select",
+              "props": {
+                "className": "select text-sm"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Option",
+                  "props": {
+                    "value": "10"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.items_count|count=10"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "refund_table_container",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "table-container overflow-x-auto"
+      },
+      "responsive": {
+        "portable": {
+          "props": {
+            "className": "space-y-4"
+          },
+          "children": [
+            {
+              "id": "refund_mobile_card_1",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "excel-card relative"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "absolute top-4 right-4 badge badge-red"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.status.refund_rejected"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "mb-4 pr-20"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "A",
+                      "props": {
+                        "href": "#",
+                        "className": "text-blue-600 dark:text-blue-400 font-bold text-sm hover:underline"
+                      },
+                      "text": "RFD-2025-00005"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "ORD-2025-001238"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
+                      },
+                      "text": "2025-01-23 11:10:20"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-xs text-gray-600 dark:text-gray-400 mt-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.refund_method:"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-gray-900 dark:text-white ml-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.method.direct_refund"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "border-t border-gray-100 dark:border-gray-700 pt-4 mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex gap-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "font-bold text-sm text-gray-900 dark:text-white"
+                              },
+                              "text": "태블릿 케이스"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                              },
+                              "text": "SKU-77889"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.product.size: 11인치"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-2 gap-3 mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.actual_price:"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-gray-900 dark:text-white"
+                          },
+                          "text": "25,000원"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity:"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-gray-900 dark:text-white"
+                          },
+                          "text": "1개"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.expected_refund:"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-blue-600 dark:text-blue-400"
+                          },
+                          "text": "22,500원"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.actual_refund:"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-green-600 dark:text-green-400"
+                          },
+                          "text": "22,500원"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "border-t border-gray-100 dark:border-gray-700 pt-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2 mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.reason.customer_fault"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-sm text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.reason.simple_change"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-400"
+                      },
+                      "text": "다른 제품을 구매하고 싶어서 환불 신청합니다."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "refund_mobile_card_2",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "excel-card relative"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "absolute top-4 right-4 badge badge-yellow"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.status.refund_hold"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "mb-4 pr-20"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "A",
+                      "props": {
+                        "href": "#",
+                        "className": "text-blue-600 dark:text-blue-400 font-bold text-sm hover:underline"
+                      },
+                      "text": "RFD-2025-00004"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                      },
+                      "text": "ORD-2025-001237"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
+                      },
+                      "text": "2025-01-22 16:20:45"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-xs text-gray-600 dark:text-gray-400 mt-1"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.refund_method:"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-gray-900 dark:text-white ml-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.method.deposit"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "border-t border-gray-100 dark:border-gray-700 pt-4 mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex gap-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "font-bold text-sm text-gray-900 dark:text-white"
+                              },
+                              "text": "무선 충전기"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                              },
+                              "text": "SKU-44556"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.product.color: 블랙"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-2 gap-3 mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.actual_price:"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-gray-900 dark:text-white"
+                          },
+                          "text": "35,000원"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity:"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-gray-900 dark:text-white"
+                          },
+                          "text": "1개"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.expected_refund:"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-blue-600 dark:text-blue-400"
+                          },
+                          "text": "35,000원"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount.actual_refund:"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-green-600 dark:text-green-400"
+                          },
+                          "text": "35,000원"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "border-t border-gray-100 dark:border-gray-700 pt-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2 mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "bg-gray-900 text-white px-2 py-0.5 rounded text-xs font-bold dark:bg-gray-700"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.reason.seller_fault"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "font-bold text-sm text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.reason.wrong_color"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "bg-gray-100 dark:bg-gray-800 rounded-lg p-3"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "w-12 h-8 bg-gray-300 dark:bg-gray-600 rounded mb-2"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-sm text-gray-600 dark:text-gray-400"
+                          },
+                          "text": "주문한 블랙이 아니라 화이트 색상이 배송되었습니다. 사진에서 확인 가능합니다."
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Table",
+          "props": {
+            "className": "table"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Thead",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "w-[12%]"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.request_date"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "w-[13%]"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.refund_number"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "w-[25%]"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.product_info"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "w-[12%]"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.amount_info"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "w-[5%] text-center"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.quantity"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "w-[8%]"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.refund_method"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "w-[8%]"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.refund_status"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Th",
+                      "props": {
+                        "className": "w-[30%]"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.columns.refund_reason"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Tbody",
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "2025-01-23 11:10:20"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "A",
+                          "props": {
+                            "href": "#",
+                            "className": "text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                          },
+                          "text": "RFD-2025-00005"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "ORD-2025-001238"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-start gap-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "font-bold text-sm text-gray-900 dark:text-white"
+                                  },
+                                  "text": "태블릿 케이스"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "SKU-77889"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "사이즈: 11인치"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "text-right"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "font-bold text-gray-900 dark:text-white"
+                          },
+                          "text": "25,000원"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "예상: 22,500원"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "실환불: 22,500원"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "text-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "font-bold text-gray-900 dark:text-white"
+                          },
+                          "text": "1"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "(주문: 1)"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "직접 환불"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "badge badge-red"
+                          },
+                          "text": "환불반려"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2 mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "bg-red-600 text-white px-2 py-0.5 rounded text-xs font-bold"
+                              },
+                              "text": "고객귀책"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "font-bold text-sm text-gray-900 dark:text-white"
+                              },
+                              "text": "단순변심"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-400"
+                          },
+                          "text": "다른 제품을 구매하고 싶어서 환불 신청합니다."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Tr",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "2025-01-22 16:20:45"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "A",
+                          "props": {
+                            "href": "#",
+                            "className": "text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                          },
+                          "text": "RFD-2025-00004"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "block text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "ORD-2025-001237"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-start gap-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded flex-shrink-0"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "font-bold text-sm text-gray-900 dark:text-white"
+                                  },
+                                  "text": "무선 충전기"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "SKU-44556"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                  },
+                                  "text": "색상: 블랙"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "text-right"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "font-bold text-gray-900 dark:text-white"
+                          },
+                          "text": "35,000원"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "예상: 35,000원"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "실환불: 35,000원"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "text-center"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "font-bold text-gray-900 dark:text-white"
+                          },
+                          "text": "1"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "(주문: 1)"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "props": {
+                        "className": "font-medium text-gray-900 dark:text-white"
+                      },
+                      "text": "예치금"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "badge badge-yellow"
+                          },
+                          "text": "환불보류"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Td",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2 mb-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "bg-gray-900 text-white px-2 py-0.5 rounded text-xs font-bold dark:bg-gray-700"
+                              },
+                              "text": "판매자귀책"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "font-bold text-sm text-gray-900 dark:text-white"
+                              },
+                              "text": "색상 다름"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "bg-gray-100 dark:bg-gray-800 rounded-lg p-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "w-16 h-10 bg-gray-300 dark:bg-gray-600 rounded mb-2"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                              },
+                              "text": "주문한 블랙이 아니라 화이트 색상이 배송되었습니다. 사진에서 확인 가능합니다."
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "refund_pagination",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-center items-center gap-2 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "w-8 h-8 flex items-center justify-center text-gray-400 dark:text-gray-500"
+          },
+          "text": "«"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "w-8 h-8 flex items-center justify-center text-gray-400 dark:text-gray-500"
+          },
+          "text": "‹"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "w-8 h-8 flex items-center justify-center border border-gray-200 dark:border-gray-700 rounded font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-800"
+          },
+          "text": "1"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "w-8 h-8 flex items-center justify-center text-gray-400 dark:text-gray-500"
+          },
+          "text": "›"
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button",
+            "className": "w-8 h-8 flex items-center justify-center text-gray-400 dark:text-gray-500"
+          },
+          "text": "»"
+        }
+      ]
+    }
+  ]
+}

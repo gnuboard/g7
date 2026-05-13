@@ -29,11 +29,6 @@ class ExtensionStatusCacheTest extends TestCase
 {
     private CoreCacheDriver $cache;
 
-    /**
-     * 캐시를 비우고 array 저장소 기반 코어 캐시 드라이버를 CacheInterface 로 바인딩한다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,11 +38,6 @@ class ExtensionStatusCacheTest extends TestCase
         $this->app->instance(CacheInterface::class, $this->cache);
     }
 
-    /**
-     * 테스트가 남긴 캐시를 비운다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -60,12 +50,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-1: 모듈 활성/설치 캐시 키 형식 검증.
-     *
-     * @scenario case=module_status
-     *
-     * @effects status_cache_key_uses_core_ext_prefix, status_cache_returns_stored_identifiers
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_1_module_cache_key_uses_new_prefix(): void
@@ -85,12 +69,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-3 ~ A-1-6: invalidateModuleStatusCache() 가 두 키 모두 무효화.
-     *
-     * @scenario case=module_status
-     *
-     * @effects module_status_invalidation_clears_active_and_installed
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_3_invalidate_module_status_clears_both_keys(): void
@@ -98,8 +76,7 @@ class ExtensionStatusCacheTest extends TestCase
         $this->cache->put('ext.modules.active_identifiers', ['mod-a']);
         $this->cache->put('ext.modules.installed_identifiers', ['mod-a']);
 
-        $stub = new class
-        {
+        $stub = new class {
             use CachesModuleStatus;
         };
         $stub::invalidateModuleStatusCache();
@@ -114,12 +91,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-2-1: 플러그인 캐시 키 형식 검증.
-     *
-     * @scenario case=plugin_status
-     *
-     * @effects status_cache_key_uses_core_ext_prefix
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_2_1_plugin_cache_key_uses_new_prefix(): void
@@ -135,12 +106,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-2-3: invalidatePluginStatusCache() 가 두 키 모두 무효화.
-     *
-     * @scenario case=plugin_status
-     *
-     * @effects plugin_status_invalidation_clears_active_and_installed
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_2_3_invalidate_plugin_status_clears_both_keys(): void
@@ -148,8 +113,7 @@ class ExtensionStatusCacheTest extends TestCase
         $this->cache->put('ext.plugins.active_identifiers', ['plugin-a']);
         $this->cache->put('ext.plugins.installed_identifiers', ['plugin-a']);
 
-        $stub = new class
-        {
+        $stub = new class {
             use CachesPluginStatus;
         };
         $stub::invalidatePluginStatusCache();
@@ -164,12 +128,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-3-1: 템플릿 캐시 키 형식 검증 (4종).
-     *
-     * @scenario case=template_status
-     *
-     * @effects status_cache_key_uses_core_ext_prefix
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_3_1_template_cache_keys_use_new_prefix(): void
@@ -189,12 +147,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-3-3: invalidateTemplateStatusCache() 가 4개 키 모두 무효화.
-     *
-     * @scenario case=template_status
-     *
-     * @effects template_status_invalidation_clears_all_four_keys
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_3_3_invalidate_template_status_clears_all_four_keys(): void
@@ -204,8 +156,7 @@ class ExtensionStatusCacheTest extends TestCase
         $this->cache->put('ext.templates.active_identifiers_user', ['t-user']);
         $this->cache->put('ext.templates.installed_identifiers', ['t-a']);
 
-        $stub = new class
-        {
+        $stub = new class {
             use CachesTemplateStatus;
         };
         $stub::invalidateTemplateStatusCache();
@@ -222,20 +173,13 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-4-1: 확장 캐시 버전 키 형식 + 증가 동작 검증.
-     *
-     * @scenario case=cache_version
-     *
-     * @effects extension_cache_version_increments_monotonically, status_cache_key_uses_core_ext_prefix
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_4_1_increment_extension_cache_version(): void
     {
         $this->cache->put('ext.cache_version', 1000);
 
-        $stub = new class
-        {
+        $stub = new class {
             use ClearsTemplateCaches {
                 incrementExtensionCacheVersion as public callIncrement;
             }
@@ -251,33 +195,14 @@ class ExtensionStatusCacheTest extends TestCase
     }
 
     /**
-     * A-4-3: 미설정(키 부재) 시 0 대신 새 유효 버전을 재생성·저장·반환.
-     *
-     * 회귀 가드 (버그 ②): `cache:clear` 로 키 소실 시 0 을 반환하면 자원 URL 이
-     * `?v=0` 으로 수렴해 immutable 에셋이 stale 고착된다. 키가 없으면 새 `time()`
-     * 버전을 생성·저장·반환해야 한다.
-     *
-     * @scenario case=cache_version
-     *
-     * @effects extension_cache_version_regenerated_when_missing
-     *
-     * @return void 반환값 없음
+     * A-4-3: 미설정 시 0 반환.
      */
     #[Test]
-    public function a_4_3_get_extension_cache_version_regenerates_when_unset(): void
+    public function a_4_3_get_extension_cache_version_returns_zero_when_unset(): void
     {
         $this->cache->forget('ext.cache_version');
 
-        $before = time();
-        $version = ClearsTemplateCaches::getExtensionCacheVersion();
-
-        // 0 이 아닌 유효한 타임스탬프 (기존 결함이면 0 → 실패)
-        $this->assertGreaterThanOrEqual($before, $version);
-        $this->assertLessThanOrEqual(time(), $version);
-
-        // 저장되어 다음 호출이 같은 값 반환
-        $this->assertSame($version, ClearsTemplateCaches::getExtensionCacheVersion());
-        $this->assertSame($version, (int) $this->cache->get('ext.cache_version'));
+        $this->assertSame(0, ClearsTemplateCaches::getExtensionCacheVersion());
     }
 
     // ========================================================================
@@ -286,12 +211,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-1: 모듈 활성 목록 캐시 생성 — put 후 has=true.
-     *
-     * @scenario case=module_status
-     *
-     * @effects status_cache_returns_stored_identifiers
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_create_active_modules_cache(): void
@@ -306,12 +225,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-2: 모듈 활성 목록 캐시 히트 — 두 번째 read 동일.
-     *
-     * @scenario case=module_status
-     *
-     * @effects status_cache_returns_stored_identifiers
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_active_modules_cache_hit(): void
@@ -326,20 +239,13 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-4: 모듈 활성화 시 캐시 무효화 — invalidate 후 has=false.
-     *
-     * @scenario case=module_status
-     *
-     * @effects module_status_invalidation_clears_active_and_installed
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_4_module_activate_invalidates_cache(): void
     {
         $this->cache->put('ext.modules.active_identifiers', ['mod-a', 'mod-b']);
 
-        $stub = new class
-        {
+        $stub = new class {
             use CachesModuleStatus;
         };
         $stub::invalidateModuleStatusCache();
@@ -349,12 +255,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-5: 모듈 비활성화 시 캐시 무효화 — installed 키도 함께 삭제.
-     *
-     * @scenario case=module_status
-     *
-     * @effects module_status_invalidation_clears_active_and_installed
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_5_module_deactivate_invalidates_both_keys(): void
@@ -362,8 +262,7 @@ class ExtensionStatusCacheTest extends TestCase
         $this->cache->put('ext.modules.active_identifiers', ['mod-a']);
         $this->cache->put('ext.modules.installed_identifiers', ['mod-a', 'mod-b']);
 
-        $stub = new class
-        {
+        $stub = new class {
             use CachesModuleStatus;
         };
         $stub::invalidateModuleStatusCache();
@@ -374,12 +273,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-7: 빈 배열 처리 — 빈 배열도 정상 캐시 가능 (무효화로 보장).
-     *
-     * @scenario case=module_status
-     *
-     * @effects status_cache_returns_stored_identifiers, module_status_invalidation_clears_active_and_installed
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_7_empty_array_can_be_cached_and_invalidated(): void
@@ -390,8 +283,7 @@ class ExtensionStatusCacheTest extends TestCase
         $this->assertSame([], $this->cache->get('ext.modules.active_identifiers'));
 
         // 모듈 설치/활성화 시 invalidateModuleStatusCache 호출로 확실히 갱신
-        $stub = new class
-        {
+        $stub = new class {
             use CachesModuleStatus;
         };
         $stub::invalidateModuleStatusCache();
@@ -405,12 +297,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-2-2: 플러그인 활성 목록 캐시 히트.
-     *
-     * @scenario case=plugin_status
-     *
-     * @effects status_cache_returns_stored_identifiers
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_2_2_active_plugins_cache_hit(): void
@@ -423,18 +309,11 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-2-4: 플러그인 활성화/비활성화/삭제 시 캐시 무효화 (라이프사이클).
-     *
-     * @scenario case=plugin_status
-     *
-     * @effects plugin_status_invalidation_clears_active_and_installed
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_2_4_plugin_lifecycle_invalidates_cache(): void
     {
-        $stub = new class
-        {
+        $stub = new class {
             use CachesPluginStatus;
         };
 
@@ -460,12 +339,6 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-3-2: 템플릿 타입별 캐시 히트 (admin/user 분리).
-     *
-     * @scenario case=template_status
-     *
-     * @effects status_cache_returns_stored_identifiers
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_3_2_template_type_cache_hit(): void
@@ -483,26 +356,19 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-4-2: 모듈 설치 시 캐시 버전 증가 (T1 → T2 시뮬레이션).
-     *
-     * @scenario case=cache_version
-     *
-     * @effects extension_cache_version_increments_monotonically
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_4_2_install_increments_cache_version(): void
     {
         $this->cache->put('ext.cache_version', 1000);
 
-        $stub = new class
-        {
+        $stub = new class {
             use ClearsTemplateCaches {
                 incrementExtensionCacheVersion as public callIncrement;
             }
         };
 
-        // 버전은 max(time(), 현재+1) 이라 기다리지 않아도 1000 보다 커진다
+        sleep(1); // time() 기반 증가 보장
         $stub->callIncrement();
 
         $this->assertGreaterThan(1000, ClearsTemplateCaches::getExtensionCacheVersion());
@@ -510,18 +376,11 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-4-3: 라이프사이클 단계마다 버전 증가 (T0 < T1 < T2 < T3).
-     *
-     * @scenario case=cache_version
-     *
-     * @effects extension_cache_version_increments_monotonically
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function a_4_3_lifecycle_increments_each_step(): void
     {
-        $stub = new class
-        {
+        $stub = new class {
             use ClearsTemplateCaches {
                 incrementExtensionCacheVersion as public callIncrement;
             }
@@ -530,10 +389,11 @@ class ExtensionStatusCacheTest extends TestCase
         $stub->callIncrement();
         $t1 = ClearsTemplateCaches::getExtensionCacheVersion();
 
-        // 버전은 max(time(), 현재+1) 이라 같은 초에도 단조 증가한다 — 기다리지 않는다
+        sleep(1);
         $stub->callIncrement();
         $t2 = ClearsTemplateCaches::getExtensionCacheVersion();
 
+        sleep(1);
         $stub->callIncrement();
         $t3 = ClearsTemplateCaches::getExtensionCacheVersion();
 

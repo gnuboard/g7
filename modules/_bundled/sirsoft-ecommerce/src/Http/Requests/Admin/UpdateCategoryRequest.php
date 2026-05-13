@@ -7,23 +7,17 @@ use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Ecommerce\Models\Category;
-use Modules\Sirsoft\Ecommerce\Rules\NotCircularCategoryParent;
 
 /**
  * 카테고리 수정 요청
  */
 class UpdateCategoryRequest extends FormRequest
 {
-    use ValidatesTempKey;
-
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
-     *
-     * @return bool 권한 검증 결과 (항상 true)
      */
     public function authorize(): bool
     {
@@ -34,8 +28,6 @@ class UpdateCategoryRequest extends FormRequest
      * 검증 전 데이터 전처리
      *
      * 프론트엔드에서 문자열 "true"/"false"로 전송되는 boolean 값을 변환합니다.
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -51,7 +43,7 @@ class UpdateCategoryRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, mixed> 필드별 검증 규칙
+     * @return array
      */
     public function rules(): array
     {
@@ -59,12 +51,8 @@ class UpdateCategoryRequest extends FormRequest
 
         $rules = [
             'name' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
-            'description' => ['nullable', 'array', new TranslatableField],
-            'parent_id' => [
-                'nullable',
-                Rule::exists(Category::class, 'id'),
-                new NotCircularCategoryParent($categoryId !== null ? (int) $categoryId : null),
-            ],
+            'description' => ['nullable', 'array', new TranslatableField()],
+            'parent_id' => ['nullable', Rule::exists(Category::class, 'id')],
             'slug' => [
                 'required',
                 'string',
@@ -75,7 +63,7 @@ class UpdateCategoryRequest extends FormRequest
             'is_active' => 'boolean',
             'meta_title' => 'nullable|string|max:200',
             'meta_description' => 'nullable|string',
-            'temp_key' => $this->tempKeyRules(),
+            'temp_key' => 'nullable|string|max:64',
         ];
 
         // 훅을 통한 동적 규칙 확장
@@ -85,7 +73,7 @@ class UpdateCategoryRequest extends FormRequest
     /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array<string, string> 규칙별 다국어 에러 메시지
+     * @return array
      */
     public function messages(): array
     {
@@ -95,20 +83,6 @@ class UpdateCategoryRequest extends FormRequest
             'slug.unique' => __('sirsoft-ecommerce::validation.category.slug_unique'),
             'slug.regex' => __('sirsoft-ecommerce::validation.category.slug_format'),
             'parent_id.exists' => __('sirsoft-ecommerce::validation.category.parent_not_found'),
-        ];
-    }
-
-    /**
-     * 검증 오류 문구에 쓰는 필드 표시 이름
-     *
-     * 다국어 칸의 현재 언어 값을 비우면 「카테고리명의 한국어(ko) 값은 필수입니다.」처럼 칸 이름을 싣는다.
-     *
-     * @return array<string, string> 필드 키 → 표시 이름
-     */
-    public function attributes(): array
-    {
-        return [
-            'name' => __('sirsoft-ecommerce::validation.attributes.category_name'),
         ];
     }
 }

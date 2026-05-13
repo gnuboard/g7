@@ -1,6 +1,6 @@
 # Enum 사용 규칙
 
-> **관련 문서**: [백엔드 가이드 인덱스](./README.md) | [검증 로직](./validation.md)
+> **관련 문서**: [백엔드 가이드 인덱스](./index.md) | [검증 로직](./validation.md)
 
 ---
 
@@ -8,7 +8,7 @@
 
 ```text
 1. 상태/타입/분류 = Enum 필수 (PHP 8.1+ Backed Enum)
-2. 위치: app/Enums/ 또는 modules/*/src/Enums/ (예외: 한 영역만 쓰는 Enum 은 그 영역 폴더, 공개 계약 전용 Enum 은 계약 옆)
+2. 위치: app/Enums/ 또는 modules/*/src/Enums/
 3. DB: enum 컬럼 또는 string + 검증
 4. FormRequest: Rule::enum(StatusEnum::class) 사용
 5. cases(): 모든 값 조회, tryFrom(): 안전한 변환
@@ -168,16 +168,6 @@ app/Enums/                    # 코어 Enum
 
 modules/[vendor-module]/src/Enums/  # 모듈 Enum
 ```
-
-예외 두 가지는 위 위치보다 우선합니다.
-
-| 예외 | 위치 | 예 |
-| --- | --- | --- |
-| 한 영역만 쓰는 Enum | 그 영역 폴더 | `app/Extension/Integrity/PackageVerificationStatus`(패키지 검증 상태), `app/CoreUpdate/CoreUpdateStep`(코어 업데이트 단계), `app/Extension/Vendor/VendorMode`(vendor 설치 모드 — composer 또는 동봉 zip) |
-| 다른 확장에 공개하는 계약 전용 Enum | 계약 옆 `{확장 루트}/src/Contracts/{영역}/Data/` | `src/Contracts/Payment/Data/MetaEncoding`(결제 meta 병합 인코딩) |
-
-영역 밖(다른 영역·화면·FormRequest)에서도 쓰게 되면 `app/Enums/`·`src/Enums/` 로 옮긴다. 여러 확장이 같이 쓰는 상태·분류는 처음부터 `Enums/` 에 둔다.
-같은 기준이 DTO 에도 적용된다 — [dto.md 위치](dto.md#위치).
 
 ### ScopeType Enum — 권한 스코프
 
@@ -350,4 +340,4 @@ enum UserStatus: string
 
 - [검증 로직](./validation.md) - FormRequest에서 Enum 검증
 - [데이터베이스 가이드](../database-guide.md) - 마이그레이션 규칙
-- [백엔드 가이드 인덱스](./README.md) - 전체 목차
+- [백엔드 가이드 인덱스](./index.md) - 전체 목차

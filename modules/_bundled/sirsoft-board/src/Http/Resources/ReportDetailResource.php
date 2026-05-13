@@ -4,13 +4,10 @@ namespace Modules\Sirsoft\Board\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Http\Request;
 use Modules\Sirsoft\Board\Enums\TriggerType;
-use Modules\Sirsoft\Board\Services\PostContentMediaService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
-use Modules\Sirsoft\Board\Traits\PresentsMemberName;
 
 /**
  * 신고 케이스 상세 API 리소스
@@ -20,7 +17,6 @@ use Modules\Sirsoft\Board\Traits\PresentsMemberName;
 class ReportDetailResource extends BaseApiResource
 {
     use ChecksBoardPermission;
-    use PresentsMemberName;
 
     /**
      * 리소스를 배열로 변환합니다.
@@ -141,15 +137,13 @@ class ReportDetailResource extends BaseApiResource
     {
         if ($targetType === 'post') {
             $createdAtRaw = $reportable['created_at'] ?? null;
-            $contentMode = $reportable['content_mode'] ?? 'text';
-            $content = $reportable['content'] ?? ($firstSnapshot['content'] ?? '');
 
             return [
                 'id' => $report->target_id,
                 'title' => $reportable['title'] ?? ($firstSnapshot['title'] ?? null),
-                'content' => $this->presentContentMedia($content, $contentMode, $report->board?->slug),
-                'content_mode' => $contentMode,
-                'created_at' => $createdAtRaw ? $this->formatDateTimeStringForUser(Carbon::parse($createdAtRaw)) : null,
+                'content' => $reportable['content'] ?? ($firstSnapshot['content'] ?? ''),
+                'content_mode' => $reportable['content_mode'] ?? 'text',
+                'created_at' => $createdAtRaw ? $this->formatDateTimeStringForUser(\Carbon\Carbon::parse($createdAtRaw)) : null,
                 'author' => $this->buildAuthorInfo($reportable, $firstSnapshot['author_name'] ?? ''),
             ];
         }
@@ -172,40 +166,18 @@ class ReportDetailResource extends BaseApiResource
                 'id' => $reportable['post']['id'] ?? null,
                 'title' => $reportable['post']['title'] ?? null,
                 'content' => null,
-                'created_at' => $postCreatedAtRaw ? $this->formatDateTimeStringForUser(Carbon::parse($postCreatedAtRaw)) : null,
+                'created_at' => $postCreatedAtRaw ? $this->formatDateTimeStringForUser(\Carbon\Carbon::parse($postCreatedAtRaw)) : null,
                 'author' => isset($reportable['post']['author'])
                     ? [
                         'uuid' => $reportable['post']['author']['uuid'] ?? null,
                         'name' => $reportable['post']['author']['name'] ?? null,
-                        'email' => $this->canExposeMemberEmail() ? ($reportable['post']['author']['email'] ?? null) : null,
+                        'email' => $reportable['post']['author']['email'] ?? null,
                     ]
                     : null,
             ];
         }
 
         return null;
-    }
-
-    /**
-     * 게시글 본문(HTML)의 본문 미디어 정식 주소를 서명 주소로 바꿉니다.
-     *
-     * `<img>`·`<video>` 요청에는 인증 헤더가 없어, 비밀글·회원 전용 게시판의 본문 미디어를 정식 주소로 두면 신고 상세에서
-     * 403 으로 깨진다. 신고 조회 권한이 본문을 볼 자격이므로 게시글 응답(`PostResource`)과 같은 서명으로 위임한다.
-     *
-     * @param  string|null  $content  본문
-     * @param  string  $contentMode  본문 형식 (html 일 때만 바꾼다)
-     * @param  string|null  $slug  게시판 슬러그
-     * @return string|null 서명 주소로 바꾼 본문
-     */
-    private function presentContentMedia(?string $content, string $contentMode, ?string $slug): ?string
-    {
-        if ($content === null || $content === '' || $contentMode !== 'html' || $slug === null || $slug === '') {
-            return $content;
-        }
-
-        // 신고 상세는 관리자 전용 화면이다 — 신고된 글(삭제·비밀 포함)의 증거 미디어를 관리자가 `<img>`·`<video>` 로
-        // 볼 수 있도록 본문의 이 게시판 본문 미디어를 모두 서명한다(#883 검수 동작 유지, #887).
-        return app(PostContentMediaService::class)->presentContent($content, $slug, signAll: true);
     }
 
     /**
@@ -228,7 +200,7 @@ class ReportDetailResource extends BaseApiResource
         return [
             'id' => $report->target_id,
             'content' => $reportable['content'] ?? ($firstSnapshot['content'] ?? ''),
-            'created_at' => $commentCreatedAtRaw ? $this->formatDateTimeStringForUser(Carbon::parse($commentCreatedAtRaw)) : null,
+            'created_at' => $commentCreatedAtRaw ? $this->formatDateTimeStringForUser(\Carbon\Carbon::parse($commentCreatedAtRaw)) : null,
             'author' => $this->buildAuthorInfo($reportable, $firstSnapshot['author_name'] ?? ''),
         ];
     }
@@ -243,21 +215,12 @@ class ReportDetailResource extends BaseApiResource
     private function buildAuthorInfo(?array $reportable, string $snapshotName): array
     {
         $authorId = $reportable['author_id'] ?? null;
-        $name = ($reportable['author_name'] ?? '') ?: ($snapshotName ?: null);
-
-        // 계정이 남지 않은 회원(하드 삭제)은 케이스 author_id 가 비워져도 비회원이 아니다 —
-        // 비회원 배지·「비회원」 이름 대신 이름(없으면 null → 화면이 「알 수 없음」)만 싣는다
-        $isMember = $authorId !== null || ! empty($reportable['author_is_member']);
 
         return [
             'uuid' => $reportable['author_uuid'] ?? null,
-            'name' => $isMember ? $name : ($name ?? __('sirsoft-board::messages.common.guest')),
-            // 실명 보조 — 서비스가 회원 조회 권한과 표시 이름과의 차이를 이미 판정했다(없으면 키를 싣지 않는다)
-            ...(! empty($reportable['author_real_name']) ? ['real_name' => $reportable['author_real_name']] : []),
-            'email' => $this->canExposeMemberEmail(null, $authorId !== null ? (int) $authorId : null)
-                ? ($reportable['author_email'] ?? null)
-                : null,
-            'is_guest' => ! $isMember,
+            'name' => $reportable['author_name'] ?? $snapshotName ?: __('sirsoft-board::messages.common.guest'),
+            'email' => $reportable['author_email'] ?? null,
+            'is_guest' => $authorId === null,
         ];
     }
 
@@ -276,9 +239,10 @@ class ReportDetailResource extends BaseApiResource
         return [
             'id' => $log->id,
             'reporter' => $log->reporter
-                ? $this->boardMemberNameFields($log->reporter) + [
+                ? [
                     'uuid' => $log->reporter->uuid,
-                    'email' => $this->canExposeMemberEmail(null, $log->reporter->id) ? $log->reporter->email : null,
+                    'name' => $log->reporter->name,
+                    'email' => $log->reporter->email,
                 ]
                 : null,
             'reason_type' => $log->reason_type?->value ?? null,
@@ -308,17 +272,15 @@ class ReportDetailResource extends BaseApiResource
             $processorId = $history['processor_id'] ?? null;
             $processor = $processorId ? User::find($processorId) : null;
 
-            // reported/re_reported/report_cancelled 는 신고자 측 이벤트 — 처리자 없음
-            // (report_cancelled 는 마이페이지 「내 신고」의 취소로 생기며 관리자가 아니라
-            //  신고자 본인이 일으킨다 — 처리자 칸에 「시스템」이 찍히면 사실과 다르다)
-            $isReportEvent = in_array($type, ['reported', 're_reported', 'report_cancelled']);
+            // reported/re_reported는 신고자 접수 이벤트 — 처리자 없음
+            $isReportEvent = in_array($type, ['reported', 're_reported']);
             $processorName = $isReportEvent
                 ? null
-                : ($this->boardMemberDisplayName($processor) ?? __('sirsoft-board::messages.common.system'));
+                : ($processor?->name ?? __('sirsoft-board::messages.common.system'));
             $processorEmail = $isReportEvent ? '' : ($processor?->email ?? '');
 
             $createdAtRaw = $history['created_at'] ?? null;
-            $createdAt = $createdAtRaw ? Carbon::parse($createdAtRaw) : null;
+            $createdAt = $createdAtRaw ? \Carbon\Carbon::parse($createdAtRaw) : null;
 
             return [
                 'id' => $index + 1,
@@ -343,10 +305,10 @@ class ReportDetailResource extends BaseApiResource
      *
      * 상위 2개 사유를 보여주고 나머지는 "외 N건" 형식으로 표시합니다.
      *
-     * @param  Collection  $reporters  신고자 로그 컬렉션
+     * @param  \Illuminate\Support\Collection  $reporters  신고자 로그 컬렉션
      * @return string 신고 사유 요약
      */
-    private function buildReasonSummary(Collection $reporters): string
+    private function buildReasonSummary(\Illuminate\Support\Collection $reporters): string
     {
         $reasonCounts = $reporters
             ->filter(fn ($log) => $log->reason_type !== null)

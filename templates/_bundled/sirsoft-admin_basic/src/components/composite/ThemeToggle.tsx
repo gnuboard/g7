@@ -4,16 +4,6 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
-import type { EditorAttrs } from '../../types';
-import { getDefaultTheme } from '../../handlers/setThemeHandler';
-import { escapeToClose } from '../../support/keyboardActivation';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
-const tOr = (key: string, fallback: string): string => {
-  const translated = (window as any).G7Core?.t?.(key);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
-
 
 /**
  * 테마 모드 타입
@@ -34,12 +24,6 @@ export interface ThemeToggleProps {
   lightText?: string;
   /** 다크 모드 텍스트 (다국어 키 사용 권장) */
   darkText?: string;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -98,30 +82,21 @@ const getInitialTheme = (): ThemeMode => {
   if (savedTheme && ['auto', 'light', 'dark'].includes(savedTheme)) {
     return savedTheme;
   }
-  // 저장값이 없는 첫 방문자는 템플릿 설정의 기본 화면 모드 (#434)
-  return getDefaultTheme();
+  return 'auto';
 };
 
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   onThemeChange,
   className = '',
-  autoText: autoTextProp,
-  lightText: lightTextProp,
-  darkText: darkTextProp,
-  id,
-  editorAttrs,
+  autoText = 'System',
+  lightText = 'Light',
+  darkText = 'Dark',
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
-  const autoText = autoTextProp ?? tOr('admin.theme.auto', 'System');
-  const lightText = lightTextProp ?? tOr('admin.theme.light', 'Light');
-  const darkText = darkTextProp ?? tOr('admin.theme.dark', 'Dark');
   // 초기 테마를 즉시 로드하고 적용
   const initialTheme = getInitialTheme();
   const [currentMode, setCurrentMode] = useState<ThemeMode>(initialTheme);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  // 메뉴를 여는 단추 — 메뉴 안에서 Esc 로 닫으면 여기로 포커스를 돌린다
-  const toggleRef = useRef<HTMLButtonElement>(null);
 
   /**
    * 컴포넌트 마운트 시 즉시 테마 적용
@@ -179,20 +154,16 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   };
 
   return (
-    // 메뉴 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
-    <Div ref={menuRef} className={`relative ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showMenu, () => setShowMenu(false), toggleRef)}>
+    <Div ref={menuRef} className={`relative ${className}`}>
       {/* 테마 토글 버튼 */}
       <Button
-        ref={toggleRef}
         onClick={() => setShowMenu(!showMenu)}
-        aria-haspopup="menu"
-        className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-        aria-label={tOr('common.theme_select', 'Theme')}
-        aria-expanded={showMenu}
+        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        aria-label="Toggle theme"
       >
         <Icon
           name={getCurrentIcon()}
-          className="text-sm text-slate-500 dark:text-slate-400"
+          className="w-5 h-5 text-gray-600 dark:text-gray-400"
         />
       </Button>
 
@@ -203,7 +174,6 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             {/* 자동 모드 */}
             <Button
               onClick={() => handleThemeChange('auto')}
-              aria-pressed={currentMode === 'auto'}
               className={`
                 w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors
                 ${currentMode === 'auto' ? 'bg-gray-50 dark:bg-gray-700' : ''}
@@ -225,7 +195,6 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             {/* 라이트 모드 */}
             <Button
               onClick={() => handleThemeChange('light')}
-              aria-pressed={currentMode === 'light'}
               className={`
                 w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors
                 ${currentMode === 'light' ? 'bg-gray-50 dark:bg-gray-700' : ''}
@@ -247,7 +216,6 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             {/* 다크 모드 */}
             <Button
               onClick={() => handleThemeChange('dark')}
-              aria-pressed={currentMode === 'dark'}
               className={`
                 w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors
                 ${currentMode === 'dark' ? 'bg-gray-50 dark:bg-gray-700' : ''}

@@ -4,7 +4,6 @@ namespace Tests\Feature\Api\Admin;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
-use App\Extension\Custom\CustomUpdatePreflight;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -25,11 +24,6 @@ class CoreUpdateControllerTest extends TestCase
 
     private string $token;
 
-    /**
-     * 각 테스트 전에 공통 픽스처를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -107,7 +101,7 @@ class CoreUpdateControllerTest extends TestCase
     /**
      * 인증된 요청 헬퍼 메서드
      *
-     * @return static 인증 헤더가 붙은 요청 체인
+     * @return static
      */
     private function authRequest(): static
     {
@@ -123,17 +117,11 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * 코어 업데이트 확인 시 버전 정보를 반환합니다.
-     *
-     * @scenario area=core_update.check
-     *
-     * @effects check_for_updates_returns_version_info
-     *
-     * @return void 반환값 없음
      */
     public function test_check_for_updates_returns_version_info(): void
     {
         // Arrange: CoreUpdateService를 Mock
-        $this->partialMock(CoreUpdateService::class, function ($mock) {
+        $this->mock(CoreUpdateService::class, function ($mock) {
             $mock->shouldReceive('checkForUpdates')
                 ->once()
                 ->andReturn([
@@ -166,52 +154,7 @@ class CoreUpdateControllerTest extends TestCase
     }
 
     /**
-     * 직전 업데이트가 custom 사전 검사로 멈춘 기록은 같은 새 버전일 때만 확인 결과에 실립니다 (#792).
-     *
-     * @scenario area=core_update.check
-     *
-     * @effects check_for_updates_includes_custom_preflight
-     *
-     * @return void 반환값 없음
-     */
-    public function test_check_for_updates_includes_custom_preflight_record_for_same_version(): void
-    {
-        $this->partialMock(CoreUpdateService::class, function ($mock) {
-            $mock->shouldReceive('checkForUpdates')->twice()->andReturn([
-                'update_available' => true,
-                'current_version' => '7.1.1',
-                'latest_version' => '7.2.0',
-                'github_url' => 'https://github.com/gnuboard/g7',
-            ]);
-        });
-
-        $conflict = ['package' => 'acme/cli-kit', 'installed' => '2.0.0', 'type' => 'constraint', 'requires' => 'symfony/console', 'constraint' => '^6.4', 'core_package' => 'symfony/console', 'core_version' => 'v7.1.0'];
-        CustomUpdatePreflight::record('7.2.0', ['reserved_files' => [], 'conflicts' => [$conflict]]);
-
-        try {
-            $this->authRequest()->postJson('/api/admin/core-update/check')
-                ->assertOk()
-                ->assertJsonPath('data.custom_preflight.to_version', '7.2.0')
-                ->assertJsonPath('data.custom_preflight.conflicts.0.package', 'acme/cli-kit');
-
-            // 다른 버전을 시도한 기록은 싣지 않는다
-            CustomUpdatePreflight::record('7.1.9', ['reserved_files' => [], 'conflicts' => [$conflict]]);
-            $this->authRequest()->postJson('/api/admin/core-update/check')
-                ->assertOk()
-                ->assertJsonPath('data.custom_preflight', null);
-        } finally {
-            CustomUpdatePreflight::clearRecord();
-        }
-    }
-
-    /**
      * GitHub API 호출 실패 시 422 에러와 구체적인 에러 원인을 반환합니다.
-     *
-     * @scenario area=core_update.check
-     *
-     * @effects check_for_updates_returns_error_when_github_check_fails
-     *
-     * @return void 반환값 없음
      */
     public function test_check_for_updates_returns_error_when_github_check_fails(): void
     {
@@ -242,12 +185,6 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * 인증 없이 코어 업데이트 확인 시 401을 반환합니다.
-     *
-     * @scenario area=core_update.check
-     *
-     * @effects check_for_updates_requires_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_check_for_updates_requires_authentication(): void
     {
@@ -257,49 +194,12 @@ class CoreUpdateControllerTest extends TestCase
     }
 
     /**
-     * 업데이트 확인은 환경설정 조회 권한(core.settings.read)으로 열린다 (제품 결정 2026-10-09).
-     *
-     * 확인은 버전 정보를 읽기만 하고 설정을 바꾸지 않는다. 정보 탭은 읽기 전용 관리자에게도
-     * [업데이트 확인] 버튼을 열어 두므로, 라우트도 조회 권한으로 맞춘다(전에는 수정 권한이라 눌러도 403).
-     *
-     * @scenario area=core_update.check
-     *
-     * @effects check_for_updates_allows_settings_read_only
-     *
-     * @return void 반환값 없음
-     */
-    public function test_check_for_updates_allows_settings_read_only(): void
-    {
-        $this->partialMock(CoreUpdateService::class, function ($mock) {
-            $mock->shouldReceive('checkForUpdates')->once()->andReturn([
-                'update_available' => false,
-                'current_version' => '1.0.0',
-                'latest_version' => '1.0.0',
-                'github_url' => 'https://github.com/gnuboard/g7',
-            ]);
-        });
-
-        $readOnly = $this->createAdminUser(['core.settings.read']);
-        $token = $readOnly->createToken('test-token')->plainTextToken;
-
-        $this->withHeaders([
-            'Authorization' => 'Bearer '.$token,
-            'Accept' => 'application/json',
-        ])->postJson('/api/admin/core-update/check')->assertStatus(200);
-    }
-
-    /**
-     * 환경설정 조회 권한도 없으면 업데이트 확인은 403 이다.
-     *
-     * @scenario area=core_update.check
-     *
-     * @effects check_for_updates_requires_permission
-     *
-     * @return void 반환값 없음
+     * core.settings.update 권한 없이 코어 업데이트 확인 시 403을 반환합니다.
      */
     public function test_check_for_updates_requires_permission(): void
     {
-        $userWithoutPermission = $this->createAdminUser(['core.dashboard.read']);
+        // core.settings.read 권한만 부여 (core.settings.update 권한 없음)
+        $userWithoutPermission = $this->createAdminUser(['core.settings.read']);
         $token = $userWithoutPermission->createToken('test-token')->plainTextToken;
 
         $response = $this->withHeaders([
@@ -316,12 +216,6 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * 변경사항 조회 시 파싱된 데이터를 반환합니다.
-     *
-     * @scenario area=core_update.changelog
-     *
-     * @effects changelog_returns_parsed_data
-     *
-     * @return void 반환값 없음
      */
     public function test_changelog_returns_parsed_data(): void
     {
@@ -373,12 +267,6 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * 버전 범위를 지정하여 변경사항을 조회합니다.
-     *
-     * @scenario area=core_update.changelog
-     *
-     * @effects changelog_with_version_range
-     *
-     * @return void 반환값 없음
      */
     public function test_changelog_with_version_range(): void
     {
@@ -420,12 +308,6 @@ class CoreUpdateControllerTest extends TestCase
 
     /**
      * 인증 없이 변경사항 조회 시 401을 반환합니다.
-     *
-     * @scenario area=core_update.changelog
-     *
-     * @effects changelog_requires_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_changelog_requires_authentication(): void
     {

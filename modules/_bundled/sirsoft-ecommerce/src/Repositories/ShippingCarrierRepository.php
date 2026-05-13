@@ -11,9 +11,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingCarrierRepositoryIn
  */
 class ShippingCarrierRepository implements ShippingCarrierRepositoryInterface
 {
-    /**
-     * @param  ShippingCarrier  $model  배송사 모델
-     */
     public function __construct(
         protected ShippingCarrier $model
     ) {}
@@ -104,36 +101,6 @@ class ShippingCarrierRepository implements ShippingCarrierRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function findByCodes(array $codes): Collection
-    {
-        $codes = array_values(array_unique(array_filter(array_map('strval', $codes), fn (string $c) => $c !== '')));
-
-        if ($codes === []) {
-            return new Collection;
-        }
-
-        return $this->model->newQuery()
-            ->whereIn('code', $codes)
-            ->get(['id', 'code']);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function findByIds(array $ids): Collection
-    {
-        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
-
-        if ($ids === []) {
-            return new Collection;
-        }
-
-        return $this->model->newQuery()->whereIn('id', $ids)->get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public function existsByCode(string $code, ?int $excludeId = null): bool
     {
         $query = $this->model->where('code', $code);
@@ -159,13 +126,5 @@ class ShippingCarrierRepository implements ShippingCarrierRepositoryInterface
         }
 
         return $query->get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function pluckIds(): array
-    {
-        return $this->model->newQuery()->pluck('id')->all();
     }
 }

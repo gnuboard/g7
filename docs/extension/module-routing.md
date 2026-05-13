@@ -7,8 +7,8 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. URL prefix 자동: /api/modules/[vendor-module]/...
-2. name prefix 자동: api.modules.[vendor-module]....
+1. URL prefix 자동: /api/admin/[vendor-module]/...
+2. name prefix 자동: api.[vendor-module]....
 3. 활성화된 모듈만 라우트 등록됨
 4. 프론트엔드: routes/admin.json, routes/user.json으로 admin/user 분기
 5. 레거시 routes.json은 admin으로 폴백 (경고 로그 출력)
@@ -73,8 +73,6 @@ vendor-my-module → Modules\Vendor\My\Module
 |------|-----|
 | URL prefix | `modules/{module-name}` |
 | Name prefix | `web.modules.{module-name}.` |
-
-> 라우트 이름(`{web\|api}.modules.{module-name}.{name}`)은 확장 미들웨어 타게팅의 1급 키다. `Module::getMiddleware()` 의 `targets` 는 이 라우트명 패턴으로 미들웨어 부착 대상을 지정한다. 상세: [docs/backend/middleware.md "확장 미들웨어 선언 (self-gate)"](../backend/middleware.md#확장-미들웨어-선언-self-gate).
 
 ---
 
@@ -222,11 +220,6 @@ modules/{identifier}/resources/
 3. 플러그인 routes는 **admin 템플릿에만** 포함 (settings 페이지 등 admin 전용)
 4. version은 템플릿의 version 사용
 
-**`requires` 로 걸러내기** (코어 7.1.4+):
-
-- 병합한 뒤, 라우트의 `requires`(`{"modules": [...], "plugins": [...]}`)에 적힌 모듈·플러그인이 **모두** 활성이 아닌 라우트는 응답에서 뺀다. 템플릿 routes 와 모듈 routes 모두 같다.
-- 다른 모듈·플러그인이 있어야 의미가 있는 화면(예: 쇼핑몰의 상품 문의 화면이 게시판 모듈을 쓰는 경우)에 쓴다. 규칙·형식 오류 처리는 [template-routing.md 의 requires 절](template-routing.md#requires--모듈이-꺼지면-라우트-숨기기)
-
 **레이아웃 필드 자동 변환**:
 
 - 모듈 routes의 `layout` 필드에 모듈 식별자 접두사 자동 추가
@@ -255,8 +248,8 @@ modules/{identifier}/resources/
 
 **모듈 레이아웃 정의**:
 ```
-modules/{identifier}/resources/layouts/admin/{layout_name}.g7.html
-modules/{identifier}/resources/layouts/user/{layout_name}.g7.html
+modules/{identifier}/resources/layouts/admin/{layout_name}.json
+modules/{identifier}/resources/layouts/user/{layout_name}.json
 ```
 
 **routes에서 레이아웃 참조**:
@@ -268,22 +261,12 @@ modules/{identifier}/resources/layouts/user/{layout_name}.g7.html
 ```
 
 **레이아웃 조회 우선순위**:
-1. 템플릿 오버라이드: `templates/{template}/layouts/overrides/{module}/{layout}.g7.html`
-2. 모듈 원본: `modules/{module}/resources/layouts/admin/{layout}.g7.html`
-
-> 설치 스캔은 소스 SSoT `.g7.html` 을 우선 채택하고, 짝 `.json` 이 있으면 건너뛴다
-> ([`ValidatesLayoutFiles::collectLayoutSources()`](../../app/Extension/Traits/ValidatesLayoutFiles.php)).
-> `.g7.html` 이 없는 레이아웃만 `.json` 이 설치원이 된다.
+1. 템플릿 오버라이드: `templates/{template}/layouts/overrides/{module}/{layout}.json`
+2. 모듈 원본: `modules/{module}/resources/layouts/admin/{layout}.json`
 
 ### 다국어 키 사용
 
 **routes.json에서 다국어 참조**:
-```html
-<meta title="$t:sirsoft-sample.admin.index.title"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "meta": {
@@ -357,6 +340,4 @@ template.routes.{identifier}
 - [모듈 레이아웃](module-layouts.md) - 레이아웃 등록, 오버라이드
 - [모듈 다국어](module-i18n.md) - 백엔드/프론트엔드 다국어
 - [템플릿 라우트](template-routing.md) - 템플릿 라우트 규칙
-- [라우팅 「절대 URL」](../backend/routing.md#절대-url-은-사이트-주소로-만든다) - 서버가 만드는 화면 링크는 `ScreenUrl`, 콜백은 `SiteUrl`
-- [개발자 화면 가이드](../custom-development.md) - 모듈 화면 주소를 개발자 화면이 가져갈 때의 화면 키(5절)
-- [확장 시스템 개요](README.md) - 전체 인덱스
+- [확장 시스템 개요](index.md) - 전체 인덱스

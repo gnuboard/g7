@@ -2,12 +2,11 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\User;
-use App\Support\LocaleTag;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -56,11 +55,10 @@ class SetLocale
         }
 
         // 2. Accept-Language 헤더 확인 (브라우저 기본 언어)
-        //    정확일치 → 주 언어 → 같은 주 언어의 다른 지역 순 — fil-PH 만 켠 사이트도 fil 요청을 받는다 (#148)
         $acceptLanguage = $request->header('Accept-Language');
         if ($acceptLanguage) {
-            $locale = LocaleTag::negotiate($acceptLanguage, $supportedLocales);
-            if ($locale !== null) {
+            $locale = $this->parseAcceptLanguage($acceptLanguage);
+            if (in_array($locale, $supportedLocales)) {
                 return $locale;
             }
         }
@@ -77,9 +75,9 @@ class SetLocale
      * 따라서 Bearer 토큰을 직접 파싱하여 사용자를 가져옵니다.
      *
      * @param  Request  $request  HTTP 요청
-     * @return User|null 사용자 또는 null
+     * @return \App\Models\User|null 사용자 또는 null
      */
-    private function resolveUser(Request $request): ?User
+    private function resolveUser(Request $request): ?\App\Models\User
     {
         // 이미 인증된 경우 (세션 기반 인증)
         if (Auth::check()) {
@@ -90,18 +88,38 @@ class SetLocale
         $bearerToken = $request->bearerToken();
         if ($bearerToken) {
             $token = PersonalAccessToken::findToken($bearerToken);
-
-            // 만료된 토큰은 인증되지 않은 것으로 취급 (guest 로케일 폴백).
-            // OptionalSanctumMiddleware 와 동일한 만료 검사를 적용한다.
-            if ($token && $token->expires_at && $token->expires_at->isPast()) {
-                return null;
-            }
-
-            if ($token && $token->tokenable instanceof User) {
+            if ($token && $token->tokenable instanceof \App\Models\User) {
                 return $token->tokenable;
             }
         }
 
         return null;
+    }
+
+    /**
+     * Accept-Language 헤더를 파싱하여 선호 언어를 추출합니다.
+     *
+     * @param  string  $acceptLanguage  Accept-Language 헤더 값
+     * @return string 추출된 언어 코드 (기본값: config('app.locale'))
+     */
+    private function parseAcceptLanguage(string $acceptLanguage): string
+    {
+        $supportedLocales = config('app.supported_locales', ['ko', 'en']);
+        $languages = explode(',', $acceptLanguage);
+
+        foreach ($languages as $language) {
+            $lang = trim(explode(';', $language)[0]);
+
+            // 언어-지역 형태에서 언어만 추출 (예: ko-KR -> ko)
+            if (strpos($lang, '-') !== false) {
+                $lang = explode('-', $lang)[0];
+            }
+
+            if (in_array($lang, $supportedLocales)) {
+                return $lang;
+            }
+        }
+
+        return config('app.locale', 'ko');
     }
 }

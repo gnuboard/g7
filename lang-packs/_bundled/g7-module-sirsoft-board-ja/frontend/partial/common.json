@@ -18,9 +18,7 @@
   "restore": "復元",
   "back": "戻る",
   "new": "New",
-  "pagination_info": "合計{{total}}名中{{from}}-{{to}}名を表示",
+  "pagination_info": "全{{total}}人中{{from}}-{{to}}人を表示",
   "error_occurred": "エラーが発生しました",
-  "optional": "選択",
-  "list_load_failed": "一覧を読み込めませんでした。しばらくしてからもう一度お試しください。",
-  "real_name_label": "実名: {{name}}"
+  "optional": "選択"
 }

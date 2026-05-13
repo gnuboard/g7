@@ -22,30 +22,19 @@ return [
         'max_attempts' => 'Too many attempts. Please request a new code.',
         'invalid_code' => 'The verification code is incorrect.',
         'invalid_verification_token' => 'Invalid verification token.',
-        'provider_policy_mismatch' => 'This action can only be verified with the designated verification method.',
-        'policy_provider_unavailable' => 'The verification method required for this action is currently unavailable. Please contact the site administrator.',
-        'purpose_unknown' => 'Unknown verification purpose.',
         'missing_target' => 'A verification target (email or phone) is required.',
-        'claim_denied' => 'The verification result cannot be retrieved. Please start verification again.',
-        'claim_already_used' => 'This verification has already been used. Please start verification again.',
-        'claim_unavailable' => 'The verification has expired or did not complete. Please start verification again.',
         'target_mismatch' => 'The verified target does not match the requested one.',
         'purpose_not_supported' => 'The selected provider does not support this purpose.',
         'provider_unavailable' => 'Identity verification provider is not available.',
-        'challenge_dispatch_failed' => 'We could not send the verification code. Please try again shortly or use another verification method.',
-        'challenge_cooldown' => 'A verification email was just sent. You can request again in :seconds second.|A verification email was just sent. You can request again in :seconds seconds.',
         'generic' => 'Identity verification failed.',
         'missing_scope_or_target' => 'Both scope and target are required to resolve a policy.',
         'admin_policy_has_no_default' => 'Admin-created policies do not have a declared default.',
         'reset_field_failed' => 'Failed to reset the field to its declared default. Check if the field is valid.',
-        'cannot_delete_system_policy' => 'System-declared policies cannot be deleted. Only administrator-created policies can be deleted.',
-        'purpose_not_allowed' => 'This verification request cannot be handled on this screen.',
     ],
 
     'messages' => [
         'challenge_requested' => 'A verification code has been sent.',
         'challenge_verified' => 'Identity verification completed.',
-        'challenge_pending' => 'Waiting for confirmation through the link in the email.',
         'challenge_cancelled' => 'Verification request has been cancelled.',
     ],
 
@@ -76,15 +65,10 @@ return [
             'label' => 'Sensitive Action',
             'description' => 'Re-verify before sensitive actions such as account deletion or admin operations.',
         ],
-        'login' => [
-            'label' => 'Two-Factor Login',
-            'description' => 'Require one more step after the password when two-factor authentication is enabled.',
-        ],
     ],
 
     'channels' => [
         'email' => 'Email',
-        'app' => 'Authenticator app',
     ],
 
     'origin_types' => [
@@ -119,10 +103,12 @@ return [
             'admin' => 'Admin',
         ],
     ],
-    // `identity:expire-challenges` command output
-    'console' => [
-        'expire_challenges' => [
-            'done' => 'Expired :count identity verification challenges.',
+
+    'message' => [
+        'scope_type' => [
+            'provider_default' => 'Provider default',
+            'purpose' => 'Per purpose',
+            'policy' => 'Per policy',
         ],
     ],
 ];

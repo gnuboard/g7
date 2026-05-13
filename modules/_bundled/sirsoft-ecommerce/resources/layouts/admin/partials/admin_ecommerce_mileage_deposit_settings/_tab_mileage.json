@@ -1,0 +1,1846 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Mileage/Deposit Settings - Mileage Tab Content"
+  },
+  "id": "tab_content_mileage",
+  "type": "basic",
+  "name": "Div",
+  "condition": "{{_local.activeTab === 'mileage'}}",
+  "props": {
+    "className": "space-y-6"
+  },
+  "children": [
+    {
+      "id": "mileage_basic_settings_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "id": "mileage_basic_settings_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "id": "mileage_basic_settings_title",
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.title"
+            }
+          ]
+        },
+        {
+          "id": "mileage_basic_settings_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_use_mileage",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-4 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.use_mileage"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-label-subtle mt-0.5"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.use_mileage_description"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "{{_local.mileage_enabled !== false ? 'toggle active' : 'toggle'}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "mileage_enabled": "{{_local.mileage_enabled === false}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "toggle-track"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "toggle-handle"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_default_earn_rate",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-4 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-heading mb-3"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.default_earn_rate"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.purchase_amount"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "default_earn_rate",
+                        "value": "5",
+                        "className": "input w-20 text-center"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.percent_earn"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "P",
+                  "props": {
+                    "className": "form-hint mt-2"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.earn_rate_hint"
+                }
+              ]
+            },
+            {
+              "id": "field_earn_timing",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-heading mb-3"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.earn_timing"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "Select",
+                      "props": {
+                        "name": "earn_timing",
+                        "className": "w-32",
+                        "value": "delivery_complete",
+                        "options": [
+                          {
+                            "value": "delivery_complete",
+                            "label": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.earn_timing_delivery_complete"
+                          },
+                          {
+                            "value": "order_complete",
+                            "label": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.earn_timing_order_complete"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.after"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "earn_timing_days",
+                        "value": "0",
+                        "className": "input w-16 text-center"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.basic_settings.days_after_earn"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mileage_currency_usage_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "id": "currency_usage_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.title"
+            },
+            {
+              "id": "add_currency_button",
+              "type": "basic",
+              "name": "Button",
+              "props": {
+                "type": "button",
+                "className": "btn btn-secondary"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "plus",
+                    "className": "w-4 h-4 mr-1"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.add_currency"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "currency_usage_content",
+          "type": "basic",
+          "name": "Div",
+          "children": [
+            {
+              "id": "currency_usage_table_container",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "table-container"
+              },
+              "children": [
+                {
+                  "id": "currency_usage_table",
+                  "type": "basic",
+                  "name": "Table",
+                  "props": {
+                    "className": "table"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Thead",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Tr",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.currency"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point_value"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.min_use_amount"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.use_unit"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.max_use_limit"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "props": {
+                                "className": "w-12"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.delete"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Tbody",
+                      "children": [
+                        {
+                          "id": "row_krw",
+                          "type": "basic",
+                          "name": "Tr",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Img",
+                                      "props": {
+                                        "src": "/images/flags/kr.svg",
+                                        "alt": "KRW",
+                                        "className": "w-5 h-4 object-cover rounded"
+                                      }
+                                    },
+                                    {
+                                      "type": "composite",
+                                      "name": "Select",
+                                      "props": {
+                                        "name": "currency_code_0",
+                                        "className": "w-20",
+                                        "disabled": true,
+                                        "value": "KRW",
+                                        "options": [
+                                          { "value": "KRW", "label": "KRW" }
+                                        ]
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-tertiary"
+                                      },
+                                      "text": "($t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.default_currency)"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "text",
+                                    "name": "point_value_0",
+                                    "value": "1",
+                                    "className": "input w-24"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-1"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Input",
+                                      "props": {
+                                        "type": "number",
+                                        "name": "min_use_amount_0",
+                                        "value": "1000",
+                                        "className": "input w-24"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-1"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Input",
+                                      "props": {
+                                        "type": "number",
+                                        "name": "use_unit_0",
+                                        "value": "10",
+                                        "className": "input w-20"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "space-y-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "flex items-center gap-2"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "radio",
+                                            "name": "max_use_limit_type_0",
+                                            "value": "percent",
+                                            "className": "radio"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.total_payment_percent"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "number",
+                                            "name": "max_use_limit_percent_0",
+                                            "value": "30",
+                                            "className": "input w-16 text-center"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                          },
+                                          "text": "%"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "flex items-center gap-2"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "radio",
+                                            "name": "max_use_limit_type_0",
+                                            "value": "amount",
+                                            "className": "radio",
+                                            "checked": true
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.max_amount"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "number",
+                                            "name": "max_use_limit_amount_0",
+                                            "value": "50000",
+                                            "className": "input w-24 text-center"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.won"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Button",
+                                  "props": {
+                                    "type": "button",
+                                    "className": "btn-icon text-gray-300 cursor-not-allowed",
+                                    "disabled": true
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Icon",
+                                      "props": {
+                                        "name": "trash",
+                                        "className": "w-4 h-4"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "row_usd",
+                          "type": "basic",
+                          "name": "Tr",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Img",
+                                      "props": {
+                                        "src": "/images/flags/us.svg",
+                                        "alt": "USD",
+                                        "className": "w-5 h-4 object-cover rounded"
+                                      }
+                                    },
+                                    {
+                                      "type": "composite",
+                                      "name": "Select",
+                                      "props": {
+                                        "name": "currency_code_1",
+                                        "className": "w-20",
+                                        "value": "USD",
+                                        "options": [
+                                          { "value": "USD", "label": "USD" }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "text",
+                                    "name": "point_value_1",
+                                    "value": "0.001",
+                                    "className": "input w-24"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-1"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Input",
+                                      "props": {
+                                        "type": "number",
+                                        "name": "min_use_amount_1",
+                                        "value": "1",
+                                        "className": "input w-24"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-1"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Input",
+                                      "props": {
+                                        "type": "number",
+                                        "name": "use_unit_1",
+                                        "value": "1",
+                                        "className": "input w-20"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "space-y-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "flex items-center gap-2"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "radio",
+                                            "name": "max_use_limit_type_1",
+                                            "value": "percent",
+                                            "className": "radio",
+                                            "checked": true
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.total_payment_percent"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "number",
+                                            "name": "max_use_limit_percent_1",
+                                            "value": "30",
+                                            "className": "input w-16 text-center"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                          },
+                                          "text": "%"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "flex items-center gap-2"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "radio",
+                                            "name": "max_use_limit_type_1",
+                                            "value": "amount",
+                                            "className": "radio"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.max_amount"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "number",
+                                            "name": "max_use_limit_amount_1",
+                                            "value": "50",
+                                            "className": "input w-24 text-center"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.won"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Button",
+                                  "props": {
+                                    "type": "button",
+                                    "className": "btn-icon text-error"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Icon",
+                                      "props": {
+                                        "name": "trash",
+                                        "className": "w-4 h-4"
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "responsive": {
+            "portable": {
+              "children": [
+                {
+                  "id": "mobile_currency_cards_container",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "space-y-4"
+                  },
+                  "children": [
+                    {
+                      "id": "mobile_card_krw",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "excel-card"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "excel-card-header"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Label",
+                              "props": {
+                                "className": "form-label"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.currency"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "props": {
+                                "type": "button",
+                                "className": "btn-icon-danger opacity-30 cursor-not-allowed",
+                                "disabled": true
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "props": {
+                                    "name": "trash",
+                                    "className": "w-4 h-4"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "excel-card-body space-y-4"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex items-center gap-2"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Img",
+                                  "props": {
+                                    "src": "/images/flags/kr.svg",
+                                    "alt": "KRW",
+                                    "className": "w-6 h-5 object-cover rounded"
+                                  }
+                                },
+                                {
+                                  "type": "composite",
+                                  "name": "Select",
+                                  "props": {
+                                    "name": "m_currency_code_0",
+                                    "className": "flex-1",
+                                    "disabled": true,
+                                    "value": "KRW",
+                                    "options": [
+                                      { "value": "KRW", "label": "KRW ($t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.default_currency)" }
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "form-group"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Label",
+                                  "props": {
+                                    "className": "form-label"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point_value"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "text",
+                                    "name": "m_point_value_0",
+                                    "value": "1",
+                                    "className": "input w-full"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "form-group"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Label",
+                                  "props": {
+                                    "className": "form-label"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.min_use_amount"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Input",
+                                      "props": {
+                                        "type": "number",
+                                        "name": "m_min_use_amount_0",
+                                        "value": "1000",
+                                        "className": "input flex-1"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "form-group"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Label",
+                                  "props": {
+                                    "className": "form-label"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.use_unit"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Input",
+                                      "props": {
+                                        "type": "number",
+                                        "name": "m_use_unit_0",
+                                        "value": "10",
+                                        "className": "input flex-1"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "form-group"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Label",
+                                  "props": {
+                                    "className": "form-label"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.max_use_limit"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "space-y-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "flex items-center gap-2"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "radio",
+                                            "name": "m_max_use_limit_type_0",
+                                            "value": "percent",
+                                            "className": "radio"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.total_payment_percent"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "number",
+                                            "name": "m_max_use_limit_percent_0",
+                                            "value": "30",
+                                            "className": "input w-16 text-center"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                          },
+                                          "text": "%"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "flex items-center gap-2"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "radio",
+                                            "name": "m_max_use_limit_type_0",
+                                            "value": "amount",
+                                            "className": "radio",
+                                            "checked": true
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.max_amount"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "number",
+                                            "name": "m_max_use_limit_amount_0",
+                                            "value": "50000",
+                                            "className": "input w-24 text-center"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.won"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "mobile_card_usd",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "excel-card"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "excel-card-header"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Label",
+                              "props": {
+                                "className": "form-label"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.currency"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "props": {
+                                "type": "button",
+                                "className": "btn-icon-danger"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "props": {
+                                    "name": "trash",
+                                    "className": "w-4 h-4"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "excel-card-body"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "form-group"
+                              },
+                              "children": [
+                                {
+                                  "type": "composite",
+                                  "name": "Select",
+                                  "props": {
+                                    "name": "m_currency_1",
+                                    "className": "w-full",
+                                    "value": "USD",
+                                    "options": [
+                                      {
+                                        "value": "USD",
+                                        "label": "USD",
+                                        "icon": "/images/flags/us.svg"
+                                      },
+                                      {
+                                        "value": "EUR",
+                                        "label": "EUR",
+                                        "icon": "/images/flags/eu.svg"
+                                      },
+                                      {
+                                        "value": "JPY",
+                                        "label": "JPY",
+                                        "icon": "/images/flags/jp.svg"
+                                      },
+                                      {
+                                        "value": "CNY",
+                                        "label": "CNY",
+                                        "icon": "/images/flags/cn.svg"
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "form-group"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Label",
+                                  "props": {
+                                    "className": "form-label"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point_value"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Input",
+                                  "props": {
+                                    "type": "text",
+                                    "name": "m_point_value_1",
+                                    "value": "0.001",
+                                    "className": "input w-full"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "form-group"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Label",
+                                  "props": {
+                                    "className": "form-label"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.min_use_amount"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Input",
+                                      "props": {
+                                        "type": "number",
+                                        "name": "m_min_use_amount_1",
+                                        "value": "1",
+                                        "className": "input flex-1"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "form-group"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Label",
+                                  "props": {
+                                    "className": "form-label"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.use_unit"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Input",
+                                      "props": {
+                                        "type": "number",
+                                        "name": "m_use_unit_1",
+                                        "value": "1",
+                                        "className": "input flex-1"
+                                      }
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.point"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "form-group"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Label",
+                                  "props": {
+                                    "className": "form-label"
+                                  },
+                                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.max_use_limit"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "space-y-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "flex items-center gap-2"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "radio",
+                                            "name": "m_max_use_limit_type_1",
+                                            "value": "percent",
+                                            "className": "radio",
+                                            "checked": true
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.total_payment_percent"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "number",
+                                            "name": "m_max_use_limit_percent_1",
+                                            "value": "30",
+                                            "className": "input w-16 text-center"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                          },
+                                          "text": "%"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Label",
+                                      "props": {
+                                        "className": "flex items-center gap-2"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "radio",
+                                            "name": "m_max_use_limit_type_1",
+                                            "value": "amount",
+                                            "className": "radio"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.max_amount"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Input",
+                                          "props": {
+                                            "type": "number",
+                                            "name": "m_max_use_limit_amount_1",
+                                            "value": "50",
+                                            "className": "input w-24 text-center"
+                                          }
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                                          },
+                                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.currency_usage.won"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mileage_validity_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "id": "validity_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "id": "validity_title",
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.validity.title"
+            }
+          ]
+        },
+        {
+          "id": "validity_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_validity_period",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-4 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-heading mb-3"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.validity.validity_setting"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "validity_days",
+                        "value": "365",
+                        "className": "input w-24 text-center"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.validity.days_expire"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_expiry_notification",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-heading mb-3"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.validity.expiry_notification"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2 flex-wrap"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.validity.days_before_expiry"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "expiry_notification_days",
+                        "value": "7",
+                        "className": "input w-16 text-center"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.validity.days_before"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mileage_notification_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "id": "notification_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "flex items-center justify-between mb-6"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.notification.title"
+            },
+            {
+              "type": "basic",
+              "name": "A",
+              "props": {
+                "href": "#",
+                "className": "text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "link",
+                    "className": "w-4 h-4"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.notification.alimtalk_plugin"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "notification_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "field_alimtalk_notification",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-4 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-heading mb-3"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.notification.expiry_notification"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-2 flex-wrap"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.notification.days_before_expiry"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Input",
+                      "props": {
+                        "type": "number",
+                        "name": "alimtalk_notification_days",
+                        "value": "7",
+                        "className": "input w-16 text-center"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": {
+                        "className": "text-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.notification.days_before"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "template_management",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "external-link",
+                        "className": "w-4 h-4 mr-2"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.mileage.notification.template_management"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

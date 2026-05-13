@@ -3,12 +3,8 @@
 namespace App\Http\Requests\User;
 
 use App\Extension\HookManager;
-use App\Http\Requests\Concerns\ChecksPasswordReuse;
-use App\Models\User;
-use App\Rules\PasswordPolicy;
-use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * 비밀번호 변경 요청 클래스
@@ -17,12 +13,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class ChangePasswordRequest extends FormRequest
 {
-    use ChecksPasswordReuse;
-
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -30,68 +22,20 @@ class ChangePasswordRequest extends FormRequest
     }
 
     /**
-     * 검증 전에 입력을 고릅니다.
-     *
-     * 비밀번호 없는 회원을 모르는 옛 화면(7.1.x)은 현재 비밀번호 칸이 필수라 무엇이든 넣어 보낸다. 대조할 비밀번호가 없으니
-     * 그 값은 버려 새 화면이 보내지 않은 것과 같은 상태로 만든다 — 본인 확인은 이 경로의 본인인증 정책(428)이 맡는다.
-     *
-     * @return void 입력을 제자리에서 고친다
-     */
-    protected function prepareForValidation(): void
-    {
-        if (! $this->userHasPassword()) {
-            $this->getInputSource()->remove('current_password');
-        }
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        // 비밀번호가 없는 회원(외부 인증 전용)은 확인할 현재 비밀번호가 없다 — 처음 정하는 것이다. 보낸 값은
-        // prepareForValidation 이 버리므로 이 규칙은 값이 남는 일이 없게 두는 방어선이다.
-        $currentPasswordRules = $this->userHasPassword()
-            ? ['required', 'string', 'current_password:sanctum']
-            : ['prohibited'];
-
         $rules = [
-            'current_password' => $currentPasswordRules,
-            'password' => ['required', 'string', 'confirmed', ...PasswordPolicy::rules($this->user()?->email)],
+            'current_password' => ['required', 'string', 'current_password:sanctum'],
+            'password' => ['required', 'string', 'confirmed', Password::min(8)],
             'password_confirmation' => ['required', 'string'],
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.user.change_password_validation_rules', $rules, $this);
-    }
-
-    /**
-     * 요청 회원에게 비밀번호가 있는지 반환합니다 (회원을 알 수 없으면 있다고 본다 — 종전 규칙 유지).
-     *
-     * @return bool 비밀번호가 있으면 true
-     */
-    private function userHasPassword(): bool
-    {
-        $user = $this->user();
-
-        return ! $user instanceof User || $user->hasPassword();
-    }
-
-    /**
-     * 재사용 금지 검사를 현재 비밀번호 확인 **뒤에만** 붙입니다 (추측 오라클 차단).
-     *
-     * @param  Validator  $validator  검증기
-     * @return void
-     */
-    public function withValidator(Validator $validator): void
-    {
-        $this->appendPasswordReuseCheck(
-            $validator,
-            fn () => $this->user() instanceof User ? $this->user() : null,
-            ['current_password'],
-        );
     }
 
     /**
@@ -104,7 +48,6 @@ class ChangePasswordRequest extends FormRequest
         return [
             'current_password.required' => __('user.validation.current_password_required'),
             'current_password.current_password' => __('user.validation.current_password_invalid'),
-            'current_password.prohibited' => __('user.validation.current_password_not_set'),
             'password.required' => __('user.validation.password_required'),
             'password.confirmed' => __('user.validation.password_confirmed'),
             'password.min' => __('user.validation.password_min'),

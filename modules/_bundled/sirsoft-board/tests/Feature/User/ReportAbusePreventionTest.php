@@ -6,7 +6,6 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 require_once __DIR__.'/../../ModuleTestCase.php';
 
 use App\Models\User;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -41,11 +40,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
      */
     private array $mockSettings = [];
 
-    /**
-     * 신고자·작성자와 신고 가능한 게시판을 만들고, 남발 방지 설정 기본값을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -84,9 +78,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
             ]
         );
 
-        // 신고 라우트는 그 게시판의 게시글 열람 권한을 요구한다 — 남발 검증까지 닿으려면 신고자에게 있어야 한다.
-        $this->grantUserRoleBoardPermissions($this->board);
-
         // 이전 잔여 데이터 정리
         DB::table('boards_report_logs')->delete();
         DB::table('boards_reports')->delete();
@@ -114,8 +105,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
     /**
      * BoardSettingsService를 mock으로 교체하고 테스트 설정값을 반환하도록 합니다.
-     *
-     * @return void 반환값 없음
      */
     private function mockBoardSettingsService(): void
     {
@@ -132,12 +121,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
     /**
      * 일일 신고 횟수 미초과 시 정상 신고 가능
-     *
-     * @scenario case=daily_limit
-     *
-     * @effects report_allowed_under_daily_limit
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function can_report_when_daily_limit_not_exceeded(): void
@@ -163,12 +146,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
     /**
      * 일일 신고 횟수 초과 시 422 응답 반환
-     *
-     * @scenario case=daily_limit
-     *
-     * @effects report_rejected_with_422_over_daily_limit
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function returns_422_when_daily_limit_exceeded(): void
@@ -195,12 +172,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
     /**
      * daily_report_limit = 0이면 제한 없음
-     *
-     * @scenario case=daily_limit
-     *
-     * @effects daily_limit_zero_disables_check
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function no_daily_limit_when_set_to_zero(): void
@@ -230,12 +201,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
     /**
      * 반려 누적 초과 시 422 응답 반환
-     *
-     * @scenario case=rejection_limit
-     *
-     * @effects report_rejected_with_422_over_rejection_limit
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function returns_422_when_rejection_limit_exceeded(): void
@@ -263,12 +228,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
     /**
      * 반려 건이 기간 밖이면 제한 없음
-     *
-     * @scenario case=rejection_limit
-     *
-     * @effects rejections_outside_period_not_counted
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function no_rejection_limit_when_outside_period(): void
@@ -295,12 +254,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
     /**
      * rejection_limit_count = 0이면 제한 없음
-     *
-     * @scenario case=rejection_limit
-     *
-     * @effects rejection_limit_zero_disables_check
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function no_rejection_limit_when_set_to_zero(): void
@@ -330,12 +283,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
     /**
      * 쿨타임 내 신고 시 422 응답 반환
-     *
-     * @scenario case=cooldown
-     *
-     * @effects report_rejected_with_422_during_cooldown
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function returns_422_when_cooldown_active(): void
@@ -363,12 +310,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
     /**
      * 쿨타임 만료 후 정상 신고 가능
-     *
-     * @scenario case=cooldown
-     *
-     * @effects report_allowed_after_cooldown
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function can_report_after_cooldown_expired(): void
@@ -391,12 +332,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
 
     /**
      * report_cooldown_seconds = 0이면 쿨타임 비활성화
-     *
-     * @scenario case=cooldown
-     *
-     * @effects cooldown_zero_disables_check
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function no_cooldown_when_set_to_zero(): void
@@ -416,38 +351,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
         $this->assertNotEquals(422, $response->status());
     }
 
-    /**
-     * 다른 칸 검증에 실패한 신고는 응답 뒤 선점한 쿨타임 자리를 반납한다 (#161 F7) — 쿨타임 규칙은 검증 시점에 자리를 원자적으로
-     * 잡으므로, 반납하지 않으면 사유를 빠뜨려 422 를 받은 신고자가 고쳐 다시 올려도 쿨타임에 막힌다.
-     *
-     * @scenario case=cooldown
-     *
-     * @effects report_cooldown_claim_released_when_validation_fails
-     *
-     * @return void 반환값 없음
-     */
-    #[Test]
-    public function failed_report_validation_releases_cooldown_claim(): void
-    {
-        // Given: 쿨타임 60초 설정
-        $this->mockSettings['spam_security']['report_cooldown_seconds'] = 60;
-        $this->mockBoardSettingsService();
-        $url = "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/99999/reports";
-
-        // When: 상세 사유를 빠뜨려 422 — 신고 유형 칸의 쿨타임 규칙은 이미 자리를 잡았다
-        $this->actingAs($this->reporter, 'sanctum')
-            ->postJson($url, ['reason_type' => ReportReasonType::Spam->value, 'reason_detail' => ''])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['reason_detail'])
-            ->assertJsonMissingValidationErrors(['reason_type']);
-
-        // Then: 응답 뒤 자리가 반납돼, 고쳐 다시 올린 신고는 쿨타임에 막히지 않는다
-        $this->assertNull(Cache::get("g7:module.sirsoft-board:report_cooldown_{$this->board->slug}_{$this->reporter->id}"));
-
-        $response = $this->actingAs($this->reporter, 'sanctum')->postJson($url, $this->validReportData());
-        $this->assertNotEquals(422, $response->status(), '반납된 자리 덕분에 쿨타임 검증을 통과한다');
-    }
-
     // ==========================================
     // 헬퍼 메서드
     // ==========================================
@@ -455,7 +358,7 @@ class ReportAbusePreventionTest extends ModuleTestCase
     /**
      * 유효한 신고 데이터 반환
      *
-     * @return array<string, string> 신고 사유 유형과 상세 사유
+     * @return array<string, string>
      */
     private function validReportData(): array
     {
@@ -472,7 +375,6 @@ class ReportAbusePreventionTest extends ModuleTestCase
      * boards_reports(케이스) + boards_report_logs(개별 신고 로그)를 모두 생성해야 합니다.
      *
      * @param  int  $count  생성할 건수
-     * @return void 반환값 없음
      */
     private function createReportsForToday(int $count): void
     {
@@ -501,8 +403,7 @@ class ReportAbusePreventionTest extends ModuleTestCase
      * 집계하므로 boards_reports(반려 케이스) + boards_report_logs(개별 신고 로그)를 모두 생성해야 합니다.
      *
      * @param  int  $count  생성할 건수
-     * @param  Carbon  $date  생성 날짜
-     * @return void 반환값 없음
+     * @param  \Illuminate\Support\Carbon  $date  생성 날짜
      */
     private function createRejectedReports(int $count, $date): void
     {

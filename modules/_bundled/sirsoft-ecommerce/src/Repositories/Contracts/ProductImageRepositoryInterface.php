@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 
 /**
@@ -18,14 +17,6 @@ interface ProductImageRepositoryInterface
      * @return ProductImage|null
      */
     public function findById(int $id): ?ProductImage;
-
-    /**
-     * 이미지 ID 목록이 속한 상품 ID 를 중복 없이 조회 (임시 업로드 이미지는 제외)
-     *
-     * @param  array<int, int>  $ids  이미지 ID 목록
-     * @return array<int, int> 상품 ID 목록
-     */
-    public function pluckProductIdsByIds(array $ids): array;
 
     /**
      * 해시로 이미지 조회
@@ -79,18 +70,6 @@ interface ProductImageRepositoryInterface
     public function delete(int $id): bool;
 
     /**
-     * 상품에 연결되지 않은 채 방치된 임시 이미지를 오래된 순으로 조회
-     *
-     * 상품 등록 폼에서 업로드만 하고 저장 없이 이탈하면 `temp_key` 가 남은 채
-     * `product_id` 가 비어 있는 행과 그 파일이 영구 잔존합니다. 그 회수 대상을 찾습니다.
-     *
-     * @param  Carbon  $threshold  기준 시각 (이 시각 이전 업로드가 대상)
-     * @param  int  $limit  최대 조회 건수
-     * @return Collection<int, ProductImage> 임시 이미지 목록 (created_at 오름차순)
-     */
-    public function findStaleTempImages(Carbon $threshold, int $limit): Collection;
-
-    /**
      * 임시 이미지를 상품에 연결
      *
      * @param  string  $tempKey  임시 업로드 키
@@ -124,23 +103,4 @@ interface ProductImageRepositoryInterface
      * @return bool
      */
     public function reorder(array $orders): bool;
-
-    /**
-     * 래스터 이미지 MIME 상품 이미지 행 수 (썸네일 미리 만들기 진행률)
-     * 임시 업로드(상품 미연결) 행은 뺀다 — 저장 전 폼의 미리보기이고 상품 저장 때 본경로로 옮겨진다.
-     *
-     * @param  list<string>  $mimeTypes  MIME 목록
-     * @return int 행 수
-     */
-    public function countByMimeTypes(array $mimeTypes): int;
-
-    /**
-     * 래스터 이미지 MIME 상품 이미지 행을 id 순으로 나눠 조회합니다 (썸네일 미리 만들기 — 커서는 마지막 id).
-     *
-     * @param  list<string>  $mimeTypes  MIME 목록
-     * @param  int  $afterId  이 id 보다 큰 행부터
-     * @param  int  $limit  최대 행 수
-     * @return Collection<int, ProductImage> 행 (id·disk·path·mime_type·width·height)
-     */
-    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection;
 }

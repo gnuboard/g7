@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use Illuminate\Console\Command;
 
@@ -13,17 +12,20 @@ use Illuminate\Console\Command;
  */
 class SeoCacheClearCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * @var string 커맨드 시그니처
      */
     protected $signature = 'seo:clear {--layout= : 특정 레이아웃의 캐시만 삭제}';
 
     /**
+     * @var string 커맨드 설명
+     */
+    protected $description = 'SEO 캐시 삭제';
+
+    /**
      * 커맨드를 실행합니다.
      *
-     * @param  SeoCacheManagerInterface  $cacheManager  SEO 캐시 매니저
+     * @param SeoCacheManagerInterface $cacheManager SEO 캐시 매니저
      * @return int 종료 코드
      */
     public function handle(SeoCacheManagerInterface $cacheManager): int
@@ -32,7 +34,7 @@ class SeoCacheClearCommand extends Command
 
         if ($layout) {
             $count = $cacheManager->invalidateByLayout($layout);
-            $this->info(trans_choice('seo.cache_cleared_layout', $count, [
+            $this->info(__('seo.cache_cleared_layout', [
                 'layout' => $layout,
                 'count' => $count,
             ]));

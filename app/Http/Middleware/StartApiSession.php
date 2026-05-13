@@ -3,11 +3,9 @@
 namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Http\Request;
 use Illuminate\Pipeline\Pipeline;
-use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -25,16 +23,34 @@ class StartApiSession
     /**
      * 요청을 처리합니다.
      *
-     * @param  Request  $request  HTTP 요청
-     * @param  Closure  $next  다음 미들웨어
+     * @param Request $request HTTP 요청
+     * @param Closure $next 다음 미들웨어
      * @return Response HTTP 응답
      */
     public function handle(Request $request, Closure $next): Response
     {
+        Log::info('[StartApiSession] 미들웨어 시작', ['url' => $request->url()]);
+
         return (new Pipeline(app()))
             ->send($request)
             ->through($this->sessionPipeline())
-            ->then(fn ($request) => $next($request));
+            ->then(function ($request) use ($next) {
+                Log::info('[StartApiSession] 세션 파이프라인 완료', [
+                    'hasSession' => $request->hasSession(),
+                    'sessionStarted' => $request->hasSession() ? $request->session()->isStarted() : false,
+                    'sessionId' => $request->hasSession() ? $request->session()->getId() : null,
+                ]);
+
+                $response = $next($request);
+
+                Log::info('[StartApiSession] 컨트롤러 응답 후', [
+                    'status' => $response->getStatusCode(),
+                    'cookies' => collect($response->headers->getCookies())->map(fn($c) => $c->getName())->all(),
+                    'webGuardCheck' => \Illuminate\Support\Facades\Auth::guard('web')->check(),
+                ]);
+
+                return $response;
+            });
     }
 
     /**
@@ -47,9 +63,9 @@ class StartApiSession
     protected function sessionPipeline(): array
     {
         return [
-            EncryptCookies::class,
-            AddQueuedCookiesToResponse::class,
-            StartSession::class,
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
         ];
     }
 }

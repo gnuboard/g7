@@ -1,5 +1,5 @@
 /**
- * G7DevToolsCore 테스트 (매니페스트 devtools-core-tracking.yaml)
+ * G7DevToolsCore 테스트
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -43,39 +43,7 @@ describe('G7DevToolsCore', () => {
         global.window = originalWindow;
     });
 
-    describe('인증 진단', () => {
-        // @scenario area=auth_diagnosis
-        // @effects devtools_core_auth_diagnosis_respects_auth_manager
-        it.each([[], {}, null])('빈 사용자 %j를 토큰만으로 인증됐다고 표시하지 않는다', (user) => {
-            (global as any).window.G7Core.api = { getToken: () => 'test-token' };
-            (global as any).window.G7Core.auth = { getUser: () => user, isAuthenticated: () => false };
-            (global as any).window.G7Core.state.get = () => ({ _global: { currentUser: user } });
-            const state = devTools.getAuthDebugInfo().state;
-            expect(state.isAuthenticated).toBe(false);
-            expect(state.user).toBeUndefined();
-        });
-
-        // @scenario area=auth_diagnosis
-        // @effects devtools_core_auth_diagnosis_respects_auth_manager
-        it('AuthManager의 인증 판단을 빈 폴백 데이터보다 우선한다', () => {
-            (global as any).window.G7Core.api = { getToken: () => 'test-token' };
-            (global as any).window.G7Core.auth = { getUser: () => null, isAuthenticated: () => true };
-            expect(devTools.getAuthDebugInfo().state.isAuthenticated).toBe(true);
-        });
-
-        // @scenario area=auth_diagnosis
-        // @effects devtools_core_auth_diagnosis_respects_auth_manager
-        it('실제 사용자 객체를 가진 상태 폴백은 유지한다', () => {
-            (global as any).window.G7Core.api = { getToken: () => 'test-token' };
-            (global as any).window.G7Core.state.get = () => ({ _global: { currentUser: { id: 7, email: 'fixture@example.test' } } });
-            expect(devTools.getAuthDebugInfo().state.user?.id).toBe(7);
-            expect(devTools.getAuthDebugInfo().state.isAuthenticated).toBe(true);
-        });
-    });
-
     describe('싱글톤 패턴', () => {
-        // @scenario area=singleton
-        // @effects devtools_core_singleton
         it('동일한 인스턴스를 반환해야 한다', () => {
             const instance1 = G7DevToolsCore.getInstance();
             const instance2 = G7DevToolsCore.getInstance();
@@ -84,14 +52,10 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('활성화 상태', () => {
-        // @scenario area=enablement
-        // @effects devtools_core_enabled_by_debug_mode
         it('디버그 모드가 활성화되면 true를 반환해야 한다', () => {
             expect(devTools.isEnabled()).toBe(true);
         });
 
-        // @scenario area=enablement
-        // @effects devtools_core_enabled_by_debug_mode
         it('디버그 모드가 비활성화되면 false를 반환해야 한다', () => {
             (global as any).window.G7Core.state.get = () => ({
                 settings: { advanced: { debug_mode: false } },
@@ -104,8 +68,6 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('상태 관리', () => {
-        // @scenario area=state
-        // @effects devtools_core_tracks_state
         it('초기 상태는 비어 있어야 한다', () => {
             const state = devTools.getState();
             expect(state).toHaveProperty('_global');
@@ -113,8 +75,6 @@ describe('G7DevToolsCore', () => {
             expect(state).toHaveProperty('_computed');
         });
 
-        // @scenario area=state
-        // @effects devtools_core_tracks_state
         it('상태 스냅샷을 캡처해야 한다', () => {
             devTools.captureStateSnapshot({
                 source: 'test',
@@ -127,8 +87,6 @@ describe('G7DevToolsCore', () => {
             expect(history[0].source).toBe('test');
         });
 
-        // @scenario area=state
-        // @effects devtools_core_tracks_state
         it('최대 이력 크기를 준수해야 한다', () => {
             // setMaxHistory는 최솟값 10을 보장함
             devTools.setMaxHistory(15);
@@ -145,8 +103,6 @@ describe('G7DevToolsCore', () => {
             expect(history.length).toBe(15);
         });
 
-        // @scenario area=state
-        // @effects devtools_core_tracks_state
         it('상태 변경을 구독할 수 있어야 한다', () => {
             const callback = vi.fn();
             const unsubscribe = devTools.watchState('*', callback);
@@ -173,8 +129,6 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('액션 로깅', () => {
-        // @scenario area=action_log
-        // @effects devtools_core_logs_actions
         it('액션을 로깅해야 한다', () => {
             devTools.logAction({
                 id: 'test-action-1',
@@ -189,8 +143,6 @@ describe('G7DevToolsCore', () => {
             expect(history[0].type).toBe('setState');
         });
 
-        // @scenario area=action_log
-        // @effects devtools_core_logs_actions
         it('액션 실행을 구독할 수 있어야 한다', () => {
             const callback = vi.fn();
             const unsubscribe = devTools.watchActions(callback);
@@ -208,8 +160,6 @@ describe('G7DevToolsCore', () => {
             unsubscribe();
         });
 
-        // @scenario area=action_log
-        // @effects devtools_core_logs_actions
         it('액션 메트릭을 계산해야 한다', () => {
             devTools.logAction({
                 id: 'action-1',
@@ -237,8 +187,6 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('캐시 통계', () => {
-        // @scenario area=cache
-        // @effects devtools_core_tracks_cache_stats
         it('캐시 히트를 기록해야 한다', () => {
             devTools.recordCacheHit();
             devTools.recordCacheHit();
@@ -247,8 +195,6 @@ describe('G7DevToolsCore', () => {
             expect(stats.hits).toBe(2);
         });
 
-        // @scenario area=cache
-        // @effects devtools_core_tracks_cache_stats
         it('캐시 미스를 기록해야 한다', () => {
             devTools.recordCacheMiss();
 
@@ -256,8 +202,6 @@ describe('G7DevToolsCore', () => {
             expect(stats.misses).toBe(1);
         });
 
-        // @scenario area=cache
-        // @effects devtools_core_tracks_cache_stats
         it('히트율을 계산해야 한다', () => {
             devTools.recordCacheHit();
             devTools.recordCacheHit();
@@ -269,8 +213,6 @@ describe('G7DevToolsCore', () => {
             expect(stats.hitRate).toBe(0.75);
         });
 
-        // @scenario area=cache
-        // @effects devtools_core_tracks_cache_stats
         it('캐시 통계를 초기화할 수 있어야 한다', () => {
             devTools.recordCacheHit();
             devTools.recordCacheMiss();
@@ -283,30 +225,24 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('라이프사이클 추적', () => {
-        // @scenario area=lifecycle
-        // @effects devtools_core_tracks_lifecycle
         it('컴포넌트 마운트를 추적해야 한다', () => {
-            devTools.trackMount('comp-1', { name: 'TestComponent', type: 'basic' });
+            devTools.trackMount('comp-1', { name: 'TestComponent' });
 
             const info = devTools.getLifecycleInfo();
             expect(info.mountedComponents.length).toBe(1);
             expect(info.mountedComponents[0].name).toBe('TestComponent');
         });
 
-        // @scenario area=lifecycle
-        // @effects devtools_core_tracks_lifecycle
         it('컴포넌트 언마운트를 추적해야 한다', () => {
-            devTools.trackMount('comp-1', { name: 'TestComponent', type: 'basic' });
+            devTools.trackMount('comp-1', { name: 'TestComponent' });
             devTools.trackUnmount('comp-1');
 
             const info = devTools.getLifecycleInfo();
             expect(info.mountedComponents.length).toBe(0);
         });
 
-        // @scenario area=lifecycle
-        // @effects devtools_core_tracks_lifecycle
         it('이벤트 리스너를 추적해야 한다', () => {
-            devTools.trackMount('comp-1', { name: 'TestComponent', type: 'basic' });
+            devTools.trackMount('comp-1', { name: 'TestComponent' });
             devTools.trackListener('comp-1', 'click', 'button');
 
             devTools.trackUnmount('comp-1');
@@ -317,8 +253,6 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('성능 추적', () => {
-        // @scenario area=performance
-        // @effects devtools_core_tracks_performance
         it('렌더링 횟수를 추적해야 한다', () => {
             devTools.trackRender('TestComponent');
             devTools.trackRender('TestComponent');
@@ -329,8 +263,6 @@ describe('G7DevToolsCore', () => {
             expect(info.renderCounts.get('OtherComponent')).toBe(1);
         });
 
-        // @scenario area=performance
-        // @effects devtools_core_tracks_performance
         it('바인딩 평가 횟수를 추적해야 한다', () => {
             devTools.trackBindingEval();
             devTools.trackBindingEval();
@@ -340,8 +272,6 @@ describe('G7DevToolsCore', () => {
             expect(info.bindingEvalCount).toBe(3);
         });
 
-        // @scenario area=performance
-        // @effects devtools_core_tracks_performance
         it('프로파일링을 시작하고 중지할 수 있어야 한다', () => {
             devTools.startProfiling();
             devTools.trackRender('TestComponent');
@@ -352,8 +282,6 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('네트워크 추적', () => {
-        // @scenario area=network
-        // @effects devtools_core_tracks_network
         it('요청을 추적해야 한다', () => {
             // trackRequest(url, method) - requestId를 반환
             const requestId = devTools.trackRequest('/api/test', 'GET');
@@ -363,8 +291,6 @@ describe('G7DevToolsCore', () => {
             expect(requestId).toBeTruthy();
         });
 
-        // @scenario area=network
-        // @effects devtools_core_tracks_network
         it('요청 완료를 기록해야 한다', () => {
             // trackRequest가 requestId를 반환
             const requestId = devTools.trackRequest('/api/test', 'GET');
@@ -376,8 +302,6 @@ describe('G7DevToolsCore', () => {
             expect(info.requestHistory.length).toBe(1);
         });
 
-        // @scenario area=network
-        // @effects devtools_core_tracks_network
         it('데이터소스를 추적해야 한다', () => {
             devTools.trackDataSource('users');
 
@@ -387,14 +311,10 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('설정', () => {
-        // @scenario area=config
-        // @effects devtools_core_config
         it('로그 레벨을 설정할 수 있어야 한다', () => {
             expect(() => devTools.setLogLevel('warn')).not.toThrow();
         });
 
-        // @scenario area=config
-        // @effects devtools_core_config
         it('최대 이력 크기를 설정할 수 있어야 한다', () => {
             devTools.setMaxHistory(50);
             // 내부 값 변경 확인을 위해 많은 스냅샷 추가
@@ -410,8 +330,6 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('로그 추적', () => {
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('로그를 추적해야 한다', () => {
             devTools.trackLog('info', 'TestPrefix', ['테스트 메시지', { data: 123 }]);
 
@@ -425,8 +343,6 @@ describe('G7DevToolsCore', () => {
             expect(logs[0].args).toEqual(['테스트 메시지', { data: 123 }]);
         });
 
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('여러 레벨의 로그를 추적해야 한다', () => {
             devTools.trackLog('log', 'App', ['일반 로그']);
             devTools.trackLog('warn', 'App', ['경고 메시지']);
@@ -443,8 +359,6 @@ describe('G7DevToolsCore', () => {
             expect(levels).toContain('debug');
         });
 
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('로그 필터링이 작동해야 한다 - 레벨', () => {
             devTools.trackLog('info', 'App', ['정보']);
             devTools.trackLog('error', 'App', ['에러']);
@@ -455,8 +369,6 @@ describe('G7DevToolsCore', () => {
             expect(errorLogs[0].level).toBe('error');
         });
 
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('로그 필터링이 작동해야 한다 - prefix', () => {
             devTools.trackLog('info', 'DataBindingEngine', ['바인딩 처리']);
             devTools.trackLog('info', 'ActionDispatcher', ['액션 실행']);
@@ -469,8 +381,6 @@ describe('G7DevToolsCore', () => {
             });
         });
 
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('로그 필터링이 작동해야 한다 - 검색어', () => {
             devTools.trackLog('info', 'App', ['사용자 로그인 성공']);
             devTools.trackLog('info', 'App', ['상품 목록 조회']);
@@ -480,8 +390,6 @@ describe('G7DevToolsCore', () => {
             expect(userLogs.length).toBe(2);
         });
 
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('로그 통계를 계산해야 한다', () => {
             devTools.trackLog('info', 'App', ['정보1']);
             devTools.trackLog('info', 'Service', ['정보2']);
@@ -498,8 +406,6 @@ describe('G7DevToolsCore', () => {
             expect(stats.byPrefix['Service']).toBe(2);
         });
 
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('로그를 초기화할 수 있어야 한다', () => {
             devTools.trackLog('info', 'App', ['테스트']);
             devTools.trackLog('error', 'App', ['에러']);
@@ -511,8 +417,6 @@ describe('G7DevToolsCore', () => {
             expect(devTools.getLogs().length).toBe(0);
         });
 
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('최대 로그 이력 크기를 준수해야 한다', () => {
             // 내부적으로 maxLogHistory는 500이지만, 테스트를 위해 많은 로그 추가
             for (let i = 0; i < 600; i++) {
@@ -524,8 +428,6 @@ describe('G7DevToolsCore', () => {
             expect(logs.length).toBeLessThanOrEqual(500);
         });
 
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('getLogInfo가 로그와 통계를 함께 반환해야 한다', () => {
             devTools.trackLog('info', 'App', ['정보']);
             devTools.trackLog('error', 'Service', ['에러']);
@@ -537,8 +439,6 @@ describe('G7DevToolsCore', () => {
             expect(logInfo.stats.totalLogs).toBe(2);
         });
 
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('error 로그에 스택 트레이스가 포함되어야 한다', () => {
             devTools.trackLog('error', 'App', ['에러 발생']);
 
@@ -547,8 +447,6 @@ describe('G7DevToolsCore', () => {
             expect(typeof logs[0].stack).toBe('string');
         });
 
-        // @scenario area=log
-        // @effects devtools_core_tracks_logs
         it('limit 필터가 작동해야 한다', () => {
             for (let i = 0; i < 10; i++) {
                 devTools.trackLog('info', 'App', [`메시지 ${i}`]);
@@ -560,8 +458,6 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('Named Actions 추적', () => {
-        // @scenario area=named_actions
-        // @effects devtools_core_tracks_named_actions
         it('named_actions 정의를 등록해야 한다', () => {
             devTools.setNamedActionDefinitions({
                 searchProducts: { handler: 'navigate', params: { path: '/products' } },
@@ -574,8 +470,6 @@ describe('G7DevToolsCore', () => {
             expect(info.definitions['resetFilters']).toBeDefined();
         });
 
-        // @scenario area=named_actions
-        // @effects devtools_core_tracks_named_actions
         it('actionRef 해석 이력을 기록해야 한다', () => {
             devTools.setNamedActionDefinitions({
                 searchProducts: { handler: 'navigate', params: { path: '/products' } },
@@ -594,8 +488,6 @@ describe('G7DevToolsCore', () => {
             expect(info.refLogs[0].id).toBeDefined();
         });
 
-        // @scenario area=named_actions
-        // @effects devtools_core_tracks_named_actions
         it('참조 횟수 통계를 계산해야 한다', () => {
             devTools.setNamedActionDefinitions({
                 searchProducts: { handler: 'navigate', params: {} },
@@ -624,8 +516,6 @@ describe('G7DevToolsCore', () => {
             expect(info.stats.refCountByName['resetFilters']).toBe(1);
         });
 
-        // @scenario area=named_actions
-        // @effects devtools_core_tracks_named_actions
         it('미사용 정의를 감지해야 한다', () => {
             devTools.setNamedActionDefinitions({
                 searchProducts: { handler: 'navigate', params: {} },
@@ -643,8 +533,6 @@ describe('G7DevToolsCore', () => {
             expect(info.stats.unusedDefinitions).not.toContain('searchProducts');
         });
 
-        // @scenario area=named_actions
-        // @effects devtools_core_tracks_named_actions
         it('최대 이력 크기를 준수해야 한다', () => {
             devTools.setNamedActionDefinitions({
                 testAction: { handler: 'navigate', params: {} },
@@ -663,8 +551,6 @@ describe('G7DevToolsCore', () => {
             expect(info.refLogs.length).toBeLessThanOrEqual(200);
         });
 
-        // @scenario area=named_actions
-        // @effects devtools_core_tracks_named_actions
         it('추적 상태를 초기화할 수 있어야 한다', () => {
             devTools.setNamedActionDefinitions({
                 searchProducts: { handler: 'navigate', params: {} },
@@ -684,8 +570,6 @@ describe('G7DevToolsCore', () => {
     });
 
     describe('모달 정의 누락 감지 (missing-definition)', () => {
-        // @scenario area=modal_missing_definition
-        // @effects devtools_core_detects_missing_modal_definition
         it('레이아웃 modals에 없는 모달 열기 시 missing-definition 이슈를 기록해야 한다', () => {
             // 레이아웃에 modal_a만 정의
             devTools.trackLayoutLoad(
@@ -716,8 +600,6 @@ describe('G7DevToolsCore', () => {
             expect(missingIssues[0].description).toContain('modals 섹션');
         });
 
-        // @scenario area=modal_missing_definition
-        // @effects devtools_core_detects_missing_modal_definition
         it('레이아웃 modals에 정의된 모달 열기 시 missing-definition 이슈가 없어야 한다', () => {
             devTools.trackLayoutLoad(
                 'admin/test_page',
@@ -742,8 +624,6 @@ describe('G7DevToolsCore', () => {
             expect(missingIssues).toHaveLength(0);
         });
 
-        // @scenario area=modal_missing_definition
-        // @effects devtools_core_detects_missing_modal_definition
         it('레이아웃에 modals 섹션 자체가 없으면 missing-definition 이슈를 기록해야 한다', () => {
             devTools.trackLayoutLoad(
                 'admin/test_page',
@@ -766,8 +646,6 @@ describe('G7DevToolsCore', () => {
             expect(missingIssues[0].description).toContain('modals 섹션이 없습니다');
         });
 
-        // @scenario area=modal_missing_definition
-        // @effects devtools_core_detects_missing_modal_definition
         it('stats에서 missing-definition 카운트가 반영되어야 한다', () => {
             devTools.trackLayoutLoad(
                 'admin/test_page',

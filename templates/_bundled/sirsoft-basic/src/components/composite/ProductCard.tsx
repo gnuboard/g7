@@ -5,7 +5,7 @@
  * 다중 통화를 지원하며, 할인율 뱃지를 표시합니다.
  */
 
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import React from 'react';
 
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
@@ -16,65 +16,16 @@ import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { H3 } from '../basic/H3';
 import { Img } from '../basic/Img';
-import { Icon } from '../basic/Icon';
-import type { EditorAttrs } from '../../types';
-import { LinkButton } from '../../support/LinkButton';
-import { solidChipColors } from '../../support/accessibleColor';
-import { sanitizeDeferred } from '../../support/inlineStyleDeferral';
-import { mergeQueryIntoHref, useLocationSearch } from '../../support/navigationLink';
-import { getWishlistOverride, subscribeWishlistOverrides } from '../../support/wishlistOverrides';
-import { quickAddToCartHandler, toggleWishlistQuickHandler } from '../../handlers/productQuickActions';
 
-const t = (key: string, params?: Record<string, string | number>): string =>
-  (window as any).G7Core?.t?.(key, params) ?? key;
-
-/**
- * 레이아웃 편집기 미리보기 화면인가 — 엔진은 미리보기에서 `_global.__isPreview` 를 세운다.
- * 미리보기에서 담기·찜을 누르면 실제 장바구니·찜 목록이 바뀌므로 단추를 그리기만 한다.
- */
-const isLayoutPreview = (): boolean => !!(window as any).G7Core?.state?.get?.()?.__isPreview;
-
-/**
- * 선호 통화를 전역 상태에서 읽고, 변경을 구독하는 훅.
- *
- * 회귀 배경: 종전 `G7Core.state.get('preferredCurrency')` 는 key 를 무시하고
- * _global 전체 객체를 반환해(G7CoreGlobals: get: () => getGlobalState()) 통화 코드가
- * 아닌 객체가 들어가 multi_currency 조회가 항상 KRW 폴백되었고, 단발 get 이라 헤더에서
- * 통화를 바꿔도 카드가 리렌더되지 않았다(상품 리스트/검색/캐러셀 KRW 고정 결함).
- * → 전체 객체에서 `.preferredCurrency` 키로 접근 + state.subscribe 로 리렌더한다.
- *
- * 표시 통화 미설정 시에는 쇼핑몰 기본 통화로 폴백한다 — 특정 통화를 못 박으면
- * 그 통화를 쓰지 않는 상점에서 multi_currency 조회가 늘 빗나가 기준통화 폴백이 된다.
- *
- * @returns 현재 선호 통화 코드 (없으면 기본 통화, 그것도 없으면 빈 문자열)
- */
-const usePreferredCurrency = (): string => {
-  const read = (): string => {
-    const state = (window as any).G7Core?.state?.get?.();
-    return (state && (state.preferredCurrency || state.defaultCurrency)) || '';
-  };
-  const [currency, setCurrency] = useState<string>(read);
-
-  useEffect(() => {
-    const subscribe = (window as any).G7Core?.state?.subscribe;
-    // 구독 시점과 마운트 사이 변경분 보정
-    setCurrency(read());
-    if (typeof subscribe !== 'function') return;
-    const unsubscribe = subscribe((state: Record<string, any>) => {
-      setCurrency((state && (state.preferredCurrency || state.defaultCurrency)) || '');
-    });
-    return typeof unsubscribe === 'function' ? unsubscribe : undefined;
-  }, []);
-
-  return currency;
-};
+// G7Core 전역 상태 훅
+const useGlobalState = (key: string) =>
+  (window as any).G7Core?.state?.get?.(key);
 
 // G7Core.dispatch() navigate 헬퍼
-// preserveListQuery 면 목록 컨텍스트 왕복 규약(#75)에 따라 현재 URL 의 목록 상태를 승계한다.
-const navigate = (path: string, preserveListQuery = false) => {
+const navigate = (path: string) => {
   (window as any).G7Core?.dispatch?.({
     handler: 'navigate',
-    params: preserveListQuery ? { path, mergeQuery: true, query: {} } : { path },
+    params: { path },
   });
 };
 
@@ -91,8 +42,6 @@ interface ProductLabel {
 interface ProductCardProps {
   product: {
     id: number;
-    /** 상품코드 — 상세 페이지 링크 식별자 (product_code 기준 라우팅). 없으면 id 로 폴백 */
-    product_code?: string;
     name?: string | Record<string, string>;
     name_localized?: string;
     thumbnail_url: string;
@@ -122,48 +71,13 @@ interface ProductCardProps {
     rating_avg?: number;
     /** 전시중 리뷰 수 */
     review_count?: number;
-    /** 로그인 회원의 찜 여부 — 값을 모르는 응답(옛 이커머스·비회원 캐시)에는 없다 */
-    is_wishlisted?: boolean;
-    /** 옵션 상품 여부 */
-    has_options?: boolean;
-    /** 구매할 수 있는 옵션 수 (0 이면 담을 수 없다) */
-    options_count?: number;
-    /** 추가옵션 유무 */
-    has_additional_options?: boolean;
-    /** 최소 구매 수량 */
-    min_purchase_qty?: number;
   };
-  /**
-   * 카드 위 장바구니·찜 단추 표시 여부 (기본 true).
-   *
-   * 같은 자리에 제 단추를 둔 화면(마이페이지 찜 목록의 찜 해제 단추)은 false 로 끈다.
-   */
-  showActions?: boolean;
   /** 클릭 시 호출되는 콜백 */
   onClick?: (productId: number) => void;
   /** 쇼핑몰 base 경로 (예: '/shop', '/store', '/') */
   shopBase?: string;
-  /**
-   * 목록 컨텍스트 왕복 보존 여부 (#75).
-   *
-   * 상품 목록 그리드처럼 이 카드가 페이지네이션 목록의 일부인 자리에서만 true 로 켠다.
-   * 켜면 상세로 이동할 때 현재 URL 의 page/sort/keyword/category 를 상세 URL 로 승계해,
-   * 상세의 '뒤로가기' 가 보던 목록 위치로 정확히 되돌아간다.
-   *
-   * 찜 목록·검색 결과처럼 다른 목록에서 상품 상세로 나가는 이동은 기본값(false)을 유지한다 —
-   * 그 목록의 페이지 상태를 상품 목록으로 옮기면 엉뚱한 위치로 복귀한다.
-   */
-  preserveListQuery?: boolean;
   /** 추가 CSS 클래스 */
   className?: string;
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-/**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -213,115 +127,13 @@ const getStarTypes = (avg: number): Array<'full' | 'half' | 'empty'> => {
   });
 };
 
-/** 카드 위 둥근 단추 공통 모양 — 이미지 위에 놓이므로 반투명 바탕으로 어느 사진 위에서도 보이게 한다 */
-const ACTION_BUTTON_CLASS =
-  'inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/90 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-white dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed';
-
-interface ProductCardActionsProps {
-  product: ProductCardProps['product'];
-  /** 상품 이름 (단추 이름에 넣는다) */
-  name: string;
-  /** 편집기·미리보기 — 그리기만 하고 동작하지 않는다 */
-  inert: boolean;
-}
-
-/**
- * 카드 위 장바구니·찜 단추
- *
- * 카드 본체가 링크라 단추를 그 안에 넣을 수 없다(대화형 요소 중첩). 카드의 형제로 이미지 오른쪽 위에 겹쳐 놓는다.
- * - 찜 단추는 찜 여부를 아는 응답에서만 그린다 — 모르는 채 누르면 이미 찜한 상품이 해제될 수 있다.
- * - 담기 단추는 판매 중이고 구매할 수 있는 옵션이 있는 상품에만 그린다.
- */
-const ProductCardActions: React.FC<ProductCardActionsProps> = ({ product, name, inert }) => {
-  const [cartBusy, setCartBusy] = useState(false);
-  const [wishBusy, setWishBusy] = useState(false);
-  const override = useSyncExternalStore(
-    subscribeWishlistOverrides,
-    () => getWishlistOverride(product.id),
-    () => undefined,
-  );
-
-  const wishKnown = typeof product.is_wishlisted === 'boolean';
-  const wished = override ?? product.is_wishlisted === true;
-  const canAdd = product.sales_status === 'on_sale' && product.options_count !== 0;
-
-  if (!wishKnown && !canAdd) return null;
-
-  const stop = (event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
-  const handleCart = async (event: React.MouseEvent) => {
-    stop(event);
-    if (inert || cartBusy) return;
-    setCartBusy(true);
-    try {
-      await quickAddToCartHandler({ params: { product } });
-    } finally {
-      setCartBusy(false);
-    }
-  };
-
-  const handleWish = async (event: React.MouseEvent) => {
-    stop(event);
-    if (inert || wishBusy) return;
-    setWishBusy(true);
-    try {
-      await toggleWishlistQuickHandler({ params: { product } });
-    } finally {
-      setWishBusy(false);
-    }
-  };
-
-  return (
-    <Div data-card-actions="" className="absolute top-2 right-2 z-10 flex flex-col gap-2">
-      {wishKnown && (
-        <Button
-          type="button"
-          data-card-action="wishlist"
-          aria-label={t('shop.product_card.wishlist', { name })}
-          aria-pressed={wished}
-          disabled={wishBusy}
-          onClick={handleWish}
-          className={ACTION_BUTTON_CLASS}
-        >
-          {wishBusy ? (
-            <Icon name="spinner" className="animate-spin" />
-          ) : (
-            <Icon name="heart" iconStyle={wished ? 'solid' : 'regular'} className={wished ? 'text-red-500 dark:text-red-400' : ''} />
-          )}
-        </Button>
-      )}
-      {canAdd && (
-        <Button
-          type="button"
-          data-card-action="cart"
-          aria-label={t('shop.product_card.add_to_cart', { name })}
-          disabled={cartBusy}
-          onClick={handleCart}
-          className={ACTION_BUTTON_CLASS}
-        >
-          <Icon name={cartBusy ? 'spinner' : 'shopping-cart'} className={cartBusy ? 'animate-spin' : ''} />
-        </Button>
-      )}
-    </Div>
-  );
-};
-
 const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
-  showActions = true,
   shopBase = '/shop',
-  preserveListQuery = false,
   className = '',
-  id,
-  editorAttrs,
 }) => {
-  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
-  useLocationSearch(preserveListQuery && !onClick);
-  const preferredCurrency = usePreferredCurrency();
+  const preferredCurrency = useGlobalState('preferredCurrency') || 'KRW';
 
   /**
    * 다중 통화 가격을 가져옵니다.
@@ -353,36 +165,29 @@ const ProductCard: React.FC<ProductCardProps> = ({
    * mark 태그만 허용하여 XSS를 방지합니다.
    */
   const sanitizeHighlight = (html: string): string => {
-    const config = { ALLOWED_TAGS: ['mark'], ALLOWED_ATTR: [] };
-
-    // 결과에는 style 속성이 남지 않지만(ALLOWED_ATTR 비움), 원문에 style 속성이 있으면 정화기가 문자열을 파싱하는 것만으로
-    // 엄격한 스타일 정책 위반이 보고된다. 코어 본문 서식 지연 장치가 있으면 그 장치로 정화해 파싱 전에 style 을 걷는다(서식은
-    // 설정이 금지하므로 버려져 입힐 것이 없다). 장치가 없으면(옛 코어) 종전 그대로다 (공개 #163).
-    return sanitizeDeferred(html, config) ?? (DOMPurify.sanitize(html, config) as unknown as string);
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['mark'],
+      ALLOWED_ATTR: [],
+    }) as unknown as string;
   };
 
   const nameHighlighted = product.name_highlighted;
   const descriptionHtml = product.description_highlighted ?? product.short_description;
 
-  const base = shopBase === '/' ? '' : shopBase;
-  // 상세 페이지는 product_code 기준 라우팅. code 미제공 시 id 로 폴백(하위호환).
-  const detailPath = `${base}/products/${product.product_code ?? product.id}`;
-
   const handleClick = () => {
     if (onClick) {
       onClick(product.id);
     } else {
-      navigate(detailPath, preserveListQuery);
+      const base = shopBase === '/' ? '' : shopBase;
+      navigate(`${base}/products/${product.id}`);
     }
   };
 
-  const inEditor = (editorAttrs !== undefined && editorAttrs !== null) || isLayoutPreview();
-  const actions = showActions ? <ProductCardActions product={product} name={displayName} inert={inEditor} /> : null;
-
-  const cardClassName = `block w-full h-full text-left group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${className}`;
-
-  const content = (
-    <>
+  return (
+    <Button
+      onClick={handleClick}
+      className={`block w-full text-left group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${className}`}
+    >
       {/* 이미지 영역 */}
       <Div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
         {/* 상품 이미지 */}
@@ -390,16 +195,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
           src={product.thumbnail_url}
           alt={displayName}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-          // 카드 표시 폭은 최대 약 315px — md(가로 640)에 2배 밀도는 srcset 의 lg
-          thumbPreset="md"
           loading="lazy"
         />
 
         {/* 판매 상태 오버레이 */}
         {isNotOnSale && (
-          <Div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+          <Div className="absolute inset-0 bg-black/50 flex items-center justify-center">
             <Span className={`text-lg font-bold ${
-              product.sales_status === 'sold_out' ? 'text-red-200' :
+              product.sales_status === 'sold_out' ? 'text-red-300' :
               product.sales_status === 'suspended' ? 'text-amber-300' :
               'text-blue-300'
             }`} style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
@@ -410,7 +213,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* 할인율 뱃지 (좌상단) - 품절/판매중단 시 숨김 */}
         {hasDiscount && product.sales_status !== 'sold_out' && product.sales_status !== 'suspended' && (
-          <Span className="absolute top-2 left-2 px-2 py-1 bg-red-600 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded">
+          <Span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
             {product.discount_rate}%
           </Span>
         )}
@@ -418,20 +221,15 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {/* 상품 라벨/뱃지 (우하단) */}
         {labels.length > 0 && (
           <Div className="absolute bottom-2 right-2 flex gap-1 flex-wrap justify-end">
-            {labels.map((label, idx) => {
-              // 바탕은 운영자 라벨 색 그대로, 글자는 검정·흰색 중 그 바탕과 대비가 큰 쪽 — 흰 글자 고정이면 밝은 라벨 색
-              // (초록·노랑 500 등)에서 2 안팎으로 읽히지 않는다. 읽을 수 없는 색 값은 기본 회색으로 그린다.
-              const chip = solidChipColors(label.color) ?? solidChipColors('#6b7280')!;
-              return (
-                <Span
-                  key={idx}
-                  className="text-xs font-medium px-1.5 py-0.5 rounded"
-                  style={{ backgroundColor: chip.background, color: chip.color }}
-                >
-                  {label.name}
-                </Span>
-              );
-            })}
+            {labels.map((label, idx) => (
+              <Span
+                key={idx}
+                className="text-xs text-white font-medium px-1.5 py-0.5 rounded"
+                style={{ backgroundColor: label.color || '#6b7280' }}
+              >
+                {label.name}
+              </Span>
+            ))}
           </Div>
         )}
       </Div>
@@ -477,7 +275,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {getStarTypes(product.rating_avg ?? 0).map((type, idx) => (
             <Span
               key={idx}
-              className={`text-xs ${type === 'empty' ? 'text-gray-500 dark:text-gray-500' : 'text-yellow-700 dark:text-yellow-400'}`}
+              className={`text-xs ${type === 'empty' ? 'text-gray-300 dark:text-gray-600' : 'text-yellow-400'}`}
             >
               {type === 'full' && <i className="fa-solid fa-star" />}
               {type === 'half' && <i className="fa-solid fa-star-half-stroke" />}
@@ -487,7 +285,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Span className="text-xs text-gray-600 dark:text-gray-400 ml-0.5">
             {(product.rating_avg ?? 0).toFixed(1)}
           </Span>
-          <Span className="text-xs text-gray-500 dark:text-gray-400">
+          <Span className="text-xs text-gray-400 dark:text-gray-500">
             ({product.review_count ?? 0})
           </Span>
         </Div>
@@ -504,35 +302,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </Div>
       </Div>
-    </>
-  );
-
-  // 상세로 가는 카드는 링크 — 가운데 클릭·Ctrl+클릭으로 새 탭에 연다(#757). 목록 문맥을 승계하면 href 에도 같은 쿼리를 싣는다.
-  // 레이아웃이 onClick 으로 따로 처리하는 카드는 주소를 알 수 없으므로 단추 그대로다.
-  // 겉 칸이 편집기 식별 속성과 id 를 받고, 카드 본체(링크·단추)와 장바구니·찜 단추가 그 안의 형제로 선다 —
-  // 단추를 링크 안에 넣으면 대화형 요소가 겹쳐 키보드·보조 기술이 둘을 가르지 못한다.
-  if (onClick) {
-    return (
-      <Div className="relative h-full" id={id} {...(editorAttrs as Record<string, unknown>)}>
-        <Button onClick={handleClick} className={cardClassName}>
-          {content}
-        </Button>
-        {actions}
-      </Div>
-    );
-  }
-
-  return (
-    <Div className="relative h-full" id={id} {...(editorAttrs as Record<string, unknown>)}>
-      <LinkButton
-        href={preserveListQuery ? mergeQueryIntoHref(detailPath) : detailPath}
-        onNavigate={handleClick}
-        className={cardClassName}
-      >
-        {content}
-      </LinkButton>
-      {actions}
-    </Div>
+    </Button>
   );
 };
 

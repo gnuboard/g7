@@ -1,292 +1,174 @@
 {
-    "comment": "템플릿 비활성 확인 창 — 활성 창과 짝이다. 모듈·플러그인은 스위치 하나가 양방향을 겸하지만\n  템플릿은 결과가 서로 달라(켜기=교체 / 끄기=해제) 창을 둘로 갈라 두었다.\n  취소는 활성 창과 같이 카드 목록을 다시 마운트해 스위치 모양만 되돌린다.",
-    "meta": {
-        "is_partial": true,
-        "description": "템플릿 비활성화 확인 모달",
-        "editor_label": "$t:admin.modal_label.admin_template_list.template_deactivate_modal"
-    },
-    "id": "template_deactivate_modal",
-    "type": "composite",
-    "name": "Modal",
-    "props": {
-        "title": "$t:admin.templates.modals.deactivate_title",
-        "size": "sm",
-        "footer": [
-            {
-                "type": "basic",
-                "name": "Button",
-                "actions": [
-                    {
-                        "comment": "취소 — 카드 목록을 다시 마운트해 눌린 스위치 모양을 되돌린다(서버에 다시 묻지 않는다).",
-                        "type": "click",
-                        "handler": "sequence",
-                        "actions": [
-                            {
-                                "handler": "closeModal"
-                            },
-                            {
-                                "handler": "remount",
-                                "params": {
-                                    "componentId": "template_card_grid"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                "props": {
-                    "type": "button",
-                    "className": "btn btn-secondary",
-                    "disabled": "{{_global.isTemplateDeactivating}}"
-                },
-                "children": [
-                    {
-                        "type": "basic",
-                        "name": "Span",
-                        "text": "$t:common.cancel"
-                    }
-                ]
-            },
-            {
-                "type": "basic",
-                "name": "Button",
-                "actions": [
-                    {
-                        "comment": "비활성 실행 — 목록과 확장 번들을 함께 갱신한다.\n               활성 창과 달리 화면을 다시 읽지 않는다(끄는 쪽은 지금 보는 화면을 갈아치우지 않는다).",
-                        "type": "click",
-                        "handler": "sequence",
-                        "actions": [
-                            {
-                                "handler": "setState",
-                                "params": {
-                                    "target": "global",
-                                    "isTemplateDeactivating": true
-                                }
-                            },
-                            {
-                                "handler": "apiCall",
-                                "target": "/api/admin/templates/deactivate",
-                                "auth_required": true,
-                                "params": {
-                                    "method": "POST",
-                                    "body": {
-                                        "template_name": "{{_global.selectedTemplate.identifier}}"
-                                    }
-                                },
-                                "onSuccess": [
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "isTemplateDeactivating": false
-                                        }
-                                    },
-                                    {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "success",
-                                            "message": "$t:admin.templates.deactivate_success"
-                                        }
-                                    },
-                                    {
-                                        "handler": "refetchDataSource",
-                                        "params": {
-                                            "dataSourceId": "templates"
-                                        }
-                                    },
-                                    {
-                                        "handler": "reloadExtensions"
-                                    },
-                                    {
-                                        "handler": "closeModal"
-                                    },
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "selectedTemplate": null
-                                        }
-                                    },
-                                    {
-                                        "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
-                                            "lifecycleWarningsOpen": false
-                                        }
-                                    },
-                                    {
-                                        "handler": "openModal",
-                                        "target": "lifecycle_warnings_modal",
-                                        "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
-                                    }
-                                ],
-                                "onError": [
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "isTemplateDeactivating": false
-                                        }
-                                    },
-                                    {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message}}"
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ],
-                "props": {
-                    "type": "button",
-                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_global.isTemplateDeactivating}}"
-                },
-                "children": [
-                    {
-                        "type": "basic",
-                        "name": "Icon",
-                        "if": "{{_global.isTemplateDeactivating}}",
-                        "props": {
-                            "name": "spinner",
-                            "className": "spinner-sm"
-                        }
-                    },
-                    {
-                        "type": "basic",
-                        "name": "Span",
-                        "text": "{{_global.isTemplateDeactivating ? '$t:admin.templates.deactivating' : '$t:admin.templates.actions.deactivate'}}"
-                    }
-                ]
-            }
-        ]
-    },
-    "children": [
+  "meta": {
+    "is_partial": true,
+    "description": "템플릿 비활성화 확인 모달"
+  },
+  "id": "template_deactivate_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "title": "$t:admin.templates.modals.deactivate_title",
+    "size": "small"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "py-2"
+      },
+      "children": [
         {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "py-2"
-            },
-            "children": [
+          "type": "basic",
+          "name": "P",
+          "props": {
+            "className": "text-gray-700 dark:text-gray-300"
+          },
+          "text": "$t:admin.templates.modals.deactivate_confirm|name={{_global.selectedTemplate.name}}"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isTemplateDeactivating}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
                 {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                        "className": "text-gray-700 dark:text-gray-300"
-                    },
-                    "text": "$t:admin.templates.modals.deactivate_confirm|name={{_global.selectedTemplate.name}}"
+                  "handler": "closeModal"
+                },
+                {
+                  "handler": "remount",
+                  "params": {
+                    "componentId": "template_card_grid"
+                  }
                 }
-            ]
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "$t:common.cancel"
+            }
+          ]
         },
         {
-            "comment": "이 템플릿을 다른 활성 확장이 연동으로 쓰고 있으면(`integrated_by`, 코어 7.1.4 · #822) 그 목록을 함께 보인다 — 막지 않는 안내다.\n         템플릿은 끄기 전에 이미 이 확인 창을 거치므로 모듈·플러그인처럼 연동 안내 창을 따로 두지 않고 여기에 싣는다(창 두 번 방지).",
-            "id": "deactivate_integrated_by",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{(_global.selectedTemplate?.integrated_by ?? []).length > 0}}",
-            "props": {
-                "className": "mt-4"
-            },
-            "children": [
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isTemplateDeactivating}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
                 {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "alert-warning"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "exclamation-triangle",
-                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "P",
-                            "props": {
-                                "className": "text-warning-soft"
-                            },
-                            "text": "$t:admin.extension_integrations.deactivate_notice_body|name={{_global.selectedTemplate?.name ?? _global.selectedTemplate?.identifier ?? ''}}"
-                        }
-                    ]
+                  "handler": "setState",
+                  "params": {
+                    "target": "global",
+                    "isTemplateDeactivating": true
+                  }
                 },
                 {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                        "className": "mt-3 text-body font-medium"
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/admin/templates/deactivate",
+                  "params": {
+                    "method": "POST",
+                    "body": {
+                      "template_name": "{{_global.selectedTemplate.identifier}}"
+                    }
+                  },
+                  "onSuccess": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isTemplateDeactivating": false
+                      }
                     },
-                    "text": "$t:admin.extension_integrations.integrated_by_label"
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "mt-2 row-stack"
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "selectedTemplate": null
+                      }
                     },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "iteration": {
-                                "source": "_global.selectedTemplate?.integrated_by ?? []",
-                                "item_var": "item"
-                            },
-                            "props": {
-                                "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{item.type === 'module'}}",
-                                    "props": {
-                                        "name": "cube",
-                                        "className": "text-base text-gray-500 dark:text-gray-400",
-                                        "aria-hidden": "true"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{item.type === 'plugin'}}",
-                                    "props": {
-                                        "name": "puzzle-piece",
-                                        "className": "text-base text-gray-500 dark:text-gray-400",
-                                        "aria-hidden": "true"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{item.type === 'template'}}",
-                                    "props": {
-                                        "name": "palette",
-                                        "className": "text-base text-gray-500 dark:text-gray-400",
-                                        "aria-hidden": "true"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "text-body break-words"
-                                    },
-                                    "text": "{{item.name || item.identifier}} ({{item.identifier}})"
-                                }
-                            ]
-                        }
-                    ]
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "success",
+                        "message": "$t:admin.templates.deactivate_success"
+                      }
+                    },
+                    {
+                      "handler": "refetchDataSource",
+                      "params": {
+                        "dataSourceId": "templates"
+                      }
+                    },
+                    {
+                      "handler": "reloadExtensions"
+                    },
+                    {
+                      "handler": "closeModal"
+                    }
+                  ],
+                  "onError": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "global",
+                        "isTemplateDeactivating": false
+                      }
+                    },
+                    {
+                      "handler": "toast",
+                      "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                      }
+                    }
+                  ]
                 }
-            ]
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isTemplateDeactivating}}",
+              "props": {
+                "name": "spinner",
+                "className": "w-4 h-4 animate-spin"
+              }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isTemplateDeactivating ? '$t:admin.templates.deactivating' : '$t:admin.templates.actions.deactivate'}}"
+            }
+          ]
         }
-    ]
+      ]
+    }
+  ]
 }

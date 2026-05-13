@@ -3,7 +3,6 @@
 namespace App\Http\Requests\User;
 
 use App\Extension\HookManager;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -25,8 +24,6 @@ class UploadAvatarRequest extends FormRequest
 
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -36,7 +33,7 @@ class UploadAvatarRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -49,10 +46,7 @@ class UploadAvatarRequest extends FormRequest
             ],
         ];
 
-        return HookManager::applyFiltersWithLegacyName(
-            'core.user.upload_avatar_validation_rules',
-            'core.user.upload_avatar_rules',
-            $rules);
+        return HookManager::applyFilters('core.user.upload_avatar_rules', $rules);
     }
 
     /**

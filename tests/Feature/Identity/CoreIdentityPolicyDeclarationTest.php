@@ -5,7 +5,6 @@ namespace Tests\Feature\Identity;
 use App\Models\IdentityPolicy;
 use Database\Seeders\IdentityPolicySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -19,26 +18,12 @@ class CoreIdentityPolicyDeclarationTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->seed(IdentityPolicySeeder::class);
     }
 
-    /**
-     * 코어는 정확히 9개의 본인인증 정책을 등록한다.
-     *
-     * @scenario policy_stage=declare, verification_progress=none
-     *
-     * @effects core_seeds_exactly_nine_core_policies
-     *
-     * @return void 반환값 없음
-     */
     public function test_core_seeds_exactly_nine_core_policies(): void
     {
         $count = IdentityPolicy::query()
@@ -50,17 +35,8 @@ class CoreIdentityPolicyDeclarationTest extends TestCase
     }
 
     /**
-     * 코어 정책이 config/core.php 의 선언과 같은 값으로 등록된다.
-     *
-     * @scenario policy_stage=declare, verification_progress=none
-     *
-     * @effects core_policy_matches_declaration
-     *
-     * @param  string  $key  정책 키
-     * @param  array<string, mixed>  $expected  기대 선언 값
-     * @return void 반환값 없음
+     * @dataProvider coreDeclarationProvider
      */
-    #[DataProvider('coreDeclarationProvider')]
     public function test_core_policy_matches_declaration(string $key, array $expected): void
     {
         $policy = IdentityPolicy::where('key', $key)->first();
@@ -98,11 +74,6 @@ class CoreIdentityPolicyDeclarationTest extends TestCase
         $this->assertSame('core', $policy->source_identifier);
     }
 
-    /**
-     * 코어 정책 키와 기대 선언 값을 돌려줍니다.
-     *
-     * @return array<string, array{0: string, 1: array<string, mixed>}> 정책 키와 기대 값
-     */
     public static function coreDeclarationProvider(): array
     {
         return [

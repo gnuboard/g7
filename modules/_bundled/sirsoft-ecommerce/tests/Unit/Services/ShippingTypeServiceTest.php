@@ -2,11 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
-use Illuminate\Database\Eloquent\Collection;
 use Mockery;
-use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
-use Modules\Sirsoft\Ecommerce\Exceptions\ShippingTypeOperationException;
-use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
@@ -48,7 +44,7 @@ class ShippingTypeServiceTest extends ModuleTestCase
             ->shouldReceive('getAll')
             ->once()
             ->with([])
-            ->andReturn(new Collection([]));
+            ->andReturn(new \Illuminate\Database\Eloquent\Collection([]));
 
         $result = $this->service->getAllTypes();
 
@@ -61,7 +57,7 @@ class ShippingTypeServiceTest extends ModuleTestCase
 
     public function test_get_type_returns_type_when_found(): void
     {
-        $type = new ShippingType;
+        $type = new ShippingType();
         $type->id = 1;
         $type->code = 'parcel';
 
@@ -100,7 +96,7 @@ class ShippingTypeServiceTest extends ModuleTestCase
             ->shouldReceive('getActiveTypes')
             ->with('domestic')
             ->once()
-            ->andReturn(new Collection([]));
+            ->andReturn(new \Illuminate\Database\Eloquent\Collection([]));
 
         $result = $this->service->getActiveTypes('domestic');
 
@@ -113,7 +109,7 @@ class ShippingTypeServiceTest extends ModuleTestCase
 
     public function test_get_types_for_settings_returns_formatted_array(): void
     {
-        $type = new ShippingType;
+        $type = new ShippingType();
         $type->id = 1;
         $type->code = 'parcel';
         $type->name = ['ko' => '택배', 'en' => 'Parcel'];
@@ -124,7 +120,7 @@ class ShippingTypeServiceTest extends ModuleTestCase
         $this->mockRepository
             ->shouldReceive('getAll')
             ->once()
-            ->andReturn(new Collection([$type]));
+            ->andReturn(new \Illuminate\Database\Eloquent\Collection([$type]));
 
         $result = $this->service->getTypesForSettings();
 
@@ -141,7 +137,7 @@ class ShippingTypeServiceTest extends ModuleTestCase
 
     public function test_delete_type_succeeds_when_not_in_use(): void
     {
-        $type = new ShippingType;
+        $type = new ShippingType();
         $type->id = 1;
         $type->code = 'express';
         $type->name = ['ko' => '특급', 'en' => 'Express'];
@@ -171,7 +167,7 @@ class ShippingTypeServiceTest extends ModuleTestCase
 
     public function test_delete_type_throws_when_in_use(): void
     {
-        $type = new ShippingType;
+        $type = new ShippingType();
         $type->id = 1;
         $type->code = 'parcel';
         $type->name = ['ko' => '택배', 'en' => 'Parcel'];
@@ -280,8 +276,8 @@ class ShippingTypeServiceTest extends ModuleTestCase
         ]);
 
         // DB에 직접 주문 배송 레코드 생성
-        OrderFactory::new()->create();
-        OrderShipping::factory()->create([
+        \Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory::new()->create();
+        \Modules\Sirsoft\Ecommerce\Models\OrderShipping::factory()->create([
             'shipping_type' => 'parcel',
         ]);
 
@@ -289,35 +285,5 @@ class ShippingTypeServiceTest extends ModuleTestCase
 
         // parcel을 제외한 sync → parcel 삭제 시도 → 사용 중이므로 예외
         $service->syncShippingTypes([]);
-    }
-
-    public function test_sync_throws_when_changing_code_of_type_in_use(): void
-    {
-        // 선행 판정(assertSyncDeletable)을 거치지 않고 sync 를 **직접** 부르는 경로다.
-        // sync 안에 코드변경 가드가 없으면 개명이 그대로 반영되고, 그 순간 그 코드로 접수된
-        // 주문 전건이 배송유형 카탈로그를 잃는다 (새 코드 기준 사용량이 0 이라 삭제 가드도 통과).
-        $service = app(ShippingTypeService::class);
-
-        $inUse = ShippingType::create([
-            'code' => 'parcel',
-            'name' => ['ko' => '택배', 'en' => 'Parcel'],
-            'category' => 'domestic',
-        ]);
-
-        OrderFactory::new()->create();
-        OrderShipping::factory()->create([
-            'shipping_type' => 'parcel',
-        ]);
-
-        $this->expectException(ShippingTypeOperationException::class);
-
-        try {
-            $service->syncShippingTypes([
-                ['id' => $inUse->id, 'code' => 'parcel_v2', 'name' => ['ko' => '택배', 'en' => 'Parcel'], 'category' => 'domestic'],
-            ]);
-        } finally {
-            // 거절은 롤백까지 포함한다 — 코드가 남아 있어야 접수된 주문이 카탈로그를 잃지 않는다.
-            $this->assertEquals('parcel', ShippingType::find($inUse->id)->code);
-        }
     }
 }

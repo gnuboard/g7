@@ -5,12 +5,8 @@ namespace Modules\Sirsoft\Board\Tests\Unit;
 // 테스트 베이스 클래스 수동 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../ModuleTestCase.php';
 
-use App\Enums\PermissionType;
 use App\Models\Permission;
 use App\Models\Role;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Services\BoardPermissionService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
@@ -21,26 +17,17 @@ class BoardPermissionServiceTest extends ModuleTestCase
 {
     private BoardPermissionService $service;
 
-    /**
-     * 테스트마다 BoardPermissionService 인스턴스를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->service = new BoardPermissionService;
+        $this->service = new BoardPermissionService();
     }
 
     /**
      * 서비스 인스턴스화 테스트
      *
-     * @scenario case=service_contract
-     *
-     * @effects service_resolves_instance
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_service_can_be_instantiated(): void
     {
@@ -50,11 +37,7 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * 모듈 identifier 상수 확인 (새로운 3단계 권한 구조)
      *
-     * @scenario case=service_contract
-     *
-     * @effects module_identifier_constant_is_sirsoft_board
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_permission_prefix_constant_exists(): void
     {
@@ -68,15 +51,11 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * 게시판 권한 생성 시 type 필드가 올바르게 설정되는지 테스트
      *
-     * @scenario case=ensure_permissions
-     *
-     * @effects board_permissions_typed_admin_or_user
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_board_permissions_have_correct_type(): void
     {
-        $board = Board::factory()->create([
+        $board = \Modules\Sirsoft\Board\Models\Board::factory()->create([
             'slug' => 'test-board',
             'name' => ['ko' => '테스트 게시판', 'en' => 'Test Board'],
         ]);
@@ -86,17 +65,17 @@ class BoardPermissionServiceTest extends ModuleTestCase
         // 모듈 루트 권한 확인
         $moduleRoot = Permission::where('identifier', 'sirsoft-board')->first();
         $this->assertNotNull($moduleRoot);
-        $this->assertEquals(PermissionType::Admin, $moduleRoot->type);
+        $this->assertEquals(\App\Enums\PermissionType::Admin, $moduleRoot->type);
 
         // 게시판 카테고리 권한 확인
         $categoryPermission = Permission::where('identifier', 'sirsoft-board.test-board')->first();
         $this->assertNotNull($categoryPermission);
-        $this->assertEquals(PermissionType::Admin, $categoryPermission->type);
+        $this->assertEquals(\App\Enums\PermissionType::Admin, $categoryPermission->type);
 
         // admin.* 권한은 Admin 타입이어야 함
         $adminPermissions = Permission::where('identifier', 'like', 'sirsoft-board.test-board.admin.%')->get();
         foreach ($adminPermissions as $permission) {
-            $this->assertEquals(PermissionType::Admin, $permission->type,
+            $this->assertEquals(\App\Enums\PermissionType::Admin, $permission->type,
                 "Permission {$permission->identifier} should be Admin type");
         }
 
@@ -107,7 +86,7 @@ class BoardPermissionServiceTest extends ModuleTestCase
             ->get();
 
         foreach ($userPermissions as $permission) {
-            $this->assertEquals(PermissionType::User, $permission->type,
+            $this->assertEquals(\App\Enums\PermissionType::User, $permission->type,
                 "Permission {$permission->identifier} should be User type");
         }
     }
@@ -119,18 +98,14 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * 변경 없음: granted_at 보존 확인
      *
-     * @scenario case=sync_module_roles
-     *
-     * @effects sync_roles_no_change_preserves_granted_at
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_sync_module_permission_roles_no_change_preserves_granted_at(): void
     {
         $permission = Permission::create([
             'identifier' => 'sirsoft-board.reports.view.sync1',
             'name' => ['ko' => '신고 조회 sync1', 'en' => 'View Reports sync1'],
-            'type' => PermissionType::Admin,
+            'type' => \App\Enums\PermissionType::Admin,
         ]);
 
         $adminRole = Role::where('identifier', 'admin')->first();
@@ -156,18 +131,14 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * 역할 추가: 추가분만 attach, 기존 granted_at 보존
      *
-     * @scenario case=sync_module_roles
-     *
-     * @effects sync_roles_attaches_only_new_roles
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_sync_module_permission_roles_adds_only_new_roles(): void
     {
         $permission = Permission::create([
             'identifier' => 'sirsoft-board.reports.view.sync2',
             'name' => ['ko' => '신고 조회 sync2', 'en' => 'View Reports sync2'],
-            'type' => PermissionType::Admin,
+            'type' => \App\Enums\PermissionType::Admin,
         ]);
 
         $adminRole = Role::where('identifier', 'admin')->first();
@@ -200,18 +171,14 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * 역할 제거: 제거분만 detach, 나머지 보존
      *
-     * @scenario case=sync_module_roles
-     *
-     * @effects sync_roles_detaches_only_dropped_roles
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_sync_module_permission_roles_removes_only_dropped_roles(): void
     {
         $permission = Permission::create([
             'identifier' => 'sirsoft-board.reports.view.sync3',
             'name' => ['ko' => '신고 조회 sync3', 'en' => 'View Reports sync3'],
-            'type' => PermissionType::Admin,
+            'type' => \App\Enums\PermissionType::Admin,
         ]);
 
         $adminRole = Role::where('identifier', 'admin')->first();
@@ -237,18 +204,14 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * 전체 교체: 기존 전체 detach + 신규 attach
      *
-     * @scenario case=sync_module_roles
-     *
-     * @effects sync_roles_full_replacement
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_sync_module_permission_roles_full_replacement(): void
     {
         $permission = Permission::create([
             'identifier' => 'sirsoft-board.reports.view.sync4',
             'name' => ['ko' => '신고 조회 sync4', 'en' => 'View Reports sync4'],
-            'type' => PermissionType::Admin,
+            'type' => \App\Enums\PermissionType::Admin,
         ]);
 
         $adminRole = Role::where('identifier', 'admin')->first();
@@ -273,17 +236,17 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * assignRolesToPermission 호출 헬퍼 (private 메서드 접근)
      *
-     * @param  Permission  $permission  역할을 부여할 권한
-     * @param  string  $key  권한 키(예: posts.list)
-     * @param  Board  $board  대상 게시판
-     * @param  array  $permissions  게시판 설정의 권한별 역할 데이터
-     * @param  array  $defaultPermissions  권한 키별 기본 역할 목록
-     * @return void 반환값 없음
+     * @param Permission $permission
+     * @param string $key
+     * @param \Modules\Sirsoft\Board\Models\Board $board
+     * @param array $permissions
+     * @param array $defaultPermissions
+     * @return void
      */
     private function callAssignRolesToPermission(
         Permission $permission,
         string $key,
-        Board $board,
+        \Modules\Sirsoft\Board\Models\Board $board,
         array $permissions,
         array $defaultPermissions
     ): void {
@@ -295,15 +258,11 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * 변경 없음: granted_at 보존
      *
-     * @scenario case=assign_roles
-     *
-     * @effects assign_roles_no_change_preserves_granted_at
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_assign_roles_no_change_preserves_granted_at(): void
     {
-        $board = Board::factory()->create([
+        $board = \Modules\Sirsoft\Board\Models\Board::factory()->create([
             'slug' => 'diff-test',
             'name' => ['ko' => 'diff 테스트', 'en' => 'Diff Test'],
         ]);
@@ -311,7 +270,7 @@ class BoardPermissionServiceTest extends ModuleTestCase
         $permission = Permission::create([
             'identifier' => 'sirsoft-board.diff-test.posts.list',
             'name' => ['ko' => '목록', 'en' => 'List'],
-            'type' => PermissionType::User,
+            'type' => \App\Enums\PermissionType::User,
         ]);
 
         $adminRole = Role::where('identifier', 'admin')->first();
@@ -338,15 +297,11 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * 역할 추가: 추가분만 attach, 기존 granted_at 보존
      *
-     * @scenario case=assign_roles
-     *
-     * @effects assign_roles_attaches_only_new_roles
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_assign_roles_adds_only_new_roles(): void
     {
-        $board = Board::factory()->create([
+        $board = \Modules\Sirsoft\Board\Models\Board::factory()->create([
             'slug' => 'diff-test2',
             'name' => ['ko' => 'diff 테스트2', 'en' => 'Diff Test2'],
         ]);
@@ -354,7 +309,7 @@ class BoardPermissionServiceTest extends ModuleTestCase
         $permission = Permission::create([
             'identifier' => 'sirsoft-board.diff-test2.posts.list',
             'name' => ['ko' => '목록', 'en' => 'List'],
-            'type' => PermissionType::User,
+            'type' => \App\Enums\PermissionType::User,
         ]);
 
         $adminRole = Role::where('identifier', 'admin')->first();
@@ -383,15 +338,11 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * 역할 제거: 제거분만 detach
      *
-     * @scenario case=assign_roles
-     *
-     * @effects assign_roles_detaches_only_dropped_roles
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_assign_roles_removes_only_dropped_roles(): void
     {
-        $board = Board::factory()->create([
+        $board = \Modules\Sirsoft\Board\Models\Board::factory()->create([
             'slug' => 'diff-test3',
             'name' => ['ko' => 'diff 테스트3', 'en' => 'Diff Test3'],
         ]);
@@ -399,7 +350,7 @@ class BoardPermissionServiceTest extends ModuleTestCase
         $permission = Permission::create([
             'identifier' => 'sirsoft-board.diff-test3.posts.list',
             'name' => ['ko' => '목록', 'en' => 'List'],
-            'type' => PermissionType::User,
+            'type' => \App\Enums\PermissionType::User,
         ]);
 
         $adminRole = Role::where('identifier', 'admin')->first();
@@ -425,15 +376,11 @@ class BoardPermissionServiceTest extends ModuleTestCase
     /**
      * defaultPermissions 폴백: permissionData 없을 때 기본값 사용
      *
-     * @scenario case=assign_roles
-     *
-     * @effects assign_roles_falls_back_to_default_permissions
-     *
-     * @return void 반환값 없음
+     * @return void
      */
     public function test_assign_roles_falls_back_to_default_permissions(): void
     {
-        $board = Board::factory()->create([
+        $board = \Modules\Sirsoft\Board\Models\Board::factory()->create([
             'slug' => 'diff-test4',
             'name' => ['ko' => 'diff 테스트4', 'en' => 'Diff Test4'],
         ]);
@@ -441,7 +388,7 @@ class BoardPermissionServiceTest extends ModuleTestCase
         $permission = Permission::create([
             'identifier' => 'sirsoft-board.diff-test4.posts.list',
             'name' => ['ko' => '목록', 'en' => 'List'],
-            'type' => PermissionType::User,
+            'type' => \App\Enums\PermissionType::User,
         ]);
 
         $adminRole = Role::where('identifier', 'admin')->first();
@@ -459,73 +406,5 @@ class BoardPermissionServiceTest extends ModuleTestCase
         $roleIds = $permission->roles()->pluck('roles.id')->toArray();
         $this->assertContains($adminRole->id, $roleIds, 'default admin role should be assigned');
         $this->assertContains($userRole->id, $roleIds, 'default user role should be assigned');
-    }
-
-    // -------------------------------------------------------------------------
-    // removeBoardPermissions — DB CASCADE 비의존 명시 삭제 (#888)
-    // -------------------------------------------------------------------------
-
-    /**
-     * 게시판 권한 삭제가 하위 권한·역할 부여·훅 매핑을 외래키 연쇄 없이 지우는지 확인합니다.
-     *
-     * 외래키 검사를 끈 상태에서 지워도 카테고리 권한·액션 권한·`role_permissions`·`permission_hooks` 에
-     * 고아 행이 남지 않아야 한다. `parent_id` 사슬에서 떨어진 액션 권한도 함께 지워지고,
-     * 다른 게시판 권한과 모듈 루트 권한은 그대로 남아야 한다.
-     *
-     * @scenario case=remove_permissions
-     *
-     * @effects remove_board_permissions_deletes_subtree_explicitly, remove_board_permissions_keeps_other_boards_and_root
-     *
-     * @return void 반환값 없음
-     */
-    public function test_remove_board_permissions_deletes_subtree_without_fk_cascade(): void
-    {
-        $target = Board::factory()->create([
-            'slug' => 'remove-perm-a',
-            'name' => ['ko' => '권한 삭제 A', 'en' => 'Remove Perm A'],
-        ]);
-        $other = Board::factory()->create([
-            'slug' => 'remove-perm-b',
-            'name' => ['ko' => '권한 삭제 B', 'en' => 'Remove Perm B'],
-        ]);
-
-        $this->service->ensureBoardPermissions($target);
-        $this->service->ensureBoardPermissions($other);
-
-        $category = Permission::where('identifier', 'sirsoft-board.remove-perm-a')->firstOrFail();
-        $children = Permission::where('parent_id', $category->id)->get();
-        $this->assertGreaterThanOrEqual(2, $children->count(), '게시판 액션 권한이 만들어지지 않았습니다');
-
-        // 역할 부여와 훅 매핑을 붙여 둔다 — 둘 다 외래키 연쇄로만 지워지던 행이다
-        $adminRole = Role::where('identifier', 'admin')->first();
-        $children[0]->roles()->syncWithoutDetaching([$adminRole->id => ['granted_at' => now()]]);
-        $category->roles()->syncWithoutDetaching([$adminRole->id => ['granted_at' => now()]]);
-        DB::table('permission_hooks')->insert([
-            'permission_id' => $children[0]->id,
-            'hook_name' => 'sirsoft-board.test.remove_board_permissions',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // parent_id 사슬에서 떨어진 액션 권한 — 카테고리 연쇄로는 지워지지 않던 행
-        $children[1]->update(['parent_id' => null]);
-
-        $targetIds = $children->pluck('id')->push($category->id)->all();
-        $otherCount = Permission::where('identifier', 'like', 'sirsoft-board.remove-perm-b%')->count();
-        $this->assertGreaterThan(0, $otherCount);
-
-        Schema::disableForeignKeyConstraints();
-        try {
-            $this->service->removeBoardPermissions($target);
-        } finally {
-            Schema::enableForeignKeyConstraints();
-        }
-
-        $this->assertSame(0, Permission::whereIn('id', $targetIds)->count(), '삭제한 게시판의 권한이 남았습니다');
-        $this->assertSame(0, DB::table('role_permissions')->whereIn('permission_id', $targetIds)->count(), '역할 부여가 고아로 남았습니다');
-        $this->assertSame(0, DB::table('permission_hooks')->whereIn('permission_id', $targetIds)->count(), '훅 매핑이 고아로 남았습니다');
-
-        $this->assertSame($otherCount, Permission::where('identifier', 'like', 'sirsoft-board.remove-perm-b%')->count(), '다른 게시판 권한이 지워졌습니다');
-        $this->assertNotNull(Permission::where('identifier', 'sirsoft-board')->first(), '모듈 루트 권한이 지워졌습니다');
     }
 }

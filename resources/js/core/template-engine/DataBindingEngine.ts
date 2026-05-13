@@ -11,45 +11,10 @@
 import { createLogger } from '../utils/Logger';
 import { TranslationEngine } from './TranslationEngine';
 import { hasPipes, splitPipes, executePipeChain } from './PipeRegistry';
-import { classifyExpression, extractSingleBinding, isComplexExpression, LITERALS, scanBindings } from './BindingShape';
 import { RAW_PREFIX, wrapRaw, wrapRawDeep } from './rawMarkers';
-import { findTranslationParamZones, isInTranslationParamZone, wrapTranslationParamValue } from './translationParamValues';
-import { evaluateSafeExpression, isUnsafeHostValue, isExpressionSafeFunction } from './SafeExpressionEvaluator';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
-import { getCompiledExpression } from './ExpressionCompileCache';
-import { pickLocalized } from '../support/localeTag';
-import { getEngineFlags } from './EngineFlags';
 
 const logger = createLogger('DataBindingEngine');
-
-/**
- * 변수 추출에서 컨텍스트 변수로 보지 않는 JavaScript 키워드·예약어·허용 내장 이름.
- *
- * 종전에는 호출마다 새로 만들었다(@since engine-v1.74.0 모듈 상수).
- */
-const EXPRESSION_RESERVED_WORDS: ReadonlySet<string> = new Set([
-  'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
-  'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'return',
-  'function', 'class', 'const', 'let', 'var', 'new', 'delete', 'typeof', 'instanceof',
-  'this', 'super', 'import', 'export', 'default', 'try', 'catch', 'finally', 'throw',
-  // 내장 객체
-  'Math', 'Date', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean', 'RegExp',
-  // 컬렉션/표준 내장 객체 (@since engine-v1.50.0)
-  // 이들이 reserved 에 없으면 컨텍스트 변수로 오인되어 undefined 로 가려지고
-  // new Function 본문에서 `new Set(...)` 가 `new undefined()` 가 되어 실패한다.
-  // eval/Function/globalThis/window 등 위험 전역은 의도적으로 제외한다.
-  'Set', 'Map', 'WeakSet', 'WeakMap', 'Symbol', 'Promise', 'BigInt', 'Error',
-  // 전역 함수
-  'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI',
-  'encodeURIComponent', 'decodeURIComponent',
-]);
-
-/**
- * 함수 파라미터 이름으로 쓸 수 있는 식별자 패턴.
- *
- * 표현식 평가는 화이트리스트 AST 평가기(SafeExpressionEvaluator)가 담당한다 —
- * 컨텍스트를 직접 스코프로 삼아 인터프리터로 해석하므로 `new Function` 이 필요 없다.
- */
 
 /**
  * G7Core.devTools 인터페이스 가져오기
@@ -64,60 +29,6 @@ function getDevTools(): G7DevToolsInterface | undefined {
   } catch {
     return undefined;
   }
-}
-
-/**
- * 영구 캐시(키 = 경로 글자, 30초)에 담으면 안 되는 경로인지 판정한다.
- *
- * 상태 루트(`_global`·`_local`·`_isolated`·`$parent`)와 화면 주소 루트(`route`·`query`)는
- * 값이 바뀌어도 같은 경로 글자로 남는다. 종전에는 `route`·`query` 가 영구 캐시를 타서
- * 글 보기(`/board/notice/226`) → SPA 로 다른 게시판 목록 이동 시 `{{route.slug}}` 가
- * 30초 동안 직전 화면 값(notice)으로 그려졌다. 렌더 사이클 캐시만 쓴다.
- * `route`·`query` 는 루트 이름이 정확히 일치할 때만 해당한다(`routes` 같은 데이터소스는 제외).
- *
- * @since engine-v1.82.1
- */
-function isDynamicCachePath(path: string): boolean {
-  return path.startsWith('_global') ||
-    path.startsWith('_local') ||
-    path.startsWith('_isolated') ||
-    path.startsWith('$parent') ||
-    isRootPath(path, 'route') ||
-    isRootPath(path, 'query');
-}
-
-/**
- * 바인딩 캐시 세대 표지 — 화면 전환이 새 화면의 데이터 문맥에 싣는 세대 번호의 키다 (engine-v1.95.0, #869).
- *
- * 영구 캐시와 렌더 사이클 캐시는 컨텍스트와 무관한 키(경로 글자)를 쓴다. 화면 전환은 새 화면을 그리기 직전에 둘을 비우는데
- * (engine-v1.82.1), 응답을 기다리는 동안 전역 상태가 바뀌면 떠나는 화면의 다시 그리기가 startTransition 으로 예약되고, 그 렌더가
- * 비운 뒤에 처리되면 앞 대상 문맥으로 평가한 값을 비운 캐시에 다시 채운다. 새 화면은 그 값을 읽어 30초 동안 앞 대상 값
- * (클레임 B 상세의 「주문 보기」 가 A 주문)을 그렸다. 그래서 전환이 세대를 열고({@link DataBindingEngine.startCacheEpoch}) 새 문맥에
- * 그 번호를 싣는다. 다른 세대 번호를 실은 문맥의 평가는 캐시를 읽지도 쓰지도 않는다. 표지가 없는 문맥(편집기 미리보기·단독 사용)은
- * 종전과 같다. 심볼 키라 객체 펼치기로 자식 문맥에 따라가고 `Object.keys`·식 평가의 변수 목록에는 나타나지 않는다.
- *
- * @since engine-v1.95.0
- */
-export const BINDING_CACHE_EPOCH: unique symbol = Symbol.for('g7.bindingCacheEpoch');
-
-/**
- * 어떤 캐시에도 담으면 안 되는 식인지 판정한다 — 같은 렌더 사이클 안에서도 컴포넌트마다 값이 다른 루트를 읽는다.
- *
- * `_computed`·`$computed` 는 컴포넌트 범위로 다시 계산되고(트러블슈팅 cache 사례 13), `extensionPointProps` 는
- * 확장 지점 인스턴스마다 다르다. 종전에는 단일 바인딩 prop 만 렌더러가 캐시를 건너뛰어, 문자열 보간·배열·중첩 객체
- * props(예: 통계 화면 탭 `href="...?tab=x{{_computed.tabQuery}}"`)는 기간을 바꿔도 30초 동안 옛 값이었고, 형제 확장 지점은
- * 먼저 그린 인스턴스 값을 받았다. 식 안 어디에 있든 해당한다.
- *
- * @since engine-v1.82.1
- */
-function isUncacheablePath(expr: string): boolean {
-  return UNCACHEABLE_ROOT_PATTERN.test(expr);
-}
-
-const UNCACHEABLE_ROOT_PATTERN = /(^|[^\w$.])(_computed|\$computed|extensionPointProps)(?![\w$])/;
-
-function isRootPath(path: string, root: string): boolean {
-  return path === root || path.startsWith(`${root}.`) || path.startsWith(`${root}[`) || path.startsWith(`${root}?`);
 }
 
 /**
@@ -166,50 +77,6 @@ export interface BindingOptions {
    * 반복 렌더링(DataGrid의 cellChildren 등)에서 같은 경로가 다른 값을 가져야 할 때 사용
    */
   skipCache?: boolean;
-
-  /**
-   * `$t:키|이름={{값}}` 의 인자 자리에 넣는 값을 보호 표식으로 감쌀지 여부 (`resolveBindings` 전용)
-   *
-   * 결과를 곧바로 번역 엔진(`TranslationEngine.resolveTranslations`)에 넘기는 렌더·액션 경로만 켠다 —
-   * 번역 엔진이 인자를 나눈 뒤 표식 안 글자를 그대로 치환하고 표식을 걷는다. 값에 든 `&`·`|`·`=`·끝 ` /` 가
-   * 인자 구분자·문장 꼬리로 읽히지 않는다. 번역하지 않는 경로에 켜면 표식이 결과에 남는다.
-   *
-   * @since engine-v1.80.1
-   */
-  protectTranslationParams?: boolean;
-}
-
-/**
- * DevTools 표현식 추적 정보
- *
- * 평가 지점(컴포넌트/prop)을 DevTools 로그에 남기기 위한 부가 정보.
- * 값 해석 결과에는 영향을 주지 않는다.
- */
-export interface ExpressionTrackingInfo {
-  /**
-   * 평가를 요청한 컴포넌트 ID
-   */
-  componentId?: string;
-
-  /**
-   * 평가를 요청한 컴포넌트 이름
-   */
-  componentName?: string;
-
-  /**
-   * 평가 대상 prop 이름
-   */
-  propName?: string;
-
-  /**
-   * DevTools 로그에 기록할 평가 진입점 이름 (기본: 호출된 메서드명)
-   */
-  method?: 'resolve' | 'resolveBindings' | 'evaluateExpression' | 'evaluatePipeExpression';
-
-  /**
-   * DevTools 로그에 표시할 원본 식 (기본: `{{expr}}`)
-   */
-  displayExpression?: string;
 }
 
 /**
@@ -248,6 +115,13 @@ export class DataBindingError extends Error {
  */
 export class DataBindingEngine {
   /**
+   * 바인딩 패턴 정규식
+   *
+   * {{variable}}, {{object.property}}, {{array[0]}} 등을 매칭
+   */
+  private static readonly BINDING_PATTERN = /\{\{([^}]+)\}\}/g;
+
+  /**
    * 경로 파싱 정규식
    *
    * 중첩 객체 접근 (.) 및 배열 인덱스 ([n]) 파싱
@@ -271,14 +145,13 @@ export class DataBindingEngine {
   private cache: Map<string, CacheEntry> = new Map();
 
   /**
-   * 지금 캐시 세대 번호 — 0 이면 세대를 연 적이 없다 (engine-v1.95.0, {@link BINDING_CACHE_EPOCH})
+   * 표현식 함수 캐시
+   *
+   * key: 전처리된 표현식, value: 컴파일된 Function
+   * - Function 생성자 비용이 높으므로 동일 표현식 재사용 시 캐시에서 조회
+   * - 표현식 자체만 캐싱하고, 컨텍스트 값은 실행 시 전달
    */
-  private cacheEpoch = 0;
-
-  /**
-   * 엔진 인스턴스를 넘어 겹치지 않는 세대 번호 발급기 (engine-v1.95.0)
-   */
-  private static epochSequence = 0;
+  private expressionFnCache: Map<string, Function> = new Map();
 
   /**
    * 렌더 사이클 캐시
@@ -403,8 +276,6 @@ export class DataBindingEngine {
     trackingInfo?: { componentId?: string; componentName?: string; propName?: string },
   ): string {
     const opts = { ...this.defaultOptions, ...options };
-    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.95.0, BINDING_CACHE_EPOCH)
-    if (!opts.skipCache && this.isOtherCacheEpochContext(context)) opts.skipCache = true;
     const devTools = getDevTools();
 
     // $computed alias 추가
@@ -414,7 +285,7 @@ export class DataBindingEngine {
       ? { ...context, $computed: context._computed }
       : context;
 
-    const replaceBinding = (_match: string, path: string): string => {
+    return template.replace(DataBindingEngine.BINDING_PATTERN, (_match, path) => {
       // 공백 제거
       const trimmedPath = path.trim();
 
@@ -428,16 +299,82 @@ export class DataBindingEngine {
       }
 
       // 파이프 함수 처리 (예: {{post.created_at | date}})
-      // 평가 자체는 evaluatePipeExpression 이 담당하고, 여기서는 보간의 목적에 맞게
-      // 결과를 문자열로 서식한다. @since engine-v1.54.9
+      // 파이프가 있으면 먼저 분리하여 처리
       if (hasPipes(effectivePath)) {
+        const pipeStartTime = devTools?.isEnabled() ? performance.now() : 0;
         try {
-          const result = this.evaluatePipeExpression(effectivePath, extendedContext, opts, {
-            ...trackingInfo,
-            method: 'resolveBindings',
-            displayExpression: `{{${trimmedPath}}}`,
-          });
-          const formatted = this.formatValue(result as ResolvedValue);
+          const [baseExpr, pipes] = splitPipes(effectivePath);
+
+          // 기본 표현식 평가 (파이프 적용 전)
+          let value: any;
+          let fromCache = false;
+          const isBaseExpression = /[?:|&!+\-*/<>=()]/.test(baseExpr) || /\[['"]/.test(baseExpr);
+          // 동적 경로 여부 판단
+          const isDynamicPipeBase = baseExpr.startsWith('_global') ||
+            baseExpr.startsWith('_local') ||
+            baseExpr.startsWith('_isolated') ||
+            baseExpr.startsWith('$parent');
+
+          if (opts.skipCache) {
+            // skipCache: 모든 캐시 무시
+            if (isBaseExpression) {
+              value = this.evaluateExpression(baseExpr, extendedContext);
+            } else {
+              value = this.resolvePath(baseExpr, extendedContext, opts);
+            }
+          } else if (isBaseExpression) {
+            // 복잡한 표현식: 렌더 사이클 캐시 사용
+            const exprCached = this.getFromRenderCycleCache(`expr:${baseExpr}`);
+            if (exprCached !== undefined) {
+              value = exprCached;
+              fromCache = true;
+            } else {
+              value = this.evaluateExpression(baseExpr, extendedContext);
+              this.saveToRenderCycleCache(`expr:${baseExpr}`, value);
+            }
+          } else if (isDynamicPipeBase) {
+            // 동적 경로: 렌더 사이클 캐시 사용
+            const renderCycleCached = this.getFromRenderCycleCache(baseExpr);
+            if (renderCycleCached !== undefined) {
+              value = renderCycleCached;
+              fromCache = true;
+            } else {
+              value = this.resolvePath(baseExpr, extendedContext, opts);
+              this.saveToRenderCycleCache(baseExpr, value);
+            }
+          } else {
+            // 정적 경로: 영구 캐시 사용
+            const cached = this.getFromCache(baseExpr);
+            if (cached !== undefined) {
+              value = cached;
+              fromCache = true;
+            } else {
+              value = this.resolvePath(baseExpr, extendedContext, opts);
+              this.saveToCache(baseExpr, value);
+            }
+          }
+
+          // 파이프 체인 실행
+          const result = executePipeChain(value, pipes);
+
+          // DevTools: 파이프 표현식 평가 추적
+          if (devTools?.isEnabled()) {
+            const duration = performance.now() - pipeStartTime;
+            devTools.trackExpressionEval({
+              expression: `{{${trimmedPath}}}`,
+              result: this.sanitizeResultForTracking(result),
+              resultType: this.getResultType(result),
+              componentId: trackingInfo?.componentId,
+              componentName: trackingInfo?.componentName,
+              propName: trackingInfo?.propName,
+              fromCache,
+              duration,
+              method: 'resolveBindings',
+              skipCache: opts.skipCache,
+            });
+          }
+
+          const formatted = this.formatValue(result);
           return isRawBinding ? wrapRaw(formatted) : formatted;
         } catch (error) {
           logger.error('Pipe expression evaluation failed:', effectivePath, error);
@@ -449,10 +386,7 @@ export class DataBindingEngine {
       // 대괄호 안에 따옴표가 있는 문자열 키 접근도 표현식으로 처리 (예: query['filters[0][field]'])
       // 함수 호출 패턴도 표현식으로 처리 (예: $localized(...))
       // 주의: 단일 | (파이프)는 위에서 먼저 처리되므로 여기서는 || 만 표현식으로 인식
-      // 판정은 BindingShape 정본을 쓴다 — 종전에는 이 자리의 문자 집합이 다른 렌더
-      // 경로들과 달라, 같은 식이 여기서는 경로 탐색으로 가고 저기서는 표현식으로 가는
-      // 비대칭이 있었다. 파이프는 위에서 이미 갈라졌다. @since engine-v1.55.0
-      const isExpression = isComplexExpression(effectivePath);
+      const isExpression = /[?:&!+\-*/<>=()]/.test(effectivePath) || /\|\|/.test(effectivePath) || /\[['"]/.test(effectivePath);
 
       if (isExpression) {
         // JavaScript 표현식으로 평가
@@ -461,8 +395,8 @@ export class DataBindingEngine {
           let value: any;
           let fromCache = false;
 
-          // skipCache가 아니면 렌더 사이클 캐시 사용 (컴포넌트마다 값이 다른 루트를 읽는 식은 제외 — engine-v1.82.1)
-          if (!opts.skipCache && !isUncacheablePath(effectivePath)) {
+          // skipCache가 아니면 렌더 사이클 캐시 사용
+          if (!opts.skipCache) {
             const exprCacheKey = `expr:${effectivePath}`;
             const exprCached = this.getFromRenderCycleCache(exprCacheKey);
             if (exprCached !== undefined) {
@@ -501,8 +435,8 @@ export class DataBindingEngine {
         }
       }
 
-      // skipCache 옵션이면 모든 캐시 사용 안 함 (컴포넌트마다 값이 다른 루트 포함 — engine-v1.82.1)
-      if (opts.skipCache || isUncacheablePath(effectivePath)) {
+      // skipCache 옵션이면 모든 캐시 사용 안 함
+      if (opts.skipCache) {
         const startTime = devTools?.isEnabled() ? performance.now() : 0;
         const value = this.resolvePath(effectivePath, extendedContext, opts);
 
@@ -528,7 +462,10 @@ export class DataBindingEngine {
       }
 
       // 동적 경로 여부 판단
-      const isDynamicPath = isDynamicCachePath(effectivePath);
+      const isDynamicPath = effectivePath.startsWith('_global') ||
+        effectivePath.startsWith('_local') ||
+        effectivePath.startsWith('_isolated') ||
+        effectivePath.startsWith('$parent');
 
       const startTime = devTools?.isEnabled() ? performance.now() : 0;
       let value: any;
@@ -575,145 +512,7 @@ export class DataBindingEngine {
 
       const formatted = this.formatValue(value);
       return isRawBinding ? wrapRaw(formatted) : formatted;
-    };
-
-    // 바인딩 위치는 수동 스캐너로 찾는다 — 정규식(`\{\{([^}]+)\}\}`)은 식 안에 `}` 가
-    // 들어가면 매칭에 실패하고, `String.replace` 는 그때 입력을 그대로 돌려주어
-    // 원본 `{{...}}` 문자열이 조용히 화면에 노출됐다. @since engine-v1.55.1
-    const bindings = scanBindings(template);
-    if (bindings.length === 0) return template;
-
-    // `$t:키|이름={{값}}` 의 인자 자리 값 보호 — 번역 엔진이 인자를 나눈 뒤 글자 그대로 치환한다(engine-v1.80.1).
-    // 평가에 실패해 원본 `{{…}}` 를 돌려준 자리는 감싸지 않는다(종전처럼 번역 엔진이 다시 평가한다).
-    // 빈 값도 감싸지 않는다 — 종전처럼 그 인자가 빠져 자리표시자가 남는다(빈 인자 진단 단서 유지).
-    const zones = opts.protectTranslationParams && template.includes('$t:')
-      ? findTranslationParamZones(template, bindings)
-      : null;
-
-    let output = '';
-    let cursor = 0;
-    for (const binding of bindings) {
-      output += template.slice(cursor, binding.start);
-      const matchText = template.slice(binding.start, binding.end);
-      const replaced = replaceBinding(matchText, binding.expr);
-      output += zones && replaced !== '' && replaced !== matchText && isInTranslationParamZone(zones, binding.start)
-        ? wrapTranslationParamValue(replaced)
-        : replaced;
-      cursor = binding.end;
-    }
-    return output + template.slice(cursor);
-  }
-
-  /**
-   * 파이프(`|`)가 포함된 단일 바인딩 식을 평가해 **원본 타입 그대로** 반환
-   *
-   * `resolveBindings` 는 보간(문자열 산출)이 목적이라 결과에 `formatValue` 를 적용한다.
-   * 반면 prop 값·`if` 조건·반복 렌더처럼 값 자체가 필요한 자리에서는 배열이
-   * `"[\"a\",\"b\"]"` 로, `false` 가 `"false"`(truthy) 로 바뀌면 안 된다.
-   * 그런 지점은 `resolveBindings(\`{{...}}\`)` 로 우회하지 말고 이 메서드를 직접 호출한다.
-   *
-   * 문자열 조립을 거치지 않으므로 `{{(row.meta ?? {}) | json}}` 처럼 식 안에 중괄호가
-   * 있는 경우에도 정상 평가된다 — `BINDING_PATTERN` 은 `}` 를 포함한 식을 매칭하지 못해
-   * 위임 방식에서는 입력 문자열이 그대로 화면에 노출됐다.
-   *
-   * @param expr `{{ }}` 와 `raw:` 접두사를 제거한 파이프 식 (예: `row.tags | slice(0,3)`)
-   * @param context 데이터 컨텍스트
-   * @param options 바인딩 옵션 (skipCache 등)
-   * @param trackingInfo DevTools 표현식 추적 정보 (선택적)
-   * @returns 파이프 체인 실행 결과 (원본 타입)
-   * @throws 기본 식 평가 또는 파이프 실행 실패 시 그대로 전파 — 호출 지점이 자신의
-   *         실패 정책(경고 후 undefined 등)을 적용한다
-   *
-   * @since engine-v1.54.9
-   */
-  public evaluatePipeExpression(
-    expr: string,
-    context: BindingContext,
-    options?: BindingOptions,
-    trackingInfo?: ExpressionTrackingInfo,
-  ): unknown {
-    const opts = { ...this.defaultOptions, ...options };
-    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.95.0, BINDING_CACHE_EPOCH)
-    if (!opts.skipCache && this.isOtherCacheEpochContext(context)) opts.skipCache = true;
-    const devTools = getDevTools();
-    const pipeStartTime = devTools?.isEnabled() ? performance.now() : 0;
-
-    // $computed alias 추가 (resolveBindings 와 동일 규칙)
-    const extendedContext: BindingContext = context._computed && !context.$computed
-      ? { ...context, $computed: context._computed }
-      : context;
-
-    const [baseExpr, pipes] = splitPipes(expr);
-
-    // 기본 표현식 평가 (파이프 적용 전)
-    let value: any;
-    let fromCache = false;
-    const isBaseExpression = isComplexExpression(baseExpr);
-    // 동적 경로 여부 판단
-    const isDynamicPipeBase = isDynamicCachePath(baseExpr);
-
-    if (opts.skipCache || isUncacheablePath(baseExpr)) {
-      // skipCache: 모든 캐시 무시
-      if (isBaseExpression) {
-        value = this.evaluateExpression(baseExpr, extendedContext);
-      } else {
-        value = this.resolvePath(baseExpr, extendedContext, opts);
-      }
-    } else if (isBaseExpression) {
-      // 복잡한 표현식: 렌더 사이클 캐시 사용
-      const exprCached = this.getFromRenderCycleCache(`expr:${baseExpr}`);
-      if (exprCached !== undefined) {
-        value = exprCached;
-        fromCache = true;
-      } else {
-        value = this.evaluateExpression(baseExpr, extendedContext);
-        this.saveToRenderCycleCache(`expr:${baseExpr}`, value);
-      }
-    } else if (isDynamicPipeBase) {
-      // 동적 경로: 렌더 사이클 캐시 사용
-      const renderCycleCached = this.getFromRenderCycleCache(baseExpr);
-      if (renderCycleCached !== undefined) {
-        value = renderCycleCached;
-        fromCache = true;
-      } else {
-        value = this.resolvePath(baseExpr, extendedContext, opts);
-        this.saveToRenderCycleCache(baseExpr, value);
-      }
-    } else {
-      // 정적 경로: 영구 캐시 사용
-      const cached = this.getFromCache(baseExpr);
-      if (cached !== undefined) {
-        value = cached;
-        fromCache = true;
-      } else {
-        value = this.resolvePath(baseExpr, extendedContext, opts);
-        this.saveToCache(baseExpr, value);
-      }
-    }
-
-    // 파이프 체인 실행
-    const result = executePipeChain(value, pipes, {
-      locale: typeof extendedContext.$locale === 'string' ? extendedContext.$locale : undefined,
     });
-
-    // DevTools: 파이프 표현식 평가 추적
-    if (devTools?.isEnabled()) {
-      const duration = performance.now() - pipeStartTime;
-      devTools.trackExpressionEval({
-        expression: trackingInfo?.displayExpression ?? `{{${expr}}}`,
-        result: this.sanitizeResultForTracking(result),
-        resultType: this.getResultType(result),
-        componentId: trackingInfo?.componentId,
-        componentName: trackingInfo?.componentName,
-        propName: trackingInfo?.propName,
-        fromCache,
-        duration,
-        method: trackingInfo?.method ?? 'evaluatePipeExpression',
-        skipCache: opts.skipCache,
-      });
-    }
-
-    return result;
   }
 
   /**
@@ -737,14 +536,11 @@ export class DataBindingEngine {
     trackingInfo?: { componentId?: string; componentName?: string; propName?: string },
   ): T {
     const opts = { ...this.defaultOptions, ...options };
-    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.95.0, BINDING_CACHE_EPOCH)
-    if (!opts.skipCache && this.isOtherCacheEpochContext(context)) opts.skipCache = true;
     const devTools = getDevTools();
     const startTime = devTools?.isEnabled() ? performance.now() : 0;
 
     // skipCache 옵션이 true면 모든 캐시 사용 안 함 (반복 렌더링에서 같은 경로가 다른 값을 가져야 할 때)
-    // 컴포넌트마다 값이 다른 루트도 같다 (engine-v1.82.1)
-    if (opts.skipCache || isUncacheablePath(path)) {
+    if (opts.skipCache) {
       const value = this.resolvePath(path, context, opts);
 
       // DevTools: 표현식 평가 추적
@@ -767,9 +563,9 @@ export class DataBindingEngine {
     }
 
     // 동적 경로 여부 판단
-    // - _global, _local, _isolated, $parent, route, query: 동적으로 변경되므로 영구 캐시 사용 안 함
+    // - _global, _local, _isolated, $parent: 동적으로 자주 변경되므로 영구 캐시 사용 안 함
     // - 단, 같은 렌더 사이클 내에서는 렌더 사이클 캐시 사용 (성능 최적화)
-    const isDynamicPath = isDynamicCachePath(path);
+    const isDynamicPath = path.startsWith('_global') || path.startsWith('_local') || path.startsWith('_isolated') || path.startsWith('$parent');
     let fromCache = false;
 
     // 1. 렌더 사이클 캐시 확인 (동적 경로용)
@@ -872,14 +668,6 @@ export class DataBindingEngine {
     depth: number = 0,
     visitedObjects: WeakSet<object> = new WeakSet(),
   ): ResolvedValue {
-    // 빈 경로 안전망 — 세그먼트가 하나도 없으면 아래 루프를 돌지 않아
-    // 컨텍스트 객체 **전체**가 값으로 반환된다. 그 값이 문자열로 서식되면
-    // 전역 상태가 통째로 화면·요청에 실릴 수 있다. @since engine-v1.55.0
-    if (typeof path !== 'string' || path.trim() === '') {
-      logger.warn('resolvePath: 빈 경로가 전달되었습니다 — undefined 로 해석합니다.');
-      return undefined;
-    }
-
     // 최대 깊이 체크 (순환 참조 방지)
     if (options.maxDepth && depth > options.maxDepth) {
       if (options.detectCircular) {
@@ -927,18 +715,6 @@ export class DataBindingEngine {
 
       // 다음 값으로 이동
       current = current[segment];
-
-      // 타입 경계 (KVE-2026-2350) — 호출 없는 경로 바인딩도 `….defaultView.localStorage.auth_token`
-      // 처럼 호스트 객체를 거쳐 값을 읽을 수 있다. 평가기(SafeExpressionEvaluator)와 같은 판정으로
-      // 호스트 capability 객체·허용목록 밖 네이티브 함수에 닿으면 기본값으로 끊는다.
-      if (
-        isUnsafeHostValue(current) ||
-        (typeof current === 'function' && !isExpressionSafeFunction(current))
-      ) {
-        logger.warn(`resolvePath: 호스트 객체 경로는 해석하지 않습니다 — ${path}`);
-        return options.defaultValue;
-      }
-
       // 디버깅 로그
       if (path === '_global.toasts') {
         logger.log(`[DataBindingEngine] segment: ${segment}, current:`, current);
@@ -1065,24 +841,17 @@ export class DataBindingEngine {
    * {{}} 표현식이 렌더 시점 JS 객체로 고정되어 stale 값이 전송됩니다.
    * 컴포넌트 레벨 actions 배열은 bindComponentActions에서 별도 처리되므로 비해당.
    *
-   * 분기·참조 모양(`{handler:'conditions', conditions}`·`{handler:'switch', cases}`·`{actionRef}`·
-   * `{handler, if}`)도 액션이다 — 종전에는 일반 객체로 보아 `if` 가 렌더 순간 값으로 굳었다(engine-v1.80.0).
-   *
    * @param obj 검사할 객체
    * @returns 액션 정의이면 true
    */
-  public isActionDefinition(obj: Record<string, any>): boolean {
-    if (typeof obj.actionRef === 'string') return true;
+  private isActionDefinition(obj: Record<string, any>): boolean {
     if (typeof obj.handler !== 'string') return false;
     return (
       obj.params !== undefined ||
       Array.isArray(obj.actions) ||
       typeof obj.target === 'string' ||
       obj.onSuccess !== undefined ||
-      obj.onError !== undefined ||
-      Array.isArray(obj.conditions) ||
-      (obj.cases !== null && typeof obj.cases === 'object') ||
-      obj.if !== undefined
+      obj.onError !== undefined
     );
   }
 
@@ -1151,50 +920,11 @@ export class DataBindingEngine {
         continue;
       }
 
-      // 해석 실패는 key 단위로 격리한다 — 이 메서드에는 상위 catch 가 없어서
-      // 예외가 밖으로 나가면 그 컴포넌트의 props 해석 **전체**가 중단되고,
-      // 표현식 하나의 실수가 화면 전체를 날린다. @since engine-v1.55.1
-      try {
-        this.resolveObjectEntry(result, key, value, context, options);
-      } catch (error) {
-        logger.warn(`resolveObject: 값 해석 실패 (key: ${key}):`, error);
-        result[key] = undefined;
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * `resolveObject` 의 key 하나를 해석해 결과 객체에 기록
-   *
-   * 실패 격리 단위를 key 로 두기 위해 분리했다. 이 메서드는 예외를 잡지 않는다 —
-   * 호출자(`resolveObject`)가 key 단위로 격리한다.
-   *
-   * @param result 결과 객체 (직접 기록)
-   * @param key 대상 key
-   * @param value 원본 값
-   * @param context 데이터 컨텍스트
-   * @param options 바인딩 옵션
-   *
-   * @since engine-v1.55.1
-   */
-  private resolveObjectEntry(
-    result: Record<string, any>,
-    key: string,
-    value: any,
-    context: BindingContext,
-    options?: BindingOptions & { skipBindingKeys?: string[] },
-  ): void {
-    {
       if (typeof value === 'string') {
-        // 전체가 {{variable}} 패턴인 경우 원본 값(배열/객체) 반환.
-        // `[^}]+` 는 `{{error.errors ?? {}}}` 처럼 식 안에 `}` 가 든 경우(빈 객체 fallback 등)
-        // 첫 `}` 에서 끊겨 매칭에 실패 → 원본 문자열이 그대로 새어 나오던 결함이 있었다.
-        // extractSingleBinding 은 외곽 `{{ }}` 안의 중괄호 균형을 추적해 단일 바인딩 식을 정확히 추출한다.
-        const singleBindingPath = extractSingleBinding(value);
-        if (singleBindingPath !== null) {
-          const path = singleBindingPath.trim();
+        // 전체가 {{variable}} 패턴인 경우 원본 값(배열/객체) 반환
+        const singleBindingMatch = value.match(/^\{\{([^}]+)\}\}$/);
+        if (singleBindingMatch) {
+          const path = singleBindingMatch[1].trim();
 
           // raw: 접두사 감지 @since engine-v1.27.0
           let isRawBinding = false;
@@ -1204,30 +934,12 @@ export class DataBindingEngine {
             effectivePath = path.slice(RAW_PREFIX.length);
           }
 
-          // 라우팅 판정은 BindingShape 정본을 쓴다 (파이프 → 표현식 → 경로).
-          // 파이프를 evaluateExpression 으로 보내면 `value | pipe` 가 JS 비트 OR 로 평가되어
-          // 인자 있는 파이프는 예외를 던지고(props 해석 전체가 중단), 인자 없는
-          // 파이프는 포맷이 적용되지 않은 오답이 된다. @since engine-v1.54.3
-          // 값이 필요한 자리이므로 서식(formatValue)을 적용하지 않는다. @since engine-v1.54.9
-          // 실행(캐시·예외 격리)은 이 지점의 정책을 유지한다. @since engine-v1.55.0
-          let resolved: any;
-          switch (classifyExpression(effectivePath)) {
-            case 'empty':
-              logger.warn(`resolveObject: 빈 바인딩 \`{{}}\` (key: ${key}) — undefined 로 해석합니다.`);
-              resolved = undefined;
-              break;
-            case 'literal':
-              resolved = LITERALS.get(effectivePath);
-              break;
-            case 'pipe':
-              resolved = this.evaluatePipeExpression(effectivePath, context, options);
-              break;
-            case 'expression':
-              resolved = this.evaluateExpression(effectivePath, context, options);
-              break;
-            default:
-              resolved = this.resolve(effectivePath, context, options);
-          }
+          // 복잡 표현식(연산자 포함)은 evaluateExpression으로 라우팅
+          // resolveBindings()와 동일한 isBaseExpression 판별 기준 사용
+          const isBaseExpression = /[?:|&!+\-*/<>=()]/.test(effectivePath) || /\[['"]/.test(effectivePath);
+          const resolved = isBaseExpression
+            ? this.evaluateExpression(effectivePath, context, options)
+            : this.resolve(effectivePath, context, options);
           result[key] = isRawBinding && resolved != null ? wrapRawDeep(resolved) : resolved;
         } else {
           // 문자열 보간
@@ -1247,49 +959,18 @@ export class DataBindingEngine {
         result[key] = value;
       }
     }
+
+    return result;
   }
 
   /**
    * 캐시 초기화
    *
-   * 바인딩 값 캐시를 초기화합니다.
+   * 바인딩 값 캐시와 표현식 함수 캐시를 모두 초기화합니다.
    */
   public clearCache(): void {
     this.cache.clear();
-  }
-
-  /**
-   * 바인딩 캐시의 새 세대를 엽니다 — 캐시를 비우고 새 세대 번호를 돌려줍니다 (engine-v1.95.0, #869).
-   *
-   * 화면 전환이 새 화면을 그리기 직전에 부르고, 돌려받은 번호를 새 화면 데이터 문맥의 {@link BINDING_CACHE_EPOCH} 에 싣는다. 그 뒤
-   * 늦게 처리된 떠나는 화면의 렌더(앞 세대 번호를 실은 문맥)는 캐시를 읽지도 쓰지도 않는다. 번호는 엔진 인스턴스를 넘어 겹치지 않는다
-   * (언어 전환으로 엔진을 새로 띄워도 앞 엔진의 문맥 번호와 같아지지 않게).
-   *
-   * @returns 새 세대 번호
-   * @since engine-v1.95.0
-   */
-  public startCacheEpoch(): number {
-    this.clearCache();
-    DataBindingEngine.epochSequence += 1;
-    this.cacheEpoch = DataBindingEngine.epochSequence;
-
-    return this.cacheEpoch;
-  }
-
-  /**
-   * 문맥이 지금과 다른 캐시 세대의 것인지 (engine-v1.95.0) — 표지가 없으면 false(종전처럼 캐시를 쓴다).
-   *
-   * 세대를 연 적이 없는 엔진(번역 매개변수 파이프를 평가하는 전역 싱글턴, 편집기 미리보기 등 화면 전환에 참여하지 않는 인스턴스)은
-   * 판정하지 않는다 — 렌더 문맥은 늘 세대 번호를 실으므로, 판정하면 그런 엔진의 평가가 화면 안에서도 늘 캐시를 건너뛴다.
-   *
-   * @param context 평가 문맥
-   * @returns 다른 세대 번호를 실었으면 true
-   */
-  private isOtherCacheEpochContext(context: unknown): boolean {
-    if (this.cacheEpoch === 0 || !context || typeof context !== 'object') return false;
-    const epoch = (context as Record<symbol, unknown>)[BINDING_CACHE_EPOCH];
-
-    return typeof epoch === 'number' && epoch !== this.cacheEpoch;
+    this.expressionFnCache.clear();
   }
 
   /**
@@ -1362,24 +1043,26 @@ export class DataBindingEngine {
     context: BindingContext,
     trackingInfo?: { componentId?: string; componentName?: string; propName?: string; skipCache?: boolean },
   ): any {
-    // DevTools: 바인딩 평가 추적 — 활성 여부는 호출당 1회만 확인한다(@since engine-v1.74.0)
+    // DevTools: 바인딩 평가 추적
     const devTools = getDevTools();
-    const devToolsEnabled = !!devTools?.isEnabled();
-    const startTime = devToolsEnabled ? performance.now() : 0;
+    const startTime = devTools?.isEnabled() ? performance.now() : 0;
 
-    if (devToolsEnabled) {
-      devTools!.trackBindingEval();
+    if (devTools?.isEnabled()) {
+      devTools.trackBindingEval();
     }
 
     try {
-      // 전처리(optional chaining·$t: 토큰)와 최상위 변수 추출은 식 문자열만의 순수 함수라
-      // 식 문자열 키로 기억한다(값은 담지 않는다 — 아래 컨텍스트 조립은 매번 수행).
-      // @since engine-v1.74.0
-      const compiled = getEngineFlags().expressionCompileCache
-        ? getCompiledExpression(expr, (source) => this.compileExpression(source))
-        : this.compileExpression(expr);
-      const processedExpr = compiled.processed;
-      const usedVariables = compiled.variables;
+      // 1. 표현식 전체에서 변수 접근을 optional chaining으로 변환
+      // 예: perm.identifier -> perm?.identifier
+      // 이를 통해 iteration 변수가 undefined일 때 에러 방지
+      let processedExpr = this.preprocessOptionalChaining(expr);
+
+      // 2. $t: 패턴을 문자열로 자동 변환 (예: $t:common.error -> "$t:common.error")
+      // 이를 통해 사용자가 따옴표 없이 $t: 문법을 사용할 수 있음
+      processedExpr = this.preprocessTranslationTokens(processedExpr);
+
+      // 표현식에서 사용되는 최상위 변수 추출
+      const usedVariables = this.extractVariablesFromExpression(processedExpr);
 
       // 컨텍스트에 없는 변수를 undefined로 추가
       const extendedContext = { ...context };
@@ -1396,33 +1079,13 @@ export class DataBindingEngine {
         extendedContext.$computed = context._computed;
       }
 
-      // 활성 로케일 / 템플릿 ID 해석 — $localized 와 $t 가 공유한다.
-      //
-      // @since engine-v1.38.2 ActionDispatcher 경로 fallback — bindActionsToProps
-      //   이후 createHandler 에서 빌드된 action data context 는 `$templateId`/`$locale`
-      //   을 명시적으로 포함하지 않을 수 있다. 이 경우 `window.__templateApp.getConfig()`
-      //   로부터 회수하여 `{{$event.target.checked ? '$t:A' : '$t:B'}}` 같은 조건부
-      //   $t: 평가가 raw key 를 반환하던 버그를 해결한다.
-      //
-      // @since engine-v1.52.1 회수 결과를 `$localized` 도 공유한다. 이전에는 `$localized`
-      //   가 `$t` 보다 먼저 `context.$locale || 'ko'` 로 로케일을 확정해, ActionDispatcher
-      //   경로(init_actions 파생 등)에서 항상 ko 값을 반환했다. `$locale` 이 컨텍스트에
-      //   없는 것은 로케일이 ko 라는 뜻이 아니라 "이 경로가 로케일을 안 넘긴다"는 뜻이다.
-      let templateId = context.$templateId;
-      let resolvedLocale = context.$locale;
-      if (typeof window !== 'undefined' && (!templateId || !resolvedLocale)) {
-        const appConfig = (window as any).__templateApp?.getConfig?.();
-        templateId ??= appConfig?.templateId;
-        resolvedLocale ??= appConfig?.locale;
-      }
-      const locale = resolvedLocale || 'ko';
-
       // $localized 헬퍼 함수 추가
       // 다국어 객체에서 현재 로케일에 해당하는 값을 반환
       // 사용법:
       //   $localized(value)            - 객체면 로케일 우선순위로 반환, 문자열이면 그대로
       //   $localized(value, fallbackKey) - 활성 로케일 키 부재 시 $t(fallbackKey) 호출
       //                                   (settings JSON 등 시스템 카탈로그의 lang pack 보강용)
+      const locale = context.$locale || 'ko';
       extendedContext.$localized = (value: any, fallbackKey?: string): string => {
         if (value == null && !fallbackKey) {
           return '';
@@ -1430,9 +1093,9 @@ export class DataBindingEngine {
         if (typeof value === 'string') {
           return value;
         }
-        // 1. 객체의 활성 로케일 키 (빈 칸·공백만 있는 값은 건너뜀 — 백엔드 LocalizedValue 와 같다)
-        if (value && typeof value === 'object' && pickLocalized({ [locale]: value[locale] }, locale, false) !== null) {
-          return String(value[locale]);
+        // 1. 객체의 활성 로케일 키
+        if (value && typeof value === 'object' && value[locale]) {
+          return value[locale];
         }
         // 2. fallbackKey 가 있으면 $t() 로 lang pack 보강 시도
         if (fallbackKey && typeof fallbackKey === 'string') {
@@ -1441,9 +1104,9 @@ export class DataBindingEngine {
             return translated;
           }
         }
-        // 3. 사이트 기본 언어 → en → 첫 번째 값 (engine-v1.81.0 — 종전 ko 고정)
+        // 3. 객체의 ko / en / 첫 번째 값
         if (value && typeof value === 'object') {
-          return pickLocalized(value, locale) ?? '';
+          return value.ko || value.en || Object.values(value)[0] || '';
         }
         if (value == null) {
           return '';
@@ -1472,25 +1135,35 @@ export class DataBindingEngine {
       // $t 헬퍼 함수 추가
       // 번역 키를 사용하여 다국어 텍스트를 반환
       // 사용법: $t('admin.settings.info.write_only') - 번역된 텍스트 반환
-      //         $t('common.row_n', {n: index + 1}) - 인자 치환(값은 글자 그대로)
+      // 컨텍스트에서 번역 관련 정보 추출
       //
-      // templateId / locale 은 위에서 해석된 값을 그대로 사용한다($localized 와 공유).
-      //
-      // @since engine-v1.80.1 두 번째 인자(객체) — 종전에는 인자를 버렸다. 객체가 아닌 값(배열 포함)은
-      //   인자 없는 호출과 같다.
+      // @since engine-v1.38.2 ActionDispatcher 경로 fallback — bindActionsToProps
+      //   이후 createHandler 에서 빌드된 action data context 는 `$templateId`/`$locale`
+      //   을 명시적으로 포함하지 않을 수 있다. 이 경우 `window.__templateApp.getConfig()`
+      //   로부터 회수하여 `{{$event.target.checked ? '$t:A' : '$t:B'}}` 같은 조건부
+      //   $t: 평가가 raw key 를 반환하던 버그를 해결한다.
+      let templateId = context.$templateId;
+      let resolvedLocale = locale;
+      if (!templateId && typeof window !== 'undefined') {
+        const templateApp = (window as any).__templateApp;
+        const appConfig = templateApp?.getConfig?.();
+        if (appConfig?.templateId) {
+          templateId = appConfig.templateId;
+          if (!context.$locale && appConfig.locale) {
+            resolvedLocale = appConfig.locale;
+          }
+        }
+      }
       const translationContext = {
         templateId: templateId || '',
-        locale,
+        locale: resolvedLocale,
       };
-      extendedContext.$t = (key: string, params?: unknown): string => {
+      extendedContext.$t = (key: string): string => {
         if (!key || typeof key !== 'string') {
           return '';
         }
         try {
           const translationEngine = TranslationEngine.getInstance();
-          if (params !== null && typeof params === 'object' && !Array.isArray(params)) {
-            return translationEngine.translate(key, translationContext, params as Record<string, unknown>);
-          }
           return translationEngine.translate(key, translationContext);
         } catch (error) {
           logger.warn('$t() translation failed for key:', key, error);
@@ -1530,33 +1203,39 @@ export class DataBindingEngine {
 
           // 다음 레벨로 이동
           current = current[key];
-
-          // 타입 경계 (KVE-2026-2350) — 평가기는 $get 의 최종 반환값만 검사하므로, 경로 도중의 호스트
-          // 객체(`…ownerDocument.defaultView.localStorage`)를 건너 문자열(토큰)을 꺼내지 못하게 여기서 끊는다.
-          // resolvePath 와 같은 판정이다.
-          if (isUnsafeHostValue(current) || (typeof current === 'function' && !isExpressionSafeFunction(current))) {
-            return fallback;
-          }
         }
 
         // 최종 값이 null/undefined이면 폴백 반환
         return current ?? fallback;
       };
 
-      // 표현식은 화이트리스트 AST 평가기로 안전하게 실행한다(KVE-2026-1915).
-      // `new Function(...)` / `with(ctx)` 기반 평가는 `''.constructor.constructor(...)`
-      // 형태의 샌드박스 탈출을 허용했으므로 폐기하고, evaluateSafeExpression 이 컨텍스트를
-      // 직접 스코프로 삼아 식을 인터프리터로 해석한다. 컨텍스트 키를 함수 파라미터로
-      // 만들지 않으므로 `sales_status[]` 같은 비-식별자 키가 섞여도 평가가 죽지 않는다
-      // (그런 키는 `query['sales_status[]']` 로 상위 객체를 거쳐 그대로 접근된다).
-      // @since engine-v1.59.0
-      const fromCache = false;
-      const result = evaluateSafeExpression(processedExpr, extendedContext);
+      // 확장된 컨텍스트의 모든 키를 변수로 사용할 수 있도록 준비
+      const contextKeys = Object.keys(extendedContext);
+      const contextValues = Object.values(extendedContext);
+
+      // 캐시 키 생성: 전처리된 표현식 + 컨텍스트 키 조합
+      // 같은 표현식이라도 컨텍스트 키가 다르면 다른 함수가 필요
+      const cacheKey = `${processedExpr}|${contextKeys.join(',')}`;
+
+      // 캐시된 함수 조회 또는 새로 생성
+      let evaluator = this.expressionFnCache.get(cacheKey);
+      const fromCache = !!evaluator;
+      if (!evaluator) {
+        // Function 생성자를 사용하여 표현식 평가
+        // 예: expr = "!_global.sidebarOpen"
+        //     contextKeys = ["_global", "user", ...]
+        //     contextValues = [{sidebarOpen: false}, {...}, ...]
+        // eslint-disable-next-line no-new-func
+        evaluator = new Function(...contextKeys, `return (${processedExpr});`);
+        this.expressionFnCache.set(cacheKey, evaluator);
+      }
+
+      const result = evaluator(...contextValues);
 
       // DevTools: 표현식 평가 추적
-      if (devToolsEnabled) {
+      if (devTools?.isEnabled()) {
         const duration = performance.now() - startTime;
-        devTools!.trackExpressionEval({
+        devTools.trackExpressionEval({
           expression: expr,
           result: this.sanitizeResultForTracking(result),
           resultType: this.getResultType(result),
@@ -1576,26 +1255,6 @@ export class DataBindingEngine {
         `Failed to evaluate expression "${expr}": ${error instanceof Error ? error.message : String(error)}`,
       );
     }
-  }
-
-  /**
-   * 식을 평가 가능한 형태로 전처리하고 최상위 변수를 추출한다.
-   *
-   * 1. 변수 접근을 optional chaining 으로 변환(`perm.identifier` → `perm?.identifier`) —
-   *    iteration 변수가 undefined 일 때 에러 방지
-   * 2. `$t:` 패턴을 문자열/`$t()` 호출로 변환 — 따옴표 없는 `$t:` 문법 지원
-   * 3. 전처리된 식의 최상위 변수 추출
-   *
-   * 입력 문자열만으로 결과가 정해지므로 ExpressionCompileCache 에 보관된다.
-   *
-   * @param expr 원본 식
-   * @returns 전처리된 식과 변수 목록
-   * @since engine-v1.74.0
-   */
-  private compileExpression(expr: string): { processed: string; variables: string[] } {
-    let processed = this.preprocessOptionalChaining(expr);
-    processed = this.preprocessTranslationTokens(processed);
-    return { processed, variables: this.extractVariablesFromExpression(processed) };
   }
 
   /**
@@ -1669,12 +1328,7 @@ export class DataBindingEngine {
     // 2. 기존 로직: 따옴표 없는 $t: 패턴을 문자열로 변환
     // $t:key.path → "$t:key.path"
     // @since engine-v1.28.1 하이픈(-) 지원 추가
-    // @since engine-v1.60.6 lookbehind 제거 — 선행 따옴표를 소비해 명시 분기한다.
-    //   정규식 lookbehind 는 Safari 16.4 미만이 파싱 자체를 거부해 번들 전체가 실행되지 않는다.
-    return expr.replace(
-      /(['"]\s*)?(\$t:[a-zA-Z_][a-zA-Z0-9_.\-]*)(?!\s*['"])/g,
-      (match, quoted, token) => (quoted ? match : `"${token}"`)
-    );
+    return expr.replace(/(?<!['"]\s*)(\$t:[a-zA-Z_][a-zA-Z0-9_.\-]*)(?!\s*['"])/g, '"$1"');
   }
 
   /**
@@ -1736,22 +1390,28 @@ export class DataBindingEngine {
    * @returns 변수명 배열
    */
   private extractVariablesFromExpression(expr: string): string[] {
-    const reserved = EXPRESSION_RESERVED_WORDS;
+    // JavaScript 키워드 및 예약어
+    const reserved = new Set([
+      'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
+      'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'return',
+      'function', 'class', 'const', 'let', 'var', 'new', 'delete', 'typeof', 'instanceof',
+      'this', 'super', 'import', 'export', 'default', 'try', 'catch', 'finally', 'throw',
+      // 내장 객체
+      'Math', 'Date', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean', 'RegExp',
+      // 전역 함수
+      'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI',
+      'encodeURIComponent', 'decodeURIComponent',
+    ]);
 
     // 식별자 패턴 (변수명 시작 위치)
-    // 지역 변수로 둔다 — /g + exec 루프라 모듈 상수로 올리면 루프 도중 예외 한 번에 lastIndex 가
-    // 남아 다음 호출이 오염된다. 결과가 ExpressionCompileCache 에 보관되므로 생성은 미스 때만 일어난다.
     // 식별자는 문자, $, _로 시작하고 문자, 숫자, $, _로 계속됨
-    // @since engine-v1.60.6 lookbehind 제거 — 문두(^) 또는 선행 구분자 1글자를 소비한다.
-    //   식별자 사이에는 항상 구분자가 1개 이상 있고 각 매치는 정확히 1개만 소비하므로
-    //   인접 매치가 손실되지 않는다. 식별자명은 match[2] 에 있다(구분자가 match[1]).
-    const identifierPattern = /(^|[^.\w$])([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+    const identifierPattern = /(?<![.\w$])([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
 
     const variables = new Set<string>();
     let match;
 
     while ((match = identifierPattern.exec(expr)) !== null) {
-      const varName = match[2];
+      const varName = match[1];
       // 예약어가 아니고, 이미 추출되지 않았다면 추가
       if (!reserved.has(varName)) {
         variables.add(varName);

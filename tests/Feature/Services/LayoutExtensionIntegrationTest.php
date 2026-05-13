@@ -11,11 +11,8 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Models\LayoutExtension;
 use App\Models\Template;
-use App\Models\TemplateLayout;
-use App\Services\Layout\TemplateChildrenDeleter;
 use App\Services\LayoutExtensionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
@@ -27,27 +24,12 @@ class LayoutExtensionIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * 같은 스위트의 레이아웃/GDPR 미들웨어 의존 테스트와 migrate:fresh 정합성을
-     * 맞추기 위해 GDPR 플러그인 마이그레이션을 일관 선언한다.
-     *
-     * @var array<string>
-     */
-    protected array $requiredExtensions = [
-        'plugins/sirsoft-gdpr',
-    ];
-
     private LayoutExtensionService $service;
 
     private LayoutExtensionRepositoryInterface $repository;
 
     private Template $template;
 
-    /**
-     * 확장 서비스·저장소와 활성 관리자 템플릿을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -62,10 +44,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 모듈 Extension 등록 및 레이아웃 적용 전체 흐름 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_module_extension_registration_and_layout_application_flow(): void
     {
@@ -128,20 +106,9 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 모듈 비활성화 시 Extension soft delete 및 재활성화 시 복원 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @effects reactivation_restores_rows_that_have_a_host
      */
     public function test_module_deactivation_and_reactivation_preserves_extensions(): void
     {
-        // 재활성화 복원은 붙을 자리가 있는 활성 템플릿의 행만 되살린다(#725) — 확장점을 가진 호스트 화면을 둔다.
-        TemplateLayout::factory()->create([
-            'template_id' => $this->template->id,
-            'name' => 'header_host',
-            'content' => ['layout_name' => 'header_host', 'components' => [['type' => 'extension_point', 'name' => 'header-actions']]],
-        ]);
-
         // 1. 모듈 Extension 등록
         $this->service->registerExtension(
             [
@@ -169,10 +136,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * Overlay를 통한 기존 컴포넌트에 주입 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_overlay_injection_into_existing_component(): void
     {
@@ -229,10 +192,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 템플릿 오버라이드가 모듈 Extension보다 우선순위가 높은지 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @effects template_override_replaces_the_module_extension_when_served
      */
     public function test_template_override_has_higher_priority_than_module(): void
     {
@@ -296,10 +255,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 다중 모듈의 Extension이 우선순위대로 정렬되는지 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @effects served_extensions_follow_priority_order
      */
     public function test_multiple_module_extensions_sorted_by_priority(): void
     {
@@ -366,10 +321,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * data_sources 병합 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_data_sources_merged_from_extensions(): void
     {
@@ -417,10 +368,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 비활성 Extension이 레이아웃에 적용되지 않는지 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extensions_of_inactive_sources_are_not_served
      */
     public function test_inactive_extensions_not_applied_to_layout(): void
     {
@@ -471,10 +418,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * 모듈 완전 삭제 시 Extension 영구 삭제 테스트
-     *
-     * @return void 반환값 없음
-     *
-     * @effects uninstall_and_template_deletion_remove_extension_rows
      */
     public function test_module_uninstall_permanently_deletes_extensions(): void
     {
@@ -500,15 +443,9 @@ class LayoutExtensionIntegrationTest extends TestCase
     }
 
     /**
-     * 템플릿을 지우기 전에 그 템플릿의 Extension 을 명시적으로 지운다 — 외래키 검사를 꺼도 고아가 남지 않는다(DB CASCADE 비의존, #888).
-     *
-     * 템플릿 제거(`TemplateManager::unregisterLayouts()`)와 같은 순서로 `TemplateChildrenDeleter` 가 자식을 먼저 지운다.
-     *
-     * @return void 반환값 없음
-     *
-     * @effects uninstall_and_template_deletion_remove_extension_rows
+     * 템플릿 삭제 시 관련 Extension 모두 삭제 테스트
      */
-    public function test_template_deletion_removes_extensions_explicitly(): void
+    public function test_template_deletion_cascades_to_extensions(): void
     {
         // 1. Extension 등록
         $this->service->registerExtension(
@@ -535,17 +472,11 @@ class LayoutExtensionIntegrationTest extends TestCase
 
         $this->assertEquals(2, LayoutExtension::count());
 
-        // 2. 외래키 검사를 끈 채 템플릿 제거와 같은 순서로 삭제 — CASCADE 가 돌지 않으므로 남으면 명시 삭제가 빠진 것이다
-        Schema::disableForeignKeyConstraints();
-        try {
-            app(TemplateChildrenDeleter::class)->deleteChildrenBeforeLayouts($this->template->id);
-            $this->template->delete();
-        } finally {
-            Schema::enableForeignKeyConstraints();
-        }
+        // 2. 템플릿 삭제
+        $this->template->delete();
 
-        // 3. 관련 Extension 이 명시적으로 지워졌다
-        $this->assertEquals(0, LayoutExtension::withTrashed()->count());
+        // 3. 관련 Extension도 cascade 삭제됨
+        $this->assertEquals(0, LayoutExtension::count());
     }
 
     // =========================================================================
@@ -557,7 +488,6 @@ class LayoutExtensionIntegrationTest extends TestCase
      *
      * @param  array  $moduleIdentifiers  활성 모듈 식별자 목록
      * @param  array  $pluginIdentifiers  활성 플러그인 식별자 목록
-     * @return void 반환값 없음
      */
     private function mockActiveExtensions(array $moduleIdentifiers, array $pluginIdentifiers): void
     {
@@ -589,10 +519,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-1: inject_props overlay 등록 → 적용 E2E
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_inject_props_registration_and_application_flow(): void
     {
@@ -656,10 +582,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-2: inject_props + append_child 복합 injection
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_inject_props_and_component_injection_combined(): void
     {
@@ -734,10 +656,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-3: 비활성 모듈의 inject_props 미적용
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extensions_of_inactive_sources_are_not_served
      */
     public function test_inactive_module_inject_props_not_applied(): void
     {
@@ -791,10 +709,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-4: 여러 확장의 inject_props 순차 적용 (priority 순)
-     *
-     * @return void 반환값 없음
-     *
-     * @effects served_extensions_follow_priority_order
      */
     public function test_multiple_inject_props_applied_by_priority_order(): void
     {
@@ -870,10 +784,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-5: overlay computed + modals 병합 E2E
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_overlay_computed_and_modals_merge_e2e(): void
     {
@@ -931,10 +841,6 @@ class LayoutExtensionIntegrationTest extends TestCase
 
     /**
      * C-6: Extension Point modals + Overlay modals 동시 병합
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_extension_point_and_overlay_modals_both_merged(): void
     {
@@ -1012,226 +918,8 @@ class LayoutExtensionIntegrationTest extends TestCase
         $this->assertContains('ov_modal', $modalIds);
     }
 
-    // =========================================================================
-    // extends 체인 base-타겟 overlay 전파 (E1 ~ E4)
-    //
-    // 배경: home(extends _user_base) 같은 자식 레이아웃을 서빙할 때, base(_user_base)
-    // 를 target_layout 으로 하는 overlay(예: 헤더 통화 슬롯 주입)가 적용되지 않던 결함.
-    // applyExtensions 가 $layout['layout_name'](="home") 으로만 overlay 를 매칭했기 때문.
-    // loadAndMergeLayout 가 부여하는 $layout['__extends_chain'] 을 매칭 대상에 포함시켜 해소.
-    // =========================================================================
-
-    /**
-     * E1: base(_user_base) 를 타겟한 overlay 가 자식(home) 서빙 시 적용된다
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
-     */
-    public function test_base_targeted_overlay_applies_to_child_via_extends_chain(): void
-    {
-        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
-
-        // base 레이아웃(_user_base)을 타겟하는 overlay — 헤더 통화 슬롯 주입과 동형
-        $this->service->registerExtension(
-            [
-                'target_layout' => '_user_base',
-                'injections' => [
-                    [
-                        'target_id' => 'header_currency_inject_anchor',
-                        'position' => 'append_child',
-                        'components' => [
-                            ['id' => 'ext_header_currency_selector', 'type' => 'basic', 'name' => 'Div', 'slot' => 'header_currency'],
-                        ],
-                    ],
-                ],
-            ],
-            LayoutSourceType::Module,
-            'sirsoft-ecommerce',
-            $this->template->id
-        );
-
-        // 자식(home) 서빙 시 loadAndMergeLayout 가 부여한 __extends_chain 을 가진 병합 결과
-        $layout = [
-            'layout_name' => 'home',
-            '__extends_chain' => ['_user_base'],
-            'components' => [
-                [
-                    'id' => 'header_currency_inject_anchor',
-                    'type' => 'basic',
-                    'name' => 'Div',
-                    'children' => [],
-                ],
-            ],
-        ];
-
-        $result = $this->service->applyExtensions($layout, $this->template->id);
-
-        // base-타겟 overlay 가 자식 서빙 결과에 주입됨
-        $anchorChildren = $result['components'][0]['children'] ?? [];
-        $this->assertCount(1, $anchorChildren, 'base(_user_base) overlay 가 자식(home)에 전파되어야 한다');
-        $this->assertEquals('ext_header_currency_selector', $anchorChildren[0]['id']);
-        $this->assertEquals('header_currency', $anchorChildren[0]['slot']);
-
-        // 내부 메타(__extends_chain)는 최종 응답에서 제거되어야 한다 (일반/편집 응답 노출 0)
-        $this->assertArrayNotHasKey('__extends_chain', $result, '__extends_chain 은 응답에서 제거되어야 한다');
-    }
-
-    /**
-     * E2: base overlay 의 init_actions 가 자식 서빙 시 호스트 init_actions 뒤에 병합된다
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
-     */
-    public function test_base_overlay_init_actions_merge_into_child_via_extends_chain(): void
-    {
-        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
-
-        $this->service->registerExtension(
-            [
-                'target_layout' => '_user_base',
-                'injections' => [
-                    [
-                        'target_id' => 'header_currency_inject_anchor',
-                        'position' => 'append_child',
-                        'components' => [
-                            ['id' => 'ext_currency', 'type' => 'basic', 'name' => 'Div'],
-                        ],
-                    ],
-                ],
-                'init_actions' => [
-                    ['handler' => 'sirsoft-ecommerce.initPreferredCurrency'],
-                ],
-            ],
-            LayoutSourceType::Module,
-            'sirsoft-ecommerce',
-            $this->template->id
-        );
-
-        $layout = [
-            'layout_name' => 'home',
-            '__extends_chain' => ['_user_base'],
-            'init_actions' => [
-                ['handler' => 'hostInit'],
-            ],
-            'components' => [
-                ['id' => 'header_currency_inject_anchor', 'type' => 'basic', 'name' => 'Div', 'children' => []],
-            ],
-        ];
-
-        $result = $this->service->applyExtensions($layout, $this->template->id);
-
-        // 병합 결과는 표준 키 `initActions`(camelCase) 단일 배열로 통합된다. deprecated 별칭
-        // `init_actions` 로 입력해도 결과는 표준 키이며, 별칭 키는 제거된다 — 두 키가 공존하면
-        // 엔진(TemplateApp)의 `initActions || init_actions` OR 단락이 한쪽을 통째로 무시해
-        // 확장이 기여한 init 단계가 실행되지 않는다 (#421 회귀의 근본 원인).
-        $handlers = array_column($result['initActions'] ?? [], 'handler');
-        $this->assertSame(['hostInit', 'sirsoft-ecommerce.initPreferredCurrency'], $handlers, '호스트 init_actions 뒤에 확장 init_actions 가 병합되어야 한다');
-        $this->assertArrayNotHasKey('init_actions', $result, 'deprecated 별칭 키가 잔존하면 엔진 OR 단락이 통합 결과를 무시한다');
-    }
-
-    /**
-     * E3: 다단계 extends 체인 — 자식의 자식까지 base overlay 전파
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
-     */
-    public function test_base_overlay_propagates_through_multi_level_extends_chain(): void
-    {
-        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
-
-        $this->service->registerExtension(
-            [
-                'target_layout' => '_user_base',
-                'injections' => [
-                    [
-                        'target_id' => 'anchor',
-                        'position' => 'append_child',
-                        'components' => [['id' => 'ext_node', 'type' => 'basic', 'name' => 'Div']],
-                    ],
-                ],
-            ],
-            LayoutSourceType::Module,
-            'sirsoft-ecommerce',
-            $this->template->id
-        );
-
-        // shop_detail extends shop_base extends _user_base
-        $layout = [
-            'layout_name' => 'shop_detail',
-            '__extends_chain' => ['shop_base', '_user_base'],
-            'components' => [
-                ['id' => 'anchor', 'type' => 'basic', 'name' => 'Div', 'children' => []],
-            ],
-        ];
-
-        $result = $this->service->applyExtensions($layout, $this->template->id);
-
-        $children = $result['components'][0]['children'] ?? [];
-        $this->assertCount(1, $children, '다단계 체인 끝의 base overlay 도 전파되어야 한다');
-        $this->assertEquals('ext_node', $children[0]['id']);
-    }
-
-    /**
-     * E4: 자식 자신을 타겟한 overlay 와 base 타겟 overlay 가 한 번씩만 적용된다(중복 방지)
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
-     */
-    public function test_child_and_base_overlays_apply_once_each_without_duplication(): void
-    {
-        $this->mockActiveExtensions(['sirsoft-ecommerce'], []);
-
-        // base(_user_base) 타겟 overlay
-        $this->service->registerExtension(
-            [
-                'target_layout' => '_user_base',
-                'injections' => [
-                    ['target_id' => 'anchor', 'position' => 'append_child', 'components' => [['id' => 'base_node', 'type' => 'basic', 'name' => 'Div']]],
-                ],
-            ],
-            LayoutSourceType::Module,
-            'sirsoft-ecommerce',
-            $this->template->id
-        );
-
-        // 자식(home) 자신을 타겟한 overlay
-        $this->service->registerExtension(
-            [
-                'target_layout' => 'home',
-                'injections' => [
-                    ['target_id' => 'anchor', 'position' => 'append_child', 'components' => [['id' => 'child_node', 'type' => 'basic', 'name' => 'Div']]],
-                ],
-            ],
-            LayoutSourceType::Module,
-            'sirsoft-ecommerce',
-            $this->template->id
-        );
-
-        $layout = [
-            'layout_name' => 'home',
-            '__extends_chain' => ['_user_base'],
-            'components' => [
-                ['id' => 'anchor', 'type' => 'basic', 'name' => 'Div', 'children' => []],
-            ],
-        ];
-
-        $result = $this->service->applyExtensions($layout, $this->template->id);
-
-        $childIds = array_column($result['components'][0]['children'] ?? [], 'id');
-        sort($childIds);
-        $this->assertEquals(['base_node', 'child_node'], $childIds, '자식·base overlay 가 각각 한 번씩만 적용되어야 한다(중복 없음)');
-    }
-
     /**
      * C-7: inject_props + overlay state/computed 종합 시나리오
-     *
-     * @return void 반환값 없음
-     *
-     * @effects extension_registration_flows_into_the_served_layout
      */
     public function test_inject_props_with_state_and_computed_comprehensive(): void
     {

@@ -1,6 +1,4 @@
-// e2e:allow 행 클래스 식에 선택 여부($selected)를 더한 표시 변경 — Vitest(DataGrid.rowClassName)와 게시판 글 목록 브라우저 계산값 실측(라이트·다크 선택·hover, #816)으로 잠근다.
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import type { EditorAttrs } from '../../types';
 import { Table } from '../basic/Table';
 import { Thead } from '../basic/Thead';
 import { Tbody } from '../basic/Tbody';
@@ -44,70 +42,8 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:DataGrid')) ?? {
 const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
 
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
-
-/**
- * 행 이름으로 쓸 수 있는 글자로 바꿉니다 — 다국어 객체({ko, en})는 현재 언어 값, 그다음 아무 언어 값.
- *
- * @param value 필드 값
- * @returns 이름 글자(없으면 빈 문자열)
- */
-const toRowLabelText = (value: unknown): string => {
-  if (typeof value === 'string' || typeof value === 'number') return String(value).trim();
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    const locale = (window as any).G7Core?.locale?.current?.();
-    const record = value as Record<string, unknown>;
-    const localized = locale ? record[locale] : undefined;
-    if (typeof localized === 'string' && localized.trim() !== '') return localized.trim();
-    const first = Object.values(record).find((v) => typeof v === 'string' && v.trim() !== '');
-    return typeof first === 'string' ? first.trim() : '';
-  }
-  return '';
-};
-
-/**
- * 점 경로로 행 필드 값을 읽습니다.
- *
- * @param row 행 데이터
- * @param path 점 경로(`product.name`)
- * @returns 값
- */
-const readRowPath = (row: any, path: string): unknown =>
-  path.split('.').reduce<any>((acc, key) => (acc == null ? undefined : acc[key]), row);
-
-/**
- * 열의 `field` 로 행에서 셀 값을 읽습니다.
- *
- * 행에 그 이름의 키가 그대로 있으면 그 값을 쓰고, 없고 `field` 가 점 경로(`custom_fields.job`)면
- * 경로를 따라 내려가 읽습니다. 응답의 하위 객체에 담긴 값을 열로 세울 때(회원 추가 항목 등)
- * 셀 모양(`cellChildren`)을 따로 쓰지 않아도 값이 나오게 합니다.
- *
- * @param row 행 데이터
- * @param field 열의 field(키 이름 또는 점 경로)
- * @returns 셀 값
- */
-const readCellValue = (row: any, field: string): any => {
-  const direct = row?.[field];
-  if (direct !== undefined || typeof field !== 'string' || !field.includes('.')) return direct;
-  return readRowPath(row, field);
-};
-
-/**
- * 반복 렌더 서브트리용 컴포넌트 맵 **폴백**.
- *
- * 정본은 템플릿 레지스트리(`G7Core.getComponentMap()`)다 — CardGrid 와 같은 출처를 쓴다.
- * 이 열거는 런타임 전역이 아직 없는 상황(단위 테스트 등)에서만 쓰인다.
- *
- * 종전에는 이 열거가 유일한 출처였고, 등록된 117개 중 29개만 담고 있어 나머지 88개가
- * `cellChildren`/`expandChildren`/`subRowChildren`/`footerCells` 안에서만 조용히 사라졌다.
- * 실측: `/admin/identity/logs` 확장 행의 `Pre`(부가 정보 JSON)가 라벨만 남고 미렌더 —
- * 같은 `Pre` 가 모달(DynamicRenderer 경로)에서는 정상 렌더돼 경로 비대칭이었다.
- */
-const FALLBACK_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
+// cellChildren 및 expandChildren 렌더링을 위한 컴포넌트 맵
+const componentMap: Record<string, React.ComponentType<any>> = {
   // basic 컴포넌트
   Div,
   Span,
@@ -142,22 +78,6 @@ const FALLBACK_COMPONENT_MAP: Record<string, React.ComponentType<any>> = {
   ActionMenu,
 };
 
-/**
- * 반복 렌더 서브트리에 넘길 컴포넌트 맵을 반환합니다.
- *
- * 템플릿 레지스트리 전체를 쓰므로 `components.json` 에 등록된 컴포넌트는 단발 렌더 경로와
- * 반복 렌더 경로에서 **동일하게** 조회된다. 전역이 없으면 폴백 열거로 내려간다.
- *
- * @returns 컴포넌트명 → React 컴포넌트 맵
- */
-const getComponentMap = (): Record<string, React.ComponentType<any>> => {
-  const registry = (window as any).G7Core?.getComponentMap?.();
-  if (registry && Object.keys(registry).length > 0) {
-    return registry;
-  }
-  return FALLBACK_COMPONENT_MAP;
-};
-
 export interface DataGridCellChild {
   id?: string;
   type: 'basic' | 'composite';
@@ -175,11 +95,6 @@ export interface DataGridColumn {
   sortable?: boolean;
   hidden?: boolean;
   required?: boolean;
-  /**
-   * 값이 비었을 때(null, undefined, 빈 문자열) 대신 그릴 글자.
-   * `cellChildren`, `render` 가 없는 열에만 적용됩니다. 주지 않으면 빈 칸입니다.
-   */
-  emptyText?: string;
   render?: (value: any, row: any) => React.ReactNode;
   cellChildren?: DataGridCellChild[];
 }
@@ -274,44 +189,10 @@ export interface DataGridProps {
   selectedIds?: (string | number)[];
   onSelectionChange?: (ids: (string | number)[]) => void;
   idField?: string;
-  /**
-   * 행 이름으로 쓸 필드(점 경로, 다국어 객체면 현재 언어 값). 셀 렌더 문맥 `$rowLabel` 과 행 선택 체크박스 이름에 쓰인다.
-   * 없으면 첫 표시 열의 글자 값, 그것도 없으면 「N번째 행」(#757).
-   */
-  rowLabelField?: string;
-  /**
-   * 선택의 유효 범위.
-   *
-   * - `'page'`: 선택은 지금 그려진 행에서만 유효하다. 검색·필터·페이지 이동으로
-   *   행이 목록에서 빠지면 그 행의 선택도 함께 버린다. 일괄 처리 버튼이 달린
-   *   목록 화면은 이 값을 쓴다 — 그래야 "보이지 않는 행이 일괄 처리 대상" 이
-   *   되는 상태가 만들어지지 않는다.
-   * - `'free'`(기본): 선택을 컴포넌트가 건드리지 않는다. 선택 자체가 저장 대상인
-   *   폼(쿠폰 적용 대상 고르기 등)처럼, 목록에 안 보이는 항목도 선택으로 남아야
-   *   하는 화면용.
-   */
-  selectionScope?: 'page' | 'free';
-  /**
-   * 선택할 수 없는 행의 id 목록 (`idField` 값).
-   *
-   * 이 행들은 체크박스가 비활성으로 그려지고 전체 선택·전체 선택 여부 판정에서 빠진다.
-   * 서버가 일괄 요청 전체를 거절하는 대상(예: 회원 일괄 상태 변경의 로그인한 본인)을
-   * 화면이 고를 수 없게 할 때 쓴다. `selectionScope: 'page'` 면 선택 목록에 남아 있던
-   * 이 행들의 선택도 함께 버린다.
-   */
-  nonSelectableIds?: (string | number)[];
 
   // 컬럼 표시/숨김 기능
   showColumnSelector?: boolean;
   visibleColumns?: string[];
-  /**
-   * 표시 컬럼이 바뀌었을 때 호출됩니다.
-   *
-   * 같은 이름의 이벤트를 ColumnSelector 도 방출하는데 그쪽은 두 번째 인자로 발화 출처
-   * (`{ source: 'user' | 'init' | 'dynamic' }`)를 함께 싣습니다. 여기서는 싣지 않으므로,
-   * ColumnSelector 용으로 쓴 `$args[1].source` 가드를 이 이벤트에 그대로 옮기면 항상
-   * undefined 가 되어 그 액션이 조용히 죽습니다.
-   */
   onColumnVisibilityChange?: (fields: string[]) => void;
 
   // 반응형 카드 뷰
@@ -328,26 +209,7 @@ export interface DataGridProps {
   // 서버 사이드 페이지네이션 (API에서 페이지네이션 처리 시)
   serverSidePagination?: boolean;
   serverCurrentPage?: number;
-  /**
-   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/users?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
-   */
-  pageHref?: string;
-  /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
-  pageHrefMergeQuery?: boolean;
-  /**
-   * 서버가 알려준 마지막 페이지 번호
-   *
-   * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 서버가 `null` 을 보낸다.
-   * 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말하므로 null 을 그대로 흘려보낸다.
-   */
-  serverTotalPages?: number | null;
-  /**
-   * 다음 페이지 존재 여부 (총 건수를 모르는 목록에서 사용)
-   *
-   * 총 건수를 몰라도 서버는 이 값을 정확히 판정한다. 마지막 페이지를 계산할 수 없어도
-   * "다음" 이동은 이 값으로 끝까지 열어 둘 수 있다.
-   */
-  serverHasMorePages?: boolean;
+  serverTotalPages?: number;
   onPageChange?: (page: number) => void;
 
   // 다국어 지원 텍스트 (레이아웃 JSON에서 $t: 문법으로 전달)
@@ -474,22 +336,9 @@ export interface DataGridProps {
   subRowCondition?: string;
 
   /**
-   * 데이터 행에 덧붙일 CSS 클래스 (선택적)
-   *
-   * 행 유형을 배경색으로 구분할 때 쓴다. 마크업에서 행 표현식으로 넘기면
-   * 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) DataGrid 가 행마다 푼다.
-   * 예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`
-   *
-   * 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다. 다만 확장 앞글자가 붙은 배경 클래스는 층 밖이라
-   * 선택 강조를 늘 이기므로, 식 안의 `$selected`(그 행이 선택됐는지)로 선택 색을 직접 고른다
-   * (예: `{{row.row_type === 'notice' ? ($selected ? '<선택 배경>' : '<기본 배경>') : ''}}`, 실제 예는 docs/frontend/component-props.md).
-   */
-  rowClassName?: string;
-
-  /**
    * 서브 행 셀의 CSS 클래스 (선택적)
    *
-   * @default "px-6 py-2 bg-gray-50 dark:bg-gray-900"
+   * @default "px-6 py-2 bg-gray-50 dark:bg-gray-750"
    */
   subRowClassName?: string;
 
@@ -531,9 +380,6 @@ export interface DataGridProps {
    * 미지정 시 footerCells를 key-value 형태로 자동 렌더링합니다.
    */
   footerCardChildren?: DataGridCellChild[];
-
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -585,26 +431,8 @@ const safeRenderValue = (value: any): React.ReactNode => {
 };
 
 /**
- * 셀 모양이 없는 열의 값을 그립니다. 값이 비었고 열에 `emptyText` 가 있으면 그 글자를 씁니다.
- *
- * @param value 셀 값
- * @param column 열 정의
- * @returns 렌더링할 노드
- */
-const renderPlainCellValue = (value: any, column: DataGridColumn): React.ReactNode => {
-  if (column.emptyText !== undefined && (value === null || value === undefined || value === '')) {
-    return column.emptyText;
-  }
-  return safeRenderValue(value);
-};
-
-/**
  * subRow 컨테이너의 표시 조건을 평가합니다.
- *
- * 판정은 엔진(`G7Core.evaluateCondition`)에 위임합니다. 종전에는 이 파일이
- * `new Function('row', ...)` 로 자체 평가기를 두어, `_local`/`_global` 을 참조하는
- * 조건에서 예외가 나면 CardGrid 는 자식이 사라지고 DataGrid 는 항상 표시되는
- * **반대 방향** 결과가 났습니다. 엔진 위임으로 두 컴포넌트의 판정이 같아집니다.
+ * JSX 인라인 조건에서 사용되므로 엔진 위임 불가 — 직접 평가합니다.
  *
  * @param condition 조건 문자열 (예: "{{row.charge_policy !== 'free'}}")
  * @param row 현재 행 데이터
@@ -613,102 +441,20 @@ const renderPlainCellValue = (value: any, column: DataGridColumn): React.ReactNo
 const evaluateSubRowCondition = (condition: string | undefined, row: any): boolean => {
   if (!condition) return true;
 
-  const G7Core = (window as any).G7Core;
-  if (typeof G7Core?.evaluateCondition === 'function') {
-    return G7Core.evaluateCondition(condition, { row, item: row, $item: row });
-  }
+  // {{...}} 패턴 추출
+  const match = condition.match(/^\{\{(.+)\}\}$/);
+  if (!match) return true;
 
-  logger.warn('G7Core.evaluateCondition 미노출 — subRow 조건을 평가할 수 없습니다:', condition);
-  return true;
-};
-
-/**
- * 행 단위 클래스(rowClassName)를 그 행 기준으로 풉니다.
- *
- * 관리자 게시글 목록처럼 `{{row.row_type === 'notice' ? … : …}}` 를 넘기면 행마다 다른 값이 나와야 한다.
- * 엔진이 컴포넌트 props 를 그릴 때 이 식을 row 없이 미리 풀면 빈 문자열이 되므로, components.json 의
- * skipBindingKeys 로 원문을 받아 여기서 엔진의 바인딩 해석기(`G7Core.getDataBindingEngine`)로 푼다 —
- * subRowCondition 이 엔진 판정에 위임하는 것과 같은 방식이다. 식이 없는 고정 문자열은 그대로 쓴다.
- * 식은 `$selected` 로 그 행의 선택 여부를 읽을 수 있다(확장 앞글자 배경이 선택 강조를 이기는 것을 피하려고, #816).
- *
- * @param rowClassName 행 클래스 문자열 또는 행 표현식
- * @param row 현재 행 데이터
- * @param selected 그 행이 선택됐는지
- * @returns 그 행에 붙일 클래스
- */
-const resolveRowClassName = (rowClassName: string | undefined, row: any, selected = false): string => {
-  if (!rowClassName) return '';
-  if (!rowClassName.includes('{{')) return rowClassName;
-
-  const engine = (window as any).G7Core?.getDataBindingEngine?.();
-  if (!engine?.resolveBindings) {
-    logger.warn('G7Core.getDataBindingEngine 미노출 — 행 클래스를 풀 수 없습니다:', rowClassName);
-    return '';
-  }
+  const expr = match[1].trim();
 
   try {
-    const resolved = engine.resolveBindings(rowClassName, { row, item: row, $item: row, $selected: selected }, { skipCache: true });
-    return typeof resolved === 'string' ? resolved : '';
+    // row 컨텍스트에서 표현식 평가
+    // eslint-disable-next-line no-new-func
+    const evaluator = new Function('row', `return ${expr}`);
+    return !!evaluator(row);
   } catch (error) {
-    logger.warn('행 클래스 해석 실패:', error);
-    return '';
-  }
-};
-
-/**
- * 행 메뉴 항목의 주소(`href`)를 그 행 문맥으로 평가합니다.
- *
- * `components.json` 의 `skipBindingKeys` 에 `href` 를 두어 엔진이 행 문맥 없이 먼저 풀지 않게 하고(그러면 `{{row.uuid}}` 가
- * 빈 값이 된다), 행마다 여기서 푼다(#757 링크 단계 — 행 메뉴 「보기」「수정」을 새 탭으로 열기).
- *
- * @param href 항목 주소 틀 (예: `/admin/users/{{row.uuid}}/edit`)
- * @param row 행 데이터
- * @returns 평가한 주소 (식이 없으면 그대로, 풀 수 없으면 undefined)
- */
-const resolveRowHref = (href: unknown, row: any): string | undefined => {
-  if (typeof href !== 'string' || href.trim() === '') return undefined;
-  if (!href.includes('{{')) return href;
-
-  const engine = (window as any).G7Core?.getDataBindingEngine?.();
-  if (!engine?.resolveBindings) return undefined;
-
-  try {
-    const resolved = engine.resolveBindings(href, { row, item: row, $item: row }, { skipCache: true });
-    return typeof resolved === 'string' && resolved !== '' ? resolved : undefined;
-  } catch (error) {
-    logger.warn('행 메뉴 주소 해석 실패:', error);
-    return undefined;
-  }
-};
-
-/**
- * 행 메뉴 항목의 잠김 안내(`disabledReason`)를 그 행 문맥으로 평가합니다.
- *
- * 같은 「삭제」 항목이라도 행마다 막힌 까닭(권한 없음·코어/확장 소유 등)이 다를 수 있다 — 고정 문구 하나로는
- * 사실과 다른 안내가 나온다. `href` 와 같이 `skipBindingKeys` 로 원문을 받아 행마다 푼다
- * (예: `{{row.delete_blocked_reason === 'owned' ? $t('…owned') : $t('…permission')}}`). 식이 없는 고정 문구는
- * 엔진이 이미 번역해 넘기므로 그대로 쓴다.
- *
- * @param reason 안내 문구 또는 행 표현식
- * @param row 행 데이터
- * @returns 그 행의 안내 (없거나 풀 수 없으면 undefined)
- */
-const resolveRowDisabledReason = (reason: unknown, row: any): string | undefined => {
-  if (typeof reason !== 'string' || reason.trim() === '') return undefined;
-  if (!reason.includes('{{')) return reason;
-
-  const engine = (window as any).G7Core?.getDataBindingEngine?.();
-  if (!engine?.resolveBindings) {
-    logger.warn('G7Core.getDataBindingEngine 미노출 — 행 메뉴 안내를 풀 수 없습니다:', reason);
-    return undefined;
-  }
-
-  try {
-    const resolved = engine.resolveBindings(reason, { row, item: row, $item: row }, { skipCache: true });
-    return typeof resolved === 'string' && resolved !== '' ? resolved : undefined;
-  } catch (error) {
-    logger.warn('행 메뉴 안내 해석 실패:', error);
-    return undefined;
+    logger.warn('subRow 조건 평가 실패:', condition, error);
+    return true;
   }
 };
 
@@ -723,23 +469,20 @@ const renderCellChildren = (
   row: any,
   value: any,
   keyPrefix: string = '',
-  componentContext?: { state?: any; setState?: (updates: any) => void },
-  rowContext?: { $rowLabel: string; $rowNumber: number; $column: unknown }
+  componentContext?: { state?: any; setState?: (updates: any) => void }
 ): React.ReactNode => {
   const G7Core = (window as any).G7Core;
   if (G7Core?.renderItemChildren) {
-    // $rowLabel·$rowNumber·$column — 셀 안 칸이 「{행 이름} {열 이름}」으로 이름을 달 수 있게 한다(#757)
     const context = {
       row,
       value,
       $value: value,
-      ...rowContext,
     };
 
     return G7Core.renderItemChildren(
       cellChildren,
       context,
-      getComponentMap(),
+      componentMap,
       keyPrefix,
       componentContext ? { componentContext } : undefined
     );
@@ -747,39 +490,6 @@ const renderCellChildren = (
 
   logger.warn('G7Core.renderItemChildren을 사용할 수 없습니다.');
   return null;
-};
-
-/**
- * 푸터 셀의 `text` 를 렌더링합니다.
- *
- * `components.json` 의 `skipBindingKeys` 에 `footerCells` 가 들어가면서 DynamicRenderer 는
- * 이 키를 선평가하지 않는다 — 해석 책임이 반복 렌더 경로로 넘어왔다. 그런데 푸터 렌더는
- * `children` 만 `renderCellChildren` 으로 넘기고 `text` 는 원문을 그대로 출력해 왔고,
- * 그 결과 `{{order.data?.total_quantity ?? 0}}개` 같은 값이 화면에 노출됐다
- * (실측: `/admin/ecommerce/orders/:orderNumber` 합계 행 3셀).
- *
- * 바인딩/번역 토큰이 없는 순수 문자열은 그대로 돌려주어 불필요한 래핑을 만들지 않는다.
- *
- * @param text 푸터 셀 텍스트 (바인딩 표현식 포함 가능)
- * @param keyPrefix 키 접두사
- * @param componentContext 컴포넌트 컨텍스트 (state/setState)
- * @returns 해석된 React 노드
- */
-const renderFooterCellText = (
-  text: string | undefined,
-  keyPrefix: string,
-  componentContext?: { state?: any; setState?: (updates: any) => void }
-): React.ReactNode => {
-  if (!text) return '';
-  if (!text.includes('{{') && !text.includes('$t:')) return text;
-
-  return renderCellChildren(
-    [{ type: 'basic', name: 'Span', text }],
-    {},
-    null,
-    keyPrefix,
-    componentContext
-  );
 };
 
 /**
@@ -807,7 +517,7 @@ const renderSubRowChildren = (
     return G7Core.renderItemChildren(
       subRowChildren,
       context,
-      getComponentMap(),
+      componentMap,
       keyPrefix,
       componentContext ? { componentContext } : undefined
     );
@@ -866,9 +576,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
   selectedIds = [],
   onSelectionChange,
   idField = 'id',
-  rowLabelField,
-  selectionScope = 'free',
-  nonSelectableIds,
   // 컬럼 표시/숨김
   showColumnSelector = false,
   visibleColumns: initialVisibleColumns,
@@ -884,10 +591,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // 서버 사이드 페이지네이션
   serverSidePagination = false,
   serverCurrentPage,
-  pageHref,
-  pageHrefMergeQuery,
   serverTotalPages,
-  serverHasMorePages,
   onPageChange,
   // 다국어 텍스트
   prevText,
@@ -919,14 +623,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // 서브 행 (Sub Row) - 선택적
   subRowChildren,
   subRowCondition,
-  rowClassName = '',
-  subRowClassName = 'px-6 py-2 bg-gray-50 dark:bg-gray-900',
+  subRowClassName = 'px-6 py-2 bg-gray-50 dark:bg-gray-750',
   subRowRender,
   // 푸터 행 (Footer Row) - v1.19.0+
   footerCells,
   footerClassName = 'bg-gray-50 dark:bg-gray-800/50 font-medium',
   footerCardChildren,
-  editorAttrs,
 }) => {
   // props로 전달된 값이 없으면 undefined (Pagination이 기본 화살표 사용)
   const resolvedPrevText = prevText || undefined;
@@ -936,27 +638,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
   const resolvedActionsColumnHeader = actionsColumnHeader ?? t('common.actions');
   const resolvedRequiredText = requiredText ?? t('common.required');
   const resolvedSelectedCountText = selectedCountText ?? t('common.selected_count');
-
-  /**
-   * 선택 건수 문구의 파라미터 자리를 채웁니다.
-   *
-   * 치환은 번역 엔진에 맡깁니다 — G7 의 파라미터 표준은 `{{count}}` 이고, 엔진은
-   * `{{count}}` 를 먼저, `{count}` 를 그다음에 치환합니다. 컴포넌트가 자체 치환을
-   * 두면 표준 표기가 `{1}개 선택됨` 처럼 바깥 중괄호를 남긴 채 렌더됩니다
-   * (예외·경고 없이 화면에만 드러남).
-   *
-   * `selectedCountText` prop 으로 넘어온 문자열은 엔진을 거치지 않으므로 이때만
-   * 같은 순서로 직접 채웁니다.
-   */
-  const formatSelectedCount = (count: number): string => {
-    if (selectedCountText === undefined) {
-      return t('common.selected_count', { count });
-    }
-
-    return selectedCountText
-      .replace(/\{\{count\}\}/g, String(count))
-      .replace(/\{count\}/g, String(count));
-  };
 
   // G7Core.useControllableState 훅 참조 (Phase 2-2)
   const G7Core = (window as any).G7Core;
@@ -974,21 +655,20 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   // 정렬 상태 - useControllableState 적용
   // 외부 제어(externalSortField)가 있으면 Controlled, 없으면 Uncontrolled
-  //
-  // 정렬은 "컬럼 + 방향" 한 쌍이 하나의 의미 단위다. 두 상태의 onChange 콜백에서 각각
-  // onSortChange 를 부르면, 각 콜백이 자기 렌더의 클로저에 잡힌 **반대쪽 이전 값**을 함께
-  // 실어보내 잘못된 조합이 디스패치된다 (setSortField 는 이전 방향을, setSortDirection 은
-  // 이전 컬럼을 보낸다). 헤더 클릭 한 번에 두 콜백이 연달아 불리므로 나중 것이 이겨
-  // "이름 desc → 이메일 헤더 클릭" 이 sort_by=name&sort_order=asc 로 나가고, 헤더 표시만
-  // 이메일↑ 이 되어 표시와 실제 정렬 기준이 어긋난다.
-  // 따라서 상태 setter 는 화살표 표시용 낙관적 갱신만 담당하고, 서버 디스패치는
-  // handleSort 에서 새 값 한 쌍으로 단 한 번 수행한다.
   const [sortField, setSortField] = useControllableState
-    ? useControllableState<string | null>(externalSortField, null)
+    ? useControllableState<string | null>(externalSortField, null, (value: string | null) => {
+        if (value !== null) {
+          onSortChange?.(value, sortDirection);
+        }
+      })
     : [externalSortField ?? null, () => {}];
 
   const [sortDirection, setSortDirection] = useControllableState
-    ? useControllableState<'asc' | 'desc'>(externalSortDirection, 'asc')
+    ? useControllableState<'asc' | 'desc'>(externalSortDirection, 'asc', (value: 'asc' | 'desc') => {
+        if (sortField !== null) {
+          onSortChange?.(sortField, value);
+        }
+      })
     : [externalSortDirection ?? 'asc', () => {}];
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -1092,12 +772,9 @@ export const DataGrid: React.FC<DataGridProps> = ({
         (field) => !prevDynamicFields.includes(field)
       );
 
-      // 새로운 동적 필드가 있을 때만 자동 추가 (hidden 인 동적 열은 스스로 켜지 않는다)
+      // 새로운 동적 필드가 있을 때만 자동 추가
       if (trulyNewFields.length > 0) {
-        const hiddenDynamicFields = dynamicColumns.filter((col) => col.hidden).map((col) => col.field);
-        const fieldsToAdd = trulyNewFields.filter(
-          (field) => !visibleColumns.includes(field) && !hiddenDynamicFields.includes(field)
-        );
+        const fieldsToAdd = trulyNewFields.filter((field) => !visibleColumns.includes(field));
         if (fieldsToAdd.length > 0) {
           const updatedVisible = [...visibleColumns, ...fieldsToAdd];
           setVisibleColumns(updatedVisible);
@@ -1142,27 +819,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
   }, [mergedColumns, visibleColumns, showColumnSelector, initialVisibleColumns]);
 
   // 정렬 처리
-  // onSortChange 가 연결된 경우(controlled) 정렬 주체는 서버다. 헤더 클릭 →
-  // onSortChange → 상위가 query 갱신 후 API 재요청 → 서버가 새 순서를 내려준다.
-  // 이때 data 는 이미 서버가 정렬한 결과이므로 클라이언트가 다시 정렬하면 안 된다
-  // (프론트는 서버가 내려준 순서를 그대로 출력한다). 특히 클라이언트 정렬은 null
-  // 값 비교 시 항상 앞으로 밀어 서버 ORDER BY 순서를 훼손한다.
-  // onSortChange 가 없는 경우(uncontrolled)에만 컴포넌트가 단독 정렬 주체로서
-  // 전달받은 로컬 데이터를 클라이언트에서 정렬한다.
-  // 헤더 클릭 정렬을 제공할 수 있는가.
-  //
-  // 서버 페이지네이션 목록에서 `onSortChange` 가 배선돼 있지 않으면 컴포넌트는 서버에
-  // 정렬을 요청할 방법이 없다. 그런데도 헤더를 누를 수 있게 두면 **현재 페이지 배열만**
-  // 정렬되고 화살표가 붙어, 전체 건수 기준으로 정렬된 것으로 오인된다 (#492 D-18).
-  // 정렬을 실제로 반영할 수 없는 화면에서는 정렬 가능한 척하지 않는다.
-  const headerSortEnabled = sortable && !(serverSidePagination && !onSortChange);
-
   const sortedData = useMemo(() => {
     if (!sortField || !sortable || !data) return data || [];
-    if (onSortChange) return data;
-    // 서버 페이지네이션이면 data 는 "전체 중 이번 페이지" 다. 여기서 정렬하면 그 페이지
-    // 안에서만 순서가 바뀌는데 헤더 화살표는 전체 정렬처럼 보인다 (#492 D-18).
-    if (serverSidePagination) return data;
 
     return [...data].sort((a, b) => {
       const aValue = a[sortField];
@@ -1173,7 +831,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
       const comparison = aValue > bValue ? 1 : -1;
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [data, sortField, sortDirection, sortable, onSortChange, serverSidePagination]);
+  }, [data, sortField, sortDirection, sortable]);
 
   // 페이지네이션 처리
   const paginatedData = useMemo(() => {
@@ -1188,18 +846,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   // 서버 사이드 페이지네이션인 경우 서버에서 전달된 값 사용
   const effectiveCurrentPage = serverSidePagination ? (serverCurrentPage || 1) : currentPage;
-  // 총 건수를 상한까지만 센 목록은 마지막 페이지가 null 로 온다. 1 로 채우면
-  // 페이저가 통째로 접혀 1페이지 밖 행에 도달할 방법이 사라지므로 null 을 보존한다.
-  const effectiveTotalPages: number | null = serverSidePagination
-    ? (serverTotalPages ?? null)
-    : Math.ceil((sortedData?.length || 0) / pageSize);
-
-  // 마지막 페이지를 모르더라도 "다음" 이 열려 있거나 이미 2페이지 이상이면 페이저는 필요하다.
-  const shouldShowPagination =
-    alwaysShowPagination ||
-    (effectiveTotalPages ?? 0) > 1 ||
-    serverHasMorePages === true ||
-    effectiveCurrentPage > 1;
+  const effectiveTotalPages = serverSidePagination ? (serverTotalPages || 1) : Math.ceil((sortedData?.length || 0) / pageSize);
 
   // 페이지 변경 핸들러
   const handlePageChange = useCallback((page: number) => {
@@ -1212,39 +859,28 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   // 정렬 토글 (Phase 2-2: useControllableState로 단순화)
   const handleSort = (field: string) => {
-    if (!headerSortEnabled) return;
+    if (!sortable) return;
 
     const column = columns.find((col) => col.field === field);
     if (column?.sortable === false) return;
 
     const newDirection: 'asc' | 'desc' = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
 
-    // 낙관적 갱신 — 헤더 화살표가 즉시 새 컬럼/방향을 가리키게 한다
-    setSortField(field);
-    setSortDirection(newDirection);
-
-    // 서버 디스패치는 새 값 한 쌍으로 정확히 한 번 (컬럼/방향이 섞이지 않는다)
-    onSortChange?.(field, newDirection);
+    // useControllableState 사용 시: setter가 onChange 콜백 자동 호출
+    // 폴백 시: 직접 onSortChange 호출
+    if (useControllableState) {
+      setSortField(field);
+      setSortDirection(newDirection);
+    } else if (onSortChange) {
+      onSortChange(field, newDirection);
+    }
   };
 
-  // 선택할 수 없는 행 판정 — 값 형(숫자/문자열)이 섞여 와도 같게 비교한다
-  const nonSelectableKey = JSON.stringify((nonSelectableIds ?? []).map(String));
-  const nonSelectableSet = useMemo(
-    () => new Set((nonSelectableIds ?? []).map(String)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [nonSelectableKey]
-  );
-  const isRowSelectable = useCallback(
-    (row: any): boolean => !nonSelectableSet.has(String(row?.[idField])),
-    [nonSelectableSet, idField]
-  );
-
-  // 전체 선택 처리 — 선택할 수 없는 행은 대상에서 뺀다
+  // 전체 선택 처리
   const handleSelectAll = useCallback(() => {
     if (!onSelectionChange || !paginatedData) return;
 
-    const allIds = paginatedData.filter(isRowSelectable).map((row) => row[idField]);
-    if (allIds.length === 0) return;
+    const allIds = paginatedData.map((row) => row[idField]);
     const allSelected = allIds.every((id) => selectedIds.includes(id));
 
     if (allSelected) {
@@ -1253,13 +889,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
       const newSelectedIds = [...new Set([...selectedIds, ...allIds])];
       onSelectionChange(newSelectedIds);
     }
-  }, [paginatedData, selectedIds, onSelectionChange, idField, isRowSelectable]);
+  }, [paginatedData, selectedIds, onSelectionChange, idField]);
 
   // 개별 선택 처리
   const handleSelectRow = useCallback(
     (rowId: string | number) => {
       if (!onSelectionChange) return;
-      if (nonSelectableSet.has(String(rowId))) return;
 
       if (selectedIds.includes(rowId)) {
         onSelectionChange(selectedIds.filter((id) => id !== rowId));
@@ -1267,32 +902,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
         onSelectionChange([...selectedIds, rowId]);
       }
     },
-    [selectedIds, onSelectionChange, nonSelectableSet]
+    [selectedIds, onSelectionChange]
   );
-
-  // 목록에서 빠진 행의 선택 정리
-  //
-  // 선택 상태는 목록 화면 밖(전역/로컬 상태)에 있으므로 검색·필터·페이지 이동으로
-  // 행이 화면에서 사라져도 그대로 남는다. 그 상태에서 일괄 처리를 누르면 운영자가
-  // 보고 있지도, 체크하지도 않은 행이 대상이 된다 — 확인 모달은 건수만 말하므로
-  // 실행 전에 알아챌 방법이 없다. `selectionScope: 'page'` 인 목록은 지금 그려진
-  // 행에 없는 선택을 버려서, 대상이 언제나 "화면에 보이고 체크된 행" 이 되게 한다.
-  useEffect(() => {
-    // `selectable` 여부로 가르지 않는다 — 체크박스가 꺼진 화면에 남은 선택은
-    // 아예 눈에 띄지 않으므로 오히려 더 위험하다.
-    if (selectionScope !== 'page' || !onSelectionChange) return;
-    if (selectedIds.length === 0) return;
-
-    const visibleIds = new Set((paginatedData ?? []).map((row) => row[idField]));
-    // 선택할 수 없는 행(nonSelectableIds)에 남아 있던 선택도 함께 버린다 — 그 행은 일괄 요청에
-    // 실리면 서버가 요청 전체를 거절하는 대상이다.
-    const survivors = selectedIds.filter((id) => visibleIds.has(id) && !nonSelectableSet.has(String(id)));
-
-    // 길이가 같으면 버릴 것이 없다 — 여기서 끊지 않으면 setState 가 매 렌더 반복된다.
-    if (survivors.length === selectedIds.length) return;
-
-    onSelectionChange(survivors);
-  }, [selectionScope, selectable, paginatedData, selectedIds, onSelectionChange, idField, nonSelectableSet]);
 
   // 컬럼 표시/숨김 토글
   const handleColumnToggle = useCallback(
@@ -1319,54 +930,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
   );
 
   /**
-   * 행 이름을 정합니다 — `rowLabelField` 값 → 첫 표시 열 값이 글자면 그 값 → 「N번째 행」.
-   *
-   * @param row 행 데이터
-   * @param rowNumber 1부터 세는 행 번호
-   * @returns 이름과 번호 대체 여부
-   */
-  const getRowLabel = (row: any, rowNumber: number): { label: string; numbered: boolean } => {
-    const fromField = rowLabelField ? toRowLabelText(readRowPath(row, rowLabelField)) : '';
-    if (fromField) return { label: fromField, numbered: false };
-    if (!rowLabelField) {
-      const first = displayColumns[0];
-      const value = first ? row?.[first.field] : undefined;
-      // 숫자·날짜 모양(「2026-10-07T02:50:00+00:00」·「12345」)은 사람이 행을 가리키는 이름이 아니다 — 번호 대체로 내린다(#757 실측)
-      if (typeof value === 'string' && value.trim() !== '' && !/^[\d\s:.,/+\-TZ]+$/.test(value.trim())) {
-        return { label: value.trim(), numbered: false };
-      }
-    }
-    return { label: tOr('common.row_n', `Row ${rowNumber}`, { n: rowNumber }), numbered: true };
-  };
-
-  /**
-   * 셀 렌더 문맥에 더할 행 정보.
-   *
-   * @param row 행 데이터
-   * @param rowNumber 1부터 세는 행 번호
-   * @param column 열 정의
-   * @returns `$rowLabel`·`$rowNumber`·`$column`
-   */
-  const getRowContext = (row: any, rowNumber: number, column: DataGridColumn) => ({
-    $rowLabel: getRowLabel(row, rowNumber).label,
-    $rowNumber: rowNumber,
-    $column: column.header,
-  });
-
-  /**
-   * 행 선택 체크박스의 접근 가능한 이름을 만듭니다.
-   *
-   * 행 이름이 있으면 「{이름} 선택」, 없으면 「N번째 행 선택」. 이름이 없어 화면 읽기 프로그램에
-   * 「체크박스」 만 읽히던 것을 고친다(7.1.0). 첫 열이 참/거짓인 표에서 모든 행이
-   * 「행 선택」 하나로 뭉치던 것도 번호로 나눈다(#757).
-   */
-  const getRowSelectLabel = (row: any, rowNumber: number): string => {
-    const { label, numbered } = getRowLabel(row, rowNumber);
-    if (!numbered) return t('common.select_item', { name: label });
-    return tOr('common.select_row_n', t('common.select_row'), { n: rowNumber });
-  };
-
-  /**
    * 행 데이터 기반으로 rowActions의 disabled 상태를 결정합니다.
    * disabledField가 지정된 경우 해당 경로의 값이 falsy면 disabled 처리합니다.
    */
@@ -1387,13 +950,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
         }
         return {
           ...action,
-          // 해석을 마쳤으므로 지운다 — ActionMenu 는 남아 있는 disabledField 를 「해석 안 됨」으로 보고 잠근다
-          disabledField: undefined,
           disabled: isDisabled,
-          // 잠김 안내는 행마다 다를 수 있다 — 잠긴 행만 푼다
-          disabledReason: isDisabled ? resolveRowDisabledReason(action.disabledReason, row) : undefined,
-          // 주소가 있는 항목(보기·수정)은 행 메뉴에서 링크로 그려진다 — 행마다 평가(가운데 클릭·Ctrl+클릭 새 탭)
-          href: resolveRowHref((action as ActionMenuItem).href, row),
           onClick: () => handleRowAction(action.id, row),
         };
       });
@@ -1453,7 +1010,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
           row,
           expandContext,
           componentContext: __componentContext,
-          componentMap: getComponentMap(),
+          componentMap,
           keyPrefix: `expand-${row[idField]}`,
         });
       }
@@ -1465,44 +1022,36 @@ export const DataGrid: React.FC<DataGridProps> = ({
     [expandedRowRender, expandChildren, idField, expandContext, __componentContext, __componentContext?.state]
   );
 
-  // 전체 선택 상태 계산 — 선택할 수 없는 행은 세지 않는다(세면 영영 전체 선택이 되지 않아
-  // 머리글을 눌러 해제할 수 없다)
+  // 전체 선택 상태 계산
   const isAllSelected = useMemo(() => {
-    const selectableRows = (paginatedData ?? []).filter(isRowSelectable);
-    if (selectableRows.length === 0) return false;
-    return selectableRows.every((row) => selectedIds.includes(row[idField]));
-  }, [paginatedData, selectedIds, idField, isRowSelectable]);
+    if (!paginatedData || paginatedData.length === 0) return false;
+    return paginatedData.every((row) => selectedIds.includes(row[idField]));
+  }, [paginatedData, selectedIds, idField]);
 
   const isIndeterminate = useMemo(() => {
-    const selectableRows = (paginatedData ?? []).filter(isRowSelectable);
-    if (selectableRows.length === 0) return false;
-    const selectedCount = selectableRows.filter((row) => selectedIds.includes(row[idField])).length;
-    return selectedCount > 0 && selectedCount < selectableRows.length;
-  }, [paginatedData, selectedIds, idField, isRowSelectable]);
+    if (!paginatedData || paginatedData.length === 0) return false;
+    const selectedCount = paginatedData.filter((row) => selectedIds.includes(row[idField])).length;
+    return selectedCount > 0 && selectedCount < paginatedData.length;
+  }, [paginatedData, selectedIds, idField]);
 
   // 기본 카드 렌더러
-  const defaultCardRenderer = (row: any, cols: DataGridColumn[], rowNumber: number) => {
+  const defaultCardRenderer = (row: any, cols: DataGridColumn[]) => {
     const rowId = row[idField];
     const expanded = isRowExpanded(rowId);
-    // 표 보기의 tr 과 같은 행 클래스(rowClassName)를 카드에도 붙인다 — 좁은 화면 카드 보기에서 공지·답글 카드의
-    // 배경 구분이 사라지던 것(7.1.0 실측). 행 클래스가 배경을 주면 기본 흰 배경을 빼 덮이지 않게 한다.
-    // 카드 보기는 선택 강조 색이 없으므로(선택은 체크박스로만 보인다) `$selected` 를 넘기지 않는다.
-    const rowCls = resolveRowClassName(rowClassName, row);
-    const cardBg = /(^|\s)bg-/.test(rowCls) ? '' : 'bg-white dark:bg-gray-800';
 
     return (
-      <Div className={`${cardBg} ${rowCls} border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4`}>
+      <Div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
         <Div className="flex items-start justify-between">
           {/* 확장 버튼 (카드 뷰) */}
           {expandable && isRowExpandable(row) && (
             <Button
               onClick={() => handleExpandToggle(rowId)}
               className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors mr-2"
-              aria-label={expanded ? t('common.collapse') : t('common.expand')}
+              aria-label={expanded ? 'Collapse card' : 'Expand card'}
             >
               <Icon
                 name={expanded ? expandIconExpanded : expandIconCollapsed}
-                className="w-4 h-4 text-gray-500 dark:text-gray-300"
+                className="w-4 h-4 text-gray-500 dark:text-gray-400"
               />
             </Button>
           )}
@@ -1510,10 +1059,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
           {selectable && (
             <Checkbox
               checked={selectedIds.includes(row[idField])}
-              disabled={!isRowSelectable(row)}
               onChange={() => handleSelectRow(row[idField])}
-              aria-label={getRowSelectLabel(row, rowNumber)}
-              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded mr-3 mt-1 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded mr-3 mt-1"
             />
           )}
           <Div className="flex-1">
@@ -1525,10 +1072,10 @@ export const DataGrid: React.FC<DataGridProps> = ({
                   </Span>
                   <Div className="text-sm text-gray-900 dark:text-gray-200 mt-0.5 break-words">
                     {col.cellChildren && col.cellChildren.length > 0
-                      ? renderCellChildren(col.cellChildren, row, readCellValue(row, col.field), `card-${row[idField]}-${col.field}`, __componentContext, getRowContext(row, rowNumber, col))
+                      ? renderCellChildren(col.cellChildren, row, row[col.field], `card-${row[idField]}-${col.field}`, __componentContext)
                       : col.render
-                        ? col.render(readCellValue(row, col.field), row)
-                        : renderPlainCellValue(readCellValue(row, col.field), col)}
+                        ? col.render(row[col.field], row)
+                        : safeRenderValue(row[col.field])}
                   </Div>
                 </Div>
               ))}
@@ -1540,7 +1087,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
                 items={resolveRowActions(row)}
                 triggerLabel=""
                 triggerIconName={IconName.EllipsisHorizontal}
-                ariaLabel={resolvedActionsColumnHeader}
               />
             </Div>
           )}
@@ -1569,7 +1115,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // 모바일 카드 뷰
   if (isMobileView) {
     return (
-      <Div id={id} className={`w-full ${className}`} style={style} {...editorAttrs}>
+      <Div id={id} className={`w-full ${className}`} style={style}>
         {/* 컬럼 선택 메뉴 */}
         {showColumnSelector && (
           <Div className="mb-4 flex justify-end">
@@ -1598,7 +1144,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
                         <Checkbox
                           checked={visibleColumns.includes(col.field)}
                           disabled={col.required}
-                          aria-label={typeof col.header === 'string' ? col.header : undefined}
                           onChange={() => {}}
                           className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded"
                         />
@@ -1622,7 +1167,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
         {/* 선택된 항목 수 표시 */}
         {selectable && selectedIds.length > 0 && resolvedSelectedCountText && (
           <Div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            {formatSelectedCount(selectedIds.length)}
+            {resolvedSelectedCountText.replace('{count}', String(selectedIds.length))}
           </Div>
         )}
 
@@ -1633,7 +1178,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
               <Div key={row[idField] || index}>
                 {cardRenderer
                   ? cardRenderer(row, displayColumns)
-                  : defaultCardRenderer(row, displayColumns, index + 1)}
+                  : defaultCardRenderer(row, displayColumns)}
               </Div>
             ))
           ) : (
@@ -1658,7 +1203,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                         <Span className={cell.className || 'text-gray-900 dark:text-gray-100'}>
                           {cell.children && cell.children.length > 0
                             ? renderCellChildren(cell.children, {}, null, `footer-mobile-${idx}`, __componentContext)
-                            : renderFooterCellText(cell.text, `footer-mobile-text-${idx}`, __componentContext)}
+                            : cell.text || ''}
                         </Span>
                       </Div>
                     );
@@ -1670,15 +1215,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
         )}
 
         {/* 페이지네이션 */}
-        {pagination && shouldShowPagination && (
+        {pagination && (alwaysShowPagination || effectiveTotalPages > 1) && (
           <Div className="flex justify-center mt-4">
             <Pagination
               currentPage={effectiveCurrentPage}
               totalPages={effectiveTotalPages}
-              hasMorePages={serverSidePagination ? serverHasMorePages : undefined}
               onPageChange={handlePageChange}
-              pageHref={pageHref}
-              pageHrefMergeQuery={pageHrefMergeQuery}
               showFirstLast={showFirstLast}
               maxVisiblePages={5}
               prevText={resolvedPrevText}
@@ -1692,7 +1234,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   // 데스크톱 테이블 뷰
   return (
-    <Div id={id} className={`w-full ${className}`} style={style} {...editorAttrs}>
+    <Div id={id} className={`w-full ${className}`} style={style}>
       {/* 컬럼 선택 메뉴 */}
       {showColumnSelector && (
         <Div className="mb-4 flex justify-end">
@@ -1721,7 +1263,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
                       <Checkbox
                         checked={visibleColumns.includes(col.field)}
                         disabled={col.required}
-                        aria-label={typeof col.header === 'string' ? col.header : undefined}
                         onChange={() => {}}
                         className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded"
                       />
@@ -1745,7 +1286,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
       {/* 선택된 항목 수 표시 */}
       {selectable && selectedIds.length > 0 && resolvedSelectedCountText && (
         <Div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          {formatSelectedCount(selectedIds.length)}
+          {resolvedSelectedCountText.replace('{count}', String(selectedIds.length))}
         </Div>
       )}
 
@@ -1772,51 +1313,31 @@ export const DataGrid: React.FC<DataGridProps> = ({
                       }
                     }}
                     onChange={handleSelectAll}
-                    aria-label={t('common.select_all')}
                     className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded"
                   />
                 </Th>
               )}
 
               {/* 데이터 컬럼 */}
-              {/* 정렬 머리(WAI-ARIA 정렬 표 패턴, 7.1.1) — 정렬 가능한 칸은 안에 단추를 두어 Tab 으로 닿고 Enter·Space 로 정렬하며,
-                  칸의 aria-sort 가 지금 정렬(오름·내림·없음)을 알린다. 정렬 콜백은 종전처럼 칸의 클릭에 있고 단추는 자기 동작 없이 클릭을
-                  칸으로 올려 보낸다 — 칸 여백을 눌러도 정렬되는 마우스 동작을 지키고, 단추를 눌러도 정렬이 한 번만 일어난다.
-                  단추는 inline 이라 글자 흐름·화살표 자리가 종전과 같다. */}
-              {displayColumns.map((column) => {
-                const sortableColumn = headerSortEnabled && column.sortable !== false;
-                const arrow = sortField === column.field && (
-                  <Span className="ml-1">
-                    {sortDirection === 'asc' ? '↑' : '↓'}
-                  </Span>
-                );
-
-                return (
-                  <Th
-                    key={column.field}
-                    className={`px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider ${
-                      sortableColumn
-                        ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600'
-                        : ''
-                    }`}
-                    style={{ width: column.width, minWidth: column.width }}
-                    aria-sort={sortableColumn ? (sortField === column.field ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none') : undefined}
-                    onClick={headerSortEnabled ? () => handleSort(column.field) : undefined}
-                  >
-                    {sortableColumn ? (
-                      <Button type="button" className="inline text-left font-medium uppercase tracking-wider">
-                        {column.header}
-                        {arrow}
-                      </Button>
-                    ) : (
-                      <>
-                        {column.header}
-                        {arrow}
-                      </>
-                    )}
-                  </Th>
-                );
-              })}
+              {displayColumns.map((column) => (
+                <Th
+                  key={column.field}
+                  className={`px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider ${
+                    sortable && column.sortable !== false
+                      ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600'
+                      : ''
+                  }`}
+                  style={{ width: column.width, minWidth: column.width }}
+                  onClick={() => handleSort(column.field)}
+                >
+                  {column.header}
+                  {sortField === column.field && (
+                    <Span className="ml-1">
+                      {sortDirection === 'asc' ? '↑' : '↓'}
+                    </Span>
+                  )}
+                </Th>
+              ))}
 
               {/* 액션 컬럼 */}
               {rowActions && rowActions.length > 0 && (
@@ -1838,8 +1359,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
                     <Tr
                       className={`${
                         onRowClick ? 'cursor-pointer' : ''
-                      } ${resolveRowClassName(rowClassName, row, selectedIds.includes(row[idField]))} hover:bg-gray-50 dark:hover:bg-gray-700/30 ${
-                        selectedIds.includes(row[idField]) ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
+                      } hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                        selectedIds.includes(row[idField]) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                       } ${subRowClassName && rowIndex > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}`}
                       onClick={() => onRowClick?.(row)}
                     >
@@ -1853,11 +1374,11 @@ export const DataGrid: React.FC<DataGridProps> = ({
                             <Button
                               onClick={() => handleExpandToggle(rowId)}
                               className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                              aria-label={expanded ? t('common.collapse') : t('common.expand')}
+                              aria-label={expanded ? 'Collapse row' : 'Expand row'}
                             >
                               <Icon
                                 name={expanded ? expandIconExpanded : expandIconCollapsed}
-                                className="w-4 h-4 text-gray-500 dark:text-gray-300"
+                                className="w-4 h-4 text-gray-500 dark:text-gray-400"
                               />
                             </Button>
                           ) : null}
@@ -1869,27 +1390,24 @@ export const DataGrid: React.FC<DataGridProps> = ({
                         <Td className="px-4 py-4" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                           <Checkbox
                             checked={selectedIds.includes(row[idField])}
-                            disabled={!isRowSelectable(row)}
                             onChange={() => handleSelectRow(row[idField])}
-                            aria-label={getRowSelectLabel(row, rowIndex + 1)}
-                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded"
                           />
                         </Td>
                       )}
 
-                      {/* 데이터 셀 — 칸은 줄을 바꾸지 않는다(whitespace-nowrap). 다만 칸 안에서 줄바꿈 클래스(wrap-anywhere·break-words·
-                          break-all)를 단 글은 그 뜻대로 줄을 바꾼다 — `data-grid-cell` 표식으로 main.css 가 white-space 를 되돌린다 */}
+                      {/* 데이터 셀 */}
                       {displayColumns.map((column) => (
                         <Td
                           key={column.field}
-                          className="data-grid-cell px-6 py-4 align-top whitespace-nowrap text-sm text-gray-900 dark:text-gray-200"
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200"
                           style={{ width: column.width, minWidth: column.width }}
                         >
                           {column.cellChildren && column.cellChildren.length > 0
-                            ? renderCellChildren(column.cellChildren, row, readCellValue(row, column.field), `${row[idField]}-${column.field}`, __componentContext, getRowContext(row, rowIndex + 1, column))
+                            ? renderCellChildren(column.cellChildren, row, row[column.field], `${row[idField]}-${column.field}`, __componentContext)
                             : column.render
-                              ? column.render(readCellValue(row, column.field), row)
-                              : renderPlainCellValue(readCellValue(row, column.field), column)}
+                              ? column.render(row[column.field], row)
+                              : safeRenderValue(row[column.field])}
                         </Td>
                       ))}
 
@@ -1903,8 +1421,6 @@ export const DataGrid: React.FC<DataGridProps> = ({
                             items={resolveRowActions(row)}
                             triggerLabel=""
                             triggerIconName={IconName.EllipsisHorizontal}
-                            // 아이콘만 있는 트리거라 작업 열 머리말 문구를 이름으로 준다
-                            ariaLabel={resolvedActionsColumnHeader}
                             position="right"
                           />
                         </Td>
@@ -1913,7 +1429,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
                     {/* 확장된 행 콘텐츠 */}
                     {expandable && expanded && isRowExpandable(row) && (
-                      <Tr className="bg-gray-50 dark:bg-gray-900">
+                      <Tr className="bg-gray-50 dark:bg-gray-750">
                         <Td
                           colSpan={
                             displayColumns.length +
@@ -1939,7 +1455,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                             (selectable ? 1 : 0) +
                             (rowActions && rowActions.length > 0 ? 1 : 0)
                           }
-                          className={subRowClassName ? 'p-2' : subRowClassName || 'px-6 py-2 bg-gray-50 dark:bg-gray-900'}
+                          className={subRowClassName ? 'p-2' : subRowClassName || 'px-6 py-2 bg-gray-50 dark:bg-gray-750'}
                         >
                           {subRowClassName ? (
                             <Div className={subRowClassName}>
@@ -2004,7 +1520,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                       >
                         {cell.children && cell.children.length > 0
                           ? renderCellChildren(cell.children, {}, null, `footer-${column.field}`, __componentContext)
-                          : renderFooterCellText(cell.text, `footer-text-${column.field}`, __componentContext)}
+                          : cell.text || ''}
                       </Td>
                     );
                   });
@@ -2019,15 +1535,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
       </Div>
 
       {/* 페이지네이션 */}
-      {pagination && shouldShowPagination && (
+      {pagination && (alwaysShowPagination || effectiveTotalPages > 1) && (
         <Div className="flex justify-center mt-4">
           <Pagination
             currentPage={effectiveCurrentPage}
             totalPages={effectiveTotalPages}
-            hasMorePages={serverSidePagination ? serverHasMorePages : undefined}
             onPageChange={handlePageChange}
-            pageHref={pageHref}
-            pageHrefMergeQuery={pageHrefMergeQuery}
             showFirstLast={showFirstLast}
             maxVisiblePages={5}
             prevText={resolvedPrevText}

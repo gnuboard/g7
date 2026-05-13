@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Page\Repositories\Contracts;
 
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Models\PageVersion;
 
@@ -43,37 +42,7 @@ interface PageVersionRepositoryInterface
      * @param  int  $id  버전 ID
      * @return PageVersion 버전 모델
      *
-     * @throws ModelNotFoundException
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
     public function findOrFail(int $id): PageVersion;
-
-    /**
-     * 페이지에 속한 버전을 ID로 조회하며, 없으면 예외를 발생시킵니다.
-     *
-     * @param  int  $pageId  페이지 ID
-     * @param  int  $id  버전 ID
-     * @return PageVersion 버전 모델
-     *
-     * @throws ModelNotFoundException
-     */
-    public function findForPage(int $pageId, int $id): PageVersion;
-
-    /**
-     * 페이지의 어느 버전 본문이든 이 본문 미디어 해시를 참조하는지 확인합니다 (#887).
-     *
-     * 버전 본문은 다국어 JSON(배열 캐스트)이라 주소의 `/` 가 `\/` 로 저장되므로, 주소가 아니라 12자 해시로 찾는다.
-     *
-     * @param  int  $pageId  페이지 ID
-     * @param  string  $hash  본문 미디어 해시 (12자 영숫자)
-     * @return bool 참조하는 버전이 하나라도 있으면 true
-     */
-    public function referencesHash(int $pageId, string $hash): bool;
-
-    /**
-     * 페이지의 버전 이력을 모두 영구 삭제합니다 (페이지 삭제 정리, #888).
-     *
-     * @param  int  $pageId  페이지 ID
-     * @return int 삭제된 버전 수
-     */
-    public function deleteByPageId(int $pageId): int;
 }

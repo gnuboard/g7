@@ -1,0 +1,435 @@
+/**
+ * G7 Admin Template - Design Guide
+ * UI Elements - 버튼, 인풋, 뱃지 등 기본 UI 스타일
+ */
+
+@layer components {
+  /* ========================================
+   * 1. BUTTONS
+   * ======================================== */
+
+  /* Base Button */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Primary Button (다운로드, 저장) */
+  .btn-primary {
+    @apply bg-gray-900 text-white hover:bg-gray-800;
+    @apply dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100;
+  }
+
+  /* Secondary Button (취소) */
+  .btn-secondary {
+    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50;
+    @apply dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+  }
+
+  /* Outline Button (검색 편집, 프리셋 관리) */
+  .btn-outline {
+    @apply bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+  }
+
+  /* Ghost Button */
+  .btn-ghost {
+    @apply bg-transparent text-gray-600 hover:bg-gray-100;
+    @apply dark:text-gray-400 dark:hover:bg-gray-700;
+  }
+
+  /* Icon Button */
+  .btn-icon {
+    @apply p-2 rounded-lg text-gray-500 hover:bg-gray-100;
+    @apply dark:text-gray-400 dark:hover:bg-gray-700;
+  }
+
+  /* Preset Button (오늘 결제완료, 무통장 입금대기) */
+  .btn-preset {
+    @apply bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-sm font-medium;
+    @apply dark:bg-gray-700 dark:text-gray-300;
+  }
+
+  /* Date Quick Select Button */
+  .btn-date {
+    @apply bg-white text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg text-sm;
+    @apply dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700;
+  }
+  .btn-date.active {
+    @apply bg-gray-900 text-white border-gray-900;
+    @apply dark:bg-white dark:text-gray-900 dark:border-white;
+  }
+
+  /* Badge/Filter Button (주문상태 필터) */
+  .btn-badge {
+    @apply bg-white text-gray-600 border border-gray-200 px-3 py-1.5 rounded-full text-sm font-medium;
+    @apply dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700;
+  }
+  .btn-badge.active {
+    @apply border-gray-900 text-gray-900;
+    @apply dark:border-white dark:text-blue-400;
+  }
+
+  /* Button Group (언어 선택, 상태 선택) */
+  .btn-group {
+    @apply inline-flex rounded-lg overflow-hidden border border-gray-200;
+    @apply dark:border-gray-700;
+  }
+  .btn-group-item {
+    @apply px-3 py-1.5 text-sm font-medium bg-white text-gray-600 border-r border-gray-200 transition-colors;
+    @apply hover:bg-gray-50;
+    @apply dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700;
+  }
+  .btn-group-item:last-child {
+    @apply border-r-0;
+  }
+  .btn-group-item.active {
+    @apply bg-gray-900 text-white;
+    @apply dark:bg-white dark:text-gray-900;
+  }
+
+  /* Badge Button Color Variants (선택 상태) */
+  .btn-badge-green {
+    @apply bg-green-50 border-green-500 text-green-600;
+    @apply dark:bg-green-900/20 dark:border-green-400 dark:text-green-400;
+  }
+  .btn-badge-blue {
+    @apply bg-blue-50 border-blue-500 text-blue-600;
+    @apply dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-400;
+  }
+  .btn-badge-cyan {
+    @apply bg-cyan-50 border-cyan-500 text-cyan-600;
+    @apply dark:bg-cyan-900/20 dark:border-cyan-400 dark:text-cyan-400;
+  }
+  .btn-badge-indigo {
+    @apply bg-indigo-50 border-indigo-500 text-indigo-600;
+    @apply dark:bg-indigo-900/20 dark:border-indigo-400 dark:text-indigo-400;
+  }
+  .btn-badge-pink {
+    @apply bg-pink-50 border-pink-500 text-pink-600;
+    @apply dark:bg-pink-900/20 dark:border-pink-400 dark:text-pink-400;
+  }
+  .btn-badge-red {
+    @apply bg-red-50 border-red-500 text-red-600;
+    @apply dark:bg-red-900/20 dark:border-red-400 dark:text-red-400;
+  }
+  .btn-badge-gray {
+    @apply bg-gray-50 border-gray-300 text-gray-600;
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400;
+  }
+  .btn-badge-yellow {
+    @apply bg-yellow-50 border-yellow-500 text-yellow-600;
+    @apply dark:bg-yellow-900/20 dark:border-yellow-400 dark:text-yellow-400;
+  }
+  .btn-badge-orange {
+    @apply bg-orange-50 border-orange-500 text-orange-600;
+    @apply dark:bg-orange-900/20 dark:border-orange-400 dark:text-orange-400;
+  }
+
+  /* ========================================
+   * 2. INPUTS (테두리 없음, 배경색만)
+   * ======================================== */
+
+  /* Base Input */
+  .input {
+    @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
+    @apply placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500;
+  }
+
+  /* Search Input Container */
+  .input-search-container {
+    @apply flex items-center bg-gray-100 rounded-lg overflow-hidden;
+    @apply dark:bg-gray-700;
+  }
+  .input-search-container .input-search-icon {
+    @apply pl-3 text-gray-400;
+    @apply dark:text-gray-500;
+  }
+  .input-search-container input {
+    @apply flex-1 bg-transparent px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none;
+    @apply dark:text-gray-100 dark:placeholder-gray-500;
+  }
+  .input-search-container .input-search-dropdown {
+    @apply px-3 py-2 text-sm text-gray-600 border-l border-gray-200 cursor-pointer hover:bg-gray-50;
+    @apply dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700;
+  }
+
+  /* Select/Dropdown */
+  .select {
+    @apply w-full bg-gray-100 text-gray-900 px-3 py-2 rounded-lg text-sm appearance-none cursor-pointer;
+    @apply focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+  }
+  .dark .select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  }
+
+  /* Split Input Container (사업자번호, 전화번호) */
+  .input-split {
+    @apply flex items-center gap-2;
+  }
+  .input-split input {
+    @apply bg-gray-100 text-gray-900 px-3 py-2 rounded-lg text-sm text-center;
+    @apply focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100;
+  }
+  .input-split .input-split-separator {
+    @apply text-gray-400;
+    @apply dark:text-gray-500;
+  }
+
+  /* Tag Input */
+  .tag-input-container {
+    @apply flex flex-wrap items-center gap-2;
+  }
+  .tag {
+    @apply inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm;
+    @apply dark:bg-gray-700 dark:text-gray-300;
+  }
+  .tag .tag-remove {
+    @apply text-gray-400 hover:text-gray-600 cursor-pointer;
+    @apply dark:text-gray-500 dark:hover:text-gray-300;
+  }
+
+  /* ========================================
+   * 3. FORM ELEMENTS
+   * ======================================== */
+
+  /* Form Group */
+  .form-group {
+    @apply space-y-1.5;
+  }
+
+  /* Textarea Size Variants */
+  .textarea-sm {
+    min-height: 5rem; /* 80px */
+  }
+  .textarea-md {
+    min-height: 8rem; /* 128px */
+  }
+  .textarea-lg {
+    min-height: 12rem; /* 192px */
+  }
+
+  /* Input Validation States */
+  .input-error {
+    @apply border border-red-500 focus:ring-red-500;
+    @apply dark:border-red-500;
+  }
+  .input-success {
+    @apply border border-green-500 focus:ring-green-500;
+    @apply dark:border-green-500;
+  }
+
+  /* FormField error state - 자식 input/select/textarea에 적색 테두리 자동 적용 */
+  .form-field-error .input,
+  .form-field-error input[type],
+  .form-field-error select,
+  .form-field-error textarea {
+    @apply border border-red-500 focus:ring-red-500;
+    @apply dark:border-red-500;
+  }
+
+  /* Form Error/Success Messages */
+  .form-error {
+    @apply text-sm text-red-500;
+    @apply dark:text-red-400;
+  }
+  .form-success {
+    @apply text-sm text-green-600;
+    @apply dark:text-green-400;
+  }
+
+  /* Checkbox - 시안 기반: primary 버튼 색상과 동일 */
+  .checkbox {
+    @apply w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500 cursor-pointer;
+    @apply dark:border-gray-600 dark:bg-gray-800 dark:text-blue-400;
+  }
+  .checkbox:checked {
+    @apply bg-gray-900 border-gray-900;
+    @apply dark:bg-white dark:border-white;
+  }
+
+  /* Radio Button - 시안 기반: primary 버튼 색상과 동일 */
+  .radio {
+    @apply w-4 h-4 border-gray-300 text-gray-900 focus:ring-gray-500 cursor-pointer;
+    @apply dark:border-gray-600 dark:bg-gray-800 dark:text-blue-400;
+  }
+  .radio:checked {
+    @apply border-gray-900;
+    @apply dark:border-white;
+  }
+
+  /* Toggle/Switch */
+  .toggle {
+    @apply relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors;
+  }
+  .toggle-track {
+    @apply absolute inset-0 rounded-full bg-gray-200 transition-colors;
+    @apply dark:bg-gray-700;
+  }
+  .toggle.active .toggle-track {
+    @apply bg-blue-600;
+  }
+  .toggle-handle {
+    @apply absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform;
+  }
+  .toggle.active .toggle-handle {
+    @apply translate-x-5;
+  }
+
+  /* ========================================
+   * 4. STATUS BADGES
+   * ======================================== */
+
+  /* Base Badge */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium;
+  }
+
+  /* Order Status Badges */
+  .badge-green {
+    @apply bg-green-100 text-green-700 border border-green-200;
+    @apply dark:bg-green-900/30 dark:text-green-400 dark:border-green-800;
+  }
+  .badge-blue {
+    @apply bg-blue-100 text-blue-700 border border-blue-200;
+    @apply dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800;
+  }
+  .badge-cyan {
+    @apply bg-cyan-100 text-cyan-700 border border-cyan-200;
+    @apply dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800;
+  }
+  .badge-indigo {
+    @apply bg-indigo-100 text-indigo-700 border border-indigo-200;
+    @apply dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800;
+  }
+  .badge-pink {
+    @apply bg-pink-100 text-pink-700 border border-pink-200;
+    @apply dark:bg-pink-900/30 dark:text-pink-400 dark:border-pink-800;
+  }
+  .badge-red {
+    @apply bg-red-100 text-red-700 border border-red-200;
+    @apply dark:bg-red-900/30 dark:text-red-400 dark:border-red-800;
+  }
+  .badge-gray {
+    @apply bg-gray-100 text-gray-600 border border-gray-200;
+    @apply dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700;
+  }
+  .badge-yellow {
+    @apply bg-yellow-100 text-yellow-700 border border-yellow-200;
+    @apply dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800;
+  }
+
+  /* Status Badges (엑셀 다운로드) */
+  .badge-status {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  .badge-status-success {
+    @apply bg-green-50 text-green-600;
+    @apply dark:bg-green-900/20 dark:text-green-400;
+  }
+  .badge-status-processing {
+    @apply bg-blue-50 text-blue-600;
+    @apply dark:bg-blue-900/20 dark:text-blue-400;
+  }
+  .badge-status-error {
+    @apply bg-red-50 text-red-600;
+    @apply dark:bg-red-900/20 dark:text-red-400;
+  }
+  .badge-status-expired {
+    @apply bg-gray-50 text-gray-500;
+    @apply dark:bg-gray-800 dark:text-gray-400;
+  }
+
+  /* ========================================
+   * 5. SEARCH BAR
+   * 검색 셀렉트 + 검색 입력 + 초기화 버튼 조합
+   * ======================================== */
+
+  /* Search Bar Container */
+  .search-bar {
+    @apply flex flex-col gap-3;
+    @apply md:flex-row md:flex-wrap md:items-center;
+  }
+
+  /* Search Bar Select - 고정 너비 (native select) */
+  .search-bar-select {
+    @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
+    @apply placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500;
+    @apply md:w-32 md:shrink-0;
+  }
+
+  /* Search Bar Select - Custom Select 용 */
+  .search-bar-select-custom {
+    @apply w-full;
+    @apply md:w-32 md:shrink-0;
+  }
+
+  /* Search Bar Input - 가변 너비 */
+  .search-bar-input {
+    @apply w-full h-9 bg-gray-100 text-gray-900 px-3 rounded-lg text-sm;
+    @apply placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-500;
+    @apply md:flex-1 md:min-w-64;
+  }
+
+  /* Search Bar Reset Button */
+  .search-bar-reset {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer;
+    @apply bg-transparent text-gray-700 border border-gray-300 hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+    @apply w-full shrink-0 gap-1.5;
+    @apply md:w-auto;
+  }
+
+  /* ========================================
+   * 6. FILTER ROW
+   * 필터 라벨 + 필터 버튼 그룹 조합
+   * ======================================== */
+
+  /* Filter Row Container */
+  .filter-row {
+    @apply flex flex-col gap-2 mb-4;
+    @apply md:flex-row md:items-center;
+  }
+
+  /* Filter Row - no margin bottom (마지막 행용) */
+  .filter-row-last {
+    @apply flex flex-col gap-2;
+    @apply md:flex-row md:items-center;
+  }
+
+  /* Filter Label - 세로 중앙 정렬 */
+  .filter-label {
+    @apply text-sm text-gray-600 block mb-2;
+    @apply dark:text-gray-400;
+    @apply md:mb-0 md:w-14 md:shrink-0 md:flex md:items-center;
+  }
+
+  /* Filter Buttons Container */
+  .filter-buttons {
+    @apply flex flex-wrap items-center gap-2;
+  }
+}
+
+/* ========================================
+ * MEDIA QUERIES
+ * ======================================== */
+
+/* Input Split Responsive */
+@media (max-width: 640px) {
+  .input-split {
+    flex-wrap: wrap;
+  }
+  .input-split input {
+    flex: 1;
+    min-width: 0;
+  }
+}

@@ -25,11 +25,6 @@ enum ScheduleType: string
     case Url = 'url';
 
     /**
-     * Job 클래스 (허용목록에 등록된 클래스만 실행)
-     */
-    case Job = 'job';
-
-    /**
      * 모든 유형 값을 문자열 배열로 반환합니다.
      *
      * @return array<string>
@@ -42,7 +37,7 @@ enum ScheduleType: string
     /**
      * 유효한 유형 값인지 확인합니다.
      *
-     * @param  string  $value  검증할 유형 값
+     * @param string $value 검증할 유형 값
      * @return bool 유효 여부
      */
     public static function isValid(string $value): bool
@@ -57,7 +52,7 @@ enum ScheduleType: string
      */
     public function label(): string
     {
-        return __('schedule.type.'.$this->value);
+        return __('schedule.type.' . $this->value);
     }
 
     /**
@@ -71,7 +66,6 @@ enum ScheduleType: string
             self::Artisan => 'blue',
             self::Shell => 'gray',
             self::Url => 'indigo',
-            self::Job => 'purple',
         };
     }
 }

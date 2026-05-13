@@ -1,4 +1,0 @@
-{
-  "name": "KGイニシス本人認証",
-  "description": "KGイニシス統合認証の本人確認(reqSvcCd=03)をG7コアIDVインフラにProviderとして登録するプラグイン"
-}

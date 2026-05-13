@@ -6,9 +6,6 @@
  * - _tab_shipping.json (배송설정 기본 + 배송가능국가 + 도서산간)
  * - _shipping_country_table.json (국가 테이블)
  */
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 
 // 레이아웃 JSON 임포트
@@ -17,43 +14,8 @@ import tabShipping from '../../../layouts/admin/partials/admin_ecommerce_setting
 import countryTable from '../../../layouts/admin/partials/admin_ecommerce_settings/_shipping_country_table.json';
 import countryCards from '../../../layouts/admin/partials/admin_ecommerce_settings/_shipping_country_cards.json';
 import disableIntlModal from '../../../layouts/admin/partials/admin_ecommerce_settings/_disable_international_shipping_modal.json';
-import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ── 헬퍼 함수 ──────────────────────────────────────────
-
-/**
- * 이 화면을 렌더하는 admin 템플릿의 매니페스트가 선언한 컴포넌트 종류를 읽는다.
- *
- * 레이아웃 노드의 `type` 은 렌더러가 props 전달 범위를 고르는 기준이라
- * 매니페스트 선언과 어긋나면 `editorAttrs` 가 제거돼 레이아웃 편집기에서 표식을 잃는다.
- * 바인딩 방식(자동/수동)과는 무관한 값이다.
- *
- * @param name 컴포넌트 이름
- * @returns 매니페스트가 선언한 type
- */
-function manifestType(name: string): string {
-    let current = path.dirname(fileURLToPath(import.meta.url));
-
-    for (let depth = 0; depth < 10; depth++) {
-        if (fs.existsSync(path.join(current, 'artisan'))) break;
-        current = path.dirname(current);
-    }
-
-    const manifest = JSON.parse(
-        fs.readFileSync(
-            path.join(current, 'templates/_bundled/sirsoft-admin_basic/components.json'),
-            'utf-8',
-        ),
-    );
-
-    for (const [kind, entries] of Object.entries<any>(manifest.components ?? {})) {
-        if ((entries as any[]).some((entry) => entry.name === name)) {
-            return kind;
-        }
-    }
-
-    throw new Error(`매니페스트에 ${name} 선언이 없습니다.`);
-}
 function flattenAll(node: any): any[] {
     const result: any[] = [];
     if (!node) return result;
@@ -63,7 +25,6 @@ function flattenAll(node: any): any[] {
     }
     result.push(node);
     if (node.children) result.push(...flattenAll(node.children));
-    if (node.props?.footer) result.push(...flattenAll(node.props.footer)); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
     if (node.slots) {
         Object.values(node.slots).forEach((s: any) => result.push(...flattenAll(s)));
     }
@@ -92,10 +53,6 @@ function collectI18nKeys(obj: any): string[] {
 describe('환경설정 메인 레이아웃 - shipping 탭', () => {
     const allNodes = flattenAll(settingsLayout);
 
-    /**
-     * @scenario surface=settings_tab
-     * @effects shipping_tab_registered_in_settings
-     */
     it('TabNavigation에 shipping 탭이 정의되어 있다', () => {
         const tabNav = allNodes.find((n: any) => n.name === 'TabNavigation');
         expect(tabNav).toBeDefined();
@@ -105,10 +62,6 @@ describe('환경설정 메인 레이아웃 - shipping 탭', () => {
         expect(shippingTab.label).toContain('$t:sirsoft-ecommerce.admin.settings.tabs.shipping');
     });
 
-    /**
-     * @scenario surface=settings_tab
-     * @effects shipping_tab_registered_in_settings
-     */
     it('shipping 탭 순서가 order_settings 다음이다', () => {
         const tabNav = allNodes.find((n: any) => n.name === 'TabNavigation');
         const tabs = tabNav.props?.tabs ?? [];
@@ -118,10 +71,6 @@ describe('환경설정 메인 레이아웃 - shipping 탭', () => {
         expect(shippingIdx).toBeGreaterThan(orderIdx);
     });
 
-    /**
-     * @scenario surface=settings_tab
-     * @effects shipping_tab_registered_in_settings
-     */
     it('_tab_shipping.json partial이 포함되어 있다', () => {
         const partialRef = allNodes.find(
             (n: any) => n.partial?.includes('_tab_shipping.json')
@@ -137,45 +86,25 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
     const allNodes = flattenAll(tabShipping);
 
     describe('메타 정보', () => {
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_partials_are_well_formed
-         */
         it('is_partial이 true', () => {
             expect(tabShipping.meta?.is_partial).toBe(true);
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_partials_are_well_formed
-         */
         it('id가 tab_content_shipping', () => {
             expect(tabShipping.id).toBe('tab_content_shipping');
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_partials_are_well_formed
-         */
         it('if 조건에 shipping 탭 매칭이 있다', () => {
             expect(tabShipping.if).toContain("'shipping'");
         });
     });
 
     describe('기본 배송설정 카드', () => {
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_basic_card_binds_default_country_and_intl_toggle
-         */
         it('shipping_basic_card가 존재한다', () => {
             const card = findById(allNodes, 'shipping_basic_card');
             expect(card).toBeDefined();
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_basic_card_binds_default_country_and_intl_toggle
-         */
         it('기본 국가 Select가 있다', () => {
             const defaultField = findById(allNodes, 'default_country_field');
             expect(defaultField).toBeDefined();
@@ -186,10 +115,6 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             expect(select.props?.value).toContain('default_country');
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_basic_card_binds_default_country_and_intl_toggle
-         */
         it('기본 국가 Select의 options가 available_countries에서 동적 생성된다', () => {
             const defaultField = findById(allNodes, 'default_country_field');
             const select = flattenAll(defaultField).find((n: any) => n.name === 'Select');
@@ -198,32 +123,23 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             expect(select.props?.options).toContain('is_active');
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_basic_card_binds_default_country_and_intl_toggle
-         */
-        it('해외배송 Toggle이 수동 바인딩(checked + actions)으로 구성되어 있다', () => {
+        it('해외배송 Toggle이 수동 바인딩(basic + checked + actions)으로 구성되어 있다', () => {
             const intlField = findById(allNodes, 'international_shipping_field');
             expect(intlField).toBeDefined();
             const toggles = flattenAll(intlField).filter((n: any) => n.name === 'Toggle');
             expect(toggles.length).toBeGreaterThan(0);
             const toggle = toggles[0];
-            // 수동 바인딩의 실체는 checked prop + actions 다. 노드 type 은 바인딩 방식과 무관하며
-            // 매니페스트 선언을 따라야 한다(어긋나면 레이아웃 편집기에서 표식을 잃는다).
-            expect(toggle.type).toBe(manifestType('Toggle'));
+            // 수동 바인딩: type=basic, checked prop, actions 있음
+            expect(toggle.type).toBe('basic');
             expect(toggle.props?.checked).toContain('international_shipping_enabled');
             expect(toggle.actions).toBeDefined();
-            expect(asArray(toggle?.actions).length).toBeGreaterThanOrEqual(2);
+            expect(toggle.actions.length).toBeGreaterThanOrEqual(2);
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_basic_card_binds_default_country_and_intl_toggle
-         */
         it('해외배송 Toggle ON 시 setState로 직접 활성화한다', () => {
             const intlField = findById(allNodes, 'international_shipping_field');
             const toggle = flattenAll(intlField).find((n: any) => n.name === 'Toggle');
-            const onAction = asArray(toggle?.actions).find(
+            const onAction = toggle.actions.find(
                 (a: any) => a.type === 'change' && a.if?.includes('$event.target.checked') && !a.if?.includes('!')
             );
             expect(onAction).toBeDefined();
@@ -232,48 +148,36 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             expect(onAction.params?.hasChanges).toBe(true);
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_basic_card_binds_default_country_and_intl_toggle
-         */
         it('해외배송 Toggle OFF 시 conditions 핸들러로 분기한다', () => {
             const intlField = findById(allNodes, 'international_shipping_field');
             const toggle = flattenAll(intlField).find((n: any) => n.name === 'Toggle');
-            const offAction = asArray(toggle?.actions).find(
+            const offAction = toggle.actions.find(
                 (a: any) => a.type === 'change' && a.if?.includes('!$event.target.checked')
             );
             expect(offAction).toBeDefined();
             expect(offAction.handler).toBe('conditions');
             expect(offAction.conditions).toBeDefined();
-            expect(asArray(offAction?.conditions).length).toBe(2);
+            expect(offAction.conditions.length).toBe(2);
             // 첫 번째 조건: 외국 활성 국가 존재 → sequence(setState + openModal)
-            expect(asArray(offAction?.conditions)[0].if).toContain('is_active');
-            expect(asArray(offAction?.conditions)[0].then.handler).toBe('sequence');
-            const innerOpenModal = asArray(offAction?.conditions)[0].then.actions?.find(
+            expect(offAction.conditions[0].if).toContain('is_active');
+            expect(offAction.conditions[0].then.handler).toBe('sequence');
+            const innerOpenModal = offAction.conditions[0].then.actions?.find(
                 (a: any) => a.handler === 'openModal',
             );
             expect(innerOpenModal).toBeDefined();
             expect(innerOpenModal.target).toBe('disable_international_shipping_modal');
             // 두 번째 조건: 기본(fallback) → setState
-            expect(asArray(offAction?.conditions)[1].then.handler).toBe('setState');
-            expect(asArray(offAction?.conditions)[1].then.params?.['form.shipping.international_shipping_enabled']).toBe(false);
+            expect(offAction.conditions[1].then.handler).toBe('setState');
+            expect(offAction.conditions[1].then.params?.['form.shipping.international_shipping_enabled']).toBe(false);
         });
     });
 
     describe('배송가능국가 카드', () => {
-        /**
-         * @scenario surface=settings_tab
-         * @effects available_country_add_flow
-         */
         it('available_countries_card가 존재한다', () => {
             const card = findById(allNodes, 'available_countries_card');
             expect(card).toBeDefined();
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects available_country_add_flow
-         */
         it('국가 추가 버튼이 있고 해외배송 활성 + 추가 폼 미열림 시만 표시된다', () => {
             const addBtn = findById(allNodes, 'add_country_button');
             expect(addBtn).toBeDefined();
@@ -281,10 +185,6 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             expect(addBtn.if).toContain('international_shipping_enabled');
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects available_country_add_flow
-         */
         it('국가 추가 버튼의 onClick이 isAddingCountry를 true로 설정한다', () => {
             const addBtn = findById(allNodes, 'add_country_button');
             const clickAction = addBtn.actions?.find(
@@ -294,10 +194,6 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             expect(clickAction.params?.isAddingCountry).toBe(true);
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects available_country_add_flow
-         */
         it('_shipping_country_table.json partial이 포함되어 있다', () => {
             const card = findById(allNodes, 'available_countries_card');
             const cardNodes = flattenAll(card);
@@ -307,10 +203,6 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             expect(partialRef).toBeDefined();
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects available_country_add_flow
-         */
         it('국가 추가 폼이 isAddingCountry + 해외배송 활성 시만 표시된다', () => {
             const addForm = findById(allNodes, 'add_country_form');
             expect(addForm).toBeDefined();
@@ -318,60 +210,35 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             expect(addForm.if).toContain('international_shipping_enabled');
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects available_country_add_flow
-         */
-        it('국가 추가 폼에 코드 Input + 설치 언어마다 반복되는 국가명 Input이 있다', () => {
-            // #459: 이름 입력칸은 ko/en 두 칸 고정이 아니라 $locales 순회로 언어 수만큼 생성된다.
-            // 따라서 정적 노드 트리에는 name Input 이 "템플릿 1개"로만 존재한다.
+        it('국가 추가 폼에 코드/한국어명/영문명 Input이 있다', () => {
             const addForm = findById(allNodes, 'add_country_form');
             const formNodes = flattenAll(addForm);
             const inputs = formNodes.filter((n: any) => n.name === 'Input');
-
+            // code, name.ko, name.en => 3개
+            expect(inputs.length).toBeGreaterThanOrEqual(3);
+            // code input
             const codeInput = inputs.find((i: any) => i.props?.value?.includes('newCountry?.code'));
             expect(codeInput).toBeDefined();
             expect(codeInput.props?.maxLength).toBe(10);
-
-            // 로케일 인덱싱 이름 입력칸 (name?.[loc]) — 특정 로케일 하드코딩이 아니어야 한다
-            const nameInput = inputs.find((i: any) => i.props?.value?.includes('newCountry?.name?.[loc]'));
-            expect(nameInput).toBeDefined();
-
-            // 그 입력칸을 감싼 Div 가 $locales 를 순회한다
-            const iterated = formNodes.find(
-                (n: any) => n.iteration?.source?.includes('$locales') && n.iteration?.item_var === 'loc'
-            );
-            expect(iterated).toBeDefined();
-
-            // ko/en 고정 입력칸 잔존 0 (회귀 차단)
-            expect(inputs.some((i: any) => i.props?.value?.includes('newCountry?.name?.ko'))).toBe(false);
-            expect(inputs.some((i: any) => i.props?.value?.includes('newCountry?.name?.en'))).toBe(false);
+            // name.ko input
+            const koInput = inputs.find((i: any) => i.props?.value?.includes('newCountry?.name?.ko'));
+            expect(koInput).toBeDefined();
+            // name.en input
+            const enInput = inputs.find((i: any) => i.props?.value?.includes('newCountry?.name?.en'));
+            expect(enInput).toBeDefined();
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects available_country_add_flow
-         */
-        it('추가 버튼은 코드가 없거나 모든 언어의 이름이 비면 disabled', () => {
-            // #459: 특정 로케일(ko)을 필수로 강제하지 않는다.
-            // 백엔드 StoreEcommerceSettingsRequest 도 name 을 array 로만 요구한다.
+        it('추가 버튼은 code와 name.ko가 없으면 disabled', () => {
             const addForm = findById(allNodes, 'add_country_form');
             const formNodes = flattenAll(addForm);
             const buttons = formNodes.filter((n: any) => n.name === 'Button');
+            // 추가 버튼 (disabled prop 가진 것)
             const addButton = buttons.find((b: any) => b.props?.disabled);
             expect(addButton).toBeDefined();
             expect(addButton.props.disabled).toContain('newCountry?.code');
-            // "어느 한 언어라도 채워졌는가" 조건
-            expect(addButton.props.disabled).toContain('Object.values');
-            expect(addButton.props.disabled).toContain('some');
-            // ko 필수 조건 잔존 0 (회귀 차단)
-            expect(addButton.props.disabled).not.toContain('newCountry?.name?.ko');
+            expect(addButton.props.disabled).toContain('newCountry?.name?.ko');
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects available_country_add_flow
-         */
         it('추가 버튼 클릭 시 available_countries에 새 국가가 push된다', () => {
             const addForm = findById(allNodes, 'add_country_form');
             const formNodes = flattenAll(addForm);
@@ -394,10 +261,6 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
             }
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects available_country_add_flow
-         */
         it('취소 버튼이 있고 isAddingCountry를 false로 설정한다', () => {
             const addForm = findById(allNodes, 'add_country_form');
             const formNodes = flattenAll(addForm);
@@ -418,10 +281,6 @@ describe('배송설정 탭 콘텐츠 (_tab_shipping.json)', () => {
     describe('도서산간 전역 설정 카드', () => {
         // 도서산간 추가배송비는 환경설정 전역에서 제거되고 배송정책 단위로 이전됨
         // (settings → shipping_policy.charge_policy.surcharges 로 이동)
-        /**
-         * @scenario surface=settings_tab
-         * @effects remote_area_card_removed_from_settings
-         */
         it('remote_area_card 가 환경설정 탭에서 제거되었다', () => {
             const card = findById(allNodes, 'remote_area_card');
             expect(card).toBeUndefined();
@@ -436,28 +295,16 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
     const allNodes = flattenAll(countryTable);
 
     describe('메타 정보', () => {
-        /**
-         * @scenario surface=country_table
-         * @effects shipping_partials_are_well_formed
-         */
         it('is_partial이 true', () => {
             expect(countryTable.meta?.is_partial).toBe(true);
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects shipping_partials_are_well_formed
-         */
         it('id가 shipping_country_table_container', () => {
             expect(countryTable.id).toBe('shipping_country_table_container');
         });
     });
 
     describe('빈 상태 표시', () => {
-        /**
-         * @scenario surface=country_table
-         * @effects country_list_shows_empty_state
-         */
         it('국가가 없을 때 빈 상태가 표시된다', () => {
             const emptyDiv = allNodes.find(
                 (n: any) =>
@@ -477,10 +324,6 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
     });
 
     describe('테이블 구조', () => {
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('country_list 래퍼가 국가가 있을 때만 표시된다', () => {
             const wrapper = findById(allNodes, 'country_list');
             expect(wrapper).toBeDefined();
@@ -488,10 +331,6 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
             expect(wrapper.if).toContain('length > 0');
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('Table이 country_list 래퍼 내부에 있다', () => {
             const wrapper = findById(allNodes, 'country_list');
             const wrapperNodes = flattenAll(wrapper);
@@ -500,22 +339,14 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
             expect(table.name).toBe('Table');
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('Thead에 4개 컬럼 헤더가 있다', () => {
             const theadNodes = allNodes.filter((n: any) => n.name === 'Th');
             // country_code, country_name, is_active, actions(empty)
             expect(theadNodes.length).toBe(4);
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('Tbody에 iteration이 있다', () => {
-            const iterNode = findById(allNodes, 'country_row_{{countryIndex}}');
+            const iterNode = findById(allNodes, 'country_row');
             expect(iterNode).toBeDefined();
             expect(iterNode.iteration).toBeDefined();
             expect(iterNode.iteration.source).toContain('available_countries');
@@ -523,37 +354,24 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
             expect(iterNode.iteration.index_var).toBe('countryIndex');
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('국가코드가 국기 아이콘과 함께 표시된다', () => {
             const spans = allNodes.filter((n: any) => n.name === 'Span');
-            // 국기 아이콘 Span (ecommerce-flag ecommerce-flag-xx 클래스)
-            const flagSpan = spans.find((s: any) => s.props?.className?.includes('ecommerce-flag ecommerce-flag-'));
+            // 국기 아이콘 Span (fi fi-xx 클래스)
+            const flagSpan = spans.find((s: any) => s.props?.className?.includes('fi fi-'));
             expect(flagSpan).toBeDefined();
-            expect(flagSpan.props.className).toContain('ecommerce-flag--square');
+            expect(flagSpan.props.className).toContain('fis');
             expect(flagSpan.props.className).toContain('rounded');
             // 국가코드 텍스트 Span
             const codeSpan = spans.find((s: any) => s.text === '{{country.code}}');
             expect(codeSpan).toBeDefined();
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
-        it('국가명이 $localized로 표시된다 (fallbackKey 동반)', () => {
+        it('국가명이 $localized로 표시된다', () => {
             const spans = allNodes.filter((n: any) => n.name === 'Span');
-            // catalogLangPackFallback 마이그레이션 이후 fallbackKey 인자 동반 (괄호 닫기 검사 제거)
-            const nameSpan = spans.find((s: any) => s.text?.includes('$localized(country.name'));
+            const nameSpan = spans.find((s: any) => s.text?.includes('$localized(country.name)'));
             expect(nameSpan).toBeDefined();
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('활성여부 Toggle이 있다', () => {
             const toggles = allNodes.filter((n: any) => n.name === 'Toggle');
             const activeToggle = toggles.find((t: any) =>
@@ -563,10 +381,6 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
             expect(activeToggle.props.size).toBe('sm');
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('활성여부 Toggle이 해외배송 OFF + 비기본국가 시 disabled', () => {
             const toggles = allNodes.filter((n: any) => n.name === 'Toggle');
             const activeToggle = toggles.find((t: any) =>
@@ -577,10 +391,6 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
             expect(activeToggle.props.disabled).toContain('default_country');
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('활성여부 Toggle의 setState가 배열 map으로 업데이트한다', () => {
             const toggles = allNodes.filter((n: any) => n.name === 'Toggle');
             const activeToggle = toggles.find((t: any) =>
@@ -597,10 +407,6 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
             expect(value).toContain('is_active');
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('삭제 버튼이 기본 국가가 아닌 경우에만 표시된다', () => {
             const buttons = allNodes.filter((n: any) => n.name === 'Button');
             const deleteBtn = buttons.find(
@@ -613,10 +419,6 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
             expect(deleteBtn.if).toContain('!==');
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('삭제 버튼이 해외배송 OFF 시 disabled', () => {
             const buttons = allNodes.filter((n: any) => n.name === 'Button');
             const deleteBtn = buttons.find(
@@ -628,10 +430,6 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
             expect(deleteBtn.props.disabled).toContain('international_shipping_enabled');
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('삭제 버튼 클릭 시 filter로 해당 국가를 제거한다', () => {
             const buttons = allNodes.filter((n: any) => n.name === 'Button');
             const deleteBtn = buttons.find(
@@ -650,10 +448,6 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
             expect(action.params?.[countryKey!]).toContain('filter');
         });
 
-        /**
-         * @scenario surface=country_table
-         * @effects country_rows_toggle_delete_and_default_badge
-         */
         it('기본 국가에는 기본 배지가 표시된다', () => {
             const spans = allNodes.filter((n: any) => n.name === 'Span');
             const defaultBadge = spans.find(
@@ -685,23 +479,19 @@ describe('바인딩 패턴 일관성 검증', () => {
     describe('자동 바인딩 필드 (name prop, actions 없음)', () => {
         const allNodes = flattenAll(tabShipping);
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_edits_mark_settings_dirty
-         */
         it('해외배송 Toggle이 수동 바인딩이며 ON/OFF 모두 hasChanges를 설정한다', () => {
             const intlField = findById(allNodes, 'international_shipping_field');
             const toggle = flattenAll(intlField).find((n: any) => n.name === 'Toggle');
-            expect(toggle.type).toBe(manifestType('Toggle'));
+            expect(toggle.type).toBe('basic');
             expect(toggle.props?.checked).toContain('international_shipping_enabled');
             expect(toggle.actions).toBeDefined();
             // ON action에 hasChanges: true
-            const onAction = asArray(toggle?.actions).find(
+            const onAction = toggle.actions.find(
                 (a: any) => a.if?.includes('$event.target.checked') && !a.if?.includes('!')
             );
             expect(onAction.params?.hasChanges).toBe(true);
             // OFF action은 conditions 핸들러 (setState 또는 openModal)
-            const offAction = asArray(toggle?.actions).find(
+            const offAction = toggle.actions.find(
                 (a: any) => a.if?.includes('!$event.target.checked')
             );
             expect(offAction.handler).toBe('conditions');
@@ -715,10 +505,6 @@ describe('바인딩 패턴 일관성 검증', () => {
         const tabNodes = flattenAll(tabShipping);
         const tableNodes = flattenAll(countryTable);
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_edits_mark_settings_dirty
-         */
         it('기본 국가 Select의 setState에 hasChanges: true가 포함된다', () => {
             const defaultField = findById(tabNodes, 'default_country_field');
             const select = flattenAll(defaultField).find((n: any) => n.name === 'Select');
@@ -727,10 +513,6 @@ describe('바인딩 패턴 일관성 검증', () => {
             expect(action.params?.hasChanges).toBe(true);
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_edits_mark_settings_dirty
-         */
         it('국가 추가 확인 버튼의 setState에 hasChanges: true가 포함된다', () => {
             const addForm = findById(tabNodes, 'add_country_form');
             const formNodes = flattenAll(addForm);
@@ -749,10 +531,6 @@ describe('바인딩 패턴 일관성 검증', () => {
             }
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_edits_mark_settings_dirty
-         */
         it('국가 활성여부 Toggle의 setState에 hasChanges: true가 포함된다', () => {
             const toggles = tableNodes.filter((n: any) => n.name === 'Toggle');
             const activeToggle = toggles.find((t: any) =>
@@ -765,10 +543,6 @@ describe('바인딩 패턴 일관성 검증', () => {
             expect(action.params?.['form.shipping.available_countries']).toBeDefined();
         });
 
-        /**
-         * @scenario surface=settings_tab
-         * @effects shipping_edits_mark_settings_dirty
-         */
         it('국가 삭제 버튼의 setState에 hasChanges: true가 포함된다', () => {
             const buttons = tableNodes.filter((n: any) => n.name === 'Button');
             const deleteBtn = buttons.find(
@@ -789,44 +563,24 @@ describe('바인딩 패턴 일관성 검증', () => {
 describe('해외배송 비활성화 확인 모달 (_disable_international_shipping_modal.json)', () => {
     const allNodes = flattenAll(disableIntlModal);
 
-    /**
-     * @scenario surface=disable_modal
-     * @effects disable_intl_shipping_requires_confirm
-     */
     it('is_partial이 true', () => {
         expect(disableIntlModal.meta?.is_partial).toBe(true);
     });
 
-    /**
-     * @scenario surface=disable_modal
-     * @effects disable_intl_shipping_requires_confirm
-     */
     it('id가 disable_international_shipping_modal', () => {
         expect(disableIntlModal.id).toBe('disable_international_shipping_modal');
     });
 
-    /**
-     * @scenario surface=disable_modal
-     * @effects disable_intl_shipping_requires_confirm
-     */
     it('Modal 컴포넌트로 구성된다', () => {
         expect(disableIntlModal.name).toBe('Modal');
         expect(disableIntlModal.type).toBe('composite');
     });
 
-    /**
-     * @scenario surface=disable_modal
-     * @effects disable_intl_shipping_requires_confirm
-     */
     it('경고 메시지가 다국어로 표시된다', () => {
         const keys = collectI18nKeys(disableIntlModal);
         expect(keys).toContain('$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message');
     });
 
-    /**
-     * @scenario surface=disable_modal
-     * @effects disable_intl_shipping_requires_confirm
-     */
     it('취소 버튼이 sequence(parent setState + closeModal) 패턴이다', () => {
         const buttons = allNodes.filter((n: any) => n.name === 'Button');
         const cancelBtn = buttons.find((b: any) => {
@@ -843,10 +597,6 @@ describe('해외배송 비활성화 확인 모달 (_disable_international_shippi
         expect(closeAction).toBeDefined();
     });
 
-    /**
-     * @scenario surface=disable_modal
-     * @effects disable_intl_shipping_requires_confirm
-     */
     it('확인 버튼이 sequence(setState + closeModal) 핸들러를 호출한다', () => {
         const buttons = allNodes.filter((n: any) => n.name === 'Button');
         const confirmBtn = buttons.find((b: any) => {
@@ -869,17 +619,12 @@ describe('해외배송 비활성화 확인 모달 (_disable_international_shippi
         expect(typeof availableCountriesExpr).toBe('string');
         expect(availableCountriesExpr).toContain('map');
         expect(availableCountriesExpr).toContain('is_active: false');
-        // closeModal — 엔진은 인자를 읽지 않고 맨 위 모달(이 창)을 닫는다. `params.id` 는 조용히
-        // 무시되던 값이라 두지 않는다(컴파일 경고 action_param_misplaced_key).
+        // closeModal
         const closeAction = action.actions?.find((a: any) => a.handler === 'closeModal');
         expect(closeAction).toBeDefined();
-        expect(closeAction.params?.id).toBeUndefined();
+        expect(closeAction.params?.id).toBe('disable_international_shipping_modal');
     });
 
-    /**
-     * @scenario surface=disable_modal
-     * @effects disable_intl_shipping_requires_confirm
-     */
     it('모달이 루트 레이아웃의 modals에 등록되어 있다', () => {
         const modals = (settingsLayout as any).modals ?? [];
         const disableModal = modals.find((m: any) =>
@@ -893,10 +638,6 @@ describe('해외배송 비활성화 확인 모달 (_disable_international_shippi
 // 6. 다국어 키 검증
 // ══════════════════════════════════════════════════════════
 describe('다국어 키', () => {
-    /**
-     * @scenario surface=settings_tab
-     * @effects shipping_i18n_keys_namespaced
-     */
     it('_tab_shipping.json의 모든 i18n 키가 sirsoft-ecommerce 네임스페이스다', () => {
         const keys = collectI18nKeys(tabShipping);
         const moduleKeys = keys.filter((k) => k.startsWith('$t:sirsoft-ecommerce.'));
@@ -905,10 +646,6 @@ describe('다국어 키', () => {
         expect(moduleKeys.length + commonKeys.length).toBe(keys.length);
     });
 
-    /**
-     * @scenario surface=settings_tab
-     * @effects shipping_i18n_keys_namespaced
-     */
     it('_shipping_country_table.json의 모든 i18n 키가 올바른 네임스페이스다', () => {
         const keys = collectI18nKeys(countryTable);
         const moduleKeys = keys.filter((k) => k.startsWith('$t:sirsoft-ecommerce.'));
@@ -916,10 +653,6 @@ describe('다국어 키', () => {
         expect(moduleKeys.length + commonKeys.length).toBe(keys.length);
     });
 
-    /**
-     * @scenario surface=settings_tab
-     * @effects shipping_i18n_keys_namespaced
-     */
     it('필수 다국어 키가 존재한다', () => {
         const allKeys = [
             ...collectI18nKeys(tabShipping),
@@ -953,19 +686,11 @@ describe('다국어 키', () => {
 // 7. 다크모드 검증
 // ══════════════════════════════════════════════════════════
 describe('다크모드', () => {
-    /**
-     * @scenario surface=settings_tab
-     * @effects shipping_dark_mode_pairs
-     */
     it('_tab_shipping.json에 dark: 클래스가 사용된다', () => {
         const json = JSON.stringify(tabShipping);
         expect(json).toContain('dark:');
     });
 
-    /**
-     * @scenario surface=settings_tab
-     * @effects shipping_dark_mode_pairs
-     */
     it('_shipping_country_table.json에 dark: 클래스가 사용된다', () => {
         const json = JSON.stringify(countryTable);
         expect(json).toContain('dark:');
@@ -978,10 +703,6 @@ describe('다크모드', () => {
 describe('배송가능국가 모바일 카드 — responsive 속성', () => {
     const allNodes = flattenAll(countryTable);
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_list_swaps_to_cards_on_portable
-     */
     it('country_list에 responsive.portable 속성이 있다', () => {
         const wrapper = findById(allNodes, 'country_list');
         expect(wrapper).toBeDefined();
@@ -989,19 +710,11 @@ describe('배송가능국가 모바일 카드 — responsive 속성', () => {
         expect(wrapper.responsive.portable).toBeDefined();
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_list_swaps_to_cards_on_portable
-     */
     it('portable에서 className을 빈 문자열로 오버라이드한다', () => {
         const wrapper = findById(allNodes, 'country_list');
         expect(wrapper.responsive.portable.props?.className).toBe('');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_list_swaps_to_cards_on_portable
-     */
     it('portable children에 _shipping_country_cards.json partial이 있다', () => {
         const wrapper = findById(allNodes, 'country_list');
         const portableChildren = wrapper.responsive.portable.children;
@@ -1010,10 +723,6 @@ describe('배송가능국가 모바일 카드 — responsive 속성', () => {
         expect(portableChildren[0].partial).toContain('_shipping_country_cards.json');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_list_swaps_to_cards_on_portable
-     */
     it('래퍼 props에 overflow-x-auto가 있다 (데스크톱 테이블 가로 스크롤)', () => {
         const wrapper = findById(allNodes, 'country_list');
         expect(wrapper.props?.className).toContain('overflow-x-auto');
@@ -1024,30 +733,17 @@ describe('배송가능국가 모바일 카드 — responsive 속성', () => {
 // 9. 배송가능국가 모바일 카드 — 루트 구조
 // ══════════════════════════════════════════════════════════
 describe('배송가능국가 모바일 카드 — 루트 구조', () => {
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
     it('카드 JSON이 partial이다 (meta.is_partial)', () => {
         expect(countryCards.meta?.is_partial).toBe(true);
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
-    it('루트 컨테이너에 className 이 정의되지 않는다 — partial root 의 spacing 은 부모 레이아웃/카드 자체 책임', () => {
-        // 실제 partial 은 root className 을 두지 않고 각 카드에 mb-3 로 간격을 둔다.
-        expect(countryCards.props?.className).toBeUndefined();
+    it('루트 컨테이너가 space-y-3 클래스를 가진다', () => {
+        expect(countryCards.props?.className).toContain('space-y-3');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
     it('카드가 excel-card 클래스로 반복 렌더링된다', () => {
         const allNodes = flattenAll(countryCards);
-        const card = findById(allNodes, 'country_card_{{countryIndex}}');
+        const card = findById(allNodes, 'country_card');
         expect(card).toBeDefined();
         expect(card.props?.className).toContain('excel-card');
         expect(card.iteration).toBeDefined();
@@ -1056,13 +752,9 @@ describe('배송가능국가 모바일 카드 — 루트 구조', () => {
         expect(card.iteration.index_var).toBe('countryIndex');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
     it('iteration source에 _idx 인덱스 주입이 포함된다', () => {
         const allNodes = flattenAll(countryCards);
-        const card = findById(allNodes, 'country_card_{{countryIndex}}');
+        const card = findById(allNodes, 'country_card');
         expect(card.iteration.source).toContain('_idx');
         expect(card.iteration.source).toContain('.map(');
     });
@@ -1074,34 +766,22 @@ describe('배송가능국가 모바일 카드 — 루트 구조', () => {
 describe('배송가능국가 모바일 카드 — 헤더 구조', () => {
     const allNodes = flattenAll(countryCards);
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
     it('excel-card-header가 존재한다', () => {
         const header = allNodes.find(
-            (n: any) => n.props?.className === 'ecommerce-excel-card-header'
+            (n: any) => n.props?.className === 'excel-card-header'
         );
         expect(header).toBeDefined();
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
-    it('국기 아이콘 Span이 ecommerce-flag 클래스로 표시된다', () => {
+    it('국기 아이콘 Span이 fi fi- 클래스로 표시된다', () => {
         const flagSpan = allNodes.find(
-            (s: any) => s.name === 'Span' && s.props?.className?.includes('ecommerce-flag ecommerce-flag-')
+            (s: any) => s.name === 'Span' && s.props?.className?.includes('fi fi-')
         );
         expect(flagSpan).toBeDefined();
-        expect(flagSpan.props.className).toContain('ecommerce-flag--square');
+        expect(flagSpan.props.className).toContain('fis');
         expect(flagSpan.props.className).toContain('rounded');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
     it('국가코드가 excel-card-title font-mono로 표시된다', () => {
         const title = allNodes.find(
             (n: any) =>
@@ -1112,23 +792,15 @@ describe('배송가능국가 모바일 카드 — 헤더 구조', () => {
         expect(title.text).toBe('{{country.code}}');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
-    it('국가명이 $localized로 text-tertiary로 표시된다 (fallbackKey 동반)', () => {
+    it('국가명이 $localized로 text-tertiary로 표시된다', () => {
         const subtitle = allNodes.find(
             (n: any) =>
                 n.props?.className?.includes('text-tertiary') &&
-                n.text?.includes('$localized(country.name')
+                n.text?.includes('$localized(country.name)')
         );
         expect(subtitle).toBeDefined();
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
     it('활성여부 Toggle이 sm 사이즈로 존재한다', () => {
         const toggles = allNodes.filter((n: any) => n.name === 'Toggle');
         expect(toggles.length).toBe(1);
@@ -1137,20 +809,12 @@ describe('배송가능국가 모바일 카드 — 헤더 구조', () => {
         expect(toggle.props?.size).toBe('sm');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
     it('활성여부 Toggle이 해외배송 OFF + 비기본국가 시 disabled', () => {
         const toggle = allNodes.find((n: any) => n.name === 'Toggle');
         expect(toggle.props?.disabled).toContain('international_shipping_enabled');
         expect(toggle.props?.disabled).toContain('default_country');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
     it('삭제 버튼이 기본 국가가 아닌 경우에만 표시된다', () => {
         const deleteBtn = allNodes.find(
             (n: any) =>
@@ -1160,13 +824,9 @@ describe('배송가능국가 모바일 카드 — 헤더 구조', () => {
         );
         expect(deleteBtn).toBeDefined();
         expect(deleteBtn.props?.className).toContain('btn-icon');
-        expect(deleteBtn.props?.className).toContain('ecommerce-tone-error');
+        expect(deleteBtn.props?.className).toContain('text-error');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
     it('삭제 버튼이 해외배송 OFF 시 disabled', () => {
         const deleteBtn = allNodes.find(
             (n: any) => n.name === 'Button' && n.if?.includes('!==')
@@ -1174,10 +834,6 @@ describe('배송가능국가 모바일 카드 — 헤더 구조', () => {
         expect(deleteBtn.props?.disabled).toContain('international_shipping_enabled');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_mirror_table_rows
-     */
     it('기본 국가에는 기본 배지가 표시된다', () => {
         const badge = allNodes.find(
             (s: any) =>
@@ -1198,10 +854,6 @@ describe('배송가능국가 모바일 카드 — 헤더 구조', () => {
 describe('배송가능국가 모바일 카드 — Toggle/Delete 핸들러', () => {
     const allNodes = flattenAll(countryCards);
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_handlers_match_table
-     */
     it('Toggle의 setState가 배열 map으로 is_active를 토글한다', () => {
         const toggle = allNodes.find((n: any) => n.name === 'Toggle');
         const action = toggle?.actions?.find(
@@ -1216,10 +868,6 @@ describe('배송가능국가 모바일 카드 — Toggle/Delete 핸들러', () =
         expect(action.params?.hasChanges).toBe(true);
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_handlers_match_table
-     */
     it('삭제 버튼의 setState가 배열 filter로 해당 국가를 제거한다', () => {
         const deleteBtn = allNodes.find(
             (n: any) => n.name === 'Button' && n.if?.includes('!==')
@@ -1235,10 +883,6 @@ describe('배송가능국가 모바일 카드 — Toggle/Delete 핸들러', () =
         expect(action.params?.hasChanges).toBe(true);
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_handlers_match_table
-     */
     it('카드 Toggle의 setState 핸들러가 테이블 Toggle과 동일하다', () => {
         const tableNodes = flattenAll(countryTable);
         const tableToggle = tableNodes.find(
@@ -1258,10 +902,6 @@ describe('배송가능국가 모바일 카드 — Toggle/Delete 핸들러', () =
         );
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects country_cards_handlers_match_table
-     */
     it('카드 삭제 버튼의 setState 핸들러가 테이블 삭제 버튼과 동일하다', () => {
         const tableNodes = flattenAll(countryTable);
         const tableDeleteBtn = tableNodes.find(
@@ -1291,10 +931,6 @@ describe('배송가능국가 모바일 카드 — Toggle/Delete 핸들러', () =
 // 12. 배송가능국가 모바일 카드 — 다국어/다크모드
 // ══════════════════════════════════════════════════════════
 describe('배송가능국가 모바일 카드 — 다국어/다크모드', () => {
-    /**
-     * @scenario surface=country_cards
-     * @effects shipping_i18n_keys_namespaced
-     */
     it('카드의 i18n 키가 올바른 네임스페이스를 사용한다', () => {
         const keys = collectI18nKeys(countryCards);
         const moduleKeys = keys.filter((k) => k.startsWith('$t:sirsoft-ecommerce.'));
@@ -1302,19 +938,11 @@ describe('배송가능국가 모바일 카드 — 다국어/다크모드', () =>
         expect(moduleKeys.length + commonKeys.length).toBe(keys.length);
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects shipping_dark_mode_pairs
-     */
     it('카드에 dark: 클래스가 사용된다', () => {
         const json = JSON.stringify(countryCards);
         expect(json).toContain('dark:');
     });
 
-    /**
-     * @scenario surface=country_cards
-     * @effects shipping_dark_mode_pairs
-     */
     it('기본 배지에 다크모드 클래스 쌍이 있다', () => {
         const allNodes = flattenAll(countryCards);
         const badge = allNodes.find(
@@ -1325,7 +953,6 @@ describe('배송가능국가 모바일 카드 — 다국어/다크모드', () =>
         );
         expect(badge).toBeDefined();
         expect(badge.props.className).toContain('dark:bg-blue-900');
-        // 텍스트 색은 이커머스 자산 .ecommerce-tone-info-soft 가 흡수 (text-blue-700 + .dark text-blue-300, 크기는 text-xs 유틸리티)
-        expect(badge.props.className).toContain('ecommerce-tone-info-soft');
+        expect(badge.props.className).toContain('dark:text-blue-300');
     });
 });

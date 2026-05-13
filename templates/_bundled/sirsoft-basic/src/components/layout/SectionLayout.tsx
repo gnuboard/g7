@@ -3,14 +3,8 @@ import { Section as BaseSection } from '../basic/Section';
 import { Div } from '../basic/Div';
 import { H2 } from '../basic/H2';
 import { P } from '../basic/P';
-import type { EditorAttrs } from '../../types';
 
 export interface SectionLayoutProps {
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-
   /**
    * 섹션 제목
    */
@@ -75,11 +69,6 @@ export interface SectionLayoutProps {
    * 클릭 이벤트 핸들러
    */
   onClick?: () => void;
-
-  /**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -106,7 +95,6 @@ export interface SectionLayoutProps {
  * </Section>
  */
 export const SectionLayout: React.FC<SectionLayoutProps> = ({
-  id,
   title,
   subtitle,
   children,
@@ -120,7 +108,6 @@ export const SectionLayout: React.FC<SectionLayoutProps> = ({
   className = '',
   style,
   onClick,
-  editorAttrs,
 }) => {
   // Tailwind CSS 클래스 생성
   const classes: string[] = [];
@@ -196,7 +183,7 @@ export const SectionLayout: React.FC<SectionLayoutProps> = ({
   }
 
   return (
-    <BaseSection id={id} className={classes.join(' ')} style={style} onClick={onClick} {...editorAttrs}>
+    <BaseSection className={classes.join(' ')} style={style} onClick={onClick}>
       {/* 제목 영역 */}
       {(title || subtitle) && (
         <Div className="mb-4">

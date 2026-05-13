@@ -33,14 +33,11 @@ describe('LayoutLoader', () => {
   });
 
   describe('loadLayout', () => {
-    /**
-     * @scenario phase=load
-     * @effects layout_loader_fetch_validates_shape
-     */
     it('성공적으로 레이아웃 데이터를 로드한다', async () => {
       const mockLayoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'Container',
@@ -58,16 +55,11 @@ describe('LayoutLoader', () => {
       const result = await loader.loadLayout('admin-template', 'dashboard');
 
       expect(result).toEqual(mockLayoutData);
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/layouts/admin-template/dashboard.json',
-        expect.objectContaining({ headers: { Accept: 'application/json' } })
-      );
+      expect(global.fetch).toHaveBeenCalledWith('/api/layouts/admin-template/dashboard.json', {
+        headers: { Accept: 'application/json' },
+      });
     });
 
-    /**
-     * @scenario phase=load
-     * @effects layout_loader_fetch_validates_shape
-     */
     it('API 응답 실패 시 LayoutLoaderError를 던진다', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
@@ -80,10 +72,6 @@ describe('LayoutLoader', () => {
       );
     });
 
-    /**
-     * @scenario phase=load
-     * @effects layout_loader_fetch_validates_shape
-     */
     it('version 필드가 없으면 검증 에러를 던진다', async () => {
       const invalidData = {
         endpoint: '/admin/dashboard',
@@ -100,10 +88,6 @@ describe('LayoutLoader', () => {
       );
     });
 
-    /**
-     * @scenario phase=load
-     * @effects layout_loader_fetch_validates_shape
-     */
     it('layout_name 필드가 없으면 검증 에러를 던진다', async () => {
       const invalidData = {
         version: '1.0.0',
@@ -120,10 +104,6 @@ describe('LayoutLoader', () => {
       );
     });
 
-    /**
-     * @scenario phase=load
-     * @effects layout_loader_fetch_validates_shape
-     */
     it('components가 배열이 아니면 검증 에러를 던진다', async () => {
       const invalidData = {
         version: '1.0.0',
@@ -142,10 +122,6 @@ describe('LayoutLoader', () => {
       );
     });
 
-    /**
-     * @scenario phase=load
-     * @effects layout_loader_fetch_validates_shape
-     */
     it('네트워크 에러 시 LayoutLoaderError를 던진다', async () => {
       (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
 
@@ -166,14 +142,11 @@ describe('LayoutLoader', () => {
       container.innerHTML = '<p>Existing content</p>';
     });
 
-    /**
-     * @scenario phase=render
-     * @effects layout_loader_renders_component_tree
-     */
     it('컨테이너를 초기화하고 레이아웃을 렌더링한다', async () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'Container',
@@ -200,10 +173,6 @@ describe('LayoutLoader', () => {
       expect(container.querySelector('[data-component="Container"]')).not.toBeNull();
     });
 
-    /**
-     * @scenario phase=render
-     * @effects layout_loader_renders_component_tree
-     */
     it('레이아웃 데이터가 없을 때 에러 UI를 렌더링한다', () => {
       loader.renderLayout(container);
 
@@ -211,14 +180,11 @@ describe('LayoutLoader', () => {
       expect(container.textContent).toContain('레이아웃 로드 실패');
     });
 
-    /**
-     * @scenario phase=render
-     * @effects layout_loader_renders_component_tree
-     */
     it('컴포넌트를 찾을 수 없을 때 플레이스홀더를 렌더링한다', async () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'UnknownComponent',
@@ -242,14 +208,11 @@ describe('LayoutLoader', () => {
       expect(container.textContent).toContain('Component not found: UnknownComponent');
     });
 
-    /**
-     * @scenario phase=render
-     * @effects layout_loader_renders_component_tree
-     */
     it('자식 컴포넌트를 재귀적으로 렌더링한다', async () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'Container',
@@ -281,14 +244,11 @@ describe('LayoutLoader', () => {
       ).not.toBeNull();
     });
 
-    /**
-     * @scenario phase=render
-     * @effects layout_loader_renders_component_tree
-     */
     it('텍스트 콘텐츠를 렌더링한다', async () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'Text',
@@ -313,14 +273,11 @@ describe('LayoutLoader', () => {
       expect(textElement?.textContent).toBe('Hello World');
     });
 
-    /**
-     * @scenario phase=render
-     * @effects layout_loader_renders_component_tree
-     */
     it('props를 data 속성으로 설정한다', async () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [
           {
             type: 'Button',
@@ -359,54 +316,39 @@ describe('LayoutLoader', () => {
       container = document.createElement('div');
     });
 
-    /**
-     * @scenario phase=error
-     * @effects layout_loader_error_state_without_inline_handler
-     */
     it('에러 상태 UI를 렌더링한다', () => {
+      const error = new LayoutLoaderError('Test error', 'TEST_ERROR');
+
       loader.renderLayout(container);
 
       expect(container.querySelector('.layout-error')).not.toBeNull();
       expect(container.querySelector('[data-error-code="NO_LAYOUT_DATA"]')).not.toBeNull();
     });
 
-    /**
-     * @scenario phase=error
-     * @effects layout_loader_error_state_without_inline_handler
-     */
     it('에러 메시지를 표시한다', () => {
       loader.renderLayout(container);
 
       expect(container.textContent).toContain('No layout data to render');
     });
 
-    /**
-     * @scenario phase=error
-     * @effects layout_loader_error_state_without_inline_handler
-     */
     it('새로고침 버튼을 포함한다', () => {
       loader.renderLayout(container);
 
       const button = container.querySelector('button');
       expect(button).not.toBeNull();
       expect(button?.textContent).toContain('페이지 새로고침');
-      // 인라인 onclick 대신 표식 + 리스너 (#158 strict CSP)
-      expect(button?.getAttribute('onclick')).toBeNull();
-      expect(button?.getAttribute('data-g7-error-reload')).toBe('1');
+      expect(button?.getAttribute('onclick')).toBe('window.location.reload()');
     });
   });
 
   describe('유틸리티 메서드', () => {
-    /**
-     * @scenario phase=utility
-     * @effects layout_loader_current_layout_and_clear
-     */
     it('getCurrentLayout - 현재 레이아웃을 반환한다', async () => {
       expect(loader.getCurrentLayout()).toBeNull();
 
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -420,14 +362,11 @@ describe('LayoutLoader', () => {
       expect(loader.getCurrentLayout()).toEqual(layoutData);
     });
 
-    /**
-     * @scenario phase=utility
-     * @effects layout_loader_current_layout_and_clear
-     */
     it('clear - 레이아웃 데이터를 초기화한다', async () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -445,33 +384,22 @@ describe('LayoutLoader', () => {
   });
 
   describe('캐시 버전 관리', () => {
-    /**
-     * @scenario phase=cache
-     * @effects layout_loader_cache_version_scopes_url_and_cache
-     */
     it('초기 캐시 버전은 0이다', () => {
       expect(loader.getCacheVersion()).toBe(0);
     });
 
-    /**
-     * @scenario phase=cache
-     * @effects layout_loader_cache_version_scopes_url_and_cache
-     */
     it('setCacheVersion으로 캐시 버전을 설정할 수 있다', () => {
       loader.setCacheVersion(1735000000);
       expect(loader.getCacheVersion()).toBe(1735000000);
     });
 
-    /**
-     * @scenario phase=cache
-     * @effects layout_loader_cache_version_scopes_url_and_cache
-     */
     it('캐시 버전이 설정되면 API URL에 쿼리 파라미터가 추가된다', async () => {
       loader.setCacheVersion(1735000000);
 
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -484,20 +412,17 @@ describe('LayoutLoader', () => {
 
       expect(global.fetch).toHaveBeenCalledWith(
         '/api/layouts/admin-template/dashboard.json?v=1735000000',
-        expect.objectContaining({ headers: { Accept: 'application/json' } })
+        { headers: { Accept: 'application/json' } }
       );
     });
 
-    /**
-     * @scenario phase=cache
-     * @effects layout_loader_cache_version_scopes_url_and_cache
-     */
     it('캐시 버전이 0이면 쿼리 파라미터가 추가되지 않는다', async () => {
       loader.setCacheVersion(0);
 
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -508,20 +433,16 @@ describe('LayoutLoader', () => {
 
       await loader.loadLayout('admin-template', 'dashboard');
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/layouts/admin-template/dashboard.json',
-        expect.objectContaining({ headers: { Accept: 'application/json' } })
-      );
+      expect(global.fetch).toHaveBeenCalledWith('/api/layouts/admin-template/dashboard.json', {
+        headers: { Accept: 'application/json' },
+      });
     });
 
-    /**
-     * @scenario phase=cache
-     * @effects layout_loader_cache_version_scopes_url_and_cache
-     */
     it('캐시 버전 변경 시 기존 캐시가 클리어된다', async () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -550,20 +471,17 @@ describe('LayoutLoader', () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
       expect(global.fetch).toHaveBeenLastCalledWith(
         '/api/layouts/admin-template/dashboard.json?v=1735000000',
-        expect.objectContaining({ headers: { Accept: 'application/json' } })
+        { headers: { Accept: 'application/json' } }
       );
     });
 
-    /**
-     * @scenario phase=cache
-     * @effects layout_loader_cache_version_scopes_url_and_cache
-     */
     it('동일한 캐시 버전으로 설정하면 캐시가 유지된다', async () => {
       loader.setCacheVersion(1735000000);
 
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -583,16 +501,13 @@ describe('LayoutLoader', () => {
   });
 
   describe('인증 헤더', () => {
-    /**
-     * @scenario phase=auth
-     * @effects layout_loader_sends_bearer_only_with_token
-     */
     it('토큰이 없으면 Authorization 헤더 없이 요청한다', async () => {
       mockGetToken.mockReturnValue(null);
 
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -603,22 +518,18 @@ describe('LayoutLoader', () => {
 
       await loader.loadLayout('admin-template', 'dashboard');
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/layouts/admin-template/dashboard.json',
-        expect.objectContaining({ headers: { Accept: 'application/json' } })
-      );
+      expect(global.fetch).toHaveBeenCalledWith('/api/layouts/admin-template/dashboard.json', {
+        headers: { Accept: 'application/json' },
+      });
     });
 
-    /**
-     * @scenario phase=auth
-     * @effects layout_loader_sends_bearer_only_with_token
-     */
     it('토큰이 있으면 Authorization 헤더를 포함하여 요청한다', async () => {
       mockGetToken.mockReturnValue('test-bearer-token');
 
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'admin_dashboard',
+        endpoint: '/admin/dashboard',
         components: [],
         permissions: ['core.dashboard.read'],
       };
@@ -632,25 +543,22 @@ describe('LayoutLoader', () => {
 
       expect(global.fetch).toHaveBeenCalledWith(
         '/api/layouts/sirsoft-admin_basic/admin_dashboard.json',
-        expect.objectContaining({
+        {
           headers: {
             Accept: 'application/json',
             Authorization: 'Bearer test-bearer-token',
           },
-        })
+        }
       );
     });
 
-    /**
-     * @scenario phase=auth
-     * @effects layout_loader_sends_bearer_only_with_token
-     */
     it('빈 문자열 토큰은 Authorization 헤더에 포함되지 않는다', async () => {
       mockGetToken.mockReturnValue('');
 
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'dashboard',
+        endpoint: '/admin/dashboard',
         components: [],
       };
 
@@ -661,10 +569,9 @@ describe('LayoutLoader', () => {
 
       await loader.loadLayout('admin-template', 'dashboard');
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/layouts/admin-template/dashboard.json',
-        expect.objectContaining({ headers: { Accept: 'application/json' } })
-      );
+      expect(global.fetch).toHaveBeenCalledWith('/api/layouts/admin-template/dashboard.json', {
+        headers: { Accept: 'application/json' },
+      });
     });
   });
 
@@ -673,10 +580,6 @@ describe('LayoutLoader', () => {
       mockRemoveToken.mockClear();
     });
 
-    /**
-     * @scenario phase=unauthorized
-     * @effects layout_loader_401_retries_without_token_once
-     */
     it('토큰이 있는 상태에서 401 발생 시 토큰을 삭제하고 토큰 없이 재시도한다', async () => {
       // 첫 번째 호출: 토큰 있음
       // 두 번째 호출: 토큰 없음 (재시도)
@@ -687,6 +590,7 @@ describe('LayoutLoader', () => {
       const layoutData: LayoutData = {
         version: '1.0.0',
         layout_name: 'admin_login',
+        endpoint: '/admin/login',
         components: [],
       };
 
@@ -716,31 +620,27 @@ describe('LayoutLoader', () => {
       expect(global.fetch).toHaveBeenNthCalledWith(
         1,
         '/api/layouts/sirsoft-admin_basic/admin_login.json',
-        expect.objectContaining({
+        {
           headers: {
             Accept: 'application/json',
             Authorization: 'Bearer invalid-token',
           },
-        })
+        }
       );
 
       // 두 번째 호출: 토큰 없음
       expect(global.fetch).toHaveBeenNthCalledWith(
         2,
         '/api/layouts/sirsoft-admin_basic/admin_login.json',
-        expect.objectContaining({
+        {
           headers: { Accept: 'application/json' },
-        })
+        }
       );
 
       // 결과 확인
       expect(result).toEqual(layoutData);
     });
 
-    /**
-     * @scenario phase=unauthorized
-     * @effects layout_loader_401_retries_without_token_once
-     */
     it('토큰이 없는 상태에서 401 발생 시 재시도 없이 에러를 던진다', async () => {
       mockGetToken.mockReturnValue(null);
 
@@ -762,10 +662,6 @@ describe('LayoutLoader', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
-    /**
-     * @scenario phase=unauthorized
-     * @effects layout_loader_401_retries_without_token_once
-     */
     it('재시도 후에도 401이면 에러를 던진다', async () => {
       // 첫 번째 호출: 토큰 있음
       // 두 번째 호출: 토큰 없음 (재시도)
@@ -800,10 +696,6 @@ describe('LayoutLoader', () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
-    /**
-     * @scenario phase=unauthorized
-     * @effects layout_loader_401_retries_without_token_once
-     */
     it('재시도 후에도 401이면 LayoutLoaderError.details.status === 401 이 포함되어야 한다 (Issue #301)', async () => {
       // TemplateApp.showRouteError 가드가 details.status 로 분기하므로 이 계약은 회귀 방지 필수
       mockGetToken
@@ -835,10 +727,6 @@ describe('LayoutLoader', () => {
       }
     });
 
-    /**
-     * @scenario phase=unauthorized
-     * @effects layout_loader_401_retries_without_token_once
-     */
     it('토큰 보유 + 재시도 후 401 시 details.hadToken=true 가 마킹되어야 한다 (Issue #301 후속)', async () => {
       // 가드(TemplateApp.showRouteError) 진입 시점에는 LayoutLoader 가 이미 토큰을
       // 제거한 상태라 apiClient.getToken() 만으로 토큰 보유 여부를 알 수 없다.
@@ -872,10 +760,6 @@ describe('LayoutLoader', () => {
       }
     });
 
-    /**
-     * @scenario phase=unauthorized
-     * @effects layout_loader_401_retries_without_token_once
-     */
     it('토큰 미보유 (익명) + 401 시 details.hadToken 이 부재해야 한다 (정책: 익명 안내 토스트 미노출)', async () => {
       // 익명 사용자가 인증 필요 페이지에 직접 진입한 경우, retry 분기 자체가
       // 진입하지 않으므로 hadToken 마킹 없이 throw 되어야 한다. 가드는 이를

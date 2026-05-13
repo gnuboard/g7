@@ -5,7 +5,6 @@ namespace Tests\Unit\Cache\Migration;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Seo\SeoCacheManager;
-use App\Seo\SeoUrl;
 use Illuminate\Support\Facades\Cache;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -27,11 +26,6 @@ class SeoCacheTest extends TestCase
 
     private SeoCacheManager $manager;
 
-    /**
-     * SEO 캐시를 켜고 배열 드라이버 위에 캐시 관리자를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,11 +41,6 @@ class SeoCacheTest extends TestCase
         $this->manager = new SeoCacheManager($this->cache);
     }
 
-    /**
-     * 테스트가 남긴 캐시를 비웁니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -64,20 +53,14 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-1-1: SEO 페이지 캐시 생성 — put() 호출 시 새 키 형식.
-     *
-     * @effects page_cache_round_trip, seo_cache_keys_live_under_core_namespace
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_1_1_seo_page_cache_uses_new_prefix(): void
     {
         $this->manager->put('/board/notice/123', 'ko', '<html>Hello</html>');
 
-        // 키는 사이트 주소 origin 으로 이름공간을 가른다 (KVE-2026-2333 — SeoCacheManager::buildKey)
-        $expectedKey = 'seo.page.'.md5(SeoUrl::origin().'|/board/notice/123|ko');
-        // 페이지는 레이아웃명과 함께 저장된다 — 적중 경로가 통계를 화면별로 귀속할 출처다.
-        $this->assertSame('<html>Hello</html>', $this->cache->get($expectedKey)['html'] ?? null);
+        $expectedKey = 'seo.page.'.md5('/board/notice/123|ko');
+        $this->assertSame('<html>Hello</html>', $this->cache->get($expectedKey));
         $this->assertSame(
             'g7:core:'.$expectedKey,
             $this->cache->resolveKey($expectedKey)
@@ -86,10 +69,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-1-2: SEO 페이지 캐시 히트.
-     *
-     * @effects page_cache_round_trip
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_1_2_seo_page_cache_hit(): void
@@ -102,10 +81,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-1-3: URL 패턴 기반 무효화 (와일드카드).
-     *
-     * @effects invalidation_by_url_layout_and_all
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_1_3_invalidate_by_url_pattern_wildcards(): void
@@ -124,10 +99,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-1-5: clearAll() — 모든 SEO 페이지 캐시 + 인덱스 삭제.
-     *
-     * @effects invalidation_by_url_layout_and_all
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_1_5_clear_all_removes_pages_and_index(): void
@@ -146,10 +117,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-1-7: SEO 캐시 비활성 시 저장 안 함.
-     *
-     * @effects disabled_cache_is_noop
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_1_7_disabled_cache_does_not_store(): void
@@ -164,10 +131,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-1-extra: invalidateByLayout — 레이아웃 정보 매칭 삭제.
-     *
-     * @effects invalidation_by_url_layout_and_all
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_1_extra_invalidate_by_layout(): void
@@ -188,10 +151,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-3-1: Sitemap 캐시 키는 'seo.sitemap' 으로 통일.
-     *
-     * @effects seo_cache_keys_live_under_core_namespace
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_3_1_sitemap_cache_uses_new_key(): void
@@ -207,10 +166,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-1-4: 게시글 삭제 시 URL 패턴 + 목록 페이지 동시 무효화.
-     *
-     * @effects invalidation_by_url_layout_and_all
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_1_4_post_delete_invalidates_detail_and_list(): void
@@ -228,10 +183,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-1-6: 모듈 설치 시 SeoCacheManager.clearAll() 동작 검증.
-     *
-     * @effects invalidation_by_url_layout_and_all
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_1_6_module_install_clears_all(): void
@@ -255,10 +206,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-2-1: SEO config 병합 캐시 키 형식 — 'seo.config.{templateId}'.
-     *
-     * @effects seo_cache_keys_live_under_core_namespace
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_2_1_seo_config_cache_key_format(): void
@@ -274,10 +221,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-2-2: SEO config 캐시 히트.
-     *
-     * @effects seo_config_and_sitemap_cache_forget_on_change
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_2_2_seo_config_cache_hit(): void
@@ -290,10 +233,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-2-3: 확장 변경 시 config 캐시 무효화.
-     *
-     * @effects seo_config_and_sitemap_cache_forget_on_change
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_2_3_extension_change_invalidates_config_cache(): void
@@ -307,10 +246,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-3-3: 확장 변경 시 Sitemap 캐시 무효화 (SeoExtensionCacheListener 동작).
-     *
-     * @effects seo_config_and_sitemap_cache_forget_on_change
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_3_3_extension_change_invalidates_sitemap(): void
@@ -324,10 +259,6 @@ class SeoCacheTest extends TestCase
 
     /**
      * C-3-4: SEO 설정 변경 시 Sitemap 캐시 무효화 (SeoSettingsCacheListener 동작).
-     *
-     * @effects seo_config_and_sitemap_cache_forget_on_change
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function c_3_4_seo_settings_change_invalidates_sitemap(): void

@@ -8,21 +8,12 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Models\ExtraFeeTemplate;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExtraFeeTemplateRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 추가배송비 템플릿 서비스
  */
 class ExtraFeeTemplateService
 {
-    use ReappliesPermissionScope;
-
-    /**
-     * 의존성을 주입받습니다.
-     *
-     * @param  ExtraFeeTemplateRepositoryInterface  $repository  추가배송비 템플릿 저장소
-     */
     public function __construct(
         protected ExtraFeeTemplateRepositoryInterface $repository
     ) {}
@@ -30,7 +21,7 @@ class ExtraFeeTemplateService
     /**
      * 템플릿 목록 조회
      *
-     * @param  array  $filters  필터 조건
+     * @param array $filters 필터 조건
      * @return LengthAwarePaginator
      */
     public function getList(array $filters): LengthAwarePaginator
@@ -54,31 +45,9 @@ class ExtraFeeTemplateService
     }
 
     /**
-     * 관리자 상세 조회용으로 템플릿을 찾고 `shipping-policies.read` 스코프를 단언합니다.
-     *
-     * 상세 라우트가 `{id}` 라 미들웨어 스코프 검사가 돌지 않는다. 쓰기 경로는 `getDetail()` 로 찾고
-     * 각 쓰기 메서드가 `.update`/`.delete` 범위를 단언한다.
-     *
-     * @param  int  $id  템플릿 ID
-     * @return ExtraFeeTemplate|null 조회된 템플릿 (없으면 null)
-     *
-     * @throws AccessDeniedHttpException 스코프 밖인 경우
-     */
-    public function getDetailForRead(int $id): ?ExtraFeeTemplate
-    {
-        $template = $this->getDetail($id);
-
-        if ($template) {
-            $this->assertWithinScope($template, 'sirsoft-ecommerce.shipping-policies.read');
-        }
-
-        return $template;
-    }
-
-    /**
      * 템플릿 상세 조회
      *
-     * @param  int  $id  템플릿 ID
+     * @param int $id 템플릿 ID
      * @return ExtraFeeTemplate|null
      */
     public function getDetail(int $id): ?ExtraFeeTemplate
@@ -95,7 +64,7 @@ class ExtraFeeTemplateService
     /**
      * 우편번호로 템플릿 조회
      *
-     * @param  string  $zipcode  우편번호
+     * @param string $zipcode 우편번호
      * @return ExtraFeeTemplate|null
      */
     public function findByZipcode(string $zipcode): ?ExtraFeeTemplate
@@ -106,7 +75,7 @@ class ExtraFeeTemplateService
     /**
      * 템플릿 생성
      *
-     * @param  array  $data  템플릿 데이터
+     * @param array $data 템플릿 데이터
      * @return ExtraFeeTemplate
      */
     public function create(array $data): ExtraFeeTemplate
@@ -132,14 +101,12 @@ class ExtraFeeTemplateService
     /**
      * 템플릿 수정
      *
-     * @param  ExtraFeeTemplate  $template  템플릿 모델
-     * @param  array  $data  수정 데이터
+     * @param ExtraFeeTemplate $template 템플릿 모델
+     * @param array $data 수정 데이터
      * @return ExtraFeeTemplate
      */
     public function update(ExtraFeeTemplate $template, array $data): ExtraFeeTemplate
     {
-        $this->assertWithinScope($template, 'sirsoft-ecommerce.shipping-policies.update');
-
         // 수정 전 훅
         HookManager::doAction('sirsoft-ecommerce.extra_fee_template.before_update', $template, $data);
 
@@ -163,13 +130,11 @@ class ExtraFeeTemplateService
     /**
      * 템플릿 삭제
      *
-     * @param  ExtraFeeTemplate  $template  템플릿 모델
+     * @param ExtraFeeTemplate $template 템플릿 모델
      * @return bool
      */
     public function delete(ExtraFeeTemplate $template): bool
     {
-        $this->assertWithinScope($template, 'sirsoft-ecommerce.shipping-policies.delete');
-
         // 삭제 전 훅
         HookManager::doAction('sirsoft-ecommerce.extra_fee_template.before_delete', $template);
 
@@ -184,13 +149,11 @@ class ExtraFeeTemplateService
     /**
      * 템플릿 사용여부 토글
      *
-     * @param  ExtraFeeTemplate  $template  템플릿 모델
+     * @param ExtraFeeTemplate $template 템플릿 모델
      * @return ExtraFeeTemplate
      */
     public function toggleActive(ExtraFeeTemplate $template): ExtraFeeTemplate
     {
-        $this->assertWithinScope($template, 'sirsoft-ecommerce.shipping-policies.update');
-
         // 토글 전 훅
         HookManager::doAction('sirsoft-ecommerce.extra_fee_template.before_toggle_active', $template);
 
@@ -205,18 +168,13 @@ class ExtraFeeTemplateService
     /**
      * 템플릿 일괄 삭제
      *
-     * @param  array  $ids  템플릿 ID 배열
+     * @param array $ids 템플릿 ID 배열
      * @return int 삭제된 개수
      */
     public function bulkDelete(array $ids): int
     {
-        // 스코프 검사와 스냅샷이 같은 조회를 공유한다 (Model 직접 호출 제거 겸용).
-        $targets = $this->repository->findByIdsKeyed($ids);
-
-        $this->assertAllWithinScope($targets, 'sirsoft-ecommerce.shipping-policies.delete');
-
         // 삭제 전 스냅샷 캡처 (after_bulk_delete 훅에 전달)
-        $snapshots = $targets->keyBy('id')->map->toArray()->all();
+        $snapshots = ExtraFeeTemplate::whereIn('id', $ids)->get()->keyBy('id')->map->toArray()->all();
 
         // 일괄 삭제 전 훅
         HookManager::doAction('sirsoft-ecommerce.extra_fee_template.before_bulk_delete', $ids);
@@ -232,19 +190,14 @@ class ExtraFeeTemplateService
     /**
      * 템플릿 일괄 사용여부 변경
      *
-     * @param  array  $ids  템플릿 ID 배열
-     * @param  bool  $isActive  사용여부
+     * @param array $ids 템플릿 ID 배열
+     * @param bool $isActive 사용여부
      * @return int 변경된 개수
      */
     public function bulkToggleActive(array $ids, bool $isActive): int
     {
-        // 스코프 검사와 스냅샷이 같은 조회를 공유한다 (Model 직접 호출 제거 겸용).
-        $targets = $this->repository->findByIdsKeyed($ids);
-
-        $this->assertAllWithinScope($targets, 'sirsoft-ecommerce.shipping-policies.update');
-
         // 변경 전 스냅샷 캡처 (after_bulk_toggle_active 훅에 전달)
-        $snapshots = $targets->keyBy('id')->map->toArray()->all();
+        $snapshots = ExtraFeeTemplate::whereIn('id', $ids)->get()->keyBy('id')->map->toArray()->all();
 
         // 일괄 변경 전 훅
         HookManager::doAction('sirsoft-ecommerce.extra_fee_template.before_bulk_toggle_active', $ids, $isActive);
@@ -280,7 +233,7 @@ class ExtraFeeTemplateService
     /**
      * 일괄 등록 (CSV 또는 엑셀 업로드용)
      *
-     * @param  array  $items  템플릿 데이터 배열 [{zipcode, fee, region?, description?}]
+     * @param array $items 템플릿 데이터 배열 [{zipcode, fee, region?, description?}]
      * @return int 등록된 개수
      */
     public function bulkCreate(array $items): int
@@ -295,7 +248,7 @@ class ExtraFeeTemplateService
 
         // 생성/업데이트된 레코드 조회 (per-item 로깅용)
         $zipcodes = array_column($items, 'zipcode');
-        $createdTemplates = $this->repository->findByZipcodes($zipcodes);
+        $createdTemplates = ExtraFeeTemplate::whereIn('zipcode', $zipcodes)->get();
 
         // 일괄 등록 후 훅
         HookManager::doAction('sirsoft-ecommerce.extra_fee_template.after_bulk_create', $items, $count, $createdTemplates);

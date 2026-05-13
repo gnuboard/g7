@@ -10,7 +10,6 @@
 3. 접두사로 캐시 키 격리: g7:core:{key}, g7:module.{id}:{key}, g7:plugin.{id}:{key}
 4. TTL은 g7_core_settings('cache.*')로 중앙 관리 (하드코딩 금지)
 5. Service 생성자에서 CacheInterface 타입힌트하면 자동 주입
-6. 쓰기 실패는 fail-soft — put/forget/putMany 는 false, remember 는 콜백 결과 반환 + 경고 로그 (캐시는 최적화라 페이지를 죽이지 않는다)
 ```
 
 ---
@@ -117,8 +116,6 @@ class ProductService
 }
 ```
 
-> 캐시한 조회 결과에 확장용 결과 훅(`filter_*_result`)을 둘 때는 `remember()` 콜백 밖, 캐시를 읽은 뒤에 적용한다 — [훅 시스템 — 조회 결과 훅과 캐시](hooks.md#조회-결과-훅과-캐시).
-
 ### 3단계 (선택): 캐시 스토어 오버라이드
 
 모듈 클래스에서 `getCacheStore()`를 오버라이드하면 다른 캐시 드라이버를 사용할 수 있습니다.
@@ -131,83 +128,6 @@ class EcommerceModule extends AbstractModule
         return 'redis'; // 기본값(config('cache.default')) 대신 redis 사용
     }
 }
-```
-
----
-
-## 확장에서 cache 바인딩
-
-플러그인 / 모듈 ServiceProvider 는 **글로벌 `CacheInterface` / `StorageInterface` 바인딩을 덮어쓰지 않는다**. 글로벌 재바인딩은 다음 결함을 만든다:
-
-- ServiceProvider 등록 순서가 늦은 확장이 코어 `app(CacheInterface::class)` 를 자신의 도메인으로 누수
-- 코어 LayoutService 등의 `$this->cache->put('ext.cache_version', ...)` 가 플러그인 도메인으로 작성됨 → 변경이 화면에 반영 안 됨
-- 코어/타 확장이 같은 글로벌 바인딩을 공유하면서 상호 간섭
-
-### 금지 패턴
-
-```php
-// plugins/_bundled/foo/src/Providers/FooServiceProvider.php — 금지
-public function register(): void
-{
-    $this->app->singleton(CacheInterface::class, function () {
-        return new PluginCacheDriver('foo');
-    });
-}
-```
-
-자동으로 차단된다. 면제 표지 불허.
-
-### 표준 패턴 — contextual binding
-
-`BasePluginServiceProvider` / `BaseModuleServiceProvider` 의 `$cacheServices` 배열에 캐시 의존 서비스 클래스만 등록하면, 해당 클래스 생성자의 `CacheInterface` 인자에 본 확장 도메인의 `PluginCacheDriver` / `ModuleCacheDriver` 가 자동 주입된다. 글로벌 코어 바인딩은 그대로 보존된다.
-
-## 플러그인에서 사용하기
-
-### 플러그인 1단계: BasePluginServiceProvider 상속 + cacheServices 등록
-
-```php
-class FooPluginServiceProvider extends BasePluginServiceProvider
-{
-    protected string $pluginIdentifier = 'vendor-foo_plugin';
-
-    protected array $cacheServices = [
-        FooService::class,
-        FooListener::class,
-    ];
-}
-```
-
-### 플러그인 2단계: Service 생성자에서 CacheInterface 주입
-
-모듈과 동일하다 (§"모듈에서 사용하기" §2단계 참조). 키 prefix 만 `g7:plugin.{identifier}:` 로 다르다.
-
-### 플러그인 3단계 (선택): 캐시 스토어 오버라이드
-
-```php
-class FooPlugin extends AbstractPlugin
-{
-    public function getCacheStore(): string
-    {
-        return 'redis';
-    }
-}
-```
-
-### Listener / 동적 인스턴스 생성 시
-
-Listener 가 직접 `new MyService(cache: app(CacheInterface::class), ...)` 로 생성하면 글로벌 바인딩 (코어 도메인) 이 주입되어 도메인이 누수된다. 컨테이너 해석에 위임해야 contextual binding 이 적용된다:
-
-```php
-// 금지 — 글로벌 코어 캐시가 주입됨
-$service = new MyService(
-    cache: app(CacheInterface::class),
-);
-
-// 표준 — $cacheServices 의 contextual binding 적용
-$service = app()->makeWith(MyService::class, [
-    'config' => $dynamicConfig,
-    // cache 인자는 생략 → contextual binding 으로 자동 주입
-]);
 ```
 
 ---
@@ -356,26 +276,3 @@ $this->cache->remember($key, $callback, $ttl, $tags);
 | `withDisk()` | `withStore()` | 불변 복제 |
 | `$storageServices` | `$cacheServices` | ServiceProvider 배열 |
 | `registerStorageBindings()` | `registerCacheBindings()` | DI 자동 바인딩 |
-
-## 캐시 범위
-
-검수 서버(실행 역할 `stage`, [runtime-role.md](../backend/runtime-role.md))는 운영 서버와 캐시 저장소를 공유하지만 코드·레이아웃 판이 다를 수
-있다. 그래서 키를 두 범위로 나눈다 (7.2.0).
-
-| 범위 | 뜻 | stage 의 키 |
-| --- | --- | --- |
-| Code | 이 서버의 코드·레이아웃 판·레이아웃 표·환경에 따라 달라지는 값 | `g7:stage:` 아래 (운영 키와 겹치지 않음) |
-| Data | 모든 서버가 같은 값을 봐야 하는 값(활성 목록·설정·잠금·로그인 등) | 공유 |
-
-Code 범위 키: `ext.cache_version`, `layout.{tpl}.{name}.v{n}[.meta]`, `layout_resolver.{템플릿ID}.{name}`(값이 그 서버 역할의
-레이아웃 표 행 ID), `layout:markup:{id}:{lock_version}`·`layout:markup:ext:*`(역변환 마크업), `settings.system_info.{locale}`(그 서버의 판·경로),
-`template.{id}.layout.*`, `template.routes.*`, `template.language.*`,
-`template.config.*`, `template.{id}.components_manifest`, `template.editor_css.*`, `template-lang*`, `seo.config.*`, `seo.page.*`,
-`seo.sitemap.meta`, `extension.middleware_index`, `ext.version_check.*`, `ext.recovery_check.*`, `ext.custom_signature`,
-`custom_routes.patterns.*`. 목록의 단일 출처는 `App\Extension\Cache\CacheScope::CODE_PATTERNS` 다.
-
-- 드라이버는 `CacheDriverFactory::core()`·`CacheDriverFactory::extension('module'|'plugin', $id)` 로만 만든다 — 직접 생성하면 정적 검사가 막는다.
-  범위를 주지 않으면 키 이름으로 판정하고, `CacheDriverFactory::core(CacheScope::Code)` 처럼 고정할 수 있다.
-- **새 키를 추가할 때**: 그 값이 「이 서버의 코드·레이아웃 판·레이아웃 표 행·환경에 따라 달라지는가」 면 `CODE_PATTERNS` 에 넣는다
-  (레이아웃 행 ID·`lock_version` 을 담거나 키에 쓰는 값도 여기다 — 두 역할의 표는 같은 ID 로 다른 본문을 가질 수 있다). 「모든 서버가 같은 값을 봐야 하는가」 면 Data 로 둔다.
-- stage 에서 `template:cache-clear` 등으로 캐시 버전을 올려도 운영 서버의 `ext.cache_version` 은 그대로다.

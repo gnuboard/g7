@@ -1,5 +1,10 @@
 {
   "no_content": "내용이 없습니다.",
+  "published_at": "발행일",
+  "status": {
+    "active": "현재 적용 중"
+  },
+  "back_to_home": "홈으로 돌아가기",
   "terms": {
     "title": "이용약관"
   },
@@ -92,7 +97,7 @@
     "info": {
       "title": "연락처",
       "email_label": "이메일:",
-      "email": "jjh621@sir.kr",
+      "email": "minsup@sir.kr",
       "hours_label": "운영시간:",
       "hours": "평일 09:00 - 18:00"
     },

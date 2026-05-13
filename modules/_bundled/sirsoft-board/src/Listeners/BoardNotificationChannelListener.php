@@ -30,18 +30,15 @@ class BoardNotificationChannelListener implements HookListenerInterface
 
     /**
      * 기본 훅 핸들러 (사용하지 않음 - filterChannels로 대체)
-     *
-     * @param  mixed  ...$args  훅에서 전달된 인수들 (사용하지 않음)
-     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
     /**
      * notifications.channels 설정 기반으로 활성화된 채널만 반환합니다.
      *
-     * @param  array<string>  $channels  기본 채널 배열
-     * @param  string  $type  알림 타입 (미사용, 향후 확장 대비)
-     * @param  object|null  $notifiable  수신자
+     * @param array<string> $channels 기본 채널 배열
+     * @param string $type 알림 타입 (미사용, 향후 확장 대비)
+     * @param object|null $notifiable 수신자
      * @return array<string> 활성화된 채널 배열
      */
     public function filterChannels(array $channels, string $type = '', ?object $notifiable = null): array

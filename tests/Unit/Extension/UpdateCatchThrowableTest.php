@@ -2,10 +2,7 @@
 
 namespace Tests\Unit\Extension;
 
-use App\Extension\ModuleManager;
-use App\Extension\PluginManager;
-use App\Extension\TemplateManager;
-use Tests\PureTestCase;
+use Tests\TestCase;
 
 /**
  * 확장 업데이트 catch 블록이 \Throwable을 잡는지 검증
@@ -17,16 +14,10 @@ use Tests\PureTestCase;
  *
  * @see https://www.php.net/manual/en/class.error.php
  */
-class UpdateCatchThrowableTest extends PureTestCase
+class UpdateCatchThrowableTest extends TestCase
 {
     /**
      * \Error는 \Throwable이지만 \Exception은 아님을 검증
-     *
-     * @scenario case=php_error_semantics
-     *
-     * @effects error_not_caught_by_exception_catch
-     *
-     * @return void 반환값 없음
      */
     public function test_php_error_is_throwable_but_not_exception(): void
     {
@@ -38,12 +29,6 @@ class UpdateCatchThrowableTest extends PureTestCase
 
     /**
      * catch (\Throwable)가 \Error를 잡는지 검증
-     *
-     * @scenario case=php_error_semantics
-     *
-     * @effects throwable_catch_handles_error
-     *
-     * @return void 반환값 없음
      */
     public function test_catch_throwable_catches_error(): void
     {
@@ -60,12 +45,6 @@ class UpdateCatchThrowableTest extends PureTestCase
 
     /**
      * catch (\Exception)가 \Error를 잡지 못하는지 검증 (이전 버그 재현)
-     *
-     * @scenario case=php_error_semantics
-     *
-     * @effects error_not_caught_by_exception_catch
-     *
-     * @return void 반환값 없음
      */
     public function test_catch_exception_does_not_catch_error(): void
     {
@@ -88,17 +67,11 @@ class UpdateCatchThrowableTest extends PureTestCase
 
     /**
      * ModuleManager::updateModule의 외부 catch가 \Throwable을 사용하는지 검증
-     *
-     * @scenario case=manager_update_source
-     *
-     * @effects update_outer_catch_uses_throwable
-     *
-     * @return void 반환값 없음
      */
     public function test_module_manager_update_uses_throwable_catch(): void
     {
         $reflection = new \ReflectionMethod(
-            ModuleManager::class,
+            \App\Extension\ModuleManager::class,
             'updateModule'
         );
 
@@ -123,17 +96,11 @@ class UpdateCatchThrowableTest extends PureTestCase
 
     /**
      * PluginManager::updatePlugin의 외부 catch가 \Throwable을 사용하는지 검증
-     *
-     * @scenario case=manager_update_source
-     *
-     * @effects update_outer_catch_uses_throwable
-     *
-     * @return void 반환값 없음
      */
     public function test_plugin_manager_update_uses_throwable_catch(): void
     {
         $reflection = new \ReflectionMethod(
-            PluginManager::class,
+            \App\Extension\PluginManager::class,
             'updatePlugin'
         );
 
@@ -157,17 +124,11 @@ class UpdateCatchThrowableTest extends PureTestCase
 
     /**
      * TemplateManager::updateTemplate의 외부 catch가 \Throwable을 사용하는지 검증
-     *
-     * @scenario case=manager_update_source
-     *
-     * @effects update_outer_catch_uses_throwable
-     *
-     * @return void 반환값 없음
      */
     public function test_template_manager_update_uses_throwable_catch(): void
     {
         $reflection = new \ReflectionMethod(
-            TemplateManager::class,
+            \App\Extension\TemplateManager::class,
             'updateTemplate'
         );
 

@@ -3,7 +3,7 @@
  *
  * G7Core 전역 API의 dataSource.updateData 메서드를 테스트합니다.
  */
-import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Logger mock
 vi.mock('@/core/utils/logger', () => ({
@@ -18,8 +18,8 @@ vi.mock('@/core/utils/logger', () => ({
 
 describe('G7Core.dataSource.updateData', () => {
   let mockTemplateApp: {
-    getDataSource: Mock;
-    setDataSource: Mock;
+    getDataSource: ReturnType<typeof vi.fn>;
+    setDataSource: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -101,8 +101,6 @@ describe('G7Core.dataSource.updateData', () => {
   });
 
   describe('append 모드 (기본값)', () => {
-    // @scenario area=data_source_append
-    // @effects g7core_update_data_appends
     it('기존 배열 뒤에 새 데이터를 추가한다', () => {
       // Given
       const existingData = { data: [{ id: 1 }, { id: 2 }] };
@@ -123,8 +121,6 @@ describe('G7Core.dataSource.updateData', () => {
       );
     });
 
-    // @scenario area=data_source_append
-    // @effects g7core_update_data_appends
     it('루트 배열에 데이터를 추가한다 (dataPath가 null인 경우)', () => {
       // Given
       const existingData = [{ id: 1 }, { id: 2 }];
@@ -143,8 +139,6 @@ describe('G7Core.dataSource.updateData', () => {
       );
     });
 
-    // @scenario area=data_source_append
-    // @effects g7core_update_data_appends
     it('중첩된 경로에 데이터를 추가한다', () => {
       // Given
       const existingData = {
@@ -181,8 +175,6 @@ describe('G7Core.dataSource.updateData', () => {
   });
 
   describe('prepend 모드', () => {
-    // @scenario area=data_source_prepend
-    // @effects g7core_update_data_prepends
     it('기존 배열 앞에 새 데이터를 추가한다', () => {
       // Given
       const existingData = { data: [{ id: 3 }, { id: 4 }] };
@@ -208,8 +200,6 @@ describe('G7Core.dataSource.updateData', () => {
       );
     });
 
-    // @scenario area=data_source_prepend
-    // @effects g7core_update_data_prepends
     it('루트 배열 앞에 데이터를 추가한다', () => {
       // Given
       const existingData = [{ id: 2 }];
@@ -235,8 +225,6 @@ describe('G7Core.dataSource.updateData', () => {
   });
 
   describe('에러 케이스', () => {
-    // @scenario area=data_source_errors
-    // @effects g7core_update_data_rejects_invalid_input
     it('TemplateApp이 초기화되지 않으면 false를 반환한다', () => {
       // Given
       delete (window as any).__templateApp;
@@ -248,8 +236,6 @@ describe('G7Core.dataSource.updateData', () => {
       expect(result).toBe(false);
     });
 
-    // @scenario area=data_source_errors
-    // @effects g7core_update_data_rejects_invalid_input
     it('데이터 소스를 찾을 수 없으면 false를 반환한다', () => {
       // Given
       mockTemplateApp.getDataSource.mockReturnValue(null);
@@ -262,8 +248,6 @@ describe('G7Core.dataSource.updateData', () => {
       expect(mockTemplateApp.setDataSource).not.toHaveBeenCalled();
     });
 
-    // @scenario area=data_source_errors
-    // @effects g7core_update_data_rejects_invalid_input
     it('잘못된 경로가 제공되면 false를 반환한다', () => {
       // Given
       const existingData = { data: [] };
@@ -281,8 +265,6 @@ describe('G7Core.dataSource.updateData', () => {
       expect(mockTemplateApp.setDataSource).not.toHaveBeenCalled();
     });
 
-    // @scenario area=data_source_errors
-    // @effects g7core_update_data_rejects_invalid_input
     it('대상이 배열이 아니면 false를 반환한다', () => {
       // Given
       const existingData = { data: 'not an array' };
@@ -296,8 +278,6 @@ describe('G7Core.dataSource.updateData', () => {
       expect(mockTemplateApp.setDataSource).not.toHaveBeenCalled();
     });
 
-    // @scenario area=data_source_errors
-    // @effects g7core_update_data_rejects_invalid_input
     it('newData가 배열이 아니면 false를 반환한다', () => {
       // Given
       const existingData = { data: [{ id: 1 }] };
@@ -315,11 +295,9 @@ describe('G7Core.dataSource.updateData', () => {
       expect(mockTemplateApp.setDataSource).not.toHaveBeenCalled();
     });
 
-    // @scenario area=data_source_errors
-    // @effects g7core_update_data_rejects_invalid_input
     it('getDataSource 메서드가 없으면 false를 반환한다', () => {
       // Given
-      Reflect.deleteProperty(mockTemplateApp, 'getDataSource');
+      delete mockTemplateApp.getDataSource;
 
       // When
       const result = (window as any).G7Core.dataSource.updateData('templates', 'data', []);
@@ -328,11 +306,9 @@ describe('G7Core.dataSource.updateData', () => {
       expect(result).toBe(false);
     });
 
-    // @scenario area=data_source_errors
-    // @effects g7core_update_data_rejects_invalid_input
     it('setDataSource 메서드가 없으면 false를 반환한다', () => {
       // Given
-      Reflect.deleteProperty(mockTemplateApp, 'setDataSource');
+      delete mockTemplateApp.setDataSource;
 
       // When
       const result = (window as any).G7Core.dataSource.updateData('templates', 'data', []);
@@ -343,8 +319,6 @@ describe('G7Core.dataSource.updateData', () => {
   });
 
   describe('무한 스크롤 시나리오', () => {
-    // @scenario area=infinite_scroll
-    // @effects g7core_update_data_supports_pagination
     it('페이지네이션된 데이터를 순차적으로 추가한다', () => {
       // Given - 첫 페이지 데이터
       const page1Data = {
@@ -387,8 +361,6 @@ describe('G7Core.dataSource.updateData', () => {
       );
     });
 
-    // @scenario area=infinite_scroll
-    // @effects g7core_update_data_supports_pagination
     it('빈 배열을 추가해도 정상 동작한다', () => {
       // Given
       const existingData = { data: [{ id: 1 }] };
@@ -406,8 +378,6 @@ describe('G7Core.dataSource.updateData', () => {
       );
     });
 
-    // @scenario area=infinite_scroll
-    // @effects g7core_update_data_supports_pagination
     it('빈 기존 배열에 데이터를 추가한다', () => {
       // Given
       const existingData = { data: [] };
@@ -497,8 +467,6 @@ describe('G7Core.state 부모 컨텍스트 API', () => {
   });
 
   describe('getParent', () => {
-    // @scenario area=parent_state
-    // @effects g7core_parent_state_api_reads_and_writes
     it('컨텍스트 스택이 비어있으면 null을 반환한다', () => {
       // When
       const result = (window as any).G7Core.state.getParent();
@@ -507,8 +475,6 @@ describe('G7Core.state 부모 컨텍스트 API', () => {
       expect(result).toBeNull();
     });
 
-    // @scenario area=parent_state
-    // @effects g7core_parent_state_api_reads_and_writes
     it('부모 컨텍스트의 _local과 _global을 반환한다', () => {
       // Given
       const parentState = { form: { name: 'parent value' } };
@@ -532,8 +498,6 @@ describe('G7Core.state 부모 컨텍스트 API', () => {
       expect(result.setState).toBe(parentSetState);
     });
 
-    // @scenario area=parent_state
-    // @effects g7core_parent_state_api_reads_and_writes
     it('중첩 모달에서 가장 최근 부모를 반환한다', () => {
       // Given
       const rootState = { level: 'root' };
@@ -556,8 +520,6 @@ describe('G7Core.state 부모 컨텍스트 API', () => {
   });
 
   describe('setParentLocal', () => {
-    // @scenario area=parent_state
-    // @effects g7core_parent_state_api_reads_and_writes
     it('컨텍스트 스택이 비어있으면 아무것도 하지 않는다', () => {
       // When
       (window as any).G7Core.state.setParentLocal({ test: 'value' });
@@ -566,8 +528,6 @@ describe('G7Core.state 부모 컨텍스트 API', () => {
       expect(true).toBe(true);
     });
 
-    // @scenario area=parent_state
-    // @effects g7core_parent_state_api_reads_and_writes
     it('객체로 부모 로컬 상태를 업데이트한다', () => {
       // Given
       const parentState = { existing: 'value' };
@@ -587,8 +547,6 @@ describe('G7Core.state 부모 컨텍스트 API', () => {
       });
     });
 
-    // @scenario area=parent_state
-    // @effects g7core_parent_state_api_reads_and_writes
     it('경로와 값으로 부모 로컬 상태를 업데이트한다', () => {
       // Given
       const parentState = { form: { name: 'old' } };
@@ -610,8 +568,6 @@ describe('G7Core.state 부모 컨텍스트 API', () => {
   });
 
   describe('setParentGlobal', () => {
-    // @scenario area=parent_state
-    // @effects g7core_parent_state_api_reads_and_writes
     it('G7Core.state.set을 통해 전역 상태를 업데이트한다', () => {
       // When
       (window as any).G7Core.state.setParentGlobal({ modalResult: { confirmed: true } });
@@ -622,8 +578,6 @@ describe('G7Core.state 부모 컨텍스트 API', () => {
       });
     });
 
-    // @scenario area=parent_state
-    // @effects g7core_parent_state_api_reads_and_writes
     it('경로와 값으로 전역 상태를 업데이트한다', () => {
       // When
       (window as any).G7Core.state.setParentGlobal('modalResult.confirmed', true);

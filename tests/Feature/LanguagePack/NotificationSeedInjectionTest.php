@@ -7,7 +7,6 @@ use App\Enums\LanguagePackStatus;
 use App\Extension\HookManager;
 use App\Models\LanguagePack;
 use App\Services\LanguagePack\LanguagePackRegistry;
-use App\Services\NotificationTemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -28,11 +27,6 @@ class NotificationSeedInjectionTest extends TestCase
 
     private string $packRoot;
 
-    /**
-     * 테스트용 언어팩 seed 디렉터리를 만듭니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,26 +34,12 @@ class NotificationSeedInjectionTest extends TestCase
         File::ensureDirectoryExists($this->packRoot.'/seed');
     }
 
-    /**
-     * 테스트용 언어팩 디렉터리를 지웁니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->packRoot);
         parent::tearDown();
     }
 
-    /**
-     * 활성 ja 팩에 seed 가 있으면 시더 필터가 정의·템플릿에 ja 를 병합한다.
-     *
-     * @scenario domain=notification, entry=seeder_filter
-     *
-     * @effects seeder_filter_injects_active_pack_locales
-     *
-     * @return void 반환값 없음
-     */
     public function test_apply_filters_injects_ja_translation_when_active_pack_has_seed(): void
     {
         File::put($this->packRoot.'/seed/notifications.json', json_encode([
@@ -113,197 +93,6 @@ class NotificationSeedInjectionTest extends TestCase
         $this->assertSame('Welcome', $result[0]['name']['en']);
     }
 
-    /**
-     * 실경로 회귀 — 코어 시더(loadConfigSeed)는 config/core.php 원형(연관 배열,
-     * 항목에 type 키 없음)을 그대로 필터에 넘긴다. injector 가 $def['type'] 만 보면
-     * 전 항목이 스킵되어 ja 가 조용히 주입되지 않는다 (2026-08-24 실측 — #597 보완 실측).
-     *
-     * @scenario domain=notification, entry=seeder_filter
-     *
-     * @effects seeder_filter_injects_ja_for_real_seeder_payload
-     *
-     * @return void 반환값 없음
-     */
-    public function test_apply_filters_injects_ja_for_config_shaped_associative_definitions(): void
-    {
-        File::put($this->packRoot.'/seed/notifications.json', json_encode([
-            'welcome' => [
-                'definition' => ['name' => 'ようこそ通知', 'description' => '新規会員へのウェルカム'],
-                'templates' => ['mail' => ['subject' => 'ようこそ', 'body' => '<p>{user_name}</p>']],
-            ],
-        ]));
-
-        LanguagePack::query()->create([
-            'identifier' => 'test-feature-notif-ja',
-            'vendor' => 'test',
-            'scope' => LanguagePackScope::Core->value,
-            'target_identifier' => null,
-            'locale' => 'ja',
-            'locale_name' => 'Japanese',
-            'locale_native_name' => '日本語',
-            'text_direction' => 'ltr',
-            'version' => '1.0.0',
-            'status' => LanguagePackStatus::Active->value,
-            'is_protected' => false,
-            'manifest' => [],
-            'source_type' => 'zip',
-        ]);
-        $this->app->make(LanguagePackRegistry::class)->invalidate();
-
-        // config/core.php notification_definitions 원형과 동일한 형태 — 키가 곧 type.
-        $definitions = [
-            'welcome' => [
-                'name' => ['ko' => '회원가입 환영', 'en' => 'Welcome'],
-                'description' => ['ko' => '신규 회원 환영', 'en' => 'New member welcome'],
-                'templates' => [
-                    [
-                        'channel' => 'mail',
-                        'subject' => ['ko' => '환영합니다', 'en' => 'Welcome'],
-                        'body' => ['ko' => '<p>{user_name}</p>', 'en' => '<p>{user_name}</p>'],
-                    ],
-                ],
-            ],
-        ];
-
-        $result = HookManager::applyFilters('seed.notifications.translations', $definitions);
-
-        $this->assertSame('ようこそ通知', $result['welcome']['name']['ja'] ?? null,
-            '연관 배열(실제 시더 페이로드) 형태에서 definition name 에 ja 가 병합되어야 한다');
-        $this->assertSame('ようこそ', $result['welcome']['templates'][0]['subject']['ja'] ?? null,
-            '연관 배열 형태에서 템플릿 subject 에 ja 가 병합되어야 한다');
-        // ko/en 보존
-        $this->assertSame('회원가입 환영', $result['welcome']['name']['ko']);
-    }
-
-    /**
-     * [기본값 복원] 경로 회귀 — NotificationTemplateService::getDefaultTemplateData 는
-     * core.notification.filter_default_definitions 필터만 타고 언어팩 주입에는 참여하지
-     * 않아, 복원을 누르면 팩이 주입해 둔 로케일(ja)이 ko/en 대체로 영구 소실됐다
-     * (실사례: 2026-08-23 복원 실측이 welcome ja 를 지움 — #597 보완 실측에서 확정).
-     * 복원 기본값에도 활성 팩 seed 로케일이 병합되어야 한다.
-     *
-     * @scenario domain=notification, entry=reset_default
-     *
-     * @effects reset_default_data_includes_lang_pack_locales
-     *
-     * @return void 반환값 없음
-     */
-    public function test_reset_default_data_includes_lang_pack_locales(): void
-    {
-        File::put($this->packRoot.'/seed/notifications.json', json_encode([
-            'welcome' => [
-                'definition' => ['name' => 'ようこそ通知', 'description' => '新規会員へのウェルカム'],
-                'templates' => ['mail' => ['subject' => 'ようこそ', 'body' => '<p>{user_name}</p>']],
-            ],
-        ]));
-
-        LanguagePack::query()->create([
-            'identifier' => 'test-feature-notif-ja',
-            'vendor' => 'test',
-            'scope' => LanguagePackScope::Core->value,
-            'target_identifier' => null,
-            'locale' => 'ja',
-            'locale_name' => 'Japanese',
-            'locale_native_name' => '日本語',
-            'text_direction' => 'ltr',
-            'version' => '1.0.0',
-            'status' => LanguagePackStatus::Active->value,
-            'is_protected' => false,
-            'manifest' => [],
-            'source_type' => 'zip',
-        ]);
-        $this->app->make(LanguagePackRegistry::class)->invalidate();
-
-        $defaultData = $this->app->make(NotificationTemplateService::class)
-            ->getDefaultTemplateData('welcome', 'mail');
-
-        $this->assertNotEmpty($defaultData, 'config/core.php 의 welcome/mail 기본 템플릿을 찾아야 한다');
-        $this->assertSame('ようこそ', $defaultData['subject']['ja'] ?? null,
-            '[기본값 복원] 기본값에 활성 팩 seed 의 ja subject 가 병합되어야 한다 — 없으면 복원이 팩 번역을 지운다');
-        $this->assertSame('<p>{user_name}</p>', $defaultData['body']['ja'] ?? null,
-            '[기본값 복원] 기본값에 활성 팩 seed 의 ja body 가 병합되어야 한다');
-        $this->assertArrayHasKey('ko', $defaultData['subject'], 'ko 는 config 원본에서 보존');
-    }
-
-    /**
-     * [기본값 복원] 경로 회귀 — 채널 확장(문자·알림톡)이 `core.notification.filter_default_definitions`
-     * 에서 메일 문구를 복사해 자기 채널 템플릿을 만드는 경우, 그 복사는 언어팩 로케일이 이미 병합된
-     * 메일 문구를 봐야 한다. 시딩 경로(번역 병합 → filter_seed_definitions)와 같은 순서여야 하며,
-     * 병합을 필터 뒤에만 하면 채널 확장 템플릿의 ja 가 복원 때 사라진다
-     * (2026-10-06 실측: 「중요 작업 인증」 복원 후 sms·alimtalk 템플릿에서 ja 소실).
-     *
-     * @scenario domain=notification, entry=reset_default
-     *
-     * @effects reset_default_data_channel_extension_copy_keeps_lang_pack_locales
-     *
-     * @return void 반환값 없음
-     */
-    public function test_reset_default_data_keeps_pack_locales_for_channel_copied_templates(): void
-    {
-        File::put($this->packRoot.'/seed/notifications.json', json_encode([
-            'welcome' => [
-                'definition' => ['name' => 'ようこそ通知'],
-                'templates' => ['mail' => ['subject' => 'ようこそ', 'body' => '<p>{user_name}</p>']],
-            ],
-        ]));
-
-        LanguagePack::query()->create([
-            'identifier' => 'test-feature-notif-ja',
-            'vendor' => 'test',
-            'scope' => LanguagePackScope::Core->value,
-            'target_identifier' => null,
-            'locale' => 'ja',
-            'locale_name' => 'Japanese',
-            'locale_native_name' => '日本語',
-            'text_direction' => 'ltr',
-            'version' => '1.0.0',
-            'status' => LanguagePackStatus::Active->value,
-            'is_protected' => false,
-            'manifest' => [],
-            'source_type' => 'zip',
-        ]);
-        $this->app->make(LanguagePackRegistry::class)->invalidate();
-
-        // 채널 확장 흉내 — 메일 템플릿의 제목·본문을 그대로 복사해 qa_sms 채널 템플릿을 덧붙인다.
-        $copyMailToChannel = function (array $definitions): array {
-            foreach ($definitions as $key => $definition) {
-                $mail = collect($definition['templates'] ?? [])->firstWhere('channel', 'mail');
-                if ($mail === null) {
-                    continue;
-                }
-                $definitions[$key]['templates'][] = [
-                    'channel' => 'qa_sms',
-                    'subject' => $mail['subject'] ?? null,
-                    'body' => $mail['body'] ?? [],
-                ];
-            }
-
-            return $definitions;
-        };
-        HookManager::addFilter('core.notification.filter_default_definitions', $copyMailToChannel, 50);
-
-        try {
-            $defaultData = $this->app->make(NotificationTemplateService::class)
-                ->getDefaultTemplateData('welcome', 'qa_sms');
-        } finally {
-            HookManager::removeFilter('core.notification.filter_default_definitions', $copyMailToChannel);
-        }
-
-        $this->assertNotEmpty($defaultData, '채널 확장이 덧붙인 qa_sms 기본 템플릿을 찾아야 한다');
-        $this->assertSame('ようこそ', $defaultData['subject']['ja'] ?? null,
-            '채널 확장이 복사한 템플릿에도 활성 팩의 ja 제목이 있어야 한다 — 없으면 복원이 ja 를 지운다');
-        $this->assertArrayHasKey('ko', $defaultData['subject']);
-    }
-
-    /**
-     * 활성 팩이 없으면 시더 필터가 정의 배열을 그대로 돌려준다.
-     *
-     * @scenario domain=notification, entry=seeder_filter
-     *
-     * @effects seeder_filter_passthrough_without_active_pack
-     *
-     * @return void 반환값 없음
-     */
     public function test_apply_filters_passthrough_when_no_active_pack(): void
     {
         $definitions = [

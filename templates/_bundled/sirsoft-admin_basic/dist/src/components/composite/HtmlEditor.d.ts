@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 export interface MultilingualValue {
     [locale: string]: string;
 }
@@ -89,17 +88,6 @@ export interface HtmlEditorProps {
      * 읽기 전용 모드
      */
     readOnly?: boolean;
-    /**
-     * 비활성 — readOnly 와 같이 다룬다. 레이아웃의 읽기 전용 게이트는 입력 컴포넌트에 `disabled` 를
-     * 넘기므로, 이 값을 무시하면 권한 없는 운영자에게 본문 편집이 열린다.
-     */
-    disabled?: boolean;
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * HtmlEditor 컴포넌트

@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Auth;
 
 use App\Extension\HookManager;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -12,33 +11,28 @@ use Illuminate\Foundation\Http\FormRequest;
 class ValidateResetTokenRequest extends FormRequest
 {
     /**
-     * 요청 권한을 판정합니다.
+     * Determine if the user is authorized to make this request.
      *
-     * 공개 엔드포인트이므로 항상 통과시킨다 — 접근 제어는 미들웨어가 담당한다.
-     *
-     * @return bool 항상 true
+     * @return bool
      */
     public function authorize(): bool
     {
-        return true;
+        return true; // 공개 엔드포인트
     }
 
     /**
-     * 재설정 토큰 검증 요청의 검증 규칙을 반환합니다.
+     * Get the validation rules that apply to the request.
      *
-     * @return array<string, ValidationRule|array<mixed>|string> 필드별 검증 규칙
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         $rules = [
             'token' => 'required|string',
             'email' => 'required|email',
-            // 재설정 화면 구분값 — `admin` 이면 관리자 재설정 화면(거절 응답의 다른 로그인 수단 주소가 관리자 로그인)
-            'redirect_prefix' => ['nullable', 'string', 'in:admin'],
         ];
 
-        return HookManager::applyFiltersWithLegacyName(
-            'core.auth.validate_reset_token_validation_rules',
+        return HookManager::applyFilters(
             'core.auth.validate_reset_token_rules',
             $rules,
             $this
@@ -48,7 +42,7 @@ class ValidateResetTokenRequest extends FormRequest
     /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array<string, string> 규칙 키 => 메시지
+     * @return array<string, string>
      */
     public function messages(): array
     {

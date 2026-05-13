@@ -1,14 +1,7 @@
 import React from 'react';
 import { Div } from '../basic/Div';
-import type { EditorAttrs } from '../../types';
-import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 export interface FlexProps {
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-
   /**
    * Flex 방향
    */
@@ -63,11 +56,6 @@ export interface FlexProps {
    * 클릭 이벤트 핸들러
    */
   onClick?: () => void;
-
-  /**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -91,7 +79,6 @@ export interface FlexProps {
  * </Flex>
  */
 export const Flex: React.FC<FlexProps> = ({
-  id,
   children,
   direction = 'row',
   justify = 'start',
@@ -103,7 +90,6 @@ export const Flex: React.FC<FlexProps> = ({
   className = '',
   style,
   onClick,
-  editorAttrs,
 }) => {
   // Tailwind CSS 클래스 생성
   const classes: string[] = ['flex'];
@@ -167,18 +153,13 @@ export const Flex: React.FC<FlexProps> = ({
     classes.push(`flex-shrink-${shrink}`);
   }
 
-  // 클릭을 받으면 손 모양 커서 — 눌러 쓰는 요소는 손 모양 커서를 준다(#869 κ). 레이아웃 className 이 뒤에 와서 다른 커서를 주면 그 값이 남는다
-  if (onClick) {
-    classes.push('cursor-pointer', FOCUS_VISIBLE_RING);
-  }
-
   // 사용자 정의 클래스 추가
   if (className) {
     classes.push(className);
   }
 
   return (
-    <Div id={id} className={classes.join(' ')} style={style} onClick={onClick} {...keyboardActivationProps(onClick)} {...editorAttrs}>
+    <Div className={classes.join(' ')} style={style} onClick={onClick}>
       {children}
     </Div>
   );

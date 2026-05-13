@@ -3,14 +3,14 @@
 namespace App\Http\Requests\Auth;
 
 use App\Extension\HookManager;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ForgotPasswordRequest extends FormRequest
 {
     /**
-     * 요청 권한 확인 — 공개 엔드포인트라 항상 통과시킨다(접근 제어는 미들웨어가 담당).
-     *
-     * @return bool 항상 true
+     * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
@@ -24,10 +24,8 @@ class ForgotPasswordRequest extends FormRequest
      */
     public function rules(): array
     {
-        // 가입 여부는 검증하지 않는다 — 여기서 가르면 응답으로 계정 존재를 알 수 있다.
-        // 형식 오류만 거르고, 가입되지 않은 주소도 같은 응답을 받는다(AuthService::forgotPassword).
         $rules = [
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['required', 'email', Rule::exists(User::class, 'email')],
             'redirect_prefix' => ['nullable', 'string', 'in:admin'],
         ];
 
@@ -45,6 +43,7 @@ class ForgotPasswordRequest extends FormRequest
         return [
             'email.required' => __('validation.auth.email.required'),
             'email.email' => __('validation.auth.email.email'),
+            'email.exists' => __('validation.auth.email.exists'),
         ];
     }
 }

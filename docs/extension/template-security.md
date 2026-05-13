@@ -37,20 +37,18 @@ Custom Rule: ComponentExists
 | JSON 구조 유효성 | 올바른 JSON 형식인지 검증 |
 | 최대 중첩 깊이 | 10단계 제한 |
 | 엔드포인트 화이트리스트 | `/api/(admin\|auth\|public)/` 패턴만 허용 |
-| 외부 URL 금지 | 외부 도메인 URL 차단 (사이트 자기 host 와 「공개 자산 스토리지」로 선언한 디스크의 host 는 외부가 아니다). 컴포넌트 prop 의 입력 안내 문구(`placeholder`)·링크(`href`)와 액션 요청 본문(`params.body`)은 `http(s)` 웹 주소 허용 — 실행 스킴·`//`·`ftp:` 는 그 자리에서도 차단. 확장 조각의 `injections[].components`·`injections[].props` 도 같은 규칙 |
+| 외부 URL 금지 | 외부 도메인 URL 차단 |
 | 컴포넌트 존재 여부 | components.json 기준으로 검증 |
 
 ---
 
 ## 2. 의존성 검증
 
-### 템플릿 설치·활성화 시 체크
+### 템플릿 설치 시 체크
 
 - 필수 의존성 템플릿 설치 여부
 - 순환 의존성 방지
 - 버전 호환성 (Semantic Versioning)
-- 템플릿이 `dependencies` 로 요구하는 모듈·플러그인이 설치·활성이고 버전 제약을 충족하는지 — 설치와 활성화가 같은 기준으로 막는다(활성화는 `--force`·강제 활성화 창으로만 우회)
-- 사이트 실행 중에도 같은 기준으로 본다: 활성 템플릿의 의존이 조건에 맞지 않으면 그 템플릿의 화면이 503 안내가 되고, 안내 화면은 항목마다 사유(미설치·꺼짐·버전 미달)를 보인다. 의존 확장이 업데이트 중인 동안은 503 으로 내리지 않는다
 
 ### 예시
 
@@ -112,7 +110,6 @@ namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\Template\TemplateService;
-use App\Support\Filesystem\PathGuard;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -148,9 +145,8 @@ class TemplateAssetController extends PublicBaseController
         $basePath = base_path("templates/{$identifier}");
         $filePath = realpath("{$basePath}/{$file}");
 
-        // 4. 디렉토리 탈출 방지 — 폴더 경계로 판정 (App\Support\Filesystem\PathGuard)
-        //    문자열 접두 비교(str_starts_with)는 이름이 비슷한 이웃 폴더(templates/foo-evil)를 통과시킨다
-        if (!$filePath || !PathGuard::isWithin($basePath, $filePath)) {
+        // 4. 디렉토리 탈출 방지
+        if (!$filePath || !str_starts_with($filePath, $basePath)) {
             return $this->forbidden('messages.template.invalid_path');
         }
 
@@ -239,8 +235,7 @@ class TemplateService
 |------|------|
 | ✅ 활성화된 템플릿만 접근 가능 | 비활성 템플릿 에셋 접근 차단 |
 | ✅ 화이트리스트 기반 확장자 검증 | 허용된 확장자만 제공 |
-| ✅ 디렉토리 탈출 공격 방지 | `realpath()` 뒤 `PathGuard::isWithin($base, $path)` 로 폴더 경계 판정 (실제 서빙은 `SafeTemplatePath` 규칙이 같은 판정을 한다) |
-| ❌ 문자열 접두 비교로 경계 판정 금지 | `str_starts_with($path, $base)` 는 이웃 폴더(`layouts-evil` 등)를 통과시키고, 리눅스·Windows 구분자 차이도 못 맞춘다 |
+| ✅ 디렉토리 탈출 공격 방지 | `realpath()`, `str_starts_with()` 사용 |
 | ✅ MIME 타입 명시적 설정 | Content-Type 헤더 지정 |
 | ✅ 적절한 캐싱 헤더 | `Cache-Control`, `immutable` |
 | ❌ 비활성 템플릿 에셋 접근 금지 | 활성화 여부 검증 필수 |
@@ -271,36 +266,14 @@ class TemplateService
 |--------|------|
 | `js` | JavaScript |
 | `mjs` | ES Module JavaScript |
+| `js.map` | JavaScript 소스맵 |
 
 #### 스타일 파일
 
 | 확장자 | 설명 |
 |--------|------|
 | `css` | Cascading Style Sheets |
-
-#### 소스맵 (`map`) — 로컬 개발 환경 전용
-
-소스맵에는 원본 TS/TSX 전문(`sourcesContent`)이 담기고, 이 확장자 화이트리스트가 확장 에셋
-서빙의 유일한 방어선이다. 따라서 `map` 은 `local` 환경에서만 허용 목록에 덧붙고, 그 외
-환경에서는 어떤 경우에도 서빙하지 않는다.
-
-로컬에서 허용하는 이유는 dev 빌드 산출물의 `//# sourceMappingURL` 이 개별 에셋 서빙 URL 을
-가리키기 때문이다 — 차단하면 브라우저 콘솔에 404 가 쌓인다. `--production` 빌드는 소스맵을
-생성하지 않으므로(`G7_BUILD_SOURCEMAP=0`) 운영에서는 참조 자체가 없다.
-
-이 주입이 실제로 먹으려면 확장의 vite config 가 그 환경변수를 읽어야 한다. `sourcemap: true`
-리터럴 하드코딩은 주입을 조용히 무시해 `--production` 빌드에도 `.map` 과 dangling 참조가
-배포본에 남는다. 확장 vite config 의 소스맵 선언은 다음 형태만 사용한다:
-
-```ts
-sourcemap: !['0', 'false'].includes(process.env.G7_BUILD_SOURCEMAP ?? ''),
-```
-
-판정 지점은 `Allowed{Module,Plugin,Template}FileType::getAllowedExtensions()` 한 곳이며,
-`validate()` 도 이 게터를 참조한다(상수 직접 참조 금지 — 환경 분기가 우회된다).
-
-`public/build/**` 는 docroot 라 이 화이트리스트를 거치지 않는다. `--production` 재빌드는
-기존 `.map` 을 지우지 않으므로 직접 삭제해야 한다.
+| `css.map` | CSS 소스맵 |
 
 #### 폰트 파일
 
@@ -392,7 +365,7 @@ private function getMimeType(string $extension): string
 |------|------|
 | ✅ 화이트리스트에 명시된 확장자만 허용 | 목록 외 차단 |
 | ✅ 대소문자 구분 없이 검증 | `strtolower()` 사용 |
-| ✅ 소스맵은 `local` 에서만 허용 | 운영에서 서빙 시 원본 코드 전문 노출 |
+| ✅ 소스맵 파일 특별 처리 | `.js.map`, `.css.map` |
 | 실행 파일 확장자 금지 | `.php`, `.sh`, `.exe` 등 |
 | ❌ 서버 설정 파일 금지 | `.htaccess`, `.env` 등 |
 | ❌ 화이트리스트 외 모든 확장자 차단 | 기본 거부 정책 |

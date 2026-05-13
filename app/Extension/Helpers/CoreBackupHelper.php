@@ -2,10 +2,11 @@
 
 namespace App\Extension\Helpers;
 
-use App\Helpers\TimezoneHelper;
-use Carbon\Carbon;
+use FilesystemIterator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use SplFileInfo;
 
 class CoreBackupHelper
@@ -31,103 +32,29 @@ class CoreBackupHelper
      */
     public static function createBackup(array $targets, ?\Closure $onProgress = null, array $excludes = []): string
     {
-        return self::createBackupChunk($targets, $excludes, [], null, $onProgress)['backup_path'];
-    }
+        $timestamp = date('Ymd_His');
+        $backupPath = storage_path("app/core_backups/core_{$timestamp}");
 
-    /**
-     * 코어 파일 백업을 나눠서 만듭니다 (`createBackup()` 은 이 함수를 멈춤 없이 부른다).
-     *
-     * 웹 업데이트는 한 요청이 한 단계를 맡으므로, 현재 트리 전체를 한 요청에 복사하면 서버의 요청
-     * 시간 제한에 걸린다(큰 트리는 수 분). `$shouldPause` 가 참을 돌려주면 그 자리의 target 순번과
-     * target 안 커서를 돌려주고, 다음 호출이 `$progress` 로 이어 간다. 백업 폴더는 첫 호출에서 만든다.
-     *
-     * @param  array  $targets  백업 대상 경로 목록
-     * @param  array  $excludes  제외할 디렉토리/파일 이름 목록
-     * @param  array<string, mixed>  $progress  직전 호출이 돌려준 진행분 (처음이면 빈 배열)
-     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
-     * @param  \Closure|null  $onProgress  진행 콜백
-     * @return array{done: bool, backup_path: string, target: int, cursor: string|null} 진행분
-     */
-    public static function createBackupChunk(array $targets, array $excludes = [], array $progress = [], ?\Closure $shouldPause = null, ?\Closure $onProgress = null): array
-    {
-        $backupPath = is_string($progress['backup_path'] ?? null) && $progress['backup_path'] !== ''
-            ? $progress['backup_path']
-            : self::prepareBackupDirectory();
+        File::ensureDirectoryExists($backupPath, 0770, true);
 
-        $targets = array_values($targets);
-        $count = count($targets);
-        $index = max(0, (int) ($progress['target'] ?? 0));
-        $cursor = is_string($progress['cursor'] ?? null) ? $progress['cursor'] : null;
-
-        for (; $index < $count; $index++) {
-            $target = (string) $targets[$index];
+        foreach ($targets as $target) {
             $sourcePath = base_path($target);
 
             if (! File::exists($sourcePath) && ! File::isDirectory($sourcePath)) {
-                $cursor = null;
-
                 continue;
             }
 
-            if ($cursor === null) {
-                $onProgress?->__invoke('backup', $target);
-            }
-
+            $onProgress?->__invoke('backup', $target);
             $destPath = $backupPath.DIRECTORY_SEPARATOR.$target;
 
             if (File::isDirectory($sourcePath)) {
-                $copied = FilePermissionHelper::copyDirectoryChunk($sourcePath, $destPath, $excludes, $cursor, $shouldPause);
-
-                if (! $copied['done']) {
-                    return ['done' => false, 'backup_path' => $backupPath, 'target' => $index, 'cursor' => $copied['cursor']];
-                }
+                FilePermissionHelper::copyDirectory($sourcePath, $destPath, $onProgress, $excludes);
             } else {
                 FilePermissionHelper::copyFile($sourcePath, $destPath);
-            }
-
-            $cursor = null;
-
-            if ($shouldPause !== null && $index + 1 < $count && $shouldPause()) {
-                return ['done' => false, 'backup_path' => $backupPath, 'target' => $index + 1, 'cursor' => null];
             }
         }
 
         Log::info('코어 백업 생성 완료', ['path' => $backupPath]);
-
-        return ['done' => true, 'backup_path' => $backupPath, 'target' => $count, 'cursor' => null];
-    }
-
-    /**
-     * 새 백업 디렉토리를 만들고 경로를 돌려줍니다.
-     *
-     * @return string 백업 디렉토리 경로
-     */
-    public static function prepareBackupDirectory(): string
-    {
-        // 경로는 **초 단위 타임스탬프만으로는 고유하지 않다** — 그 사유는
-        // `BackupDirectoryName` 이 소유한다. 이름의 모양을 여기서 직접 조립하지 않는
-        // 이유도 같은 곳에 적혀 있다: 정리 쪽(`StorageLeftoverPruneService`)이 같은
-        // 클래스를 보고 판정하므로, 한쪽만 바꾸는 것이 구조적으로 불가능해야 한다.
-        $timestamp = BackupDirectoryName::stamp();
-        $backupRoot = storage_path('app/core_backups');
-        $backupPath = $backupRoot.DIRECTORY_SEPARATOR."core_{$timestamp}";
-
-        // 백업 루트(core_backups)를 php-fpm 그룹이 쓸 수 있도록 보장한 뒤 타임스탬프
-        // 디렉토리를 만든다. sudo 업데이트가 core_backups 를 root/운영자 소유 + g-w(0755)
-        // 로 만들어 두면 이후 www-data 가 그 안에 mkdir 하지 못해 백업 생성이 실패한다
-        // (mkdir(): Permission denied). 루트를 g+w(0775) 로 정상화하고 소유권을 부모에서
-        // 상속한다(소유자 아님 → chmod 불가 환경은 silent no-op, 멱등).
-        File::ensureDirectoryExists($backupRoot, 0775);
-        FilePermissionHelper::inheritOwnershipFromParent($backupRoot);
-
-        File::ensureDirectoryExists($backupPath, 0775, true);
-        FilePermissionHelper::inheritOwnershipFromParent($backupPath);
-
-        // 그룹 쓰기는 부모 체인(백업 루트 → 새 폴더)만 맞춘다. 종전에는 백업 루트를 재귀로 정상화해, 남은 옛 백업
-        // (하나가 수만 파일)이 쌓일수록 이 한 줄이 백업 첫 요청을 요청 시간 제한 밖으로 밀어냈다. 새 폴더를 만드는 데
-        // 필요한 것은 부모의 그룹 쓰기뿐이고, 옛 백업까지의 정상화는 업데이트 마무리의 소유권 복원(백업 루트 강제 정상화,
-        // 요청 몫 안에서 나눠 함)이 맡는다.
-        FilePermissionHelper::promoteGroupWritableChain($backupRoot, $backupPath);
 
         return $backupPath;
     }
@@ -151,141 +78,53 @@ class CoreBackupHelper
      */
     public static function restoreFromBackup(string $backupPath, array $targets, ?\Closure $onProgress = null, array $excludes = []): array
     {
-        return self::restoreFromBackupChunk($backupPath, $targets, $excludes, [], null, null, $onProgress)['failed_targets'];
-    }
+        $failedTargets = [];
 
-    /**
-     * 백업에서 나눠서 복원합니다 (`restoreFromBackup()` 은 이 함수를 멈춤 없이 부른다).
-     *
-     * 세 구간을 차례로 지난다.
-     *
-     * 1. `priority` — `$priorityFiles`(이번 업데이트가 덮어쓴 파일, 웹은 증분 적용 목록)를 먼저 되돌린다.
-     *    웹 되돌리기는 여러 요청에 걸치고 그 사이 요청은 디스크의 코드로 부팅한다. 바뀐 파일을 첫 조각에서
-     *    되돌려 두면, 나머지 조각이 끊겨도 사이트는 섞인 판이 아니라 이전 판으로 뜬다.
-     * 2. `overlay` — target 전체를 백업으로 덮어쓴다(종전 동작, target 마다 실패를 모으고 계속).
-     * 3. `prune` — 신규 파일 manifest 가 있으면 새 판이 추가한 파일을 지운다.
-     *
-     * @param  string  $backupPath  백업 디렉토리 경로
-     * @param  array  $targets  복원 대상 경로 목록
-     * @param  array  $excludes  제외할 디렉토리/파일 이름 목록
-     * @param  array<string, mixed>  $progress  직전 호출이 돌려준 진행분 (처음이면 빈 배열)
-     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
-     * @param  array<int, string>|null  $priorityFiles  먼저 되돌릴 base 상대 파일 경로 (null 이면 건너뛴다)
-     * @param  \Closure|null  $onProgress  진행 콜백
-     * @return array{done: bool, phase: string, priority_index: int, target: int, cursor: string|null, failed_targets: list<string>} 진행분
-     */
-    public static function restoreFromBackupChunk(
-        string $backupPath,
-        array $targets,
-        array $excludes = [],
-        array $progress = [],
-        ?\Closure $shouldPause = null,
-        ?array $priorityFiles = null,
-        ?\Closure $onProgress = null,
-    ): array {
-        $phase = is_string($progress['phase'] ?? null) ? $progress['phase'] : 'priority';
-        $priorityIndex = max(0, (int) ($progress['priority_index'] ?? 0));
-        $index = max(0, (int) ($progress['target'] ?? 0));
-        $cursor = is_string($progress['cursor'] ?? null) ? $progress['cursor'] : null;
-        $failedTargets = array_values(array_map('strval', (array) ($progress['failed_targets'] ?? [])));
-        $targets = array_values($targets);
+        foreach ($targets as $target) {
+            $src = $backupPath.DIRECTORY_SEPARATOR.$target;
+            $dest = base_path($target);
 
-        $snapshot = static function (bool $done) use (&$phase, &$priorityIndex, &$index, &$cursor, &$failedTargets): array {
-            return [
-                'done' => $done,
-                'phase' => $phase,
-                'priority_index' => $priorityIndex,
-                'target' => $index,
-                'cursor' => $cursor,
-                'failed_targets' => array_values(array_unique($failedTargets)),
-            ];
-        };
-
-        if ($phase === 'priority') {
-            $files = array_values(array_filter(array_map('strval', $priorityFiles ?? []), static fn (string $f): bool => $f !== ''));
-            $total = count($files);
-
-            for (; $priorityIndex < $total; $priorityIndex++) {
-                $relative = str_replace('\\', '/', $files[$priorityIndex]);
-                $src = $backupPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
-
-                // 백업에 없는 파일은 새 판이 추가한 것이다 — 마지막 구간(prune)이 지운다.
-                if (is_file($src) && ! is_link($src)) {
-                    try {
-                        FilePermissionHelper::copyFile($src, base_path($relative));
-                    } catch (\Throwable $e) {
-                        // 덮어쓰기 구간이 같은 파일을 다시 시도하고 실패를 target 단위로 모은다.
-                        Log::warning('코어 백업 우선 복원 실패 (덮어쓰기 구간에서 다시 시도)', ['path' => $relative, 'error' => $e->getMessage()]);
-                    }
-                }
-
-                if ($shouldPause !== null && $priorityIndex + 1 < $total && $shouldPause()) {
-                    $priorityIndex++;
-
-                    return $snapshot(false);
-                }
+            if (! File::exists($src) && ! File::isDirectory($src)) {
+                continue;
             }
 
-            $phase = 'overlay';
+            try {
+                $onProgress?->__invoke('restore', $target);
 
-            if ($shouldPause !== null && $total > 0 && $shouldPause()) {
-                return $snapshot(false);
+                if (File::isDirectory($src)) {
+                    FilePermissionHelper::copyDirectory($src, $dest, $onProgress, $excludes);
+                } else {
+                    FilePermissionHelper::copyFile($src, $dest);
+                }
+            } catch (\Throwable $e) {
+                Log::error("코어 백업 복원 실패 (계속 진행): {$target}", [
+                    'error' => $e->getMessage(),
+                    'backup_path' => $backupPath,
+                ]);
+                $failedTargets[] = $target;
             }
         }
 
-        if ($phase === 'overlay') {
-            $count = count($targets);
-
-            for (; $index < $count; $index++) {
-                $target = (string) $targets[$index];
-                $src = $backupPath.DIRECTORY_SEPARATOR.$target;
-                $dest = base_path($target);
-
-                if (! File::exists($src) && ! File::isDirectory($src)) {
-                    $cursor = null;
-
-                    continue;
-                }
-
-                try {
-                    if ($cursor === null) {
-                        $onProgress?->__invoke('restore', $target);
-                    }
-
-                    if (File::isDirectory($src)) {
-                        $copied = FilePermissionHelper::copyDirectoryChunk($src, $dest, $excludes, $cursor, $shouldPause);
-
-                        if (! $copied['done']) {
-                            $cursor = $copied['cursor'];
-
-                            return $snapshot(false);
-                        }
-                    } else {
-                        FilePermissionHelper::copyFile($src, $dest);
-                    }
-                } catch (\Throwable $e) {
-                    Log::error("코어 백업 복원 실패 (계속 진행): {$target}", [
-                        'error' => $e->getMessage(),
-                        'backup_path' => $backupPath,
-                    ]);
-                    $failedTargets[] = $target;
-                }
-
-                $cursor = null;
-
-                if ($shouldPause !== null && $index + 1 < $count && $shouldPause()) {
-                    $index++;
-
-                    return $snapshot(false);
-                }
+        // Manifest 가 있으면 신 버전 신규 파일 prune. 부재 시 silent skip (기존 동작).
+        $manifestPath = $backupPath.DIRECTORY_SEPARATOR.self::NEW_FILES_MANIFEST;
+        if (File::exists($manifestPath)) {
+            try {
+                $protected = (array) config('app.update.protected_paths', []);
+                $pruneResult = self::pruneNewFiles($backupPath, base_path(), $protected, $onProgress);
+                Log::info('코어 자동 롤백 prune 완료', [
+                    'backup_path' => $backupPath,
+                    'removed_files' => $pruneResult['removed_files'],
+                    'removed_dirs' => $pruneResult['removed_dirs'],
+                    'protected_count' => $pruneResult['protected_count'],
+                    'symlink_skipped' => $pruneResult['symlink_skipped'],
+                    'failed_count' => $pruneResult['failed_count'],
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('코어 자동 롤백 prune 실패 (overlay 복사는 완료)', [
+                    'backup_path' => $backupPath,
+                    'error' => $e->getMessage(),
+                ]);
             }
-
-            $phase = 'prune';
-        }
-
-        if ($phase === 'prune') {
-            self::pruneAfterRestore($backupPath, $onProgress);
-            $phase = 'done';
         }
 
         if (empty($failedTargets)) {
@@ -297,60 +136,13 @@ class CoreBackupHelper
             ]);
         }
 
-        return $snapshot(true);
-    }
-
-    /**
-     * 복원 뒤 신 버전 신규 파일을 정리하고 루트 보호 파일 경고를 남깁니다 (manifest 가 있을 때만).
-     *
-     * @param  string  $backupPath  백업 디렉토리 경로
-     * @param  \Closure|null  $onProgress  진행 콜백
-     * @return void 반환값 없음
-     */
-    private static function pruneAfterRestore(string $backupPath, ?\Closure $onProgress): void
-    {
-        // Manifest 가 있으면 신 버전 신규 파일 prune. 부재 시 silent skip (기존 동작).
-        $manifestPath = $backupPath.DIRECTORY_SEPARATOR.self::NEW_FILES_MANIFEST;
-        if (! File::exists($manifestPath)) {
-            return;
-        }
-
-        try {
-            $protected = (array) config('app.update.protected_paths', []);
-            $pruneResult = self::pruneNewFiles($backupPath, base_path(), $protected, $onProgress);
-            Log::info('코어 자동 롤백 prune 완료', [
-                'backup_path' => $backupPath,
-                'removed_files' => $pruneResult['removed_files'],
-                'removed_dirs' => $pruneResult['removed_dirs'],
-                'protected_count' => $pruneResult['protected_count'],
-                'symlink_skipped' => $pruneResult['symlink_skipped'],
-                'failed_count' => $pruneResult['failed_count'],
-            ]);
-
-            // 루트 진입·보호 파일이 prune 대상에 들어갔다면 그 사실을 **경고로** 남긴다.
-            //
-            // 되돌리기 자체는 의도된 동작이다 — 그 두 파일이 없던 버전으로 돌아가는 것이
-            // 목적이다. 문제는 그 결과다: 문서 루트 = 프로젝트 루트인 사이트에서 보호
-            // 규칙 파일이 사라지면 `.env` 가 그대로 열린다. 정보 로그에 묻히면 운영자가
-            // 알 수 없으므로, 조치가 필요한 상태임을 로그 등급으로 구분해 남긴다.
-            self::warnIfRootProtectionFilesAreMissing(base_path());
-
-            // 되살아난 공개 파일 사본도 같은 등급으로 남긴다 — 백업은 업데이트 이전
-            // 스냅샷이라 그 시점의 `public/storage.broken.*` 를 그대로 되돌려 놓는다.
-            self::warnIfRollbackRestoredDocrootResidue(base_path());
-        } catch (\Throwable $e) {
-            Log::warning('코어 자동 롤백 prune 실패 (overlay 복사는 완료)', [
-                'backup_path' => $backupPath,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        return $failedTargets;
     }
 
     /**
      * 백업을 삭제합니다.
      *
      * @param  string  $backupPath  백업 디렉토리 경로
-     * @return void 반환값 없음
      */
     public static function deleteBackup(string $backupPath): void
     {
@@ -391,8 +183,7 @@ class CoreBackupHelper
             $backups[] = [
                 'path' => $dir,
                 'name' => basename($dir),
-                // 운영자 콘솔 출력 — 사이트 시간대
-                'created_at' => TimezoneHelper::toSiteDateTimeString(Carbon::createFromTimestamp(filectime($dir))),
+                'created_at' => date('Y-m-d H:i:s', filectime($dir)),
             ];
         }
 
@@ -421,8 +212,6 @@ class CoreBackupHelper
      * @param  array  $excludes  제외 패턴 목록 (예: ['node_modules', '.git'])
      * @param  string  $fromVersion  시작 버전 (manifest 기록용)
      * @param  string  $toVersion  대상 버전 (manifest 기록용)
-     * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로(base 상대, 예 `plugins/_bundled/{id}`).
-     *                                         `computeApplyList()` 와 같은 목록을 넘겨 롤백 manifest 와 적용 목록을 일치시킨다.
      * @return array{new_files_count:int, new_dirs_count:int}
      */
     public static function writeNewFilesManifest(
@@ -433,71 +222,61 @@ class CoreBackupHelper
         array $excludes,
         string $fromVersion,
         string $toVersion,
-        array $skipPaths = [],
     ): array {
-        $collected = self::collectNewFilesChunk($backupPath, $sourcePath, $targets, $protectedPaths, $excludes, $skipPaths);
+        $newFiles = [];
+        $newDirs = [];
 
-        return self::writeNewFilesManifestFromLists(
-            $backupPath,
-            $collected['new_files'],
-            $collected['new_dirs'],
-            $fromVersion,
-            $toVersion,
-        );
-    }
+        $protectedSet = self::normalizeProtectedSet($protectedPaths);
+        $excludeSet = array_values(array_filter(array_map('trim', $excludes)));
 
-    /**
-     * 신규 파일 목록을 나눠서 모읍니다 (`writeNewFilesManifest()` 의 순회 부분).
-     *
-     * 한 요청이 한 단계를 맡는 웹 업데이트는 이 순회가 요청 시간 제한을 넘기면 치명 오류로
-     * 끊긴다. 그래서 순회를 커서로 나눌 수 있게 한다 — `$shouldPause` 가 참을 돌려주면 그
-     * 자리의 커서와 지금까지의 목록을 돌려주고, 다음 호출이 `$progress` 로 이어 간다.
-     * `$shouldPause` 를 넘기지 않으면 한 번에 끝까지 간다(명령줄 업데이트 경로).
-     *
-     * @param  string  $backupPath  백업 디렉토리 경로
-     * @param  string  $sourcePath  소스 디렉토리 경로 (_pending 신 버전)
-     * @param  array  $targets  처리할 target 경로 목록
-     * @param  array  $protectedPaths  보호 경로 목록
-     * @param  array  $excludes  제외 패턴 목록
-     * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로
-     * @param  array<string, mixed>  $progress  직전 호출이 돌려준 진행분 (처음이면 빈 배열)
-     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
-     * @return array{done: bool, cursor: array<string, mixed>|null, new_files: list<string>, new_dirs: list<string>, visited: int}
-     */
-    public static function collectNewFilesChunk(
-        string $backupPath,
-        string $sourcePath,
-        array $targets,
-        array $protectedPaths,
-        array $excludes,
-        array $skipPaths = [],
-        array $progress = [],
-        ?\Closure $shouldPause = null,
-    ): array {
-        $newFiles = array_values(array_filter((array) ($progress['new_files'] ?? []), 'is_string'));
-        $newDirs = array_values(array_filter((array) ($progress['new_dirs'] ?? []), 'is_string'));
+        foreach ($targets as $target) {
+            $target = trim($target);
+            if ($target === '') {
+                continue;
+            }
 
-        $walk = self::walkTargetsChunk(
-            $sourcePath,
-            $targets,
-            $protectedPaths,
-            $excludes,
-            $skipPaths,
-            is_array($progress['cursor'] ?? null) ? $progress['cursor'] : null,
-            $shouldPause,
-            // 단일 파일 target 은 백업 부재면 신규. 디렉토리만 하위로 내려간다.
-            static function (string $target, string $sourceTargetPath) use ($backupPath, &$newFiles): bool {
-                if (is_file($sourceTargetPath) && ! is_link($sourceTargetPath)) {
-                    if (! file_exists($backupPath.DIRECTORY_SEPARATOR.$target)) {
-                        $newFiles[] = self::normalizeRelative($target);
-                    }
+            // target 자체가 보호 경로면 스킵
+            if (self::isWithinProtectedPath($target, $protectedSet)) {
+                continue;
+            }
 
-                    return false;
+            $sourceTargetPath = $sourcePath.DIRECTORY_SEPARATOR.$target;
+            if (! file_exists($sourceTargetPath)) {
+                continue;
+            }
+
+            // 단일 파일 target
+            if (is_file($sourceTargetPath) && ! is_link($sourceTargetPath)) {
+                $backupFilePath = $backupPath.DIRECTORY_SEPARATOR.$target;
+                if (! file_exists($backupFilePath)) {
+                    $newFiles[] = self::normalizeRelative($target);
                 }
 
-                return is_dir($sourceTargetPath);
-            },
-            static function (string $relative, string $absolute, SplFileInfo $item) use ($backupPath, &$newFiles, &$newDirs): void {
+                continue;
+            }
+
+            if (! is_dir($sourceTargetPath)) {
+                continue;
+            }
+
+            // 디렉토리 target — 재귀 비교
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($sourceTargetPath, FilesystemIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST,
+            );
+
+            foreach ($iterator as $item) {
+                /** @var SplFileInfo $item */
+                $absolute = $item->getPathname();
+                $relative = self::normalizeRelative($target.'/'.ltrim(substr($absolute, strlen($sourceTargetPath)), DIRECTORY_SEPARATOR.'/'));
+
+                if (self::matchesExcludes($relative, $excludeSet)) {
+                    continue;
+                }
+                if (self::isWithinProtectedPath($relative, $protectedSet)) {
+                    continue;
+                }
+
                 $backupItemPath = $backupPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
 
                 if ($item->isDir() && ! $item->isLink()) {
@@ -510,49 +289,14 @@ class CoreBackupHelper
                     }
                 }
                 // symlink 는 manifest 에 등재하지 않음 — prune 도 어차피 skip
-            },
-        );
-
-        if ($walk['done']) {
-            // 커서가 순서 변화를 감지해 한 target 을 처음부터 다시 훑었을 수 있다 — 중복을 걷는다.
-            $newFiles = array_values(array_unique($newFiles));
-            $newDirs = array_values(array_unique($newDirs));
+            }
         }
 
-        return [
-            'done' => $walk['done'],
-            'cursor' => $walk['cursor'],
-            'new_files' => $newFiles,
-            'new_dirs' => $newDirs,
-            'visited' => (int) ($progress['visited'] ?? 0) + $walk['visited'],
-        ];
-    }
-
-    /**
-     * 모은 신규 파일 목록으로 manifest 를 씁니다.
-     *
-     * @param  string  $backupPath  백업 디렉토리 경로
-     * @param  array<int, string>  $newFiles  신규 파일 상대 경로
-     * @param  array<int, string>  $newDirs  신규 디렉토리 상대 경로
-     * @param  string  $fromVersion  시작 버전 (manifest 기록용)
-     * @param  string  $toVersion  대상 버전 (manifest 기록용)
-     * @return array{new_files_count:int, new_dirs_count:int}
-     */
-    public static function writeNewFilesManifestFromLists(
-        string $backupPath,
-        array $newFiles,
-        array $newDirs,
-        string $fromVersion,
-        string $toVersion,
-    ): array {
-        $newFiles = array_values(array_unique(array_map('strval', $newFiles)));
-        $newDirs = array_values(array_unique(array_map('strval', $newDirs)));
         sort($newFiles, SORT_STRING);
         sort($newDirs, SORT_STRING);
 
         $manifest = [
             'version' => self::MANIFEST_SCHEMA_VERSION,
-            // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'created_at' => date('c'),
             'from_version' => $fromVersion,
             'to_version' => $toVersion,
@@ -579,473 +323,6 @@ class CoreBackupHelper
             'new_files_count' => count($newFiles),
             'new_dirs_count' => count($newDirs),
         ];
-    }
-
-    /**
-     * 코어(신 버전)가 실제로 추가·변경한 파일 목록(적용 대상)을 3-way 비교로 산출합니다.
-     *
-     * `core:update` 기본(증분) 모드에서 `applyUpdate()` 가 참조하는 "적용 대상 집합"을
-     * 만든다. 코어가 건드리지 않은 파일(base == theirs)은 목록에서 제외되어, 활성
-     * 디렉토리에 남은 현재 상태(사용자 수정 포함 가능)를 그대로 보존한다.
-     *
-     * 3-way 판정:
-     *  - base   = 구버전 원본 = 백업 스냅샷 (`$backupPath/$target`)
-     *  - theirs = 신 버전     = _pending 소스 (`$sourcePath/$target`)
-     *  - 규칙:
-     *      · base 없음 (theirs 에만 존재)        → added   (신규 파일 — 적용)
-     *      · base 있고 size 또는 md5 다름         → changed (코어가 변경 — 적용)
-     *      · base 있고 size·md5 동일             → 제외 (코어 미변경 — 스킵/보존)
-     *
-     * 성능: size 가 다르면 md5 를 계산하지 않는다(즉시 changed). size 가 같을 때만
-     * `md5_file`. mtime 은 비교하지 않는다 — `_pending` 은 방금 추출되어 mtime 이
-     * 전부 추출 시각이므로 항상 "다름"으로 오판한다.
-     *
-     * symlink 는 목록에서 제외한다 — 링크 자체는 `copyDirectory` 의 별도 링크 처리
-     * 경로가 담당하며, 증분 모드에서도 항상 재생성되어야 한다(target 추적 없이 동일
-     * 링크). 따라서 반환값 `is_partial` 이 true 여도 링크는 정상 반영된다.
-     *
-     * `writeNewFilesManifest()` 와 동일한 순회 구조·가드(`excludes`/`protectedPaths`)를
-     * 재사용한다. 두 산출을 각각 별도 순회하지만, 반환값은 in-memory 로 즉시 소비되어
-     * 파일화 비용이 없다(롤백용 `_new_files_manifest.json` 은 별도).
-     *
-     * @param  string  $backupPath  백업 디렉토리 경로 (= base, 활성 사전 스냅샷)
-     * @param  string  $sourcePath  소스 디렉토리 경로 (= theirs, _pending 신 버전)
-     * @param  array  $targets  처리할 target 경로 목록 (`app.update.targets`)
-     * @param  array  $protectedPaths  보호 경로 목록 (목록에서 제외)
-     * @param  array  $excludes  제외 패턴 목록 (예: ['node_modules', '.git'])
-     * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로(base 상대). 경로와 정확히 같거나
-     *                                         그 하위면 제외한다. `excludes` 와 달리 이름이 아니라 경로로만 매치한다 —
-     *                                         미설치·미배치 공식 번들(`plugins/_bundled/{id}` 등)을 건너뛰는 용도(#146).
-     * @return array{apply:array<int,string>, added_count:int, changed_count:int, has_symlink:bool}
-     *                                                                                              apply = 적용 대상 상대경로 목록(정렬됨, 슬래시 정규화)
-     */
-    public static function computeApplyList(
-        string $backupPath,
-        string $sourcePath,
-        array $targets,
-        array $protectedPaths,
-        array $excludes,
-        array $skipPaths = [],
-    ): array {
-        $result = self::computeApplyListChunk($backupPath, $sourcePath, $targets, $protectedPaths, $excludes, $skipPaths);
-
-        return [
-            'apply' => $result['apply'],
-            'added_count' => count($result['added']),
-            'changed_count' => count($result['changed']),
-            'has_symlink' => $result['has_symlink'],
-        ];
-    }
-
-    /**
-     * 적용 대상 목록을 나눠서 산출합니다 (`computeApplyList()` 의 순회 부분).
-     *
-     * 크기가 같은 파일은 양쪽 내용을 다 읽어 비교하므로, 버전만 바뀐 배포본에서는 트리
-     * 전체를 두 번 읽는다 — 큰 트리에서는 한 요청 안에 수 분이 걸린다. 그래서
-     * `collectNewFilesChunk()` 와 같은 커서로 나눌 수 있게 한다. `$shouldPause` 를 넘기지
-     * 않으면 한 번에 끝까지 간다(명령줄 업데이트 경로).
-     *
-     * @param  string  $backupPath  백업 디렉토리 경로 (= base)
-     * @param  string  $sourcePath  소스 디렉토리 경로 (= theirs)
-     * @param  array  $targets  처리할 target 경로 목록
-     * @param  array  $protectedPaths  보호 경로 목록
-     * @param  array  $excludes  제외 패턴 목록
-     * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로
-     * @param  array<string, mixed>  $progress  직전 호출이 돌려준 진행분 (처음이면 빈 배열)
-     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수 (null 이면 끝까지)
-     * @return array{done: bool, cursor: array<string, mixed>|null, added: list<string>, changed: list<string>, has_symlink: bool, apply: list<string>, visited: int}
-     *                                                                                                                                                                apply 는 done 일 때만 채운다(정렬됨, 슬래시 정규화)
-     */
-    public static function computeApplyListChunk(
-        string $backupPath,
-        string $sourcePath,
-        array $targets,
-        array $protectedPaths,
-        array $excludes,
-        array $skipPaths = [],
-        array $progress = [],
-        ?\Closure $shouldPause = null,
-    ): array {
-        $added = array_values(array_filter((array) ($progress['added'] ?? []), 'is_string'));
-        $changed = array_values(array_filter((array) ($progress['changed'] ?? []), 'is_string'));
-        $hasSymlink = (bool) ($progress['has_symlink'] ?? false);
-
-        $walk = self::walkTargetsChunk(
-            $sourcePath,
-            $targets,
-            $protectedPaths,
-            $excludes,
-            $skipPaths,
-            is_array($progress['cursor'] ?? null) ? $progress['cursor'] : null,
-            $shouldPause,
-            static function (string $target, string $sourceTargetPath) use ($backupPath, &$added, &$changed, &$hasSymlink): bool {
-                // 단일 파일 target
-                if (is_file($sourceTargetPath) && ! is_link($sourceTargetPath)) {
-                    self::classifyForApply(
-                        self::normalizeRelative($target),
-                        $sourceTargetPath,
-                        $backupPath.DIRECTORY_SEPARATOR.$target,
-                        $added,
-                        $changed,
-                    );
-
-                    return false;
-                }
-
-                if (is_link($sourceTargetPath)) {
-                    $hasSymlink = true;
-
-                    return false;
-                }
-
-                return is_dir($sourceTargetPath);
-            },
-            static function (string $relative, string $absolute, SplFileInfo $item) use ($backupPath, &$added, &$changed, &$hasSymlink): void {
-                // symlink 는 목록 제외 — 링크 처리 경로가 별도 담당
-                if ($item->isLink()) {
-                    $hasSymlink = true;
-
-                    return;
-                }
-
-                // 디렉토리 자체는 목록에 담지 않는다 — 파일 단위 적용이 디렉토리를
-                // 필요 시 생성한다(copyDirectory 가 대상 디렉토리를 ensure).
-                if (! $item->isFile()) {
-                    return;
-                }
-
-                $backupItemPath = $backupPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
-                self::classifyForApply($relative, $absolute, $backupItemPath, $added, $changed);
-            },
-        );
-
-        $apply = [];
-
-        if ($walk['done']) {
-            // 커서가 순서 변화를 감지해 한 target 을 처음부터 다시 훑었을 수 있다 — 중복을 걷는다.
-            $added = array_values(array_unique($added));
-            $changed = array_values(array_unique($changed));
-            $apply = array_values(array_unique(array_merge($added, $changed)));
-            sort($apply, SORT_STRING);
-        }
-
-        return [
-            'done' => $walk['done'],
-            'cursor' => $walk['cursor'],
-            'added' => $added,
-            'changed' => $changed,
-            'has_symlink' => $hasSymlink,
-            'apply' => $apply,
-            'visited' => (int) ($progress['visited'] ?? 0) + $walk['visited'],
-        ];
-    }
-
-    /**
-     * target 트리를 순회하며 방문 함수를 부르고, 멈출 때가 되면 커서를 돌려줍니다.
-     *
-     * 커서는 `{target: target 순번, path: 그 target 안에서 마지막으로 끝낸 항목의 상대 경로}` 다. target 안은 이름을
-     * 정렬한 깊이 우선 순서(`FilePermissionHelper::walkTreeChunk`)라, 이어 갈 때 경로를 비교해 앞쪽을 건너뛴다 —
-     * 앞쪽 항목의 내용을 다시 읽지 않고, 다시 나열하며 세지도 않는다. 결과는 집합이라 호출부가 중복을 걷는다.
-     *
-     * 멈춤은 항목 하나를 처리한 **뒤에만** 묻는다 — 매 호출이 적어도 한 항목은 진행하므로
-     * 나눠 부르는 쪽이 같은 자리를 무한히 도는 일이 없다.
-     *
-     * @param  string  $sourcePath  소스 디렉토리 경로
-     * @param  array  $targets  처리할 target 경로 목록
-     * @param  array  $protectedPaths  보호 경로 목록
-     * @param  array  $excludes  제외 패턴 목록
-     * @param  array<int, string>  $skipPaths  건너뛸 경로
-     * @param  array<string, mixed>|null  $cursor  이어 갈 커서 (null 이면 처음부터)
-     * @param  \Closure|null  $shouldPause  멈출 때인지 묻는 함수
-     * @param  \Closure(string, string): bool  $visitTarget  target 하나를 받아 하위로 내려갈지 정하는 함수
-     * @param  \Closure(string, string, SplFileInfo): void  $visitItem  걸러지지 않은 하위 항목을 받는 함수
-     * @return array{done: bool, cursor: array<string, mixed>|null, visited: int}
-     */
-    private static function walkTargetsChunk(
-        string $sourcePath,
-        array $targets,
-        array $protectedPaths,
-        array $excludes,
-        array $skipPaths,
-        ?array $cursor,
-        ?\Closure $shouldPause,
-        \Closure $visitTarget,
-        \Closure $visitItem,
-    ): array {
-        $protectedSet = self::normalizeProtectedSet($protectedPaths);
-        $allowedTargetSet = self::normalizeProtectedSet($targets);
-        $excludeSet = array_values(array_filter(array_map('trim', $excludes)));
-        // custom 예약 자리(#792)는 적용 목록·신규 파일 manifest 어디에도 들어가지 않는다
-        $skipSet = self::normalizeSkipPaths(UpdateReservedPaths::mergeInto($skipPaths));
-
-        $targets = array_values($targets);
-        $count = count($targets);
-        $startTarget = max(0, (int) ($cursor['target'] ?? 0));
-        // 이전 판의 순번 커서(`offset`)는 경로를 모른다 — 그 target 을 처음부터 다시 훑는다(결과는 집합이라 같다).
-        $resumePath = is_string($cursor['path'] ?? null) && $cursor['path'] !== '' ? $cursor['path'] : null;
-        $resumeTarget = $resumePath !== null || (int) ($cursor['offset'] ?? 0) > 0;
-        $visited = 0;
-
-        for ($index = $startTarget; $index < $count; $index++) {
-            $resuming = $index === $startTarget && $resumeTarget;
-            $target = trim((string) $targets[$index]);
-
-            if ($target === '') {
-                continue;
-            }
-
-            // target 자체가 보호 경로면 스킵 (단, targets 에 더 구체적으로 명시된
-            // 경로는 상위 protected 를 오버라이드 — _bundled 갱신 허용)
-            if (self::isWithinProtectedPath($target, $protectedSet, $allowedTargetSet)) {
-                continue;
-            }
-
-            $sourceTargetPath = $sourcePath.DIRECTORY_SEPARATOR.$target;
-            if (! file_exists($sourceTargetPath)) {
-                continue;
-            }
-
-            if (! $resuming) {
-                if (! $visitTarget($target, $sourceTargetPath)) {
-                    if ($shouldPause !== null && $index + 1 < $count && $shouldPause()) {
-                        return ['done' => false, 'cursor' => ['target' => $index + 1, 'path' => null], 'visited' => $visited];
-                    }
-
-                    continue;
-                }
-            } elseif (! is_dir($sourceTargetPath)) {
-                continue;
-            }
-
-            // 디렉토리 target — 이름 정렬 깊이 우선, 커서는 「여기까지 끝났다」는 경로다. 이어 갈 때 앞쪽을 다시 나열하며
-            // 세지 않으므로 조각 수에 비례해 느려지지 않는다. 링크는 따라 들어가지 않는다(종전 순회와 같다).
-            $walk = FilePermissionHelper::walkTreeChunk(
-                $sourceTargetPath,
-                $index === $startTarget ? $resumePath : null,
-                $shouldPause,
-                function (string $absolute, string $relativeInTarget) use ($target, $excludeSet, $protectedSet, $allowedTargetSet, $skipSet, $visitItem, &$visited): void {
-                    $visited++;
-                    $relative = self::normalizeRelative($target.'/'.$relativeInTarget);
-
-                    if (! self::matchesExcludes($relative, $excludeSet)
-                        && ! self::isWithinProtectedPath($relative, $protectedSet, $allowedTargetSet)
-                        && ! self::isWithinSkipPaths($relative, $skipSet)) {
-                        $visitItem($relative, $absolute, new SplFileInfo($absolute));
-                    }
-                },
-            );
-
-            if (! $walk['done']) {
-                return ['done' => false, 'cursor' => ['target' => $index, 'path' => $walk['cursor']], 'visited' => $visited];
-            }
-        }
-
-        return ['done' => true, 'cursor' => null, 'visited' => $visited];
-    }
-
-    /**
-     * 3-way 판정으로 파일 하나를 added/changed 로 분류하거나 제외합니다.
-     *
-     * base(백업) 부재 → added, size 다름 또는 md5 다름 → changed, 동일 → 제외.
-     *
-     * @param  string  $relative  슬래시 정규화된 상대 경로 (목록 등재값)
-     * @param  string  $theirsAbsolute  신 버전(_pending) 파일 절대 경로
-     * @param  string  $baseAbsolute  백업(base) 파일 절대 경로
-     * @param  array<int,string>  $added  added 누적 배열 (참조)
-     * @param  array<int,string>  $changed  changed 누적 배열 (참조)
-     * @return void 반환값 없음
-     */
-    private static function classifyForApply(
-        string $relative,
-        string $theirsAbsolute,
-        string $baseAbsolute,
-        array &$added,
-        array &$changed,
-    ): void {
-        if (! file_exists($baseAbsolute) || is_dir($baseAbsolute)) {
-            $added[] = $relative;
-
-            return;
-        }
-
-        // size 선필터 — 다르면 md5 생략하고 즉시 changed
-        $theirsSize = @filesize($theirsAbsolute);
-        $baseSize = @filesize($baseAbsolute);
-        if ($theirsSize !== $baseSize) {
-            $changed[] = $relative;
-
-            return;
-        }
-
-        // size 동일 → 내용 비교
-        if (@md5_file($theirsAbsolute) !== @md5_file($baseAbsolute)) {
-            $changed[] = $relative;
-        }
-        // 동일하면 제외 (코어 미변경 — 스킵)
-    }
-
-    /**
-     * 루트 진입·보호 파일 3종 (배포 레이아웃 ② 의 진입점 — D25).
-     *
-     * `config/app.php` 의 `update.targets` 가 이 셋을 함께 배포·갱신한다. 판정 목록을
-     * 여기 한 곳에 두는 이유는, 손으로 적힌 사본이 실제로 불완전했기 때문이다 — 롤백
-     * 소실 판정에는 `.htaccess` 만 있고 `web.config` 가 빠져 있었다. IIS 로 압축을 푼
-     * 사이트에서 그 파일은 **유일한** 보호 수단인데, 되돌리기가 그것을 지워도 경고가
-     * 발화하지 않아 운영자는 「백업에서 복원되었습니다」만 보고 창을 닫았다.
-     *
-     * @var array<int, string>
-     */
-    public const ROOT_PROTECTION_FILES = ['index.php', '.htaccess', 'web.config'];
-
-    /**
-     * 루트 보호 파일 중 **마커 블록 단위로 갱신하는** 파일과 그 갱신기 (G3 회차 16 W2 C-1).
-     *
-     * 키는 반드시 `ROOT_PROTECTION_FILES` 의 원소여야 하고(계약 테스트가 대조한다), 값은
-     * `AbstractRootMarkerFileUpdater` 의 자식이다. 코어 업데이트의 두 적용 분기(정상 targets ·
-     * 자동 발견 폴백)는 이 표로 「갱신기를 지나는가 / 통째 복사인가」를 가른다 — 종전에는
-     * `.htaccess` 리터럴 한 줄이 그 분기였고 `web.config` 는 그 옆에서 통째 복사로 떨어졌다.
-     * 루트 `index.php` 는 마커가 없는 shim 이라 이 표 밖(통째 교체)이다.
-     *
-     * @var array<string, class-string<AbstractRootMarkerFileUpdater>>
-     */
-    public const ROOT_MARKER_FILE_UPDATERS = [
-        '.htaccess' => RootHtaccessUpdater::class,
-        'web.config' => RootWebConfigUpdater::class,
-    ];
-
-    /**
-     * 정규화된 루트 파일 이름에 대응하는 마커 블록 갱신기를 돌려줍니다.
-     *
-     * @param  string  $rootFile  프로젝트 루트 기준 파일 이름 (`.htaccess` 등)
-     * @return class-string<AbstractRootMarkerFileUpdater>|null 갱신기 클래스. 마커 파일이 아니면 null
-     */
-    public static function rootMarkerFileUpdater(string $rootFile): ?string
-    {
-        return self::ROOT_MARKER_FILE_UPDATERS[$rootFile] ?? null;
-    }
-
-    /**
-     * 루트 진입·보호 파일 중 **없는 것**의 목록을 돌려줍니다.
-     *
-     * 판정을 로그 남기기와 분리한 이유: 롤백 결과를 콘솔에 실으려면 호출부가 그 목록을
-     * 손에 쥐어야 하고, 그 판정이 prune manifest 존재 여부에 묶여 있으면 안 되기 때문이다
-     * (manifest 가 없어 prune 을 건너뛴 경우에도 파일은 없을 수 있다).
-     *
-     * 세 파일을 **대칭으로** 본다. 서버 종류마다 실제로 보호를 수행하는 파일이 다르므로
-     * (Apache·LiteSpeed 는 `.htaccess`, IIS 는 `web.config`), 한쪽만 보면 그 서버의
-     * 배치에서만 경고가 조용히 사라진다.
-     *
-     * @param  string  $projectRoot  프로젝트 루트 절대 경로
-     * @return array<int, string> 없는 파일 이름 목록 (전부 있으면 빈 배열)
-     */
-    public static function missingRootProtectionFiles(string $projectRoot): array
-    {
-        $missing = [];
-
-        foreach (self::ROOT_PROTECTION_FILES as $rootFile) {
-            if (! File::exists($projectRoot.DIRECTORY_SEPARATOR.$rootFile)) {
-                $missing[] = $rootFile;
-            }
-        }
-
-        return $missing;
-    }
-
-    /**
-     * 롤백이 문서 루트 **안**에 되살린 공개 파일 사본의 목록을 돌려줍니다.
-     *
-     * 형제(`missingRootProtectionFiles()`)와 같은 이유로 판정을 로그 남기기와 분리한다 —
-     * 롤백 결과를 콘솔에 실으려면 호출부가 그 목록을 손에 쥐어야 하고, 그 판정이 prune
-     * manifest 존재 여부에 묶여 있으면 안 된다(manifest 가 없어 prune 을 건너뛴 경우에도
-     * 사본은 되살아난다).
-     *
-     * @param  string  $projectRoot  프로젝트 루트 절대 경로
-     * @return array<int, string> 되살아난 사본의 절대 경로 목록 (없으면 빈 배열)
-     */
-    public static function restoredDocrootResidue(string $projectRoot): array
-    {
-        $publicPath = $projectRoot.DIRECTORY_SEPARATOR.'public';
-
-        if (! is_dir($publicPath)) {
-            return [];
-        }
-
-        $entries = @scandir($publicPath);
-
-        if ($entries === false) {
-            return [];
-        }
-
-        $residue = [];
-        foreach ($entries as $entry) {
-            // 판정은 생산자 상수를 본다 — 리터럴 사본은 생산자가 규칙을 바꿀 때 조용히 빈다.
-            if (str_starts_with($entry, StorageLinkHelper::DOCROOT_BROKEN_PREFIX)) {
-                $residue[] = $publicPath.DIRECTORY_SEPARATOR.$entry;
-            }
-        }
-
-        return $residue;
-    }
-
-    /**
-     * 롤백 뒤 루트 진입·보호 파일이 사라졌으면 경고를 남깁니다.
-     *
-     * 되돌리기 자체는 의도된 동작이다 — 그 파일들이 없던 버전으로 돌아가는 것이 목적이고,
-     * 표준 배치(문서 루트 = `public/`)에서는 아무 영향도 없다. 문제가 되는 것은 **문서 루트가
-     * 프로젝트 루트인 사이트**다: 그 배치에서 루트 `.htaccess` 가 사라지면 보호·위임 규칙이
-     * 통째로 없어져 `.env` 가 그대로 열리고, 루트 `index.php` 가 사라지면 진입 자체가 막힌다.
-     *
-     * 그 창을 코드로 막지는 않는다(막으면 되돌리기가 되돌리기가 아니게 된다). 대신 등급을
-     * 나눠 남긴다 — 정보 로그에 묻히면 운영자는 사이트가 왜 열려 있는지 알 방법이 없다.
-     *
-     * @param  string  $projectRoot  프로젝트 루트 절대 경로
-     * @return void 반환값 없음
-     */
-    private static function warnIfRootProtectionFilesAreMissing(string $projectRoot): void
-    {
-        $missing = self::missingRootProtectionFiles($projectRoot);
-
-        if ($missing === []) {
-            return;
-        }
-
-        Log::warning('코어 자동 롤백 후 루트 진입·보호 파일이 없습니다 — 문서 루트가 프로젝트 루트인 배치라면 설정 파일이 웹에 노출됩니다', [
-            'missing' => $missing,
-            'project_root' => $projectRoot,
-            'remedy' => '되돌린 버전에 그 파일이 없다면 정상입니다. 문서 루트를 프로젝트 루트로 쓰고 있다면 즉시 문서 루트를 public/ 로 바꾸거나 보호 규칙 파일을 복구하세요.',
-        ]);
-    }
-
-    /**
-     * 롤백이 문서 루트 안에 공개 파일 사본을 **되살렸는지** 확인해 알립니다.
-     *
-     * 백업은 업데이트 **이전** 스냅샷이라 그 시점의 `public/storage.broken.*` 를 담고 있고,
-     * `public` 복원은 overlay 복사라 그 디렉토리가 그대로 돌아온다. 7.1.0 업그레이드 스텝이
-     * 이미 그것을 문서 루트 밖으로 옮긴 뒤라면, 롤백 후에는 **같은 공개 파일이 두 벌**이
-     * 되고 그중 하나는 웹에서 열린다.
-     *
-     * 자동으로 다시 옮기지는 않는다 — 되돌리기가 되돌리기여야 한다는 형제 판정과 충돌한다.
-     * 사실만 같은 등급으로 남긴다.
-     *
-     * 판정 자체는 `restoredDocrootResidue()` 가 소유한다 — 형제 축
-     * (`missingRootProtectionFiles()`)과 같은 규약으로, 그래야 롤백 호출부가 그 목록을
-     * 손에 쥐고 콘솔 통로에 실을 수 있다.
-     *
-     * @param  string  $projectRoot  프로젝트 루트 절대 경로
-     * @return void 반환값 없음
-     */
-    private static function warnIfRollbackRestoredDocrootResidue(string $projectRoot): void
-    {
-        $residue = self::restoredDocrootResidue($projectRoot);
-
-        if ($residue === []) {
-            return;
-        }
-
-        Log::warning('코어 자동 롤백이 문서 루트 안의 공개 파일 사본을 되살렸습니다 — 그 사본은 웹에서 열립니다', [
-            'residue' => $residue,
-            'remedy' => '내용을 확인한 뒤 문서 루트 밖으로 옮기거나 삭제하세요. 7.1.0 이상으로 다시 올리면 업그레이드 스텝이 같은 정리를 수행합니다.',
-        ]);
     }
 
     /**
@@ -1109,7 +386,7 @@ class CoreBackupHelper
             }
             $rel = self::normalizeRelative($rel);
 
-            if (self::isWithinProtectedPath($rel, $protectedSet) || UpdateReservedPaths::contains($rel)) {
+            if (self::isWithinProtectedPath($rel, $protectedSet)) {
                 $result['protected_count']++;
 
                 continue;
@@ -1147,7 +424,7 @@ class CoreBackupHelper
         foreach ($dirs as $rel) {
             $rel = self::normalizeRelative($rel);
 
-            if (self::isWithinProtectedPath($rel, $protectedSet) || UpdateReservedPaths::contains($rel)) {
+            if (self::isWithinProtectedPath($rel, $protectedSet)) {
                 $result['protected_count']++;
 
                 continue;
@@ -1203,94 +480,18 @@ class CoreBackupHelper
 
     /**
      * 상대 경로가 protected_paths 목록의 어떤 항목 하위에 위치하는지 검사합니다.
-     *
-     * `$allowedTargetSet` 이 주어지면 "targets 에 명시된 더 구체적인 경로" 는 상위
-     * protected 를 오버라이드한다. 예: `protected_paths` 에 `modules` 가 있고
-     * `targets` 에 `modules/_bundled` 가 명시되어 있으면, `modules/_bundled/...` 파일은
-     * protected 로 차단되지 않고 apply 대상에 포함된다.
-     *
-     * 배경: `protected_paths` 의 확장 부모(`modules`/`plugins`/`templates`/`lang-packs`)는
-     * "자동 발견 폴백" 이 활성 서브디렉토리(`modules/sirsoft-*`)를 통째로 삭제하는
-     * 회귀(#347) 를 막기 위한 방어인데, 정상 증분 흐름에서는 `_bundled` 갱신까지
-     * 함께 막아 코어 업데이트로 번들 확장 파일이 반영되지 않는 결함(#452 / 공개 #64)을
-     * 유발했다. targets 에 명시된 경로가 protected 보다 더 구체적(하위)이면 예외 처리한다.
-     *
-     * @param  string  $relative  검사할 상대 경로
-     * @param  array<int, string>  $protectedSet  정규화된 보호 경로 집합
-     * @param  array<int, string>  $allowedTargetSet  정규화된 targets 집합 (protected 오버라이드 허용)
-     * @return bool 보호 경로 하위면 true
      */
-    private static function isWithinProtectedPath(string $relative, array $protectedSet, array $allowedTargetSet = []): bool
+    private static function isWithinProtectedPath(string $relative, array $protectedSet): bool
     {
         $relative = self::normalizeRelative($relative);
-
-        // 가장 구체적으로 매칭되는 protected 경로 길이(세그먼트 수)를 찾는다.
-        $matchedProtectedLen = -1;
         foreach ($protectedSet as $p) {
             if ($p === '') {
                 continue;
             }
-            if ($relative === $p || str_starts_with($relative, $p.'/')) {
-                $len = substr_count($p, '/') + 1;
-                if ($len > $matchedProtectedLen) {
-                    $matchedProtectedLen = $len;
-                }
+            if ($relative === $p) {
+                return true;
             }
-        }
-
-        if ($matchedProtectedLen === -1) {
-            return false;
-        }
-
-        // protected 하위이지만, targets 에 더 구체적으로(= 더 깊게) 명시된 경로의
-        // 하위이면 오버라이드하여 통과(= 보호 해제). target 이 protected 와 같거나
-        // 더 얕으면 오버라이드하지 않는다(예: target `storage` == protected `storage`).
-        foreach ($allowedTargetSet as $t) {
-            if ($t === '') {
-                continue;
-            }
-            $targetLen = substr_count($t, '/') + 1;
-            if ($targetLen <= $matchedProtectedLen) {
-                continue;
-            }
-            if ($relative === $t || str_starts_with($relative, $t.'/')) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * skipPaths 를 슬래시 정규화된 경로 목록으로 만듭니다.
-     *
-     * @param  array<int, string>  $skipPaths  base 상대 경로 목록
-     * @return array<int, string> 빈 항목을 뺀 정규화 경로 목록
-     */
-    private static function normalizeSkipPaths(array $skipPaths): array
-    {
-        $out = [];
-        foreach ($skipPaths as $path) {
-            $normalized = self::normalizeRelative((string) $path);
-            if ($normalized !== '') {
-                $out[] = $normalized;
-            }
-        }
-
-        return $out;
-    }
-
-    /**
-     * 상대 경로가 skipPaths 중 하나와 같거나 그 하위인지 판정합니다.
-     *
-     * @param  string  $relative  슬래시 정규화된 상대 경로
-     * @param  array<int, string>  $skipSet  정규화된 skipPaths
-     * @return bool 건너뛸 경로면 true
-     */
-    private static function isWithinSkipPaths(string $relative, array $skipSet): bool
-    {
-        foreach ($skipSet as $skip) {
-            if ($relative === $skip || str_starts_with($relative, $skip.'/')) {
+            if (str_starts_with($relative, $p.'/')) {
                 return true;
             }
         }
@@ -1303,10 +504,6 @@ class CoreBackupHelper
      *
      * 단순 이름(슬래시 미포함) 은 경로의 어떤 세그먼트와도 매칭 — `node_modules` 처럼
      * 깊이 무관 제외 패턴 의도와 일치.
-     *
-     * @param  string  $relative  슬래시 정규화된 상대 경로
-     * @param  array<int, string>  $excludes  제외 패턴 목록
-     * @return bool 제외 대상이면 true
      */
     private static function matchesExcludes(string $relative, array $excludes): bool
     {
@@ -1331,9 +528,6 @@ class CoreBackupHelper
 
     /**
      * 경로 문자열을 슬래시 정규화 + 좌측 슬래시 제거.
-     *
-     * @param  string  $path  정규화할 경로
-     * @return string 슬래시 정규화된 상대 경로
      */
     private static function normalizeRelative(string $path): string
     {
@@ -1349,9 +543,6 @@ class CoreBackupHelper
 
     /**
      * 디렉토리가 비어있는지 검사 (`.` `..` 제외).
-     *
-     * @param  string  $path  검사할 디렉토리 경로
-     * @return bool 비어 있거나 디렉토리가 아니면 true
      */
     private static function isEmptyDirectory(string $path): bool
     {

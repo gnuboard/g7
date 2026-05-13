@@ -5,10 +5,6 @@
     "template": "Template"
   },
   "alerts": {
-    "language_pack_install_failed": "Could not install the selected language packs ({{names}}): {{reason}}",
-    "check_updates_github_failed": "Could not check GitHub for the latest version of {{count}} extensions ({{names}}) — they were not marked as up to date and their update info was left unchanged. Reason: {{reason}}",
-    "check_updates_github_failed_one": "Could not check GitHub for the latest version of {{count}} extension ({{names}}) — it was not marked as up to date and its update info was left unchanged. Reason: {{reason}}",
-    "language_pack_awaiting_host": "The selected language packs ({{names}}) were installed turned off because this extension is not active yet. They will be turned on when you activate the extension.",
     "incompatible_deactivated": "{{type}} \"{{name}}\" automatically deactivated",
     "incompatible_message": "Required: {{required}}, Installed: {{installed}}",
     "recovered_title": "{{type}} \"{{name}}\" is compatible again",
@@ -17,24 +13,12 @@
     "dismissed": "Notification dismissed.",
     "auto_deactivated_listed": "List of auto-deactivated extensions.",
     "recover_action": "Re-activate",
-    "dismiss_action": "Dismiss",
-    "open_action": "Open",
-    "layout_include_skipped": "{{count}} missing partial references in layouts were left empty. Check the server log or run php artisan layout:check-installed.",
-    "layout_include_skipped_one": "{{count}} missing partial reference in layouts was left empty. Check the server log or run php artisan layout:check-installed."
+    "dismiss_action": "Dismiss"
   },
   "badges": {
     "incompatible": "Core upgrade required",
     "incompatible_tooltip": "Requires core {{required}} or higher (current: {{installed}})",
     "incompatible_sr": "{{name}} requires core {{required}} or higher but currently {{installed}} is installed, so it cannot be updated."
-  },
-  "php_extensions": {
-    "title": "Required PHP extensions",
-    "level_require": "Required",
-    "level_suggest": "Recommended",
-    "installed": "Installed",
-    "not_installed": "Not installed",
-    "badge_required_missing": "PHP extension required: {{extensions}} (not installed)",
-    "badge_suggested_missing": "Recommended PHP extension: {{extensions}} (not installed)"
   },
   "banner": {
     "title": "Some extensions were automatically deactivated due to core compatibility issues",
@@ -42,48 +26,10 @@
     "guide_link": "Core upgrade guide",
     "dismiss": "Close"
   },
-  "unplaced_bundled": {
-    "title_modules": "{{count}} official modules in the core {{version}} release are not placed in this project",
-    "title_modules_one": "{{count}} official module in the core {{version}} release is not placed in this project",
-    "title_plugins": "{{count}} official plugins in the core {{version}} release are not placed in this project",
-    "title_plugins_one": "{{count}} official plugin in the core {{version}} release is not placed in this project",
-    "title_templates": "{{count}} official templates in the core {{version}} release are not placed in this project",
-    "title_templates_one": "{{count}} official template in the core {{version}} release is not placed in this project",
-    "title_language_packs": "{{count}} official language packs in the core {{version}} release are not placed in this project",
-    "title_language_packs_one": "{{count}} official language pack in the core {{version}} release is not placed in this project",
-    "description": "Core updates ask before placing official bundles that are not installed and do not place them by default. If you need one, place its source on the server with the command below, then install it from this screen.",
-    "command_label": "Placement command",
-    "dismiss": "Dismiss this notice"
-  },
   "update_modal": {
     "compat_warning_title": "Core version compatibility warning",
-    "compat_warning_message": "This update requires core version {{required}} (current: {{installed}})",
+    "compat_warning_message": "This {{type}} requires core {{required}} or higher. (current: {{installed}})",
     "compat_guide_link": "View core upgrade guide",
-    "requirements_title": "Check the extensions this new version needs first",
-    "requirements_dependencies_hint": "Required extensions — the new version needs the extensions below to be active at the required version to work properly. The update will still run, but install, activate, or update them first.",
-    "requirements_integrations_hint": "Extensions that work together — the update will still run, but unless you install, activate, or update the extensions below first, their integration will be off after the update.",
-    "force_label": "Ignore warning and force update (not recommended)",
-    "rebuild_search_index_title": "Search index",
-    "rebuild_search_index_label": "Rebuild search indexes that hold no indexed content after the update",
-    "rebuild_search_index_desc": "Rebuilding locks or re-indexes the target. On a live site, leave this unchecked and run it during a maintenance window."
-  },
-  "view_mode": {
-    "toggle_label": "View mode",
-    "gallery": "Gallery view",
-    "list": "List view",
-    "gallery_aria": "Show as gallery",
-    "list_aria": "Show as list"
-  },
-  "card": {
-    "open_detail": "View details of {{name}}"
-  },
-  "icon": {
-    "alt": "{{name}} icon",
-    "locale_badge_sr": "{{locale}} language pack"
-  },
-  "manifest_preview": {
-    "icon_present": "Icon included: {{path}}",
-    "icon_missing": "No icon; the default icon will be shown.",
-    "icon_invalid": "The icon does not meet the specification; the default icon will be shown."
+    "force_label": "Ignore warning and force update (not recommended)"
   }
 }

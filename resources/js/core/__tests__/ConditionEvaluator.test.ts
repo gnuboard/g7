@@ -10,7 +10,7 @@
  * @since engine-v1.10.0
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   evaluateStringCondition,
   evaluateConditionExpression,
@@ -37,32 +37,22 @@ describe('ConditionEvaluator', () => {
   // ==========================================================================
   describe('evaluateStringCondition', () => {
     describe('JavaScript 리터럴 표현식', () => {
-      // @scenario area=string_literal
-      // @effects condition_string_truthiness
       it('{{true}}는 true 반환', () => {
         expect(evaluateStringCondition('{{true}}', {}, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=string_literal
-      // @effects condition_string_truthiness
       it('{{false}}는 false 반환', () => {
         expect(evaluateStringCondition('{{false}}', {}, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_literal
-      // @effects condition_string_truthiness
       it('{{null}}은 false 반환', () => {
         expect(evaluateStringCondition('{{null}}', {}, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_literal
-      // @effects condition_string_truthiness
       it('{{undefined}}은 false 반환', () => {
         expect(evaluateStringCondition('{{undefined}}', {}, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_literal
-      // @effects condition_string_truthiness
       it('컨텍스트에 true 키가 있어도 리터럴 우선', () => {
         const context = { true: false };
         expect(evaluateStringCondition('{{true}}', context, bindingEngine)).toBe(true);
@@ -70,57 +60,41 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('단순 바인딩 표현식', () => {
-      // @scenario area=string_binding
-      // @effects condition_string_truthiness
       it('truthy 값은 true 반환', () => {
         const context = { user: { isAdmin: true } };
         expect(evaluateStringCondition('{{user.isAdmin}}', context, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=string_binding
-      // @effects condition_string_truthiness
       it('falsy 값(false)은 false 반환', () => {
         const context = { user: { isAdmin: false } };
         expect(evaluateStringCondition('{{user.isAdmin}}', context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_binding
-      // @effects condition_string_truthiness
       it('falsy 값(0)은 false 반환', () => {
         const context = { count: 0 };
         expect(evaluateStringCondition('{{count}}', context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_binding
-      // @effects condition_string_truthiness
       it('falsy 값(null)은 false 반환', () => {
         const context = { value: null };
         expect(evaluateStringCondition('{{value}}', context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_binding
-      // @effects condition_string_truthiness
       it('falsy 값(undefined)은 false 반환', () => {
         const context = { value: undefined };
         expect(evaluateStringCondition('{{value}}', context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_binding
-      // @effects condition_string_truthiness
       it('빈 문자열은 false 반환', () => {
         const context = { value: '' };
         expect(evaluateStringCondition('{{value}}', context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_binding
-      // @effects condition_string_truthiness
       it('문자열 "false"는 false 반환', () => {
         const context = { value: 'false' };
         expect(evaluateStringCondition('{{value}}', context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_binding
-      // @effects condition_string_truthiness
       it('존재하지 않는 경로는 false 반환', () => {
         const context = { user: {} };
         expect(evaluateStringCondition('{{user.notExist}}', context, bindingEngine)).toBe(false);
@@ -128,23 +102,17 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('비교 연산자', () => {
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('=== 동등 비교', () => {
         const context = { status: 'active' };
         expect(evaluateStringCondition("{{status === 'active'}}", context, bindingEngine)).toBe(true);
         expect(evaluateStringCondition("{{status === 'inactive'}}", context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('!== 부등 비교', () => {
         const context = { status: 'active' };
         expect(evaluateStringCondition("{{status !== 'inactive'}}", context, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('숫자 비교 (<, >, <=, >=)', () => {
         const context = { count: 10 };
         expect(evaluateStringCondition('{{count > 5}}', context, bindingEngine)).toBe(true);
@@ -155,24 +123,18 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('논리 연산자', () => {
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('&& AND 연산', () => {
         const context = { a: true, b: true, c: false };
         expect(evaluateStringCondition('{{a && b}}', context, bindingEngine)).toBe(true);
         expect(evaluateStringCondition('{{a && c}}', context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('|| OR 연산', () => {
         const context = { a: false, b: true, c: false };
         expect(evaluateStringCondition('{{a || b}}', context, bindingEngine)).toBe(true);
         expect(evaluateStringCondition('{{a || c}}', context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('! NOT 연산', () => {
         const context = { value: false };
         expect(evaluateStringCondition('{{!value}}', context, bindingEngine)).toBe(true);
@@ -180,22 +142,16 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('Optional Chaining', () => {
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('존재하는 중첩 경로', () => {
         const context = { user: { profile: { name: 'John' } } };
         expect(evaluateStringCondition('{{user?.profile?.name}}', context, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('중간에 null인 경로', () => {
         const context = { user: { profile: null } };
         expect(evaluateStringCondition('{{user?.profile?.name}}', context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('최상위가 존재하지 않는 경로', () => {
         const context = {};
         expect(evaluateStringCondition('{{user?.profile?.name}}', context, bindingEngine)).toBe(false);
@@ -203,15 +159,11 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('삼항 연산자', () => {
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('조건 true일 때', () => {
         const context = { isEdit: true };
         expect(evaluateStringCondition("{{isEdit ? 'yes' : 'no'}}", context, bindingEngine)).toBe(true); // 'yes' → truthy
       });
 
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('조건 false일 때 빈 문자열 반환', () => {
         const context = { isEdit: false };
         expect(evaluateStringCondition("{{isEdit ? 'yes' : ''}}", context, bindingEngine)).toBe(false); // '' → falsy
@@ -219,8 +171,6 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('함수 호출', () => {
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('_global.hasPermission 같은 함수 호출', () => {
         const context = {
           _global: {
@@ -231,8 +181,6 @@ describe('ConditionEvaluator', () => {
         expect(evaluateStringCondition("{{_global.hasPermission('guest')}}", context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=string_expression
-      // @effects condition_string_truthiness
       it('배열 메서드 호출', () => {
         const context = {
           items: [1, 2, 3],
@@ -242,43 +190,11 @@ describe('ConditionEvaluator', () => {
       });
     });
 
-    describe('파이프 표현식', () => {
-      // 회귀 배경: `|` 를 연산자로 판정해 evaluateExpression 으로 라우팅하면
-      // `value | pipe` 가 JS 비트 OR 로 평가되어 조건이 잘못 판정된다.
-      // @since engine-v1.54.3
-      // @scenario area=string_pipe
-      // @effects condition_string_truthiness
-      it('인자 있는 파이프 결과로 조건을 판정한다', () => {
-        const context = { row: { created_at: '2024-01-15T14:30:00' } };
-        expect(
-          evaluateStringCondition("{{row.created_at | datetime('YYYY-MM-DD')}}", context, bindingEngine)
-        ).toBe(true);
-      });
-
-      // @scenario area=string_pipe
-      // @effects condition_string_truthiness
-      it('인자 없는 파이프 결과로 조건을 판정한다', () => {
-        const context = { row: { code: 'abc' } };
-        expect(evaluateStringCondition('{{row.code | uppercase}}', context, bindingEngine)).toBe(true);
-      });
-
-      // @scenario area=string_pipe
-      // @effects condition_string_truthiness
-      it('파이프 결과가 빈 문자열이면 false 를 반환한다', () => {
-        const context = { row: { code: '' } };
-        expect(evaluateStringCondition('{{row.code | uppercase}}', context, bindingEngine)).toBe(false);
-      });
-    });
-
     describe('빈 조건', () => {
-      // @scenario area=string_empty
-      // @effects condition_string_truthiness
       it('빈 문자열 조건은 true 반환', () => {
         expect(evaluateStringCondition('', {}, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=string_empty
-      // @effects condition_string_truthiness
       it('undefined 조건은 true 반환', () => {
         expect(evaluateStringCondition(undefined as any, {}, bindingEngine)).toBe(true);
       });
@@ -290,8 +206,6 @@ describe('ConditionEvaluator', () => {
   // ==========================================================================
   describe('evaluateConditionExpression', () => {
     describe('문자열 조건', () => {
-      // @scenario area=group_expression
-      // @effects condition_group_and_or
       it('문자열은 evaluateStringCondition으로 평가', () => {
         const context = { user: { isAdmin: true } };
         expect(evaluateConditionExpression('{{user.isAdmin}}', context, bindingEngine)).toBe(true);
@@ -299,8 +213,6 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('AND 그룹', () => {
-      // @scenario area=group_expression
-      // @effects condition_group_and_or
       it('모든 조건 true → true', () => {
         const context = { a: true, b: true, c: true };
         const condition: ConditionExpression = {
@@ -309,8 +221,6 @@ describe('ConditionEvaluator', () => {
         expect(evaluateConditionExpression(condition, context, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=group_expression
-      // @effects condition_group_and_or
       it('하나라도 false → false', () => {
         const context = { a: true, b: false, c: true };
         const condition: ConditionExpression = {
@@ -319,15 +229,11 @@ describe('ConditionEvaluator', () => {
         expect(evaluateConditionExpression(condition, context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=group_expression
-      // @effects condition_group_and_or
       it('빈 AND 그룹은 true 반환', () => {
         const condition: ConditionExpression = { and: [] };
         expect(evaluateConditionExpression(condition, {}, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=group_expression
-      // @effects condition_group_short_circuits
       it('단락 평가: 첫 false에서 중단', () => {
         const evalOrder: string[] = [];
         const context = {
@@ -349,8 +255,6 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('OR 그룹', () => {
-      // @scenario area=group_expression
-      // @effects condition_group_and_or
       it('하나라도 true → true', () => {
         const context = { a: false, b: true, c: false };
         const condition: ConditionExpression = {
@@ -359,8 +263,6 @@ describe('ConditionEvaluator', () => {
         expect(evaluateConditionExpression(condition, context, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=group_expression
-      // @effects condition_group_and_or
       it('모든 조건 false → false', () => {
         const context = { a: false, b: false, c: false };
         const condition: ConditionExpression = {
@@ -369,15 +271,11 @@ describe('ConditionEvaluator', () => {
         expect(evaluateConditionExpression(condition, context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=group_expression
-      // @effects condition_group_and_or
       it('빈 OR 그룹은 false 반환', () => {
         const condition: ConditionExpression = { or: [] };
         expect(evaluateConditionExpression(condition, {}, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=group_expression
-      // @effects condition_group_short_circuits
       it('단락 평가: 첫 true에서 중단', () => {
         const evalOrder: string[] = [];
         const context = {
@@ -399,8 +297,6 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('중첩 AND/OR', () => {
-      // @scenario area=group_expression
-      // @effects condition_group_and_or
       it('OR 안에 AND', () => {
         const context = { isAdmin: false, isManager: true, department: 'sales' };
         // isAdmin이거나 (isManager이면서 sales 부서)
@@ -415,8 +311,6 @@ describe('ConditionEvaluator', () => {
         expect(evaluateConditionExpression(condition, context, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=group_expression
-      // @effects condition_group_and_or
       it('AND 안에 OR', () => {
         const context = { isLoggedIn: true, hasBasicPlan: false, hasPremiumPlan: true };
         // 로그인하고 (기본 플랜 또는 프리미엄 플랜)
@@ -431,8 +325,6 @@ describe('ConditionEvaluator', () => {
         expect(evaluateConditionExpression(condition, context, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=group_expression
-      // @effects condition_group_and_or
       it('복잡한 3단 중첩', () => {
         const context = {
           user: { role: 'editor', department: 'content' },
@@ -460,8 +352,6 @@ describe('ConditionEvaluator', () => {
   // ==========================================================================
   describe('evaluateConditionBranches', () => {
     describe('if/else if/else 체인', () => {
-      // @scenario area=branch_chain
-      // @effects condition_branch_first_match
       it('첫 번째 조건 매칭', () => {
         const context = { mode: 'edit' };
         const branches: ConditionBranch[] = [
@@ -474,8 +364,6 @@ describe('ConditionEvaluator', () => {
         expect(result.branchIndex).toBe(0);
       });
 
-      // @scenario area=branch_chain
-      // @effects condition_branch_first_match
       it('두 번째 조건 매칭', () => {
         const context = { mode: 'view' };
         const branches: ConditionBranch[] = [
@@ -488,8 +376,6 @@ describe('ConditionEvaluator', () => {
         expect(result.branchIndex).toBe(1);
       });
 
-      // @scenario area=branch_chain
-      // @effects condition_branch_first_match
       it('else 브랜치 매칭', () => {
         const context = { mode: 'other' };
         const branches: ConditionBranch[] = [
@@ -502,8 +388,6 @@ describe('ConditionEvaluator', () => {
         expect(result.branchIndex).toBe(2);
       });
 
-      // @scenario area=branch_chain
-      // @effects condition_branch_first_match
       it('매칭 없음 (else 없이)', () => {
         const context = { mode: 'other' };
         const branches: ConditionBranch[] = [
@@ -517,8 +401,6 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('AND/OR 조건 브랜치', () => {
-      // @scenario area=branch_chain
-      // @effects condition_branch_first_match
       it('AND 그룹 조건', () => {
         const context = { user: { isLoggedIn: true, hasPermission: true } };
         const branches: ConditionBranch[] = [
@@ -533,8 +415,6 @@ describe('ConditionEvaluator', () => {
         expect(result.branchIndex).toBe(0);
       });
 
-      // @scenario area=branch_chain
-      // @effects condition_branch_first_match
       it('OR 그룹 조건', () => {
         const context = { user: { isAdmin: false, isModerator: true } };
         const branches: ConditionBranch[] = [
@@ -551,16 +431,12 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('엣지 케이스', () => {
-      // @scenario area=branch_chain
-      // @effects condition_branch_first_match
       it('빈 배열은 매칭 없음', () => {
         const result = evaluateConditionBranches([], {}, bindingEngine);
         expect(result.matched).toBe(false);
         expect(result.branchIndex).toBe(-1);
       });
 
-      // @scenario area=branch_chain
-      // @effects condition_branch_first_match
       it('then 없는 브랜치도 정상 처리', () => {
         const context = { show: true };
         const branches: ConditionBranch[] = [
@@ -578,23 +454,17 @@ describe('ConditionEvaluator', () => {
   // ==========================================================================
   describe('evaluateConditions', () => {
     describe('단일 ConditionExpression', () => {
-      // @scenario area=conditions_property
-      // @effects conditions_property_dispatch
       it('문자열 조건', () => {
         const context = { show: true };
         expect(evaluateConditions('{{show}}', context, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=conditions_property
-      // @effects conditions_property_dispatch
       it('AND 그룹', () => {
         const context = { a: true, b: true };
         const cond: ConditionsProperty = { and: ['{{a}}', '{{b}}'] };
         expect(evaluateConditions(cond, context, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=conditions_property
-      // @effects conditions_property_dispatch
       it('OR 그룹', () => {
         const context = { a: false, b: true };
         const cond: ConditionsProperty = { or: ['{{a}}', '{{b}}'] };
@@ -603,8 +473,6 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('ConditionBranch[] (if/else 체인)', () => {
-      // @scenario area=conditions_property
-      // @effects conditions_property_dispatch
       it('하나라도 매칭되면 true', () => {
         const context = { role: 'admin' };
         const cond: ConditionsProperty = [
@@ -614,8 +482,6 @@ describe('ConditionEvaluator', () => {
         expect(evaluateConditions(cond, context, bindingEngine)).toBe(true);
       });
 
-      // @scenario area=conditions_property
-      // @effects conditions_property_dispatch
       it('모든 조건 false면 false (else 없이)', () => {
         const context = { role: 'guest' };
         const cond: ConditionsProperty = [
@@ -625,8 +491,6 @@ describe('ConditionEvaluator', () => {
         expect(evaluateConditions(cond, context, bindingEngine)).toBe(false);
       });
 
-      // @scenario area=conditions_property
-      // @effects conditions_property_dispatch
       it('else 브랜치 있으면 항상 true', () => {
         const context = { role: 'guest' };
         const cond: ConditionsProperty = [
@@ -643,32 +507,22 @@ describe('ConditionEvaluator', () => {
   // ==========================================================================
   describe('타입 가드', () => {
     describe('isConditionExpression', () => {
-      // @scenario area=type_guard
-      // @effects condition_type_guards
       it('문자열은 true', () => {
         expect(isConditionExpression('{{user.isAdmin}}')).toBe(true);
       });
 
-      // @scenario area=type_guard
-      // @effects condition_type_guards
       it('AND 객체는 true', () => {
         expect(isConditionExpression({ and: ['{{a}}', '{{b}}'] })).toBe(true);
       });
 
-      // @scenario area=type_guard
-      // @effects condition_type_guards
       it('OR 객체는 true', () => {
         expect(isConditionExpression({ or: ['{{a}}', '{{b}}'] })).toBe(true);
       });
 
-      // @scenario area=type_guard
-      // @effects condition_type_guards
       it('ConditionBranch 배열은 false', () => {
         expect(isConditionExpression([{ if: '{{a}}' }])).toBe(false);
       });
 
-      // @scenario area=type_guard
-      // @effects condition_type_guards
       it('null/undefined는 false', () => {
         expect(isConditionExpression(null)).toBe(false);
         expect(isConditionExpression(undefined)).toBe(false);
@@ -676,28 +530,20 @@ describe('ConditionEvaluator', () => {
     });
 
     describe('isConditionBranches', () => {
-      // @scenario area=type_guard
-      // @effects condition_type_guards
       it('ConditionBranch 배열은 true', () => {
         expect(isConditionBranches([{ if: '{{a}}' }])).toBe(true);
         expect(isConditionBranches([{ then: { handler: 'test' } }])).toBe(true);
         expect(isConditionBranches([{ if: '{{a}}', then: { handler: 'test' } }])).toBe(true);
       });
 
-      // @scenario area=type_guard
-      // @effects condition_type_guards
       it('빈 배열은 false', () => {
         expect(isConditionBranches([])).toBe(false);
       });
 
-      // @scenario area=type_guard
-      // @effects condition_type_guards
       it('문자열 배열은 false', () => {
         expect(isConditionBranches(['{{a}}', '{{b}}'])).toBe(false);
       });
 
-      // @scenario area=type_guard
-      // @effects condition_type_guards
       it('문자열은 false', () => {
         expect(isConditionBranches('{{a}}')).toBe(false);
       });
@@ -708,8 +554,6 @@ describe('ConditionEvaluator', () => {
   // 실제 사용 시나리오 테스트
   // ==========================================================================
   describe('실제 사용 시나리오', () => {
-    // @scenario area=usage_scenario
-    // @effects condition_group_and_or
     it('컴포넌트 조건부 렌더링 - route.id와 form_data 둘 다 필요', () => {
       const context1 = { route: { id: '123' }, form_data: { data: { author: 'John' } } };
       const context2 = { route: { id: '123' }, form_data: null };
@@ -724,8 +568,6 @@ describe('ConditionEvaluator', () => {
       expect(evaluateConditionExpression(condition, context3, bindingEngine)).toBe(false);
     });
 
-    // @scenario area=usage_scenario
-    // @effects condition_branch_first_match
     it('액션 분기 처리 - 행 액션별 다른 핸들러', () => {
       const branches: ConditionBranch[] = [
         {
@@ -754,8 +596,6 @@ describe('ConditionEvaluator', () => {
       expect(result3.branchIndex).toBe(2);
     });
 
-    // @scenario area=usage_scenario
-    // @effects condition_group_and_or
     it('데이터 소스 조건부 fetch - 권한 및 route 조건', () => {
       const condition: ConditionExpression = {
         and: [
@@ -786,8 +626,6 @@ describe('ConditionEvaluator', () => {
       expect(evaluateConditionExpression(condition, context3, bindingEngine)).toBe(false);
     });
 
-    // @scenario area=usage_scenario
-    // @effects condition_group_and_or
     it('스크립트 조건부 로드 - 플러그인 활성화 또는 관리자', () => {
       const condition: ConditionExpression = {
         or: [
@@ -829,39 +667,27 @@ describe('ConditionEvaluator', () => {
   // evaluateIfCondition (RenderHelpers) 리터럴 테스트
   // ==========================================================================
   describe('evaluateIfCondition - JavaScript 리터럴', () => {
-    // @scenario area=if_literal
-    // @effects if_condition_literal_and_path
     it('{{true}}는 true 반환', () => {
       expect(evaluateIfCondition('{{true}}', {}, bindingEngine)).toBe(true);
     });
 
-    // @scenario area=if_literal
-    // @effects if_condition_literal_and_path
     it('{{false}}는 false 반환', () => {
       expect(evaluateIfCondition('{{false}}', {}, bindingEngine)).toBe(false);
     });
 
-    // @scenario area=if_literal
-    // @effects if_condition_literal_and_path
     it('{{null}}은 false 반환', () => {
       expect(evaluateIfCondition('{{null}}', {}, bindingEngine)).toBe(false);
     });
 
-    // @scenario area=if_literal
-    // @effects if_condition_literal_and_path
     it('{{undefined}}은 false 반환', () => {
       expect(evaluateIfCondition('{{undefined}}', {}, bindingEngine)).toBe(false);
     });
 
-    // @scenario area=if_literal
-    // @effects if_condition_literal_and_path
     it('컨텍스트에 true 키가 있어도 리터럴 우선', () => {
       const context = { true: false };
       expect(evaluateIfCondition('{{true}}', context, bindingEngine)).toBe(true);
     });
 
-    // @scenario area=if_literal
-    // @effects if_condition_literal_and_path
     it('일반 경로 표현식은 기존대로 동작', () => {
       const context = { user: { isAdmin: true } };
       expect(evaluateIfCondition('{{user.isAdmin}}', context, bindingEngine)).toBe(true);

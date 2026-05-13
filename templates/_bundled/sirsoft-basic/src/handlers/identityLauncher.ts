@@ -1,4 +1,3 @@
-import { sitePath } from '../support/apiUrl';
 /**
  * IDV Modal Launcher (sirsoft-basic)
  *
@@ -29,11 +28,6 @@ const logger = ((window as any).G7Core?.createLogger?.('Template:sirsoft-basic:I
  * 코어가 launcher 에 전달하는 verification payload (런타임 형태).
  * 코어 타입 import 를 피하려고 로컬에 정의 — 실제 형식은 `resources/js/core/identity/types.ts` 와 동일.
  */
-interface IdentityVerificationTarget {
-  email?: string;
-  phone?: string;
-}
-
 interface VerificationPayload {
   policy_key: string;
   purpose: string;
@@ -42,8 +36,6 @@ interface VerificationPayload {
   challenge_start_url?: string;
   redirect_url?: string;
   return_request?: { method: string; url: string; headers_echo?: string[] } | null;
-  /** 흐름이 apiCall identity_target 으로 선언한 인증 대상 — 코어 인터셉터가 병합해 전달. */
-  target?: IdentityVerificationTarget | null;
 }
 
 /**
@@ -56,56 +48,38 @@ type VerificationResult =
   | { status: 'failed'; failureCode: string; reason?: string };
 
 /**
- * 인증 대상(이메일·전화)을 결정합니다.
+ * 가입/비밀번호 재설정 폼 등에서 target.email 을 추출합니다.
  *
- * 우선순위 (필드별 보충 머지 — email/phone 각각 첫 비어있지 않은 값 채택):
- *   1. `payload.target` — 흐름이 apiCall `identity_target` 으로 선언한 값 (범용 진입점, 비로그인 흐름의 핵심)
- *   2. 로그인 사용자 세션 (`currentUser` / `user` / `auth.user` 의 email·phone)
- *   3. (하위호환) signup/password_reset 폼 — `identity_target` 미선언 기존 레이아웃 대비
- *
- * 흐름별 폼 경로 하드코딩을 폐기하고 선언값을 1순위로 둠으로써, 주문/게시판/임의 액션 어떤 흐름이든
- * 레이아웃이 `identity_target` 만 선언하면 launcher 변경 없이 동작한다.
+ * 우선순위: signup form > password_reset form > 로그인 사용자
  *
  * 반환값은 launcher 에서 두 곳에 사용:
  * 1) 첫 POST /api/identity/challenges body 에 동봉
  * 2) `_global.identityChallenge.target` 에 저장 — 모달 재전송 액션이 같은 target 을 재사용
- *
- * @param payload 코어 인터셉터가 전달한 verification payload (target 병합 포함)
- * @returns 인증 대상 또는 null (email·phone 둘 다 없으면 — 로그인 사용자는 서버 세션 도출)
  */
-function resolveTarget(payload: VerificationPayload): IdentityVerificationTarget | null {
+function resolveTargetEmail(payload: VerificationPayload): { email?: string } | null {
   const G7Core = (window as any).G7Core;
   const local = G7Core?.state?.getLocal?.() ?? {};
   const global = G7Core?.state?.getGlobal?.() ?? G7Core?.state?.get?.() ?? {};
 
-  const pick = (...candidates: Array<unknown>): string | undefined =>
-    candidates.find((v): v is string => typeof v === 'string' && v.length > 0);
-
-  const email = pick(
-    payload.target?.email,
-    global?.currentUser?.email,
-    global?.user?.email,
-    global?.auth?.user?.email,
+  const candidates: Array<string | undefined> = [
     payload.purpose === 'signup' ? local?.registerForm?.email : undefined,
     payload.purpose === 'password_reset' ? local?.passwordResetForm?.email : undefined,
     payload.purpose === 'password_reset' ? local?.email : undefined,
-  );
+    global?.user?.email,
+    global?.auth?.user?.email,
+  ];
 
-  const phone = pick(
-    payload.target?.phone,
-    global?.currentUser?.phone,
-    global?.user?.phone,
-    global?.auth?.user?.phone,
-  );
+  const email = candidates.find((v) => typeof v === 'string' && v.length > 0);
+  return email ? { email } : null;
+}
 
-  if (!email && !phone) {
-    return null;
-  }
-
-  const target: IdentityVerificationTarget = {};
-  if (email) target.email = email;
-  if (phone) target.phone = phone;
-  return target;
+/**
+ * Bearer 토큰을 안전하게 추출합니다 (있으면).
+ */
+function getAuthHeader(): Record<string, string> {
+  const G7Core = (window as any).G7Core;
+  const token = G7Core?.api?.getToken?.() ?? null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 interface ChallengeResponseData {
@@ -114,84 +88,33 @@ interface ChallengeResponseData {
   render_hint: string;
   public_payload?: Record<string, unknown>;
   redirect_url?: string;
-  /** 허용 최대 시도 횟수 — 0 은 무제한 (popup/SDK 형 provider). 코어 mail provider 는 환경설정값을 반영. */
-  max_attempts?: number;
-  /**
-   * 링크 방식 challenge 에만 오는 일회용 비밀값 — 링크를 연 쪽(다른 기기일 수 있음)의 확인 결과를 이 화면이
-   * `POST /api/identity/challenges/{id}/claim` 으로 받아 갈 때 쓴다. 상태 조회 응답에는 실리지 않는다.
-   */
-  claim_secret?: string;
-}
-
-/** 외부 재확인에서 돌아올 때 붙는 일회용 결과 쿼리 — 돌아갈 경로에 다시 싣지 않는다(지난 왕복의 값이 따라가지 않게). */
-const RETURN_RESULT_QUERY_KEYS = ['verification_token', 'social_reauth', 'social_error'];
-
-/**
- * 외부 수단이 확인을 마치고 돌려보낼 지금 화면 경로를 만듭니다.
- *
- * 같은 출처 경로+쿼리만 쓴다(절대 주소·해시 없음). 지난 왕복의 결과 쿼리는 뺀다.
- *
- * @returns 경로 (`/` 로 시작), 만들 수 없으면 null
- */
-function currentReturnPath(): string | null {
-  const pathname = typeof window !== 'undefined' ? window.location?.pathname : undefined;
-  if (typeof pathname !== 'string' || !pathname.startsWith('/') || pathname.startsWith('//')) {
-    return null;
-  }
-  const params = new URLSearchParams(window.location?.search ?? '');
-  for (const key of RETURN_RESULT_QUERY_KEYS) {
-    params.delete(key);
-  }
-  const query = params.toString();
-  return query ? `${pathname}?${query}` : pathname;
 }
 
 /**
  * `POST /api/identity/challenges` 로 challenge 를 시작합니다.
- *
- * @param payload verification payload
- * @param target launcher 본체에서 1회 계산한 인증 대상 (startChallenge 와 _global 저장이 동일 값 공유)
  */
-async function startChallenge(
-  payload: VerificationPayload,
-  target: IdentityVerificationTarget | null,
-): Promise<ChallengeResponseData> {
+async function startChallenge(payload: VerificationPayload): Promise<ChallengeResponseData> {
+  const target = resolveTargetEmail(payload);
   const body: Record<string, unknown> = { purpose: payload.purpose };
   if (payload.provider_id) body.provider_id = payload.provider_id;
-  // 428 이 알려 준 정책 — 서버가 그 정책별 문구를 고른다(켜져 있고 목적이 같을 때만).
-  if (payload.policy_key) body.policy_key = payload.policy_key;
   if (target) body.target = target;
-  // 외부 화면을 거치는 수단(회사 계정 다시 로그인·소셜 다시 로그인 등)이 확인을 마치고 돌려보낼 곳 — 지금 화면.
-  // 싣지 않으면 서버 기본값(마이페이지·첫 화면)으로 돌아가 하던 일을 이어 갈 수 없다. 서버는 같은 출처 경로만 받는다.
-  const returnPath = currentReturnPath();
-  if (returnPath) body.return_path = returnPath;
 
-  // challenge 시작 주소는 428 응답 본문(`challenge_start_url`)에서 온다. 코어 `G7Core.api` 로 보내면
-  // Bearer·XSRF 는 동일 출처 대상에만 실리고(교차 출처 서버가 428 을 흉내 내 자기 주소를 넣어도 토큰이
-  // 가지 않는다, KVE-2026-2350), 화면 언어(`Accept-Language: g7_locale`)도 코어가 붙인다 — IDV 메일이
-  // 사용자 화면 언어로 렌더된다.
   const url = payload.challenge_start_url || '/api/identity/challenges';
-  const api = (window as any).G7Core?.api;
-  // 사용자에게 보이는 실패 문구는 화면 언어로 — 서버가 준 message 가 없을 때만 쓴다.
-  const failedText = (): string => {
-    const translated = (window as any).G7Core?.t?.('common.error_occurred');
-    return typeof translated === 'string' && translated !== 'common.error_occurred' ? translated : 'An error occurred.';
-  };
-  if (typeof api?.post !== 'function') {
-    throw new Error(failedText());
-  }
+  const res = await fetch(url, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify(body),
+  });
 
-  let json: any;
-  try {
-    json = await api.post(url, body);
-  } catch (err: any) {
-    const status = err?.response?.status;
-    const msg = err?.response?.data?.message
-      ?? (status ? `${failedText()} (HTTP ${status})` : (err instanceof Error ? err.message : String(err)));
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.success) {
+    const msg = json?.message ?? `Challenge 시작 실패 (HTTP ${res.status})`;
     throw new Error(msg);
-  }
-  if (!json?.success) {
-    throw new Error(json?.message ?? failedText());
   }
 
   const data = json.data ?? json;
@@ -201,17 +124,13 @@ async function startChallenge(
     render_hint: data.render_hint ?? payload.render_hint ?? 'text_code',
     public_payload: data.public_payload,
     redirect_url: data.redirect_url,
-    max_attempts: typeof data.max_attempts === 'number' ? data.max_attempts : undefined,
-    claim_secret: typeof data.claim_secret === 'string' ? data.claim_secret : undefined,
   };
 }
 
 /**
  * sirsoft-basic 의 IDV launcher 본체.
- *
- * 테스트에서 직접 호출할 수 있도록 export (런타임 진입점은 registerSirsoftBasicIdentityLauncher).
  */
-export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload): Promise<VerificationResult> {
+async function sirsoftBasicIdentityLauncher(payload: VerificationPayload): Promise<VerificationResult> {
   const G7Core = (window as any).G7Core;
   const identity = G7Core?.identity;
 
@@ -225,14 +144,10 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
     return identity.redirectExternally(payload);
   }
 
-  // 인증 대상을 1회 계산 — startChallenge body 와 _global.identityChallenge.target 저장이 동일 값 공유
-  // (모달 재전송이 같은 target 으로 challenge 재요청). 흐름 선언값(payload.target) 우선.
-  const target = resolveTarget(payload);
-
   // (2) Challenge 시작
   let challenge: ChallengeResponseData;
   try {
-    challenge = await startChallenge(payload, target);
+    challenge = await startChallenge(payload);
   } catch (err) {
     logger.error('Challenge 시작 실패:', err);
     try {
@@ -263,22 +178,14 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
   }
 
   // (3) _global.identityChallenge 네임스페이스 setup
-  // 위에서 1회 계산한 target 을 재사용 — 모달 재전송 액션이 같은 target 으로 challenge 재요청 가능하게
+  // target 도 함께 저장 — 모달 재전송 액션이 같은 target 으로 challenge 재요청 가능하게
+  const target = resolveTargetEmail(payload);
   const expiresMs = challenge.expires_at ? new Date(challenge.expires_at).getTime() : 0;
   const remainingSeconds = expiresMs > 0 ? Math.max(0, Math.floor((expiresMs - Date.now()) / 1000)) : 0;
-
-  // maxAttempts: 백엔드 응답값이 있으면 사용, 없으면 0(무제한 — popup/SDK 형 provider 의 기본).
-  // 코어 mail provider 응답에는 환경설정의 max_attempts 가 정확히 반영되므로 화면 카운트도 정합.
-  const maxAttempts = typeof challenge.max_attempts === 'number' ? challenge.max_attempts : 0;
-
-  // 이 띄움의 열쇠 — 창이 닫힌 뒤 이름 공간을 비울 때 다른 띄움(이어진 428)이 쓴 상태를 건드리지 않게 견준다.
-  // 건 번호는 [다시 보내기]가 바꾸므로 열쇠로 쓰지 않는다
-  const launchKey = `${challenge.id}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 
   G7Core.state.set({
     identityChallenge: {
       policy_key: payload.policy_key,
-      launch_key: launchKey,
       purpose: payload.purpose,
       provider_id: payload.provider_id ?? null,
       render_hint: challenge.render_hint,
@@ -289,7 +196,7 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
       code: '',
       error: null,
       attempts: 0,
-      maxAttempts,
+      maxAttempts: 5,
       remainingSeconds,
       resendCooldown: 0,
     },
@@ -321,7 +228,7 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
   // G7Core.state.subscribe 로 _global.identityChallenge.expires_at 변경을 감지.
   let unsubscribe: (() => void) | null = null;
   try {
-    const subscription = G7Core.state.subscribe?.((next: any) => {
+    unsubscribe = G7Core.state.subscribe?.((next: any) => {
       const updated = next?.identityChallenge?.expires_at;
       if (typeof updated === 'string') {
         const ms = new Date(updated).getTime();
@@ -334,9 +241,7 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
         // 재전송 액션이 _global.identityChallenge.resendCooldown 을 30 으로 set 한 직후 동기화
         resendCooldown = cd;
       }
-    });
-    // 코어는 해제 함수를 돌려준다 — 함수가 아니면(구 코어) 보관하지 않는다
-    unsubscribe = typeof subscription === 'function' ? subscription : null;
+    }) ?? null;
   } catch {
     /* subscribe 미지원 환경 — 첫 만료시각 기준으로만 카운트다운 */
   }
@@ -354,207 +259,19 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
     unsubscribe?.();
     return identity.redirectExternally({
       ...payload,
-      // 해석한 대상을 함께 보관한다 — 전체화면은 페이지를 새로 읽어 전역 상태가 사라지고, 비회원은 로그인 세션에서
-      // 대상을 얻을 수 없다. 전체화면의 [코드 재전송] 이 이 값을 되살려 싣는다(restoreIdentityTargetHandler).
-      target: target ?? payload.target ?? null,
       render_hint: 'external_redirect',
-      // 인증 화면은 `query.return_url` 을 읽는다 — 같은 출처 경로+쿼리만 넘긴다(절대 주소 아님). 해시는 빼는데,
-      // 인증 화면의 복귀 이동(mergeQuery)이 쿼리를 덧붙일 때 해시 안으로 들어가지 않게 하기 위해서다.
-      // 외부 인증기관이 그대로 여는 복귀 주소라 사이트 마운트 접두사를 붙인다 — 없으면 하위 폴더 사이트에서
-      // 인증을 마친 사용자가 사이트 밖으로 돌아온다(`return_url` 의 pathname 은 이미 접두사를 갖고 있고, 복귀 이동이 그대로 받는다).
-      redirect_url: sitePath(
-        `/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return_url=${encodeURIComponent(
-          // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다(위 주석).
-          `${window.location.pathname}${window.location.search}`,
-        )}`,
-      ),
+      redirect_url: `/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return=${encodeURIComponent(window.location.href)}`,
     });
   }
 
   // (6) 모달이 resolveIdentityChallenge 호출하면 deferred 가 resolve
-  // 링크 방식 — 확인은 메일 링크가 하므로 시작 응답의 비밀값으로 결과를 받아 간다(인증번호 방식은 묻지 않는다).
-  const stopClaim = startLinkClaimPolling(challenge, G7Core);
+  const result = await deferred;
 
-  // 정리 — 결과가 어떻게 나든(취소·실패 포함) 결과 폴링·카운트다운 중단 + subscribe 해제. 구독이 남으면 모달을
-  // 닫은 뒤에도 전역 상태가 바뀔 때마다 이 클로저가 불린다
-  try {
-    return await deferred;
-  } finally {
-    stopClaim();
-    window.clearInterval(tickHandle);
-    unsubscribe?.();
-    clearChallengeNamespaceAfterClose(G7Core, launchKey);
-  }
-}
+  // 정리 — 카운트다운 중단 + subscribe 해제
+  window.clearInterval(tickHandle);
+  unsubscribe?.();
 
-/** 인증 창 이름 공간 정리가 창이 닫히기를 기다리는 횟수(100ms 간격 — 최대 5초) */
-const CLEAR_WAIT_TRIES = 50;
-
-/**
- * 인증 창이 닫힌 뒤 이 띄움의 창 이름 공간(`_global.identityChallenge` — 인증번호·건 번호)을 비웁니다.
- *
- * 결과(확인·취소·실패)가 나면 창은 닫히지만 이름 공간은 다음 띄움까지 전역에 남아, 친 인증번호가 개발자 도구로 보였다
- * (docs/frontend/security.md 「창 고유 이름 공간은 창을 닫을 때 비우면 허용」). 결과를 넘기는 동작 바로 뒤에 창 닫기가
- * 이어지므로, 창이 아직 열려 있으면 닫힐 때까지 기다렸다 비운다 — 열린 창을 비우면 빈 칸이 한 번 보인다. 그 사이 다른
- * 띄움(이어진 요청의 새 428)이 이름 공간을 새로 썼으면 그 상태는 건드리지 않는다.
- *
- * @param G7Core 코어 전역 객체
- * @param launchKey 이 띄움의 열쇠
- * @return 반환값 없음
- */
-function clearChallengeNamespaceAfterClose(G7Core: any, launchKey: string): void {
-  let tries = 0;
-  const attempt = (): void => {
-    const current = (G7Core.state?.getGlobal?.() ?? G7Core.state?.get?.())?.identityChallenge;
-    if (!current || current.launch_key !== launchKey) return;
-    if (G7Core.modal?.isOpen?.('identity-challenge-modal')) {
-      tries += 1;
-      if (tries <= CLEAR_WAIT_TRIES) window.setTimeout(attempt, 100);
-
-      return;
-    }
-    G7Core.state.set({ identityChallenge: null });
-  };
-  window.setTimeout(attempt, 0);
-}
-
-/**
- * 링크 방식 challenge 의 일회용 비밀값 — 건 번호별로 이 모듈 안에만 둔다. 전역 상태(`_global`)는 개발자 도구로 누구나
- * 볼 수 있어 토큰을 받아 갈 수 있는 값을 두지 않는다(docs/frontend/security.md 「_global 상태 민감 정보 금지」).
- */
-const claimSecrets = new Map<string, string>();
-
-/**
- * [다시 보내기]가 새로 받은 링크 방식 비밀값을 기억합니다 — 인증 창이 새 건의 확인 결과를 받아 가게.
- *
- * @param action 액션 정의 (params.challenge_id · params.claim_secret)
- * @param _context 실행 컨텍스트 (미사용)
- * @return 기억했으면 true
- */
-export function rememberIdentityClaimHandler(
-  action?: { params?: Record<string, unknown> } & Record<string, any>,
-  _context?: any,
-): boolean {
-  const id = typeof action?.params?.challenge_id === 'string' ? action.params.challenge_id : '';
-  const secret = typeof action?.params?.claim_secret === 'string' ? action.params.claim_secret : '';
-  if (!id || !secret) {
-    return false;
-  }
-  claimSecrets.set(id, secret);
-  return true;
-}
-
-/** 전체화면이 되살릴 수 있는 보관값의 수명 — 같은 탭에서 한참 전에 시작한 다른 인증의 대상이 섞이지 않게. */
-const TARGET_STASH_TTL_MS = 30 * 60 * 1000;
-
-/**
- * 전체화면 본인인증 진입 때, 넘어오기 전 화면이 세션 보관함에 남긴 인증 대상을 화면 상태로 되살립니다.
- *
- * 모달을 열지 못해 전체화면으로 넘어가면 페이지를 새로 읽어 전역 상태(`_global.identityChallenge.target`)가 사라진다.
- * 비회원은 로그인 세션에서 대상을 얻을 수 없어 [코드 재전송] 이 대상 없이 나가 422 로 거절됐다. launcher(와 코어
- * 기본 launcher)가 넘어가기 전 코어 보관함(`G7Core.identity.redirectStashKey`)에 대상을 함께 넣으므로, 그 값의
- * 이메일·전화번호만 꺼내 `_local.identity_target` 에 둔다. 30분이 지났거나 깨진 보관값은 쓰지 않는다.
- *
- * @param _action 액션 정의 (인자 없음)
- * @param _context 실행 컨텍스트 (미사용 — 상태는 G7Core.state 로 쓴다)
- * @return 되살린 대상, 없으면 null
- */
-export function restoreIdentityTargetHandler(_action?: unknown, _context?: unknown): IdentityVerificationTarget | null {
-  const G7Core = (window as any).G7Core;
-  const key: string = G7Core?.identity?.redirectStashKey ?? 'g7.identity.redirectStash';
-
-  let stash: { payload?: { target?: Record<string, unknown> | null }; stashed_at?: number } | null = null;
-  try {
-    const raw = window.sessionStorage?.getItem(key);
-    stash = raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-
-  if (!stash || typeof stash.stashed_at !== 'number' || Date.now() - stash.stashed_at > TARGET_STASH_TTL_MS) {
-    return null;
-  }
-
-  const source = stash.payload?.target ?? null;
-  const target: IdentityVerificationTarget = {};
-  if (typeof source?.email === 'string' && source.email !== '') target.email = source.email;
-  if (typeof source?.phone === 'string' && source.phone !== '') target.phone = source.phone;
-
-  if (!target.email && !target.phone) {
-    return null;
-  }
-
-  G7Core?.state?.setLocal?.({ identity_target: target });
-
-  return target;
-}
-
-/** 링크 방식 결과를 묻는 간격 — 서버 throttle(분당 60) 안에서 회원이 링크를 누른 뒤 곧 이어지게. */
-const CLAIM_INTERVAL_MS = 3000;
-
-/**
- * 링크 방식 challenge 의 확인 결과를 받아 갈 때까지 주기적으로 묻습니다.
- *
- * 확인 결과의 토큰은 링크를 연 쪽에만 돌아가므로, 인증 창을 띄운 이 화면은 시작 응답으로 받은 일회용 비밀값으로
- * 서버에 물어 받아 간다. 받으면 원래 요청(428 을 낸 요청)을 이어 가도록 resolve 하고 창을 닫는다. [다시 보내기]가
- * 새 건을 만들면 전역 인증 상태의 건 번호로 갈아 묻고, 그 건의 비밀값은 `rememberIdentityClaimHandler` 가 넘겨 준다. 끝낼 수 없는 답(거절·이미 사용·만료)을 받은 건은
- * 같은 건·같은 비밀값으로 다시 묻지 않는다.
- *
- * @param challenge 시작 응답
- * @param G7Core 코어 전역 객체
- * @return 묻기를 멈추는 함수
- */
-function startLinkClaimPolling(challenge: ChallengeResponseData, G7Core: any): () => void {
-  if (challenge.render_hint !== 'link' || !challenge.claim_secret) {
-    return () => {};
-  }
-
-  let stopped = false;
-  let inFlight = false;
-  let deadKey: string | null = null;
-  claimSecrets.set(challenge.id, challenge.claim_secret);
-
-  const handle = setInterval(async () => {
-    if (stopped || inFlight) return;
-    const current = G7Core.state?.getGlobal?.()?.identityChallenge ?? {};
-    const id = String(current.challenge_id ?? challenge.id);
-    const secret = claimSecrets.get(id);
-    if (!secret) return;
-    if (`${id}:${secret}` === deadKey) return;
-
-    const api = G7Core?.api;
-    if (typeof api?.post !== 'function') return;
-    const url = `/api/identity/challenges/${encodeURIComponent(id)}/claim`;
-    inFlight = true;
-    try {
-      // 코어 `G7Core.api` 로 묻는다 — Bearer·XSRF·화면 언어는 코어가 같은 출처 요청에만 붙인다(템플릿은 로그인 토큰을 읽지 않는다).
-      const json = await api.post(url, { claim_secret: secret });
-      if (stopped) return;
-      const token = json?.data?.verification_token;
-      if (typeof token === 'string' && token !== '') {
-        stopped = true;
-        clearInterval(handle);
-        await G7Core.dispatch({ handler: 'resolveIdentityChallenge', params: { result: 'verified', token } });
-        await G7Core.dispatch({ handler: 'closeModal', target: 'identity-challenge-modal' });
-        return;
-      }
-      // 아직 링크를 열지 않았으면(202 pending) 다음 주기에 다시 묻는다.
-      if (json?.data?.status === 'pending') return;
-      deadKey = `${id}:${secret}`;
-    } catch (err: any) {
-      // 서버가 답한 실패(거절·이미 사용·만료)는 같은 건·같은 비밀값으로 다시 묻지 않는다.
-      // 응답이 없는 일시 오류(네트워크)는 다음 주기에 다시 묻는다.
-      if (err?.response) deadKey = `${id}:${secret}`;
-    } finally {
-      inFlight = false;
-    }
-  }, CLAIM_INTERVAL_MS);
-
-  return () => {
-    stopped = true;
-    clearInterval(handle);
-    claimSecrets.clear();
-  };
+  return result;
 }
 
 /**

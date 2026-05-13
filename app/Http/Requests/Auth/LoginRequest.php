@@ -2,17 +2,13 @@
 
 namespace App\Http\Requests\Auth;
 
-use App\Extension\Auth\CredentialVerifierManager;
 use App\Extension\HookManager;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LoginRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -22,20 +18,13 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        // 사내 아이디를 받는 외부 자격 증명 검증자가 있으면 그 경로의 로그인 칸은 이메일 형식을 강제하지 않는다(7.2.0).
-        // 칸 이름은 `email` 그대로다 — 화면·엔진 계약을 바꾸지 않는다.
-        $guard = $this->route()?->getName() === 'api.auth.admin.login' ? 'admin' : 'user';
-        $acceptsUsernames = app(CredentialVerifierManager::class)->acceptsUsernames($guard);
-
         $rules = [
-            'email' => $acceptsUsernames ? 'required|string|max:255' : 'required|email',
-            // 로그인은 기존 비밀번호를 대조하는 행위이지 새 정책을 강제하는 지점이 아니다.
-            // 길이 규칙을 두면 정책 미달 비밀번호에 422 를 주어 미인증 공격자에게 그 사실을 누설한다.
-            'password' => 'required|string',
+            'email' => 'required|email',
+            'password' => 'required|string|min:6',
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -53,6 +42,7 @@ class LoginRequest extends FormRequest
             'email.required' => __('validation.auth.email.required'),
             'email.email' => __('validation.auth.email.email'),
             'password.required' => __('validation.auth.password.required'),
+            'password.min' => __('validation.auth.password.min'),
         ];
     }
 }

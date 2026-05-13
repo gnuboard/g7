@@ -74,8 +74,6 @@ describe('이커머스 라우트 바인딩', () => {
   });
 
   describe('_global.shopBase 렌더링', () => {
-    // @scenario route_setting=default, surface=text
-    // @effects shop_base_text_binds_default_shop
     it('shopBase="/shop"이 텍스트에 바인딩됨', async () => {
       const layoutJson = {
         version: '1.0.0',
@@ -102,8 +100,6 @@ describe('이커머스 라우트 바인딩', () => {
       expect(el.textContent).toBe('/shop');
     });
 
-    // @scenario route_setting=custom, surface=text
-    // @effects shop_base_text_binds_custom_route
     it('shopBase="/store"이 텍스트에 바인딩됨', async () => {
       const layoutJson = {
         version: '1.0.0',
@@ -130,9 +126,7 @@ describe('이커머스 라우트 바인딩', () => {
       expect(el.textContent).toBe('/store');
     });
 
-    // @scenario route_setting=no_route, surface=text
-    // @effects shop_base_text_is_empty_when_no_route
-    it('no_route 시 shopBase 는 빈 문자열로 바인딩됨', async () => {
+    it('shopBase="/"이 텍스트에 바인딩됨 (no_route)', async () => {
       const layoutJson = {
         version: '1.0.0',
         layout_name: 'shopbase_root_text_test',
@@ -148,20 +142,18 @@ describe('이커머스 라우트 바인딩', () => {
       };
 
       testUtils = createLayoutTest(layoutJson, {
-        initialState: { _global: { shopBase: '' } },
+        initialState: { _global: { shopBase: '/' } },
         componentRegistry: registry,
       });
 
       await testUtils.render();
 
       const el = screen.getByTestId('shop-base-value');
-      expect(el.textContent).toBe('');
+      expect(el.textContent).toBe('/');
     });
   });
 
   describe('navigate 경로 바인딩', () => {
-    // @scenario route_setting=default, surface=navigate
-    // @effects navigate_cart_follows_shop_base
     it('장바구니 버튼 클릭 시 /shop/cart 으로 navigate', async () => {
       const layoutJson = {
         version: '1.0.0',
@@ -199,8 +191,6 @@ describe('이커머스 라우트 바인딩', () => {
       });
     });
 
-    // @scenario route_setting=custom, surface=navigate
-    // @effects navigate_checkout_follows_custom_route
     it('route_path="store"일 때 결제 페이지 navigate → /store/checkout', async () => {
       const layoutJson = {
         version: '1.0.0',
@@ -238,11 +228,7 @@ describe('이커머스 라우트 바인딩', () => {
       });
     });
 
-    // no_route 상점의 shopBase 는 `_user_base.json` 이 '' 로 둔다. '/' 로 두면 `{{shopBase}}/cart` 가 `//cart`(프로토콜 상대,
-    // 다른 호스트)가 되어 엔진이 사이트 밖 이동으로 막는다(engine-v1.94.0 isOffSiteNavTarget).
-    // @scenario route_setting=no_route, surface=navigate
-    // @effects navigate_cart_stays_on_site_when_no_route
-    it('no_route 시 장바구니 navigate → /cart', async () => {
+    it('no_route 시 장바구니 navigate → //cart', async () => {
       const layoutJson = {
         version: '1.0.0',
         layout_name: 'navigate_noroute_test',
@@ -265,7 +251,7 @@ describe('이커머스 라우트 바인딩', () => {
       };
 
       testUtils = createLayoutTest(layoutJson, {
-        initialState: { _global: { shopBase: '' } },
+        initialState: { _global: { shopBase: '/' } },
         componentRegistry: registry,
       });
 
@@ -275,12 +261,10 @@ describe('이커머스 라우트 바인딩', () => {
       await testUtils.user.click(cartBtn);
 
       await waitFor(() => {
-        expect(testUtils.getNavigationHistory()).toContain('/cart');
+        expect(testUtils.getNavigationHistory()).toContain('//cart');
       });
     });
 
-    // @scenario route_setting=default, surface=navigate
-    // @effects navigate_products_follows_shop_base
     it('상품 목록 페이지 (shopBase + /products)', async () => {
       const layoutJson = {
         version: '1.0.0',
@@ -320,8 +304,6 @@ describe('이커머스 라우트 바인딩', () => {
   });
 
   describe('href 속성 바인딩', () => {
-    // @scenario route_setting=default, surface=href
-    // @effects href_follows_shop_base
     it('A 태그 href에 {{_global.shopBase}} 바인딩 적용', async () => {
       const layoutJson = {
         version: '1.0.0',
@@ -356,8 +338,6 @@ describe('이커머스 라우트 바인딩', () => {
       });
     });
 
-    // @scenario route_setting=custom, surface=href
-    // @effects href_category_follows_custom_route
     it('route_path="store"일 때 카테고리 링크', async () => {
       const layoutJson = {
         version: '1.0.0',
@@ -392,8 +372,6 @@ describe('이커머스 라우트 바인딩', () => {
       });
     });
 
-    // @scenario route_setting=default, surface=href
-    // @effects href_product_detail_binds_dynamic_id
     it('상품 상세 페이지 링크 (동적 ID)', async () => {
       const layoutJson = {
         version: '1.0.0',
@@ -428,8 +406,6 @@ describe('이커머스 라우트 바인딩', () => {
       });
     });
 
-    // @scenario route_setting=no_route, surface=href
-    // @effects href_category_stays_on_site_when_no_route
     it('no_route 시 카테고리 링크', async () => {
       const layoutJson = {
         version: '1.0.0',
@@ -452,7 +428,7 @@ describe('이커머스 라우트 바인딩', () => {
       };
 
       testUtils = createLayoutTest(layoutJson, {
-        initialState: { _global: { shopBase: '' } },
+        initialState: { _global: { shopBase: '/' } },
         componentRegistry: registry,
       });
 
@@ -460,7 +436,7 @@ describe('이커머스 라우트 바인딩', () => {
 
       await waitFor(() => {
         const link = screen.getByTestId('cat-link');
-        expect(link.getAttribute('href')).toBe('/category/electronics');
+        expect(link.getAttribute('href')).toBe('//category/electronics');
       });
     });
   });

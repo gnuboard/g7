@@ -4,15 +4,8 @@ namespace App\Repositories;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
-use App\Enums\ExtensionStatus;
 use App\Models\IdentityPolicy;
-use App\Models\Module;
-use App\Models\Plugin;
-use App\Support\InstallerContext;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * identity_policies Repository 구현체.
@@ -21,11 +14,6 @@ use Illuminate\Support\Facades\Schema;
  */
 class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
 {
-    /**
-     * 정책 파생 캐시(route scope 인덱스·hook scope 인덱스·hook target 목록)를 쓰는 저장소를 받습니다.
-     *
-     * @param  CacheInterface  $cache  코어 캐시 드라이버
-     */
     public function __construct(
         protected CacheInterface $cache,
     ) {}
@@ -39,21 +27,6 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
     public function findByKey(string $key): ?IdentityPolicy
     {
         return IdentityPolicy::query()->where('key', $key)->first();
-    }
-
-    /**
-     * key + source_type 조합으로 정책 존재 여부를 확인합니다.
-     *
-     * @param  string  $key  정책 키
-     * @param  string  $sourceType  'core' | 'module' | 'plugin' | 'admin'
-     * @return bool 해당 조합의 정책 존재 여부
-     */
-    public function existsByKeyAndSourceType(string $key, string $sourceType): bool
-    {
-        return IdentityPolicy::query()
-            ->where('key', $key)
-            ->where('source_type', $sourceType)
-            ->exists();
     }
 
     /**
@@ -76,22 +49,11 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
      */
     public function resolveByScopeTarget(string $scope, string $target): Collection
     {
-        $query = IdentityPolicy::query()
+        return IdentityPolicy::query()
             ->where('scope', $scope)
             ->where('target', $target)
-            ->where('enabled', true);
-
-        // 비활성 모듈/플러그인이 선언한 정책은 enforce 대상에서 제외
-        $this->applyActiveExtensionScope($query);
-
-        // priority 동률 시 결정적 순서 보장 — id 2차 정렬키가 없으면 MySQL 이 동점 행을
-        // 보장되지 않는 순서로 반환해, 같은 scope+target 에 동률 정책이 둘 이상일 때 어느 정책이
-        // enforce 되는지(어떤 purpose 로 challenge 되는지)가 비결정적이 된다. 운영자는 우선순위
-        // 입력칸으로 순서를 정할 수 있으나, 같은 값을 넣어 동률이 된 경우에도 항상 동일한 정책이
-        // 적용되도록 id 오름차순(먼저 생성된 정책 우선)을 2차 키로 고정한다.
-        return $query
+            ->where('enabled', true)
             ->orderByDesc('priority')
-            ->orderBy('id')
             ->get();
     }
 
@@ -202,38 +164,7 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
             $query->whereNotIn('key', $currentKeys);
         }
 
-        $deleted = (int) $query->delete();
-
-        // 대량 삭제는 모델 deleted 이벤트를 내지 않는다 — route scope 인덱스·hook target 캐시를 직접 지운다(#860)
-        if ($deleted > 0) {
-            IdentityPolicy::flushRouteScopeCache();
-        }
-
-        return $deleted;
-    }
-
-    /**
-     * 현재 키 목록에 없는 stale 정책 모델을 조회합니다.
-     *
-     * 호출 측이 per-model delete()(deleted 이벤트 발화 — 라우트 스코프 캐시 flush)와
-     * 로깅을 수행할 수 있도록 모델 인스턴스를 반환한다.
-     *
-     * @param  string  $sourceType  소스 타입
-     * @param  string  $sourceIdentifier  소스 식별자
-     * @param  array  $currentKeys  유지할 키 목록
-     * @return Collection<int, IdentityPolicy> stale 정책 목록
-     */
-    public function findStale(string $sourceType, string $sourceIdentifier, array $currentKeys): Collection
-    {
-        $query = IdentityPolicy::query()
-            ->where('source_type', $sourceType)
-            ->where('source_identifier', $sourceIdentifier);
-
-        if (! empty($currentKeys)) {
-            $query->whereNotIn('key', $currentKeys);
-        }
-
-        return $query->get();
+        return (int) $query->delete();
     }
 
     /**
@@ -241,7 +172,7 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
      *
      * @param  array  $filters  검색 필터
      * @param  int  $perPage  페이지당 항목 수
-     * @return LengthAwarePaginator 페이지네이터
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator 페이지네이터
      */
     public function search(array $filters, int $perPage = 20)
     {
@@ -265,7 +196,6 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
             });
         }
 
-        // audit:allow repository-paginate-column-pruning reason: 본인인증 정책 정의 테이블 — 정책 수가 고정이고 넓은 컬럼이 없다
         return $query->orderByDesc('created_at')->orderByDesc('id')->paginate($perPage);
     }
 
@@ -276,7 +206,6 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
      */
     public function allEnabled(): Collection
     {
-        // audit:allow query-unbounded-get reason: 본인인증 정책은 운영자가 등록한 수만큼만 존재한다 (사용량과 무관)
         return IdentityPolicy::query()->where('enabled', true)->get();
     }
 
@@ -292,19 +221,10 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
         return $this->cache->remember(
             IdentityPolicy::ROUTE_SCOPE_CACHE_KEY,
             function (): array {
-                $query = IdentityPolicy::query()
+                $policies = IdentityPolicy::query()
                     ->where('scope', 'route')
-                    ->where('enabled', true);
-
-                // 비활성 모듈/플러그인이 선언한 정책은 enforce 대상에서 제외
-                $this->applyActiveExtensionScope($query);
-
-                // resolveByScopeTarget 과 동일한 결정적 정렬 — priority 동률 시 id 오름차순.
-                // 미들웨어가 이 인덱스 순서대로 enforce 하므로, 2차 키가 없으면 동률 정책의
-                // 적용 순서가 캐시 재빌드/실행계획에 따라 달라진다.
-                $policies = $query
+                    ->where('enabled', true)
                     ->orderByDesc('priority')
-                    ->orderBy('id')
                     ->get();
 
                 $index = [];
@@ -327,50 +247,11 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
     }
 
     /**
-     * hook scope 정책의 훅 이름 인덱스를 캐시 기반으로 반환합니다.
-     *
-     * route 인덱스와 같은 태그로 캐시하므로 정책 저장·삭제와 확장 활성화·비활성화가 함께 비운다. 훅 이름은 정책 target 과
-     * 1:1 이다(brace expansion 없음 — 리스너가 target 을 그대로 비교한다).
-     *
-     * @return array<string, Collection> 훅 이름 => 정책 컬렉션 매핑
-     */
-    public function getHookScopeIndex(): array
-    {
-        $ttl = (int) g7_core_settings('cache.identity_policy_ttl', 3600);
-
-        return $this->cache->remember(
-            IdentityPolicy::HOOK_SCOPE_CACHE_KEY,
-            function (): array {
-                $query = IdentityPolicy::query()
-                    ->where('scope', 'hook')
-                    ->where('enabled', true);
-
-                $this->applyActiveExtensionScope($query);
-
-                $index = [];
-                foreach ($query->orderByDesc('priority')->orderBy('id')->get() as $policy) {
-                    $hookName = (string) $policy->target;
-                    if ($hookName === '') {
-                        continue;
-                    }
-                    $bucket = $index[$hookName] ?? new Collection;
-                    $bucket->push($policy);
-                    $index[$hookName] = $bucket;
-                }
-
-                return $index;
-            },
-            $ttl,
-            [IdentityPolicy::ROUTE_SCOPE_CACHE_TAG],
-        );
-    }
-
-    /**
      * brace expansion — 'api.admin.{modules,plugins}.uninstall' → ['api.admin.modules.uninstall', 'api.admin.plugins.uninstall'].
      * 단일 그룹만 지원 (중첩/다중 그룹은 정책 키를 분리해서 정의하는 편이 명확).
      *
-     * @param  string  $target  중괄호 그룹을 포함할 수 있는 정책 target
-     * @return list<string> 펼친 target 목록
+     * @param  string  $target
+     * @return list<string>
      */
     protected function expandTargetBraces(string $target): array
     {
@@ -386,121 +267,28 @@ class IdentityPolicyRepository implements IdentityPolicyRepositoryInterface
     }
 
     /**
-     * scope='hook' 정책의 target 목록(중복 제거)을 반환합니다.
+     * scope='hook' 활성 정책의 target 목록(중복 제거)을 반환합니다.
      *
-     * 동적 hook 구독 동기화(`EnforceIdentityPolicyListener::syncDynamicHookSubscriptions()`)가 부팅마다 부르므로
-     * 설치 완료 사이트에서는 캐시한다(#860). 정책이 바뀌면 `IdentityPolicy::flushRouteScopeCache()` 가 route scope
-     * 인덱스와 함께 지운다 — 모델 저장·삭제 이벤트와 이벤트 없는 대량 삭제(`cleanupStale()`) 모두.
-     *
-     * 마이그레이션 전이거나 DB 미연결 환경에서는 빈 배열을 반환해 부팅을 보호하며, 조회 실패의 빈 배열은
-     * 캐시하지 않는다(실패가 TTL 동안 굳으면 정책이 계속 적용되지 않는다).
+     * 마이그레이션 전이거나 DB 미연결 환경에서는 빈 배열을 반환해 부팅을 보호합니다.
      *
      * @return list<string> 동적 hook target 목록
      */
     public function listHookTargets(): array
     {
         try {
-            // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 information_schema 쿼리 제거).
-            // 인스톨러 이전/마이그레이션 전 환경에서는 기존 hasTable 폴백으로 안전하게 빈 배열 반환.
-            if (! config('app.installer_completed') && ! Schema::hasTable('identity_policies')) {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('identity_policies')) {
                 return [];
             }
 
-            // 설치 중·스키마 변경 명령 중에는 정책 테이블이 바뀌는 구간이라 캐시하지 않는다
-            if (! config('app.installer_completed') || InstallerContext::isSchemaMutatingCommand()) {
-                return $this->queryHookTargets();
-            }
-
-            return $this->cache->remember(
-                IdentityPolicy::HOOK_TARGETS_CACHE_KEY,
-                fn (): array => $this->queryHookTargets(),
-                (int) g7_core_settings('cache.identity_policy_ttl', 3600),
-                [IdentityPolicy::ROUTE_SCOPE_CACHE_TAG],
-            );
-        } catch (\Throwable) {
-            return [];
-        }
-    }
-
-    /**
-     * hook scope 정책 target 을 DB 에서 조회합니다 (캐시 없이).
-     *
-     * @return list<string> 동적 hook target 목록
-     */
-    protected function queryHookTargets(): array
-    {
-        // audit:allow query-unbounded-get reason: 본인인증 정책은 운영자가 등록한 수만큼만 존재한다 (사용량과 무관)
-        return IdentityPolicy::query()
-            ->where('scope', 'hook')
-            ->distinct()
-            ->pluck('target')
-            ->filter(fn ($t) => is_string($t) && $t !== '')
-            ->values()
-            ->all();
-    }
-
-    /**
-     * 비활성 모듈/플러그인이 선언한 정책을 enforce 대상에서 제외하는 쿼리 scope 를 적용합니다.
-     *
-     * 정책의 source_type/source_identifier 귀속 정보를 기준으로:
-     *   - core / admin 정책: 항상 포함 (확장 비활성 개념 없음)
-     *   - module 정책: source_identifier 가 활성 모듈일 때만 포함
-     *   - plugin 정책: source_identifier 가 활성 플러그인일 때만 포함
-     *
-     * `enabled` 컬럼(운영자 토글)은 그대로 보존하며, 확장이 재활성화되면 정책도 자동으로
-     * 다시 enforce 된다. modules/plugins 테이블 부재(부팅/마이그레이션 전) 시에는
-     * 필터를 적용하지 않아 기존 동작을 보존한다.
-     *
-     * @param  Builder  $query  대상 쿼리 빌더
-     * @return Builder 활성 확장 필터가 적용된 쿼리 빌더
-     */
-    protected function applyActiveExtensionScope(Builder $query): Builder
-    {
-        $activeModules = $this->activeExtensionIdentifiers(Module::class);
-        $activePlugins = $this->activeExtensionIdentifiers(Plugin::class);
-
-        // 테이블 부재 등으로 활성 목록 자체를 조회하지 못한 경우(null) 필터 미적용 — 기존 동작 보존
-        if ($activeModules === null && $activePlugins === null) {
-            return $query;
-        }
-
-        return $query->where(function (Builder $q) use ($activeModules, $activePlugins): void {
-            $q->whereIn('source_type', ['core', 'admin'])
-                ->orWhere(function (Builder $sub) use ($activeModules): void {
-                    $sub->where('source_type', 'module')
-                        ->whereIn('source_identifier', $activeModules ?? []);
-                })
-                ->orWhere(function (Builder $sub) use ($activePlugins): void {
-                    $sub->where('source_type', 'plugin')
-                        ->whereIn('source_identifier', $activePlugins ?? []);
-                });
-        });
-    }
-
-    /**
-     * 활성 상태(ExtensionStatus::Active)인 확장 식별자 목록을 반환합니다.
-     *
-     * @param  class-string<Module|Plugin>  $modelClass  modules 또는 plugins 모델 클래스
-     * @return list<string>|null 활성 식별자 목록, 테이블 부재/조회 실패 시 null
-     */
-    protected function activeExtensionIdentifiers(string $modelClass): ?array
-    {
-        try {
-            $table = (new $modelClass)->getTable();
-            // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 information_schema 쿼리 제거).
-            // 인스톨러 이전/마이그레이션 전 환경에서는 기존 hasTable 폴백으로 null 반환(필터 미적용).
-            if (! config('app.installer_completed') && ! Schema::hasTable($table)) {
-                return null;
-            }
-
-            return $modelClass::query()
-                ->where('status', ExtensionStatus::Active->value)
-                ->pluck('identifier')
-                ->filter(fn ($id) => is_string($id) && $id !== '')
+            return IdentityPolicy::query()
+                ->where('scope', 'hook')
+                ->distinct()
+                ->pluck('target')
+                ->filter(fn ($t) => is_string($t) && $t !== '')
                 ->values()
                 ->all();
         } catch (\Throwable) {
-            return null;
+            return [];
         }
     }
 }

@@ -1,7 +1,5 @@
 <?php
 
-// changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
-
 return [
     /*
     |--------------------------------------------------------------------------
@@ -13,7 +11,7 @@ return [
     */
 
     'accepted' => ':attribute 필드를 승인해야 합니다.',
-    'accepted_if' => ':other 값이 :value일 때 :attribute 필드를 승인해야 합니다.',
+    'accepted_if' => ':other이(가) :value일 때 :attribute 필드를 승인해야 합니다.',
     'active_url' => ':attribute 필드는 유효한 URL이어야 합니다.',
     'after' => ':attribute 필드는 :date 이후 날짜여야 합니다.',
     'after_or_equal' => ':attribute 필드는 :date 이후 또는 같은 날짜여야 합니다.',
@@ -36,12 +34,12 @@ return [
     'contains' => ':attribute 필드에 필수 값이 누락되었습니다.',
     'current_password' => '비밀번호가 올바르지 않습니다.',
     'date' => ':attribute 필드는 유효한 날짜여야 합니다.',
-    'date_equals' => ':attribute 필드는 :date 날짜와 같아야 합니다.',
+    'date_equals' => ':attribute 필드는 :date와 같은 날짜여야 합니다.',
     'date_format' => ':attribute 필드는 :format 형식과 일치해야 합니다.',
     'decimal' => ':attribute 필드는 :decimal 자릿수의 소수점이어야 합니다.',
     'declined' => ':attribute 필드를 거부해야 합니다.',
-    'declined_if' => ':other 값이 :value일 때 :attribute 필드를 거부해야 합니다.',
-    'different' => ':attribute 필드와 :other 필드는 달라야 합니다.',
+    'declined_if' => ':other이(가) :value일 때 :attribute 필드를 거부해야 합니다.',
+    'different' => ':attribute 필드와 :other은(는) 달라야 합니다.',
     'digits' => ':attribute 필드는 :digits 자릿수여야 합니다.',
     'digits_between' => ':attribute 필드는 :min ~ :max 자릿수 사이여야 합니다.',
     'dimensions' => ':attribute 필드의 이미지 크기가 올바르지 않습니다.',
@@ -50,8 +48,8 @@ return [
     'doesnt_start_with' => ':attribute 필드는 다음으로 시작하면 안 됩니다: :values.',
     'email' => ':attribute 필드는 유효한 이메일 주소여야 합니다.',
     'ends_with' => ':attribute 필드는 다음 중 하나로 끝나야 합니다: :values.',
-    'enum' => '선택한 :attribute 값이 올바르지 않습니다.',
-    'exists' => '선택한 :attribute 값이 올바르지 않습니다.',
+    'enum' => '선택한 :attribute이(가) 올바르지 않습니다.',
+    'exists' => '선택한 :attribute이(가) 올바르지 않습니다.',
     'extensions' => ':attribute 필드는 다음 확장자 중 하나여야 합니다: :values.',
     'file' => ':attribute 필드는 파일이어야 합니다.',
     'filled' => ':attribute 필드에 값이 있어야 합니다.',
@@ -69,7 +67,7 @@ return [
     ],
     'hex_color' => ':attribute 필드는 유효한 16진수 색상이어야 합니다.',
     'image' => ':attribute 필드는 이미지여야 합니다.',
-    'in' => '선택한 :attribute 값이 올바르지 않습니다.',
+    'in' => '선택한 :attribute이(가) 올바르지 않습니다.',
     'in_array' => ':attribute 필드는 :other에 존재해야 합니다.',
     'integer' => ':attribute 필드는 정수여야 합니다.',
     'ip' => ':attribute 필드는 유효한 IP 주소여야 합니다.',
@@ -94,7 +92,7 @@ return [
     'max' => [
         'array' => ':attribute 필드는 :max개를 초과하면 안 됩니다.',
         'file' => ':attribute 필드는 :max KB를 초과하면 안 됩니다.',
-        'numeric' => ':attribute 필드는 :max 이하여야 합니다.',
+        'numeric' => ':attribute 필드는 :max를 초과하면 안 됩니다.',
         'string' => ':attribute 필드는 :max자를 초과하면 안 됩니다.',
     ],
     'max_digits' => ':attribute 필드는 :max 자릿수를 초과하면 안 됩니다.',
@@ -108,12 +106,12 @@ return [
     ],
     'min_digits' => ':attribute 필드는 최소 :min 자릿수 이상이어야 합니다.',
     'missing' => ':attribute 필드가 없어야 합니다.',
-    'missing_if' => ':other 값이 :value일 때 :attribute 필드가 없어야 합니다.',
-    'missing_unless' => ':other 값이 :value 외의 값이면 :attribute 필드가 없어야 합니다.',
-    'missing_with' => ':values 필드가 있을 때 :attribute 필드가 없어야 합니다.',
-    'missing_with_all' => ':values 필드가 모두 있을 때 :attribute 필드가 없어야 합니다.',
+    'missing_if' => ':other이(가) :value일 때 :attribute 필드가 없어야 합니다.',
+    'missing_unless' => ':other이(가) :value이(가) 아닌 경우 :attribute 필드가 없어야 합니다.',
+    'missing_with' => ':values이(가) 있을 때 :attribute 필드가 없어야 합니다.',
+    'missing_with_all' => ':values이(가) 모두 있을 때 :attribute 필드가 없어야 합니다.',
     'multiple_of' => ':attribute 필드는 :value의 배수여야 합니다.',
-    'not_in' => '선택한 :attribute 값이 올바르지 않습니다.',
+    'not_in' => '선택한 :attribute이(가) 올바르지 않습니다.',
     'not_regex' => ':attribute 필드 형식이 올바르지 않습니다.',
     'numeric' => ':attribute 필드는 숫자여야 합니다.',
     'password' => [
@@ -121,30 +119,29 @@ return [
         'mixed' => ':attribute 필드는 최소 하나의 대문자와 소문자를 포함해야 합니다.',
         'numbers' => ':attribute 필드는 최소 하나의 숫자를 포함해야 합니다.',
         'symbols' => ':attribute 필드는 최소 하나의 기호를 포함해야 합니다.',
-        'uncompromised' => '입력한 :attribute 값이 유출된 데이터에서 발견되었습니다. 다른 값을 사용해 주세요.',
+        'uncompromised' => '주어진 :attribute이(가) 데이터 유출에 나타났습니다. 다른 :attribute을(를) 선택해 주세요.',
     ],
     'present' => ':attribute 필드가 있어야 합니다.',
-    'present_if' => ':other 값이 :value일 때 :attribute 필드가 있어야 합니다.',
-    'present_unless' => ':other 값이 :value 외의 값이면 :attribute 필드가 있어야 합니다.',
-    'present_with' => ':values 필드가 있을 때 :attribute 필드가 있어야 합니다.',
-    'present_with_all' => ':values 필드가 모두 있을 때 :attribute 필드가 있어야 합니다.',
-    'forbidden_word' => '쓸 수 없는 말이 들어 있습니다: :word',
+    'present_if' => ':other이(가) :value일 때 :attribute 필드가 있어야 합니다.',
+    'present_unless' => ':other이(가) :value이(가) 아닌 경우 :attribute 필드가 있어야 합니다.',
+    'present_with' => ':values이(가) 있을 때 :attribute 필드가 있어야 합니다.',
+    'present_with_all' => ':values이(가) 모두 있을 때 :attribute 필드가 있어야 합니다.',
     'prohibited' => ':attribute 필드는 금지되어 있습니다.',
-    'prohibited_if' => ':other 값이 :value일 때 :attribute 필드는 금지되어 있습니다.',
-    'prohibited_unless' => ':other 값이 :values 중 하나가 아니면 :attribute 필드는 금지되어 있습니다.',
-    'prohibits' => ':attribute 필드가 있으면 :other 필드는 입력할 수 없습니다.',
+    'prohibited_if' => ':other이(가) :value일 때 :attribute 필드는 금지되어 있습니다.',
+    'prohibited_unless' => ':other이(가) :values에 없는 경우 :attribute 필드는 금지되어 있습니다.',
+    'prohibits' => ':attribute 필드는 :other이(가) 존재하는 것을 금지합니다.',
     'regex' => ':attribute 필드 형식이 올바르지 않습니다.',
     'required' => ':attribute 필드는 필수입니다.',
     'required_array_keys' => ':attribute 필드는 다음 항목을 포함해야 합니다: :values.',
-    'required_if' => ':other 값이 :value일 때 :attribute 필드는 필수입니다.',
-    'required_if_accepted' => ':other 필드가 승인되면 :attribute 필드는 필수입니다.',
-    'required_if_declined' => ':other 필드가 거부되면 :attribute 필드는 필수입니다.',
-    'required_unless' => ':other 값이 :values 중 하나가 아니면 :attribute 필드는 필수입니다.',
-    'required_with' => ':values 필드가 있을 때 :attribute 필드는 필수입니다.',
-    'required_with_all' => ':values 필드가 모두 있을 때 :attribute 필드는 필수입니다.',
-    'required_without' => ':values 필드가 없을 때 :attribute 필드는 필수입니다.',
-    'required_without_all' => ':values 필드가 모두 없을 때 :attribute 필드는 필수입니다.',
-    'same' => ':attribute 필드와 :other 필드가 일치해야 합니다.',
+    'required_if' => ':other이(가) :value일 때 :attribute 필드는 필수입니다.',
+    'required_if_accepted' => ':other이(가) 승인되면 :attribute 필드는 필수입니다.',
+    'required_if_declined' => ':other이(가) 거부되면 :attribute 필드는 필수입니다.',
+    'required_unless' => ':other이(가) :values에 없는 경우 :attribute 필드는 필수입니다.',
+    'required_with' => ':values이(가) 있을 때 :attribute 필드는 필수입니다.',
+    'required_with_all' => ':values이(가) 모두 있을 때 :attribute 필드는 필수입니다.',
+    'required_without' => ':values이(가) 없을 때 :attribute 필드는 필수입니다.',
+    'required_without_all' => ':values이(가) 모두 없을 때 :attribute 필드는 필수입니다.',
+    'same' => ':attribute 필드와 :other이(가) 일치해야 합니다.',
     'size' => [
         'array' => ':attribute 필드는 :size개의 항목을 포함해야 합니다.',
         'file' => ':attribute 필드는 :size KB여야 합니다.',
@@ -154,7 +151,7 @@ return [
     'starts_with' => ':attribute 필드는 다음 중 하나로 시작해야 합니다: :values.',
     'string' => ':attribute 필드는 문자열이어야 합니다.',
     'timezone' => ':attribute 필드는 유효한 시간대여야 합니다.',
-    'unique' => ':attribute 값은 이미 사용 중입니다.',
+    'unique' => ':attribute은(는) 이미 사용 중입니다.',
     'uploaded' => ':attribute 업로드에 실패했습니다.',
     'uppercase' => ':attribute 필드는 대문자여야 합니다.',
     'url' => ':attribute 필드는 유효한 URL이어야 합니다.',
@@ -168,61 +165,17 @@ return [
     */
 
     // 레이아웃 구조 검증 메시지
-    'custom_translation' => [
-        'layout_name' => [
-            'required' => '레이아웃 이름은 필수입니다.',
-            'string' => '레이아웃 이름은 문자열이어야 합니다.',
-            'max' => '레이아웃 이름은 :max자를 초과할 수 없습니다.',
-        ],
-        'locale' => [
-            'required' => '로케일은 필수입니다.',
-            'string' => '로케일은 문자열이어야 합니다.',
-        ],
-        'value' => [
-            'required' => '번역 값은 필수입니다.',
-            'string' => '번역 값은 문자열이어야 합니다.',
-        ],
-        'values' => [
-            'required' => '번역 값은 필수입니다.',
-            'array' => '번역 값은 로케일별 객체여야 합니다.',
-        ],
-        'status' => [
-            'in' => '상태는 active 또는 orphaned 여야 합니다.',
-        ],
-        'expected_lock_version' => [
-            'required' => '저장 요청에 expected_lock_version 이 누락되었습니다.',
-            'integer' => 'expected_lock_version 은 정수여야 합니다.',
-            'min' => 'expected_lock_version 은 0 이상이어야 합니다.',
-        ],
-        'ids' => [
-            'required' => '삭제할 다국어 키를 하나 이상 선택해야 합니다.',
-            'array' => '삭제 대상은 ID 배열이어야 합니다.',
-            'min' => '삭제할 다국어 키를 하나 이상 선택해야 합니다.',
-            'integer' => '다국어 키 ID 는 정수여야 합니다.',
-            'exists' => '존재하지 않는 다국어 키가 포함되어 있습니다.',
-        ],
-    ],
-
     'layout' => [
-        // 낙관적 잠금
-        'expected_lock_version' => [
-            'required' => '저장 요청에 expected_lock_version 이 누락되었습니다.',
-            'integer' => 'expected_lock_version 은 정수여야 합니다.',
-            'min' => 'expected_lock_version 은 0 이상이어야 합니다.',
-        ],
-
         'invalid_json' => '유효하지 않은 JSON 형식입니다.',
         'must_be_array' => '레이아웃 데이터는 배열이어야 합니다.',
-        'dangerous_expression' => '허용되지 않는 표현식이 포함되어 있습니다: :snippet',
-        'external_resource_url' => '외부 리소스 URL은 허용되지 않습니다(동일 출처 경로만 허용): :url',
-        'required_field_missing' => "필수 필드 ':field' 값이 누락되었습니다.",
+        'required_field_missing' => "필수 필드 ':field'가 누락되었습니다.",
         'version_must_be_string' => 'version 필드는 문자열이어야 합니다.',
         'layout_name_must_be_string' => 'layout_name 필드는 문자열이어야 합니다.',
         'components_must_be_array' => 'components 필드는 배열이어야 합니다.',
         'components_or_slots_required' => '상속 레이아웃은 components 또는 slots 중 하나가 필요합니다.',
         'component_must_be_array' => 'components[:index]는 배열이어야 합니다.',
         'max_depth_exceeded' => '컴포넌트 중첩 깊이가 최대 허용 깊이(:max)를 초과했습니다.',
-        'component_required_field_missing' => "components[:index]에 필수 필드 ':field' 값이 누락되었습니다.",
+        'component_required_field_missing' => "components[:index]에 필수 필드 ':field'가 누락되었습니다.",
         'component_field_must_be_string' => 'components[:index].component는 문자열이어야 합니다.',
         'component_name_must_be_string' => 'components[:index].name은 문자열이어야 합니다.',
         'component_type_invalid' => 'components[:index].type은 basic, composite, layout 중 하나여야 합니다.',
@@ -236,7 +189,7 @@ return [
         'permissions_max_depth_exceeded' => 'permissions 구조의 최대 중첩 깊이(:max)를 초과했습니다.',
         'permission_must_be_string' => 'components[:index].permissions[:perm_index]는 문자열이어야 합니다.',
         'permission_must_be_string_or_group' => 'permissions의 항목[:index]은 문자열(권한 식별자) 또는 구조화 객체(or/and)여야 합니다.',
-        'permission_invalid_format' => 'components[:index].permissions의 ":permission" 값은 올바른 권한 식별자 형식이 아닙니다.',
+        'permission_invalid_format' => 'components[:index].permissions의 ":permission"은 올바른 권한 식별자 형식이 아닙니다.',
         'actions_must_be_array' => 'components[:index].actions는 배열이어야 합니다.',
         'action_must_be_array' => 'components[:index].actions[:actionIndex]는 배열이어야 합니다.',
         'action_type_missing' => "components[:index].actions[:actionIndex]에 필수 필드 'type'이 누락되었습니다.",
@@ -247,11 +200,6 @@ return [
         'content' => [
             'required' => '레이아웃 content가 필요합니다.',
             'array' => '레이아웃 content는 배열이어야 합니다.',
-            'markup_compile_failed' => '레이아웃 마크업(.g7.html)을 컴파일하지 못했습니다: :detail',
-        ],
-        'markup' => [
-            'required' => '변환할 마크업(.g7.html)이 필요합니다.',
-            'string' => '마크업은 문자열이어야 합니다.',
         ],
         'version' => [
             'required' => '레이아웃 버전이 필요합니다.',
@@ -290,60 +238,11 @@ return [
             'description' => [
                 'string' => 'meta.description은 문자열이어야 합니다.',
             ],
-            'keywords' => [
-                'string' => 'meta.keywords는 문자열이어야 합니다.',
-            ],
             'auth_required' => [
                 'boolean' => 'meta.auth_required는 불린이어야 합니다.',
             ],
             'is_base' => [
                 'boolean' => 'meta.is_base는 불린이어야 합니다.',
-            ],
-            'guest_only' => [
-                'boolean' => 'meta.guest_only는 불린이어야 합니다.',
-            ],
-            'is_error_layout' => [
-                'boolean' => 'meta.is_error_layout은 불린이어야 합니다.',
-            ],
-            'error_code' => [
-                'integer' => 'meta.error_code는 정수여야 합니다.',
-            ],
-            'seo' => [
-                'array' => 'meta.seo는 배열이어야 합니다.',
-                'enabled' => [
-                    'boolean' => 'meta.seo.enabled는 불린이어야 합니다.',
-                ],
-                'data_sources' => [
-                    'array' => 'meta.seo.data_sources는 배열이어야 합니다.',
-                    'string' => 'meta.seo.data_sources의 각 항목은 문자열이어야 합니다.',
-                ],
-                'priority' => [
-                    'numeric' => 'meta.seo.priority는 숫자여야 합니다.',
-                    'min' => 'meta.seo.priority는 0 이상이어야 합니다.',
-                    'max' => 'meta.seo.priority는 1 이하여야 합니다.',
-                ],
-                'changefreq' => [
-                    'string' => 'meta.seo.changefreq는 문자열이어야 합니다.',
-                    'in' => 'meta.seo.changefreq는 always, hourly, daily, weekly, monthly, yearly, never 중 하나여야 합니다.',
-                ],
-                'og' => [
-                    'array' => 'meta.seo.og는 배열이어야 합니다.',
-                ],
-                'structured_data' => [
-                    'array' => 'meta.seo.structured_data는 배열이어야 합니다.',
-                ],
-                'page_type' => [
-                    'string' => 'meta.seo.page_type은 문자열이어야 합니다.',
-                ],
-                'toggle_setting' => [
-                    'string' => 'meta.seo.toggle_setting은 문자열이어야 합니다.',
-                ],
-                'vars' => [
-                    'array' => 'meta.seo.vars는 배열이어야 합니다.',
-                ],
-                'extensions' => [
-                    'array' => 'meta.seo.extensions는 배열이어야 합니다.',
-                ],
             ],
         ],
         'modals' => [
@@ -360,27 +259,6 @@ return [
         ],
         'init_state' => [
             'array' => 'init_state 필드는 배열이어야 합니다.',
-        ],
-        'initLocal' => [
-            'array' => 'initLocal 필드는 배열이어야 합니다.',
-        ],
-        'initGlobal' => [
-            'array' => 'initGlobal 필드는 배열이어야 합니다.',
-        ],
-        'global_state' => [
-            'array' => 'global_state 필드는 배열이어야 합니다.',
-        ],
-        'errorHandling' => [
-            'array' => 'errorHandling 필드는 배열이어야 합니다.',
-        ],
-        'actions' => [
-            'array' => 'actions 필드는 배열이어야 합니다.',
-        ],
-        'pageConfig' => [
-            'array' => 'pageConfig 필드는 배열이어야 합니다.',
-        ],
-        'schema' => [
-            'array' => 'schema 필드는 배열이어야 합니다.',
         ],
         'routes' => [
             'array' => 'routes 필드는 배열이어야 합니다.',
@@ -434,64 +312,13 @@ return [
                 'iteration_count' => [
                     'integer' => '스켈레톤 반복 횟수는 정수여야 합니다.',
                     'min' => '스켈레톤 반복 횟수는 최소 :min이어야 합니다.',
-                    'max' => '스켈레톤 반복 횟수는 최대 :max 이하여야 합니다.',
+                    'max' => '스켈레톤 반복 횟수는 최대 :max를 초과할 수 없습니다.',
                 ],
             ],
             'wait_for' => [
                 'background' => 'wait_for 에는 background 데이터소스를 지정할 수 없습니다 (사용자 차단 불가): :id',
                 'websocket' => 'wait_for 에는 websocket 데이터소스를 지정할 수 없습니다 (fetch 완료 이벤트 없음): :id',
             ],
-        ],
-    ],
-
-    // 레이아웃 확장 검증 메시지
-    'layout_extension' => [
-        // 낙관적 잠금
-        'expected_lock_version' => [
-            'required' => '저장 요청에 expected_lock_version 이 누락되었습니다.',
-            'integer' => 'expected_lock_version 은 정수여야 합니다.',
-            'min' => 'expected_lock_version 은 0 이상이어야 합니다.',
-        ],
-
-        'invalid_json' => '유효하지 않은 JSON 형식입니다.',
-        'must_be_array' => '레이아웃 확장 데이터는 배열이어야 합니다.',
-        'target_required' => "확장 정의에는 'extension_point' 또는 'target_layout' 중 하나가 필요합니다.",
-        'target_exclusive' => "'extension_point'와 'target_layout'은 동시에 지정할 수 없습니다.",
-        'extension_point_invalid' => 'extension_point 필드는 비어있지 않은 문자열이어야 합니다.',
-        'target_layout_invalid' => 'target_layout 필드는 비어있지 않은 문자열이어야 합니다.',
-        'components_must_be_array' => 'components 필드는 배열이어야 합니다.',
-        'contribution_required' => 'overlay 확장은 injections·modals·data_sources·scripts·init_actions 중 하나 이상이 필요합니다.',
-        'injections_must_be_array' => 'injections 필드는 배열이어야 합니다.',
-        'injection_must_be_array' => 'injections[:index]는 배열이어야 합니다.',
-        'injection_target_id_required' => 'injections[:index]에 target_id 필드가 필요합니다.',
-        'injection_position_invalid' => 'injections[:index].position 값이 유효하지 않습니다.',
-        'injection_components_must_be_array' => 'injections[:index].components는 배열이어야 합니다.',
-        'injection_props_must_be_array' => 'injections[:index].props는 배열이어야 합니다.',
-        'section_must_be_array' => ':section 필드는 배열이어야 합니다.',
-        'max_depth_exceeded' => '컴포넌트 중첩 깊이가 최대 허용 깊이(:max)를 초과했습니다.',
-        'component_must_be_array' => 'components[:index]는 배열이어야 합니다.',
-        'component_required_field_missing' => "components[:index]에 필수 필드 ':field' 값이 누락되었습니다.",
-        'component_name_must_be_string' => 'components[:index].name은 문자열이어야 합니다.',
-        'component_type_invalid' => 'components[:index].type은 basic, composite, layout 중 하나여야 합니다.',
-        'props_must_be_object' => 'components[:index].props는 객체(배열)여야 합니다.',
-        'children_must_be_array' => 'components[:index].children은 배열이어야 합니다.',
-        'content' => [
-            'required' => '확장 콘텐츠는 필수입니다.',
-            'array' => '확장 콘텐츠는 배열이어야 합니다.',
-            'markup_compile_failed' => '확장 마크업(.g7.html)을 컴파일하지 못했습니다: :detail',
-        ],
-        'priority' => [
-            'integer' => 'priority는 정수여야 합니다.',
-            'min' => 'priority는 0 이상이어야 합니다.',
-            'max' => 'priority는 9999 이하여야 합니다.',
-        ],
-        'data_sources' => [
-            'array' => 'data_sources는 배열이어야 합니다.',
-        ],
-        'preview_layout' => [
-            'string' => '미리보기 레이아웃명은 문자열이어야 합니다.',
-            'max' => '미리보기 레이아웃명은 255자를 초과할 수 없습니다.',
-            'required' => '확장점 미리보기에는 대표 레이아웃 선택이 필요합니다.',
         ],
     ],
 
@@ -514,29 +341,12 @@ return [
         'dangerous_scheme_detected' => '위험한 URI 스킴이 감지되었습니다: :scheme',
     ],
 
-    // 서버가 대신 호출하는 URL(외부 API·스케줄 등) 검증 메시지
-    'outbound_url' => [
-        'invalid' => '올바른 형식의 URL이 아닙니다. http 또는 https 로 시작하는 주소를 입력해 주세요.',
-        'internal_not_allowed' => '내부 네트워크 주소(사설 IP·localhost 등)는 사용할 수 없습니다. 외부에서 접속 가능한 주소를 입력해 주세요.',
-    ],
-
-    // 서버에서 실행되는 스케줄 command(쉘·Artisan) 검증 메시지
-    'schedule_command' => [
-        'shell_not_allowed' => '허용되지 않은 쉘 명령입니다. 서버에 등록된 실행 파일만 사용할 수 있으며, 파이프(|)·세미콜론(;) 등 특수문자는 쓸 수 없습니다.',
-        'shell_interpreter_denied' => '인터프리터로 인라인 명령/코드를 실행하거나 안전하지 않은 경로를 지정할 수 없습니다. 인터프리터 뒤에는 절대경로 스크립트 파일만 지정하세요.',
-        'artisan_denied' => '이 Artisan 명령은 보안상 스케줄로 실행할 수 없습니다.',
-        'artisan_not_allowlisted' => '예약 실행이 허용된 Artisan 명령이 아닙니다. 캐시 정리·큐 처리 등 유지보수 명령만 등록할 수 있습니다.',
-        'artisan_malformed' => 'Artisan 명령 형식이 올바르지 않습니다. 따옴표·역슬래시·단축 옵션(-v)은 쓸 수 없고 "명령명 --옵션[=값]" 형태만 등록할 수 있습니다.',
-        'artisan_option_denied' => '이 Artisan 명령에 허용되지 않은 옵션이 포함되어 있습니다.',
-        'artisan_argument_denied' => '이 Artisan 명령에는 추가 인자를 붙일 수 없습니다.',
-    ],
-
     // 컴포넌트 존재 여부 검증 메시지
     'component' => [
         'template_id_required' => '컴포넌트 검증을 위해서는 template_id가 필요합니다.',
         'manifest_not_found' => '템플릿 :templateId의 컴포넌트 매니페스트(components.json)를 찾을 수 없습니다.',
         'name_empty' => 'components[:index].component 이름은 비어있을 수 없습니다.',
-        'not_found' => "템플릿에 등록되지 않은 컴포넌트입니다: ':component' (components[:index])",
+        'not_found' => "컴포넌트 ':component'는 템플릿에 등록되지 않았습니다. (components[:index])",
     ],
 
     // FormRequest 필드 검증 메시지
@@ -561,7 +371,7 @@ return [
     // 레이아웃 상속 검증 메시지
     'layout_inheritance' => [
         // 부모 레이아웃 검증
-        'parent_not_found' => '부모 레이아웃을 찾을 수 없습니다: ":parent"',
+        'parent_not_found' => '부모 레이아웃 ":parent"를 찾을 수 없습니다.',
         'parent_not_in_same_template' => '부모 레이아웃은 같은 템플릿 내에 있어야 합니다.',
         'circular_reference' => '레이아웃 순환 참조가 감지되었습니다: :trace',
         'max_depth_exceeded' => '레이아웃 상속 깊이가 최대 허용 깊이(:max)를 초과했습니다.',
@@ -575,20 +385,13 @@ return [
         'parent_has_no_slots' => '부모 레이아웃에는 슬롯이 정의되지 않았습니다.',
 
         // 데이터 소스 병합 검증
-        'data_source_id_duplicate' => 'data_sources에 같은 ID 가 둘 이상 있습니다: ":id"',
+        'data_source_id_duplicate' => 'data_sources에 중복된 ID ":id"가 있습니다.',
         'data_sources_must_be_array' => 'data_sources는 배열이어야 합니다.',
         'data_source_must_have_id' => 'data_sources[:index]에 필수 필드 "id"가 누락되었습니다.',
         'data_source_id_must_be_string' => 'data_sources[:index].id는 문자열이어야 합니다.',
     ],
 
-    // 알림 채널 검증 메시지
-    'notification_channel' => [
-        'invalid' => '알림 채널 식별자가 올바르지 않습니다.',
-        'unavailable' => "사용할 수 없는 알림 채널입니다: ':value'",
-    ],
-
     // 다국어 필드 검증 메시지
-    'safe_link' => ':attribute 필드는 사이트 안 경로(/로 시작) 또는 http·https 주소여야 합니다.',
     'translatable' => [
         'must_be_array' => '다국어 필드는 배열이어야 합니다.',
         'unsupported_language' => "지원되지 않는 언어 코드입니다: ':lang'",
@@ -596,30 +399,28 @@ return [
         'max_length' => "':lang' 번역은 :max자를 초과할 수 없습니다.",
         'min_length' => "':lang' 번역은 최소 :min자 이상이어야 합니다.",
         'at_least_one_required' => '최소 하나의 언어로 번역이 필요합니다.',
-        'current_locale_required' => ':attribute의 :language(:locale) 값은 필수입니다.',
-        'current_locale_required_unnamed' => ':language(:locale) 값은 필수입니다.',
+        'current_locale_required' => ':locale 언어의 값은 필수입니다.',
     ],
 
     // 템플릿 검증 메시지
-
-    // 회원 검색(회원 고르기 창) 칸 표시 이름
-    'user_search' => [
-        'attributes' => [
-            'uuid' => '회원',
+    'template' => [
+        'type' => [
+            'in' => 'type 파라미터는 user 또는 admin만 가능합니다.',
+        ],
+        'description' => [
+            'string' => '템플릿 설명은 문자열이어야 합니다.',
+            'max' => '템플릿 설명은 :max자를 초과할 수 없습니다.',
+        ],
+        'metadata' => [
+            'array' => 'metadata는 배열이어야 합니다.',
+        ],
+        'status' => [
+            'in' => 'status는 active 또는 inactive여야 합니다.',
         ],
     ],
 
     // 메뉴 검증 메시지
     'menu' => [
-        // 다국어 칸 표시 이름 — 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
-        'attributes' => [
-            'name' => '메뉴 이름',
-        ],
-        'roles' => [
-            'array' => '역할 목록은 배열이어야 합니다.',
-            'integer' => '역할 ID는 숫자여야 합니다.',
-            'exists' => '선택한 역할을 찾을 수 없습니다.',
-        ],
         'name' => [
             'required' => '메뉴 이름을 입력해주세요.',
         ],
@@ -701,11 +502,6 @@ return [
 
     // 권한 검증 메시지
     'permission' => [
-        // 다국어 칸 표시 이름 — 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
-        'attributes' => [
-            'name' => '권한 이름',
-            'description' => '권한 설명',
-        ],
         'name' => [
             'required' => '권한 이름을 입력해주세요.',
         ],
@@ -716,22 +512,11 @@ return [
 
     // 역할 검증 메시지
     'role' => [
-        // 다국어 칸 표시 이름 — 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
-        'attributes' => [
-            'name' => '역할 이름',
-            'description' => '역할 설명',
-        ],
         'name' => [
             'required' => '역할 이름을 입력해주세요.',
         ],
         'description' => [
             'max' => '역할 설명은 :max자를 초과할 수 없습니다.',
-        ],
-        'menu_ids' => [
-            'array' => '접근 가능 메뉴는 배열이어야 합니다.',
-            'integer' => '메뉴 ID는 숫자여야 합니다.',
-            'exists' => '선택한 메뉴를 찾을 수 없습니다.',
-            'unmanageable' => '관리할 수 없는 메뉴는 추가할 수 없습니다.',
         ],
     ],
 
@@ -772,63 +557,33 @@ return [
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트 공격이 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 경로는 허용되지 않습니다.',
-        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
         'file_type_not_allowed' => '허용되지 않은 파일 타입입니다. 확장자: :extension (허용: :allowed)',
-    ],
-
-    // 확장 식별자 검증 메시지 (ValidExtensionIdentifier Rule)
-    'extension_identifier' => [
-        'max' => '확장 식별자는 최대 255자까지 입력 가능합니다.',
-        'must_be_string' => '확장 식별자는 문자열이어야 합니다.',
-        'min_parts' => '확장 식별자는 vendor-name 형식이어야 합니다 (예: sirsoft-board).',
-        'empty_part' => '확장 식별자에 빈 부분이 있습니다. 하이픈이 연속되거나 양끝에 올 수 없습니다.',
-        'invalid_characters' => '확장 식별자는 영문 소문자, 숫자, 언더스코어(_)만 사용할 수 있습니다.',
-        'empty_word' => '확장 식별자에서 언더스코어가 연속되거나 양끝에 올 수 없습니다.',
-        'word_starts_with_digit' => '확장 식별자의 각 단어는 숫자로 시작할 수 없습니다.',
     ],
 
     // 모듈 경로 검증 메시지
     'module_path' => [
-        'file_type_not_allowed' => '허용되지 않은 파일 타입입니다. 확장자: :extension (허용: :allowed)',
         'must_be_string' => '경로는 문자열이어야 합니다.',
         'traversal_detected' => '경로 트래버설이 감지되었습니다: :pattern',
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트가 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 접근은 허용되지 않습니다.',
-        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
     ],
 
     // 플러그인 경로 검증 메시지
     'plugin_path' => [
-        'file_type_not_allowed' => '허용되지 않은 파일 타입입니다. 확장자: :extension (허용: :allowed)',
         'must_be_string' => '경로는 문자열이어야 합니다.',
         'traversal_detected' => '경로 트래버설이 감지되었습니다: :pattern',
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트가 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 접근은 허용되지 않습니다.',
-        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
     ],
 
     // 인증 관련 검증 메시지
     'auth' => [
-        'two_factor' => [
-            'challenge_required' => '인증 요청 정보가 없습니다. 처음부터 다시 로그인해주세요.',
-            'challenge_invalid' => '인증 요청 정보가 올바르지 않습니다.',
-            'code_required' => '인증번호를 입력해주세요.',
-        ],
-        // 로그인 인계 (#40)
-        'login_handoff' => [
-            'code_required' => '로그인 인계 코드가 없습니다. 다시 로그인해 주세요.',
-        ],
-        // 로그인 비밀번호 변경 단계 (#736)
-        'password_change' => [
-            'challenge_required' => '비밀번호 변경 단계 정보가 없습니다. 처음부터 다시 로그인해주세요.',
-            'challenge_invalid' => '비밀번호 변경 단계 정보가 올바르지 않습니다.',
-            'password_confirmation_required' => '새 비밀번호 확인을 입력해주세요.',
-        ],
         'email' => [
             'required' => '이메일은 필수입니다.',
             'email' => '올바른 이메일 형식이 아닙니다.',
+            'exists' => '등록되지 않은 이메일입니다.',
             'unique' => '이미 사용 중인 이메일입니다.',
         ],
         'password' => [
@@ -843,14 +598,6 @@ return [
         ],
         'nickname' => [
             'max' => '닉네임은 :max자를 초과할 수 없습니다.',
-        ],
-        'mobile' => [
-            'max' => '휴대폰번호는 :max자를 초과할 수 없습니다.',
-            'regex' => '휴대폰번호는 숫자와 -, +, (), 공백만 입력할 수 있습니다.',
-        ],
-        'phone' => [
-            'max' => '전화번호는 :max자를 초과할 수 없습니다.',
-            'regex' => '전화번호는 숫자와 -, +, (), 공백만 입력할 수 있습니다.',
         ],
         'agree_terms' => [
             'accepted' => '이용약관에 동의해주세요.',
@@ -876,35 +623,13 @@ return [
         ],
     ],
 
-    // IP 허용 목록 (웹 크론 호출 제한 — App\Rules\ValidIpAllowList)
-    'ip_allow_list' => [
-        'invalid' => '올바른 IP 주소나 대역 표기가 아닙니다: ":value". 한 줄에 하나씩 또는 쉼표로 구분해 적어 주세요.',
-    ],
-
     // 설정값 검증 메시지
     'setting' => [
         'value' => [
-            'present' => '설정 값 항목(value)이 요청에 포함되어야 합니다.',
-            'boolean' => '이 설정은 사용/사용 안 함 값만 저장할 수 있습니다.',
-            'integer' => '이 설정은 정수만 저장할 수 있습니다.',
-            'numeric' => '이 설정은 숫자만 저장할 수 있습니다.',
-            'type' => '저장할 수 없는 형식의 설정 값입니다.',
+            'required' => '설정 값은 필수입니다.',
+            'string' => '설정 값은 문자열이어야 합니다.',
             'max' => '설정 값은 :max자를 초과할 수 없습니다.',
-            'array_max' => '설정 값의 크기가 :max자를 초과할 수 없습니다.',
-            'server_only' => '이 설정은 서버가 기록하는 값이라 직접 저장할 수 없습니다.',
-            'tab_only' => '이 설정은 환경설정 화면의 탭 저장으로만 바꿀 수 있습니다.',
-            'env_locked' => '이 설정은 .env 가 값을 정하고 있어 여기서 바꿀 수 없습니다. .env 의 :env 를 고치세요.',
         ],
-    ],
-
-    // 비밀번호 작성·재사용 규칙 (보안 설정에서 켜진 규칙만 적용)
-    'password_policy' => [
-        'char_types' => '비밀번호는 영문·숫자·특수문자 중 2종류 이상을 섞어야 합니다.',
-        'contains_identifier' => '비밀번호에 아이디(이메일 앞부분)를 넣을 수 없습니다.',
-        'repeated_chars' => '같은 문자를 :count번 이상 연속으로 쓸 수 없습니다.',
-        'sequential_chars' => '연속된 문자(1234·abcd·qwer 등)를 :count자 이상 쓸 수 없습니다.',
-        'reused' => '최근에 사용한 비밀번호입니다. 최근 :count개의 비밀번호는 다시 쓸 수 없습니다.',
-        'same_as_current' => '지금 쓰는 비밀번호와 다른 비밀번호를 입력해주세요.',
     ],
 
     // 사용자 관련 검증 메시지
@@ -916,36 +641,12 @@ return [
 
     // 설정 검증 메시지
     'settings' => [
-        // 본문 콘텐츠 (#883)
-        'embed_provider_invalid' => ':index번째 외부 영상 서비스 항목 형식이 올바르지 않습니다.',
-        'embed_provider_too_many' => '외부 영상 서비스는 최대 :max개까지 추가할 수 있습니다.',
-        'embed_provider_id_duplicate' => ':index번째 서비스 식별자(:id)가 기본 서비스나 다른 항목과 겹칩니다.',
-        'embed_provider_id_format' => ':index번째 서비스 식별자는 영문 소문자로 시작하는 2~32자(영문 소문자·숫자·밑줄)여야 합니다.',
-        'embed_provider_name' => ':index번째 서비스 이름은 1~40자로 입력해 주세요.',
-        'embed_provider_patterns_count' => ':index번째 서비스의 주소 형식은 1~5개여야 합니다.',
-        'embed_provider_pattern_format' => ':index번째 서비스의 주소 형식은 https:// 또는 http:// 로 시작하고 {id} 를 정확히 한 번 넣어야 합니다. 호스트의 * 는 맨 앞 하위 도메인 자리(*.example.com)에만 쓸 수 있습니다.',
-        'embed_provider_player_https' => ':index번째 서비스의 플레이어 주소는 https:// 로 시작하고 {id} 를 정확히 한 번 넣어야 합니다.',
-        'embed_provider_player_host' => ':index번째 서비스의 플레이어 주소에 이 사이트 주소나 * 는 쓸 수 없습니다.',
-        'embed_provider_option' => ':index번째 서비스의 :field 값이 허용된 선택지가 아닙니다.',
-        'embed_preset_unknown' => '알 수 없는 외부 영상 서비스입니다: :id',
-        'content_custom_tag_list' => '추가 태그는 최대 :max개까지 입력할 수 있습니다.',
-        'content_custom_tag_format' => '추가 태그 「:tag」 형식이 올바르지 않습니다. 영문 소문자로 시작하는 32자 이내(영문 소문자·숫자·하이픈)로 입력해 주세요.',
-        'content_custom_tag_rejected' => '「:tag」 태그는 추가할 수 없습니다 — :reason',
-        'content_custom_tag_reasons' => [
-            'script' => '스크립트를 실행할 수 있습니다.',
-            'style' => '화면 전체의 모양을 바꾸거나 외부 파일을 불러올 수 있습니다.',
-            'document' => '문서 구조를 바꿔 다른 정화 규칙을 우회할 수 있습니다.',
-            'embed' => '외부 문서·프로그램을 본문 안에 띄웁니다(외부 영상은 「외부 영상 서비스」로 추가하세요).',
-            'form' => '입력 양식으로 개인정보를 가로채는 데 쓰일 수 있습니다.',
-        ],
         // 일반 설정 - 필수 필드
         'site_name_required' => '사이트 이름을 입력해주세요.',
         'site_name_max' => '사이트 이름은 100자를 초과할 수 없습니다.',
         'site_url_required' => '사이트 URL을 입력해주세요.',
         'site_url_invalid' => '올바른 URL 형식이 아닙니다.',
         'site_url_max' => '사이트 URL은 255자를 초과할 수 없습니다.',
-        'user_screen_url_invalid' => 'http:// 또는 https:// 로 시작하는 전체 주소를 입력하세요.',
-        'user_screen_url_max' => '사용자 화면 URL은 255자를 초과할 수 없습니다.',
         'site_description_max' => '사이트 설명은 500자를 초과할 수 없습니다.',
         'admin_email_required' => '관리자 이메일을 입력해주세요.',
         'admin_email_invalid' => '올바른 이메일 형식이 아닙니다.',
@@ -955,6 +656,7 @@ return [
         'language_required' => '기본 언어를 선택해주세요.',
         'language_invalid' => '올바른 언어를 선택해주세요.',
         'currency_max' => '통화 코드는 10자를 초과할 수 없습니다.',
+        'maintenance_mode_boolean' => '유지보수 모드는 true 또는 false 값이어야 합니다.',
 
         // 메일 설정
         'mailer_required' => '메일러를 선택해주세요.',
@@ -982,25 +684,15 @@ return [
         'allowed_extensions_required' => '허용 확장자를 입력해주세요.',
         'allowed_extensions_max' => '허용 확장자는 500자를 초과할 수 없습니다.',
         'allowed_extensions_invalid_type' => '허용 확장자는 문자열 또는 배열이어야 합니다.',
-        'layout_attachment_extensions_required' => '레이아웃 첨부 허용 확장자를 하나 이상 입력해주세요.',
-        'rate_limit_per_minute_range' => '분당 허용 횟수는 1 이상 1000 이하의 정수로 입력해주세요.',
-        'host_format_invalid' => '호스트명 또는 IP 주소만 입력해주세요. 경로·포트·계정 정보·공백은 넣을 수 없습니다.',
-        'host_blocked' => '허용되지 않는 주소입니다.',
-        'endpoint_path_not_allowed' => '주소에 경로·쿼리를 넣을 수 없습니다. 스킴·호스트·포트까지만 입력해주세요.',
-        'public_asset_extensions_required' => '공개 디스크로 내보낼 확장자를 하나 이상 입력해주세요.',
         'image_max_width_integer' => '이미지 최대 너비는 정수여야 합니다.',
         'image_max_width_min' => '이미지 최대 너비는 100px 이상이어야 합니다.',
-        'image_max_width_max' => '이미지 최대 너비는 10000px 이하여야 합니다.',
+        'image_max_width_max' => '이미지 최대 너비는 10000px를 초과할 수 없습니다.',
         'image_max_height_integer' => '이미지 최대 높이는 정수여야 합니다.',
         'image_max_height_min' => '이미지 최대 높이는 100px 이상이어야 합니다.',
-        'image_max_height_max' => '이미지 최대 높이는 10000px 이하여야 합니다.',
+        'image_max_height_max' => '이미지 최대 높이는 10000px를 초과할 수 없습니다.',
         'image_quality_integer' => '이미지 품질은 정수여야 합니다.',
         'image_quality_min' => '이미지 품질은 1 이상이어야 합니다.',
         'image_quality_max' => '이미지 품질은 100을 초과할 수 없습니다.',
-        'orphan_cleanup_enabled_boolean' => '고아 첨부 자동 정리는 사용/사용 안 함 중 하나여야 합니다.',
-        'orphan_retention_days_integer' => '고아 첨부 보존기간은 정수여야 합니다.',
-        'orphan_retention_days_min' => '고아 첨부 보존기간은 1일 이상이어야 합니다.',
-        'orphan_retention_days_max' => '고아 첨부 보존기간은 3650일을 초과할 수 없습니다.',
 
         // SEO 설정
         'meta_title_suffix_max' => '타이틀 접미사는 100자를 초과할 수 없습니다.',
@@ -1037,44 +729,12 @@ return [
         'sitemap_cache_ttl_integer' => 'Sitemap 캐시 TTL은 정수여야 합니다.',
         'sitemap_cache_ttl_min' => 'Sitemap 캐시 TTL은 최소 3600초(1시간) 이상이어야 합니다.',
         'sitemap_cache_ttl_max' => 'Sitemap 캐시 TTL은 최대 604800초(7일)를 초과할 수 없습니다.',
-        'sitemap_urls_per_file_integer' => 'Sitemap 파일당 URL 수는 정수여야 합니다.',
-        'sitemap_urls_per_file_min' => 'Sitemap 파일당 URL 수는 최소 1000개 이상이어야 합니다.',
-        'sitemap_urls_per_file_max' => 'Sitemap 파일당 URL 수는 최대 50000개를 초과할 수 없습니다.',
-        'sitemap_gzip_boolean' => 'Sitemap 압축 설정은 true 또는 false 값이어야 합니다.',
-        'sitemap_gzip_requires_zlib' => '사이트맵 압축(gzip)을 켜려면 서버에 PHP zlib 확장이 필요합니다. 확장을 설치하거나 압축을 끄세요.',
-        'sitemap_serve_stale_on_miss_boolean' => '이전 Sitemap 제공 설정은 true 또는 false 값이어야 합니다.',
-        'sitemap_max_urls_per_contributor_integer' => '수집기당 최대 URL 수는 정수여야 합니다.',
-        'sitemap_max_urls_per_contributor_min' => '수집기당 최대 URL 수는 0 이상이어야 합니다.',
-        'sitemap_hreflang_enabled_boolean' => 'Sitemap 다국어 대체 링크(hreflang) 설정은 true 또는 false 값이어야 합니다.',
+        'sitemap_schedule_invalid' => '유효한 Sitemap 생성 주기를 선택해주세요.',
+        'sitemap_schedule_time_invalid' => 'Sitemap 생성 시각은 HH:mm 형식이어야 합니다.',
 
         // 보안 설정
         'force_https_required' => 'HTTPS 강제 적용 설정을 선택해주세요.',
         'force_https_boolean' => 'HTTPS 강제 적용은 true 또는 false 값이어야 합니다.',
-        'allow_internal_outbound_urls_boolean' => '내부 네트워크 주소 호출 허용은 true 또는 false 값이어야 합니다.',
-        // IP 접근 제한
-        'ip_restriction_enabled_boolean' => 'IP 접근 제한 사용은 true 또는 false 값이어야 합니다.',
-        'ip_or_cidr_invalid' => '":value" 값은 IP 주소 또는 CIDR(예: 203.0.113.0/24) 형식이 아닙니다.',
-        'csp_source_host_invalid' => '":value" 값은 허용하지 않는 형식입니다. 호스트(예: cdn.example.com, *.example.com, https://cdn.example.com)만 입력하세요 — 따옴표·세미콜론·공백·unsafe-inline 같은 키워드·data:·*·http:// 는 쓸 수 없습니다.',
-        'csp_mode_in' => '콘텐츠 보안 정책 모드는 끔·점검만·강제 중 하나여야 합니다.',
-        'csp_extra_script_hosts_array' => '추가 스크립트 허용 호스트는 목록이어야 합니다.',
-        'csp_extra_script_hosts_max' => '추가 스크립트 허용 호스트는 최대 :max개까지 입력할 수 있습니다.',
-        'csp_style_mode_in' => '스타일 정책 모드는 끔·점검만·강제 중 하나여야 합니다.',
-        'csp_style_level_in' => '스타일 정책 강도는 기본·엄격 중 하나여야 합니다.',
-        'csp_extra_style_hosts_array' => '추가 스타일 허용 호스트는 목록이어야 합니다.',
-        'csp_extra_style_hosts_max' => '추가 스타일 허용 호스트는 최대 :max개까지 입력할 수 있습니다.',
-        'admin_allowed_ips_array' => '관리자 영역 허용 IP 는 목록이어야 합니다.',
-        'admin_allowed_ips_max' => '관리자 영역 허용 IP 는 :max개까지 등록할 수 있습니다.',
-        'ip_restriction_rules_array' => '라우트별 규칙은 목록이어야 합니다.',
-        'ip_restriction_rules_max' => '라우트별 규칙은 :max개까지 등록할 수 있습니다.',
-        'ip_restriction_rule_pattern_required' => '규칙의 URI 패턴을 입력해주세요.',
-        'ip_restriction_rule_pattern_max' => '규칙의 URI 패턴은 :max자를 초과할 수 없습니다.',
-        'ip_restriction_rule_pattern_invalid' => '규칙의 URI 패턴에는 공백·?·# 을 쓸 수 없습니다. 경로와 * 만 적어주세요 (예: /api/admin/users*).',
-        'ip_restriction_rule_ips_required' => '규칙마다 허용할 IP 를 하나 이상 입력해주세요.',
-        'ip_restriction_rule_ips_max' => '규칙 하나에 허용 IP 는 :max개까지 등록할 수 있습니다.',
-        'ip_restriction_rule_memo_max' => '규칙 메모는 :max자를 초과할 수 없습니다.',
-        'ip_restriction_rule_enabled_boolean' => '규칙 사용 여부는 true 또는 false 값이어야 합니다.',
-        'ip_restriction_self_lockout' => '현재 접속 IP(:ip)가 관리자 영역 허용 목록에 없습니다. 이대로 저장하면 이 화면을 포함한 관리자 영역에 다시 들어올 수 없습니다 — 현재 IP 를 목록에 추가한 뒤 저장하세요.',
-        'ip_restriction_self_lockout_rule' => '":pattern" 규칙이 현재 접속 IP(:ip)를 막습니다. 이대로 저장하면 이 화면에 다시 들어올 수 없습니다 — 그 규칙의 허용 IP 에 현재 IP 를 추가하거나 규칙을 끈 뒤 저장하세요.',
         'login_attempt_enabled_required' => '로그인 시도 제한 설정을 선택해주세요.',
         'login_attempt_enabled_boolean' => '로그인 시도 제한은 true 또는 false 값이어야 합니다.',
         'auth_token_lifetime_integer' => '인증 토큰 유지시간은 정수여야 합니다.',
@@ -1103,44 +763,18 @@ return [
         'stats_cache_ttl_integer' => '통계 캐시 만료 시간은 정수여야 합니다.',
         'stats_cache_ttl_min' => '통계 캐시 만료 시간은 최소 0초여야 합니다.',
         'stats_cache_ttl_max' => '통계 캐시 만료 시간은 최대 14400초(4시간)를 초과할 수 없습니다.',
-        // 고급 탭 전용 — SEO 탭의 오버라이드 칸(seo_cache_*)과 허용 범위가 다르므로 키를 분리한다.
-        'advanced_seo_cache_enabled_required' => 'SEO 캐시 설정을 선택해주세요.',
-        'advanced_seo_cache_enabled_boolean' => 'SEO 캐시는 true 또는 false 값이어야 합니다.',
-        'advanced_seo_cache_ttl_required' => 'SEO 캐시 만료 시간을 입력해주세요.',
-        'advanced_seo_cache_ttl_integer' => 'SEO 캐시 만료 시간은 정수여야 합니다.',
-        'advanced_seo_cache_ttl_min' => 'SEO 캐시 만료 시간은 최소 0초여야 합니다.',
-        'advanced_seo_cache_ttl_max' => 'SEO 캐시 만료 시간은 최대 14400초(4시간)를 초과할 수 없습니다.',
-        'seo_sitemap_cache_ttl_integer' => 'Sitemap 캐시 만료 시간은 정수여야 합니다.',
-        'seo_sitemap_cache_ttl_min' => 'Sitemap 캐시 만료 시간은 최소 3600초(1시간) 이상이어야 합니다.',
-        'seo_sitemap_cache_ttl_max' => 'Sitemap 캐시 만료 시간은 최대 604800초(7일)를 초과할 수 없습니다.',
+        'seo_cache_enabled_required' => 'SEO 캐시 설정을 선택해주세요.',
+        'seo_cache_enabled_boolean' => 'SEO 캐시는 true 또는 false 값이어야 합니다.',
+        'seo_cache_ttl_required' => 'SEO 캐시 만료 시간을 입력해주세요.',
+        'seo_cache_ttl_integer' => 'SEO 캐시 만료 시간은 정수여야 합니다.',
+        'seo_cache_ttl_min' => 'SEO 캐시 만료 시간은 최소 0초여야 합니다.',
+        'seo_cache_ttl_max' => 'SEO 캐시 만료 시간은 최대 14400초(4시간)를 초과할 수 없습니다.',
 
         // 디버그 설정
         'debug_mode_required' => '디버그 모드 설정을 선택해주세요.',
         'debug_mode_boolean' => '디버그 모드는 true 또는 false 값이어야 합니다.',
         'sql_query_log_required' => 'SQL 쿼리 로그 설정을 선택해주세요.',
         'sql_query_log_boolean' => 'SQL 쿼리 로그는 true 또는 false 값이어야 합니다.',
-
-        // 아웃바운드 HTTP 프록시
-        'outbound_proxy_required' => '아웃바운드 프록시 주소를 입력해주세요.',
-        'outbound_proxy_string' => '아웃바운드 프록시 주소는 문자열이어야 합니다.',
-        'outbound_proxy_max' => '아웃바운드 프록시 주소는 :max자를 초과할 수 없습니다.',
-        'outbound_proxy_invalid' => '아웃바운드 프록시 주소 형식이 올바르지 않습니다. 사용 가능한 형식: :schemes (예: socks5h://127.0.0.1:1080)',
-        'outbound_proxy_bypass_array' => '프록시 예외 목록은 배열이어야 합니다.',
-        'outbound_proxy_bypass_item_string' => '프록시 예외 항목은 문자열이어야 합니다.',
-        'outbound_proxy_bypass_item_max' => '프록시 예외 항목은 :max자를 초과할 수 없습니다.',
-        'trusted_proxies_present' => '신뢰할 프록시 목록이 요청에 없습니다.',
-        'trusted_proxies_array' => '신뢰할 프록시 목록은 배열이어야 합니다.',
-        'trusted_proxies_max' => '신뢰할 프록시는 :max개를 초과할 수 없습니다.',
-        'trusted_proxy_address_invalid' => '신뢰할 프록시 주소 형식이 올바르지 않습니다. IP 주소 또는 CIDR 로 입력하세요 (예: 10.0.0.1, 10.0.0.0/24).',
-        'trusted_proxy_address_max' => '신뢰할 프록시 주소는 :max자를 초과할 수 없습니다.',
-
-        // 목록 한계값
-        'pagination_result_cap_integer' => '총 건수 집계 상한은 숫자여야 합니다.',
-        'pagination_result_cap_min' => '총 건수 집계 상한은 :min 이상이어야 합니다. (0 = 무제한)',
-        'pagination_result_cap_max' => '총 건수 집계 상한은 :max 를 초과할 수 없습니다.',
-        'pagination_max_page_integer' => '페이지 번호 상한은 숫자여야 합니다.',
-        'pagination_max_page_min' => '페이지 번호 상한은 :min 이상이어야 합니다. (0 = 무제한)',
-        'pagination_max_page_max' => '페이지 번호 상한은 :max 를 초과할 수 없습니다.',
 
         // 코어 업데이트 설정
         'core_update_github_url_invalid' => 'GitHub 저장소 URL 형식이 올바르지 않습니다.',
@@ -1151,16 +785,11 @@ return [
         'storage_driver_required' => '스토리지 드라이버를 선택해주세요.',
         'storage_driver_invalid' => '올바른 스토리지 드라이버를 선택해주세요.',
         's3_bucket_max' => 'S3 버킷 이름은 255자를 초과할 수 없습니다.',
-        's3_region_invalid' => 'S3 리전은 소문자 영숫자와 하이픈만 사용할 수 있습니다. (예: ap-northeast-2, Cloudflare R2 는 auto)',
-        's3_region_max' => 'S3 리전은 64자를 초과할 수 없습니다.',
+        's3_region_invalid' => '올바른 S3 리전을 선택해주세요.',
         's3_access_key_max' => 'S3 Access Key는 255자를 초과할 수 없습니다.',
         's3_secret_key_max' => 'S3 Secret Key는 255자를 초과할 수 없습니다.',
         's3_url_invalid' => '올바른 S3 URL 형식이 아닙니다.',
         's3_url_max' => 'S3 URL은 500자를 초과할 수 없습니다.',
-        's3_endpoint_invalid' => '올바른 S3 엔드포인트 URL 형식이 아닙니다.',
-        's3_endpoint_max' => 'S3 엔드포인트 URL은 500자를 초과할 수 없습니다.',
-        's3_use_path_style_boolean' => 'Path-style 주소 사용 설정은 true 또는 false 값이어야 합니다.',
-        'driver_unusable' => "':driver' 드라이버를 이 서버에서 사용할 수 없습니다. :reason",
         'cache_driver_required' => '캐시 드라이버를 선택해주세요.',
         'cache_driver_invalid' => '올바른 캐시 드라이버를 선택해주세요.',
         'redis_host_max' => 'Redis 호스트는 255자를 초과할 수 없습니다.',
@@ -1182,16 +811,6 @@ return [
         'session_lifetime_max' => '세션 유효시간은 최대 30일(43200분)을 초과할 수 없습니다.',
         'queue_driver_required' => '큐 드라이버를 선택해주세요.',
         'queue_driver_invalid' => '올바른 큐 드라이버를 선택해주세요.',
-        'queue_connection_invalid' => '등록할 수 없는 큐 연결입니다.',
-        'queue_connection_duplicate' => '같은 큐 연결이 두 번 있습니다.',
-        'queue_connection_default_required' => '현재 큐 드라이버(:driver) 연결은 등록 해제할 수 없습니다.',
-        'queue_names_connection_unknown' => '알 수 없는 큐 연결(:connection)의 큐 목록입니다.',
-        'queue_names_required' => ':connection 연결에 큐를 하나 이상 등록하세요.',
-        'queue_names_max' => '한 연결에는 큐를 20개까지 등록할 수 있습니다.',
-        'queue_name_required' => '큐 이름을 입력하세요.',
-        'queue_name_invalid' => '큐 이름은 영문·숫자·밑줄·하이픈·점만 쓸 수 있고 영문이나 숫자로 시작해야 합니다.',
-        'queue_name_max' => '큐 이름은 64자 이하여야 합니다.',
-        'queue_name_duplicate' => ':connection 연결에 같은 큐 이름(:name)이 두 번 있습니다.',
         'websocket_enabled_boolean' => '웹소켓 사용 설정은 true 또는 false 값이어야 합니다.',
         'websocket_app_id_required' => '웹소켓 사용 시 앱 ID는 필수입니다.',
         'websocket_app_id_max' => '웹소켓 앱 ID는 255자를 초과할 수 없습니다.',
@@ -1212,65 +831,6 @@ return [
         'websocket_server_scheme_invalid' => '올바른 웹소켓 서버 프로토콜을 선택해주세요.',
         'search_engine_driver_invalid' => '올바른 검색엔진 드라이버를 선택해주세요.',
 
-        // 로그 드라이버 설정
-        'log_driver_required' => '로그 드라이버를 선택해주세요.',
-        'log_driver_invalid' => '올바른 로그 드라이버를 선택해주세요.',
-        'log_level_required' => '로그 레벨을 선택해주세요.',
-        'log_level_invalid' => '올바른 로그 레벨을 선택해주세요.',
-        'log_days_integer' => '로그 보관 일수는 정수여야 합니다.',
-        'log_days_min' => '로그 보관 일수는 1 이상이어야 합니다.',
-        'log_days_max' => '로그 보관 일수는 365를 초과할 수 없습니다.',
-        // 큐 작업 처리 기록 (#17)
-        'queue_job_log_enabled_boolean' => '처리 기록 사용 여부는 켜기/끄기 값이어야 합니다.',
-        'queue_record_retention_days_integer' => '처리 기록 보관 기간은 정수(일)여야 합니다.',
-        'queue_record_retention_days_min' => '처리 기록 보관 기간은 :min일 이상이어야 합니다.',
-        'queue_record_retention_days_max' => '처리 기록 보관 기간은 :max일을 넘을 수 없습니다.',
-
-        // 공개 자산 디스크 설정
-        'public_asset_disk_invalid' => '올바른 공개 자산 디스크를 선택해주세요.',
-        'private_attachment_disk_invalid' => '올바른 비공개 첨부 저장소를 선택해주세요.',
-        'file_delegation_invalid' => '올바른 웹서버 파일 위임 방식을 선택해주세요.',
-        'file_delegation_accel_prefix_required' => 'nginx(X-Accel-Redirect)를 고르면 내부 위치 접두사를 입력해야 합니다.',
-        'file_delegation_accel_prefix_format' => '내부 위치 접두사는 /_g7_sendfile/ 처럼 / 로 시작하고 끝나야 하며 영문·숫자·. _ - 만 쓸 수 있습니다.',
-
-        // 이미지 처리 엔진, 이미지 썸네일 (#869)
-        'image_driver_invalid' => '올바른 이미지 처리 엔진을 선택해주세요.',
-        'thumbnail_presets_array' => '썸네일 규격 표 형식이 올바르지 않습니다.',
-        'thumbnail_presets_max' => '썸네일 규격은 최대 :max개까지 둘 수 있습니다(고정 규격과 확장 규격 포함).',
-        'thumbnail_preset_name_required' => '규격 이름을 입력해주세요.',
-        'thumbnail_preset_name_distinct' => '같은 이름의 규격이 이미 있습니다.',
-        'thumbnail_preset_name_reserved' => "기본 규격 이름(':name')이라 쓸 수 없습니다.",
-        'thumbnail_preset_name_literal' => "레이아웃 파이프가 문자열로 읽지 않는 낱말(':name')이라 규격 이름으로 쓸 수 없습니다.",
-        'thumbnail_preset_name_format' => '규격 이름은 영문 소문자로 시작하고 영문 소문자, 숫자, 밑줄(_)만 써서 2~32자로 입력해주세요.',
-        'thumbnail_preset_name_locked' => '기본 규격과 확장 규격은 이름을 바꿀 수 없습니다.',
-        'thumbnail_preset_extension_unknown' => "':name' 규격을 등록한 확장이 켜져 있지 않습니다.",
-        'thumbnail_preset_width_required' => '가로 크기를 입력해주세요.',
-        'thumbnail_preset_height_required' => '자르기나 맞추기에는 세로 크기가 필요합니다.',
-        'thumbnail_preset_size_integer' => '크기는 정수(px)로 입력해주세요.',
-        'thumbnail_preset_size_range' => '크기는 :min~:max px 사이로 입력해주세요.',
-        'thumbnail_preset_quality_range' => '품질은 :min~:max 사이 정수로 입력하거나 비워 두세요.',
-        'thumbnail_preset_fit_invalid' => '맞춤 방식을 선택해주세요.',
-        'thumbnail_preset_anchor_invalid' => '올바른 기준점을 선택해주세요.',
-        'thumbnail_preset_format_invalid' => '올바른 저장 형식을 선택해주세요.',
-        'thumbnail_content_preset_invalid' => '사용 중인 규격 중에서 본문 이미지 규격을 선택해주세요.',
-        'thumbnail_disk_public_invalid' => '공개 이미지 썸네일 저장 위치를 목록에서 선택해주세요.',
-        'thumbnail_disk_gated_invalid' => '권한이 걸린 이미지 썸네일은 서버 비공개 저장소, Amazon S3, 비공개 첨부 저장소 목록의 디스크에만 둘 수 있습니다. 공개 자산 디스크는 고를 수 없습니다.',
-
-        // 드라이버 조건부 필수 메시지 (선택 드라이버에 따라 필수)
-        's3_bucket_required' => 'S3 버킷 이름은 필수입니다.',
-        's3_access_key_required' => 'S3 Access Key는 필수입니다.',
-        's3_secret_key_required' => 'S3 Secret Key는 필수입니다.',
-        's3_url_url' => 'S3 URL은 유효한 URL이어야 합니다.',
-        'redis_host_required' => 'Redis 호스트는 필수입니다.',
-        'redis_port_required' => 'Redis 포트는 필수입니다.',
-        'redis_database_required' => 'Redis 데이터베이스 번호는 필수입니다.',
-        'memcached_host_required' => 'Memcached 호스트는 필수입니다.',
-        'memcached_port_required' => 'Memcached 포트는 필수입니다.',
-        'session_lifetime_required' => '세션 유효시간은 필수입니다.',
-        'websocket_host_required' => '웹소켓 호스트는 필수입니다.',
-        'websocket_port_required' => '웹소켓 포트는 필수입니다.',
-        'websocket_scheme_required' => '웹소켓 프로토콜을 선택해주세요.',
-
         // 본인인증(IDV) 설정
         'identity_default_provider_string' => '기본 프로바이더는 문자열이어야 합니다.',
         'identity_default_provider_max' => '기본 프로바이더 식별자는 100자를 초과할 수 없습니다.',
@@ -1285,27 +845,6 @@ return [
         'identity_max_attempts_integer' => '최대 시도 횟수는 정수여야 합니다.',
         'identity_max_attempts_min' => '최대 시도 횟수는 최소 1회 이상이어야 합니다.',
         'identity_max_attempts_max' => '최대 시도 횟수는 최대 20회를 초과할 수 없습니다.',
-
-        // 개인정보 보유기간·휴면
-        'privacy_days_integer' => '기간은 일 단위 정수여야 합니다.',
-        'privacy_retention_days_min' => '보유기간은 1일 이상이어야 합니다.',
-        'privacy_retention_days_max' => '보유기간은 최대 3650일(10년)을 초과할 수 없습니다.',
-        'privacy_search_history_scope_unknown' => '사용할 수 없는 검색 범위입니다. 화면을 새로 고친 뒤 다시 저장하세요.',
-        'privacy_search_history_scope_distinct' => '같은 검색 범위가 두 번 들어 있습니다.',
-        'privacy_dormant_days_min' => '휴면 전환 기간은 30일 이상이어야 합니다.',
-        'privacy_dormant_notice_days_min' => '사전 통지 기간은 1일 이상이어야 합니다.',
-        'privacy_dormant_notice_days_max' => '사전 통지 기간은 최대 365일을 초과할 수 없습니다.',
-        'privacy_dormant_notice_days_lt_dormant_days' => '사전 통지 기간은 휴면 전환 기간보다 짧아야 합니다. 같거나 길면 사전 안내 없이 전환과 통지가 같은 날 일어납니다.',
-        // 비밀번호 정책 (#736)
-        'password_policy_boolean' => ':attribute 값은 사용/사용 안 함 중 하나여야 합니다.',
-        'password_policy_integer' => ':attribute 값은 정수여야 합니다.',
-        'password_policy_min' => ':attribute 값은 :min 이상이어야 합니다.',
-        'password_policy_max' => ':attribute 값은 :max 이하여야 합니다.',
-        'activity_log_retention_days_min' => '활동 로그 보관 기간은 법정 최소 보관 기간인 :min일 이상이어야 합니다.',
-        'password_expiry_scope_in' => '적용 범위는 전체 회원·관리자만·지정한 역할·회원만 중 하나여야 합니다.',
-        'password_expiry_action_in' => '만료 시 동작은 변경해야 로그인·다음에 변경 허용 중 하나여야 합니다.',
-        'password_expiry_notice_days_lt_expiry_days' => '사전 안내일은 만료 기간보다 짧아야 합니다. 같거나 길면 사전 안내 없이 만료와 안내가 같은 날 일어납니다.',
-        'privacy_consent_provider_unknown' => '선택한 동의 관리 제공자를 찾을 수 없습니다. 목록에서 다시 고르세요.',
     ],
 
     // 본인인증 정책 검증 메시지
@@ -1313,9 +852,6 @@ return [
         'key_required' => '정책 키를 입력해주세요.',
         'key_max' => '정책 키는 120자를 초과할 수 없습니다.',
         'key_unique' => '이미 사용 중인 정책 키입니다.',
-        'purpose_unknown' => '등록되지 않은 인증 목적입니다.',
-        'provider_id_unknown' => '등록되지 않은 본인인증 수단입니다.',
-        'provider_purpose_unsupported' => '선택한 본인인증 수단은 이 목적을 지원하지 않습니다.',
         'scope_required' => 'Scope를 선택해주세요.',
         'scope_invalid' => 'Scope는 route, hook, custom 중 하나여야 합니다.',
         'target_required' => 'Target(라우트 또는 훅 이름)을 입력해주세요.',
@@ -1331,7 +867,6 @@ return [
         'priority_integer' => '우선순위는 정수여야 합니다.',
         'priority_min' => '우선순위는 0 이상이어야 합니다.',
         'priority_max' => '우선순위는 65535를 초과할 수 없습니다.',
-        'priority_duplicate' => '같은 적용 위치(:target)에 우선순위 :priority 인 활성 정책이 이미 있습니다. 어느 정책을 먼저 적용할지 정해지지 않으므로, 우선순위를 다르게 지정하거나 기존 정책을 비활성화해주세요.',
         'conditions_array' => '조건(conditions)은 배열이어야 합니다.',
         'applies_to_required' => '적용 대상을 선택해주세요.',
         'applies_to_invalid' => '적용 대상은 self, admin, both 중 하나여야 합니다.',
@@ -1339,167 +874,30 @@ return [
         'fail_mode_invalid' => '실패 모드는 block 또는 log_only여야 합니다.',
     ],
 
-    // 본인인증 알림 — 알림 설정 > 본인인증 「정책별 문구 추가」
-    'identity_notification' => [
-        'policy_key_not_admin_policy' => '운영자가 추가한 본인인증 정책의 키를 선택해야 합니다.',
-        'definition_already_exists' => '이 정책에는 이미 본인인증 문구가 있습니다.',
-        'attributes' => [
-            'category' => '분류',
-            'policy_key' => '정책',
-            'description' => '설명',
-            'templates' => '메일 템플릿',
-            'name' => '문구 이름',
-            'subject' => '제목',
-            'body' => '본문',
-        ],
+    // 본인인증 메시지 정의 검증 메시지
+    'identity_message' => [
+        'provider_not_registered' => '등록되지 않은 IDV 프로바이더입니다.',
+        'scope_value_not_admin_policy' => '운영자가 추가한 정책(source_type=admin)의 키와 일치해야 합니다.',
+        'definition_already_exists' => '동일 (provider, scope_type, scope_value) 정의가 이미 존재합니다.',
     ],
-
-    // 레이아웃 버전 목록 조회
-    'layout_version' => [
-        'limit' => [
-            'integer' => '조회 건수는 숫자여야 합니다.',
-            'min' => '조회 건수는 1 이상이어야 합니다.',
-            'max' => '조회 건수는 최대 :max건입니다.',
-        ],
-    ],
-
-    // 개인정보 조치 대상 목록 조회
-    'privacy_targets' => [
-        'page' => [
-            'integer' => '페이지 번호는 숫자여야 합니다.',
-            'min' => '페이지 번호는 1 이상이어야 합니다.',
-        ],
-        'per_page' => [
-            'integer' => '페이지 크기는 숫자여야 합니다.',
-            'min' => '페이지 크기는 1 이상이어야 합니다.',
-            'max' => '페이지 크기는 최대 :max건입니다.',
-        ],
-    ],
-
-    'privacy_manual_run' => [
-        'since' => [
-            'date' => '기준 시각 형식이 올바르지 않습니다.',
-        ],
-        'skip_waiting' => [
-            'boolean' => '대기기간 생략 값은 참/거짓이어야 합니다.',
-        ],
-        'targets' => [
-            'required' => '조회할 대상을 지정하세요.',
-            'string' => '대상 목록은 쉼표로 구분한 문자열이어야 합니다.',
-            'max' => '대상 목록이 너무 깁니다 (최대 :max자).',
-        ],
-    ],
-
-    // 방문자 통계 비콘 검증 메시지
-    'analytics' => [
-        'type_required' => '액션 종류가 필요합니다.',
-        'type_invalid' => '알 수 없는 액션 종류입니다.',
-        'url_required' => '방문 주소가 필요합니다.',
-        'url_too_long' => '방문 주소가 너무 깁니다.',
-        'resolution_invalid' => '화면 해상도 형식이 올바르지 않습니다.',
-        'dimensions_too_many' => '분류 값은 최대 20개까지 보낼 수 있습니다.',
-        'range_too_long' => '한 번에 조회할 수 있는 기간은 :days일까지입니다.',
-        'report_unknown' => '알 수 없는 리포트입니다.',
-        'subject_required' => 'IP·회원 번호·방문자 키 중 하나는 지정해야 합니다.',
-        'confirm_required' => '되돌릴 수 없는 작업입니다 — 확인란을 선택해야 진행합니다.',
-        'anonymize_target_required' => '가릴 옥텟 수 또는 해시 처리 중 하나는 지정해야 합니다.',
-        'bucket_bounds' => '구간 경계는 :min~:max 사이의 정수를 작은 것부터 겹치지 않게 쉼표로 적어야 합니다.',
-    ],
-
-    // 검증 실패 요약(422 응답 message)의 나머지 오류 수 꼬리 — Laravel 원문 「(and :count more error)」(단수)와 「…errors)」(복수)를 대신한다
-    'summary_more_error' => '(외 :count개 오류)',
-    'summary_more_errors' => '(외 :count개 오류)',
 
     // 검증 속성명 (validation.attributes)
     'attributes' => [
-        // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
-        'content_settings' => '본문 콘텐츠 설정',
-        'content_allow_figure_caption' => '그림 설명 허용',
-        'content_allow_uploaded_video' => '동영상 업로드 허용',
-        'content_allow_uploaded_audio' => '오디오 업로드 허용',
-        'content_allow_external_embed' => '외부 영상 삽입 허용',
-        'content_embed_presets' => '외부 영상 서비스 사용 여부',
-        'content_embed_custom_providers' => '직접 추가한 외부 영상 서비스',
-        'content_custom_tags' => '추가 허용 태그',
-        'content_media_url_ttl_minutes' => '본문 미디어 주소 유효 시간',
-        // 외부 영상 서비스 예시 주소 확인 (#883)
-        'embed_provider' => '외부 영상 서비스',
-        'embed_provider_url_patterns' => '주소 형식',
-        'embed_provider_player_url' => '플레이어 주소',
-        'embed_provider_id_rule' => 'id 글자 규칙',
-        'embed_provider_sample_url' => '예시 주소',
-        'layout_source' => '레이아웃 설치 소스',
-        'layout_strategy' => '레이아웃 처리 방식',
-        'decisions' => '화면별 결정',
-        'decisions.*' => '화면별 결정 값',
-        'pending_token' => '레이아웃 미리보기 토큰',
-        'layout_meta_icon' => '메뉴 아이콘',
-        'layout_meta_editor_label' => '편집기 표시 이름',
-        'layout_meta_authoring_note' => '작성 도구 표기',
-        'layout_meta_leave_guard' => '이탈 확인 조건',
-        'layout_meta_leave_message' => '이탈 확인 문구',
-        'layout_meta_scroll_restoration' => '스크롤 복원 설정',
-        'layout_meta_scroll_restoration_mode' => '돌아왔을 때 스크롤 동작',
-        'layout_meta_scroll_restoration_on_reload' => '새로고침 때도 적용',
-        'layout_meta_scroll_restoration_wait' => '복원 시점',
-        'layout_meta_scroll_restoration_timeout_ms' => '최대 대기 시간(ms)',
-        'layout_meta_scroll_restoration_containers' => '함께 복원할 스크롤 영역',
-        'layout_meta_scroll_restoration_snapshot' => '더보기 목록 스냅샷 설정',
-        'layout_meta_scroll_restoration_snapshot_enabled' => '더보기 목록 스냅샷 사용',
-        'layout_meta_scroll_restoration_snapshot_ttl_seconds' => '스냅샷 유효 시간(초)',
-        'layout_meta_scroll_restoration_snapshot_revalidate' => '스냅샷 뒤 다시 받기',
-        'layout_meta_scroll_restoration_snapshot_item_key' => '스냅샷 항목 식별 필드',
-        'layout_meta_scroll_restoration_snapshot_state' => '스냅샷과 함께 되돌릴 상태',
-        'layout_seo_title' => 'SEO 제목',
-        'layout_seo_description' => 'SEO 설명',
-        'layout_seo_twitter' => '트위터 카드',
-        'exclude_withdrawn' => '탈퇴 회원 제외',
-        'since' => '기준 시각',
-        'skip_waiting' => '대기기간 생략',
-        'targets' => '조회 대상',
-        'page' => '페이지 번호',
-        'per_page' => '페이지 크기',
-        'ids' => 'ID 목록',
-        'user_ids' => '사용자 ID 목록',
+        'ids' => '사용자 ID 목록',
         'user_id' => '사용자 ID',
         'status' => '상태',
-        'menu_ids' => '메뉴 목록',
-        'role_ids' => '역할 목록',
-        'mode' => '작업',
-        'uuids' => '회원 목록',
         // 일반 설정 필드
         'site_name' => '사이트 이름',
         'site_url' => '사이트 URL',
-        'user_screen_url' => '사용자 화면 URL',
         'site_description' => '사이트 설명',
         'admin_email' => '관리자 이메일',
         'timezone' => '시간대',
-        'language' => '언어',
-        'default_language' => '기본 언어',
-        // 실행 방식·예약 작업 필드 (관리자 '시스템' 탭)
-        'system.execution_mode' => '실행 방식',
-        'system.cron_mode' => '예약 작업 실행 방식',
-        'system.cron_allowed_ips' => '예약 작업 허용 주소',
-        'system.cron_min_interval' => '예약 작업 최소 호출 간격',
-        'system.cron_visit_fallback' => '방문자 접속 시 예약 작업 실행',
+        'language' => '기본 언어',
         // 본인인증(IDV) 필드
         'identity_default_provider' => '기본 프로바이더',
         'identity_purpose_providers' => '목적별 프로바이더',
         'identity_challenge_ttl_minutes' => 'Challenge 만료 시간',
         'identity_max_attempts' => '최대 시도 횟수',
-        'privacy_consent_provider' => '동의 관리 제공자',
-        'privacy_withdrawn_retention_enabled' => '탈퇴 회원 잔여정보 파기',
-        'privacy_withdrawn_retention_days' => '탈퇴 회원 잔여정보 보유기간',
-        'privacy_dormant_enabled' => '휴면 계정 전환',
-        'privacy_dormant_days' => '휴면 전환 기간',
-        'privacy_dormant_notice_days' => '휴면 사전 통지 기간',
-        'privacy_dormant_withdraw_enabled' => '휴면 계정 자동 탈퇴',
-        'privacy_dormant_withdraw_days' => '휴면 후 탈퇴 기간',
-        'privacy_search_history_enabled' => '최근 검색어 사용',
-        'privacy_search_history_scopes' => '최근 검색어 범위 설정',
-        'privacy_search_history_scope' => '검색 범위',
-        'privacy_search_history_max_count' => '보관 개수',
-        'privacy_search_history_retention_days' => '보관 기한',
         // 본인인증 정책 필드
         'identity_policy_key' => '정책 키',
         'identity_policy_scope' => 'Scope',
@@ -1512,14 +910,10 @@ return [
         'identity_policy_fail_mode' => '실패 모드',
         // 메일 설정 필드
         'mailer' => '메일러',
-        'host' => '호스트',
-        'port' => '포트',
-        'username' => '사용자명',
-        'password' => '비밀번호',
-        'smtp_host' => 'SMTP 호스트',
-        'smtp_port' => 'SMTP 포트',
-        'smtp_username' => 'SMTP 사용자명',
-        'smtp_password' => 'SMTP 비밀번호',
+        'host' => 'SMTP 호스트',
+        'port' => 'SMTP 포트',
+        'username' => 'SMTP 사용자명',
+        'password' => 'SMTP 비밀번호',
         'encryption' => '암호화',
         'from_address' => '발신자 이메일',
         'from_name' => '발신자 이름',
@@ -1529,8 +923,6 @@ return [
         'image_max_width' => '이미지 최대 너비',
         'image_max_height' => '이미지 최대 높이',
         'image_quality' => '이미지 품질',
-        'orphan_cleanup_enabled' => '고아 첨부 자동 정리',
-        'orphan_retention_days' => '고아 첨부 보존기간',
         // SEO 설정 필드
         'meta_title_suffix' => '메타 타이틀 접미사',
         'meta_description' => '메타 설명',
@@ -1541,219 +933,5 @@ return [
         // Changelog 필드
         'from_version' => '시작 버전',
         'to_version' => '종료 버전',
-        // 드라이버 설정 필드
-        'storage_driver' => '스토리지 드라이버',
-        's3_bucket' => 'S3 버킷',
-        's3_region' => 'S3 리전',
-        's3_access_key' => 'S3 Access Key',
-        's3_secret_key' => 'S3 Secret Key',
-        's3_url' => 'S3 URL',
-        's3_endpoint' => 'S3 엔드포인트 URL',
-        's3_use_path_style' => 'Path-style 주소 사용',
-        'cache_driver' => '캐시 드라이버',
-        'redis_host' => 'Redis 호스트',
-        'redis_port' => 'Redis 포트',
-        'redis_password' => 'Redis 비밀번호',
-        'redis_database' => 'Redis 데이터베이스',
-        'memcached_host' => 'Memcached 호스트',
-        'memcached_port' => 'Memcached 포트',
-        'session_driver' => '세션 드라이버',
-        'session_lifetime' => '세션 유효시간',
-        'queue_driver' => '큐 드라이버',
-        'queue_connections' => '큐 연결',
-        'queue_names' => '연결별 큐',
-        'queue_name' => '큐 이름',
-        'websocket_enabled' => '웹소켓 사용',
-        'websocket_app_key' => '웹소켓 앱 키',
-        'websocket_host' => '웹소켓 호스트',
-        'websocket_port' => '웹소켓 포트',
-        'websocket_scheme' => '웹소켓 프로토콜',
-        'layout' => '레이아웃',
-        'module' => '모듈',
-        'token' => '토큰',
-        'claim_secret' => '확인 결과 수령 값',
-        'mailgun_domain' => 'Mailgun 도메인',
-        'mailgun_secret' => 'Mailgun 시크릿',
-        'ses_key' => 'SES 액세스 키',
-        'ses_secret' => 'SES 시크릿 키',
-        'ses_region' => 'SES 리전',
-        'mailgun_endpoint' => 'Mailgun 엔드포인트',
-        // 일반 설정 (추가)
-        'channels' => '채널',
-        'notification_channels' => '알림 채널',
-        // 환경설정 탭 묶음 — 탭 자체가 배열이 아닐 때의 문구에 쓰인다(키 노출 방지).
-        'settings_tab' => '설정 탭',
-        'settings_tab_general' => '일반 설정',
-        'settings_tab_mail' => '메일 설정',
-        'settings_tab_upload' => '업로드 설정',
-        'settings_tab_seo' => 'SEO 설정',
-        'settings_tab_security' => '보안 설정',
-        'settings_tab_drivers' => '드라이버 설정',
-        'settings_tab_advanced' => '고급 설정',
-        'settings_tab_notifications' => '알림 설정',
-        'settings_tab_identity' => '본인인증 설정',
-        'settings_tab_analytics' => '방문자 통계 설정',
-        'settings_tab_privacy' => '개인정보 설정',
-        'settings_tab_member' => '회원 설정',
-        'member_nickname_unique' => '닉네임 중복 금지',
-        'member_nickname_banned_words' => '닉네임 금지어',
-        'member_nickname_change_interval_days' => '닉네임 변경 주기',
-        'member_display_name_selectable_kinds' => '회원이 고를 수 있는 표시 이름 종류',
-        'member_display_name_member_default_kind' => '회원 기본 표시 이름 종류',
-        'member_display_name_areas' => '영역별 표시 이름',
-        'member_display_name_area_mode' => '표시 이름 방식',
-        'member_display_name_area_kind' => '표시 이름 종류',
-        'member_nickname_require_existing_members' => '로그인 시 닉네임 입력 요구',
-        'display_name_kind' => '표시 이름 종류',
-        'notification_channel_id' => '알림 채널 식별자',
-        'notification_channel_is_active' => '알림 채널 사용 여부',
-        'notification_channel_sort_order' => '알림 채널 정렬 순서',
-        'currency' => '통화',
-        'default_currency' => '기본 통화',
-        'asset_url_mode' => '자산 주소 방식',
-        'layout_edit_button_enabled' => '레이아웃 편집 단추',
-        'site_logo' => '사이트 로고',
-        'site_favicon' => '사이트 파비콘',
-        'og_image_default' => '기본 공유 이미지',
-        // SEO 설정 (추가)
-        'bot_user_agents' => '봇 User-Agent 목록',
-        'bot_detection_enabled' => '봇 감지 사용',
-        'bot_detection_library_enabled' => '봇 감지 라이브러리 사용',
-        'og_default_site_name' => 'OG 기본 사이트 이름',
-        'og_image_default_width' => 'OG 이미지 기본 너비',
-        'og_image_default_height' => 'OG 이미지 기본 높이',
-        'twitter_default_card' => '트위터 기본 카드 유형',
-        'twitter_default_site' => '트위터 기본 계정',
-        'seo_page_cache_enabled' => 'SEO 페이지 캐시 사용',
-        'cache_ttl' => '캐시 유지시간',
-        'seo_page_cache_ttl' => 'SEO 페이지 캐시 유지시간',
-        'sitemap_enabled' => '사이트맵 사용',
-        'sitemap_cache_ttl' => '사이트맵 캐시 유지시간',
-        'sitemap_urls_per_file' => '사이트맵 파일당 URL 수',
-        'sitemap_gzip' => '사이트맵 압축',
-        'sitemap_serve_stale_on_miss' => '사이트맵 미생성 시 이전 파일 제공',
-        'sitemap_max_urls_per_contributor' => '사이트맵 항목별 최대 URL 수',
-        'sitemap_hreflang_enabled' => '사이트맵 대체 언어 링크 사용',
-        'generator_enabled' => 'SEO 페이지 생성기 사용',
-        'generator_content' => 'SEO 페이지 생성기 콘텐츠',
-        // 보안 설정 (추가)
-        'force_https' => 'HTTPS 강제 적용',
-        'login_attempt_enabled' => '로그인 시도 제한',
-        'registration_enabled' => '일반 회원가입 받기',
-        // 본인 확인 요청 — 외부 수단이 확인을 마친 뒤 돌아갈 화면 (7.2.0)
-        'return_path' => '돌아갈 화면 경로',
-        'scope' => '시작한 화면 범위',
-        'auth_token_lifetime' => '인증 토큰 유지시간',
-        'max_login_attempts' => '최대 로그인 시도 횟수',
-        'login_lockout_time' => '로그인 차단 시간',
-        'password_min_length' => '비밀번호 최소 길이',
-        'require_password_special_char' => '비밀번호 특수문자 필수',
-        'password_require_char_types' => '영문·숫자·특수문자 2종류 이상',
-        'password_block_identifier' => '아이디 포함 금지',
-        'password_block_repeated_chars' => '같은 문자 연속 반복 금지',
-        'password_repeated_chars_length' => '반복 금지 글자 수',
-        'password_block_sequential_chars' => '연속 문자 금지',
-        'password_sequential_chars_length' => '연속 금지 글자 수',
-        'password_reuse_prevention_enabled' => '비밀번호 재사용 금지',
-        'password_reuse_count' => '재사용 금지 개수',
-        'password_expiry_enabled' => '비밀번호 만료 사용',
-        'password_expiry_days' => '비밀번호 만료 기간',
-        'password_expiry_notice_days' => '만료 사전 안내일',
-        'password_expiry_scope' => '비밀번호 만료 적용 범위',
-        'password_expiry_action' => '비밀번호 만료 시 동작',
-        'password_expiry_remind_days' => '변경 연기 기간',
-        'password_expiry_batch_size' => '1회 실행당 안내 상한',
-        'password_reset_rate_limit_per_minute' => '비밀번호 찾기·재설정 분당 허용 횟수',
-        'register_rate_limit_per_minute' => '회원가입 분당 허용 횟수',
-        'activity_log_retention_days' => '활동 로그 보관 기간',
-        'password_expiry_policy' => '비밀번호 만료',
-        'current_password' => '현재 비밀번호',
-        'password_confirmation' => '비밀번호 확인',
-        'challenge_id' => '변경 단계 식별자',
-        'verification_token' => '본인 확인 인증',
-        'login_handoff_code' => '로그인 인계 코드',
-        'two_factor_auth' => '2단계 인증',
-        'two_factor_scope' => '2단계 인증 적용 범위',
-        'allow_internal_outbound_urls' => '내부 네트워크 주소 호출 허용',
-        'ip_restriction_enabled' => 'IP 접근 제한 사용',
-        'admin_allowed_ips' => '관리자 영역 허용 IP',
-        'csp_mode' => '콘텐츠 보안 정책 모드',
-        'csp_extra_script_hosts' => '추가 스크립트 허용 호스트',
-        'csp_style_mode' => '스타일 정책 모드',
-        'csp_style_level' => '스타일 정책 강도',
-        'csp_extra_style_hosts' => '추가 스타일 허용 호스트',
-        'ip_restriction_rules' => '라우트별 접근 규칙',
-        'ip_restriction_rule_pattern' => '규칙 URI 패턴',
-        'ip_restriction_rule_ips' => '규칙 허용 IP',
-        'ip_restriction_rule_memo' => '규칙 메모',
-        'ip_restriction_rule_enabled' => '규칙 사용 여부',
-        // 고급 설정 (추가)
-        'advanced_cache_enabled' => '캐시 사용',
-        'layout_cache_enabled' => '레이아웃 캐시 사용',
-        'layout_cache_ttl' => '레이아웃 캐시 유지시간',
-        'stats_cache_enabled' => '통계 캐시 사용',
-        'stats_cache_ttl' => '통계 캐시 유지시간',
-        'seo_cache_enabled' => 'SEO 캐시 사용',
-        'seo_cache_ttl' => 'SEO 캐시 유지시간',
-        'seo_sitemap_cache_ttl' => 'SEO 사이트맵 캐시 유지시간',
-        'debug_mode' => '디버그 모드',
-        'sql_query_log' => 'SQL 쿼리 로그',
-        'outbound_proxy' => '아웃바운드 프록시 주소',
-        'outbound_proxy_bypass' => '프록시 예외 목록',
-        'trusted_proxies' => '신뢰할 프록시 목록',
-        'core_update_github_url' => '코어 업데이트 GitHub 주소',
-        'core_update_github_token' => '코어 업데이트 GitHub 토큰',
-        'geoip_enabled' => 'GeoIP 사용',
-        'geoip_license_key' => 'GeoIP 라이선스 키',
-        'geoip_auto_update_enabled' => 'GeoIP 자동 업데이트',
-        'pagination_result_cap' => '목록 총 건수 상한',
-        'pagination_max_page' => '목록 최대 페이지 번호',
-        // 드라이버 설정 (추가)
-        'websocket_app_id' => '웹소켓 앱 ID',
-        'websocket_app_secret' => '웹소켓 앱 시크릿',
-        'websocket_verify_ssl' => '웹소켓 SSL 인증서 검증',
-        'websocket_server_host' => '웹소켓 서버 호스트',
-        'websocket_server_port' => '웹소켓 서버 포트',
-        'websocket_server_scheme' => '웹소켓 서버 프로토콜',
-        'search_engine_driver' => '검색 엔진 드라이버',
-        'log_driver' => '로그 드라이버',
-        'log_level' => '로그 레벨',
-        'log_days' => '로그 보관 일수',
-        'queue_job_log_enabled' => '큐 처리 기록 사용',
-        'queue_record_retention_days' => '큐 처리 기록 보관 기간',
-        'public_asset_disk' => '공개 자산 디스크',
-        'private_attachment_disk' => '비공개 첨부 저장소',
-        'file_delegation' => '웹서버 파일 위임',
-        'file_delegation_accel_prefix' => '내부 위치 접두사',
-        // 이미지 처리 엔진, 이미지 썸네일 (#869)
-        'image_driver' => '이미지 처리 엔진',
-        'thumbnail_enabled' => '이미지 썸네일 사용',
-        'thumbnail_prune_enabled' => '썸네일 자동 정리',
-        'thumbnail_animated_original' => '움직이는 이미지 원본 사용',
-        'thumbnail_presets' => '썸네일 규격',
-        'thumbnail_preset_row' => '썸네일 규격 행',
-        'thumbnail_preset_name' => '규격 이름',
-        'thumbnail_preset_source' => '규격 출처',
-        'thumbnail_preset_width' => '가로',
-        'thumbnail_preset_height' => '세로',
-        'thumbnail_preset_fit' => '맞춤',
-        'thumbnail_preset_anchor' => '기준점',
-        'thumbnail_preset_quality' => '품질',
-        'thumbnail_preset_format' => '형식',
-        'thumbnail_preset_upscale' => '확대',
-        'thumbnail_preset_pregenerate' => '등록 시 생성',
-        'thumbnail_preset_numeric' => '숫자 요청',
-        'thumbnail_preset_enabled' => '사용',
-        'thumbnail_content_preset' => '본문 이미지 규격',
-        'thumbnail_disk_public' => '공개 이미지 썸네일 저장 위치',
-        'thumbnail_disk_gated' => '권한이 걸린 이미지 썸네일 저장 위치',
-        'thumbnail_generate_per_minute' => '1분에 새로 만드는 썸네일 수 (IP 하나)',
-        'thumbnail_lock_wait_seconds' => '썸네일 생성 대기 시간',
-        'thumbnail_max_source_pixels' => '썸네일을 만들 원본의 최대 픽셀 수',
-        'thumbnail_pregenerate_batch' => '한 번에 만드는 원본 수',
-        'thumbnail_pregenerate_time_budget' => '한 번 호출의 시간 예산',
-        'thumbnail_purge_time_budget' => '비우기 한 번 호출의 시간 예산',
-        'public_asset_extensions' => '공개 디스크로 내보낼 확장자',
-        'layout_attachment_extensions' => '레이아웃 첨부 허용 확장자',
     ],
 ];

@@ -25,18 +25,12 @@ class SearchPresetControllerTest extends ModuleTestCase
     {
         parent::setUp();
 
-        // 관리자 사용자 생성 — 프리셋 라우트는 상품 권한을 요구한다 (#577 에서 부착).
-        // 권한 미보유 403 축은 SearchPresetPermissionTest 가 담당한다.
-        $this->adminUser = $this->createAdminUser([
-            'sirsoft-ecommerce.products.read',
-            'sirsoft-ecommerce.products.update',
-        ]);
-        $this->otherUser = $this->createAdminUser([
-            'sirsoft-ecommerce.products.read',
-            'sirsoft-ecommerce.products.update',
-        ]);
+        // 관리자 사용자 생성
+        $this->adminUser = $this->createAdminUser();
+        $this->otherUser = $this->createAdminUser();
     }
 
+    /**     */
     #[Test]
     public function test_index_returns_user_presets(): void
     {
@@ -74,6 +68,7 @@ class SearchPresetControllerTest extends ModuleTestCase
         $this->assertEquals('My Preset 2', $response->json('data.1.name'));
     }
 
+    /**     */
     #[Test]
     public function test_index_filters_by_target_screen(): void
     {
@@ -102,6 +97,7 @@ class SearchPresetControllerTest extends ModuleTestCase
         $this->assertEquals('Products Preset', $response->json('data.0.name'));
     }
 
+    /**     */
     #[Test]
     public function test_store_creates_preset(): void
     {
@@ -131,6 +127,7 @@ class SearchPresetControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**     */
     #[Test]
     public function test_store_validates_required_fields(): void
     {
@@ -150,6 +147,7 @@ class SearchPresetControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['name']);
     }
 
+    /**     */
     #[Test]
     public function test_store_validates_unique_name(): void
     {
@@ -176,6 +174,7 @@ class SearchPresetControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['name']);
     }
 
+    /**     */
     #[Test]
     public function test_update_updates_preset(): void
     {
@@ -204,6 +203,7 @@ class SearchPresetControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**     */
     #[Test]
     public function test_update_validates_unique_name_except_self(): void
     {
@@ -233,6 +233,7 @@ class SearchPresetControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['name']);
     }
 
+    /**     */
     #[Test]
     public function test_update_allows_same_name_for_self(): void
     {
@@ -254,6 +255,7 @@ class SearchPresetControllerTest extends ModuleTestCase
         $response->assertStatus(200);
     }
 
+    /**     */
     #[Test]
     public function test_destroy_deletes_preset(): void
     {
@@ -278,6 +280,7 @@ class SearchPresetControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**     */
     #[Test]
     public function test_destroy_returns_error_for_other_user_preset(): void
     {
@@ -302,6 +305,7 @@ class SearchPresetControllerTest extends ModuleTestCase
         ]);
     }
 
+    /**     */
     #[Test]
     public function test_unauthenticated_user_cannot_access(): void
     {

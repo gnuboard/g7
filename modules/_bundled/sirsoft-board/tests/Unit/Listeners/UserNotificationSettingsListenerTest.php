@@ -8,43 +8,38 @@ use App\Models\User;
 use Modules\Sirsoft\Board\Listeners\UserNotificationSettingsListener;
 use Modules\Sirsoft\Board\Models\UserNotificationSetting;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
-use PHPUnit\Framework\Attributes\Group;
 
 /**
  * UserNotificationSettingsListener 단위 테스트
  *
- * 알림 수신 설정 4칸의 검증과 저장은 회원 항목 선언과 값 핸들러가 맡는다(`Feature/User/UserNotificationFieldSetTest`).
- * 이 리스너에 남은 것은 회원 응답에 값을 싣는 일 하나다.
- *
  * 검증 목적:
- * - getSubscribedHooks: 응답 필터 하나만 구독(검증, 저장 훅 구독 없음)
- * - 걷어 낸 검증, 저장 메서드가 남아 있지 않음
+ * - getSubscribedHooks: 7개 훅 등록, filter 타입 6개 + action 타입 1개
+ * - addValidationRules: 4개 알림 필드 규칙 추가
+ * - filterCreateData: 알림 필드 분리 → 세션 저장 + 나머지 데이터 반환
+ * - filterCreateData: 알림 필드 없을 때 세션 미저장
+ * - filterCreateData: 미전송 알림 필드 → false로 채움
+ * - filterUpdateData: 알림 필드 즉시 저장 + 데이터에서 제거
+ * - filterUpdateData: 알림 필드 없고 기존 설정 없으면 저장 미발생
+ * - filterUpdateData: 기존 설정 있으면 미전송 필드 false로 갱신
+ * - afterCreate: 세션 데이터 → DB 저장 + 세션 삭제
+ * - afterCreate: 세션 비어있으면 저장 미발생
  * - filterResourceData: 설정 있으면 실제 값 반환
  * - filterResourceData: 설정 없으면 기본값(false) 반환
+ *
+ * @group board
+ * @group unit
+ * @group listener
  */
-#[Group('board')]
-#[Group('unit')]
-#[Group('listener')]
 class UserNotificationSettingsListenerTest extends ModuleTestCase
 {
     private UserNotificationSettingsListener $listener;
 
-    /**
-     * 테스트 대상 리스너를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->listener = app(UserNotificationSettingsListener::class);
     }
 
-    /**
-     * 테스트용 회원을 만듭니다.
-     *
-     * @return User 생성된 회원
-     */
     private function makeUser(): User
     {
         return User::create([
@@ -59,37 +54,221 @@ class UserNotificationSettingsListenerTest extends ModuleTestCase
     // ==========================================
 
     /**
-     * 응답 필터 하나만 구독합니다 — 검증 규칙 필터, 저장 데이터 필터, 생성 후 액션은 항목 엔진과 겹치므로 구독하지 않습니다.
-     *
-     * @scenario case=subscription_contract
-     *
-     * @effects subscribes_user_lifecycle_hooks
-     *
-     * @return void 반환값 없음
+     * 7개 훅이 등록되어 있어야 합니다.
      */
-    public function test_subscribed_hooks_contains_resource_filter_only(): void
+    public function test_subscribed_hooks_returns_seven_hooks(): void
     {
         $hooks = UserNotificationSettingsListener::getSubscribedHooks();
-
-        $this->assertSame(['core.user.filter_resource_data'], array_keys($hooks));
-        $this->assertSame('filter', $hooks['core.user.filter_resource_data']['type']);
-        $this->assertSame('filterResourceData', $hooks['core.user.filter_resource_data']['method']);
+        $this->assertCount(7, $hooks);
     }
 
     /**
-     * 걷어 낸 검증, 저장 메서드가 리스너에 남아 있지 않습니다.
-     *
-     * @scenario case=subscription_contract
-     *
-     * @effects subscribes_user_lifecycle_hooks
-     *
-     * @return void 반환값 없음
+     * filter 타입 훅 6개, action 타입 훅 1개 (after_create)
      */
-    public function test_validation_and_save_methods_are_removed(): void
+    public function test_subscribed_hooks_has_correct_types(): void
     {
-        foreach (['addValidationRules', 'filterCreateData', 'filterUpdateData', 'afterCreate'] as $method) {
-            $this->assertFalse(method_exists($this->listener, $method), "{$method} 가 남아 있으면 항목 엔진과 이중으로 처리한다");
-        }
+        $hooks = UserNotificationSettingsListener::getSubscribedHooks();
+
+        $filterHooks = array_filter($hooks, fn ($h) => ($h['type'] ?? '') === 'filter');
+        $actionHooks = array_filter($hooks, fn ($h) => ! isset($h['type']));
+
+        $this->assertCount(6, $filterHooks, 'filter 타입 훅은 6개여야 합니다.');
+        $this->assertCount(1, $actionHooks, 'action 타입 훅(type 없음)은 1개여야 합니다.');
+        $this->assertArrayHasKey('core.user.after_create', $hooks, 'after_create 훅이 등록되어야 합니다.');
+    }
+
+    // ==========================================
+    // addValidationRules
+    // ==========================================
+
+    /**
+     * addValidationRules: 4개 알림 필드 규칙을 기존 규칙에 추가합니다.
+     */
+    public function test_add_validation_rules_merges_notification_fields(): void
+    {
+        $existing = ['name' => 'required|string'];
+        $result = $this->listener->addValidationRules($existing);
+
+        $this->assertArrayHasKey('name', $result, '기존 규칙 유지');
+        $this->assertArrayHasKey('notify_post_complete', $result);
+        $this->assertArrayHasKey('notify_post_reply', $result);
+        $this->assertArrayHasKey('notify_comment', $result);
+        $this->assertArrayHasKey('notify_reply_comment', $result);
+        $this->assertSame('nullable|boolean', $result['notify_post_complete']);
+    }
+
+    // ==========================================
+    // filterCreateData
+    // ==========================================
+
+    /**
+     * filterCreateData: 알림 필드가 요청에 있으면 세션에 저장하고 데이터에서 제거합니다.
+     */
+    public function test_filter_create_data_extracts_notification_fields_to_session(): void
+    {
+        $data = [
+            'name' => '홍길동',
+            'email' => 'hong@example.com',
+            'notify_post_complete' => true,
+            'notify_comment' => false,
+        ];
+
+        $result = $this->listener->filterCreateData($data);
+
+        // 알림 필드 제거됨
+        $this->assertArrayNotHasKey('notify_post_complete', $result);
+        $this->assertArrayNotHasKey('notify_comment', $result);
+
+        // 일반 필드 유지됨
+        $this->assertArrayHasKey('name', $result);
+        $this->assertArrayHasKey('email', $result);
+
+        // 세션에 저장됨
+        $sessionData = session('board_notification_data');
+        $this->assertNotEmpty($sessionData);
+        $this->assertTrue($sessionData['notify_post_complete']);
+    }
+
+    /**
+     * filterCreateData: 알림 필드가 없으면 세션에 저장하지 않습니다.
+     */
+    public function test_filter_create_data_does_not_set_session_when_no_notification_fields(): void
+    {
+        session()->forget('board_notification_data');
+
+        $data = ['name' => '홍길동', 'email' => 'hong@example.com'];
+        $this->listener->filterCreateData($data);
+
+        $this->assertNull(session('board_notification_data'));
+    }
+
+    /**
+     * filterCreateData: 알림 필드 일부만 전송 시 미전송 필드는 false로 채웁니다.
+     */
+    public function test_filter_create_data_fills_missing_notification_fields_with_false(): void
+    {
+        $data = [
+            'name' => '홍길동',
+            'notify_post_complete' => true,
+            // notify_post_reply, notify_comment, notify_reply_comment 미전송
+        ];
+
+        $this->listener->filterCreateData($data);
+
+        $sessionData = session('board_notification_data');
+        $this->assertFalse($sessionData['notify_post_reply']);
+        $this->assertFalse($sessionData['notify_comment']);
+        $this->assertFalse($sessionData['notify_reply_comment']);
+    }
+
+    // ==========================================
+    // filterUpdateData
+    // ==========================================
+
+    /**
+     * filterUpdateData: 알림 필드를 즉시 DB에 저장하고 데이터에서 제거합니다.
+     */
+    public function test_filter_update_data_saves_notification_fields_immediately(): void
+    {
+        $user = $this->makeUser();
+        $data = [
+            'name' => '수정된 이름',
+            'notify_post_complete' => true,
+            'notify_post_reply' => true,
+        ];
+
+        $result = $this->listener->filterUpdateData($data, $user);
+
+        // 알림 필드 제거됨
+        $this->assertArrayNotHasKey('notify_post_complete', $result);
+        $this->assertArrayHasKey('name', $result);
+
+        // DB에 저장됨
+        $this->assertDatabaseHas('board_user_notification_settings', [
+            'user_id' => $user->id,
+            'notify_post_complete' => true,
+        ]);
+    }
+
+    /**
+     * filterUpdateData: 알림 필드 없고 기존 설정도 없으면 저장이 발생하지 않습니다.
+     */
+    public function test_filter_update_data_does_not_save_when_no_fields_and_no_existing(): void
+    {
+        $user = $this->makeUser();
+        $data = ['name' => '수정된 이름'];
+
+        $this->listener->filterUpdateData($data, $user);
+
+        $this->assertDatabaseMissing('board_user_notification_settings', ['user_id' => $user->id]);
+    }
+
+    /**
+     * filterUpdateData: 기존 설정이 있으면 미전송 알림 필드는 false로 갱신합니다.
+     */
+    public function test_filter_update_data_resets_missing_fields_to_false_when_existing(): void
+    {
+        $user = $this->makeUser();
+
+        // 기존 설정 생성
+        UserNotificationSetting::create([
+            'user_id' => $user->id,
+            'notify_post_complete' => true,
+            'notify_post_reply' => true,
+            'notify_comment' => true,
+            'notify_reply_comment' => true,
+        ]);
+
+        // notify_post_complete만 전송 (나머지 체크박스 해제)
+        $data = ['notify_post_complete' => true];
+        $this->listener->filterUpdateData($data, $user);
+
+        $this->assertDatabaseHas('board_user_notification_settings', [
+            'user_id' => $user->id,
+            'notify_post_complete' => true,
+            'notify_post_reply' => false,
+            'notify_comment' => false,
+            'notify_reply_comment' => false,
+        ]);
+    }
+
+    // ==========================================
+    // afterCreate
+    // ==========================================
+
+    /**
+     * afterCreate: 세션 데이터를 DB에 저장하고 세션을 삭제합니다.
+     */
+    public function test_after_create_saves_session_data_and_clears_session(): void
+    {
+        $user = $this->makeUser();
+        session(['board_notification_data' => [
+            'notify_post_complete' => true,
+            'notify_post_reply' => false,
+            'notify_comment' => true,
+            'notify_reply_comment' => false,
+        ]]);
+
+        $this->listener->afterCreate($user, []);
+
+        $this->assertDatabaseHas('board_user_notification_settings', [
+            'user_id' => $user->id,
+            'notify_post_complete' => true,
+        ]);
+        $this->assertNull(session('board_notification_data'), '세션이 삭제되어야 합니다.');
+    }
+
+    /**
+     * afterCreate: 세션이 비어있으면 DB 저장이 발생하지 않습니다.
+     */
+    public function test_after_create_does_not_save_when_session_empty(): void
+    {
+        $user = $this->makeUser();
+        session()->forget('board_notification_data');
+
+        $this->listener->afterCreate($user, []);
+
+        $this->assertDatabaseMissing('board_user_notification_settings', ['user_id' => $user->id]);
     }
 
     // ==========================================
@@ -98,12 +277,6 @@ class UserNotificationSettingsListenerTest extends ModuleTestCase
 
     /**
      * filterResourceData: 설정 레코드가 있으면 실제 값을 반환합니다.
-     *
-     * @scenario case=resource_filter
-     *
-     * @effects notification_settings_merged_into_user_resource
-     *
-     * @return void 반환값 없음
      */
     public function test_filter_resource_data_returns_actual_settings_when_exists(): void
     {
@@ -121,18 +294,11 @@ class UserNotificationSettingsListenerTest extends ModuleTestCase
         $this->assertTrue($result['notify_post_complete']);
         $this->assertFalse($result['notify_post_reply']);
         $this->assertTrue($result['notify_comment']);
-        $this->assertTrue($result['notify_reply_comment']);
         $this->assertArrayHasKey('name', $result, '기존 데이터 유지');
     }
 
     /**
      * filterResourceData: 설정 레코드가 없으면 모든 알림 필드를 false로 반환합니다.
-     *
-     * @scenario case=resource_filter
-     *
-     * @effects notification_settings_merged_into_user_resource
-     *
-     * @return void 반환값 없음
      */
     public function test_filter_resource_data_returns_false_defaults_when_no_settings(): void
     {

@@ -32,8 +32,8 @@ class CategoryResource extends BaseApiResource
             'icon' => 'folder', // SortableMenuList 컴포넌트용 아이콘
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
-            'created_at' => $this->formatDateTimeStringForUser($this->created_at),
-            'updated_at' => $this->formatDateTimeStringForUser($this->updated_at),
+            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
+            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
 
             // 관계
             'parent' => $this->whenLoaded('parent', function () {
@@ -52,7 +52,6 @@ class CategoryResource extends BaseApiResource
                         'size' => $image->file_size,
                         'size_formatted' => $this->formatFileSize($image->file_size),
                         'download_url' => $image->download_url,
-                        'preview_url' => $image->preview_url,
                         'order' => $image->sort_order,
                         'is_image' => str_starts_with($image->mime_type ?? '', 'image/'),
                         'alt_text' => $image->alt_text,

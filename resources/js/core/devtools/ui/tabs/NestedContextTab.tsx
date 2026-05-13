@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { G7DevToolsCore } from '../../G7DevToolsCore';
-import type { NestedContextTrackingInfo } from '../../types';
+import type { NestedContextTrackingInfo, NestedContextInfo } from '../../types';
 
 export interface NestedContextTabProps {
     devTools: G7DevToolsCore;

@@ -1,4 +1,0 @@
-{
-  "name": "CloudFront CDN",
-  "description": "公開画像のサムネイルを Amazon S3 に保存して CloudFront のアドレスで配信し、サムネイルが削除されると CDN キャッシュを自動で無効化します。"
-}

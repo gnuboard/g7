@@ -1,8 +1,0 @@
-<!-- 최근 본 상품 가로 줄 — 인기·신상품·관련 상품 줄과 같은 짜임이다. 넘기기는 ProductRail 컴포넌트가 맡는다. -->
-<partial description="최근 본 상품 섹션">
-  <product-rail data-type="composite" data-if="{{recentProducts.data &amp;&amp; recentProducts.data.length > 0}}" class="mb-12" title="$t:shop.recent_products" icon="clock" iconClassName="text-xl text-gray-700 dark:text-gray-300" prevLabel="$t:common.prev" nextLabel="$t:common.next" roleDescription="$t:shop.product_rail.roledescription">
-    <div data-each="product in {{recentProducts.data ?? []}}">
-      <product-card data-type="composite" product="{{product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
-    </div>
-  </product-rail>
-</partial>

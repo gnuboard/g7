@@ -1,4 +1,3 @@
-// e2e:allow 편집기 ComponentRegistry 등록맵에 SlotContainer 추가(편집기 IIFE 번들 포함 — 헤더 통화 슬롯 렌더). 편집기 캔버스 렌더는 Chrome MCP 라이브 실측 + Vitest 로 검증. 사용자 사이트 런타임 무변경.
 /**
  * sirsoft-basic 템플릿 Composite 컴포넌트 등록
  *
@@ -15,29 +14,12 @@ export type { NotificationCenterProps, NotificationItem } from './NotificationCe
 
 // 상품 관련 컴포넌트
 export { default as ProductCard } from './ProductCard';
-export { BrandMark } from './BrandMark';
-export type { BrandMarkProps, BrandMarkData } from './BrandMark';
 export { default as ImageGallery } from './ImageGallery';
 export { default as ProductImageViewer } from './ProductImageViewer';
 export { default as QuantitySelector } from './QuantitySelector';
-// 가로 상품 줄 컨테이너 — 자식 카드를 감싸 손가락 넘김·이전/다음 단추로 넘긴다
-export { ProductRail } from './ProductRail';
-export type { ProductRailProps } from './ProductRail';
-// 분류 칩 줄 컨테이너 — 자식 칩의 폭을 재서 한 줄·두 줄 배치를 정한다
-export { ChipRows } from './ChipRows';
-export type { ChipRowsProps } from './ChipRows';
-// 좁은 화면 하단 구매바 — 가격과 구매 단추를 화면 아래에 고정한다
-export { MobileBuyBar } from './MobileBuyBar';
-export type { MobileBuyBarProps } from './MobileBuyBar';
-// 좁은 화면 바텀시트 — 화면 레이아웃 안에 두는 대화 상자 컨테이너
-export { BottomSheet } from './BottomSheet';
-export type { BottomSheetProps } from './BottomSheet';
-
-// 회원 항목 입력칸 (가입, 내 정보, 추가 정보 입력 공용)
-export { default as MemberFieldInput } from './MemberFieldInput';
-export type { MemberFieldInputProps, MemberFieldContract } from './MemberFieldInput';
 
 // 게시판 관련 컴포넌트
+export { default as PostReactions } from './PostReactions';
 export { default as RichTextEditor } from './RichTextEditor';
 export { HtmlContent } from './HtmlContent';
 export { HtmlEditor } from './HtmlEditor';
@@ -48,6 +30,7 @@ export { ExpandableContent } from './ExpandableContent';
 // 공통 컴포넌트
 export { default as FileUploader } from './FileUploader';
 export { ConfirmDialog } from './ConfirmDialog';
+export { default as SocialLoginButtons } from './SocialLoginButtons';
 export { default as Toast } from './Toast';
 export { default as PageTransitionIndicator } from './PageTransitionIndicator';
 export { default as PageTransitionBlur } from './PageTransitionBlur';
@@ -56,18 +39,11 @@ export { default as PageLoading } from './PageLoading';
 export { default as ThemeToggle } from './ThemeToggle';
 export { Pagination } from './Pagination';
 export { SearchBar } from './SearchBar';
-// 최근 검색어 펼침 목록을 가진 검색창 — 머리글·모바일 서랍·통합검색 화면 (엔진 G7Core.useSearchHistory)
-export { RecentSearchCombobox } from './RecentSearchCombobox';
-export type { RecentSearchComboboxProps, RecentSearchItem } from './RecentSearchCombobox';
 export { Avatar } from './Avatar';
-// 방문자 카운터 — 홈 하단 오늘·어제·최대·전체 (#682)
-export { VisitorCounter } from './VisitorCounter';
-export type { VisitorCounterProps, VisitorCounterLabels } from './VisitorCounter';
 export { AvatarUploader } from './AvatarUploader';
 export { UserInfo } from './UserInfo';
 export { Modal } from './Modal';
 export { TabNavigation } from './TabNavigation';
-export { SlotContainer } from './SlotContainer';
 // AddressSearch는 별도 컴포넌트가 아닌 sirsoft-daum_postcode 플러그인의 extension_point 방식 사용
 
 /**
@@ -89,28 +65,16 @@ export const compositeComponents = {
   Header: () => import('./Header'),
   Footer: () => import('./Footer'),
   MobileNav: () => import('./MobileNav'),
-  // 슬롯 컨테이너 — 모듈 주입 UI(헤더 통화 셀렉터 등)를 떙겨 렌더. 등록맵 누락 시
-  // 편집기 캔버스 IIFE 번들에 포함되지 않아 "Component not found in bundle" 로 렌더 실패한다
-  // (운영 사이트는 별도 등록 경로라 정상이나 편집기 미리보기에서만 슬롯이 통째로 비는 회귀).
-  SlotContainer: () => import('./SlotContainer'),
   NotificationCenter: () => import('./NotificationCenter'),
 
   // 상품
   ProductCard: () => import('./ProductCard'),
-  // 결제 브랜드 마크(배지/SVG) — 카탈로그 _cached_brand_mark 를 데이터 기반 렌더
-  BrandMark: () => import('./BrandMark'),
   ImageGallery: () => import('./ImageGallery'),
   ProductImageViewer: () => import('./ProductImageViewer'),
   QuantitySelector: () => import('./QuantitySelector'),
-  ProductRail: () => import('./ProductRail'),
-  ChipRows: () => import('./ChipRows'),
-  MobileBuyBar: () => import('./MobileBuyBar'),
-  BottomSheet: () => import('./BottomSheet'),
-
-  // 회원 항목
-  MemberFieldInput: () => import('./MemberFieldInput'),
 
   // 게시판
+  PostReactions: () => import('./PostReactions'),
   RichTextEditor: () => import('./RichTextEditor'),
   HtmlContent: () => import('./HtmlContent'),
   HtmlEditor: () => import('./HtmlEditor'),
@@ -121,6 +85,7 @@ export const compositeComponents = {
   // 공통
   FileUploader: () => import('./FileUploader'),
   ConfirmDialog: () => import('./ConfirmDialog'),
+  SocialLoginButtons: () => import('./SocialLoginButtons'),
   Toast: () => import('./Toast'),
   PageTransitionIndicator: () => import('./PageTransitionIndicator'),
   PageTransitionBlur: () => import('./PageTransitionBlur'),
@@ -129,11 +94,7 @@ export const compositeComponents = {
   ThemeToggle: () => import('./ThemeToggle'),
   Pagination: () => import('./Pagination'),
   SearchBar: () => import('./SearchBar'),
-  // 최근 검색어 검색창 — 등록맵에 없으면 편집기 캔버스 번들에서 빠진다
-  RecentSearchCombobox: () => import('./RecentSearchCombobox'),
   Avatar: () => import('./Avatar'),
-  // 방문자 카운터 (#682) — 등록맵에 없으면 편집기 캔버스 번들에서 빠진다
-  VisitorCounter: () => import('./VisitorCounter'),
   AvatarUploader: () => import('./AvatarUploader'),
   UserInfo: () => import('./UserInfo'),
   Modal: () => import('./Modal'),

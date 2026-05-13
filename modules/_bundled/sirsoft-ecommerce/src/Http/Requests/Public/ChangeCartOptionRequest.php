@@ -14,8 +14,6 @@ class ChangeCartOptionRequest extends FormRequest
 {
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
-     *
-     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -25,22 +23,13 @@ class ChangeCartOptionRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, mixed> 검증 규칙
+     * @return array
      */
     public function rules(): array
     {
-        $maxQuantity = (int) config('sirsoft-ecommerce.cart.max_quantity', 99);
-
         $rules = [
             'product_option_id' => ['required', 'integer', Rule::exists(ProductOption::class, 'id')],
-            // 장바구니 수량 상한은 config('sirsoft-ecommerce.cart.max_quantity') 가 SSoT
-            'quantity' => ['required', 'integer', 'min:1', 'max:'.$maxQuantity],
-            // 추가옵션 재선택 (미전달 시 기존 선택 유지 — 서버에서 value_id 검증/가격 재조회)
-            'additional_option_selections' => 'nullable|array',
-            'additional_option_selections.*.additional_option_id' => 'required_with:additional_option_selections|integer',
-            'additional_option_selections.*.value_id' => 'required_with:additional_option_selections|integer',
-            // 직접입력 텍스트 (선택지의 allow_custom_text 여부·필수성은 서버에서 재검증)
-            'additional_option_selections.*.custom_text' => 'nullable|string|max:255',
+            'quantity' => 'required|integer|min:1|max:9999',
         ];
 
         return HookManager::applyFilters('sirsoft-ecommerce.cart.change_option_validation_rules', $rules, $this);
@@ -49,7 +38,7 @@ class ChangeCartOptionRequest extends FormRequest
     /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array<string, string> 검증 메시지
+     * @return array
      */
     public function messages(): array
     {

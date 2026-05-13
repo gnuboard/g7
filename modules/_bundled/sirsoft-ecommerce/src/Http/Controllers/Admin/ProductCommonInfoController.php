@@ -6,8 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Ecommerce\Exceptions\ProductCommonInfoOperationException;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\IndexProductCommonInfoRequest;
+use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreProductCommonInfoRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateProductCommonInfoRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductCommonInfoCollection;
@@ -28,15 +27,25 @@ class ProductCommonInfoController extends AdminBaseController
     /**
      * 공통정보 목록을 조회합니다.
      *
-     * @param  IndexProductCommonInfoRequest  $request  요청 데이터
+     * @param Request $request 요청 데이터
      * @return JsonResponse 공통정보 목록 JSON 응답
      */
-    public function index(IndexProductCommonInfoRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $filters = $request->filters();
+        $filters = [
+            'search' => $request->get('search'),
+            'is_active' => $request->boolean('active_only', false) ? true : null,
+            'is_default' => $request->has('default_only') && $request->boolean('default_only') ? true : null,
+        ];
+
+        // null 값 제거
+        $filters = array_filter($filters, fn ($v) => $v !== null);
+
+        // 페이지네이션 파라미터
+        $perPage = (int) $request->get('per_page', 20);
 
         // per_page가 0 이하이거나 all이면 전체 조회
-        if ($request->wantsAll()) {
+        if ($perPage <= 0 || $request->get('per_page') === 'all') {
             $commonInfos = $this->commonInfoService->getAllCommonInfos($filters);
 
             return ResponseHelper::moduleSuccess(
@@ -47,7 +56,7 @@ class ProductCommonInfoController extends AdminBaseController
         }
 
         // 페이지네이션 조회
-        $commonInfos = $this->commonInfoService->getPaginatedCommonInfos($filters, $request->perPage());
+        $commonInfos = $this->commonInfoService->getPaginatedCommonInfos($filters, $perPage);
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',
@@ -59,7 +68,7 @@ class ProductCommonInfoController extends AdminBaseController
     /**
      * 공통정보 상세를 조회합니다.
      *
-     * @param  int  $id  공통정보 ID
+     * @param int $id 공통정보 ID
      * @return JsonResponse 공통정보 상세 JSON 응답
      */
     public function show(int $id): JsonResponse
@@ -84,7 +93,7 @@ class ProductCommonInfoController extends AdminBaseController
     /**
      * 공통정보를 생성합니다.
      *
-     * @param  StoreProductCommonInfoRequest  $request  생성 요청
+     * @param StoreProductCommonInfoRequest $request 생성 요청
      * @return JsonResponse 생성된 공통정보 JSON 응답
      */
     public function store(StoreProductCommonInfoRequest $request): JsonResponse
@@ -98,19 +107,11 @@ class ProductCommonInfoController extends AdminBaseController
                 new ProductCommonInfoResource($commonInfo),
                 201
             );
-        } catch (ProductCommonInfoOperationException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -118,8 +119,8 @@ class ProductCommonInfoController extends AdminBaseController
     /**
      * 공통정보를 수정합니다.
      *
-     * @param  UpdateProductCommonInfoRequest  $request  수정 요청
-     * @param  int  $id  공통정보 ID
+     * @param UpdateProductCommonInfoRequest $request 수정 요청
+     * @param int $id 공통정보 ID
      * @return JsonResponse 수정된 공통정보 JSON 응답
      */
     public function update(UpdateProductCommonInfoRequest $request, int $id): JsonResponse
@@ -132,19 +133,11 @@ class ProductCommonInfoController extends AdminBaseController
                 'messages.common_infos.updated',
                 new ProductCommonInfoResource($commonInfo)
             );
-        } catch (ProductCommonInfoOperationException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -152,7 +145,7 @@ class ProductCommonInfoController extends AdminBaseController
     /**
      * 공통정보를 삭제합니다.
      *
-     * @param  int  $id  공통정보 ID
+     * @param int $id 공통정보 ID
      * @return JsonResponse 삭제 결과 JSON 응답
      */
     public function destroy(int $id): JsonResponse
@@ -165,19 +158,11 @@ class ProductCommonInfoController extends AdminBaseController
                 'messages.common_infos.deleted',
                 $result
             );
-        } catch (ProductCommonInfoOperationException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -185,7 +170,7 @@ class ProductCommonInfoController extends AdminBaseController
     /**
      * 공통정보 사용 여부를 토글합니다.
      *
-     * @param  int  $id  공통정보 ID
+     * @param int $id 공통정보 ID
      * @return JsonResponse 토글된 공통정보 JSON 응답
      */
     public function toggleActive(int $id): JsonResponse
@@ -200,19 +185,11 @@ class ProductCommonInfoController extends AdminBaseController
                     : 'messages.common_infos.deactivated',
                 new ProductCommonInfoResource($commonInfo)
             );
-        } catch (ProductCommonInfoOperationException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }

@@ -109,7 +109,7 @@ WebSocket은 두 가지 endpoint를 가집니다:
 
 | Endpoint | 용도 | 사용 주체 | 예시 |
 |----------|------|---------|------|
-| 클라이언트 (외부) | 브라우저가 WebSocket 접속 | 브라우저 → Reverb (직접 또는 리버스 프록시 경유) | `example.com:443` (https) |
+| 클라이언트 (외부) | 브라우저가 WebSocket 접속 | 브라우저 → Reverb (직접 또는 리버스 프록시 경유) | `g7.dev:443` (https) |
 | 서버 (내부) | 백엔드가 broadcast HTTP API 호출 | Pusher SDK → Reverb (Laravel queue worker 내부) | `127.0.0.1:8080` (http) |
 
 **환경설정 → 드라이버 → 웹소켓**에서 두 endpoint를 분리 입력할 수 있습니다:
@@ -180,22 +180,6 @@ HookManager::broadcast("core.user.notifications.{$user->uuid}", 'notification.re
 브로드캐스팅은 부가 기능이므로 실패해도 메인 작업(사용자 업데이트, 주문 처리, 알림 발송 등)을 중단시키지 않습니다. 개별 리스너에서 try-catch를 추가할 필요가 없습니다.
 
 > **중요**: 웹소켓 OFF 시 `broadcasting.default`가 `'null'`로 강제되는 동작은 `.env`의 `BROADCAST_CONNECTION` 값을 무시하고 적용됩니다. 따라서 운영자가 환경설정에서 OFF한 경우, `.env`에 `REVERB_HOST=localhost` 등이 남아 있어도 broadcast 시도가 발생하지 않습니다. 알림 시스템(mail/database 채널)은 이 설정과 독립적으로 정상 동작합니다.
->
-> 예외: `.env` 우선 모드(`G7_ENV_PRIORITY=true`)를 켜고 `.env` 에 `BROADCAST_CONNECTION` 을 명시한 설치에서는 이 강제가 적용되지 않습니다 — 웹소켓 계층 전체의 권위가 `.env` 로 넘어가고 관리자 토글이 그 설치에서 무력화됩니다. 자세한 규약은 [admin-settings-access.md](admin-settings-access.md) "env 우선 모드" 를 참조하세요.
-
-#### 웹소켓 토글은 전 계층 SSoT (송신 · 프론트연결 · 채널인증)
-
-웹소켓 사용 OFF 는 **송신 계층만** 막는 것이 아니라 다음 세 계층을 모두 차단합니다 (`websocket_enabled` 가 단일 SSoT):
-
-| 계층 | OFF 시 동작 | 구현 |
-|------|------------|------|
-| ① 백엔드 송신 | `broadcasting.default='null'` → `HookManager::broadcast()` 즉시 return | `applyWebsocketConfig()` |
-| ② 프론트 연결 | `broadcasting.connections.reverb.key` 를 빈 문자열로 무력화 → Blade `@if(reverb.key)` false → 브라우저 WebSocket 미연결 | `applyWebsocketConfig()` OFF 분기 |
-| ③ 채널 인증 | `POST /api/broadcasting/auth` 가 `broadcasting.default==='null'` 이면 403 | `routes/api.php` 가드 |
-
-따라서 `.env` 에 `REVERB_APP_KEY` 가 살아 있고 Reverb 서버가 운영자 OS 레벨로 기동 중이어도, 토글 OFF 면 프론트가 연결을 시도하지 않고 직접 연결 시도도 채널 인증 단계에서 거부됩니다. `.env` 는 토글 ON 일 때만 자격증명·endpoint 소스로 사용됩니다.
-
-단, `.env` 우선 모드를 켜고 `BROADCAST_CONNECTION` 을 명시한 설치는 예외입니다. 그 설치에서는 마스터 토글이 잠겨 위 세 계층 모두 `.env`/config 기본값을 따르며, 관리자 화면의 토글은 잠금 표시와 함께 편집 불가가 됩니다.
 
 ### 채널 타입
 
@@ -215,27 +199,16 @@ HookManager::broadcast("core.user.notifications.{$user->uuid}", 'notification.re
 
 | 소스 | 패턴 | 예시 |
 |------|------|------|
-| 코어 | `core.*` | `core.admin.dashboard`, `core.admin.seo.sitemap`, `core.user.notifications.{id}` |
+| 코어 | `core.*` | `core.admin.dashboard`, `core.user.notifications.{id}` |
 | 모듈 | `module.{identifier}.*` | `module.sirsoft-ecommerce.orders.{id}` |
 | 플러그인 | `plugin.{identifier}.*` | `plugin.sirsoft-payment.status.{id}` |
-
-### 코어 방송 채널 목록
-
-| 채널 | 이벤트 | 인증 권한 | 페이로드 |
-|------|--------|----------|----------|
-| `core.admin.dashboard` | `dashboard.stats.updated` | `core.dashboard.read` | `{type, data}` |
-| `core.admin.seo.sitemap` | `sitemap.progress.updated` | `core.settings.read` | `{realtime_enabled, progress}` (상태 API `data` 와 동형) |
-
-> `core.admin.seo.sitemap` 은 Sitemap 생성 진행상황을 실시간 전달합니다. Reverb OFF 면 방송이 자동 skip 되고 프론트가 상태 API 폴링으로 폴백합니다. payload 가 상태 API 응답 `data` 와 동형이라 websocket 데이터소스 `target_source` 교체 후에도 UI 바인딩이 유지됩니다.
 
 ---
 
 ## 모듈/플러그인 채널 등록
 
 모듈/플러그인에서 WebSocket 채널이 필요한 경우 `getChannels()` 메서드를 오버라이드합니다.
-선언한 채널은 **활성** 확장일 때 채널 인증 요청(`/api/broadcasting/auth`)을 처리하면서 `Broadcast::channel()` 에 등록됩니다.
-
-> **등록 시점 (7.1.5)**: 채널 인가 콜백(코어 `routes/channels.php` + 활성 확장 `getChannels()`)은 부팅마다 등록하지 않고, 인증 라우트가 `Broadcast::auth()` 직전에 `BroadcastChannelRegistrar::ensureRegistered()` 로 브로드캐스터당 한 번 등록합니다. 부팅마다 `Broadcast::channel()` 을 부르면 그때마다 드라이버(reverb 면 Pusher 클라이언트)가 만들어졌기 때문입니다. 라우트 처리 안에서 부르므로 라우트 캐시와 무관하며, 웹소켓을 끈 사이트(`broadcasting.default === 'null'`)는 등록하지 않습니다. 인가 콜백을 직접 읽어야 하는 코드(시험 등)는 먼저 `ensureRegistered()` 를 부릅니다.
+`ModuleManager`/`PluginManager`가 로드 시 자동으로 `Broadcast::channel()`에 등록합니다.
 
 ### 모듈 예시
 
@@ -327,11 +300,6 @@ Broadcast::channel('core.user.notifications.{uuid}', function ($user, $uuid) {
 // 관리자 대시보드 채널 - 권한 체크
 Broadcast::channel('core.admin.dashboard', function ($user) {
     return $user->hasPermission('core.dashboard.read');
-});
-
-// 관리자 Sitemap 생성 진행상황 채널 - SEO 설정 읽기 권한
-Broadcast::channel('core.admin.seo.sitemap', function ($user) {
-    return $user->hasPermission('core.settings.read');
 });
 
 // 모듈 리소스 채널 (모듈의 getChannels()로 자동 등록 — 참고용 예시)
@@ -585,43 +553,14 @@ redirect_stderr=true
 stdout_logfile=/var/log/reverb.log
 
 [program:queue-worker]
-; 환경설정 → 드라이버 → 「큐 워커」에 등록한 연결·큐 그대로 (화면이 명령을 보여 준다)
-command=php /var/www/g7/artisan queue:work database --queue=default --sleep=3 --tries=3 --max-time=3600
+command=php /var/www/g7/artisan queue:work --sleep=3 --tries=3
 directory=/var/www/g7
 user=www-data
 autostart=true
 autorestart=true
 redirect_stderr=true
 stdout_logfile=/var/log/queue-worker.log
-
-[program:queue-worker-long]
-; 긴 작업 전용(등록 시) — 통계 재집계·익명화·개인정보 직권 실행. 반드시 *-long 연결 이름으로 띄운다
-; (같은 jobs 표라 `database --queue=long` 으로 띄우면 retry_after 90 이 적용돼 실행 중인 잡을 다시 집는다)
-command=php /var/www/g7/artisan queue:work database-long --queue=long --sleep=3 --tries=3 --timeout=3600 --max-time=7200
-directory=/var/www/g7
-user=www-data
-numprocs=1
-stopwaitsecs=3660
-autostart=true
-autorestart=true
-redirect_stderr=true
-stdout_logfile=/var/log/queue-worker-long.log
-
-[program:queue-worker-sitemap]
-; 사이트맵 생성 전용 큐 — 등록과 무관하게 큐 드라이버 연결의 sitemap 큐로 잡이 간다(「큐 워커」 화면에 명령이 나온다).
-; 동시 중복 생성을 막으려 워커는 1개만 둔다
-command=php /var/www/g7/artisan queue:work database --queue=sitemap --sleep=3 --tries=3 --max-time=3600 --timeout=1800
-directory=/var/www/g7
-user=www-data
-numprocs=1
-stopwaitsecs=1860
-autostart=true
-autorestart=true
-redirect_stderr=true
-stdout_logfile=/var/log/queue-worker-sitemap.log
 ```
-
-드라이버 탭을 저장하면 서버가 `queue:restart` 를 보낸다 — 워커는 지금 잡을 마치고 종료하며 Supervisor 가 새 설정으로 다시 띄운다. 큐 드라이버가 `sync` 면 워커가 필요 없다.
 
 ---
 

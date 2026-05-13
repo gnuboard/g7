@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Board\Models;
 
 use App\Models\Concerns\HasUserOverrides;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 /**
  * 게시판 유형 모델.
@@ -13,8 +12,8 @@ use Illuminate\Support\Carbon;
  * @property string $slug
  * @property array $name
  * @property array|null $user_overrides
- * @property Carbon $created_at
- * @property Carbon $updated_at
+ * @property \Illuminate\Support\Carbon $created_at
+ * @property \Illuminate\Support\Carbon $updated_at
  *
  * @since 7.0.0-beta.2 (HasUserOverrides 적용)
  */
@@ -49,11 +48,6 @@ class BoardType extends Model
         'user_overrides',
     ];
 
-    /**
-     * 속성 캐스팅 규칙을 반환합니다.
-     *
-     * @return array<string, string> 컬럼별 캐스트 타입 (name, user_overrides 는 배열)
-     */
     protected function casts(): array
     {
         return [

@@ -43,29 +43,25 @@ describe('IconButton', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  // label 미지정 시 정사각 고정 크기 (w-N h-N) 가 적용된다. label 지정 시에는 padding 기반.
-  it('size="sm" (label 없음) 스타일이 적용됨', () => {
+  it('size="sm" 스타일이 적용됨', () => {
     render(<IconButton iconName={IconName.Plus} size="sm" />);
 
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('w-8');
-    expect(button).toHaveClass('h-8');
+    expect(button).toHaveClass('p-1.5');
   });
 
-  it('size="md" (label 없음) 스타일이 적용됨', () => {
+  it('size="md" 스타일이 적용됨', () => {
     render(<IconButton iconName={IconName.Plus} size="md" />);
 
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('w-10');
-    expect(button).toHaveClass('h-10');
+    expect(button).toHaveClass('p-2');
   });
 
-  it('size="lg" (label 없음) 스타일이 적용됨', () => {
+  it('size="lg" 스타일이 적용됨', () => {
     render(<IconButton iconName={IconName.Plus} size="lg" />);
 
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('w-12');
-    expect(button).toHaveClass('h-12');
+    expect(button).toHaveClass('p-2.5');
   });
 
   it('variant="primary" 스타일이 적용됨', () => {

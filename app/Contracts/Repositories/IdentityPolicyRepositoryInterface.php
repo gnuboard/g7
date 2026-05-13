@@ -3,7 +3,6 @@
 namespace App\Contracts\Repositories;
 
 use App\Models\IdentityPolicy;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 /**
@@ -20,26 +19,15 @@ interface IdentityPolicyRepositoryInterface
      * key 로 조회합니다.
      *
      * @param  string  $key  정책 키 (예: core.auth.signup_before_submit)
-     * @return IdentityPolicy|null 정책 또는 null
+     * @return IdentityPolicy|null
      */
     public function findByKey(string $key): ?IdentityPolicy;
-
-    /**
-     * key + source_type 조합으로 정책 존재 여부를 확인합니다.
-     *
-     * 운영자 UI 의 scope_value 매핑 검증 등 "특정 출처 정책" 만 허용하는 검증 경로에서 사용.
-     *
-     * @param  string  $key  정책 키
-     * @param  string  $sourceType  'core' | 'module' | 'plugin' | 'admin'
-     * @return bool 존재하면 true
-     */
-    public function existsByKeyAndSourceType(string $key, string $sourceType): bool;
 
     /**
      * id 로 조회합니다.
      *
      * @param  int  $id  정책 PK
-     * @return IdentityPolicy|null 정책 또는 null
+     * @return IdentityPolicy|null
      */
     public function findById(int $id): ?IdentityPolicy;
 
@@ -100,26 +88,13 @@ interface IdentityPolicyRepositoryInterface
     public function cleanupStale(string $sourceType, string $sourceIdentifier, array $currentKeys): int;
 
     /**
-     * source_type+source_identifier 에 속하면서 currentKeys 에 없는 stale 정책을 조회합니다.
-     *
-     * bulk delete(cleanupStale) 와 달리 모델 인스턴스를 반환하므로, 호출 측이 per-model
-     * delete()(deleted 이벤트 발화 — 라우트 스코프 캐시 flush)와 로깅을 수행할 수 있다.
-     *
-     * @param  string  $sourceType  'core' | 'module' | 'plugin' | 'admin'
-     * @param  string  $sourceIdentifier  vendor 식별자
-     * @param  array<int, string>  $currentKeys  현재 선언된 key 목록
-     * @return Collection<int, IdentityPolicy> stale 정책 목록
-     */
-    public function findStale(string $sourceType, string $sourceIdentifier, array $currentKeys): Collection;
-
-    /**
      * 특정 source(확장) 가 등록한 정책 개수를 반환합니다.
      *
      * 모듈/플러그인 uninstall 모달의 "삭제될 데이터" 표시에 사용.
      *
      * @param  string  $sourceType  'core' | 'module' | 'plugin' | 'admin'
      * @param  string  $sourceIdentifier  확장 식별자
-     * @return int 정책 개수
+     * @return int
      */
     public function countBySource(string $sourceType, string $sourceIdentifier): int;
 
@@ -128,7 +103,7 @@ interface IdentityPolicyRepositoryInterface
      *
      * @param  array<string, mixed>  $filters  필터 조건
      * @param  int  $perPage  페이지 크기
-     * @return LengthAwarePaginator
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function search(array $filters, int $perPage = 20);
 
@@ -151,16 +126,6 @@ interface IdentityPolicyRepositoryInterface
      * @return array<string, Collection<int, IdentityPolicy>> route name → 매칭 정책 컬렉션
      */
     public function getRouteScopeIndex(): array;
-
-    /**
-     * hook scope 활성 정책의 훅 이름 인덱스를 캐시 기반으로 반환합니다.
-     *
-     * route 인덱스와 같은 캐시 태그·무효화(IdentityPolicy saved/deleted, 확장 활성화·비활성화)를 쓴다. 훅이 발화할 때마다
-     * 정책 표를 조회하지 않고 「이 훅에 켜진 정책이 있는지」를 알 때 쓴다. 비활성 확장이 선언한 정책은 빠진다.
-     *
-     * @return array<string, Collection<int, IdentityPolicy>> hook name → 매칭 정책 컬렉션
-     */
-    public function getHookScopeIndex(): array;
 
     /**
      * scope='hook' 활성 정책의 target 목록(중복 제거)을 반환합니다.

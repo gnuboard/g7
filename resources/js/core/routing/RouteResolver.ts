@@ -1,6 +1,5 @@
 import { Router, RouteMatch } from './Router';
 import { createLogger } from '../utils/Logger';
-import { stripBasePrefix, withBasePrefix } from '../support/assetUrl';
 
 const logger = createLogger('RouteResolver');
 
@@ -67,9 +66,7 @@ export class RouteResolver {
    * 리다이렉트 라우트인 경우 자동으로 리다이렉트합니다.
    */
   resolve(): void {
-    // 라우트 패턴은 접두사 없이 등록된다 — 하위 폴더 배치의 주소에서 마운트
-    // 접두사를 벗겨야 대조가 성립한다 (형제 `Router.navigateToCurrentPath`).
-    const pathname = stripBasePrefix(window.location.pathname);
+    const pathname = window.location.pathname;
     const match = this.router.match(pathname);
 
     // 리다이렉트 라우트인 경우 처리
@@ -91,9 +88,7 @@ export class RouteResolver {
    * @param state - history state 객체 (선택사항)
    */
   navigate(path: string, state?: unknown): void {
-    // 히스토리에 싣는 값은 브라우저가 보는 주소이므로 접두사를 붙인다.
-    // 이어지는 `resolve()` 가 그 값을 다시 벗겨 패턴과 대조한다.
-    window.history.pushState(state ?? null, '', withBasePrefix(path));
+    window.history.pushState(state ?? null, '', path);
     this.resolve();
   }
 

@@ -11,25 +11,18 @@
  * @module composite/FileUploader
  */
 
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useImperativeHandle, useMemo } from 'react';
 
 import { Div } from '../../basic/Div';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { ImageGallery, GalleryImage } from '../ImageGallery';
-import { attachmentThumbUrl } from '../../../support/thumbnail';
 
 import { FileUploaderProvider } from './FileUploaderContext';
-import { useFileUploader, directZoomSource } from './useFileUploader';
+import { useFileUploader } from './useFileUploader';
 import { FileDropZone } from './FileDropZone';
 import { FileList } from './FileList';
-import { useFocusRecovery } from './useFocusRecovery';
 import type { FileUploaderProps, FileUploaderRef, Attachment, PendingFile } from './types';
-import { t, resolveApiEndpoints } from './utils';
-
-// 생략된 배열 속성의 기본값 — 렌더마다 새 배열을 만들면 그 값을 의존성으로 쓰는 동기화 effect·콜백이
-// 렌더마다 다시 돌아 상태 갱신이 끝없이 이어진다(7.1.0). 얼려 두어 공유 상수가 바뀌지 않게 한다.
-const EMPTY_FILES = Object.freeze([]) as unknown as Attachment[];
-const EMPTY_ROLE_IDS = Object.freeze([]) as unknown as number[];
+import { t } from './utils';
 
 // ========== Main Component ==========
 
@@ -42,20 +35,18 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       collection = 'default',
       maxFiles = 10,
       maxSize = 10,
-      // 기본은 고른 순서대로 하나씩 — 서버가 도착 순서로 첨부 번호를 매기면 동시 업로드는 먼저 끝난 파일이 앞에 선다
-      maxConcurrentUploads = 1,
+      maxConcurrentUploads = 3,
       accept,
       imageCompression: compressionOptions,
-      roleIds = EMPTY_ROLE_IDS,
+      roleIds = [],
       autoUpload = true,
       onFilesChange,
       onUploadComplete,
       onUploadError,
       onRemove,
       onReorder,
-      initialFiles = EMPTY_FILES,
+      initialFiles = [],
       disabled = false,
-      size = 'md',
       className = '',
       confirmBeforeRemove = false,
       confirmRemoveTitle,
@@ -65,13 +56,15 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       enablePrimarySelection = false,
       primaryFileId,
       onPrimaryChange,
-      id,
-      editorAttrs,
     },
     ref
   ) => {
-    // API 엔드포인트 기본값 설정 — 정렬 주소는 `reorder` 키가 있으면 그 값(`null`·빈 문자열이면 정렬 없음), 없을 때만 기본값
-    const endpoints = resolveApiEndpoints(apiEndpoints);
+    // API 엔드포인트 기본값 설정
+    const endpoints = {
+      upload: apiEndpoints?.upload ?? '/api/admin/attachments',
+      delete: apiEndpoints?.delete ?? '/api/admin/attachments/:id',
+      reorder: apiEndpoints?.reorder ?? '/api/admin/attachments/reorder',
+    };
 
     // 핵심 로직 훅 사용
     const uploader = useFileUploader({
@@ -96,10 +89,6 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       confirmBeforeRemove,
       uploadParams,
     });
-
-    // 항목을 지우거나 파일을 고른 뒤 초점을 쥔 요소가 사라지면 가까운 자리로 초점을 돌린다(7.1.0 P-6)
-    const rootRef = useRef<HTMLDivElement>(null);
-    useFocusRecovery(rootRef);
 
     // 컴포넌트 외부에서 호출 가능한 메서드 노출
     useImperativeHandle(ref, () => ({
@@ -126,15 +115,8 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
         } else {
           // 기존 첨부파일은 인증된 URL 또는 다운로드 URL 사용
           const cachedUrl = uploader.authenticatedImageUrls.get(attachmentItem.id);
-          // 썸네일로 그리는 첨부는 업로더가 blob 을 받지 않을 수 있다. 확대 보기는 업로더가 받아 둔 blob → 미리보기 주소 순이고,
-          // 둘 다 없으면(다운로드 주소만 있는 권한 첨부) 확대 보기를 열 때 업로더가 받는 blob 을 기다린다 — 인증 없는
-          // 다운로드 주소를 열면 권한 첨부가 깨진다.
-          const thumbnailDrawn = Boolean(attachmentThumbUrl(attachmentItem, 'sm'));
-          const src = thumbnailDrawn
-            ? (cachedUrl || directZoomSource(attachmentItem) || '')
-            : (cachedUrl || attachmentItem.download_url);
           return {
-            src,
+            src: cachedUrl || attachmentItem.download_url,
             downloadUrl: attachmentItem.download_url,
             filename: attachmentItem.original_filename,
             title: attachmentItem.original_filename,
@@ -195,12 +177,11 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
 
       // 인증된 이미지 URL 캐시
       authenticatedImageUrls: uploader.authenticatedImageUrls,
-      requestAuthenticatedImage: uploader.requestAuthenticatedImage,
     }), [uploader, maxFiles, maxSize, accept, endpoints, confirmBeforeRemove]);
 
     return (
       <FileUploaderProvider value={contextValue}>
-        <Div ref={rootRef} id={id} className={className} {...editorAttrs}>
+        <Div className={className}>
           {/* 드롭존 + 파일 목록 통합 영역 */}
           <FileDropZone
             isDragOver={uploader.isDragOver}
@@ -212,7 +193,6 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
             maxFiles={maxFiles}
             maxSize={maxSize}
             disabled={disabled}
-            size={size}
           >
             {/* 파일이 있을 때만 FileList 렌더링 */}
             {uploader.hasFiles && (
@@ -233,7 +213,6 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
                 primaryFileId={primaryFileId}
                 onPrimaryChange={onPrimaryChange}
                 disabled={disabled}
-                size={size}
               />
             )}
           </FileDropZone>

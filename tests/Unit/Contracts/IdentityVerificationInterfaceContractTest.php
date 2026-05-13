@@ -24,7 +24,6 @@ class IdentityVerificationInterfaceContractTest extends TestCase
             'getId',
             'getLabel',
             'getChannels',
-            'getChannelLabels',
             'getRenderHint',
             'supportsPurpose',
             'isAvailable',
@@ -46,8 +45,6 @@ class IdentityVerificationInterfaceContractTest extends TestCase
         $this->assertIsString($provider->getId());
         $this->assertIsString($provider->getLabel());
         $this->assertIsArray($provider->getChannels());
-        $this->assertIsArray($provider->getChannelLabels());
-        $this->assertArrayHasKey('email', $provider->getChannelLabels());
         $this->assertIsString($provider->getRenderHint());
         $this->assertIsBool($provider->supportsPurpose('signup'));
         $this->assertIsBool($provider->isAvailable());

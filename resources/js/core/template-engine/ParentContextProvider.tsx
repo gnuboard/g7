@@ -149,8 +149,9 @@ export function useParentContext(): ParentContextState | null {
  * @returns 부모 데이터 컨텍스트 또는 undefined
  */
 export function useParentDataContext(): Record<string, any> | undefined {
-  // useParentContext 가 문맥을 구독하므로 version 이 바뀌면 이 훅을 쓰는 컴포넌트가 다시 그려진다
   const context = useParentContext();
+  // version을 읽어서 변경 시 리렌더링되도록 함
+  const _version = context?.version;
   return context?.getParentDataContext();
 }
 

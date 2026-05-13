@@ -4,25 +4,11 @@ namespace App\Services;
 
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
-use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
-use App\Contracts\Repositories\LanguagePackRepositoryInterface;
-use App\Contracts\Repositories\NotificationLogRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
-use App\DisplayName\DisplayNameAreaRegistry;
-use App\DisplayName\DisplayNameResolver;
-use App\Enums\PermissionType;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
-use App\Models\NotificationLog;
-use App\Models\User;
-use App\Support\ExecutionEnvironment;
-use App\Support\SiteUrl;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 /**
  * 대시보드 서비스
@@ -31,25 +17,11 @@ use Illuminate\Support\Str;
  */
 class DashboardService
 {
-    /**
-     * @param  UserRepositoryInterface  $userRepository  회원 저장소
-     * @param  ActivityLogRepositoryInterface  $activityLogRepository  활동 로그 저장소
-     * @param  ModuleManagerInterface  $moduleManager  모듈 관리자
-     * @param  PluginManagerInterface  $pluginManager  플러그인 관리자
-     * @param  NotificationLogRepositoryInterface  $notificationLogRepository  알림 발송 이력 저장소
-     * @param  TemplateManagerInterface  $templateManager  템플릿 관리자
-     * @param  LanguagePackRepositoryInterface  $languagePackRepository  언어팩 저장소
-     * @param  LanguagePackService  $languagePackService  언어팩 서비스
-     */
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private ActivityLogRepositoryInterface $activityLogRepository,
         private ModuleManagerInterface $moduleManager,
-        private PluginManagerInterface $pluginManager,
-        private NotificationLogRepositoryInterface $notificationLogRepository,
-        private TemplateManagerInterface $templateManager,
-        private LanguagePackRepositoryInterface $languagePackRepository,
-        private LanguagePackService $languagePackService
+        private PluginManagerInterface $pluginManager
     ) {}
 
     /**
@@ -66,8 +38,6 @@ class DashboardService
             'total_users' => $this->getUserStats(),
             'installed_modules' => $this->getModuleStats(),
             'active_plugins' => $this->getPluginStats(),
-            'installed_templates' => $this->getTemplateStats(),
-            'language_packs' => $this->getLanguagePackStats(),
             'system_status' => $this->getSystemStatus(),
         ];
 
@@ -140,50 +110,6 @@ class DashboardService
     }
 
     /**
-     * 템플릿 통계를 조회합니다.
-     *
-     * 활성 템플릿은 타입(admin/user)별로 1개씩 지정되므로, 활성 수는
-     * 활성 템플릿이 지정된 타입 수와 같습니다.
-     *
-     * @return array{total: int, active: int} 템플릿 통계 배열
-     */
-    private function getTemplateStats(): array
-    {
-        $allTemplates = $this->templateManager->getAllTemplates();
-
-        $activeCount = 0;
-        foreach (['admin', 'user'] as $type) {
-            if ($this->templateManager->getActiveTemplate($type) !== null) {
-                $activeCount++;
-            }
-        }
-
-        return [
-            'total' => count($allTemplates),
-            'active' => $activeCount,
-        ];
-    }
-
-    /**
-     * 언어팩 통계를 조회합니다.
-     *
-     * 활성 = 현재 활성화된 언어팩 레코드 수,
-     * 전체 = 활성 + 미설치 번들 팩(설치 가능 후보) 수.
-     *
-     * @return array{total: int, active: int} 언어팩 통계 배열
-     */
-    private function getLanguagePackStats(): array
-    {
-        $activeCount = $this->languagePackRepository->getActivePacks()->count();
-        $uninstalledBundledCount = $this->languagePackService->getUninstalledBundledPacks()->count();
-
-        return [
-            'total' => $activeCount + $uninstalledBundledCount,
-            'active' => $activeCount,
-        ];
-    }
-
-    /**
      * 시스템 상태를 조회합니다.
      *
      * @return array 시스템 상태 배열
@@ -224,84 +150,17 @@ class DashboardService
      */
     public function getSystemResources(): array
     {
-        // IDV 정책 가드 지점 (민감 관리자 조회 훅 커버리지)
+        // IDV 정책 가드 지점 (계획서 #297 — 민감 관리자 조회 훅 커버리지)
         HookManager::doAction('core.dashboard.before_resources');
 
-        // 각 probe 를 개별 격리한다 (공개#40).
-        // 일부 호스팅(open_basedir 제한, disable_functions, /proc 미접근)에서 한 probe 의
-        // 실패(warning → ErrorException)가 리소스 조회 전체를 500 으로 떨어뜨리지 않도록,
-        // probe 별 가드(레이어 a) 위에 safeProbe 격리(레이어 b)를 추가한다.
         $resources = [
-            'cpu' => $this->safeProbe(fn () => $this->getCpuUsage(), $this->fallbackCpu()),
-            'memory' => $this->safeProbe(fn () => $this->getMemoryUsage(), $this->fallbackMemory()),
-            'disk' => $this->safeProbe(fn () => $this->getDiskUsage(), $this->fallbackDisk()),
+            'cpu' => $this->getCpuUsage(),
+            'memory' => $this->getMemoryUsage(),
+            'disk' => $this->getDiskUsage(),
         ];
 
         // 훅을 통한 리소스 정보 확장 지원
         return HookManager::applyFilters('core.dashboard.resources', $resources);
-    }
-
-    /**
-     * 시스템 리소스 probe 를 안전하게 실행합니다.
-     *
-     * probe 가 예외(ErrorException·Error 포함)를 던지면 전파하지 않고 폴백값을 반환합니다.
-     * 시스템 리소스 수집 실패가 결코 대시보드 리소스 조회 전체를 500 으로 만들지 않게 합니다.
-     *
-     * @param  callable  $cb  실행할 probe 콜백
-     * @param  array  $fallback  실패 시 반환할 폴백 구조
-     * @return array probe 결과 또는 폴백
-     */
-    protected function safeProbe(callable $cb, array $fallback): array
-    {
-        try {
-            return $cb();
-        } catch (\Throwable $e) {
-            Log::warning('대시보드 시스템 리소스 수집 실패', ['error' => $e->getMessage()]);
-
-            return $fallback;
-        }
-    }
-
-    /**
-     * CPU 수집 불가 시 폴백 구조를 반환합니다.
-     *
-     * percentage null = 측정 불가 — 화면은 0% 가 아니라 "측정 불가" 로 표기한다 (A-8).
-     *
-     * @return array CPU 폴백 (percentage null, color gray)
-     */
-    protected function fallbackCpu(): array
-    {
-        return ['percentage' => null, 'color' => 'gray'];
-    }
-
-    /**
-     * 메모리 수집 불가 시 폴백 구조를 반환합니다.
-     *
-     * @return array 메모리 폴백 (percentage null = 측정 불가, used/total "알 수 없음", color gray)
-     */
-    protected function fallbackMemory(): array
-    {
-        return [
-            'percentage' => null,
-            'used' => __('common.unknown'),
-            'total' => __('common.unknown'),
-            'color' => 'gray',
-        ];
-    }
-
-    /**
-     * 디스크 수집 불가 시 폴백 구조를 반환합니다.
-     *
-     * @return array 디스크 폴백 (percentage null = 측정 불가, used/total "알 수 없음", color gray)
-     */
-    protected function fallbackDisk(): array
-    {
-        return [
-            'percentage' => null,
-            'used' => __('common.unknown'),
-            'total' => __('common.unknown'),
-            'color' => 'gray',
-        ];
     }
 
     /**
@@ -311,8 +170,7 @@ class DashboardService
      */
     protected function getCpuUsage(): array
     {
-        // 측정 불가는 null 로 구분한다 — 0% 로 표기하면 "한가한 서버" 와 구분되지 않는다.
-        $percentage = null;
+        $percentage = 0;
 
         if (PHP_OS_FAMILY === 'Windows') {
             $percentage = $this->getWindowsCpuUsage();
@@ -320,12 +178,9 @@ class DashboardService
             // Linux/Unix: /proc/stat에서 CPU 사용률 계산
             if (function_exists('sys_getloadavg')) {
                 $load = sys_getloadavg();
-                // 1분 평균 로드를 CPU 코어 수로 나눠서 백분율로 변환.
-                // shell_exec 차단 판정은 ExecutionEnvironment 가 SSoT (공개#40 가드 승계).
-                $cores = ExecutionEnvironment::hasFunction('shell_exec')
-                    ? ((int) @shell_exec('nproc 2>/dev/null') ?: 1)
-                    : 1;
-                $percentage = (int) min(100, round(($load[0] / $cores) * 100));
+                // 1분 평균 로드를 CPU 코어 수로 나눠서 백분율로 변환
+                $cores = (int) shell_exec('nproc 2>/dev/null') ?: 1;
+                $percentage = min(100, round(($load[0] / $cores) * 100));
             }
         }
 
@@ -339,17 +194,11 @@ class DashboardService
      * Windows에서 CPU 사용률을 조회합니다.
      *
      * PowerShell Get-CimInstance를 우선 사용하고, 실패 시 wmic을 fallback으로 사용합니다.
-     * shell_exec 차단 환경(disable_functions)에서는 호출 없이 null(측정 불가)을 반환합니다.
      *
-     * @return int|null CPU 사용률 (0-100). 측정 불가 시 null
+     * @return int CPU 사용률 (0-100)
      */
-    private function getWindowsCpuUsage(): ?int
+    private function getWindowsCpuUsage(): int
     {
-        // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
-        if (! ExecutionEnvironment::hasFunction('shell_exec')) {
-            return null;
-        }
-
         // PowerShell Get-CimInstance 시도 (Windows 10/11 권장)
         $output = shell_exec('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty LoadPercentage" 2>&1');
         if ($output !== null) {
@@ -368,7 +217,7 @@ class DashboardService
             }
         }
 
-        return null;
+        return 0;
     }
 
     /**
@@ -380,33 +229,27 @@ class DashboardService
     {
         $used = 0;
         $total = 0;
+        $percentage = 0;
 
         if (PHP_OS_FAMILY === 'Windows') {
             [$total, $used] = $this->getWindowsMemoryUsage();
         } else {
-            // Linux: /proc/meminfo에서 메모리 정보 조회.
-            // open_basedir 제한 환경에서 file_get_contents 가 warning → ErrorException 이 되지
-            // 않도록 is_readable 가드 + @ 억제 + false 체크 (공개#40, SettingsService::getMemoryUsage 동형).
-            if (PHP_OS_FAMILY === 'Linux' && is_readable('/proc/meminfo')) {
-                $memInfo = @file_get_contents('/proc/meminfo');
-                if ($memInfo !== false) {
-                    if (preg_match('/MemTotal:\s+(\d+)/', $memInfo, $matches)) {
-                        $total = $matches[1] * 1024;
-                    }
-                    if (preg_match('/MemAvailable:\s+(\d+)/', $memInfo, $matches)) {
-                        $available = $matches[1] * 1024;
-                        $used = $total - $available;
-                    }
+            // Linux: /proc/meminfo에서 메모리 정보 조회
+            if (file_exists('/proc/meminfo')) {
+                $memInfo = file_get_contents('/proc/meminfo');
+                if (preg_match('/MemTotal:\s+(\d+)/', $memInfo, $matches)) {
+                    $total = $matches[1] * 1024;
+                }
+                if (preg_match('/MemAvailable:\s+(\d+)/', $memInfo, $matches)) {
+                    $available = $matches[1] * 1024;
+                    $used = $total - $available;
                 }
             }
         }
 
-        // total 을 못 읽었으면 측정 불가 — 0% 가 아니라 null 로 구분한다 (A-8)
-        if ($total <= 0) {
-            return $this->fallbackMemory();
+        if ($total > 0) {
+            $percentage = round(($used / $total) * 100);
         }
-
-        $percentage = (int) round(($used / $total) * 100);
 
         return [
             'percentage' => $percentage,
@@ -420,19 +263,13 @@ class DashboardService
      * Windows에서 메모리 사용량을 조회합니다.
      *
      * PowerShell Get-CimInstance를 우선 사용하고, 실패 시 wmic을 fallback으로 사용합니다.
-     * shell_exec 차단 환경(disable_functions)에서는 호출 없이 [0, 0](측정 불가)을 반환합니다.
      *
-     * @return array [total, used] 바이트 단위 (측정 불가 시 [0, 0])
+     * @return array [total, used] 바이트 단위
      */
     private function getWindowsMemoryUsage(): array
     {
         $total = 0;
         $used = 0;
-
-        // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
-        if (! ExecutionEnvironment::hasFunction('shell_exec')) {
-            return [0, 0];
-        }
 
         // PowerShell Get-CimInstance 시도 (Windows 10/11 권장)
         $totalOutput = shell_exec('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory" 2>&1');
@@ -481,25 +318,11 @@ class DashboardService
     {
         $path = PHP_OS_FAMILY === 'Windows' ? 'C:' : '/';
 
-        // open_basedir 로 '/' 가 제한된 환경에서 disk_*_space 가 warning → ErrorException 이
-        // 되지 않도록 @ 억제 + numeric 체크 (공개#40). ?: 0 폴백은 예외 승격 후엔 무력하므로 @ 필수.
-        // `@` 는 `disable_functions` 축의 가드가 아니지만, 이 두 지점은 호출부가
-        // `safeProbe`/`safeSystemProbe` 로 `\Throwable` 을 잡아 「측정 불가」 폴백으로 접는다 —
-        // PHP 8 에서 차단 함수 호출은 `Error`(= Throwable)이므로 그 catch 가 실제로 잡는다.
-        // audit 이관 원장이 이 자리를 「조치 불필요」로 판정한 근거가 그것이다.
-        $totalRaw = @disk_total_space($path);
-        // audit:allow hosting-blocked-function-requires-guard 호출부 safeProbe/safeSystemProbe 가 Throwable 을 잡아 「측정 불가」로 접는다 — 룰은 호출부 try/catch 를 보지 못한다
-        $freeRaw = @disk_free_space($path);
-        $total = is_numeric($totalRaw) ? (float) $totalRaw : 0;
-        $free = is_numeric($freeRaw) ? (float) $freeRaw : 0;
+        $total = disk_total_space($path) ?: 0;
+        $free = disk_free_space($path) ?: 0;
         $used = $total - $free;
 
-        // total 을 못 읽었으면 측정 불가 — 0% 가 아니라 null 로 구분한다 (A-8)
-        if ($total <= 0) {
-            return $this->fallbackDisk();
-        }
-
-        $percentage = (int) round(($used / $total) * 100);
+        $percentage = $total > 0 ? round(($used / $total) * 100) : 0;
 
         return [
             'percentage' => $percentage,
@@ -512,15 +335,11 @@ class DashboardService
     /**
      * 리소스 사용률에 따른 색상을 반환합니다.
      *
-     * @param  int|null  $percentage  사용률 (0-100). null 은 측정 불가
-     * @return string 색상명 (측정 불가 시 gray)
+     * @param  int  $percentage  사용률 (0-100)
+     * @return string 색상명
      */
-    private function getResourceColor(?int $percentage): string
+    private function getResourceColor(int $percentage): string
     {
-        if ($percentage === null) {
-            return 'gray';
-        }
-
         if ($percentage >= 90) {
             return 'red';
         } elseif ($percentage >= 70) {
@@ -587,7 +406,7 @@ class DashboardService
     /**
      * 활동 액션에 따른 아이콘을 반환합니다.
      *
-     * @param  string|null  $action  액션 문자열
+     * @param string|null $action 액션 문자열
      * @return string 아이콘명
      */
     private function getActivityIcon(?string $action): string
@@ -619,126 +438,6 @@ class DashboardService
      */
     public function getSystemAlerts(): array
     {
-        $alerts = HookManager::applyFilters('core.dashboard.alerts', []);
-
-        return array_map(fn ($alert) => is_array($alert) ? $this->withAlertAbilities($alert) : $alert, $alerts);
-    }
-
-    /**
-     * 경고 하나에 [복구]·[닫기] 가능 여부(abilities)를 싣습니다.
-     *
-     * 경고는 시스템 알림 권한으로 보이지만, 버튼이 부르는 엔드포인트는 각자 다른 권한을 요구한다
-     * (확장 복구·닫기 = core.plugins.activate, 정적 캐시 재발행 = core.settings.update 등).
-     * 경고 종류를 열거하지 않고 **그 엔드포인트 라우트의 permission 미들웨어**로 판정해, 새 경고가
-     * 복구 주소를 붙여도 이 판정을 고칠 필요가 없게 한다. 라우트를 찾지 못하면 잠근다(fail-closed).
-     *
-     * @param  array<string, mixed>  $alert  경고 항목
-     * @return array<string, mixed> abilities 가 붙은 경고 항목
-     */
-    private function withAlertAbilities(array $alert): array
-    {
-        $recover = is_string($alert['recover_endpoint'] ?? null) && $alert['recover_endpoint'] !== ''
-            ? $this->endpointAllowed($alert['recover_endpoint'])
-            : false;
-
-        $dismiss = ! empty($alert['extension_type']) && ! empty($alert['identifier'])
-            ? $this->endpointAllowed("/api/admin/extensions/{$alert['extension_type']}/{$alert['identifier']}/dismiss")
-            : false;
-
-        $alert['abilities'] = ['can_recover' => $recover, 'can_dismiss' => $dismiss];
-
-        return $alert;
-    }
-
-    /**
-     * 현재 사용자가 POST 엔드포인트의 라우트 권한을 모두 가졌는지 판정합니다.
-     *
-     * permission 미들웨어 인자(`permission:admin,a|b[,false]`)를 미들웨어와 같은 규칙(기본 AND,
-     * 세 번째 인자 false 면 OR)으로 해석한다. permission 미들웨어가 없는 라우트는 허용한다.
-     *
-     * @param  string  $endpoint  경로 (예: /api/admin/extensions/plugin/x/recover)
-     * @return bool 호출 가능 여부
-     */
-    private function endpointAllowed(string $endpoint): bool
-    {
-        $user = Auth::user();
-        if (! $user instanceof User) {
-            return false;
-        }
-
-        // 판정용 요청은 사이트 주소의 origin 으로 만든다. 컴파일된 라우트 표(라우트 캐시)는 매칭할 때
-        // 요청 Host 를 읽는데, Host 없이 만들면 `localhost` 가 허용 도메인(TrustHosts) 밖이라 매칭이
-        // 예외로 끝나 권한 있는 운영자에게도 늘 잠긴다. 사이트 주소의 host 는 허용 도메인에 항상 들어
-        // 있고, 방문자가 보낸 Host 에 기대지 않는다(사이트 주소가 없으면 허용 도메인도 제한하지 않는다).
-        $target = str_starts_with($endpoint, '/') ? SiteUrl::origin().$endpoint : $endpoint;
-
-        try {
-            $route = app('router')->getRoutes()->match(Request::create($target, 'POST'));
-        } catch (\Throwable) {
-            return false;
-        }
-
-        $parameters = $route->parameters();
-
-        foreach ($route->gatherMiddleware() as $middleware) {
-            if (! is_string($middleware) || ! str_starts_with($middleware, 'permission:')) {
-                continue;
-            }
-
-            // 라우트 파라미터 자리표시자(core.{type}s.activate 등)를 미들웨어와 같이 치환한다.
-            $middleware = preg_replace_callback(
-                '/\{(\w+)\}/',
-                fn (array $m) => is_scalar($parameters[$m[1]] ?? null) ? (string) $parameters[$m[1]] : $m[0],
-                $middleware
-            );
-
-            $args = explode(',', substr($middleware, strlen('permission:')));
-            $type = PermissionType::tryFrom($args[0] ?? '');
-            $permissions = explode('|', $args[1] ?? '');
-            $requireAll = filter_var($args[2] ?? 'true', FILTER_VALIDATE_BOOLEAN);
-
-            if (! $user->hasPermissions($permissions, $requireAll, $type)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * 최근 발송된 알림 이력을 조회합니다.
-     *
-     * notification_logs 테이블에서 발송 시각 최신순으로 조회하여
-     * 대시보드 "최근 알림" 카드 표시 형식으로 변환합니다. 현재 사용자의 발송 이력 조회 범위
-     * (self·role 스코프)를 그대로 따른다 — 최근 활동 카드가 스코프를 거는 것과 같은 기준이다.
-     *
-     * @param  int  $limit  조회할 알림 수
-     * @return array 최근 알림 배열
-     */
-    public function getRecentNotificationLogs(int $limit = 5): array
-    {
-        $viewer = Auth::user();
-        $logs = $this->notificationLogRepository->getRecent($limit, $viewer instanceof User ? $viewer : null);
-
-        // 수신 회원은 관리자 영역의 표시 이름으로 보인다. 회원이 지워졌으면 발송 당시 기록한 이름, 그것도 없으면 수신 주소.
-        $names = app(DisplayNameResolver::class)->resolveMany(
-            $logs->map(fn (NotificationLog $log) => $log->recipientUser)->filter(),
-            DisplayNameAreaRegistry::AREA_ADMIN,
-        );
-
-        return $logs->map(function (NotificationLog $log) use ($names) {
-            return [
-                'id' => $log->id,
-                'type' => $log->notification_type,
-                'channel' => $log->channel,
-                'recipient' => ($log->recipientUser ? ($names[$log->recipientUser->getKey()] ?? null) : null)
-                    ?? $log->recipient_name
-                    ?? $log->recipient_identifier,
-                'subject' => Str::limit((string) $log->subject, 50),
-                'status' => $log->status->value,
-                'time' => TimezoneHelper::toUserCarbon($log->sent_at ?? $log->created_at)?->diffForHumans(),
-                'timestamp' => TimezoneHelper::toUserTimezone($log->sent_at ?? $log->created_at),
-            ];
-        })->toArray();
+        return HookManager::applyFilters('core.dashboard.alerts', []);
     }
 }

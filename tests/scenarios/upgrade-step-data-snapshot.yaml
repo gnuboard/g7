@@ -1,5 +1,4 @@
-# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 7.0.0-beta.5 도입 "버전별 데이터 스냅샷" 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 앞선 정리에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 7.0.0-beta.5 도입 "버전별 데이터 스냅샷" 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
 
 feature: 버전별 데이터 스냅샷 (AbstractUpgradeStep + data/{version}/ 격리)
 
@@ -33,9 +32,6 @@ axes:
   cross_version_reference: [self_only, other_version_in_applier, other_version_in_migration]
   audit_allow_inline: [present, absent]                                # 면제 주석 적용 여부
   hotfix_filesystem_state: [healthy, broken_active_dir, broken_pending_stub, broken_langpacks_bundled, broken_storage_symlink]
-  # beta.5 RecoverPublicStorageSymlink 의 입력 두 갈래 (2026-11-13 Upgrade_7_0_0_beta_5RecoveryTest 마킹 때 선언으로 올림, 값은 그 시험 5건에서 도출)
-  public_storage_link_state: [symlink, plain_directory, absent]          # 복구 전 public/storage 의 상태
-  storage_link_source: [present, absent]                                 # storage:link 원본(filesystems.disks.public.root) 존재 여부
   cross_extension_namespace_collision: [single, two_extensions_same_step_version_class]   # known limitation 검증
 
 exclusions:
@@ -52,74 +48,13 @@ exclusions:
   - { extension_g7_version_constraint: ge_beta_4_legacy, step_class_inheritance: no_implements, reason: "legacy g7_version 확장은 가드 미발동 (호환 유지)" }
   - { extension_g7_version_constraint: null_constraint, step_class_inheritance: no_implements, reason: "g7_version 미선언 = legacy 로 판정 (호환)" }
   - { extension_g7_version_constraint: malformed, step_class_inheritance: no_implements, reason: "파싱 실패 시 보수적으로 legacy 처리 (가드 미발동)" }
-  - { public_storage_link_state: symlink, storage_link_source: absent, reason: "원본이 없는 링크는 깨진 링크라 복구기가 원본 부재 분기로 먼저 건너뛴다 — 링크 보존 여부를 따로 잴 입력이 아님" }
   # cross_extension_namespace_collision 의 두 케이스 모두 회귀 가드 보유:
   #   - single: 기본 케이스 (다른 step 버전이면 자명 격리)
   #   - two_extensions_same_step_version_class: namespace 에 확장 식별자 segment 가
   #     포함되어 PHP compile-time fatal 회피. 정적 검증(DataSnapshotTest) + 실행 검증
   #     (ExtensionAbstractUpgradeStepFullFlowTest::test_two_extensions_..._isolated_by_namespace)
 
-effects:
-  # DataSnapshot — 스냅샷 로드/네임스페이스 격리
-  - empty_snapshot_when_manifest_absent
-  - versioned_namespace_converts_dots_and_hyphens_to_underscore
-  - versioned_namespace_branches_by_core_bundled_module_bundled_plugin_external
-  - same_step_version_different_extensions_get_distinct_namespaces
-  - manifest_kind_resolves_to_applier_class_and_instantiates
-  - applier_file_missing_or_namespace_mismatch_throws_runtime_exception
-  # AbstractUpgradeStep — 위임 규약
-  - run_delegates_in_order_data_snapshot_then_migrations_then_post_run
-  - migrations_execute_in_filename_sort_order
-  - two_digit_prefix_stripped_before_class_name_mapping
-  - data_dir_absent_silently_skips_without_fatal
-  # 코어 upgrade step 가드
-  - core_beta_5_or_later_step_without_abstract_inheritance_throws
-  - core_beta_5_or_later_step_with_inheritance_runs
-  - core_legacy_beta_4_or_earlier_step_passes_without_inheritance
-  # 확장 upgrade step 가드
-  - bundled_module_ge_beta_5_without_inheritance_throws
-  - bundled_module_with_inheritance_runs
-  - bundled_module_legacy_g7_version_bypasses_guard
-  - bundled_module_callable_closure_bypasses_guard
-  - step_version_below_extension_since_version_bypasses_guard
-  - bundled_plugin_mirrors_module_guard_branches
-  # 확장 전체 흐름
-  - extension_full_flow_preserves_applier_migration_post_run_order
-  - data_dir_resolves_to_extension_directory_via_reflection
-  - manifest_json_absent_is_graceful_silent
-  - manifest_applier_file_missing_throws_explicit_runtime_exception
-  - two_modules_same_step_version_same_migration_class_both_run_own_code
-  # IDV 권한 rename 마이그레이션
-  - permissions_applier_renames_in_place_when_new_row_absent
-  - identity_permission_pivot_merges_on_collision_path
-  - old_pivot_removed_and_new_pivot_preserved_for_dual_granted_role
-  - permission_rename_is_idempotent_across_repeated_runs
-  # beta.5 복구 핫픽스
-  - four_domain_active_directories_recovered
-  - external_extension_loss_triggers_one_shot_deactivation_with_notice
-  - pending_stub_regenerated
-  - lang_packs_bundled_fallback_applied
-  - public_storage_symlink_restored
-  - public_storage_symlink_preserved_when_already_symlink                # 정상 링크면 대상 그대로 두고 건너뜀 (멱등)
-  - public_storage_corrupted_directory_backed_up_as_broken_timestamp     # 일반 디렉토리를 storage.broken.{timestamp} 로 옮겨 내용 보존
-  - public_storage_left_untouched_when_link_source_absent                # 원본 부재면 링크도 백업도 만들지 않음
-  # since-version 판정 헬퍼
-  - resolve_since_version_branches_null_empty_legacy_beta5_or_and_parse_failure
-  - assert_abstract_inheritance_branches_by_step_version_vs_since_version
-  - guard_exception_message_includes_extension_type_identifier_step_version_and_core_version
-
 test_files:
-  - tests/Unit/Extension/Upgrade/DataSnapshotTest.php
-  - tests/Unit/Extension/AbstractUpgradeStepTest.php
-  - tests/Unit/Extension/Helpers/ExtensionUpgradeGuardHelperTest.php
-  - tests/Feature/Upgrades/RunUpgradeStepsAbstractGuardTest.php
-  - tests/Feature/Upgrades/Upgrade_7_0_0_beta_5PermissionRenameTest.php
-  - tests/Feature/Upgrades/Upgrade_7_0_0_beta_5RecoveryTest.php
-  - tests/Feature/Upgrades/ExtensionAbstractGuardTest.php
-  - tests/Feature/Upgrades/ExtensionAbstractUpgradeStepFullFlowTest.php
-
-# 파일별 커버 범위 상세 (test_files 의 각 항목이 무엇을 보장하는지)
-test_coverage_detail:
   unit:
     - path: tests/Unit/Extension/Upgrade/DataSnapshotTest.php
       covers:

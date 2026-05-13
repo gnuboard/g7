@@ -2,22 +2,18 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
-use App\Extension\HookManager;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mockery;
-use Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOption;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
-use Modules\Sirsoft\Ecommerce\Models\ProductInquiry;
 use Modules\Sirsoft\Ecommerce\Models\ProductLabel;
 use Modules\Sirsoft\Ecommerce\Models\ProductLabelAssignment;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
-use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -30,11 +26,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 {
     protected ProductService $service;
 
-    /**
-     * 큐와 public 디스크를 가짜로 바꾸고 ProductService 를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -52,10 +43,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 테스트용 ProductImage를 생성합니다.
-     *
-     * @param  Product  $product  이미지를 붙일 상품
-     * @param  array  $overrides  기본값을 덮어쓸 속성
-     * @return ProductImage 생성된 상품 이미지
      */
     protected function createProductImage(Product $product, array $overrides = []): ProductImage
     {
@@ -73,10 +60,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 테스트용 ProductAdditionalOption을 생성합니다.
-     *
-     * @param  Product  $product  추가옵션을 붙일 상품
-     * @param  array  $overrides  기본값을 덮어쓸 속성
-     * @return ProductAdditionalOption 생성된 추가옵션
      */
     protected function createProductAdditionalOption(Product $product, array $overrides = []): ProductAdditionalOption
     {
@@ -90,9 +73,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 테스트용 ProductLabel을 생성합니다.
-     *
-     * @param  array  $overrides  기본값을 덮어쓸 속성
-     * @return ProductLabel 생성된 라벨
      */
     protected function createProductLabel(array $overrides = []): ProductLabel
     {
@@ -106,10 +86,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 테스트용 ProductLabelAssignment를 생성합니다.
-     *
-     * @param  Product  $product  라벨을 연결할 상품
-     * @param  ProductLabel  $label  연결할 라벨
-     * @return ProductLabelAssignment 생성된 라벨 연결
      */
     protected function createProductLabelAssignment(Product $product, ProductLabel $label): ProductLabelAssignment
     {
@@ -121,9 +97,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 테스트용 Category를 생성합니다.
-     *
-     * @param  array  $overrides  기본값을 덮어쓸 속성
-     * @return Category 생성된 카테고리
      */
     protected function createCategory(array $overrides = []): Category
     {
@@ -142,12 +115,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 주문 이력이 없는 상품은 삭제 가능
-     *
-     * @scenario case=check_no_orders
-     *
-     * @effects product_delete_check_allows_without_orders
-     *
-     * @return void 반환값 없음
      */
     public function test_check_can_delete_returns_true_when_no_orders(): void
     {
@@ -165,12 +132,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 주문 이력이 있는 상품은 삭제 불가
-     *
-     * @scenario case=check_with_orders
-     *
-     * @effects product_delete_check_blocks_with_order_history
-     *
-     * @return void 반환값 없음
      */
     public function test_check_can_delete_returns_false_when_has_orders(): void
     {
@@ -189,12 +150,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 다중 주문 이력이 있는 경우 카운트 정확히 반환
-     *
-     * @scenario case=check_many_orders
-     *
-     * @effects product_delete_check_reports_order_count
-     *
-     * @return void 반환값 없음
      */
     public function test_check_can_delete_returns_correct_order_count(): void
     {
@@ -212,12 +167,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 연관 데이터 카운트가 정확히 반환됨
-     *
-     * @scenario case=check_related_counts
-     *
-     * @effects product_delete_check_reports_related_data_counts
-     *
-     * @return void 반환값 없음
      */
     public function test_check_can_delete_returns_accurate_related_data_counts(): void
     {
@@ -258,12 +207,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 삭제 시 모든 연관 데이터가 명시적으로 삭제됨
-     *
-     * @scenario case=delete_with_related_data
-     *
-     * @effects product_delete_removes_related_rows
-     *
-     * @return void 반환값 없음
      */
     public function test_delete_removes_all_related_data_explicitly(): void
     {
@@ -302,12 +245,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 삭제 시 이미지 파일도 삭제됨
-     *
-     * @scenario case=delete_with_image_files
-     *
-     * @effects product_delete_removes_image_files_from_storage
-     *
-     * @return void 반환값 없음
      */
     public function test_delete_removes_image_files_from_storage(): void
     {
@@ -338,12 +275,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 카테고리 연결도 해제됨
-     *
-     * @scenario case=delete_with_categories
-     *
-     * @effects product_delete_detaches_categories
-     *
-     * @return void 반환값 없음
      */
     public function test_delete_detaches_categories(): void
     {
@@ -367,12 +298,6 @@ class ProductServiceDeleteTest extends ModuleTestCase
 
     /**
      * 연관 데이터가 없는 상품도 정상 삭제됨
-     *
-     * @scenario case=delete_without_related_data
-     *
-     * @effects product_delete_succeeds_without_related_data
-     *
-     * @return void 반환값 없음
      */
     public function test_delete_works_for_product_without_related_data(): void
     {
@@ -388,136 +313,9 @@ class ProductServiceDeleteTest extends ModuleTestCase
         $this->assertDatabaseMissing('ecommerce_products', ['id' => $productId]);
     }
 
-    /**
-     * 주문 이력이 있는 상품은 도메인 가드로 삭제 차단 (A37 결함① — 컨트롤러 우회 방어)
-     *
-     * @scenario case=delete_with_order_history
-     *
-     * @effects product_delete_blocked_by_order_history_guard
-     *
-     * @return void 반환값 없음
-     */
-    public function test_delete_throws_when_product_has_order_history(): void
-    {
-        // Given: 주문 이력이 있는 상품
-        $product = Product::factory()->create();
-        $productId = $product->id;
-        OrderOption::factory()->create(['product_id' => $product->id]);
-
-        // Then: 도메인 예외 throw + 상품 보존
-        $this->expectException(ProductHasOrderHistoryException::class);
-
-        try {
-            $this->service->delete($product);
-        } finally {
-            $this->assertDatabaseHas('ecommerce_products', ['id' => $productId]);
-        }
-    }
-
-    // ========================================
-    // delete() — 문의 스레드 정리 (#107 확대판)
-    // ========================================
-
-    /**
-     * 상품 삭제 시 문의 게시판이 설정돼 있으면 피벗 전건(소프트 삭제 포함)에 대해
-     * inquiry.delete 훅이 호출되고, 피벗은 trashed 포함 영구 삭제된다.
-     *
-     * @effects product_delete_cleans_thread
-     *
-     * @return void 반환값 없음
-     */
-    public function test_delete_fires_inquiry_delete_hook_per_pivot_including_trashed(): void
-    {
-        // Given: 문의 게시판 설정 + 상품에 딸린 피벗 (alive 2건 + trashed 1건)
-        app(EcommerceSettingsService::class)->setSetting('inquiry.board_slug', 'test-inquiry-board');
-
-        $product = Product::factory()->create();
-        $productId = $product->id;
-
-        ProductInquiry::factory()->create(['product_id' => $productId, 'inquirable_id' => 701]);
-        ProductInquiry::factory()->create(['product_id' => $productId, 'inquirable_id' => 702]);
-        $trashed = ProductInquiry::factory()->create(['product_id' => $productId, 'inquirable_id' => 703]);
-        $trashed->delete();
-
-        // And: 게시판 삭제 훅을 걷어내고 호출된 Post ID 를 수집하는 훅으로 교체
-        HookManager::clearFilter('sirsoft-ecommerce.inquiry.delete');
-        $deletedPostIds = [];
-        HookManager::addFilter(
-            'sirsoft-ecommerce.inquiry.delete',
-            function ($result, $slug, $postId) use (&$deletedPostIds) {
-                $deletedPostIds[] = (int) $postId;
-
-                return true;
-            },
-            priority: 1
-        );
-
-        // When: 상품 삭제
-        $result = $this->service->delete($product);
-
-        // Then: 피벗 수만큼(withTrashed 포함 3건) 훅 호출
-        $this->assertTrue($result);
-        $this->assertCount(3, $deletedPostIds);
-        $this->assertEqualsCanonicalizing([701, 702, 703], $deletedPostIds);
-
-        // And: 피벗은 trashed 포함 0건 (forceDelete — 행 자체 소멸)
-        $this->assertDatabaseMissing('ecommerce_product_inquiries', ['product_id' => $productId]);
-        $this->assertDatabaseMissing('ecommerce_products', ['id' => $productId]);
-    }
-
-    /**
-     * 문의 게시판 미설정이면 훅 없이 피벗만 정리되고 상품 삭제는 성공한다 (안전 열화).
-     *
-     * @effects board_not_configured_safe
-     *
-     * @return void 반환값 없음
-     */
-    public function test_delete_without_board_slug_skips_hook_but_purges_pivots(): void
-    {
-        // Given: 문의 게시판 미설정 (명시적 null)
-        app(EcommerceSettingsService::class)->setSetting('inquiry.board_slug', null);
-
-        $product = Product::factory()->create();
-        $productId = $product->id;
-
-        ProductInquiry::factory()->create(['product_id' => $productId, 'inquirable_id' => 801]);
-        $trashed = ProductInquiry::factory()->create(['product_id' => $productId, 'inquirable_id' => 802]);
-        $trashed->delete();
-
-        // And: 훅 호출 계수기
-        HookManager::clearFilter('sirsoft-ecommerce.inquiry.delete');
-        $hookCalls = 0;
-        HookManager::addFilter(
-            'sirsoft-ecommerce.inquiry.delete',
-            function () use (&$hookCalls) {
-                $hookCalls++;
-
-                return true;
-            },
-            priority: 1
-        );
-
-        // When: 상품 삭제
-        $result = $this->service->delete($product);
-
-        // Then: 훅 미호출 + 피벗 전건 영구 삭제 + 상품 삭제 성공
-        $this->assertTrue($result);
-        $this->assertSame(0, $hookCalls, '게시판 미설정 시 inquiry.delete 훅은 호출되지 않아야 합니다.');
-        $this->assertDatabaseMissing('ecommerce_product_inquiries', ['product_id' => $productId]);
-        $this->assertDatabaseMissing('ecommerce_products', ['id' => $productId]);
-    }
-
-    /**
-     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 }

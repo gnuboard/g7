@@ -7,8 +7,6 @@ use App\Contracts\Extension\PluginInterface;
 use App\Extension\AbstractUpgradeStep;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
-use App\Extension\Upgrade\DataSnapshot;
-use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\File;
 use Mockery;
 use Tests\TestCase;
@@ -29,22 +27,12 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
 {
     private array $tempDirs = [];
 
-    /**
-     * 스텝 호출 순서를 기록할 전역 배열을 비운다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
         $GLOBALS['__ext_full_flow_calls'] = [];
     }
 
-    /**
-     * 만든 확장 디렉토리와 전역 기록을 지우고 Mockery 를 닫은 뒤 부모 정리를 실행한다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         foreach ($this->tempDirs as $dir) {
@@ -53,24 +41,12 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
             }
         }
         unset($GLOBALS['__ext_full_flow_calls']);
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 
     // ── 모듈 측 전체 흐름 ────────────────────────────────────────────────
 
-    /**
-     * 모듈 스텝이 Applier, 파일명 순서의 Migration, postRun 순으로 실행된다.
-     *
-     * @scenario extension_type=bundled_module, data_dir_state=present_full
-     *
-     * @effects extension_full_flow_preserves_applier_migration_post_run_order
-     *
-     * @return void 반환값 없음
-     */
     public function test_module_full_flow_runs_applier_then_migration_then_post_run(): void
     {
         $version = '0.0.21-test.mod.flow';
@@ -106,15 +82,6 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
         );
     }
 
-    /**
-     * 모듈 스텝의 dataDir() 가 스텝 파일 옆 data/{버전}/ 를 가리킨다.
-     *
-     * @scenario extension_type=bundled_module, data_dir_state=present_full
-     *
-     * @effects data_dir_resolves_to_extension_directory_via_reflection
-     *
-     * @return void 반환값 없음
-     */
     public function test_module_data_dir_resolves_under_extension_path(): void
     {
         $version = '0.0.22-test.mod.datadir';
@@ -133,7 +100,7 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
         $dataDirMethod = $reflection->getMethod('dataDir');
         $dataDirMethod->setAccessible(true);
 
-        $context = new UpgradeContext(
+        $context = new \App\Extension\UpgradeContext(
             fromVersion: '0.0.21',
             toVersion: $version,
             currentStep: $version,
@@ -154,15 +121,6 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
         );
     }
 
-    /**
-     * manifest.json 이 없으면 Applier 와 Migration 없이 postRun 만 실행되고 실패하지 않는다.
-     *
-     * @scenario extension_type=bundled_module, data_dir_state=absent
-     *
-     * @effects manifest_json_absent_is_graceful_silent
-     *
-     * @return void 반환값 없음
-     */
     public function test_module_manifest_absent_does_not_fail(): void
     {
         // manifest.json 부재 → DataSnapshot::empty() 반환 → Applier 0개, fatal 없음
@@ -193,15 +151,6 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
         );
     }
 
-    /**
-     * manifest 가 가리키는 Applier 파일이 없으면 「Applier file not found」 RuntimeException 을 던진다.
-     *
-     * @scenario extension_type=bundled_module, applier_namespace=missing_class
-     *
-     * @effects manifest_applier_file_missing_throws_explicit_runtime_exception
-     *
-     * @return void 반환값 없음
-     */
     public function test_module_missing_applier_file_throws_runtime_exception(): void
     {
         $version = '0.0.24-test.mod.missing';
@@ -234,15 +183,6 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
 
     // ── 플러그인 측 전체 흐름 (모듈과 1:1 대응) ─────────────────────────
 
-    /**
-     * 플러그인 스텝이 Applier, Migration, postRun 순으로 실행된다.
-     *
-     * @scenario extension_type=bundled_plugin, data_dir_state=present_full
-     *
-     * @effects extension_full_flow_preserves_applier_migration_post_run_order
-     *
-     * @return void 반환값 없음
-     */
     public function test_plugin_full_flow_runs_applier_then_migration_then_post_run(): void
     {
         $version = '0.0.31-test.plg.flow';
@@ -276,15 +216,6 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
         );
     }
 
-    /**
-     * 플러그인 스텝의 dataDir() 가 스텝 파일 옆 data/{버전}/ 를 가리킨다.
-     *
-     * @scenario extension_type=bundled_plugin, data_dir_state=absent
-     *
-     * @effects data_dir_resolves_to_extension_directory_via_reflection
-     *
-     * @return void 반환값 없음
-     */
     public function test_plugin_data_dir_resolves_under_extension_path(): void
     {
         $version = '0.0.32-test.plg.datadir';
@@ -296,7 +227,7 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
         $dataDirMethod = $reflection->getMethod('dataDir');
         $dataDirMethod->setAccessible(true);
 
-        $context = new UpgradeContext(
+        $context = new \App\Extension\UpgradeContext(
             fromVersion: '0.0.31',
             toVersion: $version,
             currentStep: $version,
@@ -310,9 +241,6 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
 
     /**
      * Windows / POSIX 경로 구분자 차이 흡수.
-     *
-     * @param  string  $path  원본 경로
-     * @return string 슬래시로 통일한 경로
      */
     private function normalizePath(string $path): string
     {
@@ -335,12 +263,6 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
      *
      * 본 테스트는 KNOWN LIMITATION 의 해결 후 회귀 안전망 — 향후 namespace 패턴이 다시
      * 변경되어 두 확장이 같은 FQCN 을 갖게 되면 본 테스트가 fatal 로 실패한다.
-     *
-     * @scenario extension_type=bundled_module, cross_extension_namespace_collision=two_extensions_same_step_version_class
-     *
-     * @effects two_modules_same_step_version_same_migration_class_both_run_own_code
-     *
-     * @return void 반환값 없음
      */
     public function test_two_extensions_with_same_step_version_isolated_by_namespace(): void
     {
@@ -395,37 +317,28 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
         );
     }
 
-    /**
-     * 같은 스텝 버전이라도 모듈, 플러그인, 코어가 서로 다른 namespace 를 받고 확장 식별자가 그 안에 들어간다.
-     *
-     * @scenario cross_extension_namespace_collision=two_extensions_same_step_version_class
-     *
-     * @effects same_step_version_different_extensions_get_distinct_namespaces
-     *
-     * @return void 반환값 없음
-     */
     public function test_versionedNamespace_uses_distinct_namespaces_for_different_extensions_same_version(): void
     {
         // namespace 격리의 *근원* 정적 검증 — DataSnapshot 단위에서 검증.
-        $context = new UpgradeContext(
+        $context = new \App\Extension\UpgradeContext(
             fromVersion: '0.0.0',
             toVersion: '1.0.0',
             currentStep: '1.0.0',
         );
 
-        $nsModuleA = DataSnapshot::versionedNamespace(
+        $nsModuleA = \App\Extension\Upgrade\DataSnapshot::versionedNamespace(
             $context,
             '/var/www/modules/_bundled/vendor-foo/upgrades/data/1.0.0',
         );
-        $nsModuleB = DataSnapshot::versionedNamespace(
+        $nsModuleB = \App\Extension\Upgrade\DataSnapshot::versionedNamespace(
             $context,
             '/var/www/modules/_bundled/vendor-bar/upgrades/data/1.0.0',
         );
-        $nsPlugin = DataSnapshot::versionedNamespace(
+        $nsPlugin = \App\Extension\Upgrade\DataSnapshot::versionedNamespace(
             $context,
             '/var/www/plugins/_bundled/vendor-baz/upgrades/data/1.0.0',
         );
-        $nsCore = DataSnapshot::versionedNamespace(
+        $nsCore = \App\Extension\Upgrade\DataSnapshot::versionedNamespace(
             $context,
             '/var/www/upgrades/data/1.0.0',
         );
@@ -454,10 +367,6 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
      * 가 확장 namespace 분기로 진입한다.
      *
      * type 이 'module' 이면 modules/_bundled, 'plugin' 이면 plugins/_bundled.
-     *
-     * @param  string  $label  디렉토리 이름에 넣을 표식
-     * @param  string  $type  확장 종류('module' 또는 'plugin')
-     * @return string 만든 upgrades 디렉토리의 절대경로
      */
     private function makeExtensionDir(string $label, string $type = 'module'): string
     {
@@ -476,11 +385,6 @@ class ExtensionAbstractUpgradeStepFullFlowTest extends TestCase
      * 확장의 step 파일을 작성 후 require_once + FQCN 반환.
      *
      * step 클래스명은 fixture 별 고유 — PHP 클래스 재선언 회피.
-     *
-     * @param  string  $extDir  확장의 upgrades 디렉토리
-     * @param  string  $version  스텝 버전
-     * @param  string|null  $postRunCall  postRun 이 호출 기록에 남길 표식(없으면 남기지 않음)
-     * @return string 만든 스텝 클래스의 FQCN
      */
     private function writeStepFile(string $extDir, string $version, ?string $postRunCall = null): string
     {
@@ -512,14 +416,6 @@ PHP;
         return 'App\\Upgrades\\Data\\TestFixtures\\'.$unique;
     }
 
-    /**
-     * data/{버전}/manifest.json 을 쓴다.
-     *
-     * @param  string  $extDir  확장의 upgrades 디렉토리
-     * @param  string  $version  스텝 버전
-     * @param  array<int, array<string, string>>  $entries  manifest 의 files 항목
-     * @return void 반환값 없음
-     */
     private function writeManifest(string $extDir, string $version, array $entries): void
     {
         $dir = $extDir.'/data/'.$version;
@@ -533,15 +429,6 @@ PHP;
         );
     }
 
-    /**
-     * data/{버전}/ 아래에 delta JSON 파일을 쓴다.
-     *
-     * @param  string  $extDir  확장의 upgrades 디렉토리
-     * @param  string  $version  스텝 버전
-     * @param  string  $file  delta 파일 이름
-     * @param  array<string, mixed>  $delta  delta 내용
-     * @return void 반환값 없음
-     */
     private function writeDelta(string $extDir, string $version, string $file, array $delta): void
     {
         $dir = $extDir.'/data/'.$version;
@@ -549,15 +436,6 @@ PHP;
         File::put($dir.'/'.$file, json_encode($delta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
-    /**
-     * 호출되면 표식을 기록하는 Applier 클래스 파일을 data/{버전}/appliers/ 에 쓴다.
-     *
-     * @param  string  $extDir  확장의 upgrades 디렉토리
-     * @param  string  $version  스텝 버전
-     * @param  string  $className  Applier 클래스 이름
-     * @param  string  $callLabel  호출 기록에 남길 표식
-     * @return void 반환값 없음
-     */
     private function writeApplier(string $extDir, string $version, string $className, string $callLabel): void
     {
         $dir = $extDir.'/data/'.$version.'/appliers';
@@ -583,16 +461,6 @@ PHP;
         File::put($dir.'/'.$className.'.php', $contents);
     }
 
-    /**
-     * 호출되면 표식을 기록하는 Migration 클래스 파일을 data/{버전}/migrations/ 에 쓴다.
-     *
-     * @param  string  $extDir  확장의 upgrades 디렉토리
-     * @param  string  $version  스텝 버전
-     * @param  string  $fileName  마이그레이션 파일 이름(정렬용 접두 포함)
-     * @param  string  $className  Migration 클래스 이름
-     * @param  string  $callLabel  호출 기록에 남길 표식
-     * @return void 반환값 없음
-     */
     private function writeMigration(
         string $extDir,
         string $version,
@@ -627,28 +495,18 @@ PHP;
      * fixture 의 namespace prefix 계산.
      *
      * DataSnapshot::versionedNamespace 의 PHP 측 SSoT 를 그대로 호출하여 동기 보장.
-     *
-     * @param  string  $dir  data 하위 디렉토리 경로
-     * @param  string  $version  스텝 버전
-     * @return string 그 디렉토리의 namespace 접두
      */
     private function namespaceForDataFile(string $dir, string $version): string
     {
-        $context = new UpgradeContext(
+        $context = new \App\Extension\UpgradeContext(
             fromVersion: '0.0.0',
             toVersion: $version,
             currentStep: $version,
         );
 
-        return DataSnapshot::versionedNamespace($context, $dir);
+        return \App\Extension\Upgrade\DataSnapshot::versionedNamespace($context, $dir);
     }
 
-    /**
-     * 항목이 없는 권한 delta 를 돌려준다.
-     *
-     * @param  string  $unusedLabel  쓰지 않는 표식(호출부 가독용)
-     * @return array<string, array<int, mixed>> added, removed, renamed 가 빈 delta
-     */
     private function permissionsDelta(string $unusedLabel): array
     {
         return [
@@ -660,15 +518,6 @@ PHP;
 
     // ── 헬퍼: Manager 진입점 ─────────────────────────────────────────────
 
-    /**
-     * 식별자, 버전, 요구 코어 버전, 스텝 목록만 돌려주는 모듈 대역을 만든다.
-     *
-     * @param  string  $identifier  확장 식별자
-     * @param  string  $workingVersion  확장의 현재 버전
-     * @param  string|null  $g7Version  요구 코어 버전 제약(없으면 null)
-     * @param  array<string, mixed>  $upgrades  버전별 업그레이드 스텝
-     * @return ModuleInterface 모듈 대역
-     */
     private function mockModule(
         string $identifier,
         string $workingVersion,
@@ -684,15 +533,6 @@ PHP;
         return $module;
     }
 
-    /**
-     * 식별자, 버전, 요구 코어 버전, 스텝 목록만 돌려주는 플러그인 대역을 만든다.
-     *
-     * @param  string  $identifier  확장 식별자
-     * @param  string  $workingVersion  확장의 현재 버전
-     * @param  string|null  $g7Version  요구 코어 버전 제약(없으면 null)
-     * @param  array<string, mixed>  $upgrades  버전별 업그레이드 스텝
-     * @return PluginInterface 플러그인 대역
-     */
     private function mockPlugin(
         string $identifier,
         string $workingVersion,
@@ -709,14 +549,8 @@ PHP;
     }
 
     /**
-     * 매니저의 비공개 runUpgradeSteps 를 리플렉션으로 호출한다.
-     *
-     * @param  ModuleManager|PluginManager  $manager  대상 매니저
-     * @param  ModuleInterface|PluginInterface  $extension  스텝을 가진 확장
-     * @param  string  $from  시작 버전
-     * @param  string  $to  목표 버전
-     * @param  \Closure|null  $onStep  스텝마다 불리는 콜백(없으면 null)
-     * @return void 반환값 없음
+     * @param  ModuleManager|PluginManager  $manager
+     * @param  ModuleInterface|PluginInterface  $extension
      */
     private function invokeRunUpgradeSteps(
         $manager,

@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { Div } from '../basic/Div';
 import { Img } from '../basic/Img';
 import { Icon } from '../basic/Icon';
-import type { EditorAttrs } from '../../types';
 
 /**
  * 아바타 크기 타입
@@ -26,23 +25,6 @@ const SIZE_CLASSES: Record<AvatarSize, string> = {
 } as const;
 
 /**
- * 사이즈별 썸네일 규격 — 표시 크기 32px 이하는 `xs`(64), 40px 이상은 `sm`(160). 규칙은 「2배 밀도에서 필요한 가로
- * (칸의 두 배)가 규격 가로 안에 드는 가장 작은 규격」이다 — 40px 원은 80px 가 필요해 64 인 xs 로는 늘려 그려진다.
- * 2000px 원본이 24px 원에 내려가던 것을 막는다.
- */
-const SIZE_THUMB_PRESETS: Record<AvatarSize, 'xs' | 'sm'> = {
-  xs: 'xs',
-  sm: 'xs',
-  md: 'sm',
-  lg: 'sm',
-  xl: 'sm',
-  '2xl': 'sm',
-  '3xl': 'sm',
-  '4xl': 'sm',
-  '5xl': 'sm',
-};
-
-/**
  * 기본 컨테이너 스타일 (공통)
  */
 const BASE_CONTAINER_CLASSES = 'rounded-full overflow-hidden flex-shrink-0 border border-gray-200 dark:border-gray-700';
@@ -56,7 +38,7 @@ const WITHDRAWN_CLASSES = 'grayscale opacity-50';
  * 이니셜 배경 스타일
  */
 const INITIAL_BG_CLASSES = {
-  normal: 'bg-gradient-to-br from-blue-600 to-purple-600',
+  normal: 'bg-gradient-to-br from-blue-500 to-purple-600',
   withdrawn: 'bg-gray-300 dark:bg-gray-600',
   guest: 'bg-gray-200 dark:bg-gray-700',
 } as const;
@@ -72,7 +54,7 @@ export interface AuthorInfo {
   /** 아바타 URL */
   avatar?: string;
   /** 사용자 상태 */
-  status?: 'active' | 'inactive' | 'blocked' | 'withdrawn' | 'dormant' | 'pending_verification';
+  status?: 'active' | 'inactive' | 'blocked' | 'withdrawn';
   /** 비회원 여부 */
   is_guest?: boolean;
 }
@@ -98,14 +80,6 @@ export interface AvatarProps {
   isWithdrawn?: boolean;
   /** 비회원 여부 (author.is_guest보다 우선) @default false */
   isGuest?: boolean;
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-/**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -157,8 +131,6 @@ export const Avatar: React.FC<AvatarProps> = ({
   text,
   isWithdrawn = false,
   isGuest = false,
-  id,
-  editorAttrs,
 }) => {
   // 명시적 props > author 추출값 순서로 결정
   const actualAvatar = avatar ?? author?.avatar;
@@ -188,14 +160,14 @@ export const Avatar: React.FC<AvatarProps> = ({
     if (actualIsGuest) {
       return (
         <Div className={`w-full h-full flex items-center justify-center ${initialBgClass}`}>
-          <Icon name="user" className="text-gray-500 dark:text-gray-400" />
+          <Icon name="user" className="text-gray-400 dark:text-gray-500" />
         </Div>
       );
     }
     if (actualIsWithdrawn) {
       return (
         <Div className={`w-full h-full flex items-center justify-center ${initialBgClass}`}>
-          <Icon name="user" className="text-gray-600 dark:text-gray-300" />
+          <Icon name="user" className="text-gray-500 dark:text-gray-400" />
         </Div>
       );
     }
@@ -207,14 +179,12 @@ export const Avatar: React.FC<AvatarProps> = ({
   };
 
   return (
-    <Div className={containerClasses} id={id} {...editorAttrs}>
+    <Div className={containerClasses}>
       {actualAvatar && !actualIsGuest && !actualIsWithdrawn ? (
         <Img
           src={actualAvatar}
           alt={actualName}
           className="w-full h-full object-cover"
-          thumbPreset={SIZE_THUMB_PRESETS[size] ?? 'xs'}
-          loading="lazy"
         />
       ) : (
         renderContent()

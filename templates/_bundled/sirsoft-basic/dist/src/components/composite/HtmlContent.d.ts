@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 export interface HtmlContentProps {
     /**
      * 콘텐츠 (HTML 또는 일반 텍스트)
@@ -21,24 +20,10 @@ export interface HtmlContentProps {
      */
     purifyConfig?: any;
     /**
-     * 본문 이미지 srcset 의 `sizes` 값 (isHtml=true일 때만 사용)
-     * 본문 칸 너비가 레이아웃마다 달라, 브라우저가 고를 후보 폭을 레이아웃이 바꿀 수 있게 연다.
-     * @default "(min-width: 1024px) 768px, 100vw"
-     */
-    imageSizes?: string;
-    /**
      * 레이아웃 JSON에서 text 속성으로 전달되는 콘텐츠
      * content보다 우선순위가 높음
      */
     text?: string;
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-    id?: string;
-    /**
-       * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-       */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * HtmlContent 콘텐츠 렌더링 컴포넌트

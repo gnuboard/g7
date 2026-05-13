@@ -1,8 +1,6 @@
 # 레이아웃 JSON 스키마
 
 > **관련 문서**: [컴포넌트 개발](components.md) | [데이터 바인딩](data-binding.md) | [데이터 소스](data-sources.md)
->
-> **마크업 형식**: 이 문서는 런타임 JSON 계약(엔진이 소비하는 스키마)이다. 사람·AI 가 직접 작성하는 마크업 형식은 `.g7.html`([layout-markup.md](layout-markup.md), 2026-07-18 문법 동결)이며 설치 시 서버가 이 JSON 으로 컴파일한다. 산출 JSON 키는 이 스키마 그대로다 — 여기 키 이름 ↔ `.g7.html` 태그·속성명 매핑은 layout-markup.md 참조.
 
 ---
 
@@ -23,7 +21,7 @@
 
 ## 분리된 문서
 
-이 문서는 가독성을 위해 다음과 같이 분리되었습니다:
+이 문서는 가독성을 위해 다음과 같이 분리되었습니다:dff
 
 | 문서 | 내용 |
 |------|------|
@@ -40,9 +38,8 @@
 2. [필수 필드](#필수-필드)
 3. [레이아웃 권한 (permissions)](#레이아웃-권한-permissions)
 4. [컴포넌트 정의](#컴포넌트-정의)
-5. [레이아웃 최상위 initLocal](#레이아웃-최상위-initlocal)
-6. [격리된 상태 (isolatedState)](#격리된-상태-isolatedstate)
-7. [텍스트 렌더링](#텍스트-렌더링)
+5. [격리된 상태 (isolatedState)](#격리된-상태-isolatedstate)
+6. [텍스트 렌더링](#텍스트-렌더링)
 
 ---
 
@@ -59,15 +56,6 @@
 ---
 
 ## 필수 필드
-
-```html
-<layout name="dashboard" version="1.0.0">
-  <meta title="$t:dashboard.title" description="$t:dashboard.description"/>
-  …
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -89,39 +77,15 @@
 | `version` | string | ✅ | 스키마 버전 (예: "1.0.0") |
 | `layout_name` | string | ✅ | 레이아웃 식별자 (아래 네이밍 규칙 참조) |
 | `meta` | object | ❌ | 메타 정보 (title, description) |
-| `data_sources` | array | ✅ | API 데이터 소스 정의 (각 항목에 `label_key` `$t:` 키 — 편집기 데이터 연결 피커 친화 명칭) |
+| `data_sources` | array | ✅ | API 데이터 소스 정의 |
 | `init_actions` | array | ❌ | 초기화 액션 (레이아웃 로드 시 실행) |
-| `modals` | array | ❌ | 모달 컴포넌트 정의. 인라인 항목에 `layout_name` 이 있으면 설치가 `partial` 참조 조각을 인라인하며 남긴 조각 이름이다(마크업 `<modal name>`) |
+| `modals` | array | ❌ | 모달 컴포넌트 정의 |
 | `scripts` | array | ❌ | 외부 스크립트 동적 로드 (engine-v1.8.0+) |
 | `errorHandling` | object | ❌ | 레이아웃 레벨 에러 핸들링 설정 (engine-v1.6.0+) |
 | `permissions` | string[] | ❌ | 레이아웃 접근 권한 식별자 배열 (engine-v1.15.0+) |
 | `globalHeaders` | array | ❌ | 전역 HTTP 헤더 규칙 배열 (engine-v1.16.0+) |
 | `meta.seo` | object | ❌ | SEO 페이지 생성기 설정 (아래 참조) |
-| `meta.leave_guard` | string | ❌ | 저장하지 않은 변경 이탈 확인 식 `{{…}}` (engine-v1.82.0, 아래 참조) |
-| `meta.leave_message` | string | ❌ | 이탈 확인 문구(`$t:키` 또는 글자). 없으면 코어 기본 문구 |
-| `meta.scroll_restoration` | object | ❌ | 뒤로/앞으로 가기·새로고침으로 돌아왔을 때의 스크롤 동작 (engine-v1.85.0, 아래 참조) |
-| `meta.icon` | string | ❌ | 레이아웃 편집기 라우트 트리의 메뉴 아이콘 (편집기 [기본 정보] 탭) |
-| `meta.editor_label` | string | ❌ | 레이아웃 편집기 트리·후보 목록의 표시 이름(`$t:키` 허용). 없으면 `title` |
 | `components` | array | ✅ | 컴포넌트 배열 |
-
-### 한 객체에 같은 키를 두 번 쓰지 않는다
-
-JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.parse`)도 서버 등록(`json_decode`)도
-**뒤에 온 값이 앞의 값을 덮는다.** 그래서 앞에 쓴 선언은 예외도 경고도 없이 사라지는데,
-파일에는 그대로 남아 있으므로 코드를 읽는 사람에게는 반영된 것처럼 보인다.
-
-가장 자주 걸리는 자리는 `props` 다 — 노드가 `children` **뒤**에 `"props": {}` 를 이미 갖고 있는데
-작성자가 노드 앞머리에 `"props": { ... }` 를 새로 적는 경우다. 노드가 길면 앞머리와 꼬리가
-한 화면에 들어오지 않아 눈으로는 발견되지 않고, 그 속성만 화면에 영영 나타나지 않는다.
-
-| ❌ 금지 | ✅ 올바른 사용 |
-|--------|---------------|
-| 한 노드에 `props`(또는 `comment`·`actions` 등)를 두 번 선언 | 하나로 합친다 — 값을 추가할 때는 그 노드에 **이미 있는** 키를 찾아 거기에 넣는다 |
-| 노드 앞머리에 키를 추가하기 전에 꼬리를 확인하지 않음 | 노드 전체에서 그 키의 존재를 먼저 확인한다 |
-
-의도적으로 재선언해야 하는 예외는 그 객체의 `comment` 에
-`audit:allow layout-json-duplicate-object-key <사유>` 를 남긴다 (JSON 은 주석을 담을 수 없으므로
-표식 자리가 `comment` 값이다). 자동 검증이 차단한다.
 
 ### layout_name 네이밍 규칙
 
@@ -136,10 +100,10 @@ JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.par
 
 | 파일 경로 | layout_name |
 |----------|-------------|
-| `layouts/home.g7.html` | `home` |
-| `layouts/board/popular.g7.html` | `board/popular` |
-| `layouts/mypage/orders/show.g7.html` | `mypage/orders/show` |
-| `layouts/admin_dashboard.g7.html` | `admin_dashboard` |
+| `layouts/home.json` | `home` |
+| `layouts/board/popular.json` | `board/popular` |
+| `layouts/mypage/orders/show.json` | `mypage/orders/show` |
+| `layouts/admin_dashboard.json` | `admin_dashboard` |
 
 > **상세 문서**:
 > - `errorHandling`: [layout-json-features.md](layout-json-features.md#에러-핸들링-설정-errorhandling)
@@ -149,8 +113,6 @@ JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.par
 > - `permissions`: [아래 섹션](#레이아웃-권한-permissions)
 > - `globalHeaders`: [아래 섹션](#전역-헤더-globalheaders)
 > - `meta.seo`: [아래 섹션](#metaseo-seo-페이지-생성기)
-> - `meta.leave_guard`: [아래 섹션](#metaleave_guard-저장하지-않은-변경-이탈-확인)
-> - `meta.scroll_restoration`: [아래 섹션](#metascroll_restoration-뒤로-가기와-새로고침-스크롤-복원)
 
 ### meta.seo (SEO 페이지 생성기)
 
@@ -166,9 +128,6 @@ JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.par
 | seo.changefreq | string | X | sitemap changefreq (daily/weekly 등) |
 | seo.og | object | X | Open Graph 메타태그 |
 | seo.structured_data | object | X | JSON-LD 구조화 데이터 |
-| seo.title | string | X | 편집기 SEO 탭 공유 미리보기의 제목 대체값(Open Graph 제목이 없을 때) |
-| seo.description | string | X | 편집기 SEO 탭 공유 미리보기의 설명 대체값 |
-| seo.twitter | object | X | Twitter 카드 메타태그 (없는 칸은 Open Graph 값으로 채운다) |
 
 #### seo.extensions
 
@@ -194,96 +153,6 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 
 > 상세: [seo-system.md](../backend/seo-system.md)
 
-### meta.leave_guard (저장하지 않은 변경 이탈 확인)
-
-폼 화면에서 입력을 저장하지 않고 다른 화면으로 떠나면 입력이 사라진다. `meta.leave_guard` 에 「지금 저장하지 않은 변경이 있는가」를 식으로 적으면, 엔진이 떠나는 순간 그 식을 한 번 평가해 참일 때 확인 창을 띄운다 (engine-v1.82.0).
-
-```html
-<meta leave_guard="{{_local.hasChanges === true}}" leave_message="$t:board.leave_confirm" title="…"/>
-```
-
-```json
-"meta": {
-  "leave_guard": "{{_local.hasChanges === true}}",
-  "leave_message": "$t:board.leave_confirm"
-}
-```
-
-| 떠나는 방법 | 묻는 방식 |
-| --- | --- |
-| `navigate` 액션·링크 클릭·`G7Core.dispatch` navigate | 주소를 바꾸기 **전에** 확인 창. 머무르면 아무 일도 없다(스크롤도 그대로) |
-| 브라우저 뒤로/앞으로·`navigateBack` | 주소가 바뀐 뒤 확인 창. 머무르면 떠나던 화면의 주소를 다시 쌓는다(앞으로 가기 기록은 잃을 수 있다) |
-| 새로고침·탭 닫기·같은 탭 전체 이동(`openWindow` `_self`·`redirect`) | 브라우저 자체 확인 창(`beforeunload`) — 문구는 브라우저가 정한다 |
-
-- 같은 경로로의 이동(쿼리·해시만 바뀜 — 탭·검색·쪽 번호)은 같은 화면이라 묻지 않는다. `navigate` 의 `replace: true`(같은 화면 쿼리 교체)도 묻지 않는다.
-- 식은 `{{…}}` 하나여야 한다. 문맥은 `_local`(`G7Core.state.getLocal()` 과 같은 값)·`_global`·`route`·`query`·데이터 소스·`_computed` 다. 평가는 읽기 전용이고 상태를 바꾸지 않는다. 식이 아니거나 평가에 실패하면 묻지 않는다(사용자를 화면에 가두지 않는다).
-- 판정 근거는 `_local` 의 변경 표시(`hasChanges` 등)를 쓴다. 자동바인딩(`data-key`)·`setState`·`G7Core.state.setLocal` 이 쓴 값이 보인다. 화면 렌더러 안에서만 다시 계산되는 `_computed` 는 이동 순간 최신이 아닐 수 있으니 판정 근거로 쓰지 않는다.
-- 디바운스 입력(`debounce`) 칸에 친 값이 아직 상태에 닿기 전(마지막 입력 뒤 디바운스 시간 안)이면, 식이 거짓이어도 「변경 있음」 으로 보고 묻는다(브라우저 뒤로 가기·새로고침·닫기 포함). 대기 입력은 그대로 두고 존재만 본다. 링크·단추·`G7Core.dispatch` navigate(사이드바 등)로 떠나는 이동은 대기 입력을 먼저 반영한 뒤 식으로 판정하므로, 변경 표시와 무관한 디바운스 검색칸만 쳤다면 묻지 않는다(dispatch 경로는 engine-v1.82.1). 브라우저 뒤로 가기·새로고침·닫기는 반영 없이 존재만 보므로, 이런 칸도 친 직후 잠깐은 묻는다.
-- 저장 성공 뒤 이동·취소·삭제 뒤 이동처럼 **묻지 않아야 하는** 이동은 그 액션에 `bypassLeaveGuard: true` 를 준다(`navigate`·`navigateBack`·`openWindow`·`redirect` 공통 — [actions-handlers-navigation.md](actions-handlers-navigation.md#이탈-확인-건너뛰기-bypassleaveguard)). 저장 성공 뒤 화면에 머무르면 변경 표시도 내린다.
-- 한 번 떠나기로 한 이동(확인 승인 또는 우회)은 다음 화면이 그려질 때까지 다시 묻지 않는다(리다이렉트 라우트·로그인 리다이렉트에서 두 번 묻지 않는다). 세션 만료로 로그인 화면으로 옮기는 이동은 묻지 않는다.
-- 이 키는 브라우저 화면 전용이다. 검색엔진용 화면(SEO 렌더러)은 `meta.seo` 만 읽으므로 출력에 영향이 없다.
-- 상속 레이아웃은 `meta` 를 키 단위로 병합하므로 자식이 선언하면 그 화면에만 적용된다.
-- 확장 핸들러에서 확인 여부를 알아야 하면 `G7Core.navigation.isLeaveGuarded()` 를 쓴다([g7core-api.md](g7core-api.md#저장하지-않은-변경-확인--isleaveguarded)).
-
-### meta.scroll_restoration (뒤로 가기와 새로고침 스크롤 복원)
-
-화면은 뒤로/앞으로 가기에서 데이터를 다시 받느라 높이가 늦게 늘어난다. 브라우저 기본 복원은 그 직후 한 번만 시도해 문서가 짧으면 맨 위에 머문다. 엔진은 히스토리 항목마다 스크롤 위치를 기억했다가, 화면을 다시 그린 뒤 이 설정에 따라 되돌린다 (engine-v1.85.0). 설정이 없으면 기억한 위치로 복원한다.
-
-```html
-<meta title="…" :scroll_restoration='{"wait":"data","timeout_ms":8000,"containers":["#admin-main"]}'/>
-```
-
-```json
-"meta": {
-  "scroll_restoration": {
-    "mode": "restore",
-    "on_reload": true,
-    "wait": "height",
-    "timeout_ms": 5000,
-    "containers": [],
-    "snapshot": { "enabled": true, "ttl_seconds": 600, "revalidate": true, "item_key": "id", "state": [] }
-  }
-}
-```
-
-| 키 | 값 | 기본 | 뜻 |
-| --- | --- | --- | --- |
-| `mode` | `"restore"` · `"top"` · `"none"` · `"#선택자"` | `"restore"` | 돌아왔을 때 동작. `none` 은 엔진이 관여하지 않는다(브라우저·템플릿 몫). 선택자는 그 요소로 이동(`navigate` 의 `scroll` 과 같은 문법) |
-| `on_reload` | boolean | `true` | 새로고침 뒤에도 같은 동작. `false` 면 새로고침 뒤 맨 위 |
-| `wait` | `"height"` · `"data"` | `"height"` | `height`: 문서가 그 위치를 담을 만큼 자라면 맞추고 높이가 멈추면 끝낸다. `data`: 화면 데이터 소스 응답이 모두 온 뒤 한 번 맞춘다 |
-| `timeout_ms` | 정수 0~60000 | `5000` | 최대 대기. 넘으면 닿을 수 있는 가장 아래로. 사용자가 휠·터치·키·포인터로 만지면 바로 멈춘다 |
-| `containers` | 선택자 배열 | `[]` | 창 말고 함께 기억·복원할 안쪽 스크롤 영역(예: 관리자 본문 `#admin-main`) |
-| `snapshot.enabled` | boolean | `true` | 더보기(`appendDataSource`)로 늘어난 데이터 소스를 항목별로 기억해, 돌아왔을 때 먼저 그려 늘어났던 위치까지 복원 |
-| `snapshot.ttl_seconds` | 정수 0~86400 | `600` | 스냅샷 유효 시간. 넘으면 버리고 새로 받는다 |
-| `snapshot.revalidate` | boolean | `true` | 스냅샷으로 그린 뒤 첫 묶음을 다시 받아 바뀐 항목만 갈아끼운다 |
-| `snapshot.item_key` | 문자열 (최대 100자) | `"id"` | 갈아끼울 때 같은 항목을 알아보는 필드 |
-| `snapshot.state` | 상태 경로 배열 (`_global.*` · `_local.*`) | `[]` | 더보기 스냅샷과 함께 기억했다가, 돌아올 때 화면 초기화 뒤 첫 렌더 직전에 되돌릴 진행 상태(다음 쪽 번호·끝 여부 등). 각 경로는 `^_(global\|local)\.[A-Za-z0-9_$][\w$.]*$` 형식, 최대 200자 |
-
-더보기 목록이 다음 쪽 번호를 상태에 들고 있으면(예: `_global.infiniteScroll` 에 `{ "page": 3, "hasMore": true }`), 그 경로를 `snapshot.state` 에 적어야 돌아온 뒤 「더보기」가 1쪽이 아니라 4쪽부터 받는다:
-
-```json
-"meta": {
-  "scroll_restoration": {
-    "snapshot": { "state": ["_global.infiniteScroll"] }
-  }
-}
-```
-
-모든 키는 선택이다 — 적은 키만 위 단계 값을 덮는다(부분 덮어쓰기). 적용 순서(뒤가 우선):
-
-1. 엔진 기본값 (위 표의 「기본」)
-2. 템플릿 `template.json` 의 `scroll_restoration` — 제작자가 배포한 초깃값([template-basics.md](../extension/template-basics.md#템플릿-메타데이터-templatejson))
-3. 베이스 레이아웃(`_user_base`·`_admin_base` 등)의 `meta.scroll_restoration` — 레이아웃 편집기에서 고치는 「템플릿 기본값」
-4. 화면 레이아웃의 `meta.scroll_restoration` — 서버가 베이스→화면을 키 단위(하위 `snapshot` 까지)로 깊게 병합한다([layout-json-inheritance.md](layout-json-inheritance.md))
-5. 이 화면을 떠날 때 쓴 `navigate` 의 `returnScroll` — 그 이동으로 떠난 화면에 뒤로 가기로 돌아올 때만([actions-handlers-navigation.md](actions-handlers-navigation.md#navigate))
-
-- 화면별 예: 주문 완료 `{"mode":"top"}`, 관리자 목록 `{"containers":["#admin-main"]}`, 긴 상품 목록 `{"timeout_ms":8000}`.
-- 레이아웃 편집기의 편집 화면에서는 복원하지 않는다(편집 중 위치가 튀지 않게). 미리보기·운영 화면만 복원한다.
-- 레이아웃 편집기 [페이지 설정 → 스크롤] 탭이 이 키를 고친다. 비운 칸은 키를 지워 위 단계 값을 따른다.
-- 이 키는 브라우저 화면 전용이다. 검색엔진용 화면(SEO 렌더러)에는 영향이 없다.
-- 저장 검증: `UpdateLayoutContentRequest` 가 하위 키까지 규칙을 둔다(`mode` 최대 200자, `wait` 은 `height`·`data`, `timeout_ms` 0~60000, `containers.*` 최대 200자, `snapshot.ttl_seconds` 0~86400, `snapshot.item_key` 최대 100자, `snapshot.state.*` 위 상태 경로 형식·최대 200자). 규칙 밖 값은 422.
-- 목록 값(`containers`·`snapshot.state`)은 상속에서 통째로 바뀐다 — 화면이 적으면 베이스 목록에 덧붙지 않고 그 목록이 쓰인다.
-
 ---
 
 ## 레이아웃 권한 (permissions)
@@ -293,18 +162,6 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 레이아웃 접근에 필요한 권한을 정의합니다. 권한이 없는 사용자는 레이아웃 서빙 API에서 401/403 응답을 받습니다.
 
 ### 기본 문법
-
-```html
-<layout name="admin_dashboard" version="1.0.0">
-  <meta title="$t:admin.dashboard.title"/>
-  <permissions>
-    <permission>core.dashboard.read</permission>
-  </permissions>
-  …
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -353,18 +210,6 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 
 #### 관리자 레이아웃
 
-```html
-<layout name="admin_user_list" version="1.0.0">
-  <meta title="$t:admin.users.title"/>
-  <permissions>
-    <permission>core.users.read</permission>
-  </permissions>
-  …
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "version": "1.0.0",
@@ -376,18 +221,6 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 ```
 
 #### 모듈 관리 레이아웃
-
-```html
-<layout name="admin_ecommerce_product_list" version="1.0.0">
-  <meta title="$t:admin.ecommerce.products.title"/>
-  <permissions>
-    <permission>sirsoft-ecommerce.products.read</permission>
-  </permissions>
-  …
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -401,15 +234,6 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 
 #### 공개 레이아웃 (권한 없음)
 
-```html
-<layout name="home" version="1.0.0">
-  <meta title="$t:common.home"/>
-  …
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "version": "1.0.0",
@@ -417,6 +241,21 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
   "meta": { "title": "$t:common.home" },
   "components": [...]
 }
+```
+
+### 일괄 업데이트 커맨드
+
+기존 레이아웃에 권한을 일괄 추가하려면 Artisan 커맨드를 사용합니다:
+
+```bash
+# 시뮬레이션 (실제 수정 없음)
+php artisan layout:add-permissions --dry-run
+
+# 실제 실행
+php artisan layout:add-permissions
+
+# 특정 레이아웃만
+php artisan layout:add-permissions --layout=admin_dashboard
 ```
 
 ### 주의사항
@@ -436,17 +275,6 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 개별 컴포넌트에 `permissions` 속성을 추가하면, **서버 사이드에서 해당 컴포넌트를 JSON에서 제거**하여 서빙합니다. 프론트엔드 `if` 조건부 렌더링과 달리, 권한 없는 컴포넌트의 구조 자체가 클라이언트에 노출되지 않습니다.
 
 ### 기본 문법
-
-```html
-<div data-ref="admin_widget">
-  <permissions>
-    <permission>core.dashboard.admin-widget</permission>
-  </permissions>
-  <h2>관리자 전용 위젯</h2>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -481,22 +309,6 @@ data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략
 ### 상위-하위 중복 선언
 
 각 노드는 자기 permissions만 독립 평가합니다. 별도 병합 정책 없음:
-
-```html
-<div>
-  <permissions>
-    <permission>core.users.read</permission>
-  </permissions>
-  <button>
-    <permissions>
-      <permission>core.users.delete</permission>
-    </permissions>
-    삭제
-  </button>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -549,18 +361,6 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 
 ### 기본 문법
 
-```html
-<layout name="shop_cart" version="1.0.0">
-  <global-headers>
-    <match pattern="*" X-Request-Source="user-template"/>
-    <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}"/>
-  </global-headers>
-  …
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "version": "1.0.0",
@@ -583,7 +383,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `pattern` | string | ✅ | 엔드포인트 매칭 패턴 (`*`, `/api/modules/sirsoft-ecommerce/*` 등) |
+| `pattern` | string | ✅ | 엔드포인트 매칭 패턴 (`*`, `/api/shop/*` 등) |
 | `headers` | object | ✅ | 헤더 키-값 쌍 (표현식 지원) |
 
 ### 패턴 매칭 규칙
@@ -592,20 +392,12 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 |------|------|----------|
 | `*` | 모든 API | 전체 적용 |
 | `/api/modules/sirsoft-ecommerce/*` | ecommerce 모듈 API | `/api/modules/sirsoft-ecommerce/cart`, `/api/modules/sirsoft-ecommerce/products/123` |
-| `/api/modules/sirsoft-ecommerce/*` | shop prefix API | `/api/modules/sirsoft-ecommerce/products`, `/api/modules/sirsoft-ecommerce/categories` |
-| `/api/modules/sirsoft-ecommerce/cart` | 정확히 일치 | `/api/modules/sirsoft-ecommerce/cart`만 (하위 경로 제외) |
+| `/api/shop/*` | shop prefix API | `/api/shop/products`, `/api/shop/categories` |
+| `/api/cart` | 정확히 일치 | `/api/cart`만 (하위 경로 제외) |
 
 ### 표현식 지원
 
 헤더 값에서 데이터 바인딩 표현식을 사용할 수 있습니다:
-
-```html
-<global-headers>
-  <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}" X-User-Locale="{{$locale}}"/>
-</global-headers>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -614,7 +406,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
       "pattern": "/api/modules/sirsoft-ecommerce/*",
       "headers": {
         "X-Cart-Key": "{{_global.cartKey}}",
-        "X-User-Locale": "{{$locale ?? 'ko'}}"
+        "X-User-Locale": "{{_global.locale ?? 'ko'}}"
       }
     }
   ]
@@ -638,17 +430,6 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
 
 개별 API의 `headers` 속성이 `globalHeaders`의 동일한 키를 덮어씁니다:
 
-```html
-<data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products">
-  <headers X-Custom="source-value"/>
-</data-source>
-<global-headers>
-  <match pattern="*" X-Custom="global-value"/>
-</global-headers>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "globalHeaders": [
@@ -657,7 +438,7 @@ post-cache filtering — 기존 캐시 구조에 영향 없음
   "data_sources": [
     {
       "id": "products",
-      "endpoint": "/api/modules/sirsoft-ecommerce/products",
+      "endpoint": "/api/products",
       "headers": { "X-Custom": "source-value" }  // globalHeaders보다 우선
     }
   ]
@@ -743,18 +524,6 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 
 ## 컴포넌트 정의
 
-작성에서는 **태그명이 곧 컴포넌트**이고(`name`), `type`(basic/composite/layout)은 레지스트리에서 파생하므로 적지 않는다. `id` 는 `data-ref`, props 는 무접두 속성, 액션은 `<on>` 블록이다.
-
-```html
-<button data-ref="unique_id" title="$t:dashboard.title" value="{{data.field}}">
-  <on type="click">
-    <navigate path="/path"/>
-  </on>
-</button>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. 태그 자리에는 등록된 컴포넌트의 kebab 이름이 온다(`<button>`·`<data-grid>` 등) — 아래 JSON 의 `name` 이 그 태그에서 나오고, `type` 은 레지스트리에서 파생된다.
-
 ```json
 {
   "id": "unique_id",
@@ -771,7 +540,10 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
       "handler": "navigate",
       "target": "/path"
     }
-  ]
+  ],
+  "data_binding": {
+    "value": "data.field"
+  }
 }
 ```
 
@@ -782,14 +554,14 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 | `id` | string | ✅ | 컴포넌트 고유 ID |
 | `type` | string | ✅ | 컴포넌트 타입 (basic/composite/layout) |
 | `name` | string | ✅ | 컴포넌트 이름 (components.json에 등록된 이름) |
-| `comment` | string | ✅ | 시안 추적 코드 및 역할 설명 (예: "F-002: 상품명 검색 필드"). 공개 서빙 응답에서는 제거됨 (아래 참조) |
+| `comment` | string | ✅ | 시안 추적 코드 및 역할 설명 (예: "F-002: 상품명 검색 필드") |
 | `props` | object | ❌ | 컴포넌트에 전달할 props |
 | `text` | string | ❌ | 텍스트 콘텐츠 (최우선 렌더링) |
 | `children` | array | ❌ | 자식 컴포넌트 배열 (레이아웃/집합 컴포넌트에서 사용) |
 | `iteration` | object | ❌ | 반복 렌더링 설정 (source, item_var, index_var) |
 | `actions` | array | ❌ | 액션 핸들러 정의 (클릭, 키보드, 폼 제출 등) |
 | `lifecycle` | object | ❌ | 생명주기 핸들러 (onMount, onUnmount) |
-| ~~`data_binding`~~ | object | — | **사어(死語)** — 렌더러가 타입만 선언하고 읽지 않으며 코퍼스 사용 0건이다. 마크업 태그로 승격되지 않는다([layout-markup.md 명명 3순위](layout-markup.md)). 데이터는 props 표현식(`value="{{data.field}}"`)으로 바인딩한다 |
+| `data_binding` | object | ❌ | 데이터 바인딩 정의 |
 | `blur_until_loaded` | boolean \| string | ❌ | 데이터 로딩 중 blur 효과 적용 (boolean 또는 표현식 문자열) |
 | `component_layout` | object | ❌ | 컴포넌트 내부 커스텀 렌더링 레이아웃 정의 (RichSelect 등에서 사용) |
 | `isolatedState` | object | ❌ | 격리된 상태 초기값 정의 (engine-v1.14.0+) |
@@ -803,85 +575,6 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 > - `actions`: [layout-json-features.md](layout-json-features.md#액션-시스템-actions)
 > - `isolatedState`: [아래 섹션](#격리된-상태-isolatedstate)
 
-### `comment` / `_comment` — 화면 렌더 응답에서 제거
-
-`comment` / `_comment` 는 편집기·개발자용 설명 주석이며 런타임 렌더러는 참조하지 않는다. **브라우저가 화면을 그리는 데 쓰는 JSON 을 내보내는 응답**에서는 전송 크기 절감을 위해 이 두 키가 노드 트리 전체에서 재귀적으로 제거된다(`LayoutService::stripDeveloperComments`).
-
-- 편집 모드 서빙(`?with_source_meta=1`, 편집 권한 필요)에서는 편집기가 `comment` 를 편집 가능한 속성으로 노출하므로 **보존**된다. 공개/편집 응답은 별도 캐시 키로 분리되어 있어 조건부 제거가 안전하다.
-- 따라서 `comment` 는 편집기·저장본에서는 유지되고, 일반 사용자에게 서빙되는 응답에서만 사라진다. 레이아웃 로직이 `comment` 값에 의존해서는 안 된다.
-- 화면 조각의 설명(`<partial description="…">` → 조각 루트 `meta: {is_partial: true, description}`)도 개발자용 설명이므로 같은 응답에서 제거된다. 레이아웃 최상단 `meta.description` 은 화면 설명(SEO)이라 보존된다 — 조각 표식(`is_partial: true`)이 있는 `meta` 만 대상이다.
-- **요청 본문 자리는 제거하지 않는다** — `body`·`query`·`headers` 아래와 데이터소스의 `params` 아래는 서버로 보낼 데이터라 `comment` 키도 값으로 남는다(예: 검수 의견을 보내는 `apiCall` 의 `params.body.comment`).
-- 반대로 액션 `params`·`props`·`initLocal` **바로 아래**의 `comment` 는 설명으로 보고 지운다. 설명은 노드·액션에 붙이고, 서버로 보낼 데이터 키 `comment` 는 `body`·`query` 에 둔다.
-
-| 자리 | `comment` 키 | 서빙 응답 |
-| --- | --- | --- |
-| 노드·액션·데이터소스·모달·명명 액션 정의 | 설명 | 제거 |
-| 액션 `params` 바로 아래 · `props` 아래 · `initLocal` 아래 | 설명(예약 — 데이터로 쓰지 않는다) | 제거 |
-| `body`·`query`·`headers` 아래 · 데이터소스 `params` 아래 | 요청 데이터 | **보존** |
-
-#### 제거는 소비자마다 서야 한다
-
-이 계약을 지는 응답은 하나가 아니다. 현재 소비자는 둘이다.
-
-| 소비자 | 엔드포인트 | 제거 지점 |
-| --- | --- | --- |
-| 공개 레이아웃 서빙 | `GET /api/layouts/{template}/{layout}.json` | `LayoutService::getLayout` — 병합 안(`loadAndMergeLayout`) **+ 확장 주입 뒤** 두 번 |
-| 미리보기 서빙 | `GET /api/layouts/preview/{token}.json` (무인증 토큰) | `LayoutPreviewService::getPreviewLayout` 진입점 한 자리 (분기 둘을 함께 덮음) |
-
-새 소비자를 만들 때는 재귀 제거를 새로 짜지 않고 `LayoutService::stripDeveloperComments`(public) 를 부른다 — 각자 구현하면 한쪽만 키를 늘렸을 때 조용히 갈린다.
-
-제거 지점을 **병합 함수 안에만** 두면 그 뒤에 얹히는 것이 새어 나간다. 확장 주입 조각(`resources/extensions/`)이 실제로 그렇게 빠져나갔다 — 주석 제거는 병합 시점에 일어나는데 `applyExtensions` 는 그 뒤에 얹히므로 조각의 주석은 제거를 지나쳤고, 같은 응답 안에서 본문에는 주석이 없고 주입 조각에만 있는 상태로 서빙되었다. 회귀 잠금: `tests/Feature/Api/Public/{LayoutServingTest,LayoutPreviewControllerTest}.php`.
-
----
-
-## 레이아웃 최상위 initLocal
-
-레이아웃 최상위 `initLocal`(구 `state`, engine-v1.11.0+ 별칭)은 `_local` 의 **정적 초기값**을 세운다.
-데이터 소스의 `initLocal`(응답을 `_local` 로 옮기는 옵션)과는 다른 것이다.
-
-<!-- pair:skip initLocal 설명용 발췌 — 소스는 templates/_bundled/sirsoft-basic/layouts/shop/guest_claim_show.g7.html -->
-```json
-{
-  "layout_name": "shop/guest_claim_show",
-  "initLocal": {
-    "isGuest": true,
-    "withdrawRefreshDataSourceId": "claim"
-  }
-}
-```
-
-### 값은 그대로 복사된다 — 표현식은 해석되지 않는다
-
-엔진은 값을 JSON 깊은 복사로 옮긴다. 그래서 `{{...}}` 를 쓰면 **그 문자열 자체**가 `_local` 에 들어간다.
-
-| ❌ 금지 | ✅ 올바른 사용 |
-| --- | --- |
-| `"initLocal": { "apiBase": "/api/orders/{{_global.orderNumber}}/claims" }` | 표현식이 필요한 값은 `init_actions` 의 `setState` 로 세운다 |
-
-어긋나도 예외가 나지 않는다 — 주소에 `{{_global.orderNumber}}` 가 그대로 실려 요청이 404 가 되거나,
-화면이 그 문자열을 그대로 출력한다. 정적 리터럴(불리언·숫자·고정 문자열·고정 배열)만 여기 둔다.
-
-### 이미 값이 있는 키는 덮지 않는다
-
-`_local[key]` 가 `undefined` 일 때만 채운다. 앞 화면이 같은 키를 남겨 두었다면 그 값이 유지되므로,
-화면마다 초기값이 달라야 하는 키는 `init_actions` 에서 명시적으로 세운다.
-
-### 실행 순서
-
-```text
-blocking 데이터 소스 조회
-  → 레이아웃 initLocal/initGlobal/initIsolated
-    → 데이터 소스의 initLocal/initGlobal/initIsolated
-      → init_actions (부모 → 자식 순)
-```
-
-`blocking` 데이터 소스는 이 사슬의 **맨 앞**에서 조회된다. 그래서 `init_actions` 나 `initLocal` 이
-세우는 값을 blocking 데이터 소스의 주소·헤더에서 읽을 수 없다 — 그 자리에는 아직 아무것도 없다.
-그 값이 필요한 데이터 소스는 `progressive` 로 두고 `blur_until_loaded` 로 로딩 중을 가린다.
-
-`extends` 로 상속하면 부모의 `init_actions` 가 자식보다 먼저 실행되므로, 부모가 세운 `_global` 값은
-자식의 `init_actions` 에서 읽을 수 있다.
-
 ---
 
 ## 격리된 상태 (isolatedState)
@@ -892,22 +585,9 @@ blocking 데이터 소스 조회
 
 ### 기본 문법
 
-```html
-<div>
-  <isolated-state scope-id="category-selector">
-    <field name="selectedCategories" :value="[]"/>
-    <field name="currentStep" :value="1"/>
-    <field name="isExpanded" :value="false"/>
-  </isolated-state>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
-  "type": "basic",
-  "name": "Div",
+  "type": "Div",
   "isolatedState": {
     "selectedCategories": [],
     "currentStep": 1,
@@ -929,12 +609,6 @@ blocking 데이터 소스 조회
 
 격리된 상태는 `_isolated` 접두사로 접근합니다:
 
-```html
-<button disabled="{{_isolated.currentStep === 1}}">{{_isolated.selectedCategories.length}}개 선택됨</button>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "type": "basic",
@@ -949,14 +623,6 @@ blocking 데이터 소스 조회
 ### 상태 업데이트
 
 `setState` 핸들러에서 `target: "isolated"` 옵션을 사용합니다:
-
-```html
-<on type="click">
-  <set-state target="isolated" currentStep="{{_isolated.currentStep + 1}}"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1022,12 +688,6 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 
 ### 올바른 패턴
 
-```html
-<h1 data-ref="page_title" class="text-2xl font-bold">대시보드</h1>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "id": "page_title",
@@ -1039,12 +699,6 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
   "text": "대시보드"
 }
 ```
-
-```html
-<span data-ref="logo_text" class="text-white font-bold">G7</span>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1076,12 +730,6 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 
 `text` 속성에서도 다국어 키를 사용할 수 있습니다:
 
-```html
-<h1 data-ref="page_title" class="text-2xl font-bold">$t:dashboard.title</h1>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "id": "page_title",
@@ -1098,12 +746,6 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 
 `text` 속성에서 데이터 바인딩도 가능합니다:
 
-```html
-<span data-ref="user_name">{{user.name}}</span>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "id": "user_name",
@@ -1114,18 +756,6 @@ isolatedScopeId 중복 시 → 마지막 등록된 스코프 우선 + 경고 로
 ```
 
 ### children 배열과의 차이
-
-```html
-<!-- ✅ text 속성: 단순 텍스트 표시 -->
-<h1 data-ref="title">제목</h1>
-<!-- ✅ children 배열: 하위 컴포넌트 포함 -->
-<card data-ref="card">
-  <h2 data-ref="card_title">카드 제목</h2>
-  <p data-ref="card_content">카드 내용</p>
-</card>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // ✅ text 속성: 단순 텍스트 표시
@@ -1188,17 +818,6 @@ const renderChildren = useMemo(() => {
 
 ### 실제 사용 예시
 
-```html
-<div data-ref="sidebar_logo" class="flex items-center gap-3">
-  <div data-ref="logo_circle" class="flex items-center justify-center w-10 h-10 bg-black rounded-full">
-    <span data-ref="logo_text" class="text-white font-bold text-sm">G7</span>
-  </div>
-  <span data-ref="app_name" class="font-semibold text-lg">G7</span>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "id": "sidebar_logo",
@@ -1251,20 +870,6 @@ const renderChildren = useMemo(() => {
 
 ### 호스트 레이아웃 (extension_point 정의)
 
-```html
-<extension-point name="address_search_slot" productId="{{route.id}}">
-  <prop name="readOnlyFields">
-    <item>zipcode</item>
-    <item>address</item>
-  </prop>
-  <callback name="onAddressSelect">
-    <set-state target="local" form.zipcode="{{$event.zipcode}}"/>
-  </callback>
-</extension-point>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "type": "extension_point",
@@ -1284,14 +889,6 @@ const renderChildren = useMemo(() => {
 
 ### 플러그인 extension JSON (주입되는 컴포넌트)
 
-```html
-<on type="click">
-  <action handler="myPlugin.doSomething" id="{{extensionPointProps.productId}}" fields="{{extensionPointProps.readOnlyFields}}" callbackAction="{{extensionPointCallbacks.onAddressSelect}}"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "handler": "myPlugin.doSomething",
@@ -1310,10 +907,6 @@ const renderChildren = useMemo(() => {
 |------|------|------|------|
 | `props` | object | ❌ | 주입 컴포넌트에 전달할 데이터 (표현식 평가) |
 | `callbacks` | object | ❌ | 주입 컴포넌트에 전달할 액션 객체 (평가 없이 전달) |
-
-전달된 값은 주입 컴포넌트와 그 자손 전체에서 참조할 수 있습니다.
-
-검색 봇용 화면에서는 `extensionPointProps` 만 해석되고 `extensionPointCallbacks` 는 해석되지 않습니다. 색인되어야 할 내용은 `props` 로 전달하세요. 사용자 작성 콘텐츠를 넘길 때는 평문/HTML 판정 값(`isHtml`)을 함께 전달합니다 — 두 화면 모두 이 값에 따라 이스케이프하거나 위험 요소를 제거한 뒤 출력합니다. 봇 화면의 노드 문법 지원 범위는 [seo-system.md "SEO 렌더러 지원 노드 키"](../backend/seo-system.md), 정화 규칙은 같은 문서의 "봇 화면의 HTML 정화" 를 참조하세요.
 
 ---
 
@@ -1341,73 +934,3 @@ const renderChildren = useMemo(() => {
 - [데이터 바인딩](data-binding.md) - `{{}}` 표현식, `$t:` 다국어
 - [데이터 소스](data-sources.md) - API 데이터 자동 fetch
 - [상태 관리](state-management.md) - `_global` 전역 상태
-
-## 확장이 제공하는 컴포넌트
-
-마크업 태그는 식별자의 `_` 를 `-` 로 접은 프리픽스가 앞에 붙은 kebab 이름이고, 노드 `name` 에는 `{확장식별자}.{이름}` 이 그대로 들어간다.
-
-```html
-<sirsoft-ecommerce-product-card title="{{product.name}}"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
-```json
-{
-  "type": "composite",
-  "name": "sirsoft-ecommerce.ProductCard",
-  "props": { "title": "{{product.name}}" }
-}
-```
-
-마크업 어휘는 템플릿 `components.json` 단독이 아니라 템플릿 + 활성 모듈 + 활성 플러그인 3계통이다. 템플릿이 그 컴포넌트를 오버라이드했더라도 노드 `name` 은 바뀌지 않는다 — 대체는 같은 이름 아래에서 일어난다.
-
-규약 전문: [../extension/extension-components.md](../extension/extension-components.md)
-
-## 레이아웃 구현 규칙 (작성 `.g7.html` / 런타임 계약 `.json`)
-```
-0. 소스 SSoT 는 `.g7.html` 마크업 — 문법은 layout-markup.md, 산출 JSON 키 계약은 layout-json.md
-1. 새로운 기능 사용 전 → 반드시 해당 규정 문서에서 지원 여부 확인
-2. 지원되지 않는 문법 사용 금지 → 추측/가정으로 구현하지 않음
-3. 불확실한 경우 → 기존 레이아웃 패턴 참조
-4. 규정 문서에 없는 기능 → 절대 사용 금지
-```
-
-### 레이아웃 작성 체크리스트
-
-```
-□ 소스(`.g7.html`) 문법이 layout-markup.md 와 일치하는가? (산출 JSON 키 계약은 layout-json.md)
-□ 레이아웃 구조가 layout-json.md 스키마와 일치하는가? (`.json` 직접 편집 또는 컴파일 산출 확인 시)
-□ 사용할 컴포넌트가 3소스 중 하나에 정의되어 있는가?
-  → 템플릿 소유: components.md
-  → 확장 제공: {확장식별자}.{이름} — extension-components.md
-  → 템플릿이 대체한 확장 컴포넌트: 이름은 확장 것 그대로 (마크업 표면 불변)
-□ 컴포넌트 props가 component-props.md에 정의된 것만 사용하는가?
-□ 사용할 핸들러가 actions.md에 정의되어 있는가?
-□ 핸들러의 params 구조가 actions-handlers.md와 일치하는가?
-□ 데이터 바인딩 문법이 data-binding.md에 정의된 형식인가?
-□ 다크 모드 클래스가 dark-mode.md 규칙을 따르는가?
-□ 기존 유사 레이아웃에서 동일 패턴이 사용되고 있는가?
-```
-
-### 주의 사항
-
-```text
-필수: 규정 문서에 정의된 핸들러/props/바인딩 문법만 사용 (API 응답 구조도 확인 후 바인딩)
-필수: Partial은 컴포넌트 치환만 수행 (computed, data_sources, modals, state 미지원)
-필수: data_sources ID 고유성 유지, 조건부 렌더링은 if 속성만 사용 (type: "conditional" 미지원)
-```
-
-### 독립 레이아웃(extends 없음)의 글로벌 호스트 컴포넌트
-
-`toast`, `openModal` 등 글로벌 상태 기반 핸들러(`_global.toasts`, `_global.modal`)는 호스트 컴포넌트(`Toast`, `ModalRoot` 등)가 마운트되어야 화면에 렌더된다. 베이스 레이아웃(`_user_base`, `_admin_base`)은 일반적으로 이들을 마운트하므로 자식 레이아웃은 별도 작업이 필요 없지만, `extends` 없이 정의된 독립 레이아웃(예: `admin_login.g7.html`)은 호스트 컴포넌트가 자동 주입되지 않는다.
-
-```text
-필수: 독립 레이아웃에서 toast/modal 사용 시 components 최상단에 호스트 컴포넌트를 직접 추가
-  - Toast: { type: "composite", name: "Toast", props: { toasts: "{{_global.toasts}}", ... } }
-  - 누락 시 핸들러는 success 로 기록되나 화면에는 미노출 (조용한 실패)
-
-필수: 의심 시 베이스 레이아웃의 호스트 컴포넌트 정의를 그대로 복사
-  - sirsoft-admin_basic: layouts/_admin_base.g7.html 의 global_toast 블록
-  - sirsoft-basic: layouts/_user_base.g7.html 의 토스트 컴포넌트 블록
-```

@@ -47,8 +47,7 @@ export interface StateDiff {
 /** 액션 로그 */
 export interface ActionLog {
     id: string;
-    /** 액션 타입. 엔진이 type 을 적지 않은 액션(event 만 적은 진입점, 풀리지 않은 actionRef)은 undefined 로 기록한다 */
-    type: string | undefined;
+    type: string;
     params?: Record<string, any>;
     /** 바인딩이 해석된 params (템플릿 표현식 → 실제 값) */
     resolvedParams?: Record<string, any>;
@@ -56,13 +55,10 @@ export interface ActionLog {
     startTime: number;
     endTime?: number;
     duration?: number;
-    /** `skipped` — 미리보기 모드에서 억제된 액션 (ActionDispatcher.executeAction) */
-    status: 'started' | 'success' | 'error' | 'skipped';
+    status: 'started' | 'success' | 'error';
     result?: any;
     error?: SerializedError;
     children?: ActionLog[];
-    /** 부가 정보 (예: `{ reason: 'preview_mode_suppressed' }`) */
-    metadata?: Record<string, any>;
 }
 
 /** 직렬화된 에러 */
@@ -198,8 +194,6 @@ export interface DiagnosticContext {
     websocket: WebSocketInfo;
     stateAtTime: (timestamp: number) => StateView | undefined;
     layoutHas: (prop: string, value: string) => boolean;
-    /** 현재 렌더 중인 레이아웃 JSON (DevTools 가 로드를 추적하지 못했으면 null) */
-    currentLayoutJson?: LayoutJsonData | null;
 }
 
 /** 진단 결과 */
@@ -546,7 +540,7 @@ export interface ExpressionEvalInfo {
     duration?: number;            // 평가 소요 시간 (ms)
     steps?: EvaluationStep[];     // 추적 단계
     warning?: ExpressionWarning;  // 경고 정보
-    method?: 'resolve' | 'resolveBindings' | 'evaluateExpression' | 'evaluatePipeExpression';  // 사용된 메서드 (파이프 식은 evaluatePipeExpression)
+    method?: 'resolve' | 'resolveBindings' | 'evaluateExpression';  // 사용된 메서드
     skipCache?: boolean;          // skipCache 옵션 사용 여부
 }
 
@@ -2146,8 +2140,8 @@ export interface NamedActionRefLog {
     id: string;
     /** 참조한 named action 이름 */
     actionRefName: string;
-    /** 해석된 핸들러명 (핸들러 없이 actionRef 만 적은 정의면 undefined) */
-    resolvedHandler: string | undefined;
+    /** 해석된 핸들러명 */
+    resolvedHandler: string;
     /** 해석 시각 */
     timestamp: number;
 }

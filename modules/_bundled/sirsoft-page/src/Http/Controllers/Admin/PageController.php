@@ -2,11 +2,8 @@
 
 namespace Modules\Sirsoft\Page\Http\Controllers\Admin;
 
-use App\Exceptions\ContentMediaLimitExceededException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Page\Http\Requests\BulkChangePageStatusRequest;
 use Modules\Sirsoft\Page\Http\Requests\ChangePageStatusRequest;
 use Modules\Sirsoft\Page\Http\Requests\CheckSlugRequest;
@@ -47,7 +44,7 @@ class PageController extends AdminBaseController
     {
         try {
             $validated = $request->validated();
-            $perPage = $validated['per_page'] ?? 20;
+            $perPage = $validated['per_page'] ?? 15;
             $pages = $this->pageService->getPages(
                 array_filter($validated, fn ($v) => $v !== null),
                 $perPage
@@ -79,17 +76,6 @@ class PageController extends AdminBaseController
                 new PageResource($page),
                 201
             );
-        } catch (ContentMediaLimitExceededException $e) {
-            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
-            return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]], $e->getMessageParams());
-        } catch (AttachmentLimitExceededException $e) {
-            // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error(
-                $e->getMessageKey(),
-                422,
-                ['code' => 'attachment_limit_exceeded'],
-                $e->getMessageParams()
-            );
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.page.create_failed', 500, $e->getMessage());
         }
@@ -111,7 +97,7 @@ class PageController extends AdminBaseController
                 'sirsoft-page::messages.page.fetch_success',
                 new PageResource($page)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -138,18 +124,7 @@ class PageController extends AdminBaseController
                 'sirsoft-page::messages.page.update_success',
                 new PageResource($page)
             );
-        } catch (ContentMediaLimitExceededException $e) {
-            // 본문 미디어 문서당 최대 개수 초과 — 저장 전체가 되돌아갔다 (#883)
-            return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]], $e->getMessageParams());
-        } catch (AttachmentLimitExceededException $e) {
-            // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error(
-                $e->getMessageKey(),
-                422,
-                ['code' => 'attachment_limit_exceeded'],
-                $e->getMessageParams()
-            );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -159,7 +134,7 @@ class PageController extends AdminBaseController
     }
 
     /**
-     * 페이지를 영구 삭제합니다 (소프트 삭제 없음).
+     * 페이지를 삭제합니다 (소프트 삭제).
      *
      * @param  int  $id  페이지 ID
      * @return JsonResponse 삭제 결과 응답
@@ -171,7 +146,7 @@ class PageController extends AdminBaseController
             $this->pageService->deletePage($page);
 
             return $this->success('sirsoft-page::messages.page.delete_success');
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -216,7 +191,7 @@ class PageController extends AdminBaseController
                 'sirsoft-page::messages.page.publish_success',
                 new PageResource($page)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -237,12 +212,9 @@ class PageController extends AdminBaseController
             $validated = $request->validated();
             $count = $this->pageService->bulkChangePublishStatus($validated['ids'], $validated['published']);
 
-            return $this->success(
-                'sirsoft-page::messages.page.bulk_publish_success',
-                ['count' => $count],
-                200,
-                ['count' => $count],
-            );
+            return $this->success('sirsoft-page::messages.page.bulk_publish_success', [
+                'count' => $count,
+            ]);
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.page.bulk_publish_failed', 500, $e->getMessage());
         }
@@ -259,14 +231,12 @@ class PageController extends AdminBaseController
         try {
             $page = $this->pageService->getPage($id);
             $versions = $this->pageService->getVersions($page);
-            // 리소스가 발행 여부로 본문 미디어 서명을 정한다 — 이미 조회한 페이지를 관계로 넣어 버전마다 다시 읽지 않는다
-            $versions->each->setRelation('page', $page);
 
             return $this->success(
                 'sirsoft-page::messages.page.fetch_success',
                 PageVersionResource::collection($versions)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -285,17 +255,15 @@ class PageController extends AdminBaseController
     public function showVersion(int $id, int $versionId): JsonResponse
     {
         try {
-            $page = $this->pageService->getPage($id);
-            // 경로의 페이지에 속한 버전만 조회 (교차 페이지 접근 차단)
-            $version = $this->pageService->getVersion($id, $versionId);
+            $this->pageService->getPage($id);
+            $version = $this->pageService->getVersion($versionId);
             $version->load('creator');
-            $version->setRelation('page', $page);
 
             return $this->successWithResource(
                 'sirsoft-page::messages.page.fetch_success',
                 new PageVersionResource($version)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -322,13 +290,10 @@ class PageController extends AdminBaseController
                 'sirsoft-page::messages.page.restore_success',
                 new PageResource($page)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
-        } catch (ContentMediaLimitExceededException $e) {
-            // 복원 본문도 저장처럼 본문 미디어를 동기화한다 — 복제할 것까지 세어 문서당 최대를 넘으면 복원 전체가 되돌아간다 (#887)
-            return $this->error($e->getMessageKey(), 422, ['code' => 'content_media_limit_exceeded', 'content' => [$e->getMessage()]], $e->getMessageParams());
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.page.restore_failed', 500, $e->getMessage());
         }

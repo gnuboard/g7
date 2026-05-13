@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback, useId } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { Button } from '../basic/Button';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
-import { focusMenuEdge, menuKeyDown, menuTriggerKeyDown } from '../../support/keyboardActivation';
 
 export interface DropdownButtonProps {
   label?: string;
@@ -57,27 +56,13 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
-  /** 메뉴를 띄운 때의 트리거 위치 — 스크롤로 트리거가 실제로 움직였는지 가르는 기준 */
-  const anchorRectRef = useRef<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  // 키보드로 연 메뉴가 열린 뒤 포커스를 옮길 끝 — 마우스로 열면 비어 있어 포커스를 옮기지 않는다(#869 8차 8부)
-  const pendingEdgeRef = useRef<'first' | 'last' | null>(null);
-  const menuId = `dropdown-button-menu-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
-
-  // 메뉴는 포털로 문서 끝에 붙는다 — 키보드로 열면 열린 직후 첫 항목(ArrowUp 이면 마지막)으로 옮긴다
-  useEffect(() => {
-    if (!isOpen || !pendingEdgeRef.current) return;
-    const edge = pendingEdgeRef.current;
-    pendingEdgeRef.current = null;
-    focusMenuEdge(menuRef.current, edge);
-  }, [isOpen]);
 
   // 메뉴 위치 계산
   const updateMenuPosition = useCallback(() => {
     if (!triggerRef.current) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
-    anchorRectRef.current = { top: rect.top, left: rect.left };
     const menuWidth = 224; // w-56 = 14rem = 224px
 
     let left = position === 'right' ? rect.right - menuWidth : rect.left;
@@ -103,29 +88,20 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
     }
   }, [isOpen, updateMenuPosition]);
 
-  // 스크롤/리사이즈 시 메뉴 닫기 — 스크롤은 트리거가 실제로 움직였을 때만(ActionMenu 와 같은 규칙, #757).
-  // 단추를 보이게 한 스크롤의 scroll 이벤트는 메뉴를 연 뒤에 늦게 와 첫 클릭에 곧바로 닫히게 했다.
+  // 스크롤/리사이즈 시 메뉴 닫기
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleScroll = () => {
-      const anchor = anchorRectRef.current;
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (anchor && rect && Math.abs(rect.top - anchor.top) < 1 && Math.abs(rect.left - anchor.left) < 1) {
-        return;
-      }
-      setIsOpen(false);
-    };
-    const handleResize = () => {
+    const handleScrollOrResize = () => {
       setIsOpen(false);
     };
 
-    window.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
 
     return () => {
-      window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
     };
   }, [isOpen]);
 
@@ -160,16 +136,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
             top: menuPosition.top,
             left: menuPosition.left,
           }}
-          // 항목을 고르거나 Esc 로 닫으면 여는 단추로 포커스를 돌린다 — 메뉴가 사라져 body 로 빠지지 않게(#869 키보드 접근).
-          // 항목이 창을 열면 창이 이 단추를 「연 자리」로 기억했다가 닫힐 때 돌려준다
-          onClick={() => {
-            setIsOpen(false);
-            triggerRef.current?.focus();
-          }}
-          id={menuId}
-          role="menu"
-          // 화살표, Home, End, Enter, Space, Esc, Tab — ActionMenu 와 같은 메뉴 단추 규칙(#869 8차 8부)
-          onKeyDown={menuKeyDown(menuRef, triggerRef, () => setIsOpen(false))}
+          onClick={() => setIsOpen(false)}
         >
           {children}
         </div>,
@@ -183,11 +150,6 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
       <Button
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
-        // Modal 이 펼친 메뉴로 알아보게 한다 — 메뉴 안 Esc 는 메뉴 몫이다(#869)
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-        aria-controls={isOpen ? menuId : undefined}
-        onKeyDown={menuTriggerKeyDown(isOpen, setIsOpen, pendingEdgeRef, menuRef)}
         className="flex items-center gap-2"
       >
         {iconPosition === 'left' && icon && (

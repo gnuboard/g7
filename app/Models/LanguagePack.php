@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * 언어팩 모델.
@@ -34,15 +33,15 @@ use Illuminate\Support\Carbon;
  * @property array<string, string>|null $description
  * @property string $status
  * @property string|null $deactivated_reason
- * @property Carbon|null $deactivated_at
+ * @property \Illuminate\Support\Carbon|null $deactivated_at
  * @property string|null $incompatible_required_version
  * @property bool $is_protected
  * @property array<string, mixed> $manifest
  * @property string|null $source_type
  * @property string|null $source_url
  * @property int|null $installed_by
- * @property Carbon|null $installed_at
- * @property Carbon|null $activated_at
+ * @property \Illuminate\Support\Carbon|null $installed_at
+ * @property \Illuminate\Support\Carbon|null $activated_at
  */
 class LanguagePack extends Model
 {
@@ -100,9 +99,6 @@ class LanguagePack extends Model
         'installed_by',
         'installed_at',
         'activated_at',
-        // 설치 때 받은 패키지의 서명 검증 결과 (7.2.0)
-        'integrity_status',
-        'integrity_key_id',
     ];
 
     /**
@@ -126,7 +122,7 @@ class LanguagePack extends Model
     /**
      * 설치자(User) 와의 관계를 정의합니다.
      *
-     * @return BelongsTo
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function installer(): BelongsTo
     {
@@ -194,8 +190,8 @@ class LanguagePack extends Model
     /**
      * 활성 언어팩만 조회하는 스코프.
      *
-     * @param  Builder  $query
-     * @return Builder
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -205,9 +201,9 @@ class LanguagePack extends Model
     /**
      * 특정 스코프 언어팩만 조회하는 스코프.
      *
-     * @param  Builder  $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  string  $scope  스코프 문자열
-     * @return Builder
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfScope(Builder $query, string $scope): Builder
     {
@@ -217,11 +213,11 @@ class LanguagePack extends Model
     /**
      * 특정 슬롯의 언어팩만 조회하는 스코프.
      *
-     * @param  Builder  $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  string  $scope  스코프 문자열
      * @param  string|null  $targetIdentifier  대상 확장 식별자
      * @param  string  $locale  로케일
-     * @return Builder
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForSlot(
         Builder $query,

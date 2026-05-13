@@ -3,27 +3,21 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\User;
-use App\Support\AssetUrl;
-use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Modules\Sirsoft\Ecommerce\Models\Concerns\HasDirectAssetUrl;
 
 /**
  * 카테고리 이미지 모델
  */
 class CategoryImage extends Model
 {
-    use HasDirectAssetUrl;
     use SoftDeletes;
 
     protected $table = 'ecommerce_category_images';
 
     /**
      * 모델 부팅
-     *
-     * @return void 반환값 없음
      */
     protected static function boot(): void
     {
@@ -39,8 +33,6 @@ class CategoryImage extends Model
 
     /**
      * 고유 해시 생성 (12자리)
-     *
-     * @return string 12자리 고유 해시
      */
     protected static function generateHash(): string
     {
@@ -112,16 +104,16 @@ class CategoryImage extends Model
         $locale = $locale ?? app()->getLocale();
         $altText = $this->alt_text;
 
-        return LocalizedValue::pick($altText, $locale, anyAsLast: false);
+        return $altText[$locale] ?? $altText[config('app.fallback_locale', 'ko')] ?? null;
     }
 
     /**
-     * hash 기반 카테고리 이미지 서빙 API URL (직접 URL 불가 시 폴백).
+     * `download_url` 가상 attribute — hash 기반 카테고리 이미지 서빙 API URL.
      *
      * @return string `/api/modules/sirsoft-ecommerce/category-image/{hash}` 형식 URL
      */
-    protected function apiDownloadUrl(): string
+    public function getDownloadUrlAttribute(): string
     {
-        return AssetUrl::basePrefix().'/api/modules/sirsoft-ecommerce/category-image/'.$this->hash;
+        return '/api/modules/sirsoft-ecommerce/category-image/'.$this->hash;
     }
 }

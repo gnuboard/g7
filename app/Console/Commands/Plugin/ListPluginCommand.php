@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Plugin;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\PluginManager;
@@ -10,8 +9,6 @@ use Illuminate\Console\Command;
 
 class ListPluginCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * The name and signature of the console command.
      */
@@ -20,10 +17,12 @@ class ListPluginCommand extends Command
         {--hidden : 숨김(hidden=true) 플러그인도 함께 출력}';
 
     /**
+     * The console command description.
+     */
+    protected $description = '플러그인 목록을 조회합니다';
+
+    /**
      * 플러그인 관리자 및 리포지토리
-     *
-     * @param  PluginManager  $pluginManager  플러그인 관리자
-     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 리포지토리
      */
     public function __construct(
         private PluginManager $pluginManager,
@@ -34,8 +33,6 @@ class ListPluginCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
@@ -60,8 +57,6 @@ class ListPluginCommand extends Command
 
         // 테이블 데이터 준비
         $tableData = [];
-        // 요약 집계용 원래 상태값 — 표시 문자열로 세면 한국어 「비활성」 에도 「활성」 이 들어 있어 잘못 센다(#137)
-        $rawStatuses = [];
 
         // 설치된 플러그인 추가
         foreach ($installedPlugins as $identifier => $plugin) {
@@ -86,7 +81,6 @@ class ListPluginCommand extends Command
                 }
             }
 
-            $rawStatuses[] = $plugin['status'];
             $tableData[] = [
                 'identifier' => $identifier,
                 'name' => $plugin['name'],
@@ -109,7 +103,6 @@ class ListPluginCommand extends Command
                     continue;
                 }
 
-                $rawStatuses[] = 'uninstalled';
                 $tableData[] = [
                     'identifier' => $identifier,
                     'name' => $plugin['name'],
@@ -141,11 +134,11 @@ class ListPluginCommand extends Command
 
         // 요약 정보
         $totalCount = count($tableData);
-        $activeCount = count(array_filter($rawStatuses, fn ($status) => $status === ExtensionStatus::Active->value));
-        $installedCount = count(array_filter($rawStatuses, fn ($status) => $status !== 'uninstalled'));
+        $activeCount = count(array_filter($tableData, fn ($p) => str_contains($p['status'], __('plugins.commands.list.status.active'))));
+        $installedCount = count(array_filter($tableData, fn ($p) => ! str_contains($p['status'], __('plugins.commands.list.status.uninstalled'))));
 
         $this->newLine();
-        $this->info(trans_choice('plugins.commands.list.summary', $totalCount, [
+        $this->info(__('plugins.commands.list.summary', [
             'total' => $totalCount,
             'installed' => $installedCount,
             'active' => $activeCount,
@@ -156,9 +149,6 @@ class ListPluginCommand extends Command
 
     /**
      * 상태 포맷팅
-     *
-     * @param  string  $status  상태 값 (installed·active·inactive·uninstalled 등)
-     * @return string 콘솔 표시용 상태 라벨
      */
     private function formatStatus(string $status): string
     {

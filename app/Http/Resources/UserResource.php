@@ -2,34 +2,13 @@
 
 namespace App\Http\Resources;
 
-use App\DisplayName\DisplayNameAreaRegistry;
-use App\DisplayName\DisplayNameChoicePolicy;
-use App\DisplayName\DisplayNameResolver;
 use App\Enums\ConsentType;
-use App\Enums\IdentityVerificationPurpose;
-use App\Enums\PermissionType;
 use App\Enums\UserStatus;
-use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Extension\HookManager;
-use App\Extension\IdentityVerification\IdentityVerificationManager;
-use App\Fields\FieldRegistry;
-use App\Fields\FieldSet;
-use App\Fields\FieldValueService;
 use App\Helpers\TimezoneHelper;
-use App\Models\FieldDefinition;
-use App\Models\User;
-use App\Services\Auth\PasswordAuthPolicyService;
-use App\Services\MemberNotificationService;
-use App\Services\PasswordExpiryService;
-use App\Services\RequiredFieldsChecker;
-use App\Services\SearchHistoryService;
-use App\Services\UserLockedFieldsService;
-use App\Support\UndeliverableEmail;
-use App\Support\UserGradeGuard;
 use App\Traits\HasCountryAttributes;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 
 class UserResource extends BaseApiResource
 {
@@ -43,28 +22,21 @@ class UserResource extends BaseApiResource
      */
     public function toArray(Request $request): array
     {
-        $data = [
+        return [
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
             'nickname' => $this->getValue('nickname'),
-            // 다른 회원에게 보이는 이름(사이트 기본 영역) — 이름, 닉네임 원본은 그대로 두고 더한다(7.2.0)
-            'display_name' => $this->displayName(),
-            'email' => $this->canExposeMemberEmail($request, $this->getValue('id')) ? $this->getValue('email') : null,
+            'email' => $this->getValue('email'),
             'avatar' => $this->resource->getAvatarUrl(),
             'language' => $this->getValue('language'),
-            'language_label' => $this->languageLabel($this->getValue('language')),
+            'language_label' => $this->getValue('language')
+                ? __('user.language.'.$this->getValue('language'))
+                : null,
             'country' => $this->getValue('country'),
-            // 상세·수정 폼·마이페이지가 국가를 이름으로 보인다 — 코드만 실으면 「US」 가 그대로 보인다 (#705).
-            'country_name' => $this->getValue('country') ? $this->getCountryName($this->getValue('country')) : null,
             'status' => $this->getValue('status'),
             'status_label' => $this->getStatusLabel(),
             'status_variant' => $this->getStatusVariant(),
             'is_admin' => $this->resource->isAdmin(),
-            // 비밀번호 설정 여부만 싣는다(해시 값 노출 없음) — 외부 인증 전용 회원의 「비밀번호 처음 설정」·「비밀번호 미설정」 분기가 읽는다.
-            'has_password' => $this->resource->hasPassword(),
-            // 이메일로 메일을 받을 수 있는지만 싣는다(주소 노출 없음) — 대체 이메일(`…@social.invalid`) 회원은 인증번호 메일을 받을 수 없어
-            // 본인 재확인 화면이 메일 대신 확장 수단(예: 소셜 재로그인)을 보인다.
-            'email_deliverable' => ! UndeliverableEmail::is($this->resource->email),
             'homepage' => $this->getValue('homepage'),
             'mobile' => $this->getValue('mobile'),
             'phone' => $this->getValue('phone'),
@@ -194,142 +166,6 @@ class UserResource extends BaseApiResource
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
         ];
-
-        return $data;
-    }
-
-    /**
-     * 인증 사용자(/api/auth/user, currentUser 출처) 응답용 배열을 반환합니다.
-     *
-     * 기본 toArray() 에 더해 core.user.filter_resource_data 필터를 적용해
-     * 모듈이 자신의 데이터(결제 통화 등)를 병합할 수 있게 한다. 프론트(_user_base.g7.html)는
-     * 로그인 유저면 이 값으로 _global.preferredCurrency 를 초기화해
-     * "로그인 시 계정 통화로 덮어씀"(D-LOGIN-CUR)을 구조적으로 충족한다.
-     *
-     * 주의: 이 메서드는 toArray() 외부에서 수동 호출되므로 $this->when() 대신
-     * 삼항 연산자를 사용해야 한다. (toProfileArray/withAdminInfo 와 동일 규약)
-     *
-     * @param  Request|null  $request  HTTP 요청
-     * @return array<string, mixed> 모듈 필드가 병합된 인증 사용자 데이터
-     */
-    public function toAuthArray(?Request $request = null): array
-    {
-        // resolve() 로 받는다 — toArray() 를 직접 부르면 when()/whenLoaded() 의 빈 값 객체가 걸러지지 않고
-        // JSON 에 `{}` 로 나갔다(modules_count·consents·terms_consent 등 9개, #703).
-        $data = $this->resolve($request ?? request());
-        $data['locked_fields'] = app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE);
-        $data['locked_reasons'] = (object) app(UserLockedFieldsService::class)->reasonsFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE);
-        $data['can_edit_layouts'] = $this->canEditLayouts();
-        // 비어 있는 필수 항목 키 — 값이 있으면 화면이 추가 정보 입력 화면으로 보낸다(7.2.0)
-        $data['pending_required_fields'] = $this->pendingRequiredFields();
-        $data = [...$data, ...$this->displayNameChoiceFields()];
-
-        // Filter 훅: 모듈이 자신의 데이터를 응답에 병합 (toProfileArray 와 동일)
-        return HookManager::applyFilters('core.user.filter_resource_data', $data, $this->resource);
-    }
-
-    /**
-     * 관리자 화면의 로그인 사용자 응답용 배열을 반환합니다.
-     *
-     * 기본 응답에 본인의 최고관리자 여부(is_super)를 더한다. 목록 화면의 최고관리자 전용 제어
-     * (모듈·플러그인·템플릿의 「숨김 포함」)가 이 값을 읽는다 — 주지 않으면 최고관리자에게도 제어가
-     * 나타나지 않는다(#703). 남의 계정이 담기는 목록 응답(toArray)에는 싣지 않는다.
-     *
-     * @param  Request|null  $request  HTTP 요청
-     * @return array<string, mixed> 최고관리자 여부가 포함된 로그인 사용자 데이터
-     */
-    public function toAdminAuthArray(?Request $request = null): array
-    {
-        // resolve() 는 when()/whenLoaded() 로 빠진 값을 걸러 준다 — toArray() 를 직접 부르면 빈 값 객체가 남는다.
-        return array_merge($this->resolve($request ?? request()), [
-            'is_super' => $this->resource->isSuperAdmin(),
-            'locked_fields' => app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN),
-            'locked_reasons' => (object) app(UserLockedFieldsService::class)->reasonsFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN),
-            'can_edit_layouts' => $this->canEditLayouts(),
-            // 비어 있는 필수 항목 키 — 관리자 화면은 유도하지 않지만 본인 응답의 모양을 사용자 화면과 맞춘다(7.2.0)
-            'pending_required_fields' => $this->pendingRequiredFields(),
-            // 관리자 화면의 머리글에 보이는 본인 이름은 관리자 영역의 표시 이름이다(7.2.0)
-            'display_name' => $this->displayName(DisplayNameAreaRegistry::AREA_ADMIN),
-            ...$this->displayNameChoiceFields(),
-        ]);
-    }
-
-    /**
-     * 이 회원의 표시 이름을 반환합니다 (7.2.0).
-     *
-     * 목록처럼 회원 여럿을 그리는 응답은 호출 전에 `DisplayNameResolver::preload()` 로 추가 항목 값을 한 번에 읽어 둔다.
-     *
-     * @param  string  $area  표시 이름 영역 키 (기본: 사이트 기본)
-     * @return string|null 표시 이름 (회원 모델이 아니거나 보일 값이 없으면 null)
-     */
-    private function displayName(string $area = DisplayNameAreaRegistry::AREA_SITE): ?string
-    {
-        $user = $this->displayNameSubject();
-
-        return $user !== null ? app(DisplayNameResolver::class)->resolve($user, $area) : null;
-    }
-
-    /**
-     * 표시 이름을 계산할 회원 모델을 반환합니다.
-     *
-     * 목록(UserCollection)은 이미 UserResource 로 감싼 항목을 다시 감싸므로 모델까지 벗긴다.
-     *
-     * @return User|null 회원 모델 (회원이 아니면 null)
-     */
-    private function displayNameSubject(): ?User
-    {
-        $target = $this->resource;
-        while ($target instanceof JsonResource) {
-            $target = $target->resource;
-        }
-
-        return $target instanceof User ? $target : null;
-    }
-
-    /**
-     * 회원이 고른 표시 이름 종류와, 종류를 직접 고를 수 있는지를 반환합니다 (7.2.0).
-     *
-     * @return array{display_name_kind: string|null, can_choose_display_name: bool} 고른 종류 키(고르지 않았으면 null)와 선택 가능 여부
-     */
-    private function displayNameChoiceFields(): array
-    {
-        $user = $this->displayNameSubject();
-        $kind = $user?->getAttribute('display_name_kind');
-
-        return [
-            'display_name_kind' => is_string($kind) && $kind !== '' ? $kind : null,
-            'can_choose_display_name' => $user !== null && app(DisplayNameChoicePolicy::class)->allowedFor($user),
-        ];
-    }
-
-    /**
-     * 본인에게 비어 있는 필수 항목의 키를 반환합니다 (본인 응답과 로그인 완료 응답이 쓴다).
-     *
-     * 판정은 캐시를 쓴다 — 본인 응답은 화면을 열 때마다 불린다.
-     *
-     * @return array<int, string> 항목 키 목록 (없으면 빈 배열)
-     */
-    public function pendingRequiredFields(): array
-    {
-        return $this->resource instanceof User
-            ? app(RequiredFieldsChecker::class)->pendingKeys($this->resource)
-            : [];
-    }
-
-    /**
-     * 본인이 레이아웃 편집기에 들어갈 수 있는지 판정합니다.
-     *
-     * 운영 화면의 편집 진입 단추가 이 값을 읽는다(#869). 편집기 API 가드
-     * (`permission:admin,core.templates.layouts.edit`)와 같은 판정이다 — 응답의 `permissions` 목록은
-     * 사용 중지한 역할의 권한까지 담아 그것으로 판정하면 편집기에서 거절될 사람에게도 단추가 보인다.
-     * 남의 계정이 담기는 목록 응답(toArray)에는 싣지 않는다.
-     *
-     * @return bool 레이아웃 편집 권한 보유 여부
-     */
-    private function canEditLayouts(): bool
-    {
-        return $this->resource instanceof User
-            && $this->resource->hasPermission('core.templates.layouts.edit', PermissionType::Admin);
     }
 
     /**
@@ -344,10 +180,7 @@ class UserResource extends BaseApiResource
             'can_create' => 'core.users.create',
             'can_update' => 'core.users.update',
             'can_delete' => 'core.users.delete',
-            // 역할 부여는 "사용자 관리"(core.users.update)의 일부다 — "역할 정의 수정"
-            // (core.permissions.update: 역할에 권한을 가감)이 아니다. 부여 가능한 개별 역할의
-            // 범위는 서버 상한(PermissionEscalationGuard)이 역할별로 강제한다.
-            'can_assign_roles' => 'core.users.update',
+            'can_assign_roles' => 'core.permissions.update',
         ];
     }
 
@@ -355,7 +188,6 @@ class UserResource extends BaseApiResource
      * 리소스별 권한을 해석합니다.
      *
      * 슈퍼관리자 계정은 시스템 불변식상 삭제 불가하므로 can_delete=false 로 강제합니다.
-     * 요청한 운영자 본인 계정도 관리자 화면에서는 삭제할 수 없으므로 can_delete=false 입니다.
      * 그 외 사용자(관리자 포함)의 삭제 가능 여부는 G7 역할/퍼미션/스코프 시스템
      * (PermissionHelper::checkScopeAccess) 이 평가합니다.
      *
@@ -368,30 +200,6 @@ class UserResource extends BaseApiResource
 
         if ($this->resource->isSuperAdmin()) {
             $abilities['can_delete'] = false;
-        }
-
-        // 등급 상한(UserGradeGuard): 비-슈퍼 운영자는 슈퍼 관리자 계정을 수정할 수 없다.
-        // 서버의 모든 쓰기 경로가 이 판정으로 403 을 내므로, 화면의 수정 버튼·저장 버튼·역할 칸도
-        // 같은 판정으로 잠가야 한다 — 권한 보유만 보고 켜 두면 폼은 열리는데 저장이 403 이다.
-        // 목록(UserCollection)은 컬렉션이 이미 UserResource 로 감싼 항목을 다시 감싸므로, 모델까지
-        // 벗겨서 판정한다 — 감싼 채로 보면 모델 검사가 거짓이 되어 목록 행만 판정을 건너뛴다(#703 실측).
-        $target = $this->resource;
-        while ($target instanceof JsonResource) {
-            $target = $target->resource;
-        }
-
-        if ($target instanceof User) {
-            $actor = $request->user();
-
-            if (! UserGradeGuard::mayModify($target, $actor instanceof User ? $actor : null)) {
-                $abilities['can_update'] = false;
-                $abilities['can_assign_roles'] = false;
-            }
-
-            // 본인 계정은 관리자 화면에서 지울 수 없다 — 서버(UserService::deleteUser)와 같은 판정.
-            if ($actor instanceof User && $actor->id === $target->id) {
-                $abilities['can_delete'] = false;
-            }
         }
 
         return $abilities;
@@ -419,8 +227,7 @@ class UserResource extends BaseApiResource
      */
     public function withAdminInfo(): array
     {
-        // resolve() 로 받는다 — toArray() 를 직접 부르면 빈 값 객체가 `{}` 로 나갔다(toAuthArray 와 같은 이유, #703).
-        $data = array_merge($this->resolve(request()), [
+        $data = array_merge($this->toArray(request()), [
             'admin_memo' => $this->getValue('admin_memo'),
             'ip_address' => $this->getValue('ip_address'),
             'withdrawn_at' => $this->getValue('withdrawn_at')
@@ -429,27 +236,6 @@ class UserResource extends BaseApiResource
             'blocked_at' => $this->getValue('blocked_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('blocked_at'))
                 : null,
-            // 휴면 전환 시각 — 「휴면 후 N일」 자동 탈퇴 판정의 기준점이라 관리자가 언제
-            // 전환됐는지 볼 수 있어야 한다(상태 뱃지만으로는 남은 기간을 알 수 없다).
-            'dormant_at' => $this->getValue('dormant_at')
-                ? $this->formatDateTimeStringForUser($this->getValue('dormant_at'))
-                : null,
-            // 로그인 실패 누적 잠금 상태 — 관리자만 확인·해제할 수 있어야 하므로 관리자 응답에만 노출
-            'failed_login_attempts' => (int) ($this->getValue('failed_login_attempts') ?? 0),
-            'locked_permanently' => (bool) $this->getValue('locked_permanently'),
-            'locked_until' => $this->getValue('locked_until')
-                ? $this->formatDateTimeStringForUser($this->getValue('locked_until'))
-                : null,
-            'is_locked' => (bool) $this->getValue('locked_permanently')
-                || ($this->getValue('locked_until') !== null && $this->resource->locked_until?->isFuture()),
-            // 회원 알림함 요약 — 회원 상세 「알림함」 탭이 읽는다. 단건 상세 응답이라 2쿼리를 허용하되,
-            // 목록(toListArray)에는 넣지 않는다: 목록은 행마다 도므로 같은 집계가 N+1 이 된다.
-            'notifications_summary' => app(MemberNotificationService::class)->summaryForUser((int) $this->resource->id),
-            // 비밀번호 만료 개별 설정(따름·적용·제외) — 회원 수정 폼의 선택칸이 읽는다(#736). 판정 결과(`password_status`)는
-            // 역할 판정이 회원마다 들어 목록(UserCollection 이 이 메서드를 행마다 부른다)에서 N+1 이 되므로 상세에서만 덧붙인다.
-            'password_expiry_policy' => $this->passwordExpiryPolicyValue(),
-            // 회원이 고른 표시 이름 종류(읽기 전용 — 관리자는 바꾸지 못한다)와 선택 가능 여부(7.2.0)
-            ...$this->displayNameChoiceFields(),
         ]);
 
         // Filter 훅: 모듈이 자신의 데이터를 응답에 병합
@@ -478,11 +264,9 @@ class UserResource extends BaseApiResource
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
             'nickname' => $this->getValue('nickname'),
-            // 다른 회원에게 보이는 이름(사이트 기본 영역) — 이름, 닉네임 원본은 그대로 두고 더한다(7.2.0)
-            'display_name' => $this->displayName(),
-            'email' => $this->canExposeMemberEmail($request, $this->getValue('id')) ? $this->getValue('email') : null,
+            'email' => $this->getValue('email'),
             'language' => $language,
-            'language_label' => $this->languageLabel($language),
+            'language_label' => $language ? __('user.language.'.$language) : null,
             'country' => $countryCode,
             'country_flag' => $countryCode ? $this->getCountryFlag($countryCode) : null,
             'country_name' => $countryCode ? $this->getCountryName($countryCode) : null,
@@ -500,10 +284,6 @@ class UserResource extends BaseApiResource
             'email_verified_at' => $this->getValue('email_verified_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('email_verified_at'))
                 : null,
-            // 목록 열 선택기의 「본인인증」 열 — 인증 여부 필터와 짝으로 보는 값이다 (#705).
-            'identity_verified_at' => $this->getValue('identity_verified_at')
-                ? $this->formatDateTimeStringForUser($this->getValue('identity_verified_at'))
-                : null,
             'last_login_at' => $this->getValue('last_login_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('last_login_at'))
                 : null,
@@ -512,26 +292,6 @@ class UserResource extends BaseApiResource
                 : null,
             ...$this->resourceMeta($request),
         ];
-    }
-
-    /**
-     * 언어 코드를 사람이 읽는 언어 이름으로 바꿉니다 — 이름 번역이 없는 언어는 코드를 그대로 돌려줍니다.
-     *
-     * 번역 키(`user.language.{code}`)가 없을 때 키 원문(「user.language.ja」)이 화면에 나가지 않게 한다.
-     *
-     * @param  string|null  $language  언어 코드
-     * @return string|null 언어 이름 (코드가 없으면 null)
-     */
-    private function languageLabel(?string $language): ?string
-    {
-        if ($language === null || $language === '') {
-            return null;
-        }
-
-        $key = 'user.language.'.$language;
-        $label = __($key);
-
-        return is_string($label) && $label !== $key ? $label : $language;
     }
 
     /**
@@ -551,16 +311,11 @@ class UserResource extends BaseApiResource
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
             'nickname' => $this->getValue('nickname'),
-            // 다른 회원에게 보이는 이름(사이트 기본 영역) — 이름, 닉네임 원본은 그대로 두고 더한다(7.2.0)
-            'display_name' => $this->displayName(),
-            'email' => $this->canExposeMemberEmail(null, $this->getValue('id')) ? $this->getValue('email') : null,
+            'email' => $this->getValue('email'),
             'avatar' => $this->resource->getAvatarUrl(),
             'language' => $this->getValue('language'),
-            // 마이페이지 「내 정보」 가 이름을 보인다 — 코드만 실으면 「ko」 가 그대로 보인다(7.1.0 실측).
-            'language_label' => $this->languageLabel($this->getValue('language')),
             'timezone' => $this->getValue('timezone'),
             'country' => $this->getValue('country'),
-            'country_name' => $this->getValue('country') ? $this->getCountryName($this->getValue('country')) : null,
             'status' => $status,
             'status_label' => $userStatus?->label(),
             'status_variant' => $userStatus?->variant(),
@@ -574,17 +329,6 @@ class UserResource extends BaseApiResource
             'bio' => $this->getValue('bio'),
             'is_super' => $this->resource->isSuperAdmin(),
             'is_admin' => $this->resource->isAdmin(),
-            'has_password' => $this->resource->hasPassword(),
-            // 외부(회사 계정)가 관리해 화면에서 바꿀 수 없는 칸 — 마이페이지가 읽기 전용으로 그린다(7.2.0)
-            'locked_fields' => app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE),
-            // 잠긴 칸마다의 사유(sso, identity, locked 등) — 화면이 사유별 안내 문구를 고른다(7.2.0)
-            'locked_reasons' => (object) app(UserLockedFieldsService::class)->reasonsFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE),
-            'email_deliverable' => ! UndeliverableEmail::is($this->resource->email),
-            // 비밀번호를 만들 수 있는지(7.2.0) — 비밀번호 인증 정책(회사 계정 로그인 강제 등)이 막으면 false 와 저장 때와 같은 안내 문구.
-            // 비밀번호 변경 화면이 칸과 본인 확인 대신 안내를 미리 보인다.
-            ...$this->passwordSettableFields(),
-            // 메일·비밀번호를 쓸 수 없는 회원의 민감 작업 재확인에 코어가 실제로 고를 수단(7.2.0) — 화면 안내가 실제 수단과 같은 판정을 쓴다.
-            'reauth_provider' => $this->reauthProviderId(),
             'withdrawn_at' => $this->getValue('withdrawn_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('withdrawn_at'))
                 : null,
@@ -598,213 +342,10 @@ class UserResource extends BaseApiResource
                 ? $this->formatDateTimeStringForUser($this->getValue('created_at'))
                 : null,
             'is_owner' => request()->user()?->uuid === $this->resource->uuid,
-            // 비밀번호 변경일·만료 예정 (#736) — 마이페이지 비밀번호 변경 화면이 읽는다. 만료가 적용되지 않으면 예정일은 null.
-            ...$this->profilePasswordFields(),
-            // 운영자 추가 항목의 값 — 본인 응답에는 관리자만 열람 항목을 싣지 않는다(7.2.0)
-            'custom_fields' => (object) $this->customFieldsArray(includeAdminOnly: false),
-            // 회원이 고른 표시 이름 종류와 선택 가능 여부(7.2.0)
-            ...$this->displayNameChoiceFields(),
         ];
 
         // Filter 훅: 모듈이 자신의 데이터를 프로필 응답에 병합
         return HookManager::applyFilters('core.user.filter_resource_data', $data, $this->resource);
-    }
-
-    /**
-     * 운영자 추가 항목의 값을 반환합니다 (7.2.0).
-     *
-     * 키는 항목 키이고 값은 유형이 되살린 값이다(선택은 선택지 값, 주소는 하위 값 객체, 기간은 `{start, end}`).
-     * 요청 키 `custom_fields.{키}` 와 같은 모양이라 폼이 응답을 그대로 초기값으로 쓴다.
-     * 값 조회가 회원마다 쿼리 1회라 목록 응답에는 싣지 않는다 — 단건 응답(내 정보, 관리자 상세)에서만 부른다.
-     *
-     * @param  bool  $includeAdminOnly  관리자만 열람 항목을 포함할지 (본인 응답은 false)
-     * @return array<string, mixed> 항목 키 => 값 (추가 항목이 없으면 빈 배열)
-     */
-    public function customFieldsArray(bool $includeAdminOnly): array
-    {
-        $definitions = app(FieldRegistry::class)->active(FieldSet::CORE_USER)
-            ->filter(fn (FieldDefinition $definition) => $definition->isCustom()
-                && ($includeAdminOnly || $definition->edit_scope !== FieldDefinition::SCOPE_ADMIN_ONLY))
-            ->values();
-
-        if ($definitions->isEmpty()) {
-            return [];
-        }
-
-        $values = app(FieldValueService::class)->read($this->resource, FieldSet::CORE_USER, $definitions);
-        $result = [];
-        foreach ($definitions as $definition) {
-            $result[$definition->key] = $values[$definition->key] ?? null;
-        }
-
-        return $result;
-    }
-
-    /**
-     * 관리자 회원 상세의 잠긴 칸을 반환합니다 (7.2.0 — 상세 응답에만 `locked_fields` 로 싣는다).
-     *
-     * 외부(회사 계정)가 관리해 관리자 화면에서도 바꿀 수 없는 칸이다. 필터 `core.user.locked_fields` 를 회원마다 부르므로
-     * 행마다 `withAdminInfo()` 를 부르는 목록에는 싣지 않는다(목록 행 필터 금지 — 훅 규정).
-     *
-     * @return array<int, string> 잠긴 칸 이름
-     */
-    public function adminLockedFields(): array
-    {
-        return app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN);
-    }
-
-    /**
-     * 관리자 회원 상세의 잠긴 칸마다의 사유를 반환합니다 (7.2.0 — 상세 응답에만 `locked_reasons` 로 싣는다).
-     *
-     * @return array<string, string> 잠긴 칸 이름 => 사유
-     */
-    public function adminLockedReasons(): array
-    {
-        return app(UserLockedFieldsService::class)->reasonsFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN);
-    }
-
-    /**
-     * 관리자 회원 상세의 비밀번호 상태를 반환합니다 (#736 — 상세 응답에만 `password_status` 로 싣는다).
-     *
-     * 적용 판정은 역할을 읽으므로 목록에는 넣지 않는다(A13).
-     *
-     * 비밀번호가 없는 회원은 만료 정책 비대상이라 `applies=false`·예정일 null·`change_required=false` 로 「해당 없음」 이 된다.
-     *
-     * @return array{has_password: bool, can_set: bool, set_blocked_message: string|null, changed_at: string|null, expires_at: string|null, expired: bool, applies: bool, policy: string, change_required: bool, postponed_until: string|null, days_left: int|null} 비밀번호 상태
-     */
-    public function passwordStatusArray(): array
-    {
-        $expiry = app(PasswordExpiryService::class);
-        $hasPassword = $this->resource->hasPassword();
-        $applies = $expiry->appliesTo($this->resource);
-        $expiresAt = $applies ? $expiry->expiresAt($this->resource) : null;
-        $postponedUntil = $this->getValue('password_change_postponed_until');
-
-        $settable = $this->passwordSettableFields(request()->user());
-
-        return [
-            'has_password' => $hasPassword,
-            // 이 화면을 보는 사람이 이 회원의 비밀번호를 정할 수 있는지(7.2.0) — 저장 때와 같은 판정(본인 `set_password`, 남 `admin_set_password`)
-            'can_set' => $settable['can_set_password'],
-            'set_blocked_message' => $settable['password_set_blocked_message'],
-            'changed_at' => $this->getValue('password_changed_at')
-                ? $this->formatDateTimeStringForUser($this->getValue('password_changed_at'))
-                : null,
-            'expires_at' => $expiresAt ? $this->formatDateTimeStringForUser($expiresAt) : null,
-            'expired' => $expiresAt !== null && ! $expiresAt->isFuture(),
-            'applies' => $applies,
-            'policy' => $this->passwordExpiryPolicyValue(),
-            'change_required' => $hasPassword && (bool) $this->getValue('password_change_required'),
-            'postponed_until' => $postponedUntil && $postponedUntil->isFuture()
-                ? $this->formatDateTimeStringForUser($postponedUntil)
-                : null,
-            'days_left' => $expiresAt !== null ? $expiry->daysLeft($this->resource) : null,
-        ];
-    }
-
-    /**
-     * 비밀번호를 정할 수 있는지와, 막혔으면 그 안내 문구를 반환합니다 (7.2.0).
-     *
-     * 저장 경로(`UserService::updateUser`)와 같은 판정(`PasswordAuthPolicyService::decideSetPassword`)이라 화면이 미리 알린 결과와
-     * 저장 결과가 갈리지 않는다. 문구는 저장 403(`auth.password_auth_disabled`)의 문구와 같다.
-     *
-     * @param  User|null  $actor  정하는 사람 (null 이면 본인)
-     * @return array{can_set_password: bool, password_set_blocked_message: string|null} 판정 필드
-     */
-    private function passwordSettableFields(?User $actor = null): array
-    {
-        $decision = app(PasswordAuthPolicyService::class)->decideSetPassword($this->resource, $actor instanceof User ? $actor : null);
-
-        return [
-            'can_set_password' => $decision->allowed,
-            'password_set_blocked_message' => $decision->allowed ? null : PasswordAuthDisallowedException::localizedMessage($decision),
-        ];
-    }
-
-    /**
-     * 메일·비밀번호를 쓸 수 없는 회원의 민감 작업 재확인에 코어가 실제로 고를 수단 ID 를 반환합니다 (7.2.0).
-     *
-     * 비밀번호가 있거나 가입 이메일로 메일을 받을 수 있는 회원은 그 수단(비밀번호·인증번호 메일)을 쓰므로 null. 그 밖의 회원은 코어 재확인
-     * 시작(`IdentityVerificationService::start`)과 같은 해석으로 고른 수단의 ID, 그 회원에게 쓸 수 있는 수단이 없으면 null.
-     *
-     * @return string|null 수단 ID
-     */
-    private function reauthProviderId(): ?string
-    {
-        if ($this->resource->hasPassword() || ! UndeliverableEmail::is($this->resource->email)) {
-            return null;
-        }
-
-        return app(IdentityVerificationManager::class)
-            ->resolveUsableForUser(IdentityVerificationPurpose::SensitiveAction->value, $this->resource)
-            ?->getId();
-    }
-
-    /**
-     * 관리자 회원 상세의 최근 검색어를 반환합니다 — 상세 응답에만 `search_history` 로 싣는다.
-     *
-     * 범위마다 몇 건을 읽으므로 목록(UserCollection 이 withAdminInfo 를 행마다 부른다)에는 넣지 않는다.
-     * 범위 id 를 키로 둔다 — 코어 구획은 `core.site`, 확장 탭은 자기 범위를 이름으로 꺼내 그린다.
-     *
-     * @return array{enabled: bool, auto_save: bool, scopes: array<string, array{owner: string, label: string, items: array<int, array{keyword: string, searched_at: string|null}>}>} 범위별 최근 검색어
-     */
-    public function searchHistoryArray(): array
-    {
-        $overview = app(SearchHistoryService::class)->overviewForAdmin($this->resource);
-
-        $scopes = [];
-        foreach ($overview['scopes'] as $scope => $entry) {
-            $scopes[$scope] = [
-                'owner' => $entry['owner'],
-                'label' => $entry['label'],
-                'items' => $entry['items']->map(fn ($history): array => [
-                    'keyword' => (string) $history->keyword,
-                    'searched_at' => $history->searched_at ? $this->formatDateTimeStringForUser($history->searched_at) : null,
-                ])->values()->all(),
-            ];
-        }
-
-        return [
-            'enabled' => $overview['enabled'],
-            'auto_save' => $overview['auto_save'],
-            // 비어도 객체로 — 화면이 `scopes['core.site']` 처럼 키로 읽는다
-            'scopes' => (object) $scopes,
-        ];
-    }
-
-    /**
-     * 마이페이지용 비밀번호 변경일·만료 예정 필드를 반환합니다.
-     *
-     * @return array{password_changed_at: string|null, password_expires_at: string|null, password_expiry_days_left: int|null} 비밀번호 필드
-     */
-    private function profilePasswordFields(): array
-    {
-        $expiry = app(PasswordExpiryService::class);
-        $expiresAt = $expiry->appliesTo($this->resource) ? $expiry->expiresAt($this->resource) : null;
-
-        return [
-            'password_changed_at' => $this->getValue('password_changed_at')
-                ? $this->formatDateTimeStringForUser($this->getValue('password_changed_at'))
-                : null,
-            'password_expires_at' => $expiresAt ? $this->formatDateTimeStringForUser($expiresAt) : null,
-            'password_expiry_days_left' => $expiresAt !== null ? $expiry->daysLeft($this->resource) : null,
-        ];
-    }
-
-    /**
-     * 비밀번호 만료 개별 설정 값을 문자열로 반환합니다.
-     *
-     * @return string inherit | apply | exempt
-     */
-    private function passwordExpiryPolicyValue(): string
-    {
-        $policy = $this->getValue('password_expiry_policy');
-
-        if ($policy instanceof \BackedEnum) {
-            return (string) $policy->value;
-        }
-
-        return is_string($policy) && $policy !== '' ? $policy : 'inherit';
     }
 
     /**
@@ -820,9 +361,7 @@ class UserResource extends BaseApiResource
         return [
             'uuid' => $this->getValue('uuid'),
             'name' => $this->getValue('name'),
-            // 다른 회원에게 보이는 이름(사이트 기본 영역, 7.2.0)
-            'display_name' => $this->displayName(),
-            'email' => $this->canExposeMemberEmail(null, $this->getValue('id')) ? $this->getValue('email') : null,
+            'email' => $this->getValue('email'),
             'modules_count' => $this->getValue('modules_count', 0),
             'plugins_count' => $this->getValue('plugins_count', 0),
             'menus_count' => $this->getValue('menus_count', 0),

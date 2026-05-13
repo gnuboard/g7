@@ -2,18 +2,13 @@
 
 namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 
-use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
-use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Http\Requests\ReorderAttachmentsRequest;
 use Modules\Sirsoft\Board\Http\Requests\UploadAttachmentRequest;
 use Modules\Sirsoft\Board\Services\AttachmentService;
 use Modules\Sirsoft\Board\Services\BoardService;
-use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -32,12 +27,10 @@ class AttachmentController extends AdminBaseController
      *
      * @param  AttachmentService  $attachmentService  첨부파일 서비스
      * @param  BoardService  $boardService  게시판 서비스
-     * @param  PostService  $postService  게시글 서비스 (post_id 업로드의 같은 게시판 글 확인)
      */
     public function __construct(
         private AttachmentService $attachmentService,
-        private BoardService $boardService,
-        private PostService $postService
+        private BoardService $boardService
     ) {
         parent::__construct();
     }
@@ -47,7 +40,6 @@ class AttachmentController extends AdminBaseController
      *
      * @param  UploadAttachmentRequest  $request  업로드 요청
      * @param  string  $slug  게시판 슬러그
-     * @return JsonResponse 업로드된 첨부파일 정보 응답
      */
     public function upload(UploadAttachmentRequest $request, string $slug): JsonResponse
     {
@@ -58,18 +50,8 @@ class AttachmentController extends AdminBaseController
             $validated = $request->validated();
 
             // post_id가 없으면 임시 업로드 (temp_key 필수)
-            $postId = isset($validated['post_id']) ? (int) $validated['post_id'] : null;
+            $postId = $validated['post_id'] ?? null;
             $tempKey = $validated['temp_key'] ?? null;
-
-            // 기존 글에 붙이는 업로드는 이 게시판 글이어야 하고(아니면 404), 관리자 글 수정과 같은 스코프 권한이 있어야 한다
-            // (「본인 글만」 위임 관리자가 남의 글에 파일을 붙이지 못하게, #883)
-            if ($postId !== null) {
-                $post = $this->postService->getPost($slug, $postId);
-
-                if (! PermissionHelper::checkScopeAccess($post, "sirsoft-board.{$slug}.admin.posts.write")) {
-                    return $this->error('auth.scope_denied', 403);
-                }
-            }
 
             $attachment = $this->attachmentService->upload(
                 slug: $slug,
@@ -94,27 +76,12 @@ class AttachmentController extends AdminBaseController
                         'url' => $this->attachmentService->getUrl($slug, $attachment->id),
                         'order' => $attachment->order,
                         'created_at' => $attachment->created_at,
-                        // 올린 본인에게만 주는 임시 키 (사용자 업로드와 같은 응답 형태, #883)
-                        'temp_key' => $attachment->temp_key,
                     ],
                 ],
                 201
             );
-        } catch (ModelNotFoundException $e) {
-            // 이 게시판에 없는 글 번호
-            return $this->error('sirsoft-board::messages.errors.post_not_found', 404);
-        } catch (AccessDeniedHttpException $e) {
-            return $this->error('auth.scope_denied', 403);
-        } catch (AttachmentLimitExceededException $e) {
-            // 게시판 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error(
-                $e->getMessageKey(),
-                422,
-                ['code' => 'attachment_limit_exceeded'],
-                $e->getMessageParams()
-            );
         } catch (BoardNotFoundException $e) {
-            return $this->error('sirsoft-board::messages.boards.not_found', 404);
+            return $this->error('sirsoft-board::messages.board.not_found', 404);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.attachment.upload_failed', 500, $e->getMessage());
         }
@@ -125,7 +92,6 @@ class AttachmentController extends AdminBaseController
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  첨부파일 ID
-     * @return JsonResponse 삭제 결과 응답
      */
     public function destroy(string $slug, int $id): JsonResponse
     {
@@ -141,7 +107,7 @@ class AttachmentController extends AdminBaseController
             }
 
             // 삭제 (Service에서 처리)
-            $result = $this->attachmentService->delete($slug, $id, 'admin');
+            $result = $this->attachmentService->delete($slug, $id);
 
             if (! $result) {
                 return $this->error('sirsoft-board::messages.attachment.delete_failed', 500);
@@ -149,10 +115,7 @@ class AttachmentController extends AdminBaseController
 
             return $this->success('sirsoft-board::messages.attachment.delete_success');
         } catch (BoardNotFoundException $e) {
-            return $this->error('sirsoft-board::messages.boards.not_found', 404);
-        } catch (AccessDeniedHttpException $e) {
-            // 남이 올린 임시 첨부 등 스코프 밖 대상 — 서버 오류(500)가 아니라 403 으로 알린다
-            return $this->error('auth.scope_denied', 403);
+            return $this->error('sirsoft-board::messages.board.not_found', 404);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.attachment.delete_failed', 500, $e->getMessage());
         }
@@ -163,7 +126,6 @@ class AttachmentController extends AdminBaseController
      *
      * @param  ReorderAttachmentsRequest  $request  순서 변경 요청
      * @param  string  $slug  게시판 슬러그
-     * @return JsonResponse 순서 변경 결과 응답
      */
     public function reorder(ReorderAttachmentsRequest $request, string $slug): JsonResponse
     {
@@ -175,7 +137,7 @@ class AttachmentController extends AdminBaseController
 
             // FileUploader가 [{id, order}] 형태로 전송 → [ID => order] 매핑으로 변환
             $orders = collect($validated['order'])->pluck('order', 'id')->all();
-            $result = $this->attachmentService->reorder($slug, $orders, 'admin');
+            $result = $this->attachmentService->reorder($slug, $orders);
 
             if (! $result) {
                 return $this->error('sirsoft-board::messages.attachment.reorder_failed', 500);
@@ -183,10 +145,7 @@ class AttachmentController extends AdminBaseController
 
             return $this->success('sirsoft-board::messages.attachment.reorder_success');
         } catch (BoardNotFoundException $e) {
-            return $this->error('sirsoft-board::messages.boards.not_found', 404);
-        } catch (AccessDeniedHttpException $e) {
-            // 남이 올린 임시 첨부 등 스코프 밖 대상 — 서버 오류(500)가 아니라 403 으로 알린다
-            return $this->error('auth.scope_denied', 403);
+            return $this->error('sirsoft-board::messages.board.not_found', 404);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.attachment.reorder_failed', 500, $e->getMessage());
         }
@@ -197,9 +156,8 @@ class AttachmentController extends AdminBaseController
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $hash  첨부파일 해시
-     * @return StreamedResponse|Response|JsonResponse 파일 스트림, 304 또는 오류 응답
      */
-    public function download(string $slug, string $hash): StreamedResponse|Response|JsonResponse
+    public function download(string $slug, string $hash): StreamedResponse|JsonResponse
     {
         try {
             // 게시판 존재 여부 확인
@@ -212,33 +170,18 @@ class AttachmentController extends AdminBaseController
                 return $this->error('sirsoft-board::messages.attachment.not_found', 404);
             }
 
-            // 다운로드 서빙 정보 (스트림 + 검증자 메타)
-            $info = $this->attachmentService->getDownloadInfo($slug, $attachment->id);
+            // 다운로드 응답 생성
+            $response = $this->attachmentService->download($slug, $attachment->id);
 
-            if (! $info) {
+            if (! $response) {
                 return $this->error('sirsoft-board::messages.attachment.file_not_found', 404);
             }
 
-            // 캐시 계약(검증자 비교·304·200 헤더 동반)은 코어 단일 지점이 입힌다 — 미리보기
-            // 통로와 같은 형태다. 종전에는 다운로드에 검증자가 없었다.
-            // `immutable` 은 `false`(이 URL 에는 `?v=` 가 없다), 압축은 선언으로 제외한다
-            // (사용자 업로드물 — 형제 `PublicStorageController` 와 같은 선언).
-            // `Content-Disposition: attachment` 는 스토리지가 세운 것을 헬퍼가 그대로 승계한다.
-            // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다.
-            return $this->streamedFileResponseFromMeta(
-                $info,
-                (int) g7_core_settings('cache.layout_ttl', 86400),
-                immutable: false,
-                skipCompression: true,
-                logContext: ['board_slug' => $slug, 'hash' => $hash],
-                errorMessageKey: 'sirsoft-board::messages.attachment.download_failed',
-                // 관리자 권한을 지난 응답이다 — 글 상태와 무관하게 공유 캐시에 남기지 않는다.
-                private: true
-            );
+            return $response;
         } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);
         } catch (BoardNotFoundException $e) {
-            return $this->error('sirsoft-board::messages.boards.not_found', 404);
+            return $this->error('sirsoft-board::messages.board.not_found', 404);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.attachment.download_failed', 500, $e->getMessage());
         }
