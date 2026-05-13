@@ -51,10 +51,18 @@ class ExecuteUpgradeStepsCommandHandoffTest extends TestCase
         );
 
         ob_start();
+        // 부모 CoreUpdateCommand::spawnUpgradeStepsProcess 와 동일하게 5개 `--skip-*` 옵션 전달.
+        // 사전·사후 단계가 본 핸드오프 신호 출력 계약 검증에 부수효과(nested Artisan::call 의
+        // outer output buffer 덮어쓰기 등) 를 주지 않도록 옵션으로 단절.
         $exitCode = Artisan::call('core:execute-upgrade-steps', [
             '--from' => '0.1.0',
             '--to' => $version,
             '--force' => true,
+            '--skip-migrations' => true,
+            '--skip-resync' => true,
+            '--skip-version-env' => true,
+            '--skip-cache-clear' => true,
+            '--skip-bundled-updates' => true,
         ]);
         ob_end_clean();
 
@@ -81,6 +89,11 @@ class ExecuteUpgradeStepsCommandHandoffTest extends TestCase
             '--from' => '0.1.0',
             '--to' => $version,
             '--force' => true,
+            '--skip-migrations' => true,
+            '--skip-resync' => true,
+            '--skip-version-env' => true,
+            '--skip-cache-clear' => true,
+            '--skip-bundled-updates' => true,
         ]);
         ob_end_clean();
 
@@ -113,6 +126,11 @@ class ExecuteUpgradeStepsCommandHandoffTest extends TestCase
             '--from' => '0.1.0',
             '--to' => $version,
             '--force' => true,
+            '--skip-migrations' => true,
+            '--skip-resync' => true,
+            '--skip-version-env' => true,
+            '--skip-cache-clear' => true,
+            '--skip-bundled-updates' => true,
         ]);
         ob_end_clean();
 
@@ -152,10 +170,18 @@ PHP;
         $this->createdPaths[] = $path;
 
         ob_start();
+        // 부모 CoreUpdateCommand::spawnUpgradeStepsProcess 와 동일하게 5개 `--skip-*` 옵션 전달.
+        // 사전·사후 단계가 본 핸드오프 신호 출력 계약 검증에 부수효과(nested Artisan::call 의
+        // outer output buffer 덮어쓰기 등) 를 주지 않도록 옵션으로 단절.
         $exitCode = Artisan::call('core:execute-upgrade-steps', [
             '--from' => '0.1.0',
             '--to' => $version,
             '--force' => true,
+            '--skip-migrations' => true,
+            '--skip-resync' => true,
+            '--skip-version-env' => true,
+            '--skip-cache-clear' => true,
+            '--skip-bundled-updates' => true,
         ]);
         ob_end_clean();
 
