@@ -23,18 +23,12 @@ import {
 } from '@dnd-kit/sortable';
 
 import { Div } from '../../basic/Div';
-import { Button } from '../../basic/Button';
 import { Span } from '../../basic/Span';
 import { I } from '../../basic/I';
 
 import { SortableThumbnailItem } from './SortableThumbnailItem';
 import type { Attachment, PendingFile } from './types';
 import { t } from './utils';
-import { gridColsClass, resolveGridCols, type GridResponsiveCols } from '../../layout/gridColumns';
-import { useViewportWidth } from '../../layout/viewportWidth';
-
-/** 썸네일 격자 구간별 열 수 (기본 2열) */
-const THUMBNAIL_COLS: GridResponsiveCols = { sm: 3, md: 4, lg: 5 };
 
 export interface FileListProps {
   /** 모든 파일 목록 (기존 + 대기) */
@@ -46,7 +40,7 @@ export interface FileListProps {
   /** 최대 파일 수 */
   maxFiles: number;
   /** 최대 파일 크기 (MB) */
-  maxSize?: number;
+  maxSize: number;
   /** 허용 확장자 */
   accept?: string;
   /** 파일 삭제 핸들러 */
@@ -86,11 +80,6 @@ export const FileList: React.FC<FileListProps> = ({
   primaryFileId,
   onPrimaryChange,
 }) => {
-  // 썸네일 열 수 — 640 미만 2·640 이상 3·768 이상 4·1024 이상 5열. 엔진 폭으로 골라 편집기 미리보기 폭도 따른다
-  // (예전에는 Tailwind 반응형 접두로 나눴는데, 접두는 창 폭으로 판정되어 미리보기 폭을 따르지 못한다)
-  const viewportWidth = useViewportWidth();
-  const thumbnailColsClass = gridColsClass(resolveGridCols(2, THUMBNAIL_COLS, viewportWidth));
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -103,7 +92,7 @@ export const FileList: React.FC<FileListProps> = ({
           items={allItems.map((item) => ('hash' in item ? item.hash : item.id))}
           strategy={rectSortingStrategy}
         >
-          <Div className={`grid ${thumbnailColsClass} gap-3`}>
+          <Div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {/* 파일 썸네일들 */}
             {allItems.map((item) => {
               const isExisting = 'hash' in item;
@@ -138,27 +127,24 @@ export const FileList: React.FC<FileListProps> = ({
               );
             })}
 
-            {/* 추가 버튼 (더 추가할 수 있을 때만) — 단추로 그려 Tab 으로 닿고 Enter·Space 로 파일 선택을 연다 */}
+            {/* 추가 버튼 (더 추가할 수 있을 때만) */}
             {canAddMore && (
-              <Button
-                type="button"
-                data-uploader-action="add"
-                className="w-full aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
+              <Div
+                className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 onClick={onAddClick}
               >
-                <I className="fa-solid fa-plus text-2xl text-gray-500 dark:text-gray-500 mb-1" aria-hidden="true" />
+                <I className="fa-solid fa-plus text-2xl text-gray-400 dark:text-gray-500 mb-1" />
                 <Span className="text-xs text-gray-500 dark:text-gray-400">{t('common.add')}</Span>
-              </Button>
+              </Div>
             )}
           </Div>
         </SortableContext>
       </DndContext>
 
       {/* 하단 정보 */}
-      <Div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+      <Div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
         <Span>{t('attachment.attached_count', { count: totalCount, max: maxFiles })}</Span>
-        {/* 허용 형식 목록은 쉼표로만 이어져 끊을 자리가 없다 — 좁은 화면에서 넘치지 않게 어디서든 끊는다 */}
-        <Span className="min-w-0 wrap-anywhere">{maxSize != null ? t('attachment.max_size', { size: maxSize }) : ''}{accept && ` (${accept})`}</Span>
+        <Span>{t('attachment.max_size', { size: maxSize })}{accept && ` (${accept})`}</Span>
       </Div>
     </Div>
   );

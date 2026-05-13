@@ -4,7 +4,7 @@ return [
     // Module management messages
     'not_found' => 'Module :module not found.',
     'dependency_not_active' => 'Dependency module :dependency is not installed or active.',
-
+    
     // Module operation messages
     'fetch_success' => 'Module retrieved successfully.',
     'fetch_failed' => 'Failed to retrieve module: :error',
@@ -21,7 +21,6 @@ return [
     'update_success' => 'Module updated successfully.',
     'update_failed' => 'Failed to update module: :error',
     'refresh_layouts_success' => 'Module layouts refreshed successfully.',
-    'refresh_layouts_preview_success' => 'Layout refresh preview created.',
     'refresh_layouts_failed' => 'Failed to refresh module layouts: :error',
     'uninstall_info_success' => 'Module uninstall information retrieved successfully.',
     'uninstall_info_failed' => 'Failed to retrieve module uninstall information: :error',
@@ -34,9 +33,9 @@ return [
         'active' => 'Active',
         'inactive' => 'Inactive',
         'installing' => 'Installing',
-        'uninstalling' => 'Uninstalling',
+        'uninstalling' => 'Uninstalling'
     ],
-
+    
     // Error messages
     'errors' => [
         'module_class_not_found' => 'Module class not found.',
@@ -45,5 +44,5 @@ return [
         'database_error' => 'Database error occurred.',
         'module_not_found' => 'Module :name not found.',
         'module_not_active' => 'Module :name is not active.',
-    ],
+    ]
 ];

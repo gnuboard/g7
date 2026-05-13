@@ -2,7 +2,7 @@
  * 찜(위시리스트) 레이아웃 구조 검증 테스트
  *
  * @description
- * - _header.json 찜 버튼 구조 및 중복 클릭 방지 검증 (클릭 동작은 show.json 이름 붙은 액션으로 해석해 검증)
+ * - _header.json 찜 버튼 구조 및 중복 클릭 방지 검증
  * - wishlist.json 데이터소스 및 API 엔드포인트 검증
  * - _list.json 찜 목록 그리드, 삭제 버튼, 빈 목록 표시 검증
  *
@@ -12,10 +12,8 @@
 import { describe, it, expect } from 'vitest';
 
 import headerPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_header.json';
-import showLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/shop/show.json';
 import wishlistLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/mypage/wishlist.json';
 import wishlistListPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/mypage/wishlist/_list.json';
-import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 트리에서 조건을 만족하는 첫 노드 찾기 (재귀)
@@ -41,7 +39,7 @@ function findHandlerInActions(actions: any[] | undefined, handler: string): any 
         if (action?.handler === handler) return action;
         const nestedSources = [
             action?.actions,
-            callbacksOf(action, 'actions'),
+            action?.params?.actions,
         ];
         for (const conditionItem of action?.conditions ?? []) {
             // conditions 핸들러: { if, then } 형태
@@ -56,26 +54,6 @@ function findHandlerInActions(actions: any[] | undefined, handler: string): any 
     return null;
 }
 
-/**
- * 액션의 `actionRef` 를 상품 상세(show.json)의 `named_actions` 로 해석한다.
- *
- * 엔진(ActionDispatcher.resolveActionRef)과 같은 규칙이다 — 이름 붙은 정의 위에 인라인 속성을 덮는다.
- * 7.1.6(#898)에서 찜 토글이 제목 옆 단추 안에서 이름 붙은 액션 `toggleProductWishlist` 로 옮겨졌다
- * (좁은 화면 하단 구매바의 찜 단추와 같이 쓴다 — show.g7.html `<action name="toggleProductWishlist">`).
- * 동작 계약은 그대로이므로 해석한 정의에서 같은 것을 단언한다.
- *
- * @param action 이벤트 액션 (actionRef 를 가질 수 있음)
- * @returns 해석된 액션 (참조 대상이 없으면 null)
- */
-function resolveActionRef(action: any): any | null {
-    if (!action?.actionRef) return action ?? null;
-    const named = (showLayout as any).named_actions?.[action.actionRef];
-    if (!named) return null;
-    const { actionRef: _ref, ...inline } = action;
-
-    return { ...named, ...inline };
-}
-
 describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
     // 찜 버튼은 disabled 가 _local.wishlistLoading 인 Button 으로 식별 (위치 의존 제거)
     const wishlistButton = findFirstNode(
@@ -86,27 +64,15 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
             n.props.disabled.includes('wishlistLoading'),
     );
 
-    /**
-     * @scenario surface=product_detail
-     * @effects wishlist_toggle_blocks_duplicate_clicks
-     */
     it('찜 버튼(Button + wishlistLoading disabled)이 존재해야 함', () => {
         expect(wishlistButton).not.toBeNull();
         expect(wishlistButton.type).toBe('basic');
     });
 
-    /**
-     * @scenario surface=product_detail
-     * @effects wishlist_toggle_blocks_duplicate_clicks
-     */
     it('찜 버튼 disabled 가 wishlistLoading 으로 묶여 중복 클릭이 방지되어야 함', () => {
         expect(wishlistButton.props.disabled).toContain('_local.wishlistLoading');
     });
 
-    /**
-     * @scenario surface=product_detail
-     * @effects wishlist_toggle_icon_reflects_state
-     */
     it('찜 아이콘이 isWishlisted 상태에 따라 iconStyle 이 토글되어야 함', () => {
         const icon = wishlistButton.children?.find((c: any) => c.name === 'Icon');
         expect(icon).toBeDefined();
@@ -115,71 +81,47 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
         expect(icon.props.iconStyle).toContain('isWishlisted');
     });
 
-    /**
-     * @scenario surface=product_detail
-     * @effects wishlist_toggle_branches_guest_and_member
-     */
     it('찜 버튼 클릭 액션이 conditions 핸들러로 비회원/회원 분기되어야 함', () => {
-        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
-        expect(click, '찜 단추 클릭 액션(또는 그 이름 붙은 액션)이 있어야 한다').toBeTruthy();
+        const click = wishlistButton.actions?.find((a: any) => a.type === 'click');
+        expect(click).toBeDefined();
         expect(click.handler).toBe('conditions');
-        expect(asArray(click?.conditions).length > 0).toBe(true);
-        expect(asArray(click?.conditions).length).toBeGreaterThanOrEqual(2);
+        expect(Array.isArray(click.conditions)).toBe(true);
+        expect(click.conditions.length).toBeGreaterThanOrEqual(2);
     });
 
-    /**
-     * @scenario surface=product_detail
-     * @effects wishlist_toggle_calls_api_and_restores_loading
-     */
     it('회원 분기 sequence 첫 setState 가 wishlistLoading=true 로 설정해야 함', () => {
-        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
+        const click = wishlistButton.actions.find((a: any) => a.type === 'click');
         const setState = findHandlerInActions([click], 'setState');
         expect(setState).toBeDefined();
         expect(setState.params.wishlistLoading).toBe(true);
     });
 
-    /**
-     * @scenario surface=product_detail
-     * @effects wishlist_toggle_calls_api_and_restores_loading
-     */
     it('회원 분기에서 apiCall 로 wishlist/toggle API 가 호출되어야 함', () => {
-        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
+        const click = wishlistButton.actions.find((a: any) => a.type === 'click');
         const apiCall = findHandlerInActions([click], 'apiCall');
         expect(apiCall).toBeDefined();
         expect(apiCall.target).toContain('/wishlist/toggle');
         expect(apiCall.params.method).toBe('POST');
     });
 
-    /**
-     * @scenario surface=product_detail
-     * @effects wishlist_toggle_calls_api_and_restores_loading
-     */
     it('apiCall onSuccess 에서 wishlistLoading 을 false 로 복원해야 함', () => {
-        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
+        const click = wishlistButton.actions.find((a: any) => a.type === 'click');
         const apiCall = findHandlerInActions([click], 'apiCall');
-        const setStateOnSuccess = asArray(apiCall?.onSuccess).find((a: any) => a.handler === 'setState');
+        const setStateOnSuccess = apiCall.onSuccess.find((a: any) => a.handler === 'setState');
         expect(setStateOnSuccess).toBeDefined();
         expect(setStateOnSuccess.params.wishlistLoading).toBe(false);
     });
 
-    /**
-     * @scenario surface=product_detail
-     * @effects wishlist_toggle_calls_api_and_restores_loading
-     */
     it('apiCall onError 에서 wishlistLoading 을 false 로 복원해야 함', () => {
-        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
+        const click = wishlistButton.actions.find((a: any) => a.type === 'click');
         const apiCall = findHandlerInActions([click], 'apiCall');
-        const setStateOnError = asArray(apiCall?.onError).find((a: any) => a.handler === 'setState');
+        const setStateOnError = apiCall.onError.find((a: any) => a.handler === 'setState');
         expect(setStateOnError).toBeDefined();
         expect(setStateOnError.params.wishlistLoading).toBe(false);
     });
 
-    /**
-     * @scenario surface=product_detail
-     * @effects wishlist_toggle_calls_api_and_restores_loading
-     */
     it('apiCall 에 auth_mode: required 가 설정되어 있어야 함', () => {
-        const click = resolveActionRef(asArray(wishlistButton?.actions).find((a: any) => a.type === 'click'));
+        const click = wishlistButton.actions.find((a: any) => a.type === 'click');
         const apiCall = findHandlerInActions([click], 'apiCall');
         // auth_required boolean → auth_mode: 'required' 표준 표기로 통일됨
         expect(apiCall.auth_mode).toBe('required');
@@ -187,10 +129,6 @@ describe('상품 상세 찜 버튼 구조 검증 (_header.json)', () => {
 });
 
 describe('마이페이지 찜 목록 레이아웃 검증 (wishlist.json)', () => {
-    /**
-     * @scenario surface=mypage_list
-     * @effects mypage_wishlist_reads_the_wishlist_api
-     */
     it('데이터소스가 올바른 API 엔드포인트를 사용해야 함', () => {
         const ds = wishlistLayout.data_sources[0];
         expect(ds.id).toBe('wishlist');
@@ -199,29 +137,17 @@ describe('마이페이지 찜 목록 레이아웃 검증 (wishlist.json)', () =>
         expect(ds.auto_fetch).toBe(true);
     });
 
-    /**
-     * @scenario surface=mypage_list
-     * @effects mypage_wishlist_reads_the_wishlist_api
-     */
     it('_user_base 레이아웃을 상속해야 함', () => {
         expect(wishlistLayout.extends).toBe('_user_base');
     });
 });
 
 describe('찜 목록 partial 구조 검증 (_list.json)', () => {
-    /**
-     * @scenario surface=mypage_list
-     * @effects mypage_wishlist_list_binds_wishlist_data
-     */
     it('blur_until_loaded 가 wishlist 데이터소스에 설정되어야 함', () => {
         expect(wishlistListPartial.blur_until_loaded).toBeDefined();
         expect(wishlistListPartial.blur_until_loaded.data_sources).toBe('wishlist');
     });
 
-    /**
-     * @scenario surface=mypage_list
-     * @effects mypage_wishlist_list_binds_wishlist_data
-     */
     it('찜 목록 그리드에 iteration 이 wishlist.data.data 를 source 로 사용해야 함', () => {
         // 트리 어디에 있든 iteration.source 가 wishlist.data.data 인 노드 검색
         const gridNode = findFirstNode(
@@ -232,10 +158,6 @@ describe('찜 목록 partial 구조 검증 (_list.json)', () => {
         expect(gridNode).not.toBeNull();
     });
 
-    /**
-     * @scenario surface=mypage_list
-     * @effects mypage_wishlist_remove_calls_delete_api
-     */
     it('삭제 버튼이 wishlist DELETE API 를 호출해야 함', () => {
         // partial 내부 어디든 apiCall + DELETE + wishlist 경로를 호출하는 액션을 찾는다
         const json = JSON.stringify(wishlistListPartial);
@@ -244,10 +166,6 @@ describe('찜 목록 partial 구조 검증 (_list.json)', () => {
         expect(json).toContain('"method":"DELETE"');
     });
 
-    /**
-     * @scenario surface=mypage_empty
-     * @effects mypage_wishlist_list_binds_wishlist_data
-     */
     it('빈 목록 분기 if 가 wishlist.data.data 를 참조해야 함', () => {
         const emptyNode = findFirstNode(
             wishlistListPartial,
@@ -258,43 +176,22 @@ describe('찜 목록 partial 구조 검증 (_list.json)', () => {
         expect(emptyNode).not.toBeNull();
     });
 
-    /**
-     * @scenario surface=mypage_empty
-     * @effects mypage_wishlist_empty_state_links_to_products
-     */
-    it('빈 목록에서 shopBase/products 로 가는 링크(A)가 존재해야 함', () => {
-        // 경로가 _global.shopBase 동적 표현식 + /products 로 변경됨.
-        // #757 WP-L: 화면 이동은 실제 주소를 가진 링크다 — 주소는 href 한 곳이고(D12), 보통 클릭의 navigate 는
-        // path 없이 그 href 로 간다. 가운데 클릭·새 탭으로 상품 목록을 열 수 있다.
-        const shopLink = findFirstNode(
-            wishlistListPartial,
-            (n: any) => n?.name === 'A'
-                && typeof n?.props?.href === 'string'
-                && n.props.href.includes('shopBase')
-                && n.props.href.includes('/products'),
-        );
-        expect(shopLink).not.toBeNull();
-
-        const navigate = asArray(shopLink?.actions).find((a: any) => a.handler === 'navigate');
-        expect(navigate, '보통 클릭이 화면 안 이동(navigate)을 잃었다').toBeTruthy();
-        // 주소가 두 곳에 갈라지면 한쪽만 낡는다 — navigate 는 path 를 들지 않는다.
-        expect(navigate?.params?.path).toBeUndefined();
-
-        // 단추로 되돌아가면 새 탭으로 열 수 없다 — 같은 목적지의 Button+navigate 는 없어야 한다.
-        const legacyButton = findFirstNode(
+    it('빈 목록에서 shopBase/products 로 navigate 하는 Button 이 존재해야 함', () => {
+        // 경로가 _global.shopBase 동적 표현식 + /products 로 변경됨
+        const navButton = findFirstNode(
             wishlistListPartial,
             (n: any) => n?.name === 'Button'
-                && asArray(n?.actions).some(
-                    (a: any) => a.handler === 'navigate' && String(a.params?.path ?? '').includes('/products'),
+                && Array.isArray(n.actions)
+                && n.actions.some(
+                    (a: any) => a.handler === 'navigate'
+                        && typeof a.params?.path === 'string'
+                        && a.params.path.includes('shopBase')
+                        && a.params.path.includes('/products'),
                 ),
         );
-        expect(legacyButton).toBeNull();
+        expect(navButton).not.toBeNull();
     });
 
-    /**
-     * @scenario surface=mypage_list
-     * @effects mypage_wishlist_list_binds_wishlist_data
-     */
     it('Pagination 컴포넌트가 존재하고 wishlist pagination 메타에 바인딩되어야 함', () => {
         const pagination = findFirstNode(
             wishlistListPartial,

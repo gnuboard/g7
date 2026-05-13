@@ -2,23 +2,8 @@
 
 namespace App\Console\Commands\Core;
 
-use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
-use App\Console\Commands\Traits\HasUnifiedConfirm;
-use App\Console\Commands\Traits\LocalizesDescription;
-use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\UpgradeHandoffException;
-use App\Extension\ExtensionManager;
-use App\Extension\Helpers\FilePermissionHelper;
-use App\Extension\Helpers\StorageLinkHelper;
-use App\Extension\ModuleManager;
-use App\Extension\PluginManager;
-use App\Extension\Support\LifecycleWarnings;
-use App\Extension\TemplateManager;
-use App\Extension\Traits\ClearsTemplateCaches;
 use App\Services\CoreUpdateService;
-use App\Support\ConfigCacheHelper;
-use App\Support\ExecutionEnvironment;
-use App\Support\RouteCacheHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -33,46 +18,15 @@ use Illuminate\Support\Facades\Log;
  * 업그레이드는 beta.1 의 CoreUpdateCommand 가 본 커맨드를 알지 못하므로 spawn
  * 효과를 받지 못한다(경로 A) — 이 경우 upgrade step 파일 내부 로컬 로직으로
  * 후처리를 수행해야 한다. 상세는 docs/extension/upgrade-step-guide.md 참조.
- *
- * 단독 실행 안전성: 운영자가 HANDOFF 안내문 또는 수동 복구 목적으로 직접 호출하면
- * 기본값으로 부모 CoreUpdateCommand 가 처리하던 사전(Migration + Resync) 및
- * 사후(.env 버전 + 캐시 정리 + 번들 확장 일괄 업데이트) 단계를 자동 수행한다.
- * CoreUpdateCommand spawn 호출 시엔 `--skip-*` 옵션 5개로 중복 회피.
- *
- * `--steps-only`: 업그레이드 스텝만 실행하고 모든 보조 단계(권한 정상화 ·
- * 오토로드 재생성 · 마이그레이션 · resync · 버전 갱신 · 캐시 정리 · 번들 업데이트)를
- * 생략한다. 특정 스텝의 데이터 보정만 단발성으로 재실행할 때 사용한다. 보조 단계가
- * 이미 완료된 환경에서 무거운 권한 재귀 순회 등을 건너뛴다.
  */
 class ExecuteUpgradeStepsCommand extends Command
 {
-    use BundledExtensionUpdatePrompt;
-    use ClearsTemplateCaches;
-    use HasUnifiedConfirm;
-    use LocalizesDescription;
-    use ReportsLifecycleWarnings;
-
     protected $signature = 'core:execute-upgrade-steps
         {--from= : 시작 버전}
         {--to= : 대상 버전}
-        {--force : 동일 버전 강제 실행 + 번들 확장 일괄 업데이트 prompt 스킵}
-        {--y|yes : 진행 확인만 「예」로 처리 — --force 의 다른 효과(같은 판 재실행·실행 대장 무시) 없이 비대화형 실행. 번들 확장 일괄 업데이트의 레이아웃 전략은 물을 수 없으면 기본 overwrite}
-        {--steps-only : 업그레이드 스텝만 실행 — 권한 정상화·오토로드 재생성·마이그레이션·resync·버전 갱신·캐시 정리·번들 업데이트 등 모든 사전/사후 보조 단계 생략}
-        {--skip-migrations : 마이그레이션 실행 생략 (CoreUpdateCommand spawn 시 부모 Step 9 가 이미 실행)}
-        {--skip-resync : 코어 config 재로드 및 권한/메뉴/시더 동기화 생략 (동일 사유)}
-        {--skip-version-env : .env APP_VERSION 갱신 생략 (부모 Step 11 가 처리)}
-        {--skip-cache-clear : 캐시 정리 생략 (부모 Step 11 가 처리)}
-        {--skip-bundled-updates : 번들 확장 일괄 업데이트 생략 (부모가 prompt 로 처리)}';
+        {--force : 동일 버전 강제 실행}';
 
-    /**
-     * 재동기화·오토로드 갱신 실패 경고는 표로만 보이고 종료코드는 바꾸지 않습니다 — 부모(core:update)는 종료코드 0 만 성공으로 본다.
-     *
-     * @return bool 늘 false
-     */
-    protected function lifecycleWarningsChangeExitCode(): bool
-    {
-        return false;
-    }
+    protected $description = '코어 업그레이드 스텝을 별도 프로세스에서 실행합니다 (CoreUpdateCommand 내부용)';
 
     /**
      * 커맨드를 실행합니다.
@@ -86,72 +40,11 @@ class ExecuteUpgradeStepsCommand extends Command
         $to = (string) $this->option('to');
         $force = (bool) $this->option('force');
 
-        // --steps-only: 업그레이드 스텝만 실행하고 모든 보조 단계(권한 정상화 · 오토로드
-        // 재생성 · 마이그레이션 · resync · 버전 갱신 · 캐시 정리 · 번들 업데이트)를 생략한다.
-        // 운영자가 특정 스텝의 데이터 보정만 단발성으로 재실행할 때 사용한다.
-        $stepsOnly = (bool) $this->option('steps-only');
-
         if ($from === '' || $to === '') {
-            $this->error(__('common.console.core_execute_upgrade_steps.from_to_required'));
+            $this->error('--from 과 --to 는 필수 옵션입니다.');
 
             return self::INVALID;
         }
-
-        $isSpawnChild = $this->isSpawnChild();
-
-        // 운영자 단독 실행도 코어 업데이트와 같은 실행 잠금을 잡는다 — `core:update` 나 다른 단독 실행과 겹치면
-        // 같은 스텝이 두 번 돌거나 백업이 서로 덮어써진다. spawn 자식은 부모가 이미 잠금을 쥐고 있다(다른 프로세스라
-        // 여기서 잡으면 늘 실패한다).
-        if (! $isSpawnChild) {
-            if (! $service->acquireRunLock()) {
-                $this->error(__('common.console.core_execute_upgrade_steps.lock_held'));
-
-                return self::FAILURE;
-            }
-
-            foreach (CoreUpdateService::takeRunLockWarnings() as $warning) {
-                $this->warn('⚠ '.$warning);
-            }
-        }
-
-        try {
-            return $this->executeSteps($service, $from, $to, $force, $stepsOnly, $isSpawnChild);
-        } finally {
-            if (! $isSpawnChild) {
-                $service->releaseRunLock();
-            }
-        }
-    }
-
-    /**
-     * 이 실행이 `core:update` 의 spawn 자식인지 판정합니다.
-     *
-     * CoreUpdateCommand::spawnUpgradeStepsProcess 가 자식에 `G7_UPDATE_IN_PROGRESS=1` env 를 전달한다(beta.3 부터).
-     * `getenv` 가 막힌 호스팅에서도 판정은 성립해야 한다 — 부모는 `$_ENV`/`$_SERVER` 에도 같은 값을 심고,
-     * 서브프로세스 러너는 그 둘을 합쳐 자식에게 물려준다 (#609 D34). 단독 호출(운영자 수동) 시엔 env 미설정.
-     *
-     * @return bool spawn 자식이면 true
-     */
-    private function isSpawnChild(): bool
-    {
-        return ($_ENV['G7_UPDATE_IN_PROGRESS']
-            ?? $_SERVER['G7_UPDATE_IN_PROGRESS']
-            ?? (ExecutionEnvironment::hasFunction('getenv') ? getenv('G7_UPDATE_IN_PROGRESS') : false)) === '1';
-    }
-
-    /**
-     * 사전 단계 → 업그레이드 스텝 → 사후 단계를 실행합니다 (잠금은 호출자가 잡는다).
-     *
-     * @param  CoreUpdateService  $service  코어 업데이트 서비스
-     * @param  string  $from  시작 판
-     * @param  string  $to  대상 판
-     * @param  bool  $force  같은 판 강제 실행
-     * @param  bool  $stepsOnly  스텝만 실행
-     * @param  bool  $isSpawnChild  core:update spawn 자식 여부
-     * @return int 종료 코드
-     */
-    private function executeSteps(CoreUpdateService $service, string $from, string $to, bool $force, bool $stepsOnly, bool $isSpawnChild): int
-    {
 
         // spawn 자식 진입 시 활성 모듈/플러그인의 PSR-4 매핑을 fresh 등록.
         // 부모 프로세스의 autoload-extensions.php 가 stale 한 경우 upgrade step 안에서
@@ -164,15 +57,12 @@ class ExecuteUpgradeStepsCommand extends Command
         // `app(ExtensionManager::class)->updateComposerAutoload()` 직접 호출은 stale 가능성
         // 없음. (Artisan::call 대신 직접 호출 — nested Artisan::call 이 outer 명령의
         // output buffer 를 덮어쓰는 Laravel 동작 회피)
-        if (! $stepsOnly) {
-            try {
-                app(ExtensionManager::class)->updateComposerAutoload();
-            } catch (\Throwable $e) {
-                Log::warning('upgrade step spawn 자식: updateComposerAutoload 호출 실패', [
-                    'error' => $e->getMessage(),
-                ]);
-                LifecycleWarnings::current()->add('autoload', 'autoload-extensions.php', $e->getMessage());
-            }
+        try {
+            app(\App\Extension\ExtensionManager::class)->updateComposerAutoload();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('upgrade step spawn 자식: updateComposerAutoload 호출 실패', [
+                'error' => $e->getMessage(),
+            ]);
         }
 
         // spawn 자식 진입 시 활성 디렉토리의 쓰기 권한 디렉토리를 멱등적으로 보장.
@@ -182,100 +72,36 @@ class ExecuteUpgradeStepsCommand extends Command
         //
         // 한계: 부모(이전 버전) 만 알고 있던 신규 디렉토리는 처리 불가 — 그 일회성 케이스는
         // 해당 release 의 upgrade step 단발 처리. (예: beta.3→beta.4 의 lang-packs/* 보정)
-        if (! $stepsOnly) {
-            try {
-                // 구버전 부모(7.0.9 이하)는 spawn 전에 config 캐시를 비우지 않아 이 자식이 이전 버전
-                // 캐시로 부팅할 수 있다. 그러면 `config()` 는 옛 목록이라 신버전이 추가한 디렉토리가
-                // 빠진다 — 캐시 부팅이면 디스크 config/app.php 를 직접 읽는다 (7.0.9→7.0.10 실사례).
-                // 판정은 캐시 파일의 실존으로 한다 — 부팅에 쓰였든 위 updateComposerAutoload() 가 방금
-                // 재생성했든, 파일이 있으면 메모리 config 를 신뢰하지 않는다 (디스크 판독은 멱등).
-                if (is_file($this->laravel->getCachedConfigPath())) {
-                    Log::channel('upgrade')->warning('[spawn] config 캐시 파일이 있어 쓰기 권한 디렉토리 목록을 디스크 config/app.php 에서 직접 읽는다 (이전 버전 캐시일 수 있어 캐시 값을 쓰지 않음 — 업데이트 오류 아님)');
-                    $writablePaths = (array) $service->freshDiskUpdateConfig('restore_ownership_group_writable', []);
-                } else {
-                    $writablePaths = (array) config('app.update.restore_ownership_group_writable', []);
-                }
-                if (! empty($writablePaths)) {
-                    $service->ensureWritableDirectories(
-                        $writablePaths,
-                        function (string $level, string $msg): void {
-                            // 콘솔 + upgrade 로그 채널 동시 출력 — 운영자가 단일 파일(upgrade.log)에서
-                            // spawn 자식의 권한 정상화 진행을 추적할 수 있도록 양쪽 모두 누적.
-                            $this->{$level === 'warning' ? 'warn' : 'info'}($msg);
-                            Log::channel('upgrade')->$level('[spawn] '.$msg);
-                        },
-                    );
-                }
-            } catch (\Throwable $e) {
-                Log::warning('upgrade step spawn 자식: ensureWritableDirectories 호출 실패', [
-                    'error' => $e->getMessage(),
-                ]);
+        try {
+            $writablePaths = (array) config('app.update.restore_ownership_group_writable', []);
+            if (! empty($writablePaths)) {
+                $service->ensureWritableDirectories(
+                    $writablePaths,
+                    function (string $level, string $msg): void {
+                        // 콘솔 + upgrade 로그 채널 동시 출력 — 운영자가 단일 파일(upgrade.log)에서
+                        // spawn 자식의 권한 정상화 진행을 추적할 수 있도록 양쪽 모두 누적.
+                        $this->{$level === 'warning' ? 'warn' : 'info'}($msg);
+                        \Illuminate\Support\Facades\Log::channel('upgrade')->$level('[spawn] '.$msg);
+                    },
+                );
             }
-        }
-
-        // 코어 업데이트 spawn 자식 감지.
-        //
-        // CoreUpdateCommand::spawnUpgradeStepsProcess 가 자식에 `G7_UPDATE_IN_PROGRESS=1` env 를
-        // 전달한다 (beta.3 부터 존재). 이 시그널은 자식이 부모의 `core:update` 컨텍스트에서
-        // 실행 중임을 의미한다. 부모는 본인이 사전(Step 9 migration + resync) + 사후
-        // (Step 11 version-env + cache-clear + bundled prompt) 단계를 모두 책임지므로 자식은
-        // 5단계 모두 스킵해야 한다.
-        //
-        // 구버전 부모(예: beta.5)는 신버전 자식이 도입한 `--skip-*` 옵션을 모른다. 옵션 부재
-        // 시 자식이 사후 단계를 실행하면 (특히 bundled prompt) non-interactive 환경에서
-        // `Aborted.` exit=1 회귀 발생 (882deb9b0 사각지대). env 시그널이 옵션 부재를 보완.
-        //
-        // 단독 호출 (운영자 수동) 시엔 env 미설정 → 모든 단계 정상 진행.
-        // `getenv` 가 막힌 호스팅에서도 판정은 성립해야 한다 — 부모는 `$_ENV`/`$_SERVER`
-        // 에도 같은 값을 심고, 서브프로세스 러너는 그 둘을 합쳐 자식에게 물려준다 (#609 D34).
-        // (판정은 handle() 의 isSpawnChild())
-
-        // 사전 단계 (단독 실행 안전성 보장).
-        //
-        // CoreUpdateCommand 가 spawn 호출 시엔 부모 Step 9 (CoreUpdateCommand.php:408-409) 에서
-        // 이미 동일 단계를 실행했으므로 --skip-migrations / --skip-resync 로 중복 회피.
-        // 운영자 단독 호출 시 옵션 미전달 → 기본값으로 두 단계 자동 수행 →
-        // migration / permission / menu / seeder 누락 차단.
-        if (! $this->option('skip-migrations') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(__('common.console.core_execute_upgrade_steps.migrations'));
-            $service->runMigrations();
-        } else {
-            $this->info($stepsOnly
-                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.migrations')
-                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.migrations'));
-        }
-
-        if (! $this->option('skip-resync') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(__('common.console.core_execute_upgrade_steps.resync'));
-            $service->reloadCoreConfigAndResync();
-        } else {
-            $this->info($stepsOnly
-                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.resync')
-                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.resync'));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('upgrade step spawn 자식: ensureWritableDirectories 호출 실패', [
+                'error' => $e->getMessage(),
+            ]);
         }
 
         $stepsExecuted = 0;
-        $stepsDiscovered = 0;
-        $stepsSkipped = 0;
 
         try {
             $service->runUpgradeSteps(
                 $from,
                 $to,
                 function (string $version) use (&$stepsExecuted): void {
-                    $this->info(__('common.console.core_execute_upgrade_steps.step_running', ['version' => $version]));
+                    $this->info("upgrade step 실행: {$version}");
                     $stepsExecuted++;
                 },
                 $force,
-                function (int $discovered) use (&$stepsDiscovered): void {
-                    $stepsDiscovered = $discovered;
-                },
-                freshProcess: true,
-                // 같은 DB 의 다른 서버·실행이 이미 끝낸 스텝 — 실행 건수와 따로 세어 종료 신호에 싣는다
-                onSkipped: function (string $version) use (&$stepsSkipped): void {
-                    $this->info(__('common.console.core_execute_upgrade_steps.step_already_run', ['version' => $version]));
-                    $stepsSkipped++;
-                },
             );
         } catch (UpgradeHandoffException $e) {
             // 업그레이드 스텝이 새 PHP 프로세스 재진입을 요청했다.
@@ -292,8 +118,6 @@ class ExecuteUpgradeStepsCommand extends Command
                 'resumeCommand' => $e->resumeCommand,
             ], JSON_UNESCAPED_UNICODE);
 
-            $this->surfaceDocrootExposureWarnings($isSpawnChild);
-
             $this->line('[HANDOFF] '.$payload);
 
             Log::info('core:execute-upgrade-steps 핸드오프', [
@@ -302,9 +126,6 @@ class ExecuteUpgradeStepsCommand extends Command
                 'after' => $e->afterVersion,
                 'reason' => $e->reason,
             ]);
-
-            $this->restoreUpgradeLogOwnership();
-            $service->normalizeRuntimeOwnershipAfterRootRun();
 
             return UpgradeHandoffException::EXIT_CODE;
         } catch (\Throwable $e) {
@@ -315,11 +136,6 @@ class ExecuteUpgradeStepsCommand extends Command
             ]);
             $this->error($e->getMessage());
 
-            $this->surfaceDocrootExposureWarnings($isSpawnChild);
-
-            $this->restoreUpgradeLogOwnership();
-            $service->normalizeRuntimeOwnershipAfterRootRun();
-
             return self::FAILURE;
         }
 
@@ -327,204 +143,12 @@ class ExecuteUpgradeStepsCommand extends Command
         // 명시 종료 신호. [HANDOFF] 와 동일 구조의 라인 프로토콜. 정상 종료 (handoff 미발생) 경로
         // 에서만 발행되며, 부모는 exit=0 인데 본 라인이 부재하면 mode=abort 시 throw,
         // mode=fallback 시 in-process 진행 (`spawn_failure_mode`).
-        $this->surfaceDocrootExposureWarnings($isSpawnChild);
-
         $this->line('[STEPS_EXECUTED] '.json_encode([
             'count' => $stepsExecuted,
-            'discovered' => $stepsDiscovered,
-            // 실행 대장에 이미 끝난 것으로 있어 건너뛴 스텝 수 — 구버전 부모는 모르는 필드라 무시한다
-            'skipped' => $stepsSkipped,
             'fromVersion' => $from,
             'toVersion' => $to,
         ], JSON_UNESCAPED_UNICODE));
 
-        // 사후 단계 (단독 실행 안전성 보장).
-        //
-        // CoreUpdateCommand spawn 시엔 부모 Step 11 (CoreUpdateCommand.php:457-458) 및
-        // 번들 확장 일괄 업데이트 prompt (라인 497-515) 가 자식 종료 후 실행하므로
-        // --skip-version-env / --skip-cache-clear / --skip-bundled-updates 로 중복 회피.
-        // 단독 실행 시엔 옵션 미전달 → 기본값으로 3단계 자동 수행 → gnuboard/g7#34 의 운영자 수동 절차
-        // (sed APP_VERSION + cache:clear + module/plugin/template:update --force --source=bundled) 통합.
-        if (! $this->option('skip-version-env') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(__('common.console.core_execute_upgrade_steps.version_env', ['version' => $to]));
-            $service->updateVersionInEnv($to);
-        } else {
-            $this->info($stepsOnly
-                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.version_env')
-                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.version_env'));
-        }
-
-        if (! $this->option('skip-cache-clear') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(__('common.console.core_execute_upgrade_steps.cache_clear'));
-            $service->clearAllCaches();
-            // 상주 큐 워커는 부팅이 한 번뿐이라 옛 코드를 물고 있다 — 캐시 정리 직후 재시작 신호.
-            // spawn 자식·steps-only 는 이 블록을 스킵하고 부모가 보낸다.
-            $service->signalQueueRestart();
-            $this->info(__('common.console.core_execute_upgrade_steps.queue_restart'));
-            // clearAllCaches() 는 config:clear 만 하므로, 단독 실행 흐름에서는 config 캐시가
-            // 비활성 상태로 남는다. 모든 upgrade step + 번들 확장 업데이트가 config 소스를
-            // 변경했을 수 있으니, 캐시 정리 세트의 마지막에 config 캐시를 재생성한다.
-            // spawn 자식·steps-only 는 이 블록을 스킵하고 부모(CoreUpdateCommand)가 재생성한다.
-            ConfigCacheHelper::rebuild();
-            // 라우트 캐시도 같은 이유로 되살린다 — 업그레이드 스텝이나 번들 확장 업데이트가
-            // 라우트를 바꿨을 수 있고, 비운 채로 끝내면 이후 모든 요청이 라우트를 재등록한다.
-            RouteCacheHelper::rebuild();
-            // 업그레이드 스텝 단독 실행 시에도 코어 lang/routes/layout 변경이
-            // 프론트엔드 캐시 stale 로 가려지지 않도록 `ext.cache_version` bump.
-            // spawn 자식·steps-only 모드에서는 부모가 처리하므로 스킵.
-            $this->incrementExtensionCacheVersion();
-        } else {
-            $this->info($stepsOnly
-                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.cache_clear')
-                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.cache_clear'));
-        }
-
-        $bundledResult = ['failed' => 0];
-
-        if (! $this->option('skip-bundled-updates') && ! $isSpawnChild && ! $stepsOnly) {
-            $this->info(__('common.console.core_execute_upgrade_steps.bundled_updates'));
-            $bundledResult = $this->runBundledExtensionUpdatePrompt(
-                app(ModuleManager::class),
-                app(PluginManager::class),
-                app(TemplateManager::class),
-                $force,
-            );
-        } else {
-            $this->info($stepsOnly
-                ? '[steps-only] '.__('common.console.core_execute_upgrade_steps.skipped.bundled_updates')
-                : '[spawn] '.__('common.console.core_execute_upgrade_steps.skipped_by_parent.bundled_updates'));
-        }
-
-        $this->restoreUpgradeLogOwnership();
-        $this->sweepEmptyStagingDirectories($service);
-        // 단독 실행(sudo core:execute-upgrade-steps)이 만든 캐시/번들 root 산출물
-        // 소유권 정상화 — spawn 자식 모드에서도 무해(멱등)하며, 부모(CoreUpdateCommand)
-        // 종료부의 동일 호출이 부모 측 후속 쓰기를 담당한다
-        $service->normalizeRuntimeOwnershipAfterRootRun();
-
-        // 단독 실행의 번들 확장 일괄 업데이트가 하나라도 실패하면 core:update 와 같이 종료 코드 1.
-        // spawn 자식·steps-only 는 번들 업데이트를 하지 않으므로 늘 0 이다.
-        return $this->bundledUpdateExitCode($bundledResult, $to);
-    }
-
-    /**
-     * 이전 버전 부모가 남긴 빈 격리 디렉토리(`core_{ts}/extracted` 껍데기)를 청소합니다.
-     *
-     * 부모의 정리 단계는 소스 경로 안쪽만 지우던 결함(7.0.0~7.0.9)이 있어 업데이트마다
-     * 껍데기가 남았고, sudo 실행이면 root 소유라 운영자·웹서버 계정이 지울 수 없었다.
-     * 부모는 구버전 클래스를 메모리에 들고 있어 고쳐도 다음 업데이트부터 효력이 있으므로,
-     * 신버전 코드로 도는 이 자식이 치운다. 파일이 있는 디렉토리(부모가 쓰는 중인 격리
-     * 디렉토리)는 술어상 건드리지 않는다. 실패는 업데이트 결과와 무관하므로 경고로 흡수한다.
-     *
-     * @param  CoreUpdateService  $service  코어 업데이트 서비스
-     * @return void 반환값 없음
-     */
-    private function sweepEmptyStagingDirectories(CoreUpdateService $service): void
-    {
-        try {
-            $swept = $service->sweepEmptyStagingDirectories();
-            if ($swept > 0) {
-                $this->info('[spawn] '.__('common.console.core_execute_upgrade_steps.staging_swept', ['count' => $swept]));
-            }
-        } catch (\Throwable $e) {
-            Log::channel('upgrade')->warning('[spawn] 빈 격리 디렉토리 청소 실패', ['error' => $e->getMessage()]);
-        }
-    }
-
-    /**
-     * spawn 자식이 root 로 만든 upgrade 로그 파일의 소유권을 부모(storage/logs) 로 정합합니다.
-     *
-     * upgrade step 은 sudo 코어 업데이트에서 별도 PHP 프로세스로 spawn 되며(이 커맨드),
-     * root 로 실행되어 `upgrade-YYYY-MM-DD.log`(Log::channel('upgrade')) 를 root 소유로
-     * 만든다. 부모(CoreUpdateCommand) 프로세스는 업데이트 시작 시점의 *이전 버전* 클래스를
-     * 메모리에 들고 있어, 부모 측 로그 정상화 로직이 추가돼 있어도 그 버전엔 없을 수 있다
-     * (클래스 캐싱). 반면 본 spawn 자식은 항상 *신버전* 코드로 실행되므로, upgrade 로그를
-     * 만든 주체인 자식이 자기 종료 직전에 직접 소유권을 정합하면 부모 버전과 무관하게 동작한다.
-     *
-     * 그 결과 이후 www-data(php-fpm) 의 module:update upgrade step 이 같은 날짜 upgrade
-     * 로그에 append 할 수 있다. 본 메서드는 어떤 로그도 쓰지 않는다(쓰면 다시 root 가 됨).
-     * sudo 아닌 환경에서는 silent no-op(멱등).
-     *
-     * @return void 반환값 없음
-     */
-    private function restoreUpgradeLogOwnership(): void
-    {
-        $logsDir = storage_path('logs');
-        if (! is_dir($logsDir)) {
-            return;
-        }
-
-        // 코어('upgrade-*.log') + 확장('extension-upgrade-*.log') 두 채널의 daily 로그를 모두
-        // 정합한다. glob 'upgrade-*.log' 는 'extension-' 접두사 파일을 매칭하지 못하므로
-        // 두 패턴을 각각 순회한다.
-        //
-        // `glob` 은 하드닝 프로필이 흔히 막는 이름이고, 이 커맨드는 무CLI 환경에서
-        // `InProcessCommandRunner` 로 **웹 요청 안에서** 실행된다 — 막힌 호스팅에서는
-        // 함수 테이블에 없어 `Error`(치명)이고 `?: []` 는 그것을 막지 못한다(false 만 받는다).
-        // 소유권 정합은 실패해도 업데이트 자체를 되돌릴 이유가 없으므로 조용히 건너뛴다.
-        if (! ExecutionEnvironment::hasFunction('glob')) {
-            return;
-        }
-
-        foreach (['upgrade-*.log', 'extension-upgrade-*.log'] as $pattern) {
-            foreach (glob($logsDir.DIRECTORY_SEPARATOR.$pattern) ?: [] as $logFile) {
-                FilePermissionHelper::inheritOwnershipFromParent($logFile);
-            }
-        }
-    }
-
-    /**
-     * 이 프로세스가 만든 「공개 파일이 지금 웹에서 열린다」 통보를 부모에게 넘깁니다.
-     *
-     * 그 통보 버퍼는 **소비자만** 비우는데, 소비자(`CoreUpdateCommand`)는 부모 프로세스에만
-     * 있다. 그래서 업그레이드 스텝이 이 자식에서 `public/storage` 복구를 돌려 통보를 담아도,
-     * 자식 종료와 함께 폐기되어 콘솔에도 업데이트 기록에도 도달하지 않았다 — `upgrade` 로그
-     * 파일에만 남았고, 그 사실은 「공개 파일 전량 사본이 웹에서 열린다」이다.
-     *
-     * `[HANDOFF]` · `[STEPS_EXECUTED]` 와 같은 라인 프로토콜로 실어 보낸다. 구버전 부모는
-     * 이 접두사를 모르므로 그대로 콘솔에 중계된다 — 기록에는 못 닿아도 **사라지지는 않는다**.
-     *
-     * 단독 실행(부모 없음)이면 이 프로세스가 소비자이므로 콘솔에 직접 낸다.
-     *
-     * @param  bool  $isSpawnChild  부모 프로세스가 띄운 자식 실행인지 (true 면 라인 프로토콜로 부모에게 넘기고, 아니면 콘솔에 직접 낸다)
-     * @return void 반환값 없음
-     */
-    private function surfaceDocrootExposureWarnings(bool $isSpawnChild): void
-    {
-        $warnings = StorageLinkHelper::takeDocrootExposureWarnings();
-
-        if ($warnings === []) {
-            return;
-        }
-
-        if ($isSpawnChild) {
-            // 인코딩 실패를 삼키지 않는다. 백업 경로가 비-UTF8 바이트를 포함하는
-            // 파일시스템(로케일이 다른 공유 호스팅)에서 `json_encode` 는 `false` 를
-            // 돌려주고, 그러면 접두사만 실린 빈 줄이 나가 부모가 파싱하지 못한 채
-            // **노출 사실이 통째로 사라진다.** 치환으로 살려 보내고, 그래도 실패하면
-            // 원문 그대로 콘솔에 내어 부모의 원시 중계에 얹는다.
-            $payload = json_encode(
-                ['warnings' => array_values($warnings)],
-                JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
-            );
-
-            if (is_string($payload)) {
-                $this->line('[DOCROOT_EXPOSURE] '.$payload);
-
-                return;
-            }
-        }
-
-        $this->newLine();
-        // 이 통로에는 등급이 다른 두 종류가 섞인다 — 「지금 웹에서 열린다」(웹 트리 안
-        // 폴백)와 「옮기는 데 성공했으니 확인 후 지워라」(정상 결과)다. 머리말이 전자를
-        // 단정하면 문서 루트가 `public/` 인 표준 배치(절대다수)에서 노출이 아닌 상태에
-        // 노출 경보가 뜬다. 형제 축(`surfaceRootFileWarnings`)이 같은 이유로 단정 대신
-        // 완화 표현을 쓴다 — 등급은 각 문구가 스스로 말한다.
-        $this->warn(__('settings.core_update.console.docroot_exposure_header'));
-        foreach ($warnings as $warning) {
-            $this->warn('  - '.$warning);
-        }
-        $this->newLine();
+        return self::SUCCESS;
     }
 }

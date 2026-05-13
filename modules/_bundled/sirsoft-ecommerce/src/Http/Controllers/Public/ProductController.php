@@ -6,17 +6,13 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Http\Controllers\Concerns\EnsuresPublicProduct;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductNewRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductPopularRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductRecentRequest;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductRelatedRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\ProductListResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\PublicProductResource;
-use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
 
 /**
@@ -26,13 +22,6 @@ use Modules\Sirsoft\Ecommerce\Services\ProductService;
  */
 class ProductController extends PublicBaseController
 {
-    use EnsuresPublicProduct;
-
-    /**
-     * 공개 상품 조회 서비스를 주입받습니다.
-     *
-     * @param  ProductService  $productService  상품 서비스
-     */
     public function __construct(
         private ProductService $productService
     ) {}
@@ -43,7 +32,7 @@ class ProductController extends PublicBaseController
      * 전시상태가 visible이고, 판매상태가 on_sale 또는 coming_soon인 상품만 반환합니다.
      * 정렬: latest(최신순), sales(판매순), price_asc(가격낮은순), price_desc(가격높은순)
      *
-     * @param  Request  $request  요청 데이터
+     * @param Request $request 요청 데이터
      * @return JsonResponse 상품 목록을 포함한 JSON 응답
      */
     public function index(PublicProductListRequest $request): JsonResponse
@@ -56,7 +45,6 @@ class ProductController extends PublicBaseController
 
             $perPage = (int) ($validated['per_page'] ?? 20);
             $paginator = $this->productService->getPublicList($filters, $perPage);
-            $this->productService->attachPublicListViewerContext($paginator);
 
             $collection = new ProductCollection($paginator);
 
@@ -66,11 +54,6 @@ class ProductController extends PublicBaseController
                 $collection->toArray($request)
             );
         } catch (Exception $e) {
-            Log::error('products.index failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-            ]);
 
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -85,7 +68,7 @@ class ProductController extends PublicBaseController
      *
      * 최근 30일 판매량 기준으로 정렬합니다.
      *
-     * @param  Request  $request  요청 데이터
+     * @param Request $request 요청 데이터
      * @return JsonResponse 인기 상품 목록을 포함한 JSON 응답
      */
     public function popular(PublicProductPopularRequest $request): JsonResponse
@@ -95,7 +78,6 @@ class ProductController extends PublicBaseController
 
             $limit = (int) ($request->validated('limit') ?? 10);
             $products = $this->productService->getPopularProducts($limit);
-            $this->productService->attachPublicListViewerContext($products);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -103,54 +85,6 @@ class ProductController extends PublicBaseController
                 ProductListResource::collection($products)
             );
         } catch (Exception $e) {
-            Log::error('products.popular failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-            ]);
-
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'messages.products.fetch_failed',
-                500
-            );
-        }
-    }
-
-    /**
-     * 관련 상품 목록을 조회합니다 (상품 상세 「이 상품은 어떠세요?」).
-     *
-     * 대표 분류 → 상위 분류 단계로 채우고 단계 안 순서·캐시 만료는 이커머스 환경설정을 따릅니다.
-     * 기준 상품이 공개 상태가 아니면 404 입니다.
-     *
-     * @param  PublicProductRelatedRequest  $request  요청 데이터
-     * @param  Product  $product  기준 상품 (상품코드 또는 ID)
-     * @return JsonResponse 관련 상품 목록을 포함한 JSON 응답
-     */
-    public function related(PublicProductRelatedRequest $request, Product $product): JsonResponse
-    {
-        $this->ensurePublicProduct($product);
-
-        try {
-            $this->logApiUsage('products.related', ['product_id' => $product->id]);
-
-            $limit = (int) ($request->validated('limit') ?? 8);
-            $products = $this->productService->getRelatedProducts($product, $limit);
-            $this->productService->attachPublicListViewerContext($products);
-
-            return ResponseHelper::moduleSuccess(
-                'sirsoft-ecommerce',
-                'messages.products.fetch_success',
-                ProductListResource::collection($products)
-            );
-        } catch (Exception $e) {
-            Log::error('products.related failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-                'product_id' => $product->id,
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.fetch_failed',
@@ -164,7 +98,7 @@ class ProductController extends PublicBaseController
      *
      * 최신 등록순으로 정렬합니다.
      *
-     * @param  Request  $request  요청 데이터
+     * @param Request $request 요청 데이터
      * @return JsonResponse 신상품 목록을 포함한 JSON 응답
      */
     public function new(PublicProductNewRequest $request): JsonResponse
@@ -174,7 +108,6 @@ class ProductController extends PublicBaseController
 
             $limit = (int) ($request->validated('limit') ?? 10);
             $products = $this->productService->getNewProducts($limit);
-            $this->productService->attachPublicListViewerContext($products);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -182,12 +115,6 @@ class ProductController extends PublicBaseController
                 ProductListResource::collection($products)
             );
         } catch (Exception $e) {
-            Log::error('products.new failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.fetch_failed',
@@ -201,7 +128,7 @@ class ProductController extends PublicBaseController
      *
      * 클라이언트가 전달한 상품 ID 목록으로 조회합니다.
      *
-     * @param  Request  $request  요청 데이터 (ids: 쉼표 구분 상품 ID)
+     * @param Request $request 요청 데이터 (ids: 쉼표 구분 상품 ID)
      * @return JsonResponse 상품 목록을 포함한 JSON 응답
      */
     public function recent(PublicProductRecentRequest $request): JsonResponse
@@ -220,8 +147,7 @@ class ProductController extends PublicBaseController
                 );
             }
 
-            $products = $this->productService->getRecentProducts($ids);
-            $this->productService->attachPublicListViewerContext($products);
+            $products = $this->productService->getProductsByIds($ids);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -229,12 +155,6 @@ class ProductController extends PublicBaseController
                 ProductListResource::collection($products)
             );
         } catch (Exception $e) {
-            Log::error('products.recent failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.fetch_failed',
@@ -247,21 +167,18 @@ class ProductController extends PublicBaseController
      * 공개 상품 상세 정보를 조회합니다.
      *
      * 전시상태가 visible인 상품만 조회할 수 있습니다.
-     * 라우트 파라미터는 상품코드(product_code) 기준이며, 숫자 ID도 하위호환으로 허용됩니다
-     * (Product::resolveRouteBinding 이 code/id 를 자동 해석).
      *
-     * @param  Product  $product  라우트 바인딩된 상품 (product_code 또는 id)
+     * @param int $id 상품 ID
      * @return JsonResponse 상품 상세 정보를 포함한 JSON 응답
      */
-    public function show(Product $product): JsonResponse
+    public function show(int $id): JsonResponse
     {
         try {
-            $this->logApiUsage('products.show', ['product_id' => $product->id]);
+            $this->logApiUsage('products.show', ['product_id' => $id]);
 
-            // 바인딩된 상품의 id 로 상세(옵션/관계 포함)를 재조회
-            $product = $this->productService->getDetail($product->id);
+            $product = $this->productService->getDetail($id);
 
-            if (! self::isPublicProduct($product)) {
+            if (! $product || $product->display_status->value !== 'visible') {
                 return ResponseHelper::notFound(
                     'messages.products.not_found',
                     [],
@@ -277,7 +194,6 @@ class ProductController extends PublicBaseController
                 'brand',
                 'activeLabelAssignments.label',
                 'additionalOptions',
-                'additionalOptions.activeValues',
                 'currentUserWishlist',
             ]);
 
@@ -287,13 +203,6 @@ class ProductController extends PublicBaseController
                 new PublicProductResource($product)
             );
         } catch (Exception $e) {
-            Log::error('products.show failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-                'product_id' => $product?->id,
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.products.fetch_failed',

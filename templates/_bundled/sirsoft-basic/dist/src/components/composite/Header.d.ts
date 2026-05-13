@@ -8,73 +8,17 @@ interface Board {
 }
 interface User {
     uuid: string;
-    /** 실명. 이름 항목을 쓰지 않는 사이트에서는 null 이다 */
-    name: string | null;
-    /** 사이트 기본 영역에서 보이는 이름(표시 이름). 헤더는 이 값을 먼저 쓴다 */
-    display_name?: string | null;
+    name: string;
     avatar?: string;
     is_admin?: boolean;
 }
-/**
- * 헤더 메뉴 항목 — 템플릿 설정 `header.menu` (#434). 레이아웃 계산값 `siteMenu` 가 보이기 조건·꺼진 항목을 이미 걸러서 넘긴다.
- *
- * `kind` 가 `link` 면 운영자가 적은 주소, 그 밖(`home`·`popular`·`shop`·`boards`)은 이 컴포넌트가 그 자리에 그리는 자동 항목이다.
- */
-export interface HeaderMenuItem {
-    id?: string;
-    kind: string;
-    /** 이름 — 언어별 맵(`{ko, en}`) 또는 문자열. 자동 항목은 비우면 기본 이름 */
-    label?: string | Record<string, string>;
-    /** 사이트 안 경로(`/…`) 또는 http(s) 주소 — 서버가 검증한 값 */
-    url?: string;
-    /** 새 창으로 열기 */
-    new_tab?: boolean;
-    /** 하위 메뉴 (1단) */
-    children?: HeaderMenuItem[];
-}
-/** 메뉴 값이 없을 때(편집기 미리보기 등) — 템플릿 설정 기본값과 같은 순서 */
-export declare const DEFAULT_HEADER_MENU: HeaderMenuItem[];
-/**
- * 언어별 이름에서 현재 언어 값을 고릅니다 — 비었으면 다른 언어의 첫 값(기본 언어 대체는 서버·엔진과 같은 규칙).
- *
- * @param label 이름
- * @param locale 현재 언어
- * @returns 표시할 이름
- */
-export declare const pickLocalizedLabel: (label: HeaderMenuItem["label"], locale: string) => string;
 interface HeaderProps {
     /** 사이트 로고 URL */
     logo?: string;
-    /** 다크 모드 로고 URL — 있으면 어두운 화면에서 사이트 로고 대신 보인다(템플릿 설정 `branding.logo_dark`, #434) */
-    logoDark?: string;
-    /** 테마(라이트/다크) 단추를 보일지 — 기본 true (템플릿 설정 `header.show_theme_toggle`) */
-    showThemeToggle?: boolean;
-    /** 헤더 메뉴 — 템플릿 설정 `header.menu` 를 보이기 조건으로 거른 값(레이아웃 `_computed.siteMenu`). 없으면 기본 메뉴 */
-    menu?: HeaderMenuItem[] | null;
-    /**
-     * 봇 화면 전용 — `menu` 를 펴서 링크로 만든 목록(`{href, label}`). 검색봇 HTML 매핑(`seo-config.json` header_nav)이
-     * 1단 순회만 하므로 레이아웃이 미리 펴서 넘긴다. 사람 화면 렌더에는 쓰지 않는다.
-     */
-    seoMenuLinks?: Array<{
-        href: string;
-        label: string;
-    }>;
-    /**
-     * 봇 화면 전용 — `"false"` 면 `seo-config.json` 의 옛 고정 링크(홈·인기글·쇼핑·게시판 목록)를 끈다. 이 prop 이 없는
-     * keep 된 옛 레이아웃은 종전대로 고정 링크가 나간다.
-     */
-    seoLegacyNav?: string;
     /** 사이트 이름 */
     siteName?: string;
     /** 현재 로그인된 사용자 */
     user?: User | null;
-    /**
-     * 로그인 사용자 정보를 받는 중인가 — true 면 사용자 메뉴 자리에 빈 자리(회색 원 + 이름 막대)를 그리고
-     * 로그인·회원가입·주문조회·사용자 메뉴는 그리지 않는다(이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다). 레이아웃이 `{{_global.currentUser === undefined}}` 로 넘긴다.
-     * 받는 중을 비회원으로 읽으면 회원이 새로고침할 때 「로그인·회원가입」이 잠깐 보였다가 바뀌고 검색창이 출렁였다(#915).
-     * 기본값 false — 편집기 미리보기·바인딩이 없는 옛 레이아웃은 지금처럼 그린다.
-     */
-    userLoading?: boolean;
     /** 장바구니 아이템 수 */
     cartCount?: number;
     /** 읽지 않은 알림 수 */
@@ -91,36 +35,8 @@ interface HeaderProps {
     currentLocale?: string;
     /** 쇼핑몰 기본 경로 (예: "/shop", "/") */
     shopBase?: string;
-    /** 일반 회원가입을 받는지 — false 면 비로그인 헤더의 회원가입 버튼을 숨긴다 (기본 true, 7.2.0) */
-    registrationEnabled?: boolean;
-    /**
-     * 게시판 모듈이 켜져 있는가 — false 면 「인기글」 탭과 게시판 탭·더보기를 그리지 않는다.
-     * 기본값 true: 레이아웃이 `_global.activeModules` 로 판정해 넘긴다. 값이 오지 않는 경우(루트 레이아웃을 keep 으로
-     * 업데이트해 새 바인딩이 없는 사이트)에는 지금처럼 보인다(#822).
-     */
-    boardEnabled?: boolean;
-    /** 쇼핑몰 모듈이 켜져 있는가 — false 면 장바구니 단추·「쇼핑」 탭·회원 메뉴의 주문내역·위시리스트·비회원 「주문조회」를 그리지 않는다. 기본값 true(위와 같은 이유) */
-    shopEnabled?: boolean;
-    /** 검색칸을 그리는가 — 레이아웃은 게시판·쇼핑몰·페이지 중 하나라도 켜져 있으면 true 를 넘긴다(검색 공급자가 없으면 숨김). 기본값 true */
-    searchEnabled?: boolean;
-    /**
-     * 검색칸의 최근 검색어 범위 — 같은 범위를 쓰는 검색창(모바일 서랍·통합검색 화면)과 목록을 공유한다.
-     * 기본값 `core.site`(코어 통합검색). 엔진이 그 범위를 쓸 수 없다고 답하면 펼침 목록 없이 평범한 검색칸이다
-     */
-    searchHistoryScope?: string;
-    /**
-     * 봇 화면(seo-config header_nav)의 「쇼핑」 링크 주소(예: "/shop/products") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다).
-     * 옛 코어(7.1.3 이하)의 봇 렌더가 `{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 레이아웃이 완성된 주소를 넘긴다.
-     */
-    shopProductsHref?: string;
-    /**
-     * 봇 화면(seo-config header_nav)의 「리뷰」 링크 주소(예: "/shop/reviews") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다)
-     */
-    shopReviewsHref?: string;
     /** 추가 CSS 클래스 */
     className?: string;
-    /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */
-    editorAttrs?: Record<string, unknown>;
     /** 알림 목록 (NotificationCenter에 전달) */
     notifications?: NotificationItem[];
     /** 더 불러올 페이지 존재 여부 */
@@ -129,14 +45,6 @@ interface HeaderProps {
     notificationLoading?: boolean;
     /** "안 읽은 알림만" 필터 상태 */
     notificationUnreadOnly?: boolean;
-    /**
-     * 알림 읽음 처리 권한 — false 면 [모두 읽음] 숨김·닫을 때 읽음 처리 생략.
-     * 기본값 true(NotificationCenter 와 같음): 권한이 없으면 레이아웃이 abilities 를 읽어 false 를 명시한다.
-     * 값이 오지 않는 경우(루트 레이아웃을 keep 으로 업데이트해 바인딩이 없는 사이트)에 기능을 숨기지 않으며, 최종 방어선은 서버 403.
-     */
-    notificationCanUpdate?: boolean;
-    /** 알림 삭제 권한 — false 면 [모두 삭제]·개별 삭제 숨김. 기본값 true(위와 같은 이유) */
-    notificationCanDelete?: boolean;
     /** 알림 드롭다운 제목 */
     notificationTitleText?: string;
     /** 알림 없음 텍스트 */

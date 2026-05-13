@@ -3,13 +3,9 @@
 namespace App\Http\Resources;
 
 use App\Enums\LanguagePackOrigin;
-use App\Extension\Helpers\ChangelogParser;
 use App\Helpers\TimezoneHelper;
-use App\Support\LocalizedValue;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\DB;
 
 /**
  * 언어팩 단건 API 리소스.
@@ -38,30 +34,19 @@ class LanguagePackResource extends BaseApiResource
             'latest_version' => $this->getValue('latest_version'),
             'target_version_constraint' => $this->getValue('target_version_constraint'),
             'target_version_mismatch' => (bool) $this->getValue('target_version_mismatch', false),
-            'name' => $this->resolveLocalizedManifestField('name') ?? $this->resolveBuiltInName(),
+            'name' => $this->resolveLocalizedManifestField('name'),
             'license' => $this->getValue('license'),
             'description' => $this->getLocalizedField('description'),
             'status' => $this->getValue('status'),
             'is_protected' => (bool) $this->getValue('is_protected', false),
             'source_type' => $this->getValue('source_type'),
-            // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
-            'integrity_status' => $this->getValue('integrity_status'),
-            'integrity_key_id' => $this->getValue('integrity_key_id'),
             'origin' => LanguagePackOrigin::fromSourceTypeValue($this->getValue('source_type'))?->value,
             'source_url' => $this->getValue('source_url'),
             'github_url' => $this->resolveManifestField('github_url'),
             'github_changelog_url' => $this->resolveManifestField('github_changelog_url'),
             'bundled_identifier' => $this->getValue('bundled_identifier'),
             'install_blocked_reason' => $this->getValue('install_blocked_reason'),
-            // 설치는 되지만 알려 둘 사정 (예: target_inactive — 대상이 꺼져 있어 꺼진 채 설치되고, 대상을 켠 뒤 켤 수 있음)
-            'install_notice' => $this->getValue('install_notice'),
-            // 켜져 있지 않은 사유 (awaiting_host — 대상 확장을 켤 때 함께 켜짐)
-            'deactivated_reason' => $this->getValue('deactivated_reason'),
-            'files_missing' => (bool) $this->getValue('files_missing', false),
-            'bundled_source_available' => (bool) $this->getValue('bundled_source_available', false),
             'target_name' => $this->resolveTargetName(),
-            'icon_url' => $this->getValue('icon_url'),
-            'icon_source' => $this->getValue('icon_source', 'none'),
             'installed_at' => $this->formatTimestamp('installed_at'),
             'activated_at' => $this->formatTimestamp('activated_at'),
             'created_at' => $this->formatTimestamp('created_at'),
@@ -74,7 +59,7 @@ class LanguagePackResource extends BaseApiResource
     /**
      * 매니페스트 스냅샷의 다국어 필드를 현재 로케일 기준으로 해석합니다.
      *
-     * 모듈/플러그인의 `name` 컬럼이 다국어 JSON 인 패턴과 일관 — 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값.
+     * 모듈/플러그인의 `name` 컬럼이 다국어 JSON 인 패턴과 일관 — 현재 로케일 → fallback locale → ko → 첫 값.
      * 매니페스트에 단일 문자열로 들어있으면 그대로 반환 (구버전 호환).
      *
      * @param  string  $key  매니페스트 최상위 키 (예: 'name', 'description')
@@ -97,36 +82,18 @@ class LanguagePackResource extends BaseApiResource
             return null;
         }
 
-        // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
-        return LocalizedValue::pick($value, App::getLocale());
-    }
+        $locale = \Illuminate\Support\Facades\App::getLocale();
+        $fallback = (string) config('app.fallback_locale', 'ko');
 
-    /**
-     * 매니페스트 이름이 없는 내장(보호) 언어팩의 표시 이름을 만듭니다.
-     *
-     * 확장·코어에 동봉된 언어팩은 매니페스트 파일이 없어 이름이 없고, 관리 화면은 이름이 없으면 식별자를
-     * 그린다(#736). 대상 확장 이름(코어는 「코어」)과 언어 이름으로 사람이 읽는 이름을 만든다.
-     * 보호 언어팩이 아니면 null 을 돌려 종전처럼 화면이 식별자로 대신한다.
-     *
-     * @return string|null 표시 이름 또는 null
-     */
-    private function resolveBuiltInName(): ?string
-    {
-        if (! (bool) $this->getValue('is_protected', false)) {
-            return null;
+        foreach ([$locale, $fallback, 'ko', 'en'] as $candidate) {
+            if (isset($value[$candidate]) && is_string($value[$candidate]) && $value[$candidate] !== '') {
+                return $value[$candidate];
+            }
         }
 
-        $target = $this->getValue('scope') === 'core'
-            ? __('language_packs.core_target')
-            : ($this->resolveTargetName() ?? $this->getValue('target_identifier'));
-        if (! is_string($target) || $target === '') {
-            return null;
-        }
+        $first = reset($value);
 
-        $locale = $this->getValue('locale');
-        $language = $this->getValue('locale_native_name') ?: (is_string($locale) ? $locale : '');
-
-        return __('language_packs.built_in_name', ['target' => $target, 'language' => $language]);
+        return is_string($first) && $first !== '' ? $first : null;
     }
 
     /**
@@ -186,7 +153,7 @@ class LanguagePackResource extends BaseApiResource
                 $directoryPath = str_replace(base_path().DIRECTORY_SEPARATOR, '', $directory);
                 $changelogPath = $directory.DIRECTORY_SEPARATOR.'CHANGELOG.md';
                 if (is_file($changelogPath)) {
-                    $changelogEntries = ChangelogParser::parse($changelogPath);
+                    $changelogEntries = \App\Extension\Helpers\ChangelogParser::parse($changelogPath);
                 }
             } catch (\Throwable $e) {
                 $directoryPath = null;
@@ -218,10 +185,6 @@ class LanguagePackResource extends BaseApiResource
      * 미설치 번들 가상 행(`status === uninstalled`)은 활성/비활성/제거 액션이
      * 무의미하므로 `can_install` 만 노출합니다. 모듈/플러그인 행 액션과 동일 패턴.
      *
-     * 드리프트 행(설치본 파일 부재 + 번들 소스 실재)은 설치 행이지만 "재설치로 복구" 가
-     * 유효한 액션이므로 `can_install` 을 함께 노출합니다. 이 플래그가 없으면 화면이
-     * 복구 버튼을 켤 근거가 없어, 드리프트가 보이기만 하고 고칠 수 없는 상태로 남습니다.
-     *
      * @return array<string, string>
      */
     protected function abilityMap(): array
@@ -232,17 +195,11 @@ class LanguagePackResource extends BaseApiResource
             ];
         }
 
-        $map = [
+        return [
             'can_activate' => 'core.language_packs.manage',
             'can_deactivate' => 'core.language_packs.manage',
             'can_uninstall' => 'core.language_packs.manage',
         ];
-
-        if ($this->getValue('files_missing') && $this->getValue('bundled_source_available')) {
-            $map['can_install'] = 'core.language_packs.install';
-        }
-
-        return $map;
     }
 
     /**
@@ -269,7 +226,7 @@ class LanguagePackResource extends BaseApiResource
      * 대상 확장의 현재 로케일 이름을 반환합니다.
      *
      * 모듈/플러그인/템플릿의 `name` 컬럼은 다국어 JSON 텍스트입니다 — 활성 행을 조회하여
-     * 현재 로케일, 사이트 기본 언어, 영어, 첫 값 순서로 대신합니다. 코어/타깃 없음 행은 null.
+     * 현재 로케일 키, ko, en, 첫 값 순서로 폴백합니다. 코어/타깃 없음 행은 null.
      *
      * @return string|null 다국어 명칭 또는 null
      */
@@ -291,7 +248,7 @@ class LanguagePackResource extends BaseApiResource
             return null;
         }
 
-        $row = DB::table($table)
+        $row = \Illuminate\Support\Facades\DB::table($table)
             ->where('identifier', $target)
             ->first(['name']);
         if (! $row || ! $row->name) {
@@ -303,7 +260,9 @@ class LanguagePackResource extends BaseApiResource
             return is_string($row->name) ? $row->name : null;
         }
 
-        return LocalizedValue::pick($decoded, App::getLocale());
+        $locale = \Illuminate\Support\Facades\App::getLocale();
+
+        return $decoded[$locale] ?? $decoded[config('app.fallback_locale', 'ko')] ?? (reset($decoded) ?: null);
     }
 
     /**

@@ -2,9 +2,7 @@
 
 namespace App\Contracts\Extension;
 
-use Illuminate\Database\Seeder;
-
-interface ModuleInterface extends CacheableExtensionInterface
+interface ModuleInterface
 {
     /**
      * 모듈명 반환 (표시용)
@@ -75,7 +73,7 @@ interface ModuleInterface extends CacheableExtensionInterface
      * 반환 형식: ['1.1.0' => callable|UpgradeStepInterface, ...]
      * 시스템이 fromVersion 초과 ~ toVersion 이하의 스텝을 자동 필터링 후 순차 실행합니다.
      *
-     * @return array<string, callable|UpgradeStepInterface> 버전 => 스텝 매핑
+     * @return array<string, callable|\App\Contracts\Extension\UpgradeStepInterface> 버전 => 스텝 매핑
      */
     public function upgrades(): array;
 
@@ -106,26 +104,6 @@ interface ModuleInterface extends CacheableExtensionInterface
      * @return array 의존성 목록 배열
      */
     public function getDependencies(): array;
-
-    /**
-     * 함께 쓰면 연동되는(선택) 확장 식별자를 유형별로 반환합니다.
-     *
-     * @return array{modules: array<int, string>, plugins: array<int, string>, templates: array<int, string>} 유형별 확장 식별자
-     *
-     * @since 7.1.4
-     */
-    public function getIntegrations(): array;
-
-    /**
-     * 함께 쓰면 연동되는(선택) 확장을 「식별자 => 버전 제약」 맵으로 반환합니다.
-     *
-     * 목록형·버전식이 아닌 값은 `'*'`(버전 무관)입니다. 버전이 모자라도 설치·활성화를 막지 않습니다.
-     *
-     * @return array{modules: array<string, string>, plugins: array<string, string>, templates: array<string, string>} 유형별 식별자 => 버전 제약
-     *
-     * @since 7.1.4
-     */
-    public function getIntegrationConstraints(): array;
 
     /**
      * 모듈이 사용하는 권한 목록을 반환합니다.
@@ -178,20 +156,13 @@ interface ModuleInterface extends CacheableExtensionInterface
     /**
      * 모듈의 스케줄 작업 목록을 반환합니다.
      *
-     * 7.2.0 부터 코어가 이 선언을 schedules 테이블로 동기화하고 스케줄러는 DB 행을 실행한다.
-     * 각 항목(코어 `config/core.php` 의 `schedules` 카탈로그와 같은 키):
-     * - name: 모듈 안에서 고유한 기계 식별자 (권장)
-     * - type: artisan(기본) | job
-     * - label / description: 다국어 표시 명칭·설명 ({로케일: 문자열})
-     * - command: Artisan 명령(옵션 포함) 또는 job 클래스 FQCN
-     * - expression: cron 식 / frequency: custom(기본) | everyThirtySeconds / timezone (선택)
-     * - without_overlapping(분)·on_one_server·dispatch_mode(sync|queue)·history_mode(all|failures_only)·notify_on_failure·timeout (선택)
-     * - enabled_condition: 실행 조건 목록 [{source, key, operator, value?, default}] (선택)
+     * 스케줄 배열의 각 항목은 다음 구조를 따라야 합니다:
+     * - command: Artisan 커맨드 이름
+     * - schedule: 스케줄 주기 ('daily', 'hourly', 'everyMinute', 'weekly' 또는 cron 표현식)
+     * - description: 작업 설명 (선택)
+     * - enabled_config: 설정 키 (선택, 설정에 따라 활성화 여부 결정)
      *
-     * 옛 형식(command·schedule·description 문자열·enabled_config)도 받는다 — 동기화 때 새 형식으로 바뀐다.
-     * 상세 형식은 AbstractModule::getSchedules() 주석을 따른다.
-     *
-     * @return array<int, array<string, mixed>> 스케줄 선언 목록
+     * @return array 스케줄 작업 배열
      */
     public function getSchedules(): array;
 
@@ -201,7 +172,7 @@ interface ModuleInterface extends CacheableExtensionInterface
      * 배열 순서대로 실행됩니다.
      * 빈 배열 반환 시 database/seeders/ 디렉토리의 모든 시더를 자동 검색합니다. (역호환)
      *
-     * @return array<class-string<Seeder>> 시더 클래스명 배열 (FQCN)
+     * @return array<class-string<\Illuminate\Database\Seeder>> 시더 클래스명 배열 (FQCN)
      */
     public function getSeeders(): array;
 

@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Module;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Extension\ExtensionManager;
 use App\Extension\ModuleManager;
@@ -11,8 +10,6 @@ use Illuminate\Support\Facades\Log;
 
 class ComposerInstallModuleCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * The name and signature of the console command.
      */
@@ -22,11 +19,12 @@ class ComposerInstallModuleCommand extends Command
                             {--no-dev : dev 의존성 제외}';
 
     /**
+     * The console command description.
+     */
+    protected $description = '모듈의 Composer 의존성을 설치합니다';
+
+    /**
      * 모듈 관리자 및 리포지토리
-     *
-     * @param  ModuleManager  $moduleManager  모듈 관리자 (모듈 적재·조회)
-     * @param  ExtensionManager  $extensionManager  Composer 의존성 확인·설치·오토로드 갱신을 맡는 확장 관리자
-     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 리포지토리
      */
     public function __construct(
         private ModuleManager $moduleManager,
@@ -37,9 +35,7 @@ class ComposerInstallModuleCommand extends Command
     }
 
     /**
-     * 커맨드를 실행합니다.
-     *
-     * @return int 종료 코드
+     * Execute the console command.
      */
     public function handle(): int
     {
@@ -48,9 +44,9 @@ class ComposerInstallModuleCommand extends Command
         $noDev = $this->option('no-dev');
 
         if (! $identifier && ! $installAll) {
-            $this->error('❌ '.__('modules.commands.composer_install.missing_identifier'));
+            $this->error('❌ 모듈 식별자를 지정하거나 --all 옵션을 사용하세요.');
             $this->line('');
-            $this->line(__('modules.commands.composer_install.usage'));
+            $this->line('사용법:');
             $this->line('  php artisan module:composer-install sirsoft-ecommerce');
             $this->line('  php artisan module:composer-install --all');
             $this->line('  php artisan module:composer-install --all --no-dev');
@@ -111,7 +107,7 @@ class ComposerInstallModuleCommand extends Command
 
             // 오토로드 갱신
             $this->extensionManager->updateComposerAutoload();
-            $this->line('   '.__('modules.commands.composer_install.autoload_refreshed'));
+            $this->line('   오토로드 캐시 갱신 완료');
 
             return Command::SUCCESS;
         }
@@ -132,7 +128,7 @@ class ComposerInstallModuleCommand extends Command
         $modules = $this->moduleManager->getAllModules();
 
         if (empty($modules)) {
-            $this->warn('⚠️  '.__('modules.commands.composer_install.none_installed'));
+            $this->warn('⚠️  설치된 모듈이 없습니다.');
 
             return Command::SUCCESS;
         }
@@ -140,14 +136,14 @@ class ComposerInstallModuleCommand extends Command
         // 중복 패키지 감지
         $duplicates = $this->extensionManager->detectDuplicatePackages();
         if (! empty($duplicates)) {
-            $this->warn('⚠️  '.__('modules.commands.composer_install.duplicate_packages'));
+            $this->warn('⚠️  중복 패키지 감지:');
             foreach ($duplicates as $package => $users) {
                 $this->warn("   - {$package}: ".implode(', ', $users));
             }
             $this->line('');
         }
 
-        $this->info('📦 '.__('modules.commands.composer_install.start_all'));
+        $this->info('📦 모든 모듈의 Composer 의존성 설치 시작');
 
         $successCount = 0;
         $skipCount = 0;
@@ -165,10 +161,10 @@ class ComposerInstallModuleCommand extends Command
 
             if ($result) {
                 $successCount++;
-                $this->info('   ✅ '.__('modules.commands.composer_install.item_done', ['identifier' => $identifier]));
+                $this->info("   ✅ 완료: {$identifier}");
             } else {
                 $failCount++;
-                $this->error('   ❌ '.__('modules.commands.composer_install.item_failed', ['identifier' => $identifier]));
+                $this->error("   ❌ 실패: {$identifier}");
             }
 
             $this->line('');

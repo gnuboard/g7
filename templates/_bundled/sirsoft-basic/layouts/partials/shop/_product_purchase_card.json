@@ -1,0 +1,306 @@
+{
+  "meta": { "is_partial": true, "description": "가격, 옵션 선택, 선택상품 목록, 구매 버튼 카드" },
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5" },
+  "children": [
+    {
+      "comment": "=== 가격 섹션 ===",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "mb-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{product.data.discount_rate > 0}}",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400 line-through" },
+          "text": "{{product.data.multi_currency_list_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data.list_price_formatted}}"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "text-2xl font-bold text-gray-900 dark:text-white" },
+          "text": "{{product.data.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data.selling_price_formatted}}"
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+          "text": "{{product.data.free_shipping ? '$t:shop.free_shipping' : '$t:shop.shipping_fee:' + product.data.shipping_fee_formatted}}"
+        }
+      ]
+    },
+    {
+      "comment": "=== 옵션 선택 안내 (선택 전) ===",
+      "type": "basic",
+      "name": "Button",
+      "if": "{{!_local.selectedItems || _local.selectedItems.length === 0}}",
+      "props": { "className": "block w-full text-left text-green-600 dark:text-green-400 text-sm font-medium mb-4 hover:underline cursor-pointer" },
+      "text": "$t:shop.select_options_guide",
+      "actions": [{ "type": "click", "handler": "scrollTo", "params": { "target": "#option-select" } }]
+    },
+    {
+      "comment": "=== 옵션 선택 섹션 ===",
+      "type": "basic",
+      "name": "Div",
+      "id": "option-select",
+      "props": { "className": "border-t border-gray-200 dark:border-gray-700 pt-4 mb-4 space-y-3" },
+      "children": [
+        {
+          "comment": "옵션 그룹별 Select (계층형)",
+          "type": "basic",
+          "name": "Div",
+          "iteration": { "source": "{{product.data.option_groups ?? []}}", "item_var": "group", "index_var": "groupIndex" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "mb-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Label",
+                  "props": { "className": "block text-sm text-gray-700 dark:text-gray-300 mb-1" },
+                  "text": "{{group.name_localized ?? group.name}}"
+                },
+                {
+                  "type": "composite",
+                  "name": "Select",
+                  "props": {
+                    "name": "option_{{group.id}}",
+                    "className": "w-full",
+                    "value": "{{_local.currentSelection?.[group.id] ?? ''}}",
+                    "placeholder": "{{groupIndex === 0 || _local.currentSelection?.[product.data.option_groups[groupIndex - 1]?.id] ? '$t:shop.select' : '$t:shop.select_upper_option_first'}}",
+                    "disabled": "{{groupIndex > 0 && !_local.currentSelection?.[product.data.option_groups[groupIndex - 1]?.id]}}",
+                    "options": "{{group.values.map(v => ({ value: v.id, label: v.name + (v.additional_price > 0 ? ' (+' + (v.multi_currency_additional_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? v.additional_price_formatted) + ')' : '') }))}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "change",
+                      "handler": "sequence",
+                      "actions": [
+                        {
+                          "comment": "현재 선택 상태 업데이트",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "currentSelection": "{{Object.assign({}, _local.currentSelection ?? {}, { [group.id]: $event.target.value })}}"
+                          }
+                        },
+                        {
+                          "comment": "마지막 옵션 선택 시 자동으로 selectedItems에 추가",
+                          "handler": "custom",
+                          "name": "addSelectedItemIfComplete",
+                          "params": {
+                            "productId": "{{product.data.id}}",
+                            "optionGroups": "{{product.data.option_groups}}",
+                            "currentSelection": "{{_local.currentSelection}}",
+                            "selectedItems": "{{_local.selectedItems ?? []}}",
+                            "preferredCurrency": "{{_global.preferredCurrency ?? 'KRW'}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "=== 선택한 상품 섹션 ===",
+      "type": "basic",
+      "name": "Div",
+      "if": "{{_local.selectedItems && _local.selectedItems.length > 0}}",
+      "props": { "className": "border-t border-gray-200 dark:border-gray-700 pt-4 mb-4" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "H4",
+          "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mb-3" },
+          "text": "$t:shop.selected_products"
+        },
+        {
+          "comment": "선택된 상품 목록",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "space-y-3" },
+          "iteration": { "source": "{{_local.selectedItems ?? []}}", "item_var": "item", "index_var": "itemIndex" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3" },
+              "children": [
+                {
+                  "comment": "상품 옵션명 + 재고 + 삭제 버튼",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center justify-between mb-2" },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
+                          "text": "{{Object.values(item.options).join(' / ')}}"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400 ml-2" },
+                          "text": "($t:shop.stock_count:{{item.stock}})"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Button",
+                      "props": { "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" },
+                      "children": [
+                        { "type": "basic", "name": "Icon", "props": { "name": "x", "className": "w-4 h-4" } }
+                      ],
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "setState",
+                          "params": {
+                            "target": "local",
+                            "selectedItems": "{{(_local.selectedItems ?? []).filter((_, idx) => idx !== itemIndex)}}"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "comment": "수량 조절 + 가격",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": { "className": "flex items-center justify-between" },
+                  "children": [
+                    {
+                      "type": "composite",
+                      "name": "QuantitySelector",
+                      "props": {
+                        "value": "{{item.quantity}}",
+                        "min": 1,
+                        "max": "{{item.stock}}",
+                        "size": "sm"
+                      },
+                      "actions": [
+                        {
+                          "event": "onChange",
+                          "type": "change",
+                          "handler": "custom",
+                          "name": "updateSelectedItemQuantity",
+                          "params": {
+                            "itemIndex": "{{itemIndex}}",
+                            "newQuantity": "{{$args[0]}}",
+                            "selectedItems": "{{_local.selectedItems}}",
+                            "preferredCurrency": "{{_global.preferredCurrency ?? 'KRW'}}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "props": { "className": "text-sm font-bold text-gray-900 dark:text-white" },
+                      "text": "{{item.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? item.totalPriceFormatted}}"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "comment": "=== 총 금액 + 구매 버튼 섹션 ===",
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "border-t border-gray-200 dark:border-gray-700 pt-4" },
+      "children": [
+        {
+          "comment": "총 금액 (다중 통화 지원)",
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex justify-between items-center mb-4" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
+              "text": "$t:shop.total_amount ({{(_local.selectedItems ?? []).reduce((sum, item) => sum + item.quantity, 0)}}$t:shop.count_unit)"
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "props": { "className": "text-xl font-bold text-gray-900 dark:text-white" },
+              "text": "{{(function() { const items = _local.selectedItems ?? []; if (items.length === 0) return product.data.multi_currency_selling_price?.[_global.preferredCurrency ?? 'KRW']?.formatted ?? product.data.selling_price_formatted; const total = items.reduce((sum, item) => sum + (item.multiCurrencyTotalPrice?.[_global.preferredCurrency ?? 'KRW']?.value ?? item.totalPrice), 0); return _global.formatCurrency(total, _global.preferredCurrency ?? 'KRW'); })()}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium mb-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+            "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0}}"
+          },
+          "text": "$t:shop.buy_now",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": { "url": "{{_global.shopBase}}/checkout?items={{encodeURIComponent(JSON.stringify(_local.selectedItems))}}" }
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{!_local.selectedItems || _local.selectedItems.length === 0}}"
+          },
+          "children": [
+            { "type": "basic", "name": "Icon", "props": { "name": "shopping-cart", "className": "w-5 h-5" } },
+            { "type": "basic", "name": "Span", "text": "$t:shop.add_to_cart" }
+          ],
+          "actions": [
+            {
+              "type": "click",
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "/api/shop/cart/bulk",
+              "params": {
+                "method": "POST",
+                "body": {
+                  "product_id": "{{product.data.id}}",
+                  "items": "{{(_local.selectedItems ?? []).map(item => ({ option_values: item.optionValues, quantity: item.quantity }))}}"
+                }
+              },
+              "onSuccess": [
+                { "handler": "setState", "params": { "target": "global", "cartCount": "{{response.data.cart_count}}" } },
+                { "handler": "setState", "params": { "target": "local", "selectedItems": [], "currentSelection": {} } },
+                { "handler": "toast", "params": { "type": "success", "message": "$t:shop.cart_added" } }
+              ],
+              "onError": [
+                { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

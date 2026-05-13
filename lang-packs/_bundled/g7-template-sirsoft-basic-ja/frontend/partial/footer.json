@@ -4,21 +4,11 @@
   "info": "情報",
   "policy": "ポリシー",
   "all_boards": "すべての掲示板",
-  "about": "企業情報",
+  "about": "会社概要",
   "faq": "よくある質問",
   "contact": "お問い合わせ",
   "terms": "利用規約",
   "privacy": "プライバシーポリシー",
   "refund": "キャンセル·返品·交換ポリシー",
-  "powered_by": "Powered by グヌボード7",
-  "business": {
-    "company_name": "商号",
-    "ceo_name": "代表者",
-    "address": "事業所住所",
-    "phone": "電話",
-    "email": "メール",
-    "business_number": "事業者登録番号",
-    "mail_order_number": "通信販売業申告番号",
-    "hosting_provider": "ホスティングサービス提供者"
-  }
+  "powered_by": "Powered by Gnuboard7"
 }

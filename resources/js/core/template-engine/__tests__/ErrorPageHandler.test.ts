@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ErrorPageHandler, type RenderFunction, type RenderOptions } from '../ErrorPageHandler';
 import type { LayoutLoader } from '../LayoutLoader';
-import { DataSourceManager } from '../DataSourceManager';
+import type { DataSourceManager } from '../DataSourceManager';
 
 describe('ErrorPageHandler', () => {
   let handler: ErrorPageHandler;
@@ -22,7 +22,6 @@ describe('ErrorPageHandler', () => {
 
     mockDataSourceManager = {
       fetchDataSources: vi.fn().mockResolvedValue({}),
-      filterByCondition: vi.fn((sources: unknown[]) => sources),
     } as any;
 
     mockRenderFunction = vi.fn(async (options: RenderOptions) => {
@@ -54,8 +53,6 @@ describe('ErrorPageHandler', () => {
   });
 
   describe('initGlobal 처리', () => {
-    // @scenario case=init_global
-    // @effects init_global_maps_fetched_data
     it('문자열 형태 initGlobal — _global에 데이터 매핑', async () => {
       const mockUserData = { uuid: 'test-uuid', name: '테스트 사용자', email: 'test@example.com' };
 
@@ -87,8 +84,6 @@ describe('ErrorPageHandler', () => {
       expect((renderCallArgs!.dataContext as any)._global.currentUser).toEqual(mockUserData);
     });
 
-    // @scenario case=init_global
-    // @effects init_global_maps_fetched_data
     it('객체 형태 {key, path} initGlobal — 중첩 경로에서 값 추출', async () => {
       (mockLayoutLoader.loadLayout as any).mockResolvedValue({
         version: '1.0.0',
@@ -117,8 +112,6 @@ describe('ErrorPageHandler', () => {
       expect((renderCallArgs!.dataContext as any)._global.cartCount).toBe(5);
     });
 
-    // @scenario case=init_global
-    // @effects init_global_maps_fetched_data
     it('배열 형태 initGlobal — 복수 전역 상태 동시 초기화', async () => {
       const mockData = { name: '테스트', role: 'admin' };
 
@@ -150,8 +143,6 @@ describe('ErrorPageHandler', () => {
       expect((renderCallArgs!.dataContext as any)._global.currentAccount).toEqual(mockData);
     });
 
-    // @scenario case=init_global
-    // @effects init_global_maps_fetched_data
     it('복수 데이터소스 각각 initGlobal 처리', async () => {
       const mockUserData = { uuid: 'u1', name: '사용자' };
 
@@ -195,8 +186,6 @@ describe('ErrorPageHandler', () => {
   });
 
   describe('initLocal 처리', () => {
-    // @scenario case=init_local
-    // @effects init_local_maps_fetched_data
     it('문자열 형태 initLocal — _local에 데이터 매핑', async () => {
       const mockFormData = { title: '', content: '' };
 
@@ -227,8 +216,6 @@ describe('ErrorPageHandler', () => {
       expect((renderCallArgs!.dataContext as any)._local.formData).toEqual(mockFormData);
     });
 
-    // @scenario case=init_local
-    // @effects init_local_maps_fetched_data
     it('객체 형태 {key, path} initLocal — 중첩 경로에서 값 추출', async () => {
       (mockLayoutLoader.loadLayout as any).mockResolvedValue({
         version: '1.0.0',
@@ -259,8 +246,6 @@ describe('ErrorPageHandler', () => {
   });
 
   describe('initGlobal/initLocal 미정의 시', () => {
-    // @scenario case=no_init_options
-    // @effects layout_renders_without_init_options
     it('initGlobal/initLocal 없는 데이터소스 — 기존 동작 유지', async () => {
       (mockLayoutLoader.loadLayout as any).mockResolvedValue({
         version: '1.0.0',
@@ -292,8 +277,6 @@ describe('ErrorPageHandler', () => {
       expect((renderCallArgs!.dataContext as any)._local).toEqual({});
     });
 
-    // @scenario case=no_init_options
-    // @effects layout_renders_without_init_options
     it('데이터소스 없는 레이아웃 — 정상 렌더링', async () => {
       (mockLayoutLoader.loadLayout as any).mockResolvedValue({
         version: '1.0.0',
@@ -310,8 +293,6 @@ describe('ErrorPageHandler', () => {
   });
 
   describe('에러 처리', () => {
-    // @scenario case=fetch_failure
-    // @effects fetch_failure_does_not_block_render
     it('데이터 fetch 실패 — 크래시 없이 렌더링 진행', async () => {
       (mockLayoutLoader.loadLayout as any).mockResolvedValue({
         version: '1.0.0',
@@ -342,8 +323,6 @@ describe('ErrorPageHandler', () => {
       expect((renderCallArgs!.dataContext as any)._global.currentUser).toBeUndefined();
     });
 
-    // @scenario case=fetch_failure
-    // @effects fetch_failure_does_not_block_render
     it('fetch 데이터가 null인 데이터소스 — 건너뛰기', async () => {
       (mockLayoutLoader.loadLayout as any).mockResolvedValue({
         version: '1.0.0',
@@ -374,8 +353,6 @@ describe('ErrorPageHandler', () => {
   });
 
   describe('globalState 참조 업데이트', () => {
-    // @scenario case=global_state_reference
-    // @effects global_state_copy_receives_init_values
     it('processInitOptions가 globalState를 직접 변이시킨다', async () => {
       const sharedState: Record<string, unknown> = { existingKey: 'preserved' };
 
@@ -415,137 +392,6 @@ describe('ErrorPageHandler', () => {
       // 기존 키 유지 + 새 키 추가
       expect((renderCallArgs!.dataContext as any)._global.existingKey).toBe('preserved');
       expect((renderCallArgs!.dataContext as any)._global.currentUser).toEqual({ uuid: 'u1' });
-    });
-  });
-
-  describe('[case:components-misc-error-page-datasource-if] 데이터 소스 if 조건 (#822)', () => {
-    /**
-     * 오류 화면도 일반 화면처럼 데이터 소스의 `if` 를 평가해야 한다.
-     * 꺼진 모듈의 API 를 부르는 공통 데이터 소스(`_user_base` 의 장바구니 수 등)가
-     * 404 화면에서만 호출되던 회귀를 잠근다.
-     */
-    const realManager = new DataSourceManager();
-    const cartSource = {
-      id: 'cart',
-      type: 'api',
-      endpoint: '/api/modules/sirsoft-ecommerce/cart/count',
-      method: 'GET',
-      auto_fetch: true,
-      loading_strategy: 'progressive',
-      if: "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
-    };
-    const menuSource = {
-      id: 'boards',
-      type: 'api',
-      endpoint: '/api/modules/sirsoft-board/boards/board-menu',
-      method: 'GET',
-      auto_fetch: true,
-      loading_strategy: 'progressive',
-    };
-
-    beforeEach(() => {
-      (mockDataSourceManager as any).filterByCondition = vi.fn(
-        (sources: any[], ctx: any) => realManager.filterByCondition(sources, ctx)
-      );
-      (mockLayoutLoader.loadLayout as any).mockResolvedValue({
-        version: '1.0.0',
-        layout_name: '404',
-        data_sources: [cartSource, menuSource],
-        components: [],
-      });
-    });
-
-    // @scenario case=data_source_if
-    // @effects false_if_data_source_not_fetched
-    it('if 가 거짓인 데이터 소스는 오류 화면에서 부르지 않는다', async () => {
-      globalState.activeModules = ['sirsoft-board'];
-
-      await handler.renderError(404);
-
-      const fetched = (mockDataSourceManager.fetchDataSources as any).mock.calls[0][0].map((s: any) => s.id);
-      expect(fetched).toEqual(['boards']);
-    });
-
-    // @scenario case=data_source_if
-    // @effects missing_active_list_keeps_guarded_source
-    it('활성 목록이 없는 옛 코어 상태면 가드가 참이라 그대로 부른다', async () => {
-      delete globalState.activeModules;
-
-      await handler.renderError(404);
-
-      const fetched = (mockDataSourceManager.fetchDataSources as any).mock.calls[0][0].map((s: any) => s.id);
-      expect(fetched).toEqual(['cart', 'boards']);
-    });
-  });
-
-  describe('코드 레이아웃이 없을 때의 대체 (#869 λ 4부 18)', () => {
-    const configWith = (layouts: Record<string, string> | null) => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ success: true, data: layouts === null ? {} : { error_config: { layouts } } }),
-      });
-    };
-    const makeHandler = (fallback: (code: number) => void) => new ErrorPageHandler({
-      templateId: 'sirsoft-basic',
-      layoutLoader: mockLayoutLoader,
-      locale: 'ko',
-      debug: false,
-      renderFunction: mockRenderFunction,
-      dataSourceManager: mockDataSourceManager,
-      globalState,
-      renderBuiltinFallback: fallback,
-    } as any);
-
-    // @scenario case=missing_code_layout
-    // @effects missing_code_falls_back_to_default_layout
-    it('코드 레이아웃이 없으면 error_config.layouts.default 레이아웃으로 그린다', async () => {
-      configWith({ 404: 'errors/404', 500: 'errors/500', default: 'errors/default' });
-      (mockLayoutLoader.loadLayout as any).mockResolvedValue({ version: '1.0.0', layout_name: 'errors/default', components: [] });
-      const fallback = vi.fn();
-
-      const rendered = await makeHandler(fallback).renderError(400, 'main_content');
-
-      expect(rendered).toBe(true);
-      expect(mockLayoutLoader.loadLayout).toHaveBeenCalledWith('sirsoft-basic', 'errors/default');
-      expect(renderCallArgs?.dataContext?.errorCode).toBe(400);
-      expect(fallback).not.toHaveBeenCalled();
-    });
-
-    // @scenario case=missing_code_layout
-    // @effects missing_code_falls_back_to_builtin_display
-    it('default 도 없으면 엔진 내장 오류 화면으로 그린다(빈 화면으로 끝나지 않는다)', async () => {
-      configWith({ 404: 'errors/404', 403: 'errors/403', 500: 'errors/500' });
-      const fallback = vi.fn();
-
-      const rendered = await makeHandler(fallback).renderError(400, 'main_content');
-
-      expect(rendered).toBe(true); // 결함: false — 아무것도 그리지 않았다
-      expect(fallback).toHaveBeenCalledWith(400);
-      expect(mockRenderFunction).not.toHaveBeenCalled();
-    });
-
-    // @scenario case=missing_code_layout
-    // @effects missing_code_falls_back_to_builtin_display
-    it('error_config 가 없는 템플릿도 엔진 내장 오류 화면으로 그린다', async () => {
-      configWith(null);
-      const fallback = vi.fn();
-
-      const rendered = await makeHandler(fallback).renderError(404, 'app');
-
-      expect(rendered).toBe(true);
-      expect(fallback).toHaveBeenCalledWith(404);
-    });
-
-    // @scenario case=missing_code_layout
-    // @effects missing_code_falls_back_to_builtin_display
-    it('그리기 직전 판정이 거짓이면(경로가 바뀜) 대체 화면도 그리지 않는다', async () => {
-      configWith({ 404: 'errors/404' });
-      const fallback = vi.fn();
-
-      const rendered = await makeHandler(fallback).renderError(400, 'main_content', () => false);
-
-      expect(rendered).toBe(false);
-      expect(fallback).not.toHaveBeenCalled();
     });
   });
 });

@@ -10,11 +10,6 @@
 3. 부모 상태 수정: G7Core.state.setParentLocal() 또는 setState target="$parent._local"
 4. 로딩 상태 등 공유 상태는 _global 사용 권장 (모달 간 공유 필요 시)
 5. 삭제/위험 작업 버튼은 로딩 중 흐림 + 스피너 + 텍스트 변경 필수
-6. $parent._local 은 모달 마운트 시점의 스냅샷 — 모달이 열린 뒤의 부모 변경은 반영되지 않음
-7. `_local`(target 생략 포함)·부모 상태($parent._local · setParentLocal)를 고치는 setState 는 closeModal 보다 먼저 — `_global`·`_isolated` 정리는 closeModal 뒤여도 된다(§주의사항 1, §편집 모달 표준 예)
-8. 하단 버튼은 입력값을 읽든 안 읽든 props.footer(`<footer>`)에 둔다 — 고정 하단은 본문과 같은 데이터 컨텍스트로 그려지고 640px 이하에서 세로로 쌓인다 (§Footer 버튼 배치). 확장 지점을 품은 줄도 같다 (§확장 지점을 품은 바닥 줄도 `props.footer` 에 둔다)
-9. 부모 **폼**(저장이 실어 보내는 값)을 고칠 때는 $parent._local 만으로 부족하다 — §부모 폼 커밋 참조
-10. 창 이름 공간이 개인정보·비밀값을 담으면 닫히는 모든 갈래(X·바깥 클릭·Esc 포함)에서 비운다 — 창 본문 노드의 `lifecycle.onUnmount` (§창을 닫을 때 이름 공간 비우기)
 ```
 
 ---
@@ -24,7 +19,7 @@
 1. [모달 위치에 따른 제어 방식](#모달-위치에-따른-제어-방식)
 2. [modals 섹션 모달 구조](#modals-섹션-모달-구조)
 3. [모달 열기/닫기](#모달-열기닫기)
-4. [$parent 바인딩 컨텍스트 (engine-v1.16.0+)](#parent-바인딩-컨텍스트-engine-v1160)
+4. [$parent 바인딩 컨텍스트 (engine-v1.16.0+)](#parent-바인딩-컨텍스트-v1160)
 5. [Footer 버튼 배치](#footer-버튼-배치)
 6. [위험 작업 버튼 로딩 상태](#위험-작업-버튼-로딩-상태)
 7. [일반 액션 버튼 로딩 상태](#일반-액션-버튼-로딩-상태)
@@ -40,42 +35,13 @@
 
 ### 1. `modals` 섹션 (권장)
 
-소스(`.g7.html`)에서는 `<modal src>` 로 조각을 참조합니다. `src` 값은 런타임 계약인
-`.json` 경로 그대로 둡니다 — 소스 코퍼스의 `<modal src>` 213건 전량이 `.json` 이고, 조각 해석기가 그
-경로를 읽습니다.
-
-```html
-<modal src="partials/xxx/_modal_delete_confirm.g7.html"/>
-```
-
-인라인이 필요하면 `<modal>` 안에 노드를 직접 적습니다. 바깥 `<modal>` 은 `<layout>` 직속
-섹션(모달 목록)이고 안쪽 `<modal>` 은 `Modal` 컴포넌트 노드입니다 — 섹션은 **노드 하나**만
-담습니다(둘 이상이면 `modal_inline_not_single_node`). 노드 식별자는 `data-ref` 로 답니다.
-
-```html
-<modal>
-  <modal data-ref="delete_confirm_modal" title="$t:common.confirm">
-    <div>$t:common.delete_confirm</div>
-  </modal>
-</modal>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. `modals` 는
-> **객체 맵이 아니라 배열**이고, 각 항목은 조각이 인라인된 노드입니다.
-
 ```json
 {
-  "modals": [
-    {
-      "id": "delete_confirm_modal",
-      "type": "composite",
-      "name": "Modal",
-      "props": { "title": "$t:common.confirm" },
-      "children": [
-        { "type": "basic", "name": "Div", "text": "$t:common.delete_confirm" }
-      ]
+  "modals": {
+    "delete_confirm_modal": {
+      "$ref": "partials/xxx/_modal_delete_confirm.json"
     }
-  ]
+  }
 }
 ```
 
@@ -130,13 +96,11 @@
   "name": "Modal",
   "props": {
     "title": "$t:module.modal.title",
-    "size": "medium",
-    "footer": [
-      { "/* 취소/확인 버튼 — 본문 스크롤 밖 고정 하단 영역 */" }
-    ]
+    "size": "medium"
   },
   "children": [
-    { "/* 모달 본문 내용 (스크롤 영역) */" }
+    { "/* 모달 본문 내용 */" },
+    { "/* Footer 버튼 Div */" }
   ]
 }
 ```
@@ -149,14 +113,8 @@
 | `type` | ✅ | `"composite"` |
 | `name` | ✅ | `"Modal"` |
 | `props.title` | ✅ | 모달 제목 (다국어 권장) |
-| `props.size` | ❌ | 이름 있는 너비 단계 — `sm`/`small` 400px · `md`/`medium` 500px · `lg`/`large` 720px · `xl` 900px · `2xl` 1120px. 모르는 값은 기본 500px 으로 떨어진다 |
-| `props.width` | ❌ | 모달 너비 CSS 값 (기본 `"500px"`). **`size` 와 함께 주면 `width` 가 우선한다** |
-| `children` | ✅ | 모달 **본문** (스크롤 영역) |
-| `props.titlePrefix` | ❌ | 제목 **앞**에 렌더링할 컴포넌트 배열 (아이콘·배지). `.g7.html` 마크업은 `<title-prefix>…</title-prefix>` |
-| `props.titleSuffix` | ❌ | 제목 **뒤**에 렌더링할 컴포넌트 배열. `.g7.html` 마크업은 `<title-suffix>…</title-suffix>` |
-| `props.footer` | ❌ | 본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 **배열** (취소/확인 버튼). `.g7.html` 마크업은 `<footer>…</footer>` ([layout-markup.md](layout-markup.md) §Modal footer). ⚠️ **취소/확인 버튼을 `children` 마지막에 두지 말 것** — `Modal` 은 `props.footer` 를 별도 표면으로 렌더한다(S8 신설, F5) |
-
-`footer` 는 두 번들 템플릿(`sirsoft-admin_basic`, `sirsoft-basic`)의 `Modal` 이 모두 같은 계약으로 그린다(사용자 템플릿은 7.2.0 부터, #869). `titlePrefix`·`titleSuffix` 는 `sirsoft-admin_basic` 의 `Modal` 에만 있다 — `sirsoft-basic` 의 `Modal` 은 이 둘을 구조분해하지 않고 rest spread 도 없어 값이 소멸한다.
+| `props.size` | ❌ | `"sm"`, `"medium"`, `"lg"` 등 |
+| `children` | ✅ | 모달 내용 (footer 포함) |
 
 ### 금지 속성
 
@@ -164,7 +122,7 @@
 |------|------|
 | `props.show` | modals 섹션에서는 무시됨 |
 | `slots` | 지원되지 않음 - children 사용 |
-| `slots.footer` | 지원되지 않음 - `props.footer` 배열 사용 |
+| `slots.footer` | 지원되지 않음 - children 끝에 Div로 배치 |
 | `slots.default` | 지원되지 않음 - children 사용 |
 
 ---
@@ -172,14 +130,6 @@
 ## 모달 열기/닫기
 
 ### 모달 열기 - `openModal`
-
-```html
-<on type="click">
-  <open-modal target="delete_confirm_modal"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -193,14 +143,6 @@
 
 ### 모달 닫기 - `closeModal`
 
-```html
-<on type="click">
-  <close-modal/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "type": "click",
@@ -213,20 +155,6 @@
 ### 데이터와 함께 모달 열기
 
 모달에 데이터를 전달하려면 `openModal` 전에 `setState`로 데이터를 **반드시 `_global`에** 설정합니다.
-
-```html
-<on type="click">
-  <set-state target="global">
-    <field name="deleteProduct">
-      <field name="target" value="{{$item}}"/>
-      <field name="canDelete" :value="true"/>
-    </field>
-  </set-state>
-  <open-modal target="delete_confirm_modal"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -290,12 +218,6 @@
 
 ### 부모 상태 읽기
 
-```html
-<p>상품명: {{$parent._local.form.product_name}}</p>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "type": "basic",
@@ -311,14 +233,6 @@
 | `$parent._computed` | 부모 레이아웃의 계산된 값 |
 
 ### 부모 상태 수정 - 레이아웃 JSON
-
-```html
-<on type="click">
-  <set-state target="$parent._local" form.label_assignments="{{filteredAssignments}}"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -365,17 +279,6 @@ export const myHandler: ActionHandler = async (action, context) => {
 
 1. **핸들러 순서**: 부모 상태 수정 핸들러를 `closeModal`보다 **먼저** 실행
 
-```html
-<on type="click">
-  <action handler="myModule.updateParentState"/>
-</on>
-<on type="click">
-  <close-modal/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "actions": [
@@ -398,8 +301,7 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 이 두 제약 때문에 편집 모달의 form 데이터는 **모달별 고유 `_global` namespace 키** 안에 두는 것이 표준입니다:
 
 ```json
-// list 측 click — 먼저 null 로 비운 뒤 객체를 쓴다 (매 진입 fresh)
-{ "handler": "setState", "params": { "target": "global", "<modal_namespace>": null } },
+// list 측 click — 객체 통째 set (매 진입 fresh)
 { "handler": "setState", "params": {
   "target": "global",
   "<modal_namespace>": {
@@ -419,65 +321,13 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
   "<modal_namespace>.form.X": "{{$event.target.value}}"
 }}
 
-// 저장 onSuccess — 명시적 정리 (닫기 → 비우기 → 다시 받기)
+// 저장 onSuccess — 명시적 정리
 [
   { "handler": "closeModal" },
-  { "handler": "setState", "params": { "target": "global", "<modal_namespace>": null } },
-  { "handler": "refetchDataSource", "params": { "dataSourceId": "..." } }
+  { "handler": "refetchDataSource", "params": { "dataSourceId": "..." } },
+  { "handler": "setState", "params": { "target": "global", "<modal_namespace>": null } }
 ]
 ```
-
-**성공 갈래의 비우기는 다시 받기 앞**: `refetchDataSource` 는 응답을 기다리는 액션이라, 비우기를 그 뒤에 두면 창이 닫힌 뒤 목록을 다시 받는 몇 초 동안 비우기가 늦어진다. 그 사이 관리자가 같은 창을 다시 열면 늦게 도는 비우기가 **새 창의 상태를 지운다**(빈 수정 창이 `…/undefined` 로 저장을 보내거나, 확인 창 문구가 `{{name}}` 자리표시로 남는다). 그래서 성공 갈래(409 충돌로 닫는 갈래 포함)는 `closeModal` 바로 뒤에 비우고 다시 받기는 그 뒤에 둔다. 다시 받기 뒤 동작이 그 값을 읽어야 하면 이름 공간이 아니라 값을 먼저 다른 키로 옮기거나 응답 값을 쓴다.
-
-**여는 순간 비우기**: `setState` 의 기본 병합은 deep 이라, 객체를 써도 이번 객체에 없는 앞 키(앞 창의 `id`·입력값·오류)는 지워지지 않습니다. 새로 만들기 창이 수정 창과 같은 키를 쓰면 앞 `id` 가 남아 「수정」 으로 열리고 저장이 그 항목을 덮어씁니다. 그래서 여는 동작은 같은 액션 목록에서 그 키를 먼저 `null` 로 쓰고 객체를 씁니다(`null` 은 그 키만 덮어쓰고 다른 `_global` 키는 그대로 둡니다). 전역 대상에 `merge: "replace"` 를 쓰는 방식은 쓰지 않습니다.
-
-#### 창을 닫을 때 이름 공간 비우기
-
-이름 공간이 개인정보·비밀값을 담으면 창이 닫히는 **모든 갈래**에서 비운다([security.md 「_global 상태 민감 정보 금지」 예외](security.md#예외--창-고유-이름-공간은-창을-닫을-때-비우면-허용)). 다음 열기의 null 선행만으로는 닫힌 동안 값이 전역에 남는다.
-
-| 닫는 갈래 | 레이아웃 동작을 타는가 | 비우는 자리 |
-| --- | --- | --- |
-| 취소·닫기 단추(창 안 단추) | 탄다 | 그 단추의 액션 — `closeModal` 뒤에 `setState target:"global" <ns>: null` |
-| 「선택」·적용 등 값을 넘기고 닫는 단추 | 탄다 | 값을 넘긴 **뒤**(이벤트·요청 본문이 이름 공간을 읽은 뒤) 같은 정리 |
-| 저장 성공으로 닫힘 | 탄다 | 성공 갈래 — 안내 문구가 이름 공간을 읽으면 그 뒤에 |
-| 창 머리 닫기(X)·바깥 클릭·Esc | **안 탄다** — 엔진이 주입한 `onClose`(= `closeModal`)로만 이어진다 | 창 본문 노드의 `lifecycle.onUnmount` |
-
-창은 닫히면 본문을 그리지 않으므로(영구 마운트되는 것은 창 루트 렌더러다) 본문 노드의 unmount 는 어느 갈래로 닫든 한 번 돈다. 그 노드는 **창이 열려 있는 동안 내내 붙어 있어야 한다** — 조건(`data-if`)·반복 안 노드에 걸면 창이 열린 채 그 노드가 내려갈 때(목록 ↔ 폼 전환 등) 입력 중인 값을 지운다. 본문의 맨 바깥 틀이 늘 있으면 거기에, 본문이 조건으로 갈아 끼워지는 두 얼굴뿐이면 맨 끝에 보이지 않는 빈 표지를 두고 건다.
-
-```html
-<modal data-type="composite" data-ref="address_manage_modal" title="...">
-  <!-- 목록 -->
-  <div data-if="{{_global.address_manage_modal?.mode !== 'form'}}">...</div>
-  <!-- 폼 -->
-  <div data-if="{{_global.address_manage_modal?.mode === 'form'}}">...</div>
-  <!-- 창 닫힘 표지 — 열려 있는 동안 내내 붙어 있다가 닫히면 함께 내려가며 이름 공간을 비운다 -->
-  <div class="hidden" aria-hidden="true">
-    <on event="unmount">
-      <set-state target="global" :address_manage_modal="null"/>
-    </on>
-  </div>
-</modal>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
-```json
-{
-  "type": "basic",
-  "name": "Div",
-  "props": { "className": "hidden", "aria-hidden": "true" },
-  "lifecycle": {
-    "onUnmount": [
-      { "handler": "setState", "params": { "target": "global", "address_manage_modal": null } }
-    ]
-  }
-}
-```
-
-- 닫는 액션 목록에서 `closeModal` 뒤에 오는 동작(이벤트 보내기·안내 문구)은 unmount 보다 먼저 돈다 — 다시 그리기가 미뤄지므로 같은 목록 안의 다음 동작이 이름 공간을 읽을 수 있다. 그래도 값을 넘기는 동작 뒤에 직접 비우는 정리를 함께 둔다.
-- 위에 다른 창이 겹쳐 떠도(덮어쓰기 확인 창 등) 아래 창은 열린 채라 비워지지 않는다. 아래 창까지 닫혀야 비워진다.
-- 창이 닫힌 뒤에도 페이지가 그 값을 읽어야 하면 창 이름 공간이 아니다 — 페이지 상태로 옮기거나(「창은 알리기만 하고 페이지가 자기 상태를 고친다」) 이벤트 값으로 넘긴다.
-- **창이 닫힌 뒤 도착한 응답도 이름 공간을 되살리면 안 된다.** 창 안에서 보낸 요청(검색 자동완성·상세 조회 등)의 응답 콜백이 `<ns>.<키>` 점 경로로 쓰면, 창이 닫혀 `null` 이 된 이름 공간을 부모째 새로 만든다(검색 결과의 이름·이메일이 그대로 남는다). 액션 `if` 는 요청 시점 문맥의 `_global` 을 보므로 닫힘을 알 수 없다 — 값 식은 평가 시점 최신 `_global` 을 보므로 이름 공간 전체를 값 식으로 쓴다: `<set-state target="global" ns="{{_global.ns == null ? null : ({ results: response.data })}}"/>`(기본 deep 병합이라 다른 칸은 그대로다). 창을 닫고 다른 대상을 다시 열 수 있는 창은 「열린 창의 대상 = 요청한 대상」 도 함께 견준다.
 
 **키 분리 규칙**:
 
@@ -510,169 +360,48 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 ### 올바른 패턴 ✅
 
-취소/확인 버튼은 **`props.footer` 배열**에 배치한다. `Modal` 은 이 배열을 본문 스크롤 밖 **고정 하단 표면**으로 렌더한다(S8 신설). `children` 마지막 Div 에 두면 본문과 함께 스크롤된다. `.g7.html` 마크업은 `<footer>…</footer>` ([layout-markup.md](layout-markup.md) §Modal footer).
-
-```html
-<modal data-ref="my_modal" title="$t:...">
-  <footer>
-    <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-      <on type="click">
-        <close-modal/>
-      </on>
-      <span>$t:common.cancel</span>
-    </button>
-    <button class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-      <on type="click">…</on>
-      <span>$t:common.delete</span>
-    </button>
-  </footer>
-  …
-</modal>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+Footer 버튼은 `children` 배열의 **마지막 요소**로 Div에 감싸서 배치합니다.
 
 ```json
 {
-  "id": "my_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:...",
-    "footer": [
-      {
-        "type": "basic",
-        "name": "Button",
-        "props": {
-          "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-        },
-        "actions": [{ "type": "click", "handler": "closeModal" }],
-        "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
+  "children": [
+    { "/* 본문 내용들 */" },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "flex justify-end gap-3 mt-6"
       },
-      {
-        "type": "basic",
-        "name": "Button",
-        "props": {
-          "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+          },
+          "actions": [{ "type": "click", "handler": "closeModal" }],
+          "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
         },
-        "actions": [{ "/* 삭제 등 주요 액션 */" }],
-        "children": [{ "type": "basic", "name": "Span", "text": "$t:common.delete" }]
-      }
-    ]
-  },
-  "children": [{ "/* 본문 내용들 (스크롤 영역) */" }]
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          },
+          "actions": [{ "/* 삭제 등 주요 액션 */" }],
+          "children": [{ "type": "basic", "name": "Span", "text": "$t:common.delete" }]
+        }
+      ]
+    }
+  ]
 }
 ```
-
-> **회귀 배경 (F5)**: 이전에는 `Modal` 에 `footer` 표면이 없어 `props.footer` 가 렌더되지 않았고, 마크업이 버튼을 `children` 마지막 Div 로 우회 배치했다. S8 이 `props.footer` 표면을 신설(S16 F5 로 12개 모달 버튼 복원)했으므로 이제 `props.footer` 가 정본이다.
->
-> **적용 범위 — 두 번들 템플릿**: `props.footer` 는 `sirsoft-admin_basic` 과 `sirsoft-basic` 의 `Modal` 이 같은 계약(본문 스크롤 밖 `modal-footer-bar`, 본문 자식과 같은 데이터 컨텍스트, 렌더 폭 640px 이하 세로 쌓기)으로 그린다. 사용자 템플릿 `Modal` 은 7.2.0 전까지 이 prop 을 받지 않아 넘기면 조용히 사라졌다(#869 에서 지원) — 7.2.0 전 사용자 템플릿과 함께 쓰는 확장은 하단 버튼을 `children` 안에 둔다. props 표면 대조: [component-props.md §Modal](component-props.md#modal-컴포넌트).
-
-### 하단 버튼이 방금 입력한 값을 읽는 창도 `props.footer` 를 쓴다
-
-`Modal` 은 고정 하단(`props.footer`)을 본문 자식과 **같은 데이터 컨텍스트·상태 범위**로 그린다 — 엔진이 넘겨 주는
-Modal 노드의 확장 컨텍스트(`__componentContext.parentDataContext`)와 컴포넌트 컨텍스트를 그대로 쓴다. 그래서 고정 하단의
-`disabled`·`if`·액션 인자가 창을 연 뒤 본문에서 바뀐 `_global.{창}.form.*`·`_local.*` 를 읽는다.
-
-> **회귀 배경**: 7.2.0 전까지 `Modal` 은 고정 하단을 빈 데이터 컨텍스트·자기 상태 범위로 그렸다. 입력을 받아 그 값으로
-> 분기하는 창(IP 접근 제한 규칙·본인인증 정책 편집 등)의 「적용」이 늘 "입력하세요" 로 되돌아가(#636 브라우저 실측) 단추를
-> 본문 맨 아래 줄로 우회했고, 그 줄은 640px 이하에서 세로로 쌓이지 않았다. Modal 을 고쳐 모든 확인 창의 단추를 고정 하단으로
-> 모았다(#869). 회귀 시험: `admin-settings-ip-restriction.test.tsx`(진짜 Modal 로 창을 그려 고정 하단 「적용」이 방금 친 값을
-> 읽는지 잰다), `admin_plugin_list._modal_update.force.test.tsx`(창을 연 뒤 켠 체크박스로 진행 단추가 풀린다).
-
-### 확장 지점을 품은 바닥 줄도 `props.footer` 에 둔다
-
-서버의 확장 처리(레이아웃 확장 주입)는 `children` 과 함께 Modal 의 `footer`·`titlePrefix`·`titleSuffix` 도 걷는다 —
-고정 하단 안의 `<extension-point>` 에도 조각이 주입되고, 오버레이(`target_id` 주입·`inject_props`)도 고정 하단 안의 단추를
-찾는다(#869). 그래서 알림 템플릿 편집 창처럼 바닥 줄에 확장 지점이 있는 창도 단추를 `<footer>` 에 둔다.
-
-왼쪽에 떨어져 놓일 단추(미리보기 등)는 `mr-auto`(확장은 `{접두}:mr-auto`)로 오른쪽 묶음과 떨어뜨리고, 640px 이하에서는
-Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로 준다.
-
-```html
-<footer>
-  <button data-if="{{…}}" type="button" class="… mr-auto">
-    <responsive on="-640" class="…"/>
-    …미리보기
-  </button>
-  <button type="button" class="…">…취소</button>
-  <extension-point name="notification_template_form_footer_actions" …/>
-  <button data-if="{{…}}" type="button" class="…">…저장</button>
-</footer>
-```
-
-> 오버레이는 레이아웃 `components` 트리를 걷는다 — `modals` 갈래에 둔 창의 노드는 오버레이 대상이 아니다(확장 지점은 두 갈래 모두 채운다).
-
-부모 폼 배열을 고칠 때는 **고칠 자리를 `target` 에 적고 값을 `value` 로 준다** — `target="$parent._local"` 에 점 찍은 이름(`form.security.rules`)을 주면 그 이름이 통째로 한 칸이 되어 화면에 아무것도 반영되지 않는다.
-
-```html
-<!-- ✅ 부모 폼의 한 칸만 갈아 끼운다 -->
-<set-state target="$parent._local.form.security.ip_restriction_rules" value="{{ ... }}"/>
-<set-state target="$parent._local.hasChanges" :value="true"/>
-```
-
-### 부모 폼 커밋 — 두 자리에 같은 값을 쓴다
-
-`_local` 은 **두 곳**에 산다 — 화면이 읽는 저장소(React 로컬 상태)와 저장·플러그인이 읽는 저장소
-(`_global._local`)다. 엔진은 모달의 `$parent._local` 쓰기를 **일부러 미러에서 빼 둔다**(모달이 페이지
-상태를 오염시키던 사례 때문이다). 그래서 창에서 부모 폼만 고치면 **표에는 보이는데 저장 요청 본문에는
-실리지 않아**, 운영자는 「저장했는데 방금 넣은 값이 사라졌다」를 겪는다(#636 브라우저 실측).
-
-> engine-v1.81.2 부터 대상이 페이지(첫 모달을 연 화면)인 `$parent._local`·`$root._local` 쓰기와
-> `setLocal({ scope: 'parent' | 'root' })` 는 엔진이 쓴 키만 `_global._local` 에도 얹는다(모달 자신의 상태는 넣지 않는다).
-> 아래 이중 쓰기는 같은 값을 두 번 쓸 뿐이라 그대로 둬도 되고, 이전 엔진과 함께 쓰는 확장은 계속 두는 편이 안전하다.
-> 중첩 모달에서 바로 아래 모달을 고치는 `$parent._local` 은 페이지 `_local` 이 아니라 얹지 않는다.
-
-부모의 **폼 값**(하단 저장 버튼이 실어 보내는 값)을 고치는 창은 같은 배열·객체를 두 자리에 쓴다.
-
-```html
-<sequence>
-  <!-- ① 저장이 읽는 자리 — 전역을 통해 페이지 _local 에 넣는다 -->
-  <set-state target="global" _local.form.security.ip_restriction_rules="{{ ... }}" :_local.hasChanges="true"/>
-  <!-- ② 화면이 읽는 자리 — 표·저장 버튼이 곧바로 반응하게 한다 -->
-  <set-state target="$parent._local.form.security.ip_restriction_rules" value="{{ ... }}"/>
-  <set-state target="$parent._local.hasChanges" :value="true"/>
-  <close-modal target="..."/>
-</sequence>
-```
-
-두 쓰기에는 **같은 표현식**을 넣는다 — 갈라지면 화면과 저장이 다른 값을 보게 된다. 값은 결과를 통째로
-넣어(부분 갱신이 아니라 배열·객체 전체) 순서가 바뀌어도 같은 결과가 되게 한다.
-
-서버 API 를 직접 부르는 창(예: 본인인증 정책 창)은 이 문제가 없다 — 부모 폼을 거치지 않기 때문이다.
-창이 부모 폼을 고쳐야 하는지, 자기가 저장해야 하는지를 먼저 정하고 그에 맞는 형태를 고른다.
-
-> 엔진이 이 미러 정책을 바꾸면 ①이 불필요해진다. 그때까지 새로 쓸 때는 이 절을 근거로 삼는다.
-> 번들 예: 관리자 환경설정 `_modal_ip_restriction_rule_form`·`_modal_notification_channel_off_confirm`, 이커머스 공통정보 `_modal_default_confirm`·마일리지 내역 `_modal_extend_expiry`, 탭을 옮길 때 묻는 미저장 확인 창
-> `_modal_unsaved_tab_switch`(코어 환경설정, 게시판 환경설정).
-
-#### 다른 형태 — 창은 알리기만 하고 페이지가 자기 상태를 고친다
-
-창이 고칠 페이지 상태가 많거나 페이지의 다른 동작(탭 전환·주소 갱신)과 묶여 있으면, 창은 `<close-modal>` 뒤
-`<emit-event>` 로 알리기만 하고 페이지 쪽 `<on listen>` 이 자기 `_local` 을 고친다. 리스너의 setState 는
-모달 문맥이 아니라 페이지 문맥에서 돌므로 「closeModal 뒤 setState 금지」에 걸리지 않고, 두 자리에 같은 값을
-쓸 필요도 없다(engine-v1.80.0 부터 `<on listen>` 안의 연속 실행·분기가 동작한다).
-
-```html
-<!-- 창 [이동] 버튼 -->
-<sequence>
-  <close-modal target="..."/>
-  <emit-event event="sirsoft-ecommerce:settings-switch-tab"><field name="data"><field name="tab" value="{{_global.pendingEcommerceSettingsTab}}"/></field></emit-event>
-</sequence>
-<!-- 페이지 탭 본문 틀 -->
-<on listen="sirsoft-ecommerce:settings-switch-tab">
-  <set-state target="local" :hasChanges="false"/>
-  <set-state target="global" activeEcommerceSettingsTab="{{_eventData.tab}}" :pendingEcommerceSettingsTab="null"/>
-</on>
-```
-
-> 번들 예: 이커머스 환경설정 `_modal_unsaved_tab_switch` + `admin_ecommerce_settings` 의 탭 본문 틀(#753).
 
 ### Footer 스타일 규칙
 
 | 요소 | 클래스 |
 |------|--------|
-| Footer 컨테이너 | **작성하지 않는다** — `Modal` 이 `props.footer` 를 `modal-footer-bar` 로 감싼다(옛 이름 `modal-footer-row` 는 폐지 예정). 배열 요소로 버튼만 나열 |
+| Footer 컨테이너 | `flex justify-end gap-3 mt-6` |
 | 취소 버튼 | `px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700` |
 | 위험 버튼 (삭제) | `px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700` |
 | 주요 버튼 (확인) | `px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700` |
@@ -702,75 +431,78 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
 "if": "{{_global.isDeleting}}"
 { "handler": "setState", "params": { "target": "global", "isDeleting": true } }
 
-// ❌ 잘못된 패턴 - _local은 모달에서 접근 불가 (항상 undefined)
-"disabled": "{{_local.isDeleting}}"
-"if": "{{_local.isDeleting}}"
-{ "handler": "setState", "params": { "target": "local", "isDeleting": true } }
+// ❌ 잘못된 패턴 - _local은 모달에서 접근 불가
+"disabled": "{{_global.isDeleting}}"
+"if": "{{_global.isDeleting}}"
+{ "handler": "setState", "params": { "target": "global", "isDeleting": true } }
 ```
 
 ### 표준 패턴
 
-> 아래 버튼들은 `props.footer` 배열의 요소로 배치한다(위 [Footer 버튼 배치](#footer-버튼-배치) 참조). 여기서는 위험 버튼의 로딩/비활성 상태 구현에 초점을 둔다.
-
 ```json
-"footer": [
-  {
-    "type": "basic",
-    "name": "Button",
-    "props": {
-      "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-      "disabled": "{{_global.isDeleting}}"
-    },
-    "actions": [{ "type": "click", "handler": "closeModal" }],
-    "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
-  },
-  {
-    "type": "basic",
-    "name": "Button",
-    "props": {
-      "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-      "disabled": "{{_global.isDeleting}}"
-    },
-    "actions": [
-      {
-        "type": "click",
-        "handler": "sequence",
-        "actions": [
-          { "handler": "setState", "params": { "target": "global", "isDeleting": true } },
-          {
-            "handler": "apiCall",
-            "auth_required": true,
-            "target": "/api/modules/sirsoft-ecommerce/items/{{_global.deleteItem.id}}",
-            "params": { "method": "DELETE" },
-            "onSuccess": [
-              { "handler": "closeModal" },
-              { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
-              { "handler": "toast", "params": { "type": "success", "message": "$t:messages.deleted" } },
-              { "handler": "refetchDataSource", "params": { "dataSourceId": "items" } }
-            ],
-            "onError": [
-              { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
-              { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
-            ]
-          }
-        ]
-      }
-    ],
-    "children": [
-      {
-        "type": "basic",
-        "name": "Icon",
-        "if": "{{_global.isDeleting}}",
-        "props": { "name": "spinner", "className": "text-base animate-spin" }
+{
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "flex justify-end gap-3 mt-6" },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+        "disabled": "{{_global.isDeleting}}"
       },
-      {
-        "type": "basic",
-        "name": "Span",
-        "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
-      }
-    ]
-  }
-]
+      "actions": [{ "type": "click", "handler": "closeModal" }],
+      "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+        "disabled": "{{_global.isDeleting}}"
+      },
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sequence",
+          "actions": [
+            { "handler": "setState", "params": { "target": "global", "isDeleting": true } },
+            {
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "/api/items/{{_global.deleteItem.id}}",
+              "params": { "method": "DELETE" },
+              "onSuccess": [
+                { "handler": "closeModal" },
+                { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
+                { "handler": "toast", "params": { "type": "success", "message": "$t:messages.deleted" } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "items" } }
+              ],
+              "onError": [
+                { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
+                { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
+              ]
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "if": "{{_global.isDeleting}}",
+          "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ### 핵심 구현 포인트
@@ -779,28 +511,16 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
 
 - **스피너 아이콘**: `if` 조건으로 로딩 중에만 표시
 
-```html
-<icon data-if="{{_global.isDeleting}}" name="spinner" class="text-base animate-spin"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "type": "basic",
   "name": "Icon",
   "if": "{{_global.isDeleting}}",
-  "props": { "name": "spinner", "className": "text-base animate-spin" }
+  "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
 }
 ```
 
 - **텍스트 삼항 연산자**: 상태에 따라 텍스트 변경
-
-```html
-<div>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -838,95 +558,77 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
 ### 일반 액션 표준 패턴 (저장 예시)
 
 ```json
-"footer": [
-  {
-    "type": "basic",
-    "name": "Button",
-    "props": {
-      "type": "button",
-      "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-      "disabled": "{{_global.isSaving}}"
-    },
-    "text": "$t:common.cancel",
-    "actions": [{ "type": "click", "handler": "closeModal" }]
-  },
-  {
-    "type": "basic",
-    "name": "Button",
-    "props": {
-      "type": "button",
-      "className": "flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
-      "disabled": "{{_global.isSaving}}"
-    },
-    "children": [
-      {
-        "type": "basic",
-        "name": "Icon",
-        "if": "{{_global.isSaving}}",
-        "props": { "name": "spinner", "className": "text-base animate-spin" }
+{
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "flex justify-end gap-3 mt-6" },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+        "disabled": "{{_global.isSaving}}"
       },
-      {
-        "type": "basic",
-        "name": "Span",
-        "text": "{{_global.isSaving ? '$t:common.saving' : '$t:common.save'}}"
-      }
-    ],
-    "actions": [
-      {
-        "type": "click",
-        "handler": "sequence",
-        "actions": [
-          { "handler": "setState", "params": { "target": "global", "isSaving": true } },
-          {
-            "handler": "apiCall",
-            "auth_required": true,
-            "target": "/api/modules/sirsoft-ecommerce/items",
-            "params": { "method": "POST", "body": {} },
-            "onSuccess": [
-              { "handler": "setState", "params": { "target": "global", "isSaving": false } },
-              { "handler": "closeModal" },
-              { "handler": "toast", "params": { "type": "success", "message": "{{response.message}}" } },
-              { "handler": "refetchDataSource", "params": { "dataSourceId": "items" } }
-            ],
-            "onError": [
-              { "handler": "setState", "params": { "target": "global", "isSaving": false } },
-              { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-]
+      "text": "$t:common.cancel",
+      "actions": [{ "type": "click", "handler": "closeModal" }]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "props": {
+        "type": "button",
+        "className": "flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+        "disabled": "{{_global.isSaving}}"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Icon",
+          "if": "{{_global.isSaving}}",
+          "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+        },
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "{{_global.isSaving ? '$t:common.saving' : '$t:common.save'}}"
+        }
+      ],
+      "actions": [
+        {
+          "type": "click",
+          "handler": "sequence",
+          "actions": [
+            { "handler": "setState", "params": { "target": "global", "isSaving": true } },
+            {
+              "handler": "apiCall",
+              "auth_required": true,
+              "target": "/api/items",
+              "params": { "method": "POST", "body": {} },
+              "onSuccess": [
+                { "handler": "setState", "params": { "target": "global", "isSaving": false } },
+                { "handler": "closeModal" },
+                { "handler": "toast", "params": { "type": "success", "message": "{{response.message}}" } },
+                { "handler": "refetchDataSource", "params": { "dataSourceId": "items" } }
+              ],
+              "onError": [
+                { "handler": "setState", "params": { "target": "global", "isSaving": false } },
+                { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ### 커스텀 핸들러 호출 시 스피너 패턴
 
 커스텀 핸들러를 사용하는 경우에도 동일한 스피너 패턴을 적용합니다.
 핸들러 내부에서 `setState`를 직접 관리하는 경우, 버튼의 `disabled`와 `children` 스피너는 동일하게 구현합니다.
-
-```html
-<button type="button" class="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProcessing}}">
-  <on type="click">
-    <set-state target="global" :isProcessing="true"/>
-    <action handler="myModule.customHandler">
-      …
-      <success>
-        <set-state target="global" :isProcessing="false"/>
-        <close-modal/>
-      </success>
-      <fail>
-        <set-state target="global" :isProcessing="false"/>
-        <toast type="error" message="{{$error.message}}"/>
-      </fail>
-    </action>
-  </on>
-  <icon data-if="{{_global.isProcessing}}" name="spinner" class="text-base animate-spin"/>
-  <span>{{_global.isProcessing ? '$t:common.processing' : '$t:common.confirm'}}</span>
-</button>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -942,7 +644,7 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
       "type": "basic",
       "name": "Icon",
       "if": "{{_global.isProcessing}}",
-      "props": { "name": "spinner", "className": "text-base animate-spin" }
+      "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
     },
     {
       "type": "basic",
@@ -993,46 +695,6 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
 
 ### 삭제 확인 모달
 
-```html
-<partial description="Delete Confirmation Modal">
-  <modal data-ref="delete_confirm_modal" title="$t:module.delete_modal.title" size="medium">
-    <footer>
-      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
-        <on type="click">
-          <close-modal/>
-        </on>
-        <span>$t:common.cancel</span>
-      </button>
-      <button class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
-        <on type="click">
-          <set-state target="global" :isDeleting="true"/>
-          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/items/{{_global.modal_data.itemId}}" method="DELETE">
-            <success>
-              <close-modal/>
-              <set-state target="global" :isDeleting="false"/>
-              <refetch-data-source dataSourceId="items"/>
-              <toast type="success" message="$t:module.messages.deleted"/>
-            </success>
-            <fail>
-              <set-state target="global" :isDeleting="false"/>
-              <toast type="error" message="{{$error.message}}"/>
-            </fail>
-          </api-call>
-        </on>
-        <icon data-if="{{_global.isDeleting}}" name="spinner" class="text-base animate-spin"/>
-        <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
-      </button>
-    </footer>
-    <div class="space-y-4">
-      <p class="text-base text-gray-900 dark:text-white">$t:module.delete_modal.confirm_message</p>
-      <p class="text-sm text-red-600 dark:text-red-400 font-medium">$t:module.delete_modal.warning</p>
-    </div>
-  </modal>
-</partial>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "meta": {
@@ -1044,68 +706,7 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
   "name": "Modal",
   "props": {
     "title": "$t:module.delete_modal.title",
-    "size": "medium",
-    "footer": [
-      {
-        "type": "basic",
-        "name": "Button",
-        "props": {
-          "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-          "disabled": "{{_global.isDeleting}}"
-        },
-        "actions": [{ "type": "click", "handler": "closeModal" }],
-        "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
-      },
-      {
-        "type": "basic",
-        "name": "Button",
-        "props": {
-          "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-          "disabled": "{{_global.isDeleting}}"
-        },
-        "actions": [
-          {
-            "type": "click",
-            "handler": "sequence",
-            "actions": [
-              {
-                "handler": "setState",
-                "params": { "target": "global", "isDeleting": true }
-              },
-              {
-                "handler": "apiCall",
-                "auth_required": true,
-                "target": "/api/modules/sirsoft-ecommerce/items/{{_global.modal_data.itemId}}",
-                "params": { "method": "DELETE" },
-                "onSuccess": [
-                  { "handler": "closeModal" },
-                  { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
-                  { "handler": "refetchDataSource", "params": { "dataSourceId": "items" } },
-                  { "handler": "toast", "params": { "type": "success", "message": "$t:module.messages.deleted" } }
-                ],
-                "onError": [
-                  { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
-                  { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
-                ]
-              }
-            ]
-          }
-        ],
-        "children": [
-          {
-            "type": "basic",
-            "name": "Icon",
-            "if": "{{_global.isDeleting}}",
-            "props": { "name": "spinner", "className": "text-base animate-spin" }
-          },
-          {
-            "type": "basic",
-            "name": "Span",
-            "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
-          }
-        ]
-      }
-    ]
+    "size": "medium"
   },
   "children": [
     {
@@ -1124,6 +725,72 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
           "name": "P",
           "props": { "className": "text-sm text-red-600 dark:text-red-400 font-medium" },
           "text": "$t:module.delete_modal.warning"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "props": { "className": "flex justify-end gap-3 mt-6" },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isDeleting}}"
+          },
+          "actions": [{ "type": "click", "handler": "closeModal" }],
+          "children": [{ "type": "basic", "name": "Span", "text": "$t:common.cancel" }]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+            "disabled": "{{_global.isDeleting}}"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "sequence",
+              "actions": [
+                {
+                  "handler": "setState",
+                  "params": { "target": "global", "isDeleting": true }
+                },
+                {
+                  "handler": "apiCall",
+                  "auth_required": true,
+                  "target": "/api/items/{{_global.modal_data.itemId}}",
+                  "params": { "method": "DELETE" },
+                  "onSuccess": [
+                    { "handler": "closeModal" },
+                    { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
+                    { "handler": "refetchDataSource", "params": { "dataSourceId": "items" } },
+                    { "handler": "toast", "params": { "type": "success", "message": "$t:module.messages.deleted" } }
+                  ],
+                  "onError": [
+                    { "handler": "setState", "params": { "target": "global", "isDeleting": false } },
+                    { "handler": "toast", "params": { "type": "error", "message": "{{$error.message}}" } }
+                  ]
+                }
+              ]
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Icon",
+              "if": "{{_global.isDeleting}}",
+              "props": { "name": "spinner", "className": "w-4 h-4 animate-spin" }
+            },
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
+            }
+          ]
         }
       ]
     }
@@ -1193,12 +860,6 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
 
 모달 내부에서도 `extension_point`를 정의할 수 있으며, 플러그인/모듈이 자동으로 주입됩니다.
 
-```html
-<json key="components">[{"id":"address_modal","type":"composite","name":"Modal","children":[{"type":"extension_point","name":"address_search_slot","props":{"onAddressSelect":{"handler":"setState","params":{"target":"local","form.zipcode":"{{$event.zipcode}}"}}}}]}]</json>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "id": "address_modal",
@@ -1229,7 +890,7 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
    (모달 자체의 _local 스코프에 쓰기 — 부모 상태는 "$parent._local" 사용)
 ```
 
-> 상세: [layout-extensions.md](../extension/layout-extensions.md) "지원 위치" 섹션 참조
+> 상세: [layout-extensions.md](../../extension/layout-extensions.md) "지원 위치" 섹션 참조
 
 ---
 
@@ -1242,10 +903,9 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
 □ type: "composite", name: "Modal"인가?
 □ props에 show가 없는가? (modals 섹션인 경우)
 □ slots 속성이 없는가?
-□ 본문 내용이 children에 있는가?
-□ 취소/확인 버튼이 `props.footer` 배열에 있는가? (children 마지막 Div 아님 — Modal 이 별도 하단 표면으로 렌더)
-   ↳ 입력값을 읽는 창도 같다. 확장 지점을 품은 줄도 같다 ([§확장 지점을 품은 바닥 줄도 `props.footer` 에 둔다](#확장-지점을-품은-바닥-줄도-propsfooter-에-둔다))
-□ 부모 **폼 값**을 고치는 창이라면 저장이 읽는 자리에도 함께 썼는가? ([§부모 폼 커밋](#부모-폼-커밋--두-자리에-같은-값을-쓴다))
+□ 모든 내용이 children에 있는가?
+□ footer 버튼이 children 마지막 Div에 있는가?
+□ footer Div에 "flex justify-end gap-3 mt-6" 클래스가 있는가?
 □ 취소 버튼에 closeModal 핸들러가 있는가?
 ```
 
@@ -1259,7 +919,7 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
 □ 로딩 중 스피너 아이콘(Icon name="spinner" animate-spin)이 표시되는가?
 □ 버튼 텍스트가 로딩 상태에 따라 변경되는가? (삼항 연산자 사용)
 □ setState target이 "global"인가?
-□ onSuccess에서 closeModal이 `_global` 정리 setState보다 먼저 호출되는가? (`_local`·부모 상태 `$parent._local` 쓰기는 closeModal 보다 먼저 — §주의사항 1)
+□ onSuccess에서 closeModal이 setState보다 먼저 호출되는가?
 □ onError에서 로딩 상태가 false로 복원되는가?
 ```
 
@@ -1275,7 +935,7 @@ Modal 이 세로로 쌓으므로 그 여백만 뺀 클래스를 `responsive` 로
 
 ## ZIP 파일 업로드 모달/드로어 패턴 (multipart 백엔드)
 
-ZIP 파일을 업로드해 백엔드에 multipart/form-data 로 전송하는 모달/드로어를 신규 작성할 때는 동일 도메인의 작동 install 모달(`_modal_manual_install.g7.html`)을 정확히 1:1 베껴서 작성한다. 구조는 변경하지 않고 변수명/라우트/i18n 키만 바꾼다.
+ZIP 파일을 업로드해 백엔드에 multipart/form-data 로 전송하는 모달/드로어를 신규 작성할 때는 동일 도메인의 작동 install 모달(`_modal_manual_install.json`)을 정확히 1:1 베껴서 작성한다. 구조는 변경하지 않고 변수명/라우트/i18n 키만 바꾼다.
 
 ### 필수 패턴 (전부 충족)
 
@@ -1292,7 +952,7 @@ ZIP 파일을 업로드해 백엔드에 multipart/form-data 로 전송하는 모
 
 ### 작성 절차
 
-1. 같은 도메인의 `_modal_manual_install.g7.html` 을 통째 Read
+1. 같은 도메인의 `_modal_manual_install.json` 을 통째 Read
 2. 새 partial 파일에 구조 그대로 복사 (FileInput → setState → apiCall sequence)
 3. 변수 prefix(예: `pluginUpload` → `pluginPreview`) + 라우트 target + i18n 키 + 결과 표시 영역만 변경
 4. 1:1 비교로 위 8가지 항목 동일 여부 검증
@@ -1332,6 +992,3 @@ ZIP 파일을 업로드해 백엔드에 multipart/form-data 로 전송하는 모
 | 2026-01-21 | 1.2 | 모달 내 로딩 상태는 반드시 `_global` 사용 (수정: `_local` → `_global`) |
 | 2026-01-30 | 1.3 | `$parent` 바인딩 컨텍스트 추가 (engine-v1.16.0) - 부모 레이아웃 상태 접근/수정 지원 |
 | 2026-04-28 | 1.4 | ZIP 파일 업로드 모달/드로어 패턴 섹션 추가 (FileInput, contentType, body 표현식, _global, sequence 로딩) |
-| 2026-10-18 | 1.5 | 「창을 닫을 때 이름 공간 비우기」 추가 — 개인정보·비밀값을 담은 창 이름 공간은 닫히는 모든 갈래에서 비우고, X·바깥 클릭·Esc 는 창 본문 노드의 unmount 로 덮는다 |
-| 2026-10-20 | 1.6 | 「창을 닫을 때 이름 공간 비우기」 보강 — 창이 닫힌 뒤 도착한 응답이 이름 공간을 되살리지 않게 값 식에서 null 을 가른다 |
-| 2026-11-18 | 1.7 | 「저장 onSuccess — 명시적 정리」 순서를 닫기 → 비우기 → 다시 받기로 고침 — 다시 받기 뒤 비우기가 그동안 다시 연 창 상태를 지우던 결함(회원 항목 추가·삭제 창 외 12곳) |

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Elements - 그누보드7 Admin Design Guide</title>
+  <link rel="stylesheet" href="../../dist/css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    .preview-section {
+      margin-bottom: 3rem;
+    }
+    .preview-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #111827;
+    }
+    .dark .preview-title {
+      color: #f9fafb;
+    }
+    .preview-subtitle {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+      color: #374151;
+    }
+    .dark .preview-subtitle {
+      color: #d1d5db;
+    }
+    .preview-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      align-items: center;
+    }
+    @media (max-width: 640px) {
+      .preview-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .preview-row > .btn,
+      .preview-row > .w-auto {
+        width: auto;
+      }
+    }
+    .preview-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+    .preview-breadcrumb a {
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .preview-breadcrumb a:hover {
+      color: #3b82f6;
+    }
+    .dark .preview-breadcrumb a {
+      color: #9ca3af;
+    }
+    .dark .preview-breadcrumb a:hover {
+      color: #60a5fa;
+    }
+    .preview-breadcrumb span {
+      color: #9ca3af;
+    }
+    .dark .preview-breadcrumb span {
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <!-- Dark Mode Toggle -->
+  <div class="fixed top-4 right-4 z-50">
+    <button id="darkModeToggle" class="btn btn-secondary">
+      <i class="fas fa-moon dark:hidden"></i>
+      <i class="fas fa-sun hidden dark:inline"></i>
+      <span class="dark:hidden">다크모드</span>
+      <span class="hidden dark:inline">라이트모드</span>
+    </button>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-8">
+    <div class="preview-breadcrumb">
+      <a href="index.html"><i class="fas fa-home"></i></a>
+      <span>/</span>
+      <span class="text-gray-900 dark:text-white">UI Elements</span>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">UI Elements</h1>
+
+    <!-- Buttons -->
+    <section class="preview-section">
+      <h2 class="preview-title">1. Buttons</h2>
+
+      <h3 class="preview-subtitle">Primary & Secondary</h3>
+      <div class="preview-row">
+        <button class="btn btn-primary">button</button>
+        <button class="btn btn-primary"><i class="fas fa-download"></i> button</button>
+        <button class="btn btn-secondary">button</button>
+        <button class="btn btn-outline"><i class="fas fa-sliders-h"></i> button</button>
+        <button class="btn btn-ghost">button</button>
+        <button class="btn btn-icon"><i class="fas fa-ellipsis-v"></i></button>
+      </div>
+
+      <h3 class="preview-subtitle">Preset Buttons</h3>
+      <div class="preview-row">
+        <span class="text-label">label:</span>
+        <button class="btn-preset">button</button>
+      </div>
+
+      <h3 class="preview-subtitle">Badge/Filter Buttons</h3>
+      <div class="preview-row">
+        <span class="text-label">label</span>
+        <button class="btn-badge btn-badge-gray">button</button>
+        <button class="btn-badge btn-badge-green"><i class="fas fa-check-circle"></i> button</button>
+        <button class="btn-badge btn-badge-blue"><i class="fas fa-box"></i> button</button>
+        <button class="btn-badge btn-badge-cyan"><i class="fas fa-truck-loading"></i> button</button>
+        <button class="btn-badge btn-badge-indigo"><i class="fas fa-truck"></i> button</button>
+        <button class="btn-badge btn-badge-pink"><i class="fas fa-check"></i> button</button>
+        <button class="btn-badge btn-badge-red"><i class="fas fa-times"></i> button</button>
+        <button class="btn-badge btn-badge-yellow">button</button>
+      </div>
+
+      <h3 class="preview-subtitle">Loading Button</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">클릭 후 응답 대기 중 상태를 표시하는 버튼</p>
+      <div class="preview-row">
+        <button class="btn btn-outline">취소</button>
+        <button class="btn btn-primary opacity-75 cursor-not-allowed" disabled>
+          <i class="fas fa-spinner fa-spin mr-2"></i> 설치 중...
+        </button>
+      </div>
+      <div class="preview-row">
+        <button class="btn btn-primary opacity-75 cursor-not-allowed" disabled>
+          <i class="fas fa-spinner fa-spin mr-2"></i> 저장 중...
+        </button>
+        <button class="btn btn-secondary opacity-75 cursor-not-allowed" disabled>
+          <i class="fas fa-spinner fa-spin mr-2"></i> 로딩 중...
+        </button>
+      </div>
+    </section>
+
+    <!-- Inputs -->
+    <section class="preview-section">
+      <h2 class="preview-title">2. Inputs</h2>
+
+      <h3 class="preview-subtitle">Text Input</h3>
+      <div class="preview-row">
+        <input type="text" class="input max-w-xs" placeholder="placeholder">
+      </div>
+
+      <h3 class="preview-subtitle">Search Input</h3>
+      <div class="preview-row">
+        <div class="input-search-container max-w-lg flex-1">
+          <span class="input-search-icon"><i class="fas fa-search"></i></span>
+          <input type="text" placeholder="placeholder">
+          <span class="input-search-dropdown">dropdown <i class="fas fa-chevron-down ml-1"></i></span>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle">Select</h3>
+      <div class="preview-row">
+        <select class="select max-w-[200px]">
+          <option>option 1</option>
+          <option>option 2</option>
+          <option>option 3</option>
+        </select>
+      </div>
+
+      <h3 class="preview-subtitle">Split Input</h3>
+      <div class="preview-row">
+        <div class="input-split">
+          <input type="text" class="w-[70px]" placeholder="000">
+          <span class="input-split-separator">-</span>
+          <input type="text" class="w-[50px]" placeholder="00">
+          <span class="input-split-separator">-</span>
+          <input type="text" class="w-[80px]" placeholder="00000">
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle">Tag Input</h3>
+      <div class="preview-row">
+        <div class="tag-input-container">
+          <span class="tag">tag1 <button class="tag-remove"><i class="fas fa-times"></i></button></span>
+          <span class="tag">tag2 <button class="tag-remove"><i class="fas fa-times"></i></button></span>
+        </div>
+      </div>
+      <div class="preview-row">
+        <input type="text" class="input max-w-xs" placeholder="placeholder">
+        <button class="btn btn-outline"><i class="fas fa-plus"></i> button</button>
+      </div>
+    </section>
+
+    <!-- Form Elements -->
+    <section class="preview-section">
+      <h2 class="preview-title">3. Form Elements</h2>
+
+      <h3 class="preview-subtitle">Form Group</h3>
+      <div class="responsive-grid max-w-xs">
+        <div class="form-group">
+          <label class="form-label">label</label>
+          <input type="text" class="input" placeholder="placeholder">
+          <p class="form-hint">hint text</p>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle">Form Group (Required Field)</h3>
+      <div class="responsive-grid max-w-xs">
+        <div class="form-group">
+          <label class="form-label">label <span class="text-red-500">*</span></label>
+          <input type="text" class="input" placeholder="placeholder">
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle">Form Group (Error State)</h3>
+      <div class="responsive-grid max-w-xs">
+        <div class="form-group">
+          <label class="form-label">label <span class="text-red-500">*</span></label>
+          <input type="text" class="input input-error" placeholder="placeholder">
+          <p class="form-error">에러 메시지가 여기에 표시됩니다.</p>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle">Checkbox</h3>
+      <div class="preview-row">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" class="checkbox" checked>
+          <span class="text-secondary">checkbox (checked)</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" class="checkbox">
+          <span class="text-secondary">checkbox</span>
+        </label>
+      </div>
+
+      <h3 class="preview-subtitle">Radio Button</h3>
+      <div class="preview-row">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="radio-example" class="radio" checked>
+          <span class="text-secondary">radio (checked)</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="radio-example" class="radio">
+          <span class="text-secondary">radio</span>
+        </label>
+      </div>
+
+      <h3 class="preview-subtitle">Toggle/Switch</h3>
+      <div class="preview-row">
+        <div class="toggle" onclick="this.classList.toggle('active')">
+          <div class="toggle-track"></div>
+          <div class="toggle-handle"></div>
+        </div>
+        <span class="text-secondary">toggle</span>
+      </div>
+      <div class="preview-row">
+        <div class="toggle active" onclick="this.classList.toggle('active')">
+          <div class="toggle-track"></div>
+          <div class="toggle-handle"></div>
+        </div>
+        <span class="text-secondary">toggle (active)</span>
+      </div>
+    </section>
+
+    <!-- Status Badges -->
+    <section class="preview-section">
+      <h2 class="preview-title">4. Status Badges</h2>
+
+      <h3 class="preview-subtitle">주문상태 뱃지</h3>
+      <div class="preview-row">
+        <span class="badge badge-green">결제완료</span>
+        <span class="badge badge-gray">입금대기</span>
+        <span class="badge badge-blue">상품준비중</span>
+        <span class="badge badge-cyan">배송준비중</span>
+        <span class="badge badge-indigo">배송중</span>
+        <span class="badge badge-pink">배송완료</span>
+        <span class="badge badge-red">주문취소</span>
+        <span class="badge badge-yellow">발송보류</span>
+      </div>
+
+      <h3 class="preview-subtitle">상태 뱃지 (엑셀)</h3>
+      <div class="preview-row">
+        <span class="badge-status badge-status-success"><i class="fas fa-check-circle"></i> 완료</span>
+        <span class="badge-status badge-status-processing"><i class="fas fa-spinner"></i> 생성중</span>
+        <span class="badge-status badge-status-error"><i class="fas fa-exclamation-circle"></i> 실패</span>
+        <span class="badge-status badge-status-expired"><i class="fas fa-file-alt"></i> 만료됨</span>
+      </div>
+    </section>
+
+    <!-- Form Validation -->
+    <section class="preview-section">
+      <h2 class="preview-title">5. Form Validation</h2>
+
+      <h3 class="preview-subtitle">Error Summary Box</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">페이지 상단에 표시되는 에러 요약 박스</p>
+      <div class="max-w-2xl">
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div class="flex items-start gap-3">
+            <i class="fas fa-exclamation-triangle text-red-500 mt-0.5"></i>
+            <div>
+              <p class="text-red-700 dark:text-red-400 font-medium">입력 정보를 확인해주세요.</p>
+              <ul class="mt-2 text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
+                <li>이름은 필수입니다.</li>
+                <li>이메일 형식이 올바르지 않습니다.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">Inline Error Message</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">입력 필드 아래에 표시되는 개별 에러 메시지</p>
+      <div class="responsive-grid max-w-md" style="grid-template-columns: repeat(2, 1fr);">
+        <div class="form-group">
+          <label class="form-label">이메일 <span class="text-red-500">*</span></label>
+          <input type="text" class="input" value="user@example.com" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">이름 <span class="text-red-500">*</span></label>
+          <input type="text" class="input input-error" placeholder="이름">
+          <p class="form-error">이름은 필수입니다.</p>
+        </div>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">Validation States</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">입력 필드의 다양한 검증 상태</p>
+      <div class="flex flex-col gap-4 max-w-xs">
+        <div class="form-group">
+          <label class="form-label">기본 상태</label>
+          <input type="text" class="input" placeholder="placeholder">
+        </div>
+        <div class="form-group">
+          <label class="form-label">에러 상태</label>
+          <input type="text" class="input input-error" placeholder="placeholder">
+          <p class="form-error">필수 입력 항목입니다.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">성공 상태</label>
+          <input type="text" class="input input-success" value="올바른 입력값">
+          <p class="form-success">사용 가능한 값입니다.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/preview.js"></script>
+</body>
+</html>

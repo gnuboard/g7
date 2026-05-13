@@ -3,9 +3,6 @@
 namespace App\Services;
 
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
-use App\Enums\IdentityVerificationStatus;
-use App\Extension\HookManager;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * IDV 인증 이력 조회/파기 Service.
@@ -28,7 +25,7 @@ class IdentityLogService
      *
      * @param  array<string, mixed>  $filters  필터 (provider_id/purpose/status/user_id/date_from/date_to 등)
      * @param  int  $perPage  페이지 크기
-     * @return LengthAwarePaginator
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function search(array $filters, int $perPage = 20)
     {
@@ -38,48 +35,21 @@ class IdentityLogService
     /**
      * 보관주기 경과 로그를 파기합니다.
      *
-     * 로그를 참조하는 자식 행은 확장(본인확인 플러그인 등)이 소유해 코어가 그 테이블을 모른다. 그래서 배치마다
-     * 지우기 직전에 `core.identity_logs.before_purge` 훅을 그 배치의 로그 ID 목록으로 발화하고, 소유 확장의
-     * 리스너가 자기 자식 행을 명시적으로 지운다(DB CASCADE 비의존).
-     *
      * @param  int  $days  보관 일수 (기본 180)
      * @return int 삭제된 행 수
      */
     public function purge(int $days = 180): int
     {
-        return $this->logRepository->purgeOlderThan(
-            max(1, $days),
-            static function (array $logIds): void {
-                HookManager::doAction('core.identity_logs.before_purge', $logIds);
-            }
-        );
+        return $this->logRepository->purgeOlderThan(max(1, $days));
     }
 
     /**
-     * 만료 시각이 지난 진행 중 challenge 를 만료 처리하고, 만료된 건마다 만료 훅을 발화합니다.
+     * 만료 상태로 전환할 pending challenge 를 일괄 expire 처리합니다.
      *
-     * 예전에는 상태만 일괄로 바꿔 `core.identity.challenge_expired` 구독자(활동 로그 등)가 한 번도 불리지 않았다.
-     * 만료된 요청 1건 = 발화 1회 = 활동 로그 1줄이다. 조회와 변경 사이에 인증이 끝난 건은 만료로 덮지 않고
-     * 발화도 하지 않는다.
-     *
-     * @return int 이번 실행에서 만료로 바뀐 건수
+     * @return int 처리된 행 수
      */
     public function expirePastDue(): int
     {
-        $expired = 0;
-
-        $this->logRepository->chunkPendingPastDue(500, function ($logs) use (&$expired) {
-            foreach ($logs as $log) {
-                if (! $this->logRepository->expireIfPending($log)) {
-                    continue;
-                }
-
-                $log->status = IdentityVerificationStatus::Expired;
-                HookManager::doAction('core.identity.challenge_expired', $log);
-                $expired++;
-            }
-        });
-
-        return $expired;
+        return $this->logRepository->expirePastDue();
     }
 }

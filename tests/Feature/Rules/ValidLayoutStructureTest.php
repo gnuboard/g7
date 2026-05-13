@@ -16,52 +16,6 @@ class ValidLayoutStructureTest extends TestCase
     }
 
     /**
-     * `extends` 만 두고 meta/state 만 덮어쓰는 상속 레이아웃을 허용한다.
-     *
-     * 종전 규칙은 상속 레이아웃에 `components` 또는 `slots` 중 하나를 **필수**로 요구했다. 그러나
-     * [LayoutService::mergeLayouts](app/Services/LayoutService.php#L79) 는 자식의 components·slots 를
-     * `?? []` 로 읽어, 둘 다 없으면 부모 구조를 그대로 물려주고 meta·state 만 갈아끼운다 — 실제로
-     * 번들 admin 템플릿의 언어팩 화면 4종이 이 형태로 출하 중이다. 규칙이 정상 마크업을 거부하고
-     * 있었고(편집기 저장·이관 양쪽), 설치 경로가 이 규칙을 안 돌려 출하만 무사했다.
-     */
-    public function test_allows_inherited_layout_overriding_only_meta(): void
-    {
-        $layout = [
-            'version' => '1.0.0',
-            'layout_name' => 'admin_language_packs',
-            'extends' => 'admin_language_pack_list',
-            'meta' => ['title' => '언어팩'],
-            'state' => ['scopeContext' => 'all'],
-        ];
-
-        $failed = false;
-        $this->rule->validate('layout', $layout, function () use (&$failed) {
-            $failed = true;
-        });
-
-        $this->assertFalse($failed, 'extends 만 있고 meta/state 만 덮어쓰는 상속 레이아웃이 거부되었습니다.');
-    }
-
-    /**
-     * `extends` 가 없는 베이스 레이아웃은 여전히 components 가 필수다 (대조군).
-     */
-    public function test_blocks_base_layout_without_components(): void
-    {
-        $layout = [
-            'version' => '1.0.0',
-            'layout_name' => 'orphan_base',
-            'meta' => ['title' => '베이스'],
-        ];
-
-        $failed = false;
-        $this->rule->validate('layout', $layout, function () use (&$failed) {
-            $failed = true;
-        });
-
-        $this->assertTrue($failed, 'extends 없는 베이스 레이아웃은 components 없이 통과하면 안 됩니다.');
-    }
-
-    /**
      * 유효한 레이아웃 구조 테스트
      */
     public function test_allows_valid_layout_structure(): void
@@ -521,54 +475,6 @@ class ValidLayoutStructureTest extends TestCase
         });
 
         $this->assertTrue($failed, 'Expected invalid child component (missing type) to be blocked');
-    }
-
-    /**
-     * extension_point 타입 노드를 포함한 레이아웃 허용.
-     *
-     * `_user_base` 등 호스트 레이아웃은 확장 주입 지점을 `type:"extension_point"` 노드로
-     * 선언한다(예: `user_global_overlay`, `identity_provider_ui:provider`). 종전엔 type
-     * allow-list 가 basic/composite/layout 뿐이라 extension_point 를 거부 → extension_point 를
-     * 포함한 레이아웃(또는 그 레이아웃의 모달)을 편집기에서 저장 시 422
-     * (`components[N].children[0].type은 basic, composite, layout 중 하나여야 합니다`).
-     * extension_point 는 정상 노드 타입이므로 허용해야 한다.
-     */
-    public function test_allows_extension_point_type_node(): void
-    {
-        $layout = [
-            'version' => '1.0',
-            'layout_name' => '_user_base',
-            'components' => [
-                [
-                    'id' => 'user_layout_root',
-                    'type' => 'basic',
-                    'name' => 'Div',
-                    'props' => ['className' => 'min-h-screen'],
-                    'children' => [
-                        [
-                            // 확장 주입 지점 — type="extension_point" + name(슬롯명) + default/children.
-                            'id' => 'user_global_overlay_slot',
-                            'type' => 'extension_point',
-                            'name' => 'user_global_overlay',
-                            'default' => [],
-                            'children' => [],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-        $failed = false;
-        $failMessage = null;
-        $this->rule->validate('layout', $layout, function ($msg) use (&$failed, &$failMessage) {
-            $failed = true;
-            $failMessage = $msg;
-        });
-
-        $this->assertFalse(
-            $failed,
-            'extension_point 타입 노드를 포함한 레이아웃은 허용돼야 한다: '.((string) $failMessage)
-        );
     }
 
     /**

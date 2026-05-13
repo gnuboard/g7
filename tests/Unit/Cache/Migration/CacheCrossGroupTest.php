@@ -14,18 +14,11 @@ use Tests\TestCase;
  *
  * 여러 그룹(A/B/C/D/E/F/G)이 함께 동작하는 시나리오와
  * CacheService 완전 제거 검증을 수행합니다.
- *
- * @scenario-manifest tests/scenarios/cache-cross-group-invalidation.yaml
  */
 class CacheCrossGroupTest extends TestCase
 {
     private CoreCacheDriver $cache;
 
-    /**
-     * 캐시를 비우고 array 저장소 코어 드라이버를 CacheInterface 로 바인딩합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,11 +28,6 @@ class CacheCrossGroupTest extends TestCase
         $this->app->instance(CacheInterface::class, $this->cache);
     }
 
-    /**
-     * 테스트가 남긴 캐시를 비웁니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -51,12 +39,6 @@ class CacheCrossGroupTest extends TestCase
      *
      * 그룹 A(상태) + B(레이아웃) + C(SEO) 캐시가 한 번에 무효화되고,
      * ext.cache_version 이 증가하는 시나리오를 키 차원에서 검증.
-     *
-     * @scenario case=module_install
-     *
-     * @effects cascade_keys_forgotten, cache_version_bumped
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function x_1_module_install_cascades_all_groups(): void
@@ -88,12 +70,6 @@ class CacheCrossGroupTest extends TestCase
 
     /**
      * X-2: 설정 저장(SEO 탭) → 설정 + SEO 캐시 카스케이드.
-     *
-     * @scenario case=seo_settings_save
-     *
-     * @effects cascade_keys_forgotten
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function x_2_seo_settings_save_cascades_settings_and_seo(): void
@@ -114,12 +90,6 @@ class CacheCrossGroupTest extends TestCase
 
     /**
      * X-3: 모듈 비활성화 → 코어 상태/레이아웃 + 모듈 자체(ModuleCacheDriver) 캐시 모두 정리.
-     *
-     * @scenario case=module_deactivation
-     *
-     * @effects cascade_keys_forgotten, module_own_cache_flushed
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function x_3_module_deactivation_clears_core_and_module_own_cache(): void
@@ -149,12 +119,6 @@ class CacheCrossGroupTest extends TestCase
 
     /**
      * X-4: 캐시 드라이버 전환 후 정상 동작 (withStore).
-     *
-     * @scenario case=driver_switch
-     *
-     * @effects with_store_keeps_key_prefix
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function x_4_driver_switch_isolates_data(): void
@@ -180,12 +144,6 @@ class CacheCrossGroupTest extends TestCase
      * X-5: CacheService 완전 제거 검증.
      *
      * CacheService 클래스 파일 삭제 + 어디에도 참조되지 않는지 grep 검증.
-     *
-     * @scenario case=cache_service_removed
-     *
-     * @effects cache_service_absent
-     *
-     * @return void 반환값 없음
      */
     #[Test]
     public function x_5_cache_service_class_removed(): void

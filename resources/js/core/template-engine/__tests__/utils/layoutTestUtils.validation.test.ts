@@ -8,13 +8,11 @@
  * 3. 데이터 바인딩 타입 검증 (배열 vs 객체)
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLayoutTest, type LayoutJson } from './layoutTestUtils';
 
 describe('layoutTestUtils 검증 기능', () => {
   describe('data_sources fetch mock 통합', () => {
-    // @scenario area=datasource_mock
-    // @effects layout_test_mock_api_feeds_data_sources
     it('mockApi로 등록한 데이터가 fetch를 통해 로드되어야 함', async () => {
       const layoutJson: LayoutJson = {
         layout_name: 'test_datasource_fetch',
@@ -60,8 +58,6 @@ describe('layoutTestUtils 검증 기능', () => {
       cleanup();
     });
 
-    // @scenario area=datasource_mock
-    // @effects layout_test_mock_api_feeds_data_sources
     it('mockApi 없이 data_source가 있으면 빈 데이터가 로드됨', async () => {
       const layoutJson: LayoutJson = {
         layout_name: 'test_no_mock',
@@ -95,8 +91,6 @@ describe('layoutTestUtils 검증 기능', () => {
   });
 
   describe('슬롯 시스템 검증', () => {
-    // @scenario area=slot_validation
-    // @effects layout_test_warns_missing_slot_container
     it('slot 속성만 있고 SlotContainer가 없으면 경고 발생', async () => {
       // 이 레이아웃은 버그가 있음:
       // - filter_row가 slot="basic_filters"로 등록됨
@@ -155,8 +149,6 @@ describe('layoutTestUtils 검증 기능', () => {
       cleanup();
     });
 
-    // @scenario area=slot_validation
-    // @effects layout_test_warns_missing_slot_container
     it('SlotContainer가 있으면 경고 없음', async () => {
       // 올바른 레이아웃
       const layoutJson: LayoutJson = {
@@ -208,8 +200,6 @@ describe('layoutTestUtils 검증 기능', () => {
   });
 
   describe('데이터 바인딩 타입 검증', () => {
-    // @scenario area=binding_type_validation
-    // @effects layout_test_warns_binding_type_mismatch
     it('DataGrid의 data prop에 객체가 바인딩되면 경고 발생', async () => {
       const layoutJson: LayoutJson = {
         layout_name: 'test_data_type_mismatch',
@@ -267,8 +257,6 @@ describe('layoutTestUtils 검증 기능', () => {
       cleanup();
     });
 
-    // @scenario area=binding_type_validation
-    // @effects layout_test_warns_binding_type_mismatch
     it('DataGrid의 data prop에 배열이 올바르게 바인딩되면 경고 없음', async () => {
       const layoutJson: LayoutJson = {
         layout_name: 'test_correct_data_binding',
@@ -318,8 +306,6 @@ describe('layoutTestUtils 검증 기능', () => {
   });
 
   describe('assertNoValidationErrors', () => {
-    // @scenario area=assert_no_errors
-    // @effects layout_test_assert_throws_on_validation_error
     it('검증 오류가 있으면 예외 발생', async () => {
       const layoutJson: LayoutJson = {
         layout_name: 'test_assert_errors',
@@ -345,8 +331,6 @@ describe('layoutTestUtils 검증 기능', () => {
       cleanup();
     });
 
-    // @scenario area=assert_no_errors
-    // @effects layout_test_assert_throws_on_validation_error
     it('검증 오류가 없으면 예외 없음', async () => {
       const layoutJson: LayoutJson = {
         layout_name: 'test_no_errors',

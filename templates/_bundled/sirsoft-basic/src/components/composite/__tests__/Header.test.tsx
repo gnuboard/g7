@@ -5,12 +5,12 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // G7Core mock
 const mockG7Core = {
-  t: vi.fn((key: string) => {
+  t: vi.fn((key: string, params?: Record<string, string | number>) => {
     const translations: Record<string, string> = {
       'nav.home': '홈',
       'nav.popular': '인기글',
@@ -72,22 +72,16 @@ const MockHeader: React.FC<{
 
 describe('Header 컴포넌트', () => {
   describe('렌더링', () => {
-    // @scenario area=rendering
-    // @effects header_renders_site_identity
     it('기본 헤더가 렌더링되어야 함', () => {
       render(<MockHeader />);
       expect(screen.getByTestId('header')).toBeInTheDocument();
     });
 
-    // @scenario area=rendering
-    // @effects header_renders_site_identity
     it('사이트 이름이 표시되어야 함', () => {
       render(<MockHeader siteName="테스트 사이트" />);
       expect(screen.getByText('테스트 사이트')).toBeInTheDocument();
     });
 
-    // @scenario area=rendering
-    // @effects header_renders_site_identity
     it('로고 이미지가 있으면 이미지로 표시되어야 함', () => {
       render(<MockHeader logo="/logo.png" siteName="테스트" />);
       const img = screen.getByAltText('테스트');
@@ -96,8 +90,6 @@ describe('Header 컴포넌트', () => {
   });
 
   describe('네비게이션', () => {
-    // @scenario area=navigation
-    // @effects header_shows_menu_and_boards
     it('기본 메뉴 항목이 표시되어야 함', () => {
       render(<MockHeader />);
       expect(screen.getByText('홈')).toBeInTheDocument();
@@ -105,8 +97,6 @@ describe('Header 컴포넌트', () => {
       expect(screen.getByText('쇼핑')).toBeInTheDocument();
     });
 
-    // @scenario area=navigation
-    // @effects header_shows_menu_and_boards
     it('게시판 목록이 표시되어야 함', () => {
       const boards = [
         { id: 1, name: '자유게시판', slug: 'free' },
@@ -119,16 +109,12 @@ describe('Header 컴포넌트', () => {
   });
 
   describe('사용자 상태', () => {
-    // @scenario area=user_state
-    // @effects header_auth_controls_follow_login_state
     it('비로그인 시 로그인/회원가입 버튼이 표시되어야 함', () => {
       render(<MockHeader user={null} />);
       expect(screen.getByText('로그인')).toBeInTheDocument();
       expect(screen.getByText('회원가입')).toBeInTheDocument();
     });
 
-    // @scenario area=user_state
-    // @effects header_auth_controls_follow_login_state
     it('로그인 시 사용자 이름이 표시되어야 함', () => {
       const user = { id: 1, name: '홍길동' };
       render(<MockHeader user={user} />);
@@ -137,15 +123,11 @@ describe('Header 컴포넌트', () => {
   });
 
   describe('장바구니', () => {
-    // @scenario area=cart_badge
-    // @effects header_cart_count_shown_only_when_nonempty
     it('장바구니에 아이템이 있으면 카운트가 표시되어야 함', () => {
       render(<MockHeader cartCount={3} />);
       expect(screen.getByTestId('cart-count')).toHaveTextContent('3');
     });
 
-    // @scenario area=cart_badge
-    // @effects header_cart_count_shown_only_when_nonempty
     it('장바구니가 비어있으면 카운트가 표시되지 않아야 함', () => {
       render(<MockHeader cartCount={0} />);
       expect(screen.queryByTestId('cart-count')).not.toBeInTheDocument();

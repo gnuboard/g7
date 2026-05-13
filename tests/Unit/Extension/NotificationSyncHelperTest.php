@@ -3,11 +3,9 @@
 namespace Tests\Unit\Extension;
 
 use App\Extension\Helpers\NotificationSyncHelper;
-use App\Models\ActivityLog;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
@@ -15,9 +13,9 @@ use Tests\TestCase;
  *
  * 정책:
  *  - seeder 에 없는 (extension_type + extension_identifier + type) 조합의 definition 삭제
- *  - definition 삭제 시 그 template 을 정리 코드가 명시적으로 지운다(DB CASCADE 비의존)
+ *  - definition 삭제 시 FK cascade 로 연관 template 도 자동 정리
  *  - definition 은 유지되지만 channel 이 재구성된 경우: 제거된 channel 의 template 삭제
- *  - 운영자가 고친 항목도 선언에서 빠지면 지운다 — 지우기 직전 활동 로그에 남긴다(#888)
+ *  - user_overrides 무관 삭제
  */
 class NotificationSyncHelperTest extends TestCase
 {
@@ -25,26 +23,12 @@ class NotificationSyncHelperTest extends TestCase
 
     private NotificationSyncHelper $helper;
 
-    /**
-     * 테스트 대상 헬퍼를 만듭니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->helper = app(NotificationSyncHelper::class);
     }
 
-    /**
-     * 선언에 없는 정의만 지운다.
-     *
-     * @scenario case=notification__definition
-     *
-     * @effects declarative_children_deleted_explicitly
-     *
-     * @return void 반환값 없음
-     */
     public function test_cleanupStaleDefinitions_deletes_definitions_not_in_seeder_scope(): void
     {
         NotificationDefinition::create([
@@ -85,15 +69,6 @@ class NotificationSyncHelperTest extends TestCase
         $this->assertDatabaseMissing('notification_definitions', ['type' => 'not-in-seeder']);
     }
 
-    /**
-     * 운영자가 고친 정의도 선언에서 빠지면 지운다(지우기 직전 기록은 별도 시험).
-     *
-     * @scenario case=notification__definition
-     *
-     * @effects sync_deletion_logged_for_operator_data
-     *
-     * @return void 반환값 없음
-     */
     public function test_cleanupStaleDefinitions_deletes_even_with_user_overrides(): void
     {
         NotificationDefinition::create([
@@ -117,15 +92,6 @@ class NotificationSyncHelperTest extends TestCase
         $this->assertDatabaseMissing('notification_definitions', ['type' => 'stale-with-overrides']);
     }
 
-    /**
-     * 다른 확장의 정의는 건드리지 않는다.
-     *
-     * @scenario case=notification__definition
-     *
-     * @effects declarative_children_deleted_explicitly
-     *
-     * @return void 반환값 없음
-     */
     public function test_cleanupStaleDefinitions_scope_isolation_protects_other_extensions(): void
     {
         NotificationDefinition::create([
@@ -162,15 +128,6 @@ class NotificationSyncHelperTest extends TestCase
         $this->assertDatabaseHas('notification_definitions', ['type' => 'module-type']);
     }
 
-    /**
-     * 선언에서 빠진 채널의 템플릿만 지운다.
-     *
-     * @scenario case=notification__template
-     *
-     * @effects declarative_children_deleted_explicitly
-     *
-     * @return void 반환값 없음
-     */
     public function test_cleanupStaleTemplates_deletes_by_channel_diff(): void
     {
         $def = NotificationDefinition::create([
@@ -211,15 +168,6 @@ class NotificationSyncHelperTest extends TestCase
         $this->assertDatabaseMissing('notification_templates', ['definition_id' => $def->id, 'channel' => 'fcm']);
     }
 
-    /**
-     * 운영자가 고친 템플릿도 선언에서 빠지면 지운다.
-     *
-     * @scenario case=notification__template
-     *
-     * @effects sync_deletion_logged_for_operator_data
-     *
-     * @return void 반환값 없음
-     */
     public function test_cleanupStaleTemplates_deletes_even_with_user_overrides(): void
     {
         $def = NotificationDefinition::create([
@@ -252,17 +200,7 @@ class NotificationSyncHelperTest extends TestCase
         $this->assertDatabaseMissing('notification_templates', ['definition_id' => $def->id, 'channel' => 'fcm']);
     }
 
-    /**
-     * 정의를 지우면 그 템플릿을 DB CASCADE 가 아니라 정리 코드가 명시적으로 지운다 — FK 를 꺼도 고아가 남지 않는다.
-     * 운영자가 고친 템플릿이 있으면 지우기 직전 활동 로그 `notification_definition.sync_deleted` 에 정의와 템플릿이 남는다(#888).
-     *
-     * @scenario case=notification__definition
-     *
-     * @effects declarative_children_deleted_explicitly, sync_deletion_logged_for_operator_data
-     *
-     * @return void 반환값 없음
-     */
-    public function test_definition_delete_removes_templates_explicitly(): void
+    public function test_definition_delete_cascades_to_templates(): void
     {
         $def = NotificationDefinition::create([
             'type' => 'cascade-test',
@@ -284,21 +222,11 @@ class NotificationSyncHelperTest extends TestCase
             'body' => ['ko' => 'cascade'],
             'is_active' => true,
             'is_default' => true,
-            'user_overrides' => ['subject'],
         ]);
 
-        Schema::disableForeignKeyConstraints();
-        try {
-            $this->helper->cleanupStaleDefinitions('core', 'core', []);
-        } finally {
-            Schema::enableForeignKeyConstraints();
-        }
+        $this->helper->cleanupStaleDefinitions('core', 'core', []);
 
         $this->assertDatabaseMissing('notification_definitions', ['id' => $def->id]);
         $this->assertDatabaseMissing('notification_templates', ['id' => $tpl->id]);
-        $log = ActivityLog::where('action', 'notification_definition.sync_deleted')->latest('id')->first();
-        $this->assertNotNull($log, '운영자가 고친 템플릿이 있으면 지우기 직전 기록이 남아야 한다');
-        $this->assertSame('cascade-test', $log->properties['key']);
-        $this->assertCount(1, $log->properties['snapshot']['templates']);
     }
 }

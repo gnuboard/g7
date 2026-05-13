@@ -33,13 +33,13 @@ $isLicenseAgreed = isset($_SESSION['license_agreed']) && $_SESSION['license_agre
         <?php endif; ?>
 
         <form method="POST" class="installer-form">
-            <label class="form-checkbox u-justify-end">
+            <label class="form-checkbox" style="justify-content: flex-end;">
                 <span><?= htmlspecialchars(lang('i_agree')) ?></span>
                 <input type="checkbox" name="agree" value="1" id="license-agree" class="checkbox-input" <?= $isLicenseAgreed ? 'checked' : '' ?>>
             </label>
 
             <div id="navigation-buttons" class="btn-group btn-group-spread">
-                <button type="button" data-action="goToStep" data-arg="0" class="btn btn-secondary">
+                <button type="button" onclick="goToStep(0)" class="btn btn-secondary">
                     <?= htmlspecialchars(lang('previous')) ?>
                 </button>
 

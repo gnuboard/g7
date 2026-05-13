@@ -1,6 +1,6 @@
 # Tailwind Safelist 가이드
 
-> **상위 문서**: [프론트엔드 가이드 인덱스](README.md)
+> **상위 문서**: [프론트엔드 가이드 인덱스](index.md)
 
 Tailwind CSS는 빌드 시 사용된 클래스만 포함합니다. JSON 레이아웃에서 동적으로 사용하는 클래스는 safelist에 등록해야 합니다.
 
@@ -11,11 +11,9 @@ Tailwind CSS는 빌드 시 사용된 클래스만 포함합니다. JSON 레이�
 ```text
 1. Tailwind는 빌드 시 사용된 클래스만 CSS에 포함
 2. JSON 레이아웃의 클래스는 소스코드 스캔에서 누락됨
-3. 동적 클래스는 템플릿 CSS 의 safelist에 등록 필수 (sirsoft-admin_basic 은 `semantic.css` — `main.css` 가 가져온다)
+3. 동적 클래스는 main.css의 @utility safelist에 등록 필수
 4. 등록 전 기존 safelist 또는 사용 중인 클래스 확인
 5. 빌드 후 적용 확인 필수
-6. **`@import` 는 `@plugin`·`@config` 보다 먼저** — 뒤에 두면 그 파일이 통째로 사라진다 (§7)
-7. 템플릿 빌드는 `php artisan template:build` → `template:update --force` (npm 직접 호출 아님)
 ```
 
 ---
@@ -45,13 +43,9 @@ Tailwind CSS는 **사용된 클래스만** 최종 CSS에 포함합니다:
 - safelist에 명시된 클래스
 
 **스캔 제외**:
-- 레이아웃 파일 — 소스 SSoT `*.g7.html` 과 런타임 계약 `*.json` **양쪽 모두**
-  (템플릿 `main.css` 가 `@source` 로 명시 앵커한 경우만 예외 — 두 번들 템플릿의 배선이 서로 다르다)
+- JSON 레이아웃 파일 (`*.json`)
 - 데이터베이스에서 가져온 동적 클래스
 - JavaScript로 런타임에 생성된 클래스
-
-> `.g7.html` 만 고치고 safelist 를 잊으면 새 클래스가 CSS 에서 누락된다. 소스의 `class` 도
-> 여기서 말하는 "스캔 제외" 대상이다 — 확장자만 바뀌었을 뿐 성질은 같다.
 
 ---
 
@@ -96,7 +90,7 @@ grep "\.w-32" templates/sirsoft-admin_basic/dist/css/components.css
 ### 파일 위치
 
 ```
-templates/sirsoft-admin_basic/src/styles/semantic.css   # main.css 가 @import — 템플릿 설정 화면 묶음도 같은 파일을 쓴다
+templates/sirsoft-admin_basic/src/styles/main.css
 ```
 
 ### 구조
@@ -109,8 +103,8 @@ templates/sirsoft-admin_basic/src/styles/semantic.css   # main.css 가 @import �
   /* UserStatus 상태별 버튼 색상 */
   @apply bg-yellow-600 hover:bg-yellow-700;
 
-  /* 2열 레이아웃 — 데스크톱 구간(responsive) 값에서 쓰는 클래스. 반응형 접두(lg: 등)는 등록하지 않는다 */
-  @apply flex-row basis-2/5 basis-3/5 flex-shrink-0;
+  /* 2열 레이아웃용 반응형 클래스 */
+  @apply lg:flex-row lg:basis-2/5 lg:basis-3/5 lg:flex-shrink-0;
 
   /* 사이드바 로고 이미지 크기 제한 */
   @apply max-h-10 max-h-8;
@@ -130,7 +124,7 @@ templates/sirsoft-admin_basic/src/styles/semantic.css   # main.css 가 @import �
 
 ```bash
 # safelist 확인
-grep -n "원하는클래스" templates/sirsoft-admin_basic/src/styles/semantic.css
+grep -n "원하는클래스" templates/sirsoft-admin_basic/src/styles/main.css
 
 # TSX 파일에서 사용 여부 확인
 grep -r "원하는클래스" templates/sirsoft-admin_basic/src/components/
@@ -171,7 +165,7 @@ JSON 레이아웃에서 새 Tailwind 클래스 사용 시:
 ```
 □ 1. 기존 safelist에 해당 클래스가 있는지 확인
 □ 2. TSX/CSS 파일에서 이미 사용 중인지 확인
-□ 3. 없으면 safelist에 추가 (용도 주석 포함 — sirsoft-admin_basic 은 semantic.css)
+□ 3. 없으면 main.css safelist에 추가 (용도 주석 포함)
 □ 4. 템플릿 빌드 실행
 □ 5. 브라우저에서 적용 확인
 ```
@@ -186,12 +180,7 @@ JSON 레이아웃에서 새 Tailwind 클래스 사용 시:
 ❌ safelist 확인 없이 JSON에 새 Tailwind 클래스 사용
 ❌ 용도 주석 없이 safelist에 클래스 추가
 ❌ 빌드 없이 적용 확인 시도
-❌ 반응형 접두(sm: md: lg: xl: 2xl: min-[..]: max-[..]:) 클래스를 safelist 에 등록
 ```
-
-레이아웃은 Tailwind 반응형 접두를 쓰지 않고 화면 폭 분기를 `responsive` 구간 값으로 한다([반응형 레이아웃](responsive-layout.md)). 그래서 safelist 에는 구간 값에 들어가는 접두 없는 클래스(`flex-row` 등)만 등록한다.
-
-**폐지 예정 보존 블록(7.2.0 한정)**: 두 번들 템플릿의 스타일 진입점(`templates/_bundled/sirsoft-basic/src/styles/main.css`, `templates/_bundled/sirsoft-admin_basic/src/styles/main.css`)에는 `DEPRECATED-RESPONSIVE-START`~`END` 표식 사이에 반응형 접두 클래스를 모은 `@source inline(...)` 블록이 있다. 번들 레이아웃이 반응형 접두를 엔진 `responsive` 로 바꾸면서 레이아웃 스캔으로 들어오던 `md:w-96` 같은 클래스가 빌드 CSS 에서 빠지는데, 이미 설치한 사이트가 편집기로 고쳐 저장한 레이아웃과 사이트 자체 확장은 그 클래스를 계속 쓸 수 있어서 이번 버전에만 남긴다. 기준은 마지막 공개 출시본의 빌드 CSS 에 실제로 있던 이름이다. 출시본 확장 CSS 가 싣던 접두 없는 반응형 클래스(이커머스 `md:w-24` 등)는 지금 확장 접두 빌드가 만들 수 없어 관리자 템플릿 블록에 더한다. 출시된 적 없는 확장 접두 이름(`{접두}:lg:` 등)은 쓸 수 있었던 사이트가 없어 남기지 않는다. 반응형 접두가 아닌 일반 유틸리티도 출시본 빌드 CSS 에 있다가 번들 레이아웃이 더 쓰지 않아 빠진 것(관리자 42개, 사용자 34개 — `dark:bg-sky-700`·`grid-cols-[120px_1fr]` 등)은 같은 블록에 함께 남긴다(`deprecated-responsive-classes.mjs utilities` 로 뽑는다). 관리자 템플릿의 `SAFELIST-START`~`END` 생성 구간 밖에 있어 `extract-safelist.cjs` 가 덮어쓰지 않는다. 블록은 손으로 고치지 않고 `node scripts/extension-css/deprecated-responsive-classes.mjs inject` 로 다시 만들며, 다음 출시 이후 블록·기준 픽스처·시험(`scripts/extension-css/__tests__/deprecated-responsive-classes.test.mjs`)을 함께 지운다. 새 레이아웃은 이 블록에 기대지 않는다.
 
 ### 권장 사항
 
@@ -206,57 +195,9 @@ JSON 레이아웃에서 새 Tailwind 클래스 사용 시:
 
 | 상황 | 권장 방법 |
 |------|----------|
-| 여러 곳에서 반복 사용 | CSS 커스텀 클래스 정의 (예: `.filter-field-label`) |
+| 여러 곳에서 반복 사용 | CSS 커스텀 클래스 정의 (예: `.filter-label`) |
 | 특정 레이아웃에서만 오버라이드 | Safelist + JSON에서 클래스 추가 |
 | 일회성 스타일링 | Safelist + JSON에서 직접 사용 |
-
----
-
-## 7. `@import` 는 `@plugin`·`@config` 보다 먼저
-
-`main.css` 에 at-rule 을 더할 때 **순서가 곧 정합성**이다. CSS 명세상 `@import` 는 다른
-at-rule 뒤에 오면 무시되고 Tailwind v4 도 그대로 따르므로, `@plugin` 아래에 있는
-`@import` 는 **그 파일이 통째로 빌드에서 사라진다**.
-
-```css
-/* ❌ 잘못됨 — 아래 두 @import 가 통째로 유실된다 */
-@import "tailwindcss";
-@plugin "@tailwindcss/typography";
-@import "./components/dashboard.css";
-@import "./layout/_admin_base.css";
-
-/* ✅ 올바름 — @import 를 모두 위로 */
-@import "tailwindcss";
-@import "./components/dashboard.css";
-@import "./layout/_admin_base.css";
-@plugin "@tailwindcss/typography";
-```
-
-**이 결함이 위험한 이유는 아무도 알려주지 않는다는 점이다.** 빌드는 성공하고 경고도
-없다. Vitest 도 레이아웃 짝 파일 검사도 통과한다 — 사람이 브라우저로 화면을 열어야만
-드러난다.
-
-실제 사고(2026-09-18): admin_basic 의 `main.css` 에서 `@plugin "@tailwindcss/typography"`
-가 두 `@import` 위로 올라가 `dashboard.css` 와 `_admin_base.css` 가 빌드에서 빠졌다.
-결과는 **관리자 셸 붕괴**였다 — `.left_sidebar_area` · `.admin_layout_root` 가 산출물에
-0건이 되어 사이드바가 세로로 늘어지고 본문이 그 아래로 밀렸다.
-
-확장 개발자가 자기 화면에 필요한 플러그인 하나를 추가하는 것만으로 **남의 CSS 가
-조용히 사라지는** 구조다. 새 `@import` 는 반드시 `@plugin`·`@config` 위 구간에 둔다.
-
-### 검증
-
-빌드 산출물에 그 파일의 클래스가 실렸는지 직접 확인한다.
-
-```bash
-php artisan template:build sirsoft-admin_basic
-grep -c "left_sidebar_area" templates/_bundled/sirsoft-admin_basic/dist/css/components.css  # 1 이어야 함
-```
-
-0 이 나오면 `@import` 가 유실된 것이다 — `main.css` 의 at-rule 순서를 먼저 본다.
-
-> 템플릿 빌드는 `php artisan template:build` → `php artisan template:update {id} --force`
-> 가 표준이다. `npm run build` 를 직접 부르면 캐시 버전 갱신과 설치본 반영이 빠진다.
 
 ---
 

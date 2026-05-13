@@ -2,9 +2,7 @@
 
 namespace Tests\Feature\Api\Public;
 
-use App\Enums\AttachmentSourceType;
 use App\Enums\UserStatus;
-use App\Models\Attachment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,12 +22,6 @@ class PublicProfileControllerTest extends TestCase
 
     /**
      * active 사용자는 전체 프로필 정보를 반환합니다.
-     *
-     * @scenario user_status=active
-     *
-     * @effects active_profile_returns_all_public_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_active_user_returns_full_profile(): void
     {
@@ -64,12 +56,6 @@ class PublicProfileControllerTest extends TestCase
 
     /**
      * inactive 사용자는 기본 정보만 반환합니다 (bio 제외).
-     *
-     * @scenario user_status=inactive
-     *
-     * @effects inactive_profile_hides_bio_only
-     *
-     * @return void 반환값 없음
      */
     public function test_inactive_user_returns_basic_info(): void
     {
@@ -96,12 +82,6 @@ class PublicProfileControllerTest extends TestCase
 
     /**
      * blocked 사용자는 최소 정보만 반환합니다 (avatar, bio, created_at 제외).
-     *
-     * @scenario user_status=blocked
-     *
-     * @effects blocked_profile_keeps_name_and_status_only
-     *
-     * @return void 반환값 없음
      */
     public function test_blocked_user_returns_minimal_info(): void
     {
@@ -126,12 +106,6 @@ class PublicProfileControllerTest extends TestCase
 
     /**
      * withdrawn 사용자는 익명화된 정보를 반환합니다.
-     *
-     * @scenario user_status=withdrawn
-     *
-     * @effects withdrawn_profile_is_anonymized_with_200
-     *
-     * @return void 반환값 없음
      */
     public function test_withdrawn_user_returns_anonymized_info(): void
     {
@@ -158,12 +132,6 @@ class PublicProfileControllerTest extends TestCase
 
     /**
      * 존재하지 않는 사용자 ID는 404를 반환합니다.
-     *
-     * @scenario user_status=missing
-     *
-     * @effects unknown_user_profile_returns_404
-     *
-     * @return void 반환값 없음
      */
     public function test_non_existent_user_returns_404(): void
     {
@@ -176,12 +144,6 @@ class PublicProfileControllerTest extends TestCase
 
     /**
      * 프로필 응답에 status와 status_label이 포함됩니다.
-     *
-     * @scenario user_status=active
-     *
-     * @effects profile_carries_status_and_localized_label
-     *
-     * @return void 반환값 없음
      */
     public function test_profile_contains_status_and_label(): void
     {
@@ -206,12 +168,6 @@ class PublicProfileControllerTest extends TestCase
     /**
      * 프로필 응답에 게시글 통계가 포함되지 않습니다.
      * (게시글 통계는 게시판 모듈 API에서 별도 제공)
-     *
-     * @scenario user_status=active
-     *
-     * @effects profile_excludes_board_statistics
-     *
-     * @return void 반환값 없음
      */
     public function test_profile_does_not_contain_post_stats(): void
     {
@@ -230,39 +186,5 @@ class PublicProfileControllerTest extends TestCase
         $this->assertArrayNotHasKey('posts_count', $data);
         $this->assertArrayNotHasKey('comments_count', $data);
         $this->assertArrayNotHasKey('recent_posts', $data);
-    }
-
-    /**
-     * 아바타를 올린 회원의 공개 프로필에 아바타 주소가 실린다 (#869).
-     *
-     * 종전에는 접근자가 없는 `$user->avatar_url` 을 읽어 아바타를 올린 회원도 늘 null 이었다 —
-     * 공개 프로필 화면에 아바타 대신 기본 아이콘만 보였다. 주소는 `getAvatarUrl()` 과 같아야 한다.
-     *
-     * @scenario user_status=active
-     *
-     * @effects profile_avatar_matches_user_avatar_url
-     *
-     * @return void 반환값 없음
-     */
-    public function test_active_user_with_avatar_returns_avatar_url(): void
-    {
-        $user = User::factory()->create(['status' => UserStatus::Active->value]);
-
-        Attachment::factory()->create([
-            'attachmentable_type' => User::class,
-            'attachmentable_id' => $user->id,
-            'collection' => 'avatar',
-            'disk' => 'attachments',
-            'path' => 'attachments/avatars/profile.jpg',
-            'mime_type' => 'image/jpeg',
-            'source_type' => AttachmentSourceType::Core,
-        ]);
-
-        $expected = $user->fresh()->getAvatarUrl();
-        $this->assertNotNull($expected);
-
-        $response = $this->getJson("/api/users/{$user->uuid}/profile");
-
-        $response->assertOk()->assertJsonPath('data.avatar', $expected);
     }
 }

@@ -2,8 +2,8 @@
 
 namespace Modules\Sirsoft\Board\Tests\Unit\Listeners;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Modules\Sirsoft\Board\Listeners\SeoBoardSettingsCacheListener;
@@ -20,11 +20,6 @@ class SeoBoardSettingsCacheListenerTest extends ModuleTestCase
 
     private SeoCacheManagerInterface $cacheMock;
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,28 +30,16 @@ class SeoBoardSettingsCacheListenerTest extends ModuleTestCase
         $this->listener = new SeoBoardSettingsCacheListener;
     }
 
-    /**
-     * 테스트가 바꾼 상태를 정리합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 
     // ─── 훅 구독 등록 ──────────────────────────────────────
 
     /**
      * 훅 구독이 올바르게 등록되어 있는지 확인합니다.
-     *
-     * @effects seo_settings_listener_subscribes_after_save_hook
-     *
-     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_returns_correct_mapping(): void
     {
@@ -71,10 +54,6 @@ class SeoBoardSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * 게시판 모듈 설정 변경 시 관련 레이아웃 캐시가 무효화되는지 확인합니다.
-     *
-     * @effects seo_cache_invalidated_on_module_settings_save
-     *
-     * @return void 반환값 없음
      */
     public function test_board_settings_change_invalidates_board_layouts(): void
     {
@@ -87,9 +66,9 @@ class SeoBoardSettingsCacheListenerTest extends ModuleTestCase
             });
 
         // 새 시스템: app(CacheInterface::class)->forget('seo.sitemap')
-        $cacheInterfaceMock = Mockery::mock(CacheInterface::class);
+        $cacheInterfaceMock = Mockery::mock(\App\Contracts\Extension\CacheInterface::class);
         $cacheInterfaceMock->shouldReceive('forget')->once()->with('seo.sitemap');
-        $this->app->instance(CacheInterface::class, $cacheInterfaceMock);
+        $this->app->instance(\App\Contracts\Extension\CacheInterface::class, $cacheInterfaceMock);
 
         Log::shouldReceive('info')
             ->once()
@@ -106,10 +85,6 @@ class SeoBoardSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * 게시판 모듈이 아닌 경우 무시하는지 확인합니다.
-     *
-     * @effects seo_cache_untouched_for_other_module
-     *
-     * @return void 반환값 없음
      */
     public function test_ignores_non_board_module(): void
     {
@@ -122,10 +97,6 @@ class SeoBoardSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * identifier가 null인 경우 무시하는지 확인합니다.
-     *
-     * @effects seo_cache_untouched_without_module_identifier
-     *
-     * @return void 반환값 없음
      */
     public function test_ignores_null_identifier(): void
     {
@@ -140,10 +111,6 @@ class SeoBoardSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * 예외 발생 시 graceful하게 처리되는지 확인합니다.
-     *
-     * @effects seo_cache_invalidation_failure_logged_without_throw
-     *
-     * @return void 반환값 없음
      */
     public function test_handles_exceptions_gracefully(): void
     {
@@ -165,10 +132,6 @@ class SeoBoardSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * handle 메서드가 존재하는지 확인합니다 (HookListenerInterface 준수).
-     *
-     * @effects seo_settings_listener_handle_is_callable
-     *
-     * @return void 반환값 없음
      */
     public function test_handle_method_exists(): void
     {

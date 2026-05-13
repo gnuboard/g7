@@ -10,7 +10,6 @@ use App\Models\IdentityVerificationLog;
 use Database\Seeders\IdentityPolicySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -33,11 +32,6 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
 
     private EnforceIdentityPolicy $middleware;
 
-    /**
-     * 기본 정책을 시드하고 검사할 미들웨어를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,9 +40,7 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
     }
 
     /**
-     * 토큰 우회를 검사할 강제 정책과 그 목적의 매트릭스를 돌려줍니다.
-     *
-     * @return array<string, array{0: string, 1: string}> 정책 키·목적 쌍 [policy_key, purpose]
+     * @return array<string, array{0: string, 1: string}> [policy_key, purpose]
      */
     public static function enforcedPolicyMatrix(): array
     {
@@ -59,8 +51,6 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
     }
 
     /**
-     * 토큰을 발급한 수단 ID 의 매트릭스를 돌려줍니다.
-     *
      * @return array<string, array{0: string}> provider id 매트릭스 — 인프라 규약을 따르는 한 provider 무관.
      */
     public static function providerMatrix(): array
@@ -69,19 +59,9 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
             'core.mail' => ['g7:core.mail'],
             'hypothetical.sms' => ['g7:plugin.sms'],
             'hypothetical.kcp' => ['g7:plugin.kcp'],
-            'plugin.nhnkcp' => ['nhnkcp'],
         ];
     }
 
-    /**
-     * 같은 목적·같은 대상의 확인 완료·미소비 토큰이면 각 강제 정책을 통과하는지 확인합니다.
-     *
-     * @effects verified_token_passes_matching_policy
-     *
-     * @param  string  $policyKey  강제 정책 키
-     * @param  string  $purpose  정책 목적
-     * @return void 반환값 없음
-     */
     #[DataProvider('enforcedPolicyMatrix')]
     public function test_valid_token_bypasses_for_each_policy(string $policyKey, string $purpose): void
     {
@@ -110,21 +90,12 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         $this->middleware->handle($request, function () use (&$passed) {
             $passed = true;
 
-            return new Response('ok');
+            return new \Illuminate\Http\Response('ok');
         }, $policyKey);
 
         $this->assertTrue($passed, "policy={$policyKey} 가 token 으로 통과하지 못함");
     }
 
-    /**
-     * 이미 소비된 토큰으로는 정책을 통과하지 못하고 428 예외가 나는지 확인합니다.
-     *
-     * @effects token_consumed_once
-     *
-     * @param  string  $policyKey  강제 정책 키
-     * @param  string  $purpose  정책 목적
-     * @return void 반환값 없음
-     */
     #[DataProvider('enforcedPolicyMatrix')]
     public function test_consumed_token_does_not_bypass(string $policyKey, string $purpose): void
     {
@@ -151,18 +122,9 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         ]);
 
         $this->expectException(IdentityVerificationRequiredException::class);
-        $this->middleware->handle($request, fn () => new Response('ok'), $policyKey);
+        $this->middleware->handle($request, fn () => new \Illuminate\Http\Response('ok'), $policyKey);
     }
 
-    /**
-     * 다른 목적(sensitive_action)으로 발급된 토큰으로는 정책을 통과하지 못하는지 확인합니다.
-     *
-     * @effects token_purpose_mismatch_rejected
-     *
-     * @param  string  $policyKey  강제 정책 키
-     * @param  string  $purpose  정책 목적
-     * @return void 반환값 없음
-     */
     #[DataProvider('enforcedPolicyMatrix')]
     public function test_token_with_wrong_purpose_does_not_bypass(string $policyKey, string $purpose): void
     {
@@ -189,18 +151,9 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         ]);
 
         $this->expectException(IdentityVerificationRequiredException::class);
-        $this->middleware->handle($request, fn () => new Response('ok'), $policyKey);
+        $this->middleware->handle($request, fn () => new \Illuminate\Http\Response('ok'), $policyKey);
     }
 
-    /**
-     * 확인이 끝나지 않은(sent) 토큰으로는 정책을 통과하지 못하는지 확인합니다.
-     *
-     * @effects unverified_token_rejected
-     *
-     * @param  string  $policyKey  강제 정책 키
-     * @param  string  $purpose  정책 목적
-     * @return void 반환값 없음
-     */
     #[DataProvider('enforcedPolicyMatrix')]
     public function test_unverified_status_does_not_bypass(string $policyKey, string $purpose): void
     {
@@ -226,16 +179,9 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         ]);
 
         $this->expectException(IdentityVerificationRequiredException::class);
-        $this->middleware->handle($request, fn () => new Response('ok'), $policyKey);
+        $this->middleware->handle($request, fn () => new \Illuminate\Http\Response('ok'), $policyKey);
     }
 
-    /**
-     * DB 에 없는 위조 토큰으로는 정책을 통과하지 못하는지 확인합니다.
-     *
-     * @effects unknown_token_rejected
-     *
-     * @return void 반환값 없음
-     */
     public function test_forged_token_not_in_db_does_not_bypass(): void
     {
         IdentityPolicy::where('key', 'core.auth.signup_before_submit')->update(['enabled' => true]);
@@ -246,16 +192,9 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         ]);
 
         $this->expectException(IdentityVerificationRequiredException::class);
-        $this->middleware->handle($request, fn () => new Response('ok'), 'core.auth.signup_before_submit');
+        $this->middleware->handle($request, fn () => new \Illuminate\Http\Response('ok'), 'core.auth.signup_before_submit');
     }
 
-    /**
-     * 다른 이메일로 발급된 토큰을 가로채 쓰면 대상 불일치로 정책을 통과하지 못하는지 확인합니다.
-     *
-     * @effects guest_target_bound
-     *
-     * @return void 반환값 없음
-     */
     public function test_token_target_mismatch_does_not_bypass(): void
     {
         IdentityPolicy::where('key', 'core.auth.signup_before_submit')->update(['enabled' => true]);
@@ -281,25 +220,18 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         ]);
 
         $this->expectException(IdentityVerificationRequiredException::class);
-        $this->middleware->handle($request, fn () => new Response('ok'), 'core.auth.signup_before_submit');
+        $this->middleware->handle($request, fn () => new \Illuminate\Http\Response('ok'), 'core.auth.signup_before_submit');
     }
 
     /**
-     * provider 비종속성 — 정책이 인증 수단을 지정하지 않았으면(「기본 인증 수단 사용」) provider_id 가 무엇이든
-     * IdentityVerificationLog 인프라(verified/token/target_hash)만 따르면 동일하게 통과. 새 provider 추가 시 이 동작이 자동 보장됨.
+     * provider 비종속성 — provider_id 가 무엇이든 IdentityVerificationLog 인프라(verified/token/target_hash)만
+     * 따르면 동일하게 통과. 새 provider(SMS/KCP/외부 SDK 등) 추가 시 이 동작이 자동 보장됨.
      *
-     * 정책이 수단을 지정하면 그 수단의 결과만 인정한다(7.1.6) — IdentityPolicyProviderBindingTest 가 덮는다.
-     *
-     * @effects unspecified_provider_accepts_any
-     *
-     * @param  string  $providerId  토큰을 발급한 수단 ID
-     * @return void 반환값 없음
      */
     #[DataProvider('providerMatrix')]
     public function test_token_bypass_is_provider_agnostic(string $providerId): void
     {
-        // 전제: 정책 수단 미지정(null)
-        IdentityPolicy::where('key', 'core.auth.signup_before_submit')->update(['enabled' => true, 'provider_id' => null]);
+        IdentityPolicy::where('key', 'core.auth.signup_before_submit')->update(['enabled' => true]);
         $email = 'p-'.md5($providerId).'@example.com';
         $token = 'tok-'.bin2hex(random_bytes(8));
 
@@ -324,7 +256,7 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         $this->middleware->handle($request, function () use (&$passed) {
             $passed = true;
 
-            return new Response('ok');
+            return new \Illuminate\Http\Response('ok');
         }, 'core.auth.signup_before_submit');
 
         $this->assertTrue($passed, "provider={$providerId} 토큰 우회가 동작하지 않음");

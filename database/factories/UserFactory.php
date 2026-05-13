@@ -3,13 +3,12 @@
 namespace Database\Factories;
 
 use App\Enums\UserStatus;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends Factory<User>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
  */
 class UserFactory extends Factory
 {
@@ -48,53 +47,6 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
-        ]);
-    }
-
-    /**
-     * 비밀번호가 없는 회원(소셜 로그인 같은 외부 인증 전용)을 만듭니다.
-     *
-     * 변경일도 비운다 — 비밀번호를 처음 정할 때 기록된다.
-     */
-    public function passwordless(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'password' => null,
-            'password_changed_at' => null,
-            'password_change_required' => false,
-        ]);
-    }
-
-    /**
-     * 모든 프로필 필드가 채워진 완전한 상태를 만듭니다.
-     *
-     * API 문서 실측 시 응답 필드의 예시값이 null 이 되지 않도록, 모델 로직상
-     * 유효한 값으로 nullable 프로필 컬럼을 전수 채웁니다.
-     * (language=지원 로케일, country=ISO alpha-2, status=UserStatus enum 등)
-     */
-    public function complete(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'nickname' => fake()->userName(),
-            'language' => 'ko',
-            'timezone' => 'Asia/Seoul',
-            'country' => 'KR',
-            'homepage' => 'https://example.com',
-            'mobile' => '010-'.fake()->numerify('####-####'),
-            'phone' => '02-'.fake()->numerify('###-####'),
-            'zipcode' => fake()->numerify('#####'),
-            'address' => fake()->address(),
-            'address_detail' => fake()->numerify('##동 ###호'),
-            'signature' => fake()->sentence(),
-            'bio' => fake()->paragraph(),
-            // avatar 는 users 테이블 컬럼이 아니라 avatarAttachment 관계에서 파생되는
-            // accessor(getAvatarUrl) 이므로 factory 에서 직접 세팅하지 않는다.
-            'admin_memo' => fake()->sentence(),
-            'ip_address' => fake()->ipv4(),
-            'last_login_at' => now()->subDays(1),
-            'identity_verified_at' => now()->subDays(5),
-            'mobile_verified_at' => now()->subDays(5),
-            'failed_login_attempts' => 0,
         ]);
     }
 }

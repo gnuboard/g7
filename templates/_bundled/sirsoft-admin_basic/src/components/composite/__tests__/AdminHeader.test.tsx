@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminHeader, AdminUser, NotificationItem } from '../AdminHeader';
+import { IconName } from '../../basic/IconTypes';
 
 describe('AdminHeader', () => {
   const mockUser: AdminUser = {
@@ -16,15 +17,11 @@ describe('AdminHeader', () => {
     { id: 2, title: '시스템 알림', message: '업데이트가 완료되었습니다', time: '1시간 전', read: true },
   ];
 
-  // @scenario component=admin_header
-  // @effects admin_header_shows_user_info
   it('컴포넌트가 렌더링됨', () => {
     render(<AdminHeader user={mockUser} />);
     expect(screen.getByText('홍길동')).toBeInTheDocument();
   });
 
-  // @scenario component=admin_header
-  // @effects admin_header_shows_user_info
   it('사용자 정보가 표시됨', () => {
     render(<AdminHeader user={mockUser} />);
 
@@ -33,8 +30,6 @@ describe('AdminHeader', () => {
     expect(screen.getByAltText('홍길동')).toHaveAttribute('src', '/avatar.png');
   });
 
-  // @scenario component=admin_header
-  // @effects admin_header_shows_user_info
   it('아바타가 없을 때 기본 아이콘이 표시됨', () => {
     const userWithoutAvatar = { ...mockUser, avatar: undefined };
     render(<AdminHeader user={userWithoutAvatar} />);
@@ -43,8 +38,6 @@ describe('AdminHeader', () => {
     expect(screen.getByText('홍길동')).toBeInTheDocument();
   });
 
-  // @scenario component=admin_header
-  // @effects admin_header_notification_dropdown
   it('알림 버튼을 클릭하면 알림 드롭다운이 표시됨', async () => {
     const user = userEvent.setup();
     render(<AdminHeader user={mockUser} notifications={mockNotifications} />);
@@ -56,16 +49,12 @@ describe('AdminHeader', () => {
     expect(screen.getByText('시스템 알림')).toBeInTheDocument();
   });
 
-  // @scenario component=admin_header
-  // @effects admin_header_notification_dropdown
   it('읽지 않은 알림 개수가 표시됨', () => {
     render(<AdminHeader user={mockUser} notifications={mockNotifications} />);
 
     expect(screen.getByText('1')).toBeInTheDocument();
   });
 
-  // @scenario component=admin_header
-  // @effects admin_header_notification_dropdown
   it('알림이 9개 이상일 때 9+로 표시됨', () => {
     const manyNotifications: NotificationItem[] = Array.from({ length: 10 }, (_, i) => ({
       id: i,
@@ -80,8 +69,6 @@ describe('AdminHeader', () => {
     expect(screen.getByText('9+')).toBeInTheDocument();
   });
 
-  // @scenario component=admin_header
-  // @effects admin_header_profile_menu_actions
   it('프로필 버튼을 클릭하면 프로필 드롭다운이 표시됨', async () => {
     const user = userEvent.setup();
     render(<AdminHeader user={mockUser} />);
@@ -93,8 +80,6 @@ describe('AdminHeader', () => {
     expect(screen.getByText('로그아웃')).toBeInTheDocument();
   });
 
-  // @scenario component=admin_header
-  // @effects admin_header_profile_menu_actions
   it('프로필 메뉴에서 프로필 설정 클릭 시 핸들러가 호출됨', async () => {
     const user = userEvent.setup();
     const onProfileClick = vi.fn();
@@ -109,8 +94,6 @@ describe('AdminHeader', () => {
     expect(onProfileClick).toHaveBeenCalledTimes(1);
   });
 
-  // @scenario component=admin_header
-  // @effects admin_header_profile_menu_actions
   it('로그아웃 버튼 클릭 시 핸들러가 호출됨', async () => {
     const user = userEvent.setup();
     const onLogoutClick = vi.fn();
@@ -125,8 +108,6 @@ describe('AdminHeader', () => {
     expect(onLogoutClick).toHaveBeenCalledTimes(1);
   });
 
-  // @scenario component=admin_header
-  // @effects admin_header_notification_dropdown
   it('알림 클릭 시 핸들러가 호출됨', async () => {
     const user = userEvent.setup();
     const onNotificationClick = vi.fn();
@@ -147,8 +128,6 @@ describe('AdminHeader', () => {
     expect(onNotificationClick).toHaveBeenCalledWith(1);
   });
 
-  // @scenario component=admin_header
-  // @effects admin_header_notification_dropdown
   it('알림이 없을 때 빈 상태 메시지가 표시됨', async () => {
     const user = userEvent.setup();
     render(<AdminHeader user={mockUser} notifications={[]} />);

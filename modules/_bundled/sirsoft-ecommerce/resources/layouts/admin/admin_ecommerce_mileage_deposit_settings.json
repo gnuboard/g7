@@ -1,0 +1,279 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_mileage_deposit_settings",
+    "permissions": [
+        "sirsoft-ecommerce.settings.read"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.title",
+        "description": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.description"
+    },
+    "state": {
+        "activeTab": "mileage",
+        "isSaving": false,
+        "hasChanges": false,
+        "form": []
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "settings_wrapper",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "page-header"
+                        },
+                        "children": [
+                            {
+                                "id": "header_left",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "id": "header_title_row",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-3 mb-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "header_icon",
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "coins",
+                                                    "className": "w-5 h-5 icon-muted"
+                                                }
+                                            },
+                                            {
+                                                "id": "header_title",
+                                                "type": "basic",
+                                                "name": "H1",
+                                                "props": {
+                                                    "className": "page-title"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.title"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "header_description",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "page-description"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "header_actions",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "page-actions"
+                                },
+                                "children": [
+                                    {
+                                        "id": "view_history_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "external-link",
+                                                    "className": "w-4 h-4 mr-2"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "{{_local.activeTab === 'mileage' ? '$t:sirsoft-ecommerce.admin.mileage_deposit_settings.view_mileage_history' : '$t:sirsoft-ecommerce.admin.mileage_deposit_settings.view_deposit_history'}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "tab_navigation",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "tabs w-full mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "tab_mileage",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "{{_local.activeTab === 'mileage' ? 'tab active flex-1' : 'tab flex-1'}}"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.tabs.mileage",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "activeTab": "mileage"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "tab_deposit",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "{{_local.activeTab === 'deposit' ? 'tab active flex-1' : 'tab flex-1'}}"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.tabs.deposit",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "activeTab": "deposit"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "tab_contents",
+                        "type": "basic",
+                        "name": "Form",
+                        "props": {
+                            "id": "mileage_deposit_settings_form"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_ecommerce_mileage_deposit_settings/_tab_mileage.json"
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_mileage_deposit_settings/_tab_deposit.json"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "footer_actions",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex justify-end gap-3 mt-6"
+                        },
+                        "children": [
+                            {
+                                "id": "cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
+                                },
+                                "text": "$t:sirsoft-ecommerce.common.cancel",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "type": "submit",
+                                    "disabled": "{{_local.isSaving}}",
+                                    "className": "btn btn-primary"
+                                },
+                                "text": "{{_local.isSaving ? '$t:sirsoft-ecommerce.common.saving' : '$t:sirsoft-ecommerce.common.save'}}",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "isSaving": true
+                                        }
+                                    },
+                                    {
+                                        "type": "click",
+                                        "handler": "apiCall",
+                                        "auth_required": true,
+                                        "target": "/api/modules/sirsoft-ecommerce/admin/mileage-deposit-settings",
+                                        "params": {
+                                            "method": "PUT",
+                                            "body": "{{_local.form}}"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "isSaving": false,
+                                                    "hasChanges": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "설정이 저장되었습니다."
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "isSaving": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "설정 저장에 실패했습니다."
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

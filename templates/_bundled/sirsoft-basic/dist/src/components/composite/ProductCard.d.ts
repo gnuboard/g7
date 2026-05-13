@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 interface CurrencyPrice {
     value: number;
     formatted: string;
@@ -11,8 +10,6 @@ interface ProductLabel {
 interface ProductCardProps {
     product: {
         id: number;
-        /** 상품코드 — 상세 페이지 링크 식별자 (product_code 기준 라우팅). 없으면 id 로 폴백 */
-        product_code?: string;
         name?: string | Record<string, string>;
         name_localized?: string;
         thumbnail_url: string;
@@ -42,48 +39,13 @@ interface ProductCardProps {
         rating_avg?: number;
         /** 전시중 리뷰 수 */
         review_count?: number;
-        /** 로그인 회원의 찜 여부 — 값을 모르는 응답(옛 이커머스·비회원 캐시)에는 없다 */
-        is_wishlisted?: boolean;
-        /** 옵션 상품 여부 */
-        has_options?: boolean;
-        /** 구매할 수 있는 옵션 수 (0 이면 담을 수 없다) */
-        options_count?: number;
-        /** 추가옵션 유무 */
-        has_additional_options?: boolean;
-        /** 최소 구매 수량 */
-        min_purchase_qty?: number;
     };
-    /**
-     * 카드 위 장바구니·찜 단추 표시 여부 (기본 true).
-     *
-     * 같은 자리에 제 단추를 둔 화면(마이페이지 찜 목록의 찜 해제 단추)은 false 로 끈다.
-     */
-    showActions?: boolean;
     /** 클릭 시 호출되는 콜백 */
     onClick?: (productId: number) => void;
     /** 쇼핑몰 base 경로 (예: '/shop', '/store', '/') */
     shopBase?: string;
-    /**
-     * 목록 컨텍스트 왕복 보존 여부 (#75).
-     *
-     * 상품 목록 그리드처럼 이 카드가 페이지네이션 목록의 일부인 자리에서만 true 로 켠다.
-     * 켜면 상세로 이동할 때 현재 URL 의 page/sort/keyword/category 를 상세 URL 로 승계해,
-     * 상세의 '뒤로가기' 가 보던 목록 위치로 정확히 되돌아간다.
-     *
-     * 찜 목록·검색 결과처럼 다른 목록에서 상품 상세로 나가는 이동은 기본값(false)을 유지한다 —
-     * 그 목록의 페이지 상태를 상품 목록으로 옮기면 엉뚱한 위치로 복귀한다.
-     */
-    preserveListQuery?: boolean;
     /** 추가 CSS 클래스 */
     className?: string;
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-    id?: string;
-    /**
-       * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-       */
-    editorAttrs?: EditorAttrs;
 }
 declare const ProductCard: React.FC<ProductCardProps>;
 export default ProductCard;

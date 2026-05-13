@@ -4,23 +4,14 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
-use App\Enums\SitemapChangeFreq;
-use App\Jobs\GenerateSitemapJob;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use App\Seo\SitemapIndexer;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 
 /**
  * 카테고리 변경 시 SEO 캐시 무효화 리스너
  *
  * 카테고리의 생성, 수정, 삭제 시 관련 SEO 캐시를 자동으로 무효화합니다.
  * 카테고리 목록, 쇼핑몰 메인 등의 캐시가 대상입니다.
- *
- * 비우기는 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면 TTL 까지) 봇이 옛 화면을
- * 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면 커밋 뒤에 비운다 — 커밋 전에 비우면
- * 다른 요청이 옛 데이터로 다시 채울 틈이 생긴다(#724). 트랜잭션 밖이면 즉시 비운다.
  */
 class SeoCategoryCacheListener implements HookListenerInterface
 {
@@ -35,17 +26,14 @@ class SeoCategoryCacheListener implements HookListenerInterface
             'sirsoft-ecommerce.category.after_create' => [
                 'method' => 'onCategoryChange',
                 'priority' => 20,
-                'sync' => true,
             ],
             'sirsoft-ecommerce.category.after_update' => [
                 'method' => 'onCategoryChange',
                 'priority' => 20,
-                'sync' => true,
             ],
             'sirsoft-ecommerce.category.after_delete' => [
-                'method' => 'onCategoryDelete',
+                'method' => 'onCategoryChange',
                 'priority' => 20,
-                'sync' => true,
             ],
         ];
     }
@@ -54,7 +42,6 @@ class SeoCategoryCacheListener implements HookListenerInterface
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드)
      *
      * @param  mixed  ...$args  훅 인자
-     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -67,113 +54,37 @@ class SeoCategoryCacheListener implements HookListenerInterface
      * 카테고리 관련 레이아웃 및 쇼핑몰 인덱스 캐시를 무효화합니다.
      *
      * @param  mixed  ...$args  훅 인자 (첫 번째: Category 모델 또는 카테고리 ID)
-     * @return void 반환값 없음
      */
     public function onCategoryChange(...$args): void
     {
-        DB::afterCommit(function () use ($args) {
-            $category = $args[0] ?? null;
-
-            try {
-                $cache = app(SeoCacheManagerInterface::class);
-
-                // 카테고리별 상품 목록 페이지 캐시 무효화
-                $cache->invalidateByLayout('shop/category');
-
-                // 쇼핑몰 인덱스 페이지 캐시 무효화
-                $cache->invalidateByLayout('shop/index');
-
-                // 홈 페이지 캐시 무효화 (카테고리 네비게이션이 변경될 수 있음)
-                $cache->invalidateByLayout('home');
-
-                // 검색 결과 페이지 캐시 무효화
-                $cache->invalidateByLayout('search/index');
-
-                // Sitemap 캐시 무효화
-                app(CacheInterface::class)->forget('seo.sitemap');
-
-                $categoryId = is_object($category) ? ($category->id ?? null) : $category;
-
-                Log::debug('[SEO] Category change cache invalidated', [
-                    'category_id' => $categoryId,
-                ]);
-            } catch (\Throwable $e) {
-                Log::warning('[SEO] Category cache invalidation failed', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
-            $this->syncSitemapIndex($category);
-        });
-    }
-
-    /**
-     * 카테고리 삭제 시 캐시를 무효화하고 사이트맵 색인을 제거합니다.
-     *
-     * after_delete 훅은 모델이 아닌 카테고리 ID(int)를 전달합니다.
-     *
-     * @param  mixed  ...$args  훅 인자 (첫 번째: 카테고리 ID)
-     * @return void 반환값 없음
-     */
-    public function onCategoryDelete(...$args): void
-    {
-        DB::afterCommit(function () use ($args) {
-            $this->onCategoryChange(...$args);
-
-            $categoryId = $args[0] ?? null;
-            if ($categoryId === null) {
-                return;
-            }
-
-            try {
-                app(SitemapIndexer::class)->deindexResource('category', is_object($categoryId) ? $categoryId->id : $categoryId);
-                GenerateSitemapJob::dispatch();
-            } catch (\Throwable $e) {
-                Log::warning('[SEO] Category sitemap index removal failed', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        });
-    }
-
-    /**
-     * 카테고리의 사이트맵 색인을 증분 갱신합니다.
-     *
-     * 활성(is_active) 이며 'SEO 제공 페이지(카테고리)' 토글이 켜져 있으면 색인(upsert),
-     * 아니면 색인 해제(remove)한 뒤, 사이트맵 재생성 잡을 디바운스 디스패치합니다.
-     * 색인 규칙은 EcommerceSitemapContributor 의 카테고리 URL 규칙과 일치해야 합니다.
-     *
-     * @param  mixed  $category  Category 모델 (create/update)
-     * @return void 반환값 없음
-     */
-    private function syncSitemapIndex(mixed $category): void
-    {
-        if (! is_object($category) || ! isset($category->id) || ! isset($category->slug)) {
-            return;
-        }
+        $category = $args[0] ?? null;
 
         try {
-            $indexer = app(SitemapIndexer::class);
+            $cache = app(SeoCacheManagerInterface::class);
 
-            $visible = (bool) ($category->is_active ?? false)
-                && (bool) g7_module_settings('sirsoft-ecommerce', 'seo.seo_category', true);
+            // 카테고리별 상품 목록 페이지 캐시 무효화
+            $cache->invalidateByLayout('shop/category');
 
-            if ($visible) {
-                $indexer->indexResource('category', $category->id, 'sirsoft-ecommerce', [[
-                    'url' => EcommerceScreenUrl::category((string) $category->slug),
-                    'lastmod' => $category->updated_at?->toW3cString(),
-                    'changefreq' => SitemapChangeFreq::Weekly->value,
-                    'priority' => 0.6,
-                ]]);
-            } else {
-                $indexer->deindexResource('category', $category->id);
-            }
+            // 쇼핑몰 인덱스 페이지 캐시 무효화
+            $cache->invalidateByLayout('shop/index');
 
-            GenerateSitemapJob::dispatch();
+            // 홈 페이지 캐시 무효화 (카테고리 네비게이션이 변경될 수 있음)
+            $cache->invalidateByLayout('home');
+
+            // 검색 결과 페이지 캐시 무효화
+            $cache->invalidateByLayout('search/index');
+
+            // Sitemap 캐시 무효화
+            app(CacheInterface::class)->forget('seo.sitemap');
+
+            $categoryId = is_object($category) ? ($category->id ?? null) : $category;
+
+            Log::debug('[SEO] Category change cache invalidated', [
+                'category_id' => $categoryId,
+            ]);
         } catch (\Throwable $e) {
-            Log::warning('[SEO] Category sitemap index sync failed', [
+            Log::warning('[SEO] Category cache invalidation failed', [
                 'error' => $e->getMessage(),
-                'category_id' => $category->id ?? null,
             ]);
         }
     }

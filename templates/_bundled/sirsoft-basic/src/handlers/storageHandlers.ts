@@ -1,4 +1,3 @@
-import { apiUrl } from '../support/apiUrl';
 /**
  * 로컬 스토리지 관련 핸들러
  *
@@ -9,16 +8,11 @@ import { apiUrl } from '../support/apiUrl';
  *
  * G7Core API 사용:
  * - G7Core.state.set() - 전역 상태 설정
- * - G7Core.state.get()?.currentUser - 현재 사용자 확인 (반환값이 곧 `_global` 이라 `._global` 을 덧붙이지 않는다)
+ * - G7Core.state.get()._global?.currentUser - 현재 사용자 확인
  */
 
 const CART_KEY_STORAGE_NAME = 'g7_cart_key';
 const CART_KEY_API_ENDPOINT = '/api/modules/sirsoft-ecommerce/cart/key';
-const GUEST_ORDER_TOKEN_STORAGE_NAME = 'g7_guest_order_token';
-const GUEST_ORDER_NUMBER_STORAGE_NAME = 'g7_guest_order_number';
-const GUEST_ORDER_EXPIRES_AT_STORAGE_NAME = 'g7_guest_order_expires_at';
-export const SECRET_VIEW_TOKEN_STORAGE_NAME = 'g7_board_secret_view_token';
-export const SECRET_VIEW_EXPIRES_AT_STORAGE_NAME = 'g7_board_secret_view_expires_at';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Handler:Storage')) ?? {
@@ -32,9 +26,9 @@ const logger = ((window as any).G7Core?.createLogger?.('Handler:Storage')) ?? {
  *
  * @returns 발급된 cart_key 또는 null (실패 시)
  */
-export async function issueCartKeyFromApi(): Promise<string | null> {
+async function issueCartKeyFromApi(): Promise<string | null> {
   try {
-    const response = await fetch(apiUrl(CART_KEY_API_ENDPOINT), {
+    const response = await fetch(CART_KEY_API_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,103 +84,11 @@ function getCurrentUser(): any {
   }
 }
 
-/** 서버가 받는 장바구니 키 형식 — `ck_` + 영숫자 32자 (이커머스 CartController::validateGuestCartKey) */
-const CART_KEY_PATTERN = /^ck_[a-zA-Z0-9]{32}$/;
-
-/**
- * 저장된 장바구니 키를 읽는다 — 서버 형식에 맞지 않으면(망가진 키) 지우고 없는 것으로 본다 (#869 ρ 8부 L1).
- * 종전에는 망가진 키를 그대로 실어 목록 조회가 방문 내내 형식 오류 400 을 받았다. 없는 것으로 보면 새로 발급받는다.
- *
- * @returns 쓸 수 있는 키, 없으면 null
- */
-function readStoredCartKey(): string | null {
-  let stored: string | null = null;
-  try {
-    stored = localStorage.getItem(CART_KEY_STORAGE_NAME);
-  } catch {
-    return null;
-  }
-  if (stored && !CART_KEY_PATTERN.test(stored)) {
-    logger.warn('Stored cartKey has an invalid format — discarding it and issuing a new one');
-    try {
-      localStorage.removeItem(CART_KEY_STORAGE_NAME);
-    } catch {
-      // localStorage 접근 불가 시 무시
-    }
-
-    return null;
-  }
-
-  return stored || null;
-}
-
-/**
- * 백엔드 API 로 키를 발급받아 localStorage 에 저장한다 — 응답이 올 때까지 기다린다(출시본과 같음, 설계 확정 2026-11-10).
- *
- * @returns 발급된 키(실패하면 null)
- */
-async function issueAndStoreCartKey(): Promise<string | null> {
-  const issued = await issueCartKeyFromApi();
-  if (issued) {
-    try {
-      localStorage.setItem(CART_KEY_STORAGE_NAME, issued);
-      logger.log('New cartKey issued from API:', issued);
-    } catch {
-      // localStorage 저장 실패 시 무시
-    }
-  } else {
-    logger.error('Failed to issue cartKey from API');
-  }
-
-  return issued;
-}
-
-/** 번들이 실릴 때 시작한 장바구니 키 발급 — initCartKey 가 한 번 가져가면 비운다 (#879) */
-let pendingIssue: Promise<string | null> | null = null;
-
-/**
- * 셸이 실은 활성 모듈 목록에 쇼핑몰 모듈이 있는지 — 레이아웃 가드 `{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}`
- * 와 같은 관대 규칙(목록이 없으면 켜진 것으로 본다). 번들이 실리는 시점에는 엔진 전역 상태가 아직 없어 `G7Config.activeModules`
- * (식별자 문자열 또는 `{identifier}` 메타의 배열)를 읽는다.
- *
- * @returns 켜져 있으면 true
- */
-function isEcommerceActiveInShell(): boolean {
-  const list = (window as any).G7Config?.activeModules;
-  if (!Array.isArray(list)) {
-    return true;
-  }
-
-  return list.some((meta: unknown) => (typeof meta === 'string' ? meta : (meta as { identifier?: unknown })?.identifier) === 'sirsoft-ecommerce');
-}
-
-/**
- * 장바구니 키 발급을 미리 시작한다 — 템플릿 번들이 실릴 때 한 번 부른다 (#879).
- *
- * 종전에는 레이아웃을 받은 뒤 init_actions 의 `initCartKey` 에서야 발급 요청이 나가, 첫 화면 전 PHP 왕복이 레이아웃 → 키로
- * 줄줄이 이어졌다. 저장된 키가 없고 쇼핑몰 모듈이 켜져 있으면 여기서 요청을 시작해 레이아웃 요청과 겹치게 한다. 렌더 전에
- * 키 응답을 끝까지 기다리는 것은 그대로다 — `initCartKey` 가 이 결과를 기다린다(설계 확정 2026-11-10).
- *
- * @returns 진행 중인 발급(시작하지 않았으면 null)
- */
-export function prefetchCartKey(): Promise<string | null> | null {
-  if (pendingIssue) {
-    return pendingIssue;
-  }
-  if (readStoredCartKey() || !isEcommerceActiveInShell()) {
-    return null;
-  }
-  pendingIssue = issueAndStoreCartKey();
-
-  return pendingIssue;
-}
-
 /**
  * 장바구니 키 초기화
  *
  * 비로그인 사용자의 장바구니를 식별하기 위한 키를 생성/로드합니다.
  * 이미 저장된 키가 있으면 로드하고, 없으면 백엔드 API를 통해 새로 발급합니다.
- * 번들이 실릴 때 시작한 발급({@link prefetchCartKey})이 있으면 새 요청 없이 그 결과를 끝까지 기다린다.
  *
  * ActionDispatcher 핸들러 형식: (action, context) => void | Promise<void>
  *
@@ -197,21 +99,29 @@ export async function initCartKeyHandler(
   _action?: any,
   _context?: any
 ): Promise<void> {
-  // 미리 시작한 발급은 한 번만 쓴다 — 키를 지운 뒤(로그아웃 등) 다시 부르면 지난 결과를 되쓰지 않고 새로 발급한다
-  const pending = pendingIssue;
-  pendingIssue = null;
-
   // 로그인/비로그인 사용자 모두 cartKey 필요 (API 헤더에 포함)
-  // localStorage에서 기존 cartKey 확인 — 형식이 망가진 저장 키는 버리고 새로 발급받는다 (#869 ρ 8부 L1)
-  let cartKey: string | null = readStoredCartKey();
-
-  // 없으면 미리 시작한 발급을, 그것도 없거나 실패했으면 백엔드 API를 통해 새로 발급 — 응답이 올 때까지 기다린다
-  // (출시본과 같음, 설계 확정 2026-11-10)
-  if (!cartKey && pending) {
-    cartKey = await pending;
+  // localStorage에서 기존 cartKey 확인
+  let cartKey: string | null = null;
+  try {
+    cartKey = localStorage.getItem(CART_KEY_STORAGE_NAME);
+  } catch {
+    // localStorage 접근 불가 시 무시
   }
+
+  // 없으면 백엔드 API를 통해 새로 발급
   if (!cartKey) {
-    cartKey = await issueAndStoreCartKey();
+    cartKey = await issueCartKeyFromApi();
+
+    if (cartKey) {
+      try {
+        localStorage.setItem(CART_KEY_STORAGE_NAME, cartKey);
+        logger.log('New cartKey issued from API:', cartKey);
+      } catch {
+        // localStorage 저장 실패 시 무시
+      }
+    } else {
+      logger.error('Failed to issue cartKey from API');
+    }
   } else {
     logger.log('Existing cartKey loaded:', cartKey);
   }
@@ -258,37 +168,6 @@ export function clearCartKeyHandler(
   }
 
   setGlobalState({ cartKey: null });
-}
-
-/**
- * 장바구니 키가 필요한 동작 앞에서 키를 갖춘다 (#869 ρ J2).
- *
- * 저장된 키가 있으면 그것을 싣고, 없으면(init 의 발급이 실패한 경우) 새로 요청해 응답을 기다린다. 레이아웃은 담기, 바로 구매처럼 키가
- * 필요한 동작의 sequence 맨 앞에 둔다. 받지 못하면 null 로 끝나고 동작은 종전처럼 서버 응답대로 처리된다.
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- * @returns 갖춘 키(받지 못하면 null)
- */
-export async function ensureCartKeyHandler(
-  _action?: any,
-  _context?: any
-): Promise<string | null> {
-  const stored = readStoredCartKey();
-  if (stored) {
-    if ((window as any).G7Core?.state?.get?.()?.cartKey !== stored) {
-      setGlobalState({ cartKey: stored });
-    }
-
-    return stored;
-  }
-
-  const issued = await issueAndStoreCartKey();
-  if (issued) {
-    setGlobalState({ cartKey: issued });
-  }
-
-  return issued;
 }
 
 /**
@@ -369,277 +248,4 @@ export function loadFromStorageHandler(
   } catch {
     return defaultValue || null;
   }
-}
-
-/**
- * sessionStorage 의 비회원 주문 토큰을 모두 삭제합니다 (내부 헬퍼).
- *
- * 토큰/주문번호/만료시각 3개 키를 함께 비웁니다.
- */
-function clearGuestOrderTokenInternal(): void {
-  try {
-    sessionStorage.removeItem(GUEST_ORDER_TOKEN_STORAGE_NAME);
-    sessionStorage.removeItem(GUEST_ORDER_NUMBER_STORAGE_NAME);
-    sessionStorage.removeItem(GUEST_ORDER_EXPIRES_AT_STORAGE_NAME);
-  } catch {
-    // sessionStorage 접근 불가 시 무시
-  }
-}
-
-/**
- * 비회원 주문 조회 토큰 초기화 (init_actions 전용)
- *
- * sessionStorage 의 g7_guest_order_token 을 읽어 `_global.guestOrderToken` 에 설정한다.
- * 표준 loadFromSessionStorage 핸들러는 `context.setState`(React 컴포넌트 state)를 호출해
- * `_local` 에만 영향을 주므로, `_global` 에 토큰을 설정하려면 `G7Core.state.set` 직접 호출이 필요하다.
- * `initCartKey` 와 동일한 패턴.
- *
- * 동작:
- * 1. sessionStorage 에서 토큰/만료시각 로드 (탭 종료 시 자동 소실 — 공유 PC 안전)
- * 2. 만료된 토큰은 자동 폐기 (3개 키 모두 제거)
- * 3. `_global.guestOrderToken` 에 토큰 또는 null 설정
- * 4. `_user_base.globalHeaders` 의 `X-Guest-Order-Token: {{_global.guestOrderToken}}` 패턴이
- *    토큰 있을 때만 `guest/orders/*` 호출에 헤더 자동 주입 (엔진이 null/빈값 자동 제외)
- * 5. `_global.guestOrderNumber` 에 그 토큰이 묶인 주문번호 설정
- *
- * 주문번호를 함께 올리는 이유는 비회원 클레임 화면(`{shopBase}/guest/claims/{번호}` · `.../edit`)
- * 때문이다 — 그 주소에는 주문번호가 없는데 비회원 클레임 API 는 전부 주문 스코프
- * (`guest/orders/{주문번호}/claims/...`)다. 토큰이 주문 하나에 묶여 있으므로 그 짝인 주문번호가
- * 곧 스코프이며, 셸이 이 값으로 API 주소 앞부분을 만든다. 토큰과 같은 자리에서 함께 세워야
- * 한쪽만 남는 상태가 생기지 않는다 — 주문번호만 남으면 셸은 주소를 만들고 요청은 토큰이 없어
- * 404 가 된다.
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export function initGuestOrderTokenHandler(
-  _action?: any,
-  _context?: any
-): void {
-  let token: string | null = null;
-  let expiresAt: string | null = null;
-  let orderNumber: string | null = null;
-  try {
-    token = sessionStorage.getItem(GUEST_ORDER_TOKEN_STORAGE_NAME);
-    expiresAt = sessionStorage.getItem(GUEST_ORDER_EXPIRES_AT_STORAGE_NAME);
-    orderNumber = sessionStorage.getItem(GUEST_ORDER_NUMBER_STORAGE_NAME);
-  } catch {
-    // sessionStorage 접근 불가 시 무시
-  }
-
-  // 만료된 토큰 자동 폐기 (백엔드도 동일 시각 기준으로 거부하지만 로컬에서 미리 정리)
-  // expiresAt 이 invalid 포맷이면 getTime() 이 NaN → NaN <= now 비교가 false 라
-  // 만료 인식이 안 되는 회귀를 방어한다. invalid 토큰도 명시적으로 폐기.
-  let expired = false;
-  if (token) {
-    const expiryTs = expiresAt ? new Date(expiresAt).getTime() : NaN;
-    if (isNaN(expiryTs) || expiryTs <= Date.now()) {
-      clearGuestOrderTokenInternal();
-      token = null;
-      expired = true;
-    }
-  }
-
-  if (token) {
-    // sessionStorage 에 유효 토큰이 있으면 그 값으로 _global 동기화 (새로고침/재방문 경로)
-    setGlobalState({ guestOrderToken: token, guestOrderNumber: orderNumber });
-    logger.log('Guest order token loaded from sessionStorage');
-    return;
-  }
-
-  // sessionStorage 에 토큰이 없을 때, 직전 단계(verify onSuccess saveGuestOrderToken)가
-  // 이미 _global.guestOrderToken 에 동기 set 해 둔 in-memory 토큰을 보존한다.
-  // 조회 폼 verify→상세 SPA 전이에서 sessionStorage 쓰기가 제때 반영되지 않거나
-  // (브라우저/프라이버시 모드) 비활성인 환경에서도, navigate 로 살아남은 _global 토큰으로
-  // 상세 데이터소스가 X-Guest-Order-Token 을 주입할 수 있게 한다.
-  // 단, 만료로 명시 폐기된 경우(expired)는 in-memory 토큰도 비운다.
-  if (!expired) {
-    const G7Core = (window as any).G7Core;
-    const existing = G7Core?.state?.get?.('_global')?.guestOrderToken;
-    if (typeof existing === 'string' && existing !== '') {
-      logger.log('Guest order token preserved from in-memory _global (sessionStorage empty)');
-      return;
-    }
-  }
-
-  setGlobalState({ guestOrderToken: null, guestOrderNumber: null });
-  logger.log('No guest order token (visitor not authenticated)');
-}
-
-// 표시 통화(preferredCurrency) 초기화 핸들러는 이커머스 모듈로 이전되었다
-// (modules/_bundled/sirsoft-ecommerce/resources/js/handlers/initPreferredCurrency.ts).
-// "통화 = 커머스 책임" 원칙 — 레이아웃은 `sirsoft-ecommerce.initPreferredCurrency` 로 호출한다.
-
-/**
- * 비회원 주문 토큰을 sessionStorage 에 저장하고 _global 에 동기 set 합니다.
- *
- * 토큰/주문번호/만료시각 3개 키를 함께 저장하며, _global.guestOrderToken 과
- * _global.guestOrderNumber 도 즉시 갱신해 직후 호출되는 navigate 의 globalHeaders 자동 주입과
- * 비회원 클레임 화면의 주문 스코프 주소 조립이 동작하도록 한다.
- *
- * @param action params.token, params.orderNumber, params.expiresAt 필수
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export function saveGuestOrderTokenHandler(
-  action?: any,
-  _context?: any
-): void {
-  const { token, orderNumber, expiresAt } = action?.params || {};
-  if (!token || !orderNumber || !expiresAt) {
-    logger.warn('saveGuestOrderToken: token, orderNumber, expiresAt are required');
-    return;
-  }
-  try {
-    sessionStorage.setItem(GUEST_ORDER_TOKEN_STORAGE_NAME, token);
-    sessionStorage.setItem(GUEST_ORDER_NUMBER_STORAGE_NAME, orderNumber);
-    sessionStorage.setItem(GUEST_ORDER_EXPIRES_AT_STORAGE_NAME, expiresAt);
-  } catch {
-    // sessionStorage 접근 불가 시 무시 (private 모드 등) — _global 만 set 되어 현재 페이지는 동작
-  }
-  setGlobalState({ guestOrderToken: token, guestOrderNumber: orderNumber });
-}
-
-/**
- * 비회원 주문 토큰을 sessionStorage 에서 삭제하고 _global 도 비웁니다.
- *
- * 비회원 주문 취소/구매확정/명시적 로그아웃 등 토큰 무효화 시점에서 호출.
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export function clearGuestOrderTokenHandler(
-  _action?: any,
-  _context?: any
-): void {
-  clearGuestOrderTokenInternal();
-  setGlobalState({ guestOrderToken: null, guestOrderNumber: null });
-}
-
-/**
- * 비회원 주문 조회 폼(guest_order_form) 진입 시 sessionStorage 의 비회원 주문 토큰을 초기화한다.
- *
- * 비회원 주문 조회 폼은 매번 새로 본인 확인을 거치는 게 표준 패턴(eBay/Best Buy/카페24/
- * 11번가/G마켓 등). 결제 직후 자동 verify 로 받은 토큰은 완료/상세 화면에서는 유효하지만,
- * 사용자가 헤더 '비회원 주문 조회' 메뉴 등을 통해 조회 폼에 도달했을 때는 의도가
- * "다시 조회" 이므로 토큰을 비워 폼이 정상 노출되도록 한다.
- *
- * 만료된 토큰도 같은 경로로 자연스럽게 정리된다.
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export function clearGuestTokenOnEntryHandler(
-  _action?: any,
-  _context?: any
-): void {
-  clearGuestOrderTokenInternal();
-  setGlobalState({ guestOrderToken: null, guestOrderNumber: null });
-}
-
-/**
- * sessionStorage 의 비밀글 열람 토큰 두 키(토큰·만료 시각)를 지웁니다 (내부 헬퍼).
- */
-function clearSecretViewTokenInternal(): void {
-  try {
-    sessionStorage.removeItem(SECRET_VIEW_TOKEN_STORAGE_NAME);
-    sessionStorage.removeItem(SECRET_VIEW_EXPIRES_AT_STORAGE_NAME);
-  } catch {
-    // sessionStorage 접근 불가 시 무시
-  }
-}
-
-/**
- * 비밀글 열람 토큰 초기화 (init_actions 전용)
- *
- * 비밀번호로 비밀글을 연 사실은 서버가 토큰 하나에 글별 인증으로 기록하고, 화면은 그 토큰을
- * `_user_base.globalHeaders` 의 `X-Board-Secret-View-Token` 으로 게시판 요청에 싣는다. 토큰이
- * 메모리(`_global.secretViewToken`)에만 있으면 답변 링크(`<a href>` 전체 이동)·새로고침에서 사라져
- * 원글 비밀번호를 맞힌 비회원도 답변 화면에서 다시 잠긴다. 그래서 탭 세션(sessionStorage)에 두고
- * 부팅마다 여기서 `_global` 로 복원한다 — 탭을 닫으면 사라지므로 공용 PC 에 남지 않는다.
- *
- * - 만료됐거나 만료 시각이 날짜가 아니면(NaN) 두 키를 지우고 null 로 둔다.
- * - 저장 토큰이 없는데 같은 화면에서 막 받은 in-memory 토큰이 있으면 덮어쓰지 않는다
- *   (sessionStorage 를 쓸 수 없는 환경 — `initGuestOrderToken` 과 같은 이유).
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export function initSecretViewTokenHandler(
-  _action?: any,
-  _context?: any
-): void {
-  let token: string | null = null;
-  let expiresAt: string | null = null;
-  try {
-    token = sessionStorage.getItem(SECRET_VIEW_TOKEN_STORAGE_NAME);
-    expiresAt = sessionStorage.getItem(SECRET_VIEW_EXPIRES_AT_STORAGE_NAME);
-  } catch {
-    // sessionStorage 접근 불가 시 무시
-  }
-
-  let expired = false;
-  if (token) {
-    const expiryTs = expiresAt ? new Date(expiresAt).getTime() : NaN;
-    if (isNaN(expiryTs) || expiryTs <= Date.now()) {
-      clearSecretViewTokenInternal();
-      token = null;
-      expired = true;
-    }
-  }
-
-  if (token) {
-    setGlobalState({ secretViewToken: token });
-    return;
-  }
-
-  if (!expired) {
-    const existing = (window as any).G7Core?.state?.get?.()?.secretViewToken;
-    if (typeof existing === 'string' && existing !== '') {
-      return;
-    }
-  }
-
-  setGlobalState({ secretViewToken: null });
-}
-
-/**
- * 비밀글 열람 토큰을 sessionStorage 에 저장하고 `_global.secretViewToken` 에 동기 set 합니다.
- *
- * 비밀번호 확인(글 비밀번호·원글 비밀번호) 성공 응답의 `secret_view_token`·`secret_view_expires_at`
- * 을 받는다. 서버는 같은 탭의 두 번째 인증에 같은 토큰을 다시 돌려주고 그 토큰에 글별 인증만 더하므로,
- * 여기서는 마지막 응답 값으로 덮어쓰면 된다. 토큰이 비면(응답에 없음) 기존 값을 건드리지 않는다.
- *
- * @param action params.token, params.expiresAt
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export function saveSecretViewTokenHandler(
-  action?: any,
-  _context?: any
-): void {
-  const { token, expiresAt } = action?.params || {};
-  if (typeof token !== 'string' || token === '') {
-    logger.warn('saveSecretViewToken: token is required');
-    return;
-  }
-  try {
-    sessionStorage.setItem(SECRET_VIEW_TOKEN_STORAGE_NAME, token);
-    sessionStorage.setItem(SECRET_VIEW_EXPIRES_AT_STORAGE_NAME, typeof expiresAt === 'string' ? expiresAt : '');
-  } catch {
-    // sessionStorage 접근 불가 시 무시 — _global 만 set 되어 현재 화면은 동작
-  }
-  setGlobalState({ secretViewToken: token });
-}
-
-/**
- * 비밀글 열람 토큰을 sessionStorage 에서 지우고 `_global.secretViewToken` 도 비웁니다.
- *
- * @param _action 액션 정의 (사용하지 않음)
- * @param _context 액션 컨텍스트 (사용하지 않음)
- */
-export function clearSecretViewTokenHandler(
-  _action?: any,
-  _context?: any
-): void {
-  clearSecretViewTokenInternal();
-  setGlobalState({ secretViewToken: null });
 }

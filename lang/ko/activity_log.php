@@ -13,10 +13,6 @@ return [
         'ids_required' => '삭제할 활동 로그를 선택해주세요.',
         'ids_min' => '삭제할 활동 로그를 하나 이상 선택해주세요.',
         'id_not_found' => '선택한 활동 로그를 찾을 수 없습니다.',
-        'log_type_invalid' => '선택한 로그 유형이 올바르지 않습니다.',
-        'date_range_invalid' => '종료일은 시작일과 같거나 이후여야 합니다.',
-        'per_page_min' => '페이지당 표시 개수는 1개 이상이어야 합니다.',
-        'per_page_max' => '페이지당 표시 개수는 100개를 초과할 수 없습니다.',
     ],
 
     // 로그 유형 라벨
@@ -28,21 +24,16 @@ return [
 
     // 액션 라벨 (마지막 세그먼트 기준)
     'action' => [
-        'force_deleted' => '영구 삭제 (직전 기록)',
-        'sync_deleted' => '선언 정리로 삭제 (직전 기록)',
         'created' => '생성',
         'create' => '생성',
         'updated' => '수정',
         'update' => '수정',
-        'fields_update' => '추가 항목 수정',
-        'rename' => '이름변경',
         'deleted' => '삭제',
         'delete' => '삭제',
         'login' => '로그인',
         'logout' => '로그아웃',
         'login_failed' => '로그인 실패',
         'account_locked' => '계정 잠금',
-        'account_unlocked' => '계정 잠금 해제',
         'request' => '요청',
         'expired' => '만료',
         'verify' => '본인인증',
@@ -64,7 +55,6 @@ return [
         'bulk_update' => '일괄 수정',
         'bulk_delete' => '일괄 삭제',
         'bulk_update_status' => '일괄 상태 변경',
-        'bulk_roles' => '역할 일괄 변경',
         'refund' => '환불',
         'publish' => '발행',
         'register' => '회원가입',
@@ -83,75 +73,17 @@ return [
         'version_update' => '버전 업데이트',
         'version_restore' => '버전 복원',
         'reset' => '초기화',
-        // 코어 업데이트 — 실행·성공·실패를 각각 남긴다
-        'started' => '시작',
-        'completed' => '완료',
-        'failed' => '실패',
-
-        // IP 접근 제한 (security.*) — 기존 세그먼트와 겹치지 않는 복합어로 둔다
-        // (4단계 "마지막 세그먼트" 조회가 무관한 라벨을 붙이지 않게)
-        'ip_blocked' => 'IP 접근 차단',
-        'ip_restriction_disabled' => 'IP 접근 제한 해제',
-
-        // 휴면 계정 (user.dormant_*) — 2단 키(namespace.verb_phrase)로 두고 verb_phrase 를
-        // 기존 세그먼트와 겹치지 않는 복합어로 만든다. `restored`·`converted` 처럼 흔한 낱말을
-        // 쓰면 4단계 "마지막 세그먼트" 조회가 무관한 라벨을 조용히 붙인다.
-        'dormant_restored' => '휴면 해제',
-        'dormant_converted' => '휴면 전환',
-        'dormant_withdrawn' => '휴면 계정 탈퇴 처리',
-        // 외부 인증 확장점 (7.2.0)
-        'register_identity_policy_skipped' => '본인인증 정책 생략 가입',
-        'block' => '회원 차단',
-        'unblock' => '회원 차단 해제',
-        'sessions_revoked' => '모든 기기에서 로그아웃',
-
-        // 비밀번호 정책 (auth.password_*) — 기존 세그먼트와 겹치지 않는 복합어
-        'password_change' => '비밀번호 변경',
-        'password_change_postpone' => '비밀번호 변경 연기',
-        'password_expiry_logout' => '비밀번호 만료 로그인 해제',
-
-        // 회원 등록·수정의 역할 변경 (user.roles_update, #736) — 일괄 변경(bulk_roles)과 겹치지 않는 복합어
-        'roles_update' => '역할 변경',
-
-        // 개인정보 조치 직권 실행 (privacy.manual_run_*) — 흔한 낱말과 겹치지 않는 복합어
-        'manual_run_queued' => '개인정보 조치 직권 실행 접수',
-        'manual_run_finished' => '개인정보 조치 직권 실행 종료',
 
         // 이커머스/게시판 공용
-
-        // 방문자 통계 운영 행위 (analytics.*) — 설명 문구(activity_log.analytics.*)와 별개로 목록의 「동작」 칸 라벨
-        'analytics' => [
-            'settings_updated' => '통계 설정 변경',
-            'privacy_mode_changed' => '통계 개인정보 모드 변경',
-            'data_purged' => '통계 데이터 전체 삭제',
-            'anonymized' => '통계 소급 익명화',
-            'subject_exported' => '정보주체 방문 기록 내보내기',
-            'subject_deleted' => '정보주체 방문 기록 삭제',
-            'opt_out_changed' => '통계 수집 제외 변경',
-            'archive_requested' => '통계 수동 집계',
-            'extension_purged' => '확장 통계 데이터 정리',
-        ],
     ],
 
     // 설명 템플릿 (description_key로 사용)
     'description' => [
-        'layout_force_deleted' => '레이아웃 영구 삭제 직전 기록: :name (:template, :reason)',
-        'layout_extension_force_deleted' => '레이아웃 확장 조각 영구 삭제 직전 기록: :name (:template, :reason)',
-        'template_custom_translation_deleted' => '템플릿 커스텀 번역 삭제 직전 기록: :key',
-        'notification_definition_sync_deleted' => '알림 정의 선언 정리 직전 기록: :key (:extension)',
-        'notification_template_sync_deleted' => '알림 템플릿 선언 정리 직전 기록: :key (:channel)',
-        'menu_sync_deleted' => '관리자 메뉴 선언 정리 직전 기록: :key (:extension)',
-        'permission_sync_deleted' => '권한 선언 정리 직전 기록: :key (:extension)',
-        'role_sync_deleted' => '역할 선언 정리 직전 기록: :key (:extension)',
-        'identity_policy_sync_deleted' => '본인확인 정책 선언 정리 직전 기록: :key (:extension)',
-        'entity_sync_deleted' => ':entity 기본 데이터 선언 정리 직전 기록: :key (:extension)',
-        'schedule_sync_deleted' => '스케줄 선언 정리 직전 기록: :key (:extension)',
         // 사용자 관리
         'user_index' => '사용자 목록 조회',
         'user_create' => '사용자 생성 (ID: :user_id)',
         'user_show' => '사용자 상세 조회 (ID: :user_id)',
         'user_update' => '사용자 수정 (ID: :user_id)',
-        'user_fields_update' => '회원 추가 항목 수정 (ID: :user_id)',
         'user_delete' => '사용자 삭제 (ID: :user_id)',
         'user_withdraw' => '사용자 탈퇴 (ID: :user_id)',
         'user_statistics' => '사용자 통계 조회',
@@ -160,11 +92,6 @@ return [
         'user_check_email' => '이메일 중복 확인',
         'user_update_language' => '사용자 언어 설정 변경',
         'user_bulk_update_status' => '사용자 일괄 상태 변경 (:count건)',
-        'user_bulk_roles' => '사용자 역할 일괄 변경 (ID: :user_id)',
-        'user_roles_update' => '사용자 역할 변경 (ID: :user_id, 추가: :added, 회수: :removed)',
-
-        // 회원 알림함 (관리자가 회원 수신함을 지우는 행위)
-        'member_notification_bulk_delete' => '회원 알림함 일괄 삭제 (:count건)',
 
         // 역할 관리
         'role_index' => '역할 목록 조회',
@@ -192,16 +119,9 @@ return [
         'menu_sync_roles' => '메뉴 역할 동기화 (ID: :menu_id)',
         'menu_get_by_extension' => '확장별 메뉴 조회 (:extension_type: :extension_identifier)',
 
-        // 코어 업데이트
-        'core_update_started' => '코어 업데이트 시작 (:from → :to)',
-        'core_update_completed' => '코어 업데이트 완료 (:from → :to)',
-        'core_update_failed' => '코어 업데이트 실패 (:from → :to) — 단계: :step / 되돌리기: :rollback',
-
         // 설정 관리
         'settings_index' => '설정 목록 조회',
         'settings_save' => '설정 저장',
-        'extension_trust_key_create' => '확장 신뢰 키 등록 (:key_id, vendor: :vendors)',
-        'extension_trust_key_delete' => '확장 신뢰 키 삭제 (:key_id, vendor: :vendors)',
         'settings_show' => '설정 조회',
         'settings_update' => '설정 수정',
         'settings_system_info' => '시스템 정보 조회',
@@ -216,42 +136,14 @@ return [
         'settings_test_driver_connection' => '드라이버 연결 테스트',
 
         // 인증
-        'auth_login' => '로그인',
-        'auth_admin_login' => '관리자 로그인',
-        'auth_logout' => '로그아웃',
-        'auth_admin_logout' => '관리자 로그아웃',
+        'auth_login' => '관리자 로그인',
+        'auth_logout' => '관리자 로그아웃',
         'auth_register' => '회원가입',
         'auth_forgot_password' => '비밀번호 찾기 요청',
         'auth_reset_password' => '비밀번호 재설정',
-        'auth_reset_password_by_console' => '시스템(CLI)이 회원 비밀번호를 재설정 (ID: :user_id)',
         'auth_record_consents' => '이용약관 동의 기록',
         'auth_login_failed' => '로그인 실패 (:email)',
-        'auth_two_factor_failed' => '2단계 인증 실패 (:email)',
         'auth_account_locked' => '계정 잠금 (:attempts회 실패, :minutes분 차단)',
-        'auth_account_locked_permanently' => '계정 영구 잠금 (:attempts회 실패, 관리자 해제 또는 비밀번호 재설정 필요)',
-        'auth_account_unlocked' => '계정 잠금 해제 (:email)',
-        'auth_account_unlocked_by_password_reset' => '비밀번호 재설정으로 계정 잠금 해제 (:email)',
-        'auth_password_change_self' => '비밀번호 변경 (본인)',
-        'auth_password_change_by_admin' => '관리자가 회원 비밀번호 지정 (ID: :user_id)',
-        'auth_password_change_on_login_expired' => '로그인 시 비밀번호 변경 (사용 기간 만료)',
-        'auth_password_change_on_login_admin_assigned' => '로그인 시 비밀번호 변경 (관리자가 정해 준 비밀번호)',
-        'auth_password_change_postpone' => '비밀번호 변경 연기 (:until 까지)',
-        'auth_password_expiry_logout' => '비밀번호 만료로 로그인 해제 (ID: :user_id, :count개 기기)',
-
-        // 보안 — IP 접근 제한
-        'security_ip_blocked' => 'IP 접근 차단 (:ip → :path)',
-        'user_dormant_restored' => '로그인으로 휴면 해제 (ID: :user_id)',
-        'user_dormant_converted' => '장기 미접속으로 휴면 전환 (ID: :user_id)',
-        'user_dormant_withdrawn' => '휴면 기간 경과로 탈퇴 처리 (ID: :user_id)',
-        'user_register_identity_policy_skipped' => '본인인증 정책을 생략한 가입 (ID: :user_id, 사유: :reason)',
-        'user_block' => '회원 차단 (ID: :user_id, 사유: :reason)',
-        'user_unblock' => '회원 차단 해제 (ID: :user_id, 사유: :reason)',
-        'user_sessions_revoked' => '회원을 모든 기기에서 로그아웃 (ID: :user_id, 토큰 :count개)',
-        'privacy_manual_run_queued' => '개인정보 조치 직권 실행 접수 (:target)',
-        'privacy_manual_run_queued_skip_waiting' => '개인정보 조치 직권 실행 접수 — 대기기간 생략 (:target)',
-        'privacy_manual_run_completed' => '개인정보 조치 직권 실행 완료 (:target, :count건)',
-        'privacy_manual_run_failed' => '개인정보 조치 직권 실행 실패 (:target)',
-        'security_ip_restriction_disabled' => 'IP 접근 제한 비상 해제 (콘솔)',
 
         // 스케줄 관리
         'schedule_index' => '스케줄 목록 조회',
@@ -287,9 +179,6 @@ return [
         'layout_versions_index' => '레이아웃 버전 목록 조회 (:layout_path)',
         'layout_version_show' => '레이아웃 버전 상세 조회 (:layout_path)',
         'layout_version_restore' => '레이아웃 버전 복원 (:layout_path)',
-        'layout_create' => '레이아웃 파일 생성 (:layout_path)',
-        'layout_rename' => '레이아웃 파일 이름변경 (:layout_path → :new_path)',
-        'layout_delete' => '레이아웃 파일 삭제 (:layout_path)',
 
         // 메일 템플릿 관리
         'mail_template_update' => '메일 템플릿 수정 (:template_name)',
@@ -333,8 +222,6 @@ return [
         // 플러그인 설정
         'plugin_settings_save' => '플러그인 설정 저장 (:plugin_name)',
         'plugin_settings_reset' => '플러그인 설정 초기화 (:plugin_name)',
-        'template_settings_save' => '템플릿 설정 저장 (:template_name)',
-        'template_settings_reset' => '템플릿 설정 기본값 되돌리기 (:template_name)',
 
         // 템플릿 관리
         'template_index' => '템플릿 목록 조회',
@@ -350,10 +237,6 @@ return [
         'template_install_from_file' => '파일에서 템플릿 설치',
         'template_install_from_github' => 'GitHub에서 템플릿 설치',
         'template_refresh_layouts' => '템플릿 레이아웃 갱신 (:template_name)',
-        'custom_asset_save' => '커스텀 자산 저장 (:identifier — :path)',
-        'custom_asset_upload' => '커스텀 자산 업로드 (:identifier — :path)',
-        'custom_asset_delete' => '커스텀 자산 삭제 (:identifier — :path)',
-        'custom_asset_rename' => '커스텀 자산 이름변경 (:identifier — :path)',
 
         // 코어 업데이트
         'core_update_check' => '코어 업데이트 확인',
@@ -406,30 +289,5 @@ return [
         'subject' => '제목',
         'body' => '본문',
         'is_default' => '기본값',
-    ],
-
-    // 방문자 통계 운영 행위
-    'analytics' => [
-        'settings_updated' => '방문자 통계 설정 변경',
-        'privacy_mode_changed' => '방문자 통계 개인정보 모드 변경 (:mode)',
-        'data_purged' => '방문자 통계 데이터 전체 삭제',
-        'anonymized' => '방문자 통계 소급 익명화',
-        'subject_exported' => '정보주체 방문 기록 내보내기 (:subject)',
-        'subject_deleted' => '정보주체 방문 기록 삭제 (:subject)',
-        'opt_out_changed' => '관리자 수집 제외 설정 변경',
-        'archive_requested' => '방문자 통계 수동 집계 실행 (:run_type)',
-        'extension_purged' => '확장 통계 데이터 정리 (:identifier)',
-    ],
-    // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨 (#727)
-    'layout_sync' => [
-        'operator_modified' => '운영자 수정본',
-    ],
-    'deletion_reason' => [
-        'uninstall' => '확장 제거',
-        'refresh_overwrite_removed' => '덮어쓰기 갱신에서 새 판에 없음',
-        'orphan_override' => '고아 오버라이드 정리',
-        'settings_layout_removed' => '설정 화면 파일이 빠짐',
-        'template_uninstall' => '템플릿 제거',
-        'declaration_removed' => '새 판 선언에서 빠짐',
     ],
 ];

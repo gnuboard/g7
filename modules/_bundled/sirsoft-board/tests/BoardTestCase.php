@@ -2,14 +2,10 @@
 
 namespace Modules\Sirsoft\Board\Tests;
 
-use App\Http\Middleware\PermissionMiddleware;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Models\Board;
-use Modules\Sirsoft\Board\Services\PostService;
 
 /**
  * 단일 테이블을 사용하는 테스트 베이스 클래스
@@ -27,7 +23,7 @@ abstract class BoardTestCase extends ModuleTestCase
     /**
      * RefreshDatabase 비활성화
      *
-     * @return void 반환값 없음
+     * @return void
      */
     protected function refreshTestDatabase(): void
     {
@@ -42,8 +38,6 @@ abstract class BoardTestCase extends ModuleTestCase
 
     /**
      * 테스트 게시판 slug (하위 클래스에서 오버라이드 가능)
-     *
-     * @return string 게시판 slug
      */
     protected function getTestBoardSlug(): string
     {
@@ -55,8 +49,6 @@ abstract class BoardTestCase extends ModuleTestCase
 
     /**
      * 테스트 환경 설정
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -69,8 +61,6 @@ abstract class BoardTestCase extends ModuleTestCase
     /**
      * 테스트 게시판을 설정합니다.
      * 게시판이 이미 존재하면 해당 게시판의 데이터만 초기화합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function setupTestBoard(): void
     {
@@ -105,8 +95,6 @@ abstract class BoardTestCase extends ModuleTestCase
 
     /**
      * 사용자 관련 테이블 초기화
-     *
-     * @return void 반환값 없음
      */
     protected function truncateUserTables(): void
     {
@@ -145,7 +133,6 @@ abstract class BoardTestCase extends ModuleTestCase
      * guest_permissions 컬럼 대신 role/permission 시스템을 사용합니다.
      *
      * @param  array  $permissionKeys  권한 키 배열 (예: ['posts.read', 'posts.write'])
-     * @return void 반환값 없음
      */
     protected function setGuestPermissions(array $permissionKeys): void
     {
@@ -179,8 +166,6 @@ abstract class BoardTestCase extends ModuleTestCase
      * 기본 비회원 권한을 부여합니다.
      *
      * posts.read, posts.write, attachments.upload 권한을 guest 역할에 부여합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function grantDefaultGuestPermissions(): void
     {
@@ -192,12 +177,13 @@ abstract class BoardTestCase extends ModuleTestCase
      *
      * DELETE로 roles 테이블을 비우면 AUTO_INCREMENT가 변경되어
      * 캐시된 Role 객체의 ID와 실제 DB ID가 불일치합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function resetPermissionMiddlewareCache(): void
     {
-        PermissionMiddleware::clearGuestRoleCache();
+        $reflection = new \ReflectionClass(\App\Http\Middleware\PermissionMiddleware::class);
+        $property = $reflection->getProperty('guestRoleCache');
+        $property->setAccessible(true);
+        $property->setValue(null, null);
     }
 
     /**
@@ -207,7 +193,6 @@ abstract class BoardTestCase extends ModuleTestCase
      * 해당 게시판 권한이 필요합니다.
      *
      * @param  array  $permissionKeys  권한 키 배열 (예: ['posts.read', 'posts.write'])
-     * @return void 반환값 없음
      */
     protected function grantUserRolePermissions(array $permissionKeys = ['posts.read', 'posts.write', 'attachments.upload']): void
     {
@@ -231,7 +216,6 @@ abstract class BoardTestCase extends ModuleTestCase
      * 게시판 설정을 업데이트합니다.
      *
      * @param  array  $settings  업데이트할 설정
-     * @return void 반환값 없음
      */
     protected function updateBoardSettings(array $settings): void
     {
@@ -265,24 +249,6 @@ abstract class BoardTestCase extends ModuleTestCase
         ];
 
         return DB::table('board_posts')->insertGetId(array_merge($defaults, $attributes));
-    }
-
-    /**
-     * 비회원 글을 만들고, 그 글에 첨부를 붙이는 업로드 요청에 실을 검증 토큰 헤더를 함께 돌려줍니다.
-     *
-     * 기존 글에 붙이는 업로드(`post_id`)는 그 글을 고칠 수 있는 사람만 할 수 있다 — 비회원 글은 비밀번호 확인 뒤 받은
-     * 검증 토큰이 있어야 한다. 헤더는 업로드 요청 하나에만 싣는다(`postJson($url, $data, $headers)`).
-     *
-     * @param  array<string, mixed>  $attributes  게시글 속성
-     * @return array{0: int, 1: array<string, string>} 게시글 ID 와 업로드 요청 헤더
-     */
-    protected function createGuestPostWithUploadToken(array $attributes = []): array
-    {
-        $postId = $this->createTestPost(['user_id' => null, 'password' => Hash::make('guest-upload-1234')] + $attributes);
-        $token = Str::random(40);
-        app(PostService::class)->storeDeleteVerifyToken($this->board->slug, $postId, $token);
-
-        return [$postId, [PostService::VERIFY_TOKEN_HEADER => $token]];
     }
 
     /**

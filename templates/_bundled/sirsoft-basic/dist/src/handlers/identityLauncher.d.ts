@@ -1,74 +1,22 @@
 /**
- * 코어가 launcher 에 전달하는 verification payload (런타임 형태).
- * 코어 타입 import 를 피하려고 로컬에 정의 — 실제 형식은 `resources/js/core/identity/types.ts` 와 동일.
- */
-interface IdentityVerificationTarget {
-    email?: string;
-    phone?: string;
-}
-interface VerificationPayload {
-    policy_key: string;
-    purpose: string;
-    provider_id?: string | null;
-    render_hint?: string | null;
-    challenge_start_url?: string;
-    redirect_url?: string;
-    return_request?: {
-        method: string;
-        url: string;
-        headers_echo?: string[];
-    } | null;
-    /** 흐름이 apiCall identity_target 으로 선언한 인증 대상 — 코어 인터셉터가 병합해 전달. */
-    target?: IdentityVerificationTarget | null;
-}
-/**
- * launcher 가 코어에 돌려주는 결과 타입 (런타임 형태).
- */
-type VerificationResult = {
-    status: 'verified';
-    token: string;
-    providerData?: Record<string, unknown>;
-} | {
-    status: 'pending';
-    pollUrl: string;
-    pollIntervalMs?: number;
-    expiresAt: string;
-} | {
-    status: 'cancelled';
-} | {
-    status: 'failed';
-    failureCode: string;
-    reason?: string;
-};
-/**
- * sirsoft-basic 의 IDV launcher 본체.
+ * IDV Modal Launcher (sirsoft-basic)
  *
- * 테스트에서 직접 호출할 수 있도록 export (런타임 진입점은 registerSirsoftBasicIdentityLauncher).
- */
-export declare function sirsoftBasicIdentityLauncher(payload: VerificationPayload): Promise<VerificationResult>;
-/**
- * [다시 보내기]가 새로 받은 링크 방식 비밀값을 기억합니다 — 인증 창이 새 건의 확인 결과를 받아 가게.
+ * 코어 `IdentityGuardInterceptor` 가 428 응답을 가로채면 호출하는 launcher 입니다.
  *
- * @param action 액션 정의 (params.challenge_id · params.claim_secret)
- * @param _context 실행 컨텍스트 (미사용)
- * @return 기억했으면 true
- */
-export declare function rememberIdentityClaimHandler(action?: {
-    params?: Record<string, unknown>;
-} & Record<string, any>, _context?: any): boolean;
-/**
- * 전체화면 본인인증 진입 때, 넘어오기 전 화면이 세션 보관함에 남긴 인증 대상을 화면 상태로 되살립니다.
+ * 코어 진입점은 `window.G7Core.identity.*` 를 통해 사용 — 템플릿 IIFE 번들이 코어 모듈을
+ * 중복 포함하면서 정적 클래스 상태가 분리되는 사고를 방지합니다 (다음 우편번호 / CKEditor5 와 동일 패턴).
  *
- * 모달을 열지 못해 전체화면으로 넘어가면 페이지를 새로 읽어 전역 상태(`_global.identityChallenge.target`)가 사라진다.
- * 비회원은 로그인 세션에서 대상을 얻을 수 없어 [코드 재전송] 이 대상 없이 나가 422 로 거절됐다. launcher(와 코어
- * 기본 launcher)가 넘어가기 전 코어 보관함(`G7Core.identity.redirectStashKey`)에 대상을 함께 넣으므로, 그 값의
- * 이메일·전화번호만 꺼내 `_local.identity_target` 에 둔다. 30분이 지났거나 깨진 보관값은 쓰지 않는다.
+ * 동작 순서:
+ * 1. `external_redirect` 분기 — 코어 helper `redirectExternally` 로 위임.
+ * 2. `POST /api/identity/challenges` 로 challenge 시작 → `id, expires_at, render_hint, public_payload` 획득.
+ * 3. `_global.identityChallenge` 네임스페이스에 verification payload + challenge 응답 병합.
+ * 4. 카운트다운 `startInterval` 등록.
+ * 5. `openModal: identity-challenge-modal` 디스패치.
+ * 6. `createDeferred()` Promise 반환 — 모달이 `resolveIdentityChallenge` 핸들러로 결과 통보 시 resolve.
  *
- * @param _action 액션 정의 (인자 없음)
- * @param _context 실행 컨텍스트 (미사용 — 상태는 G7Core.state 로 쓴다)
- * @return 되살린 대상, 없으면 null
+ * 외부 IDV 플러그인(KCP/PortOne 등) 은 모달 파셜의 `identity_provider_ui:*` Extension Point 슬롯에
+ * 자기 컴포넌트 + scripts 를 주입하여 launcher 변경 없이 자기 SDK 를 띄울 수 있습니다.
  */
-export declare function restoreIdentityTargetHandler(_action?: unknown, _context?: unknown): IdentityVerificationTarget | null;
 /**
  * 부트스트랩 시 코어 인터셉터에 launcher 를 등록합니다.
  *
@@ -76,4 +24,3 @@ export declare function restoreIdentityTargetHandler(_action?: unknown, _context
  * 코어의 단일 IdentityGuardInterceptor 정적 클래스에 launcher 를 주입합니다.
  */
 export declare function registerSirsoftBasicIdentityLauncher(): void;
-export {};

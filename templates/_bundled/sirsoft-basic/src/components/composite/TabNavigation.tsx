@@ -1,5 +1,4 @@
-// e2e:allow 탭 줄 넘침 처리 클래스 한 곳(overflow-x-auto) — 단위 회귀는 TabNavigation.test.tsx, 768px 브라우저 재측정은 F1(M14).
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Nav } from '../basic/Nav';
 import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
@@ -7,9 +6,6 @@ import { IconName } from '../basic/IconTypes';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
-import type { EditorAttrs } from '../../types';
-import { sitePath } from '../../support/apiUrl';
-import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref, useLocationSearch } from '../../support/navigationLink';
 
 export interface Tab {
   id: string | number;
@@ -17,11 +13,6 @@ export interface Tab {
   iconName?: IconName;
   disabled?: boolean;
   badge?: string | number;
-  /**
-   * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
-   * 보통 클릭은 지금처럼 탭 전환(onTabChange)이다(#757).
-   */
-  href?: string;
 }
 
 export interface TabNavigationProps {
@@ -35,19 +26,6 @@ export interface TabNavigationProps {
   hiddenTabIds?: (string | number)[];
   /** 모바일 전환 임계값 (px). 기본값 768 — G7 ResponsiveContext mobile 프리셋과 동일 */
   mobileBreakpoint?: number;
-  /**
-   * 탭 주소(`tabs[].href`)에 현재 주소의 쿼리를 합친다(탭 주소 자신의 키가 이긴다).
-   * 같은 화면 안에서 쿼리만 바꾸는 탭이 목록 문맥(쪽·정렬·검색어)을 이고 갈 때 — 보통 클릭과 새 탭이 같은 주소가 된다.
-   */
-  tabHrefMergeQuery?: boolean;
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-/**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -58,7 +36,7 @@ export interface TabNavigationProps {
  *
  * 반응형: G7Core.useResponsive() hook으로 화면 너비를 구독하여
  * mobileBreakpoint(기본 768px) 미만일 때 Select 드롭다운으로 자동 전환됩니다.
- * Tailwind 반응형 접두로 숨기고 보이는 분기를 쓰지 않으므로 위지윅 편집기의 디바이스 미리보기와도 호환됩니다.
+ * Tailwind hidden md:flex 분기를 사용하지 않으므로 위지윅 편집기의 디바이스 미리보기와도 호환됩니다.
  *
  * **주의**: 이 컴포넌트는 순수 네비게이션 UI만 제공하며,
  * 실제 탭 컨텐츠는 부모 컴포넌트에서 activeTabId를 기반으로 조건부 렌더링해야 합니다.
@@ -89,12 +67,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   style,
   hiddenTabIds = [],
   mobileBreakpoint = 768,
-  tabHrefMergeQuery = false,
-  id,
-  editorAttrs,
 }) => {
-  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
-  useLocationSearch(tabHrefMergeQuery && Array.isArray(tabs) && tabs.some((tab) => typeof tab?.href === 'string' && tab.href !== ''));
   // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준)
   const G7Core = (window as any).G7Core;
   const useResponsive = G7Core?.useResponsive;
@@ -128,30 +101,10 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     ? tabs.filter((tab) => !hiddenTabIds.includes(tab.id))
     : tabs;
 
-  // 탭 줄이 가로로 스크롤될 때 활성 탭이 보이는 자리에 오게 한다 — 끝 탭이 활성이어도 처음 위치(scrollLeft 0)면 그 탭이 탭 줄 밖에
-  // 있었다(768px en·ja). scrollIntoView 는 페이지 세로 스크롤까지 움직이므로 쓰지 않고, 탭 줄의 가로 위치만 가장 가까운 쪽으로 옮긴다.
-  const navRef = useRef<HTMLElement>(null);
-  const activeIndex = visibleTabs.findIndex((tab) => tab.id === activeTabId);
-  useEffect(() => {
-    const nav = navRef.current;
-    const active = activeIndex >= 0 ? (nav?.children[activeIndex] as HTMLElement | undefined) : undefined;
-    if (!nav || !active) return;
-    const navRect = nav.getBoundingClientRect();
-    const tabRect = active.getBoundingClientRect();
-    if (tabRect.left < navRect.left) {
-      nav.scrollLeft += tabRect.left - navRect.left;
-    } else if (tabRect.right > navRect.right) {
-      nav.scrollLeft += tabRect.right - navRect.right;
-    }
-  }, [activeIndex, isMobile, visibleTabs.length]);
-
   // 모바일: Select 드롭다운 단일 렌더
-  // 데스크톱 분기와 동일하게 id/editorAttrs 를 루트에 spread 해야 레이아웃 편집기가
-  // 모바일 디바이스 미리보기에서도 이 노드를 선택/측정할 수 있다(모든 렌더 분기 패리티 —
-  // 누락 시 모바일 프리뷰에서 data-editor-* 가 사라져 캔버스에서 선택 불가).
   if (isMobile) {
     return (
-      <Div className={`relative ${className}`} style={style} id={id} {...editorAttrs}>
+      <Div className={`relative ${className}`} style={style}>
         <Select
           value={activeTabId !== undefined ? String(activeTabId) : ''}
           onChange={handleSelectChange}
@@ -178,8 +131,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     switch (variant) {
       case 'pills':
         return isActive
-          ? `${baseClasses} bg-blue-600 dark:bg-blue-600 text-white rounded-lg`
-          : `${baseClasses} text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
+          ? `${baseClasses} bg-blue-600 dark:bg-blue-500 text-white rounded-lg`
+          : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
 
       case 'underline':
         return isActive
@@ -194,70 +147,36 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     }
   };
 
-  // 탭은 줄어들지 않으므로(shrink-0·whitespace-nowrap) 화면보다 넓어지면 탭 줄만 가로로 스크롤한다 — 두지 않으면
-  // 페이지 전체가 가로로 밀린다(768px 마이페이지 탭 9개). 밑줄은 탭 상자 안의 border-b-2 라 잘리지 않는다.
   const navClasses =
     variant === 'underline'
-      ? 'flex gap-0 overflow-x-auto border-b border-gray-200 dark:border-gray-700'
-      : 'flex gap-2 overflow-x-auto';
-
-  /** 탭 링크 주소 — `tabHrefMergeQuery` 면 현재 쿼리를 합친다 */
-  const tabLink = (tab: Tab) =>
-    resolveLinkHref(tabHrefMergeQuery && typeof tab.href === 'string' && tab.href !== '' ? mergeQueryIntoHref(tab.href) : tab.href);
-
-  // 주소를 가진 탭이 하나라도 있으면 탭 목록 역할을 단다 — 링크 탭은 `role="tab"`·`aria-selected` 로 읽힌다
-  const hasLinkTabs = visibleTabs.some((tab) => !tab.disabled && tabLink(tab)?.external === false);
+      ? 'flex gap-0 border-b border-gray-200 dark:border-gray-700'
+      : 'flex gap-2';
 
   // 데스크톱: 탭 버튼 단일 렌더
   return (
-    <Div className={`relative ${className}`} style={style} id={id} {...editorAttrs}>
-      <Nav ref={navRef} className={navClasses} role={hasLinkTabs ? 'tablist' : undefined}>
-        {visibleTabs.map((tab) => {
-          const tabContent = (
-            <>
-              {tab.iconName && (
-                <Icon name={tab.iconName} size="sm" />
-              )}
+    <Div className={`relative ${className}`} style={style}>
+      <Nav className={navClasses}>
+        {visibleTabs.map((tab) => (
+          <Button
+            key={tab.id}
+            type="button"
+            onClick={() => handleTabClick(tab)}
+            disabled={tab.disabled}
+            className={getTabClasses(tab)}
+          >
+            {tab.iconName && (
+              <Icon name={tab.iconName} size="sm" />
+            )}
 
-              <Span>{tab.label}</Span>
+            <Span>{tab.label}</Span>
 
-              {tab.badge !== undefined && (
-                <Div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-600 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded-full">
-                  <Span>{tab.badge}</Span>
-                </Div>
-              )}
-            </>
-          );
-          const link = tab.disabled ? null : tabLink(tab);
-          if (link && !link.external) {
-            return (
-              <a
-                key={tab.id}
-                href={sitePath(link.href)}
-                role="tab"
-                aria-selected={tab.id === activeTabId}
-                onClick={(event) => handleLinkClick(event, () => handleTabClick(tab))}
-                className={getTabClasses(tab)}
-              >
-                {tabContent}
-              </a>
-            );
-          }
-
-          return (
-            <Button
-              key={tab.id}
-              type="button"
-              onClick={() => handleTabClick(tab)}
-              disabled={tab.disabled}
-              className={getTabClasses(tab)}
-              role={hasLinkTabs ? 'tab' : undefined}
-              aria-selected={hasLinkTabs ? tab.id === activeTabId : undefined}
-            >
-              {tabContent}
-            </Button>
-          );
-        })}
+            {tab.badge !== undefined && (
+              <Div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                <Span>{tab.badge}</Span>
+              </Div>
+            )}
+          </Button>
+        ))}
       </Nav>
     </Div>
   );

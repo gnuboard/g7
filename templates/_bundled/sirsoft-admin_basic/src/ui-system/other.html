@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Other - 그누보드7 Admin Design Guide</title>
+  <link rel="stylesheet" href="../../dist/css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    .preview-section {
+      margin-bottom: 3rem;
+    }
+    .preview-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #111827;
+    }
+    .dark .preview-title {
+      color: #f9fafb;
+    }
+    .preview-subtitle {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+      color: #374151;
+    }
+    .dark .preview-subtitle {
+      color: #d1d5db;
+    }
+    .preview-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      align-items: center;
+    }
+    @media (max-width: 640px) {
+      .preview-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+    }
+    .preview-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+    .preview-breadcrumb a {
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .preview-breadcrumb a:hover {
+      color: #3b82f6;
+    }
+    .dark .preview-breadcrumb a {
+      color: #9ca3af;
+    }
+    .dark .preview-breadcrumb a:hover {
+      color: #60a5fa;
+    }
+    .preview-breadcrumb span {
+      color: #9ca3af;
+    }
+    .dark .preview-breadcrumb span {
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <!-- Dark Mode Toggle -->
+  <div class="fixed top-4 right-4 z-50">
+    <button id="darkModeToggle" class="btn btn-secondary">
+      <i class="fas fa-moon dark:hidden"></i>
+      <i class="fas fa-sun hidden dark:inline"></i>
+      <span class="dark:hidden">다크모드</span>
+      <span class="hidden dark:inline">라이트모드</span>
+    </button>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-8">
+    <div class="preview-breadcrumb">
+      <a href="index.html"><i class="fas fa-home"></i></a>
+      <span>/</span>
+      <span class="text-gray-900 dark:text-white">Other</span>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Other</h1>
+
+    <!-- Pagination -->
+    <section class="preview-section">
+      <h2 class="preview-title">1. Pagination</h2>
+
+      <h3 class="preview-subtitle">기본 페이지네이션</h3>
+      <div class="pagination">
+        <button class="pagination-btn" disabled><i class="fas fa-angle-double-left"></i></button>
+        <button class="pagination-btn" disabled><i class="fas fa-angle-left"></i></button>
+        <button class="pagination-btn active">1</button>
+        <button class="pagination-btn">2</button>
+        <button class="pagination-btn">3</button>
+        <button class="pagination-btn">4</button>
+        <button class="pagination-btn">5</button>
+        <button class="pagination-btn"><i class="fas fa-angle-right"></i></button>
+        <button class="pagination-btn"><i class="fas fa-angle-double-right"></i></button>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">페이지네이션 (대용량 데이터)</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">페이지 수가 많을 경우 중간을 생략하여 표시</p>
+      <div class="pagination">
+        <button class="pagination-btn"><i class="fas fa-angle-double-left"></i></button>
+        <button class="pagination-btn"><i class="fas fa-angle-left"></i></button>
+        <button class="pagination-btn active">1</button>
+        <button class="pagination-btn">2</button>
+        <button class="pagination-btn">3</button>
+        <button class="pagination-btn">4</button>
+        <button class="pagination-btn">5</button>
+        <span class="px-2 text-gray-400 dark:text-gray-500">...</span>
+        <button class="pagination-btn">11</button>
+        <button class="pagination-btn"><i class="fas fa-angle-right"></i></button>
+        <button class="pagination-btn"><i class="fas fa-angle-double-right"></i></button>
+      </div>
+
+      <h3 class="preview-subtitle mt-8">페이지네이션 (중간 페이지)</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">중간 페이지일 경우 양쪽 생략 표시</p>
+      <div class="pagination">
+        <button class="pagination-btn"><i class="fas fa-angle-double-left"></i></button>
+        <button class="pagination-btn"><i class="fas fa-angle-left"></i></button>
+        <button class="pagination-btn">1</button>
+        <span class="px-2 text-gray-400 dark:text-gray-500">...</span>
+        <button class="pagination-btn">5</button>
+        <button class="pagination-btn active">6</button>
+        <button class="pagination-btn">7</button>
+        <span class="px-2 text-gray-400 dark:text-gray-500">...</span>
+        <button class="pagination-btn">11</button>
+        <button class="pagination-btn"><i class="fas fa-angle-right"></i></button>
+        <button class="pagination-btn"><i class="fas fa-angle-double-right"></i></button>
+      </div>
+    </section>
+
+    <!-- Divider -->
+    <section class="preview-section">
+      <h2 class="preview-title">2. Divider</h2>
+
+      <h3 class="preview-subtitle">.divider</h3>
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">상단 내용</p>
+        <div class="divider"></div>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-4">하단 내용</p>
+      </div>
+    </section>
+
+    <!-- Product Image -->
+    <section class="preview-section">
+      <h2 class="preview-title">3. Product Image</h2>
+
+      <h3 class="preview-subtitle">.product-image</h3>
+      <div class="preview-row">
+        <img src="https://via.placeholder.com/48" class="product-image" alt="product">
+        <div class="flex items-center gap-2">
+          <img src="https://via.placeholder.com/48" class="product-image" alt="product">
+          <div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white">상품명</div>
+            <div class="text-xs text-gray-500">외 2건</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Avatar -->
+    <section class="preview-section">
+      <h2 class="preview-title">4. Avatar</h2>
+
+      <h3 class="preview-subtitle">.avatar</h3>
+      <div class="preview-row">
+        <div class="avatar"><i class="fas fa-user"></i></div>
+        <div class="avatar">A</div>
+        <div class="avatar">김</div>
+      </div>
+
+      <h3 class="preview-subtitle">사용 예시</h3>
+      <div class="preview-row">
+        <div class="flex items-center gap-3">
+          <div class="avatar"><i class="fas fa-user"></i></div>
+          <div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white">김철수 <span class="text-gray-500">(kimcs)</span></div>
+            <div class="text-xs text-gray-500 dark:text-gray-400"><i class="fas fa-calendar mr-1"></i>2025-10-27 14:35:00</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/preview.js"></script>
+</body>
+</html>

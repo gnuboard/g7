@@ -1,0 +1,97 @@
+/**
+ * G7 Admin Template - Design Guide
+ * Layout - 페이지 헤더, 그리드 등 레이아웃 스타일
+ */
+
+@layer components {
+  /* ========================================
+   * 1. PAGE HEADER
+   * ======================================== */
+
+  /* Page Header */
+  .page-header {
+    @apply flex items-center justify-between mb-6;
+  }
+  .page-actions {
+    @apply flex items-center gap-3;
+  }
+
+  /* ========================================
+   * 2. RESPONSIVE UTILITIES
+   * ======================================== */
+
+  /* Responsive Grid */
+  .responsive-grid {
+    @apply grid grid-cols-1 gap-4;
+  }
+
+  /* ========================================
+   * 3. RESPONSIVE GRID COLUMNS
+   * ======================================== */
+
+  /* Grid Container - 3 columns on lg */
+  .grid-cols-1-lg-3 {
+    @apply grid grid-cols-1 gap-6;
+  }
+
+  /* Grid Column Spans */
+  .col-span-1-lg {
+    @apply col-span-1;
+  }
+
+  .col-span-2-lg {
+    @apply col-span-1;
+  }
+}
+
+/* ========================================
+ * MEDIA QUERIES
+ * ======================================== */
+
+/* Responsive Grid - sm breakpoint */
+@media (min-width: 640px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Responsive Grid - lg breakpoint */
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Grid 3 columns on lg */
+  .grid-cols-1-lg-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Column spans on lg */
+  .col-span-1-lg {
+    grid-column: span 1 / span 1;
+  }
+
+  .col-span-2-lg {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* Page Header Responsive - 오버플로우 방지 */
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .page-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Responsive Grid - 오버플로우 방지 (이미지3) */
+@media (max-width: 480px) {
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

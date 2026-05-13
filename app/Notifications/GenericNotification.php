@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
-use App\Contracts\Notifications\GuestRecipientInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\HookManager;
 use App\Mail\DbTemplateMail;
@@ -11,39 +10,24 @@ use App\Services\NotificationChannelService;
 use App\Services\NotificationDefinitionService;
 use App\Services\NotificationLogService;
 use App\Services\NotificationTemplateService;
-use App\Support\UndeliverableEmail;
 use Illuminate\Support\Facades\Log;
 
 class GenericNotification extends BaseNotification
 {
     /**
-     * 알림 data 에서 수신 전화번호를 싣는 코어 표준 키.
-     *
-     * 비회원처럼 수신자 객체에 전화번호(mobile)가 없는 알림은, 알림을 발행하는 도메인이
-     * `{hookPrefix}.notification.extract_data` 결과의 data 에 이 키로 수신 번호를 싣는다.
-     * 문자·알림톡 같은 채널 드라이버는 도메인을 모른 채 이 키만 읽는다.
-     */
-    public const RECIPIENT_PHONE_KEY = '_recipient_phone';
-
-    /**
-     * 채널별 발송 결과를 받을 보고서 (호출자가 붙였을 때만 기록 — 없으면 동작 변화 없음).
-     */
-    private ?DeliveryReport $deliveryReport = null;
-
-    /**
-     * @param  string  $type  알림 타입 (welcome, order_confirmed 등)
-     * @param  string  $hookPrefix  훅 접두사 (core.auth, sirsoft-ecommerce 등)
-     * @param  array  $data  변수 데이터 (['name' => '홍길동', ...])
-     * @param  string  $extensionType  확장 타입 (core, module, plugin)
-     * @param  string  $extensionIdentifier  확장 식별자 (core, sirsoft-board 등)
+     * @param string $type 알림 타입 (welcome, order_confirmed 등)
+     * @param string $hookPrefix 훅 접두사 (core.auth, sirsoft-ecommerce 등)
+     * @param array $data 변수 데이터 (['name' => '홍길동', ...])
+     * @param string $extensionType 확장 타입 (core, module, plugin)
+     * @param string $extensionIdentifier 확장 식별자 (core, sirsoft-board 등)
      */
     /**
-     * @param  string  $type  알림 타입 (welcome, order_confirmed 등)
-     * @param  string  $hookPrefix  훅 접두사 (core.auth, sirsoft-ecommerce 등)
-     * @param  array  $data  변수 데이터 (['name' => '홍길동', ...])
-     * @param  string  $extensionType  확장 타입 (core, module, plugin)
-     * @param  string  $extensionIdentifier  확장 식별자 (core, sirsoft-board 등)
-     * @param  string|null  $channel  대상 채널 (지정 시 해당 채널만 발송, null이면 기존 다채널 로직)
+     * @param string $type 알림 타입 (welcome, order_confirmed 등)
+     * @param string $hookPrefix 훅 접두사 (core.auth, sirsoft-ecommerce 등)
+     * @param array $data 변수 데이터 (['name' => '홍길동', ...])
+     * @param string $extensionType 확장 타입 (core, module, plugin)
+     * @param string $extensionIdentifier 확장 식별자 (core, sirsoft-board 등)
+     * @param string|null $channel 대상 채널 (지정 시 해당 채널만 발송, null이면 기존 다채널 로직)
      */
     public function __construct(
         private readonly string $type,
@@ -57,7 +41,7 @@ class GenericNotification extends BaseNotification
     /**
      * 훅 접두사 반환.
      *
-     * @return string 훅 접두사
+     * @return string
      */
     protected function getHookPrefix(): string
     {
@@ -67,7 +51,7 @@ class GenericNotification extends BaseNotification
     /**
      * 알림 유형 반환.
      *
-     * @return string 알림 유형
+     * @return string
      */
     protected function getNotificationType(): string
     {
@@ -81,45 +65,16 @@ class GenericNotification extends BaseNotification
      * 2. 훅 필터 적용 (플러그인 채널 추가/제거)
      * 3. readiness 필터 (미설정 채널 제외 + skipped 로깅)
      *
-     * @param  object  $notifiable  알림 수신자
-     * @return array 발송 채널 목록
+     * @param object $notifiable
+     * @return array
      */
     public function via(object $notifiable): array
     {
-        // 대상 채널이 지정된 경우 (template별 발송) — 게스트 게이트 + 확장 토글 + readiness 확인
+        // 대상 채널이 지정된 경우 (template별 발송) — 확장 토글 + readiness 확인
         if ($this->channel !== null) {
             try {
-                $channelService = app(NotificationChannelService::class);
-
-                // 사용 가능한 채널 목록에 없는 채널은 발송 후보에서 제외한다 (로그도 남기지 않음).
-                // 채널을 제공하던 확장이 비활성/삭제되면 그 채널이 getAvailableChannels() 에서 빠지지만,
-                // 저장된 채널 설정·템플릿은 남아 있어 죽은 채널로 발송·"건너뜀" 로깅이 발생한다. 살아 있지
-                // 않은 채널은 "존재하지 않는 것"으로 취급해 조용히 제외한다(skipped 기록 대상 아님).
-                if (! $channelService->isChannelAvailable($this->channel)) {
-                    $this->deliveryReport?->markSkipped($this->channel, __('notification.channel_unavailable'));
-
-                    return [];
-                }
-
-                // 게스트 게이트: 비회원 수신자인데 채널이 게스트 발송 미허용이면 제외
-                if ($this->isChannelBlockedForGuest($notifiable, $this->channel)) {
-                    $this->logSkippedChannels([
-                        ['channel' => $this->channel, 'reason' => 'notification.channel_guest_not_allowed'],
-                    ], $notifiable);
-
-                    return [];
-                }
-
-                // 메일을 보낼 수 없는 주소(비어 있음·예약 도메인 `.invalid` 대체 주소)는 메일 채널을 건너뛴다.
-                if ($this->isMailUndeliverable($notifiable, $this->channel)) {
-                    $this->logSkippedChannels([
-                        ['channel' => $this->channel, 'reason' => 'notification.recipient_email_undeliverable'],
-                    ], $notifiable);
-
-                    return [];
-                }
-
                 // 0단계: 확장 단위 채널 전역 활성 여부 확인
+                $channelService = app(NotificationChannelService::class);
                 if (! $channelService->isChannelEnabledForExtension(
                     $this->extensionType,
                     $this->extensionIdentifier,
@@ -152,10 +107,8 @@ class GenericNotification extends BaseNotification
         $definition = $definitionService->resolve($this->type);
         $channels = $definition?->channels ?? ['mail'];
 
-        // 채널 후보: 코어 단일 진입점 — 채널 제공 확장(core.notification.channels) → 도메인
-        // ({hookPrefix}.notification.channels) 순으로 거친다.
-        $channels = app(NotificationChannelService::class)->resolveChannelCandidates(
-            $this->hookPrefix,
+        $channels = HookManager::applyFilters(
+            "{$this->hookPrefix}.notification.channels",
             $channels,
             $this->type,
             $notifiable
@@ -170,33 +123,6 @@ class GenericNotification extends BaseNotification
             $skippedChannels = [];
 
             foreach ($channels as $channel) {
-                // 사용 가능한 채널 목록에 없는 채널(비활성/삭제된 확장이 제공하던 채널)은 로그 없이
-                // 조용히 제외한다 — 죽은 채널을 "건너뜀"으로 기록하지 않는다(채널 지정 경로와 동일 정책).
-                if (! $channelService->isChannelAvailable($channel)) {
-                    $this->deliveryReport?->markSkipped($channel, __('notification.channel_unavailable'));
-
-                    continue;
-                }
-
-                // 게스트 게이트: 비회원 수신자인데 채널이 게스트 발송 미허용이면 제외
-                if ($this->isChannelBlockedForGuest($notifiable, $channel)) {
-                    $skippedChannels[] = [
-                        'channel' => $channel,
-                        'reason' => 'notification.channel_guest_not_allowed',
-                    ];
-
-                    continue;
-                }
-
-                if ($this->isMailUndeliverable($notifiable, $channel)) {
-                    $skippedChannels[] = [
-                        'channel' => $channel,
-                        'reason' => 'notification.recipient_email_undeliverable',
-                    ];
-
-                    continue;
-                }
-
                 // 0단계: 확장 단위 채널 전역 활성 여부 확인
                 if (! $channelService->isChannelEnabledForExtension(
                     $this->extensionType,
@@ -256,63 +182,14 @@ class GenericNotification extends BaseNotification
     }
 
     /**
-     * 비회원 수신자에게 해당 채널 발송이 차단되는지 확인합니다.
-     *
-     * 수신자가 게스트(GuestRecipientInterface)가 아니면 항상 false(차단 안 함).
-     * 게스트면 채널의 allow_guest 정책을 조회해, 미허용 채널이면 true(차단)를 반환합니다.
-     *
-     * @param  object  $notifiable  수신자
-     * @param  string  $channel  채널 식별자
-     * @return bool true = 차단, false = 허용
-     */
-    private function isChannelBlockedForGuest(object $notifiable, string $channel): bool
-    {
-        if (! ($notifiable instanceof GuestRecipientInterface && $notifiable->isGuest())) {
-            return false;
-        }
-
-        return ! app(NotificationChannelService::class)->isChannelGuestAllowed($channel);
-    }
-
-    /**
-     * 메일 채널인데 수신자 주소로 메일을 보낼 수 없는지 확인합니다.
-     *
-     * 외부 인증 회원의 대체 주소(`…@xxx.invalid`)는 절대 닿지 않으므로 「이메일 없음」과 같게 건너뛴다.
-     * 이메일 속성이 아예 없는 수신자(메일이 아닌 식별 수단만 가진 수신자)는 판정하지 않는다 — 종전 동작 유지.
-     *
-     * @param  object  $notifiable  수신자
-     * @param  string  $channel  채널 식별자
-     * @return bool true = 건너뜀
-     */
-    private function isMailUndeliverable(object $notifiable, string $channel): bool
-    {
-        if ($channel !== 'mail' || ! isset($notifiable->email)) {
-            return false;
-        }
-
-        return UndeliverableEmail::is(is_string($notifiable->email) ? $notifiable->email : null);
-    }
-
-    /**
      * 미설정 채널 건너뛰기를 notification_logs에 기록합니다.
      *
-     * @param  array  $skippedChannels  건너뛴 채널과 사유 목록 [{channel, reason}]
-     * @param  object  $notifiable  알림 수신자
-     * @return void 반환값 없음
+     * @param array $skippedChannels [{channel, reason}]
+     * @param object $notifiable
+     * @return void
      */
     private function logSkippedChannels(array $skippedChannels, object $notifiable): void
     {
-        foreach ($skippedChannels as $skipped) {
-            $this->deliveryReport?->markSkipped(
-                $skipped['channel'],
-                __($skipped['reason'] ?? 'notification.readiness.unknown')
-            );
-        }
-
-        // 게스트는 user FK 가 없으므로 recipient_user_id 는 null, 식별은 email 로 한다.
-        $isGuest = $notifiable instanceof GuestRecipientInterface && $notifiable->isGuest();
-        $recipientUserId = $isGuest ? null : ($notifiable->getKey() ?? null);
-
         try {
             $logService = app(NotificationLogService::class);
             foreach ($skippedChannels as $skipped) {
@@ -322,8 +199,8 @@ class GenericNotification extends BaseNotification
                     'extension_type' => $this->extensionType,
                     'extension_identifier' => $this->extensionIdentifier,
                     'recipient_identifier' => $notifiable->email ?? (string) ($notifiable->getKey() ?? ''),
-                    'recipient_name' => app(RecipientDisplayName::class)->forLog($notifiable),
-                    'recipient_user_id' => $recipientUserId,
+                    'recipient_name' => $notifiable->name ?? null,
+                    'recipient_user_id' => $notifiable->getKey() ?? null,
                     'error_message' => __($skipped['reason'] ?? 'notification.readiness.unknown'),
                     'source' => 'notification',
                     'sent_at' => now(),
@@ -340,8 +217,8 @@ class GenericNotification extends BaseNotification
     /**
      * 메일 채널 처리 — notification_templates에서 mail 채널 템플릿 조회.
      *
-     * @param  object  $notifiable  알림 수신자
-     * @return DbTemplateMail 렌더된 메일 메시지
+     * @param object $notifiable
+     * @return DbTemplateMail
      */
     public function toMail(object $notifiable): DbTemplateMail
     {
@@ -351,18 +228,16 @@ class GenericNotification extends BaseNotification
         $ownerType = ExtensionOwnerType::tryFrom($this->extensionType) ?? ExtensionOwnerType::Core;
 
         if (! $template || ! $template->is_active) {
-            $this->deliveryReport?->markSkipped('mail', __('notification.template_inactive'));
-
             return DbTemplateMail::skipped(
                 recipientEmail: $notifiable->email ?? '',
                 templateType: $this->type,
                 extensionType: $ownerType,
                 extensionIdentifier: $this->extensionIdentifier,
-                recipientName: app(RecipientDisplayName::class)->forChannel($notifiable, 'mail'),
+                recipientName: $notifiable->name ?? null,
             );
         }
 
-        $locale = self::resolveNotifiableLocale($notifiable);
+        $locale = $notifiable->locale ?? app()->getLocale();
         $rendered = $template->replaceVariables($this->data, $locale);
 
         return new DbTemplateMail(
@@ -373,30 +248,29 @@ class GenericNotification extends BaseNotification
             extensionType: $ownerType,
             extensionIdentifier: $this->extensionIdentifier,
             source: 'notification',
-            // 메일의 받는 사람 이름은 본문의 받는 사람 이름과 같은 영역(메일 채널)의 표시 이름이다.
-            recipientName: app(RecipientDisplayName::class)->forChannel($notifiable, 'mail'),
+            recipientName: $notifiable->name ?? null,
         );
     }
 
     /**
      * 데이터베이스 채널 처리 — notification_templates에서 database 채널 템플릿 조회.
      *
-     * @param  object  $notifiable  알림 수신자
-     * @return array 사이트 내 알림 데이터
+     * @param object $notifiable
+     * @return array
      */
     public function toArray(object $notifiable): array
     {
         $templateService = app(NotificationTemplateService::class);
         $template = $templateService->resolve($this->type, 'database');
 
-        $locale = self::resolveNotifiableLocale($notifiable);
+        $locale = $notifiable->locale ?? app()->getLocale();
 
         if ($template && $template->is_active) {
             $rendered = $template->replaceVariables($this->data, $locale);
 
             // click_url 패턴이 있으면 변수 치환하여 포함 (알림센터 클릭 시 이동 URL)
             $clickUrl = $template->click_url
-                ? $template->replaceVariablesInString($template->click_url, $this->data, $locale)
+                ? $template->replaceVariablesInString($template->click_url, $this->data)
                 : null;
 
             return [
@@ -404,73 +278,43 @@ class GenericNotification extends BaseNotification
                 'subject' => $rendered['subject'],
                 'body' => $rendered['body'],
                 'click_url' => $clickUrl,
-                'data' => NotificationVariables::resolve($this->data, $locale),
+                'data' => $this->data,
             ];
         }
 
         return [
             'type' => $this->type,
-            'data' => NotificationVariables::resolve($this->data, $locale),
+            'data' => $this->data,
         ];
     }
 
     /**
      * 미래 채널 자동 위임 (fcm 등).
      *
-     * @param  string  $method  호출된 메서드 이름
-     * @param  array  $parameters  호출 인자
-     * @return mixed 결과 값
+     * @param string $method
+     * @param array $parameters
+     * @return mixed
      */
     public function __call($method, $parameters)
     {
         if (str_starts_with($method, 'to')) {
             $channel = lcfirst(substr($method, 2));
 
-            // 확장 채널도 메일·사이트 알림과 같은 받는 사람 언어로 고른 변수 값을 받는다.
-            $notifiable = $parameters[0] ?? null;
-            $data = is_object($notifiable) ? $this->getDataFor($notifiable) : $this->data;
-
             return HookManager::applyFilters(
                 "{$this->hookPrefix}.notification.to_{$channel}",
-                $data,
+                $this->data,
                 $this->type,
-                $notifiable
+                $parameters[0] ?? null
             );
         }
 
-        throw new \BadMethodCallException("Method [{$method}] does not exist on ".static::class);
-    }
-
-    /**
-     * 채널별 발송 결과를 받을 보고서를 붙입니다.
-     *
-     * 붙이면 채널 제외(via)·템플릿 비활성(toMail)·발송 성공/예외(NotificationDispatcher)
-     * 지점이 결과를 기록한다. 붙이지 않으면 기존 동작과 같다.
-     *
-     * @param  DeliveryReport  $report  결과 보고서
-     * @return static 보고서가 붙은 같은 알림
-     */
-    public function withDeliveryReport(DeliveryReport $report): static
-    {
-        $this->deliveryReport = $report;
-
-        return $this;
-    }
-
-    /**
-     * 붙어 있는 발송 결과 보고서를 반환합니다.
-     *
-     * @return DeliveryReport|null 보고서 (붙이지 않았으면 null)
-     */
-    public function getDeliveryReport(): ?DeliveryReport
-    {
-        return $this->deliveryReport;
+        throw new \BadMethodCallException("Method [{$method}] does not exist on " . static::class);
     }
 
     /**
      * 알림 데이터 반환.
      *
-     * @return array 알림 변수 데이터
+     * @return array
      */
     public function getData(): array
     {
@@ -478,23 +322,9 @@ class GenericNotification extends BaseNotification
     }
 
     /**
-     * 받는 사람 언어로 언어별 변수 값을 고른 알림 데이터를 반환합니다.
-     *
-     * 자체 템플릿으로 본문을 만드는 확장 채널 드라이버는 `getData()` 대신 이것을 쓴다 —
-     * 메일·사이트 알림과 같은 규칙(`NotificationVariables`)으로 값을 고른다.
-     *
-     * @param  object  $notifiable  알림 수신자
-     * @return array 언어별 값을 문자열로 해석한 알림 변수 데이터
-     */
-    public function getDataFor(object $notifiable): array
-    {
-        return NotificationVariables::resolve($this->data, self::resolveNotifiableLocale($notifiable));
-    }
-
-    /**
      * 알림 타입 반환.
      *
-     * @return string 알림 유형
+     * @return string
      */
     public function getType(): string
     {
@@ -504,7 +334,7 @@ class GenericNotification extends BaseNotification
     /**
      * 확장 타입 반환.
      *
-     * @return string 확장 타입
+     * @return string
      */
     public function getExtensionType(): string
     {
@@ -514,7 +344,7 @@ class GenericNotification extends BaseNotification
     /**
      * 확장 식별자 반환.
      *
-     * @return string 확장 식별자
+     * @return string
      */
     public function getExtensionIdentifier(): string
     {

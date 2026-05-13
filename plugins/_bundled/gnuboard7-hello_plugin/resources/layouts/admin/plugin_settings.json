@@ -1,7 +1,9 @@
 {
-    "comment": "학습용 플러그인 환경설정 화면 — 코어의 플러그인 설정 규약(경로·엔드포인트·저장 흐름)을 그대로 따르는 최소 예다. 모양은 템플릿 CSS 가 아니라 이 플러그인의 순수 CSS(resources/css/main.css, helloplugin-*)가 싣는다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
+    "permissions": [
+        "core.plugins.update"
+    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:gnuboard7-hello_plugin.settings.title",
@@ -10,49 +12,14 @@
     "data_sources": [
         {
             "id": "settings",
-            "label_key": "$t:gnuboard7-hello_plugin.editor.data_source.settings",
             "type": "api",
             "endpoint": "/api/admin/plugins/{{route.identifier}}/settings",
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true,
-            "errorHandling": {
-                "default": {
-                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
-                    "handler": "conditions",
-                    "conditions": [
-                        {
-                            "if": "{{error.refetch}}",
-                            "then": {
-                                "handler": "toast",
-                                "params": {
-                                    "type": "error",
-                                    "message": "$t:core.errors.refresh_failed"
-                                }
-                            }
-                        },
-                        {
-                            "then": {
-                                "handler": "showErrorPage",
-                                "params": {
-                                    "errorCode": "{{error.status}}",
-                                    "target": "content"
-                                }
-                            }
-                        }
-                    ]
-                }
-            },
-            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) — 저장 후 되돌아왔을 때 낡은 값이 남지 않게"
+            "refetchOnMount": true
         }
-    ],
-    "computed": {
-        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
-    },
-    "permissions": [
-        "core.plugins.read"
     ],
     "slots": {
         "content": [
@@ -60,22 +27,11 @@
                 "id": "plugin_settings_content",
                 "type": "basic",
                 "name": "Div",
+                "blur_until_loaded": "{{_local.isSaving}}",
                 "dataKey": "form",
                 "trackChanges": true,
-                "responsive": {
-                    "640-1023": {
-                        "props": {
-                            "className": "helloplugin-settings helloplugin-settings--md"
-                        }
-                    },
-                    "1024-": {
-                        "props": {
-                            "className": "helloplugin-settings helloplugin-settings--lg"
-                        }
-                    }
-                },
                 "props": {
-                    "className": "helloplugin-settings"
+                    "className": "p-4 sm:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen"
                 },
                 "children": [
                     {
@@ -90,39 +46,11 @@
                         }
                     },
                     {
-                        "id": "plugin_read_only_banner",
-                        "type": "basic",
-                        "name": "Div",
-                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
-                        "props": {
-                            "role": "status",
-                            "className": "helloplugin-alert"
-                        },
-                        "children": [
-                            {
-                                "type": "basic",
-                                "name": "Icon",
-                                "props": {
-                                    "name": "lock",
-                                    "className": "helloplugin-alert__icon"
-                                }
-                            },
-                            {
-                                "type": "basic",
-                                "name": "Span",
-                                "props": {
-                                    "className": "helloplugin-alert__text"
-                                },
-                                "text": "$t:gnuboard7-hello_plugin.plugin_read_only"
-                            }
-                        ]
-                    },
-                    {
                         "id": "settings_form",
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "helloplugin-card"
+                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
                         },
                         "children": [
                             {
@@ -130,7 +58,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "helloplugin-card__body"
+                                    "className": "p-6 space-y-6"
                                 },
                                 "children": [
                                     {
@@ -138,7 +66,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "helloplugin-field"
+                                            "className": "flex items-start gap-3"
                                         },
                                         "children": [
                                             {
@@ -146,10 +74,8 @@
                                                 "name": "Input",
                                                 "props": {
                                                     "type": "checkbox",
-                                                    "id": "hello_plugin_log_enabled",
                                                     "name": "log_enabled",
-                                                    "className": "helloplugin-checkbox",
-                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                    "className": "mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                                 }
                                             },
                                             {
@@ -160,8 +86,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "helloplugin-label",
-                                                            "htmlFor": "hello_plugin_log_enabled"
+                                                            "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
                                                         },
                                                         "text": "$t:gnuboard7-hello_plugin.settings.fields.log_enabled.label"
                                                     },
@@ -169,7 +94,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "helloplugin-hint"
+                                                            "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "$t:gnuboard7-hello_plugin.settings.fields.log_enabled.hint"
                                                     }
@@ -186,23 +111,26 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "helloplugin-footer"
+                            "className": "flex justify-end gap-3 mt-6"
                         },
                         "children": [
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "A",
+                                "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins"
+                                        }
                                     }
                                 ],
-                                "props": {
-                                    "href": "/admin/plugins",
-                                    "className": "helloplugin-button helloplugin-button--secondary"
-                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -215,9 +143,13 @@
                                 "id": "save_button",
                                 "type": "basic",
                                 "name": "Button",
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
+                                    "className": "flex items-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "actions": [
                                     {
-                                        "comment": "설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -231,8 +163,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "target": "/api/admin/plugins/{{route.identifier}}/settings",
                                                 "auth_required": true,
+                                                "target": "/api/admin/plugins/{{route.identifier}}/settings",
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": "{{_local.form}}"
@@ -266,14 +198,14 @@
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "errors": "{{error.errors}}"
+                                                            "errors": "{{$error.errors}}"
                                                         }
                                                     },
                                                     {
                                                         "handler": "toast",
                                                         "params": {
                                                             "type": "error",
-                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
+                                                            "message": "$t:admin.plugins.settings.save_error"
                                                         }
                                                     }
                                                 ]
@@ -281,11 +213,6 @@
                                         ]
                                     }
                                 ],
-                                "props": {
-                                    "type": "button",
-                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
-                                    "className": "helloplugin-button helloplugin-button--primary helloplugin-footer__save"
-                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -306,5 +233,13 @@
                 ]
             }
         ]
+    },
+    "schema": {
+        "log_enabled": {
+            "type": "boolean",
+            "default": true,
+            "label": "$t:gnuboard7-hello_plugin.settings.fields.log_enabled.label",
+            "hint": "$t:gnuboard7-hello_plugin.settings.fields.log_enabled.hint"
+        }
     }
 }

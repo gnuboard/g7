@@ -12,6 +12,7 @@ import {
   useSlotContext,
   useSlotComponents,
   SlotContextValue,
+  SlotRegistration,
 } from '../SlotContext';
 
 // 테스트용 컴포넌트
@@ -27,6 +28,21 @@ const TestSlotConsumer: React.FC<{
   return <div data-testid="consumer">Consumer</div>;
 };
 
+// 슬롯 컴포넌트 목록을 표시하는 테스트 컴포넌트
+const SlotDisplayer: React.FC<{ slotId: string }> = ({ slotId }) => {
+  const components = useSlotComponents(slotId);
+
+  return (
+    <div data-testid={`slot-${slotId}`}>
+      {components.map((reg, i) => (
+        <div key={i} data-testid={`slot-item-${i}`}>
+          {reg.componentDef?.id || 'unnamed'}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 describe('SlotContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -39,8 +55,6 @@ describe('SlotContext', () => {
   });
 
   describe('SlotProvider', () => {
-    // @scenario area=provider
-    // @effects slot_provider_enables_context
     it('SlotProvider가 자식 컴포넌트를 렌더링해야 함', () => {
       render(
         <SlotProvider>
@@ -51,48 +65,40 @@ describe('SlotContext', () => {
       expect(screen.getByTestId('child')).toBeInTheDocument();
     });
 
-    // @scenario area=provider
-    // @effects slot_provider_enables_context
     it('SlotProvider가 isEnabled=true인 컨텍스트를 제공해야 함', () => {
-      // 콜백 안에서 채우므로 값 상자에 담는다 — 지역 변수는 대입 뒤 null 로 좁혀진다
-      const captured: { context: SlotContextValue | null } = { context: null };
+      let capturedContext: SlotContextValue | null = null;
 
       render(
         <SlotProvider>
           <TestSlotConsumer
             onContext={(ctx) => {
-              captured.context = ctx;
+              capturedContext = ctx;
             }}
           />
         </SlotProvider>
       );
 
-      expect(captured.context).not.toBeNull();
-      expect(captured.context?.isEnabled).toBe(true);
+      expect(capturedContext).not.toBeNull();
+      expect(capturedContext?.isEnabled).toBe(true);
     });
 
-    // @scenario area=provider
-    // @effects slot_provider_enables_context
     it('SlotProvider 외부에서는 isEnabled=false인 기본 컨텍스트를 반환해야 함', () => {
-      // 콜백 안에서 채우므로 값 상자에 담는다 — 지역 변수는 대입 뒤 null 로 좁혀진다
-      const captured: { context: SlotContextValue | null } = { context: null };
+      let capturedContext: SlotContextValue | null = null;
 
       render(
         <TestSlotConsumer
           onContext={(ctx) => {
-            captured.context = ctx;
+            capturedContext = ctx;
           }}
         />
       );
 
-      expect(captured.context).not.toBeNull();
-      expect(captured.context?.isEnabled).toBe(false);
+      expect(capturedContext).not.toBeNull();
+      expect(capturedContext?.isEnabled).toBe(false);
     });
   });
 
   describe('registerToSlot / unregisterFromSlot', () => {
-    // @scenario area=register
-    // @effects slot_register_unregister_tracks_components
     it('컴포넌트를 슬롯에 등록할 수 있어야 함', async () => {
       let context: SlotContextValue | null = null;
 
@@ -126,8 +132,6 @@ describe('SlotContext', () => {
       });
     });
 
-    // @scenario area=register
-    // @effects slot_register_unregister_tracks_components
     it('동일한 registrationKey로 중복 등록을 방지해야 함', async () => {
       let context: SlotContextValue | null = null;
 
@@ -173,8 +177,6 @@ describe('SlotContext', () => {
       });
     });
 
-    // @scenario area=register
-    // @effects slot_register_unregister_tracks_components
     it('컴포넌트를 슬롯에서 해제할 수 있어야 함', async () => {
       let context: SlotContextValue | null = null;
 
@@ -213,8 +215,6 @@ describe('SlotContext', () => {
   });
 
   describe('getSlotComponents', () => {
-    // @scenario area=ordering
-    // @effects slot_components_ordered_by_order
     it('order 기준으로 정렬된 컴포넌트 목록을 반환해야 함', async () => {
       let context: SlotContextValue | null = null;
 
@@ -273,34 +273,31 @@ describe('SlotContext', () => {
       });
     });
 
-    // @scenario area=ordering
-    // @effects slot_components_ordered_by_order
     it('존재하지 않는 슬롯에 대해 빈 배열을 반환해야 함', () => {
-      // 콜백 안에서 채우므로 값 상자에 담는다 — 지역 변수는 대입 뒤 null 로 좁혀진다
-      const captured: { context: SlotContextValue | null } = { context: null };
+      let context: SlotContextValue | null = null;
 
       render(
         <SlotProvider>
           <TestSlotConsumer
             onContext={(ctx) => {
-              captured.context = ctx;
+              context = ctx;
             }}
           />
         </SlotProvider>
       );
 
-      expect(captured.context?.getSlotComponents('nonexistent_slot')).toEqual([]);
+      expect(context?.getSlotComponents('nonexistent_slot')).toEqual([]);
     });
   });
 
   describe('subscribeToSlot', () => {
-    // @scenario area=subscribe
-    // @effects slot_subscribers_notified_on_change
     it('슬롯 변경 시 구독자에게 알림을 보내야 함', async () => {
       const mockCallback = vi.fn();
+      let context: SlotContextValue | null = null;
 
       const TestSubscription: React.FC = () => {
         const ctx = useSlotContext();
+        context = ctx;
 
         React.useEffect(() => {
           const unsubscribe = ctx.subscribeToSlot('test_slot', mockCallback);
@@ -335,8 +332,6 @@ describe('SlotContext', () => {
   });
 
   describe('useSlotComponents', () => {
-    // @scenario area=hook_rerender
-    // @effects slot_hook_rerenders_on_change
     it('슬롯 변경 시 자동으로 리렌더링해야 함', async () => {
       let context: SlotContextValue | null = null;
       let renderCount = 0;
@@ -383,15 +378,12 @@ describe('SlotContext', () => {
   });
 
   describe('clearAllSlots', () => {
-    // @scenario area=clear
-    // @effects slot_clear_all_empties_slots
     it('모든 슬롯을 클리어해야 함', async () => {
-      // 콜백 안에서 채우므로 값 상자에 담는다 — 지역 변수는 대입 뒤 null 로 좁혀진다
-      const captured: { context: SlotContextValue | null } = { context: null };
+      let context: SlotContextValue | null = null;
 
       const TestClear: React.FC = () => {
         const ctx = useSlotContext();
-        captured.context = ctx;
+        context = ctx;
 
         React.useEffect(() => {
           // 여러 슬롯에 등록
@@ -426,23 +418,21 @@ describe('SlotContext', () => {
       );
 
       await waitFor(() => {
-        expect(captured.context?.getSlotComponents('slot_a')).toHaveLength(1);
-        expect(captured.context?.getSlotComponents('slot_b')).toHaveLength(1);
+        expect(context?.getSlotComponents('slot_a')).toHaveLength(1);
+        expect(context?.getSlotComponents('slot_b')).toHaveLength(1);
       });
 
       // 모든 슬롯 클리어
       act(() => {
-        captured.context?.clearAllSlots();
+        context?.clearAllSlots();
       });
 
-      expect(captured.context?.getSlotComponents('slot_a')).toHaveLength(0);
-      expect(captured.context?.getSlotComponents('slot_b')).toHaveLength(0);
+      expect(context?.getSlotComponents('slot_a')).toHaveLength(0);
+      expect(context?.getSlotComponents('slot_b')).toHaveLength(0);
     });
   });
 
   describe('전역 노출', () => {
-    // @scenario area=global_exposure
-    // @effects slot_context_exposed_on_window
     it('SlotProvider가 마운트되면 window.__slotContextValue에 값이 설정되어야 함', async () => {
       render(
         <SlotProvider>

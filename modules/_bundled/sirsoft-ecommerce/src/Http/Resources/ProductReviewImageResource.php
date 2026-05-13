@@ -4,42 +4,12 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 
 /**
  * 리뷰 이미지 리소스
  */
 class ProductReviewImageResource extends BaseApiResource
 {
-    /**
-     * 숨김 리뷰 이미지의 <img> 렌더용 한시 서명 download URL 발급 여부.
-     *
-     * 게이트(관리자 권한 미들웨어)를 통과한 응답의 직렬화 시점에만 참이 된다 —
-     * 전시중(VISIBLE) 리뷰는 무서명 공개 URL 을 유지한다 (CDN·캐시 안정성).
-     */
-    private bool $signedDownload = false;
-
-    /**
-     * 리뷰 이미지 목록을 리소스 배열로 변환합니다.
-     *
-     * @param  iterable<int, ProductReviewImage>|null  $images  리뷰 이미지 목록
-     * @param  bool  $signedDownload  한시 서명 download URL 발급 여부 (숨김 리뷰 전용)
-     * @return array<int, self>
-     */
-    public static function collectionFor($images, bool $signedDownload = false): array
-    {
-        return Collection::make($images ?? [])
-            ->map(function ($image) use ($signedDownload) {
-                $resource = new self($image);
-                $resource->signedDownload = $signedDownload;
-
-                return $resource;
-            })
-            ->values()
-            ->all();
-    }
-
     /**
      * 리소스를 배열로 변환
      *
@@ -48,17 +18,12 @@ class ProductReviewImageResource extends BaseApiResource
      */
     public function toArray(Request $request): array
     {
-        // 숨김 리뷰(서명 모드)는 원본·썸네일 모두 게이트가 있는 API 서빙 경로에 서명한다 —
-        // 직접 URL 은 게이트가 없고, 서명 URL 에 붙는 `?size=` 는 서명 검증에서 제외된다.
-        $signedUrl = $this->signedDownload ? $this->resource->signedDownloadUrl() : null;
-
         return [
             'id' => $this->id,
             'review_id' => $this->review_id,
             'hash' => $this->hash,
             'original_filename' => $this->original_filename,
-            'download_url' => $signedUrl ?? $this->download_url,
-            'preview_url' => $signedUrl ?? $this->preview_url,
+            'download_url' => $this->download_url,
             'mime_type' => $this->mime_type,
             'file_size' => $this->file_size,
             'width' => $this->width,
@@ -79,10 +44,8 @@ class ProductReviewImageResource extends BaseApiResource
      */
     protected function abilityMap(): array
     {
-        // 이미지 삭제 라우트(`user/reviews/{review}/images/{image}`)의 권한과 같은 식별자다 — 관리자 리뷰 삭제 권한
-        // (`reviews.delete`)이 아니다. 본인 리뷰인지는 리뷰의 `is_owner` 와 서버의 소유권 검사가 맡는다.
         return [
-            'can_delete' => 'sirsoft-ecommerce.user-reviews.write',
+            'can_delete' => 'sirsoft-ecommerce.reviews.delete',
         ];
     }
 }

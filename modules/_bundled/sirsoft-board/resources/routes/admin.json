@@ -27,7 +27,7 @@
             }
         },
         {
-            "path": "*/admin/boards/:slug/edit",
+            "path": "*/admin/boards/:id/edit",
             "layout": "admin_board_form",
             "auth_required": true,
             "meta": {
@@ -65,26 +65,6 @@
             "meta": {
                 "title": "$t:sirsoft-board.admin.posts.page_title",
                 "description": "$t:sirsoft-board.admin.posts.page_description"
-            }
-        },
-        {
-            "path": "*/admin/boards/scraps",
-            "layout": "admin_board_scraps_index",
-            "auth_required": true,
-            "meta": {
-                "title": "$t:sirsoft-board.admin.scraps.page_title",
-                "description": "$t:sirsoft-board.admin.scraps.page_description",
-                "permission": "sirsoft-board.scraps.view"
-            }
-        },
-        {
-            "path": "*/admin/boards/reactions",
-            "layout": "admin_board_reactions_index",
-            "auth_required": true,
-            "meta": {
-                "title": "$t:sirsoft-board.admin.reactions.page_title",
-                "description": "$t:sirsoft-board.admin.reactions.page_description",
-                "permission": "sirsoft-board.reactions.view"
             }
         },
         {

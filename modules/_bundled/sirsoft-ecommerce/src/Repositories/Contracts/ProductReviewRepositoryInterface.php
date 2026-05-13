@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
@@ -16,7 +15,7 @@ interface ProductReviewRepositoryInterface
      * ID로 리뷰 조회
      *
      * @param  int  $id  리뷰 ID
-     * @return ProductReview|null 리뷰 모델 (없으면 null)
+     * @return ProductReview|null
      */
     public function findById(int $id): ?ProductReview;
 
@@ -25,7 +24,7 @@ interface ProductReviewRepositoryInterface
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 개수
-     * @return LengthAwarePaginator 페이지네이션된 리뷰 목록
+     * @return LengthAwarePaginator
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
 
@@ -35,19 +34,9 @@ interface ProductReviewRepositoryInterface
      * @param  int  $productId  상품 ID
      * @param  array  $filters  필터 조건 (sort, photo_only)
      * @param  int  $perPage  페이지당 개수
-     * @return LengthAwarePaginator 페이지네이션된 상품 리뷰 목록
+     * @return LengthAwarePaginator
      */
     public function findByProduct(int $productId, array $filters = [], int $perPage = 10): LengthAwarePaginator;
-
-    /**
-     * 전체 공개 후기 목록 조회 (리뷰 모아보기, 페이지네이션)
-     *
-     * 노출 상태 후기 중 전시 중이고 삭제되지 않은 상품의 것만 돌려준다.
-     *
-     * @param  array  $filters  필터 조건 (sort, photo_only, rating, per_page)
-     * @return LengthAwarePaginator 페이지네이션된 후기 목록
-     */
-    public function paginatePublicFeed(array $filters = []): LengthAwarePaginator;
 
     /**
      * 상품별 별점 통계 조회
@@ -61,7 +50,7 @@ interface ProductReviewRepositoryInterface
      * 상품별 전체 리뷰 수 조회 (필터 무관)
      *
      * @param  int  $productId  상품 ID
-     * @return int 전체 리뷰 수
+     * @return int
      */
     public function getTotalCount(int $productId): int;
 
@@ -79,7 +68,7 @@ interface ProductReviewRepositoryInterface
      * 주문 옵션 ID로 리뷰 조회 (중복 작성 방지)
      *
      * @param  int  $orderOptionId  주문 옵션 ID
-     * @return ProductReview|null 리뷰 모델 (없으면 null)
+     * @return ProductReview|null
      */
     public function findByOrderOptionId(int $orderOptionId): ?ProductReview;
 
@@ -87,7 +76,7 @@ interface ProductReviewRepositoryInterface
      * 리뷰 생성
      *
      * @param  array  $data  리뷰 데이터
-     * @return ProductReview 생성된 리뷰 모델
+     * @return ProductReview
      */
     public function create(array $data): ProductReview;
 
@@ -96,7 +85,7 @@ interface ProductReviewRepositoryInterface
      *
      * @param  ProductReview  $review  리뷰 모델
      * @param  array  $data  수정 데이터
-     * @return ProductReview 수정된 리뷰 모델
+     * @return ProductReview
      */
     public function update(ProductReview $review, array $data): ProductReview;
 
@@ -104,7 +93,7 @@ interface ProductReviewRepositoryInterface
      * 리뷰 삭제 (소프트 삭제)
      *
      * @param  ProductReview  $review  리뷰 모델
-     * @return bool 삭제 성공 여부
+     * @return bool
      */
     public function delete(ProductReview $review): bool;
 
@@ -121,89 +110,7 @@ interface ProductReviewRepositoryInterface
      * 리뷰 이미지를 포함한 일괄 조회 (일괄 삭제용)
      *
      * @param  array  $ids  리뷰 ID 배열
-     * @return Collection 이미지를 포함한 리뷰 컬렉션
+     * @return Collection
      */
     public function getByIdsWithImages(array $ids): Collection;
-
-    /**
-     * 리뷰 ID 배열로 리뷰를 일괄 삭제합니다 (소프트 삭제).
-     *
-     * @param  array  $ids  리뷰 ID 배열
-     * @return int 삭제된 건수
-     */
-    public function bulkSoftDeleteByIds(array $ids): int;
-
-    /**
-     * 주문 옵션 ID에 연결된 리뷰의 소유권을 이전합니다 (옵션 병합 시).
-     *
-     * @param  int  $fromOrderOptionId  기존 주문 옵션 ID
-     * @param  int  $toOrderOptionId  이전 대상 주문 옵션 ID
-     * @return int 업데이트된 레코드 수
-     */
-    public function transferByOrderOptionId(int $fromOrderOptionId, int $toOrderOptionId): int;
-
-    /**
-     * 전체 상품의 최신 노출 리뷰를 조회합니다 (대시보드 최신 리뷰).
-     *
-     * 노출 상태(visible) 리뷰를 작성일 최신순으로 상위 N건 조회하며,
-     * 상품/작성자를 eager load 합니다.
-     *
-     * @param  int  $limit  조회 건수
-     * @return Collection 최신 리뷰 컬렉션
-     */
-    public function getRecentAcrossProducts(int $limit): Collection;
-
-    /**
-     * 주문 옵션들에 연결된 리뷰를 삭제 여부와 무관하게 이미지와 함께 조회합니다 (개인정보 보유기간 삭제용).
-     *
-     * @param  array<int, int>  $orderOptionIds  주문 옵션 ID 목록
-     * @return Collection 리뷰 컬렉션 (images 관계 로드됨, 휴지통 포함)
-     */
-    public function getWithTrashedByOrderOptionIds(array $orderOptionIds): Collection;
-
-    /**
-     * 리뷰와 그 이미지 레코드를 영구 삭제합니다 (개인정보 보유기간 삭제용).
-     *
-     * @param  ProductReview  $review  리뷰 모델
-     * @return bool 삭제 성공 여부
-     */
-    public function forceDeleteWithImages(ProductReview $review): bool;
-
-    /**
-     * 회원 없이 등록한 후기를 상품·작성자 이름·작성일로 찾습니다 (이관 멱등 판정, 지운 후기 포함).
-     *
-     * @param  int  $productId  상품 ID
-     * @param  string  $authorName  작성자 표시 이름
-     * @param  Carbon  $createdAt  작성일 (앱 시간대)
-     * @return ProductReview|null 후기 모델 (없으면 null)
-     */
-    public function findImported(int $productId, string $authorName, Carbon $createdAt): ?ProductReview;
-
-    /**
-     * 회원 없이 등록하는 후기를 작성일·수정일을 받은 값 그대로 두고 저장합니다.
-     *
-     * 새 모델이면 만들고(`wasRecentlyCreated` 참), 기존 모델이면 받은 값만 덮어쓴다. 자동 시각 기록을 끄므로
-     * `created_at`·`updated_at` 은 `$attributes` 에 준 값이 그대로 남는다.
-     *
-     * @param  ProductReview  $review  저장할 후기 (새 모델 또는 기존 모델)
-     * @param  array<string, mixed>  $attributes  저장할 컬럼 값
-     * @return ProductReview 저장된 후기 모델
-     */
-    public function saveImported(ProductReview $review, array $attributes): ProductReview;
-
-    /**
-     * 회원이 쓴 리뷰를 삭제 여부와 무관하게 이미지와 함께 조회합니다 (회원 삭제 정리용).
-     *
-     * @param  int  $userId  회원 ID
-     * @return Collection 리뷰 컬렉션 (images 관계 로드됨, 휴지통 포함)
-     */
-    public function getWithTrashedByUserId(int $userId): Collection;
-
-    /**
-     * 상품에 달린 리뷰를 삭제 여부와 무관하게 이미지와 함께 조회합니다 (상품 삭제 정리용).
-     *
-     * @param  int  $productId  상품 ID
-     * @return Collection 리뷰 컬렉션 (images 관계 로드됨, 휴지통 포함)
-     */
-    public function getWithTrashedByProductId(int $productId): Collection;
 }

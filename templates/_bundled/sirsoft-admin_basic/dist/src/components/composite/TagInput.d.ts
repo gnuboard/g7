@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 export interface TagOption {
     value: string | number;
     label: string;
@@ -30,7 +29,7 @@ export interface TagInputProps {
     noOptionsMessage?: string;
     /** 새 항목 추가 라벨 (문자열 또는 생성 함수) */
     formatCreateLabel?: string | ((inputValue: string) => string);
-    /** 새 항목 추가 접미사 — 넘기면 값 뒤에 붙인다. 생략하면 화면 언어의 문장 `common.tag_input.create_label`(값 자리 `{{value}}`) */
+    /** 새 항목 추가 접미사 (기본값: "추가") */
     createLabelSuffix?: string;
     /** 최대 선택 개수 (멀티 모드에서만 유효) */
     maxItems?: number;
@@ -60,14 +59,6 @@ export interface TagInputProps {
     splitOnPaste?: boolean;
     /** 검색 입력 변경 콜백 (비동기 검색용, 매 키 입력 시 호출) */
     onInputChange?: (event: any) => void;
-    /** 요소 ID (레이아웃 편집기 elemId / DOM id) */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (data-editor-* 등 — 편집 모드 선택용) */
-    editorAttrs?: EditorAttrs;
-    /** 입력칸 접근 가능한 이름 — 있으면 곁 라벨을 잇지 않는다(#757) */
-    'aria-label'?: string;
-    /** 입력칸 이름이 될 요소 id — 있으면 곁 라벨을 잇지 않는다 */
-    'aria-labelledby'?: string;
 }
 /**
  * 태그 입력 컴포넌트

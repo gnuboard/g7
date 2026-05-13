@@ -4,15 +4,8 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Enums\IdentityVerificationStatus;
-use App\Helpers\TimezoneHelper;
-use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
-use App\Repositories\Concerns\DeletesInBatches;
-use App\Repositories\Concerns\PaginatesWithDeferredJoin;
-use App\Support\Query\PaginationLimits;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 
 /**
  * identity_verification_logs Repository 구현체.
@@ -21,9 +14,6 @@ use Illuminate\Support\Collection;
  */
 class IdentityVerificationLogRepository implements IdentityVerificationLogRepositoryInterface
 {
-    use DeletesInBatches;
-    use PaginatesWithDeferredJoin;
-
     /**
      * 검증 로그를 생성합니다.
      *
@@ -65,7 +55,6 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
      * @param  int|null  $userId  사용자 ID (null 가능)
      * @param  string|null  $targetHash  대상 해시 (null 가능)
      * @param  int  $withinMinutes  조회 범위 (분)
-     * @param  string|null  $providerId  정책이 지정한 인증 수단 (null 이면 수단 무관)
      * @return IdentityVerificationLog|null 가장 최근 검증 로그 또는 null
      */
     public function findRecentVerified(
@@ -73,13 +62,11 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
         ?int $userId,
         ?string $targetHash,
         int $withinMinutes,
-        ?string $providerId = null,
     ): ?IdentityVerificationLog {
         $query = IdentityVerificationLog::query()
             ->where('purpose', $purpose)
             ->where('status', IdentityVerificationStatus::Verified->value)
-            ->where('verified_at', '>=', Carbon::now()->subMinutes(max(0, $withinMinutes)))
-            ->when($providerId !== null, fn ($q) => $q->where('provider_id', $providerId));
+            ->where('verified_at', '>=', Carbon::now()->subMinutes(max(0, $withinMinutes)));
 
         if ($userId !== null) {
             $query->where('user_id', $userId);
@@ -93,52 +80,7 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public function findLatestVerifiedForUser(int $userId, string $providerId): ?IdentityVerificationLog
-    {
-        return IdentityVerificationLog::query()
-            ->where('user_id', $userId)
-            ->where('provider_id', $providerId)
-            ->where('status', IdentityVerificationStatus::Verified->value)
-            ->orderByDesc('verified_at')
-            ->first();
-    }
-
-    /**
-     * 같은 프로바이더·수신 대상·목적으로 주어진 시각 이후에 발행된 가장 최근 challenge 를 찾습니다.
-     * 발송이 실패로 끝난 challenge 는 제외합니다.
-     *
-     * @param  string  $providerId  프로바이더 id
-     * @param  string  $targetHash  수신 대상 sha256 해시
-     * @param  string  $purpose  IDV 목적
-     * @param  \DateTimeInterface  $since  이 시각 이후 발행분만
-     * @return IdentityVerificationLog|null 매칭 로그 또는 null
-     */
-    public function findLatestRequestedSince(
-        string $providerId,
-        string $targetHash,
-        string $purpose,
-        \DateTimeInterface $since,
-    ): ?IdentityVerificationLog {
-        return IdentityVerificationLog::query()
-            ->where('provider_id', $providerId)
-            ->where('target_hash', $targetHash)
-            ->where('purpose', $purpose)
-            ->where('status', '!=', IdentityVerificationStatus::Failed->value)
-            ->where('created_at', '>', $since)
-            ->orderByDesc('created_at')
-            ->first();
-    }
-
-    /**
-     * 미소비·미만료 검증 토큰으로 로그를 조회합니다.
-     *
-     * 만료 술어(expires_at > now)는 이 지점이 단일 관문이다. 정책 미들웨어·정책 서비스·
-     * 회원가입/비밀번호재설정 리스너·IdvTokenRule 이 모두 이 메서드를 경유하므로
-     * 호출부마다 만료 검사를 중복해 두지 않는다(한쪽 누락 시 그 경로가 우회로가 된다).
-     * expires_at 이 비어 있는 로그도 반환하지 않는다 — 모든 provider 가 challenge 생성 시
-     * expires_at 을 세팅하므로 NULL 은 정상 발급 산물이 아니다.
+     * 미소비된 검증 토큰으로 로그를 조회합니다.
      *
      * @param  string  $token  검증 토큰
      * @param  string  $purpose  본인인증 목적
@@ -151,23 +93,6 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
             ->where('purpose', $purpose)
             ->where('status', IdentityVerificationStatus::Verified->value)
             ->whereNull('consumed_at')
-            ->where('expires_at', '>', Carbon::now())
-            ->first();
-    }
-
-    /**
-     * 토큰으로 verified 상태의 challenge 를 소비·만료 여부와 무관하게 찾습니다.
-     *
-     * @param  string  $token  verification_token
-     * @param  string  $purpose  IDV 목적 (예: signup)
-     * @return IdentityVerificationLog|null 매칭 로그 또는 null
-     */
-    public function findVerifiedByToken(string $token, string $purpose): ?IdentityVerificationLog
-    {
-        return IdentityVerificationLog::query()
-            ->where('verification_token', $token)
-            ->where('purpose', $purpose)
-            ->where('status', IdentityVerificationStatus::Verified->value)
             ->first();
     }
 
@@ -188,181 +113,16 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
     }
 
     /**
-     * 만료 시각이 지난 진행 중(requested·sent) challenge 를 ID 순으로 나눠 콜백에 넘깁니다.
-     *
-     * @param  int  $size  한 번에 넘길 건수
-     * @param  callable(Collection<int, IdentityVerificationLog>): void  $callback  청크 콜백
-     * @return void
-     */
-    public function chunkPendingPastDue(int $size, callable $callback): void
-    {
-        IdentityVerificationLog::query()
-            ->whereIn('status', [
-                IdentityVerificationStatus::Requested->value,
-                IdentityVerificationStatus::Sent->value,
-            ])
-            ->where('expires_at', '<', Carbon::now())
-            ->chunkById($size, function ($logs) use ($callback) {
-                $callback($logs);
-            });
-    }
-
-    /**
-     * challenge 가 아직 진행 중(requested·sent)일 때만 만료로 바꿉니다.
-     *
-     * @param  IdentityVerificationLog  $log  대상 challenge
-     * @return bool 이번 호출로 만료로 바뀌었으면 true
-     */
-    public function expireIfPending(IdentityVerificationLog $log): bool
-    {
-        $affected = IdentityVerificationLog::query()
-            ->whereKey($log->getKey())
-            ->whereIn('status', [
-                IdentityVerificationStatus::Requested->value,
-                IdentityVerificationStatus::Sent->value,
-            ])
-            ->update(['status' => IdentityVerificationStatus::Expired->value]);
-
-        return $affected > 0;
-    }
-
-    /**
-     * 진행 중 challenge 의 시도 횟수를 상한 안에서만 1 올립니다.
-     *
-     * @param  string  $id  challenge id
-     * @return int|null 올린 뒤 시도 횟수 (올리지 못했으면 null)
-     */
-    public function incrementAttemptsIfAllowed(string $id): ?int
-    {
-        $affected = IdentityVerificationLog::query()
-            ->whereKey($id)
-            ->whereColumn('attempts', '<', 'max_attempts')
-            ->whereIn('status', [
-                IdentityVerificationStatus::Requested->value,
-                IdentityVerificationStatus::Sent->value,
-            ])
-            ->increment('attempts');
-
-        if ($affected === 0) {
-            return null;
-        }
-
-        return (int) IdentityVerificationLog::query()->whereKey($id)->value('attempts');
-    }
-
-    /**
-     * 진행 중이고 아직 확인되지 않은 challenge 만 확인 완료로 바꿉니다.
-     *
-     * @param  string  $id  challenge id
-     * @param  array<string, mixed>  $attributes  함께 저장할 값
-     * @return bool 이번 호출이 바꿨으면 true
-     */
-    public function markVerifiedIfPending(string $id, array $attributes): bool
-    {
-        return IdentityVerificationLog::query()
-            ->whereKey($id)
-            ->whereIn('status', [
-                IdentityVerificationStatus::Requested->value,
-                IdentityVerificationStatus::Sent->value,
-                IdentityVerificationStatus::Processing->value,
-            ])
-            ->whereNull('verified_at')
-            ->update($attributes) > 0;
-    }
-
-    /**
-     * 진행 중인 challenge 만 실패(잠금)로 바꿉니다.
-     *
-     * @param  string  $id  challenge id
-     * @return bool 이번 호출이 바꿨으면 true
-     */
-    public function markFailedIfPending(string $id): bool
-    {
-        return IdentityVerificationLog::query()
-            ->whereKey($id)
-            ->whereIn('status', [
-                IdentityVerificationStatus::Requested->value,
-                IdentityVerificationStatus::Sent->value,
-            ])
-            ->update(['status' => IdentityVerificationStatus::Failed->value]) > 0;
-    }
-
-    /**
-     * 진행 중인 challenge 만 취소로 바꿉니다.
-     *
-     * @param  string  $id  challenge id
-     * @return bool 이번 호출이 바꿨으면 true
-     */
-    public function markCancelledIfPending(string $id): bool
-    {
-        return IdentityVerificationLog::query()
-            ->whereKey($id)
-            ->whereIn('status', [
-                IdentityVerificationStatus::Requested->value,
-                IdentityVerificationStatus::Sent->value,
-                IdentityVerificationStatus::Processing->value,
-            ])
-            ->update(['status' => IdentityVerificationStatus::Cancelled->value]) > 0;
-    }
-
-    /**
-     * 확인 완료·미소비·미만료 결과만 소비로 표시합니다.
-     *
-     * @param  string  $id  challenge id
-     * @param  \DateTimeInterface  $consumedAt  소비 시각
-     * @return bool 이번 호출이 소비했으면 true
-     */
-    public function consumeIfUnconsumed(string $id, \DateTimeInterface $consumedAt): bool
-    {
-        return IdentityVerificationLog::query()
-            ->whereKey($id)
-            ->where('status', IdentityVerificationStatus::Verified->value)
-            ->whereNull('consumed_at')
-            ->where('expires_at', '>', Carbon::now())
-            ->update(['consumed_at' => $consumedAt]) > 0;
-    }
-
-    /**
-     * 이 요청이 남긴 소비 표시만 되돌립니다.
-     *
-     * @param  string  $id  challenge id
-     * @param  \DateTimeInterface  $consumedAt  소비할 때 쓴 시각
-     * @return bool 되돌렸으면 true
-     */
-    public function releaseConsumption(string $id, \DateTimeInterface $consumedAt): bool
-    {
-        return IdentityVerificationLog::query()
-            ->whereKey($id)
-            ->where('consumed_at', $consumedAt)
-            ->update(['consumed_at' => null]) > 0;
-    }
-
-    /**
-     * challenge 를 행 잠금으로 읽습니다.
-     *
-     * @param  string  $id  challenge id
-     * @return IdentityVerificationLog|null 조회 결과
-     */
-    public function findByIdForUpdate(string $id): ?IdentityVerificationLog
-    {
-        return IdentityVerificationLog::query()->whereKey($id)->lockForUpdate()->first();
-    }
-
-    /**
      * 지정된 일수 이전의 로그를 일괄 삭제합니다.
      *
      * @param  int  $days  보존 일수
-     * @param  \Closure(array<int, string>): void|null  $beforeEachBatch  배치마다 지우기 직전에 그 배치의 로그 ID 목록으로 부를 콜백
      * @return int 삭제된 행 수
      */
-    public function purgeOlderThan(int $days, ?\Closure $beforeEachBatch = null): int
+    public function purgeOlderThan(int $days): int
     {
-        return $this->deleteInBatches(
-            IdentityVerificationLog::query()
-                ->where('created_at', '<', Carbon::now()->subDays(max(1, $days))),
-            null,
-            $beforeEachBatch
-        );
+        return IdentityVerificationLog::query()
+            ->where('created_at', '<', Carbon::now()->subDays(max(1, $days)))
+            ->delete();
     }
 
     /**
@@ -370,7 +130,7 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
      *
      * @param  array  $filters  검색 필터
      * @param  int  $perPage  페이지당 항목 수
-     * @return LengthAwarePaginator 페이지네이터
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator 페이지네이터
      */
     public function search(array $filters, int $perPage = 20)
     {
@@ -398,7 +158,7 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
         if (! empty($filters['source_type'])) {
             $query->whereIn('origin_policy_key', function ($q) use ($filters) {
                 $q->select('key')
-                    ->from((new IdentityPolicy)->getTable())
+                    ->from('identity_policies')
                     ->where('source_type', $filters['source_type']);
                 if (! empty($filters['source_identifier'])) {
                     $q->where('source_identifier', $filters['source_identifier']);
@@ -430,33 +190,21 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
             }
         }
 
-        // 기간 필터는 사이트 타임존 기준으로 해석한다 — created_at 은 UTC 로 저장되고
-        // 화면은 사이트 타임존으로 보여주므로, 입력 문자열을 그대로 비교하면 하루가 어긋난다.
-        // 종료값은 시각 없이 날짜만 오는 경우(`<input type="date">`) 그날 끝까지 포함한다.
         if (! empty($filters['date_from'])) {
-            $query->where('created_at', '>=', TimezoneHelper::fromSiteDateTime($filters['date_from']));
+            $query->where('created_at', '>=', $filters['date_from']);
         }
 
         if (! empty($filters['date_to'])) {
-            $query->where('created_at', '<=', TimezoneHelper::fromSiteRangeEnd($filters['date_to']));
+            $query->where('created_at', '<=', $filters['date_to']);
         }
 
         $sortBy = in_array($filters['sort_by'] ?? null, ['created_at', 'attempts'], true)
             ? $filters['sort_by']
             : 'created_at';
         $sortOrder = ($filters['sort_order'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $query->orderBy($sortBy, $sortOrder);
 
-        // 본인인증 로그는 계속 쌓이는 이력이라 뒤쪽 페이지에서 OFFSET 비용이 커진다.
-        // 응답이 요청/응답 payload 를 그대로 노출하므로 컬럼은 좁히지 않고 지연 조인만 적용한다.
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: [['column' => $sortBy, 'direction' => $sortOrder]],
-            perPage: $perPage,
-            // 로그 테이블은 계속 쌓이기만 한다. 총 건수는 상한까지만 세고 "다음" 이동은
-            // per_page + 1 실측으로 끝까지 열어 둔다 (계산 불가는 마지막 페이지 번호 하나뿐).
-            resultCap: PaginationLimits::resultCap('admin.identity_logs'),
-        );
+        return $query->paginate($perPage);
     }
 
     /**

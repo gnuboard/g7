@@ -1,32 +1,10 @@
-// e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread)·키보드 항목 선택(포털 목록 초점 이동 — 단위 Select.keyboard.test.tsx, 관리자 화면 실제 키 실측). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
-import React, { useMemo, useState, useRef, useEffect, useCallback, useId } from 'react';
-import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
-import { getLocaleDisplayName } from '../../support/localeName';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Div } from './Div';
 import { Button } from './Button';
 import { Span } from './Span';
 import { Svg } from './Svg';
 import { Input } from './Input';
-import { translate } from '../../utils/translate';
-
-/** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 전수 실측) */
-const selectSearchPlaceholder = (): string => {
-  const translated = translate('common.search_placeholder');
-  return typeof translated === 'string' && translated !== 'common.search_placeholder' ? translated : 'Search...';
-};
-
-/** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 전수 실측 후속) */
-const selectSearchLabel = (): string => {
-  const translated = translate('common.search');
-  return typeof translated === 'string' && translated !== 'common.search' ? translated : 'Search';
-};
-
-/** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 전수 실측 같은 결함군) */
-const selectNoResults = (): string => {
-  const translated = translate('common.no_results');
-  return typeof translated === 'string' && translated !== 'common.no_results' ? translated : 'No results';
-};
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:Select')) ?? {
@@ -35,16 +13,9 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:Select')) ?? {
     error: (...args: unknown[]) => console.error('[Comp:Select]', ...args),
 };
 
-/** 드롭다운 패널 폭 상한(px). 트리거가 이보다 넓으면 트리거 폭이 상한이 된다. */
-const DROPDOWN_MAX_WIDTH = 320;
-/** 패널 오른쪽 끝과 뷰포트 사이 최소 여유(px) */
-const DROPDOWN_VIEWPORT_MARGIN = 8;
-
 export interface SelectOption {
   value: string | number;
   label: string;
-  /** 드롭다운 목록에서 라벨 아래 작은 글자로 보이는 설명 (트리거 버튼에는 보이지 않는다) */
-  description?: string;
   disabled?: boolean;
 }
 
@@ -57,22 +28,26 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   searchable?: boolean;
   /** 검색 input placeholder */
   searchPlaceholder?: string;
-  /** 값이 비었을 때 버튼에 흐리게 보이는 안내 글자 — 버튼의 읽기 이름도 된다 */
-  placeholder?: string;
-  /**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용). Select 는 커스텀 드롭다운 루트에
-   * 개별 data-editor-* 키를 spread 해야 선택/편집이 닿는다(커스텀 루트
-   * passthrough). basic 컴포넌트라 `{...props}` 로 DOM 표준 속성(id 등)도 함께 흐른다.
-   */
-  editorAttrs?: Record<string, unknown>;
 }
 
 /**
  * 로케일 코드를 사람이 읽을 수 있는 이름으로 변환
  */
 function getLocaleName(locale: string): string {
-  // 언어팩 이름 → 번역 → 내장 표 → 코드 (#148 — 종전 state.get(경로) 는 인자를 무시해 언어팩 이름을 못 읽었다)
-  return getLocaleDisplayName(locale);
+  const fromAppConfig = (window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale];
+  if (fromAppConfig) {
+    return fromAppConfig;
+  }
+  const fallback: Record<string, string> = {
+    ko: '한국어',
+    en: 'English',
+    ja: '日本語',
+    zh: '中文',
+    es: 'Español',
+    fr: 'Français',
+    de: 'Deutsch',
+  };
+  return fallback[locale] || locale;
 }
 
 /**
@@ -92,24 +67,15 @@ export const Select: React.FC<SelectProps> = ({
   disabled,
   searchable = false,
   searchPlaceholder,
-  placeholder,
-  editorAttrs,
-  'aria-label': ariaLabel,
-  'aria-labelledby': ariaLabelledBy,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [dropdownPos, setDropdownPos] = useState<{ top?: number; bottom?: number; left: number; minWidth: number; maxWidth: number } | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top?: number; bottom?: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const nativeSelectRef = useRef<HTMLSelectElement>(null);
-  // 보이는 항목 단추(목록 순서) — ↓↑ 로 실제 초점을 옮긴다(사용자 템플릿 Basic Select 와 같은 방식)
-  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  // 단추에서 ↓↑ 로 열 때, 목록이 그려진 뒤 초점을 줄 자리
-  const pendingFocusRef = useRef<'selected' | 'last' | null>(null);
 
   // options를 SelectOption[] 형식으로 정규화
   const normalizedOptions = useMemo((): SelectOption[] | null => {
@@ -143,28 +109,6 @@ export const Select: React.FC<SelectProps> = ({
     return selected?.label || '';
   }, [normalizedOptions, value]);
 
-  // 목록형 단추 이름 — 「{이름} {현재 값}」. 종전에는 aria-label 이 단추 이름을 덮어 고른 값이 빠지고,
-  // aria-labelledby 는 단추가 아니라 바깥 상자에 붙어 읽히지 않았다(#757). 숨은 이름 span + 값 span 을 잇는다.
-  const domId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
-  const nameId = `${domId}-name`;
-  const valueId = `${domId}-value`;
-  const listboxId = `${domId}-listbox`;
-  // 고른 값이 없으면 값 span 은 placeholder(안내 글자)를 보이므로 이름에 잇지 않는다 — 「상태 변경 상태 변경」처럼 겹친다.
-  // 값이 빈 자리표시 선택지(`<option value="" disabled>주문상태 변경</option>`, 「판매 상태 선택」)도 고른 값이 아니다 —
-  // disabled 이거나 글자가 이름으로 시작하면 잇지 않는다. 「언어 전체」처럼 뜻 있는 빈 값은 그대로 잇는다(수정 후 브라우저 실측)
-  const selectedOption = normalizedOptions?.find((opt) => String(opt.value) === String(value));
-  const isPlaceholderOption =
-    !!selectedOption &&
-    String(selectedOption.value) === '' &&
-    (!!selectedOption.disabled ||
-      (!!ariaLabel && selectedOption.label.trim().startsWith(String(ariaLabel).trim())));
-  const valuePart = selectedLabel && !isPlaceholderOption ? ` ${valueId}` : '';
-  const buttonLabelledBy = ariaLabel
-    ? `${nameId}${valuePart}`
-    : ariaLabelledBy
-      ? `${ariaLabelledBy}${valuePart}`
-      : undefined;
-
   // searchable 모드에서 검색어로 필터링된 옵션
   const visibleOptions = useMemo((): SelectOption[] | null => {
     if (!normalizedOptions) return null;
@@ -192,12 +136,6 @@ export const Select: React.FC<SelectProps> = ({
   /**
    * 드롭다운 위치 계산 (버튼 기준 fixed positioning)
    * Modal 등 overflow:hidden 컨테이너 내부에서도 정상 표시
-   *
-   * 패널 폭은 트리거 폭을 **하한**으로 두고 내용(max-content)만큼 넓어진다. 종전에는 트리거 폭에
-   * 고정해서, 트리거가 글자폭으로 수축한 경우(호출처 폭 클래스가 빌드 CSS 에 없을 때 등) 옵션
-   * 라벨이 두 줄로 꺾여 "상태 / 선택"·"교환결제대 / 기" 처럼 읽혔다. 상한은 max(트리거 폭,
-   * DROPDOWN_MAX_WIDTH) 과 뷰포트 오른쪽 여유 중 작은 값 — 긴 라벨(상품명 등)은 종전처럼 상한
-   * 안에서 줄바꿈되고, 화면 오른쪽 밖으로 삐져나가지 않는다.
    */
   const updateDropdownPos = useCallback(() => {
     if (!buttonRef.current) return;
@@ -206,21 +144,17 @@ export const Select: React.FC<SelectProps> = ({
     const dropdownMaxH = 280; // max-h-60(240px) + search(~40px)
     // 아래 공간 부족 시 위로 열기
     const openUpward = spaceBelow < dropdownMaxH && rect.top > spaceBelow;
-    const viewportRoom = window.innerWidth - rect.left - DROPDOWN_VIEWPORT_MARGIN;
-    const maxWidth = Math.max(rect.width, Math.min(Math.max(rect.width, DROPDOWN_MAX_WIDTH), viewportRoom));
     if (openUpward) {
       setDropdownPos({
         bottom: window.innerHeight - rect.top + 4,
         left: rect.left,
-        minWidth: rect.width,
-        maxWidth,
+        width: rect.width,
       });
     } else {
       setDropdownPos({
         top: rect.bottom + 4,
         left: rect.left,
-        minWidth: rect.width,
-        maxWidth,
+        width: rect.width,
       });
     }
   }, []);
@@ -280,88 +214,6 @@ export const Select: React.FC<SelectProps> = ({
     }
   };
 
-  // 고를 수 있는(잠기지 않은) 항목의 목록 위치
-  const enabledIndexes = (): number[] =>
-    (visibleOptions ?? []).map((opt, index) => (opt.disabled ? -1 : index)).filter((index) => index >= 0);
-
-  // 목록 안 항목으로 초점 — 'selected' 는 고른 값(잠겼거나 없으면 첫 항목), 'last' 는 고른 값(없으면 마지막 항목)
-  const focusOption = (where: 'selected' | 'last') => {
-    const enabled = enabledIndexes();
-    if (enabled.length === 0) return;
-    const selectedIndex = (visibleOptions ?? []).findIndex((opt) => String(opt.value) === String(value));
-    const target = enabled.includes(selectedIndex)
-      ? selectedIndex
-      : where === 'last' ? enabled[enabled.length - 1] : enabled[0];
-    optionRefs.current[target]?.focus();
-  };
-
-  // ↓↑ 로 연 목록이 그려지면(포털은 위치 계산 뒤에 붙는다) 맡겨 둔 항목으로 초점.
-  // 아래 기본 select 분기보다 먼저 부른다 — 분기 뒤에 두면 options 유무에 따라 훅 호출 수가 달라진다.
-  useEffect(() => {
-    if (!isOpen || !dropdownPos || pendingFocusRef.current === null) return;
-    const where = pendingFocusRef.current;
-    pendingFocusRef.current = null;
-    focusOption(where);
-  });
-
-  // 단추 키보드 — ↓/↑ 는 목록을 열고(열려 있으면 그대로) 항목으로 들어간다. Enter·Space 는 단추 기본 동작(클릭)
-  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (disabled || (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')) return;
-    event.preventDefault();
-    const where = event.key === 'ArrowUp' ? 'last' : 'selected';
-    if (isOpen && dropdownPos) {
-      focusOption(where);
-      return;
-    }
-    pendingFocusRef.current = where;
-    setIsOpen(true);
-  };
-
-  // 목록 키보드 — 잠긴 항목을 건너뛰며 ↓↑ 순환, Home·End 양 끝, Esc 는 목록만 닫고 단추로,
-  // Tab 은 닫고 단추로 초점을 돌려 이어지는 기본 Tab 이 단추 다음 칸으로 가게 한다(목록은 문서 끝 포털이다).
-  // 검색칸에서는 ↓ 만 항목으로 들어가고 나머지 키는 글자 편집에 남긴다.
-  const handleListboxKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      setIsOpen(false);
-      buttonRef.current?.focus();
-      return;
-    }
-    if (event.key === 'Tab') {
-      setIsOpen(false);
-      buttonRef.current?.focus();
-      return;
-    }
-    const enabled = enabledIndexes();
-    if (enabled.length === 0) return;
-    const inSearch = event.target === searchInputRef.current;
-    const current = optionRefs.current.findIndex((el) => el !== null && el === document.activeElement);
-    const position = enabled.indexOf(current);
-    let next: number;
-    switch (event.key) {
-      case 'ArrowDown':
-        next = position < 0 ? enabled[0] : enabled[(position + 1) % enabled.length];
-        break;
-      case 'ArrowUp':
-        if (inSearch) return;
-        next = position < 0 ? enabled[enabled.length - 1] : enabled[(position - 1 + enabled.length) % enabled.length];
-        break;
-      case 'Home':
-        if (inSearch) return;
-        next = enabled[0];
-        break;
-      case 'End':
-        if (inSearch) return;
-        next = enabled[enabled.length - 1];
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-    optionRefs.current[next]?.focus();
-  };
-
   const handleSelect = (optionValue: string | number) => {
     if (onChange) {
       // ActionDispatcher가 이벤트를 인식할 수 있도록 preventDefault 메서드 포함
@@ -377,33 +229,14 @@ export const Select: React.FC<SelectProps> = ({
     buttonRef.current?.focus();
   };
 
-  // 곁 라벨을 이름으로 잇는다 — 목록형 버튼은 「작업 유형 Artisan」 처럼 라벨 뒤에 현재 값이 이어 읽힌다.
-  // 종전에는 고른 값(「Artisan」)만 이름이라 무엇을 고르는 칸인지 알 수 없었다(7.1.0 전수 실측). 기본 select 는 라벨만 잇는다.
-  // 훅은 아래 기본 select 분기보다 먼저 부른다 — 분기 뒤에 두면 options 유무에 따라 훅 호출 수가 달라진다.
-  useAdjacentLabel(
-    (normalizedOptions ? buttonRef : nativeSelectRef) as React.RefObject<HTMLElement | null>,
-    true,
-    !!normalizedOptions
-  );
-
   // options가 없으면 기본 select 사용 (children 지원)
-  // .select 시맨틱(admin main.css)을 디폴트로 머지 → 호출처가 className 미지정해도 표준 외형
-  // 호출처가 이미 'select' 토큰을 명시한 경우 중복 prepend 방지.
   if (!normalizedOptions) {
-    const tokens = (className ?? '').split(/\s+/).filter(Boolean);
-    const mergedClassName = tokens.includes('select')
-      ? (className ?? '')
-      : ['select', className].filter(Boolean).join(' ');
     return (
       <select
-        ref={nativeSelectRef}
-        className={mergedClassName}
+        className={className}
         value={value}
         onChange={onChange as React.ChangeEventHandler<HTMLSelectElement>}
         disabled={disabled}
-        aria-label={ariaLabel}
-        aria-labelledby={ariaLabelledBy}
-        {...editorAttrs}
         {...props}
       >
         {children}
@@ -412,74 +245,25 @@ export const Select: React.FC<SelectProps> = ({
   }
 
   // 기본 스타일 (className이 없을 때 적용)
-  // variant 접두사가 붙은 유틸(disabled:bg-, dark:bg-, hover:bg- 등)은 베이스 외형이 아니므로
-  // hasCustomStyle/hasTextColor 판정에서 제외한다. 베이스 토큰만으로 커스텀 외형 여부를 판단해야
-  // 호출처가 disabled:bg-gray-100 만 추가했을 때 기본 크기 클래스(w-full px-4 py-2.5)가 유실되지 않는다.
-  // 확장이 자기 CSS 로 준 접두 빌드 클래스(`ecommerce:bg-white`)는 앞글자를 떼고 같은 뜻으로 읽는다 —
-  // 앞글자는 변형이 아니다(코어 G7Core.style.splitExtensionClassPrefix, engine-v1.94.0).
-  const bareToken = (t: string): string =>
-    (window as any).G7Core?.style?.splitExtensionClassPrefix?.(t)?.rest ?? t;
-  const baseTokens = (className ?? '')
-    .split(/\s+/)
-    .map(bareToken)
-    .filter((t) => t && !t.includes(':')) // variant 접두사(`disabled:`, `dark:`, `hover:` 등) 토큰 제외
-    .join(' ');
-  const hasCustomStyle = baseTokens.includes('bg-');
+  const hasCustomStyle = className && className.includes('bg-');
   // 커스텀 스타일에 텍스트 색상이 없으면 기본 텍스트 색상 보충
-  const hasTextColor = /text-(gray|red|blue|green|yellow|white|black|indigo|purple|pink|orange|amber|emerald|teal|cyan|slate)-\d+|text-white|text-black/.test(baseTokens);
+  const hasTextColor = className && /text-(gray|red|blue|green|yellow|white|black|indigo|purple|pink|orange|amber|emerald|teal|cyan|slate)-\d+|text-white|text-black/.test(className);
   const baseButtonClass = hasCustomStyle
     ? `${className}${hasTextColor ? '' : ' text-gray-700 dark:text-gray-200'}`
-    : `w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-sm text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none ${className}`;
-
-  // props 는 SelectHTMLAttributes 기반이라 Div(HTMLDivElement) 에 직접 spread 시 타입 불일치.
-  // 런타임 동작(편집기 data-editor-* / id 등 DOM 표준 속성 passthrough)은 동일하므로
-  // DOM-safe 레코드로 캐스팅해 커스텀 드롭다운 루트에 전달한다.
-  const rootDomProps = { ...editorAttrs, ...props } as Record<string, unknown>;
-
-  // 폭은 **바깥 상자**가 쥔다. 커스텀 드롭다운의 버튼은 `w-full` 로 부모를 채우는데,
-  // 부모(`relative`)에 폭이 없으면 글자 길이만큼 줄어 호출처가 준 `w-44` 가 무의미해진다
-  // (2026-09-16 실측: 「전체」 선택 상자가 80px 로 눌렸다). 호출처의 폭 토큰만 골라
-  // 바깥 상자로 올려 준다 — 나머지 외형은 종전대로 버튼이 받는다.
-  const widthClass = (className ?? '')
-    .split(/\s+/)
-    .filter((t) => /^(?:sm:|md:|lg:|xl:)?(?:w-|min-w-|max-w-|flex-1|grow)/.test(bareToken(t)))
-    .join(' ');
-
-  // 버튼에 `w-full` 이 있으면 확장 앞글자가 붙은 변형 없는 폭(`ecommerce:w-40`)은 버튼에서 뺀다 —
-  // 폭은 바깥 상자가 이미 쥐었다. 앞글자 없는 `w-40` 은 템플릿 CSS 안에서 `w-full` 에 졌지만,
-  // 확장 CSS 는 템플릿 층 밖이라 `w-full` 을 이겨 버튼이 고정 폭으로 굳는다(issue816 지문 비교).
-  const buttonTokens = baseButtonClass.split(/\s+/).filter(Boolean);
-  const buttonFillsBox = buttonTokens.some((t) => bareToken(t) === 'w-full');
-  const isPrefixedFixedWidth = (t: string): boolean => {
-    const split = (window as any).G7Core?.style?.splitExtensionClassPrefix?.(t);
-    return !!split?.prefix && /^w-/.test(split.rest) && split.rest !== 'w-full';
-  };
-  const buttonClass = buttonFillsBox
-    ? buttonTokens.filter((t) => !isPrefixedFixedWidth(t)).join(' ')
-    : baseButtonClass;
+    : `w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none ${className}`;
 
   return (
-    <Div ref={containerRef} className={`relative ${widthClass}`.trim()} {...rootDomProps}>
-      {ariaLabel && (
-        <Span id={nameId} className="sr-only">
-          {ariaLabel}
-        </Span>
-      )}
+    <Div ref={containerRef} className="relative">
       <Button
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
-        onKeyDown={handleTriggerKeyDown}
         disabled={disabled}
-        className={`${buttonClass} flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
+        className={`${baseButtonClass} flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        aria-controls={isOpen && dropdownPos ? listboxId : undefined}
-        aria-labelledby={buttonLabelledBy}
       >
-        {/* 고른 값이 없으면 placeholder 를 흐린 글자로 보인다 — 종전에는 placeholder 가 바깥 div 속성으로 새고
-            버튼은 빈칸이라, 일괄 처리 선택 상자 두 개가 이름도 글자도 없는 빈 상자로 보였다(7.1.0 전수 실측). */}
-        <Span id={valueId} className={selectedLabel ? 'truncate' : 'truncate text-gray-600 dark:text-gray-300'}>{selectedLabel || placeholder || '\u00A0'}</Span>
+        <Span className="truncate">{selectedLabel || '\u00A0'}</Span>
         <Svg
           className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -494,17 +278,8 @@ export const Select: React.FC<SelectProps> = ({
         <Div
           ref={dropdownRef}
           className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600 overflow-hidden"
-          style={{
-            top: dropdownPos.top,
-            bottom: dropdownPos.bottom,
-            left: dropdownPos.left,
-            width: 'max-content',
-            minWidth: dropdownPos.minWidth,
-            maxWidth: dropdownPos.maxWidth,
-          }}
-          id={listboxId}
+          style={{ top: dropdownPos.top, bottom: dropdownPos.bottom, left: dropdownPos.left, width: dropdownPos.width }}
           role="listbox"
-          onKeyDown={handleListboxKeyDown}
         >
           {searchable && (
             <Div className="p-2 border-b border-gray-200 dark:border-gray-600">
@@ -513,45 +288,37 @@ export const Select: React.FC<SelectProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                placeholder={searchPlaceholder ?? selectSearchPlaceholder()}
-                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-600 dark:placeholder-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder={searchPlaceholder ?? 'Search...'}
+                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 role="searchbox"
-                aria-label={searchPlaceholder ?? selectSearchLabel()}
+                aria-label={searchPlaceholder ?? 'Search'}
               />
             </Div>
           )}
-          <Div className="py-2 max-h-60 overflow-auto" style={{ scrollbarGutter: 'stable' }}>
+          <Div className="py-2 max-h-60 overflow-auto">
             {visibleOptions && visibleOptions.length === 0 && (
               <Div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                {searchTerm ? selectNoResults() : ''}
+                {searchTerm ? 'No results' : ''}
               </Div>
             )}
-            {(visibleOptions ?? []).map((option, index) => {
+            {(visibleOptions ?? []).map((option) => {
               const isSelected = String(option.value) === String(value);
               return (
                 <Button
                   key={option.value}
-                  ref={(el: HTMLButtonElement | null) => { optionRefs.current[index] = el; }}
                   type="button"
                   onClick={() => !option.disabled && handleSelect(option.value)}
                   disabled={option.disabled}
-                  className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                    isSelected ? 'text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'
+                  className={`w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                    isSelected ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'
                   } ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   role="option"
                   aria-selected={isSelected}
                 >
-                  {option.description ? (
-                    <Div className="flex flex-col gap-0.5 min-w-0">
-                      <Span>{option.label}</Span>
-                      <Span className="text-xs font-normal text-gray-500 dark:text-gray-300 whitespace-normal">{option.description}</Span>
-                    </Div>
-                  ) : (
-                    <Span>{option.label}</Span>
-                  )}
+                  <Span>{option.label}</Span>
                   {isSelected && (
                     <Svg
-                      className="w-5 h-5 flex-shrink-0 text-blue-600 dark:text-blue-400"
+                      className="w-5 h-5 text-blue-600 dark:text-blue-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

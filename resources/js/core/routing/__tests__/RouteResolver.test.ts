@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi, afterEach, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { Router } from '../Router';
-import { RouteResolver, type RouteChangeCallback } from '../RouteResolver';
+import { RouteResolver } from '../RouteResolver';
 import { Logger } from '../../utils/Logger';
 
 // fetch 모킹
@@ -9,12 +9,12 @@ global.fetch = vi.fn();
 describe('RouteResolver', () => {
   let router: Router;
   let resolver: RouteResolver;
-  let mockCallback: Mock<RouteChangeCallback>;
+  let mockCallback: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     router = new Router('sirsoft-admin_basic');
     resolver = new RouteResolver(router);
-    mockCallback = vi.fn<RouteChangeCallback>();
+    mockCallback = vi.fn();
     vi.clearAllMocks();
     // Logger 디버그 모드 활성화
     Logger.getInstance().setDebug(true);
@@ -43,8 +43,6 @@ describe('RouteResolver', () => {
   });
 
   describe('init', () => {
-    // @scenario area=init
-    // @effects route_resolver_init
     it('router.loadRoutes()를 호출해야 합니다', async () => {
       const loadRoutesSpy = vi.spyOn(router, 'loadRoutes');
 
@@ -53,8 +51,6 @@ describe('RouteResolver', () => {
       expect(loadRoutesSpy).toHaveBeenCalledOnce();
     });
 
-    // @scenario area=init
-    // @effects route_resolver_init
     it('popstate 이벤트 리스너를 등록해야 합니다', async () => {
       const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
 
@@ -63,8 +59,6 @@ describe('RouteResolver', () => {
       expect(addEventListenerSpy).toHaveBeenCalledWith('popstate', expect.any(Function));
     });
 
-    // @scenario area=init
-    // @effects route_resolver_init
     it('초기 라우트를 해석하고 콜백을 호출해야 합니다', async () => {
       // 현재 경로를 /admin으로 설정
       Object.defineProperty(window, 'location', {
@@ -83,8 +77,6 @@ describe('RouteResolver', () => {
       );
     });
 
-    // @scenario area=init
-    // @effects route_resolver_init
     it('이미 초기화된 경우 경고를 출력하고 재초기화하지 않아야 합니다', async () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -102,8 +94,6 @@ describe('RouteResolver', () => {
       mockCallback.mockClear(); // init에서 호출된 것 제외
     });
 
-    // @scenario area=resolve
-    // @effects route_resolved_to_callback
     it('현재 경로와 매칭되는 라우트를 찾아 콜백을 호출해야 합니다', () => {
       Object.defineProperty(window, 'location', {
         value: { pathname: '/admin/users/123' },
@@ -121,8 +111,6 @@ describe('RouteResolver', () => {
       );
     });
 
-    // @scenario area=resolve
-    // @effects route_resolved_to_callback
     it('매칭되지 않는 경로는 null로 콜백을 호출해야 합니다', () => {
       Object.defineProperty(window, 'location', {
         value: { pathname: '/unknown' },
@@ -142,8 +130,6 @@ describe('RouteResolver', () => {
       mockCallback.mockClear();
     });
 
-    // @scenario area=navigate
-    // @effects route_navigate_pushes_history
     it('window.history.pushState()를 호출해야 합니다', () => {
       const pushStateSpy = vi.spyOn(window.history, 'pushState');
 
@@ -153,8 +139,6 @@ describe('RouteResolver', () => {
       expect(pushStateSpy).toHaveBeenCalledWith(null, '', '/admin/users/456');
     });
 
-    // @scenario area=navigate
-    // @effects route_navigate_pushes_history
     it('state를 전달하면 pushState에 포함되어야 합니다', () => {
       const pushStateSpy = vi.spyOn(window.history, 'pushState');
       const state = { fromSearch: true };
@@ -164,8 +148,6 @@ describe('RouteResolver', () => {
       expect(pushStateSpy).toHaveBeenCalledWith(state, '', '/admin/users/456');
     });
 
-    // @scenario area=navigate
-    // @effects route_navigate_pushes_history
     it('navigate 후 resolve()를 호출하여 콜백이 실행되어야 합니다', () => {
       Object.defineProperty(window, 'location', {
         value: { pathname: '/admin/users/456' },
@@ -190,8 +172,6 @@ describe('RouteResolver', () => {
       mockCallback.mockClear();
     });
 
-    // @scenario area=popstate
-    // @effects route_popstate_resolves
     it('popstate 이벤트 발생 시 resolve()가 호출되어야 합니다', () => {
       Object.defineProperty(window, 'location', {
         value: { pathname: '/admin' },
@@ -211,8 +191,6 @@ describe('RouteResolver', () => {
   });
 
   describe('destroy', () => {
-    // @scenario area=destroy
-    // @effects route_resolver_destroy_cleans_up
     it('popstate 이벤트 리스너를 제거해야 합니다', async () => {
       const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
 
@@ -222,8 +200,6 @@ describe('RouteResolver', () => {
       expect(removeEventListenerSpy).toHaveBeenCalledWith('popstate', expect.any(Function));
     });
 
-    // @scenario area=destroy
-    // @effects route_resolver_destroy_cleans_up
     it('destroy 후 popstate 이벤트가 발생해도 콜백이 호출되지 않아야 합니다', async () => {
       await resolver.init(mockCallback);
       mockCallback.mockClear();
@@ -235,8 +211,6 @@ describe('RouteResolver', () => {
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
-    // @scenario area=destroy
-    // @effects route_resolver_destroy_cleans_up
     it('destroy 후 isInitialized가 false로 설정되어야 합니다', async () => {
       await resolver.init(mockCallback);
       resolver.destroy();

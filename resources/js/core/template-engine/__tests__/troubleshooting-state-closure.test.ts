@@ -3,12 +3,13 @@
  *
  * troubleshooting-state-closure.md에 기록된 모든 사례의 회귀 테스트입니다.
  *
- * @see 트러블슈팅 가이드 troubleshooting-state-closure.md
+ * @see docs/frontend/troubleshooting-state-closure.md
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ActionDispatcher } from '../ActionDispatcher';
 import { Logger } from '../../utils/Logger';
+import React from 'react';
 
 // AuthManager mock
 vi.mock('../../auth/AuthManager', () => ({
@@ -29,8 +30,8 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('트러블슈팅 회귀 테스트 - Stale Closure 이슈', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: Mock;
-  let mockSetState: Mock;
+  let mockNavigate: ReturnType<typeof vi.fn>;
+  let mockSetState: ReturnType<typeof vi.fn>;
   let capturedState: Record<string, any>;
 
   beforeEach(() => {
@@ -61,8 +62,6 @@ describe('트러블슈팅 회귀 테스트 - Stale Closure 이슈', () => {
      * 증상: PermissionTree에서 체크박스 클릭 시 상태가 변경되었다가 즉시 원래대로 되돌아감
      * 해결: getter 함수 패턴 적용 (parentComponentContext를 함수로 전달)
      */
-    // @scenario case=checkbox_revert
-    // @effects getter_reads_latest_state
     it('getter 함수 패턴으로 최신 상태를 참조할 수 있어야 함', () => {
       // stateRef 패턴 시뮬레이션
       const stateRef = { current: { checked: false } };
@@ -85,8 +84,6 @@ describe('트러블슈팅 회귀 테스트 - Stale Closure 이슈', () => {
      * 증상: DataGrid의 expandChildren 내부 체크박스 클릭 시 UI가 업데이트되지 않음
      * 해결: stateRef 패턴 적용
      */
-    // @scenario case=expand_children_local
-    // @effects expand_children_reads_local_via_state_ref
     it('stateRef.current를 통해 최신 _local 상태에 접근해야 함', () => {
       // stateRef 패턴 시뮬레이션
       const latestLocalStateRef = { current: { selectedOptionIds: [1, 2] } };
@@ -109,11 +106,9 @@ describe('트러블슈팅 회귀 테스트 - Stale Closure 이슈', () => {
      * 증상: expandChildren에서 _computed 기반 표현식이 항상 빈 배열 반환
      * 해결: computedRef 패턴 적용
      */
-    // @scenario case=expand_children_computed
-    // @effects expand_children_reads_computed_via_ref
     it('computedRef.current를 통해 최신 _computed 상태에 접근해야 함', () => {
       // computedRef 패턴 시뮬레이션
-      const latestComputedRef: { current: { filteredColumns: string[] } } = { current: { filteredColumns: [] } };
+      const latestComputedRef = { current: { filteredColumns: [] } };
 
       // 초기 상태 확인
       expect(latestComputedRef.current.filteredColumns).toEqual([]);
@@ -134,8 +129,6 @@ describe('트러블슈팅 회귀 테스트 - Stale Closure 이슈', () => {
      * 증상: Form 자동 바인딩 + debounce 사용 시 입력 값이 0으로 전송됨
      * 해결: 함수형 업데이트 + stateRef.current 우선 참조
      */
-    // @scenario case=debounce_setstate
-    // @effects debounce_callback_reads_latest_state
     it('함수형 업데이트로 최신 상태 기반 병합이 되어야 함', async () => {
       // 함수형 업데이트 시뮬레이션
       let internalState = { list_price: 0 };
@@ -155,8 +148,6 @@ describe('트러블슈팅 회귀 테스트 - Stale Closure 이슈', () => {
       expect(internalState.list_price).toBe(10000);
     });
 
-    // @scenario case=debounce_setstate
-    // @effects debounce_callback_reads_latest_state
     it('debounce 콜백에서도 stateRef를 통해 최신 상태에 접근해야 함', async () => {
       const stateRef = { current: { list_price: 0 } };
 
@@ -178,8 +169,6 @@ describe('트러블슈팅 회귀 테스트 - Stale Closure 이슈', () => {
      * 증상: setLocal 호출 후 즉시 refetchDataSource 호출 시 이전 상태값 전송
      * 해결: __g7PendingLocalState 메커니즘
      */
-    // @scenario case=custom_handler_setlocal_dispatch
-    // @effects setlocal_sets_pending_local_state
     it('setLocal 후 __g7PendingLocalState가 설정되어야 함', async () => {
       (window as any).__g7PendingLocalState = undefined;
 
@@ -190,9 +179,8 @@ describe('트러블슈팅 회귀 테스트 - Stale Closure 이슈', () => {
       };
 
       // setLocal 시뮬레이션 (ActionDispatcher.handleSetState)
-      await dispatcher['executeAction'](
+      await dispatcher.executeAction(
         {
-          type: 'click' as const,
           handler: 'setState' as const,
           params: { target: 'local', selectedItems: [1, 2] },
         },
@@ -215,8 +203,6 @@ describe('트러블슈팅 회귀 테스트 - Global State 공유 충돌', () => 
      * 증상: 사용자 관리 페이지에서 게시판 페이지로 이동 시 ColumnSelector에 이전 페이지 컬럼 표시
      * 해결: _local 스코프 사용 또는 key prop으로 리마운트 강제
      */
-    // @scenario case=page_state_conflict
-    // @effects page_local_state_isolated
     it('_local 상태는 페이지별로 격리되어야 함', () => {
       // 페이지 A의 _local
       const pageALocal = { visibleColumns: ['name', 'email', 'role'] };
@@ -228,8 +214,6 @@ describe('트러블슈팅 회귀 테스트 - Global State 공유 충돌', () => 
       expect(pageALocal.visibleColumns).not.toEqual(pageBLocal.visibleColumns);
     });
 
-    // @scenario case=page_state_conflict
-    // @effects page_local_state_isolated
     it('key prop을 사용하여 컴포넌트 리마운트를 강제할 수 있어야 함', () => {
       // key가 변경되면 React는 컴포넌트를 리마운트
       const key1 = 'datagrid-/admin/users';
@@ -244,8 +228,6 @@ describe('트러블슈팅 회귀 테스트 - Global State 공유 충돌', () => 
      * 증상: 주문관리에서 배송정책 화면 진입 시 DataGrid 컬럼이 렌더링되지 않음
      * 해결: 레이아웃 전환 시 _local 완전 초기화
      */
-    // @scenario case=spa_local_leak
-    // @effects layout_change_resets_local_before_snapshot
     it('레이아웃이 변경되면 _local 상태가 초기화되어야 함', () => {
       // 이전 레이아웃 상태
       let globalState: Record<string, any> = {
@@ -256,7 +238,7 @@ describe('트러블슈팅 회귀 테스트 - Global State 공유 충돌', () => 
       };
 
       // 레이아웃 변경 감지 시뮬레이션
-      const previousLayoutName: string = 'order_list';
+      const previousLayoutName = 'order_list';
       const newLayoutName = 'shipping_policy';
       const isLayoutChanged = previousLayoutName !== newLayoutName;
 
@@ -275,8 +257,6 @@ describe('트러블슈팅 회귀 테스트 - Global State 공유 충돌', () => 
      *           _global._local에 이전 페이지의 stale 키가 남음
      * 해결: _global 스냅샷을 _local 리셋 + initLocal/initGlobal/initIsolated 처리 이후로 이동
      */
-    // @scenario case=spa_local_leak
-    // @effects layout_change_resets_local_before_snapshot
     it('_global 스냅샷은 _local 리셋 이후에 생성되어야 함 (stale _local 키 유출 방지)', () => {
       // TemplateApp.handleRouteChange 시뮬레이션
       const globalState: Record<string, any> = {
@@ -290,7 +270,7 @@ describe('트러블슈팅 회귀 테스트 - Global State 공유 충돌', () => 
       };
 
       // 레이아웃 전환 감지
-      const previousLayoutName: string = 'admin_ecommerce_promotion_coupon_list';
+      const previousLayoutName = 'admin_ecommerce_promotion_coupon_list';
       const newLayoutName = 'admin_ecommerce_promotion_coupon_form';
       const isLayoutChanged = previousLayoutName !== newLayoutName;
 
@@ -332,8 +312,6 @@ describe('트러블슈팅 회귀 테스트 - Global State 공유 충돌', () => 
       expect(cleanGlobalSnapshot._local).toHaveProperty('errors');
     });
 
-    // @scenario case=spa_local_leak
-    // @effects layout_change_resets_local_before_snapshot
     it('_global._local이 clean이면 DynamicRenderer _localInit에서 오염 없이 병합되어야 함', () => {
       // DynamicRenderer._localInit effect 시뮬레이션
       // dataContext._global._local이 clean인 경우
@@ -350,7 +328,7 @@ describe('트러블슈팅 회귀 테스트 - Global State 공유 충돌', () => 
       };
 
       // shallow merge (기본 전략)
-      const globalLocalUpdate: Record<string, any> = { ...cleanGlobalLocal, ...initDataWithoutMeta, hasChanges: false };
+      const globalLocalUpdate = { ...cleanGlobalLocal, ...initDataWithoutMeta, hasChanges: false };
 
       // 검증: 이전 페이지의 stale 키(visibleColumns, filter 등)가 없어야 함
       expect(globalLocalUpdate).not.toHaveProperty('visibleColumns');
@@ -370,8 +348,6 @@ describe('트러블슈팅 회귀 테스트 - useControllableState 훅', () => {
      * 증상: useControllableState 사용 컴포넌트에서 체크박스 클릭 시 무반응 또는 깜빡거림
      * 해결: 낙관적 업데이트 패턴 + 내부 업데이트 플래그
      */
-    // @scenario case=controllable_checkbox
-    // @effects controllable_state_updates_optimistically
     it('낙관적 업데이트로 내부 상태를 즉시 반영해야 함', () => {
       // 낙관적 업데이트 시뮬레이션
       let internalValue = false;
@@ -392,8 +368,6 @@ describe('트러블슈팅 회귀 테스트 - useControllableState 훅', () => {
       expect(isInternalUpdate).toBe(true);
     });
 
-    // @scenario case=controllable_checkbox
-    // @effects controllable_state_updates_optimistically
     it('외부 props 동기화 시 내부 업데이트 플래그를 확인해야 함', () => {
       let internalValue = false;
       let isInternalUpdate = false;
@@ -421,8 +395,6 @@ describe('트러블슈팅 회귀 테스트 - useControllableState 훅', () => {
 
 describe('트러블슈팅 회귀 테스트 - expandChildren Stale Closure 패턴', () => {
   describe('stateRef와 computedRef 패턴 요약', () => {
-    // @scenario case=expand_children_ref_summary
-    // @effects expand_children_uses_state_and_computed_refs
     it('_local 상태는 stateRef.current로 접근해야 함', () => {
       const stateRef = { current: {} as Record<string, any> };
       const componentContext = {
@@ -440,8 +412,6 @@ describe('트러블슈팅 회귀 테스트 - expandChildren Stale Closure 패턴
       expect(getLatestState().updatedValue).toBe(2);
     });
 
-    // @scenario case=expand_children_ref_summary
-    // @effects expand_children_uses_state_and_computed_refs
     it('_computed 상태는 computedRef.current로 접근해야 함', () => {
       const computedRef = { current: {} as Record<string, any> };
 
@@ -462,7 +432,7 @@ describe('트러블슈팅 회귀 테스트 - expandChildren Stale Closure 패턴
 
 describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: Mock;
+  let mockNavigate: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockNavigate = vi.fn();
@@ -492,8 +462,6 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
      *
      * @see resources/js/core/template-engine/ActionDispatcher.ts evaluateExpression
      */
-    // @scenario case=handler_computed_stale
-    // @effects action_reads_latest_computed
     it('evaluateExpression에서 _computed 참조 시 computedRef.current의 최신 값을 사용해야 함', async () => {
       // computedRef를 포함한 __g7ActionContext mock
       const computedRef = { current: { selectedPaymentMethod: 'dbank' } };
@@ -515,14 +483,13 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
 
       // built-in 핸들러(apiCall 등)가 아닌 커스텀 핸들러 사용
       // (built-in 핸들러는 switch문에서 먼저 처리되어 registerHandler 호출 안됨)
-      dispatcher.registerHandler('capturePayment', async (action, _ctx) => {
+      dispatcher.registerHandler('capturePayment', async (action, ctx) => {
         capturedPaymentMethod = action.params?.payment_method;
         return { data: { success: true } };
       });
 
-      await dispatcher['executeAction'](
+      await dispatcher.executeAction(
         {
-          type: 'click' as const,
           handler: 'capturePayment' as const,
           params: {
             payment_method: '{{_computed.selectedPaymentMethod}}',
@@ -535,8 +502,6 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
       expect(capturedPaymentMethod).toBe('dbank');
     });
 
-    // @scenario case=handler_computed_stale
-    // @effects action_reads_latest_computed
     it('__g7ActionContext가 없는 경우 기존 dataContext._computed를 fallback으로 사용해야 함', async () => {
       delete (window as any).__g7ActionContext;
       (window as any).G7Core = {
@@ -553,14 +518,13 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
 
       let capturedPaymentMethod: string | null = null;
 
-      dispatcher.registerHandler('captureFallback', async (action, _ctx) => {
+      dispatcher.registerHandler('captureFallback', async (action, ctx) => {
         capturedPaymentMethod = action.params?.payment_method;
         return { data: { success: true } };
       });
 
-      await dispatcher['executeAction'](
+      await dispatcher.executeAction(
         {
-          type: 'click' as const,
           handler: 'captureFallback' as const,
           params: {
             payment_method: '{{_computed.selectedPaymentMethod}}',
@@ -583,8 +547,6 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
      *
      * @see resources/js/core/template-engine/ActionDispatcher.ts handleSequence
      */
-    // @scenario case=sequence_computed_recalc
-    // @effects sequence_recalculates_computed_after_setstate
     it('sequence 내 setState 후 다음 액션에서 재계산된 _computed를 참조해야 함', async () => {
       (window as any).G7Core = {
         state: {
@@ -607,23 +569,20 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
 
       let capturedComputed: any = null;
 
-      dispatcher.registerHandler('captureComputed', async (_action, ctx) => {
+      dispatcher.registerHandler('captureComputed', async (action, ctx) => {
         capturedComputed = ctx.data?._computed;
         return { data: capturedComputed };
       });
 
-      await dispatcher['executeAction'](
+      await dispatcher.executeAction(
         {
-          type: 'click' as const,
           handler: 'sequence' as const,
           actions: [
             {
-              type: 'click' as const,
               handler: 'setState' as const,
               params: { target: 'local', quantity: 5 },
             },
             {
-              type: 'click' as const,
               handler: 'captureComputed' as const,
             },
           ],
@@ -645,10 +604,8 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
      *   따라서 stale closure 방지를 위해서는 sequence 내에서 setState로 최신 상태를 설정한 후
      *   후속 액션을 실행해야 함.
      *
-     * @see templates/sirsoft-basic/layouts/shop/checkout.g7.html
+     * @see templates/sirsoft-basic/layouts/shop/checkout.json
      */
-    // @scenario case=sequence_initial_state
-    // @effects sequence_starts_from_context_state
     it('sequence는 context.state를 초기 상태로 사용하고 내부 setState로 갱신해야 함', async () => {
       // G7Core.state mock 설정
       (window as any).G7Core = {
@@ -670,26 +627,23 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
       let capturedStates: string[] = [];
 
       // 커스텀 핸들러로 상태 캡처 (apiCall은 built-in이므로 사용 불가)
-      dispatcher.registerHandler('capturePayment', async (_action, ctx) => {
+      dispatcher.registerHandler('capturePayment', async (action, ctx) => {
         capturedStates.push(ctx.data?._local?.paymentMethod || ctx.state?.paymentMethod || 'unknown');
         return { data: { success: true } };
       });
 
       // sequence 내에서 setState로 최신 상태 설정 후 액션 실행
-      await dispatcher['executeAction'](
+      await dispatcher.executeAction(
         {
-          type: 'click' as const,
           handler: 'sequence' as const,
           actions: [
             // 먼저 setState로 결제수단 업데이트
             {
-              type: 'click' as const,
               handler: 'setState' as const,
               params: { target: 'local', paymentMethod: 'dbank' },
             },
             // 업데이트된 상태로 결제 처리
             {
-              type: 'click' as const,
               handler: 'capturePayment' as const,
             },
           ],
@@ -701,8 +655,6 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
       expect(capturedStates[0]).toBe('dbank');
     });
 
-    // @scenario case=sequence_initial_state
-    // @effects sequence_starts_from_context_state
     it('G7Core가 없는 경우 context.state를 fallback으로 사용해야 함', async () => {
       // G7Core가 없는 환경 시뮬레이션
       delete (window as any).G7Core;
@@ -714,20 +666,18 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
         },
       };
 
-      let capturedLocalState = null as Record<string, any> | null;
+      let capturedLocalState: Record<string, any> | null = null;
 
-      dispatcher.registerHandler('processOrder', async (_action, ctx) => {
+      dispatcher.registerHandler('processOrder', async (action, ctx) => {
         capturedLocalState = ctx.data?._local || ctx.state || {};
         return { data: { success: true } };
       });
 
-      await dispatcher['executeAction'](
+      await dispatcher.executeAction(
         {
-          type: 'click' as const,
           handler: 'sequence' as const,
           actions: [
             {
-              type: 'click' as const,
               handler: 'processOrder' as const,
             },
           ],
@@ -740,8 +690,6 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
       expect(capturedLocalState?.paymentMethod).toBe('vbank');
     });
 
-    // @scenario case=sequence_initial_state
-    // @effects sequence_starts_from_context_state
     it('sequence 내 setState 후 다음 액션에서 최신 상태가 반영되어야 함', async () => {
       // G7Core.state mock 설정
       let currentLocalState = { step: 0 };
@@ -763,32 +711,27 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
 
       let capturedSteps: number[] = [];
 
-      dispatcher.registerHandler('captureStep', async (_action, ctx) => {
+      dispatcher.registerHandler('captureStep', async (action, ctx) => {
         capturedSteps.push(ctx.data?._local?.step || ctx.state?.step || -1);
         return { data: { step: ctx.data?._local?.step } };
       });
 
-      await dispatcher['executeAction'](
+      await dispatcher.executeAction(
         {
-          type: 'click' as const,
           handler: 'sequence' as const,
           actions: [
             {
-              type: 'click' as const,
               handler: 'setState' as const,
               params: { target: 'local', step: 1 },
             },
             {
-              type: 'click' as const,
               handler: 'captureStep' as const,
             },
             {
-              type: 'click' as const,
               handler: 'setState' as const,
               params: { target: 'local', step: 2 },
             },
             {
-              type: 'click' as const,
               handler: 'captureStep' as const,
             },
           ],
@@ -811,10 +754,8 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
      *       currentLocalState(pendingLocalState, 최신)를 덮어씀
      * 해결: v1.19.1 dispatch에서 pendingLocalState를 context.data._local에도 반영
      *
-     * @see 트러블슈팅 가이드 troubleshooting-state-closure.md 사례 7
+     * @see docs/frontend/troubleshooting-state-closure.md 사례 7
      */
-    // @scenario case=refetch_merge_pending_local
-    // @effects pending_local_wins_over_context_local
     it('dispatch 경로에서 pendingLocalState가 context.data._local보다 우선 적용되어야 함', () => {
       // refetchDataSource의 merge 패턴 시뮬레이션
       // G7Core.dispatch 경로: pendingLocalState(NEW)와 context.data._local(OLD)
@@ -836,8 +777,6 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
       expect(mergedFixed.selectedItems).toEqual([101, 102]); // 최신 값 유지
     });
 
-    // @scenario case=refetch_merge_pending_local
-    // @effects pending_local_wins_over_context_local
     it('pendingLocalState가 없으면 context.data._local을 그대로 사용해야 함', () => {
       // pendingLocalState가 없는 경우 (setLocal 호출 없이 dispatch)
       const contextLocal = { filter: 'active', page: 1 };
@@ -848,8 +787,6 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
       expect(effectiveLocal).toEqual({ filter: 'active', page: 1 });
     });
 
-    // @scenario case=refetch_merge_pending_local
-    // @effects pending_local_wins_over_context_local
     it('dispatch에서 context.data._local 교체 시 다른 context.data 속성은 보존되어야 함', () => {
       // dispatch 수정: context.data의 _local만 교체, 나머지 보존
       const pendingLocalState = { selectedItems: [1, 2] };
@@ -873,8 +810,6 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
       expect(updatedData.cartItems).toEqual({ data: { items: [] } });
     });
 
-    // @scenario case=refetch_merge_pending_local
-    // @effects pending_local_wins_over_context_local
     it('sequence 경로에서는 context.data._local이 이미 최신이므로 영향 없어야 함', async () => {
       // sequence 핸들러는 G7Core.dispatch를 경유하지 않음
       // context.data._local은 sequence 내에서 누적 업데이트됨
@@ -894,23 +829,20 @@ describe('트러블슈팅 회귀 테스트 - sequence 핸들러 Stale Closure', 
 
       let capturedSelectedItems: number[] | null = null;
 
-      dispatcher.registerHandler('captureSelection', async (_action, ctx) => {
+      dispatcher.registerHandler('captureSelection', async (action, ctx) => {
         capturedSelectedItems = ctx.data?._local?.selectedItems || ctx.state?.selectedItems || [];
         return { data: { items: capturedSelectedItems } };
       });
 
-      await dispatcher['executeAction'](
+      await dispatcher.executeAction(
         {
-          type: 'click' as const,
           handler: 'sequence' as const,
           actions: [
             {
-              type: 'click' as const,
               handler: 'setState' as const,
               params: { target: 'local', selectedItems: [1, 2] },
             },
             {
-              type: 'click' as const,
               handler: 'captureSelection' as const,
             },
           ],
@@ -935,7 +867,7 @@ describe('트러블슈팅 회귀 테스트 - startInterval Stale Closure (사례
    * 코어 startInterval 핸들러 동작 자체는 변경하지 않음 — 이 테스트는 우회 패턴을 잠금.
    */
   describe('[사례 8] launcher 가 setInterval 직접 사용으로 stale closure 우회', () => {
-    let setSpy: Mock;
+    let setSpy: ReturnType<typeof vi.fn>;
     let originalG7Core: any;
 
     beforeEach(() => {
@@ -957,8 +889,6 @@ describe('트러블슈팅 회귀 테스트 - startInterval Stale Closure (사례
       (window as any).G7Core = originalG7Core;
     });
 
-    // @scenario case=start_interval_stale
-    // @effects interval_launcher_counts_down_without_stale
     it('launcher 클로저의 expiresMs 를 매 tick 마다 사용해 remainingSeconds 가 정확히 감소', () => {
       const G7Core = (window as any).G7Core;
       const startTime = 1_700_000_000_000;
@@ -989,8 +919,6 @@ describe('트러블슈팅 회귀 테스트 - startInterval Stale Closure (사례
       window.clearInterval(tickHandle);
     });
 
-    // @scenario case=start_interval_stale
-    // @effects interval_launcher_counts_down_without_stale
     it('만료 시각 도달 시 remainingSeconds 가 0 으로 고정 (음수 방지)', () => {
       const G7Core = (window as any).G7Core;
       const startTime = 1_700_000_000_000;
@@ -1022,8 +950,6 @@ describe('트러블슈팅 회귀 테스트 - startInterval Stale Closure (사례
       window.clearInterval(tickHandle);
     });
 
-    // @scenario case=start_interval_stale
-    // @effects interval_launcher_counts_down_without_stale
     it('clearInterval 후 setState 호출 중단 — 모달 닫힌 후 누수 방지', () => {
       const G7Core = (window as any).G7Core;
       const startTime = 1_700_000_000_000;

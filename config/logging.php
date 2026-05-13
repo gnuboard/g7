@@ -1,6 +1,5 @@
 <?php
 
-use App\ActivityLog\ActivityLogChannel;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -144,35 +143,9 @@ return [
             'replace_placeholders' => true,
         ],
 
-        // 확장(모듈/플러그인) 업그레이드 전용 로그 채널.
-        //
-        // 코어 업그레이드('upgrade' 채널)와 실행 주체가 다르다: 코어 업데이트는 sudo(root)
-        // 로 실행되어 로그를 root 소유로 만드는 반면, 확장 업데이트(module:update 등)는
-        // php-fpm(www-data) 로 실행된다. 두 흐름이 같은 날짜 파일(upgrade-YYYY-MM-DD.log)
-        // 을 공유하면 root 가 만든 파일에 www-data 가 append 하지 못해 Permission denied 로
-        // 실패한다. 파일을 분리하여 각 실행 주체가 자기 소유 파일에만 쓰도록 하여 교차
-        // 소유권 충돌을 원천 차단한다.
-        'extension-upgrade' => [
-            'driver' => 'daily',
-            'path' => storage_path('logs/extension-upgrade.log'),
-            'level' => 'debug',
-            'days' => 30,
-            'replace_placeholders' => true,
-        ],
-
-        // 코어 CSP 위반 보고(#158) — 관리자 환경설정 > 보안의 CSP 모드가 '점검만'·'강제'일 때
-        // 브라우저가 `report-uri /api/csp-report` 로 보낸 위반을 한 줄씩 남긴다(IP 미기록, 쿼리스트링 제거).
-        'csp' => [
-            'driver' => 'daily',
-            'path' => storage_path('logs/csp.log'),
-            'level' => 'info',
-            'days' => 14,
-            'replace_placeholders' => true,
-        ],
-
         'activity' => [
             'driver' => 'custom',
-            'via' => ActivityLogChannel::class,
+            'via' => \App\ActivityLog\ActivityLogChannel::class,
             'level' => 'debug',
         ],
 

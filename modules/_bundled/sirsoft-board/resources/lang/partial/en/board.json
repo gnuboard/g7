@@ -35,9 +35,7 @@
       "write": "Create/Edit/Delete Posts",
       "write_desc": "Can create posts and edit/delete own posts.",
       "read-secret": "View Secret Posts",
-      "read-secret_desc": "Can view secret posts without entering password.",
-      "write-notice": "Create Notice Posts",
-      "write-notice_desc": "Can set posts as notice or unset them when writing or editing."
+      "read-secret_desc": "Can view secret posts without entering password."
     },
     "comments": {
       "read": "View Comments",

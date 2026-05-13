@@ -2,11 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
-use App\Helpers\PermissionHelper;
-use App\Repositories\Concerns\PaginatesWithDeferredJoin;
-use App\Repositories\Concerns\ResolvesSortSpec;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\ExtraFeeTemplate;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExtraFeeTemplateRepositoryInterface;
 
@@ -15,17 +13,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ExtraFeeTemplateRepositoryI
  */
 class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
 {
-    use PaginatesWithDeferredJoin;
-    use ResolvesSortSpec;
-
-    /** 허용 정렬 컬럼 (ExtraFeeTemplate::scopeOrderByField 와 동일 집합) */
-    private const SORTABLE_COLUMNS = ['id', 'zipcode', 'fee', 'region', 'is_active', 'created_at', 'updated_at'];
-
-    /**
-     * 의존성을 주입받습니다.
-     *
-     * @param  ExtraFeeTemplate  $model  추가배송비 템플릿 모델
-     */
     public function __construct(
         protected ExtraFeeTemplate $model
     ) {}
@@ -47,30 +34,11 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
     }
 
     /**
-     * 여러 우편번호로 템플릿을 한 번에 조회
-     *
-     * @param  array  $zipcodes  우편번호 목록
-     * @return Collection
-     */
-    public function findByZipcodes(array $zipcodes): Collection
-    {
-        if (empty($zipcodes)) {
-            return $this->model->newCollection();
-        }
-
-        return $this->model->whereIn('zipcode', $zipcodes)->get();
-    }
-
-    /**
      * {@inheritDoc}
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery();
-
-        // 권한 스코프 필터링 (`shipping-policies.read` 의 본인·역할 범위) — 배송정책 목록과 같은 범위.
-        // 목록 라우트는 미들웨어 스코프 검사 대상이 아니다.
-        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.shipping-policies.read');
 
         // 검색어 (우편번호 또는 지역명)
         if (! empty($filters['search'])) {
@@ -88,17 +56,12 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
             $query->where('is_active', $isActive);
         }
 
-        // 정렬 (모델 scopeOrderByField 와 동일한 허용 집합)
-        $sort = $this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'zipcode', 'asc');
+        // 정렬
+        $sortBy = $filters['sort_by'] ?? 'zipcode';
+        $sortOrder = $filters['sort_order'] ?? 'asc';
+        $query->orderByField($sortBy, $sortOrder);
 
-        // 지연 조인: 우편번호 단위 행이라 건수가 커질 수 있고 description(text)이 있어
-        // OFFSET 이 훑는 구간에서 넓은 컬럼까지 읽힌다. inner 는 id 만 훑는다.
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: $sort,
-            perPage: $perPage,
-        );
+        return $query->paginate($perPage);
     }
 
     /**
@@ -170,7 +133,6 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
      */
     public function getActiveList(): Collection
     {
-        // audit:allow query-unbounded-get reason: 추가배송비 템플릿은 운영자 등록 설정성 테이블 — 행 수가 운영자 행위(도서산간 우편번호 등록)에 묶여 데이터 증가에 비례하지 않는다
         return $this->model
             ->active()
             ->orderBy('zipcode')
@@ -182,7 +144,6 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
      */
     public function getAllAsExtraFeeSettings(): array
     {
-        // audit:allow query-unbounded-get reason: 추가배송비 템플릿은 운영자 등록 설정성 테이블 — 행 수가 운영자 행위(도서산간 우편번호 등록)에 묶여 데이터 증가에 비례하지 않는다
         return $this->model
             ->active()
             ->orderBy('zipcode')
@@ -267,12 +228,12 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
      * ID 목록으로 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  ID 목록
-     * @return Collection
+     * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function findByIdsKeyed(array $ids): Collection
+    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection
     {
         if (empty($ids)) {
-            return new Collection;
+            return new \Illuminate\Database\Eloquent\Collection();
         }
 
         return ExtraFeeTemplate::whereIn('id', $ids)->get()->keyBy('id');

@@ -2,10 +2,7 @@
 
 namespace App\Extension;
 
-use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
-use App\Contracts\Repositories\AttachmentRepositoryInterface;
-use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
@@ -13,57 +10,18 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
-use App\Enums\LayoutSyncMode;
-use App\Exceptions\ExtensionOperationInProgressException;
-use App\Exceptions\ExtensionUpdateFailedException;
-use App\Exceptions\PackageIntegrityException;
-use App\Extension\Cache\CacheDriverFactory;
-use App\Extension\Cache\CoreCacheDriver;
-use App\Extension\Concerns\ChecksDependencyVersions;
-use App\Extension\Concerns\ResolvesExtensionIcons;
-use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
-use App\Extension\Concerns\TracksGithubVersionCheckError;
-use App\Extension\Helpers\DependencyEnricher;
-use App\Extension\Helpers\DependencyVersionWarnings;
 use App\Extension\Helpers\ExtensionBackupHelper;
-use App\Extension\Helpers\ExtensionInstallRollbackHelper;
-use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
-use App\Extension\Helpers\ExtensionUpdateJournal;
 use App\Extension\Helpers\GithubHelper;
-use App\Extension\Helpers\IntegrationNotices;
-use App\Extension\Helpers\StuckUpdateRecovery;
-use App\Extension\Integrity\ExtensionIntegrityRecorder;
-use App\Extension\Integrity\PackageIntegrityOptions;
-use App\Extension\Integrity\PackageVerification;
-use App\Extension\Layout\DTO\LayoutSyncEntry;
-use App\Extension\Layout\LayoutRowSynchronizer;
-use App\Extension\Layout\LayoutSyncOptions;
-use App\Extension\Layout\LayoutSyncReport;
-use App\Extension\Support\LifecycleWarnings;
-use App\Extension\Support\StatusRestore;
-use App\Extension\Template\TemplateSettingsSchema;
-use App\Extension\Update\ExtensionUpdatePreviewStore;
-use App\Models\TemplateLayout;
 use App\Providers\CoreServiceProvider;
-use App\Services\Layout\LayoutDeletionService;
-use App\Services\Layout\TemplateChildrenDeleter;
 use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
-use App\Services\TemplateSettingsService;
-use App\Support\BootDeferredLog;
-use App\Support\ExtensionIntegrations;
-use App\Support\ExtensionStoragePath;
-use App\Support\LocalizedValue;
-use App\Support\RuntimeRole;
-use App\Support\StateContracts;
-use App\Support\Template\ColorSchemeDeclaration;
-use App\Support\Template\ExtensionCssOverrideResolver;
-use App\Support\Template\TemplateSettingCollections;
-use Illuminate\Support\Arr;
+use Composer\Semver\Semver;
 use Illuminate\Support\Facades\Auth;
+use App\Contracts\Extension\CacheInterface;
+use App\Extension\Cache\CoreCacheDriver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -75,29 +33,12 @@ use Illuminate\Support\Facades\Log;
  */
 class TemplateManager implements TemplateManagerInterface
 {
-    use ChecksDependencyVersions;
-    use ResolvesExtensionIcons;
-    use ResolvesUpdateCoreCompatibility;
-    use TracksGithubVersionCheckError;
     use Traits\CachesTemplateStatus;
     use Traits\ClearsTemplateCaches;
-    use Traits\CollectsFragmentSources;
     use Traits\ComputesLayoutContentHash;
     use Traits\InspectsUninstallData;
     use Traits\InvalidatesLayoutCache;
-    use Traits\SynchronizesLayoutRows;
     use Traits\ValidatesLayoutFiles;
-    use Traits\ValidatesStateContracts;
-
-    /**
-     * 아이콘 해석기에 넘길 확장 유형을 반환합니다.
-     *
-     * @return string 확장 유형 ('template')
-     */
-    protected function extensionIconType(): string
-    {
-        return 'template';
-    }
 
     /** @var int install 프로그레스바 단계 수 */
     public const INSTALL_STEPS = 4;
@@ -109,14 +50,6 @@ class TemplateManager implements TemplateManagerInterface
     public const UNINSTALL_STEPS = 3;
 
     protected array $templates = [];
-
-    /**
-     * 템플릿 디렉토리 스캔이 1회 이상 수행되었는지 여부
-     *
-     * `ensureLoaded()` 의 멱등 판정에만 쓴다 — 명시적 `loadTemplates()` 는 이 값과 무관하게
-     * 항상 재스캔한다(설치/삭제 직후 갱신 계약).
-     */
-    protected bool $templatesLoaded = false;
 
     /**
      * _pending 디렉토리의 템플릿 메타데이터 배열
@@ -132,43 +65,19 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected array $bundledTemplates = [];
 
-    /**
-     * _pending / _bundled 메타를 이번 로드 주기에 읽었는지 — 처음 읽힐 때까지 미룬다(#860)
-     */
-    protected bool $pendingAndBundledLoaded = false;
-
-    /**
-     * 마지막 설치·갱신이 빈 자리로 등록한 조각 참조 경고 (#712 — {@see takeLastLayoutWarnings()})
-     *
-     * @var array<int, array{file: string, partial: string, reason: string, message: string}>
-     */
-    protected array $lastLayoutWarnings = [];
-
     protected string $templatesPath;
 
     protected string $pendingTemplatesPath;
 
     protected string $bundledTemplatesPath;
 
-    /**
-     * @param  ExtensionManager  $extensionManager  설치·활성 상태 등 확장 공통 관리
-     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 행 조회·저장
-     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 행 조회·저장
-     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 행 조회·저장
-     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 행 조회·저장
-     * @param  LayoutExtensionService  $layoutExtensionService  확장 조각 등록·해제 (설치·제거에 동반)
-     * @param  LayoutRowSynchronizer  $layoutRowSynchronizer  레이아웃·확장 조각 행 동기화기 (3자 병합·기준 보관)
-     * @param  LayoutExtensionRepositoryInterface  $layoutExtensionRepository  확장 조각 행 조회 (수정한 레이아웃 목록)
-     */
     public function __construct(
         protected ExtensionManager $extensionManager,
         protected TemplateRepositoryInterface $templateRepository,
         protected LayoutRepositoryInterface $layoutRepository,
         protected ModuleRepositoryInterface $moduleRepository,
         protected PluginRepositoryInterface $pluginRepository,
-        protected LayoutExtensionService $layoutExtensionService,
-        protected LayoutRowSynchronizer $layoutRowSynchronizer,
-        protected LayoutExtensionRepositoryInterface $layoutExtensionRepository
+        protected LayoutExtensionService $layoutExtensionService
     ) {
         $this->templatesPath = base_path('templates');
         $this->pendingTemplatesPath = $this->templatesPath.DIRECTORY_SEPARATOR.'_pending';
@@ -176,52 +85,24 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
-     * 코어 캐시 드라이버를 반환합니다.
-     *
-     * 이 메서드가 다루는 키(`template.*`, `layout.*`)는 모두 코어 소유이므로
-     * 항상 `g7:core:` 네임스페이스를 써야 한다. 컨테이너의 `CacheInterface`
-     * 바인딩(모듈/플러그인 테스트가 일시적으로 `PluginCacheDriver` 등으로
-     * 재바인딩할 수 있음)에 의존하면 누수된 바인딩 때문에 forget/remember 가
-     * `g7:plugin.*` 네임스페이스로 빗나가므로, 항상 CoreCacheDriver 를 직접 생성한다.
-     *
-     * @return CacheInterface 코어 캐시 드라이버
+     * 코어 캐시 드라이버를 lazy 조회합니다.
      */
     private function cache(): CacheInterface
     {
-        return CacheDriverFactory::core();
-    }
-
-    /**
-     * 템플릿이 아직 로드되지 않았을 때만 로드합니다. (멱등)
-     *
-     * 소비자가 "템플릿 맵이 채워져 있음" 만 필요로 할 때 쓴다. `loadTemplates()` 는 맵을
-     * 리셋하고 디렉토리를 통째로 재스캔하므로, 그것을 무조건 호출하면 공유 인스턴스의
-     * 상태를 매번 갈아엎으면서 풀스캔 비용까지 반복된다.
-     *
-     * @return void 반환값 없음
-     */
-    public function ensureLoaded(): void
-    {
-        if ($this->templatesLoaded) {
-            return;
+        try {
+            return app(CacheInterface::class);
+        } catch (\Throwable $e) {
+            return new CoreCacheDriver(config('cache.default', 'array'));
         }
-
-        $this->loadTemplates();
     }
 
     /**
      * 모든 템플릿을 로드하고 초기화합니다.
-     *
-     * 항상 재스캔한다 — 설치/삭제/업데이트 직후 갱신을 보장하는 계약이다.
-     * 단순히 "채워져 있으면 됨" 인 호출자는 `ensureLoaded()` 를 쓴다.
-     *
-     * @return void 반환값 없음
      */
     public function loadTemplates(): void
     {
         // 기존 템플릿 캐시 초기화 (테스트 환경에서 재로드 지원)
         $this->templates = [];
-        $this->templatesLoaded = true;
 
         if (! File::exists($this->templatesPath)) {
             return;
@@ -297,11 +178,11 @@ class TemplateManager implements TemplateManagerInterface
             }
         }
 
-        // _pending / _bundled 메타는 관리 목록·업데이트 확인처럼 실제로 쓰는 곳이 처음 읽을 때 로드한다 — 부팅마다
-        // 미설치 번들 매니페스트까지 읽지 않게(#860). 다시 load 하면 지연 상태를 처음으로 돌린다.
-        $this->pendingTemplates = [];
-        $this->bundledTemplates = [];
-        $this->pendingAndBundledLoaded = false;
+        // _pending 디렉토리 로드
+        $this->loadPendingTemplates();
+
+        // _bundled 디렉토리 로드
+        $this->loadBundledTemplates();
     }
 
     /**
@@ -309,8 +190,6 @@ class TemplateManager implements TemplateManagerInterface
      *
      * 클래스 로드 없이 template.json 메타데이터만 읽어 저장합니다.
      * 이미 활성 디렉토리에 로드된 템플릿은 제외합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function loadPendingTemplates(): void
     {
@@ -318,7 +197,7 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($pending as $identifier => $metadata) {
             // 이미 활성 디렉토리에 로드된 템플릿은 제외
-            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier])) {
+            if (isset($this->templates[$identifier])) {
                 continue;
             }
 
@@ -331,8 +210,6 @@ class TemplateManager implements TemplateManagerInterface
      *
      * 클래스 로드 없이 template.json 메타데이터만 읽어 저장합니다.
      * 이미 활성 디렉토리 또는 _pending에 로드된 템플릿은 제외합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function loadBundledTemplates(): void
     {
@@ -340,31 +217,12 @@ class TemplateManager implements TemplateManagerInterface
 
         foreach ($bundled as $identifier => $metadata) {
             // 이미 활성 디렉토리 또는 pending에 로드된 템플릿은 제외
-            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier]) || isset($this->bundledTemplates[$identifier])) {
+            if (isset($this->templates[$identifier]) || isset($this->pendingTemplates[$identifier])) {
                 continue;
             }
 
             $this->bundledTemplates[$identifier] = $metadata;
         }
-    }
-
-    /**
-     * _pending / _bundled 템플릿 메타데이터를 처음 읽힐 때 한 번 로드합니다.
-     *
-     * 읽는 것은 매니페스트 JSON 뿐이다 — 번들 사본의 진입 클래스를 require 하지 않는다(재선언 Fatal 선례).
-     * 이미 메모리에 있는 키는 덮지 않는다(같은 주기에 갱신·재로드된 항목 보존).
-     *
-     * @return void 반환값 없음
-     */
-    protected function ensurePendingAndBundledLoaded(): void
-    {
-        if ($this->pendingAndBundledLoaded) {
-            return;
-        }
-
-        $this->pendingAndBundledLoaded = true;
-        $this->loadPendingTemplates();
-        $this->loadBundledTemplates();
     }
 
     /**
@@ -374,8 +232,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getPendingTemplates(): array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         return $this->pendingTemplates;
     }
 
@@ -386,8 +242,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getBundledTemplates(): array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         return $this->bundledTemplates;
     }
 
@@ -443,8 +297,11 @@ class TemplateManager implements TemplateManagerInterface
 
         // 배열인 경우 로케일에 맞는 값 반환
         if (is_array($value)) {
-            // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 번째 값 → 빈 문자열 (#148)
-            return LocalizedValue::pick($value, $locale) ?? '';
+            // 요청 언어 → fallback 언어 → 첫 번째 값 → 빈 문자열
+            return $value[$locale]
+                ?? $value[config('app.fallback_locale')]
+                ?? (! empty($value) ? array_values($value)[0] : '')
+                ?? '';
         }
 
         return '';
@@ -476,17 +333,6 @@ class TemplateManager implements TemplateManagerInterface
             return false;
         }
 
-        // 확장 CSS 계약 — 다크 방식 선언과 확장 CSS 덮기 파일 선언의 형식
-        $contractErrors = array_merge(
-            ColorSchemeDeclaration::validationErrors($data),
-            (new ExtensionCssOverrideResolver)->validationErrors($data),
-        );
-        if ($contractErrors !== []) {
-            Log::error("Invalid extension CSS contract in template.json for {$templateName}", ['errors' => $contractErrors]);
-
-            return false;
-        }
-
         return true;
     }
 
@@ -502,159 +348,6 @@ class TemplateManager implements TemplateManagerInterface
     protected function convertDirectoryToNamespace(string $directoryName): string
     {
         return ExtensionManager::directoryToNamespace($directoryName);
-    }
-
-    /**
-     * 템플릿 필수 저장 키 선언 항목 형식 — 개인정보 동의 플러그인의 운영자 항목 규칙과 같다(끝 `*` 는 앞부분 매칭).
-     */
-    public const NECESSARY_STORAGE_KEY_PATTERN = '/^[A-Za-z0-9_.:@+\-]+\*?$/';
-
-    /**
-     * 템플릿 필수 저장 키 선언의 저장소 종류.
-     */
-    public const NECESSARY_STORAGE_SCOPES = ['localStorage', 'sessionStorage', 'cookie'];
-
-    /**
-     * 활성 사용자·관리자 템플릿이 template.json `necessary_storage` 로 선언한 필수 브라우저 저장 키의 합집합 (7.1.3)
-     *
-     * 쿠키 동의 플러그인은 동의 전 「필수」 목록 밖의 저장 키를 지운다. 확장이 키를 필수로 올리는 통로는 PHP 필터 훅
-     * 하나라 PHP 리스너가 없는 템플릿은 등록할 수 없었다. 템플릿은 template.json 에 선언하고, 동의 플러그인이 이 함수의
-     * 결과를 제공 목록에 더한다(코어는 동의 플러그인을 모른다 — 의존 방향 유지). 형식이 틀린 항목은 무시한다.
-     *
-     * @return array{localStorage: array<int, string>, sessionStorage: array<int, string>, cookie: array<int, string>}
-     */
-    public function getActiveTemplatesNecessaryStorage(): array
-    {
-        $merged = array_fill_keys(self::NECESSARY_STORAGE_SCOPES, []);
-
-        foreach (['user', 'admin'] as $type) {
-            foreach (self::getActiveTemplateIdentifiersByType($type) as $identifier) {
-                $manifestPath = $this->templatesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'template.json';
-                $manifest = is_file($manifestPath) ? json_decode((string) file_get_contents($manifestPath), true) : null;
-                $declared = self::normalizeNecessaryStorage(is_array($manifest) ? ($manifest['necessary_storage'] ?? null) : null, $identifier);
-
-                foreach (self::NECESSARY_STORAGE_SCOPES as $scope) {
-                    $merged[$scope] = array_values(array_unique([...$merged[$scope], ...$declared[$scope]]));
-                }
-            }
-        }
-
-        return $merged;
-    }
-
-    /**
-     * template.json `necessary_storage` 선언을 검사해 형식이 맞는 항목만 돌려줍니다.
-     *
-     * @param  mixed  $declared  선언값 (`{localStorage: [], sessionStorage: [], cookie: []}`)
-     * @param  string  $identifier  템플릿 식별자 (로그용)
-     * @param  bool  $reportWarnings  설치·업데이트처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
-     * @return array{localStorage: array<int, string>, sessionStorage: array<int, string>, cookie: array<int, string>}
-     */
-    public static function normalizeNecessaryStorage(mixed $declared, string $identifier, bool $reportWarnings = false): array
-    {
-        $result = array_fill_keys(self::NECESSARY_STORAGE_SCOPES, []);
-        if ($declared === null) {
-            return $result;
-        }
-
-        // 버린 이유별로 모은다 — 경고 문구가 「무엇을 왜 버렸는지」를 이유마다 한 덩어리로 말한다
-        $invalid = ['not_object' => false, 'invalid_scope' => [], 'invalid_key' => []];
-        if (! is_array($declared)) {
-            $invalid['not_object'] = true;
-        } else {
-            foreach ($declared as $scope => $items) {
-                if (! in_array($scope, self::NECESSARY_STORAGE_SCOPES, true) || ! is_array($items)) {
-                    $invalid['invalid_scope'][] = (string) $scope;
-
-                    continue;
-                }
-                foreach ($items as $item) {
-                    if (is_string($item) && strlen($item) <= 128 && preg_match(self::NECESSARY_STORAGE_KEY_PATTERN, $item) === 1) {
-                        $result[$scope][] = $item;
-                    } else {
-                        $invalid['invalid_key'][] = $scope.':'.(is_scalar($item) ? (string) $item : gettype($item));
-                    }
-                }
-                $result[$scope] = array_values(array_unique($result[$scope]));
-            }
-        }
-
-        $reasons = [];
-        if ($invalid['not_object']) {
-            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_not_object', [], 'necessary_storage');
-        }
-        if ($invalid['invalid_scope'] !== []) {
-            $names = implode(', ', $invalid['invalid_scope']);
-            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_invalid_scope', ['names' => $names], $names);
-        }
-        if ($invalid['invalid_key'] !== []) {
-            $items = implode(', ', $invalid['invalid_key']);
-            $reasons[] = LifecycleWarnings::reason('extensions.warnings.necessary_storage_invalid_key', ['items' => $items], $items);
-        }
-
-        if ($reasons !== []) {
-            Log::warning('template.json necessary_storage 의 형식이 틀린 항목을 무시합니다', [
-                'template' => $identifier,
-                'invalid' => $invalid,
-            ]);
-            if ($reportWarnings) {
-                // 템플릿이 template.json 에 잘못 적은 값이라 다시 실행해도 같다 — 템플릿 개발자가 고칠 선언으로 표시한다
-                LifecycleWarnings::current()->declaration('necessary_storage', $identifier, implode(' / ', $reasons));
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * 엔진이 template.json 에서 읽는 최상위 키 — 셸 HTML 에 싣도록(`expose`) 선언하지 않으면 첫 화면에 config API 왕복이 남는다 (#879)
-     */
-    public const ENGINE_TEMPLATE_CONFIG_KEYS = ['scroll_restoration', 'errorHandling', 'error_config'];
-
-    /**
-     * template.json `expose`(셸 HTML 에 미리 실을 최상위 키) 선언을 검사합니다 (#879).
-     *
-     * 설치·업데이트를 막지 않고 경고로만 알린다. `expose` 가 배열이 아니면 아무것도 싣지 않는다는 경고,
-     * 엔진이 읽는 키({@see self::ENGINE_TEMPLATE_CONFIG_KEYS})가 template.json 에 있는데 `expose` 에 없으면 「첫 화면에 API 왕복
-     * 1회가 남습니다」 경고를 낸다. `expose` 가 아예 없는 템플릿(선언을 쓰지 않는 제3자 템플릿)은 경고하지 않는다 — 종전 동작이다.
-     *
-     * @param  array<string, mixed>  $manifest  template.json 데이터
-     * @param  string  $identifier  템플릿 식별자 (로그·경고 대상)
-     * @param  bool  $reportWarnings  설치·업데이트처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
-     * @return array<int, string> 경고 사유 (없으면 빈 배열)
-     */
-    public static function exposeDeclarationWarnings(array $manifest, string $identifier, bool $reportWarnings = false): array
-    {
-        if (! array_key_exists('expose', $manifest)) {
-            return [];
-        }
-
-        $reasons = [];
-        if (! is_array($manifest['expose'])) {
-            $reasons[] = LifecycleWarnings::reason('extensions.warnings.expose_not_array', [], 'expose');
-        } else {
-            $declared = array_filter($manifest['expose'], 'is_string');
-            $missing = array_values(array_filter(
-                self::ENGINE_TEMPLATE_CONFIG_KEYS,
-                fn (string $key) => array_key_exists($key, $manifest) && ! in_array($key, $declared, true),
-            ));
-            if ($missing !== []) {
-                $keys = implode(', ', $missing);
-                $reasons[] = LifecycleWarnings::reason('extensions.warnings.expose_missing_engine_keys', ['keys' => $keys], $keys);
-            }
-        }
-
-        if ($reasons !== []) {
-            Log::warning('template.json expose 선언을 확인하세요 — 첫 화면 템플릿 설정 인라인', [
-                'template' => $identifier,
-                'reasons' => $reasons,
-            ]);
-            if ($reportWarnings) {
-                LifecycleWarnings::current()->declaration('expose', $identifier, implode(' / ', $reasons));
-            }
-        }
-
-        return $reasons;
     }
 
     /**
@@ -690,13 +383,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function installTemplate(string $templateName, ?\Closure $onProgress = null, bool $force = false): bool
     {
-        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'install');
-
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
-        HookManager::doAction('core.templates.before_install', $templateName);
-
         // identifier 형식 검증 (내부 호출 방어)
         ExtensionManager::validateIdentifierFormat($templateName);
 
@@ -709,131 +395,81 @@ class TemplateManager implements TemplateManagerInterface
             );
         }
 
-        // 검증(2단계)은 복사된 활성 디렉토리를 읽어야 해서 복사보다 뒤에 온다. 그래서 검증이
-        // 실패하면 방금 만든 활성 디렉토리가 고아로 남는다 — DB 행이 없어 목록에도 뜨지 않고
-        // 오류도 남지 않은 채 디스크만 점유한다. 이번 호출이 만든 것이면 되돌린다.
-        $rollbackActivePath = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
-        $rollbackDirExisted = File::isDirectory($rollbackActivePath);
-
         // 1. _pending/_bundled에서 활성 디렉토리로 복사 (활성 디렉토리에 없는 경우)
         // force=true 시 활성 디렉토리가 있어도 원본으로 덮어씀 (불완전 설치 복구)
-        $onProgress?->__invoke('copy', __('extensions.progress.copy_files'));
-        // 무결성 기록용 원본 판별 — `_bundled` 는 번들, `_pending` 은 ZIP·GitHub 설치 서비스가 검증 결과를 적는다 (7.2.0)
-        $integritySource = ExtensionIntegrityRecorder::installSourceOf($this->templatesPath, $templateName, $force || ! isset($this->templates[$templateName]));
+        $onProgress?->__invoke('copy', '파일 복사 중...');
         if ($force || ! isset($this->templates[$templateName])) {
             $this->copyToActiveFromSource($templateName, $onProgress, $force);
         }
 
         // 2. 검증
-        $onProgress?->__invoke('validate', __('extensions.progress.validate'));
+        $onProgress?->__invoke('validate', '검증 중...');
 
-        try {
-            DB::transaction(function () use ($templateName, $onProgress) {
-                $template = $this->getTemplate($templateName);
-                if (! $template) {
-                    throw new \Exception(__('templates.errors.not_found', ['template' => $templateName]));
-                }
+        return DB::transaction(function () use ($templateName, $onProgress) {
+            $template = $this->getTemplate($templateName);
+            if (! $template) {
+                throw new \Exception(__('templates.errors.not_found', ['template' => $templateName]));
+            }
 
-                // 의존성 확인
-                $this->checkDependencies($template);
+            // 의존성 확인
+            $this->checkDependencies($template);
 
-                // SEO 설정 검증 (설치 전 seo-config.json 유효성 검사)
-                $this->validateSeoConfig($templateName);
+            // SEO 설정 검증 (설치 전 seo-config.json 유효성 검사)
+            $this->validateSeoConfig($templateName);
 
-                // 환경설정 선언 검증 (#434) — 깨진 선언이 설정 화면 500 으로 늦게 드러나지 않게 설치를 막는다
-                $this->validateSettingsDeclaration($templateName);
+            // 레이아웃 검증 (설치 전 모든 레이아웃 파일 유효성 검사)
+            $this->validateLayouts($templateName);
 
-                // 필수 저장 키 선언(template.json necessary_storage) 형식 검사 — 틀린 항목은 무시하고 경고로만 알린다(설치는 막지 않음, 7.1.3)
-                self::normalizeNecessaryStorage($template['necessary_storage'] ?? null, $templateName, reportWarnings: true);
+            // name과 description 다국어 변환 (역호환성)
+            $name = $this->convertToMultilingual($template['name']);
+            $description = $this->convertToMultilingual($template['description'] ?? '');
 
-                // 셸에 미리 실을 키 선언(template.json expose) 검사 — 설치는 막지 않고 경고로만 알린다 (#879)
-                self::exposeDeclarationWarnings($template, $templateName, reportWarnings: true);
+            // 3. DB 등록
+            $onProgress?->__invoke('db', 'DB 등록 중...');
 
-                // 레이아웃 검증 (설치 전 모든 레이아웃 파일 유효성 검사) — 7.0 JSON 의 깨진 조각 참조는 경고로 모은다 (#712)
-                $this->lastLayoutWarnings = [];
-                $this->validateLayouts($templateName);
-                $this->rememberLayoutWarnings();
-
-                // name과 description 다국어 변환 (역호환성)
-                $name = $this->convertToMultilingual($template['name']);
-                $description = $this->convertToMultilingual($template['description'] ?? '');
-
-                // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입
-                $manifest = HookManager::applyFilters(
-                    "template.{$templateName}.manifest.translations",
-                    ['name' => $name, 'description' => $description]
-                );
-                $name = $manifest['name'] ?? $name;
-                $description = $manifest['description'] ?? $description;
-
-                // 3. DB 등록
-                $onProgress?->__invoke('db', __('extensions.progress.db_register'));
-
-                // 템플릿 레코드 생성 또는 업데이트
-                $templateRecord = $this->templateRepository->updateOrCreate(
-                    ['identifier' => $templateName],
-                    [
-                        'vendor' => $template['vendor'],
-                        'name' => $name,
-                        'version' => $template['version'],
-                        'type' => $template['type'],
-                        'description' => $description,
-                        'github_url' => $template['github_url'] ?? null,
-                        'metadata' => $template['metadata'] ?? null,
-                        'status' => ExtensionStatus::Inactive->value,
-                        'created_by' => Auth::id(),
-                        'updated_by' => Auth::id(),
-                    ]
-                );
-
-                // 4. 레이아웃 등록
-                $onProgress?->__invoke('layout', __('extensions.progress.layout_register'));
-
-                // 레이아웃 JSON 파일 일괄 등록
-                $this->registerLayouts($templateName, $templateRecord->id);
-
-                // 모듈 레이아웃 오버라이드 등록
-                $this->registerLayoutOverrides($templateName, $templateRecord->id);
-
-                // Extension 오버라이드 등록 (모듈/플러그인 Extension 커스터마이징)
-                $this->registerExtensionOverrides($templateName, $templateRecord->id);
-
-                // 템플릿 설정 화면을 활성 관리자 템플릿에 등록 (#434) — 꺼진 채 설치돼도 미리 설정할 수 있게
-                $this->registerSettingsLayout($templateName);
-
-                // 에러 레이아웃 검증 (레이아웃 등록 후 수행)
-                $this->validateErrorLayouts($templateName, $template);
-
-                // 템플릿 상태 캐시 무효화
-                self::invalidateTemplateStatusCache();
-
-                // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
-                $this->incrementExtensionCacheVersion();
-
-                // 훅 발행: 템플릿 설치 완료
-                // @deprecated 'core.templates.installed' — identifier 1개만 전달하는 구훅. 정규 훅은
-                //   트랜잭션 밖의 after_install 이다. 구독자가 있어 다음 메이저까지 유지(위치도 그대로).
-                HookManager::doAction('core.templates.installed', $templateName);
-            });
-        } catch (\Throwable $e) {
-            ExtensionInstallRollbackHelper::removeIfCreatedByThisInstall(
-                $rollbackActivePath,
-                $rollbackDirExisted,
-                $templateName,
-                'template',
+            // 템플릿 레코드 생성 또는 업데이트
+            $templateRecord = $this->templateRepository->updateOrCreate(
+                ['identifier' => $templateName],
+                [
+                    'vendor' => $template['vendor'],
+                    'name' => $name,
+                    'version' => $template['version'],
+                    'type' => $template['type'],
+                    'description' => $description,
+                    'github_url' => $template['github_url'] ?? null,
+                    'metadata' => $template['metadata'] ?? null,
+                    'status' => ExtensionStatus::Inactive->value,
+                    'created_by' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                ]
             );
 
-            throw $e;
-        }
+            // 4. 레이아웃 등록
+            $onProgress?->__invoke('layout', '레이아웃 등록 중...');
 
-        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). **DB 트랜잭션 밖**에서 발화한다: 언어팩 동기화
-        // 구독은 동기 실행이라, 트랜잭션 안이면 커밋 실패 시 언어팩 레코드만 롤백되고 파일 I/O 는 남는다.
-        // 설치 롤백 try 밖이기도 해서, 리스너 예외가 방금 끝난 설치를 되돌리지 않는다.
-        app(ExtensionIntegrityRecorder::class)->recordInstallSource('template', $templateName, $integritySource);
+            // 레이아웃 JSON 파일 일괄 등록
+            $this->registerLayouts($templateName, $templateRecord->id);
 
-        HookManager::doAction('core.templates.after_install', $templateName, $this->getTemplateInfo($templateName) ?? []);
+            // 모듈 레이아웃 오버라이드 등록
+            $this->registerLayoutOverrides($templateName, $templateRecord->id);
 
-        return true;
+            // Extension 오버라이드 등록 (모듈/플러그인 Extension 커스터마이징)
+            $this->registerExtensionOverrides($templateName, $templateRecord->id);
+
+            // 에러 레이아웃 검증 (레이아웃 등록 후 수행)
+            $this->validateErrorLayouts($templateName, $template);
+
+            // 템플릿 상태 캐시 무효화
+            self::invalidateTemplateStatusCache();
+
+            // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
+            $this->incrementExtensionCacheVersion();
+
+            // 훅 발행: 템플릿 설치 완료
+            HookManager::doAction('core.templates.installed', $templateName);
+
+            return true;
+        });
     }
 
     /**
@@ -841,19 +477,12 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  활성화할 템플릿명 (identifier)
      * @param  bool  $force  필요 의존성이 충족되지 않아도 강제 활성화 여부
-     * @return array{success: bool, warning?: bool, missing_modules?: array, missing_plugins?: array, template_type?: string, current_active_identifier?: string|null, message?: string} 활성화 결과
+     * @return array{success: bool, warning?: bool, missing_modules?: array, missing_plugins?: array, message?: string} 활성화 결과
      *
      * @throws \Exception 활성화 실패 시
      */
     public function activateTemplate(string $templateName, bool $force = false): array
     {
-        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'activate');
-
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
-        HookManager::doAction('core.templates.before_activate', $templateName);
-
         $template = $this->getTemplate($templateName);
         if (! $template) {
             throw new \Exception(__('templates.errors.not_found', ['template' => $templateName]));
@@ -863,19 +492,6 @@ class TemplateManager implements TemplateManagerInterface
         if (! $templateRecord) {
             throw new \Exception(__('templates.errors.not_installed', ['template' => $templateName]));
         }
-
-        // 멈춘 업데이트(updating 고착)는 활성화가 정리하고 진행한다(7.1.1 출시 전)
-        if (StuckUpdateRecovery::recover('template', $templateName, $templateRecord, fn (array $attributes) => $this->templateRepository->updateByIdentifier($templateName, $attributes), lockHeld: true) !== null) {
-            self::invalidateTemplateStatusCache();
-            $templateRecord = $this->templateRepository->findByIdentifier($templateName);
-        }
-
-        // 상태 가드: 설치·삭제·업데이트가 진행 중이면 차단 (모듈·플러그인 활성화와 같은 가드)
-        StuckUpdateRecovery::assertNotInProgress($templateName, $templateRecord);
-
-        // 필터 훅 — 직전 훅 뒤에 돈다(before → filter 순서). 직전 훅과 함께 Manager 로 옮겨 CLI·어드민 UI 공통으로
-        // 한 번 발화한다(#138 후속 — 설계 결정). 결과 값은 종전처럼 쓰지 않는다(활성화 상태는 아래에서 정한다).
-        HookManager::applyFilters('core.templates.filter_activate_data', ['status' => ExtensionStatus::Active->value], $templateRecord);
 
         // 이미 활성화된 템플릿인지 확인
         if ($templateRecord->status === ExtensionStatus::Active->value) {
@@ -891,34 +507,59 @@ class TemplateManager implements TemplateManagerInterface
             );
         }
 
-        // 전역 상태 공개 계약 이름 충돌 검증 (#639) — 같은 유형의 활성 템플릿은 이번 활성화로 교체되므로
-        // 그 선언은 빼고 본다. 같은 계약을 선언한 새 사용자 템플릿이 옛 템플릿 때문에 막히면 안 된다.
-        $replaced = $this->getActiveTemplate((string) ($template['type'] ?? ''));
-        $this->validateStateContracts(
-            'template:'.$templateName,
-            StateContracts::normalize($template['state_contracts'] ?? []),
-            is_array($replaced) && isset($replaced['identifier']) ? ['template:'.$replaced['identifier']] : [],
-        );
+        // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
+        $missingModules = [];
+        $missingPlugins = [];
 
-        // 의존성 검증: 필요한 모듈/플러그인이 설치·활성이고 요구 버전을 충족하는지 확인한다. 종전 사본은 버전 제약을 버려
-        // 버전 미달 의존 위에서도 활성화가 통과하고, 직후 런타임 미들웨어가 같은 미달로 화면 전체를 503 으로 내렸다(#152).
-        // 판정은 설치·런타임과 같은 원천(DependencyEnricher)을 쓴다 — 사유: not_installed·inactive·version_mismatch
-        $unmet = $this->collectUnmetDependencies($template['dependencies'] ?? []);
-        $missingModules = $unmet['modules'];
-        $missingPlugins = $unmet['plugins'];
+        // 모듈 의존성 확인
+        // dependencies.modules는 연관 배열 형식 {"identifier": ">=version"} 또는 빈 객체 {}
+        $requiredModules = $template['dependencies']['modules'] ?? [];
+        foreach ($requiredModules as $requiredModuleIdentifier => $_versionConstraint) {
+            $requiredModule = $this->moduleRepository->findByIdentifier($requiredModuleIdentifier);
+            if (! $requiredModule) {
+                $missingModules[] = [
+                    'identifier' => $requiredModuleIdentifier,
+                    'name' => $requiredModuleIdentifier,
+                    'status' => 'not_installed',
+                ];
+            } elseif ($requiredModule->status !== ExtensionStatus::Active->value) {
+                $missingModules[] = [
+                    'identifier' => $requiredModule->identifier,
+                    'name' => $requiredModule->getLocalizedName(),
+                    'status' => 'inactive',
+                ];
+            }
+        }
+
+        // 플러그인 의존성 확인
+        // dependencies.plugins는 연관 배열 형식 {"identifier": ">=version"} 또는 빈 객체 {}
+        $requiredPlugins = $template['dependencies']['plugins'] ?? [];
+        foreach ($requiredPlugins as $requiredPluginIdentifier => $_versionConstraint) {
+            $requiredPlugin = $this->pluginRepository->findByIdentifier($requiredPluginIdentifier);
+            if (! $requiredPlugin) {
+                $missingPlugins[] = [
+                    'identifier' => $requiredPluginIdentifier,
+                    'name' => $requiredPluginIdentifier,
+                    'status' => 'not_installed',
+                ];
+            } elseif ($requiredPlugin->status !== ExtensionStatus::Active->value) {
+                $missingPlugins[] = [
+                    'identifier' => $requiredPlugin->identifier,
+                    'name' => $requiredPlugin->getLocalizedName(),
+                    'status' => 'inactive',
+                ];
+            }
+        }
 
         $hasMissingDependencies = ! empty($missingModules) || ! empty($missingPlugins);
 
         if ($hasMissingDependencies && ! $force) {
             // 필요한 의존성이 충족되지 않고 강제 활성화가 아닌 경우 경고 반환
-            // template_type·current_active_identifier — 강제 활성화 창이 타입별 503 경고(관리자면 복구 명령)를 고른다
             return [
                 'success' => false,
                 'warning' => true,
                 'missing_modules' => $missingModules,
                 'missing_plugins' => $missingPlugins,
-                'template_type' => (string) ($template['type'] ?? ''),
-                'current_active_identifier' => is_array($replaced) ? ($replaced['identifier'] ?? null) : null,
                 'message' => __('templates.warnings.missing_dependencies'),
             ];
         }
@@ -937,32 +578,14 @@ class TemplateManager implements TemplateManagerInterface
                 'updated_at' => now(),
             ]);
 
-            // 템플릿 자기 레이아웃을 keep 규칙으로 갱신한다(D11) — 꺼 둔 채 업데이트한 템플릿은 켤 때 새 판이 들어와야
-            // 하고(종전엔 옛 화면에 고착), 운영자가 고친 부분은 남아야 한다. 파일이 원본과 같으면 아무것도 바꾸지 않는다.
-            try {
-                $this->refreshTemplateLayouts($templateName, true);
-            } catch (\Throwable $e) {
-                Log::error('템플릿 활성화 중 레이아웃 갱신 실패', ['template' => $templateName, 'error' => $e->getMessage()]);
-                LifecycleWarnings::current()->add('layout_refresh', $templateName, $e->getMessage());
-            }
-
-            // 활성 모듈/플러그인의 레이아웃을 새 템플릿에 **먼저** 등록한다 — 아래 조각 등록의 적용 필터(C10)가 호스트
-            // 레이아웃·확장점이 이 템플릿에 실재하는지 보므로, 호스트가 없는 채로 조각을 먼저 등록하면 모듈 화면에 붙는
-            // 조각이 통째로 빠진다(#712 — 새 관리자 템플릿 활성화 시 38 → 27행).
-            // registerModuleLayouts/registerPluginLayouts는 모든 활성 템플릿을 조회하므로
-            // 새로 활성화된 템플릿에도 자동으로 레이아웃이 등록됨 (keep 규칙 — 템플릿을 바꿨다 돌아와도 운영자 수정 보존, D3)
-            // 켜는 템플릿 종류의 화면만 처리하고 한 확장의 실패는 그 확장만 건너뛴다 — 무관한 확장의 다른 종류 화면 하나가
-            // 깨졌다고 활성화 전체가 되돌아가지 않게 한다(#725 D6).
-            app(ModuleManager::class)->registerLayoutsForAllActiveModules($template['type'], $templateName);
-            app(PluginManager::class)->registerLayoutsForAllActivePlugins($template['type'], $templateName);
-
-            // 관리자 템플릿을 켜면 설치된 모든 템플릿(꺼진 것 포함)의 설정 화면을 이 템플릿에 등록한다 (#434)
-            if (($template['type'] ?? null) === 'admin') {
-                $this->registerSettingsLayoutsForAllInstalled($templateName);
-            }
-
-            // 그 뒤에 활성 모듈/플러그인의 레이아웃 확장(조각)을 새 템플릿에 등록 (keep — 운영자가 고친 조각은 보존)
+            // 활성 모듈/플러그인의 레이아웃 확장을 새 템플릿에 등록
             $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);
+
+            // 활성 모듈/플러그인의 레이아웃을 새 템플릿에 등록
+            // registerModuleLayouts/registerPluginLayouts는 모든 활성 템플릿을 조회하므로
+            // 새로 활성화된 템플릿에도 자동으로 레이아웃이 등록됨 (updateOrCreate로 기존 중복 안전)
+            app(ModuleManager::class)->registerLayoutsForAllActiveModules();
+            app(PluginManager::class)->registerLayoutsForAllActivePlugins();
 
             // 확장 캐시 버전 증가 (프론트엔드가 새로운 캐시로 요청하도록)
             $this->incrementExtensionCacheVersion();
@@ -980,13 +603,7 @@ class TemplateManager implements TemplateManagerInterface
         });
 
         // 훅 발행: 템플릿 활성화 완료
-        // @deprecated 'core.templates.activated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_activate.
         HookManager::doAction('core.templates.activated', $templateName);
-
-        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 템플릿만 계약이 다르다: 식별자 없이
-        // 정보 배열 1개를 넘긴다(구독자 handleTemplateAfterActivate(array)). 정보가 없어도
-        // 활동 로그에 템플릿 이름이 남도록 빈 배열 대신 identifier 를 담아 넘긴다.
-        HookManager::doAction('core.templates.after_activate', $this->getTemplateInfo($templateName) ?? ['identifier' => $templateName]);
 
         return ['success' => true];
     }
@@ -995,7 +612,6 @@ class TemplateManager implements TemplateManagerInterface
      * 지정된 타입의 모든 템플릿을 비활성화합니다.
      *
      * @param  string  $type  템플릿 타입 ('admin' 또는 'user')
-     * @return void 반환값 없음
      */
     protected function deactivateTemplatesByType(string $type): void
     {
@@ -1018,28 +634,15 @@ class TemplateManager implements TemplateManagerInterface
      * @param  string  $templateName  비활성화할 템플릿명 (identifier)
      * @param  string  $reason  비활성화 사유 (DeactivationReason enum value: manual|incompatible_core)
      * @param  string|null  $incompatibleRequiredVersion  incompatible_core 사유 시 요구된 코어 버전 제약
-     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
      * @return bool 비활성화 성공 여부
      */
     public function deactivateTemplate(
         string $templateName,
         string $reason = DeactivationReason::Manual->value,
         ?string $incompatibleRequiredVersion = null,
-        ?string &$failureReason = null,
     ): bool {
-        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'deactivate');
-
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
-        HookManager::doAction('core.templates.before_deactivate', $templateName);
-
-        $failureReason = null;
-
         $template = $this->getTemplate($templateName);
         if (! $template) {
-            $failureReason = __('templates.errors.not_found', ['template' => $templateName]);
-
             return false;
         }
 
@@ -1072,8 +675,7 @@ class TemplateManager implements TemplateManagerInterface
         // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
         HookManager::doAction('core.templates.after_deactivate', $templateName);
 
-        // 부팅 중 자동 비활성화에서도 불리므로 언어팩 번역 등록 뒤에 남긴다
-        BootDeferredLog::info('templates.messages.template_deactivated', [], [
+        Log::info(__('templates.messages.template_deactivated'), [
             'template' => $templateName,
         ]);
 
@@ -1085,54 +687,14 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  제거할 템플릿명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
-     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups  삭제 전에 보관한 운영자 소유 디렉토리(`custom/`)의 사본 경로가 담기는 out 파라미터.
-     *                                                                                        운영자에게 "지웠지만 사본은 여기 있다" 를 알리기 위한 것이므로 호출부가 노출해야 한다.
-     * @param  bool  $deleteData  운영자가 "데이터도 삭제" 를 골랐는지 — 고르면 템플릿 환경설정 파일과 그 설정 첨부도
-     *                            지운다(#434). 고르지 않으면 보존해 재설치 때 그대로 돌아온다. after_uninstall 훅 인자로도 전달한다
      * @return bool 제거 성공 여부
      *
      * @throws \Exception 템플릿을 찾을 수 없을 때
      */
-    public function uninstallTemplate(
-        string $templateName,
-        ?\Closure $onProgress = null,
-        ?array &$preservedBackups = null,
-        bool $deleteData = false,
-    ): bool {
-        // 같은 템플릿의 다른 작업(설치·업데이트·활성화·비활성화·제거)과 겹치지 않게 잠근다 — 직전 훅보다 먼저 잠가 거절된
-        // 요청이 훅을 발화하지 않는다. 잠금 저장소 오류면 시작하지 않는다(503). 이 지역 변수가 메서드를 빠져나갈 때 풀린다(#161).
-        $operationLock = ExtensionOperationLock::acquire('template', $templateName, 'uninstall');
-
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
-        HookManager::doAction('core.templates.before_uninstall', $templateName, $deleteData);
-
-        $preservedBackups = [];
-
-        // 상태 가드: 설치·삭제·업데이트가 진행 중이면 차단 (모듈·플러그인 삭제와 같은 가드)
-        $existingRecord = $this->templateRepository->findByIdentifier($templateName);
-        if ($existingRecord) {
-            ExtensionStatusGuard::assertNotInProgress(
-                ExtensionStatus::from($existingRecord->status),
-                $templateName
-            );
-        }
-
-        // 켜진 템플릿은 비활성화(직전·완료 훅 포함)를 먼저 거친다 — 종전에는 바로 제거해 비활성화 훅이 돌지 않았다.
-        // 진행 중 상태 가드를 지난 뒤에만 끈다. 유형의 마지막 활성 템플릿 거절은 TemplateService 가 이 메서드보다 먼저 한다.
-        // 비활성화는 아래 제거 트랜잭션 밖에서 끝나므로 제거가 실패해 롤백돼도 템플릿은 꺼진 상태로 남는다.
-        if ($existingRecord && $existingRecord->status === ExtensionStatus::Active->value) {
-            if (! $this->deactivateTemplate($templateName, failureReason: $deactivationFailure)) {
-                throw new \Exception(__('templates.errors.deactivation_failed', [
-                    'error' => $deactivationFailure ?? __('templates.errors.unknown_error'),
-                ]));
-            }
-        }
-
-        // after_uninstall 훅에 실을 정보는 파괴 단계(DB 행 삭제·디렉토리 삭제) 이전에 캡처한다.
-        $templateInfo = $this->getTemplateInfo($templateName) ?? [];
-
+    public function uninstallTemplate(string $templateName, ?\Closure $onProgress = null): bool
+    {
         // 1. 캐시 삭제
-        $onProgress?->__invoke('cache', __('extensions.progress.cache_delete'));
+        $onProgress?->__invoke('cache', '캐시 삭제 중...');
 
         $result = DB::transaction(function () use ($templateName, $onProgress) {
             $template = $this->getTemplate($templateName);
@@ -1144,7 +706,7 @@ class TemplateManager implements TemplateManagerInterface
             $this->clearTemplateCache($templateName);
 
             // 2. DB 삭제
-            $onProgress?->__invoke('db', __('extensions.progress.db_delete'));
+            $onProgress?->__invoke('db', 'DB 삭제 중...');
 
             // 레이아웃 삭제 (트랜잭션 내)
             $templateRecord = $this->templateRepository->findByIdentifier($templateName);
@@ -1154,9 +716,6 @@ class TemplateManager implements TemplateManagerInterface
 
             // Extension 오버라이드 제거
             $this->unregisterExtensionOverrides($templateName);
-
-            // 다른 관리자 템플릿에 등록된 이 템플릿의 설정 화면 제거 (#434)
-            $this->removeSettingsLayoutRows($templateName, 'template_uninstall');
 
             // 데이터베이스에서 템플릿 정보 제거
             $this->templateRepository->deleteByIdentifier($templateName);
@@ -1176,29 +735,13 @@ class TemplateManager implements TemplateManagerInterface
 
         if ($result) {
             // 3. 파일 삭제
-            $onProgress?->__invoke('files', __('extensions.progress.delete_files'));
+            $onProgress?->__invoke('files', '파일 삭제 중...');
 
             // 활성 템플릿 디렉토리 전체 삭제 (_pending/_bundled에 원본 보존되므로 재설치 가능)
-            $preservedBackups = ExtensionPendingHelper::deleteExtensionDirectory(
-                $this->templatesPath,
-                $templateName
-            );
+            ExtensionPendingHelper::deleteExtensionDirectory($this->templatesPath, $templateName);
 
             // 메모리에서 템플릿 제거
             unset($this->templates[$templateName]);
-
-            // 「데이터도 삭제」 — 템플릿 환경설정·설정 첨부 파기 (#434). 템플릿 디렉토리 밖(storage)에 있어 위 삭제가 닿지 않는다.
-            if ($deleteData) {
-                try {
-                    app(TemplateSettingsService::class)->deleteSettings($templateName);
-                } catch (\Throwable $e) {
-                    Log::warning('템플릿 삭제 중 환경설정 데이터 정리 실패 — 삭제는 완료됨', ['template' => $templateName, 'error' => $e->getMessage()]);
-                    LifecycleWarnings::current()->add('template_settings_delete', $templateName, $e->getMessage());
-                }
-            }
-
-            // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138)
-            HookManager::doAction('core.templates.after_uninstall', $templateName, $templateInfo, $deleteData);
         }
 
         return $result;
@@ -1222,15 +765,8 @@ class TemplateManager implements TemplateManagerInterface
         // 확장 설치 디렉토리 정보 조회
         $extensionDirInfo = $this->getExtensionDirectoryInfo('templates', $templateName);
 
-        // 「데이터도 삭제」 가 지우는 것 — 템플릿 설정 저장 폴더(섹션별 파일)와 그 템플릿 설정 첨부 (#434, 모듈·플러그인 storage_directories 대칭)
-        $storageInfo = $this->getStorageDirectoriesInfo(ExtensionStoragePath::template($templateName));
-
         return [
             'extension_directory' => $extensionDirInfo,
-            'storage_directories' => $storageInfo,
-            'total_storage_size' => array_sum(array_column($storageInfo, 'size_bytes')),
-            'total_storage_size_formatted' => $this->formatBytes(array_sum(array_column($storageInfo, 'size_bytes'))),
-            'settings_attachments_count' => app(AttachmentRepositoryInterface::class)->getByCollectionPrefix(TemplateSettingCollections::templatePrefix($templateName))->count(),
         ];
     }
 
@@ -1243,27 +779,6 @@ class TemplateManager implements TemplateManagerInterface
     public function getTemplate(string $templateName): ?array
     {
         return $this->templates[$templateName] ?? null;
-    }
-
-    /**
-     * 템플릿이 선택 연동(`integrations`)으로 선언한 확장을 「식별자 => 버전 제약」 맵으로 반환합니다 (7.1.4).
-     *
-     * 설치된 템플릿을 먼저 보고, 없으면 `_pending`·`_bundled` 의 template.json 을 봅니다(설치 창은 설치 전에 읽는다).
-     * 모듈·플러그인의 `getIntegrationConstraints()` 와 같은 정규화기({@see ExtensionIntegrations::constraints()})를 씁니다.
-     *
-     * @param  string  $identifier  템플릿 식별자
-     * @return array{modules: array<string, string>, plugins: array<string, string>, templates: array<string, string>} 유형별 식별자 => 버전 제약
-     */
-    public function getIntegrationConstraints(string $identifier): array
-    {
-        $this->ensurePendingAndBundledLoaded();
-
-        $template = $this->templates[$identifier]
-            ?? $this->pendingTemplates[$identifier]
-            ?? $this->bundledTemplates[$identifier]
-            ?? null;
-
-        return ExtensionIntegrations::constraints(is_array($template) ? ($template['integrations'] ?? []) : []);
     }
 
     /**
@@ -1283,12 +798,9 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getUninstalledTemplates(): array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $uninstalledTemplates = [];
         // 캐시된 설치된 템플릿 identifier 목록 활용
-        // 진행 중 상태에 멈춘 행도 미설치가 아니다 — 목록에 같은 확장이 두 번 나오지 않게(7.1.1 출시 전)
-        $installedTemplateIdentifiers = array_values(array_unique([...self::getInstalledTemplateIdentifiers(), ...self::getRecordedTemplateIdentifiers()]));
+        $installedTemplateIdentifiers = self::getInstalledTemplateIdentifiers();
         $locale = app()->getLocale();
 
         // 활성 디렉토리 템플릿 중 미설치
@@ -1302,14 +814,9 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $template['type'],
                     'description' => $this->getLocalizedValue($template['description'] ?? '', $locale),
                     'dependencies' => $template['dependencies'] ?? [],
-                    'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
-                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-                    'integration_constraints' => ExtensionIntegrations::constraints($template['integrations'] ?? []),
-                    'requires_core' => $template['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'active',
                     'hidden' => (bool) ($template['hidden'] ?? false),
-                    ...$this->resolveIconFields($template['identifier'], $template['version']),
                 ];
             }
         }
@@ -1327,14 +834,9 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $metadata['type'] ?? 'admin',
                     'description' => $this->getLocalizedValue($description, $locale),
                     'dependencies' => $metadata['dependencies'] ?? [],
-                    'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
-                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-                    'integration_constraints' => ExtensionIntegrations::constraints($metadata['integrations'] ?? []),
-                    'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'pending',
                     'hidden' => (bool) ($metadata['hidden'] ?? false),
-                    ...$this->resolveIconFields($identifier, $metadata['version'] ?? '0.0.0'),
                 ];
             }
         }
@@ -1352,14 +854,9 @@ class TemplateManager implements TemplateManagerInterface
                     'type' => $metadata['type'] ?? 'admin',
                     'description' => $this->getLocalizedValue($description, $locale),
                     'dependencies' => $metadata['dependencies'] ?? [],
-                    'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
-                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-                    'integration_constraints' => ExtensionIntegrations::constraints($metadata['integrations'] ?? []),
-                    'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'bundled',
                     'hidden' => (bool) ($metadata['hidden'] ?? false),
-                    ...$this->resolveIconFields($identifier, $metadata['version'] ?? '0.0.0'),
                 ];
             }
         }
@@ -1376,8 +873,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     public function getInstalledTemplatesWithDetails(): array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $installedTemplates = [];
         $templateRecords = $this->templateRepository->getAllKeyedByIdentifier();
         $locale = app()->getLocale();
@@ -1401,55 +896,22 @@ class TemplateManager implements TemplateManagerInterface
                     $latestVersion = $bundledVersion ?? $fileVersion;
                 }
 
-                // 다국어 필드는 DB row(applyExtensionManifests 가 활성 언어팩 ja 등을 주입) 우선,
-                // 미설치 시 template.json 폴백 — 상세 조회(getTemplateDetails)·모듈·플러그인과 같은 규약이다.
-                // 종전에는 이 목록 경로만 디스크 매니페스트를 바로 읽어, 언어팩이 DB 에 넣어 둔 ja 가
-                // 버려졌다(실측 2026-09-12: 같은 응답에서 모듈 description 은 활성 언어팩의 번역으로
-                // 내려가는데 템플릿 description 만 ko 원문이 내려갔다).
-                $nameJson = $record->name ?: $template['name'];
-                $descriptionJson = $record->description ?: ($template['description'] ?? '');
-
                 $installedTemplates[$identifier] = [
                     'identifier' => $template['identifier'],
                     'vendor' => $template['vendor'],
-                    'name' => $this->getLocalizedValue($nameJson, $locale),
+                    'name' => $this->getLocalizedValue($template['name'], $locale),
                     'version' => $record->version,
                     'type' => $template['type'],
-                    'description' => $this->getLocalizedValue($descriptionJson, $locale),
+                    'description' => $this->getLocalizedValue($template['description'] ?? '', $locale),
                     'dependencies' => $template['dependencies'] ?? [],
-                    'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
-                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-                    'integration_constraints' => ExtensionIntegrations::constraints($template['integrations'] ?? []),
-                    'requires_core' => $template['g7_version'] ?? null,
                     'status' => $record->status,
-                    // 멈춘 업데이트(updating 이 10분 넘게 남고 잠금이 빔) — 관리자 카드가 정리·활성화 단추를 보인다
-                    'stuck_update' => StuckUpdateRecovery::isStuck('template', $identifier, $record),
                     'update_available' => $updateAvailable,
                     'latest_version' => $latestVersion,
                     'file_version' => $fileVersion,
                     'update_source' => $record->update_source ?? null,
-                    // 설치·업데이트 때 받은 패키지의 서명 검증 결과 (7.2.0, 이 칸 전 설치는 null)
-                    'integrity_status' => $record->integrity_status ?? null,
-                    'integrity_key_id' => $record->integrity_key_id ?? null,
-                    // 업데이트 대상 버전의 코어 호환 — 업데이트 창의 경고·강제 업데이트 체크가 읽는다(업데이트가 있을 때만).
-                    ...($updateAvailable ? $this->buildUpdateCompatibilityFields($this->resolveUpdateTargetRequiredCoreVersion(
-                        $record->update_source ?? null,
-                        $this->findBundledTemplateManifest($identifier),
-                        $template['g7_version'] ?? null
-                    )) : []),
-                    // 업데이트 대상 판이 요구하는 의존·연동 중 지금 못 미치는 것 — 업데이트 창이 실행 전에 알린다(업데이트가 있을 때만).
-                    // 판정은 업데이트 뒤 완료 문구의 경고·안내와 같다. GitHub 출처라 대상 판 manifest 를 모르면 null.
-                    ...($updateAvailable ? $this->buildUpdateTargetRequirementFields($this->resolveUpdateTargetManifest(
-                        $record->update_source ?? null,
-                        $this->findBundledTemplateManifest($identifier),
-                        $latestVersion
-                    )) : []),
                     'github_url' => $template['github_url'] ?? ($record->github_url ?? null),
                     'github_changelog_url' => $record->github_changelog_url ?? ($template['github_changelog_url'] ?? null),
                     'hidden' => (bool) ($template['hidden'] ?? false),
-                    ...$this->resolveIconFields($template['identifier'], $record->version),
-                    // 템플릿 환경설정 화면 (#434) — 선언 파일과 설정 레이아웃이 둘 다 있을 때만
-                    ...$this->settingsFields($identifier),
                     'user_modified_at' => $record->user_modified_at,
                     'created_at' => $record->created_at,
                     'updated_at' => $record->updated_at,
@@ -1459,24 +921,6 @@ class TemplateManager implements TemplateManagerInterface
 
         return $installedTemplates;
     }
-
-    /**
-     * 템플릿 환경설정 화면 유무와 경로를 돌려줍니다 (#434).
-     *
-     * @param  string  $identifier  템플릿 식별자
-     * @return array{has_settings: bool, settings_route: string|null} 목록 필드
-     */
-    protected function settingsFields(string $identifier): array
-    {
-        $settingsService = app(TemplateSettingsService::class);
-        $route = $settingsService->settingsRoute($identifier);
-
-        return [
-            'has_settings' => $route !== null,
-            'settings_route' => $route,
-        ];
-    }
-
     /**
      * 템플릿 식별자에 대한 메타데이터(다국어 치환 + 활성 상태 포함)를 조회합니다.
      *
@@ -1515,26 +959,15 @@ class TemplateManager implements TemplateManagerInterface
             'identifier' => $template['identifier'],
             'vendor' => $template['vendor'],
             'name' => $this->getLocalizedValue($nameJson, $locale),
-            // 판은 DB 기록(설치가 끝난 판)을 앞세운다 — 판 전환이 끝나지 않은 확장(파일은 새 판, 정리가 기록 판을 시작 판으로 되돌림)의
-            // 활성화 응답이 파일 판을 내면 목록·카드(DB 판 + 「업데이트 있음」)와 어긋났다. 파일 판은 file_version 칸으로 따로 낸다.
-            'version' => $templateRecord?->version ?: $template['version'],
-            'file_version' => $template['version'],
-            'latest_version' => $templateRecord?->latest_version ?? ($template['latest_version'] ?? null),
-            'update_available' => (bool) ($templateRecord?->update_available ?? ($template['update_available'] ?? false)),
-            'update_source' => $templateRecord?->update_source,
-            // 설치·업데이트 때 받은 패키지의 서명 검증 결과 (7.2.0, 이 칸 전 설치는 null)
-            'integrity_status' => $templateRecord?->integrity_status,
-            'integrity_key_id' => $templateRecord?->integrity_key_id,
+            'version' => $template['version'],
+            'latest_version' => $template['latest_version'] ?? null,
+            'update_available' => $template['update_available'] ?? false,
             'type' => $template['type'],
             'description' => $this->getLocalizedValue($descriptionJson, $locale),
             'github_url' => $template['github_url'] ?? null,
             'github_changelog_url' => $template['github_changelog_url'] ?? null,
             'requires_core' => $template['g7_version'] ?? null,
             'dependencies' => $template['dependencies'] ?? [],
-            'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
-            // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-            'integration_constraints' => ExtensionIntegrations::constraints($template['integrations'] ?? []),
-            'externals' => $template['externals'] ?? [],
             'locales' => $template['locales'] ?? [],
             'layouts_count' => $layoutsCount,
             'components' => $components,
@@ -1545,9 +978,6 @@ class TemplateManager implements TemplateManagerInterface
             'user_modified_at' => $templateRecord?->user_modified_at,
             'created_at' => $templateRecord?->created_at,
             'updated_at' => $templateRecord?->updated_at,
-            // 상세 응답이 목록 행을 덮어써도 설정 진입이 사라지지 않게 목록과 같은 필드를 싣는다 (#434)
-            ...($templateRecord ? $this->settingsFields($templateName) : ['has_settings' => false, 'settings_route' => null]),
-            ...$this->resolveIconFields($template['identifier'], $template['version']),
         ];
     }
 
@@ -1562,8 +992,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     protected function getTemplateInfoFromMetadata(string $templateName): ?array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $metadata = $this->pendingTemplates[$templateName] ?? $this->bundledTemplates[$templateName] ?? null;
 
         if (! $metadata) {
@@ -1587,10 +1015,6 @@ class TemplateManager implements TemplateManagerInterface
             'github_changelog_url' => $metadata['github_changelog_url'] ?? null,
             'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $metadata['dependencies'] ?? [],
-            'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
-            // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
-            'integration_constraints' => ExtensionIntegrations::constraints($metadata['integrations'] ?? []),
-            'externals' => $metadata['externals'] ?? [],
             'locales' => $metadata['locales'] ?? [],
             'layouts_count' => 0,
             'components' => $metadata['components'] ?? [],
@@ -1601,47 +1025,20 @@ class TemplateManager implements TemplateManagerInterface
             'user_modified_at' => null,
             'created_at' => null,
             'updated_at' => null,
-            ...$this->resolveIconFields($metadata['identifier'] ?? $templateName, $metadata['version'] ?? '0.0.0'),
         ];
     }
 
     /**
-     * 템플릿 환경설정 선언(`config/settings/defaults.json`)을 검증합니다 (#434).
+     * 템플릿의 에러 레이아웃 설정을 검증합니다.
      *
-     * 파일은 선택이라 없으면 통과한다. 있으면 JSON·필드 타입·예약 키 `favicon` 규격을 본다
-     * ({@see TemplateSettingsSchema::validate()}).
-     *
-     * @param  string  $templateId  템플릿 식별자
-     * @return void 반환값 없음
-     *
-     * @throws \InvalidArgumentException 선언이 깨졌거나 규약에 어긋나면
-     */
-    protected function validateSettingsDeclaration(string $templateId): void
-    {
-        TemplateSettingsSchema::load($templateId);
-
-        // 다른 주인(코어·모듈)이 가진 값과 이름이 겹치는 칸은 막지 않고 알린다 — 「템플릿 설정으로 두지 않는 것」 규칙
-        $overlaps = TemplateSettingsSchema::warningsFor($templateId);
-
-        if ($overlaps !== []) {
-            LifecycleWarnings::current()->notice('template_settings_declaration', $templateId, __('templates.settings.warnings.owned_elsewhere', [
-                'template' => $templateId,
-                'fields' => implode(', ', $overlaps),
-            ]));
-        }
-    }
-
-    /**
-     * 템플릿의 `seo-config.json` 을 검증합니다.
-     *
-     * 파일은 선택이라 없으면 통과시키고(SEO 렌더가 div 폴백으로 돈다), 있으면 JSON 파싱 ·
-     * `component_map` 의 `tag` 필수 · `render` 가 가리키는 모드의 실재 · `render_modes` 의
-     * 타입 허용값을 본다.
+     * error_config 섹션 존재 확인, 필수 에러 코드(404, 403, 500) 레이아웃 정의 확인,
+     * 정의된 레이아웃 파일 실제 존재 확인을 수행합니다.
      *
      * @param  string  $templateId  템플릿 식별자
-     * @return bool 검증 성공 여부 (파일이 없어도 true)
+     * @param  array  $templateData  template.json 데이터
+     * @return bool 검증 성공 여부
      *
-     * @throws \Exception 파싱 실패·구조 위반 시
+     * @throws \Exception 검증 실패 시
      */
     protected function validateSeoConfig(string $templateId): bool
     {
@@ -1790,25 +1187,12 @@ class TemplateManager implements TemplateManagerInterface
                 );
             }
 
-            // 레이아웃 이름 (숫자 또는 문자열 키) — 다른 모든 카테고리(auth/, board/) 와
-            // 동일하게 디렉토리 접두사 포함된 식별자를 그대로 사용한다 (예: "errors/404").
+            // 레이아웃 이름 (숫자 또는 문자열 키)
             $layoutName = $errorLayouts[$code] ?? $errorLayouts[(string) $code];
 
-            // 3. 레이아웃 파일 실제 존재 확인 — layout_name 그대로 layouts/ 하위 파일 경로로 사용.
-            //    소스 선택은 설치 경로와 **같은 우선순위 규약**을 쓴다. 종전에는 여기만 `.json` 을
-            //    하드코딩해, 소스(`.g7.html`)으로만 작성된 에러 레이아웃이 registerLayouts() 로
-            //    정상 등록된 직후 이 검증에서 "없다" 로 판정돼 설치가 세워졌다 (34차 ❌2).
-            $found = false;
-
-            foreach ($this->layoutSourceCandidates($templatePath.'/layouts/'.$layoutName.'.json') as $candidate) {
-                if (File::exists($candidate['path'])) {
-                    $found = true;
-
-                    break;
-                }
-            }
-
-            if (! $found) {
+            // 3. 레이아웃 파일 실제 존재 확인 (errors/ 디렉토리 내)
+            $layoutFilePath = $templatePath.'/layouts/errors/'.$layoutName.'.json';
+            if (! File::exists($layoutFilePath)) {
                 throw new \Exception(
                     __('templates.errors.error_layout_not_found', [
                         'code' => $code,
@@ -1821,17 +1205,6 @@ class TemplateManager implements TemplateManagerInterface
         return true;
     }
 
-    /**
-     * 템플릿의 코어 버전 호환성(`template.json` 의 `g7_version`)을 확인하고, 아니면 예외로 세웁니다.
-     *
-     * 모듈·플러그인의 동명 메서드와 판정 대상이 다르다 — 저쪽은 다른 확장에 대한 의존이고,
-     * 템플릿은 코어 버전 범위만 선언한다.
-     *
-     * @param  array<string, mixed>  $template  템플릿 메타데이터 (`template.json`)
-     * @return void 반환값 없음
-     *
-     * @throws \Exception 코어 버전이 선언 범위를 벗어날 때
-     */
     protected function checkDependencies(array $template): void
     {
         // 그누보드7 코어 버전 호환성 검증 (template.json의 g7_version 필드 활용)
@@ -1842,21 +1215,57 @@ class TemplateManager implements TemplateManagerInterface
             'template'
         );
 
-        // 활성화·런타임과 같은 판정식(DependencyEnricher) — 목록형·빈 제약은 '*', 꺼진 확장은 미충족(#152)
-        $unmet = $this->collectUnmetDependencies($template['dependencies'] ?? []);
+        $dependencies = $template['dependencies'] ?? [];
         $unmetDependencies = [];
 
-        foreach ([...$unmet['modules'], ...$unmet['plugins']] as $item) {
-            $unmetDependencies[] = $item['status'] === DependencyEnricher::STATUS_VERSION_MISMATCH
-                ? __('templates.errors.version_mismatch', [
-                    'dependency' => $item['identifier'],
-                    'required' => $item['required_version'],
-                    'installed' => $item['installed_version'],
-                ])
-                : __('templates.errors.dependency_not_met', [
-                    'dependency' => $item['identifier'],
-                    'type' => __('extensions.dependency_types.'.$item['type']),
-                ]);
+        // 모듈 의존성 확인
+        if (isset($dependencies['modules']) && ! empty($dependencies['modules'])) {
+            foreach ($dependencies['modules'] as $moduleName => $versionConstraint) {
+                // identifier 컬럼으로 활성화된 모듈 조회
+                $module = $this->moduleRepository->findActiveByIdentifier($moduleName);
+                if (! $module) {
+                    $unmetDependencies[] = __('templates.errors.dependency_not_met', [
+                        'dependency' => $moduleName,
+                        'type' => 'module',
+                    ]);
+
+                    continue;
+                }
+
+                // 버전 체크
+                if (! $this->checkVersionConstraint($module->version, $versionConstraint)) {
+                    $unmetDependencies[] = __('templates.errors.version_mismatch', [
+                        'dependency' => $moduleName,
+                        'required' => $versionConstraint,
+                        'installed' => $module->version,
+                    ]);
+                }
+            }
+        }
+
+        // 플러그인 의존성 확인
+        if (isset($dependencies['plugins']) && ! empty($dependencies['plugins'])) {
+            foreach ($dependencies['plugins'] as $pluginName => $versionConstraint) {
+                // identifier 컬럼으로 활성화된 플러그인 조회
+                $plugin = $this->pluginRepository->findActiveByIdentifier($pluginName);
+                if (! $plugin) {
+                    $unmetDependencies[] = __('templates.errors.dependency_not_met', [
+                        'dependency' => $pluginName,
+                        'type' => 'plugin',
+                    ]);
+
+                    continue;
+                }
+
+                // 버전 체크
+                if (! $this->checkVersionConstraint($plugin->version, $versionConstraint)) {
+                    $unmetDependencies[] = __('templates.errors.version_mismatch', [
+                        'dependency' => $pluginName,
+                        'required' => $versionConstraint,
+                        'installed' => $plugin->version,
+                    ]);
+                }
+            }
         }
 
         if (! empty($unmetDependencies)) {
@@ -1865,15 +1274,25 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
-     * 버전 제약조건을 검증합니다 — 판정식 원천(DependencyEnricher)에 위임합니다(빈 제약·null = 제약 없음, 예외 없음).
+     * 버전 제약조건을 검증합니다.
      *
-     * @param  string|null  $installedVersion  설치된 버전
-     * @param  mixed  $versionConstraint  요구 버전 제약조건 (예: '>=1.0.0', '^2.0', '~1.2.3')
+     * @param  string  $installedVersion  설치된 버전
+     * @param  string  $versionConstraint  요구 버전 제약조건 (예: '>=1.0.0', '^2.0', '~1.2.3')
      * @return bool 제약조건 충족 여부
      */
-    protected function checkVersionConstraint(?string $installedVersion, mixed $versionConstraint): bool
+    protected function checkVersionConstraint(string $installedVersion, string $versionConstraint): bool
     {
-        return DependencyEnricher::checkVersionConstraint($installedVersion, $versionConstraint);
+        try {
+            return Semver::satisfies($installedVersion, $versionConstraint);
+        } catch (\Exception $e) {
+            Log::warning('Version constraint check failed', [
+                'installed_version' => $installedVersion,
+                'constraint' => $versionConstraint,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**
@@ -1966,36 +1385,6 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
-     * 마지막 설치·갱신이 빈 자리로 등록한 조각 참조 경고를 꺼내고 비웁니다 (#712).
-     *
-     * 템플릿 설치는 레이아웃 검증을 여러 번 돈다(사전 검증·등록·오버라이드 디렉토리마다). 검증 한 번이 끝날 때마다
-     * {@see rememberLayoutWarnings()} 가 경고를 이 보관소에 모으고, 설치를 부른 서비스가 결과를 만들 때 꺼낸다.
-     *
-     * @return array<int, array{file: string, partial: string, reason: string, message: string}> 경고 목록
-     */
-    public function takeLastLayoutWarnings(): array
-    {
-        $warnings = $this->lastLayoutWarnings;
-        $this->lastLayoutWarnings = [];
-
-        return $warnings;
-    }
-
-    /**
-     * 방금 끝난 레이아웃 검증의 경고를 보관소에 합칩니다 (같은 경고는 한 번만).
-     *
-     * @return void 반환값 없음
-     */
-    private function rememberLayoutWarnings(): void
-    {
-        foreach ($this->takeLayoutIncludeWarnings() as $warning) {
-            if (! in_array($warning, $this->lastLayoutWarnings, true)) {
-                $this->lastLayoutWarnings[] = $warning;
-            }
-        }
-    }
-
-    /**
      * 템플릿 설치 전 모든 레이아웃 JSON 파일을 검증합니다.
      *
      * 설치 전에 모든 레이아웃 파일의 유효성을 검사하여
@@ -2022,7 +1411,6 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  템플릿명 (identifier)
      * @param  int  $templateId  템플릿 DB ID
-     * @return void 반환값 없음
      */
     protected function registerLayouts(string $templateName, int $templateId): void
     {
@@ -2038,9 +1426,8 @@ class TemplateManager implements TemplateManagerInterface
         // 여기서 다시 검증하여 데이터를 가져옴
         try {
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $templateName, 'template', true);
-            $this->rememberLayoutWarnings();
         } catch (\Exception $e) {
-            Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
+            Log::error(__('templates.errors.layout_registration_failed'), [
                 'template' => $templateName,
                 'error' => $e->getMessage(),
             ]);
@@ -2054,30 +1441,23 @@ class TemplateManager implements TemplateManagerInterface
             return;
         }
 
-        $synchronizer = $this->layoutSynchronizer();
-
         foreach ($validatedLayouts as $validatedLayout) {
             try {
                 $layoutFile = $validatedLayout['file'];
+                $layoutData = $validatedLayout['data'];
                 $layoutName = $validatedLayout['layout_name'];
 
-                // 오버라이드는 전용 등록(registerLayoutOverrides)이 맡는다.
-                if ($this->isOverrideLayoutFile($layoutFile)) {
-                    continue;
-                }
-
-                // DB에 레이아웃 등록 — 원본 본문(병합 기준)까지 남긴다. 재설치로 행이 남아 있으면 운영자 수정은 보존한다.
-                $synchronizer->syncLayout(
+                // DB에 레이아웃 등록 (updateOrCreate로 멱등성 보장)
+                $this->layoutRepository->updateOrCreate(
                     [
                         'template_id' => $templateId,
-                        'template' => $templateName,
                         'name' => $layoutName,
-                        'source_type' => LayoutSourceType::Template,
-                        'source_identifier' => null,
                     ],
-                    $validatedLayout['data'],
-                    $validatedLayout['original'],
-                    LayoutSyncMode::Keep
+                    [
+                        'content' => $layoutData,
+                        'original_content_hash' => $this->computeContentHash($layoutData),
+                        'original_content_size' => $this->computeContentSize($layoutData),
+                    ]
                 );
 
                 Log::info(__('templates.info.layout_registered'), [
@@ -2087,11 +1467,10 @@ class TemplateManager implements TemplateManagerInterface
                 ]);
 
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
+                Log::error(__('templates.errors.layout_registration_failed'), [
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
-                LifecycleWarnings::current()->add('layout_register', basename((string) $validatedLayout['file']), $e->getMessage());
             }
         }
     }
@@ -2100,15 +1479,10 @@ class TemplateManager implements TemplateManagerInterface
      * 특정 템플릿의 모든 레이아웃을 삭제합니다.
      *
      * @param  int  $templateId  템플릿 DB ID
-     * @return void 반환값 없음
      */
     protected function unregisterLayouts(int $templateId): void
     {
-        // 템플릿 행을 지우기 전에 그 템플릿의 자식을 명시적으로 지운다 — DB CASCADE 에 기대지 않는다.
-        //   ① 모든 조각(다른 출처 포함, 운영자 수정본은 스냅샷) ② 조각 버전 ③ 커스텀 번역(운영자 생성 — 스냅샷)
-        //   ④ 레이아웃 첨부(스토리지 파일까지) ⑤ 레이아웃 미리보기 ⑥ 레이아웃과 그 버전(운영자 데이터는 스냅샷)
-        app(TemplateChildrenDeleter::class)->deleteChildrenBeforeLayouts($templateId);
-        $deletedCount = app(LayoutDeletionService::class)->forceDeleteLayoutsByTemplate($templateId, 'template_uninstall');
+        $deletedCount = $this->layoutRepository->deleteByTemplateId($templateId);
 
         if ($deletedCount > 0) {
             Log::info(__('templates.info.layouts_deleted'), [
@@ -2119,198 +1493,6 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
-     * 템플릿 설정 화면 레이아웃을 활성 관리자 템플릿에 등록합니다 (#434).
-     *
-     * 소스는 템플릿 자기 `layouts/` 밖의 `settings/template_settings.{g7.html,json}` 이다. 활성 관리자 템플릿마다
-     * `{소유}.template_settings` 행을 keep 규칙으로 동기화한다(운영자가 레이아웃 편집기로 고친 부분은 보존) —
-     * 설치된 템플릿이면 꺼져 있어도 등록한다(꺼진 템플릿도 미리 설정해 둘 수 있다).
-     *
-     * 관리자 템플릿이 `layouts/overrides/{템플릿id}/template_settings.*` 로 그 화면을 덮어썼으면 그 관리자 템플릿 행은
-     * 덮어쓴 파일로 만든다(플러그인·모듈 화면 덮어쓰기와 같은 자리). 행 소유(`source_identifier`)는 화면을 공급한
-     * 템플릿 그대로라 설정 화면 판정·삭제가 덮어쓰기와 무관하게 맞는다. 덮어쓰기는 템플릿이 화면을 공급할 때만 쓰인다.
-     *
-     * 한 템플릿의 화면이 깨져도 설치·활성화 전체를 되돌리지 않는다 — 로그·수명주기 경고로 알리고 그 행만 건너뛴다.
-     *
-     * @param  string  $identifier  설정 화면을 가진 템플릿 식별자
-     * @param  string|null  $onlyAdminTemplate  이 관리자 템플릿에만 등록 (null 이면 활성 관리자 템플릿 전부)
-     * @param  LayoutSyncMode  $mode  동기화 모드 (설치·활성화는 Keep, 업데이트는 그 업데이트의 전략)
-     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
-     * @return int 등록(동기화)한 행 수
-     */
-    public function registerSettingsLayout(string $identifier, ?string $onlyAdminTemplate = null, LayoutSyncMode $mode = LayoutSyncMode::Keep, ?LayoutSyncReport $report = null): int
-    {
-        $source = TemplateSettingsSchema::layoutPath($identifier);
-
-        if ($source === null) {
-            return 0;
-        }
-
-        $hosts = $this->templateRepository->getActiveByType('admin')
-            ->filter(fn ($template) => $onlyAdminTemplate === null || $template->identifier === $onlyAdminTemplate);
-
-        if ($hosts->isEmpty()) {
-            return 0;
-        }
-
-        $name = TemplateLayout::templateSettingsLayoutName($identifier);
-        $compiled = [];
-        $count = 0;
-
-        foreach ($hosts as $host) {
-            $file = TemplateSettingsSchema::overrideLayoutPath((string) $host->identifier, $identifier) ?? $source;
-
-            if (! array_key_exists($file, $compiled)) {
-                $compiled[$file] = $this->compileSettingsLayoutFile($identifier, $file);
-            }
-
-            $data = $compiled[$file];
-
-            if ($data === null) {
-                continue;
-            }
-
-            try {
-                $entry = $this->layoutSynchronizer()->syncLayout(
-                    [
-                        'template_id' => $host->id,
-                        'template' => (string) $host->identifier,
-                        'name' => $name,
-                        'source_type' => LayoutSourceType::Template,
-                        'source_identifier' => $identifier,
-                        'track_extends' => true,
-                    ],
-                    $data,
-                    $data,
-                    $mode
-                );
-                $this->warnActivationConflict($entry, $identifier);
-                $report?->add($entry);
-                $count++;
-            } catch (\Throwable $e) {
-                Log::error('템플릿 설정 화면 레이아웃 등록 실패', [
-                    'template' => $identifier,
-                    'host' => $host->identifier,
-                    'error' => $e->getMessage(),
-                ]);
-                LifecycleWarnings::current()->add('layout_register', $name, $e->getMessage());
-            }
-
-            $this->clearTemplateCache((string) $host->identifier);
-        }
-
-        return $count;
-    }
-
-    /**
-     * 설정 화면 레이아웃 파일(템플릿 원본 또는 관리자 템플릿 덮어쓰기)을 읽습니다 — 깨졌으면 로그·수명주기 경고 후 null.
-     *
-     * @param  string  $identifier  설정 화면을 공급한 템플릿 식별자
-     * @param  string  $file  레이아웃 파일 경로
-     * @return array<string, mixed>|null 레이아웃 데이터
-     */
-    private function compileSettingsLayoutFile(string $identifier, string $file): ?array
-    {
-        try {
-            $data = preg_match('/\.g7\.html$/i', $file) === 1
-                ? $this->compileMarkupLayoutFile($file)
-                : $this->decodeLayoutJson((string) File::get($file));
-
-            if (! is_array($data) || $data === []) {
-                throw new \RuntimeException(__('templates.settings.errors.invalid_json', ['template' => $identifier, 'error' => basename($file)]));
-            }
-
-            return $data;
-        } catch (\Throwable $e) {
-            Log::error('템플릿 설정 화면 레이아웃 컴파일 실패 — 그 화면만 등록하지 않음', [
-                'template' => $identifier,
-                'file' => $file,
-                'error' => $e->getMessage(),
-            ]);
-            LifecycleWarnings::current()->add('layout_register', basename($file), $e->getMessage());
-
-            return null;
-        }
-    }
-
-    /**
-     * 설치된 모든 템플릿의 설정 화면을 한 관리자 템플릿에 등록합니다 — 관리자 템플릿을 켤 때 (#434).
-     *
-     * @param  string  $adminTemplateIdentifier  켜진 관리자 템플릿 식별자
-     * @param  LayoutSyncMode  $mode  동기화 모드 (활성화는 Keep, 레이아웃 새로 고침은 그 새로 고침의 전략)
-     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
-     * @return int 등록한 행 수
-     */
-    public function registerSettingsLayoutsForAllInstalled(string $adminTemplateIdentifier, LayoutSyncMode $mode = LayoutSyncMode::Keep, ?LayoutSyncReport $report = null): int
-    {
-        $count = 0;
-
-        foreach ($this->templateRepository->getAllKeyedByIdentifier() as $identifier => $record) {
-            $count += $this->registerSettingsLayout((string) $identifier, $adminTemplateIdentifier, $mode, $report);
-        }
-
-        return $count;
-    }
-
-    /**
-     * 한 템플릿의 설정 화면 행을 모든 관리자 템플릿에서 지웁니다 — 템플릿 삭제·설정 화면이 사라진 업데이트 (#434).
-     *
-     * @param  string  $identifier  설정 화면을 가진 템플릿 식별자
-     * @param  string  $reason  삭제 사유 (활동 로그 스냅샷용 — `settings_layout_removed`·`template_uninstall`)
-     * @return int 지운 행 수
-     */
-    public function removeSettingsLayoutRows(string $identifier, string $reason = 'settings_layout_removed'): int
-    {
-        $deleted = 0;
-
-        foreach ($this->layoutRepository->getTemplateSettingsLayouts($identifier) as $row) {
-            $hostIdentifier = (string) ($row->template?->identifier ?? '');
-            $this->forgetLayoutCacheKeys($row, $hostIdentifier);
-            // 운영자가 고친 설정 화면이면 지우기 직전 스냅샷 — 버전 이력은 명시 삭제
-            app(LayoutDeletionService::class)->forceDeleteLayout($row, $reason, $hostIdentifier);
-            $deleted++;
-        }
-
-        return $deleted;
-    }
-
-    /**
-     * 설정 화면 파일 유무에 맞춰 등록 행을 맞춥니다 — 파일이 있으면 등록, 없어졌으면 행 제거 (#434).
-     *
-     * @param  string  $identifier  템플릿 식별자
-     * @param  LayoutSyncMode  $mode  동기화 모드
-     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
-     * @return void 반환값 없음
-     */
-    protected function syncSettingsLayout(string $identifier, LayoutSyncMode $mode = LayoutSyncMode::Keep, ?LayoutSyncReport $report = null): void
-    {
-        if (TemplateSettingsSchema::layoutPath($identifier) === null) {
-            // 새 판에서 설정 화면 파일이 빠졌다. keep 이면 운영자가 고친 행은 남기고(`kept_removed`) 나머지만 지운다 —
-            // 종전에는 전략과 무관하게 모두 지웠다.
-            foreach ($this->layoutRepository->getTemplateSettingsLayouts($identifier) as $row) {
-                $host = (string) ($row->template?->identifier ?? '');
-                $key = LayoutSyncOptions::layoutKey($host, (string) $row->name);
-
-                if ($mode === LayoutSyncMode::Keep && $this->layoutSynchronizer()->isOperatorModified($row)) {
-                    $report?->add(new LayoutSyncEntry('layout', $host, $row->name, 'kept_removed', [], [], $key));
-
-                    continue;
-                }
-
-                $report?->add(new LayoutSyncEntry('layout', $host, $row->name, 'deleted', [], [], $key));
-
-                if (LayoutSyncOptions::writes()) {
-                    $this->forgetLayoutCacheKeys($row, $host);
-                    app(LayoutDeletionService::class)->forceDeleteLayout($row, 'settings_layout_removed', $host);
-                }
-            }
-
-            return;
-        }
-
-        $this->registerSettingsLayout($identifier, null, $mode, $report);
-    }
-
-    /**
      * 템플릿의 모듈 레이아웃 오버라이드를 등록합니다.
      *
      * overrides/ 디렉토리에서 모듈별 오버라이드 레이아웃을 스캔하여
@@ -2318,25 +1500,18 @@ class TemplateManager implements TemplateManagerInterface
      * 레이아웃 해석 시 모듈 기본 레이아웃보다 높은 우선순위를 가집니다.
      * 파일에 없는 기존 오버라이드 레코드(고아)는 자동으로 정리됩니다.
      *
-     * 원본 해시·원본 본문을 남겨 운영자 수정 여부를 판정할 수 있게 하고, keep 이면 병합한다(W6 — 종전엔 해시 없이
-     * 덮어써 keep 이 무효였고 「수정한 레이아웃」 목록에도 뜨지 않았다).
-     *
      * @param  string  $templateName  템플릿명 (identifier)
      * @param  int  $templateId  템플릿 DB ID
-     * @param  LayoutSyncMode  $mode  동기화 모드 (설치·활성화는 Keep, 갱신은 그 갱신의 모드)
-     * @param  array<string, array<string, mixed>>  $backupOriginals  업데이트 백업을 컴파일한 이전 판 원본 (이름 => 원본)
-     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
-     * @return void 반환값 없음
      */
-    protected function registerLayoutOverrides(string $templateName, int $templateId, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $backupOriginals = [], ?LayoutSyncReport $report = null): void
+    protected function registerLayoutOverrides(string $templateName, int $templateId): void
     {
-        $overridesPath = $this->layoutSourceRoot('templates', $templateName).'/layouts/overrides';
+        $overridesPath = base_path("templates/{$templateName}/layouts/overrides");
 
         if (! File::exists($overridesPath)) {
             Log::info(__('templates.info.no_overrides_directory'), ['template' => $templateName]);
 
-            // overrides 디렉토리 없음 → 기존 override 레이아웃 모두 정리 (keep 이면 운영자 수정본은 남긴다)
-            $this->cleanupOrphanOverrideLayouts($templateId, $templateName, [], $mode, $report);
+            // overrides 디렉토리 없음 → 기존 override 레이아웃 모두 삭제
+            $this->cleanupOrphanOverrideLayouts($templateId, $templateName, []);
 
             return;
         }
@@ -2347,8 +1522,8 @@ class TemplateManager implements TemplateManagerInterface
         if (empty($moduleDirectories)) {
             Log::info(__('templates.info.no_override_modules'), ['template' => $templateName]);
 
-            // 모듈 디렉토리 없음 → 기존 override 레이아웃 모두 정리 (keep 이면 운영자 수정본은 남긴다)
-            $this->cleanupOrphanOverrideLayouts($templateId, $templateName, [], $mode, $report);
+            // 모듈 디렉토리 없음 → 기존 override 레이아웃 모두 삭제
+            $this->cleanupOrphanOverrideLayouts($templateId, $templateName, []);
 
             return;
         }
@@ -2362,14 +1537,12 @@ class TemplateManager implements TemplateManagerInterface
             // 공통 Trait 메서드 사용하여 오버라이드 레이아웃 검증
             try {
                 $validatedLayouts = $this->validateLayoutFiles($moduleDirectory, $moduleIdentifier, 'template', true);
-                $this->rememberLayoutWarnings();
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.override_layout_registration_failed', ['error' => $e->getMessage()]), [
+                Log::error(__('templates.errors.override_layout_registration_failed'), [
                     'template' => $templateName,
                     'module' => $moduleIdentifier,
                     'error' => $e->getMessage(),
                 ]);
-                LifecycleWarnings::current()->add('layout_override_register', $moduleIdentifier, $e->getMessage());
 
                 continue;
             }
@@ -2389,34 +1562,24 @@ class TemplateManager implements TemplateManagerInterface
                     $layoutData = $validatedLayout['data'];
                     $layoutName = $validatedLayout['layout_name'];
 
-                    // 템플릿 설정 화면(`{id}.template_settings`) 덮어쓰기는 설정 화면 교차 등록이 맡는다({@see registerSettingsLayout()}) —
-                    // 여기서 같은 행 키로 쓰면 교차 등록 행의 소유자(source_identifier)가 이 관리자 템플릿으로 뒤집혀 설정 화면 판정이 깨진다 (#434)
-                    if (str_ends_with((string) $layoutName, '.'.TemplateLayout::TEMPLATE_SETTINGS_SUFFIX)) {
-                        continue;
-                    }
-
-                    // content 필드 구성 — 원본도 같은 규칙으로 잘라야 병합 기준과 본문의 키 집합이 맞는다.
+                    // content 필드 구성
                     $content = $this->extractLayoutContent($layoutData);
-                    $original = $this->extractLayoutContent($validatedLayout['original']);
-                    $backupOriginal = isset($backupOriginals[$layoutName]) ? $this->extractLayoutContent($backupOriginals[$layoutName]) : null;
 
-                    // DB에 오버라이드 레이아웃 등록 (동기화기 경유 — 원본 해시·원본 본문 기록, keep 이면 병합).
-                    // extends 컬럼은 본문이 아니라 파일 선언에서 온다(오버라이드 본문에는 extends 키가 없다).
-                    $entry = $this->layoutSynchronizer()->syncLayout(
+                    // DB에 오버라이드 레이아웃 등록
+                    $this->layoutRepository->updateOrCreate(
                         [
                             'template_id' => $templateId,
-                            'template' => $templateName,
                             'name' => $layoutName,
+                        ],
+                        [
+                            'content' => $content,
+                            'extends' => $layoutData['extends'] ?? null,
                             'source_type' => LayoutSourceType::Template,
                             'source_identifier' => $templateName,
-                            'extends' => $layoutData['extends'] ?? null,
-                        ],
-                        $content,
-                        $original,
-                        $mode,
-                        $backupOriginal
+                            'created_by' => Auth::id(),
+                            'updated_by' => Auth::id(),
+                        ]
                     );
-                    $report?->add($entry);
 
                     $registeredCount++;
                     $registeredLayoutNames[] = $layoutName;
@@ -2429,19 +1592,18 @@ class TemplateManager implements TemplateManagerInterface
                     ]);
 
                 } catch (\Exception $e) {
-                    Log::error(__('templates.errors.override_layout_registration_failed', ['error' => $e->getMessage()]), [
+                    Log::error(__('templates.errors.override_layout_registration_failed'), [
                         'file' => $validatedLayout['file'],
                         'template' => $templateName,
                         'module' => $moduleIdentifier,
                         'error' => $e->getMessage(),
                     ]);
-                    LifecycleWarnings::current()->add('layout_override_register', basename((string) $validatedLayout['file']), $e->getMessage());
                 }
             }
         }
 
-        // 파일에 없는 고아 override 레이아웃 정리 (keep 이면 운영자 수정본은 남긴다)
-        $this->cleanupOrphanOverrideLayouts($templateId, $templateName, $registeredLayoutNames, $mode, $report);
+        // 파일에 없는 고아 override 레이아웃 정리
+        $this->cleanupOrphanOverrideLayouts($templateId, $templateName, $registeredLayoutNames);
 
         if ($registeredCount > 0) {
             // 오버라이드 레이아웃 캐시 무효화
@@ -2461,19 +1623,11 @@ class TemplateManager implements TemplateManagerInterface
      * 레이아웃을 삭제합니다. 이는 레이아웃 이름 변경이나 오버라이드 파일
      * 삭제 시 발생하는 고아 레코드를 방지합니다.
      *
-     * 편집기 「새 파일」 로 만든 레이아웃은 오버라이드와 같은 source_type·source_identifier 를 쓴다. 파일에서
-     * 등록된 행만 원본 정보(원본 해시·원본 본문)를 가지므로, 둘 다 없는 행은 운영자가 만든 것으로 보고
-     * 지우지 않는다(LayoutRowSynchronizer::hasFileOrigin) — 종전에는 그 행을 판본 이력째 영구 삭제했다 (#703).
-     * 7.0.x 에서 등록된 오버라이드 행은 7.1.0 업그레이드 스텝이 원본 정보를 채운다.
-     *
      * @param  int  $templateId  템플릿 DB ID
      * @param  string  $templateName  템플릿명 (identifier)
      * @param  array  $registeredLayoutNames  현재 파일에서 등록된 레이아웃 이름 목록
-     * @param  LayoutSyncMode  $mode  동기화 모드 — keep 이면 운영자가 고친 오버라이드는 남긴다(D4)
-     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
-     * @return void 반환값 없음
      */
-    protected function cleanupOrphanOverrideLayouts(int $templateId, string $templateName, array $registeredLayoutNames, LayoutSyncMode $mode = LayoutSyncMode::Overwrite, ?LayoutSyncReport $report = null): void
+    protected function cleanupOrphanOverrideLayouts(int $templateId, string $templateName, array $registeredLayoutNames): void
     {
         try {
             $existingOverrides = $this->layoutRepository->getOverridesByTemplateId($templateId);
@@ -2490,40 +1644,16 @@ class TemplateManager implements TemplateManagerInterface
                     continue;
                 }
 
-                // 관리자 템플릿 자기 설정 화면(`{자기}.template_settings`)은 오버라이드와 모양(source_type·source_identifier)이
-                // 같지만 전용 등록({@see registerSettingsLayout()})이 맡는다 — 여기서 고아로 지우면 레이아웃 갱신마다 사라진다(#434).
-                if ($override->isTemplateSettingsLayout()) {
-                    continue;
-                }
-
                 if (! in_array($override->name, $registeredLayoutNames)) {
-                    // 파일에서 온 적이 없는 행(원본 본문·원본 해시가 둘 다 없다)은 오버라이드가 아니라 운영자가 편집기
-                    // 「새 레이아웃」 으로 만든 화면이다 — `source_identifier` 가 템플릿 식별자라 모양만 같을 뿐이므로
-                    // 고아 정리 대상이 아니다(지우면 템플릿을 켜기만 해도 운영자 화면이 영구 삭제된다).
-                    if (! $this->layoutSynchronizer()->hasFileOrigin($override)) {
-                        continue;
-                    }
+                    // 캐시 삭제 (레코드 삭제 전에 수행)
+                    $cacheKey = "template.{$templateId}.layout.{$override->name}";
+                    $this->cache()->forget($cacheKey);
 
-                    // 새 버전에서 빠졌지만 운영자 수정본이면 남긴다 (D4 — 템플릿 자기 레이아웃과 같은 규칙)
-                    if ($mode === LayoutSyncMode::Keep && $this->layoutSynchronizer()->isOperatorModified($override)) {
-                        $report?->add(new LayoutSyncEntry('layout', $templateName, $override->name, 'kept_removed'));
+                    $sourceHash = md5($override->source_type?->value.$override->source_identifier);
+                    $cacheKeyWithHash = "template.{$templateId}.layout.{$override->name}.{$sourceHash}";
+                    $this->cache()->forget($cacheKeyWithHash);
 
-                        continue;
-                    }
-
-                    $report?->add(new LayoutSyncEntry('layout', $templateName, $override->name, 'deleted', [], [], LayoutSyncOptions::layoutKey($templateName, (string) $override->name)));
-
-                    // 미리보기(dry-run)는 판정만 한다.
-                    if (! LayoutSyncOptions::writes()) {
-                        continue;
-                    }
-
-                    // 캐시 삭제 (레코드 삭제 전에 수행) — 키 조립은 트레이트 단일 지점에 위임
-                    // (.with_source_meta 변종 포함, 수작업 키 목록의 규약 드리프트 방지)
-                    $this->forgetLayoutCacheKeys($override, $templateName);
-
-                    // 운영자가 고친 오버라이드면(overwrite 갱신) 지우기 직전 스냅샷 — 버전 이력은 명시 삭제
-                    app(LayoutDeletionService::class)->forceDeleteLayout($override, 'orphan_override', $templateName);
+                    $override->forceDelete();
                     $deletedCount++;
 
                     Log::info('고아 오버라이드 레이아웃 삭제', [
@@ -2556,14 +1686,9 @@ class TemplateManager implements TemplateManagerInterface
      * 캐시를 무효화하여 다음 요청 시 새로운 데이터가 로드되도록 합니다.
      *
      * @param  int  $templateId  템플릿 DB ID
-     * @return void 반환값 없음
      */
     protected function invalidateOverrideLayoutCaches(int $templateId): void
     {
-        if (! LayoutSyncOptions::writes()) {
-            return;
-        }
-
         try {
             // 템플릿의 오버라이드 레이아웃 조회
             $overrideLayouts = $this->layoutRepository->getOverridesByTemplateId($templateId);
@@ -2573,10 +1698,14 @@ class TemplateManager implements TemplateManagerInterface
             }
 
             foreach ($overrideLayouts as $layout) {
-                // 키 조립은 트레이트 단일 지점에 위임 (.with_source_meta 변종 포함).
-                // 이 경로는 identifier 를 보유하지 않으므로 '' 전달 — 버전 포함 공개
-                // 서빙 키는 종전과 동일하게 버전 bump 로 무효화된다.
-                $this->forgetLayoutCacheKeys($layout, '');
+                // 기본 캐시 키 패턴으로 삭제
+                $cacheKey = "template.{$templateId}.layout.{$layout->name}";
+                $this->cache()->forget($cacheKey);
+
+                // sourceHash를 포함한 캐시 키도 삭제 (LayoutService의 캐시 키 패턴)
+                $sourceHash = md5($layout->source_type?->value.$layout->source_identifier);
+                $cacheKeyWithHash = "template.{$templateId}.layout.{$layout->name}.{$sourceHash}";
+                $this->cache()->forget($cacheKeyWithHash);
             }
 
             Log::info(__('templates.info.override_layouts_cache_invalidated'), [
@@ -2623,92 +1752,47 @@ class TemplateManager implements TemplateManagerInterface
     /**
      * 템플릿 관련 모든 캐시를 삭제합니다.
      *
-     * 템플릿 라이프사이클(update/deactivate/uninstall/cache-clear)이 공유하는
-     * 무효화 단일 지점이다. 버전 접미사 없는 고정 키(`template.config.{identifier}`,
-     * `template.{id|identifier}.components_manifest`)는 캐시 버전 bump 로 무효화되지
-     * 않으므로 여기서 능동 forget 한다 — 누락 시 공개 config.json 이 TTL(1시간) 동안
-     * 이전 manifest 로 응답된다 (#588, 공개 #119).
-     *
-     * template:cache-clear 커맨드가 호출할 수 있도록 public 이다.
-     *
      * @param  string  $templateIdentifier  템플릿 식별자
-     * @return int 능동 삭제를 시도한 캐시 키 수
      */
-    public function clearTemplateCache(string $templateIdentifier): int
+    protected function clearTemplateCache(string $templateIdentifier): void
     {
-        // 레이아웃 동기화 미리보기(dry-run)는 판정만 한다 — 캐시를 지우지 않는다.
-        if (! LayoutSyncOptions::writes()) {
-            return 0;
-        }
-
-        $clearedCount = 0;
-
-        // identifier 만으로 가능한 고정 키 forget — uninstall 등 DB 레코드가 이미
-        // 없는 상황에서도 반드시 수행되어야 하므로 레코드 조회보다 먼저 둔다.
-        $this->cache()->forget("template.config.{$templateIdentifier}");
-        $clearedCount++;
-
-        // components_manifest identifier 변종 (ComponentExists 는 int|string 수용)
-        $this->cache()->forget("template.{$templateIdentifier}.components_manifest");
-        $clearedCount++;
-
-        // 활성 템플릿 + 레이아웃 무변경 업데이트 경로는 캐시 버전 bump 가 없어
-        // 현재 버전 routes/language 키가 stale 로 남는다 — warmTemplateCache() 와
-        // 대칭으로 현재 버전 키를 능동 삭제한다 (이전 버전 키는 TTL 자연 만료).
-        $cacheVersion = self::getExtensionCacheVersion();
-        $this->cache()->forget("template.routes.{$templateIdentifier}.v{$cacheVersion}");
-        $clearedCount++;
-        foreach (config('app.supported_locales', ['ko', 'en']) as $locale) {
-            $this->cache()->forget("template.language.{$templateIdentifier}.{$locale}.v{$cacheVersion}");
-            $clearedCount++;
-        }
-
         // DB 기반 조회 — 파일 시스템 상태와 무관하게 캐시 삭제 보장
         // (파일 교체 중이거나 reloadTemplate() 전에도 캐시를 확실히 삭제)
         $templateRecord = $this->templateRepository->findByIdentifier($templateIdentifier);
         if (! $templateRecord) {
-            return $clearedCount;
+            return;
         }
 
-        // components_manifest 숫자 id 변종 (StoreLayoutRequest 가 integer 검증 — 실운영 키)
-        $this->cache()->forget("template.{$templateRecord->id}.components_manifest");
-        $clearedCount++;
-
         // 레이아웃 캐시 삭제 (버전 없는 내부 캐시)
-        $clearedCount += $this->clearLayoutCaches($templateIdentifier);
+        $this->clearLayoutCaches($templateIdentifier);
 
-        // 부팅 중 자동 비활성화(deactivateTemplate)에서도 불리므로 언어팩 번역 등록 뒤에 남긴다
-        BootDeferredLog::info('templates.info.cache_cleared', [], [
+        // Routes/다국어 캐시는 버전 포함 키이므로 incrementExtensionCacheVersion() + TTL로 무효화됨
+
+        Log::info(__('templates.info.cache_cleared'), [
             'template' => $templateIdentifier,
         ]);
-
-        return $clearedCount;
     }
 
     /**
      * 템플릿의 모든 레이아웃 캐시를 삭제합니다.
      *
      * @param  string  $templateIdentifier  템플릿 식별자
-     * @return int 캐시를 무효화한 레이아웃 수
      */
-    protected function clearLayoutCaches(string $templateIdentifier): int
+    protected function clearLayoutCaches(string $templateIdentifier): void
     {
         // 템플릿의 모든 레이아웃 조회
         $template = $this->templateRepository->findByIdentifier($templateIdentifier);
         if (! $template) {
-            return 0;
+            return;
         }
 
         $this->invalidateTemplateLayoutCache($template->id, $templateIdentifier);
-
-        return $this->layoutRepository->getByTemplateId($template->id)->count();
     }
 
     /**
      * 템플릿의 주요 레이아웃을 미리 캐싱합니다 (캐시 워밍).
      *
      * @param  string  $templateIdentifier  템플릿 식별자
-     * @return void 반환값 없음
      */
     protected function warmTemplateCache(string $templateIdentifier): void
     {
@@ -2760,8 +1844,7 @@ class TemplateManager implements TemplateManagerInterface
         // PublicTemplateController::getRoutes()와 동일한 캐시 키 패턴 사용
         try {
             $templateService = app(TemplateService::class);
-            // 공개 routes 응답과 같은 캐시 키를 채우므로 그 응답처럼 빈 맵 `{}` 를 보존한다 (#758)
-            $result = $templateService->getRoutesDataWithModules($templateIdentifier, preserveEmptyMaps: true);
+            $result = $templateService->getRoutesDataWithModules($templateIdentifier);
 
             if ($result['success']) {
                 $cacheKey = "template.routes.{$templateIdentifier}.v{$cacheVersion}";
@@ -2866,24 +1949,17 @@ class TemplateManager implements TemplateManagerInterface
     /**
      * 템플릿의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
-     * 모든 행 쓰기는 {@see LayoutRowSynchronizer} 를 지난다. keep(`$preserveModified`)이면 운영자가 고친 화면은
-     * 조각 단위로 병합하고(고친 조각은 운영자 판, 손대지 않은 조각은 새 판), 운영자가 지운·만든·이름 바꾼 화면은
-     * 되살리거나 덮거나 지우지 않는다. overwrite 면 새 판으로 덮는다(수동 「레이아웃 갱신」).
+     * 활성화된 템플릿의 레이아웃 파일을 다시 스캔하여
+     * DB에 저장된 레이아웃을 최신 파일 내용으로 갱신합니다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @param  bool|LayoutSyncMode  $preserveModified  동기화 모드 (keep 이 기본 — 운영자가 고친 화면을 병합해 보존, overwrite 면 새 판으로 덮음). bool 은 호환용(true = keep)
-     * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준을 만든다
-     * @return array{success: bool, layouts_refreshed: int, created: int, updated: int, deleted: int, unchanged: int, skipped: int, extensions_refreshed: int, layout_sync: array<string, mixed>, layout_warnings: array<int, array<string, string>>} 갱신 결과 (빈 자리로 등록한 조각 참조 경고 포함)
+     * @param  bool  $preserveModified  운영자가 관리자 UI 에서 수정한 레이아웃은 덮어쓰지 않을지 여부 (true 면 user_overrides 보존)
+     * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
      *
      * @throws \Exception 템플릿을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshTemplateLayouts(string $identifier, bool|LayoutSyncMode $preserveModified = LayoutSyncMode::Keep, ?string $backupPath = null): array
+    public function refreshTemplateLayouts(string $identifier, bool $preserveModified = false): array
     {
-        // 업데이트 미리보기는 새 판 디렉토리를 읽는다 — 그 동안 마크업 컴파일의 소유 확장을 이 템플릿으로 고정한다.
-        if (LayoutSyncOptions::current()->sourceRoot !== null && $this->compileContextOverride === null) {
-            return $this->withLayoutSourceContext($identifier, fn () => $this->refreshTemplateLayouts($identifier, $preserveModified, $backupPath));
-        }
-
         // 템플릿 DB 조회
         $template = $this->templateRepository->findByIdentifier($identifier);
 
@@ -2896,24 +1972,19 @@ class TemplateManager implements TemplateManagerInterface
             throw new \Exception(__('templates.errors.template_not_active', ['identifier' => $identifier]));
         }
 
-        $mode = $preserveModified instanceof LayoutSyncMode ? $preserveModified : LayoutSyncMode::fromPreserve($preserveModified);
-        $preserveModified = $mode === LayoutSyncMode::Keep;
-        $report = new LayoutSyncReport($mode);
-        $layoutsPath = $this->layoutSourceRoot('templates', $identifier).'/layouts';
-        $this->lastLayoutWarnings = [];
+        $layoutsPath = base_path("templates/{$identifier}/layouts");
 
         if (! File::exists($layoutsPath)) {
             Log::info(__('templates.info.no_layouts_directory'), ['template' => $identifier]);
 
-            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'extensions_refreshed' => 0, 'layout_sync' => $report->toArray(), 'layout_preview' => $report->toPreviewArray(), 'layout_warnings' => [], 'warnings' => LifecycleWarnings::current()->all()];
+            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0];
         }
 
-        // 레이아웃 검증 — 7.0 JSON 의 깨진 조각 참조는 빈 자리로 등록하고 경고로 모은다 (#712)
+        // 레이아웃 검증
         try {
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $identifier, 'template', true);
-            $this->rememberLayoutWarnings();
         } catch (\Exception $e) {
-            Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
+            Log::error(__('templates.errors.layout_registration_failed'), [
                 'template' => $identifier,
                 'error' => $e->getMessage(),
             ]);
@@ -2921,74 +1992,112 @@ class TemplateManager implements TemplateManagerInterface
             throw $e;
         }
 
-        // 오버라이드는 전용 등록이 맡는다 — 자기 레이아웃 동기화에서 뺀다.
-        $validatedLayouts = array_values(array_filter($validatedLayouts, fn ($layout) => ! $this->isOverrideLayoutFile($layout['file'])));
-        $fileLayoutNames = array_column($validatedLayouts, 'layout_name');
+        // 파일에서 가져온 레이아웃 이름 목록
+        $fileLayoutNames = collect($validatedLayouts)->pluck('layout_name')->toArray();
 
-        $synchronizer = $this->layoutSynchronizer();
-        $backupOriginals = $synchronizer->compileBackupOriginals($backupPath, 'templates', $identifier);
+        // DB에 있는 템플릿 기본 레이아웃 조회 (source_type = template, source_identifier = null)
+        $existingLayouts = $this->layoutRepository->getByTemplateIdWithFilter(
+            $template->id,
+            'template',
+            null
+        )->keyBy('name');
+
         $stats = ['created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0];
 
         // 파일 기반 레이아웃 동기화
         foreach ($validatedLayouts as $validatedLayout) {
-            $layoutName = $validatedLayout['layout_name'];
-
             try {
-                $entry = $synchronizer->syncLayout(
-                    [
-                        'template_id' => $template->id,
-                        'template' => $identifier,
-                        'name' => $layoutName,
-                        'source_type' => LayoutSourceType::Template,
-                        'source_identifier' => null,
-                    ],
-                    $validatedLayout['data'],
-                    $validatedLayout['original'],
-                    $mode,
-                    $backupOriginals[$layoutName] ?? null
-                );
-                $this->tallyLayoutSync($stats, $entry);
-                $report->add($entry);
+                $layoutName = $validatedLayout['layout_name'];
+                $layoutData = $validatedLayout['data'];
+                $existingLayout = $existingLayouts->get($layoutName);
+
+                if ($existingLayout) {
+                    // 기존 레이아웃이 있는 경우 - 내용 비교 후 업데이트
+                    $existingContent = is_string($existingLayout->content)
+                        ? json_decode($existingLayout->content, true)
+                        : $existingLayout->content;
+
+                    if ($existingContent !== $layoutData) {
+                        // 사용자 수정 감지: preserveModified 시 original_content_hash와 현재 content hash 비교
+                        if ($preserveModified) {
+                            $currentHash = $this->computeContentHash($existingContent);
+                            $originalHash = $existingLayout->original_content_hash;
+
+                            // hash가 다르면 사용자가 수정한 것 → 보존
+                            if ($originalHash && $currentHash !== $originalHash) {
+                                $stats['skipped']++;
+                                Log::info("템플릿 레이아웃 보존 (사용자 수정): {$layoutName}", ['template' => $identifier]);
+
+                                continue;
+                            }
+                        }
+
+                        // 업데이트 + 새 원본 hash/size 저장
+                        $this->layoutRepository->updateOrCreate(
+                            ['template_id' => $template->id, 'name' => $layoutName],
+                            [
+                                'content' => $layoutData,
+                                'original_content_hash' => $this->computeContentHash($layoutData),
+                                'original_content_size' => $this->computeContentSize($layoutData),
+                            ]
+                        );
+                        $stats['updated']++;
+                        Log::info("템플릿 레이아웃 업데이트: {$layoutName}", ['template' => $identifier]);
+                    } else {
+                        // 내용이 같으면 그대로
+                        $stats['unchanged']++;
+                    }
+                } else {
+                    // DB에 없으면 새로 생성
+                    $this->layoutRepository->updateOrCreate(
+                        ['template_id' => $template->id, 'name' => $layoutName],
+                        [
+                            'content' => $layoutData,
+                            'source_type' => 'template',
+                            'original_content_hash' => $this->computeContentHash($layoutData),
+                            'original_content_size' => $this->computeContentSize($layoutData),
+                        ]
+                    );
+                    $stats['created']++;
+                    Log::info("템플릿 레이아웃 생성: {$layoutName}", ['template' => $identifier]);
+                }
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
+                Log::error(__('templates.errors.layout_registration_failed'), [
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
-                LifecycleWarnings::current()->add('layout_refresh', basename((string) $validatedLayout['file']), $e->getMessage());
             }
         }
 
-        // DB에만 있고 파일에 없는 레이아웃 — 이전 판 파일 목록에 있던 이름만 삭제 후보(운영자가 만든·이름 바꾼 화면은 남긴다).
-        $previousNames = $backupOriginals !== []
-            ? array_values(array_filter(array_keys($backupOriginals), fn ($name) => ! str_contains((string) $name, '.')))
-            : null;
-        $existingLayouts = $this->layoutRepository->getByTemplateIdWithFilter($template->id, 'template', null);
+        // DB에만 있고 파일에 없는 레이아웃 삭제
+        foreach ($existingLayouts as $layoutName => $layout) {
+            if (! in_array($layoutName, $fileLayoutNames)) {
+                // preserveModified: 사용자가 수정한 레이아웃은 삭제하지 않음
+                if ($preserveModified && $layout->original_content_hash) {
+                    $currentContent = is_string($layout->content)
+                        ? json_decode($layout->content, true)
+                        : $layout->content;
+                    $currentHash = $this->computeContentHash($currentContent);
 
-        foreach ($existingLayouts as $layout) {
-            if (in_array($layout->name, $fileLayoutNames, true)) {
-                continue;
+                    if ($currentHash !== $layout->original_content_hash) {
+                        $stats['skipped']++;
+                        Log::info("템플릿 레이아웃 보존 (삭제 대상, 사용자 수정): {$layoutName}", ['template' => $identifier]);
+
+                        continue;
+                    }
+                }
+
+                $layout->forceDelete();
+                $stats['deleted']++;
+                Log::info("템플릿 레이아웃 삭제: {$layoutName}", ['template' => $identifier]);
             }
-
-            $entry = $synchronizer->removeMissingLayout($layout, $identifier, $mode, $synchronizer->isRemovalCandidate($layout, $previousNames));
-            $this->tallyLayoutSync($stats, $entry);
-            $report->add($entry);
         }
 
         // 오버라이드 레이아웃 재등록
-        $this->registerLayoutOverrides($identifier, $template->id, $mode, $backupOriginals, $report);
+        $this->registerLayoutOverrides($identifier, $template->id);
 
         // Extension 오버라이드 재등록 (레이아웃 확장)
-        $extensionStats = $this->registerExtensionOverrides($identifier, $template->id, $mode, $report);
-
-        // 자기 설정 화면 재등록 (#434) — 관리자 템플릿의 자기 행 동기화는 source_identifier 가 빈 행만 보므로
-        // 다른 템플릿이 이 관리자 템플릿에 등록한 설정 화면 행은 건드리지 않는다.
-        $this->syncSettingsLayout($identifier, $mode, $report);
-
-        // 켜진 관리자 템플릿이면 설치된 템플릿 설정 화면을 이 관리자 템플릿에 다시 등록한다 — 이 관리자 템플릿의
-        // `layouts/overrides/{템플릿id}/template_settings.*` 덮어쓰기가 더해지거나 빠진 것을 반영한다 (#434 D28)
-        if ($template->type === 'admin' && $template->status === ExtensionStatus::Active->value) {
-            $this->registerSettingsLayoutsForAllInstalled($identifier, $mode, $report);
-        }
+        $extensionStats = $this->registerExtensionOverrides($identifier, $template->id);
 
         // 캐시 무효화
         $this->clearTemplateCache($identifier);
@@ -2996,7 +2105,7 @@ class TemplateManager implements TemplateManagerInterface
         $totalRefreshed = $stats['created'] + $stats['updated'];
 
         // 레이아웃 또는 Extension 오버라이드가 변경된 경우에만 캐시 버전 증가
-        $extensionChanged = ($extensionStats['created'] ?? 0) > 0 || ($extensionStats['updated'] ?? 0) > 0 || ($extensionStats['deleted'] ?? 0) > 0;
+        $extensionChanged = ($extensionStats['created'] ?? 0) > 0 || ($extensionStats['updated'] ?? 0) > 0;
         if ($totalRefreshed > 0 || $stats['deleted'] > 0 || $extensionChanged) {
             $this->incrementExtensionCacheVersion();
         }
@@ -3020,9 +2129,6 @@ class TemplateManager implements TemplateManagerInterface
             'unchanged' => $stats['unchanged'],
             'skipped' => $stats['skipped'],
             'extensions_refreshed' => $extensionStats['registered'] ?? 0,
-            'layout_sync' => $report->toArray(), 'layout_preview' => $report->toPreviewArray(),
-            'layout_warnings' => $this->takeLastLayoutWarnings(),
-            'warnings' => LifecycleWarnings::current()->all(),
         ];
     }
 
@@ -3034,62 +2140,52 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateIdentifier  템플릿 식별자
      * @param  int  $templateId  템플릿 DB ID
-     * @param  LayoutSyncMode  $mode  동기화 모드 (설치는 Keep, 갱신은 그 갱신의 모드)
-     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
-     * @return array{registered: int, created: int, updated: int, deleted: int} 등록 통계 (deleted = 정리한 옛 행)
+     * @return array{registered: int, created: int, updated: int} 등록 통계
      */
-    protected function registerExtensionOverrides(string $templateIdentifier, int $templateId, LayoutSyncMode $mode = LayoutSyncMode::Keep, ?LayoutSyncReport $report = null): array
+    protected function registerExtensionOverrides(string $templateIdentifier, int $templateId): array
     {
-        $stats = ['registered' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0];
-        $extensionsPath = $this->layoutSourceRoot('templates', $templateIdentifier).'/extensions';
-
-        // 대상별로 소스에 실재하는 조각 키 — 등록 뒤 이 집합에 없는 옛 행을 정리한다(removeOrphanTemplateOverrides).
-        $liveKeysByTarget = [];
+        $stats = ['registered' => 0, 'created' => 0, 'updated' => 0];
+        $extensionsPath = base_path("templates/{$templateIdentifier}/extensions");
 
         if (! is_dir($extensionsPath)) {
             Log::debug('Extension 오버라이드 디렉토리 없음', ['template' => $templateIdentifier]);
-            $stats['deleted'] = $this->layoutExtensionService->removeOrphanTemplateOverrides($templateIdentifier, $templateId, $liveKeysByTarget, $mode, $report);
 
             return $stats;
         }
 
         // extensions/{module-identifier}/ 폴더 순회
-        $moduleDirectories = ExtensionManager::listDirectories($extensionsPath);
+        $moduleDirectories = glob($extensionsPath.'/*', GLOB_ONLYDIR);
 
         if (empty($moduleDirectories)) {
             Log::debug('Extension 오버라이드 모듈 폴더 없음', ['template' => $templateIdentifier]);
-            $stats['deleted'] = $this->layoutExtensionService->removeOrphanTemplateOverrides($templateIdentifier, $templateId, $liveKeysByTarget, $mode, $report);
 
             return $stats;
         }
 
         foreach ($moduleDirectories as $moduleDir) {
             $moduleIdentifier = basename($moduleDir);
-            // 소스 디렉토리에 실재하는 조각 키 — 컴파일 성공 여부와 무관하다(모듈·플러그인 갱신과 같은 기준).
-            // 컴파일에 한 번 실패했다고 오버라이드 행을 지우면 모듈 원본 조각이 대신 그려진다.
-            $liveKeysByTarget[$moduleIdentifier] = $this->fragmentSourceKeys($moduleDir, []);
+            $overrideFiles = glob($moduleDir.'/*.json');
 
-            // 소스 선택 + 읽기 — 둘 다 규약 SSoT 가 끝낸다 (CollectsFragmentSources).
-            // 읽기를 여기서 다시 구현하면 그것이 사본이 되고, 사본은 트레이트보다 반드시 약해진다
-            // (실제로 그랬다 — `is_array` 미검사로 스칼라 JSON 이 통과해 등록에 닿았다).
-            $definitions = $this->loadFragmentDefinitions($moduleDir, [], [
-                'template' => $templateIdentifier,
-                'module' => $moduleIdentifier,
-            ], $templateIdentifier);
-
-            foreach ($definitions as $definition) {
-                $file = $definition['path'];
-
+            foreach ($overrideFiles as $file) {
                 try {
+                    $jsonContent = file_get_contents($file);
+                    $content = json_decode($jsonContent, true);
+
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        Log::warning('Extension 오버라이드 파일 JSON 파싱 실패', [
+                            'file' => $file,
+                            'error' => json_last_error_msg(),
+                        ]);
+
+                        continue;
+                    }
+
                     // 템플릿 오버라이드로 등록
                     $result = $this->layoutExtensionService->registerTemplateOverride(
-                        $definition['data'],
+                        $content,
                         $templateIdentifier,
                         $moduleIdentifier,  // override_target = 오버라이드 대상 모듈
-                        $templateId,
-                        $definition['key'],
-                        $mode,
-                        $report
+                        $templateId
                     );
 
                     $stats['registered']++;
@@ -3099,22 +2195,16 @@ class TemplateManager implements TemplateManagerInterface
                         $stats['updated']++;
                     }
 
-                    // `\Exception` 이 아니라 `\Throwable` 이다 — 등록 한 건이 던지는 `Error`(타입 오류 등)에
-                    // 나머지 확장점이 끌려 사라지면 안 된다 (트레이트 읽기 계약과 같은 이유).
-                } catch (\Throwable $e) {
+                } catch (\Exception $e) {
                     Log::error('Extension 오버라이드 등록 실패', [
                         'file' => $file,
                         'template' => $templateIdentifier,
                         'module' => $moduleIdentifier,
                         'error' => $e->getMessage(),
                     ]);
-                    LifecycleWarnings::current()->add('layout_extension_override_register', basename((string) $file), $e->getMessage());
                 }
             }
         }
-
-        // 소스에 더는 없는 조각의 행 정리 — 백필된 옛 키 행(대상 이름 키)도 여기서 파일 키로 정정된다.
-        $stats['deleted'] = $this->layoutExtensionService->removeOrphanTemplateOverrides($templateIdentifier, $templateId, $liveKeysByTarget, $mode, $report);
 
         if ($stats['registered'] > 0) {
             Log::info('템플릿 Extension 오버라이드 등록 완료', [
@@ -3132,7 +2222,6 @@ class TemplateManager implements TemplateManagerInterface
      * 템플릿 삭제 시 오버라이드를 제거합니다.
      *
      * @param  string  $templateIdentifier  템플릿 식별자
-     * @return void 반환값 없음
      */
     protected function unregisterExtensionOverrides(string $templateIdentifier): void
     {
@@ -3171,35 +2260,68 @@ class TemplateManager implements TemplateManagerInterface
             ];
         }
 
-        // 설치·활성화와 같은 판정식(DependencyEnricher). 런타임만 업데이트 중(updating)인 확장을 활성으로 본다 —
-        // 의존 모듈을 업데이트하는 잠깐 동안 사이트 전체가 503 이 되지 않게 한다(#152 D2).
+        $dependencies = $template['dependencies'] ?? [];
+        $moduleDependencies = $dependencies['modules'] ?? [];
+        $pluginDependencies = $dependencies['plugins'] ?? [];
+
         $moduleStatuses = [];
         $pluginStatuses = [];
         $allMet = true;
 
-        foreach (DependencyEnricher::enrich($template['dependencies'] ?? [], true) as $item) {
+        // 모듈 의존성 확인
+        foreach ($moduleDependencies as $moduleName => $versionConstraint) {
+            // 먼저 설치된 모듈 조회 (활성화 여부와 무관)
+            $module = $this->moduleRepository->findByIdentifier($moduleName);
+            $activeModule = $module && $module->status === ExtensionStatus::Active->value;
+
             $status = [
-                'identifier' => $item['identifier'],
-                'name' => $item['name'],
-                'type' => $item['type'],
-                'status' => $item['status'],
-                'required_version' => $item['required_version'],
-                'installed_version' => $item['installed_version'],
-                'is_active' => $item['is_active'],
-                // 하위 호환 — 꺼졌거나 미설치면 버전 비교 자체를 하지 않았으므로 false
-                'version_met' => $item['is_active'] && $item['status'] !== DependencyEnricher::STATUS_VERSION_MISMATCH,
-                'met' => $item['is_met'],
+                'identifier' => $moduleName,
+                'name' => $module ? $module->getLocalizedName() : $moduleName,
+                'required_version' => $versionConstraint,
+                'installed_version' => $module?->version,
+                'is_active' => $activeModule,
+                'version_met' => false,
+                'met' => false,
             ];
+
+            if ($activeModule) {
+                $status['version_met'] = $this->checkVersionConstraint($module->version, $versionConstraint);
+                $status['met'] = $status['version_met'];
+            }
 
             if (! $status['met']) {
                 $allMet = false;
             }
 
-            if ($item['type'] === 'module') {
-                $moduleStatuses[] = $status;
-            } else {
-                $pluginStatuses[] = $status;
+            $moduleStatuses[] = $status;
+        }
+
+        // 플러그인 의존성 확인
+        foreach ($pluginDependencies as $pluginName => $versionConstraint) {
+            // 먼저 설치된 플러그인 조회 (활성화 여부와 무관)
+            $plugin = $this->pluginRepository->findByIdentifier($pluginName);
+            $activePlugin = $plugin && $plugin->status === ExtensionStatus::Active->value;
+
+            $status = [
+                'identifier' => $pluginName,
+                'name' => $plugin ? $plugin->getLocalizedName() : $pluginName,
+                'required_version' => $versionConstraint,
+                'installed_version' => $plugin?->version,
+                'is_active' => $activePlugin,
+                'version_met' => false,
+                'met' => false,
+            ];
+
+            if ($activePlugin) {
+                $status['version_met'] = $this->checkVersionConstraint($plugin->version, $versionConstraint);
+                $status['met'] = $status['version_met'];
             }
+
+            if (! $status['met']) {
+                $allMet = false;
+            }
+
+            $pluginStatuses[] = $status;
         }
 
         return [
@@ -3283,9 +2405,6 @@ class TemplateManager implements TemplateManagerInterface
     /**
      * GitHub에서 최신 버전을 조회합니다.
      *
-     * 조회에 실패하면(주소 해석 실패·연결 실패·404 가 아닌 실패 응답·예외) null 을 돌려주고 사유를 기록한다 —
-     * {@see checkTemplateUpdate()} 가 응답의 `check_error` 로 싣는다. 릴리스가 아직 없으면(404) 사유 없이 null 이다.
-     *
      * @param  string  $githubUrl  GitHub 저장소 URL
      * @return string|null 최신 버전 또는 null
      */
@@ -3298,15 +2417,12 @@ class TemplateManager implements TemplateManagerInterface
         try {
             [$owner, $repo] = GithubHelper::parseUrl($githubUrl);
         } catch (\RuntimeException $e) {
-            $this->recordGithubVersionCheckError($e->getMessage());
-
             return null;
         }
 
         try {
             $token = (string) (config('app.update.github_token') ?? '');
             $result = GithubHelper::fetchLatestRelease($owner, $repo, $token);
-            $this->recordGithubVersionCheckError($this->githubReleaseCheckError($result));
 
             return $result['version'];
         } catch (\Exception $e) {
@@ -3314,7 +2430,6 @@ class TemplateManager implements TemplateManagerInterface
                 'github_url' => $githubUrl,
                 'error' => $e->getMessage(),
             ]);
-            $this->recordGithubVersionCheckError($e->getMessage());
 
             return null;
         }
@@ -3343,15 +2458,11 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  템플릿 식별자
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
-     * @param  bool  $force  이미 활성 디렉터리에 있어도 덮어쓸지 여부
-     * @return void 반환값 없음
      *
      * @throws \RuntimeException 소스를 찾을 수 없을 때
      */
     protected function copyToActiveFromSource(string $templateName, ?\Closure $onProgress = null, bool $force = false): void
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $targetPath = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
 
         // _pending에서 찾기
@@ -3385,12 +2496,9 @@ class TemplateManager implements TemplateManagerInterface
      * 활성 디렉토리의 template.json을 다시 읽어 메모리에 로드합니다.
      *
      * @param  string  $templateName  템플릿 식별자
-     * @return void 반환값 없음
      */
     protected function reloadTemplate(string $templateName): void
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $directory = $this->templatesPath.DIRECTORY_SEPARATOR.$templateName;
         $templateFile = $directory.DIRECTORY_SEPARATOR.'template.json';
 
@@ -3443,30 +2551,21 @@ class TemplateManager implements TemplateManagerInterface
     /**
      * 단일 템플릿의 업데이트 가능 여부를 확인합니다.
      *
-     * 일반 업데이트 우선순위:
-     *   1. GitHub URL 존재 + API 조회 성공
-     *      a. 소스 미지정이고 번들 판이 GitHub 최신·현재보다 높음 → 'bundled' 소스 반환 (코어와 함께 배포된 번들이 호환 기준 —
-     *         확장 공개 릴리스가 코어 출시보다 늦을 때 「업데이트 없음」으로 끝나던 문제)
-     *      b. GitHub 버전 > 현재 → 'github' 소스 반환
-     *      c. 그 밖 → "업데이트 없음"
-     *   2. GitHub URL 없음 OR API 조회 실패 → _bundled 폴백 (안전망, `github` 지정이면 폴백하지 않음)
-     *   `bundled` 지정이면 GitHub 를 보지 않고 번들만 비교한다 (CLI `--source`).
+     * 일반 업데이트 우선순위 (GitHub 엄격 우선):
+     *   1. GitHub URL 존재 + API 조회 성공 → GitHub 결과만 신뢰
+     *      a. GitHub 버전 > 현재 → 'github' 소스 반환
+     *      b. GitHub 버전 ≤ 현재 → "업데이트 없음" 즉시 반환 (bundled 폴백 없음)
+     *   2. GitHub URL 없음 OR API 조회 실패 → _bundled 폴백 (안전망)
      *
      * --force 업데이트 우선순위는 resolveForceUpdateSource() 참조 (번들 우선).
      *
      * 참고: _pending 디렉토리는 install 경로에서만 사용되며 update 에서는 참조하지 않음.
      *
-     * GitHub 조회에 실패하면 응답에 `check_error`(사유)를 더한다 — 번들 대체·「업데이트 없음」 답과 「확인하지 못함」을
-     * 가르기 위해서다. 조회에 성공했거나 릴리스가 아직 없으면 키가 없다.
-     *
      * @param  string  $identifier  템플릿 식별자
-     * @param  string|null  $source  소스 지정 (`bundled`·`github`, null 이면 자동 — GitHub·번들 중 높은 버전)
-     * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null, check_error?: string} 업데이트 확인 결과
+     * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null}
      */
-    public function checkTemplateUpdate(string $identifier, ?string $source = null): array
+    public function checkTemplateUpdate(string $identifier): array
     {
-        $this->ensurePendingAndBundledLoaded();
-
         $record = $this->templateRepository->findByIdentifier($identifier);
         if (! $record) {
             return $this->buildTemplateUpdateResponse(false, null, null, null, null);
@@ -3476,13 +2575,9 @@ class TemplateManager implements TemplateManagerInterface
         $template = $this->getTemplate($identifier);
         $activeRequiredCoreVersion = $template['g7_version'] ?? null;
 
-        // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (번들 지정이면 건너뜀)
-        // GitHub 조회에 실패했으면 그 사유 — 아래 모든 응답에 `check_error` 로 싣는다(번들 대체·「없음」과 구분)
-        $checkError = null;
-
+        // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (조회 성공 시 GitHub만 신뢰)
         $githubUrl = $template['github_url'] ?? ($record->github_url ?? null);
-        if ($source !== 'bundled' && $githubUrl) {
-            $this->resetGithubVersionCheckError();
+        if ($githubUrl) {
             try {
                 $latestVersion = $this->fetchLatestVersion($githubUrl);
             } catch (\Throwable $e) {
@@ -3492,20 +2587,9 @@ class TemplateManager implements TemplateManagerInterface
                     'error' => $e->getMessage(),
                 ]);
                 $latestVersion = null;
-                $this->recordGithubVersionCheckError($e->getMessage());
             }
-            $checkError = $latestVersion === null ? $this->githubVersionCheckError() : null;
 
             if ($latestVersion !== null) {
-                // 소스를 지정하지 않았으면 코어와 함께 배포된 번들이 공개 최신보다 새 판일 때 번들을 후보로 본다 — 확장 공개
-                // 릴리스가 코어 출시보다 늦으면 GitHub 결과만 믿어 「업데이트 없음」으로 끝났다(W3 실측: 번들 1.1.0, 공개 1.0.4).
-                $bundled = $source === null ? $this->bundledTemplateUpdateCandidate($identifier, $activeRequiredCoreVersion) : null;
-                if ($bundled !== null
-                    && version_compare($bundled['version'], $latestVersion, '>')
-                    && version_compare($bundled['version'], $currentVersion, '>')) {
-                    return $this->buildTemplateUpdateResponse(true, 'bundled', $bundled['version'], $currentVersion, $bundled['required']);
-                }
-
                 if (version_compare($latestVersion, $currentVersion, '>')) {
                     return $this->buildTemplateUpdateResponse(
                         true, 'github', $latestVersion, $currentVersion, $activeRequiredCoreVersion
@@ -3522,61 +2606,31 @@ class TemplateManager implements TemplateManagerInterface
             ]);
         }
 
-        // github 지정 — 번들로 폴백하지 않는다(문서: GitHub 단독).
-        if ($source === 'github') {
-            return $this->withUpdateCheckError(
-                $this->buildTemplateUpdateResponse(false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion),
-                $checkError,
-            );
-        }
-
         // 2. _bundled에서 업데이트 확인
         if (isset($this->bundledTemplates[$identifier])) {
             $bundledVersion = $this->bundledTemplates[$identifier]['version'] ?? null;
-            $bundledRequired = $this->resolveUpdateTargetRequiredCoreVersion('bundled', $this->bundledTemplates[$identifier], $activeRequiredCoreVersion);
+            $bundledRequired = $this->bundledTemplates[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
             if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
-                return $this->withUpdateCheckError($this->buildTemplateUpdateResponse(
+                return $this->buildTemplateUpdateResponse(
                     true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
-                ), $checkError);
+                );
             }
         } else {
             $bundledMeta = ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json');
             if (isset($bundledMeta[$identifier])) {
                 $bundledVersion = $bundledMeta[$identifier]['version'] ?? null;
-                $bundledRequired = $this->resolveUpdateTargetRequiredCoreVersion('bundled', $bundledMeta[$identifier], $activeRequiredCoreVersion);
+                $bundledRequired = $bundledMeta[$identifier]['g7_version'] ?? $activeRequiredCoreVersion;
                 if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
-                    return $this->withUpdateCheckError($this->buildTemplateUpdateResponse(
+                    return $this->buildTemplateUpdateResponse(
                         true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
-                    ), $checkError);
+                    );
                 }
             }
         }
 
-        return $this->withUpdateCheckError($this->buildTemplateUpdateResponse(
+        return $this->buildTemplateUpdateResponse(
             false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion
-        ), $checkError);
-    }
-
-    /**
-     * 번들(`_bundled`) 판 템플릿의 버전과 코어 요구 버전을 돌려줍니다 — 번들에 없으면 null.
-     *
-     * @param  string  $identifier  템플릿 식별자
-     * @param  string|null  $activeRequiredCoreVersion  설치본의 코어 요구 버전 (번들 manifest 에 없을 때의 폴백)
-     * @return array{version: string, required: string|null}|null 번들 후보
-     */
-    private function bundledTemplateUpdateCandidate(string $identifier, ?string $activeRequiredCoreVersion): ?array
-    {
-        $this->ensurePendingAndBundledLoaded();
-
-        $meta = $this->bundledTemplates[$identifier]
-            ?? (ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json')[$identifier] ?? null);
-        $version = is_array($meta) ? ($meta['version'] ?? null) : null;
-
-        if (! is_string($version) || $version === '') {
-            return null;
-        }
-
-        return ['version' => $version, 'required' => $this->resolveUpdateTargetRequiredCoreVersion('bundled', $meta, $activeRequiredCoreVersion)];
+        );
     }
 
     /**
@@ -3587,7 +2641,7 @@ class TemplateManager implements TemplateManagerInterface
      * @param  string|null  $latestVersion  최신 버전
      * @param  string|null  $currentVersion  현재 설치된 버전
      * @param  string|null  $requiredCoreVersion  요구 코어 버전 제약
-     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string} 업데이트 확인 응답(코어 호환 필드 포함)
+     * @return array{update_available: bool, update_source: ?string, latest_version: ?string, current_version: ?string, required_core_version: ?string, is_compatible: bool, current_core_version: string}
      */
     protected function buildTemplateUpdateResponse(
         bool $updateAvailable,
@@ -3601,42 +2655,25 @@ class TemplateManager implements TemplateManagerInterface
             'update_source' => $updateSource,
             'latest_version' => $latestVersion,
             'current_version' => $currentVersion,
-            ...$this->buildUpdateCompatibilityFields($requiredCoreVersion),
+            'required_core_version' => $requiredCoreVersion,
+            'is_compatible' => CoreVersionChecker::isCompatible($requiredCoreVersion),
+            'current_core_version' => CoreVersionChecker::getCoreVersion(),
         ];
     }
 
     /**
      * 모든 설치된 템플릿의 업데이트를 확인합니다.
      *
-     * GitHub 조회에 실패한 템플릿(`check_error`)은 `failures` 에 사유와 함께 담는다. 그 템플릿의 DB 값(`update_available`·
-     * `latest_version`·`update_source`)은 갱신하지 않는다 — 번들 대체 판정이 「업데이트 있음」이어도 결과(`details`)에만 싣는다.
-     * 덮으면 지난 확인에서 알아 둔 판 정보가 조회 실패 한 번으로 지워지거나 번들 판으로 바뀐다. 검수 서버(stage)에서는 확인 결과만 돌려주고 DB 는 갱신하지 않는다 —
-     * 같은 DB 를 쓰는 운영 서버 관리자 화면의 「업데이트 있음」 표시를 검수 서버의 번들·코드 기준 판정으로 덮지 않게.
-     *
-     * @return array{updated_count: int, checked_count: int, details: array, failures: list<array{identifier: string, reason: string}>} 갱신 건수와 템플릿별 결과·조회 실패 목록
+     * @return array{updated_count: int, details: array}
      */
     public function checkAllTemplatesForUpdates(): array
     {
         $templateRecords = $this->templateRepository->getAllKeyedByIdentifier();
         $details = [];
-        $failures = [];
         $updatedCount = 0;
-        $checkedCount = 0;
-
-        // 검수 서버는 공유 DB 의 업데이트 표시를 바꾸지 않는다(결과는 그대로 돌려준다)
-        $persist = ! RuntimeRole::isStage();
 
         foreach ($templateRecords as $identifier => $record) {
             $result = $this->checkTemplateUpdate($identifier);
-            $checkedCount++;
-
-            if (isset($result['check_error'])) {
-                $failures[] = ['identifier' => (string) $identifier, 'reason' => (string) $result['check_error']];
-
-                if (! $result['update_available']) {
-                    continue;
-                }
-            }
 
             $updateData = [
                 'update_available' => $result['update_available'],
@@ -3654,16 +2691,12 @@ class TemplateManager implements TemplateManagerInterface
                 }
             }
 
-            // 조회에 실패한 확장은 DB 를 덮지 않는다(번들 판은 결과에만 보인다)
-            if ($persist && ! isset($result['check_error'])) {
-                $this->templateRepository->updateByIdentifier($identifier, $updateData);
-            }
+            $this->templateRepository->updateByIdentifier($identifier, $updateData);
 
             if ($result['update_available']) {
                 $updatedCount++;
                 $details[] = [
                     'identifier' => $identifier,
-                    'update_available' => true,
                     'current_version' => $result['current_version'],
                     'latest_version' => $result['latest_version'],
                     'update_source' => $result['update_source'],
@@ -3673,79 +2706,70 @@ class TemplateManager implements TemplateManagerInterface
 
         return [
             'updated_count' => $updatedCount,
-            'checked_count' => $checkedCount,
             'details' => $details,
-            'failures' => $failures,
         ];
     }
 
     /**
-     * 업데이트 미리보기용으로 GitHub 새 판을 내려받아 서명을 검증하고 임시 디렉토리에 풀어 둡니다 — 이어지는 업데이트가 토큰으로 다시 씁니다.
+     * GitHub에서 템플릿 업데이트를 다운로드하여 _pending 스테이징에 배치합니다.
      *
-     * 미리보기는 아무것도 바꾸지 않으므로 미서명 패키지도 받아 둔다(「미서명 패키지 차단」이 켜져 있거나 서명 불일치·미신뢰 키면
-     * 실패). 미서명 확인은 업데이트가 준비본을 꺼낼 때 그 요청의 선택으로 다시 받는다({@see ExtensionUpdatePreviewStore::claimAcquired()}).
-     *
-     * @param  string  $identifier  템플릿 식별자
-     * @param  string  $version  내려받을 판 번호
-     * @return array{temp_dir: string, extracted_dir: string, verification: PackageVerification} 받은 소스 (미리보기가 준비본 표에 등록)
-     *
-     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 차단 시
-     * @throws \RuntimeException 다운로드 실패 시
-     */
-    public function prepareUpdatePreviewSource(string $identifier, string $version): array
-    {
-        $template = $this->getTemplate($identifier);
-        $githubUrl = $template['github_url'] ?? ($this->templateRepository->findByIdentifier($identifier)?->github_url ?? '');
-
-        return $this->downloadTemplateUpdate($identifier, (string) $githubUrl, $version, PackageIntegrityOptions::none()->allowingUnsigned(), false);
-    }
-
-    /**
-     * GitHub 태그 릴리스에서 템플릿 업데이트를 받아 서명을 검증하고 임시 디렉토리에 풀어 둡니다 (미리보기 준비본이 있으면 그것을 씁니다).
-     *
-     * 서명 자산(`{identifier}-{version}.zip` + `.sig.json`)이 있으면 그것을, 없으면 미서명 정책이 허락할 때만 태그
-     * zipball 을 받는다(7.2.0). 스테이징은 호출부(updateTemplate)가 풀어 둔 디렉토리에서 한다.
+     * ExtensionManager의 공용 GitHub 다운로드 유틸리티를 사용하여
+     * 코어 업데이트와 동일한 폴백 체인(ZipArchive → unzip)을 적용합니다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @param  string|null  $githubUrl  GitHub 저장소 URL
+     * @param  string  $githubUrl  GitHub 저장소 URL
      * @param  string  $version  다운로드할 버전
-     * @param  PackageIntegrityOptions  $integrity  패키지 무결성 선택
-     * @param  bool  $usePrepared  미리보기 준비본을 먼저 찾을지 (미리보기 자신이 내려받을 때는 false)
-     * @return array{temp_dir: string, extracted_dir: string, verification: PackageVerification} 받은 소스 (호출부가 temp_dir 정리)
+     * @return string 스테이징 경로
      *
-     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
      * @throws \RuntimeException 다운로드 실패 시
      */
-    protected function downloadTemplateUpdate(string $identifier, ?string $githubUrl, string $version, PackageIntegrityOptions $integrity, bool $usePrepared = true): array
+    protected function downloadTemplateUpdate(string $identifier, string $githubUrl, string $version): string
     {
-        // 업데이트 미리보기가 내려받아 둔 같은 판이 있으면 그것을 쓴다 — 미리보기로 본 파일을 그대로 적용한다.
-        // 미서명 확인은 이 요청의 선택으로 다시 판정하고, 확인이 필요하면 준비본을 남겨 둔 채 예외를 던진다(확인 후 재요청이 같은 준비본을 쓴다).
-        if ($usePrepared) {
-            $prepared = app(ExtensionUpdatePreviewStore::class)->claimAcquired('template', $identifier, $version, $integrity);
-            if ($prepared !== null) {
-                return $prepared;
-            }
-        }
-
         if (! $githubUrl) {
             throw new \RuntimeException(__('templates.errors.invalid_github_url'));
         }
 
-        if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl)) {
+        if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
             throw new \RuntimeException(__('templates.errors.invalid_github_url'));
         }
 
-        $acquired = $this->extensionManager->acquireGithubUpdate(
-            'template', $identifier, $githubUrl, $version, 'template.json', $integrity, config('app.update.github_token') ?? ''
-        );
+        $owner = $matches[1];
+        $repo = $matches[2];
 
-        Log::info('템플릿 업데이트 다운로드·검증 완료', [
-            'template' => $identifier,
-            'version' => $version,
-            'integrity' => $acquired['verification']->status->value,
-        ]);
+        // _pending 스테이징 경로 생성
+        $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->templatesPath, $identifier);
 
-        return $acquired;
+        // 임시 디렉토리 (다운로드/추출용)
+        $tempDir = storage_path('app/temp/template_update_'.uniqid());
+
+        try {
+            File::ensureDirectoryExists($tempDir);
+
+            // GitHub에서 다운로드 및 추출 (코어와 동일한 폴백 체인)
+            $extractedDir = $this->extensionManager->downloadAndExtractFromGitHub(
+                $owner, $repo, $version, $tempDir, config('app.update.github_token') ?? ''
+            );
+
+            // 추출된 파일을 _pending 스테이징으로 복사
+            ExtensionPendingHelper::stageForUpdate($extractedDir, $stagingPath);
+
+            Log::info('템플릿 업데이트 다운로드 및 스테이징 완료', [
+                'template' => $identifier,
+                'version' => $version,
+                'staging_path' => $stagingPath,
+            ]);
+
+            return $stagingPath;
+
+        } catch (\Exception $e) {
+            ExtensionPendingHelper::cleanupStaging($stagingPath);
+            throw $e;
+        } finally {
+            // 임시 파일 정리
+            if (File::isDirectory($tempDir)) {
+                File::deleteDirectory($tempDir);
+            }
+        }
     }
 
     /**
@@ -3755,7 +2779,7 @@ class TemplateManager implements TemplateManagerInterface
      * 사용자가 관리자 UI에서 레이아웃을 수정한 적이 있는지 감지합니다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array} 수정한 레이아웃 존재 여부·개수·목록
+     * @return array{has_modified_layouts: bool, modified_count: int, modified_layouts: array}
      */
     public function hasModifiedLayouts(string $identifier): array
     {
@@ -3768,24 +2792,45 @@ class TemplateManager implements TemplateManagerInterface
             ];
         }
 
-        // 템플릿 자신이 소유한 레이아웃만 센다 — getByTemplateId() 는 같은 template_id 에
-        // 등록된 모듈/플러그인 소유 레이아웃까지 반환해서, 남의 확장 수정본이 템플릿
-        // 업데이트 모달에 자기 것으로 집계된다. 그래서 source_type='template' 만 남긴다.
-        // 오버라이드 레이아웃(source_identifier = 템플릿)도 이 템플릿 소유라 함께 센다(W6) — keep 갱신이 병합하는 범위와 같다.
-        $ownLayouts = $this->layoutRepository->getByTemplateIdWithFilter($record->id, 'template', null)
-            ->concat($this->layoutRepository->getByTemplateIdWithFilter($record->id, 'template', $identifier));
+        $allLayouts = $this->layoutRepository->getByTemplateId($record->id);
+        $modifiedLayouts = $allLayouts->filter(function ($layout) {
+            if (! $layout->original_content_hash) {
+                return false; // hash 없으면 (레거시 데이터) 미수정 취급
+            }
 
-        return $this->buildModifiedLayoutsReport(
-            $ownLayouts,
-            $this->layoutExtensionRepository->getBySource(LayoutSourceType::Template, $identifier)
-        );
+            $currentContent = is_string($layout->content)
+                ? json_decode($layout->content, true)
+                : $layout->content;
+            $currentHash = $this->computeContentHash($currentContent);
+
+            return $currentHash !== $layout->original_content_hash;
+        });
+
+        return [
+            'has_modified_layouts' => $modifiedLayouts->isNotEmpty(),
+            'modified_count' => $modifiedLayouts->count(),
+            'modified_layouts' => $modifiedLayouts->map(function ($layout) {
+                $currentContent = is_string($layout->content)
+                    ? json_decode($layout->content, true)
+                    : $layout->content;
+                $currentSize = $this->computeContentSize($currentContent);
+                $originalSize = $layout->original_content_size ?? $currentSize;
+
+                return [
+                    'id' => $layout->id,
+                    'name' => $layout->name,
+                    'updated_at' => $layout->updated_at?->format('Y-m-d H:i:s'),
+                    'size_diff' => $currentSize - $originalSize,
+                ];
+            })->values()->toArray(),
+        ];
     }
 
     /**
      * 템플릿을 업데이트합니다.
      *
      * 프로세스: 백업 → updating 상태 → 파일 교체 → DB 갱신 →
-     * 상태 복원 → 레이아웃 갱신 → 활성 확장 조각 재등록(활성 템플릿만) → 백업 삭제
+     * 레이아웃 갱신 → 상태 복원 → 백업 삭제
      *
      * 파라미터 순서는 updateModule / updatePlugin 과 일치시켜 공통 prefix
      * (id, force, onProgress, ...) 를 공유한다. 템플릿은 upgrade step 이 없어
@@ -3797,60 +2842,22 @@ class TemplateManager implements TemplateManagerInterface
      * @param  string  $layoutStrategy  레이아웃 전략 ('overwrite' 또는 'keep')
      * @param  string|null  $sourceOverride  소스 강제 지정 ('bundled' | 'github'). null 이면 자동 감지
      * @param  string|null  $zipPath  사용자가 업로드한 ZIP 경로 (sourceOverride 가 'zip' 일 때 필수)
-     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일) — null 이면 미서명은 409 (7.2.0)
-     * @return array{success: bool, from_version: string|null, to_version: string|null, message: string} 업데이트 결과(성공 여부·이전/이후 버전·메시지)
+     * @return array{success: bool, from_version: string|null, to_version: string|null, message: string}
      *
      * @throws \RuntimeException 업데이트 실패 시
-     * @throws ExtensionOperationInProgressException 같은 확장의 업데이트가 이미 진행 중일 때 (409)
-     * @throws PackageIntegrityException 받은 패키지의 서명이 맞지 않거나·미신뢰 키거나·미서명 확인이 필요할 때 (백업 전)
      */
-    public function updateTemplate(string $identifier, bool $force = false, ?\Closure $onProgress = null, string $layoutStrategy = 'overwrite', ?string $sourceOverride = null, ?string $zipPath = null, ?PackageIntegrityOptions $integrity = null): array
+    public function updateTemplate(string $identifier, bool $force = false, ?\Closure $onProgress = null, string $layoutStrategy = 'overwrite', ?string $sourceOverride = null, ?string $zipPath = null): array
     {
-        $integrity ??= PackageIntegrityOptions::none();
-        // 같은 템플릿의 업데이트는 한 번에 하나만 — 상태 가드(status=updating)가 서기 전 구간에 들어온 두 번째 요청이
-        // 함께 통과해 업데이트가 두 번 수행됐다(#138 실측 ② 버튼 더블클릭). 직전 훅보다 먼저 잠그고, 이 지역 변수가
-        // 메서드를 빠져나갈 때(정상 반환·예외 모두) 잠금이 풀린다.
-        $operationLock = ExtensionOperationLock::acquire('template', $identifier);
-
-        // 진행 중 하트비트 — 단계마다(30초 간격) 잠금을 늘리고, `updating` 기록 뒤에는 행 `updated_at` 도 갱신한다. 10분 넘게
-        // 걸리는 업데이트가 잠금 만료·`updated_at` 경과로 「멈춘 업데이트」로 오판돼 활성화·정리가 되돌리는 일을 막는다(#161 D4).
-        $statusUpdating = false;
-        $touch = function () use (&$statusUpdating, $identifier): void {
-            if ($statusUpdating) {
-                $this->templateRepository->updateByIdentifier($identifier, ['updated_at' => now()]);
-            }
-        };
-        $onProgress = $operationLock->wrapProgress($onProgress, $touch);
-
-        // 직전 훅 — CLI·어드민 UI 공통으로 한 번 발화한다(예전에는 Service 에서만 발화해 CLI 가 빠졌다, #138 후속)
-        HookManager::doAction('core.templates.before_version_update', $identifier);
-
         $record = $this->templateRepository->findByIdentifier($identifier);
         if (! $record) {
             throw new \RuntimeException(__('templates.not_installed', ['template' => $identifier]));
         }
 
-        // 멈춘 업데이트(updating 고착) — --force 면 정리하고 진행한다(7.1.1 출시 전). 업데이트 잠금은 위에서 이미 잡았다.
-        if ($force && StuckUpdateRecovery::recover('template', $identifier, $record, fn (array $attributes) => $this->templateRepository->updateByIdentifier($identifier, $attributes), lockHeld: true) !== null) {
-            self::invalidateTemplateStatusCache();
-            $record = $this->templateRepository->findByIdentifier($identifier);
-        }
-
-        // 상태 가드 (멈춘 업데이트로 보이면 --force 를 안내한다)
-        StuckUpdateRecovery::assertNotInProgress($identifier, $record);
-
-        // 행은 있는데 활성 디렉토리만 없으면(파일만 지워진 사이트) 원본(_pending·_bundled)을 복사해 되살린 뒤 업데이트를 잇는다.
-        // 종전에는 업데이트는 「찾을 수 없습니다」, 설치는 「이미 설치되어 있습니다」로 막혀 되돌릴 길이 없었다.
-        // GitHub·ZIP 소스는 원본 사본이 아니므로 이 복구를 하지 않는다(그 경로는 종전대로 실패한다).
-        if ($zipPath === null && $sourceOverride !== 'github'
-            && ! File::isDirectory($this->templatesPath.DIRECTORY_SEPARATOR.$identifier)) {
-            try {
-                $this->copyToActiveFromSource($identifier, $onProgress);
-                Log::warning('활성 디렉토리가 없는 설치 템플릿을 원본에서 되살렸습니다', ['template' => $identifier]);
-            } catch (\RuntimeException) {
-                // 원본도 없으면 종전 흐름이 그대로 실패를 알린다
-            }
-        }
+        // 상태 가드
+        ExtensionStatusGuard::assertNotInProgress(
+            ExtensionStatus::from($record->status),
+            $identifier
+        );
 
         $previousStatus = $record->status;
         $fromVersion = $record->version;
@@ -3860,14 +2867,10 @@ class TemplateManager implements TemplateManagerInterface
         // zipTempDir / zipExtractedDir 는 staging 단계에서 사용 후 finally 에서 정리.
         $zipTempDir = null;
         $zipExtractedDir = null;
-        // 받은 패키지의 무결성 검증 결과 — 끝나면 설치 행에 적는다(번들은 bundled, 7.2.0)
-        $integrityVerification = PackageVerification::bundled();
         if ($zipPath !== null) {
-            // 서명 검증(해제 전 바이트 + 해제 뒤 manifest) — 미서명 확인(409)·불일치(422)는 아무것도 바꾸기 전에 멈춘다
-            $prepared = $this->extensionManager->prepareVerifiedZipSource('template', $zipPath, $identifier, 'template.json', $integrity);
+            $prepared = $this->extensionManager->prepareZipSource($zipPath, $identifier, 'template.json');
             $zipTempDir = $prepared['temp_dir'];
             $zipExtractedDir = $prepared['extracted_dir'];
-            $integrityVerification = $prepared['verification'];
             $updateSource = 'zip';
             $toVersion = $prepared['to_version'];
         }
@@ -3895,18 +2898,12 @@ class TemplateManager implements TemplateManagerInterface
             $toVersion = ($updateInfo['update_source'] === 'github' ? $updateInfo['latest_version'] : null)
                 ?? $updateInfo['current_version'];
         } elseif (! $updateInfo['update_available'] && ! $force) {
-            $result = [
+            return [
                 'success' => false,
                 'from_version' => $fromVersion,
                 'to_version' => $fromVersion,
                 'message' => __('templates.no_update_available'),
             ];
-
-            // "업데이트할 것 없음" 도 정규 훅을 발화한다 — 어드민 UI 는 종전부터 이 결과를 활동 로그에
-            // 남겨 왔다(Service 발화 시절 동작 보존). 구훅(updated)은 발화하지 않는다.
-            HookManager::doAction('core.templates.after_version_update', $identifier, $result, $this->getTemplateInfo($identifier) ?? []);
-
-            return $result;
         } elseif ($force && ! $updateInfo['update_available']) {
             $updateSource = $this->resolveForceUpdateSource($identifier);
 
@@ -3930,66 +2927,40 @@ class TemplateManager implements TemplateManagerInterface
         // 다운그레이드 차단 — fromVersion > toVersion 인 경우 force=false 면 차단.
         // force=true 는 의도적 다운그레이드 (장애 롤백 등) 허용. lang pack/모듈/플러그인과 일관.
         if ($fromVersion && version_compare($toVersion, $fromVersion, '<') && ! $force) {
-            // 받아 둔 ZIP 소스 임시 디렉토리 — 이 차단은 바깥 try 앞이라 그 catch 의 정리를 지나지 않는다 (#916)
-            if ($zipTempDir && File::isDirectory($zipTempDir)) {
-                File::deleteDirectory($zipTempDir);
-            }
-
             throw new \RuntimeException(__('templates.errors.downgrade_blocked', [
                 'from' => $fromVersion,
                 'to' => $toVersion,
             ]));
         }
 
-        // GitHub 소스는 백업·상태 변경 전에 받아 검증한다(7.2.0) — 미서명 확인(409)·서명 불일치(422)·릴리스 없음이
-        // 아무것도 바꾸지 않은 채로 끝나게 한다. 받은 소스는 ZIP 경로와 같은 임시 디렉토리로 다루고 finally 에서 정리한다.
-        if ($updateSource === 'github') {
-            $template = $this->getTemplate($identifier);
-            $githubUrl = $template['github_url'] ?? ($record->github_url ?? null);
-            $acquired = $this->downloadTemplateUpdate($identifier, $githubUrl, $toVersion, $integrity);
-            $zipTempDir = $acquired['temp_dir'];
-            $zipExtractedDir = $acquired['extracted_dir'];
-            $integrityVerification = $acquired['verification'];
-        }
-
         $backupPath = null;
-        $layoutSync = null;
-        $layoutWarnings = [];
-        $recordedColumns = [];
-        $filesRestored = false;
-        $journal = null;
 
         try {
             // 1. 백업 생성
-            $onProgress?->__invoke('backup', __('extensions.progress.backup'));
+            $onProgress?->__invoke('backup', '백업 생성 중...');
             $backupPath = ExtensionBackupHelper::createBackup('templates', $identifier, $onProgress);
 
-            // 진행 기록 — 파일을 바꾼 뒤 DB 판을 적기 전에 프로세스가 죽으면 파일은 새 판·DB 판은 옛 판으로 남는다. 정리가 그 사실을
-            // 알고 알리게 한다. 템플릿은 업그레이드 스텝이 없어 판 기록(레이아웃 갱신 뒤)까지가 판 전환이다.
-            $journal = ExtensionUpdateJournal::begin('template', $identifier, (string) $fromVersion, (string) $toVersion, $updateSource);
-
             // 2. 상태 → updating
-            $onProgress?->__invoke('status', __('extensions.progress.status_change'));
-            // 검수 서버(stage)는 공유 상태 칸에 updating 을 쓰지 않는다 — 진행 표식은 서버 로컬 진행 기록과 작업 잠금만 쓴다
-            if (! RuntimeRole::isStage()) {
-                $this->templateRepository->updateByIdentifier($identifier, [
-                    'status' => ExtensionStatus::Updating->value,
-                    'updated_at' => now(),
-                ]);
-                $statusUpdating = true;
-            }
+            $onProgress?->__invoke('status', '상태 변경 중...');
+            $this->templateRepository->updateByIdentifier($identifier, [
+                'status' => ExtensionStatus::Updating->value,
+                'updated_at' => now(),
+            ]);
 
             // 3. 스테이징 (소스에 따라 분기) — 템플릿은 composer install 불필요
-            $onProgress?->__invoke('staging', __('extensions.progress.staging'));
+            $onProgress?->__invoke('staging', '스테이징 중...');
             $stagingPath = null;
 
             try {
-                if ($updateSource === 'bundled') {
+                if ($updateSource === 'github') {
+                    $template = $this->getTemplate($identifier);
+                    $githubUrl = $template['github_url'] ?? ($record->github_url ?? null);
+                    $stagingPath = $this->downloadTemplateUpdate($identifier, $githubUrl, $toVersion);
+                } elseif ($updateSource === 'bundled') {
                     $sourcePath = ExtensionPendingHelper::getBundledPath($this->templatesPath, $identifier);
                     $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->templatesPath, $identifier);
                     ExtensionPendingHelper::stageForUpdate($sourcePath, $stagingPath, $onProgress);
-                } elseif ($updateSource === 'zip' || $updateSource === 'github') {
-                    // GitHub 소스도 위에서 받아 검증하고 풀어 둔 디렉토리에서 스테이징한다
+                } elseif ($updateSource === 'zip') {
                     $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->templatesPath, $identifier);
                     ExtensionPendingHelper::stageForUpdate($zipExtractedDir, $stagingPath, $onProgress);
                 }
@@ -4005,10 +2976,9 @@ class TemplateManager implements TemplateManagerInterface
                 }
 
                 // 4. 원자적 적용 (스테이징 → 활성 디렉토리)
-                $onProgress?->__invoke('files', __('extensions.progress.replace_files'));
+                $onProgress?->__invoke('files', '파일 교체 중...');
                 if ($stagingPath) {
                     $targetPath = $this->templatesPath.DIRECTORY_SEPARATOR.$identifier;
-                    $journal->markFilesTouched();
                     ExtensionPendingHelper::copyToActive($stagingPath, $targetPath, $onProgress);
                 }
             } finally {
@@ -4023,78 +2993,21 @@ class TemplateManager implements TemplateManagerInterface
             }
 
             // 템플릿 재로드 (새 파일로)
-            $onProgress?->__invoke('reload', __('extensions.progress.reload'));
+            $onProgress?->__invoke('reload', '재로드 중...');
             $this->reloadTemplate($identifier);
             $template = $this->getTemplate($identifier);
 
             // SEO 설정 검증 (업데이트 후 seo-config.json 유효성 검사)
             $this->validateSeoConfig($identifier);
 
-            // 환경설정 선언 검증 (#434) — 새 판의 기본값·노출이 바로 보이게 설정 캐시·미러를 다시 읽는다
-            $this->validateSettingsDeclaration($identifier);
-            app(TemplateSettingsService::class)->refreshAfterPackageChange($identifier);
-
-            // 5. 상태 복원 (refreshTemplateLayouts()가 active 상태를 요구하므로 먼저 복원)
-            $onProgress?->__invoke('restore_status', __('extensions.progress.restore_status'));
-            $this->templateRepository->updateByIdentifier($identifier, [
-                'status' => $previousStatus,
-                'updated_at' => now(),
-            ]);
-            $statusUpdating = false;
-
-            // 6. 레이아웃 갱신 (이전 상태가 active이고 overwrite 전략이면)
-            // refreshTemplateLayouts()는 캐시 초기화 + 캐시 버전 증가를 포함
-            $onProgress?->__invoke('layout', __('extensions.progress.layout_update'));
-            if ($previousStatus === ExtensionStatus::Active->value) {
-                $preserveModified = ($layoutStrategy === 'keep');
-                $refreshed = $this->refreshTemplateLayouts($identifier, $preserveModified, $backupPath);
-                $layoutSync = $refreshed['layout_sync'] ?? null;
-                $layoutWarnings = $refreshed['layout_warnings'] ?? [];
-
-                // 활성 모듈·플러그인의 조각을 새 판 템플릿에 다시 등록한다(keep — 운영자가 고친 조각은 보존).
-                // 번들 일괄 업데이트는 모듈 → 플러그인 → 템플릿 순서라, 플러그인이 조각을 등록할 때는 템플릿이 아직 옛 판이어서
-                // 새 확장점(예: 결제 플러그인의 주문 상세 슬롯)에 붙는 조각이 붙을 자리가 없어 건너뛰어졌다. 템플릿을 갱신한
-                // 지금 다시 등록해야 그 조각이 들어온다. 실패해도 파일·레이아웃은 이미 새 판이라 업데이트는 되돌리지 않는다 —
-                // 다른 확장을 켜거나 갱신할 때 같은 재등록이 다시 돈다.
-                try {
-                    $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($record->id);
-                } catch (\Throwable $e) {
-                    Log::error('템플릿 업데이트 뒤 확장 조각 재등록 실패', ['template' => $identifier, 'error' => $e->getMessage()]);
-                    LifecycleWarnings::current()->add('layout_extension_reregister', $identifier, $e->getMessage());
-                }
-            } elseif ($backupPath !== null) {
-                // 꺼 둔 채 업데이트(D11) — 켤 때(activateTemplate) 병합할 수 있게 이전 판 원본을 미리 저장한다.
-                $this->layoutSynchronizer()->stashBaseForInactiveUpdate($backupPath, 'templates', $identifier);
-            }
-
-            // 꺼진 템플릿도 설정 화면은 관리자 템플릿에 있어야 한다 (#434) — 켜진 템플릿은 위 갱신이 처리했다.
-            if ($previousStatus !== ExtensionStatus::Active->value) {
-                $this->syncSettingsLayout($identifier, LayoutSyncMode::fromPreserve($layoutStrategy === 'keep'));
-            }
-
-            // 7. 트랜잭션: DB 정보 갱신 — 새 판 기록은 레이아웃 갱신을 마친 **뒤**에 한다.
-            // 판을 먼저 적으면 레이아웃 갱신 도중 프로세스가 죽을 때(메모리 고갈·시간 초과·강제 종료 — catch 가 돌지 않는다)
-            // 판은 새 판인데 레이아웃은 옛 판으로 남고, 상태도 이미 되돌린 뒤라 멈춘 업데이트 정리 대상이 아니며, 「업데이트
-            // 확인」은 같은 판이라 업데이트 없음으로 판정해 다시 시도할 길이 없었다. 여기서 적으면 그 경우 판이 옛 판으로 남아
-            // 다음 업데이트 확인이 같은 업데이트를 다시 잡는다(진행 기록도 남아 이어받는다). 템플릿은 업그레이드 스텝이 없어
-            // 레이아웃 갱신이 새 판 기록에 기대는 것이 없다.
-            $onProgress?->__invoke('db', __('extensions.progress.db_update'));
+            // 5. 트랜잭션: DB 정보 갱신
+            $onProgress?->__invoke('db', 'DB 갱신 중...');
             DB::beginTransaction();
             try {
                 $name = $template ? $this->convertToMultilingual($template['name']) : $record->name;
                 $description = $template ? $this->convertToMultilingual($template['description'] ?? '') : $record->description;
 
-                // 활성 언어팩의 manifest seed(ja 등)를 name/description 다국어 필드에 주입 (install 경로와 동일)
-                if ($template) {
-                    $manifest = HookManager::applyFilters(
-                        "template.{$identifier}.manifest.translations",
-                        ['name' => $name, 'description' => $description]
-                    );
-                    $name = $manifest['name'] ?? $name;
-                    $description = $manifest['description'] ?? $description;
-                }
-
-                $recorded = [
+                $this->templateRepository->updateByIdentifier($identifier, [
                     'version' => $toVersion,
                     'latest_version' => $toVersion,
                     'name' => $name,
@@ -4106,47 +3019,43 @@ class TemplateManager implements TemplateManagerInterface
                     'metadata' => $template['metadata'] ?? $record->metadata,
                     'updated_by' => Auth::id(),
                     'updated_at' => now(),
-                ];
-                $this->templateRepository->updateByIdentifier($identifier, $recorded);
+                ]);
 
                 DB::commit();
-                // 실패 경로가 되돌릴 칸 — 이 배열 하나가 기록·복원의 SSoT 다(갱신 시각은 복원이 새로 찍는다).
-                $recordedColumns = array_keys(Arr::except($recorded, ['updated_at']));
             } catch (\Throwable $e) {
                 DB::rollBack();
                 throw $e;
             }
 
-            // 8. 백업 삭제 + 캐시 삭제
-            $onProgress?->__invoke('cleanup', __('extensions.progress.cleanup'));
-            ExtensionBackupHelper::deleteBackup($backupPath);
-            // 진행 기록을 지운다 — 백업을 지운 뒤에는 파일을 되돌리지 않으므로 파일 판·DB 판이 새 판으로 맞고 돌 스텝도 없다. 그 전에
-            // 죽거나 실패하면 기록이 남아 정리·다시 시도가 끝낸 스텝을 건너뛴다(레이아웃 갱신에서 실패해도 스텝은 이미 끝났다).
-            $journal->finish();
-            // 백업을 지운 뒤의 실패(완료 훅·캐시 재생성)는 파일을 되돌릴 수 없다 — 파일이 새 버전이므로 DB 버전 칸도 두어야
-            // 둘이 맞는다. catch 가 지워진 백업으로 복원을 시도하지 않게 비운다.
-            $backupPath = null;
+            // 6. 상태 복원 (refreshTemplateLayouts()가 active 상태를 요구하므로 먼저 복원)
+            $onProgress?->__invoke('restore_status', '상태 복원 중...');
+            $this->templateRepository->updateByIdentifier($identifier, [
+                'status' => $previousStatus,
+                'updated_at' => now(),
+            ]);
 
-            // 고정 키(config/components_manifest) + 현재 버전 routes/language 키 능동 삭제.
-            // 비활성 업데이트·레이아웃 무변경 업데이트 경로는 버전 bump 가 없어 이 호출이
-            // 없으면 공개 config.json 이 TTL 동안 이전 manifest 로 응답된다 (#588, 공개 #119).
-            // 활성 경로의 refreshTemplateLayouts() 경유 중복 삭제는 forget 멱등이라 무해.
-            $this->clearTemplateCache($identifier);
+            // 7. 레이아웃 갱신 (이전 상태가 active이고 overwrite 전략이면)
+            // refreshTemplateLayouts()는 캐시 초기화 + 캐시 버전 증가를 포함
+            $onProgress?->__invoke('layout', '레이아웃 갱신 중...');
+            if ($previousStatus === ExtensionStatus::Active->value) {
+                $preserveModified = ($layoutStrategy === 'keep');
+                $this->refreshTemplateLayouts($identifier, $preserveModified);
+            }
+
+            // 8. 백업 삭제 + 캐시 삭제
+            $onProgress?->__invoke('cleanup', '정리 중...');
+            ExtensionBackupHelper::deleteBackup($backupPath);
 
             $this->clearAllTemplateLanguageCaches();
             $this->clearAllTemplateRoutesCaches();
-            // 모듈(`updateModule`)·플러그인(`updatePlugin`)과 동형으로 **무조건** 올린다 —
-            // lang/routes/components/dist 만 바뀐 릴리스도 정적 게시본(#122)을 갱신해야 한다.
-            // 종전에는 활성 템플릿이면 `refreshTemplateLayouts()` 의 조건부 bump(레이아웃
-            // 변경 건수 > 0)에 위임했는데, 그 조건은 게시 입력 중 레이아웃 축만 보므로
-            // 레이아웃이 그대로인 릴리스는 게시본이 immutable 로 stale 하게 남았다(#651 F1).
-            // `refreshTemplateLayouts()` 내부의 조건부 bump 는 단독 호출처(refresh-layout)가
-            // 있어 그대로 두며, 이중 bump 는 put 1회 비용이고 terminating 게시는 1회로 병합된다.
-            $this->incrementExtensionCacheVersion();
+            // refreshTemplateLayouts() 내부에서 변경 시 incrementExtensionCacheVersion() 호출됨
+            // 비활성 템플릿이라 refreshTemplateLayouts()를 건너뛴 경우에만 여기서 증가
+            if ($previousStatus !== ExtensionStatus::Active->value) {
+                $this->incrementExtensionCacheVersion();
+            }
             self::invalidateTemplateStatusCache();
 
             // 훅 발행: 템플릿 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
-            // @deprecated 'core.templates.updated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_version_update.
             HookManager::doAction('core.templates.updated', $identifier);
 
             Log::info('템플릿 업데이트 완료', [
@@ -4157,72 +3066,25 @@ class TemplateManager implements TemplateManagerInterface
                 'layout_strategy' => $layoutStrategy,
             ]);
 
-            // 새 판의 필수 저장 키 선언(template.json necessary_storage) 형식 검사 — 설치와 같이 틀린 항목은 무시하고 경고로만
-            // 알린다. 업데이트로 들어온 선언이 틀려도 로그에만 남고 결과 창·CLI 에는 보이지 않았다 (7.1.5)
-            if (is_array($template)) {
-                self::normalizeNecessaryStorage($template['necessary_storage'] ?? null, $identifier, reportWarnings: true);
-                // 셸에 미리 실을 키 선언(template.json expose) 검사 — 설치와 같이 경고로만 알린다 (#879)
-                self::exposeDeclarationWarnings($template, $identifier, reportWarnings: true);
-            }
-
-            // 새 판이 요구하는 의존 확장 버전 검사 — 모자라면 경고만 하고 갱신은 그대로 둔다(일괄 업데이트처럼 의존 확장이
-            // 곧 따라 올라오는 흐름을 막지 않는다). 결과·완료 문구·로그로 알린다.
-            $dependencyWarnings = DependencyVersionWarnings::afterUpdate(
-                'template',
-                $identifier,
-                $this->templatesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'template.json'
-            );
-
-            // 선택 연동(integrations) 안내 — 막지 않고 결과·완료 문구로만 알린다 (7.1.4 D10)
-            $integrationNotices = DependencyVersionWarnings::integrationsAfterUpdate(
-                'template',
-                $identifier,
-                $this->templatesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'template.json'
-            );
-
-            // 받은 패키지의 무결성 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지 (7.2.0)
-            app(ExtensionIntegrityRecorder::class)->record('template', $identifier, $integrityVerification);
-
-            $result = [
+            return [
                 'success' => true,
                 'from_version' => $fromVersion,
                 'to_version' => $toVersion,
-                'integrity' => $integrityVerification->toArray(),
-                'layout_strategy' => $layoutStrategy,
-                // 이번 실행의 레이아웃 설치 소스 — 활동 로그 리스너가 큐로 돌아도 실행 당시 값을 기록하게 결과에 싣는다.
-                'layout_source' => self::normalizeLayoutInstallSource(config('template.layout_markup.install_source')),
-                'layout_sync' => $layoutSync,
-                'layout_warnings' => $layoutWarnings,
-                'warnings' => LifecycleWarnings::current()->all(),
-                'dependency_warnings' => $dependencyWarnings,
-                'integration_notices' => $integrationNotices,
-                'message' => IntegrationNotices::appendToMessage(DependencyVersionWarnings::appendToMessage(__('templates.update_success', [
+                'message' => __('templates.update_success', [
                     'template' => $identifier,
                     'version' => $toVersion,
-                ]), $dependencyWarnings), $integrationNotices),
+                ]),
             ];
 
         } catch (\Throwable $e) {
-            $statusUpdating = false;
-
-            // 받아 둔 ZIP·GitHub 소스 임시 디렉토리 — 스테이징의 finally 보다 앞(백업 생성·진행 기록·상태 변경)에서 실패하면
-            // 여기로 바로 온다. 스테이징을 지났으면 이미 지워져 있다(두 번 지워도 안전, #916).
-            if ($zipTempDir && File::isDirectory($zipTempDir)) {
-                File::deleteDirectory($zipTempDir);
-            }
-
             Log::error('템플릿 업데이트 실패', [
                 'template' => $identifier,
                 'error' => $e->getMessage(),
             ]);
 
-            // 실패 시점에 되돌릴 백업이 있었는지 — 백업을 지운 뒤(마무리 단계) 실패면 새 판이 남는다. 실패 안내가 실제 결과를 말하게 한다.
-            $hadBackup = $backupPath !== null;
-
             if ($backupPath) {
                 try {
                     ExtensionBackupHelper::restoreFromBackup('templates', $identifier, $backupPath);
-                    $filesRestored = true;
                     ExtensionBackupHelper::deleteBackup($backupPath);
 
                     $this->reloadTemplate($identifier);
@@ -4234,53 +3096,21 @@ class TemplateManager implements TemplateManagerInterface
                 }
             }
 
-            // 진행 기록 — 파일을 되돌렸으면 지우고, 못 되돌렸으면 남겨 정리가 알게 한다
-            $journal?->settleAfterFailure($filesRestored);
-
-            // 상태 복원 — 새 버전 기록이 이미 저장된 뒤 실패했고 파일을 백업으로 되돌렸으면 버전 칸도 업데이트 전 값으로
-            // 되돌린다. 파일은 옛 버전인데 DB 만 새 버전이면 관리자 화면이 설치되지 않은 버전을 보여 주고, "업데이트 없음" 으로
-            // 판정돼 같은 업데이트를 다시 시도할 수도 없다. 파일을 되돌리지 못했으면(백업 삭제 뒤 실패·복원 실패) 새 버전
-            // 파일에 맞춰 버전 칸을 그대로 둔다 — 반대 방향 불일치를 만들지 않는다. 업그레이드 스텝은 멱등이 규정이라
-            // (upgrade-step-guide 원칙 4) 다시 시도할 때 처음부터 돌아도 안전하다.
-            // 이 쓰기가 실패하면(실패 원인이 DB 연결 고갈일 때 흔하다) 확장이 「업데이트 중」에 남고 그 예외가 아래의
-            // 원래 실패를 가린다 — 연결을 다시 맺고 한 번 더 시도하고, 그래도 안 되면 기록만 남기고 원래 예외로 넘어간다.
-            StatusRestore::run(fn () => $this->templateRepository->updateByIdentifier($identifier, [
+            // 상태 복원
+            $this->templateRepository->updateByIdentifier($identifier, [
                 'status' => $previousStatus,
                 'updated_at' => now(),
-                ...($filesRestored && $recordedColumns !== [] ? Arr::only($record->getRawOriginal(), $recordedColumns) : []),
-            ]), 'template', $identifier);
+            ]);
 
-            // 상태를 되돌렸으면 상태 캐시도 비운다 — 업데이트 창(updating)에서 읽힌 활성 목록이 캐시에 남으면 템플릿이 정상인데
-            // 그 화면이 캐시 만료까지 빠진다(모듈·플러그인 실패 경로와 같게, #888)
-            self::invalidateTemplateStatusCache();
-
-            // 실패 경로도 bump 한다 — 백업 복원이 실패했거나 부분 반영된 디스크가 남을 수
-            // 있어, 게시본을 새 버전으로 다시 굽는 쪽이 옛 게시본을 그대로 두는 쪽보다
-            // 안전하다(#651 F2). 원래 예외를 가리지 않도록 bump 실패는 삼킨다.
-            try {
-                $this->incrementExtensionCacheVersion();
-            } catch (\Throwable) {
-                // 원래 예외(아래 throw)가 진짜 원인이다 — bump 실패는 로그(트레이트)로 충분
-            }
-
-            throw ExtensionUpdateFailedException::fromFailure(
+            throw new \RuntimeException(
                 __('templates.errors.update_failed', [
                     'template' => $identifier,
                     'error' => $e->getMessage(),
                 ]),
-                $filesRestored,
-                $hadBackup,
-                $recordedColumns !== [],
+                0,
                 $e
             );
         }
-
-        // 정규 훅 — CLI·어드민 UI 공통 단일 발화(#138). 업데이트 롤백(백업 복원) try 밖에서 발화해,
-        // 리스너 예외가 이미 끝난 업데이트를 되돌리는 경로로 들어가지 않게 한다.
-        // 이름이 after_version_update 인 이유: after_update 는 템플릿 레코드 수정 훅이다(동명이인 유지).
-        HookManager::doAction('core.templates.after_version_update', $identifier, $result, $this->getTemplateInfo($identifier) ?? []);
-
-        return $result;
     }
 
     /**
@@ -4300,8 +3130,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function resolveForceUpdateSource(string $identifier): ?string
     {
-        $this->ensurePendingAndBundledLoaded();
-
         if (isset($this->bundledTemplates[$identifier])) {
             return 'bundled';
         }
@@ -4330,8 +3158,6 @@ class TemplateManager implements TemplateManagerInterface
      */
     private function getBundledVersion(string $identifier): ?string
     {
-        $this->ensurePendingAndBundledLoaded();
-
         if (isset($this->bundledTemplates[$identifier]['version'])) {
             return $this->bundledTemplates[$identifier]['version'];
         }
@@ -4339,24 +3165,5 @@ class TemplateManager implements TemplateManagerInterface
         $meta = ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json');
 
         return $meta[$identifier]['version'] ?? null;
-    }
-
-    /**
-     * 같은 식별자의 _bundled template 매니페스트를 반환합니다 (업데이트 대상 코어 호환 판정용).
-     *
-     * @param  string  $identifier  template 식별자
-     * @return array<string, mixed>|null _bundled 매니페스트 또는 null
-     */
-    private function findBundledTemplateManifest(string $identifier): ?array
-    {
-        $this->ensurePendingAndBundledLoaded();
-
-        if (isset($this->bundledTemplates[$identifier])) {
-            return $this->bundledTemplates[$identifier];
-        }
-
-        $meta = ExtensionPendingHelper::loadBundledExtensions($this->templatesPath, 'template.json');
-
-        return $meta[$identifier] ?? null;
     }
 }

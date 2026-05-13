@@ -2,10 +2,7 @@
 
 namespace Modules\Sirsoft\Page\Repositories;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
@@ -47,9 +44,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
      */
     public function getByPageId(int $pageId): Collection
     {
-        // 첨부 목록 — 본문 미디어(예약 컬렉션)는 뺀다 (#883)
         return PageAttachment::where('page_id', $pageId)
-            ->whereNotIn('collection', PageAttachment::RESERVED_COLLECTIONS)
             ->orderBy('order')
             ->get();
     }
@@ -62,10 +57,8 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
      */
     public function getByTempKey(string $tempKey): Collection
     {
-        // 임시 첨부 — 본문 미디어는 임시 키가 같아도 첨부 연결(파일 이동)이 집어 가지 않는다 (#883)
         return PageAttachment::where('temp_key', $tempKey)
             ->whereNull('page_id')
-            ->whereNotIn('collection', PageAttachment::RESERVED_COLLECTIONS)
             ->orderBy('order')
             ->get();
     }
@@ -88,7 +81,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
     }
 
     /**
-     * 페이지의 모든 첨부파일 행을 영구 삭제합니다 (소프트 삭제 없음, 물리 파일은 지우지 않음).
+     * 페이지의 모든 첨부파일을 삭제합니다 (소프트 삭제).
      *
      * @param  int  $pageId  페이지 ID
      * @return int 삭제된 첨부파일 수
@@ -104,7 +97,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
      * @param  int  $id  첨부파일 ID
      * @return PageAttachment 첨부파일 모델
      *
-     * @throws ModelNotFoundException
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
     public function findOrFail(int $id): PageAttachment
     {
@@ -112,7 +105,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
     }
 
     /**
-     * 첨부파일 행을 영구 삭제합니다 (소프트 삭제 없음, 물리 파일은 지우지 않음).
+     * 첨부파일을 삭제합니다 (소프트 삭제).
      *
      * @param  PageAttachment  $attachment  첨부파일 모델
      * @return bool 삭제 성공 여부
@@ -120,22 +113,6 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
     public function delete(PageAttachment $attachment): bool
     {
         return (bool) $attachment->delete();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function findStaleTempAttachments(Carbon $threshold, int $limit): Collection
-    {
-        return PageAttachment::query()
-            ->whereNotNull('temp_key')
-            ->whereNull('page_id')
-            ->where('collection', '!=', PageAttachment::COLLECTION_CONTENT_MEDIA)
-            ->where('created_at', '<', $threshold)
-            ->orderBy('created_at')
-            ->orderBy('id')
-            ->limit($limit)
-            ->get(['id', 'temp_key', 'disk', 'path', 'created_at']);
     }
 
     /**
@@ -184,7 +161,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
      */
     public function getMaxOrder(?int $pageId = null, ?string $tempKey = null): int
     {
-        $query = PageAttachment::query()->whereNotIn('collection', PageAttachment::RESERVED_COLLECTIONS);
+        $query = PageAttachment::query();
 
         if ($pageId) {
             $query->where('page_id', $pageId);
@@ -193,126 +170,5 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
         }
 
         return (int) $query->max('order');
-    }
-
-    /**
-     * 래스터 이미지 첨부 수를 셉니다 (썸네일 원본 제공자용 — 페이지에 이어진 첨부만).
-     *
-     * @param  list<string>  $mimeTypes  MIME 목록
-     * @return int 개수
-     */
-    public function countByMimeTypes(array $mimeTypes): int
-    {
-        return $this->imageRowsQuery($mimeTypes)->count();
-    }
-
-    /**
-     * 래스터 이미지 첨부를 ID 순으로 나눠 조회합니다 (썸네일 원본 제공자용 — 페이지에 이어진 첨부만).
-     *
-     * @param  list<string>  $mimeTypes  MIME 목록
-     * @param  int  $afterId  이 ID 다음부터 (처음이면 0)
-     * @param  int  $limit  최대 개수
-     * @return Collection<int, PageAttachment> 첨부 목록
-     */
-    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
-    {
-        return $this->imageRowsQuery($mimeTypes)
-            ->where('id', '>', $afterId)
-            ->orderBy('id')
-            ->limit(max(1, $limit))
-            ->get(['id', 'page_id', 'disk', 'path', 'mime_type', 'meta']);
-    }
-
-    /**
-     * 썸네일 원본이 되는 첨부 행 쿼리 — 래스터 MIME, 페이지에 이어진 행(임시 첨부 제외).
-     *
-     * 컬렉션으로 거르지 않는다 — 본문 미디어(`collection = content_media`) 이미지도 같은 제공자의 원본이다. 동영상과 오디오는
-     * MIME 조건에서 빠진다.
-     *
-     * @param  list<string>  $mimeTypes  MIME 목록
-     * @return Builder<PageAttachment> 쿼리
-     */
-    private function imageRowsQuery(array $mimeTypes): Builder
-    {
-        return PageAttachment::query()
-            ->whereIn('mime_type', $mimeTypes)
-            ->whereNotNull('page_id')
-            ->whereNull('temp_key');
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function countTempContentMedia(string $tempKey): int
-    {
-        return PageAttachment::query()
-            ->whereNull('page_id')
-            ->where('temp_key', $tempKey)
-            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
-            ->count();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getTempContentMediaByHashes(string $tempKey, array $hashes): Collection
-    {
-        if ($hashes === []) {
-            return new Collection;
-        }
-
-        return PageAttachment::query()
-            ->whereNull('page_id')
-            ->where('temp_key', $tempKey)
-            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
-            ->whereIn('hash', $hashes)
-            ->get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getContentMediaByPage(int $pageId): Collection
-    {
-        return PageAttachment::query()
-            ->where('page_id', $pageId)
-            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
-            ->orderBy('order')
-            ->get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function findContentMediaByHash(string $hash): ?PageAttachment
-    {
-        return PageAttachment::query()
-            ->where('hash', $hash)
-            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
-            ->first();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function linkContentMedia(PageAttachment $attachment, int $pageId, int $order): void
-    {
-        $attachment->update(['page_id' => $pageId, 'temp_key' => null, 'order' => $order]);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function findStaleTempContentMedia(Carbon $threshold, int $limit): Collection
-    {
-        return PageAttachment::query()
-            ->whereNull('page_id')
-            ->whereNotNull('temp_key')
-            ->where('collection', PageAttachment::COLLECTION_CONTENT_MEDIA)
-            ->where('created_at', '<', $threshold)
-            ->orderBy('created_at')
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
     }
 }

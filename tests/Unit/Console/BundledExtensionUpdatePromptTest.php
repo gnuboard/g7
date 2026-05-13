@@ -7,7 +7,6 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Services\CoreUpdateService;
-use App\Services\LanguagePackService;
 use Mockery;
 use Tests\TestCase;
 
@@ -24,7 +23,7 @@ class BundledExtensionUpdatePromptTest extends TestCase
      */
     public function test_collect_bundled_updates_delegates_to_service(): void
     {
-        $serviceResult = [
+        $expected = [
             'modules' => [
                 ['identifier' => 'sirsoft-ecommerce', 'current_version' => '1.0.0', 'latest_version' => '1.1.0', 'update_source' => 'bundled'],
             ],
@@ -33,21 +32,12 @@ class BundledExtensionUpdatePromptTest extends TestCase
             ],
             'templates' => [],
         ];
-        $langPackResult = [
-            ['identifier' => 'g7-core-ja', 'current_version' => '1.0.0', 'latest_version' => '1.0.1', 'update_source' => 'bundled'],
-        ];
 
         $serviceMock = Mockery::mock(CoreUpdateService::class);
         $serviceMock->shouldReceive('collectBundledExtensionUpdates')
             ->once()
-            ->andReturn($serviceResult);
+            ->andReturn($expected);
         $this->app->instance(CoreUpdateService::class, $serviceMock);
-
-        $langPackMock = Mockery::mock(LanguagePackService::class);
-        $langPackMock->shouldReceive('collectBundledLangPackUpdates')
-            ->once()
-            ->andReturn($langPackResult);
-        $this->app->instance(LanguagePackService::class, $langPackMock);
 
         $harness = $this->makeTraitHarness();
         $result = $harness->callCollect(
@@ -56,8 +46,6 @@ class BundledExtensionUpdatePromptTest extends TestCase
             Mockery::mock(TemplateManager::class),
         );
 
-        // trait 은 CoreUpdateService 결과에 LanguagePackService 의 lang_packs 를 덧붙인다.
-        $expected = $serviceResult + ['lang_packs' => $langPackResult];
         $this->assertSame($expected, $result);
     }
 
@@ -72,12 +60,6 @@ class BundledExtensionUpdatePromptTest extends TestCase
             ->andReturn(['modules' => [], 'plugins' => [], 'templates' => []]);
         $this->app->instance(CoreUpdateService::class, $serviceMock);
 
-        $langPackMock = Mockery::mock(LanguagePackService::class);
-        $langPackMock->shouldReceive('collectBundledLangPackUpdates')
-            ->once()
-            ->andReturn([]);
-        $this->app->instance(LanguagePackService::class, $langPackMock);
-
         $harness = $this->makeTraitHarness();
         $result = $harness->callCollect(
             Mockery::mock(ModuleManager::class),
@@ -88,7 +70,6 @@ class BundledExtensionUpdatePromptTest extends TestCase
         $this->assertEmpty($result['modules']);
         $this->assertEmpty($result['plugins']);
         $this->assertEmpty($result['templates']);
-        $this->assertEmpty($result['lang_packs']);
     }
 
     /**

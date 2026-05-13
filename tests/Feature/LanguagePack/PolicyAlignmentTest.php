@@ -2,21 +2,13 @@
 
 namespace Tests\Feature\LanguagePack;
 
-use App\Contracts\Repositories\LanguagePackRepositoryInterface;
-use App\Enums\LanguagePackAbility;
-use App\Enums\LanguagePackErrorCode;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackSourceType;
 use App\Enums\LanguagePackStatus;
-use App\Enums\TextDirection;
-use App\Extension\PluginManager;
 use App\Models\LanguagePack;
-use App\Models\Plugin;
 use App\Services\LanguagePack\LanguagePackBaseLocales;
-use App\Services\LanguagePack\LanguagePackBundledRegistrar;
 use App\Services\LanguagePackService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
@@ -24,19 +16,13 @@ use Tests\TestCase;
  *
  * 본 테스트는 abstract-foraging-pony.md 계획서의 §1~§7 핵심 동작을
  * 한 파일로 통합 검증합니다. 도메인 매트릭스: Pure Logic + CRUD 혼합.
- *
- * 소유 시나리오: `language-pack-policy-alignment`
  */
 class PolicyAlignmentTest extends TestCase
 {
     use RefreshDatabase;
 
     /**
-     * 요구사항 #1, #2: base locale 판정 헬퍼가 ko·en 만 기본 로케일로 인정하는지 검증합니다.
-     *
-     * @effects base_locale_helper_recognizes_ko_en_only
-     *
-     * @return void 반환값 없음
+     * 요구사항 #1, #2: base locale 판정 헬퍼 동작 검증.
      */
     public function test_base_locale_helper_recognizes_ko_en_only(): void
     {
@@ -48,13 +34,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 요구사항 #1: DB 가 비어 있을 때 코어 lang/ko·lang/en 에 대해 가상 보호 행이 합성되는지 검증합니다.
-     *
-     * @scenario row_origin=core_virtual
-     *
-     * @effects core_locales_synthesized_as_protected_virtual_rows
-     *
-     * @return void 반환값 없음
+     * 요구사항 #1: DB 비어있을 때 코어 lang/ko, lang/en 디렉토리에 대해 가상 보호 행이 합성된다.
      */
     public function test_virtual_built_in_packs_synthesized_for_core_locales(): void
     {
@@ -77,13 +57,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 요구사항 #1: 같은 슬롯에 DB 행이 있으면 가상 행은 목록에서 빠지고 DB 행이 우선하는지 검증합니다.
-     *
-     * @scenario row_origin=db_row
-     *
-     * @effects db_row_overrides_virtual_built_in_in_same_slot
-     *
-     * @return void 반환값 없음
+     * 요구사항 #1, slot dedup: 같은 슬롯에 DB 행이 있으면 가상 행은 list 응답에서 스킵된다.
      */
     public function test_db_row_overrides_virtual_built_in_in_same_slot(): void
     {
@@ -119,11 +93,7 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 요구사항 #5: 활성화 시 호스트 확장이 없으면 실패하는지 검증합니다.
-     *
-     * @effects activation_requires_installed_host_extension
-     *
-     * @return void 반환값 없음
+     * 요구사항 #5: activate 시 의존성/버전 검사. 호스트 모듈이 없으면 실패해야 한다.
      */
     public function test_activate_fails_when_target_extension_does_not_exist(): void
     {
@@ -155,20 +125,14 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 요구사항 #3: 언어팩 번들 패키지(lang-packs/_bundled)는 비보호 행으로 표현되는지 검증합니다.
+     * 요구사항 #3: install 흐름의 lang-packs/_bundled/ 패키지는 비보호로 등록되어야 한다.
      *
-     * 실제 설치는 ZIP 추출이 필요하므로 가상 행 합성 결과를 직접 검증한다.
-     *
-     * @scenario row_origin=bundled_package
-     *
-     * @effects bundled_language_pack_packages_are_unprotected
-     *
-     * @return void 반환값 없음
+     * 실제 install 은 ZIP 추출이 필요하므로 buildPackData 의 출력을 직접 검증.
      */
     public function test_install_flow_produces_unprotected_packs(): void
     {
         // 가상 행도 비보호 (요구사항 #3): 미설치 가상 행은 lang-packs/_bundled/ 의 ja 패키지 표현
-        $repo = app(LanguagePackRepositoryInterface::class);
+        $repo = app(\App\Contracts\Repositories\LanguagePackRepositoryInterface::class);
         $manifest = [
             'identifier' => 'g7-module-test-ja',
             'vendor' => 'g7',
@@ -182,15 +146,11 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 요구사항 #6: 호스트 확장 비활성화 연쇄의 재활성화 대기 목록이 한 번만 읽히는지 검증합니다.
-     *
-     * @effects reactivation_stash_is_read_once
-     *
-     * @return void 반환값 없음
+     * 요구사항 #6: 호스트 확장 deactivate cascade 헬퍼 stash/get 라운드트립.
      */
     public function test_reactivation_stash_round_trip(): void
     {
-        $registrar = app(LanguagePackBundledRegistrar::class);
+        $registrar = app(\App\Services\LanguagePack\LanguagePackBundledRegistrar::class);
 
         // inactive 팩 생성
         $pack = LanguagePack::create([
@@ -222,62 +182,40 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * 개별 확장 언어팩 관리 화면(target_identifier 필터)에서 코어 팩이 노출되지 않는지 검증합니다.
+     * 개별 확장 언어팩 관리 화면 (target_identifier 필터) 에서 코어 팩이 노출되지 않는다.
      *
-     * 환경설정 > 언어팩 관리(필터 없음)에서는 코어가 보여야 하지만, 플러그인·모듈·템플릿 개별
-     * 화면은 그 확장에 해당하는 행만 보여야 한다. 대상 플러그인은 설치 기록과 설치본 lang/ko 가
-     * 있는 픽스처다 — 내장 번역 가상 행은 설치된 확장의 설치본을 근거로 만들어진다.
-     *
-     * @scenario row_origin=extension_virtual
-     *
-     * @effects extension_filter_excludes_core_packs
-     *
-     * @return void 반환값 없음
+     * 환경설정 > 언어팩 관리 (필터 없음) 에서는 코어가 보여야 하지만, plugin/module/template
+     * 개별 화면은 그 확장에 해당되는 행만 노출되어야 함.
      */
     public function test_extension_filter_excludes_core_packs(): void
     {
-        $pluginRoot = base_path('plugins/test-policy-plug');
-        File::ensureDirectoryExists($pluginRoot.'/lang/ko');
-        File::put($pluginRoot.'/plugin.json', (string) json_encode(['vendor' => 'test', 'version' => '1.0.0']));
-        Plugin::factory()->create(['identifier' => 'test-policy-plug', 'status' => 'active']);
-        PluginManager::invalidatePluginStatusCache();
+        $svc = app(LanguagePackService::class);
 
-        try {
-            $svc = app(LanguagePackService::class);
+        // 필터 없음 → 코어 ko/en 가상 보호 행 포함
+        $unfiltered = $svc->list([], 200);
+        $hasCoreKo = collect($unfiltered->items())->contains(
+            fn (LanguagePack $p) => $p->scope === LanguagePackScope::Core->value && $p->locale === 'ko'
+        );
+        $this->assertTrue($hasCoreKo, '필터 없는 화면에서 코어 ko 가 노출되어야 함');
 
-            // 필터 없음 → 코어 ko/en 가상 보호 행 포함
-            $unfiltered = $svc->list([], 200);
-            $hasCoreKo = collect($unfiltered->items())->contains(
-                fn (LanguagePack $p) => $p->scope === LanguagePackScope::Core->value && $p->locale === 'ko'
-            );
-            $this->assertTrue($hasCoreKo, '필터 없는 화면에서 코어 ko 가 노출되어야 함');
+        // 플러그인 필터 → 코어 팩 제외, 그 플러그인 행만
+        $filtered = $svc->list(['target_identifier' => 'sirsoft-tosspayments'], 200);
+        $corePacksLeaked = collect($filtered->items())->filter(
+            fn (LanguagePack $p) => $p->scope === LanguagePackScope::Core->value
+        );
+        $this->assertCount(0, $corePacksLeaked, '플러그인 필터 시 코어 팩 노출 금지');
 
-            // 플러그인 필터 → 코어 팩 제외, 그 플러그인 행만
-            $filtered = $svc->list(['target_identifier' => 'test-policy-plug'], 200);
-            $corePacksLeaked = collect($filtered->items())->filter(
-                fn (LanguagePack $p) => $p->scope === LanguagePackScope::Core->value
-            );
-            $this->assertCount(0, $corePacksLeaked, '플러그인 필터 시 코어 팩 노출 금지');
-
-            // 그 플러그인의 자체 built_in 은 여전히 노출
-            $hasOwnKo = collect($filtered->items())->contains(
-                fn (LanguagePack $p) => $p->scope === LanguagePackScope::Plugin->value
-                    && $p->target_identifier === 'test-policy-plug'
-                    && $p->locale === 'ko'
-            );
-            $this->assertTrue($hasOwnKo, '플러그인 자체 built_in ko 는 노출되어야 함');
-        } finally {
-            File::deleteDirectory($pluginRoot);
-            PluginManager::invalidatePluginStatusCache();
-        }
+        // 그 플러그인의 자체 built_in 은 여전히 노출
+        $hasOwnKo = collect($filtered->items())->contains(
+            fn (LanguagePack $p) => $p->scope === LanguagePackScope::Plugin->value
+                && $p->target_identifier === 'sirsoft-tosspayments'
+                && $p->locale === 'ko'
+        );
+        $this->assertTrue($hasOwnKo, '플러그인 자체 built_in ko 는 노출되어야 함');
     }
 
     /**
-     * §3: 폐지된 LanguagePackBundledSeeder 클래스가 남아 있지 않은지 검증합니다.
-     *
-     * @effects bundled_seeder_is_retired
-     *
-     * @return void 반환값 없음
+     * §3: LanguagePackBundledSeeder 클래스 부재 검증.
      */
     public function test_bundled_seeder_class_does_not_exist(): void
     {
@@ -288,22 +226,18 @@ class PolicyAlignmentTest extends TestCase
     }
 
     /**
-     * §9: 언어팩 Enum 클래스가 모두 정의되어 있고 핵심 값을 노출하는지 검증합니다.
-     *
-     * @effects language_pack_enums_expose_expected_cases
-     *
-     * @return void 반환값 없음
+     * §9: 신규 Enum 클래스가 모두 정의되어 있고 핵심 cases 를 노출한다.
      */
     public function test_new_enums_are_defined_with_expected_cases(): void
     {
-        $this->assertTrue(enum_exists(LanguagePackSourceType::class));
-        $this->assertTrue(enum_exists(LanguagePackErrorCode::class));
-        $this->assertTrue(enum_exists(TextDirection::class));
-        $this->assertTrue(enum_exists(LanguagePackAbility::class));
+        $this->assertTrue(enum_exists(\App\Enums\LanguagePackSourceType::class));
+        $this->assertTrue(enum_exists(\App\Enums\LanguagePackErrorCode::class));
+        $this->assertTrue(enum_exists(\App\Enums\TextDirection::class));
+        $this->assertTrue(enum_exists(\App\Enums\LanguagePackAbility::class));
 
-        $this->assertContains('built_in', LanguagePackSourceType::values());
-        $this->assertContains('bundled_with_extension', LanguagePackSourceType::values());
-        $this->assertTrue(LanguagePackSourceType::BuiltIn->isProtectedByDefault());
-        $this->assertFalse(LanguagePackSourceType::Bundled->isProtectedByDefault());
+        $this->assertContains('built_in', \App\Enums\LanguagePackSourceType::values());
+        $this->assertContains('bundled_with_extension', \App\Enums\LanguagePackSourceType::values());
+        $this->assertTrue(\App\Enums\LanguagePackSourceType::BuiltIn->isProtectedByDefault());
+        $this->assertFalse(\App\Enums\LanguagePackSourceType::Bundled->isProtectedByDefault());
     }
 }

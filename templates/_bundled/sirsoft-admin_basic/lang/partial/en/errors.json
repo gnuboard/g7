@@ -18,23 +18,15 @@
   "503": {
     "title": "Service Unavailable",
     "message": "The service is currently unavailable.",
-    "unmet_dependencies": "Required extensions do not meet the requirements.",
+    "unmet_dependencies": "Required extensions are not activated.",
     "required_modules": "Required Modules",
     "required_plugins": "Required Plugins",
-    "contact_admin": "Please install, activate or update the required extensions.",
-    "reason_not_installed": "Not installed",
-    "reason_inactive": "Disabled",
-    "reason_version_mismatch": "Version too low {{installed}} → {{required}}"
+    "contact_admin": "Please activate the required extensions."
   },
   "maintenance": {
     "title": "Under Maintenance",
     "message": "The system is currently being updated.",
     "description": "Please try again later. We apologize for the inconvenience."
-  },
-  "default": {
-    "title": "We could not process your request",
-    "message": "This may be a temporary problem. Refresh the page or try again later.",
-    "refresh": "Refresh"
   },
   "back_home": "Back to Home",
   "server_error": "A server error occurred. Please try again later."

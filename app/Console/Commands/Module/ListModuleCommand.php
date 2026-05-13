@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Module;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\ModuleManager;
@@ -10,8 +9,6 @@ use Illuminate\Console\Command;
 
 class ListModuleCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * The name and signature of the console command.
      */
@@ -20,10 +17,12 @@ class ListModuleCommand extends Command
         {--hidden : 숨김(hidden=true) 모듈도 함께 출력}';
 
     /**
+     * The console command description.
+     */
+    protected $description = '모듈 목록을 조회합니다';
+
+    /**
      * 모듈 관리자 및 리포지토리
-     *
-     * @param  ModuleManager  $moduleManager  모듈 관리자
-     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 리포지토리
      */
     public function __construct(
         private ModuleManager $moduleManager,
@@ -34,8 +33,6 @@ class ListModuleCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
@@ -60,8 +57,6 @@ class ListModuleCommand extends Command
 
         // 테이블 데이터 준비
         $tableData = [];
-        // 요약 집계용 원래 상태값 — 표시 문자열로 세면 한국어 「비활성」 에도 「활성」 이 들어 있어 잘못 센다(#137)
-        $rawStatuses = [];
 
         // 설치된 모듈 추가
         foreach ($installedModules as $identifier => $module) {
@@ -86,7 +81,6 @@ class ListModuleCommand extends Command
                 }
             }
 
-            $rawStatuses[] = $module['status'];
             $tableData[] = [
                 'identifier' => $identifier,
                 'name' => $module['name'],
@@ -109,7 +103,6 @@ class ListModuleCommand extends Command
                     continue;
                 }
 
-                $rawStatuses[] = 'uninstalled';
                 $tableData[] = [
                     'identifier' => $identifier,
                     'name' => $module['name'],
@@ -141,11 +134,11 @@ class ListModuleCommand extends Command
 
         // 요약 정보
         $totalCount = count($tableData);
-        $activeCount = count(array_filter($rawStatuses, fn ($status) => $status === ExtensionStatus::Active->value));
-        $installedCount = count(array_filter($rawStatuses, fn ($status) => $status !== 'uninstalled'));
+        $activeCount = count(array_filter($tableData, fn ($m) => str_contains($m['status'], __('modules.commands.list.status.active'))));
+        $installedCount = count(array_filter($tableData, fn ($m) => ! str_contains($m['status'], __('modules.commands.list.status.uninstalled'))));
 
         $this->newLine();
-        $this->info(trans_choice('modules.commands.list.summary', $totalCount, [
+        $this->info(__('modules.commands.list.summary', [
             'total' => $totalCount,
             'installed' => $installedCount,
             'active' => $activeCount,
@@ -156,9 +149,6 @@ class ListModuleCommand extends Command
 
     /**
      * 상태 포맷팅
-     *
-     * @param  string  $status  상태 값 (installed·active·inactive·uninstalled 등)
-     * @return string 콘솔 표시용 상태 라벨
      */
     private function formatStatus(string $status): string
     {

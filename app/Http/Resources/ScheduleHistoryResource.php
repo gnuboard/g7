@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Enums\ScheduleRejectReason;
 use Illuminate\Http\Request;
 
 class ScheduleHistoryResource extends BaseApiResource
@@ -10,7 +9,7 @@ class ScheduleHistoryResource extends BaseApiResource
     /**
      * 스케줄 실행 이력 리소스를 배열로 변환합니다.
      *
-     * @param  Request  $request  HTTP 요청 객체
+     * @param Request $request HTTP 요청 객체
      * @return array<string, mixed> 변환된 이력 데이터 배열
      */
     public function toArray(Request $request): array
@@ -30,9 +29,6 @@ class ScheduleHistoryResource extends BaseApiResource
             'duration_formatted' => $this->resource->duration_formatted ?? null,
             'status' => $this->getValue('status')?->value ?? $this->getValue('status'),
             'status_label' => $this->getStatusLabel(),
-            // 거절 행(status=rejected)만 값이 있다 — 문구는 읽는 사람의 언어로 그때 푼다.
-            'reject_reason' => $this->getRejectReason()?->value,
-            'reject_reason_label' => $this->getRejectReason()?->label(),
             'exit_code' => $this->getValue('exit_code'),
             'memory_usage' => $this->getValue('memory_usage'),
             'memory_usage_formatted' => $this->resource->memory_usage_formatted ?? null,
@@ -42,12 +38,11 @@ class ScheduleHistoryResource extends BaseApiResource
             'trigger_type_label' => $this->getTriggerTypeLabel(),
 
             // 관계형 데이터
-            'triggered_by' => $this->whenLoaded('triggeredBy', function () use ($request) {
+            'triggered_by' => $this->whenLoaded('triggeredBy', function () {
                 $user = $this->getValue('triggeredBy');
-
                 return $user ? [
                     'uuid' => $user->uuid,
-                    ...$this->memberNameFields($user, $request),
+                    'name' => $user->name,
                 ] : null;
             }),
 
@@ -76,20 +71,14 @@ class ScheduleHistoryResource extends BaseApiResource
             'duration_formatted' => $this->resource->duration_formatted ?? null,
             'status' => $this->getValue('status')?->value ?? $this->getValue('status'),
             'status_label' => $this->getStatusLabel(),
-            // 거절 행(status=rejected)만 값이 있다 — 문구는 읽는 사람의 언어로 그때 푼다.
-            'reject_reason' => $this->getRejectReason()?->value,
-            'reject_reason_label' => $this->getRejectReason()?->label(),
             'exit_code' => $this->getValue('exit_code'),
             'memory_usage_formatted' => $this->resource->memory_usage_formatted ?? null,
-            // 실행 이력 창이 회차마다 정상·오류 출력을 펼쳐 보인다 — 저장소가 이번 쪽 분량만 넓은 칸을 읽는다.
-            'output' => $this->getValue('output'),
-            'error_output' => $this->getValue('error_output'),
             'trigger_type' => $this->getValue('trigger_type')?->value ?? $this->getValue('trigger_type'),
             'trigger_type_label' => $this->getTriggerTypeLabel(),
             'triggered_by' => $this->resource->relationLoaded('triggeredBy') && $this->resource->triggeredBy
                 ? [
                     'uuid' => $this->resource->triggeredBy->uuid,
-                    ...$this->memberNameFields($this->resource->triggeredBy),
+                    'name' => $this->resource->triggeredBy->name,
                 ]
                 : null,
         ];
@@ -104,7 +93,7 @@ class ScheduleHistoryResource extends BaseApiResource
     {
         $status = $this->getValue('status');
 
-        if (! $status) {
+        if (!$status) {
             return null;
         }
 
@@ -112,23 +101,7 @@ class ScheduleHistoryResource extends BaseApiResource
             return $status->label();
         }
 
-        return __('schedule.result.'.$status);
-    }
-
-    /**
-     * 거절 사유를 반환합니다.
-     *
-     * @return ScheduleRejectReason|null 거절 사유 (거절 행이 아니거나 알 수 없는 값이면 null)
-     */
-    protected function getRejectReason(): ?ScheduleRejectReason
-    {
-        $reason = $this->getValue('reject_reason');
-
-        if ($reason instanceof ScheduleRejectReason) {
-            return $reason;
-        }
-
-        return is_string($reason) ? ScheduleRejectReason::tryFrom($reason) : null;
+        return __('schedule.result.' . $status);
     }
 
     /**
@@ -140,7 +113,7 @@ class ScheduleHistoryResource extends BaseApiResource
     {
         $type = $this->getValue('trigger_type');
 
-        if (! $type) {
+        if (!$type) {
             return null;
         }
 
@@ -148,6 +121,6 @@ class ScheduleHistoryResource extends BaseApiResource
             return $type->label();
         }
 
-        return __('schedule.trigger_type.'.$type);
+        return __('schedule.trigger_type.' . $type);
     }
 }

@@ -11,7 +11,6 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateOptionPriceRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateOptionsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateOptionStockRequest;
 use Modules\Sirsoft\Ecommerce\Services\ProductOptionService;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 상품 옵션 관리 컨트롤러
@@ -20,11 +19,6 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class ProductOptionController extends AdminBaseController
 {
-    /**
-     * 상품 옵션 서비스를 주입받습니다.
-     *
-     * @param  ProductOptionService  $optionService  상품 옵션 조회·일괄 수정 서비스
-     */
     public function __construct(
         private ProductOptionService $optionService
     ) {}
@@ -35,7 +29,7 @@ class ProductOptionController extends AdminBaseController
      * product_ids: 상품 ID 배열 (해당 상품의 모든 옵션 대상)
      * option_ids: "productId-optionId" 형식의 문자열 배열 (개별 선택된 옵션)
      *
-     * @param  BulkUpdateOptionPriceRequest  $request  일괄 가격 변경 요청 데이터
+     * @param BulkUpdateOptionPriceRequest $request 일괄 가격 변경 요청 데이터
      * @return JsonResponse 변경 결과 JSON 응답
      */
     public function bulkUpdatePrice(BulkUpdateOptionPriceRequest $request): JsonResponse
@@ -53,9 +47,7 @@ class ProductOptionController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.options.bulk_price_updated',
-                $result,
-                200,
-                ['count' => $result['updated_count'] ?? 0]
+                $result
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -63,8 +55,6 @@ class ProductOptionController extends AdminBaseController
                 'messages.options.bulk_price_update_failed',
                 422
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -80,7 +70,7 @@ class ProductOptionController extends AdminBaseController
      * product_ids: 상품 ID 배열 (해당 상품의 모든 옵션 대상)
      * option_ids: "productId-optionId" 형식의 문자열 배열 (개별 선택된 옵션)
      *
-     * @param  BulkUpdateOptionStockRequest  $request  일괄 재고 변경 요청 데이터
+     * @param BulkUpdateOptionStockRequest $request 일괄 재고 변경 요청 데이터
      * @return JsonResponse 변경 결과 JSON 응답
      */
     public function bulkUpdateStock(BulkUpdateOptionStockRequest $request): JsonResponse
@@ -97,9 +87,7 @@ class ProductOptionController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.options.bulk_stock_updated',
-                $result,
-                200,
-                ['count' => $result['updated_count'] ?? 0]
+                $result
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -107,8 +95,6 @@ class ProductOptionController extends AdminBaseController
                 'messages.options.bulk_stock_update_failed',
                 422
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -125,7 +111,7 @@ class ProductOptionController extends AdminBaseController
      * 일괄 변경(bulk_changes)과 개별 인라인 수정(items)을 동시 처리합니다.
      * 일괄 변경 조건이 설정된 필드는 우선 적용되며, 나머지는 개별 수정이 적용됩니다.
      *
-     * @param  BulkUpdateOptionsRequest  $request  통합 업데이트 요청 데이터
+     * @param BulkUpdateOptionsRequest $request 통합 업데이트 요청 데이터
      * @return JsonResponse 변경 결과 JSON 응답
      */
     public function bulkUpdate(BulkUpdateOptionsRequest $request): JsonResponse
@@ -137,9 +123,7 @@ class ProductOptionController extends AdminBaseController
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.options.bulk_updated',
-                $result,
-                200,
-                ['count' => $result['options_updated'] ?? 0]
+                $result
             );
         } catch (ValidationException $e) {
             return ResponseHelper::moduleError(
@@ -147,8 +131,6 @@ class ProductOptionController extends AdminBaseController
                 'messages.options.bulk_update_failed',
                 422
             );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',

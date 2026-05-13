@@ -1,0 +1,835 @@
+/**
+ * G7 Admin Template - Design Guide
+ * Components - 카드, 모달 등 복합 컴포넌트 스타일
+ */
+
+@layer components {
+  /* ========================================
+   * 1. TABLES
+   * ======================================== */
+
+  /* Table Container */
+  .table-container {
+    @apply border border-gray-200 rounded-lg overflow-hidden;
+    @apply dark:border-gray-700;
+  }
+
+  /* Table */
+  .table {
+    @apply w-full;
+  }
+
+  /* Table Header */
+  .table thead {
+    @apply bg-gray-50;
+    @apply dark:bg-gray-800;
+  }
+  .table th {
+    @apply px-4 py-3 text-left text-sm font-medium text-gray-600 border-b border-gray-200;
+    @apply dark:text-gray-400 dark:border-gray-700;
+  }
+  .table th.sortable {
+    @apply cursor-pointer hover:bg-gray-100;
+    @apply dark:hover:bg-gray-700;
+  }
+
+  /* Table Body */
+  .table tbody tr {
+    @apply bg-white border-b border-gray-100;
+    @apply dark:bg-gray-900 dark:border-gray-800;
+  }
+  .table tbody tr:hover {
+    @apply bg-gray-50;
+    @apply dark:bg-gray-800;
+  }
+  .table tbody tr.selected {
+    @apply bg-blue-50;
+    @apply dark:bg-blue-900/20;
+  }
+  .table td {
+    @apply px-4 py-3 text-sm text-gray-900;
+    @apply dark:text-gray-100;
+  }
+
+  /* Table Actions */
+  .table-actions {
+    @apply flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200;
+    @apply dark:bg-gray-900 dark:border-gray-700;
+  }
+
+  /* ----------------------------------------
+   * Log Table - 로그/이력 테이블
+   * 처리일시, 처리자, 이벤트 등 이력 표시용
+   * ---------------------------------------- */
+
+  /* Log Table */
+  .log-table {
+    @apply w-full;
+  }
+  .log-table th {
+    @apply px-4 py-3 text-left text-sm font-medium text-gray-500 border-b border-gray-200;
+    @apply dark:text-gray-400 dark:border-gray-700;
+  }
+  .log-table td {
+    @apply px-4 py-3 text-sm text-gray-900 border-b border-gray-100;
+    @apply dark:text-gray-100 dark:border-gray-800;
+  }
+  .log-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  /* Log Table - 처리자 뱃지 */
+  .log-table-actor {
+    @apply inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-sm border border-gray-200;
+    @apply dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600;
+  }
+
+  /* Log Card - 모바일용 */
+  .log-card {
+    @apply bg-white rounded-lg border border-gray-200 p-4;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .log-card-header {
+    @apply flex items-center justify-between gap-3 mb-2;
+  }
+  .log-card-body {
+    @apply text-sm text-gray-900;
+    @apply dark:text-gray-100;
+  }
+
+  /* ========================================
+   * 2. MODALS
+   * ======================================== */
+
+  /* Modal Overlay */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
+  }
+
+  /* Modal Container */
+  .modal {
+    @apply bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6;
+    @apply dark:bg-gray-800;
+  }
+  .modal-lg {
+    @apply max-w-lg;
+  }
+  .modal-xl {
+    @apply max-w-xl;
+  }
+
+  /* Modal Header */
+  .modal-header {
+    @apply flex items-start justify-between mb-4;
+  }
+  .modal-close {
+    @apply p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer;
+    @apply dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700;
+  }
+
+  /* Modal Body */
+  .modal-body {
+    @apply py-4;
+  }
+
+  /* Modal Footer */
+  .modal-footer {
+    @apply flex justify-end gap-3 mt-6;
+  }
+
+  /* ----------------------------------------
+   * Danger Confirm Modal
+   * 삭제 등 위험한 작업 확인용 모달 스타일
+   * ---------------------------------------- */
+
+  /* Danger Confirm Modal Icon */
+  .danger-confirm-icon {
+    @apply w-12 h-12 mx-auto mb-4 flex items-center justify-center rounded-full bg-red-100;
+    @apply dark:bg-red-900/30;
+  }
+  .danger-confirm-icon svg,
+  .danger-confirm-icon .icon {
+    @apply w-6 h-6 text-red-600;
+    @apply dark:text-red-400;
+  }
+
+  /* Danger Confirm Modal Title */
+  .danger-confirm-title {
+    @apply text-lg font-semibold text-gray-900 text-center mb-2;
+    @apply dark:text-white;
+  }
+
+  /* Danger Confirm Modal Message */
+  .danger-confirm-message {
+    @apply text-sm text-gray-600 text-center mb-4;
+    @apply dark:text-gray-400;
+  }
+
+  /* Danger Confirm Modal Warning Box */
+  .danger-confirm-warning {
+    @apply bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4;
+    @apply dark:bg-yellow-900/20 dark:border-yellow-700;
+  }
+  .danger-confirm-warning-title {
+    @apply text-sm font-semibold text-yellow-800 mb-2;
+    @apply dark:text-yellow-300;
+  }
+  .danger-confirm-warning-list {
+    @apply text-sm text-yellow-700 list-disc list-inside space-y-1;
+    @apply dark:text-yellow-400;
+  }
+
+  /* Danger Confirm Modal Alert (되돌릴 수 없음 경고) */
+  .danger-confirm-alert {
+    @apply text-sm text-red-600 text-center;
+    @apply dark:text-red-400;
+  }
+
+  /* Danger Confirm Modal Footer */
+  .danger-confirm-footer {
+    @apply flex justify-center gap-3 mt-6;
+  }
+
+  /* ========================================
+   * 3. CARDS
+   * ======================================== */
+
+  /* Basic Card - 기본적으로 가로 100% */
+  .card {
+    @apply w-full bg-white rounded-xl border border-gray-200 p-6;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+
+  /* Card Header */
+  .card-header {
+    @apply mb-6;
+  }
+
+  /* Card Section Title - 구분선이 있는 섹션 제목 (카드 전체 너비로 확장) */
+  .card-section-title {
+    @apply text-lg font-semibold text-gray-900 pb-4 mb-6 border-b border-gray-200 -mx-6 px-6;
+    @apply dark:text-white dark:border-gray-700;
+  }
+
+  /* Account Card (무통장 계좌) */
+  .card-account {
+    @apply bg-gray-50 rounded-lg p-4 relative;
+    @apply dark:bg-gray-900;
+  }
+  .card-account-default {
+    @apply absolute top-3 left-3;
+  }
+  .card-account-delete {
+    @apply absolute top-3 right-3;
+  }
+
+  /* Accordion Card */
+  .card-accordion {
+    @apply w-full bg-white rounded-xl border border-gray-200 overflow-hidden;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+
+  /* Accordion Header - 클릭 가능한 헤더 */
+  .card-accordion-header {
+    @apply flex items-center justify-between p-4 cursor-pointer;
+    @apply hover:bg-gray-50;
+    @apply dark:hover:bg-gray-700;
+  }
+
+  /* Accordion Title */
+  .card-accordion-title {
+    @apply text-base font-medium text-gray-900;
+    @apply dark:text-white;
+  }
+
+  /* Accordion Toggle Icon */
+  .card-accordion-icon {
+    @apply w-5 h-5 text-gray-400 transition-transform duration-200;
+    @apply dark:text-gray-500;
+  }
+  .card-accordion-icon.open {
+    @apply rotate-180;
+  }
+
+  /* Accordion Body */
+  .card-accordion-body {
+    @apply px-4 pb-4 pt-2 border-t border-gray-100;
+    @apply dark:border-gray-700;
+  }
+  .card-accordion-body.hidden {
+    @apply hidden;
+  }
+
+  /* Accordion Toggle Button Only (제목 없는 버전) */
+  .card-accordion-toggle {
+    @apply flex items-center justify-center p-2 cursor-pointer text-gray-400;
+    @apply hover:text-gray-600 hover:bg-gray-50;
+    @apply dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700;
+  }
+
+  /* ========================================
+   * 4. TABS
+   * ======================================== */
+
+  /* Tab Container */
+  .tabs {
+    @apply bg-gray-100 rounded-lg p-1 inline-flex;
+    @apply dark:bg-gray-800;
+  }
+
+  /* Tab Button */
+  .tab {
+    @apply px-6 py-2 rounded-md text-sm font-medium text-gray-500 cursor-pointer transition-colors;
+    @apply hover:text-gray-700;
+    @apply dark:text-gray-400 dark:hover:text-gray-300;
+  }
+  .tab.active {
+    @apply bg-white text-gray-900 shadow-sm;
+    @apply dark:bg-gray-700 dark:text-white;
+  }
+
+  /* ========================================
+   * 5. TOAST
+   * ======================================== */
+
+  /* Toast Container */
+  .toast {
+    @apply fixed bottom-4 right-4 z-50;
+  }
+
+  /* Toast Item */
+  .toast-item {
+    @apply flex items-center gap-3 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg;
+    @apply dark:bg-white dark:text-gray-900;
+  }
+  .toast-icon {
+    @apply flex-shrink-0;
+  }
+
+  /* ========================================
+   * 6. DROPDOWN MENU
+   * ======================================== */
+
+  /* Dropdown Container */
+  .dropdown {
+    @apply relative inline-block;
+  }
+
+  /* Dropdown Menu */
+  .dropdown-menu {
+    @apply absolute right-0 mt-2 min-w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+
+  /* Dropdown Item */
+  .dropdown-item {
+    @apply flex items-center gap-2 px-4 py-2 text-sm text-gray-700 cursor-pointer;
+    @apply hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+  .dropdown-item-icon {
+    @apply text-gray-400;
+    @apply dark:text-gray-500;
+  }
+
+  /* Dropdown Divider */
+  .dropdown-divider {
+    @apply border-t border-gray-100 my-1;
+    @apply dark:border-gray-700;
+  }
+
+  /* ========================================
+   * 7. DRAG LIST
+   * ======================================== */
+
+  /* Drag Item */
+  .drag-item {
+    @apply bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-4;
+    @apply hover:shadow-sm;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+
+  /* Drag Handle */
+  .drag-handle {
+    @apply cursor-grab text-gray-400;
+    @apply dark:text-gray-500;
+  }
+  .drag-handle:active {
+    @apply cursor-grabbing;
+  }
+
+  /* ========================================
+   * 8. MOBILE CARD VIEW (테이블 대체)
+   * 시안 기반: 엑셀다운로드 관리 모바일 카드
+   * ======================================== */
+
+  /* Mobile Card Container - 데스크탑에서 숨김 */
+  .table-mobile-cards {
+    @apply hidden;
+  }
+
+  /* Excel Download Card - 시안 기반 */
+  .excel-card {
+    @apply bg-white rounded-xl border border-gray-200 p-4;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+
+  /* Card Header: 타이틀 + 상태 뱃지 */
+  .excel-card-header {
+    @apply flex items-start justify-between gap-3 mb-4 pb-3 border-b border-gray-100;
+    @apply dark:border-gray-700;
+  }
+  .excel-card-title {
+    @apply text-base font-semibold text-gray-900;
+    @apply dark:text-white;
+  }
+
+  /* Card Body: 레이블-값 쌍 */
+  .excel-card-body {
+    @apply space-y-2;
+  }
+  .excel-card-row {
+    @apply flex justify-between items-center py-1 text-sm;
+  }
+  .excel-card-label {
+    @apply text-gray-500 flex-shrink-0;
+    @apply dark:text-gray-400;
+  }
+  .excel-card-value {
+    @apply text-gray-900 text-right;
+    @apply dark:text-white;
+  }
+
+  /* Card Footer: 생성자 + 다운로드 버튼 */
+  .excel-card-footer {
+    @apply mt-4 pt-3 border-t border-gray-100 flex items-center justify-between;
+    @apply dark:border-gray-700;
+  }
+  .excel-card-creator {
+    @apply text-sm text-gray-700;
+    @apply dark:text-gray-300;
+  }
+  .excel-card-creator-label {
+    @apply text-gray-500 mr-2;
+    @apply dark:text-gray-400;
+  }
+
+  /* ========================================
+   * 9. CUSTOM SELECT (Select.tsx 구조 호환)
+   * 구조: div.select-custom > button.select-trigger > span + svg
+   *       div.select-dropdown > button.select-option
+   * ======================================== */
+
+  /* Custom Select Container */
+  .select-custom {
+    @apply relative inline-block;
+  }
+
+  /* Select Trigger Button */
+  .select-trigger {
+    @apply w-full h-9 bg-gray-100 text-gray-700 px-4 rounded-xl text-sm;
+    @apply flex items-center justify-between gap-2 cursor-pointer;
+    @apply border-0 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Select Trigger Text */
+  .select-trigger span {
+    @apply truncate;
+  }
+
+  /* Select Trigger Icon (SVG) */
+  .select-trigger-icon {
+    @apply w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0;
+    @apply dark:text-gray-500;
+  }
+  .select-trigger-icon.open {
+    @apply rotate-180;
+  }
+
+  /* Select Dropdown */
+  .select-dropdown {
+    @apply absolute z-50 w-full mt-2 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden;
+    @apply dark:bg-gray-800 dark:border-gray-600;
+  }
+  .select-dropdown.hidden {
+    @apply hidden;
+  }
+
+  /* Select Dropdown Inner Container */
+  .select-dropdown-inner {
+    @apply py-2 max-h-60 overflow-auto;
+  }
+
+  /* Select Option */
+  .select-option {
+    @apply w-full px-4 py-3 text-left text-sm text-gray-700 cursor-pointer;
+    @apply flex items-center;
+    @apply hover:bg-gray-100 transition-colors;
+    @apply dark:text-gray-200 dark:hover:bg-gray-700;
+  }
+  .select-option.selected {
+    @apply text-blue-600 font-medium;
+    @apply dark:text-blue-400;
+  }
+  .select-option:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* Select Option Check Icon */
+  .select-option-check {
+    @apply w-5 h-5 text-blue-600 ml-auto flex-shrink-0;
+    @apply dark:text-blue-400;
+  }
+
+  /* ========================================
+   * 9-2. MULTI SELECT (체크박스 드롭다운)
+   * 구조: div.multi-select > button.multi-select-trigger
+   *       div.multi-select-dropdown > div.multi-select-item
+   * ======================================== */
+
+  /* Multi Select Container */
+  .multi-select {
+    @apply relative inline-block;
+  }
+
+  /* Multi Select Trigger - outline 스타일 버튼 */
+  .multi-select-trigger {
+    @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium;
+    @apply bg-transparent text-gray-700 border border-gray-300 rounded-lg;
+    @apply cursor-pointer hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700;
+  }
+
+  /* Multi Select Count Badge */
+  .multi-select-count {
+    @apply text-gray-500;
+    @apply dark:text-gray-400;
+  }
+
+  /* Multi Select Dropdown */
+  .multi-select-dropdown {
+    @apply absolute z-50 mt-2 min-w-64 bg-white rounded-xl shadow-lg border border-gray-200;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .multi-select-dropdown.hidden {
+    @apply hidden;
+  }
+
+  /* Multi Select Header */
+  .multi-select-header {
+    @apply px-4 py-3 text-sm font-medium text-gray-900 border-b border-gray-100;
+    @apply dark:text-white dark:border-gray-700;
+  }
+  .multi-select-hint {
+    @apply text-xs text-gray-500 font-normal;
+    @apply dark:text-gray-400;
+  }
+
+  /* Multi Select Items Container */
+  .multi-select-items {
+    @apply py-2 max-h-80 overflow-auto;
+  }
+
+  /* Multi Select Item */
+  .multi-select-item {
+    @apply flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 cursor-pointer;
+    @apply hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+  .multi-select-item.disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+  .multi-select-item.disabled:hover {
+    @apply bg-transparent;
+    @apply dark:bg-transparent;
+  }
+
+  /* ========================================
+   * 9-3. GHOST SELECT (배경 없는 셀렉트)
+   * 구조: div.select-ghost > button.select-ghost-trigger
+   *       div.select-ghost-dropdown > button.select-ghost-option
+   * ======================================== */
+
+  /* Ghost Select Container */
+  .select-ghost {
+    @apply relative inline-block;
+  }
+
+  /* Ghost Select Trigger - 투명 배경 */
+  .select-ghost-trigger {
+    @apply inline-flex items-center gap-1 px-2 py-1.5 text-sm font-medium;
+    @apply bg-transparent text-gray-700 rounded-lg cursor-pointer;
+    @apply hover:bg-gray-100;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+
+  /* Ghost Select Dropdown */
+  .select-ghost-dropdown {
+    @apply absolute z-50 mt-1 min-w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1;
+    @apply dark:bg-gray-800 dark:border-gray-700;
+  }
+  .select-ghost-dropdown.hidden {
+    @apply hidden;
+  }
+
+  /* Ghost Select Option */
+  .select-ghost-option {
+    @apply w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 cursor-pointer;
+    @apply hover:bg-gray-50;
+    @apply dark:text-gray-300 dark:hover:bg-gray-700;
+  }
+  .select-ghost-option.selected {
+    @apply text-blue-600 font-medium;
+    @apply dark:text-blue-400;
+  }
+
+  /* Ghost Select Check Icon */
+  .select-ghost-check {
+    @apply w-4 h-4 text-blue-600;
+    @apply dark:text-blue-400;
+  }
+
+  /* ========================================
+   * 9-4. SEARCHABLE DROPDOWN (검색 가능한 드롭다운)
+   * 구조: div.searchable-dropdown > button.searchable-dropdown-trigger
+   *       div.searchable-dropdown-dropdown > div.searchable-dropdown-search + div.searchable-dropdown-items
+   * ======================================== */
+
+  /* Searchable Dropdown Container */
+  .searchable-dropdown {
+    @apply relative inline-block;
+  }
+
+  /* Searchable Dropdown Trigger */
+  .searchable-dropdown-trigger {
+    @apply min-w-[200px] px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium;
+    @apply flex items-center justify-between gap-2 cursor-pointer;
+    @apply border-0 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-gray-200;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Searchable Dropdown Trigger Icon */
+  .searchable-dropdown-trigger-icon {
+    @apply w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0;
+    @apply dark:text-gray-500;
+  }
+  .searchable-dropdown-trigger-icon.open {
+    @apply rotate-180;
+  }
+
+  /* Searchable Dropdown Panel */
+  .searchable-dropdown-dropdown {
+    @apply absolute z-50 w-full mt-2 min-w-[280px] bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden;
+    @apply dark:bg-gray-800 dark:border-gray-600;
+  }
+  .searchable-dropdown-dropdown.hidden {
+    @apply hidden;
+  }
+
+  /* Searchable Dropdown Search Section */
+  .searchable-dropdown-search {
+    @apply p-3 border-b border-gray-200;
+    @apply dark:border-gray-700;
+  }
+
+  /* Searchable Dropdown Search Input */
+  .searchable-dropdown-search-input {
+    @apply w-full px-3 py-2 bg-gray-50 text-gray-900 rounded-lg text-sm;
+    @apply border border-gray-200 placeholder-gray-400;
+    @apply focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none;
+    @apply dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-500;
+  }
+
+  /* Searchable Dropdown Items Container */
+  .searchable-dropdown-items {
+    @apply py-2 max-h-80 overflow-auto;
+  }
+
+  /* Searchable Dropdown Option */
+  .searchable-dropdown-option {
+    @apply w-full px-4 py-3 text-left cursor-pointer;
+    @apply flex items-start gap-3;
+    @apply hover:bg-gray-100 transition-colors;
+    @apply dark:hover:bg-gray-700;
+  }
+  .searchable-dropdown-option:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* Searchable Dropdown Option Check Icon Area */
+  .searchable-dropdown-check-area {
+    @apply w-5 h-5 flex-shrink-0 mt-0.5;
+  }
+
+  /* Searchable Dropdown Option Check Icon */
+  .searchable-dropdown-check {
+    @apply w-5 h-5 text-blue-600;
+    @apply dark:text-blue-400;
+  }
+
+  /* Searchable Dropdown Option Content */
+  .searchable-dropdown-option-content {
+    @apply flex-1 min-w-0;
+  }
+
+  /* Searchable Dropdown Option Label */
+  .searchable-dropdown-option-label {
+    @apply font-medium text-gray-900;
+    @apply dark:text-blue-400;
+  }
+  .searchable-dropdown-option.selected .searchable-dropdown-option-label {
+    @apply text-blue-600;
+    @apply dark:text-blue-400;
+  }
+
+  /* Searchable Dropdown Option Description */
+  .searchable-dropdown-option-description {
+    @apply text-sm text-gray-500 mt-0.5;
+    @apply dark:text-gray-400;
+  }
+
+  /* Searchable Dropdown Message (No Results / Initial) */
+  .searchable-dropdown-message {
+    @apply px-4 py-6 text-center text-gray-500;
+    @apply dark:text-gray-400;
+  }
+
+}
+
+/* ========================================
+ * MEDIA QUERIES
+ * ======================================== */
+
+/* Mobile Card View - 768px 이하에서 표시 */
+@media (max-width: 768px) {
+  .table-mobile-cards {
+    display: block;
+  }
+  .table-mobile-cards > * + * {
+    margin-top: 1rem;
+  }
+  .table-desktop {
+    display: none !important;
+  }
+}
+
+/* Modal Responsive */
+@media (max-width: 640px) {
+  .modal {
+    margin-left: 1rem;
+    margin-right: 1rem;
+    max-width: calc(100% - 2rem);
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+  .modal-overlay {
+    padding: 1rem;
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
+  .modal-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .modal-footer .btn {
+    width: 100%;
+  }
+}
+
+/* Card Account - 오버플로우 방지 */
+@media (max-width: 640px) {
+  .card-account {
+    width: 100%;
+  }
+}
+
+/* ========================================
+ * 10. CATEGORY TREE
+ * 카테고리 관리 트리 구조 스타일
+ * ======================================== */
+
+/* Tree Container */
+.tree {
+  @apply space-y-1;
+}
+
+/* Tree Item Row */
+.tree-item {
+  @apply flex items-center gap-2 p-2 rounded-lg cursor-pointer;
+  @apply hover:bg-gray-50;
+  @apply dark:hover:bg-gray-800;
+}
+.tree-item.selected {
+  @apply bg-blue-50;
+  @apply dark:bg-blue-900/20;
+}
+
+/* Tree Item Content (icon + label) */
+.tree-item-content {
+  @apply flex items-center gap-2 flex-1 min-w-0;
+}
+.tree-item-icon {
+  @apply w-4 h-4 text-gray-400 flex-shrink-0;
+  @apply dark:text-gray-500;
+}
+.tree-item-label {
+  @apply text-sm text-gray-700 truncate;
+  @apply dark:text-gray-300;
+}
+
+/* Tree Expand/Collapse Button */
+.tree-expand-btn {
+  @apply w-6 h-6 flex items-center justify-center text-gray-400 rounded;
+  @apply hover:bg-gray-100;
+  @apply dark:text-gray-500 dark:hover:bg-gray-700;
+}
+.tree-expand-btn.hidden {
+  @apply invisible;
+}
+
+/* Tree Children Container - 계층별 들여쓰기 */
+.tree-children {
+  @apply ml-6 pl-4 border-l border-gray-200;
+  @apply dark:border-gray-700;
+}
+
+/* 레벨별 들여쓰기 (CSS 변수 또는 별도 클래스) */
+.tree-level-1 { @apply ml-0 pl-0 border-l-0; }
+.tree-level-2 { @apply ml-6 pl-4 border-l border-gray-200 dark:border-gray-700; }
+.tree-level-3 { @apply ml-6 pl-4 border-l border-gray-200 dark:border-gray-700; }
+.tree-level-4 { @apply ml-6 pl-4 border-l border-gray-200 dark:border-gray-700; }
+
+/* ========================================
+ * 11. CATEGORY SELECTOR (상품 등록/수정 폼용)
+ * data-selected 속성으로 선택 상태 관리
+ * 성능 최적화: 동적 className 대신 CSS 선택자 사용
+ * ======================================== */
+
+/* 데스크톱 카테고리 아이템 - 기본 상태 */
+.category-item {
+  @apply px-3 py-2 text-sm cursor-pointer flex justify-between items-center;
+  @apply text-gray-900 dark:text-white;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700;
+}
+
+/* 데스크톱 카테고리 아이템 - 선택 상태 */
+.category-item[data-selected="true"] {
+  @apply bg-blue-600 text-white;
+}
+.category-item[data-selected="true"]:hover {
+  @apply bg-blue-700;
+}
+
+/* 모바일 카테고리 아이템 - 기본 상태 */
+.category-item-mobile {
+  @apply px-3 py-2 text-sm cursor-pointer;
+  @apply text-gray-900 dark:text-white;
+}
+
+/* 모바일 카테고리 아이템 - 선택 상태 */
+.category-item-mobile[data-selected="true"] {
+  @apply bg-blue-50 dark:bg-blue-900/30;
+}

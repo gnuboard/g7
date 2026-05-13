@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\NotificationService;
 use Illuminate\Console\Command;
 
@@ -11,34 +10,34 @@ use Illuminate\Console\Command;
  */
 class NotificationCleanupCommand extends Command
 {
-    use LocalizesDescription;
-
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'notification:cleanup';
 
     /**
+     * The console command description.
+     */
+    protected $description = '보관 기간이 지난 사이트내 알림을 삭제합니다';
+
+    /**
      * Execute the console command.
      *
-     * @param  NotificationService  $service  알림 서비스
+     * @param NotificationService $service 알림 서비스
      * @return int 명령 실행 결과 코드
      */
     public function handle(NotificationService $service): int
     {
-        $this->info(__('notification.console.cleanup.start'));
+        $this->info('알림 정리 시작...');
 
         $config = config('notification.database_channel', []);
-        $this->info('  '.__('notification.console.cleanup.retention', [
-            'read_days' => $config['read_retention_days'],
-            'unread_days' => $config['unread_retention_days'],
-        ]));
+        $this->info("  읽음 보관: {$config['read_retention_days']}일, 미읽음 보관: {$config['unread_retention_days']}일");
 
         $result = $service->cleanup();
 
-        $this->info('  '.__('notification.console.cleanup.deleted_read', ['count' => $result['deleted_read']]));
-        $this->info('  '.__('notification.console.cleanup.deleted_unread', ['count' => $result['deleted_unread']]));
-        $this->info(__('notification.console.cleanup.done'));
+        $this->info("  읽음 알림 삭제: {$result['deleted_read']}건");
+        $this->info("  미읽음 알림 삭제: {$result['deleted_unread']}건");
+        $this->info('알림 정리 완료');
 
         return self::SUCCESS;
     }

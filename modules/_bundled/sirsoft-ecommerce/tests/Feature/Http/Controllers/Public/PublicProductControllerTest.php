@@ -2,9 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Public;
 
-use App\Http\Middleware\PermissionMiddleware;
-use App\Models\Role;
-use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\Category;
@@ -14,9 +11,9 @@ use Modules\Sirsoft\Ecommerce\Models\ProductCommonInfo;
 use Modules\Sirsoft\Ecommerce\Models\ProductLabel;
 use Modules\Sirsoft\Ecommerce\Models\ProductLabelAssignment;
 use Modules\Sirsoft\Ecommerce\Models\ProductNotice;
+use Modules\Sirsoft\Ecommerce\Models\ProductNoticeTemplate;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
-use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -33,7 +30,10 @@ class PublicProductControllerTest extends ModuleTestCase
 
         // PermissionMiddleware의 guest role 정적 캐시 초기화
         // (TestingSeeder에서 guest 역할을 생성하지만, 정적 캐시가 null로 초기화되지 않을 수 있음)
-        PermissionMiddleware::clearGuestRoleCache();
+        $reflection = new \ReflectionClass(\App\Http\Middleware\PermissionMiddleware::class);
+        $prop = $reflection->getProperty('guestRoleCache');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
     }
 
     // ========================================
@@ -97,144 +97,13 @@ class PublicProductControllerTest extends ModuleTestCase
         $productNotInCategory = Product::factory()->onSale()->create();
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products?category_id='.$category->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products?category_id=' . $category->id);
 
         // Then
         $response->assertStatus(200);
         $ids = collect($response->json('data.data'))->pluck('id')->toArray();
         $this->assertContains($productInCategory->id, $ids);
         $this->assertNotContains($productNotInCategory->id, $ids);
-    }
-
-    /**
-     * U6①: category_id 필터 시 하위 카테고리 상품도 포함되는지 테스트.
-     *
-     * 가구 > 책상 > 의자 3단계 트리에서 상품을 의자(잎)에만 attach 후
-     * 가구(루트) 필터로 조회 → 하위 의자 상품 포함. (수정 전 직접 할당만 → fail)
-     */
-    #[Test]
-    public function test_category_id_filter_includes_descendant_products(): void
-    {
-        [$furniture, $desk, $chair] = $this->createThreeLevelCategoryTree();
-
-        // 상품을 잎 카테고리(의자)에만 attach
-        $chairProduct = Product::factory()->onSale()->create();
-        $chairProduct->categories()->attach($chair->id);
-
-        // When: 루트(가구) 필터
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products?category_id='.$furniture->id);
-
-        // Then: 하위 의자 상품 포함
-        $response->assertStatus(200);
-        $ids = collect($response->json('data.data'))->pluck('id')->toArray();
-        $this->assertContains($chairProduct->id, $ids);
-    }
-
-    /**
-     * U6①: category_slug 필터 시 하위 카테고리 상품도 포함되는지 테스트.
-     */
-    #[Test]
-    public function test_category_slug_filter_includes_descendant_products(): void
-    {
-        [$furniture, $desk, $chair] = $this->createThreeLevelCategoryTree();
-
-        $deskProduct = Product::factory()->onSale()->create();
-        $deskProduct->categories()->attach($desk->id);
-
-        // When: 루트 slug 필터
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products?category_slug='.$furniture->slug);
-
-        // Then: 중간 책상 상품 포함
-        $response->assertStatus(200);
-        $ids = collect($response->json('data.data'))->pluck('id')->toArray();
-        $this->assertContains($deskProduct->id, $ids);
-    }
-
-    /**
-     * U6①: 형제 가지 상품은 포함되지 않는지 테스트 (과포함 가드).
-     */
-    #[Test]
-    public function test_category_filter_excludes_sibling_branch(): void
-    {
-        [$furniture, $desk, $chair] = $this->createThreeLevelCategoryTree();
-
-        // 형제 가지: 가전 (가구와 동일 레벨 루트)
-        $appliance = Category::create([
-            'name' => ['ko' => '가전', 'en' => 'Appliance'],
-            'slug' => 'appliance',
-            'is_active' => true,
-            'depth' => 0,
-            'sort_order' => 2,
-            'path' => '',
-        ]);
-        $appliance->update(['path' => (string) $appliance->id]);
-
-        $applianceProduct = Product::factory()->onSale()->create();
-        $applianceProduct->categories()->attach($appliance->id);
-
-        // When: 가구 필터
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products?category_id='.$furniture->id);
-
-        // Then: 형제 가지(가전) 상품 미포함
-        $response->assertStatus(200);
-        $ids = collect($response->json('data.data'))->pluck('id')->toArray();
-        $this->assertNotContains($applianceProduct->id, $ids);
-    }
-
-    /**
-     * U6①: 존재하지 않는 category_slug 는 빈 결과(500 아님)를 반환하는지 테스트.
-     */
-    #[Test]
-    public function test_unknown_category_slug_returns_empty(): void
-    {
-        Product::factory()->onSale()->create();
-
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products?category_slug=__does_not_exist__');
-
-        $response->assertStatus(200);
-        $this->assertEmpty($response->json('data.data'));
-    }
-
-    /**
-     * 가구 > 책상 > 의자 3단계 카테고리 트리를 생성합니다.
-     *
-     * @return array{0: Category, 1: Category, 2: Category} [가구(루트), 책상(중간), 의자(잎)]
-     */
-    private function createThreeLevelCategoryTree(): array
-    {
-        $furniture = Category::create([
-            'name' => ['ko' => '가구', 'en' => 'Furniture'],
-            'slug' => 'furniture',
-            'is_active' => true,
-            'depth' => 0,
-            'sort_order' => 1,
-            'path' => '',
-        ]);
-        $furniture->update(['path' => (string) $furniture->id]);
-
-        $desk = Category::create([
-            'name' => ['ko' => '책상', 'en' => 'Desk'],
-            'slug' => 'desk',
-            'parent_id' => $furniture->id,
-            'is_active' => true,
-            'depth' => 1,
-            'sort_order' => 1,
-            'path' => '',
-        ]);
-        $desk->update(['path' => $furniture->path.'/'.$desk->id]);
-
-        $chair = Category::create([
-            'name' => ['ko' => '의자', 'en' => 'Chair'],
-            'slug' => 'chair',
-            'parent_id' => $desk->id,
-            'is_active' => true,
-            'depth' => 2,
-            'sort_order' => 1,
-            'path' => '',
-        ]);
-        $chair->update(['path' => $desk->path.'/'.$chair->id]);
-
-        return [$furniture, $desk, $chair];
     }
 
     /**
@@ -297,7 +166,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // MySQL InnoDB FULLTEXT cache 플러시 (MATCH × weight DOUBLE overflow 방지)
-        DB::statement('ALTER TABLE g7_ecommerce_products ENGINE=InnoDB');
+        \Illuminate\Support\Facades\DB::statement('ALTER TABLE g7_ecommerce_products ENGINE=InnoDB');
 
         // When
         $response = $this->getJson('/api/modules/sirsoft-ecommerce/products?search=갤럭시');
@@ -408,7 +277,7 @@ class PublicProductControllerTest extends ModuleTestCase
         $product3 = Product::factory()->onSale()->create();
 
         // When: product2, product1 순서로 요청
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/recent?ids='.$product2->id.','.$product1->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/recent?ids=' . $product2->id . ',' . $product1->id);
 
         // Then
         $response->assertStatus(200);
@@ -443,7 +312,7 @@ class PublicProductControllerTest extends ModuleTestCase
         $hidden = Product::factory()->hidden()->create();
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/recent?ids='.$visible->id.','.$hidden->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/recent?ids=' . $visible->id . ',' . $hidden->id);
 
         // Then
         $response->assertStatus(200);
@@ -466,30 +335,11 @@ class PublicProductControllerTest extends ModuleTestCase
         $product = Product::factory()->onSale()->create();
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then
         $response->assertStatus(200);
         $response->assertJsonPath('data.id', $product->id);
-    }
-
-    /**
-     * 상품 상세를 product_code(상품코드)로 조회할 수 있다 (#450 라우팅 code 전환)
-     */
-    #[Test]
-    public function test_show_returns_product_by_product_code(): void
-    {
-        // Given: product_code 를 가진 상품
-        $product = Product::factory()->onSale()->create();
-        $this->assertNotEmpty($product->product_code);
-
-        // When: 숫자 id 가 아닌 product_code 로 상세 조회
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->product_code);
-
-        // Then: 동일 상품이 반환되고 응답에 product_code 노출
-        $response->assertStatus(200);
-        $response->assertJsonPath('data.id', $product->id);
-        $response->assertJsonPath('data.product_code', $product->product_code);
     }
 
     /**
@@ -505,7 +355,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then
         $response->assertStatus(200);
@@ -562,7 +412,7 @@ class PublicProductControllerTest extends ModuleTestCase
             'is_active' => true,
             'sort_order' => 1,
         ]);
-        ShippingPolicyCountrySetting::create([
+        \Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting::create([
             'shipping_policy_id' => $shippingPolicy->id,
             'country_code' => 'KR',
             'shipping_method' => 'parcel',
@@ -577,7 +427,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then — 리소스가 shipping_policy 오브젝트를 반환 (charge_policy 는 country setting 이관)
         $response->assertStatus(200);
@@ -602,7 +452,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id, [
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id, [
             'Accept-Language' => 'ko',
         ]);
 
@@ -636,7 +486,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then
         $response->assertStatus(200);
@@ -660,7 +510,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then
         $response->assertStatus(200);
@@ -679,7 +529,7 @@ class PublicProductControllerTest extends ModuleTestCase
         $product = Product::factory()->hidden()->create();
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then
         $response->assertStatus(404);
@@ -703,7 +553,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then
         $response->assertStatus(200);
@@ -721,7 +571,7 @@ class PublicProductControllerTest extends ModuleTestCase
         $product = Product::factory()->onSale()->create(['brand_id' => null]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then
         $response->assertStatus(200);
@@ -741,7 +591,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then
         $response->assertStatus(200);
@@ -771,7 +621,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then
         $response->assertStatus(200);
@@ -803,7 +653,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then
         $response->assertStatus(200);
@@ -832,7 +682,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $product->id);
 
         // Then — Resource 는 name/content 를 label/value 로 프론트 스펙 변환
         $response->assertStatus(200);
@@ -858,7 +708,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$htmlProduct->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $htmlProduct->id);
 
         // Then
         $response->assertStatus(200);
@@ -871,7 +721,7 @@ class PublicProductControllerTest extends ModuleTestCase
         ]);
 
         // When
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$textProduct->id);
+        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/' . $textProduct->id);
 
         // Then
         $response->assertStatus(200);
@@ -1057,79 +907,5 @@ class PublicProductControllerTest extends ModuleTestCase
         $this->assertNotNull($data);
         $this->assertEquals(0, $data['review_count']);
         $this->assertEquals(0.0, $data['rating_avg']);
-    }
-
-    // ========================================
-    // abilities.can_update 게이트 테스트 (#450)
-    // 유저 상품 상세에서 관리자 상품 수정 화면 진입 크로스링크 노출 여부
-    // ========================================
-
-    /**
-     * 상품 수정 권한(sirsoft-ecommerce.products.update) 보유자는 abilities.can_update = true
-     *
-     * @scenario link=user_product_to_admin_edit, permitted=true
-     *
-     * @effects product_edit_gate_true_shows_link
-     */
-    #[Test]
-    public function test_show_returns_can_update_true_for_product_update_permission_holder(): void
-    {
-        // Given: visible 상품 + 상품 수정 권한 보유 관리자
-        $product = Product::factory()->onSale()->create();
-        $admin = $this->createAdminUser(['sirsoft-ecommerce.products.update']);
-
-        // 공개 상품 상세는 `permission:user,sirsoft-ecommerce.user-products.read` 로 가드된다.
-        // createAdminUser 는 admin 타입 권한만 부여하므로 user 역할을 함께 붙여야 라우트를 통과한다
-        // (운영에서도 관리자는 사용자 페이지 열람 권한을 함께 보유). can_update 게이트는
-        // 라우트 통과 뒤 products.update 보유 여부로 판정된다.
-        $admin->roles()->attach(Role::where('identifier', 'user')->firstOrFail()->id);
-
-        // When: 권한 보유자가 유저 상품 상세 조회
-        $response = $this->actingAs($admin, 'sanctum')
-            ->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
-
-        // Then: abilities.can_update = true
-        $response->assertStatus(200);
-        $this->assertTrue($response->json('data.abilities.can_update'));
-    }
-
-    /**
-     * 상품 수정 권한 미보유 일반 사용자는 abilities.can_update = false
-     *
-     * @scenario link=user_product_to_admin_edit, permitted=false
-     *
-     * @effects product_edit_gate_false_hides_link
-     */
-    #[Test]
-    public function test_show_returns_can_update_false_for_regular_user(): void
-    {
-        // Given
-        $product = Product::factory()->onSale()->create();
-        $user = $this->createUser();
-
-        // When
-        $response = $this->actingAs($user, 'sanctum')
-            ->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
-
-        // Then
-        $response->assertStatus(200);
-        $this->assertFalse($response->json('data.abilities.can_update'));
-    }
-
-    /**
-     * 비로그인(게스트)은 abilities.can_update = false
-     */
-    #[Test]
-    public function test_show_returns_can_update_false_for_guest(): void
-    {
-        // Given
-        $product = Product::factory()->onSale()->create();
-
-        // When: 비로그인 조회
-        $response = $this->getJson('/api/modules/sirsoft-ecommerce/products/'.$product->id);
-
-        // Then
-        $response->assertStatus(200);
-        $this->assertFalse($response->json('data.abilities.can_update'));
     }
 }

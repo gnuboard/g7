@@ -1,17 +1,11 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
-import { EditorAttrs } from '../../types';
 export interface Tab {
     id: string | number;
     label: string;
     iconName?: IconName;
     disabled?: boolean;
     badge?: string | number;
-    /**
-     * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
-     * 보통 클릭은 지금처럼 탭 전환(onTabChange)이다(#757).
-     */
-    href?: string;
 }
 export interface TabNavigationProps {
     tabs: Tab[];
@@ -24,19 +18,6 @@ export interface TabNavigationProps {
     hiddenTabIds?: (string | number)[];
     /** 모바일 전환 임계값 (px). 기본값 768 — G7 ResponsiveContext mobile 프리셋과 동일 */
     mobileBreakpoint?: number;
-    /**
-     * 탭 주소(`tabs[].href`)에 현재 주소의 쿼리를 합친다(탭 주소 자신의 키가 이긴다).
-     * 같은 화면 안에서 쿼리만 바꾸는 탭이 목록 문맥(쪽·정렬·검색어)을 이고 갈 때 — 보통 클릭과 새 탭이 같은 주소가 된다.
-     */
-    tabHrefMergeQuery?: boolean;
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-    id?: string;
-    /**
-       * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-       */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * TabNavigation 집합 컴포넌트
@@ -46,7 +27,7 @@ export interface TabNavigationProps {
  *
  * 반응형: G7Core.useResponsive() hook으로 화면 너비를 구독하여
  * mobileBreakpoint(기본 768px) 미만일 때 Select 드롭다운으로 자동 전환됩니다.
- * Tailwind 반응형 접두로 숨기고 보이는 분기를 쓰지 않으므로 위지윅 편집기의 디바이스 미리보기와도 호환됩니다.
+ * Tailwind hidden md:flex 분기를 사용하지 않으므로 위지윅 편집기의 디바이스 미리보기와도 호환됩니다.
  *
  * **주의**: 이 컴포넌트는 순수 네비게이션 UI만 제공하며,
  * 실제 탭 컨텐츠는 부모 컴포넌트에서 activeTabId를 기반으로 조건부 렌더링해야 합니다.

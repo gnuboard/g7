@@ -4,10 +4,10 @@
  * troubleshooting-state-setstate.md에 기록된 사례들의 회귀 테스트입니다.
  * 각 테스트는 해당 사례가 재발하지 않도록 검증합니다.
  *
- * @see 트러블슈팅 가이드 troubleshooting-state-setstate.md
+ * @see docs/frontend/troubleshooting-state-setstate.md
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ActionDispatcher } from '../ActionDispatcher';
 import { deepMergeState } from '../DynamicRenderer';
 import { Logger } from '../../utils/Logger';
@@ -31,8 +31,9 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: Mock;
-  let mockSetState: Mock;
+  let mockNavigate: ReturnType<typeof vi.fn>;
+  let mockSetState: ReturnType<typeof vi.fn>;
+  let mockGlobalStateUpdater: ReturnType<typeof vi.fn>;
   let capturedState: Record<string, any>;
 
   beforeEach(() => {
@@ -58,8 +59,11 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       }
     });
 
+    mockGlobalStateUpdater = vi.fn();
+
     dispatcher = new ActionDispatcher({
       navigate: mockNavigate,
+      globalStateUpdater: mockGlobalStateUpdater,
     });
 
     Logger.getInstance().setDebug(false);
@@ -86,10 +90,8 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
      *
      * 해결: 단일 setState에 모든 변경사항 병합
      */
-    // @scenario case=sequence_setstate_overwrite
-    // @effects sequence_setstates_keep_prior_changes
     it('sequence 내 연속 setState에서 이전 상태가 손실되지 않아야 함', async () => {
-      const context: { state: Record<string, any>; setState: Mock; actionId: string } = {
+      const context = {
         state: { currencies: ['USD'], showForm: true },
         setState: mockSetState,
         actionId: 'test-action-1',
@@ -97,7 +99,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
 
       // 첫 번째 setState: 통화 추가
       const action1 = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -105,11 +106,10 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
         },
       };
 
-      await dispatcher['executeAction'](action1, context);
+      await dispatcher.executeAction(action1, context);
 
       // 두 번째 setState: 폼 숨기기
       const action2 = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -120,7 +120,7 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       // context.state를 업데이트된 값으로 설정 (sequence 시뮬레이션)
       context.state = capturedState;
 
-      await dispatcher['executeAction'](action2, context);
+      await dispatcher.executeAction(action2, context);
 
       // 두 변경사항 모두 유지되어야 함
       expect(capturedState.currencies).toEqual(['USD', 'EUR']);
@@ -136,8 +136,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
      *
      * 해결: deepMergeWithState로 중첩 객체 병합
      */
-    // @scenario case=dot_notation_key_conflict
-    // @effects shared_root_dot_keys_all_applied
     it('같은 루트를 공유하는 dot notation 키가 모두 적용되어야 함', async () => {
       // capturedState를 context.state 초기값으로 설정
       // (실제 DynamicRenderer에서는 localDynamicState가 이 역할)
@@ -150,7 +148,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       };
 
       const action = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -159,7 +156,7 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
         },
       };
 
-      await dispatcher['executeAction'](action, context);
+      await dispatcher.executeAction(action, context);
 
       // 모든 필드가 병합되어야 함
       expect(capturedState.form.email).toBe('test@example.com');
@@ -176,8 +173,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
      *
      * 해결: setNestedValue에서 null 값 처리
      */
-    // @scenario case=dot_notation_null
-    // @effects dot_notation_accepts_null
     it('dot notation 키에 null 값을 설정할 수 있어야 함', async () => {
       const context = {
         state: { form: { selectedId: 123 } },
@@ -186,7 +181,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       };
 
       const action = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -195,7 +189,7 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       };
 
       // 에러 없이 실행되어야 함
-      await expect(dispatcher['executeAction'](action, context)).resolves.not.toThrow();
+      await expect(dispatcher.executeAction(action, context)).resolves.not.toThrow();
       expect(capturedState.form.selectedId).toBeNull();
     });
   });
@@ -208,8 +202,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
      *
      * 해결: 배열은 직접 할당, 객체만 병합
      */
-    // @scenario case=nested_value_array
-    // @effects nested_set_keeps_array_type
     it('배열 값이 객체로 변환되지 않아야 함', async () => {
       const context = {
         state: { form: { items: [] } },
@@ -218,7 +210,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       };
 
       const action = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -226,7 +217,7 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
         },
       };
 
-      await dispatcher['executeAction'](action, context);
+      await dispatcher.executeAction(action, context);
 
       expect(Array.isArray(capturedState.form.items)).toBe(true);
       expect(capturedState.form.items).toHaveLength(2);
@@ -245,8 +236,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
      * 참고: 실제 globalStateUpdater 호출 테스트는 ActionDispatcher.test.ts에서 수행
      * 여기서는 deepMergeWithState 로직만 검증
      */
-    // @scenario case=global_dot_notation_merge
-    // @effects global_dot_keys_merge_into_nested
     it('deepMergeWithState가 dot notation 키를 중첩 객체로 변환해야 함', async () => {
       // capturedState를 context.state 초기값으로 설정
       capturedState = { user: { id: 1 }, theme: 'dark' };
@@ -258,7 +247,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       };
 
       const action = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -267,7 +255,7 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
         },
       };
 
-      await dispatcher['executeAction'](action, context);
+      await dispatcher.executeAction(action, context);
 
       // dot notation이 중첩 객체로 변환되어 병합되어야 함
       expect(capturedState.user.id).toBe(1); // 기존 값 유지
@@ -285,8 +273,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
      *
      * 해결: __g7ForcedLocalFields에 업데이트된 필드 저장
      */
-    // @scenario case=datakey_forced_fields
-    // @effects setstate_updates_forced_local_fields
     it('setState 실행 시 __g7ForcedLocalFields가 업데이트되어야 함', async () => {
       const context = {
         state: { form: { label_assignments: [] } },
@@ -295,7 +281,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       };
 
       const action = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -304,7 +289,7 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
         },
       };
 
-      await dispatcher['executeAction'](action, context);
+      await dispatcher.executeAction(action, context);
 
       // __g7ForcedLocalFields가 설정되어야 함
       const forcedFields = (window as any).__g7ForcedLocalFields;
@@ -314,10 +299,8 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       expect(forcedFields.form.common_info_id).toBe(218);
     });
 
-    // @scenario case=datakey_forced_fields
-    // @effects setstate_updates_forced_local_fields
     it('연속 setState 시 __g7ForcedLocalFields가 누적되어야 함', async () => {
-      const context: { state: Record<string, any>; setState: Mock; actionId: string } = {
+      const context = {
         state: { form: {}, ui: {} },
         setState: mockSetState,
         actionId: 'test-action-datakey-2',
@@ -325,7 +308,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
 
       // 첫 번째 setState
       const action1 = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -333,12 +315,11 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
         },
       };
 
-      await dispatcher['executeAction'](action1, context);
+      await dispatcher.executeAction(action1, context);
 
       // 두 번째 setState
       context.state = capturedState;
       const action2 = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -346,7 +327,7 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
         },
       };
 
-      await dispatcher['executeAction'](action2, context);
+      await dispatcher.executeAction(action2, context);
 
       // __g7ForcedLocalFields에 두 필드 모두 있어야 함
       const forcedFields = (window as any).__g7ForcedLocalFields;
@@ -354,8 +335,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       expect(forcedFields.form.shipping_policy_id).toBe(33);
     });
 
-    // @scenario case=datakey_forced_fields
-    // @effects setstate_updates_forced_local_fields
     it('__g7PendingLocalState도 함께 업데이트되어야 함', async () => {
       const context = {
         state: { form: { name: 'existing' } },
@@ -364,7 +343,6 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
       };
 
       const action = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -372,7 +350,7 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
         },
       };
 
-      await dispatcher['executeAction'](action, context);
+      await dispatcher.executeAction(action, context);
 
       // __g7PendingLocalState가 설정되어야 함
       const pendingState = (window as any).__g7PendingLocalState;
@@ -384,8 +362,8 @@ describe('트러블슈팅 회귀 테스트 - setState 관련', () => {
 });
 
 describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
-  let mockNavigate: Mock;
-  let mockSetState: Mock;
+  let mockNavigate: ReturnType<typeof vi.fn>;
+  let mockSetState: ReturnType<typeof vi.fn>;
   let capturedState: Record<string, any>;
 
   beforeEach(() => {
@@ -416,8 +394,6 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
      * 참고: globalStateUpdater fallback 테스트는 ActionDispatcher의 내부 구현에 의존하므로
      * 여기서는 context.setState가 있는 경우의 동작만 검증
      */
-    // @scenario case=init_actions_local
-    // @effects init_setstate_uses_component_context
     it('componentContext가 있으면 setState를 통해 상태가 업데이트되어야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
@@ -433,7 +409,6 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
       };
 
       const action = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -441,7 +416,7 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
         },
       };
 
-      await dispatcher['executeAction'](action, context);
+      await dispatcher.executeAction(action, context);
 
       expect(mockSetState).toHaveBeenCalled();
       expect(capturedState.filter).toEqual({
@@ -460,8 +435,6 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
      *
      * 해결: target 정규화 (local, component, _local 모두 동일 처리)
      */
-    // @scenario case=init_actions_underscore_local
-    // @effects underscore_local_target_equals_local
     it('target: "_local"이 "local"과 동일하게 처리되어야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
@@ -474,7 +447,6 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
       };
 
       const action = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: '_local', // _local 접두사 사용
@@ -482,7 +454,7 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
         },
       };
 
-      await dispatcher['executeAction'](action, context);
+      await dispatcher.executeAction(action, context);
 
       // _local._local이 아닌 formData로 직접 저장되어야 함
       expect(mockSetState).toHaveBeenCalled();
@@ -518,8 +490,6 @@ describe('트러블슈팅 회귀 테스트 - G7Core.state.setLocal 관련', () =
      * 여기서는 ActionDispatcher.handleSetState에서 __g7ForcedLocalFields가
      * 올바르게 설정되는지 검증합니다.
      */
-    // @scenario case=setlocal_datakey
-    // @effects setlocal_sets_forced_local_fields
     it('handleSetState 실행 후 __g7ForcedLocalFields가 설정되어야 함 (ActionDispatcher 경로)', async () => {
       // 이 테스트는 [TS-SETSTATE-DATAKEY] 테스트에서 이미 검증됨
       // ActionDispatcher.handleSetState에서 __g7ForcedLocalFields 설정 확인
@@ -535,7 +505,6 @@ describe('트러블슈팅 회귀 테스트 - G7Core.state.setLocal 관련', () =
       };
 
       const action = {
-        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -544,7 +513,7 @@ describe('트러블슈팅 회귀 테스트 - G7Core.state.setLocal 관련', () =
         },
       };
 
-      await dispatcher['executeAction'](action, context);
+      await dispatcher.executeAction(action, context);
 
       // __g7ForcedLocalFields 확인
       const forcedFields = (window as any).__g7ForcedLocalFields;

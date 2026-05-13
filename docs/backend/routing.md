@@ -1,6 +1,6 @@
 # 라우트 네이밍 및 경로
 
-> **상위 문서**: [백엔드 가이드 인덱스](./README.md)
+> **상위 문서**: [백엔드 가이드 인덱스](./index.md)
 
 ---
 
@@ -12,11 +12,6 @@
 3. URL: /api/admin/*, /api/auth/*, /api/public/*
 4. 권한: permission: 또는 Middleware에서 체크
 5. REST 패턴: index, store, show, update, destroy
-6. .js/.css/.json/.map 로 끝나는 라우트 = dualSuffix/dualSuffixSegment/dualAsset 매크로 필수
-7. catch-all 은 예약 프리픽스를 전수 제외 (가려진 라우트는 200 SPA 셸이라 단서가 없다)
-8. 조건부로만 열리는 라우트군의 게이트 = 그룹 미들웨어 단일 지점 (핸들러 개별 게이트 금지)
-9. 리다이렉트·콜백·제3자 전송·메일 링크의 절대 URL = SiteUrl::absolute() (url()·redirect('/x') 는 요청 Host 를 따른다)
-10. 라우트는 언제나 마운트 접두사 없이 등록 — 접두사는 AssetUrl(서버)·G7Core.url(브라우저)이 붙이고 벗긴다
 ```
 
 ---
@@ -27,9 +22,7 @@
 2. [URL 경로 규칙](#url-경로-규칙)
 3. [권한 체크](#권한-체크)
 4. [라우트 정의 예시](#라우트-정의-예시)
-5. [절대 URL 은 사이트 주소로 만든다](#절대-url-은-사이트-주소로-만든다)
-6. [라우트 캐시](#라우트-캐시)
-7. [개발 체크리스트](#개발-체크리스트)
+5. [개발 체크리스트](#개발-체크리스트)
 
 ---
 
@@ -75,8 +68,7 @@
 | 코어 | `/admin/[기능명]` | `/admin/users` |
 | 모듈 | `/admin/[vendor-module]/[기능명]` | `/admin/sirsoft-ecommerce/products` |
 | 플러그인 | `/admin/[vendor-plugin]/[기능명]` | `/admin/sirsoft-payment/settings` |
-| 모듈 공개 API | `/api/modules/[vendor-module]/[기능명]` | `/api/modules/sirsoft-ecommerce/products` |
-| 플러그인 공개 API | `/api/plugins/[vendor-plugin]/[기능명]` | `/api/plugins/sirsoft-gdpr/consent` |
+| 공개 API | `/api/[vendor-module]/[기능명]` | `/api/sirsoft-ecommerce/products` |
 
 ### 리소스 URL 규칙
 
@@ -107,207 +99,6 @@ GET /api/admin/modules/{identifier}/license     # 모듈 LICENSE 반환
 GET /api/admin/plugins/{identifier}/license     # 플러그인 LICENSE 반환
 GET /api/admin/templates/{identifier}/license   # 템플릿 LICENSE 반환
 ```
-
-### 정적 확장자로 끝나는 동적 엔드포인트
-
-`.js` / `.css` / `.json` / `.map` 으로 끝나는 라우트는 `Route::get()` 으로 단일 등록하지 않는다.
-`Route::dualSuffix()` / `dualSuffixSegment()` / `dualAsset()` 매크로로 **확장자 형태와 확장자 없는 형태를
-동시에** 등록한다. 코어 라우트와 확장 라우트 파일 모두에 적용된다.
-
-nginx/Apache 의 표준적 정적 최적화 블록은 URL 마지막 확장자로 분기하며, nginx 에서 정규식 location 은
-프리픽스 location 보다 먼저 매칭된다. 그래서 `try_files ... /index.php` 폴백이 실행될 기회 없이 nginx 가
-직접 파일시스템을 열려 시도해 404 가 된다. aaPanel / CyberPanel / Plesk 기본 템플릿에 들어있는 블록이라
-드물지 않으며, 그런 서버에서는 해당 엔드포인트가 통째로 죽는다.
-
-```nginx
-location ~* \.(js|css|json)$ { expires max; access_log off; }
-```
-
-```php
-// 잘못된 등록 — 확장자 없는 형태가 생기지 않는다
-Route::get('{identifier}/routes.json', [Ctrl::class, 'getRoutes'])->name('...');
-
-// 접미사 제거형 — routes.json + routes
-Route::dualSuffix('{identifier}/routes', 'json', [Ctrl::class, 'getRoutes'])
-    ->name('api.public.templates.routes');
-
-// 세그먼트 강등형 — 접미사가 종류를 구분해 제거 불가 (bundle.js + bundle/js)
-Route::dualSuffixSegment('bundle', 'js', [Ctrl::class, 'serveBundleJs'])
-    ->name('api.public.modules.bundle.js');
-
-// 쿼리 이동형 — 경로가 곧 파일명 (assets/{id}/js/a.js + assets/{id}?file=js/a.js)
-Route::dualAsset('assets/{identifier}', [Ctrl::class, 'serveAsset'])
-    ->name('api.public.templates.assets');
-```
-
-매크로가 반환하는 프록시는 `name()` 을 양쪽에 적용하며(확장자 없는 쪽은 `.extensionless` 접미사),
-`middleware()` 등 나머지 호출도 두 라우트에 함께 전달한다. 한쪽에만 걸리는 가드가 생기지 않는다.
-
-URL 을 만드는 쪽도 문자열로 직접 조립하지 않는다. 서버는 `App\Support\AssetUrl`, 프론트엔드는
-`resources/js/core/support/assetUrl.ts` 를 경유해야 현재 모드에 맞는 형태가 나온다. 두 구현은 동일 규칙을
-공유하므로 한쪽만 바꾸면 서버가 만든 URL 과 클라이언트가 만든 URL 이 어긋나 그 자산만 404 가 된다.
-
-`// audit:allow dynamic-route-static-extension reason: ...`.
-
-### SPA catch-all 의 정적 확장자 제외
-
-SPA catch-all(`routes/web.php` 의 admin·user 그룹)은 등록되지 않은 경로에 SPA 셸 HTML 을 돌려준다.
-**정적 자산 요청이 거기 걸리면 안 된다** — 없는 `.mjs` 가 `Content-Type: text/html` 인 200 을 받고,
-브라우저는 그것을 스크립트로 파싱하다 죽는다. 응답이 성공이라 `onerror` 는 발화하지 않으므로 태그
-복구기도 뜨지 않는다: 예외도 404 도 없이 화면 기능만 사라진다.
-
-제외 목록을 라우트 파일에 손으로 적으면 에셋 서빙이 허용하는 확장자와 갈라진다. 실제로 갈라져 있었고
-(`mjs` · `webp` · `otf` 가 서빙은 되는데 제외 목록엔 없었다), `.json` 이 무사했던 것은 lookahead 에 끝
-앵커가 없어 `.js` 에 **부분일치**한 우연이었다.
-
-그래서 목록을 파생시킨다 — `App\Support\StaticExtensionPattern::catchAllExclusion()` 이
-`Allowed{Template,Module,Plugin}FileType` 세 화이트리스트의 **합집합**에서 패턴을 만들고, 두 catch-all 이
-그것을 호출한다. 합집합인 이유: 게시 트리에는 템플릿 dist 뿐 아니라 모듈·플러그인의 사용자 추가 에셋도
-함께 실리므로 한 종류만 기준으로 삼으면 나머지가 서빙하는 확장자(`ico`)가 다시 빠진다.
-
-환경 의존 게터(`getAllowedExtensions()`, 로컬에서 `map` 을 덧붙인다)는 쓰지 않는다 — `where()` 인자는
-정의 시점에 평가되어 컴파일된 정규식으로 라우트 캐시에 박히므로, 패턴이 **캐시를 구운 환경**에 따라
-달라지면 안 된다. 캐시 로드 경로는 이 클래스를 참조하지 않으므로 캐시 안전성도 유지된다.
-
-라우트 정의를 바꿨으므로 배포 시 라우트 캐시를 재생성해야 한다 — 재생성 전에는 이전에 컴파일된 패턴이
-그대로 쓰인다.
-
-두 형태는 모두 영구 유지한다 — 확장자 형태를 제거하면 URL 을 하드코딩한 서드파티 확장이 깨진다.
-엔드포인트별 변환 규칙 표와 프로브 판정 절차: [API 레퍼런스 진입점](./api/README.md) "자산 URL 이중 모드".
-
-**반대 방향의 의무도 있다** — 운영자가 외부 서비스에 붙여넣는 주소는 애초에 정적 확장자로 끝나지
-않게 만든다. 웹 크론 호출 주소(`GET /api/system/cron/run`)가 그 예다. 이런 주소에 `.json` 같은 접미사를
-붙이면 이중 등록으로 되살릴 수는 있지만, 운영자가 이미 등록해 둔 주소가 어느 형태였는지에 따라 사이트가
-달라진다 — 처음부터 확장자를 두지 않는 편이 낫다. 그 성질은 회귀 테스트가 라우트 URI 를 직접 재서 고정한다
-(`WebCronEndpointTest::test_cron_route_is_named_and_has_no_static_extension`).
-
-### catch-all 은 예약 프리픽스를 전수 제외한다
-
-catch-all 은 그 뒤에 등록된 라우트를 **가린다**. Laravel 은 등록 순서대로 매칭하므로, 예약 프리픽스가
-제외 목록에 없으면 그 경로의 GET 요청이 catch-all 에 먼저 걸려 SPA 셸을 받는다. 문제는 그 응답이
-예외도 404 도 아닌 **200** 이라는 점이다 — 요청한 쪽에는 "라우트가 가려졌다" 는 단서가 전혀 없고,
-서버 로그에도 정상 요청으로 남는다.
-
-더 나쁜 것은 그 shadow 가 **보호처럼 보인다**는 점이다. 가려진 라우트는 도달 불가라 열려 있어도
-증상이 없으므로, 게이트 누락이 있어도 드러나지 않는다. 제외 목록이 한 줄 바뀌는 순간 그 라우트가
-게이트 없이 노출된다 — 보호를 등록 순서라는 우연에 맡긴 상태다.
-
-```php
-// ❌ 예약 프리픽스가 빠져 있다 — 그 경로의 GET 라우트가 조용히 가려진다
-->where('any', '(?!admin)(?!api)(?!plugins)'.StaticExtensionPattern::catchAllExclusion());
-
-// ✅ 예약 프리픽스 전수 제외
-->where('any', '(?!admin)(?!api)(?!plugins)(?!_boost)(?!modules)'.StaticExtensionPattern::catchAllExclusion());
-```
-
-예약 프리픽스를 추가하는 확장·기능은 이 목록에 자기 프리픽스를 함께 넣는다. 스코프가 좁은 catch-all
-(`admin/` 하위만 받는 admin catch-all 등)은 애초에 다른 프리픽스를 삼키지 않으므로 대상이 아니다.
-
-### 끝·연속 슬래시는 301 로 정규형에 모은다
-
-Laravel 라우터는 `path()` 로 매칭하므로 `/admin/`·`/board//free` 도 catch-all 에 걸린다. 그러나 그 뒤의
-템플릿 라우트 판정·SEO 렌더·SEO 캐시 키·방문 통계는 요청 경로 문자열을 쓰는데, `getPathInfo()`·`getRequestUri()`
-는 끝 `/` 와 `//` 를 그대로 남긴다. 그대로 두면 같은 화면이 두 갈래가 된다(웹 서버에 따라 `/admin/` 이 404).
-
-그래서 화면 셸 라우트 두 묶음(admin catch-all · user catch-all)과 개발자 화면 묶음(`custom.screen`, `routes/custom.php`)에 `canonical.path` 미들웨어를 붙인다.
-
-- **GET·HEAD 만** 이동한다. 다른 메서드는 통과한다.
-- 끝 `/` 를 떼고(루트 제외) 연속 `/` 를 하나로 줄인 주소로 **301** 한다. 쿼리스트링은 원문 그대로 붙인다(순서 보존).
-- 템플릿에 없는 주소도 먼저 이동하고, 이동한 곳에서 404 를 판정한다.
-- `public/` 아래 실제 디렉터리 경로는 건너뛴다(이동 루프 방지 — Apache `RewriteCond !-d` 와 같음).
-- 이동 주소는 사이트 주소 안에서만 만든다 — `//evil.com/` 같은 경로도 `https://<사이트>/evil.com` 으로 간다.
-- `/api/*`·확장 라우트·사이트맵은 대상이 아니다.
-
-**순서가 계약이다.** `canonical.path` 는 `canonical.host` 바로 뒤, 봇 기록(`analytics.bots`)·SEO(`seo`)·서버 통계
-(`analytics.fallback`)보다 **앞**에 둔다. 그래야 끝·연속 슬래시 주소가 그쪽에 닿지 않는다.
-
-```php
-Route::middleware(['canonical.host', 'canonical.path', 'template.dependencies:user', 'analytics.bots', 'seo', 'analytics.fallback'])
-```
-
-요청 경로를 문자열 비교·캐시 키로 쓸 때는 `getPathInfo()` 를 직접 쓰지 말고 `App\Support\RequestPath::normalize()`
-를 거친다. 미들웨어를 거치지 않는 경로(직접 호출·다른 라우트)에서도 같은 정규형을 쓰기 위해서다. 클라이언트 라우터도
-같은 규칙으로 주소창을 정규형으로 바꾼다([라우터 주소 정규화](../frontend/actions-handlers-navigation.md)).
-
-이 미들웨어로 Apache 와 nginx 의 동작이 같아졌다. Apache 는 `public/.htaccess` 의 끝 슬래시 301 규칙이 먼저
-처리하고, nginx 는 이 미들웨어가 처리한다. 연속 슬래시는 두 서버 모두 이 미들웨어가 처리한다.
-
-### 디버그·개발 라우트는 그룹 단위로 게이트한다
-
-디버그 도구처럼 "특정 조건에서만 열려야 하는" 라우트군은 판정을 **핸들러 안이 아니라 그룹
-미들웨어**에 둔다. 핸들러마다 적으면 라우트를 추가할 때 게이트를 함께 적는 것을 잊게 되고, 빠뜨려도
-예외도 로그도 남지 않는다 — 그 엔드포인트가 정상 응답하는 것이 유일한 증상이다.
-
-실제로 그렇게 흩어져 있던 8개 라우트 중 게이트는 3개에만 있었고, 빠진 쪽에 디버그 데이터를 통째로
-지우는 파괴적 엔드포인트가 있었다. 운영 환경·디버그 OFF 상태에서도 미인증 요청이 200 으로 통과했다.
-
-```php
-// bootstrap/app.php — 부착은 이 한 곳뿐이다
-Route::middleware(['api', 'debug.gate'])
-    ->group(base_path('routes/devtools.php'));
-```
-
-```php
-// ❌ 핸들러 안의 개별 게이트 — 새 라우트에서 빠뜨리게 된다
-Route::delete('clear', function () {
-    if (! DebugGate::isEnabled()) {
-        return response()->json(['status' => 'error'], 403);
-    }
-    // ...
-});
-
-// ✅ 게이트는 그룹이 부여하고, 핸들러는 본래 일만 한다
-Route::delete('clear', function () {
-    // ...
-});
-```
-
-부착 지점이 하나면 그 지점의 훼손이 곧바로 드러난다 — 라우트군 전체의 `gatherMiddleware()` 에 게이트
-별칭이 들어 있는지를 단언하는 **등록 계약 테스트**를 함께 둔다. 이 축은 행위 테스트로 대체할 수 없다:
-가려져 있거나 조건이 맞지 않는 라우트는 행위상 "막힌 것처럼" 보이므로, 게이트 부착 여부와 구분되지
-않기 때문이다. 그 테스트에는 모집단이 비었을 때 공허하게 통과하지 않도록 건수 가드를 둔다.
-
-게이트 미들웨어는 라우트와 함께 라우트 캐시에 구워지므로 캐시 상태에서도 유지된다. 다만 그 사실을
-가정하지 말고 캐시 상태에서의 차단도 함께 검증한다 — 라우트 캐시는 확장 설치·활성화 등 수명주기
-지점에서 자동 생성되므로 오히려 흔한 상태다.
-### 마운트 접두사 — 라우트는 언제나 접두사 없이 등록된다
-
-사이트는 문서 루트가 아니라 하위 폴더에 설치될 수 있다(`https://host/g7/`). 그래도 라우트 파일에는 그
-접두사(`/g7`)를 적지 않는다 — `Route::get('api/...')` 그대로다. 접두사는 라우트 정의가 아니라 **주소를 만들고
-읽는 두 경계**가 다룬다.
-
-| 방향 | 서버 | 브라우저 |
-|------|------|----------|
-| 붙인다 — 요청·이동 주소를 만들 때 | `App\Support\AssetUrl::basePrefix()` 가 접두사를 돌려주고 `sitePath()`(같은 사이트 안 상대 경로)가 그것을 붙인다. 크롤러·메일·제3자에 주는 절대 주소는 `SiteUrl`·`ScreenUrl`([절대 URL](#절대-url-은-사이트-주소로-만든다)) — 이미 접두사가 붙은 경로에 다시 붙이지 않는다 | 코어: `withBasePrefix()` 와 `resources/js/core/support/assetUrl.ts` 의 생성기 / 확장: `G7Core.url.api()` · `sitePath()` |
-| 벗긴다 — 브라우저 주소를 라우트 패턴과 대조할 때 | 프레임워크가 요청의 base URL 을 벗긴 경로로 라우팅한다 — 라우트 정의가 접두사를 모르는 이유 | 코어: `stripBasePrefix()` / 확장: `routePath()` |
-
-서버 쪽 `basePrefix()` 는 현재 요청의 base URL(프레임워크가 진입 스크립트 위치에서 도출)을 우선하고,
-요청 밖(콘솔·큐)에서는 `app.url` 에 담긴 경로 접두사로 폴백한다. 그래서 라우트를 등록하는 쪽은 배치를 몰라도
-되고, 주소를 **문자열로 조립하는 쪽**만 이 경계를 지키면 된다.
-
-하위 폴더 마운트에서 일어나는 일을 요약하면 다음과 같다.
-
-- 서버가 렌더한 주소(레이아웃 JSON 의 `href`·API 응답의 URL·SEO 봇 화면)는 이미 접두사를 갖고 나간다.
-- 브라우저 안에서 만드는 주소(`fetch('/api/…')`·`location.href` 대입·`history.pushState` 의 세 번째 인자)는
-  루트 상대라 접두사가 없다 — 그대로 쓰면 요청·이동이 사이트 밖으로 나가고, 증상은 오류가 아니라 버튼이
-  조용히 무반응인 것이다(문서 루트에 다른 사이트가 있으면 그쪽 응답을 받는다).
-- 브라우저 주소(`location.pathname`)를 라우트 패턴과 대조하는 쪽은 접두사를 **벗긴 뒤** 대조해야 한다.
-  벗기지 않으면 하위 폴더 사이트에서 그 대조가 언제나 불일치라 전 화면이 「없는 페이지」가 된다.
-- 붙이는 쪽과 벗기는 쪽은 다른 방향이다. 한쪽만 재는 회귀 테스트는 다른 쪽이 통째로 빠져도 통과하므로
-  양방향을 함께 잰다.
-- 서버가 만드는 **절대** 주소(알림·메일·비밀번호 재설정 링크 · 결제·본인인증의 복귀·통보 주소 · 사이트맵 ·
-  봇 화면)는 [「절대 URL 은 사이트 주소로 만든다」](#절대-url-은-사이트-주소로-만든다)를 따른다 — 다른 사람·시스템에
-  닿는 주소는 `SiteUrl`(사이트 주소 기준, 요청 Host 로 폴백하지 않음), 회원이 여는 사용자 화면 주소는 `ScreenUrl`.
-  하위 폴더 설치에서 이미 접두사가 붙은 경로(`/g7/…`)를 넘겨도 `SiteUrl` 은 접두사를 다시 붙이지 않는다.
-  `AssetUrl::siteAbsolute()` 는 `SiteUrl::absolute()` 에 위임하는 호환용 이름이다. `url()` 은 요청의 호스트·접두사를
-  실어 앞단 프록시 배치에서 사이트 밖을 가리키고 접두사를 품은 값에는 접두사를 한 번 더 싣는다. `config('app.url').'/path'`
-  는 `APP_URL` 의 후행 슬래시를 그대로 실어 `https://host/g7//path` 를 만든다 — 둘 다 오류 없이 깨진 링크로만
-  드러난다.
-
-확장 프론트엔드는 코어와 별도 번들이라 코어 함수를 `import` 할 수 없다 — `G7Core.url` 이 그 공식 수단이고,
-번들 확장은 같은 규칙의 헬퍼 사본(`apiUrl.ts`)을 바이트 동일하게 갖는다. 상세: [G7Core 전역 API "주소 조립
-(G7Core.url)"](../frontend/g7core-api.md#주소-조립-g7coreurl), 배치별 설치 절차와 하위 주소 설치:
-[INSTALL.md "방법 7: 문서 루트 고정 · 심볼릭 링크 불가 호스팅"](../../INSTALL.md#방법-7-문서-루트-고정--심볼릭-링크-불가-호스팅).
 
 ---
 
@@ -358,35 +149,32 @@ sirsoft-ecommerce.products.delete
 ### 모듈 라우트 파일
 
 ```php
-// modules/_bundled/sirsoft-ecommerce/src/routes/api.php
+// modules/sirsoft-ecommerce/src/routes/api.php
 
 use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Ecommerce\Controllers\Api\Admin\ProductController;
 
-// ModuleRouteServiceProvider 가 URL prefix('api/modules/sirsoft-ecommerce')와
-// name prefix('api.modules.sirsoft-ecommerce.')를 자동 적용한다.
-// 라우트 파일 내부 group 에는 관리자 세그먼트('admin')만 두고, 접두는 중복 입력하지 않는다.
-Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
-    // 상품 관리 (권한 체크 포함) → 최종 URL: /api/modules/sirsoft-ecommerce/admin/products
+Route::prefix('admin/sirsoft-ecommerce')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    // 상품 관리 (권한 체크 포함)
     Route::get('/products', [ProductController::class, 'index'])
         ->middleware('permission:sirsoft-ecommerce.products.view')
-        ->name('products.index'); // 최종 name: api.modules.sirsoft-ecommerce.products.index
+        ->name('api.sirsoft-ecommerce.products.index');
 
     Route::post('/products', [ProductController::class, 'store'])
         ->middleware('permission:sirsoft-ecommerce.products.create')
-        ->name('products.store');
+        ->name('api.sirsoft-ecommerce.products.store');
 
     Route::get('/products/{id}', [ProductController::class, 'show'])
         ->middleware('permission:sirsoft-ecommerce.products.view')
-        ->name('products.show');
+        ->name('api.sirsoft-ecommerce.products.show');
 
     Route::put('/products/{id}', [ProductController::class, 'update'])
         ->middleware('permission:sirsoft-ecommerce.products.edit')
-        ->name('products.update');
+        ->name('api.sirsoft-ecommerce.products.update');
 
     Route::delete('/products/{id}', [ProductController::class, 'destroy'])
         ->middleware('permission:sirsoft-ecommerce.products.delete')
-        ->name('products.destroy');
+        ->name('api.sirsoft-ecommerce.products.destroy');
 });
 ```
 
@@ -465,232 +253,19 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
 ### 공개 API 라우트
 
 ```php
-// modules/_bundled/sirsoft-ecommerce/src/routes/api.php
+// modules/sirsoft-ecommerce/src/routes/api.php
 
 use Modules\Sirsoft\Ecommerce\Controllers\Api\Public\ProductController;
 
-// ModuleRouteServiceProvider 가 URL prefix('api/modules/sirsoft-ecommerce')와
-// name prefix('api.modules.sirsoft-ecommerce.')를 자동 적용한다.
-// 라우트 파일에서 prefix/name 접두를 중복 입력하지 않는다.
-Route::prefix('products')->group(function () {
-    // 공개 상품 API (인증 불필요) → 최종 URL: /api/modules/sirsoft-ecommerce/products
-    Route::get('/', [ProductController::class, 'index'])
-        ->name('public.products.index'); // 최종 name: api.modules.sirsoft-ecommerce.public.products.index
+Route::prefix('api/sirsoft-ecommerce')->group(function () {
+    // 공개 상품 API (인증 불필요)
+    Route::get('/products', [ProductController::class, 'index'])
+        ->name('api.sirsoft-ecommerce.public.products.index');
 
-    Route::get('/{id}', [ProductController::class, 'show'])
-        ->name('public.products.show');
+    Route::get('/products/{id}', [ProductController::class, 'show'])
+        ->name('api.sirsoft-ecommerce.public.products.show');
 });
 ```
-
-### 요청 제한은 라우트마다 자기 키를 쓴다
-
-Laravel 의 `throttle:N,M` 은 비로그인 요청의 제한 키를 `sha1(domain|ip)` 하나로 만든다. 경로는 키에 들어가지 않으므로, 접두사 없는 `throttle:` 을 단 라우트는 **같은 형식의 다른 모든 라우트와 횟수를 공유**한다. 상한이 작은 엔드포인트(본인인증 확인 10/분)는 상한이 큰 라우트(`api/user/*` 600/분)를 치는 화면 로드 몇 번만으로 먼저 막힌다 — 예외도 로그도 없이 그 엔드포인트만 429 를 돌려주는 것이 유일한 증상이다.
-
-| ❌ 금지 | ✅ 올바른 사용 |
-|--------|---------------|
-| `'throttle:10,1'` (접두사 없음) | `'throttle:10,1,identity_verify'` — 세 번째 인자가 키 접두사 |
-| 여러 라우트가 같은 접두사를 공유 | 라우트마다 고유 접두사 (요청·확인·취소·상태 조회·콜백 각자) |
-| 응답 문구·상한 계산이 필요한데 접두사 인자로 해결 | `RateLimiter::for()` 명명 리미터 (`throttle:auth-login` 이 그 예) |
-
-상한과 접두사의 SSoT 는 라우트 정의 한 곳이고, API 레퍼런스는 그 값을 서술한다. 회귀 가드: `tests/Feature/Identity/IdentityVerifyThrottleIsolationTest.php` (공유 키를 상한 이상 선점해도 확인 요청이 429 가 아님 + 자기 상한은 그대로 걸림). 재현 경위와 리미터 카운터를 찾는 법은 [API 레퍼런스의 요청 제한 절](api/identity.md#공개-본인인증-엔드포인트의-요청-제한)에 정리돼 있다.
-
----
-
-## 절대 URL 은 사이트 주소로 만든다
-
-Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormRequest 의 기본 `failedValidation`(직전 화면으로 되돌림)은 절대 주소의 호스트를 **요청의 Host 헤더**(신뢰 프록시 뒤라면 `X-Forwarded-Host`)에서 가져온다. 화면 안 링크처럼 같은 요청에 되돌려 주는 주소라면 문제가 없지만, 그 주소가 사이트 밖으로 나가거나 나중에 다시 쓰이면 Host 를 바꿔 보낸 사람이 목적지를 정하게 된다 — 결제·본인인증 결과와 검증 토큰이 그 호스트로 전달된다.
-
-운영 환경의 신뢰 호스트 검사(`config/trustedhosts.php`)는 마지막 겹일 뿐이다. 사이트 주소의 **하위 도메인·www 쌍(`www.` 를 붙이거나 뗀 주소)·다른 포트**는 그 검사를 통과하므로, 그것만으로 이 경로를 막지 못한다.
-
-| ❌ 금지 (리다이렉트·콜백·제3자 전송·메일/알림 링크) | ✅ 올바른 사용 |
-|--------|---------------|
-| `redirect('/shop/orders')`, `redirect()->to('/x')` | `redirect(SiteUrl::absolute('/shop/orders'))` |
-| `redirect(ShopRedirectUrl::resolve($setting))` (설정값은 상대 경로일 수 있음) | `redirect(SiteUrl::absolute(ShopRedirectUrl::resolve($setting)))` |
-| PG·본인인증 제공자에 넘기는 `url('/plugins/x/callback')`·`route('x.callback')` | `SiteUrl::absolute('/plugins/x/callback')` |
-| 큐·메일·알림에서 `url('/mypage')` (큐 작업자는 `http://localhost` 로 만든다) | `SiteUrl::absolute('/mypage')` |
-| 웹 라우트(결제·본인인증 콜백, 결과 브리지, PG 서버 통보·웹훅)의 FormRequest 가 기본 `failedValidation` 을 그대로 씀 | 브라우저가 오는 주소면 `failedValidation` 에서 `HttpResponseException(redirect(SiteUrl::absolute($failUrl)))` 로 명시 이동, PG 서버가 부르는 주소면 `HttpResponseException(ResponseHelper::validationError($validator->errors()))` 로 422 (규칙이 빈 배열이라 검증이 실패할 수 없는 요청은 해당 없음) |
-| `return_url` 같은 입력 주소를 요청 Host 와 비교해 허용 | `SiteUrl::isSameOrigin($url)` 로 사이트 주소와 비교 |
-
-`App\Support\SiteUrl` 이 사이트 주소(`config('app.url')` — 환경설정에 사이트 주소가 있으면 그 값) 기준 절대 URL 의 단일 출처다. 하위 폴더 설치(`APP_URL=https://host/g7`)에서도 같다 — 사이트 주소의 경로가 곧 마운트 접두사이고, 이미 접두사가 붙은 경로(`/g7/…`)를 넘겨도 다시 붙이지 않는다. 종전 이름 `AssetUrl::siteAbsolute()` 는 `SiteUrl::absolute()` 에 위임한다(호환). 같은 사이트 안의 상대 경로는 `AssetUrl::sitePath()`([마운트 접두사](#마운트-접두사--라우트는-언제나-접두사-없이-등록된다)).
-
-| 메서드 | 용도 |
-| --- | --- |
-| `SiteUrl::absolute($pathOrUrl)` | 상대 경로를 사이트 주소 기준 절대 URL 로. 이미 절대 URL 이면 그대로 |
-| `SiteUrl::forPath($pathAndQuery)` | 요청에서 꺼낸 경로·쿼리(`$request->getRequestUri()`)를 사이트 주소에 붙인 URL |
-| `SiteUrl::base()` · `SiteUrl::origin()` · `SiteUrl::hostWithPort()` | 사이트 주소(끝 `/` 제거)·출처(`scheme://host[:port]`)·호스트[:포트] |
-| `SiteUrl::isSameOrigin($url)` | 주어진 URL 이 사이트 주소와 같은 출처인지 |
-| `SiteUrl::forOutboundLinks()` | 메일·알림처럼 밖으로 나가는 링크의 베이스 — `G7_PUBLIC_LINK_URL` 을 정했으면 그 값, 비면 사이트 주소(아래 「밖으로 나가는 링크의 주소」) |
-
-**사람이 여는 화면 주소는 화면 주소 헬퍼로 (7.2.0)** — 알림·메일 링크, 비밀번호 재설정, 결제·클레임 결제 뒤 성공·실패 복귀, 본인인증 복귀처럼 **회원이 브라우저로 여는 사용자 화면**은 `SiteUrl` 대신 `App\Support\ScreenUrl` 로 만든다. 기본은 사이트 주소와 같고, 환경설정 「사용자 화면 URL」(`general.user_screen_url`)을 정하면 그 주소가 베이스가 되며, 필터 훅 `core.screen_url.filter_path` 로 경로를 바꿀 수 있다. PG·본인인증 제공자에 넘기는 **콜백·웹훅 주소**는 이 서버가 받아야 하므로 계속 `SiteUrl` 이다. 관리자 화면 링크는 관리자 범위(`ScreenUrl::SCOPE_ADMIN`)로 만든다 — 「사용자 화면 URL」을 따르지 않는다.
-
-| 용도 | 사용 |
-| --- | --- |
-| 화면 키로 경로·절대 URL 만들기 | `ScreenUrl::path('auth.login', '/login')` · `ScreenUrl::absolute('board.post', '/board/{slug}/{id}', [...])` |
-| 이미 만든 상대 경로(설정값 등)를 사용자 화면 베이스로 | `redirect(ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($setting)))` (브라우저 복귀용 `failedValidation` 포함) |
-| 관리자 링크 | 범위 `ScreenUrl::SCOPE_ADMIN` — 베이스는 사이트 주소 |
-| 메일·알림·문자에 싣는 링크 | 링크 변형 `ScreenUrl::absoluteForLinks()` · `ScreenUrl::toAbsoluteForLinks()` · `ScreenUrl::userLinkBase()` (아래 「밖으로 나가는 링크의 주소」) |
-| 입력 복귀 주소 출처 허용 | `SiteUrl::isSameOrigin($url) \|\| ScreenUrl::isUserScreenOrigin($url)` |
-
-화면 키 목록과 필터 예제는 [개발자 화면 가이드](../custom-development.md#5-화면-주소-키와-주소-필터).
-
-**밖으로 나가는 링크의 주소 (`G7_PUBLIC_LINK_URL`)** — 같은 DB 를 쓰는 서버를 공개 주소와 다른 주소로 띄우면(예: 검수용
-사이트), 그 서버가 보내는 메일·알림의 링크가 그 서버 주소를 가리켜 받는 사람이 공개 사이트가 아닌 곳을 열게 된다. `.env` 의
-`G7_PUBLIC_LINK_URL`(config `core.public_link_url`, 비면 null)에 공개 주소를 적으면 링크 베이스가 그 주소로 바뀐다.
-
-| 주소 | 베이스 (처음 정해진 값) |
-| --- | --- |
-| 메일·알림·문자의 회원용 링크 (`ScreenUrl::absoluteForLinks()`·`toAbsoluteForLinks()` 회원 범위·`userLinkBase()`) | 환경설정 「사용자 화면 URL」 → `G7_PUBLIC_LINK_URL` → 사이트 주소 |
-| 메일·알림·문자의 관리자용 링크 (링크 변형의 관리자 범위)·알림의 사이트 링크(`{site_url}`) | `G7_PUBLIC_LINK_URL` → 사이트 주소 (`SiteUrl::forOutboundLinks()`) |
-| 브라우저가 돌아가는 화면 주소 (`ScreenUrl::absolute()`·`toAbsolute()`·`userBase()` — 결제·본인인증 뒤 복귀, 복귀 출처 검사 `isUserScreenOrigin()`, 사이트맵) | 회원 범위 = 「사용자 화면 URL」 → 사이트 주소, 관리자 범위 = 사이트 주소 — 이 값을 따르지 않는다 |
-| PG·본인인증·소셜 로그인 콜백, 웹훅, 정식 주소 이동, 분석 수집 주소 | 사이트 주소 (`SiteUrl::base()`·`absolute()`·`forPath()`) — 이 값을 따르지 않는다 |
-
-알림 데이터 리스너(`extract_data` 필터)와 메일 본문을 만드는 코드는 링크를 링크 변형으로 만든다 — 경로는
-`ScreenUrl::absoluteForLinks($key, $path, $params, $scope)`·`ScreenUrl::toAbsoluteForLinks($path, $scope)`, 회원용 `{site_url}` 은
-`ScreenUrl::userLinkBase()`, 관리자용 `{site_url}` 은 `SiteUrl::forOutboundLinks()`. 확장 헬퍼가 절대 주소를 만들어 주는 경우
-(`BoardScreenUrl::post(..., absolute: true)` 등)는 상대 경로로 받아 `ScreenUrl::toAbsoluteForLinks()` 로 감싼다. 문자·알림톡 채널은
-알림 데이터의 `*_url` 을 그대로 실으므로 따로 손볼 것이 없다. 결제·본인인증 뒤 브라우저 복귀는 요청을 받은 이 서버의 화면으로
-돌아가야 하므로 기본 변형(`ScreenUrl::toAbsolute()`)을 그대로 쓴다. 비워 두면 종전과 같다.
-
-API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON 으로 응답한다(`bootstrap/app.php` 의 `shouldRenderJsonWhen`) — 직전 화면으로 되돌아가는 응답이 생기지 않는다. 사이트 주소가 아닌 Host(하위 도메인·www 쌍·다른 포트·별칭)로 들어온 화면 요청은 사이트 주소로 이동한다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐).
-
-요청 Host 를 의도적으로 쓰는 코드(예: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단)는 해당 줄 위에 그렇게 쓰는 이유를 주석으로 남긴다. 회귀 가드: 계약 테스트 `tests/Feature/Http/TrustedProxyContractTest.php`, 단위 테스트 `tests/Unit/Support/SiteUrlTest.php`.
-
----
-
-## 라우트 캐시
-
-`php artisan route:cache` 를 적용한 사이트는 캐시 파일에 직렬화된 라우트만 서빙한다.
-따라서 **라우트 정의를 바꾸는 모든 지점은 캐시를 함께 갱신해야 한다.**
-
-라우트 캐시는 훅 캐시와 성질이 다르다. 훅 캐시는 항목이 없으면 스캔으로 폴백해 낡아도
-안전하지만, **라우트 캐시에는 폴백이 없다** — 캐시에 없는 라우트는 그대로 404 다.
-예외도 경고도 남지 않고 그 엔드포인트만 조용히 사라지므로, 확장을 만든 쪽에서는
-"내 코드에는 분명히 있는데 라우트가 없다" 는 형태로만 관측된다.
-
-### 갱신은 헬퍼 하나로만 한다
-
-각 지점에 `route:clear` 를 흩어 놓으면 누락이 생기고, 반대로 비우기만 하면 한 번 비워진
-캐시가 재생성되지 않아 성능 이점이 영구히 사라진다. `App\Support\RouteCacheHelper` 가
-단일 해석 지점이다 (`ConfigCacheHelper` 와 동일한 정책).
-
-| 메서드 | 동작 |
-|--------|------|
-| `RouteCacheHelper::rebuild()` | 임시 파일에 다 구운 뒤 실제 파일과 바꿔 끼운다. 테스트 환경·설치 미완료는 비우기까지만 |
-| `RouteCacheHelper::clear()` | 재생성 없이 비우기만 — 재생성이 부적절한 흐름 중간용 |
-
-`rebuild()` 는 `route:cache` 를 호출하며, 이 커맨드는 **새 애플리케이션을 부팅해** 라우트를
-수집한다. 방금 설치·활성화한 확장의 라우트가 함께 잡히려면 그 새 부팅이 바뀐 상태를 읽어야
-하므로, 굽기 전에 상태 캐시를 비워야 한다(아래 절). 재생성이 실패하면(직렬화
-불가한 클로저 라우트 등) 그때 낡은 캐시를 지운다 — 비어 있으면 느릴 뿐 정확하지만, 낡은 캐시는
-방금 설치한 확장을 통째로 없는 것으로 만든다.
-
-### 먼저 지우지 않는다 — 비는 순간 없이 바꿔 끼우기 (7.1.5)
-
-종전에는 `route:clear` 로 지운 뒤 `route:cache` 로 다시 구웠다. 굽는 1~2초 사이에 들어온 요청은
-`file_exists()` 를 통과한 뒤 `require` 직전에 파일이 지워져 500(`routes-v7.php: No such file`)을 받았다
-— 확장을 켜고 끄는 동안 다른 관리자가 화면을 열면 「초기화 실패 Failed to reload routes」로 멈췄다.
-이제 `App\Support\AtomicBootstrapCache` 가 굽는 동안만 출력 경로(`APP_ROUTES_CACHE`)를 같은 폴더의
-임시 파일로 돌리고, 다 구우면 `rename` 으로 바꿔 끼운다. 실제 파일은 굽는 내내 남아 다른 요청이 계속 쓴다.
-Windows 는 다른 요청이 그 순간 파일을 열고 있으면 `rename` 이 실패하므로 짧게 다시 시도한다.
-config 캐시(`ConfigCacheHelper`)·훅 캐시(`HookCacheManager`)·확장 오토로드(`ExtensionManager`)도
-같은 도우미를 쓴다. 관리자 「캐시 정리」·「최적화」도 두 헬퍼를 거친다.
-
-### 갱신이 필요한 지점
-
-| 지점 | 이유 |
-|------|------|
-| 확장 설치 / 활성화 / 비활성화 / 삭제 / 업데이트 | 확장 라우트 등록이 활성 목록에 게이트되어 있다 |
-| 코어 업데이트 · 업그레이드 스텝 | 코어 라우트 파일과 vendor 가 교체된다 |
-| **코어 설치 완료** | 인스톨러 `complete_flag` 직후 `route_cache` task (config 캐시와 나란히) |
-
-**코어 설치 완료가 별도 지점인 이유** — 설치 중의 확장 install·activate 도 `rebuild()` 를
-부르지만, 그 시점에는 `installer_completed` 가 아직 서지 않아 **clear 까지만** 수행된다
-(불완전한 부팅을 캐시에 박제하지 않으려는 정책). 완료 플래그 이후에는 재생성 트리거가
-확장 라이프사이클에만 묶여 있으므로, 인스톨러가 마무리 단계에서 직접 굽지 않으면
-**갓 설치한 사이트는 라우트 캐시가 빈 채로 시작한다.** 웹은 정상 동작하지만(매 요청
-라우트 파일 스캔 — 느릴 뿐) `php artisan test` 는 부모 부팅에서 확장 라우트 파일을
-실행하다 죽는다. 확장을 하나라도 설치·변경하면 그때 구워져 그 뒤로는 드러나지 않으므로
-노출 창이 좁다. 회귀 가드: `tests/Unit/Installer/InstallerFinalizeCacheTasksTest`.
-
-코어 업데이트처럼 파일 교체가 진행 중인 흐름에서는 **중간에 비우고 끝에서 재생성**한다.
-교체 중 상태를 캐시에 구우면 안 되기 때문이며, config 캐시가 같은 형태로 처리된다.
-
-템플릿 설치·활성화는 갱신 대상이 아니다 — 템플릿의 `routes.json` 은 프론트엔드 라우팅이라
-서버 라우트에 영향을 주지 않는다. 모듈 설정의 경로 값도 마찬가지다(서버 라우트 접두사는
-`api/modules/{identifier}` 로 식별자에 고정).
-
-### 확장 라우트는 활성 상태로 게이트된다
-
-모듈·플러그인 라우트는 **활성 상태인 확장의 것만** 등록한다. 비활성화하면 화면·메뉴·프론트엔드
-에셋은 사라지지만, 라우트 등록을 게이트하지 않으면 그 확장의 API 는 계속 호출 가능한 상태로 남는다.
-컨트롤러 파일이 그대로 있으므로 요청은 정상 처리되고 오류도 로그도 남지 않아, 화면만 보고는
-꺼진 기능이 여전히 동작한다는 사실을 알 수 없다.
-
-| ❌ 금지 | ✅ 올바른 사용 |
-|--------|---------------|
-| 라우트 프로바이더가 디렉토리에 있는 확장 전부를 등록 | 활성 식별자 목록으로 걸러 등록 |
-| 한쪽(모듈)만 게이트하고 다른 쪽(플러그인)은 무게이트 | 두 경로가 같은 기준을 공유 |
-| 게이트를 개별 컨트롤러·미들웨어에 흩어 놓기 | 라우트 등록 지점 한 곳에서 판정 |
-
-활성 목록은 상태 캐시를 공유하므로, 상태를 바꾼 쪽이 그 캐시를 비워야 다음 부팅이 새 상태를
-읽는다(아래 절).
-
-### 굽기는 상태 캐시 무효화 뒤에 온다
-
-`route:cache` 가 부팅하는 새 애플리케이션에서 확장 라우트 프로바이더는 DB 가 아니라
-**캐시된 활성 확장 목록**을 읽는다(TTL 기본 1일). 그래서 확장의 상태를 DB 에 쓴 뒤
-그 상태 캐시를 비우기 **전에** 구우면, 새 부팅이 낡은 목록을 읽어 방금 바뀐 상태가
-반영되지 않은 라우트가 박제된다.
-
-```text
-DB 상태 쓰기 → 상태 캐시 무효화 → 굽기(rebuild / 훅 캐시 재생성)
-```
-
-순서가 뒤집혔을 때의 결과는 방향마다 다르고, 어느 쪽도 스스로 회복되지 않는다.
-
-| 수명주기 | 낡은 목록의 내용 | 결과 |
-|---------|----------------|------|
-| 활성화 | 그 확장이 없음 | 방금 켠 확장의 API 전량 404 |
-| 비활성화 | 그 확장이 남아 있음 | 끈 확장의 API 가 계속 호출 가능 |
-| 업데이트 | `Updating`(=비활성)으로 판정 | 업데이트 후 API 404 + 훅 리스너 누락 |
-
-상태 캐시 무효화는 **DB 상태 쓰기 직후**에 둔다. 굽기 직전으로 옮기는 것으로는 부족하다 —
-같은 목록을 읽는 굽기가 라우트 캐시 말고도 있기 때문이다(훅 매핑 캐시가 오토로드 갱신
-안에서 구워진다).
-
-업데이트 경로만 예외가 하나 있다. `Updating` 전이 직후에는 비우지 않는다 — 비우면 그 창
-안에서 도는 오토로드 갱신이 DB 를 재조회해 그 확장을 비활성으로 판정하고 훅 캐시에서
-리스너를 떨군다. 대신 **상태 복원 직후**에 비우고, 그 뒤 훅 캐시를 다시 굽는다. 훅 캐시
-폴백은 파일 부재·손상에만 작동하므로 내용이 낡은 경우는 조용히 통과하기 때문이다.
-
-이 순서는 자동 검증으로 강제된다 — `rebuild()` 를 호출하는 수명주기 메서드를 리플렉션으로
-도출해(개별 열거 금지) 각각에서 무효화가 앞서는지 확인한다.
-
-### 캐시 안전한 라우트 작성
-
-캐시가 걸리면 `RouteServiceProvider::boot()` 이 캐시 파일 로드로 분기해 **라우트 파일 자체가
-실행되지 않는다.** 라우트 핸들러 클로저는 직렬화된 형태로 복원되지만, 파일이 실행되어야만
-존재하는 심볼은 어디에도 없다.
-
-깨지는 것은 클로저가 아니라 **오토로드되지 않는 심볼 참조**다. 클로저 자체는 캐시에서 정상
-동작한다 — `routes/web.php` 의 SPA catch-all 이 그 증거다. 클래스는 오토로더가 찾아주므로
-FQCN 정적 호출도 안전하다. 문제가 되는 것은 오토로드 경로가 없는 것들뿐이다.
-
-| ❌ 금지 | ✅ 올바른 사용 |
-|--------|---------------|
-| 라우트 파일에 전역 함수를 선언하고 핸들러가 호출 | 로직을 클래스(`app/Support/…` 등)로 옮기고 핸들러는 위임만 |
-| 파일 스코프 변수를 핸들러가 `use` 없이 참조 | 클래스 상수 또는 `use ($var)` 로 클로저에 캡처 |
-| 벤더/서비스 프로바이더가 조건부로 등록하는 라우트에 의존 | 그 URI 를 G7 라우트 파일이 직접 소유 |
-
-전역 함수 위반의 증상은 특히 추적하기 어렵다. `Call to undefined function` 500 이 나는데
-예외의 `file` 이 `laravel-serializable-closure://` 라 **원인 파일이 스택에 드러나지 않는다.**
-자동 검증이 라우트 파일의 함수 선언을 차단한다.
-
-프로바이더의 `boot()` 에서 등록한 라우트가 폐기되는 이유는 별개다. `Router::setCompiledRoutes()`
-가 라우트 컬렉션을 **통째로 교체**하고 이 교체가 `booted` 콜백에서 일어나므로, 그보다 앞서
-등록된 것은 조건 충족 여부와 무관하게 사라진다. 프레임워크 자신의 `BroadcastManager::routes()`
-는 캐시 여부를 확인하는 가드를 갖고 있지만, 모든 패키지가 그렇지는 않다. 그런 라우트에
-기능이 의존한다면 해당 URI 를 G7 라우트 파일에서 등록해 캐시에 함께 구워지게 한다.
 
 ---
 
@@ -705,15 +280,12 @@ FQCN 정적 호출도 안전하다. 문제가 되는 것은 오토로드 경로�
 - [ ] 인증이 필요한 라우트에 `auth:sanctum` 미들웨어 적용
 - [ ] 관리자 라우트에 `admin` 미들웨어 적용
 - [ ] FormRequest의 `authorize()` 메서드에서 권한 체크하지 않음
-- [ ] 예약 프리픽스를 새로 쓴다면 SPA catch-all 제외 목록에 추가
-- [ ] 조건부로만 열리는 라우트군은 그룹 미들웨어로 게이트 (핸들러 안 개별 판정 금지)
 
 ### 라우트 테스트 확인사항
 
 - [ ] 인증 없이 접근 시 401 반환
 - [ ] 권한 없이 접근 시 403 반환
 - [ ] 올바른 권한으로 접근 시 성공
-- [ ] 그룹 게이트를 둔 라우트군은 `gatherMiddleware()` 부착을 단언하는 등록 계약 테스트 동반 (모집단 가드 포함)
 
 ---
 
@@ -722,8 +294,6 @@ FQCN 정적 호출도 안전하다. 문제가 되는 것은 오토로드 경로�
 - [컨트롤러 계층 구조](./controllers.md) - 컨트롤러 네이밍 규칙
 - [미들웨어 등록 규칙](./middleware.md) - 미들웨어 실행 순서
 - [검증 로직 구현](./validation.md) - FormRequest 사용 규칙
-- [G7Core 전역 API "주소 조립 (G7Core.url)"](../frontend/g7core-api.md#주소-조립-g7coreurl) - 브라우저 쪽 마운트 접두사 처리
-- [INSTALL.md "방법 7"](../../INSTALL.md#방법-7-문서-루트-고정--심볼릭-링크-불가-호스팅) - 문서 루트 고정 배치·하위 주소 설치
 
 ### SEO 라우트
 

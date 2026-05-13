@@ -4,16 +4,6 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
-import type { EditorAttrs } from '../../types';
-import { getDefaultTheme } from '../../handlers/setThemeHandler';
-import { escapeToClose } from '../../support/keyboardActivation';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
 
 /**
  * 테마 모드 타입
@@ -34,10 +24,6 @@ export interface ThemeToggleProps {
   lightText?: string;
   /** 다크 모드 텍스트 (다국어 키 사용 권장) */
   darkText?: string;
-  /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID) */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -98,30 +84,21 @@ const getInitialTheme = (): ThemeMode => {
   if (savedTheme && ['auto', 'light', 'dark'].includes(savedTheme)) {
     return savedTheme;
   }
-  // 저장값이 없는 첫 방문자는 템플릿 설정의 기본 화면 모드 (#434)
-  return getDefaultTheme();
+  return 'auto';
 };
 
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   onThemeChange,
   className = '',
-  autoText: autoTextProp,
-  lightText: lightTextProp,
-  darkText: darkTextProp,
-  id,
-  editorAttrs,
+  autoText = 'System',
+  lightText = 'Light',
+  darkText = 'Dark',
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
-  const autoText = autoTextProp ?? tOr('common.theme.auto', 'System');
-  const lightText = lightTextProp ?? tOr('common.theme.light', 'Light');
-  const darkText = darkTextProp ?? tOr('common.theme.dark', 'Dark');
   // 초기 테마를 즉시 로드하고 적용
   const initialTheme = getInitialTheme();
   const [currentMode, setCurrentMode] = useState<ThemeMode>(initialTheme);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  // 메뉴를 여는 단추 — 메뉴 안에서 Esc 로 닫으면 여기로 포커스를 돌린다
-  const toggleRef = useRef<HTMLButtonElement>(null);
 
   /**
    * 컴포넌트 마운트 시 즉시 테마 적용
@@ -180,18 +157,12 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   };
 
   return (
-    // 메뉴 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
-    <Div ref={menuRef} className={`relative ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showMenu, () => setShowMenu(false), toggleRef)}>
+    <Div ref={menuRef} className={`relative ${className}`}>
       {/* 테마 토글 버튼 */}
       <Button
-        ref={toggleRef}
         onClick={() => setShowMenu(!showMenu)}
-        aria-haspopup="menu"
         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
-        // 언어와 무관하게 「Toggle theme」 이던 이름을 번역한다(7.1.0 실측). 번역이 없을 때의 대체 문구는
-        // 다른 기본 문구와 같이 영어다(컴포넌트 다국어 규칙 — 한국어 기본값 금지)
-        aria-label={tOr('common.theme_select', 'Theme')}
-        aria-expanded={showMenu}
+        aria-label="Toggle theme"
       >
         <Icon
           name={getCurrentIcon()}

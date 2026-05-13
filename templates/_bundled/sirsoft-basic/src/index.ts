@@ -1,4 +1,3 @@
-// e2e:allow편집기 위젯(icon-picker) 등록을 module-load 시점으로 이동(결함#3, admin 동기 — 직접 하드로드 시 위젯 누락 해소). 단위 회귀는 registerEditorWidgets.test.ts(module-load 등록 + index.ts 최상위 호출 정적 가드).
 /**
  * Sirsoft Basic User Template
  *
@@ -89,6 +88,10 @@ export {
   type IconProps,
   Code,
   type CodeProps,
+  Footer as BasicFooter,
+  type FooterProps as BasicFooterProps,
+  Header as BasicHeader,
+  type HeaderProps as BasicHeaderProps,
   Hr,
   type HrProps,
   IconName,
@@ -107,33 +110,13 @@ import templateMetadata from '../template.json';
 
 // Handlers
 import { handlerMap } from './handlers';
-import { prefetchCartKey } from './handlers/storageHandlers';
 
 // IDV Modal Launcher (engine-v1.46.0+)
 import { registerSirsoftBasicIdentityLauncher } from './handlers/identityLauncher';
 
-// 서버 기기 감지값(appConfig.isIos) 클라이언트 보정 (iPadOS 데스크탑 UA 케이스)
-import { correctIosDeviceState } from './handlers/deviceCorrection';
-
-// 인증 경계 비회원 저장값 정리 (#639 ⑦)
-import { installAuthBoundaryStorageCleanup } from './handlers/authBoundaryStorage';
-
-// 레이아웃 편집기 커스텀 위젯(icon-picker 등) 등록
-import { registerSirsoftBasicEditorWidgets } from './layout-editor/registerEditorWidgets';
-
-// 이 번들이 페이지의 활성 템플릿으로 실렸는지 (레이아웃 편집기는 다른 템플릿 페이지에 이 번들을 싣는다)
-import { isPageTemplate } from './support/pageTemplate';
-
-/** 템플릿 식별자 — 핸들러 등록자 표기 (template.json 의 identifier 와 같다) */
-const TEMPLATE_IDENTIFIER = 'sirsoft-basic';
-
 // handlerMap을 전역으로 노출 (로케일 변경 시 재등록용)
-// 다른 템플릿 페이지(편집기)에 실렸으면 노출하지 않는다 — 그 페이지의 로케일 전환이 이 맵을 호스트 핸들러 대신 다시 등록한다.
-if (typeof window !== 'undefined' && isPageTemplate(TEMPLATE_IDENTIFIER)) {
+if (typeof window !== 'undefined') {
   (window as any).G7TemplateHandlers = handlerMap;
-  // 장바구니 키 발급을 번들이 실릴 때 시작한다 — 레이아웃 요청과 겹쳐 첫 화면 전 PHP 왕복 한 단계를 줄인다.
-  // 렌더 전 대기는 그대로다(init_actions 의 initCartKey 가 이 결과를 기다린다). 다른 템플릿 페이지(편집기)에서는 하지 않는다 (#879)
-  prefetchCartKey();
 }
 
 /**
@@ -150,15 +133,6 @@ export { templateMetadata };
  * 코어 엔진에 커스텀 핸들러를 등록합니다.
  */
 export function initTemplate(): void {
-  // 다른 템플릿 페이지(레이아웃 편집기)에 실린 번들은 페이지 전역(핸들러·본인인증 launcher·기기 보정·인증 경계 정리)을
-  // 건드리지 않는다. 호스트 템플릿의 같은 이름 핸들러(setTheme 등)를 덮으면 그 페이지 동작이 이 템플릿 것으로 바뀐다.
-  // 편집기 캔버스는 격리 dispatcher 를 쓰므로 여기 등록이 필요 없다.
-  if (!isPageTemplate(TEMPLATE_IDENTIFIER)) {
-    logger.log('Loaded on another template page — skipping page-level handler registration');
-
-    return;
-  }
-
   // ActionDispatcher가 로드될 때까지 대기 후 핸들러 등록
   if (typeof window !== 'undefined') {
     let retryCount = 0;
@@ -168,23 +142,15 @@ export function initTemplate(): void {
       const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
 
       if (actionDispatcher) {
-        // handlerMap의 모든 핸들러를 자동으로 등록 — 등록자를 이 템플릿 식별자로 표시한다(코어 재등록과 같은 표기).
-        // 다른 주인의 이름을 덮으면 엔진이 [G7] 경고로 드러낸다 (engine-v1.94.0)
+        // handlerMap의 모든 핸들러를 자동으로 등록
         Object.entries(handlerMap).forEach(([name, handler]) => {
-          actionDispatcher.registerHandler(name, handler, { category: 'custom', source: TEMPLATE_IDENTIFIER });
+          actionDispatcher.registerHandler(name, handler);
         });
 
         logger.log(`${Object.keys(handlerMap).length} custom handler(s) registered:`, Object.keys(handlerMap));
 
         // IDV Modal Launcher 등록 (window.G7Core.identity.setLauncher 사용)
         registerSirsoftBasicIdentityLauncher();
-
-        // 서버 UA 판정이 놓친 iPadOS(데스크탑 UA) 를 클라 신호로 보정 → appConfig.isIos.
-        // 애플페이 iOS 게이팅(체크아웃 레이아웃 iteration 필터)이 이 값을 참조한다.
-        correctIosDeviceState();
-
-        // 로그인·로그아웃 경계에서 카트키·비회원 주문 토큰을 정리·재발급한다(#639 ⑦). 다시 불려도 구독은 하나다.
-        installAuthBoundaryStorageCleanup();
       } else {
         retryCount++;
         if (retryCount <= maxRetries) {
@@ -204,14 +170,6 @@ export function initTemplate(): void {
     }
   }
 }
-
-// 레이아웃 편집기 커스텀 위젯(icon-picker) 등록 — 모듈 로드 시점에 즉시 실행한다.
-//  ActionDispatcher 가용을 기다리는 `registerHandlers`(window.load
-// 게이트) 안에서 등록하면, 편집기 URL 을 직접 하드로드한 경로에서 등록이 편집기 셸 마운트보다
-// 늦어 icon-picker 위젯이 누락된다("Unsupported control"). `G7Core.layoutEditor` 예약 접수함
-// (ready 큐 stub)은 편집기 로드 전 등록도 큐로 보존했다가 flush 하므로, 핸들러 등록 타이밍과
-// 무관하게 모듈 로드 시 즉시 등록하는 것이 진입 경로(SPA 전환 / 직접 로드)와 무관하게 결정적이다.
-registerSirsoftBasicEditorWidgets();
 
 // 템플릿 초기화 자동 실행
 initTemplate();

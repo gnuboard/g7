@@ -1,4 +1,3 @@
-// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file admin-user-delete-modal.test.tsx
  * @description 사용자 삭제 모달 레이아웃 테스트
@@ -12,11 +11,9 @@
  * - 삭제 버튼 스피너/disabled 상태 (규정: modal-usage.md 위험 작업 버튼 로딩 상태)
  * - 취소 버튼도 삭제 중 비활성화
  * - onError 시 isDeleting 복원
- * - 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
  */
 
 import { describe, it, expect } from 'vitest';
-import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ==============================
 // 테스트
@@ -24,10 +21,6 @@ import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtil
 
 describe('사용자 삭제 모달 레이아웃 테스트', () => {
   describe('모달 데이터 전달 패턴', () => {
-    /**
-     * @scenario area=data_handoff
-     * @effects user_delete_modal_receives_target_via_global
-     */
     it('삭제 모달은 setState(_global.modal_data) -> openModal 패턴을 사용해야 한다', () => {
       // admin_user_list.json의 switch > delete 케이스 구조 검증
       // 이 테스트는 레이아웃 JSON 구조를 직접 검증
@@ -49,10 +42,6 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       expect(bodyStr).not.toContain('"handler":"openModal","target":"delete_confirm_modal","params"');
     });
 
-    /**
-     * @scenario area=data_handoff
-     * @effects user_delete_modal_receives_target_via_global
-     */
     it('apiCall target에 _global.modal_data.id를 사용해야 한다', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const bodyStr = JSON.stringify(layout);
@@ -66,10 +55,6 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
   });
 
   describe('삭제 버튼 스피너/disabled 상태', () => {
-    /**
-     * @scenario area=loading_state
-     * @effects user_delete_modal_locks_while_deleting
-     */
     it('삭제 모달에 isDeleting 로딩 상태가 구현되어 있어야 한다', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const bodyStr = JSON.stringify(layout);
@@ -81,18 +66,13 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       expect(bodyStr).toContain('"handler":"sequence"');
     });
 
-    /**
-     * @scenario area=loading_state
-     * @effects user_delete_modal_locks_while_deleting
-     */
     it('삭제/취소 버튼 모두 isDeleting 시 disabled여야 한다', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
       expect(deleteModal).toBeDefined();
 
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
-      const footerDiv = { children: deleteModal.props.footer };
+      const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const buttons = footerDiv.children;
 
       // 취소 버튼 (첫 번째)
@@ -101,16 +81,11 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       expect(buttons[1].props.disabled).toBe('{{_global.isDeleting}}');
     });
 
-    /**
-     * @scenario area=loading_state
-     * @effects user_delete_modal_locks_while_deleting
-     */
     it('삭제 버튼에 스피너 아이콘과 텍스트 삼항연산자가 있어야 한다', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
-      const footerDiv = { children: deleteModal.props.footer };
+      const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1]; // 삭제 버튼
 
       // 스피너 Icon 존재
@@ -119,8 +94,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       );
       expect(spinnerIcon).toBeDefined();
       expect(spinnerIcon.if).toBe('{{_global.isDeleting}}');
-      // .spinner-sm 시맨틱 자산이 w-4 h-4 + animate-spin 흡수 (#408)
-      expect(spinnerIcon.props.className).toContain('spinner-sm');
+      expect(spinnerIcon.props.className).toContain('animate-spin');
 
       // 텍스트 삼항 연산자
       const textSpan = deleteButton.children.find((c: any) => c.name === 'Span');
@@ -130,42 +104,32 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       expect(textSpan.text).toContain('$t:common.delete');
     });
 
-    /**
-     * @scenario area=loading_state
-     * @effects user_delete_modal_locks_while_deleting
-     */
     it('삭제 버튼 className에 flex items-center gap-2가 있어야 한다', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
-      const footerDiv = { children: deleteModal.props.footer };
+      const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
-      expect(deleteButton.props.className).toContain('flex-center gap-2');
+      expect(deleteButton.props.className).toContain('flex items-center gap-2');
       expect(deleteButton.props.className).toContain('disabled:opacity-50');
       expect(deleteButton.props.className).toContain('disabled:cursor-not-allowed');
     });
   });
 
   describe('onSuccess/onError 핸들러 구조', () => {
-    /**
-     * @scenario area=result_handlers
-     * @effects user_delete_modal_handles_success_and_failure
-     */
     it('onSuccess에 closeModal, setState(false), refetchDataSource, toast가 있어야 한다', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
-      const footerDiv = { children: deleteModal.props.footer };
+      const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
       // sequence > apiCall 추출
-      const sequenceAction = actionsOf(deleteButton)[0];
+      const sequenceAction = deleteButton.actions[0];
       expect(sequenceAction.handler).toBe('sequence');
 
-      const apiCallAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'apiCall');
+      const apiCallAction = sequenceAction.actions.find((a: any) => a.handler === 'apiCall');
       expect(apiCallAction).toBeDefined();
 
       // onSuccess 핸들러 순서 검증 (setState → refetchDataSource → toast → closeModal)
@@ -179,20 +143,15 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       expect(onSuccess[3].handler).toBe('closeModal');
     });
 
-    /**
-     * @scenario area=result_handlers
-     * @effects user_delete_modal_handles_success_and_failure
-     */
     it('onError에 setState(false)와 toast(error)가 있어야 한다', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
-      const footerDiv = { children: deleteModal.props.footer };
+      const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
-      const sequenceAction = actionsOf(deleteButton)[0];
-      const apiCallAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'apiCall');
+      const sequenceAction = deleteButton.actions[0];
+      const apiCallAction = sequenceAction.actions.find((a: any) => a.handler === 'apiCall');
 
       // onError 핸들러 검증
       const onError = apiCallAction.onError;
@@ -204,20 +163,15 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       expect(onError[1].params.type).toBe('error');
     });
 
-    /**
-     * @scenario area=result_handlers
-     * @effects user_delete_modal_handles_success_and_failure
-     */
     it('onError toast 메시지는 {{error.message}}를 사용해야 한다 ($error 아님)', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
-      const footerDiv = { children: deleteModal.props.footer };
+      const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
-      const sequenceAction = actionsOf(deleteButton)[0];
-      const apiCallAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'apiCall');
+      const sequenceAction = deleteButton.actions[0];
+      const apiCallAction = sequenceAction.actions.find((a: any) => a.handler === 'apiCall');
 
       const onError = apiCallAction.onError;
       const toastAction = onError.find((a: any) => a.handler === 'toast');
@@ -230,34 +184,22 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
   });
 
   describe('삭제 버튼 스타일 규정 준수', () => {
-    /**
-     * @scenario area=button_style
-     * @effects user_delete_modal_buttons_follow_danger_style
-     */
-    it('취소 버튼이 .btn .btn-secondary 표준 시맨틱으로 정렬되어 있다 (.btn 안에 disabled 시각 처리 포함)', () => {
+    it('취소 버튼에 disabled:opacity-50 disabled:cursor-not-allowed가 있어야 한다', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
-      const footerDiv = { children: deleteModal.props.footer };
+      const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const cancelButton = footerDiv.children[0];
 
-      // .btn CSS 시맨틱이 disabled:opacity-50 disabled:cursor-not-allowed 를 흡수.
-      // 호출처는 시맨틱 클래스만 명시하면 disabled 시각 처리가 자동 적용된다.
-      expect(cancelButton.props.className).toContain('btn');
-      expect(cancelButton.props.className).toContain('btn-secondary');
+      expect(cancelButton.props.className).toContain('disabled:opacity-50');
+      expect(cancelButton.props.className).toContain('disabled:cursor-not-allowed');
     });
 
-    /**
-     * @scenario area=button_style
-     * @effects user_delete_modal_buttons_follow_danger_style
-     */
     it('삭제 버튼은 bg-red-600 스타일이어야 한다 (위험 작업)', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
-      // 취소·삭제 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
-      const footerDiv = { children: deleteModal.props.footer };
+      const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
       expect(deleteButton.props.className).toContain('bg-red-600');

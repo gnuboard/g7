@@ -12,22 +12,11 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import fs from 'fs';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
-import { makeHarnessModal } from './harnessModal';
-
-// 엔진(코어)은 저장소 루트의 react 를, 진짜 Modal 은 이 템플릿 node_modules 의 react 를 읽어 사본이 둘이 된다 — 이 파일에서만
-// 템플릿 쪽 react 를 루트 사본으로 바꿔 낀다(productFormRouteSwitchInputResidue.test.tsx 와 같은 방식)
-vi.mock('react', async () => {
-  const p = await import('path');
-  const u = await import('url');
-  const dir = p.dirname(u.fileURLToPath(import.meta.url));
-
-  return import(/* @vite-ignore */ u.pathToFileURL(p.resolve(dir, '../../../../../node_modules/react/index.js')).href);
-});
 
 // ==============================
 // 실제 partial JSON 로드
@@ -94,12 +83,7 @@ const TestInput: React.FC<any> = ({
     className={className}
     name={name}
     value={value}
-    // 모달에는 체크박스가 둘이다 — 코어 호환성 강제(amber 계열)와 검색 인덱스 재생성(blue 계열).
-    // 모든 checkbox 에 같은 testid 를 붙이면 getByTestId 가 "multiple elements" 로 실패하므로
-    // force 쪽만 식별한다 (stub 이 받는 props 중 둘을 구분할 수 있는 것은 className 뿐).
-    data-testid={
-      type === 'checkbox' && String(className ?? '').includes('amber') ? 'force-checkbox' : undefined
-    }
+    data-testid={type === 'checkbox' ? 'force-checkbox' : undefined}
   />
 );
 const TestLabel: React.FC<any> = ({ className, children }) => (
@@ -110,9 +94,12 @@ const TestA: React.FC<any> = ({ href, target, className, children }) => (
     {children}
   </a>
 );
-// 진짜 Modal — 취소·진행 단추가 고정 하단(props.footer)에 있다. 진행 단추의 disabled 는 창을 연 뒤 바뀌는
-// `_global.pluginForceUpdate` 를 읽으므로, 고정 하단이 Modal 노드의 데이터 컨텍스트로 그려지는지가 곧 이 시험의 대상이다(#869 P1)
-const TestModal = makeHarnessModal({ forceOpen: true });
+const TestModal: React.FC<any> = ({ title, children }) => (
+  <div role="dialog">
+    <h2>{title}</h2>
+    {children}
+  </div>
+);
 const TestFragment: React.FC<any> = ({ children }) => <>{children}</>;
 
 function setupRegistry(): ComponentRegistry {
@@ -183,8 +170,7 @@ function buildLayout(initGlobal: Record<string, any>) {
   return {
     version: '1.0.0',
     layout_name: 'plugin_modal_force_test',
-    // 진행 단추는 화면별 처리 미리보기가 준비(ready)된 뒤에만 풀린다(#888) — 이 시험은 force 축만 본다.
-    initGlobal: { layoutPreviewState: 'ready', ...initGlobal },
+    initGlobal,
     components: [
       {
         id: 'host',
@@ -212,8 +198,6 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     if (testUtils) testUtils.cleanup();
   });
 
-  // @scenario core_compat=incompatible
-  // @effects incompatible_update_shows_force_checkbox
   it('is_compatible=false 일 때 호환성 안내 패널과 force 체크박스가 렌더된다', async () => {
     testUtils = createLayoutTest(
       buildLayout({
@@ -230,6 +214,10 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
         pluginForceUpdate: false,
         pluginUpdateError: null,
         isPluginUpdating: false,
+        pluginLayoutStrategy: 'overwrite',
+        hasModifiedPluginLayouts: false,
+        modifiedPluginLayoutsCount: 0,
+        modifiedPluginLayouts: [],
         updateChangelog: [],
       }),
       { translations, locale: 'ko', componentRegistry: registry },
@@ -246,17 +234,15 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     expect(checkbox.checked).toBe(false);
   });
 
-  // 진행 버튼은 amber-700 클래스로 식별(흰 글자 대비 4.5:1 — amber-600 은 3.19) (텍스트는 $t: 키 또는 번역됨에 따라 달라짐)
+  // 진행 버튼은 amber-600 클래스로 식별 (텍스트는 $t: 키 또는 번역됨에 따라 달라짐)
   function getConfirmButton(): HTMLButtonElement | null {
     const buttons = Array.from(document.querySelectorAll('button'));
     return (
-      (buttons.find(b => b.className.includes('bg-amber-700')) as HTMLButtonElement) ||
+      (buttons.find(b => b.className.includes('bg-amber-600')) as HTMLButtonElement) ||
       null
     );
   }
 
-  // @scenario core_compat=incompatible
-  // @effects force_unchecked_blocks_confirm
   it('is_compatible=false + force 미체크 시 진행 버튼이 disabled', async () => {
     testUtils = createLayoutTest(
       buildLayout({
@@ -271,6 +257,7 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
         },
         pluginForceUpdate: false,
         isPluginUpdating: false,
+        pluginLayoutStrategy: 'overwrite',
       }),
       { translations, locale: 'ko', componentRegistry: registry },
     );
@@ -281,8 +268,6 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     expect(button!.disabled).toBe(true);
   });
 
-  // @scenario core_compat=incompatible
-  // @effects force_checked_enables_confirm
   it('is_compatible=false + force 체크 시 진행 버튼이 enabled', async () => {
     testUtils = createLayoutTest(
       buildLayout({
@@ -297,6 +282,7 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
         },
         pluginForceUpdate: true,
         isPluginUpdating: false,
+        pluginLayoutStrategy: 'overwrite',
       }),
       { translations, locale: 'ko', componentRegistry: registry },
     );
@@ -307,45 +293,6 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     expect(button!.disabled).toBe(false);
   });
 
-  /**
-   * 창을 연 뒤에 체크하면 고정 하단의 진행 단추가 그 자리에서 풀린다(#869 P1).
-   *
-   * 고정 하단은 Modal 이 자기 렌더러로 그린다. 종전에는 빈 데이터 컨텍스트로 그려 `{{_global.pluginForceUpdate}}`
-   * 같은 렌더 바인딩이 늘 비어 있었다 — 창을 열 때 값으로 굳거나 비어 체크해도 단추가 그대로였다.
-   */
-  // @scenario core_compat=incompatible
-  // @effects modal_footer_reads_modal_node_context
-  it('창을 연 뒤 force 를 체크하면 고정 하단의 진행 버튼이 그 자리에서 풀린다', async () => {
-    testUtils = createLayoutTest(
-      buildLayout({
-        selectedPlugin: {
-          identifier: 'p',
-          name: '결제',
-          version: '1.0.0',
-          latest_version: '2.0.0',
-          is_compatible: false,
-          required_core_version: '>=7.5.0',
-          current_core_version: '7.0.0',
-        },
-        pluginForceUpdate: false,
-        isPluginUpdating: false,
-      }),
-      { translations, locale: 'ko', componentRegistry: registry },
-    );
-    await testUtils.render();
-
-    expect(getConfirmButton()!.disabled).toBe(true);
-    // 고정 하단에 그려졌는지 — 본문 스크롤 영역이 아니라 바닥 줄에 있다
-    expect(getConfirmButton()!.closest('.modal-footer-bar')).not.toBeNull();
-
-    testUtils.setState('pluginForceUpdate', true, 'global');
-    await testUtils.rerender();
-
-    expect(getConfirmButton()!.disabled, '고정 하단이 창을 연 시점 값에 묶였습니다').toBe(false);
-  });
-
-  // @scenario core_compat=compatible
-  // @effects compatible_update_skips_force_checkbox
   it('is_compatible=true 일 때 호환성 패널/체크박스가 렌더되지 않고 진행 버튼 enabled', async () => {
     testUtils = createLayoutTest(
       buildLayout({
@@ -358,6 +305,7 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
         },
         pluginForceUpdate: false,
         isPluginUpdating: false,
+        pluginLayoutStrategy: 'overwrite',
       }),
       { translations, locale: 'ko', componentRegistry: registry },
     );
@@ -371,12 +319,10 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     expect(button!.disabled).toBe(false);
   });
 
-  // @scenario core_compat=incompatible
-  // @effects confirm_sends_force_in_update_body
   it('진행 버튼 actions에 force 바인딩이 apiCall body 에 포함되어 있다', () => {
     // partial JSON 구조 검증 — sequence 내부 apiCall body.force 값
-    // 취소·진행 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
-    const confirmBtn = modalPartial.props.footer[1];
+    const buttonsRow = modalPartial.children[modalPartial.children.length - 1];
+    const confirmBtn = buttonsRow.children[1];
     expect(confirmBtn.name).toBe('Button');
 
     const sequence = confirmBtn.actions[0];
@@ -392,8 +338,6 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     );
   });
 
-  // @scenario core_compat=incompatible
-  // @effects force_checkbox_toggles_global_flag
   it('체크박스 클릭 액션이 _global.pluginForceUpdate 를 토글한다', () => {
     // partial 구조에서 체크박스 onChange 핸들러가 setState target=global, pluginForceUpdate 토글인지 검증
     function findCheckbox(node: any): any | null {

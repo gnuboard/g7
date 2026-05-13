@@ -9,9 +9,7 @@ use App\Contracts\Extension\StorageInterface;
 use Mockery;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Models\PageAttachment;
-use Modules\Sirsoft\Page\Services\PageAttachmentService;
 use Modules\Sirsoft\Page\Tests\FeatureTestCase;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 공개 페이지 API 테스트
@@ -25,8 +23,6 @@ class PublicPageControllerTest extends FeatureTestCase
 {
     /**
      * 테스트 환경 설정
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -41,49 +37,24 @@ class PublicPageControllerTest extends FeatureTestCase
         $storageMock->shouldReceive('deleteDirectory')->andReturn(true);
         $storageMock->shouldReceive('getDisk')->andReturn('local');
         $storageMock->shouldReceive('url')->andReturn(null);
-        // 파일 서빙(다운로드/미리보기)은 200 스트리밍 응답을 반환 — 권한 게이트 검증용
-        $storageMock->shouldReceive('response')->andReturnUsing(
-            fn () => new StreamedResponse(fn () => print ('file content'), 200)
-        );
-        // 다운로드 통로는 `download()` 프리미티브(첨부 disposition)를 쓴다 — 코어 첨부 통로와 같은 형태 (G3 회차 15)
-        $storageMock->shouldReceive('download')->andReturnUsing(
-            fn () => new StreamedResponse(fn () => print ('file content'), 200, ['Content-Type' => 'application/pdf'])
-        );
+        $storageMock->shouldReceive('response')->andReturn(null);
         $this->app->instance(StorageInterface::class, $storageMock);
-
-        // PageAttachmentService 는 contextual binding 으로 모듈 도메인 Storage 를 받으므로
-        // (AbstractExtensionServiceProvider::$storageServices), 전역 instance 만으로는
-        // 오버라이드되지 않는다. 해당 서비스에도 mock 을 명시적으로 주입한다.
-        $this->app->when(PageAttachmentService::class)
-            ->needs(StorageInterface::class)
-            ->give(fn () => $storageMock);
     }
 
     /**
      * 테스트 정리
-     *
-     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
         Page::where('slug', 'like', 'test-%')->forceDelete();
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 
     // ─── 슬러그 조회 ──────────────────────────────────
 
     /**
      * 발행된 페이지를 슬러그로 조회할 수 있는지 확인
-     *
-     * @scenario viewer=guest, published=published
-     *
-     * @effects guest_sees_published_page
-     *
-     * @return void 반환값 없음
      */
     public function test_public_can_view_published_page_by_slug(): void
     {
@@ -109,12 +80,6 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 미발행 페이지 슬러그로 조회 시 404를 반환하는지 확인
-     *
-     * @scenario viewer=guest, published=unpublished
-     *
-     * @effects guest_gets_404_for_unpublished_page
-     *
-     * @return void 반환값 없음
      */
     public function test_unpublished_page_returns_404(): void
     {
@@ -134,10 +99,6 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 존재하지 않는 슬러그로 조회 시 404를 반환하는지 확인
-     *
-     * @scenario viewer=guest
-     *
-     * @return void 반환값 없음
      */
     public function test_nonexistent_slug_returns_404(): void
     {
@@ -146,190 +107,8 @@ class PublicPageControllerTest extends FeatureTestCase
         $response->assertStatus(404);
     }
 
-    // ─── 미발행 페이지 관리자 미리보기 ────────
-
-    /**
-     * 페이지 조회 권한(pages.read) 관리자는 미발행 페이지를 미리볼 수 있는지 확인
-     *
-     * @scenario viewer=page_reader, published=unpublished
-     *
-     * @effects page_reader_admin_previews_unpublished_page_with_200, preview_response_exposes_is_preview_true_only_for_unpublished_preview
-     *
-     * @return void 반환값 없음
-     */
-    public function test_admin_with_read_permission_can_preview_unpublished_page(): void
-    {
-        $admin = $this->createAdminUser(['sirsoft-page.pages.read']);
-
-        Page::factory()->create([
-            'slug' => 'test-draft-preview',
-            'published' => false,
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
-
-        $response = $this->actingAs($admin)
-            ->getJson('/api/modules/sirsoft-page/pages/test-draft-preview');
-
-        $response->assertStatus(200)
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.slug', 'test-draft-preview')
-            ->assertJsonPath('data.is_preview', true);
-    }
-
-    /**
-     * 미발행 미리보기 응답의 첨부 URL이 공개 hash 라우트인지 확인
-     *
-     * 썸네일 <img>·다운로드는 브라우저 직접 GET 이라 토큰을 실을 수 없어 인증 라우트로
-     * 두면 401 로 깨진다. 게시판·이커머스 표준과 동일하게 공개 hash 라우트로 단일화하고,
-     * 미발행 콘텐츠 보안은 다운로드 권한 게이트(공개 라우트 내부)로 담당한다.
-     *
-     * @scenario viewer=page_reader, published=unpublished
-     *
-     * @effects preview_attachments_use_public_hash_url
-     *
-     * @return void 반환값 없음
-     */
-    public function test_admin_preview_unpublished_page_attachments_use_public_url(): void
-    {
-        $admin = $this->createAdminUser(['sirsoft-page.pages.read']);
-
-        $page = Page::factory()->create([
-            'slug' => 'test-draft-preview-attach',
-            'published' => false,
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
-
-        // 이미지 첨부 — preview_url 은 이미지에만 생성되므로 image mime 사용
-        PageAttachment::create([
-            'page_id' => $page->id,
-            'original_filename' => 'draft.png',
-            'stored_filename' => 'stored-draft.png',
-            'disk' => 'local',
-            'path' => 'test/draft.png',
-            'mime_type' => 'image/png',
-            'size' => 1024,
-            'collection' => 'attachments',
-            'order' => 1,
-            'created_by' => $admin->id,
-        ]);
-
-        $response = $this->actingAs($admin)
-            ->getJson('/api/modules/sirsoft-page/pages/test-draft-preview-attach');
-
-        $response->assertStatus(200);
-        $downloadUrl = $response->json('data.attachments.0.download_url');
-        $previewUrl = $response->json('data.attachments.0.preview_url');
-        $this->assertStringContainsString('/pages/attachment/', $downloadUrl);
-        $this->assertStringContainsString('/pages/attachment/', $previewUrl);
-        $this->assertStringNotContainsString('/admin/attachments/', $downloadUrl);
-        $this->assertStringNotContainsString('/admin/attachments/', $previewUrl);
-    }
-
-    /**
-     * 페이지 권한이 없는 일반 회원은 미발행 페이지를 미리볼 수 없음(404)
-     *
-     * @scenario viewer=member, published=unpublished
-     *
-     * @effects member_gets_404_for_unpublished_page
-     *
-     * @return void 반환값 없음
-     */
-    public function test_non_admin_user_cannot_preview_unpublished_page(): void
-    {
-        $author = $this->createAdminUser([]);
-        $member = $this->createUser();
-
-        Page::factory()->create([
-            'slug' => 'test-draft-member',
-            'published' => false,
-            'created_by' => $author->id,
-            'updated_by' => $author->id,
-        ]);
-
-        $response = $this->actingAs($member)
-            ->getJson('/api/modules/sirsoft-page/pages/test-draft-member');
-
-        $response->assertStatus(404);
-    }
-
-    /**
-     * pages.read 권한이 없는 관리자(다른 모듈 admin)는 미발행 페이지를 미리볼 수 없음(404)
-     *
-     * @scenario viewer=other_admin, published=unpublished
-     *
-     * @effects other_admin_without_pages_read_gets_404_for_unpublished_page
-     *
-     * @return void 반환값 없음
-     */
-    public function test_admin_without_pages_read_cannot_preview_unpublished_page(): void
-    {
-        // sirsoft-page.pages.read 가 아닌 다른 admin 권한만 보유
-        $otherAdmin = $this->createAdminUser(['sirsoft-other.things.read']);
-
-        Page::factory()->create([
-            'slug' => 'test-draft-other-admin',
-            'published' => false,
-            'created_by' => $otherAdmin->id,
-            'updated_by' => $otherAdmin->id,
-        ]);
-
-        $response = $this->actingAs($otherAdmin)
-            ->getJson('/api/modules/sirsoft-page/pages/test-draft-other-admin');
-
-        $response->assertStatus(404);
-    }
-
-    /**
-     * 발행된 페이지의 첨부 URL은 관리자 요청이어도 공개용 라우트를 유지하는지 확인
-     *
-     * @scenario viewer=page_reader, published=published
-     *
-     * @effects published_page_attachments_use_public_hash_url_even_for_admin
-     *
-     * @return void 반환값 없음
-     */
-    public function test_published_page_attachments_use_public_url_even_for_admin(): void
-    {
-        $admin = $this->createAdminUser(['sirsoft-page.pages.read']);
-
-        $page = Page::factory()->published()->create([
-            'slug' => 'test-published-admin-attach',
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
-
-        PageAttachment::create([
-            'page_id' => $page->id,
-            'original_filename' => 'public.pdf',
-            'stored_filename' => 'stored-public.pdf',
-            'disk' => 'local',
-            'path' => 'test/public.pdf',
-            'mime_type' => 'application/pdf',
-            'size' => 1024,
-            'collection' => 'attachments',
-            'order' => 1,
-            'created_by' => $admin->id,
-        ]);
-
-        $response = $this->actingAs($admin)
-            ->getJson('/api/modules/sirsoft-page/pages/test-published-admin-attach');
-
-        $response->assertStatus(200)
-            ->assertJsonPath('data.is_preview', false);
-        $downloadUrl = $response->json('data.attachments.0.download_url');
-        $this->assertStringContainsString('/pages/attachment/', $downloadUrl);
-    }
-
     /**
      * 발행된 페이지 조회 시 첨부파일 목록이 포함되는지 확인
-     *
-     * @scenario viewer=guest, published=published
-     *
-     * @effects guest_sees_published_page
-     *
-     * @return void 반환값 없음
      */
     public function test_published_page_includes_attachments(): void
     {
@@ -354,7 +133,7 @@ class PublicPageControllerTest extends FeatureTestCase
             'created_by' => $admin->id,
         ]);
 
-        $response = $this->getJson('/api/modules/sirsoft-page/pages/test-page-with-attach');
+        $response = $this->getJson("/api/modules/sirsoft-page/pages/test-page-with-attach");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -371,10 +150,6 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 존재하지 않는 해시로 공개 다운로드 시 404를 반환하는지 확인
-     *
-     * @scenario serving_type=download, viewer=guest
-     *
-     * @return void 반환값 없음
      */
     public function test_public_download_nonexistent_hash_returns_404(): void
     {
@@ -385,12 +160,6 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 미발행 페이지의 첨부파일 다운로드 시 404를 반환하는지 확인
-     *
-     * @scenario serving_type=download, published=unpublished, viewer=guest
-     *
-     * @effects download_unpublished_blocked_404_for_guest
-     *
-     * @return void 반환값 없음
      */
     public function test_public_download_unpublished_page_attachment_returns_404(): void
     {
@@ -423,255 +192,11 @@ class PublicPageControllerTest extends FeatureTestCase
 
     /**
      * 존재하지 않는 해시로 공개 미리보기 시 404를 반환하는지 확인
-     *
-     * @scenario serving_type=preview, viewer=guest
-     *
-     * @effects preview_nonexistent_hash_returns_404
-     *
-     * @return void 반환값 없음
      */
     public function test_public_preview_nonexistent_hash_returns_404(): void
     {
         $response = $this->getJson('/api/modules/sirsoft-page/pages/attachment/abcdefghijkl/preview');
 
         $response->assertStatus(404);
-    }
-
-    // ─── 썸네일(preview) 서빙 매트릭스 (KVE-2026-1914 이후: 미발행은 게이트) ───
-
-    /**
-     * 미발행 페이지의 이미지 첨부 미리보기(썸네일)는 비로그인에게 404 로 차단된다.
-     *
-     * KVE-2026-1914 이전에는 공개 hash 서빙 트레이드오프로 200 이었으나, 이후
-     * preview 도 download 와 동일한 발행상태 게이트를 적용한다. 권한자 화면의
-     * <img> 썸네일은 응답 직렬화 시점에 발급되는 한시 서명 URL 이 담당한다
-     * (PublicPageAttachmentAccessTest 서명 축 참조).
-     *
-     * @scenario serving_type=preview, published=unpublished, viewer=guest
-     *
-     * @effects preview_unpublished_blocked_404_for_guest
-     *
-     * @return void 반환값 없음
-     */
-    public function test_public_preview_unpublished_image_blocked_for_guest(): void
-    {
-        $admin = $this->createAdminUser([]);
-
-        $page = Page::factory()->create([
-            'slug' => 'test-draft-preview-guest',
-            'published' => false,
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
-
-        $attachment = PageAttachment::create([
-            'page_id' => $page->id,
-            'original_filename' => 'draft.png',
-            'stored_filename' => 'stored-draft.png',
-            'disk' => 'local',
-            'path' => 'test/draft.png',
-            'mime_type' => 'image/png',
-            'size' => 1024,
-            'collection' => 'attachments',
-            'order' => 1,
-            'created_by' => $admin->id,
-        ]);
-
-        $response = $this->getJson("/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}/preview");
-
-        $response->assertStatus(404);
-    }
-
-    /**
-     * 발행 페이지의 이미지 첨부 미리보기(썸네일)는 200을 반환한다.
-     *
-     * @scenario serving_type=preview, published=published, viewer=guest
-     *
-     * @effects preview_published_returns_200_for_any_viewer
-     *
-     * @return void 반환값 없음
-     */
-    public function test_public_preview_published_image_returns_200(): void
-    {
-        $admin = $this->createAdminUser([]);
-
-        $page = Page::factory()->published()->create([
-            'slug' => 'test-pub-preview',
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
-
-        $attachment = PageAttachment::create([
-            'page_id' => $page->id,
-            'original_filename' => 'pub.png',
-            'stored_filename' => 'stored-pub.png',
-            'disk' => 'local',
-            'path' => 'test/pub.png',
-            'mime_type' => 'image/png',
-            'size' => 1024,
-            'collection' => 'attachments',
-            'order' => 1,
-            'created_by' => $admin->id,
-        ]);
-
-        $response = $this->getJson("/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}/preview");
-
-        $response->assertStatus(200);
-    }
-
-    // ─── 다운로드 권한 게이트 매트릭스 (별건: 관리자 상세 다운로드 401 회귀) ───
-
-    /**
-     * 미발행 페이지 첨부 다운로드는 비로그인에게 404로 차단된다.
-     *
-     * @scenario serving_type=download, published=unpublished, viewer=guest
-     *
-     * @effects download_unpublished_blocked_404_for_guest
-     *
-     * @return void 반환값 없음
-     */
-    public function test_download_unpublished_attachment_blocked_for_guest(): void
-    {
-        $admin = $this->createAdminUser([]);
-
-        $page = Page::factory()->create([
-            'slug' => 'test-dl-guest',
-            'published' => false,
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
-
-        $attachment = PageAttachment::create([
-            'page_id' => $page->id,
-            'original_filename' => 'secret.pdf',
-            'stored_filename' => 'stored-secret.pdf',
-            'disk' => 'local',
-            'path' => 'test/secret.pdf',
-            'mime_type' => 'application/pdf',
-            'size' => 1024,
-            'collection' => 'attachments',
-            'order' => 1,
-            'created_by' => $admin->id,
-        ]);
-
-        $response = $this->getJson("/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}");
-
-        $response->assertStatus(404);
-    }
-
-    /**
-     * 미발행 페이지 첨부 다운로드는 권한 없는 일반 회원에게 404로 차단된다.
-     *
-     * @scenario serving_type=download, published=unpublished, viewer=member
-     *
-     * @effects download_unpublished_blocked_404_for_member
-     *
-     * @return void 반환값 없음
-     */
-    public function test_download_unpublished_attachment_blocked_for_member(): void
-    {
-        $admin = $this->createAdminUser([]);
-        $member = $this->createUser();
-
-        $page = Page::factory()->create([
-            'slug' => 'test-dl-member',
-            'published' => false,
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
-
-        $attachment = PageAttachment::create([
-            'page_id' => $page->id,
-            'original_filename' => 'secret.pdf',
-            'stored_filename' => 'stored-secret.pdf',
-            'disk' => 'local',
-            'path' => 'test/secret.pdf',
-            'mime_type' => 'application/pdf',
-            'size' => 1024,
-            'collection' => 'attachments',
-            'order' => 1,
-            'created_by' => $admin->id,
-        ]);
-
-        $response = $this->actingAs($member)
-            ->getJson("/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}");
-
-        $response->assertStatus(404);
-    }
-
-    /**
-     * 미발행 페이지 첨부 다운로드는 pages.read 권한 관리자에게 200(스트리밍)을 허용한다.
-     *
-     * @scenario serving_type=download, published=unpublished, viewer=page_reader_admin
-     *
-     * @effects download_unpublished_allowed_200_for_page_reader_admin
-     *
-     * @return void 반환값 없음
-     */
-    public function test_download_unpublished_attachment_allowed_for_admin_with_read(): void
-    {
-        $admin = $this->createAdminUser(['sirsoft-page.pages.read']);
-
-        $page = Page::factory()->create([
-            'slug' => 'test-dl-admin',
-            'published' => false,
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
-
-        $attachment = PageAttachment::create([
-            'page_id' => $page->id,
-            'original_filename' => 'draft.pdf',
-            'stored_filename' => 'stored-draft.pdf',
-            'disk' => 'local',
-            'path' => 'test/draft.pdf',
-            'mime_type' => 'application/pdf',
-            'size' => 1024,
-            'collection' => 'attachments',
-            'order' => 1,
-            'created_by' => $admin->id,
-        ]);
-
-        $response = $this->actingAs($admin)
-            ->get("/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}");
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * 발행 페이지 첨부 다운로드는 누구나 200(스트리밍)을 허용한다.
-     *
-     * @scenario serving_type=download, published=published, viewer=guest
-     *
-     * @effects download_published_returns_200_for_guest
-     *
-     * @return void 반환값 없음
-     */
-    public function test_download_published_attachment_allowed_for_guest(): void
-    {
-        $admin = $this->createAdminUser([]);
-
-        $page = Page::factory()->published()->create([
-            'slug' => 'test-dl-pub',
-            'created_by' => $admin->id,
-            'updated_by' => $admin->id,
-        ]);
-
-        $attachment = PageAttachment::create([
-            'page_id' => $page->id,
-            'original_filename' => 'pub.pdf',
-            'stored_filename' => 'stored-pub.pdf',
-            'disk' => 'local',
-            'path' => 'test/pub.pdf',
-            'mime_type' => 'application/pdf',
-            'size' => 1024,
-            'collection' => 'attachments',
-            'order' => 1,
-            'created_by' => $admin->id,
-        ]);
-
-        $response = $this->get("/api/modules/sirsoft-page/pages/attachment/{$attachment->hash}");
-
-        $response->assertStatus(200);
     }
 }

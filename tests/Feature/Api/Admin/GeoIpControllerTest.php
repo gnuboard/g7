@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Services\GeoIpDatabaseService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Testing\TestResponse;
 use Mockery;
 use Tests\TestCase;
 
@@ -28,11 +27,6 @@ class GeoIpControllerTest extends TestCase
 
     private string $token;
 
-    /**
-     * 설정 수정 권한을 가진 관리자와 그 토큰을 준비한다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,18 +35,10 @@ class GeoIpControllerTest extends TestCase
         $this->token = $this->admin->createToken('test-token')->plainTextToken;
     }
 
-    /**
-     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 
     /**
@@ -107,38 +93,20 @@ class GeoIpControllerTest extends TestCase
     /**
      * Bearer 토큰 헤더를 포함하여 API 엔드포인트를 호출합니다.
      *
-     * @return TestResponse HTTP 응답
+     * @return \Illuminate\Testing\TestResponse HTTP 응답
      */
-    private function postUpdate(): TestResponse
+    private function postUpdate(): \Illuminate\Testing\TestResponse
     {
         return $this->withHeader('Authorization', 'Bearer '.$this->token)
             ->postJson('/api/admin/settings/geoip/update');
     }
 
-    /**
-     * 토큰 없이 갱신을 요청하면 401 로 거절된다.
-     *
-     * @scenario case=unauthenticated
-     *
-     * @effects geoip_update_requires_authentication
-     *
-     * @return void 반환값 없음
-     */
     public function test_unauthenticated_request_returns_401(): void
     {
         $response = $this->postJson('/api/admin/settings/geoip/update');
         $response->assertStatus(401);
     }
 
-    /**
-     * 서비스가 라이선스 키 없음 상태를 돌려주면 400 과 success=false 로 응답한다.
-     *
-     * @scenario case=missing_license_key
-     *
-     * @effects geoip_update_missing_license_key_returns_400
-     *
-     * @return void 반환값 없음
-     */
     public function test_missing_license_key_returns_400(): void
     {
         $mockService = Mockery::mock(GeoIpDatabaseService::class);
@@ -158,15 +126,6 @@ class GeoIpControllerTest extends TestCase
         $this->assertFalse($response->json('success'));
     }
 
-    /**
-     * 갱신에 성공하면 200 과 함께 서비스가 돌려준 데이터(파일 크기 등)를 그대로 싣는다.
-     *
-     * @scenario case=updated
-     *
-     * @effects geoip_update_success_returns_200_with_data
-     *
-     * @return void 반환값 없음
-     */
     public function test_successful_update_returns_200_with_data(): void
     {
         $mockService = Mockery::mock(GeoIpDatabaseService::class);
@@ -193,15 +152,6 @@ class GeoIpControllerTest extends TestCase
         $this->assertEquals(62_000_000, $response->json('data.file_size_bytes'));
     }
 
-    /**
-     * 서비스가 라이선스 키 인증 실패 상태를 돌려주면 401 로 응답한다.
-     *
-     * @scenario case=license_unauthorized
-     *
-     * @effects geoip_update_invalid_license_returns_401
-     *
-     * @return void 반환값 없음
-     */
     public function test_unauthorized_status_returns_401_code(): void
     {
         $mockService = Mockery::mock(GeoIpDatabaseService::class);
@@ -220,15 +170,6 @@ class GeoIpControllerTest extends TestCase
         $response->assertStatus(401);
     }
 
-    /**
-     * 서비스가 다운로드 실패 상태를 돌려주면 500 으로 응답한다.
-     *
-     * @scenario case=download_failed
-     *
-     * @effects geoip_update_download_failure_returns_500
-     *
-     * @return void 반환값 없음
-     */
     public function test_download_failed_returns_500_code(): void
     {
         $mockService = Mockery::mock(GeoIpDatabaseService::class);

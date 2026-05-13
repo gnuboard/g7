@@ -2,83 +2,8 @@
 
 namespace App\Seo;
 
-use App\Support\AssetUrl;
-use App\Support\SiteUrl;
-use App\Thumbnails\ThumbnailUrl;
-
 class ComponentHtmlMapper
 {
-    /**
-     * 봇에게 나가는 HTML 의 **사이트 내부 링크**에 마운트 접두사를 붙입니다.
-     *
-     * 화면(React)은 접두사를 붙이는 자리를 템플릿 `A` 컴포넌트 한 곳으로 모았는데,
-     * 봇 경로는 그 컴포넌트를 **거치지 않는다** — `component_map` 이 `A` 를
-     * `{"tag":"a"}` 로 치환하고 `href` 를 날 문자열로 전개하기 때문이다. 그래서
-     * 하위 폴더 배치(`https://host/g7/`)에서는 같은 레이아웃의 같은 링크가 화면에서는
-     * 사이트 안을, 봇에게는 **사이트 밖**을 가리켰다. 오류가 나지 않으므로 증상은
-     * 검색 색인이 조용히 사이트 밖 주소로 쌓이는 것뿐이다.
-     *
-     * 루트 상대(`/…`)만 대상이다. 절대 URL·프로토콜 상대(`//`)·조각(`#`)·상대 경로는
-     * 사이트 경로가 아니므로 손대지 않는다. 이미 접두사를 가진 값도 그대로 둔다
-     * — 이 함수가 멱등이어야 소비 지점을 늘려도 이중 접두가 생기지 않는다.
-     *
-     * 그 규칙 자체는 `AssetUrl::sitePath()` 가 소유한다. 종전에는 같은 규칙이 이
-     * 파일 두 곳과 `SeoMetaResolver` 에 세 벌의 독립 사본으로 살아 있었고, 갈려도
-     * 오류가 나지 않아 대조할 장치가 없었다.
-     *
-     * @param  string  $href  해석이 끝난 링크 목적지
-     * @return string 접두사가 붙은 링크 목적지
-     */
-    private function siteHref(string $href): string
-    {
-        return AssetUrl::sitePath($href);
-    }
-
-    /**
-     * 봇에게 나가는 HTML 의 **자산 주소**(`src`)를 절대 URL 로 만듭니다.
-     *
-     * `url()` 을 쓰면 안 된다 — 그 헬퍼는 `config('app.url')` 전체(오리진 **+ 마운트
-     * 접두사**)를 앞에 붙이는데, 이 자리에 오는 값의 생산자가 이미 접두사를 실어 준다
-     * (`ProductImage::apiDownloadUrl()` 등이 `AssetUrl::basePrefix().'/api/…'` 를
-     * 돌려준다). 그래서 하위 폴더 배치에서 `https://host/g7/g7/api/…` 가 나가고,
-     * 그 주소는 404 다. 오류가 아니라 **이미지가 안 나오는 것**이 유일한 증상이라
-     * 봇 화면을 열어 보기 전에는 드러나지 않는다.
-     *
-     * 그렇다고 오리진만 붙이면 반대쪽이 깨진다 — 레이아웃이 리터럴로 적은 사이트
-     * 경로(`/images/logo.png`)에는 접두사를 붙일 주체가 여기밖에 없다. 두 입력이
-     * 같은 자리에 오므로 **접두사를 멱등으로 보정한 뒤 오리진을 붙인다**:
-     * 이미 접두사가 있으면 `siteHref()` 가 그대로 두고, 없으면 채운다.
-     *
-     * 그 규칙 자체는 `AssetUrl::siteAbsolute()` 가 소유하고, 절대 주소의 본체는 사이트 주소 기준
-     * `SiteUrl::absolute()`(`SeoUrl::absolute()` 와 같은 출처 — 요청 Host 비의존)다.
-     *
-     * @param  string  $value  해석이 끝난 자산 경로
-     * @return string 절대 URL (판정 대상이 아니면 원본 그대로)
-     */
-    private function siteAssetUrl(string $value): string
-    {
-        return AssetUrl::siteAbsolute($value);
-    }
-
-    /**
-     * SEO 렌더링 기준 뷰포트 폭 (px)
-     *
-     * 검색 봇은 데스크톱으로 간주하므로 responsive 오버라이드 매칭에 이 값을 사용합니다.
-     */
-    private const DESKTOP_VIEWPORT_WIDTH = 1024;
-
-    /**
-     * responsive 브레이크포인트 프리셋 → [min, max] 폭 범위 (px)
-     *
-     * React ResponsiveManager.ts 의 BREAKPOINT_PRESETS 와 동일한 값입니다.
-     */
-    private const BREAKPOINT_PRESETS = [
-        'mobile' => [0, 767],
-        'tablet' => [768, 1023],
-        'desktop' => [1024, PHP_INT_MAX],
-        'portable' => [0, 1023],
-    ];
-
     /**
      * 템플릿 제공 컴포넌트 매핑 (seo-config.json의 component_map)
      */
@@ -105,13 +30,7 @@ class ComponentHtmlMapper
     private array $attrMap = [
         'className' => 'class',
         'htmlFor' => 'for',
-        'srcSet' => 'srcset',
     ];
-
-    /**
-     * URL 을 담는 속성 — 평가할 때 「빈 바인딩 뒤 남은 부호 정리」를 하지 않는다(`/{{빈값}}` → `/`, 사람 화면 href 와 같음)
-     */
-    private const URL_ATTRS = ['href', 'src'];
 
     /**
      * 허용된 HTML 속성 목록 (seo-config.json의 allowed_attrs로 오버라이드 가능)
@@ -143,25 +62,9 @@ class ComponentHtmlMapper
     private array $fieldsContext = [];
 
     /**
-     * 사용자 작성 HTML 정화기 (raw 렌더 모드에서 지연 생성)
-     */
-    private ?HtmlSanitizer $htmlSanitizer = null;
-
-    /**
-     * `value` prop 을 텍스트로 승격하지 않는 태그 목록
-     *
-     * 폼 컨트롤의 `value` 는 현재 선택값(속성)이지 화면에 보이는 글자가 아닙니다.
-     * React 는 `<select>` 안에 `<option>` 라벨을 그리므로, 봇 화면에서만 `value` 가
-     * 글자로 노출되면(예: `<select>created_at_desc</select>`) 두 화면이 어긋나고
-     * 색인에도 내부 식별자가 섞입니다.
-     */
-    private const VALUE_NOT_TEXT_TAGS = ['select', 'option', 'input', 'textarea', 'progress', 'meter'];
-
-    /**
      * 템플릿 제공 컴포넌트 매핑을 설정합니다.
      *
      * @param  array  $componentMap  seo-config.json의 component_map
-     * @return void
      */
     public function setComponentMap(array $componentMap): void
     {
@@ -172,7 +75,6 @@ class ComponentHtmlMapper
      * 템플릿 제공 렌더 모드를 설정합니다.
      *
      * @param  array  $renderModes  seo-config.json의 render_modes
-     * @return void
      */
     public function setRenderModes(array $renderModes): void
     {
@@ -183,7 +85,6 @@ class ComponentHtmlMapper
      * 셀프 클로징 태그 목록을 설정합니다.
      *
      * @param  array  $selfClosing  seo-config.json의 self_closing
-     * @return void
      */
     public function setSelfClosing(array $selfClosing): void
     {
@@ -194,7 +95,6 @@ class ComponentHtmlMapper
      * 텍스트 추출 대상 props 키 목록을 설정합니다.
      *
      * @param  array  $textProps  seo-config.json의 text_props
-     * @return void
      */
     public function setTextProps(array $textProps): void
     {
@@ -205,7 +105,6 @@ class ComponentHtmlMapper
      * React→HTML 속성명 매핑을 설정합니다.
      *
      * @param  array  $attrMap  seo-config.json의 attr_map
-     * @return void
      */
     public function setAttrMap(array $attrMap): void
     {
@@ -216,7 +115,6 @@ class ComponentHtmlMapper
      * 허용된 HTML 속성 목록을 설정합니다.
      *
      * @param  array  $allowedAttrs  seo-config.json의 allowed_attrs
-     * @return void
      */
     public function setAllowedAttrs(array $allowedAttrs): void
     {
@@ -230,7 +128,6 @@ class ComponentHtmlMapper
      * props → seoVars → defaults 순서로 참조됩니다.
      *
      * @param  array  $seoVars  해석된 SEO 변수 (키 → 값)
-     * @return void
      */
     public function setSeoVars(array $seoVars): void
     {
@@ -241,7 +138,6 @@ class ComponentHtmlMapper
      * _global 표현식 해석 콜백을 설정합니다.
      *
      * @param  \Closure  $resolver  _global 경로를 해석하는 콜백 (string → ?string)
-     * @return void
      */
     public function setGlobalResolver(\Closure $resolver): void
     {
@@ -261,15 +157,6 @@ class ComponentHtmlMapper
         $html = '';
 
         foreach ($components as $component) {
-            // children 배열 내 문자열 = 텍스트 노드
-            // React DynamicRenderer 는 이 문자열을 그대로 반환한다(표현식·번역 미해석).
-            // SEO 가 여기서 표현식을 해석하면 반대 방향의 패리티 격차가 생기므로,
-            // 이스케이프만 하고 리터럴로 출력한다.
-            if (is_string($component)) {
-                $html .= e($component);
-
-                continue;
-            }
             if (! is_array($component)) {
                 continue;
             }
@@ -289,30 +176,27 @@ class ComponentHtmlMapper
      */
     private function renderComponent(array $component, array $context, ExpressionEvaluator $evaluator): string
     {
-        // Extension Point 주입 컴포넌트의 props를 평가 컨텍스트에 주입
-        // LayoutExtensionService가 호스트 props를 주입 컴포넌트 최상위 extensionPointProps로
-        // 부착하므로, 여기서 해석해 컨텍스트에 넣어야 {{extensionPointProps.xxx}}가 평가된다.
-        // $context는 값 전달이므로 이 노드의 서브트리에만 상속되고 형제로 새지 않는다
-        // (React DynamicRenderer의 extendedDataContext 전파와 동형).
-        // if/iteration 평가에도 이미 반영되어야 하므로 가장 먼저 처리한다.
-        $this->injectExtensionPointContext($component, $context, $evaluator);
-
-        // type: "iterator" → iteration 속성으로 변환 (React DynamicRenderer와 동일 매핑)
-        $component = $this->normalizeIteratorNode($component);
-
         // SEO는 데스크톱 뷰로 렌더링 (검색 봇 = 데스크톱)
-        // 데스크톱 폭에 매칭되는 responsive 오버라이드를 기본 속성에 병합
-        $component = $this->applyResponsiveOverrides($component);
+        // responsive.desktop 오버라이드를 기본 속성에 병합
+        if (isset($component['responsive']['desktop'])) {
+            $desktop = $component['responsive']['desktop'];
+            if (isset($desktop['props'])) {
+                $component['props'] = array_merge($component['props'] ?? [], $desktop['props']);
+            }
+            if (isset($desktop['if'])) {
+                $component['if'] = $desktop['if'];
+            }
+            if (isset($desktop['text'])) {
+                $component['text'] = $desktop['text'];
+            }
+        }
 
-        // 조건부 렌더링 (if / condition / conditions)
-        //
-        // iteration 이 있으면 여기서 끊지 않는다. 조건이 항목 변수(`{{user.is_active}}` 등)를
-        // 참조하면 이 시점 컨텍스트에는 그 변수가 없어 항상 거짓이 되고, 목록 전체가
-        // 사라진다. 항목별 컨텍스트에서 renderIteration 이 같은 조건을 다시 평가한다
-        // (iteration 만 제거한 정의를 넘기므로 `if` 는 그대로 남는다).
-        // React DynamicRenderer 와 동일한 순서 — 한쪽만 고치면 봇 화면에서만 목록이 빈다.
-        if (! isset($component['iteration']) && ! $this->shouldRender($component, $context, $evaluator)) {
-            return '';
+        // 조건부 렌더링 (if)
+        if (isset($component['if'])) {
+            $condition = $evaluator->evaluate($component['if'], $context);
+            if ($condition === '' || $condition === 'false' || $condition === '0') {
+                return '';
+            }
         }
 
         // 반복 렌더링 (iteration)
@@ -367,10 +251,9 @@ class ComponentHtmlMapper
         // navigate/openWindow 링크 자동 생성
         $linkAction = $this->extractLinkAction($component);
         if ($linkAction !== null) {
-            $newWindow = self::isNewWindowLink($linkAction['handler'], $linkAction['params']);
-            $href = $this->resolveNavigateHref($linkAction['params'], $context, $evaluator, $newWindow);
+            $href = $this->resolveNavigateHref($linkAction['params'], $context, $evaluator);
             if ($href !== null) {
-                $html = $this->applyNavigateLink($html, $tag, $href, $newWindow, $component);
+                $html = $this->applyNavigateLink($html, $tag, $href, $linkAction['handler'], $component);
             }
         }
 
@@ -378,390 +261,7 @@ class ComponentHtmlMapper
     }
 
     /**
-     * Extension Point 주입 컴포넌트의 props를 평가 컨텍스트에 주입합니다.
-     *
-     * LayoutExtensionService는 extension_point 호스트의 props를 주입 컴포넌트 최상위
-     * `extensionPointProps` 키로 부착합니다. 주입 컴포넌트는 `{{extensionPointProps.content}}`
-     * 형태로 그 값을 참조하므로, 렌더링 전에 표현식을 해석해 컨텍스트에 넣어야 합니다.
-     *
-     * 해석된 값은 이 노드와 그 자손 전체에 상속됩니다 (React DynamicRenderer가
-     * extendedDataContext를 자식에게 전달하는 동작과 동일).
-     *
-     * `extensionPointCallbacks`는 의도적으로 주입하지 않습니다 — SEO 파이프라인에는
-     * 액션 디스패처가 없고, 액션 배열을 컨텍스트에 넣으면 HTML에 JSON 파편이
-     * 노출될 수 있습니다.
-     *
-     * @param  array  $component  컴포넌트 정의 (해석 후 extensionPointProps 키 제거)
-     * @param  array  $context  데이터 컨텍스트 (해석된 값이 주입됨)
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return void
-     */
-    private function injectExtensionPointContext(array &$component, array &$context, ExpressionEvaluator $evaluator): void
-    {
-        if (! isset($component['extensionPointProps']) || ! is_array($component['extensionPointProps'])) {
-            return;
-        }
-
-        $context['extensionPointProps'] = $this->resolveAllProps(
-            $component['extensionPointProps'],
-            $context,
-            $evaluator
-        );
-
-        // iteration 재진입 시 항목별로 재해석되지 않도록 제거
-        // (React는 바깥 컨텍스트 기준 1회 해석 후 상속)
-        unset($component['extensionPointProps']);
-    }
-
-    /**
-     * `type: "iterator"` 노드를 `iteration` 속성 형태로 정규화합니다.
-     *
-     * React DynamicRenderer가 `{ type: "iterator", data, itemName, indexName }` 를
-     * `iteration: { source, item_var, index_var }` 로 변환하는 것과 동일합니다.
-     *
-     * @param  array  $component  컴포넌트 정의
-     * @return array 정규화된 컴포넌트 정의
-     */
-    private function normalizeIteratorNode(array $component): array
-    {
-        if (($component['type'] ?? null) !== 'iterator' || ! isset($component['data'])) {
-            return $component;
-        }
-
-        $component['iteration'] = [
-            'source' => $component['data'],
-            'item_var' => $component['itemName'] ?? 'item',
-            'index_var' => $component['indexName'] ?? null,
-        ];
-
-        unset($component['data'], $component['itemName'], $component['indexName']);
-
-        return $component;
-    }
-
-    /**
-     * 데스크톱 폭에 해당하는 responsive 오버라이드를 병합합니다.
-     *
-     * SEO는 검색 봇을 데스크톱 뷰포트로 간주하므로 `desktop` 프리셋과 데스크톱 폭
-     * (1024px 이상)을 포함하는 숫자 범위 키만 적용합니다. mobile/tablet/portable 은
-     * 데스크톱에서 매칭되지 않으므로 무시합니다.
-     *
-     * 오버라이드 항목은 React와 동일하게 props/if/text/children/iteration 입니다.
-     *
-     * @param  array  $component  컴포넌트 정의
-     * @return array 오버라이드가 병합된 컴포넌트 정의
-     */
-    private function applyResponsiveOverrides(array $component): array
-    {
-        if (empty($component['responsive']) || ! is_array($component['responsive'])) {
-            return $component;
-        }
-
-        $breakpoint = $this->matchingBreakpointKey($component['responsive']);
-        if ($breakpoint === null) {
-            return $component;
-        }
-
-        $override = $component['responsive'][$breakpoint];
-
-        if (isset($override['props'])) {
-            $component['props'] = array_merge($component['props'] ?? [], $override['props']);
-        }
-        foreach (['if', 'text', 'children', 'iteration'] as $key) {
-            if (isset($override[$key])) {
-                $component[$key] = $override[$key];
-            }
-        }
-
-        return $component;
-    }
-
-    /**
-     * 데스크톱 폭에 매칭되는 responsive 키를 하나만 고릅니다.
-     *
-     * React `ResponsiveManager::getMatchingKey()` 와 동일한 우선순위를 따릅니다:
-     * ① 커스텀 범위가 프리셋보다 우선 ② 좁은 범위가 넓은 범위보다 우선.
-     * 매칭되는 키를 전부 순차 병합하면 JSON 키 선언 순서에 따라 결과가 달라진다.
-     *
-     * @param  array  $responsive  responsive 오버라이드 맵
-     * @return string|null 적용할 키 (없으면 null)
-     */
-    private function matchingBreakpointKey(array $responsive): ?string
-    {
-        $matched = [];
-
-        foreach ($responsive as $breakpoint => $override) {
-            if (! is_array($override)) {
-                continue;
-            }
-
-            $range = $this->parseBreakpointRange((string) $breakpoint);
-            if ($range === null) {
-                continue;
-            }
-
-            [$min, $max] = $range;
-            if ($min > self::DESKTOP_VIEWPORT_WIDTH || $max < self::DESKTOP_VIEWPORT_WIDTH) {
-                continue;
-            }
-
-            $matched[] = [
-                'key' => (string) $breakpoint,
-                'isPreset' => isset(self::BREAKPOINT_PRESETS[$breakpoint]),
-                'width' => $max - $min,
-            ];
-        }
-
-        if ($matched === []) {
-            return null;
-        }
-
-        usort($matched, function (array $a, array $b): int {
-            if ($a['isPreset'] !== $b['isPreset']) {
-                return $a['isPreset'] ? 1 : -1;
-            }
-
-            return $a['width'] <=> $b['width'];
-        });
-
-        return $matched[0]['key'];
-    }
-
-    /**
-     * responsive 브레이크포인트 키를 [min, max] 범위로 파싱합니다.
-     *
-     * 프리셋(`desktop`/`portable`/`mobile`/`tablet`)과 `1024-`, `1280-1535`,
-     * `-599` 같은 숫자 범위를 지원합니다. `min > max` 인 잘못된 범위는 무시합니다
-     * (React `ResponsiveManager::parseRange()` 와 동일).
-     *
-     * @param  string  $breakpoint  브레이크포인트 키
-     * @return array{0: int, 1: int}|null [min, max] (파싱 불가 시 null)
-     */
-    private function parseBreakpointRange(string $breakpoint): ?array
-    {
-        if (isset(self::BREAKPOINT_PRESETS[$breakpoint])) {
-            return self::BREAKPOINT_PRESETS[$breakpoint];
-        }
-
-        if (! preg_match('/^(-?\d*)-(-?\d*)$/', $breakpoint, $matches)) {
-            return null;
-        }
-
-        $min = $matches[1] === '' ? 0 : (int) $matches[1];
-        $max = $matches[2] === '' ? PHP_INT_MAX : (int) $matches[2];
-
-        return $min <= $max ? [$min, $max] : null;
-    }
-
-    /**
-     * 컴포넌트를 렌더링해야 하는지 판정합니다 (if / condition / conditions).
-     *
-     * React RenderHelpers.evaluateRenderCondition과 동일한 우선순위를 따릅니다:
-     * `if` → `condition`(별칭) → `conditions`(AND/OR 그룹 또는 if/else 체인).
-     *
-     * @param  array  $component  컴포넌트 정의
-     * @param  array  $context  데이터 컨텍스트
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return bool 렌더링 대상이면 true
-     */
-    private function shouldRender(array $component, array $context, ExpressionEvaluator $evaluator): bool
-    {
-        return $this->isRenderable($component, $context, $evaluator);
-    }
-
-    /**
-     * 정의의 렌더 조건(`if` / `condition` / `conditions`)을 평가합니다 — 노드 렌더와 데이터 소스 판 선택이 함께 쓰는 규칙.
-     *
-     * 봇 화면 데이터 소스 해석기({@see DataSourceResolver})가 같은 id 의 조건부 판을 고를 때도 이 판정을 쓴다(엔진은
-     * 노드·데이터 소스 모두 `evaluateRenderCondition` 하나를 쓴다, 7.1.1).
-     *
-     * @param  array  $component  컴포넌트·데이터 소스 정의 (조건 키만 있어도 된다)
-     * @param  array  $context  데이터 컨텍스트
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return bool 조건을 만족하거나 조건이 없으면 true
-     */
-    public function isRenderable(array $component, array $context, ExpressionEvaluator $evaluator): bool
-    {
-        if (isset($component['if'])) {
-            return $this->evaluateBooleanExpression($component['if'], $context, $evaluator);
-        }
-
-        if (isset($component['condition'])) {
-            return $this->evaluateBooleanExpression($component['condition'], $context, $evaluator);
-        }
-
-        if (! isset($component['conditions'])) {
-            return true;
-        }
-
-        return $this->evaluateConditions($component['conditions'], $context, $evaluator);
-    }
-
-    /**
-     * conditions 속성(AND/OR 그룹 또는 if/else 체인)을 평가합니다.
-     *
-     * - 문자열 / `{and: [...]}` / `{or: [...]}` → 조건식 평가
-     * - `[{if: ...}, {if: ...}, {}]` → 하나라도 매칭되면 true (if 없는 항목은 else 브랜치)
-     * - 위 어느 형식도 아니면 **렌더링**한다 — React `evaluateRenderCondition()` 이 알 수 없는
-     *   형식에 대해 경고 후 true 를 반환하므로, 여기서 false 를 주면 봇 화면에서만 노드가 사라진다.
-     *
-     * @param  mixed  $conditions  conditions 속성 값
-     * @param  array  $context  데이터 컨텍스트
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return bool 평가 결과
-     */
-    private function evaluateConditions(mixed $conditions, array $context, ExpressionEvaluator $evaluator): bool
-    {
-        if ($this->isConditionExpression($conditions)) {
-            return $this->evaluateConditionExpression($conditions, $context, $evaluator);
-        }
-
-        if ($this->isConditionBranches($conditions)) {
-            foreach ($conditions as $branch) {
-                if (! is_array($branch)) {
-                    continue;
-                }
-                // if 없는 항목 = else 브랜치 (항상 매칭)
-                if (! isset($branch['if'])) {
-                    return true;
-                }
-                if ($this->evaluateConditionExpression($branch['if'], $context, $evaluator)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        // 알 수 없는 형식 → 렌더링 (React 동형)
-        return true;
-    }
-
-    /**
-     * 값이 단일 ConditionExpression(문자열 / `{and:[]}` / `{or:[]}`) 인지 판정합니다.
-     *
-     * React `ConditionEvaluator.isConditionExpression()` 과 동일한 판정입니다.
-     *
-     * @param  mixed  $value  판정 대상
-     * @return bool ConditionExpression 이면 true
-     */
-    private function isConditionExpression(mixed $value): bool
-    {
-        if (is_string($value) || is_bool($value)) {
-            return true;
-        }
-
-        if (is_array($value) && ! array_is_list($value)) {
-            return array_key_exists('and', $value) || array_key_exists('or', $value);
-        }
-
-        return false;
-    }
-
-    /**
-     * 값이 ConditionBranch[] 인지 판정합니다.
-     *
-     * 빈 배열은 브랜치 배열로 보지 않으며, 첫 항목에 `if` 또는 `then` 이 있어야 합니다
-     * (React `ConditionEvaluator.isConditionBranches()` 와 동일).
-     *
-     * @param  mixed  $value  판정 대상
-     * @return bool ConditionBranch[] 이면 true
-     */
-    private function isConditionBranches(mixed $value): bool
-    {
-        if (! is_array($value) || ! array_is_list($value) || $value === []) {
-            return false;
-        }
-
-        $first = $value[0];
-        if (! is_array($first)) {
-            return false;
-        }
-
-        return array_key_exists('if', $first) || array_key_exists('then', $first);
-    }
-
-    /**
-     * 조건식(문자열 또는 AND/OR 그룹)을 평가합니다.
-     *
-     * 빈 AND 그룹은 true, 빈 OR 그룹은 false 를 반환합니다 (React와 동일).
-     *
-     * @param  mixed  $condition  조건식
-     * @param  array  $context  데이터 컨텍스트
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return bool 평가 결과
-     */
-    private function evaluateConditionExpression(mixed $condition, array $context, ExpressionEvaluator $evaluator): bool
-    {
-        if (! is_array($condition)) {
-            return $this->evaluateBooleanExpression($condition, $context, $evaluator);
-        }
-
-        if (array_key_exists('and', $condition)) {
-            if (! is_array($condition['and']) || $condition['and'] === []) {
-                return true;
-            }
-            foreach ($condition['and'] as $sub) {
-                if (! $this->evaluateConditionExpression($sub, $context, $evaluator)) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        if (array_key_exists('or', $condition)) {
-            if (! is_array($condition['or']) || $condition['or'] === []) {
-                return false;
-            }
-            foreach ($condition['or'] as $sub) {
-                if ($this->evaluateConditionExpression($sub, $context, $evaluator)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        // 알 수 없는 조건 형식
-        return false;
-    }
-
-    /**
-     * 단일 조건 표현식을 boolean으로 평가합니다.
-     *
-     * 문자열 결과의 falsy 판정 목록은 React RenderHelpers.evaluateIfCondition과
-     * 동일합니다 (`''`, `false`, `0`, `null`, `undefined` — 대소문자·공백 무시).
-     *
-     * @param  mixed  $condition  조건 표현식 (문자열 또는 boolean)
-     * @param  array  $context  데이터 컨텍스트
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return bool 평가 결과
-     */
-    private function evaluateBooleanExpression(mixed $condition, array $context, ExpressionEvaluator $evaluator): bool
-    {
-        if (is_bool($condition)) {
-            return $condition;
-        }
-
-        // 조건이 비어 있으면 조건 없음으로 간주 (React: `if (!ifCondition) return true`)
-        if ($condition === null || $condition === '') {
-            return true;
-        }
-
-        $resolved = $evaluator->evaluate((string) $condition, $context);
-
-        return ! in_array(strtolower(trim($resolved)), ['', 'false', '0', 'null', 'undefined'], true);
-    }
-
-    /**
      * 선언적 렌더 모드로 컴포넌트를 HTML로 변환합니다.
-     *
-     * 우선순위가 renderTag() 와 반대인 것은 의도된 것이다 — renderTag() 는 text 를
-     * children 보다 먼저 쓰지만(React DynamicRenderer 동형), 이 경로는 자체 렌더링을
-     * 가진 집합 컴포넌트(Select·Pagination·HtmlContent 등) 전용이라 모드 출력이 먼저다.
-     * React 에서도 Select 는 options prop 으로 스스로 option 을 그리고 text/children 을
-     * 무시하므로, 여기서 text 를 우선하면 옵션 목록이 통째로 사라져 오히려 어긋난다.
      *
      * @param  string  $mode  렌더 모드명 (render_modes 키)
      * @param  string  $tag  외부 래퍼 HTML 태그
@@ -779,7 +279,7 @@ class ComponentHtmlMapper
         }
 
         $props = $component['props'] ?? [];
-        $attrs = $this->buildAttributes($props, $context, $evaluator, $tag);
+        $attrs = $this->buildAttributes($props, $context, $evaluator);
 
         $innerHtml = match ($modeConfig['type'] ?? '') {
             'iterate' => $this->renderIterateMode($modeConfig, $configEntry, $component, $context, $evaluator),
@@ -798,7 +298,7 @@ class ComponentHtmlMapper
 
         // 텍스트 콘텐츠 fallback
         if ($innerHtml === '') {
-            $innerHtml = $this->resolveTextContent($component, $props, $context, $evaluator, $tag);
+            $innerHtml = $this->resolveTextContent($component, $props, $context, $evaluator);
         }
 
         return "<{$tag}{$attrs}>{$innerHtml}</{$tag}>";
@@ -816,32 +316,23 @@ class ComponentHtmlMapper
     private function renderTag(string $tag, array $component, array $context, ExpressionEvaluator $evaluator): string
     {
         $props = $component['props'] ?? [];
-        $attrs = $this->buildAttributes($props, $context, $evaluator, $tag);
+        $attrs = $this->buildAttributes($props, $context, $evaluator);
 
         if (in_array($tag, $this->selfClosing)) {
             return "<{$tag}{$attrs}>";
         }
 
-        // 노드 레벨 text가 있으면 children보다 우선 (React DynamicRenderer와 동일 우선순위).
-        // text 키가 있으면 해석 결과가 빈 문자열이어도 그것이 최종 값이다 — React 는
-        // text !== undefined 인 순간 children 경로로 내려가지 않는다(DynamicRenderer.tsx:2591,2639).
-        $nodeText = $this->resolveNodeText($component, $context, $evaluator);
+        $innerHtml = $this->renderChildren($component, $context, $evaluator);
 
-        if ($nodeText !== null) {
-            $innerHtml = $nodeText;
-        } else {
-            $innerHtml = $this->renderChildren($component, $context, $evaluator);
-
-            if ($innerHtml === '') {
-                $innerHtml = $this->resolveTextContent($component, $props, $context, $evaluator, $tag);
-            }
+        if ($innerHtml === '') {
+            $innerHtml = $this->resolveTextContent($component, $props, $context, $evaluator);
         }
 
-        // dangerouslySetInnerHTML 처리 — 일반 화면과 동일 강도로 정화 후 삽입
+        // dangerouslySetInnerHTML 처리
         if ($innerHtml === '' && isset($props['dangerouslySetInnerHTML'])) {
             $rawHtml = $evaluator->evaluate((string) $props['dangerouslySetInnerHTML'], $context);
             if ($rawHtml !== '') {
-                $innerHtml = $this->htmlSanitizer()->sanitize($rawHtml);
+                $innerHtml = $rawHtml;
             }
         }
 
@@ -896,36 +387,38 @@ class ComponentHtmlMapper
 
         $html = '';
         foreach ($data as $item) {
-            $attrStr = $itemAttrs ? $this->buildIterateItemAttributes($itemAttrs, $item) : '';
-
-            if ($itemContent !== null) {
-                // 콘텐츠 기반 렌더링 (탭 리스트, 선택 목록 등)
-                // item_attrs 가 함께 선언되면 속성과 라벨을 모두 그린다 — `<option value="x">라벨</option>`
-                // 처럼 둘이 다 필요한 요소를 표현하기 위함이다.
-                $content = $this->resolveFieldPattern($itemContent, $item);
-                $evaluatedContent = $content === ''
-                    ? ''
-                    : e($evaluator->evaluate((string) $content, $context));
-
-                if ($evaluatedContent === '' && $attrStr === '') {
-                    continue;
-                }
-
-                $badge = '';
-                if ($badgeField && isset($item[$badgeField])) {
-                    $evaluatedBadge = $evaluator->evaluate((string) $item[$badgeField], $context);
-                    if ($evaluatedBadge !== '' && $evaluatedBadge !== '0') {
-                        $badge = ' <span>('.e($evaluatedBadge).')</span>';
+            if ($itemAttrs) {
+                // 속성 기반 렌더링 (이미지 갤러리 등)
+                $attrStr = '';
+                foreach ($itemAttrs as $attrName => $fieldPattern) {
+                    $value = $this->resolveFieldPattern($fieldPattern, $item);
+                    if ($value !== '') {
+                        // src 속성의 상대 경로를 절대 경로로 변환
+                        if ($attrName === 'src' && ! str_starts_with($value, 'http')) {
+                            $value = url($value);
+                        }
+                        $attrStr .= " {$attrName}=\"".e($value).'"';
                     }
                 }
 
-                $html .= "<{$itemTag}{$attrStr}>".$evaluatedContent.$badge."</{$itemTag}>";
-            } elseif ($itemAttrs) {
-                // 속성 기반 렌더링 (이미지 갤러리 등)
                 if (in_array($itemTag, $this->selfClosing)) {
                     $html .= "<{$itemTag}{$attrStr}>";
                 } else {
                     $html .= "<{$itemTag}{$attrStr}></{$itemTag}>";
+                }
+            } elseif ($itemContent !== null) {
+                // 콘텐츠 기반 렌더링 (탭 리스트 등)
+                $content = $this->resolveFieldPattern($itemContent, $item);
+                if ($content !== '') {
+                    $evaluatedContent = e($evaluator->evaluate((string) $content, $context));
+                    $badge = '';
+                    if ($badgeField && isset($item[$badgeField])) {
+                        $evaluatedBadge = $evaluator->evaluate((string) $item[$badgeField], $context);
+                        if ($evaluatedBadge !== '' && $evaluatedBadge !== '0') {
+                            $badge = ' <span>('.e($evaluatedBadge).')</span>';
+                        }
+                    }
+                    $html .= "<{$itemTag}>".$evaluatedContent.$badge."</{$itemTag}>";
                 }
             } else {
                 // 단순 아이템 (문자열)
@@ -935,43 +428,6 @@ class ComponentHtmlMapper
         }
 
         return $html;
-    }
-
-    /**
-     * iterate 모드 아이템의 속성 문자열을 만듭니다.
-     *
-     * @param  array  $itemAttrs  render_modes 의 item_attrs 정의
-     * @param  mixed  $item  현재 아이템
-     * @return string 속성 문자열 (앞에 공백 포함, 없으면 빈 문자열)
-     */
-    private function buildIterateItemAttributes(array $itemAttrs, mixed $item): string
-    {
-        $attrStr = '';
-
-        foreach ($itemAttrs as $attrName => $fieldPattern) {
-            $value = $this->resolveFieldPattern($fieldPattern, $item);
-            if ($value === '') {
-                continue;
-            }
-
-            // src 속성의 상대 경로를 절대 경로로 변환 (마운트 접두사 인지 — `siteAssetUrl` 독블록)
-            if ($attrName === 'src') {
-                $value = $this->siteAssetUrl($value);
-            }
-
-            // `href` 도 같은 `item_attrs` 를 전개한다 — `render_modes` 의 iterate 정의는
-            // 속성 이름을 자유롭게 선언하므로(`item_attrs: {href: "/board/{slug}"}`)
-            // 이 루프에 링크가 온다. 형제 두 지점은 `href`·`src` 를 **둘 다** 배선하는데
-            // 여기만 `src` 뿐이라, 이 경로로 나간 링크는 하위 폴더 배치에서 사이트 밖을
-            // 가리켰다 — `href` 만 배선하던 형제 지점과 반대 방향의 비대칭이다.
-            if ($attrName === 'href') {
-                $value = $this->siteHref($value);
-            }
-
-            $attrStr .= " {$attrName}=\"".e($value).'"';
-        }
-
-        return $attrStr;
     }
 
     /**
@@ -1036,14 +492,7 @@ class ComponentHtmlMapper
     }
 
     /**
-     * raw 타입: 콘텐츠를 `isHtml` 판정에 따라 평문 또는 정화된 HTML 로 출력
-     *
-     * 일반 화면의 `HtmlContent` 컴포지트와 동일한 규칙입니다.
-     * - `isHtml=false` → 평문 (전체 이스케이프)
-     * - `isHtml=true`(기본) → 정화 후 HTML 로 출력
-     *
-     * 정화·이스케이프를 생략하면 봇 화면에서만 사용자 작성 `<script>` 가 살아남아,
-     * 주소에 봇 파라미터를 붙이는 것만으로 실행됩니다.
+     * raw 타입: 원본 HTML/텍스트를 그대로 출력
      *
      * @param  array  $modeConfig  render_modes 엔트리
      * @param  array  $configEntry  component_map 엔트리
@@ -1066,33 +515,7 @@ class ComponentHtmlMapper
             return '';
         }
 
-        $content = $evaluator->evaluate((string) $contentExpr, $context);
-
-        if ($content === '') {
-            return '';
-        }
-
-        // isHtml 미지정은 HTML 로 간주 (HtmlContent 의 기본값 isHtml = true 와 동일)
-        if (! $this->evaluateBooleanExpression($props['isHtml'] ?? true, $context, $evaluator)) {
-            return e($content);
-        }
-
-        // 본문 이미지는 일반 화면 HtmlContent 와 같은 계약으로 썸네일 주소·srcset·sizes·지연 로딩을 받는다
-        $imageSizes = isset($props['imageSizes']) && is_string($props['imageSizes'])
-            ? $evaluator->evaluate($props['imageSizes'], $context)
-            : null;
-
-        return $this->htmlSanitizer()->sanitizeContent($content, $imageSizes);
-    }
-
-    /**
-     * HTML 정화기를 반환합니다 (지연 생성).
-     *
-     * @return HtmlSanitizer 정화기
-     */
-    private function htmlSanitizer(): HtmlSanitizer
-    {
-        return $this->htmlSanitizer ??= new HtmlSanitizer;
+        return $evaluator->evaluate((string) $contentExpr, $context);
     }
 
     /**
@@ -1143,9 +566,9 @@ class ComponentHtmlMapper
 
             // link 래핑: 모든 필드를 <a> 태그로 감쌈
             if ($html !== '' && isset($modeConfig['link']['href'])) {
-                $linkHref = $this->resolveFieldsLink($modeConfig['link'], $data, $props, $context, $evaluator);
+                $linkHref = $this->resolveFieldsLink($modeConfig['link'], $data);
                 if ($linkHref !== null) {
-                    $html = '<a href="'.e($this->siteHref($linkHref)).'">'."\n".$html.'</a>'."\n";
+                    $html = '<a href="'.e($linkHref).'">'."\n".$html.'</a>'."\n";
                 }
             }
 
@@ -1207,7 +630,7 @@ class ComponentHtmlMapper
 
         $html = '';
         for ($i = $start; $i <= $end; $i++) {
-            $href = e($this->siteHref($basePath).'?page='.$i);
+            $href = e($basePath.'?page='.$i);
             if ($i === $currentPage) {
                 $html .= '<span>'.$i.'</span>';
             } else {
@@ -1301,20 +724,6 @@ class ComponentHtmlMapper
                     foreach ($itemAttrs as $attrName => $attrPattern) {
                         $attrValue = $this->resolveFieldContent($attrPattern, $item);
                         if ($attrValue !== '') {
-                            // `href` 는 브라우저가 그대로 여는 사이트 경로다 — 봇 화면에서도
-                            // 마운트 접두사를 거쳐야 한다(예: `item_attrs: {href: "/board/{slug}"}`).
-                            if ($attrName === 'href') {
-                                $attrValue = $this->siteHref($attrValue);
-                            }
-
-                            // `src` 도 같은 `item_attrs` 를 전개하는데 형제 두 지점만
-                            // 다루고 여기만 빠져 있었다 — 그래서 이 경로로 나간 이미지는
-                            // 하위 폴더 배치에서 접두사 없는 주소가 되고, 봇이 그것을
-                            // 페이지 주소가 아니라 **오리진 루트**에 붙여 해석한다
-                            // (사이트 밖 주소 결함을 고치다 드러난 형제 경로).
-                            if ($attrName === 'src') {
-                                $attrValue = $this->siteAssetUrl($attrValue);
-                            }
                             $attrStr .= " {$attrName}=\"".e($attrValue).'"';
                         }
                     }
@@ -1364,22 +773,14 @@ class ComponentHtmlMapper
     /**
      * fields 모드의 link 설정을 해석하여 URL을 반환합니다.
      *
-     * href 패턴에서 {field} 를 데이터 값으로 치환하고, base_url이 있으면 앞에 붙입니다.
-     *
-     * base_url 참조:
-     * - `$prop:name` — 그 컴포넌트가 받은 prop 을 화면처럼 평가한 값(빈 문자열도 값, prop 이 없으면 빈 값).
-     *   화면 컴포넌트(ProductCard 의 `shopBase`)와 같은 출처라 화면마다 meta.seo.vars 를 두지 않아도 같다.
-     * - `$global:key` — 렌더 문맥 `_global.key`(빈 문자열도 값), 문맥에 없으면 globalResolver.
-     * - `$var:name` — 그 화면 meta.seo.vars 값.
+     * href 패턴에서 {field} 를 데이터 값으로 치환하고,
+     * base_url이 있으면 앞에 붙입니다. $global: 접두사는 globalResolver로 해석합니다.
      *
      * @param  array  $linkConfig  link 설정 (href, base_url 등)
      * @param  array  $data  소스 객체 데이터
-     * @param  array  $props  컴포넌트 props (`$prop:` 해석용)
-     * @param  array  $context  데이터 컨텍스트 (`$prop:`·`$global:` 해석용)
-     * @param  ExpressionEvaluator|null  $evaluator  표현식 평가기 (`$prop:` 해석용)
      * @return string|null 해석된 URL (null이면 링크 미생성)
      */
-    private function resolveFieldsLink(array $linkConfig, array $data, array $props = [], array $context = [], ?ExpressionEvaluator $evaluator = null): ?string
+    private function resolveFieldsLink(array $linkConfig, array $data): ?string
     {
         $hrefPattern = $linkConfig['href'] ?? '';
         if ($hrefPattern === '') {
@@ -1388,28 +789,14 @@ class ComponentHtmlMapper
 
         $baseUrl = '';
         if (isset($linkConfig['base_url'])) {
-            $ref = (string) $linkConfig['base_url'];
-            if (str_starts_with($ref, '$prop:')) {
-                // 화면 컴포넌트가 받는 그 prop — 예: ProductCard `shopBase="{{_global.shopBase ?? '/shop'}}"`
-                $propName = substr($ref, strlen('$prop:'));
-                $propValue = $props[$propName] ?? null;
-                if (is_string($propValue) && $evaluator !== null) {
-                    $baseUrl = $evaluator->evaluate($propValue, $context, false);
-                } elseif (is_scalar($propValue)) {
-                    $baseUrl = (string) $propValue;
-                }
-            } elseif (str_starts_with($ref, '$var:')) {
+            $ref = $linkConfig['base_url'];
+            if (str_starts_with($ref, '$var:')) {
                 // SEO vars에서 해석 (meta.seo.vars로 정의된 변수)
                 $varName = substr($ref, strlen('$var:'));
                 $baseUrl = $this->seoVars[$varName] ?? '';
             } elseif (str_starts_with($ref, '$global:')) {
                 $globalKey = substr($ref, strlen('$global:'));
-                // 렌더 문맥의 _global 이 먼저다 — `_user_base` init 이 푼 값(예: shopBase)이 여기 있다
-                $missing = new \stdClass;
-                $fromContext = data_get($context['_global'] ?? [], $globalKey, $missing);
-                if ($fromContext !== $missing && $fromContext !== null && is_scalar($fromContext)) {
-                    $baseUrl = (string) $fromContext;
-                } elseif ($this->globalResolver) {
+                if ($this->globalResolver) {
                     $resolved = ($this->globalResolver)('_global.'.$globalKey);
                     $baseUrl = $resolved ?? '';
                 }
@@ -1447,10 +834,7 @@ class ComponentHtmlMapper
             $baseUrl = '';
         }
 
-        // 접두사는 **생산 지점**에서 붙인다 — 호출부 하나가 이미 감싸고 있지만, 그러면
-        // 새 소비처가 생길 때마다 그 자리를 다시 기억해야 한다. `siteHref()` 는 멱등이고
-        // 절대 URL(`base_url` 설정)은 손대지 않으므로 이중 적용이 생기지 않는다.
-        return $this->siteHref($baseUrl.$href);
+        return $baseUrl.$href;
     }
 
     /**
@@ -1465,50 +849,13 @@ class ComponentHtmlMapper
      */
     private function renderFieldWithAttrs(array $field, array $data, string $tag): string
     {
-        // 이미지 썸네일 규격 — 템플릿 Img 의 `thumbPreset` 과 같은 계약(buildAttributes 와 같은 규칙).
-        // 필드 항목 키라 속성으로 나가지 않는다. 컴포지트(ProductCard 등)가 fields 로 그려지면 Img props 경로를
-        // 지나지 않으므로 이 자리에서 따로 받아야 화면과 같은 썸네일 주소가 나간다.
-        $thumbPreset = '';
-        if ($tag === 'img' && isset($field['thumbPreset']) && is_string($field['thumbPreset'])) {
-            $thumbPreset = trim($this->resolveFieldContent($field['thumbPreset'], $data));
-        }
-        $hasExplicitSrcset = array_key_exists('srcset', $field['attrs']) || array_key_exists('srcSet', $field['attrs']);
-
         $attrStr = '';
         foreach ($field['attrs'] as $attrName => $fieldPattern) {
-            // `{shopBase}/products` 처럼 값과 글자가 섞인 패턴도 치환한다(item_attrs 와 같은 규칙).
-            // 종전에는 `{x}` 하나짜리만 치환해 섞인 패턴이 중괄호째 href 로 나갔다(engine-v1.84.0).
-            $value = $this->resolveFieldContent((string) $fieldPattern, $data);
+            $value = $this->resolveFieldPattern($fieldPattern, $data);
             if ($value !== '') {
-                // src 속성의 상대 경로를 절대 경로로 변환 (마운트 접두사 인지 — `siteAssetUrl` 독블록)
-                if ($attrName === 'src') {
-                    $value = $this->siteAssetUrl($value);
-
-                    // 같은 출처 + 등록된 서빙 경로만 바뀐다(외부·정적·data: 는 그대로). 명시한 srcset 은 존중한다.
-                    if ($thumbPreset !== '') {
-                        $original = $value;
-                        $value = ThumbnailUrl::for($original, $thumbPreset);
-
-                        if (! $hasExplicitSrcset && in_array('srcset', $this->allowedAttrs)) {
-                            $srcset = ThumbnailUrl::srcset($original, $thumbPreset);
-
-                            if ($srcset !== '') {
-                                $attrStr .= ' src="'.e($value).'" srcset="'.e($srcset).'"';
-
-                                continue;
-                            }
-                        }
-                    }
-                }
-                // `href` 는 브라우저가 그대로 여는 사이트 경로다 — 마운트 접두사를 거친다.
-                //
-                // 이 경로(`fields` 렌더 모드)가 `seo-config.json` 이 **자기 소유로 선언한**
-                // 헤더·푸터 앵커를 그린다. 형제 지점(속성 매핑·link 래핑·페이지네이션·
-                // item_attrs·navigate 주입)을 배선하고도 여기만 남아, 같은 봇 응답 안에
-                // `/g7/page/about` 와 `/page/about` 이 **동시에** 나갔다. 단위 테스트는
-                // 형제 경로만 세워 초록이었고 **P0 하위 폴더 실측이 잡았다**.
-                if ($attrName === 'href') {
-                    $value = $this->siteHref($value);
+                // src 속성의 상대 경로를 절대 경로로 변환
+                if ($attrName === 'src' && ! str_starts_with($value, 'http')) {
+                    $value = url($value);
                 }
                 $attrStr .= " {$attrName}=\"".e($value).'"';
             }
@@ -1574,7 +921,6 @@ class ComponentHtmlMapper
      * context에서 해당 데이터를 찾아 반환합니다.
      *
      * @param  mixed  $expr  표현식 (문자열 또는 배열)
-     * @param  array  $context  데이터 컨텍스트
      * @return mixed 해석된 데이터 (배열/객체 또는 null)
      */
     private function resolveObjectFromExpression(mixed $expr, array $context): mixed
@@ -1636,9 +982,6 @@ class ComponentHtmlMapper
                 // 표현식 해석: 문자열/숫자는 evaluate, 배열/객체는 evaluateRaw
                 $resolved = $evaluator->evaluateRaw($value, $context);
                 $data[$key] = $resolved;
-            } elseif ($this->isSwitchDefinition($value)) {
-                // $switch 선언적 분기 (React resolveObject 와 동일 위치에서 해석)
-                $data[$key] = $this->resolveSwitchValue($value, $context, $evaluator);
             } elseif (is_array($value)) {
                 // 중첩 객체 (예: socialLinks): 재귀적으로 해석
                 $data[$key] = $this->resolveAllPropsRecursive($value, $context, $evaluator);
@@ -1664,78 +1007,11 @@ class ComponentHtmlMapper
         foreach ($values as $k => $v) {
             if (is_string($v) && str_contains($v, '{{')) {
                 $result[$k] = $evaluator->evaluateRaw($v, $context);
-            } elseif ($this->isSwitchDefinition($v)) {
-                $result[$k] = $this->resolveSwitchValue($v, $context, $evaluator);
             } elseif (is_array($v)) {
                 $result[$k] = $this->resolveAllPropsRecursive($v, $context, $evaluator);
             } else {
                 $result[$k] = $v;
             }
-        }
-
-        return $result;
-    }
-
-    /**
-     * 값이 `$switch` 선언적 분기 객체인지 판정합니다.
-     *
-     * React `DataBindingEngine.isSwitchExpression` 과 동일 — `$switch` 와 `$cases`
-     * 키를 모두 가진 객체(연관 배열)만 해당한다.
-     *
-     * @param  mixed  $value  판정 대상 값
-     * @return bool $switch 정의 여부
-     */
-    private function isSwitchDefinition(mixed $value): bool
-    {
-        return is_array($value)
-            && array_key_exists('$switch', $value)
-            && array_key_exists('$cases', $value);
-    }
-
-    /**
-     * `$switch` 선언적 분기 객체를 해석합니다.
-     *
-     * React `DataBindingEngine.resolveSwitch` 와 동일 의미론 (engine-v1.56.0 패리티):
-     * ① `$switch` 키 표현식을 평가해 문자열 키로 정규화(trim, 실패 시 빈 문자열)
-     * ② `$cases` 에서 키 일치 값 선택, 없으면 `$default`, 그것도 없으면 null(React undefined)
-     * ③ 결과가 `{{}}` 포함 문자열이면 재해석, 객체면 재귀 해석(중첩 $switch 포함)
-     *
-     * 레이아웃 최상위 `computed` 의 $switch 는 `SeoRenderer::resolveComputedSwitch` 가
-     * 별도 처리한다 — 이 메서드는 노드 props 값 축 담당.
-     *
-     * @param  array  $definition  $switch 정의 { "$switch", "$cases", "$default"? }
-     * @param  array  $context  데이터 컨텍스트
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return mixed 해석된 값 (매칭·기본값 모두 없으면 null)
-     */
-    private function resolveSwitchValue(array $definition, array $context, ExpressionEvaluator $evaluator): mixed
-    {
-        try {
-            $keyValue = trim((string) $evaluator->evaluate((string) ($definition['$switch'] ?? ''), $context));
-        } catch (\Throwable) {
-            $keyValue = '';
-        }
-
-        $cases = is_array($definition['$cases'] ?? null) ? $definition['$cases'] : [];
-
-        if ($keyValue !== '' && array_key_exists($keyValue, $cases)) {
-            $result = $cases[$keyValue];
-        } elseif (array_key_exists('$default', $definition)) {
-            $result = $definition['$default'];
-        } else {
-            return null;
-        }
-
-        if (is_string($result)) {
-            return str_contains($result, '{{') ? $evaluator->evaluate($result, $context) : $result;
-        }
-
-        if ($this->isSwitchDefinition($result)) {
-            return $this->resolveSwitchValue($result, $context, $evaluator);
-        }
-
-        if (is_array($result)) {
-            return $this->resolveAllPropsRecursive($result, $context, $evaluator);
         }
 
         return $result;
@@ -1799,25 +1075,20 @@ class ComponentHtmlMapper
      * @param  array  $props  컴포넌트 props
      * @param  array  $context  데이터 컨텍스트
      * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @param  string  $tag  렌더 대상 HTML 태그 (값을 텍스트로 쓰지 않는 태그 판정용)
      * @return string 텍스트 콘텐츠
      */
-    private function resolveTextContent(array $component, array $props, array $context, ExpressionEvaluator $evaluator, string $tag = ''): string
+    private function resolveTextContent(array $component, array $props, array $context, ExpressionEvaluator $evaluator): string
     {
-        // 1. 컴포넌트 레벨 text 속성 (최우선) — 키가 있으면 빈 값이어도 그것이 최종 값
-        $nodeText = $this->resolveNodeText($component, $context, $evaluator);
-        if ($nodeText !== null) {
-            return $nodeText;
+        // 1. 컴포넌트 레벨 text 속성 (최우선)
+        if (isset($component['text'])) {
+            $text = $evaluator->evaluate((string) $component['text'], $context);
+            if ($text !== '') {
+                return e($text);
+            }
         }
-
-        $skipValueProp = in_array(strtolower($tag), self::VALUE_NOT_TEXT_TAGS, true);
 
         // 2. props 레벨 텍스트 추출 (seo-config.json의 text_props)
         foreach ($this->textProps as $textProp) {
-            if ($textProp === 'value' && $skipValueProp) {
-                continue;
-            }
-
             if (isset($props[$textProp])) {
                 $text = $evaluator->evaluate((string) $props[$textProp], $context);
                 if ($text !== '') {
@@ -1827,40 +1098,6 @@ class ComponentHtmlMapper
         }
 
         return '';
-    }
-
-    /**
-     * 노드 레벨 text 속성을 해석합니다.
-     *
-     * @param  array  $component  컴포넌트 정의
-     * @param  array  $context  데이터 컨텍스트
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return string 이스케이프된 텍스트 (없으면 빈 문자열)
-     */
-    private function resolveNodeText(array $component, array $context, ExpressionEvaluator $evaluator): ?string
-    {
-        if (! array_key_exists('text', $component)) {
-            return null;
-        }
-
-        $expression = (string) $component['text'];
-
-        // JSX 시맨틱: bool / null 은 렌더되지 않는다.
-        // React 는 단일 바인딩 text 를 raw 값으로 받아 그대로 자식에 넘기므로
-        // {false} / {null} 이 화면에 나오지 않는다 (DynamicRenderer.tsx 의 renderChildren).
-        // 문자열화하면 'false' 라는 글자가 봇 화면에만 노출된다.
-        //
-        // 판정에만 evaluateRaw 를 쓰고 출력은 evaluate 로 만든다 — evaluate 가 파이프·인라인
-        // `$t:` 토큰 후처리를 담당하므로, 이를 건너뛰면 `?? '$t:key'` 같은 폴백 문자열의
-        // 번역 토큰이 봇 화면에 그대로 남는다.
-        $resolved = $evaluator->evaluateRaw($expression, $context);
-        if (is_bool($resolved) || $resolved === null) {
-            return '';
-        }
-
-        $text = $evaluator->evaluate($expression, $context);
-
-        return $text === '' ? '' : e($text);
     }
 
     /**
@@ -1897,21 +1134,11 @@ class ComponentHtmlMapper
         $templateComponent = $component;
         unset($templateComponent['iteration']);
 
-        // responsive 오버라이드가 항목 렌더링 시 iteration을 다시 주입해
-        // 무한 재귀가 되지 않도록 함께 제거한다.
-        if (isset($templateComponent['responsive']) && is_array($templateComponent['responsive'])) {
-            foreach (array_keys($templateComponent['responsive']) as $breakpoint) {
-                unset($templateComponent['responsive'][$breakpoint]['iteration']);
-            }
-        }
-
         $html = '';
         foreach (array_values($data) as $index => $item) {
             $iterContext = array_merge($context, [
                 $itemVar => $item,
                 $indexVar => $index,
-                // `{item_var}_index` 자동 변수 — React 반복 렌더 경로와 동일하게 제공한다.
-                $itemVar.'_index' => $index,
             ]);
             $html .= $this->renderComponent($templateComponent, $iterContext, $evaluator);
         }
@@ -1920,53 +1147,16 @@ class ComponentHtmlMapper
     }
 
     /**
-     * URL 이 현재 문서에서 코드를 실행하는 스킴인지 판정합니다.
-     *
-     * 브라우저는 스킴 해석 전에 선행 C0 제어문자·공백을 버리고 ASCII tab·개행을 제거하며
-     * 스킴을 대소문자 구분 없이 읽는다. 클라이언트 `support/navPolicy` 와 같은 정규화다.
-     *
-     * @param  string  $url  검사할 URL
-     * @param  bool  $includeData  `data:` 도 실행 스킴으로 볼지 (href 는 true, src 는 이미지 인라인 때문에 false)
-     * @return bool 실행 스킴이면 true
-     */
-    private static function isExecutableUrl(string $url, bool $includeData): bool
-    {
-        $normalized = strtolower((string) preg_replace(['/^[\x00-\x20]+/', '/[\t\n\r]/'], '', $url));
-
-        $schemes = $includeData ? ['javascript:', 'vbscript:', 'data:'] : ['javascript:', 'vbscript:'];
-
-        foreach ($schemes as $scheme) {
-            if (str_starts_with($normalized, $scheme)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * props를 HTML 속성 문자열로 변환합니다.
      *
      * @param  array  $props  컴포넌트 props
      * @param  array  $context  데이터 컨텍스트
      * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @param  string  $tag  그릴 HTML 태그 (`a` 면 정적 링크 규칙 적용 — 비우면 속성만 옮긴다)
      * @return string HTML 속성 문자열
      */
-    private function buildAttributes(array $props, array $context, ExpressionEvaluator $evaluator, string $tag = ''): string
+    private function buildAttributes(array $props, array $context, ExpressionEvaluator $evaluator): string
     {
         $attrs = '';
-
-        // 정적 링크는 템플릿 A 컴포넌트와 같은 규칙으로 이미 푼 값을 쓴다 (7.1.1)
-        $preset = $tag === 'a' ? $this->presetAnchorAttributes($props, $context, $evaluator) : [];
-
-        // 이미지 썸네일 규격 (템플릿 Img 의 `thumbPreset` 과 같은 계약) — 그 자체는 속성으로 내지 않는다
-        $thumbPreset = '';
-        if ($tag === 'img' && isset($props['thumbPreset']) && is_string($props['thumbPreset'])) {
-            $thumbPreset = trim($evaluator->evaluate($props['thumbPreset'], $context));
-        }
-        $hasExplicitSrcset = array_key_exists('srcSet', $props) || array_key_exists('srcset', $props);
-        $thumbSrcset = '';
 
         foreach ($props as $key => $value) {
             $htmlAttr = $this->attrMap[$key] ?? $key;
@@ -1975,199 +1165,17 @@ class ComponentHtmlMapper
                 continue;
             }
 
-            if (array_key_exists($htmlAttr, $preset)) {
-                $value = $preset[$htmlAttr];
-                unset($preset[$htmlAttr]);
-
-                if ($value === null) {
-                    continue;
-                }
-
-                // 미리 정한 링크 목적지(`fallbackHref` 대체)는 presetAnchorAttributes() 가 이미 마운트 접두사를 거쳐 돌려준다
-                if ($htmlAttr === 'href' && self::isExecutableUrl($value, true)) {
-                    $value = '#';
-                }
-
-                if ($value !== '') {
-                    $attrs .= " {$htmlAttr}=\"".e($value).'"';
-                }
-
-                continue;
-            }
-
-            // $switch 선언적 분기 객체 (engine-v1.56.0 React 패리티) — 해석하지 않으면
-            // 배열이라는 이유로 속성이 조용히 사라진다 (예외·경고 없음)
-            if ($this->isSwitchDefinition($value)) {
-                $value = $this->resolveSwitchValue($value, $context, $evaluator);
-            }
-
             if (is_string($value)) {
-                $evaluated = $evaluator->evaluate($value, $context, ! in_array($htmlAttr, self::URL_ATTRS, true));
-
-                // URL 속성의 실행 스킴 무해화 — React 렌더러(DynamicRenderer 2.6)와 동형.
-                // href 는 링크 모양을 유지하려 `#`, src 는 data: 이미지를 살리고 스크립트 스킴만 제거.
-                if ($htmlAttr === 'href' && self::isExecutableUrl($evaluated, true)) {
-                    $evaluated = '#';
-                } elseif ($htmlAttr === 'src' && self::isExecutableUrl($evaluated, false)) {
-                    continue;
-                }
-
-                // 링크 목적지는 브라우저가 그대로 여는 사이트 경로다 — 봇 화면에서도
-                // 마운트 접두사를 거쳐야 한다. 레이아웃 JSON 의 `A` 컴포넌트 `href` 와
-                // `seo-config.json` 이 자기 소유로 선언한 앵커가 전부 이 지점을 지난다
-                // (화면 경로는 템플릿 `A` 컴포넌트가 같은 일을 한다).
-                if ($htmlAttr === 'href') {
-                    $evaluated = $this->siteHref($evaluated);
-                }
-
-                // `src` 도 같은 루프를 지난다 — `src` 는 허용 속성이고 `component_map`
-                // 에 `Img` 가 있어 레이아웃 JSON 의 `Img` props 가 전부 이 자리로 온다.
-                // 형제 세 지점(`buildIterateItemAttributes` · `renderFieldIterate` ·
-                // `renderFieldWithAttrs`)은 자산 헬퍼를 거치는데 **네 번째인 이 지점만**
-                // 아무 변환도 하지 않아, 봇 화면의 그 이미지는 상대 주소 그대로 나갔다
-                // (하위 폴더 배치에서는 오리진 루트 기준으로 해석돼 404).
-                //
-                // 종전 소스 계약 검사가 이것을 못 본 이유는 모집단이 「`'src'` 리터럴이
-                // 있는 줄」이었기 때문이다 — 배선되지 않은 지점에는 그 리터럴이 없으므로
-                // 이미 배선된 셋만 스스로를 확인하는 자기충족이었다.
-                if ($htmlAttr === 'src') {
-                    $evaluated = $this->siteAssetUrl($evaluated);
-
-                    // 썸네일 규격 — 같은 출처 + 등록된 서빙 경로만 바뀐다(외부·정적·data: 는 그대로).
-                    // srcset 을 레이아웃이 직접 적었으면 그 값을 존중한다(사람 화면 Img 와 같다).
-                    if ($thumbPreset !== '' && $evaluated !== '') {
-                        $original = $evaluated;
-                        $evaluated = ThumbnailUrl::for($original, $thumbPreset);
-
-                        if (! $hasExplicitSrcset && in_array('srcset', $this->allowedAttrs)) {
-                            $srcset = ThumbnailUrl::srcset($original, $thumbPreset);
-
-                            if ($srcset !== '') {
-                                $thumbSrcset = $srcset;
-                            }
-                        }
-                    }
-                }
-
+                $evaluated = $evaluator->evaluate($value, $context);
                 if ($evaluated !== '') {
                     $attrs .= " {$htmlAttr}=\"".e($evaluated).'"';
-                }
-
-                if ($htmlAttr === 'src' && $thumbSrcset !== '') {
-                    $attrs .= ' srcset="'.e($thumbSrcset).'"';
-                    $thumbSrcset = '';
                 }
             } elseif (is_bool($value) && $value) {
                 $attrs .= " {$htmlAttr}";
             }
         }
 
-        // 템플릿 Img 의 기본값 — 명시하지 않으면 지연 로딩·비동기 디코딩 (허용 속성일 때만 나간다)
-        if ($tag === 'img') {
-            foreach (['loading' => 'lazy', 'decoding' => 'async'] as $htmlAttr => $default) {
-                if (! array_key_exists($htmlAttr, $props) && in_array($htmlAttr, $this->allowedAttrs)) {
-                    $attrs .= " {$htmlAttr}=\"{$default}\"";
-                }
-            }
-        }
-
-        // props 에 없던 속성(새 창 링크의 rel, 비활성 링크의 role 등)
-        foreach ($preset as $htmlAttr => $value) {
-            if ($value !== null && $value !== '' && in_array($htmlAttr, $this->allowedAttrs)) {
-                $attrs .= " {$htmlAttr}=\"".e($value).'"';
-            }
-        }
-
         return $attrs;
-    }
-
-    /**
-     * 정적 링크(`a`)의 href·rel·role 을 템플릿 A 컴포넌트와 같은 규칙으로 미리 풉니다 (7.1.1).
-     *
-     * - `disabled` 가 참이면 href 를 빼고 `role="link"`·`aria-disabled="true"`(허용 속성만 나간다)
-     * - `fallbackHref` 가 있으면 비지 않은 href 가 이 사이트 주소가 아닐 때(다른 사이트·`//host`·
-     *   `https://이 사이트//다른호스트`·`#`·실행 스킴) 그 주소로 — A 의 `resolveLinkHref` 판정과 같다
-     * - `target` 이 `_blank` 면 rel 에 `noopener noreferrer` 를 합친다(받은 토큰 유지, 대소문자 무시 중복 없음)
-     *
-     * 대체 주소가 없는 href 는 손대지 않는다 — 사람 화면도 그대로 그린다(실행 스킴 `#` 무해화만 공통).
-     * 돌려준 값은 이미 푼 글자라 buildAttributes 가 다시 평가하지 않는다(값 속 `{{…}}` 재평가 방지).
-     *
-     * @param  array  $props  a 태그로 그릴 컴포넌트 props
-     * @param  array  $context  데이터 컨텍스트
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return array<string, string|null> HTML 속성명 → 푼 값 (null 이면 그 속성을 내지 않는다)
-     */
-    private function presetAnchorAttributes(array $props, array $context, ExpressionEvaluator $evaluator): array
-    {
-        $preset = [];
-
-        if (array_key_exists('disabled', $props) && $this->isTruthyPropValue($props['disabled'], $context, $evaluator)) {
-            $preset['href'] = null;
-            $preset['role'] = 'link';
-            $preset['aria-disabled'] = 'true';
-        } elseif (isset($props['href'], $props['fallbackHref']) && is_string($props['href']) && is_string($props['fallbackHref'])) {
-            $href = $evaluator->evaluate($props['href'], $context, false);
-            $trimmed = trim($href);
-
-            if ($trimmed !== '' && ($trimmed === '#' || self::isExecutableUrl($href, true) || $this->toSameOriginLinkPath($href) === null)) {
-                $href = $evaluator->evaluate($props['fallbackHref'], $context, false);
-            }
-
-            // 고른 목적지도 일반 href 경로(buildAttributes)와 같이 마운트 접두사를 거친다 — 하위 폴더 배치에서
-            // 이 링크만 사이트 밖으로 나가지 않게. 실행 스킴·`//host`·`#` 은 sitePath() 가 그대로 둔다.
-            $preset['href'] = $this->siteHref($href);
-        }
-
-        $target = isset($props['target']) && is_string($props['target']) ? $evaluator->evaluate($props['target'], $context) : '';
-
-        if ($target === '_blank') {
-            $rel = isset($props['rel']) && is_string($props['rel']) ? $evaluator->evaluate($props['rel'], $context) : '';
-            $tokens = preg_split('/\s+/', trim($rel), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-            $lowered = array_map('strtolower', $tokens);
-
-            foreach (['noopener', 'noreferrer'] as $required) {
-                if (! in_array($required, $lowered, true)) {
-                    $tokens[] = $required;
-                }
-            }
-
-            $preset['rel'] = implode(' ', $tokens);
-        }
-
-        return $preset;
-    }
-
-    /**
-     * prop 값이 참인지 판정합니다 — 단일 바인딩은 원본 값으로, 글자는 `if` 와 같은 거짓 목록으로 본다.
-     *
-     * @param  mixed  $value  prop 값 (불리언·숫자·글자·식)
-     * @param  array  $context  데이터 컨텍스트
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return bool 참이면 true
-     */
-    private function isTruthyPropValue(mixed $value, array $context, ExpressionEvaluator $evaluator): bool
-    {
-        if (is_string($value)) {
-            $value = $evaluator->evaluateRaw($value, $context);
-        }
-
-        if (is_bool($value)) {
-            return $value;
-        }
-
-        if ($value === null) {
-            return false;
-        }
-
-        if (is_int($value) || is_float($value)) {
-            return $value != 0;
-        }
-
-        if (is_string($value)) {
-            return ! in_array(strtolower(trim($value)), ['', 'false', '0', 'null', 'undefined'], true);
-        }
-
-        return true;
     }
 
     /**
@@ -2292,11 +1300,9 @@ class ComponentHtmlMapper
     /**
      * 컴포넌트의 actions에서 링크 변환 대상 액션을 추출합니다.
      *
-     * click 이벤트의 navigate/openWindow 핸들러만 추출하며, 엔진이 실행하는 중첩 키(sequence·parallel 의
-     * `actions`/`params.actions`, conditions 의 `then`, switch 의 `cases`)를 모두 따라 내려간다 — 예전에는
-     * sequence 한 단계만 봐서 parallel·conditions·중첩 sequence 안의 링크를 봇 HTML 에서 놓쳤다(7.1.3).
-     * replace: true인 navigate는 제외합니다 (필터/페이지네이션). path 가 params 에 없고 최상위 target 에
-     * 있으면 그것을 path 로 쓴다(엔진과 같은 해석).
+     * click 이벤트의 navigate/openWindow 핸들러만 추출하며,
+     * sequence 내부에 중첩된 navigate/openWindow도 탐색합니다.
+     * replace: true인 navigate는 제외합니다 (필터/페이지네이션).
      *
      * @param  array  $component  컴포넌트 정의
      * @return array|null ['handler' => string, 'params' => array] 또는 null
@@ -2319,98 +1325,41 @@ class ComponentHtmlMapper
                 continue;
             }
 
-            $found = $this->findLinkActionInTree($action, 0);
-            if ($found !== null) {
-                return $found;
-            }
-        }
+            $handler = $action['handler'] ?? '';
+            $params = $action['params'] ?? [];
 
-        return null;
-    }
-
-    /**
-     * 액션 하나와 그 중첩 액션에서 첫 navigate/openWindow 를 찾습니다.
-     *
-     * @param  array  $action  액션 정의
-     * @param  int  $depth  중첩 깊이 (순환·과도한 깊이 방어)
-     * @return array|null ['handler' => string, 'params' => array] 또는 null
-     */
-    private function findLinkActionInTree(array $action, int $depth): ?array
-    {
-        if ($depth > 8) {
-            return null;
-        }
-
-        $handler = $action['handler'] ?? '';
-        $params = is_array($action['params'] ?? null) ? $action['params'] : [];
-
-        if ($handler === 'navigate' || $handler === 'openWindow') {
-            // replace: true인 navigate는 제외
-            if ($handler === 'navigate' && ! empty($params['replace'])) {
-                return null;
-            }
-            if (! isset($params['path']) && is_string($action['target'] ?? null) && $action['target'] !== '') {
-                $params['path'] = $action['target'];
-            }
-
-            return ['handler' => $handler, 'params' => $params];
-        }
-
-        foreach ($this->childActionLists($action, $params) as $children) {
-            foreach ($children as $child) {
-                if (! is_array($child)) {
+            // 직접 navigate/openWindow
+            if ($handler === 'navigate' || $handler === 'openWindow') {
+                // replace: true인 navigate는 제외
+                if ($handler === 'navigate' && ! empty($params['replace'])) {
                     continue;
                 }
-                $found = $this->findLinkActionInTree($child, $depth + 1);
-                if ($found !== null) {
-                    return $found;
+
+                return ['handler' => $handler, 'params' => $params];
+            }
+
+            // sequence 내부 탐색
+            if ($handler === 'sequence') {
+                $seqActions = $action['actions'] ?? $params['actions'] ?? [];
+                foreach ($seqActions as $seqAction) {
+                    if (! is_array($seqAction)) {
+                        continue;
+                    }
+                    $seqHandler = $seqAction['handler'] ?? '';
+                    $seqParams = $seqAction['params'] ?? [];
+
+                    if ($seqHandler === 'navigate' || $seqHandler === 'openWindow') {
+                        if ($seqHandler === 'navigate' && ! empty($seqParams['replace'])) {
+                            continue;
+                        }
+
+                        return ['handler' => $seqHandler, 'params' => $seqParams];
+                    }
                 }
             }
         }
 
         return null;
-    }
-
-    /**
-     * 엔진이 실행하는 중첩 액션 목록들을 모읍니다 (sequence·parallel·conditions·switch).
-     *
-     * @param  array  $action  액션 정의
-     * @param  array  $params  액션 params
-     * @return array<int, array<int, mixed>> 중첩 액션 목록들
-     */
-    private function childActionLists(array $action, array $params): array
-    {
-        $lists = [];
-        foreach ([$action['actions'] ?? null, $params['actions'] ?? null] as $list) {
-            if (is_array($list)) {
-                $lists[] = $list;
-            }
-        }
-
-        foreach ([$action['conditions'] ?? null, $params['conditions'] ?? null] as $conditions) {
-            if (! is_array($conditions)) {
-                continue;
-            }
-            foreach ($conditions as $condition) {
-                $then = is_array($condition) ? ($condition['then'] ?? null) : null;
-                if (is_array($then)) {
-                    $lists[] = array_is_list($then) ? $then : [$then];
-                }
-            }
-        }
-
-        foreach ([$action['cases'] ?? null, $params['cases'] ?? null] as $cases) {
-            if (! is_array($cases)) {
-                continue;
-            }
-            foreach ($cases as $case) {
-                if (is_array($case)) {
-                    $lists[] = array_is_list($case) ? $case : [$case];
-                }
-            }
-        }
-
-        return $lists;
     }
 
     /**
@@ -2420,30 +1369,56 @@ class ComponentHtmlMapper
      * 나머지 표현식은 ExpressionEvaluator로 해석합니다.
      * 미해석 {{}} 토큰이 남아있으면 null을 반환합니다 (graceful skip).
      *
-     * 이동 대상은 엔진 `handleNavigate`·`handleOpenWindow` 와 같은 판정을 거친다 — 같은 탭 이동은
-     * 같은 출처만(같은 출처 전체 주소는 경로로), 새 창은 같은 출처 또는 https 외부 주소만.
-     *
-     * navigate 의 `fallbackPath`(engine-v1.80.1)도 엔진과 같다 — path 가 비었거나 거부되면 fallbackPath 로 링크하고,
-     * fallbackPath 도 같은 판정에서 거부되면 링크를 만들지 않는다. path 가 실행 시점 값(`_local` 등)이라 봇이 풀 수
-     * 없으면 대체 경로로 링크하지 않는다(사람은 그 값으로 다른 곳에 간다).
-     *
      * @param  array  $params  navigate/openWindow params
      * @param  array  $context  데이터 컨텍스트
      * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @param  bool  $newWindow  새 창 링크인지 (openWindow 의 `_self` 가 아닌 대상)
-     * @return string|null 해석된 URL 또는 null (해석 불가·거부 시)
+     * @return string|null 해석된 URL 또는 null (해석 불가 시)
      */
-    private function resolveNavigateHref(array $params, array $context, ExpressionEvaluator $evaluator, bool $newWindow): ?string
+    private function resolveNavigateHref(array $params, array $context, ExpressionEvaluator $evaluator): ?string
     {
-        if (($params['path'] ?? '') === '' && ! array_key_exists('fallbackPath', $params)) {
+        $pathExpr = $params['path'] ?? '';
+        if ($pathExpr === '') {
             return null;
         }
 
-        $href = $this->resolveLinkTarget((string) ($params['path'] ?? ''), $context, $evaluator, $newWindow);
-        if ($href === null && ! $newWindow && array_key_exists('fallbackPath', $params)) {
-            $href = $this->resolveLinkTarget((string) $params['fallbackPath'], $context, $evaluator, false);
+        $pathExpr = (string) $pathExpr;
+
+        // _global 참조를 globalResolver로 선치환
+        if (str_contains($pathExpr, '_global')) {
+            if (! $this->globalResolver) {
+                // globalResolver 미설정 → _global 해석 불가 → skip
+                return null;
+            }
+
+            $resolveFailed = false;
+            $pathExpr = (string) preg_replace_callback(
+                '/\{\{([^}]*_global\.[^}]*)\}\}/',
+                function ($matches) use (&$resolveFailed) {
+                    $resolved = ($this->globalResolver)($matches[1]);
+                    if ($resolved === null) {
+                        $resolveFailed = true;
+                    }
+
+                    return $resolved !== null ? $resolved : $matches[0];
+                },
+                $pathExpr
+            );
+
+            if ($resolveFailed) {
+                return null;
+            }
         }
-        if (! is_string($href)) {
+
+        // ExpressionEvaluator로 나머지 표현식 해석
+        $href = $evaluator->evaluate($pathExpr, $context);
+
+        // 미해석 {{}} 토큰이 남아있으면 skip
+        if (str_contains($href, '{{') || str_contains($href, '}}')) {
+            return null;
+        }
+
+        // 빈 문자열이면 skip
+        if ($href === '') {
             return null;
         }
 
@@ -2470,238 +1445,6 @@ class ComponentHtmlMapper
     }
 
     /**
-     * 링크 이동 주소 식 하나를 풀어 링크에 쓸 주소를 돌려줍니다.
-     *
-     * @param  string  $pathExpr  주소 식 (`/posts/{{post.slug}}`·`{{query.redirect}}` 등)
-     * @param  array  $context  데이터 컨텍스트
-     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @param  bool  $newWindow  새 창 링크인지
-     * @return string|false|null 링크 주소 · false(봇이 풀 수 없는 실행 시점 값 — 대체 경로도 쓰지 않음) · null(빈 값·거부)
-     */
-    private function resolveLinkTarget(string $pathExpr, array $context, ExpressionEvaluator $evaluator, bool $newWindow): string|false|null
-    {
-        if ($pathExpr === '') {
-            return null;
-        }
-
-        // _global 참조를 globalResolver로 선치환
-        if (str_contains($pathExpr, '_global')) {
-            if (! $this->globalResolver) {
-                // globalResolver 미설정 → _global 해석 불가 → skip
-                return false;
-            }
-
-            $resolveFailed = false;
-            $pathExpr = (string) preg_replace_callback(
-                '/\{\{([^}]*_global\.[^}]*)\}\}/',
-                function ($matches) use (&$resolveFailed) {
-                    $resolved = ($this->globalResolver)($matches[1]);
-                    if ($resolved === null) {
-                        $resolveFailed = true;
-                    }
-
-                    return $resolved !== null ? $resolved : $matches[0];
-                },
-                $pathExpr
-            );
-
-            if ($resolveFailed) {
-                return false;
-            }
-        }
-
-        // 정적 경로는 평가하지 않는다 — 평가기의 「빈 바인딩 뒤 남은 연산자 정리」가 `/` 한 글자를 지워 홈 링크가 사라진다
-        if (! str_contains($pathExpr, '{{')) {
-            $href = $pathExpr;
-        } else {
-            // ExpressionEvaluator로 나머지 표현식 해석
-            $href = $evaluator->evaluate($pathExpr, $context, false);
-
-            // 미해석 {{}} 토큰이 남아있으면 skip
-            if (str_contains($href, '{{') || str_contains($href, '}}')) {
-                return false;
-            }
-
-            // 단일 바인딩(`{{query.redirect}}`)이 `/` 로 풀려 같은 정리에 지워졌으면 원값으로 되살린다
-            if ($href === '' && preg_match('/^\{\{(?:(?!\}\}).)*\}\}$/s', trim($pathExpr))) {
-                $raw = $evaluator->evaluateRaw($pathExpr, $context);
-                $href = is_string($raw) ? $raw : '';
-            }
-
-            // 실행 시점 값(`_local`·`_isolated`·`$event`·`$args`)이 빈 값이면 봇이 모르는 값이다 — 대체 경로로도 링크하지 않는다
-            if (trim($href) === '' && preg_match('/(?<![\w.$])(_local|_isolated|\$event|\$args)\b/', $pathExpr)) {
-                return false;
-            }
-        }
-
-        // 빈 문자열이면 skip
-        if ($href === '') {
-            return null;
-        }
-
-        // 실행 스킴(`{{query.redirect}}` ← `javascript:…`)은 링크로 만들지 않는다 — 클라이언트
-        // 이동 sink 가 막는 값을 봇 HTML 이 `<a href>` 로 되살리면 그 자리가 우회로가 된다.
-        if (self::isExecutableUrl($href, true)) {
-            return null;
-        }
-
-        // 다른 출처(`https://다른 사이트`·`//host`·`/\host`)는 클라이언트가 이동하지 않는 값이라 링크로 내보내지 않는다.
-        // 같은 출처 전체 주소는 경로로 바꾼다 — 요청 주소를 같은 출처로 받아도 내보내는 값은 경로뿐이다.
-        $sameOriginPath = $this->toSameOriginLinkPath($href);
-        // 같은 탭 이동은 `/` 로 시작하는 경로만 — 클라이언트 `sanitizeNavPath` 가 상대 경로(`admin/users`·`./x`·`?q`)를 거부한다
-        if ($sameOriginPath !== null && ! $newWindow && ! str_starts_with($sameOriginPath, '/')) {
-            $sameOriginPath = null;
-        }
-        if ($sameOriginPath !== null) {
-            $href = $sameOriginPath;
-        } elseif (! $newWindow || ! self::isHttpsExternalUrl($href)) {
-            return null;
-        }
-
-        return $href;
-    }
-
-    /**
-     * 링크 액션이 새 창을 여는지 판정합니다 (엔진 `handleOpenWindow` 의 `target` 판정과 같다).
-     *
-     * @param  string  $handler  핸들러명 (navigate|openWindow)
-     * @param  array  $params  액션 params
-     * @return bool openWindow 이고 `target` 이 `_self` 가 아니면 true
-     */
-    private static function isNewWindowLink(string $handler, array $params): bool
-    {
-        return $handler === 'openWindow' && ($params['target'] ?? null) !== '_self';
-    }
-
-    /**
-     * 출처 판정 전에 브라우저 URL 파서와 같게 정규화합니다 (엔진 `normalizeScriptSrcForOriginCheck` 와 같은 규칙).
-     *
-     * 앞뒤 C0 제어문자·공백을 버리고 ASCII tab·개행을 지우며, 백슬래시를 슬래시로 바꾸고
-     * 앞쪽 3개 이상의 슬래시를 `//` 로 접는다 (`/\host`·`///host` ≡ `//host`).
-     *
-     * @param  string  $url  주소
-     * @return string 정규화한 주소
-     */
-    private static function normalizeForOriginCheck(string $url): string
-    {
-        $stripped = (string) preg_replace(['/^[\x00-\x20]+/', '/[\x00-\x20]+$/', '/[\t\n\r]/'], '', $url);
-        $slashed = str_replace('\\', '/', $stripped);
-
-        return (string) preg_replace('/^([a-z][a-z0-9+.\-]*:)?\/{2,}/i', '$1//', $slashed);
-    }
-
-    /**
-     * 링크 주소가 이 사이트와 같은 출처면 링크에 쓸 경로를 돌려줍니다.
-     *
-     * - 스킴·호스트가 없는 주소(`/path`·상대 경로·`?q`)는 원본(trim)을 그대로 — 쿼리 속 백슬래시를 보존한다.
-     * - `http(s)://` 전체 주소는 사용자 정보가 없고 출처(스킴·호스트·기본 포트 정규화)가 사이트 주소
-     *   (`app.url`) 또는 이 요청의 주소와 같을 때만 「경로?쿼리#해시」로.
-     * - `//host`·다른 출처·다른 스킴은 null.
-     *
-     * @param  string  $href  해석된 주소
-     * @return string|null 같은 출처 경로 또는 null
-     */
-    private function toSameOriginLinkPath(string $href): ?string
-    {
-        $normalized = self::normalizeForOriginCheck($href);
-        if ($normalized === '' || str_starts_with($normalized, '//')) {
-            return null;
-        }
-
-        if (! preg_match('/^[a-z][a-z0-9+.\-]*:/i', $normalized)) {
-            return trim($href);
-        }
-
-        $parts = parse_url($normalized);
-        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host']) || isset($parts['user']) || isset($parts['pass'])) {
-            return null;
-        }
-
-        $origin = self::originKey($parts['scheme'], $parts['host'], $parts['port'] ?? null);
-        if ($origin === null || ! in_array($origin, $this->sameOriginKeys(), true)) {
-            return null;
-        }
-
-        $path = $parts['path'] ?? '';
-        // `https://이 사이트//다른호스트` 의 경로는 `//다른호스트` — 그대로 쓰면 바깥 링크가 된다
-        if (str_starts_with($path, '//')) {
-            return null;
-        }
-
-        return ($path === '' ? '/' : $path)
-            .(isset($parts['query']) ? '?'.$parts['query'] : '')
-            .(isset($parts['fragment']) ? '#'.$parts['fragment'] : '');
-    }
-
-    /**
-     * 같은 출처로 보는 출처 키 목록 — 사이트 주소(`app.url`)와 이 요청의 주소.
-     *
-     * @return array<int, string> `scheme://host:port` 형식 출처 키
-     */
-    private function sameOriginKeys(): array
-    {
-        $candidates = [SiteUrl::base()];
-
-        if (app()->bound('request')) {
-            try {
-                $candidates[] = request()->getSchemeAndHttpHost();
-            } catch (\Throwable) {
-                // 형식이 잘못된 Host 헤더 — 요청 주소는 후보에서 뺀다
-            }
-        }
-
-        $keys = [];
-        foreach ($candidates as $candidate) {
-            $parts = parse_url($candidate);
-            if (is_array($parts) && isset($parts['scheme'], $parts['host'])) {
-                $key = self::originKey($parts['scheme'], $parts['host'], $parts['port'] ?? null);
-                if ($key !== null) {
-                    $keys[] = $key;
-                }
-            }
-        }
-
-        return $keys;
-    }
-
-    /**
-     * 출처 비교 키를 만듭니다 (http·https 만, 기본 포트 정규화).
-     *
-     * @param  string  $scheme  스킴
-     * @param  string  $host  호스트
-     * @param  int|null  $port  명시 포트
-     * @return string|null `scheme://host:port`, http(s) 가 아니면 null
-     */
-    private static function originKey(string $scheme, string $host, ?int $port): ?string
-    {
-        $scheme = strtolower($scheme);
-        $defaultPort = match ($scheme) {
-            'https' => 443,
-            'http' => 80,
-            default => null,
-        };
-
-        if ($defaultPort === null) {
-            return null;
-        }
-
-        return $scheme.'://'.strtolower($host).':'.($port ?? $defaultPort);
-    }
-
-    /**
-     * 새 창으로 열 수 있는 외부 주소인지 판정합니다 — 엔진은 외부 새 창을 https 주소만 연다.
-     *
-     * @param  string  $href  해석된 주소
-     * @return bool `https://호스트` 로 시작하면 true
-     */
-    private static function isHttpsExternalUrl(string $href): bool
-    {
-        $normalized = self::normalizeForOriginCheck($href);
-
-        return (bool) preg_match('#^https://[^/]#i', $normalized);
-    }
-
-    /**
      * 렌더링된 HTML에 navigate 링크를 적용합니다.
      *
      * 태그 유형에 따라 변환/래핑/주입 전략을 선택합니다:
@@ -2715,19 +1458,18 @@ class ComponentHtmlMapper
      * @param  string  $html  렌더링된 HTML
      * @param  string  $tag  HTML 태그명
      * @param  string  $href  링크 URL
-     * @param  bool  $newWindow  새 창 링크인지 (`target="_blank" rel="noopener noreferrer"`)
+     * @param  string  $handler  핸들러명 (navigate|openWindow)
      * @param  array  $component  컴포넌트 정의
      * @return string 링크가 적용된 HTML
      */
-    private function applyNavigateLink(string $html, string $tag, string $href, bool $newWindow, array $component): string
+    private function applyNavigateLink(string $html, string $tag, string $href, string $handler, array $component): string
     {
         if ($html === '' || $tag === '') {
             return $html;
         }
 
-        // 새 창은 열린 창이 이 창(opener)을 조작하지 못하게 끊는다 — 엔진 openWindow·HtmlContent 외부 링크와 같은 기준
-        $targetAttr = $newWindow ? ' target="_blank" rel="noopener noreferrer"' : '';
-        $escapedHref = e($this->siteHref($href));
+        $targetAttr = $handler === 'openWindow' ? ' target="_blank"' : '';
+        $escapedHref = e($href);
 
         // a 태그: href 주입 또는 스킵
         if ($tag === 'a') {

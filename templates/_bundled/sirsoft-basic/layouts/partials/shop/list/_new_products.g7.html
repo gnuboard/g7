@@ -1,8 +1,0 @@
-<!-- 신상품 가로 줄 — 인기·최근 본·관련 상품 줄과 같은 짜임이다. 넘기기는 ProductRail 컴포넌트가 맡는다. -->
-<partial description="신상품 섹션">
-  <product-rail data-type="composite" data-if="{{newProducts.data &amp;&amp; newProducts.data.length > 0}}" class="mb-12" title="$t:shop.new_products" icon="sparkles" iconClassName="text-xl text-yellow-700 dark:text-yellow-600" prevLabel="$t:common.prev" nextLabel="$t:common.next" roleDescription="$t:shop.product_rail.roledescription">
-    <div data-each="product in {{newProducts.data ?? []}}">
-      <product-card data-type="composite" product="{{product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
-    </div>
-  </product-rail>
-</partial>

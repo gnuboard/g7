@@ -201,11 +201,6 @@
             "required": false,
             "description": "표시할 규칙 키 목록 (minLength, hasUppercase, hasLowercase, hasNumber, hasSpecial)"
           },
-          "enableRules": {
-            "type": "array",
-            "required": false,
-            "description": "켤 검증 규칙 목록. 파라미터는 「규칙:값」 (minLength:N, maxLength:N, hasUppercase, hasLowercase, hasNumber, hasSpecial, noSpaces, minTypes:N). hasSpecial 은 서버와 같은 유니코드 구두점·기호·공백 범주로 판정하고, minTypes 는 영문·숫자·특수문자 세 종류 중 N종 이상 섞였는지 본다(서버 「문자 종류 조합」과 같다). 보안 환경설정 값으로 식을 만들어 바인딩한다 — 예: {{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)]}}"
-          },
           "wrapperClassName": {
             "type": "string",
             "required": false,
@@ -343,31 +338,6 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
-          },
-          "disabled": {
-            "type": "boolean",
-            "required": false,
-            "description": "비활성 링크 — 참이면 href 를 빼고 aria-disabled·tabindex -1 로 그리며 클릭을 무시한다(꾸밈은 aria-disabled: 변형)"
-          },
-          "mergeQuery": {
-            "type": "boolean",
-            "required": false,
-            "description": "현재 주소의 쿼리를 href 에 합친다(href 자신의 키가 이김) — 보통 클릭과 새 탭이 같은 목록 조건으로 열린다"
-          },
-          "fallbackHref": {
-            "type": "string",
-            "required": false,
-            "description": "대체 주소 — href 가 이 사이트 주소가 아니면(실행 주소·다른 사이트·//host) 대신 이 주소를 href 로 단다. 바깥에서 정해지는 href(알림 이동 주소 등)가 새 탭으로 그대로 열리지 않게 하며, 보통 클릭의 navigate fallbackPath 와 같은 착지점을 적는다. 빈 href 는 그대로"
-          },
-          "target": {
-            "type": "string",
-            "required": false,
-            "description": "링크를 열 창 — \"_blank\" 면 rel 에 noopener noreferrer 를 합친다(넘긴 rel 토큰은 남긴다)"
-          },
-          "rel": {
-            "type": "string",
-            "required": false,
-            "description": "링크 관계 — target=\"_blank\" 면 noopener noreferrer 가 빠져 있어도 컴포넌트가 채운다"
           }
         }
       },
@@ -437,76 +407,10 @@
         }
       },
       {
-        "name": "Thead",
-        "type": "basic",
-        "description": "HTML thead element wrapper",
-        "path": "src/components/basic/Thead.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "Tbody",
-        "type": "basic",
-        "description": "HTML tbody element wrapper",
-        "path": "src/components/basic/Tbody.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "Tr",
-        "type": "basic",
-        "description": "HTML tr element wrapper",
-        "path": "src/components/basic/Tr.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "Th",
-        "type": "basic",
-        "description": "HTML th element wrapper",
-        "path": "src/components/basic/Th.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "Td",
-        "type": "basic",
-        "description": "HTML td element wrapper",
-        "path": "src/components/basic/Td.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
         "name": "Icon",
         "type": "basic",
         "description": "FontAwesome icon wrapper",
         "path": "src/components/basic/Icon.tsx",
-        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -536,28 +440,32 @@
             "required": false,
             "description": "대체 텍스트"
           },
-          "thumbPreset": {
+          "className": {
             "type": "string",
             "required": false,
-            "description": "썸네일 규격 이름(xs·sm·md·lg·xl·운영자 규격). 서빙 경로 이미지에 size 를 붙이고 srcSet 이 없으면 1x·2x srcset 을 만든다. 외부·정적·data: 주소는 그대로. DOM 속성으로 나가지 않는다"
-          },
-          "srcSet": {
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Footer",
+        "type": "basic",
+        "description": "HTML footer element wrapper",
+        "path": "src/components/basic/Footer.tsx",
+        "props": {
+          "className": {
             "type": "string",
             "required": false,
-            "description": "srcset 직접 지정 (thumbPreset 이 만드는 srcset 보다 우선)"
-          },
-          "loading": {
-            "type": "string",
-            "required": false,
-            "default": "lazy",
-            "description": "지연 로딩 (lazy|eager). 첫 화면 이미지(로고·상세 메인·배너)는 eager 로 명시"
-          },
-          "decoding": {
-            "type": "string",
-            "required": false,
-            "default": "async",
-            "description": "디코딩 방식 (async|sync|auto)"
-          },
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Header",
+        "type": "basic",
+        "description": "HTML header element wrapper",
+        "path": "src/components/basic/Header.tsx",
+        "props": {
           "className": {
             "type": "string",
             "required": false,
@@ -592,50 +500,10 @@
             "default": "그누보드7",
             "description": "사이트 이름"
           },
-          "userLoading": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "로그인 사용자 정보를 받는 중인가 — true 면 사용자 메뉴 자리에 빈 자리(회색 원 + 이름 막대)를 그리고(이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다) 로그인·회원가입·주문조회·사용자 메뉴는 그리지 않는다. 레이아웃이 {{_global.currentUser === undefined}} 로 넘긴다"
-          },
-          "boardEnabled": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "게시판 모듈 활성 여부 — false 면 인기글 탭·게시판 탭을 숨긴다. 레이아웃이 _global.activeModules 로 판정해 넘긴다"
-          },
-          "shopEnabled": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "쇼핑몰 모듈 활성 여부 — false 면 쇼핑 탭·장바구니·회원 메뉴의 주문내역·위시리스트·비회원 주문조회를 숨긴다"
-          },
-          "searchEnabled": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "검색칸 표시 여부 — 레이아웃은 게시판·쇼핑몰·페이지 중 하나라도 켜져 있으면 true 를 넘긴다"
-          },
-          "searchHistoryScope": {
-            "type": "string",
-            "required": false,
-            "default": "core.site",
-            "description": "검색칸의 최근 검색어 범위 — 같은 범위의 검색창(모바일 서랍·통합검색 화면)과 목록을 공유한다. 엔진이 그 범위를 쓸 수 없다고 답하면 펼침 목록 없이 평범한 검색칸"
-          },
-          "shopProductsHref": {
-            "type": "string",
-            "required": false,
-            "description": "봇 화면(seo-config header_nav)의 「쇼핑」 링크 주소 — 컴포넌트는 읽지 않는다. 옛 코어의 봇 렌더가 값과 글자가 섞인 attrs 패턴을 치환하지 못해 완성된 주소를 넘긴다"
-          },
           "className": {
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
-          },
-          "shopReviewsHref": {
-            "type": "string",
-            "required": false,
-            "description": "검색 로봇용 화면의 「리뷰」 링크 주소 (화면은 shopBase 로 만든다)"
           }
         }
       },
@@ -651,27 +519,10 @@
             "default": "그누보드7",
             "description": "사이트 이름"
           },
-          "boardEnabled": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "게시판 모듈 활성 여부 — false 면 기본 링크 그룹에서 커뮤니티 묶음을 뺀다(linkGroups 를 직접 넘기면 무관)"
-          },
-          "pageEnabled": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "페이지 모듈 활성 여부 — false 면 기본 링크 그룹에서 정보·정책 묶음을 뺀다(linkGroups 를 직접 넘기면 무관)"
-          },
           "className": {
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
-          },
-          "businessInfo": {
-            "type": "object",
-            "required": false,
-            "description": "쇼핑몰 사업자 정보(법정 표시 항목) — 값이 있는 항목만 그린다. 쇼핑몰 공개 설정 basic_info 를 그대로 넘긴다"
           }
         }
       },
@@ -697,30 +548,13 @@
           "product": {
             "type": "object",
             "required": true,
-            "description": "상품 데이터 (상품 목록 응답의 한 항목)"
+            "description": "상품 데이터"
           },
-          "onClick": {
-            "type": "function",
-            "required": false,
-            "description": "카드를 눌렀을 때 부를 함수 — 주면 상세로 가는 링크 대신 단추로 그린다"
-          },
-          "shopBase": {
-            "type": "string",
-            "required": false,
-            "default": "/shop",
-            "description": "쇼핑몰 기본 경로"
-          },
-          "preserveListQuery": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "상세로 갈 때 지금 목록의 쪽·정렬·검색 조건을 이어 갈지"
-          },
-          "showActions": {
+          "showDiscount": {
             "type": "boolean",
             "required": false,
             "default": true,
-            "description": "카드 위 장바구니 담기·찜 단추 표시 여부"
+            "description": "할인율 표시 여부"
           },
           "className": {
             "type": "string",
@@ -820,46 +654,39 @@
         }
       },
       {
-        "name": "MemberFieldInput",
+        "name": "PostReactions",
         "type": "composite",
-        "description": "회원 항목 1개의 입력칸 (서버 항목 계약의 유형과 제한 값으로 입력칸을 고른다)",
-        "path": "src/components/composite/MemberFieldInput.tsx",
+        "description": "게시글 리액션 버튼 그룹",
+        "path": "src/components/composite/PostReactions.tsx",
         "props": {
-          "field": {
-            "type": "object",
+          "postId": {
+            "type": "number",
             "required": true,
-            "description": "서버가 준 항목 계약 (key, name, type, label, required, options, constraints 등)"
+            "description": "게시글 ID"
           },
-          "name": {
+          "reactions": {
+            "type": "object",
+            "required": false,
+            "description": "리액션 데이터"
+          },
+          "className": {
             "type": "string",
             "required": false,
-            "description": "폼 경로 (자동 바인딩의 필드 이름)"
-          },
-          "error": {
-            "type": "string",
-            "required": false,
-            "description": "이 칸의 검증 오류 문구"
-          },
-          "errorId": {
-            "type": "string",
-            "required": false,
-            "description": "오류 문구 노드의 id (aria-describedby)"
-          },
-          "disabled": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "비활성 여부"
-          },
-          "timezones": {
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "SocialLoginButtons",
+        "type": "composite",
+        "description": "소셜 로그인 버튼 그룹",
+        "path": "src/components/composite/SocialLoginButtons.tsx",
+        "props": {
+          "providers": {
             "type": "array",
             "required": false,
-            "description": "시간대 선택지 (생략하면 전역 appConfig.supportedTimezones 를 읽는다. 항목의 constraints.widget 이 timezone 일 때만 쓴다)"
-          },
-          "inputClassName": {
-            "type": "string",
-            "required": false,
-            "description": "입력칸에 붙일 클래스"
+            "default": ["google", "naver", "kakao"],
+            "description": "활성화할 소셜 로그인 프로바이더"
           },
           "className": {
             "type": "string",
@@ -1017,83 +844,20 @@
         "description": "알림 센터 드롭다운 — 알림 목록 표시, 무한스크롤, 읽음 추적, 안 읽은 필터, 개별/전체 삭제",
         "path": "src/components/composite/NotificationCenter.tsx",
         "props": {
-          "notifications": {
-            "type": "array",
-            "required": false,
-            "default": [],
-            "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data, url) — url 이 있으면 알림 본문이 <a href> 링크가 되어 새 탭으로 열 수 있다(보통 클릭은 onNotificationClick, 삭제 단추는 링크 밖)"
-          },
-          "unreadCount": {
-            "type": "number",
-            "required": false,
-            "default": 0,
-            "description": "서버 기반 미읽음 알림 수"
-          },
-          "hasMore": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "추가 로드 가능 여부 (무한스크롤)"
-          },
-          "loading": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "로딩 상태"
-          },
-          "titleText": {
-            "type": "string",
-            "required": false,
-            "default": "알림",
-            "description": "드롭다운 제목"
-          },
-          "emptyText": {
-            "type": "string",
-            "required": false,
-            "description": "알림 없음 텍스트"
-          },
-          "markAllReadText": {
-            "type": "string",
-            "required": false,
-            "description": "모두 읽음 버튼 텍스트"
-          },
-          "deleteAllText": {
-            "type": "string",
-            "required": false,
-            "description": "모두 삭제 버튼 텍스트"
-          },
-          "unreadOnlyText": {
-            "type": "string",
-            "required": false,
-            "description": "안 읽은 알림만 체크박스 텍스트"
-          },
-          "unreadOnly": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "안 읽은 알림만 필터 상태"
-          },
-          "dropdownAlign": {
-            "type": "string",
-            "required": false,
-            "default": "right",
-            "description": "드롭다운 정렬 방향 (right/left)"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "추가 CSS 클래스"
-          }
+          "notifications": { "type": "array", "required": false, "default": [], "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data)" },
+          "unreadCount": { "type": "number", "required": false, "default": 0, "description": "서버 기반 미읽음 알림 수" },
+          "hasMore": { "type": "boolean", "required": false, "default": false, "description": "추가 로드 가능 여부 (무한스크롤)" },
+          "loading": { "type": "boolean", "required": false, "default": false, "description": "로딩 상태" },
+          "titleText": { "type": "string", "required": false, "default": "알림", "description": "드롭다운 제목" },
+          "emptyText": { "type": "string", "required": false, "description": "알림 없음 텍스트" },
+          "markAllReadText": { "type": "string", "required": false, "description": "모두 읽음 버튼 텍스트" },
+          "deleteAllText": { "type": "string", "required": false, "description": "모두 삭제 버튼 텍스트" },
+          "unreadOnlyText": { "type": "string", "required": false, "description": "안 읽은 알림만 체크박스 텍스트" },
+          "unreadOnly": { "type": "boolean", "required": false, "default": false, "description": "안 읽은 알림만 필터 상태" },
+          "dropdownAlign": { "type": "string", "required": false, "default": "right", "description": "드롭다운 정렬 방향 (right/left)" },
+          "className": { "type": "string", "required": false, "description": "추가 CSS 클래스" }
         },
-        "events": [
-          "onClose",
-          "onNotificationClick",
-          "onLoadMore",
-          "onMarkAllRead",
-          "onDeleteAll",
-          "onDelete",
-          "onUnreadOnlyToggle"
-        ]
+        "events": ["onClose", "onNotificationClick", "onLoadMore", "onMarkAllRead", "onDeleteAll", "onDelete", "onUnreadOnlyToggle"]
       },
       {
         "name": "Pagination",
@@ -1108,8 +872,8 @@
           },
           "totalPages": {
             "type": "number",
-            "required": false,
-            "description": "전체 페이지 수. 총 건수를 정확히 세지 못한 목록은 null (페이지 번호 목록과 마지막 페이지 점프가 감춰지고 이전/다음만 남음)"
+            "required": true,
+            "description": "전체 페이지 수"
           },
           "maxVisiblePages": {
             "type": "number",
@@ -1122,21 +886,6 @@
             "required": false,
             "default": true,
             "description": "처음/마지막 버튼 표시 여부"
-          },
-          "showFirst": {
-            "type": "boolean",
-            "required": false,
-            "description": "처음 버튼 표시 여부 (미지정 시 showFirstLast 를 따름)"
-          },
-          "showLast": {
-            "type": "boolean",
-            "required": false,
-            "description": "마지막 버튼 표시 여부 (미지정 시 showFirstLast 를 따름). 총 건수가 부정확해 totalPages 가 null 이면 이 값과 무관하게 감춰짐"
-          },
-          "hasMorePages": {
-            "type": "boolean",
-            "required": false,
-            "description": "다음 페이지 존재 여부. 총 건수를 모르는 목록에서 '다음' 버튼 활성 여부를 이 값으로 판정"
           },
           "prevText": {
             "type": "string",
@@ -1152,16 +901,6 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
-          },
-          "pageHref": {
-            "type": "string",
-            "required": false,
-            "description": "페이지 주소 틀 — {page} 자리에 번호를 넣는다. 주면 번호·이전·다음·처음·끝이 링크가 되어 새 탭으로 열 수 있다(보통 클릭은 onPageChange)"
-          },
-          "pageHrefMergeQuery": {
-            "type": "boolean",
-            "required": false,
-            "description": "페이지 주소에 현재 주소의 쿼리(검색·정렬 조건)를 합친다"
           }
         }
       },
@@ -1212,99 +951,10 @@
         }
       },
       {
-        "name": "RecentSearchCombobox",
-        "type": "composite",
-        "description": "최근 검색어 펼침 목록을 가진 검색창 — 빈 칸에 초점을 두면 같은 범위의 최근 검색어(항목 삭제·전체 삭제·자동 저장 켜기/끄기)가 펼쳐지고, 제출할 때 기록한 뒤 onSearch(검색어)를 부른다. 목록·기록은 코어 엔진 G7Core.useSearchHistory(engine-v1.87.0+)가 맡고, 엔진이 범위를 쓸 수 없다고 답하면 평범한 검색창",
-        "path": "src/components/composite/RecentSearchCombobox.tsx",
-        "autoBinding": false,
-        "props": {
-          "scope": {
-            "type": "string",
-            "required": false,
-            "default": "core.site",
-            "description": "최근 검색어 범위(코어 통합검색 core.site, 확장은 {확장ID}.{이름}) — 같은 범위의 검색창끼리 목록을 공유"
-          },
-          "name": {
-            "type": "string",
-            "required": false,
-            "default": "q",
-            "description": "입력칸 name"
-          },
-          "value": {
-            "type": "string",
-            "required": false,
-            "description": "처음 보일 검색어(예: 주소의 q) — 바뀌면 입력칸이 따라가고 기록하지 않는다"
-          },
-          "resultPath": {
-            "type": "string",
-            "required": false,
-            "description": "검색 결과 화면 경로(예: /search) — 주면 입력칸이 주소를 따라간다: 그 경로에서는 주소의 name 검색어, 다른 화면에서는 빈칸. 화면을 옮겨도 다시 마운트되지 않는 머리글·모바일 서랍 검색창용"
-          },
-          "placeholder": {
-            "type": "string",
-            "required": false,
-            "description": "안내 문구"
-          },
-          "ariaLabel": {
-            "type": "string",
-            "required": false,
-            "description": "입력칸 접근성 이름(없으면 안내 문구)"
-          },
-          "showButton": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "검색 단추 표시"
-          },
-          "buttonText": {
-            "type": "string",
-            "required": false,
-            "description": "검색 단추 글자(없으면 「검색」)"
-          },
-          "showIcon": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "입력칸 왼쪽 돋보기 아이콘 표시"
-          },
-          "submitEmpty": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "빈 검색어 제출도 onSearch('')로 넘김(기록하지 않음) — 칸을 비우고 제출하면 검색 조건을 푸는 목록 화면 검색칸용. 끄면 빈 제출은 무시"
-          },
-          "showClear": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "검색어 지우기(×) 단추 — 칸에 글자가 있을 때만 보이고, 누르면(또는 Esc) 칸만 비우고 초점을 남긴다(검색·기록 안 함). 입력칸 클래스를 주면 오른쪽 여백 pr-11 을 둔다"
-          },
-          "inputClassName": {
-            "type": "string",
-            "required": false,
-            "description": "입력칸 클래스(주면 기본 모양을 대신함)"
-          },
-          "buttonClassName": {
-            "type": "string",
-            "required": false,
-            "description": "검색 단추 클래스(주면 기본 모양을 대신함)"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        },
-        "events": [
-          "onSearch"
-        ]
-      },
-      {
         "name": "Avatar",
         "type": "composite",
         "description": "사용자 아바타 (이미지 또는 이름 첫 글자)",
         "path": "src/components/composite/Avatar.tsx",
-        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -1335,60 +985,10 @@
         }
       },
       {
-        "name": "VisitorCounter",
-        "type": "composite",
-        "description": "방문자 카운터 (오늘·어제·최대·전체) — 순수 표시 컴포넌트, 데이터는 레이아웃 데이터소스가 넘긴다",
-        "path": "src/components/composite/VisitorCounter.tsx",
-        "autoBinding": false,
-        "props": {
-          "today": {
-            "type": "number",
-            "required": false,
-            "default": 0,
-            "description": "오늘 방문자"
-          },
-          "yesterday": {
-            "type": "number",
-            "required": false,
-            "default": 0,
-            "description": "어제 방문자"
-          },
-          "max": {
-            "type": "number",
-            "required": false,
-            "default": 0,
-            "description": "하루 최대 방문자"
-          },
-          "total": {
-            "type": "number",
-            "required": false,
-            "default": 0,
-            "description": "전체 방문자(일별 순방문자 합)"
-          },
-          "layout": {
-            "type": "string",
-            "required": false,
-            "default": "row",
-            "description": "배치 (row | column) — row 는 모바일에서 2×2"
-          },
-          "labels": {
-            "type": "object",
-            "required": false,
-            "description": "항목 라벨 { today, yesterday, max, total }"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
         "name": "UserInfo",
         "type": "composite",
         "description": "사용자 정보 표시 및 드롭다운 메뉴 (이름, 서브텍스트, 프로필 링크, 비회원 배지)",
         "path": "src/components/composite/UserInfo.tsx",
-        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -1434,34 +1034,6 @@
             "required": false,
             "description": "레이아웃 JSON에서 text 속성으로 전달되는 이름"
           },
-          "author": {
-            "type": "object",
-            "required": false,
-            "description": "작성자 객체 (name/id/is_guest/status 를 일괄 전달). 개별 props 가 우선"
-          },
-          "subTextTitle": {
-            "type": "string",
-            "required": false,
-            "description": "서브 텍스트의 title 속성 (툴팁)"
-          },
-          "isWithdrawn": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "탈퇴 회원 여부 (author.status === 'withdrawn' 와 OR)"
-          },
-          "layout": {
-            "type": "string",
-            "required": false,
-            "default": "vertical",
-            "description": "레이아웃 방향 (vertical | horizontal)"
-          },
-          "stopPropagation": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "클릭 이벤트 버블링 방지 (목록 행 안에서 쓸 때 행 선택 발화 차단). 액션 top-level 키 stopPropagation 과 이름만 같은 별개 표면"
-          },
           "menuItems": {
             "type": "array",
             "required": false,
@@ -1506,40 +1078,10 @@
             "default": true,
             "description": "HTML 렌더링 여부"
           },
-          "imageSizes": {
-            "type": "string",
-            "required": false,
-            "default": "(min-width: 1024px) 768px, 100vw",
-            "description": "본문 이미지 srcset 의 sizes 값 (isHtml=true). 서빙 경로 본문 이미지는 본문 이미지 규격·srcset·지연 로딩으로 표시되고, 링크 밖 이미지는 눌러서 원본 확대 보기"
-          },
           "purifyConfig": {
             "type": "object",
             "required": false,
             "description": "DOMPurify 설정 객체"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "BrandMark",
-        "type": "composite",
-        "description": "결제 브랜드 마크 (색 배지 또는 인라인 SVG 로고, DOMPurify 화이트리스트 sanitize)",
-        "path": "src/components/composite/BrandMark.tsx",
-        "props": {
-          "brandMark": {
-            "type": "object",
-            "required": false,
-            "description": "브랜드 마크 데이터 { text, class } 또는 { svg }"
-          },
-          "size": {
-            "type": "number",
-            "required": false,
-            "default": 32,
-            "description": "마크 컨테이너 크기(px)"
           },
           "className": {
             "type": "string",
@@ -1600,48 +1142,7 @@
         "type": "composite",
         "description": "모달 다이얼로그 (ESC 키 닫기, 포커스 트랩, 오버레이 클릭 닫기)",
         "path": "src/components/composite/Modal.tsx",
-        "skipBindingKeys": ["footer"],
         "props": {
-          "closeOnBackdropClick": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "Backdrop(오버레이) 클릭 시 모달 닫기 여부"
-          },
-          "closeOnOverlayClick": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "closeOnBackdropClick 별칭 (레이아웃 JSON 호환)"
-          },
-          "showCloseButton": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "헤더 닫기 버튼 표시 여부"
-          },
-          "closeOnEscape": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "ESC 키로 모달 닫기 허용 여부"
-          },
-          "icon": {
-            "type": "string",
-            "required": false,
-            "description": "제목 앞에 표시할 Font Awesome 아이콘 이름"
-          },
-          "iconClassName": {
-            "type": "string",
-            "required": false,
-            "default": "text-gray-500 dark:text-gray-400",
-            "description": "아이콘 클래스"
-          },
-          "style": {
-            "type": "CSSProperties",
-            "required": false,
-            "description": "인라인 스타일"
-          },
           "isOpen": {
             "type": "boolean",
             "required": true,
@@ -1657,16 +1158,11 @@
             "required": false,
             "description": "모달 제목"
           },
-          "size": {
-            "type": "string",
-            "required": false,
-            "description": "이름 있는 너비 단계 (sm/small 400px, md/medium 500px, lg/large 720px, xl 900px, 2xl 1120px). width 를 함께 주면 width 가 우선하며, 모르는 값은 기본 500px 으로 떨어진다"
-          },
           "width": {
             "type": "string",
             "required": false,
             "default": "500px",
-            "description": "모달 너비 CSS 값 (size 보다 우선)"
+            "description": "모달 너비"
           },
           "className": {
             "type": "string",
@@ -1677,11 +1173,6 @@
             "type": "ReactNode",
             "required": false,
             "description": "모달 내용"
-          },
-          "footer": {
-            "type": "array",
-            "required": false,
-            "description": "본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 배열 (확인/취소 버튼). 640px 이하에서는 세로로 쌓는다"
           }
         }
       },
@@ -1826,7 +1317,7 @@
           "tabs": {
             "type": "array",
             "required": true,
-            "description": "탭 목록 (id, label, iconName) — 탭 항목에 href 를 주면 <a role=\"tab\" href> 로 그려 새 탭으로 열 수 있다(보통 클릭은 onTabChange)"
+            "description": "탭 목록 (id, label, iconName)"
           },
           "activeTabId": {
             "type": "string",
@@ -1844,38 +1335,10 @@
             "required": false,
             "description": "탭 변경 핸들러"
           },
-          "tabHrefMergeQuery": {
-            "type": "boolean",
-            "required": false,
-            "description": "탭 주소(tabs[].href)에 현재 주소의 쿼리를 합친다 — 같은 화면 안에서 쿼리만 바꾸는 탭이 목록 문맥을 이고 갈 때"
-          },
           "className": {
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "SlotContainer",
-        "type": "composite",
-        "description": "동적 슬롯 컨테이너 — 레이아웃 JSON 노드(slot)/확장 주입 조각을 떙겨 렌더 (빈 슬롯=미렌더). 헤더 통화 등 모듈 주입 UI 소비",
-        "path": "src/components/composite/SlotContainer.tsx",
-        "props": {
-          "slotId": {
-            "type": "string",
-            "required": true,
-            "description": "렌더할 슬롯 ID"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "컨테이너 클래스"
-          },
-          "emptyContent": {
-            "type": "node",
-            "required": false,
-            "description": "빈 슬롯일 때 표시할 내용"
           }
         }
       },
@@ -1905,202 +1368,6 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "ProductRail",
-        "type": "composite",
-        "description": "가로 상품 줄 컨테이너 — 자식 카드를 한 줄로 늘어놓고 손가락 넘김·이전/다음 단추로 넘긴다",
-        "path": "src/components/composite/ProductRail.tsx",
-        "autoBinding": false,
-        "props": {
-          "title": {
-            "type": "string",
-            "required": false,
-            "description": "줄 제목"
-          },
-          "icon": {
-            "type": "string",
-            "required": false,
-            "description": "제목 앞 아이콘 이름"
-          },
-          "iconClassName": {
-            "type": "string",
-            "required": false,
-            "description": "아이콘 클래스 (색)"
-          },
-          "prevLabel": {
-            "type": "string",
-            "required": false,
-            "default": "Previous",
-            "description": "이전 단추 이름"
-          },
-          "nextLabel": {
-            "type": "string",
-            "required": false,
-            "default": "Next",
-            "description": "다음 단추 이름"
-          },
-          "roleDescription": {
-            "type": "string",
-            "required": false,
-            "description": "스크린리더가 읽는 영역 종류"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "ChipRows",
-        "type": "composite",
-        "description": "분류 칩 줄 컨테이너 — 자식 칩이 한 줄에 다 들어가면 한 줄, 넘치면 두 줄로 나눠 가로로 넘긴다",
-        "path": "src/components/composite/ChipRows.tsx",
-        "autoBinding": false,
-        "props": {
-          "ariaLabel": {
-            "type": "string",
-            "required": false,
-            "description": "칩 줄의 이름 (스크린리더가 읽는다)"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "MobileBuyBar",
-        "type": "composite",
-        "description": "좁은 화면 하단 구매바 — 가격과 찜·장바구니·바로구매(상품) 또는 주문하기(장바구니)를 화면 아래에 고정한다",
-        "path": "src/components/composite/MobileBuyBar.tsx",
-        "autoBinding": false,
-        "props": {
-          "variant": {
-            "type": "string",
-            "required": false,
-            "default": "product",
-            "description": "바 종류 — 'product'(상품 상세) · 'cart'(장바구니)"
-          },
-          "priceText": {
-            "type": "string",
-            "required": false,
-            "description": "보여 줄 금액 (형식을 갖춘 글자)"
-          },
-          "captionText": {
-            "type": "string",
-            "required": false,
-            "description": "금액 아래 보조 글자"
-          },
-          "wished": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "찜 여부 (상품 바)"
-          },
-          "showWish": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "찜 단추 표시 여부 (상품 바)"
-          },
-          "cartDisabled": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "장바구니 단추 잠금 (상품 바)"
-          },
-          "buyDisabled": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "바로구매 단추 잠금 (상품 바)"
-          },
-          "primaryLabel": {
-            "type": "string",
-            "required": false,
-            "description": "주 단추 글자 (장바구니 바)"
-          },
-          "primaryDisabled": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "주 단추 잠금 (장바구니 바)"
-          },
-          "busy": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "진행 중 — 모든 단추를 잠근다"
-          },
-          "soldOutLabel": {
-            "type": "string",
-            "required": false,
-            "description": "판매 중이 아닐 때의 상태 글자 — 주면 구매 단추 대신 이 글자를 보인다"
-          },
-          "onWish": {
-            "type": "function",
-            "required": false,
-            "description": "찜 단추를 눌렀을 때"
-          },
-          "onCart": {
-            "type": "function",
-            "required": false,
-            "description": "장바구니 단추를 눌렀을 때"
-          },
-          "onBuy": {
-            "type": "function",
-            "required": false,
-            "description": "바로구매 단추를 눌렀을 때"
-          },
-          "onPrimary": {
-            "type": "function",
-            "required": false,
-            "description": "주 단추를 눌렀을 때 (장바구니 바)"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "BottomSheet",
-        "type": "composite",
-        "description": "좁은 화면 바텀시트 — 화면 레이아웃 안에 두는 대화 상자 컨테이너(안쪽 내용이 그 화면의 상태를 그대로 쓴다)",
-        "path": "src/components/composite/BottomSheet.tsx",
-        "autoBinding": false,
-        "props": {
-          "open": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "열림 여부"
-          },
-          "title": {
-            "type": "string",
-            "required": false,
-            "description": "시트 제목"
-          },
-          "closeLabel": {
-            "type": "string",
-            "required": false,
-            "description": "닫기 단추 이름"
-          },
-          "onClose": {
-            "type": "function",
-            "required": false,
-            "description": "닫으려 할 때 (배경 누름·Esc·닫기 단추)"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스 (시트 본체)"
           }
         }
       }

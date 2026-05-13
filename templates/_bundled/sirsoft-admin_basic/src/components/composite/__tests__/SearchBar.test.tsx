@@ -4,8 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { SearchBar, SearchSuggestion } from '../SearchBar';
 
 describe('SearchBar', () => {
-  // @scenario component=search_bar
-  // @effects search_bar_input_and_submit_callbacks
   it('컴포넌트가 렌더링됨', () => {
     render(<SearchBar />);
 
@@ -13,16 +11,12 @@ describe('SearchBar', () => {
     expect(input).toBeInTheDocument();
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_input_and_submit_callbacks
   it('커스텀 placeholder가 표시됨', () => {
     render(<SearchBar placeholder="검색어를 입력하세요" />);
 
     expect(screen.getByPlaceholderText('검색어를 입력하세요')).toBeInTheDocument();
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_input_and_submit_callbacks
   it('입력 시 onChange가 호출됨', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -35,8 +29,6 @@ describe('SearchBar', () => {
     expect(onChange).toHaveBeenCalled();
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_input_and_submit_callbacks
   it('폼 제출 시 onSubmit이 호출됨', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
@@ -52,8 +44,6 @@ describe('SearchBar', () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_input_and_submit_callbacks
   it('검색 버튼 클릭 시 onSubmit이 호출됨', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
@@ -69,8 +59,6 @@ describe('SearchBar', () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_suggestions_shown_and_hidden
   it('제안 목록이 표시됨', async () => {
     const user = userEvent.setup();
     const suggestions: SearchSuggestion[] = [
@@ -88,8 +76,6 @@ describe('SearchBar', () => {
     expect(screen.getByText('TypeScript')).toBeInTheDocument();
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_suggestions_shown_and_hidden
   it('제안 항목 클릭 시 onSuggestionClick이 호출됨', async () => {
     const user = userEvent.setup();
     const onSuggestionClick = vi.fn();
@@ -115,9 +101,8 @@ describe('SearchBar', () => {
     expect(onSuggestionClick).toHaveBeenCalledWith(suggestions[0]);
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_suggestions_shown_and_hidden
   it('입력 값이 없으면 제안이 표시되지 않음', async () => {
+    const user = userEvent.setup();
     const suggestions: SearchSuggestion[] = [
       { id: 1, text: 'React' },
     ];
@@ -130,8 +115,6 @@ describe('SearchBar', () => {
     expect(screen.queryByText('React')).not.toBeInTheDocument();
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_suggestions_shown_and_hidden
   it('포커스를 잃으면 제안이 숨겨짐', async () => {
     const user = userEvent.setup();
     const suggestions: SearchSuggestion[] = [
@@ -151,8 +134,6 @@ describe('SearchBar', () => {
     // blur 후 setTimeout 때문에 즉시 확인은 어려움
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_input_and_submit_callbacks
   it('controlled value가 표시됨', () => {
     render(<SearchBar value="검색어" />);
 
@@ -160,8 +141,6 @@ describe('SearchBar', () => {
     expect(input.value).toBe('검색어');
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_input_and_submit_callbacks
   it('className prop이 적용됨', () => {
     // className은 루트 Div가 아닌 Input 요소에 적용됨
     // SearchBar는 className을 inputClassName으로 병합하여 내부 Input에 전달
@@ -170,8 +149,6 @@ describe('SearchBar', () => {
     expect(input).toHaveClass('custom-search');
   });
 
-  // @scenario component=search_bar
-  // @effects search_bar_input_and_submit_callbacks
   it('style prop이 적용됨', () => {
     const { container } = render(<SearchBar style={{ marginTop: '20px' }} />);
     expect(container.firstChild).toHaveStyle({ marginTop: '20px' });

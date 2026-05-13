@@ -2,15 +2,11 @@
 
 namespace App\Repositories;
 
-use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Models\Plugin;
-use App\Support\ExtensionDependencies;
-use App\Support\ExtensionIntegrations;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Schema;
 
 class PluginRepository implements PluginRepositoryInterface
 {
@@ -221,11 +217,11 @@ class PluginRepository implements PluginRepositoryInterface
         $activePlugins = Plugin::where('status', ExtensionStatus::Active->value)->get();
 
         if ($activePlugins->isEmpty()) {
-            return new Collection;
+            return new Collection();
         }
 
         // PluginManager를 통해 각 플러그인의 모듈 의존성 확인
-        $pluginManager = app(PluginManagerInterface::class);
+        $pluginManager = app(\App\Contracts\Extension\PluginManagerInterface::class);
 
         return $activePlugins->filter(function (Plugin $plugin) use ($pluginManager, $moduleIdentifier) {
             $pluginInstance = $pluginManager->getPlugin($plugin->identifier);
@@ -234,9 +230,15 @@ class PluginRepository implements PluginRepositoryInterface
                 return false;
             }
 
-            // 매니페스트 dependencies.modules 는 「식별자 => 버전 제약」 맵이다(목록 모양도 받는다). 종전 판정은
-            // 매니페스트 전체에 in_array 를 쓰거나 존재하지 않는 메서드를 찾아 한 번도 의존을 찾지 못했다(#138 실측 ①).
-            return array_key_exists($moduleIdentifier, ExtensionDependencies::constraints($pluginInstance->getDependencies())['modules']);
+            // getModuleDependencies 메서드가 있는지 확인
+            if (! method_exists($pluginInstance, 'getModuleDependencies')) {
+                return false;
+            }
+
+            $moduleDependencies = $pluginInstance->getModuleDependencies();
+
+            // 해당 모듈이 의존성에 포함되어 있는지 확인
+            return in_array($moduleIdentifier, $moduleDependencies);
         })->values();
     }
 
@@ -255,11 +257,11 @@ class PluginRepository implements PluginRepositoryInterface
         $activePlugins = Plugin::where('status', ExtensionStatus::Active->value)->get();
 
         if ($activePlugins->isEmpty()) {
-            return new Collection;
+            return new Collection();
         }
 
         // PluginManager를 통해 각 플러그인의 플러그인 의존성 확인
-        $pluginManager = app(PluginManagerInterface::class);
+        $pluginManager = app(\App\Contracts\Extension\PluginManagerInterface::class);
 
         return $activePlugins->filter(function (Plugin $plugin) use ($pluginManager, $pluginIdentifier) {
             $pluginInstance = $pluginManager->getPlugin($plugin->identifier);
@@ -268,40 +270,10 @@ class PluginRepository implements PluginRepositoryInterface
                 return false;
             }
 
-            // 매니페스트 dependencies.plugins 는 「식별자 => 버전 제약」 맵이다(목록 모양도 받는다). 종전 판정은
-            // 매니페스트 전체에 in_array 를 쓰거나 존재하지 않는 메서드를 찾아 한 번도 의존을 찾지 못했다(#138 실측 ①).
-            return array_key_exists($pluginIdentifier, ExtensionDependencies::constraints($pluginInstance->getDependencies())['plugins']);
-        })->values();
-    }
+            $dependencies = $pluginInstance->getDependencies();
 
-    /**
-     * 지정한 확장을 선택 연동(`integrations`)으로 선언한 활성 플러그인을 조회합니다 (7.1.4).
-     *
-     * 연동은 필수 의존과 달리 대상이 꺼져도 동작하지만, 대상을 끄거나 지울 때 「연동 중인 확장」으로 안내합니다.
-     *
-     * @param  string  $type  연동 대상 유형 (module|plugin|template, 복수형도 받음)
-     * @param  string  $identifier  연동 대상 식별자
-     * @return Collection 그 확장을 연동으로 선언한 활성 플러그인 컬렉션
-     */
-    public function findActiveByIntegration(string $type, string $identifier): Collection
-    {
-        $pluralType = ExtensionIntegrations::pluralType($type);
-        if ($pluralType === null) {
-            return new Collection;
-        }
-
-        $active = Plugin::where('status', ExtensionStatus::Active->value)->get();
-        if ($active->isEmpty()) {
-            return new Collection;
-        }
-
-        $manager = app(PluginManagerInterface::class);
-
-        return $active->filter(function (Plugin $plugin) use ($manager, $pluralType, $identifier) {
-            $instance = $manager->getPlugin($plugin->identifier);
-
-            return $instance !== null
-                && in_array($identifier, $instance->getIntegrations()[$pluralType] ?? [], true);
+            // 해당 플러그인이 의존성에 포함되어 있는지 확인
+            return in_array($pluginIdentifier, $dependencies);
         })->values();
     }
 
@@ -314,7 +286,7 @@ class PluginRepository implements PluginRepositoryInterface
     {
         // 마이그레이션이 아직 적용되지 않은 부팅 단계(예: migrate 직전 boot)에서는
         // 컬럼 부재로 SQLSTATE 42S22 가 발생하므로 정적으로 가드한다.
-        if (! Schema::hasColumn('plugins', 'deactivated_reason')) {
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('plugins', 'deactivated_reason')) {
             return new Collection;
         }
 

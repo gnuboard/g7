@@ -5,7 +5,6 @@ namespace App\Repositories;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Models\Attachment;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,17 +24,6 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     }
 
     /**
-     * 소프트삭제된 행까지 포함해 ID로 첨부파일 조회
-     *
-     * @param  int  $id  첨부파일 ID
-     * @return Attachment|null 첨부파일 또는 null
-     */
-    public function findByIdWithTrashed(int $id): ?Attachment
-    {
-        return Attachment::withTrashed()->find($id);
-    }
-
-    /**
      * 여러 ID로 첨부파일 조회 (order 정렬)
      *
      * @param  array<int>  $ids  첨부파일 ID 배열
@@ -44,8 +32,7 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     public function findByIds(array $ids): Collection
     {
         if (empty($ids)) {
-            // `collect()` 는 Support 라 선언과 어긋난다 — 빈 결과도 모델 컬렉션이어야 한다.
-            return new Collection;
+            return collect();
         }
 
         return Attachment::whereIn('id', $ids)
@@ -83,63 +70,6 @@ class AttachmentRepository implements AttachmentRepositoryInterface
         }
 
         return $query->get();
-    }
-
-    /**
-     * 첨부 대상 여럿의 지정한 컬렉션 첨부파일을 한 번에 조회합니다.
-     *
-     * @param  string  $type  attachmentable_type
-     * @param  array<int, int>  $ids  attachmentable_id 목록
-     * @param  array<int, string>  $collections  컬렉션 이름 목록
-     * @return Collection<int, Attachment> 첨부 목록 (대상, 컬렉션, 순서 순)
-     */
-    public function getByAttachmentablesAndCollections(string $type, array $ids, array $collections): Collection
-    {
-        if ($ids === [] || $collections === []) {
-            return new Collection;
-        }
-
-        return Attachment::where('attachmentable_type', $type)
-            ->whereIn('attachmentable_id', $ids)
-            ->whereIn('collection', $collections)
-            ->orderBy('attachmentable_id')
-            ->orderBy('collection')
-            ->ordered()
-            ->get();
-    }
-
-    /**
-     * 한 종류의 첨부 대상 전체에서 지정한 컬렉션에 첨부를 가진 대상 수를 셉니다 (항목 삭제 창의 「값 N건」 — DB 집계).
-     *
-     * @param  string  $type  attachmentable_type
-     * @param  string  $collection  컬렉션 이름
-     * @return int 첨부를 가진 대상(attachmentable_id) 수
-     */
-    public function countAttachmentablesByTypeAndCollection(string $type, string $collection): int
-    {
-        return (int) Attachment::where('attachmentable_type', $type)
-            ->whereNotNull('attachmentable_id')
-            ->where('collection', $collection)
-            ->distinct()
-            ->count('attachmentable_id');
-    }
-
-    /**
-     * 한 종류의 첨부 대상 전체에서 지정한 컬렉션의 첨부 ID 만 조회합니다 (항목 삭제 때 지울 대상 — 모델을 올리지 않는다).
-     *
-     * @param  string  $type  attachmentable_type
-     * @param  string  $collection  컬렉션 이름
-     * @return array<int, int> 첨부 ID 목록 (오름차순)
-     */
-    public function idsByAttachmentableTypeAndCollection(string $type, string $collection): array
-    {
-        return Attachment::where('attachmentable_type', $type)
-            ->whereNotNull('attachmentable_id')
-            ->where('collection', $collection)
-            ->orderBy('id')
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
     }
 
     /**
@@ -206,7 +136,6 @@ class AttachmentRepository implements AttachmentRepositoryInterface
      * 순서 변경
      *
      * @param  array<int, array{id: int, order: int}>  $orderData  순서 데이터
-     * @return void 반환값 없음
      */
     public function reorder(array $orderData): void
     {
@@ -286,23 +215,6 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     }
 
     /**
-     * 컬렉션명 접두사로 첨부파일 조회 (attachmentable 없는 경우)
-     *
-     * @param  string  $prefix  컬렉션명 접두사 (LIKE 와일드카드는 이스케이프된다)
-     * @return Collection<int, Attachment>
-     */
-    public function getByCollectionPrefix(string $prefix): Collection
-    {
-        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $prefix);
-
-        return Attachment::where('collection', 'like', $escaped.'%')
-            ->whereNull('attachmentable_type')
-            ->whereNull('attachmentable_id')
-            ->ordered()
-            ->get();
-    }
-
-    /**
      * 미연결 첨부파일을 특정 엔티티에 연결합니다.
      * 기존 연결된 파일들의 order 뒤에 순차적으로 배치됩니다.
      *
@@ -350,7 +262,6 @@ class AttachmentRepository implements AttachmentRepositoryInterface
      * @param  string  $attachmentableType  첨부 대상 타입
      * @param  int  $attachmentableId  첨부 대상 ID
      * @param  string  $collection  컬렉션명
-     * @return void 반환값 없음
      */
     public function reorderAfterDelete(string $attachmentableType, int $attachmentableId, string $collection): void
     {
@@ -370,54 +281,5 @@ class AttachmentRepository implements AttachmentRepositoryInterface
                 $order++;
             }
         });
-    }
-
-    /**
-     * 소유자 없이 방치된 고아 첨부 후보를 오래된 순으로 조회합니다.
-     *
-     * @param  Carbon  $threshold  기준 시각
-     * @param  int  $limit  최대 조회 건수
-     * @param  array<int, int>  $protectedIds  보호할 첨부 ID 목록
-     * @return Collection 고아 첨부 후보
-     */
-    public function findOrphanCandidates(Carbon $threshold, int $limit, array $protectedIds = []): Collection
-    {
-        $query = Attachment::withTrashed()
-            ->whereNull('attachmentable_type')
-            ->whereNull('attachmentable_id')
-            // 확장이 소유한 첨부는 그 확장의 라이프사이클 소관이므로 코어 GC 대상이 아니다.
-            ->whereNull('source_identifier')
-            ->where('created_at', '<', $threshold);
-
-        if ($protectedIds !== []) {
-            $query->whereNotIn('id', $protectedIds);
-        }
-
-        return $query
-            ->orderBy('created_at')
-            ->orderBy('id')
-            ->limit($limit)
-            ->get(['id', 'disk', 'path', 'collection', 'created_at']);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function countByMimeTypes(array $mimeTypes): int
-    {
-        return Attachment::query()->whereIn('mime_type', $mimeTypes)->count();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
-    {
-        return Attachment::query()
-            ->whereIn('mime_type', $mimeTypes)
-            ->where('id', '>', $afterId)
-            ->orderBy('id')
-            ->limit($limit)
-            ->get(['id', 'disk', 'path', 'mime_type', 'meta']);
     }
 }

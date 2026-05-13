@@ -14,13 +14,6 @@ namespace Modules\Sirsoft\Ecommerce\TestFixtures\Listeners {
     {
         use ResolvesActivityLogType;
 
-        /**
-         * 넘겨받은 액션과 컨텍스트로 트레이트의 활동 로그 기록을 호출한다.
-         *
-         * @param  string  $action  기록할 액션 키
-         * @param  array  $context  로그 컨텍스트
-         * @return void 반환값 없음
-         */
         public function fire(string $action, array $context = []): void
         {
             $this->logActivity($action, $context);
@@ -39,13 +32,6 @@ namespace App\TestFixtures\CoreListeners {
     {
         use ResolvesActivityLogType;
 
-        /**
-         * 넘겨받은 액션과 컨텍스트로 트레이트의 활동 로그 기록을 호출한다.
-         *
-         * @param  string  $action  기록할 액션 키
-         * @param  array  $context  로그 컨텍스트
-         * @return void 반환값 없음
-         */
         public function fire(string $action, array $context = []): void
         {
             $this->logActivity($action, $context);
@@ -70,29 +56,12 @@ namespace Tests\Unit\ActivityLog {
      */
     class ResolvesActivityLogTypeOriginTest extends TestCase
     {
-        /**
-         * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
-         *
-         * @return void 반환값 없음
-         */
         protected function tearDown(): void
         {
-            try {
-                Mockery::close();
-            } finally {
-                parent::tearDown();
-            }
+            Mockery::close();
+            parent::tearDown();
         }
 
-        /**
-         * 모듈 네임스페이스의 리스너가 기록하면 properties.extension_origin 에 모듈 식별자가 자동으로 들어간다.
-         *
-         * @scenario origin_type=module, loggable_state=properties_origin_empty
-         *
-         * @effects module_listener_auto_injects_extension_origin
-         *
-         * @return void 반환값 없음
-         */
         public function test_module_listener_injects_extension_origin_into_properties(): void
         {
             $captured = null;
@@ -113,15 +82,6 @@ namespace Tests\Unit\ActivityLog {
             $this->assertSame('sirsoft-ecommerce', $captured['properties']['extension_origin']);
         }
 
-        /**
-         * 코어 네임스페이스의 리스너가 기록하면 properties 에 extension_origin 이 들어가지 않는다.
-         *
-         * @scenario origin_type=core, loggable_state=properties_origin_empty
-         *
-         * @effects core_listener_does_not_inject_extension_origin_into_properties
-         *
-         * @return void 반환값 없음
-         */
         public function test_core_listener_does_not_inject_extension_origin(): void
         {
             $captured = null;
@@ -142,15 +102,6 @@ namespace Tests\Unit\ActivityLog {
             $this->assertArrayNotHasKey('extension_origin', $captured['properties'] ?? []);
         }
 
-        /**
-         * 호출자가 직접 넣은 extension_origin 은 자동 주입이 덮어쓰지 않는다.
-         *
-         * @scenario origin_type=module, loggable_state=properties_origin_set
-         *
-         * @effects explicit_extension_origin_in_properties_preserved_over_auto_resolve
-         *
-         * @return void 반환값 없음
-         */
         public function test_explicit_extension_origin_is_preserved(): void
         {
             $captured = null;
@@ -172,15 +123,6 @@ namespace Tests\Unit\ActivityLog {
             $this->assertSame('manual-override', $captured['properties']['extension_origin']);
         }
 
-        /**
-         * 자동 주입이 호출자가 넘긴 다른 properties 값을 지우지 않는다.
-         *
-         * @scenario origin_type=module, loggable_state=properties_origin_empty
-         *
-         * @effects module_listener_preserves_user_supplied_properties
-         *
-         * @return void 반환값 없음
-         */
         public function test_module_listener_preserves_existing_properties(): void
         {
             $captured = null;

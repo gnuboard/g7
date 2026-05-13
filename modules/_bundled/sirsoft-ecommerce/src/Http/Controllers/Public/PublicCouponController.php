@@ -6,10 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Http\Controllers\Concerns\EnsuresPublicProduct;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Public\DownloadableCouponsRequest;
-use Modules\Sirsoft\Ecommerce\Models\Product;
+use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Services\UserCouponService;
 
 /**
@@ -19,13 +16,6 @@ use Modules\Sirsoft\Ecommerce\Services\UserCouponService;
  */
 class PublicCouponController extends PublicBaseController
 {
-    use EnsuresPublicProduct;
-
-    /**
-     * 회원 쿠폰 서비스를 주입받습니다.
-     *
-     * @param  UserCouponService  $userCouponService  회원 쿠폰 서비스
-     */
     public function __construct(
         private UserCouponService $userCouponService
     ) {}
@@ -36,20 +26,17 @@ class PublicCouponController extends PublicBaseController
      * 선택적 인증: 라우트에 optional.sanctum 미들웨어 적용
      * 로그인 시 is_downloaded 정보가 추가됩니다.
      *
-     * @param  DownloadableCouponsRequest  $request  요청 데이터
-     * @param  Product  $product  라우트 바인딩된 상품 (product_code 또는 id)
+     * @param Request $request 요청 데이터
+     * @param int $productId 상품 ID
      * @return JsonResponse 쿠폰 목록
      */
-    public function downloadableCoupons(DownloadableCouponsRequest $request, Product $product): JsonResponse
+    public function downloadableCoupons(Request $request, int $productId): JsonResponse
     {
-        // 숨김·삭제 상품의 쿠폰 목록은 열지 않는다 (상품 상세와 같은 판정)
-        $this->ensurePublicProduct($product);
-
         try {
             $this->logApiUsage('products.downloadable_coupons');
 
             $userId = $request->user('sanctum')?->id;
-            $coupons = $this->userCouponService->getProductDownloadableCoupons($product->id, $userId);
+            $coupons = $this->userCouponService->getProductDownloadableCoupons($productId, $userId);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -57,13 +44,6 @@ class PublicCouponController extends PublicBaseController
                 ['data' => $coupons]
             );
         } catch (Exception $e) {
-            Log::error('products.downloadable_coupons failed', [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile().':'.$e->getLine(),
-                'product_id' => $product->id,
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.coupon.downloadable_fetch_failed',

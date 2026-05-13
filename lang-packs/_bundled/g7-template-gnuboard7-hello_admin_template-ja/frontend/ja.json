@@ -39,23 +39,5 @@
       "title": "サービス点検中",
       "message": "システム点検中です。しばらく後にご利用ください。"
     }
-  },
-  "settings": {
-    "favicon": {
-      "label": "ファビコン",
-      "hint": "このテンプレートが有効な間、管理画面のブラウザタブに表示されるアイコンです。"
-    },
-    "sections": {
-      "branding": {
-        "label": "ブランディング"
-      }
-    },
-    "screen": {
-      "choose_file": "ファイルを選択",
-      "remove_file": "削除",
-      "picked_file": "選択したファイル: {{name}}(保存するとアップロードします)",
-      "upload_failed": "ファイルをアップロードできませんでした。",
-      "unsupported_field": "この画面ではこの項目の種類を表示できません。"
-    }
   }
 }

@@ -1,23 +1,11 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
-import { EditorAttrs } from '../../types';
 export interface Tab {
     id: string | number;
     label: string;
     iconName?: IconName;
     disabled?: boolean;
     badge?: string | number;
-    /**
-     * 표시 조건. 레이아웃의 `if="{{...}}"` 가 평가된 값이며, 키가 있고 값이 거짓(false·undefined·null·빈 문자열·0)이면
-     * 탭을 그리지 않는다 — 노드의 `if` 와 같은 뜻이다(`{{route?.id}}` 처럼 거짓이 undefined 로 오는 식도 숨는다).
-     * 확장이 끼워 넣는 탭은 이동할 본문과 같은 조건을 달아, 본문이 없을 때 갈 곳 없는 빈 탭이 남지 않게 한다.
-     */
-    if?: unknown;
-    /**
-     * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
-     * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
-     */
-    href?: string;
 }
 export interface TabNavigationProps {
     tabs: Tab[];
@@ -28,17 +16,6 @@ export interface TabNavigationProps {
     style?: React.CSSProperties;
     /** 모바일 전환 임계값 (px). 기본값 768 — G7 ResponsiveContext mobile 프리셋과 동일 */
     mobileBreakpoint?: number;
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
-    /**
-     * 좁은 화면에서 탭 대신 그리는 선택 상자의 이름(「{이름} {현재 탭}」으로 읽힌다).
-     * 없으면 공용 문구 「섹션 이동」 — 종전에는 이름이 없어 현재 탭 글자(「기본정보」)만 읽혔다(#757)
-     */
-    'aria-label'?: string;
 }
 /**
  * TabNavigation 집합 컴포넌트
@@ -48,17 +25,10 @@ export interface TabNavigationProps {
  *
  * 반응형: G7Core.useResponsive() hook으로 화면 너비를 구독하여
  * mobileBreakpoint(기본 768px) 미만일 때 Select 드롭다운으로 자동 전환됩니다.
- * Tailwind 반응형 접두로 숨기고 보이는 분기를 쓰지 않으므로 위지윅 편집기의 디바이스 미리보기와도 호환됩니다.
+ * Tailwind hidden md:flex 분기를 사용하지 않으므로 위지윅 편집기의 디바이스 미리보기와도 호환됩니다.
  *
  * **주의**: 이 컴포넌트는 순수 네비게이션 UI만 제공하며,
  * 실제 탭 컨텐츠는 부모 컴포넌트에서 activeTabId를 기반으로 조건부 렌더링해야 합니다.
- *
- * 접근성: WAI-ARIA Tabs 규약을 따릅니다 — 목록에 `role="tablist"`, 각 탭에 `role="tab"` +
- * `aria-selected` 를 부여하고, 활성 탭만 Tab 키 초점을 받는 roving tabindex 로 좌우 화살표와
- * Home/End 로 탭 사이를 이동합니다(비활성 탭은 건너뜁니다). 탭 패널을 이 컴포넌트가 소유하지
- * 않으므로 `aria-controls` 는 부여하지 않습니다 — 존재하지 않는 id 를 가리키면 보조기기가
- * 패널을 찾지 못해 아예 없는 것보다 나쁩니다. 패널을 렌더하는 부모가 필요 시 연결합니다.
- * 모바일 전환 시에는 native select 로 렌더되어 그 자체로 접근 가능합니다.
  *
  * 기본 컴포넌트 조합: Nav + Button + Icon + Div + Span + Select
  *

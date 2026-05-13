@@ -2,40 +2,100 @@
 
 namespace App\Rules;
 
-use App\Rules\Concerns\ValidatesExtensionAssetPath;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Support\Str;
 
-/**
- * Module 자산 경로의 Path Traversal 방지 검증.
- *
- * 판정 본문은 형제 두 규칙과 **공유한다** (\App\Rules\Concerns\ValidatesExtensionAssetPath).
- * 종전에는 세 클래스가 주석까지 같은 사본이었고, 한쪽에만 들어간 보강이 나머지 둘에서
- * 누락되어 같은 입력이 통로마다 다르게 판정됐다.
- */
 class SafeModulePath implements ValidationRule
 {
-    use ValidatesExtensionAssetPath;
-
     /**
-     * 규칙을 만듭니다.
-     *
-     * @param  string  $basePath  모듈 루트 절대 경로 (이 폴더 밖 경로는 거부)
+     * Path Traversal 패턴 목록
      */
+    private const TRAVERSAL_PATTERNS = [
+        '../',
+        '..\\',
+        '//',
+        '%2e%2e%2f',  // URL encoded ../
+        '%2e%2e/',    // Partial URL encoded
+        '%2e%2e%5c',  // URL encoded ..\
+        '%2e%2e\\',   // Partial URL encoded
+        '..%2f',      // Mixed encoding
+        '..%5c',      // Mixed encoding
+        '.%2e/',      // Partial encoding
+        '.%2e\\',     // Partial encoding
+    ];
+
     public function __construct(
         private string $basePath
     ) {}
 
     /**
      * Path Traversal 방지 검증
-     *
-     * @param  string  $attribute  검증 대상 속성 이름
-     * @param  mixed  $value  모듈 루트 기준 상대 경로
-     * @param  Closure  $fail  실패 콜백
-     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $this->validateExtensionAssetPath($value, $fail, $this->basePath, 'validation.module_path');
+        if (!is_string($value)) {
+            $fail(__('validation.module_path.must_be_string'));
+
+            return;
+        }
+
+        // URL 디코딩 (다중 인코딩 공격 방지)
+        $decodedPath = $value;
+        $previousPath = '';
+
+        // 최대 5회 디코딩 (무한 루프 방지)
+        for ($i = 0; $i < 5 && $decodedPath !== $previousPath; $i++) {
+            $previousPath = $decodedPath;
+            $decodedPath = urldecode($decodedPath);
+        }
+
+        // Path Traversal 패턴 감지
+        $lowerPath = strtolower($decodedPath);
+        foreach (self::TRAVERSAL_PATTERNS as $pattern) {
+            if (Str::contains($lowerPath, strtolower($pattern))) {
+                $fail(__('validation.module_path.traversal_detected', ['pattern' => $pattern]));
+
+                return;
+            }
+        }
+
+        // 절대 경로 방지 (Windows와 Linux 모두 지원)
+        if (
+            Str::startsWith($decodedPath, '/') ||
+            Str::startsWith($decodedPath, '\\') ||
+            preg_match('/^[a-zA-Z]:/', $decodedPath)  // Windows 드라이브 문자
+        ) {
+            $fail(__('validation.module_path.absolute_path_not_allowed'));
+
+            return;
+        }
+
+        // NULL 바이트 공격 방지
+        if (Str::contains($decodedPath, "\0")) {
+            $fail(__('validation.module_path.null_byte_detected'));
+
+            return;
+        }
+
+        // 경로 정규화
+        $normalizedPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $decodedPath);
+
+        // 실제 경로 검증
+        $fullPath = realpath($this->basePath.DIRECTORY_SEPARATOR.$normalizedPath);
+
+        // realpath 실패 시 (파일이 존재하지 않을 수 있음)
+        if ($fullPath === false) {
+            // 경로 구성만 검증 (파일 존재 여부는 Controller에서 체크)
+            $fullPath = $this->basePath.DIRECTORY_SEPARATOR.$normalizedPath;
+        }
+
+        // 기준 경로 외부 접근 방지
+        $realBasePath = realpath($this->basePath);
+        if ($realBasePath === false || ! Str::startsWith($fullPath, $realBasePath)) {
+            $fail(__('validation.module_path.outside_base_directory'));
+
+            return;
+        }
     }
 }

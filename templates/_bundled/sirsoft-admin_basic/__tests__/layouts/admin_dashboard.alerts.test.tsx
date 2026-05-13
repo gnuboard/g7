@@ -15,7 +15,6 @@ import path from 'path';
 import fs from 'fs';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
-import { asArray, findByIdPrefix } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ==============================
 // 실제 admin_dashboard.json 로드
@@ -144,7 +143,7 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
     if (testUtils) testUtils.cleanup();
   });
 
-  it('경고 등급 알림은 상단 배너에 렌더되고 하단 시스템 알림 카드는 뜨지 않는다', async () => {
+  it('incompatible_core 알림이 있을 때 시스템 알림 카드가 렌더되고 본문이 표시된다', async () => {
     testUtils = createLayoutTest(dashboardLayout, {
       translations,
       locale: 'ko',
@@ -177,8 +176,6 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
       response: {
         data: [
           {
-            // ExtensionCompatibilityAlertListener 가 실제로 넣는 값 — 배치를 가르는 축이다.
-            type: 'warning',
             subtype: 'incompatible_core',
             extension_type: 'plugin',
             identifier: 'sirsoft-payment',
@@ -193,17 +190,12 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
 
     await testUtils.render();
 
-    // 본문은 상단 배너에 그대로 표시된다 (배치가 바뀌어도 내용이 사라지지 않는다)
+    // 시스템 알림 카드 헤더 (if:false 회귀 검증 — 렌더되어야 함)
+    expect(screen.getByText('시스템 알림')).toBeTruthy();
+    // 알림 본문 — title 과 message
     expect(screen.getByText('결제 플러그인 자동 비활성화')).toBeTruthy();
     expect(screen.getByText('코어 >=7.5.0 필요 (현재 7.0.0)')).toBeTruthy();
     expect(screen.getByText('5분 전')).toBeTruthy();
-
-    // 경고만 있으면 하단 '시스템 알림' 카드는 뜨지 않는다 — 같은 알림이 두 곳에
-    // 중복 노출되면 안 된다. 본문이 위에서 확인됐으므로 이 부재 단언이 곧 배치 증거다.
-    expect(screen.queryByText('시스템 알림')).toBeNull();
-
-    // 제목은 정확히 1회만 나타난다 (상단·하단 양쪽 렌더 = 중복 노출 회귀 차단)
-    expect(screen.queryAllByText('결제 플러그인 자동 비활성화').length).toBe(1);
   });
 
   it('알림 배열이 비어있을 때 시스템 알림 카드가 렌더되지 않는다', async () => {
@@ -244,11 +236,9 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
 
   it('dismiss 버튼 액션이 POST /api/admin/extensions/{type}/{id}/dismiss 로 정의되어 있다', () => {
     // JSON 구조 검증 — alert_dismiss_button 의 actions[0].target
-    // iteration template 안의 노드는 HTML id 유일성을 위해 `{{$idx}}` 접미가 붙는다(#421).
-    // 정확 일치만 보면 보간 도입 시 조용히 null 이 되므로 접미 형태도 인정한다.
     function findById(node: any, id: string): any | null {
       if (!node || typeof node !== 'object') return null;
-      if (node.id === id || node.id === `${id}_{{$idx}}`) return node;
+      if (node.id === id) return node;
       const keys = ['children'];
       for (const k of keys) {
         const arr = node[k];
@@ -273,11 +263,11 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
       }
       return null;
     }
-    const dismissBtn = findByIdPrefix(dashboardLayout, 'alert_dismiss_button');
+    const dismissBtn = findById(dashboardLayout, 'alert_dismiss_button');
     expect(dismissBtn).not.toBeNull();
     expect(dismissBtn.if).toBe('{{alert.extension_type && alert.identifier}}');
 
-    const action = asArray(dismissBtn?.actions)[0];
+    const action = dismissBtn.actions[0];
     expect(action.type).toBe('click');
     expect(action.handler).toBe('apiCall');
     expect(action.target).toBe(
@@ -286,7 +276,7 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
     expect(action.params.method).toBe('POST');
 
     // onSuccess 에 dashboard_alerts 재조회가 포함되어야 함
-    const refetch = asArray(action?.onSuccess).find(
+    const refetch = action.onSuccess.find(
       (a: any) => a.handler === 'refetchDataSource',
     );
     expect(refetch).toBeDefined();
@@ -294,11 +284,9 @@ describe('어드민 대시보드 - 시스템 알림 (incompatible_core)', () => 
   });
 
   it('system_alerts_card 의 if 조건이 if:false 가 아닌 dashboard_alerts.length 기반이다 (회귀)', () => {
-    // iteration template 안의 노드는 HTML id 유일성을 위해 `{{$idx}}` 접미가 붙는다(#421).
-    // 정확 일치만 보면 보간 도입 시 조용히 null 이 되므로 접미 형태도 인정한다.
     function findById(node: any, id: string): any | null {
       if (!node || typeof node !== 'object') return null;
-      if (node.id === id || node.id === `${id}_{{$idx}}`) return node;
+      if (node.id === id) return node;
       const arr = node.children;
       if (Array.isArray(arr)) {
         for (const c of arr) {

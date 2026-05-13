@@ -2,13 +2,13 @@
  * setThemeHandler 테스트
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { setThemeHandler } from '../setThemeHandler';
 
 describe('setThemeHandler', () => {
   // localStorage mock
   let localStorageMock: { [key: string]: string } = {};
-  let setItemSpy: MockInstance<Storage['setItem']>;
+  let setItemSpy: ReturnType<typeof vi.spyOn>;
 
   // DOM mock
   let classListAddSpy: ReturnType<typeof vi.fn>;
@@ -68,8 +68,6 @@ describe('setThemeHandler', () => {
   });
 
   describe('정상 동작', () => {
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_applies_and_persists_theme
     it('light 테마를 설정해야 함', async () => {
       const action = {
         type: 'click',
@@ -85,8 +83,6 @@ describe('setThemeHandler', () => {
       expect(console.log).toHaveBeenCalledWith('[Handler:SetTheme]', 'Theme changed to:', 'light');
     });
 
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_applies_and_persists_theme
     it('dark 테마를 설정해야 함', async () => {
       const action = {
         type: 'click',
@@ -102,8 +98,6 @@ describe('setThemeHandler', () => {
       expect(console.log).toHaveBeenCalledWith('[Handler:SetTheme]', 'Theme changed to:', 'dark');
     });
 
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_applies_and_persists_theme
     it('auto 테마를 설정하고 시스템이 라이트 모드일 때 light를 적용해야 함', async () => {
       // 시스템 라이트 모드
       matchMediaMock.mockReturnValue({
@@ -125,8 +119,6 @@ describe('setThemeHandler', () => {
       expect(classListRemoveSpy).toHaveBeenCalledWith('dark');
     });
 
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_applies_and_persists_theme
     it('auto 테마를 설정하고 시스템이 다크 모드일 때 dark를 적용해야 함', async () => {
       // 시스템 다크 모드
       matchMediaMock.mockReturnValue({
@@ -150,8 +142,6 @@ describe('setThemeHandler', () => {
   });
 
   describe('예외 처리', () => {
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_rejects_invalid_target_without_applying
     it('지원하지 않는 테마는 경고를 출력하고 적용하지 않아야 함', async () => {
       const action = {
         type: 'click',
@@ -166,8 +156,6 @@ describe('setThemeHandler', () => {
       expect(setAttributeSpy).not.toHaveBeenCalled();
     });
 
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_rejects_invalid_target_without_applying
     it('테마 값이 없으면 경고를 출력하고 적용하지 않아야 함', async () => {
       const action = {
         type: 'click',
@@ -182,8 +170,6 @@ describe('setThemeHandler', () => {
       expect(setAttributeSpy).not.toHaveBeenCalled();
     });
 
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_rejects_invalid_target_without_applying
     it('템플릿 문자열이 그대로 전달되면 경고를 출력하고 적용하지 않아야 함', async () => {
       const action = {
         type: 'click',
@@ -198,8 +184,6 @@ describe('setThemeHandler', () => {
       expect(setAttributeSpy).not.toHaveBeenCalled();
     });
 
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_rejects_invalid_target_without_applying
     it('빈 문자열은 경고를 출력하고 적용하지 않아야 함', async () => {
       const action = {
         type: 'click',
@@ -214,29 +198,6 @@ describe('setThemeHandler', () => {
       expect(setAttributeSpy).not.toHaveBeenCalled();
     });
 
-    // 계약 명문화: 이 핸들러가 읽는 것은 action.target 뿐이다.
-    // 레이아웃이 params.theme 로 넘기면(과거 admin_login/forgot/reset 3화면이 그랬다)
-    // 엔진에 상호 폴백이 없어 조용히 no-op 이 된다. 되살아나면 여기가 red 가 된다.
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_rejects_invalid_target_without_applying
-    it('params.theme 로만 넘기면 경고 후 아무 것도 하지 않아야 함 (target 단일 계약)', async () => {
-      const action = {
-        type: 'click',
-        handler: 'setTheme',
-        params: { theme: 'dark' },
-      };
-
-      await setThemeHandler(action);
-
-      expect(console.warn).toHaveBeenCalledWith('[Handler:SetTheme]', 'Invalid theme:', undefined);
-      expect(setItemSpy).not.toHaveBeenCalled();
-      expect(setAttributeSpy).not.toHaveBeenCalled();
-      expect(classListAddSpy).not.toHaveBeenCalled();
-      expect(classListRemoveSpy).not.toHaveBeenCalled();
-    });
-
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_rejects_invalid_target_without_applying
     it('localStorage 저장 실패 시 오류를 출력하고 테마를 적용하지 않아야 함', async () => {
       // localStorage.setItem이 실패하도록 모의
       const setItemError = new Error('Storage quota exceeded');
@@ -263,8 +224,6 @@ describe('setThemeHandler', () => {
   });
 
   describe('context 파라미터', () => {
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_applies_and_persists_theme
     it('context가 undefined여도 정상 동작해야 함', async () => {
       const action = {
         type: 'click',
@@ -278,8 +237,6 @@ describe('setThemeHandler', () => {
       expect(setAttributeSpy).toHaveBeenCalledWith('data-theme', 'light');
     });
 
-    // @scenario component=set_theme_handler
-    // @effects set_theme_handler_applies_and_persists_theme
     it('context가 빈 객체여도 정상 동작해야 함', async () => {
       const action = {
         type: 'click',

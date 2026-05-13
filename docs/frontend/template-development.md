@@ -105,32 +105,25 @@ export const Card = ({ title }) => (
 
 ### Step 3: 기본 레이아웃 정의
 
-`/layouts/*.g7.html`(소스 SSoT)에 기본 레이아웃 정의 — 설치 시 서버가 JSON 으로 컴파일해 DB 등록:
+`/layouts/*.json`에 기본 레이아웃 정의:
 
-- 마크업 형식은 `.g7.html` 마크업 ([layout-markup.md](layout-markup.md)). 문서 봉투는 `<layout>` 이고, `name` 은 파일 경로에서 오는 레이아웃 식별자다
+- JSON 스키마 준수
 - 데이터 바인딩/다국어 활용
-
-```html
-<layout name="admin_dashboard" version="1.0.0">
-  <page-header title="$t:dashboard.title"/>
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
   "version": "1.0.0",
-  "layout_name": "admin_dashboard",
-  "components": [
-    {
-      "type": "composite",
-      "name": "PageHeader",
-      "props": {
-        "title": "$t:dashboard.title"
+  "layout": {
+    "name": "AdminLayout",
+    "children": [
+      {
+        "name": "PageHeader",
+        "props": {
+          "title": "$t:dashboard.title"
+        }
       }
-    }
-  ]
+    ]
+  }
 }
 ```
 
@@ -238,7 +231,7 @@ powershell -Command "npm run test:run -- DataGrid"  # 특정 테스트 필터
 /src/handlers/
 ├── index.ts              # handlerMap export
 ├── setThemeHandler.ts    # 테마 관련 핸들러
-├── myLanguageHandler.ts  # 언어 설정 보조 핸들러(예시)
+├── setLocaleHandler.ts   # 언어 관련 핸들러
 └── ...
 ```
 
@@ -271,33 +264,24 @@ export async function setThemeHandler(
 ```typescript
 // handlers/index.ts
 import { setThemeHandler, initThemeHandler } from './setThemeHandler';
-import { updateMyLanguageHandler } from './myLanguageHandler';
+import { setLocaleHandler, updateMyLanguageHandler } from './setLocaleHandler';
 
 export const handlerMap = {
   // 테마 핸들러
   setTheme: setThemeHandler,
   initTheme: initThemeHandler,
 
-  // 언어 보조 핸들러 (언어 변경 자체는 엔진 빌트인 setLocale 을 그대로 쓴다)
+  // 언어 핸들러
+  setLocale: setLocaleHandler,
   updateMyLanguage: updateMyLanguageHandler,
 } as const;
 
 export type HandlerName = keyof typeof handlerMap;
 ```
 
-> `setLocale` 은 엔진 빌트인 핸들러다([template-handlers.md](template-handlers.md#엔진-빌트인-핸들러)). `handlerMap` 에 같은 이름을 등록하면 빌트인을 덮어써 언어 변경(번역 재로드·DB 저장)이 템플릿 구현으로 바뀌므로 등록하지 않는다. 그 밖의 엔진 빌트인 이름([actions.md](actions.md#내장-핸들러-목록) 표)도 템플릿 핸들러 이름으로 쓰지 않는다.
-
 ### 레이아웃 JSON에서 사용
 
 **init_actions (레이아웃 로드 시)**:
-
-```html
-<init>
-  <action handler="initTheme" target="{{query.theme}}"/>
-</init>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -317,10 +301,10 @@ export type HandlerName = keyof typeof handlerMap;
   "id": "my_component",
   "lifecycle": {
     "onMount": [
-      { "handler": "loadData", "target": "{{route.id}}" }
+      { "type": "click", "handler": "loadData", "target": "{{route.id}}" }
     ],
     "onUnmount": [
-      { "handler": "cleanup" }
+      { "type": "click", "handler": "cleanup" }
     ]
   }
 }
@@ -443,85 +427,6 @@ export default defineConfig({
 
 ---
 
-## 4-1. 운영자가 CSS·JS 를 덧붙이는 자리 (`custom/`)
-
-템플릿 소스(`src/styles/`)를 고치고 빌드하는 방법은 **템플릿 작성자**의 방법입니다. 운영자에게는
-부적합합니다 — Node.js 가 필요하고, 그렇게 넣은 파일은 다음 템플릿 업데이트에 사라집니다.
-빌드 산출물(`dist/css/`)을 직접 고치는 것도 다음 빌드에 사라집니다.
-
-운영자는 활성 템플릿 디렉토리의 `custom/` 에 파일을 놓습니다.
-
-```
-templates/{템플릿-식별자}/custom/custom.css
-```
-
-- 빌드하지 않습니다. 파일을 놓으면 다음 요청부터 적용됩니다.
-- 템플릿을 업데이트해도 이 디렉토리는 보존됩니다.
-- 적용 순서는 **템플릿·확장 스타일보다 뒤**라서 재정의가 그대로 반영됩니다.
-- 여러 파일을 놓으면 파일명 오름차순으로 적용됩니다(`10-`, `20-` 접두사로 순서를 정할 수 있습니다).
-- 폰트·이미지 같은 파일도 같은 디렉토리에 두고 CSS 에서 상대 경로로 참조합니다.
-- 순서를 바꾸거나 일부만 싣고 싶으면 `custom/assets.json` 에 선언합니다.
-
-모듈·플러그인도 같은 규약을 씁니다. 상세: [module-assets.md](../extension/module-assets.md) "사용자 추가 에셋".
-
-> 이 `custom/` 은 템플릿 화면에 CSS·JS 를 덧붙이는 자리입니다. 템플릿 엔진 없이 화면 자체를 직접 만드는 자리(프로젝트 최상위의 `routes/custom.php`·`resources/views/custom/`·`public/custom/`·`custom/` 개발자 Composer 등, 7.2.0+)와는 다릅니다 — [개발자 화면 가이드](../custom-development.md).
-
-## 템플릿 고유 CSS 와 기본 컴포넌트 클래스
-
-레이아웃에서 기본 컴포넌트의 `className` 을 줬는데 모양이 바뀌지 않는 원인은 대개 둘 중 하나다 — 컴포넌트가 고정으로 다는 배치 클래스가 남아 있거나, 템플릿 고유 클래스가 Tailwind 유틸리티에 진다. 두 경우 모두 아래 규칙으로 판단한다.
-
-### Tailwind v4 레이어 순서
-
-번들 템플릿은 Tailwind v4 를 쓰고, v4 는 CSS cascade layer(`@layer`)로 규칙을 묶는다. 우선순위는 **명시도보다 레이어가 먼저** 정한다.
-
-```text
-레이어 밖(unlayered) 규칙  >  @layer utilities  >  @layer components  >  @layer base
-```
-
-- `@layer components` 안의 템플릿 고유 클래스(`.btn`·`.select`·`.pagination-btn` 등)는 같은 요소에 붙은 유틸리티(`px-2`·`justify-start`)에 **명시도와 관계없이** 진다. 유틸리티로 덮을 수 있게 두려는 기본 외형은 이 레이어에 둔다.
-- 유틸리티를 이겨야 하는 템플릿 고유 규칙(예: 표 칸의 `px-6 py-4` 를 좁히는 변형 클래스)은 **`@layer` 밖**에 둔다 — 레이어 안에 두면 한 번도 적용되지 않는다.
-- 같은 레이어 안에서는 명시도·소스 순서로 정해진다. 유틸리티 둘이 같은 속성을 다투면(`justify-center` 와 `justify-start` 가 함께 붙음) 이기는 쪽은 클래스를 적은 순서가 아니라 빌드된 CSS 의 출력 순서다 — 그래서 기본 컴포넌트는 `mergeClasses` 로 한쪽을 지운다.
-
-### 기본 컴포넌트의 고정 배치 클래스
-
-번들 템플릿의 기본 컴포넌트는 아래 클래스를 늘 단다. 「병합 방식」이 `mergeClasses` 인 것만 레이아웃 `className` 의 같은 그룹 유틸리티가 고정 클래스를 **교체**한다. 덧붙이기인 것은 고정 클래스가 그대로 남는다.
-
-| 컴포넌트 | 템플릿 | 고정 클래스 | 병합 방식 |
-|------|------|------|------|
-| `Button` | sirsoft-basic | `inline-flex items-center justify-center` | `mergeClasses` |
-| `Button` | sirsoft-admin_basic | `button` (템플릿 고유 클래스 — `@layer components` 에서 `inline-flex items-center justify-center cursor-pointer`) | `mergeClasses` — 단 `button` 은 커스텀 클래스라 판정 대상이 아니고 늘 남는다 |
-| 링크 단추(`LinkButton`, 합성 컴포넌트 내부 도우미) | sirsoft-basic | `inline-flex items-center justify-center` (`Button` 과 같음) | `mergeClasses` |
-| `Pagination` 링크(`pageHref`) | sirsoft-basic | 각 쪽 링크에 `inline-flex items-center justify-center` | `mergeClasses` |
-| `Pagination` | sirsoft-admin_basic | 루트 `pagination`(`flex flex-wrap items-center justify-center gap-2`), 쪽 단추 `pagination-btn`·`pagination-btn-active`·링크는 `button` 추가 | 덧붙이기 (`pagination ${className}`) |
-| `IconButton` | sirsoft-admin_basic | `inline-flex items-center justify-center gap-2 font-medium rounded-lg border transition-colors focus:…` + 크기(`px-4 py-2 text-base` 등, 라벨 없으면 `w-10 h-10` 등) + 변형 색 | `mergeClasses` |
-| `SectionHeader` | sirsoft-admin_basic | `flex items-center justify-between` | `mergeClasses` |
-| `Select`(옵션 목록형 사용자 정의 드롭다운) | 두 템플릿 | `className` 에 배경 클래스가 없을 때만 `w-full px-4 py-2.5 bg-gray-100 … rounded-xl …` 를 앞에 붙임 — sirsoft-admin_basic 은 접두사 없는 `bg-` 만 배경으로 보고, sirsoft-basic 은 `dark:bg-`·`hover:bg-` 처럼 변형 접두사가 붙은 것까지 배경으로 본다 | 덧붙이기 (배경 클래스를 주면 기본 외형 전체를 빼고 `className` 만 씀 — sirsoft-basic 에서 `dark:bg-…` 만 줘도 기본 외형이 빠진다) |
-| `Select`(children 형 네이티브) | sirsoft-admin_basic | `select` (템플릿 고유 클래스, `@layer components`) | 덧붙이기 (`className` 에 `select` 가 이미 있으면 다시 붙이지 않음) |
-| `FileInput` | 두 템플릿 | 루트 `flex items-center gap-2`, 안쪽 「파일 선택」 단추는 고정 외형 | 덧붙이기 (루트만 `className` 을 받음) |
-
-### 덮는 법
-
-1. **레이아웃 `className` 에 같은 그룹 유틸리티를 준다** — 병합 방식이 `mergeClasses` 인 컴포넌트는 같은 충돌 그룹의 클래스를 교체한다. 예: `Button` 의 가운데 정렬을 왼쪽으로 → `className="justify-start"`(`justify-center` 가 지워진다). 판정하는 그룹·한계(축 유틸리티는 상위를 지우지 않음, 커스텀 클래스·v4 신규 유틸리티·확장 변형 접두사는 판정 안 함)는 [g7core-api.md 「mergeClasses」](g7core-api.md#지원-범위와-한계) 를 따른다.
-2. **템플릿 고유 클래스로 덮을 때는 그 규칙을 `@layer` 밖에 둔다** — 고정 클래스가 유틸리티(`justify-center`)라면 `@layer components` 안의 규칙은 지므로, 덮는 규칙은 레이어 밖에 적는다. 덧붙이기 방식 컴포넌트의 고정 유틸리티를 바꿀 때도 같다.
-
-```css
-/* ✅ 레이어 밖 — 유틸리티(justify-center)를 이긴다 */
-.toolbar-button {
-  justify-content: flex-start;
-}
-
-/* ❌ components 층 안 — 같은 요소의 justify-center(utilities 층)에 늘 진다 */
-@layer components {
-  .toolbar-button {
-    justify-content: flex-start;
-  }
-}
-```
-
-운영자가 덧붙이는 `custom/` CSS 는 템플릿 스타일보다 뒤에 실리지만 레이어 규칙은 같다 — 유틸리티를 덮으려면 레이어 밖에 적는다([위 절](#4-1-운영자가-cssjs-를-덧붙이는-자리-custom)).
-
----
-
 ## 5. 템플릿 네이밍 규칙
 
 ### 형식
@@ -594,12 +499,6 @@ templates/{템플릿-식별자}/custom/custom.css
 
 **1. 레이아웃 JSON 정의** (사용자):
 
-```html
-<card title="{{user.name}}" onClick="navigate:/users/:id"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "name": "Card",
@@ -632,7 +531,7 @@ export const Card: React.FC<CardProps> = ({ title, onClick }) => (
 
 `src/index.ts` 의 `initTemplate()` 함수에서 다음을 등록해야 합니다:
 
-1. 커스텀 핸들러 등록 — `actionDispatcher.registerHandler(name, handler, { category: 'custom', source: '<템플릿 식별자>' })` (모든 템플릿 공통). 이름 규칙과 덮어쓰기 경고는 [핸들러 이름 규칙과 소유권](../extension/module-assets.md#핸들러-이름-규칙과-소유권)
+1. 커스텀 핸들러 등록 — `actionDispatcher.registerHandler(name, handler)` (모든 템플릿 공통)
 2. **IDV 모달 launcher 등록** — `window.G7Core.identity.setLauncher(launcher)` (engine-v1.46.0+ 신규)
 
 본인인증 정책이 활성화되면 코어 `IdentityGuardInterceptor` 가 428 응답을 가로채 launcher 를 호출합니다. launcher 미등록 시 코어 `defaultLauncher` 가 토스트 + `/identity/challenge` 풀페이지 navigate 로 폴백합니다.
@@ -649,8 +548,7 @@ export function initTemplate(): void {
     const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
     if (actionDispatcher) {
       Object.entries(handlerMap).forEach(([name, handler]) => {
-        // 등록자를 템플릿 식별자로 밝힌다 (engine-v1.94.0 소유권 경고)
-        actionDispatcher.registerHandler(name, handler, { category: 'custom', source: 'my-template' });
+        actionDispatcher.registerHandler(name, handler);
       });
       // IDV launcher 는 핸들러 등록 직후 — G7Core.identity 준비됨
       registerMyTemplateIdentityLauncher();
@@ -665,66 +563,6 @@ export function initTemplate(): void {
 
 ---
 
-## 레이아웃 편집기 스펙(editor-spec.json)의 스타일 컨트롤
-
-레이아웃 편집기 속성 모달의 스타일 컨트롤은 `editor-spec.json` 의 `controls` 에서
-정의한다. 코어 편집기는 위젯 UI 와 적용/역해석 메커니즘(recipeEngine)만 제공하고,
-**어떤 코드를 생성할지는 컨트롤의 `apply` 선언이 정한다**(스타일 시스템 비종속, 원칙 4.8).
-`apply` 종류는 `classToken`(클래스 토큰), `styleProp`(인라인 style), `cssVar`, `propValue`.
-
-### 색/크기/배경 컨트롤은 템플릿 스타일 라이브러리 대응을 apply 로 선언한다
-
-색상(글자색/배경색)·크기(가로/세로)·배경 컨트롤은 **그 템플릿이 사용하는 스타일
-라이브러리 표현**으로 적용·역해석되도록 `apply` 를 선언해야 한다.
-
-- **토큰형 라이브러리(Tailwind)**: 색 컨트롤을 `classToken` 으로 선언한다.
-  - 프리셋 색은 `options` 에 고정 토큰(`apply.tokens`)으로 — 예 `text-gray-900`.
-    프리셋 토큰은 라이트·다크 모두 동작한다(편집기 다크 탭이 `dark:` prefix 부여).
-  - 자유 색(컬러 피커/HEX)은 control-level `apply.tokenTemplate`(예 `text-[{value}]`)로.
-  - 각 `options` 항목에 `swatch`(표시용 HEX) 를 주면 색 위젯이 토큰 스와치를 렌더한다.
-- **인라인/CSS 변수 라이브러리**: `styleProp`/`cssVar` 로 선언(다크 표현 한계 명시).
-
-#### 자유값(임의 색/크기)의 다크 한계
-
-Tailwind 는 빌드 시 safelist 에 없는 임의값 클래스(`dark:text-[#hex]`)를 CSS 에 넣지
-못한다. 따라서 **자유값(직접 입력한 HEX/임의 px)은 라이트 전용**이다. 편집기 다크 탭에서는
-자유 입력칸이 비활성화되고 "패널 프리셋 색을 고르면 다크에도 적용됩니다" 안내가 표시된다
-(프리셋 토큰만 다크 적용). 프리셋 토큰의 `dark:` 변형은 빌드에 포함되도록 safelist 에
-보장한다 — `sirsoft-admin_basic` 은 `scripts/extract-safelist.cjs` 가 editor-spec 의
-`apply.tokens` 에서 자동 도출, `sirsoft-basic` 은 `src/styles/safelist.txt` 에 명시.
-
-### 다크 모드 표현 선언(darkMode)과 편집기 프리뷰 격리
-
-편집기 프리뷰는 어드민 환경이 다크 테마(`html.dark`)여도 라이트/다크를 독립적으로
-보여줘야 한다. 이를 위해 템플릿은 editor-spec 최상위에 `darkMode` 를 선언한다:
-
-```json
-"darkMode": {
-  "strategy": "ancestor-class",
-  "ancestorSelector": ".dark",
-  "previewIsolation": {
-    "rewriteSelector": ".dark",
-    "replaceWith": ".g7le-preview-dark",
-    "flattenLayers": true
-  }
-}
-```
-
-코어 CSS 서빙 API(`/api/admin/templates/{id}/editor/component-styles.css`)가 편집기 진입
-시에만 이 선언대로 CSS 의 다크 조상 셀렉터(`rewriteSelector`)를 프리뷰 전용 마커
-(`replaceWith`)로 치환해 서빙한다. 일반 사용자 페이지 CSS 는 원본 그대로다
-(사용자 페이지 무영향). `strategy: "none"` 또는 미선언이면 편집기 다크 탭이 비노출된다.
-
-`flattenLayers` 는 CSS cascade-layer(`@layer`)를 쓰는 라이브러리(Tailwind v4 등)
-전용 옵트인이다. 편집기 CSS 가 어드민 호스트 CSS 와 같은 `@layer` 이름을 공유하면
-cross-build 레이어 우선순위 충돌로 프리뷰 다크 규칙이 적용되지 않을 수 있는데,
-`true` 로 두면 서빙 시 편집기 CSS 의 `@layer` 래퍼를 평탄화(unlayered)해 프리뷰
-규칙이 호스트 레이어드 규칙을 이기게 한다. `@layer` 비사용 라이브러리(Bootstrap 등)는
-미선언/`false`. `rewriteSelector` 도 라이브러리에 맞게 선언한다(예 Bootstrap
-`[data-bs-theme=dark]`) — 코어는 선언값을 그대로 치환할 뿐 특정 라이브러리를 가정하지 않는다.
-
----
-
 ## 관련 문서
 
 - [컴포넌트 개발 규칙](./components.md)
@@ -734,5 +572,4 @@ cross-build 레이어 우선순위 충돌로 프리뷰 다크 규칙이 적용�
 - [본인인증 모달 UI 표준 (engine-v1.46.0+)](./identity-verification-ui.md)
 - [본인인증 인터셉터 API 레퍼런스](./identity-guard-interceptor.md)
 - [외부 템플릿 IDV launcher 등록](../extension/template-idv-bootstrap.md)
-- [개발자 화면 가이드](../custom-development.md) - 템플릿 엔진 대신 Blade·HTML·외부 프레임워크로 화면을 만드는 custom 예약 자리
-- [프론트엔드 가이드 인덱스](./README.md)
+- [프론트엔드 가이드 인덱스](./index.md)

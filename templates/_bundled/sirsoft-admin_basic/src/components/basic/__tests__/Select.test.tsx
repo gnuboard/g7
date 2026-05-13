@@ -1,13 +1,10 @@
-// e2e:allow 단위 테스트 보강 (디폴트 시맨틱 머지 회귀) — 동작 무변, 컴포넌트 소스의 e2e:allow 와 동일 사이클에서 E2E spec 일괄 작성 예정.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { Select } from '../Select';
 
 describe('Select 컴포넌트', () => {
   describe('기본 렌더링 (children 모드)', () => {
-    // @scenario case=select_c01
-    // @effects select_component_contract_holds
     it('select 요소가 렌더링된다', () => {
       const { container } = render(
         <Select>
@@ -18,8 +15,6 @@ describe('Select 컴포넌트', () => {
       expect(select).toBeTruthy();
     });
 
-    // @scenario case=select_c02
-    // @effects select_component_contract_holds
     it('option 요소가 렌더링된다', () => {
       render(
         <Select>
@@ -32,8 +27,6 @@ describe('Select 컴포넌트', () => {
       expect(screen.getByText('옵션 2')).toBeTruthy();
     });
 
-    // @scenario case=select_c03
-    // @effects select_component_contract_holds
     it('기본 선택 옵션이 표시된다', () => {
       const { container } = render(
         <Select defaultValue="2">
@@ -48,8 +41,6 @@ describe('Select 컴포넌트', () => {
   });
 
   describe('이벤트 핸들링 (children 모드)', () => {
-    // @scenario case=select_c04
-    // @effects select_component_contract_holds
     it('onChange 핸들러가 호출된다', () => {
       const handleChange = vi.fn();
       const { container } = render(
@@ -65,8 +56,6 @@ describe('Select 컴포넌트', () => {
       expect(handleChange).toHaveBeenCalledTimes(1);
     });
 
-    // @scenario case=select_c05
-    // @effects select_component_contract_holds
     it('onFocus 핸들러가 호출된다', () => {
       const handleFocus = vi.fn();
       const { container } = render(
@@ -81,8 +70,6 @@ describe('Select 컴포넌트', () => {
       expect(handleFocus).toHaveBeenCalledTimes(1);
     });
 
-    // @scenario case=select_c06
-    // @effects select_component_contract_holds
     it('onBlur 핸들러가 호출된다', () => {
       const handleBlur = vi.fn();
       const { container } = render(
@@ -99,8 +86,6 @@ describe('Select 컴포넌트', () => {
   });
 
   describe('value 및 제어 컴포넌트 (children 모드)', () => {
-    // @scenario case=select_c07
-    // @effects select_component_contract_holds
     it('value prop이 적용된다', () => {
       const { container } = render(
         <Select value="2" onChange={() => {}}>
@@ -114,8 +99,6 @@ describe('Select 컴포넌트', () => {
       expect(select.value).toBe('2');
     });
 
-    // @scenario case=select_c08
-    // @effects select_component_contract_holds
     it('제어 컴포넌트로 작동한다', () => {
       const TestComponent = () => {
         const [value, setValue] = React.useState('1');
@@ -140,8 +123,6 @@ describe('Select 컴포넌트', () => {
   });
 
   describe('HTML 속성 (children 모드)', () => {
-    // @scenario case=select_c09
-    // @effects select_component_contract_holds
     it('disabled 속성이 적용된다', () => {
       const { container } = render(
         <Select disabled>
@@ -152,8 +133,6 @@ describe('Select 컴포넌트', () => {
       expect(select?.disabled).toBe(true);
     });
 
-    // @scenario case=select_c10
-    // @effects select_component_contract_holds
     it('required 속성이 적용된다', () => {
       const { container } = render(
         <Select required>
@@ -164,8 +143,6 @@ describe('Select 컴포넌트', () => {
       expect(select?.required).toBe(true);
     });
 
-    // @scenario case=select_c11
-    // @effects select_component_contract_holds
     it('name 속성이 적용된다', () => {
       const { container } = render(
         <Select name="category">
@@ -176,8 +153,6 @@ describe('Select 컴포넌트', () => {
       expect(select?.name).toBe('category');
     });
 
-    // @scenario case=select_c12
-    // @effects select_component_contract_holds
     it('id 속성이 적용된다', () => {
       const { container } = render(
         <Select id="category-select">
@@ -188,8 +163,6 @@ describe('Select 컴포넌트', () => {
       expect(select?.id).toBe('category-select');
     });
 
-    // @scenario case=select_c13
-    // @effects select_component_contract_holds
     it('multiple 속성이 적용된다', () => {
       const { container } = render(
         <Select multiple>
@@ -201,8 +174,6 @@ describe('Select 컴포넌트', () => {
       expect(select?.multiple).toBe(true);
     });
 
-    // @scenario case=select_c14
-    // @effects select_component_contract_holds
     it('size 속성이 적용된다', () => {
       const { container } = render(
         <Select size={3}>
@@ -216,8 +187,6 @@ describe('Select 컴포넌트', () => {
   });
 
   describe('Label 및 Error Props', () => {
-    // @scenario case=select_c15
-    // @effects select_component_contract_holds
     it('label prop이 존재한다', () => {
       // label prop은 있지만 렌더링하지 않음 (부모에서 처리)
       const { container } = render(
@@ -229,8 +198,6 @@ describe('Select 컴포넌트', () => {
       expect(select).toBeTruthy();
     });
 
-    // @scenario case=select_c16
-    // @effects select_component_contract_holds
     it('error prop이 존재한다', () => {
       // error prop은 있지만 렌더링하지 않음 (부모에서 처리)
       const { container } = render(
@@ -244,8 +211,6 @@ describe('Select 컴포넌트', () => {
   });
 
   describe('사용자 정의 Props (children 모드)', () => {
-    // @scenario case=select_c17
-    // @effects select_component_contract_holds
     it('사용자 정의 클래스가 추가된다', () => {
       const { container } = render(
         <Select className="custom-select">
@@ -256,8 +221,6 @@ describe('Select 컴포넌트', () => {
       expect(select?.className).toContain('custom-select');
     });
 
-    // @scenario case=select_c18
-    // @effects select_component_contract_holds
     it('aria-label이 적용된다', () => {
       const { container } = render(
         <Select aria-label="카테고리 선택">
@@ -268,8 +231,6 @@ describe('Select 컴포넌트', () => {
       expect(select?.getAttribute('aria-label')).toBe('카테고리 선택');
     });
 
-    // @scenario case=select_c19
-    // @effects select_component_contract_holds
     it('data 속성이 적용된다', () => {
       const { container } = render(
         <Select data-testid="test-select">
@@ -281,50 +242,7 @@ describe('Select 컴포넌트', () => {
     });
   });
 
-  // 디폴트 시맨틱 머지 회귀 테스트 (#369)
-  // 호출처가 이미 'select' 토큰을 명시한 경우 중복 prepend ("select select ...") 를 방지한다.
-  describe('디폴트 시맨틱 클래스 머지 (children 모드)', () => {
-    // @scenario case=select_c20
-    // @effects select_component_contract_holds
-    it('className 미지정 시 디폴트 시맨틱 "select" 가 자동 적용된다', () => {
-      const { container } = render(
-        <Select>
-          <option value="1">옵션 1</option>
-        </Select>
-      );
-      const select = container.querySelector('select');
-      expect(select?.className).toBe('select');
-    });
-
-    // @scenario case=select_c21
-    // @effects select_component_contract_holds
-    it('className 에 시맨틱 토큰이 없으면 "select" 를 prepend 한다', () => {
-      const { container } = render(
-        <Select className="w-full">
-          <option value="1">옵션 1</option>
-        </Select>
-      );
-      const select = container.querySelector('select');
-      expect(select?.className).toBe('select w-full');
-    });
-
-    // @scenario case=select_c22
-    // @effects select_component_contract_holds
-    it('className 에 이미 "select" 토큰이 있으면 중복 prepend 하지 않는다', () => {
-      const { container } = render(
-        <Select className="select w-full">
-          <option value="1">옵션 1</option>
-        </Select>
-      );
-      const select = container.querySelector('select');
-      expect(select?.className).toBe('select w-full');
-      expect(select?.className.split(/\s+/).filter((t) => t === 'select')).toHaveLength(1);
-    });
-  });
-
   describe('optgroup 지원', () => {
-    // @scenario case=select_c23
-    // @effects select_component_contract_holds
     it('optgroup이 렌더링된다', () => {
       render(
         <Select>
@@ -345,8 +263,6 @@ describe('Select 컴포넌트', () => {
   });
 
   describe('복합 Props (children 모드)', () => {
-    // @scenario case=select_c24
-    // @effects select_component_contract_holds
     it('여러 props가 함께 적용된다', () => {
       const handleChange = vi.fn();
       const { container } = render(
@@ -387,8 +303,6 @@ describe('Select 컴포넌트', () => {
       { value: 'email', label: '이메일' },
     ];
 
-    // @scenario case=select_c25
-    // @effects select_component_contract_holds
     it('options prop으로 커스텀 드롭다운이 렌더링된다', () => {
       render(<Select options={options} value="" onChange={() => {}} />);
 
@@ -397,24 +311,18 @@ describe('Select 컴포넌트', () => {
       expect(button).toBeTruthy();
     });
 
-    // @scenario case=select_c26
-    // @effects select_component_contract_holds
     it('선택된 옵션의 라벨이 버튼에 표시된다', () => {
       render(<Select options={options} value="name" onChange={() => {}} />);
 
       expect(screen.getByText('이름')).toBeTruthy();
     });
 
-    // @scenario case=select_c27
-    // @effects select_component_contract_holds
     it('빈 값일 때 해당 옵션의 라벨이 표시된다', () => {
       render(<Select options={options} value="" onChange={() => {}} />);
 
       expect(screen.getByText('전체')).toBeTruthy();
     });
 
-    // @scenario case=select_c28
-    // @effects select_component_contract_holds
     it('버튼 클릭 시 드롭다운이 열린다', () => {
       render(<Select options={options} value="" onChange={() => {}} />);
 
@@ -430,8 +338,6 @@ describe('Select 컴포넌트', () => {
       expect(optionElements.length).toBe(3);
     });
 
-    // @scenario case=select_c29
-    // @effects select_component_contract_holds
     it('옵션 클릭 시 onChange가 호출되고 드롭다운이 닫힌다', () => {
       const handleChange = vi.fn();
       render(<Select options={options} value="" onChange={handleChange} />);
@@ -459,8 +365,6 @@ describe('Select 컴포넌트', () => {
       expect(screen.queryByRole('listbox')).toBeNull();
     });
 
-    // @scenario case=select_c30
-    // @effects select_component_contract_holds
     it('선택된 옵션에 체크마크가 표시된다', () => {
       render(<Select options={options} value="email" onChange={() => {}} />);
 
@@ -476,8 +380,6 @@ describe('Select 컴포넌트', () => {
       expect(selectedOption?.textContent).toContain('이메일');
     });
 
-    // @scenario case=select_c31
-    // @effects select_component_contract_holds
     it('disabled 상태에서 클릭이 작동하지 않는다', () => {
       render(<Select options={options} value="" onChange={() => {}} disabled />);
 
@@ -490,8 +392,6 @@ describe('Select 컴포넌트', () => {
       expect(screen.queryByRole('listbox')).toBeNull();
     });
 
-    // @scenario case=select_c32
-    // @effects select_component_contract_holds
     it('외부 클릭 시 드롭다운이 닫힌다', () => {
       render(
         <div>
@@ -513,8 +413,6 @@ describe('Select 컴포넌트', () => {
       expect(screen.queryByRole('listbox')).toBeNull();
     });
 
-    // @scenario case=select_c33
-    // @effects select_component_contract_holds
     it('ESC 키로 드롭다운이 닫힌다', () => {
       render(<Select options={options} value="" onChange={() => {}} />);
 
@@ -537,8 +435,6 @@ describe('Select 컴포넌트', () => {
       { value: '2', label: '옵션 2' },
     ];
 
-    // @scenario case=select_c34
-    // @effects select_component_contract_holds
     it('기본 스타일이 적용된다', () => {
       render(<Select options={options} value="1" onChange={() => {}} />);
 
@@ -547,15 +443,13 @@ describe('Select 컴포넌트', () => {
       expect(button.className).toContain('rounded-xl');
     });
 
-    // @scenario case=select_c35
-    // @effects select_component_contract_holds
     it('커스텀 className이 적용된다', () => {
       render(
         <Select
           options={options}
           value="1"
           onChange={() => {}}
-          className="bg-blue-100 dark:bg-blue-900 custom-class"
+          className="bg-blue-100 custom-class"
         />
       );
 
@@ -564,57 +458,6 @@ describe('Select 컴포넌트', () => {
       expect(button.className).toContain('custom-class');
     });
 
-    // @scenario case=select_c36
-    // @effects select_component_contract_holds
-    it('드롭다운 패널은 트리거 폭을 하한으로 내용 폭(max-content)만큼 넓어지고 상한은 320px 이다', () => {
-      // 트리거가 글자폭(120px)으로 수축한 상황 — 종전엔 패널도 120px 에 고정돼 라벨이 두 줄로 꺾였다.
-      const rect = { top: 100, bottom: 130, left: 40, right: 160, width: 120, height: 30, x: 40, y: 100, toJSON: () => ({}) } as DOMRect;
-      const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect);
-      try {
-        render(<Select options={options} value="1" onChange={() => {}} />);
-        fireEvent.click(screen.getByRole('button'));
-
-        const listbox = screen.getByRole('listbox');
-        expect(listbox.style.width).toBe('max-content');
-        expect(listbox.style.minWidth).toBe('120px');
-        expect(listbox.style.maxWidth).toBe('320px');
-      } finally {
-        spy.mockRestore();
-      }
-    });
-
-    // @scenario case=select_c37
-    // @effects select_component_contract_holds
-    it('트리거가 상한보다 넓으면 패널 상한은 트리거 폭이고, 뷰포트 오른쪽 여유가 더 작으면 그 여유가 상한이다', () => {
-      const wide = { top: 100, bottom: 130, left: 40, right: 440, width: 400, height: 30, x: 40, y: 100, toJSON: () => ({}) } as DOMRect;
-      const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(wide);
-      try {
-        render(<Select options={options} value="1" onChange={() => {}} />);
-        fireEvent.click(screen.getByRole('button'));
-        const listbox = screen.getByRole('listbox');
-        expect(listbox.style.minWidth).toBe('400px');
-        expect(listbox.style.maxWidth).toBe('400px');
-      } finally {
-        spy.mockRestore();
-      }
-
-      // 뷰포트 오른쪽 끝에 붙은 트리거: innerWidth(1024) - left(900) - 8 = 116 < 320 → 116 이 상한, 하한은 트리거 폭
-      const edge = { top: 100, bottom: 130, left: 900, right: 1000, width: 100, height: 30, x: 900, y: 100, toJSON: () => ({}) } as DOMRect;
-      const spy2 = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(edge);
-      try {
-        render(<Select options={options} value="2" onChange={() => {}} />);
-        const buttons = screen.getAllByRole('button');
-        fireEvent.click(buttons[buttons.length - 1]);
-        const listbox = screen.getAllByRole('listbox').pop()!;
-        expect(listbox.style.minWidth).toBe('100px');
-        expect(listbox.style.maxWidth).toBe('116px');
-      } finally {
-        spy2.mockRestore();
-      }
-    });
-
-    // @scenario case=select_c38
-    // @effects select_component_contract_holds
     it('드롭다운 메뉴가 둥근 모서리를 가진다', () => {
       render(<Select options={options} value="1" onChange={() => {}} />);
 
@@ -628,8 +471,6 @@ describe('Select 컴포넌트', () => {
   });
 
   describe('string[] options 지원', () => {
-    // @scenario case=select_c39
-    // @effects select_component_contract_holds
     it('string 배열을 옵션으로 변환한다', () => {
       render(<Select options={['ko', 'en']} value="ko" onChange={() => {}} />);
 
@@ -643,8 +484,6 @@ describe('Select 컴포넌트', () => {
       expect(labels).toContain('English');
     });
 
-    // @scenario case=select_c40
-    // @effects select_component_contract_holds
     it('알 수 없는 로케일은 그대로 표시된다', () => {
       render(<Select options={['unknown']} value="unknown" onChange={() => {}} />);
 
@@ -653,8 +492,6 @@ describe('Select 컴포넌트', () => {
   });
 
   describe('disabled 옵션 지원', () => {
-    // @scenario case=select_c41
-    // @effects select_component_contract_holds
     it('disabled 옵션이 비활성화된다', () => {
       const options = [
         { value: '1', label: '옵션 1' },
@@ -685,8 +522,6 @@ describe('Select 컴포넌트', () => {
       { value: '2', label: '옵션 2' },
     ];
 
-    // @scenario case=select_c42
-    // @effects select_component_contract_holds
     it('aria-haspopup 속성이 있다', () => {
       render(<Select options={options} value="1" onChange={() => {}} />);
 
@@ -694,8 +529,6 @@ describe('Select 컴포넌트', () => {
       expect(button.getAttribute('aria-haspopup')).toBe('listbox');
     });
 
-    // @scenario case=select_c43
-    // @effects select_component_contract_holds
     it('aria-expanded가 열림 상태를 반영한다', () => {
       render(<Select options={options} value="1" onChange={() => {}} />);
 
@@ -706,8 +539,6 @@ describe('Select 컴포넌트', () => {
       expect(button.getAttribute('aria-expanded')).toBe('true');
     });
 
-    // @scenario case=select_c44
-    // @effects select_component_contract_holds
     it('옵션에 role="option"이 있다', () => {
       render(<Select options={options} value="1" onChange={() => {}} />);
 
@@ -718,8 +549,6 @@ describe('Select 컴포넌트', () => {
       expect(optionElements.length).toBe(2);
     });
 
-    // @scenario case=select_c45
-    // @effects select_component_contract_holds
     it('선택된 옵션에 aria-selected="true"가 있다', () => {
       render(<Select options={options} value="2" onChange={() => {}} />);
 
@@ -735,8 +564,6 @@ describe('Select 컴포넌트', () => {
   });
 
   describe('제어 컴포넌트 (options 모드)', () => {
-    // @scenario case=select_c46
-    // @effects select_component_contract_holds
     it('value 변경에 따라 표시가 업데이트된다', () => {
       const options = [
         { value: '1', label: '옵션 1' },
@@ -772,8 +599,6 @@ describe('Select 컴포넌트', () => {
   });
 
   describe('빈 options 처리', () => {
-    // @scenario case=select_c47
-    // @effects select_component_contract_holds
     it('빈 배열일 때도 렌더링된다', () => {
       render(<Select options={[]} value="" onChange={() => {}} />);
 
@@ -781,8 +606,6 @@ describe('Select 컴포넌트', () => {
       expect(button).toBeTruthy();
     });
 
-    // @scenario case=select_c48
-    // @effects select_component_contract_holds
     it('options가 배열이 아닐 때 기본 select로 폴백된다', () => {
       // @ts-expect-error - 의도적으로 잘못된 타입 전달
       const { container } = render(<Select options="invalid" />);
@@ -804,24 +627,18 @@ describe('Select 컴포넌트', () => {
       { value: 'Pacific/Auckland', label: '(UTC+13:00) Pacific/Auckland' },
     ];
 
-    // @scenario case=select_c49
-    // @effects select_component_contract_holds
     it('searchable=false 기본값에서는 검색 input이 렌더링되지 않는다', () => {
       render(<Select options={timezoneOptions} value="Asia/Seoul" onChange={() => {}} />);
       fireEvent.click(screen.getByRole('button'));
       expect(screen.queryByRole('searchbox')).toBeNull();
     });
 
-    // @scenario case=select_c50
-    // @effects select_component_contract_holds
     it('searchable=true 시 드롭다운 내 검색 input이 렌더링된다', () => {
       render(<Select options={timezoneOptions} value="Asia/Seoul" onChange={() => {}} searchable />);
       fireEvent.click(screen.getByRole('button'));
       expect(screen.getByRole('searchbox')).toBeTruthy();
     });
 
-    // @scenario case=select_c51
-    // @effects select_component_contract_holds
     it('searchPlaceholder가 input placeholder로 적용된다', () => {
       render(
         <Select
@@ -837,8 +654,6 @@ describe('Select 컴포넌트', () => {
       expect(input.placeholder).toBe('타임존 검색...');
     });
 
-    // @scenario case=select_c52
-    // @effects select_component_contract_holds
     it('검색어 입력 시 라벨 기준으로 옵션이 필터링된다', () => {
       render(<Select options={timezoneOptions} value="Asia/Seoul" onChange={() => {}} searchable />);
       fireEvent.click(screen.getByRole('button'));
@@ -851,8 +666,6 @@ describe('Select 컴포넌트', () => {
       expect(visibleOptions[0].textContent).toContain('Asia/Tokyo');
     });
 
-    // @scenario case=select_c53
-    // @effects select_component_contract_holds
     it('검색은 대소문자를 구분하지 않는다', () => {
       render(<Select options={timezoneOptions} value="Asia/Seoul" onChange={() => {}} searchable />);
       fireEvent.click(screen.getByRole('button'));
@@ -864,8 +677,6 @@ describe('Select 컴포넌트', () => {
       expect(visibleOptions[0].textContent).toContain('Europe/London');
     });
 
-    // @scenario case=select_c54
-    // @effects select_component_contract_holds
     it('value 문자열에 대해서도 검색된다', () => {
       render(<Select options={timezoneOptions} value="Asia/Seoul" onChange={() => {}} searchable />);
       fireEvent.click(screen.getByRole('button'));
@@ -877,8 +688,6 @@ describe('Select 컴포넌트', () => {
       expect(visibleOptions[0].textContent).toContain('Pacific/Auckland');
     });
 
-    // @scenario case=select_c55
-    // @effects select_component_contract_holds
     it('검색 결과가 없으면 "No results" 메시지가 표시된다', () => {
       render(<Select options={timezoneOptions} value="Asia/Seoul" onChange={() => {}} searchable />);
       fireEvent.click(screen.getByRole('button'));
@@ -889,8 +698,6 @@ describe('Select 컴포넌트', () => {
       expect(screen.getByText('No results')).toBeTruthy();
     });
 
-    // @scenario case=select_c56
-    // @effects select_component_contract_holds
     it('필터된 옵션 선택 시 onChange가 호출되고 드롭다운이 닫힌다', () => {
       const handleChange = vi.fn();
       render(<Select options={timezoneOptions} value="Asia/Seoul" onChange={handleChange} searchable />);
@@ -908,8 +715,6 @@ describe('Select 컴포넌트', () => {
       expect(screen.queryByRole('listbox')).toBeNull();
     });
 
-    // @scenario case=select_c57
-    // @effects select_component_contract_holds
     it('드롭다운을 다시 열면 검색어가 초기화된다', () => {
       render(<Select options={timezoneOptions} value="Asia/Seoul" onChange={() => {}} searchable />);
 
@@ -927,218 +732,6 @@ describe('Select 컴포넌트', () => {
       expect(screen.getAllByRole('option').length).toBe(timezoneOptions.length);
       const input = screen.getByRole('searchbox') as HTMLInputElement;
       expect(input.value).toBe('');
-    });
-  });
-
-  // ========================================
-  // 레이아웃 편집기 editorAttrs/props passthrough
-  // ========================================
-  // DynamicRenderer 는 편집 모드에서 basic 컴포넌트에 개별 data-editor-* 키를
-  // props 로 주입한다. Select 의 두 렌더 경로(children 폴백 <select>, options 커스텀 <Div>)
-  // 루트 모두 그 키가 DOM 에 도달해야 캔버스에서 선택/식별/편집이 가능하다.
-  describe('편집기 passthrough (editorAttrs/props → 루트 DOM)', () => {
-    // @scenario case=select_c58
-    // @effects select_component_contract_holds
-    it('options 커스텀 드롭다운 루트에 data-editor-* 가 도달한다', () => {
-      const options = [
-        { value: '1', label: '옵션 1' },
-        { value: '2', label: '옵션 2' },
-      ];
-      const { container } = render(
-        <Select
-          options={options}
-          value="1"
-          onChange={() => {}}
-          data-editor-name="Select"
-          data-editor-path="1.children.0"
-          id="root-id"
-        />
-      );
-
-      // 커스텀 드롭다운 루트는 button 의 부모 Div (relative)
-      const root = container.querySelector('[data-editor-name="Select"]') as HTMLElement;
-      expect(root).toBeTruthy();
-      expect(root.getAttribute('data-editor-path')).toBe('1.children.0');
-      expect(root.getAttribute('id')).toBe('root-id');
-      // 루트는 button(드롭다운 트리거)을 자식으로 가진다 = 커스텀 모드 루트 확인
-      expect(root.querySelector('button[aria-haspopup="listbox"]')).toBeTruthy();
-    });
-
-    // @scenario case=select_c59
-    // @effects select_component_contract_holds
-    it('children 폴백 <select> 루트에 data-editor-* 가 도달한다', () => {
-      const { container } = render(
-        <Select data-editor-name="Select" data-editor-path="1.children.1" id="sel-id">
-          <option value="1">옵션 1</option>
-        </Select>
-      );
-
-      const select = container.querySelector('select') as HTMLElement;
-      expect(select).toBeTruthy();
-      expect(select.getAttribute('data-editor-name')).toBe('Select');
-      expect(select.getAttribute('data-editor-path')).toBe('1.children.1');
-      expect(select.getAttribute('id')).toBe('sel-id');
-    });
-
-    // @scenario case=select_c60
-    // @effects select_component_contract_holds
-    it('editorAttrs 객체로 전달된 키도 루트에 도달한다', () => {
-      const options = [{ value: '1', label: '옵션 1' }];
-      const { container } = render(
-        <Select
-          options={options}
-          value="1"
-          onChange={() => {}}
-          editorAttrs={{ 'data-editor-name': 'Select', 'data-editor-path': '2.children.3' }}
-        />
-      );
-
-      const root = container.querySelector('[data-editor-name="Select"]') as HTMLElement;
-      expect(root).toBeTruthy();
-      expect(root.getAttribute('data-editor-path')).toBe('2.children.3');
-    });
-  });
-
-  describe('variant 접두사 className 과 베이스 크기 유지 (비활성 정책 Select 회귀)', () => {
-    /**
-     * 회귀 배경: 정책 편집 모달의 잠금 Select 는 className 에 `disabled:bg-gray-100` 만 추가한다.
-     * hasCustomStyle 판정이 `bg-` 단순 포함으로 동작하면 variant 접두사 유틸(disabled:bg-)을
-     * 커스텀 베이스 외형으로 오인 → 기본 크기 클래스(w-full px-4 py-2.5)를 통째로 버려
-     * 비활성 Select 만 작아지고 활성 Select 와 크기/모양이 달라진다.
-     */
-    const getTriggerBtn = (container: HTMLElement) =>
-      container.querySelector('button[aria-haspopup="listbox"]') as HTMLElement;
-
-    // @scenario case=select_c61
-    // @effects select_component_contract_holds
-    it('disabled:bg- 만 추가된 비활성 Select 도 베이스 크기 클래스(w-full px-4 py-2.5) 유지', () => {
-      const options = [{ value: 'sensitive_action', label: '민감 작업' }];
-      const { container } = render(
-        <Select
-          options={options}
-          value="sensitive_action"
-          onChange={() => {}}
-          disabled
-          className=" disabled:bg-gray-100 dark:disabled:bg-gray-900"
-        />
-      );
-      const btn = getTriggerBtn(container);
-      expect(btn).toBeTruthy();
-      expect(btn.className).toContain('w-full');
-      expect(btn.className).toContain('px-4');
-      expect(btn.className).toContain('py-2.5');
-    });
-
-    // @scenario case=select_c62
-    // @effects select_component_contract_holds
-    it('활성 Select(동일 컬럼)와 비활성 Select 의 베이스 크기 클래스가 동일', () => {
-      const options = [{ value: '', label: '(기본 인증 수단 사용)' }];
-      const active = render(
-        <Select options={options} value="" onChange={() => {}} className="" />
-      );
-      const disabled = render(
-        <Select
-          options={options}
-          value=""
-          onChange={() => {}}
-          disabled
-          className=" disabled:bg-gray-100 dark:disabled:bg-gray-900"
-        />
-      );
-      const pick = (cls: string) =>
-        ['w-full', 'px-4', 'py-2.5'].filter((t) => cls.split(/\s+/).includes(t)).sort().join(' ');
-      const activeBase = pick(getTriggerBtn(active.container).className);
-      const disabledBase = pick(getTriggerBtn(disabled.container).className);
-      expect(disabledBase).toBe(activeBase);
-      expect(disabledBase).toBe('px-4 py-2.5 w-full');
-    });
-
-    // @scenario case=select_c63
-    // @effects select_component_contract_holds
-    it('실제 커스텀 베이스 bg-(접두사 없음)는 기존대로 기본 크기 미적용', () => {
-      const options = [{ value: '1', label: '옵션 1' }];
-      const { container } = render(
-        <Select options={options} value="1" onChange={() => {}} className="bg-indigo-600 dark:bg-indigo-500 px-2" />
-      );
-      const btn = getTriggerBtn(container);
-      // 베이스 bg- 가 있으면 호출처 className 을 그대로 존중(w-full 자동 주입 안 함)
-      expect(btn.className).toContain('bg-indigo-600');
-      expect(btn.className).not.toContain('w-full');
-    });
-  });
-
-  describe('확장 접두 빌드 클래스 (G7Core.style.splitExtensionClassPrefix)', () => {
-    const options = [
-      { value: 'a', label: 'A' },
-      { value: 'b', label: 'B' },
-    ];
-    let prevCore: any;
-
-    beforeEach(() => {
-      prevCore = (window as any).G7Core;
-      (window as any).G7Core = {
-        ...(prevCore ?? {}),
-        style: {
-          ...(prevCore?.style ?? {}),
-          splitExtensionClassPrefix: (t: string) =>
-            t.startsWith('ecommerce:') ? { prefix: 'ecommerce:', rest: t.slice(10) } : { prefix: '', rest: t },
-        },
-      };
-    });
-
-    afterEach(() => {
-      (window as any).G7Core = prevCore;
-    });
-
-    // @scenario case=select_c64
-    // @effects select_component_contract_holds
-    it('확장 앞글자가 붙은 bg- 를 커스텀 외형으로 보고 기본 외형(font-medium)을 붙이지 않는다', () => {
-      const { container } = render(<Select options={options} value="a" onChange={() => {}} className="ecommerce:bg-white ecommerce:w-44 ecommerce:px-3" />);
-      const button = container.querySelector('button') as HTMLButtonElement;
-      expect(button.className).not.toContain('font-medium');
-      expect(button.className).toContain('ecommerce:bg-white');
-    });
-
-    // @scenario case=select_c65
-    // @effects select_component_contract_holds
-    it('확장 앞글자가 붙은 폭 토큰을 바깥 상자로 올린다', () => {
-      const { container } = render(<Select options={options} value="a" onChange={() => {}} className="ecommerce:bg-white ecommerce:w-44 ecommerce:md:min-w-40" />);
-      const root = container.firstElementChild as HTMLElement;
-      expect(root.className).toContain('ecommerce:w-44');
-      expect(root.className).toContain('ecommerce:md:min-w-40');
-    });
-
-    // @scenario case=select_c66
-    // @effects select_component_contract_holds
-    it('버튼에 w-full 이 있으면 앞글자 붙은 고정 폭은 버튼에서 빼고 바깥 상자에만 둔다', () => {
-      // 기본 외형 경로: 버튼이 w-full 을 받는다. 확장 CSS 는 템플릿 층 밖이라 남겨 두면 w-full 을 이긴다.
-      const { container } = render(<Select options={options} value="a" onChange={() => {}} className="ecommerce:w-40 ecommerce:min-w-32 ecommerce:md:w-60 w-36" />);
-      const root = container.firstElementChild as HTMLElement;
-      const tokens = (container.querySelector('button') as HTMLButtonElement).className.split(/\s+/);
-      expect(root.className).toContain('ecommerce:w-40');
-      expect(tokens).toContain('w-full');
-      expect(tokens).not.toContain('ecommerce:w-40');
-      // 변형·min/max·앞글자 없는 폭은 건드리지 않는다
-      expect(tokens).toContain('ecommerce:min-w-32');
-      expect(tokens).toContain('ecommerce:md:w-60');
-      expect(tokens).toContain('w-36');
-    });
-
-    // @scenario case=select_c67
-    // @effects select_component_contract_holds
-    it('커스텀 외형에서 앞글자 붙은 w-full 과 고정 폭이 함께 오면 고정 폭만 뺀다', () => {
-      const { container } = render(<Select options={options} value="a" onChange={() => {}} className="ecommerce:bg-white ecommerce:w-full ecommerce:w-40" />);
-      const tokens = (container.querySelector('button') as HTMLButtonElement).className.split(/\s+/);
-      expect(tokens).toContain('ecommerce:w-full');
-      expect(tokens).not.toContain('ecommerce:w-40');
-    });
-
-    // @scenario case=select_c68
-    // @effects select_component_contract_holds
-    it('버튼에 w-full 이 없으면 앞글자 붙은 고정 폭을 버튼에 그대로 둔다', () => {
-      const { container } = render(<Select options={options} value="a" onChange={() => {}} className="ecommerce:bg-white ecommerce:w-44" />);
-      const button = container.querySelector('button') as HTMLButtonElement;
-      expect(button.className).toContain('ecommerce:w-44');
     });
   });
 });

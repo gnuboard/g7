@@ -11,8 +11,6 @@ describe('RichSelect', () => {
     { value: 'file4', label: 'routes.json', size: '857 B', updated_at: '2026-01-04', disabled: true },
   ];
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('컴포넌트가 렌더링됨', () => {
     render(<RichSelect options={mockOptions} />);
 
@@ -20,16 +18,12 @@ describe('RichSelect', () => {
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('placeholder prop이 적용됨', () => {
     render(<RichSelect options={mockOptions} placeholder="파일 선택" />);
 
     expect(screen.getByText('파일 선택')).toBeInTheDocument();
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('트리거 버튼 클릭 시 드롭다운이 표시됨', async () => {
     const user = userEvent.setup();
     render(<RichSelect options={mockOptions} placeholder="Select" />);
@@ -41,8 +35,6 @@ describe('RichSelect', () => {
     expect(screen.getByText('403.json')).toBeInTheDocument();
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('옵션 클릭 시 선택되고 드롭다운 닫힘', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -64,8 +56,6 @@ describe('RichSelect', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('ESC 키로 드롭다운 닫힘', async () => {
     const user = userEvent.setup();
     render(<RichSelect options={mockOptions} placeholder="Select" />);
@@ -80,8 +70,6 @@ describe('RichSelect', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('외부 클릭 시 드롭다운 닫힘', async () => {
     const user = userEvent.setup();
     render(
@@ -102,8 +90,6 @@ describe('RichSelect', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('disabled prop이 true일 때 클릭 불가', async () => {
     const user = userEvent.setup();
     render(<RichSelect options={mockOptions} placeholder="Select" disabled />);
@@ -115,16 +101,12 @@ describe('RichSelect', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('value prop으로 초기 선택값 설정', () => {
     render(<RichSelect options={mockOptions} value="file1" placeholder="Select" />);
 
     expect(screen.getByText('home.json')).toBeInTheDocument();
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_styling_and_aria
   it('className prop이 적용됨', () => {
     const { container } = render(
       <RichSelect options={mockOptions} placeholder="Select" className="custom-rich-select" />
@@ -133,8 +115,6 @@ describe('RichSelect', () => {
     expect(container.firstChild).toHaveClass('custom-rich-select');
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('옵션이 없을 때 빈 메시지 표시', async () => {
     const user = userEvent.setup();
     render(<RichSelect options={[]} placeholder="Select" />);
@@ -146,8 +126,6 @@ describe('RichSelect', () => {
     expect(screen.getByText('common.no_options')).toBeInTheDocument();
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('disabled 옵션은 클릭해도 선택되지 않음', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -163,8 +141,6 @@ describe('RichSelect', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('선택된 옵션에 선택 표시가 됨', async () => {
     const user = userEvent.setup();
     render(<RichSelect options={mockOptions} value="file1" placeholder="Select" />);
@@ -176,8 +152,6 @@ describe('RichSelect', () => {
     expect(selectedOption).toHaveAttribute('data-item-value', 'file1');
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_styling_and_aria
   it('maxHeight prop이 적용됨', async () => {
     const user = userEvent.setup();
     const { container } = render(
@@ -191,18 +165,14 @@ describe('RichSelect', () => {
     expect(scrollContainer).toHaveStyle({ maxHeight: '200px' });
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_styling_and_aria
   it('다크 모드 클래스가 포함됨', () => {
-    render(<RichSelect options={mockOptions} placeholder="Select" />);
+    const { container } = render(<RichSelect options={mockOptions} placeholder="Select" />);
 
     const button = screen.getByRole('button');
     expect(button.className).toContain('dark:bg-gray-700');
     expect(button.className).toContain('dark:text-gray-200');
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_dropdown_open_select_close
   it('children이 제공되면 기본 렌더링 대신 children 사용', async () => {
     const user = userEvent.setup();
     render(
@@ -219,8 +189,6 @@ describe('RichSelect', () => {
     expect(customItems.length).toBe(mockOptions.length);
   });
 
-  // @scenario component=rich_select
-  // @effects rich_select_styling_and_aria
   it('aria 속성이 올바르게 설정됨', async () => {
     const user = userEvent.setup();
     render(<RichSelect options={mockOptions} value="file1" placeholder="Select" />);

@@ -11,11 +11,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\SearchPresetRepositoryInter
  */
 class SearchPresetRepository implements SearchPresetRepositoryInterface
 {
-    /**
-     * SearchPresetRepository 생성자
-     *
-     * @param  SearchPreset  $model  검색 프리셋 모델
-     */
     public function __construct(
         protected SearchPreset $model
     ) {}
@@ -69,13 +64,5 @@ class SearchPresetRepository implements SearchPresetRepositoryInterface
     public function delete(SearchPreset $preset): bool
     {
         return $preset->delete();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function deleteByUserId(int $userId): int
-    {
-        return (int) $this->model->newQuery()->where('user_id', $userId)->delete();
     }
 }

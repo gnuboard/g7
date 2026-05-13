@@ -19,8 +19,6 @@ return [
     'activities_failed' => 'Failed to load recent activities.',
     'alerts_loaded' => 'System alerts loaded successfully.',
     'alerts_failed' => 'Failed to load system alerts.',
-    'recent_notifications_loaded' => 'Recent notifications loaded successfully.',
-    'recent_notifications_failed' => 'Failed to load recent notifications.',
 
     // Stats card
     'stats' => [
@@ -31,11 +29,5 @@ return [
     // Recent activities
     'activities' => [
         'user_registered' => ':name has registered.',
-    ],
-    // `dashboard:*` command output
-    'console' => [
-        'broadcast_resources' => [
-            'done' => 'System resource information has been broadcast.',
-        ],
     ],
 ];

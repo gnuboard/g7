@@ -24,29 +24,11 @@ $scanExtensionsLibraryMode = defined('SCAN_EXTENSIONS_LIBRARY') && constant('SCA
 if (! $scanExtensionsLibraryMode) {
     // 기본 설정
     header('Content-Type: application/json; charset=utf-8');
-    // 확장 목록은 _bundled 디렉토리 스캔 결과다 — 캐시되면 방금 올린 확장이 보이지 않는다.
-    header('Cache-Control: no-store');
 
     // 프로젝트 루트 경로
     if (! defined('BASE_PATH')) {
-        // `realpath` 도 호스팅이 막을 수 있다 — 막힌 환경에서 무가드로 부르면
-        // 봉투가 서기 전에 치명 종료한다. 정규화를 못 해도 조립 경로로 스캔은 가능하다.
-        define('BASE_PATH', function_exists('realpath')
-            ? (realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3))
-            : dirname(__DIR__, 3));
+        define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3));
     }
-
-    // installerHasFunction 의 출처 — 아래 출력 채널 가드가 쓴다 (전이 의존 금지, R4 취지).
-    // 최상위 실행문이 없고 BASE_PATH 를 자체 역산하므로 session/config 보다 앞에 와도 안전하다.
-    require_once dirname(__DIR__).'/includes/execution-mode.php';
-
-    // 오류 텍스트가 JSON 본문에 섞이지 않게 한다 — **include 체인·가드보다
-    // 앞**. session_start 실패·깨진 매니페스트 스캔 warning 이 본문 앞에 붙으면 클라이언트
-    // 파싱이 깨진다.
-    if (installerHasFunction('ini_set')) {
-        @ini_set('display_errors', '0');
-    }
-    error_reporting(E_ALL);
 
     // 세션 및 설정 포함 (Laravel autoload 없이 독립 실행)
     // 참고: 이 API는 Laravel 부팅 없이 디렉토리 스캔만 수행
@@ -55,91 +37,6 @@ if (! $scanExtensionsLibraryMode) {
 
     require_once __DIR__.'/_guard.php';
     installer_guard_or_410();
-}
-
-// PHP 확장 요구 판정 — scanModules()/scanPlugins() 가 쓴다. 공유 해석기(installer_scan_extensions)가
-// 라이브러리 모드로 이 파일을 읽는 설치 진행·터미널 설치에서도 있어야 하므로 모드와 무관하게 적재한다(#151).
-require_once dirname(__DIR__).'/includes/php-extension-requirements.php';
-
-// 확장 아이콘 검증기 적재 — Laravel autoload 없이 프로젝트 안 고정 경로에서 require 한다.
-// 검증기는 의존성 0 의 순수 PHP 라 여기서 바로 쓸 수 있다. 부재해도 죽지 않고
-// 아이콘만 빠진다(카드는 종전대로 유형 글리프).
-//
-// 기준점은 BASE_PATH 가 아니라 **이 스크립트 자신의 위치**다. BASE_PATH 는 "무엇을
-// 스캔할지" 를 가리키므로 테스트가 격리 디렉터리로 바꿔 놓는다 — 검증기는 코드와
-// 함께 있지 스캔 대상 안에 있지 않다.
-//
-// 클래스명을 FQN 으로 쓰는 것은 의도다 — `use` 문을 두면 오토로더가 없는 인스톨러
-// 실행 시점에 그 심볼을 해석할 수 없다. pint 의 `fully_qualified_strict_types` 가
-// 이것을 `use` 로 끌어올리려 하므로 `pint.json` 의 `notPath` 로 이 파일만 제외한다.
-if (! class_exists(\App\Support\ExtensionIcon\ExtensionIconValidator::class, false)) {
-    $g7IconValidatorPath = dirname(__DIR__, 3).'/app/Support/ExtensionIcon/ExtensionIconValidator.php';
-    if (is_file($g7IconValidatorPath)) {
-        require_once $g7IconValidatorPath;
-    }
-    unset($g7IconValidatorPath);
-}
-
-/**
- * 확장 디렉토리의 아이콘을 data URI 로 만듭니다.
- *
- * 인스톨러는 Laravel 없이 도는 화면이라 아이콘 서빙 라우트를 쓸 수 없습니다. 대신
- * 검증기를 통과한 바이트만 base64 로 카드에 실어 보냅니다. 검증기가 없거나 규격을
- * 어기면 null 이고, 카드는 종전대로 유형 글리프를 그립니다.
- *
- * @param  string  $extensionDir  확장 루트 절대 경로
- * @param  array  $manifest  매니페스트 데이터
- * @return string|null data URI 문자열, 유효한 아이콘이 없으면 null
- */
-function extractExtensionIconDataUri(string $extensionDir, array $manifest): ?string
-{
-    $validator = \App\Support\ExtensionIcon\ExtensionIconValidator::class;
-
-    if (! class_exists($validator, false)) {
-        return null;
-    }
-
-    $candidates = [];
-
-    $declared = $manifest['icon'] ?? null;
-    if (is_string($declared) && trim($declared) !== ''
-        && $validator::manifestPathViolation($declared) === null) {
-        $resolved = $validator::resolveInsideRoot($extensionDir, $declared);
-        if ($resolved !== null) {
-            $candidates[] = $resolved;
-        }
-    }
-
-    if ($candidates === []) {
-        foreach ($validator::CONVENTION_CANDIDATES as $relative) {
-            $resolved = $validator::resolveInsideRoot($extensionDir, $relative);
-            if ($resolved !== null) {
-                $candidates[] = $resolved;
-                break;
-            }
-        }
-    }
-
-    foreach ($candidates as $path) {
-        $result = $validator::validateFile($path);
-        if (! $result['valid']) {
-            continue;
-        }
-
-        $bytes = @file_get_contents($path);
-        if ($bytes === false) {
-            continue;
-        }
-
-        $mime = $validator::MIME_BY_EXTENSION[$result['format']] ?? null;
-        if ($mime === null) {
-            continue;
-        }
-
-        return 'data:'.$mime.';base64,'.base64_encode($bytes);
-    }
-
-    return null;
 }
 
 /**
@@ -198,7 +95,6 @@ function scanTemplates(): array
         // dependencies 처리: 객체 형태면 모듈/플러그인 키를 배열로 변환
         $dependencies = extractDependenciesFromJson($data);
         $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
-        $integrationsDetailed = extractIntegrationsDetailedFromJson($data);
 
         $templateInfo = [
             'identifier' => $identifier,
@@ -208,10 +104,8 @@ function scanTemplates(): array
             'type' => $type,
             'dependencies' => $dependencies,
             'dependencies_detailed' => $dependenciesDetailed,
-            'integrations_detailed' => $integrationsDetailed,
             'author' => $author,
             'directory' => $dir,
-            'icon_data_uri' => extractExtensionIconDataUri($templatesDir.'/'.$dir, $data),
         ];
 
         if ($type === 'admin') {
@@ -261,12 +155,8 @@ function scanModules(): array
                 'version' => '1.0.0',
                 'description' => ['ko' => '', 'en' => ''],
                 'dependencies' => [],
-                'dependencies_detailed' => [],
-                'integrations_detailed' => [],
                 'author' => null,
                 'directory' => $dir,
-                // 매니페스트가 없는 역호환 분기 — 아이콘 선언을 읽을 근거가 없다.
-                'icon_data_uri' => null,
             ];
 
             continue;
@@ -289,7 +179,6 @@ function scanModules(): array
 
         $dependencies = extractDependenciesFromJson($data);
         $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
-        $integrationsDetailed = extractIntegrationsDetailedFromJson($data);
 
         $result[] = [
             'identifier' => $data['identifier'] ?? $dir,
@@ -298,12 +187,8 @@ function scanModules(): array
             'description' => $data['description'] ?? ['ko' => '', 'en' => ''],
             'dependencies' => $dependencies,
             'dependencies_detailed' => $dependenciesDetailed,
-            'integrations_detailed' => $integrationsDetailed,
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
-            'icon_data_uri' => extractExtensionIconDataUri($modulesDir.'/'.$dir, $data),
-            // composer.json require/suggest ext-* 중 서버에 없는 PHP 확장 — 필수가 없으면 선택 화면이 체크를 끈다(#151)
-            ...installer_extension_php_requirements($modulesDir.'/'.$dir),
         ];
     }
 
@@ -347,12 +232,8 @@ function scanPlugins(): array
                 'version' => '1.0.0',
                 'description' => ['ko' => '', 'en' => ''],
                 'dependencies' => [],
-                'dependencies_detailed' => [],
-                'integrations_detailed' => [],
                 'author' => null,
                 'directory' => $dir,
-                // 매니페스트가 없는 역호환 분기 — 아이콘 선언을 읽을 근거가 없다.
-                'icon_data_uri' => null,
             ];
 
             continue;
@@ -375,7 +256,6 @@ function scanPlugins(): array
 
         $dependencies = extractDependenciesFromJson($data);
         $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
-        $integrationsDetailed = extractIntegrationsDetailedFromJson($data);
 
         $result[] = [
             'identifier' => $data['identifier'] ?? $dir,
@@ -384,12 +264,8 @@ function scanPlugins(): array
             'description' => $data['description'] ?? ['ko' => '', 'en' => ''],
             'dependencies' => $dependencies,
             'dependencies_detailed' => $dependenciesDetailed,
-            'integrations_detailed' => $integrationsDetailed,
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
-            'icon_data_uri' => extractExtensionIconDataUri($pluginsDir.'/'.$dir, $data),
-            // composer.json require/suggest ext-* 중 서버에 없는 PHP 확장 — 필수가 없으면 선택 화면이 체크를 끈다(#151)
-            ...installer_extension_php_requirements($pluginsDir.'/'.$dir),
         ];
     }
 
@@ -543,108 +419,29 @@ function scanLanguagePacks(): array
  *
  * dependencies 구조:
  * - 객체 형태: { "modules": {"sirsoft-ecommerce": ">=1.0.0"}, "plugins": {...} }
- * - 유형별 목록 형태: { "modules": ["sirsoft-ecommerce"] } — 버전 무관. 키(0, 1 …)가 아니라 값이 식별자다.
  * - 배열 형태: ["module1", "module2"]
- *
- * 식별자 목록은 {@see extractDependenciesDetailedFromJson()} 과 같은 규칙으로 뽑는다(두 함수가 다른 답을 내면
- * 카드 표시와 선택 검증이 어긋난다).
  *
  * @param  array  $data  JSON 매니페스트 데이터
  * @return array 의존성 identifier 목록
  */
 function extractDependenciesFromJson(array $data): array
 {
-    return array_values(array_map(
-        static fn (array $dep): string => $dep['identifier'],
-        extractDependenciesDetailedFromJson($data)
-    ));
-}
+    $rawDeps = $data['dependencies'] ?? [];
+    $dependencies = [];
 
-/**
- * 문자열이 버전 제약식처럼 보이는지 판정합니다.
- *
- * 인스톨러는 Laravel·Composer 를 불러오기 전에 돌기 때문에 `Composer\Semver\VersionParser` 를 쓰지 않고,
- * 코어 `ExtensionIntegrations::isVersionConstraint()` 가 받는 흔한 모양(`>=1.2.1`, `^1.0`, `~1.2.3`,
- * `1.x`, `*`, `>=1.0 <2.0`, `^1.0 || ^2.0`, `1.0 - 2.0`)을 정규식으로 받는다.
- *
- * @param  string  $value  검사할 문자열
- * @return bool 버전 제약식이면 true
- */
-function installerLooksLikeVersionConstraint(string $value): bool
-{
-    $value = trim($value);
-    if ($value === '') {
-        return false;
-    }
-
-    $version = 'v?(?:\d+|[xX*])(?:\.(?:\d+|[xX*])){0,3}(?:-[0-9A-Za-z.]+)?(?:@[A-Za-z]+)?';
-    // 원자: 연산자 + 버전 · 하이픈 범위 · 연산자 없는 버전
-    $atom = '(?:'.$version.'\s+-\s+'.$version.'|(?:[<>]=?|==?|!=|\^|~)?\s*'.$version.')';
-    // AND 묶음(쉼표·공백) 을 OR(`|`·`||`) 로 잇는다.
-    $andGroup = $atom.'(?:(?:\s*,\s*|\s+)'.$atom.')*';
-    $pattern = '/^'.$andGroup.'(?:\s*\|\|?\s*'.$andGroup.')*$/';
-
-    return preg_match($pattern, $value) === 1;
-}
-
-/**
- * JSON 매니페스트의 선택 연동(`integrations`)을 유형·식별자·버전 제약 목록으로 추출합니다.
- *
- * `integrations` 는 「있으면 연동되고 없어도 동작한다」는 선언이다. 설치 마법사는 고른 확장의 연동 대상을
- * 한 번 자동 체크하고(모듈·플러그인만), 번들 버전이 제약에 못 미치면 카드에 「연동 버전 미달」을 보인다.
- * 선택을 막는 데는 쓰지 않는다.
- *
- * 받는 모양 (모듈·플러그인·템플릿 공통):
- * - 목록형 `{"modules": ["sirsoft-board"]}` → 버전 무관 `'*'`
- * - 버전 제약 객체형 `{"modules": {"sirsoft-board": ">=1.2.1"}}` → 값 그대로
- * - 객체형인데 값이 버전식이 아닌 문자열(옛 설명형)·문자열 아님 → `'*'`
- * 모르는 유형 키와 문자열이 아닌 식별자는 버린다. 같은 유형 안 중복은 처음 것만 남긴다.
- *
- * 반환: [['type' => 'modules'|'plugins'|'templates', 'id' => '...', 'version' => '>=1.2.1'|'*'], ...]
- *
- * @param  array  $data  JSON 매니페스트 데이터
- * @return array<int, array{type: string, id: string, version: string}> 연동 상세 목록
- */
-function extractIntegrationsDetailedFromJson(array $data): array
-{
-    $raw = $data['integrations'] ?? [];
-    $detailed = [];
-
-    if (! is_array($raw)) {
-        return $detailed;
-    }
-
-    foreach (['modules', 'plugins', 'templates'] as $type) {
-        $entries = $raw[$type] ?? [];
-        if (! is_array($entries)) {
-            continue;
-        }
-
-        $seen = [];
-        foreach ($entries as $key => $value) {
-            if (is_int($key)) {
-                // 목록형 원소 — 값이 식별자다.
-                $identifier = is_string($value) ? trim($value) : '';
-                $version = '*';
-            } else {
-                $identifier = trim((string) $key);
-                $version = (is_string($value) && installerLooksLikeVersionConstraint($value)) ? trim($value) : '*';
+    if (is_array($rawDeps)) {
+        if (isset($rawDeps['modules']) || isset($rawDeps['plugins'])) {
+            foreach (['modules', 'plugins'] as $depType) {
+                if (! empty($rawDeps[$depType]) && is_array($rawDeps[$depType])) {
+                    $dependencies = array_merge($dependencies, array_keys($rawDeps[$depType]));
+                }
             }
-
-            if ($identifier === '' || isset($seen[$identifier])) {
-                continue;
-            }
-            $seen[$identifier] = true;
-
-            $detailed[] = [
-                'type' => $type,
-                'id' => $identifier,
-                'version' => $version,
-            ];
+        } else {
+            $dependencies = array_values($rawDeps);
         }
     }
 
-    return $detailed;
+    return $dependencies;
 }
 
 /**
@@ -661,7 +458,7 @@ function extractDependenciesDetailedFromJson(array $data): array
     $rawDeps = $data['dependencies'] ?? [];
     $detailed = [];
 
-    if (! is_array($rawDeps)) {
+    if (!is_array($rawDeps)) {
         return $detailed;
     }
 
@@ -707,22 +504,6 @@ if ($scanExtensionsLibraryMode) {
 }
 
 try {
-    // 디렉토리 열거 함수가 막힌 환경. 이 API 는 전부 scandir 로 도는데,
-    // 막혀 있으면 각 호출이 Error 를 던져 아래 catch 가 개발자 원문을 화면에 띄운다.
-    // 사유를 먼저 확인해 사람 말로 알린다 — 판정은 execution-mode.php 가 소유한다
-    // (session.php 가 그 파일을 로드한다).
-    if (function_exists('installerHasFunction') && ! installerHasFunction('scandir')) {
-        http_response_code(500);
-        echo installer_json_encode([
-            'success' => false,
-            'error' => 'directory_listing_unavailable',
-            // 사유를 다국어 키로도 싣는다 — 화면이 세 사유를 구분해 그린다.
-            'message_key' => 'scan_directory_listing_unavailable',
-            'error_message' => 'Directory listing is disabled on this server (scandir), so bundled extensions cannot be scanned.',
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
     // 템플릿 스캔
     $templates = scanTemplates();
 
@@ -738,17 +519,16 @@ try {
     // Admin 템플릿 필수 검증
     if (empty($templates['admin'])) {
         http_response_code(400);
-        echo installer_json_encode([
+        echo json_encode([
             'success' => false,
             'error' => 'no_admin_template',
-            'message_key' => 'no_admin_template_error',
             'error_message' => 'Admin template is required but not found. Please ensure at least one admin template exists in the templates/_bundled directory.',
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     // 결과 반환
-    echo installer_json_encode([
+    echo json_encode([
         'success' => true,
         'data' => [
             'admin_templates' => $templates['admin'],
@@ -760,19 +540,9 @@ try {
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $e) {
-    // 예외 원문은 응답에 싣지 않는다 — 이 엔드포인트는 인증이 없고, 원문에는
-    // 절대경로가 그대로 섞인다. 원문은 로그로만 남긴다.
-    if (function_exists('logInstallationError')) {
-        logInstallationError('scan-extensions failed', $e);
-    } else {
-        installerErrorLog('[installer] scan-extensions failed: '.$e->getMessage());
-    }
-
     http_response_code(500);
-    echo installer_json_encode([
+    echo json_encode([
         'success' => false,
-        'error' => 'scan_failed',
-        'message_key' => 'scan_failed_see_log',
-        'error_message' => 'Scanning bundled extensions failed. See the installation log for details.',
+        'error' => $e->getMessage(),
     ], JSON_UNESCAPED_UNICODE);
 }

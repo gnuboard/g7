@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Identity;
 
-use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -16,7 +15,7 @@ class AdminIdentityPolicyResetFieldRequest extends FormRequest
     /**
      * 인증/권한은 route middleware 가 담당 — FormRequest 는 true 고정.
      *
-     * @return bool 항상 true (권한 판정은 미들웨어 책임)
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -30,10 +29,8 @@ class AdminIdentityPolicyResetFieldRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = [
-            'field' => ['required', 'string', 'in:enabled,grace_minutes,provider_id,fail_mode,conditions,purpose,applies_to,priority'],
+        return [
+            'field' => ['required', 'string', 'in:enabled,grace_minutes,provider_id,fail_mode,conditions'],
         ];
-
-        return HookManager::applyFilters('core.identity_policy.reset_field_validation_rules', $rules, $this);
     }
 }

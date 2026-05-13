@@ -6,14 +6,6 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Breadcrumb, BreadcrumbItem } from './Breadcrumb';
-import type { EditorAttrs } from '../../types';
-import { sitePath } from '../../support/apiUrl';
-import { handleLinkClick, navigateTo, resolveLinkHref } from '../../support/navigationLink';
-import { useRenderWidth } from '../../hooks/useRenderWidth';
-import { classAtWidth, isWidthAtMost } from '../layout/widthBreakpoints';
-
-/** 좁은 화면 상한(px, 포함) — 이 폭 이하에서는 액션 묶음이 한 줄을 다 쓰고 왼쪽부터 놓인다 */
-const NARROW_ACTIONS_MAX_WIDTH = 640;
 
 /**
  * 탭 아이템 인터페이스
@@ -36,12 +28,6 @@ export interface ActionButton {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   iconName?: IconName;
   disabled?: boolean;
-  /**
-   * 바로가기 주소 — 있으면 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
-   * 보통 클릭은 onClick(없으면 SPA 이동), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
-   * `disabled` 면 링크로 그리지 않고 종전처럼 비활성 단추다(href 없음).
-   */
-  href?: string;
 }
 
 /**
@@ -56,18 +42,12 @@ export interface PageHeaderProps {
   actions?: ActionButton[];
   className?: string;
   children?: React.ReactNode;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
  * PageHeader 컴포넌트
  *
- * 페이지 헤더 - admin_dashboard.g7.html의 page_header 스타일과 동일
+ * 페이지 헤더 - admin_dashboard.json의 page_header 스타일과 동일
  * 배경색 없음, flex items-center justify-between mb-6 레이아웃
  *
  * @example
@@ -90,126 +70,89 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   actions,
   className = '',
   children,
-  id,
-  editorAttrs,
 }) => {
-  // 제목 글자 크기·액션 묶음 배치를 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭).
-  // 폭 미디어가 걸린 옛 의미 클래스(`page-title`·`page-actions`)는 붙이지 않는다 — 창 폭 미디어가 미리보기 폭 판정을 덮어쓴다.
-  // 폭과 무관한 바탕(`page-heading`·`page-action-group`)에 폭별 유틸만 더한다.
-  const renderWidth = useRenderWidth();
-  const titleClass = `page-heading ${classAtWidth(renderWidth, 'sm', 'text-2xl')} break-words`.replace(/\s+/g, ' ');
-  const narrowActions = isWidthAtMost(renderWidth, NARROW_ACTIONS_MAX_WIDTH) ? ' w-full justify-start' : '';
-
   /**
    * Variant별 버튼 스타일
    */
   const getButtonClasses = (variant: ActionButton['variant'] = 'secondary'): string => {
+    const baseClasses = 'px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2';
+
     const variantClasses: Record<NonNullable<ActionButton['variant']>, string> = {
-      primary: 'page-action-primary',
-      secondary: 'page-action-secondary',
-      danger: 'page-action-danger',
-      ghost: 'page-action-ghost',
+      primary: 'bg-blue-600 text-white hover:bg-blue-700',
+      secondary: 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600',
+      danger: 'bg-red-600 text-white hover:bg-red-700',
+      ghost: 'p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800',
     };
 
-    return variantClasses[variant];
+    return `${baseClasses} ${variantClasses[variant]}`;
   };
 
-  /**
-   * 단추 모양 링크의 클래스 — 기본 Button 이 붙이는 바탕 클래스(`button`)를 같은 방식으로 합쳐 모양을 그대로 둔다.
-   */
-  const buttonLikeClass = (className: string): string =>
-    (window as any).G7Core?.style?.mergeClasses?.('button', className) ?? `button ${className}`;
-
   return (
-    <Div className={className} id={id} {...editorAttrs}>
+    <Div className={className}>
       {/* 브레드크럼 - Breadcrumb 컴포넌트 재사용 */}
       {breadcrumbItems && breadcrumbItems.length > 0 && (
-        <Div className="mb-md">
+        <Div className="mb-4">
           <Breadcrumb items={breadcrumbItems} />
         </Div>
       )}
 
-      {/* 제목 및 액션 버튼 - admin_dashboard.g7.html 스타일 */}
-      {/* 좁은 화면(태블릿 900px 등)에서 버튼이 많으면 한 줄에 우겨 넣지 않고 다음 줄로 내린다 —
-          종전에는 버튼이 줄어들며 글자 단위로 꺾였다(「취
-소」·「저
-장」, 7.1.0 실측). */}
-      <Div className="flex-between flex-wrap gap-3 mb-lg">
-        <Div className="min-w-0">
-          {/* 제목·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 들어간 제목도 화면을 넘지 않는다(#143). */}
-          <H1 className={titleClass}>{title}</H1>
+      {/* 제목 및 액션 버튼 - admin_dashboard.json 스타일 */}
+      <Div className="flex items-center justify-between mb-6">
+        <Div>
+          <H1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{title}</H1>
           {description && (
-            <P className="page-description break-words">{description}</P>
+            <P className="text-sm text-gray-600 dark:text-gray-400 mt-1">{description}</P>
           )}
         </Div>
 
         {/* 액션 버튼 또는 children */}
         {children ? (
-          <Div className={`flex-center page-action-group${narrowActions}`}>{children}</Div>
+          <Div className="flex items-center gap-2">{children}</Div>
         ) : actions && actions.length > 0 ? (
-          <Div className={`page-action-group${narrowActions}`}>
-            {actions.map((action) => {
-              const content = (
-                <>
-                  {action.iconName && (
-                    <Icon name={action.iconName} className="icon-md" />
-                  )}
-                  {action.variant !== 'ghost' && action.label && (
-                    <Div>{action.label}</Div>
-                  )}
-                </>
-              );
-              const link = !action.disabled && action.href !== undefined ? resolveLinkHref(action.href) : null;
-              if (link) {
-                return (
-                  <a
-                    key={action.id}
-                    href={sitePath(link.href)}
-                    {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    aria-label={action.variant === 'ghost' ? action.label : undefined}
-                    className={buttonLikeClass(getButtonClasses(action.variant))}
-                    onClick={(event) => {
-                      handleLinkClick(event, () => {
-                        if (action.onClick) {
-                          action.onClick();
-                        } else {
-                          navigateTo(link.href);
-                        }
-                      });
-                    }}
-                  >
-                    {content}
-                  </a>
-                );
-              }
-
-              return (
-                <Button
-                  key={action.id}
-                  onClick={action.onClick}
-                  disabled={action.disabled}
-                  className={getButtonClasses(action.variant)}
-                >
-                  {content}
-                </Button>
-              );
-            })}
+          <Div className="flex items-center gap-2">
+            {actions.map((action) => (
+              <Button
+                key={action.id}
+                onClick={action.onClick}
+                disabled={action.disabled}
+                className={getButtonClasses(action.variant)}
+              >
+                {action.iconName && (
+                  <Icon name={action.iconName} className="w-5 h-5" />
+                )}
+                {action.variant !== 'ghost' && action.label && (
+                  <Div>{action.label}</Div>
+                )}
+              </Button>
+            ))}
           </Div>
         ) : null}
       </Div>
 
       {/* 탭 네비게이션 */}
       {tabs && tabs.length > 0 && (
-        <Div className="tab-container">
+        <Div className="flex gap-6 border-b border-gray-200 dark:border-gray-700 mb-6">
           {tabs.map((tab) => (
             <Button
               key={tab.id}
               onClick={() => onTabChange?.(tab.value)}
-              className={tab.active ? 'tab-btn-active' : 'tab-btn'}
+              className={`
+                px-1 py-3 border-b-2 transition-colors font-medium flex items-center gap-2 -mb-px
+                ${tab.active
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }
+              `}
             >
               <Div>{tab.label}</Div>
               {tab.badge !== undefined && (
-                <Div className={tab.active ? 'tab-badge-active' : 'tab-badge'}>
+                <Div className={`
+                  px-2 py-0.5 rounded-full text-xs font-semibold
+                  ${tab.active
+                    ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                  }
+                `}>
                   {tab.badge}
                 </Div>
               )}

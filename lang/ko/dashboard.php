@@ -19,8 +19,6 @@ return [
     'activities_failed' => '최근 활동 조회에 실패했습니다.',
     'alerts_loaded' => '시스템 알림을 성공적으로 조회했습니다.',
     'alerts_failed' => '시스템 알림 조회에 실패했습니다.',
-    'recent_notifications_loaded' => '최근 알림을 성공적으로 조회했습니다.',
-    'recent_notifications_failed' => '최근 알림 조회에 실패했습니다.',
 
     // 통계 카드
     'stats' => [
@@ -31,11 +29,5 @@ return [
     // 최근 활동
     'activities' => [
         'user_registered' => ':name 님이 가입했습니다.',
-    ],
-    // `dashboard:*` 명령 출력
-    'console' => [
-        'broadcast_resources' => [
-            'done' => '시스템 리소스 정보가 브로드캐스트되었습니다.',
-        ],
     ],
 ];

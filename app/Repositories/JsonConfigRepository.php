@@ -3,8 +3,6 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
-use App\Exceptions\PhpExtensionUnavailableException;
-use App\Support\PhpExtensionProbe;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -39,33 +37,11 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     private ?array $defaultsCache = null;
 
     /**
-     * 설정 기본값 파일 프로세스 메모 — [경로·mtime·크기] 키 => 해석 결과.
-     *
-     * 저장소는 부팅 중에도 여러 번 만들어지는데(설정 미러·드라이버 설정·워커 갱신) 기본값 파일(약 30KB)은
-     * 그때마다 같은 내용이다. 키에 mtime·크기를 넣어 코어 업데이트·settings:install 로 파일이 바뀌면
-     * 같은 프로세스에서도 다시 읽는다(#860).
-     *
-     * @var array{key: string, data: array<string, mixed>}|null
-     */
-    private static ?array $defaultsFileMemo = null;
-
-    /**
      * 메모리 캐시
      *
      * @var array<string, array<string, mixed>>|null
      */
     private ?array $cache = null;
-
-    /**
-     * 카테고리별 메모리 캐시
-     *
-     * 부팅 한 번에 같은 카테고리를 여러 곳에서 읽는다 — SettingsServiceProvider 의
-     * apply*Config 9종과 loadCoreSettingsToConfig 가 각각 조회하므로, 캐시가 없으면
-     * 요청마다 카테고리 수만큼 곱한 횟수로 파일 존재 확인·읽기·JSON 파싱이 반복된다.
-     *
-     * @var array<string, array<string, mixed>>
-     */
-    private array $categoryCache = [];
 
     /**
      * 모든 카테고리의 설정을 조회합니다.
@@ -91,27 +67,9 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     /**
      * 특정 카테고리의 설정을 조회합니다.
      *
-     * @param  string  $category  카테고리명
-     * @return array<string, mixed> 기본값과 병합된 설정
-     */
-    public function getCategory(string $category): array
-    {
-        if (array_key_exists($category, $this->categoryCache)) {
-            return $this->categoryCache[$category];
-        }
-
-        return $this->categoryCache[$category] = $this->readCategory($category);
-    }
-
-    /**
-     * 카테고리 설정을 파일에서 읽어 기본값과 병합합니다.
-     *
-     * 캐시를 거치지 않는 실제 읽기 경로입니다.
-     *
-     * @param  string  $category  카테고리명
      * @return array<string, mixed>
      */
-    private function readCategory(string $category): array
+    public function getCategory(string $category): array
     {
         if (! $this->categoryExists($category)) {
             return $this->getDefaultsForCategory($category);
@@ -119,17 +77,11 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
         $path = $this->getCategoryPath($category);
 
-        // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-        // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-        // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
         if (! Storage::disk(self::STORAGE_DISK)->exists($path)) {
             return $this->getDefaultsForCategory($category);
         }
 
         try {
-            // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-            // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-            // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
             $content = Storage::disk(self::STORAGE_DISK)->get($path);
             $data = json_decode($content, true);
 
@@ -161,8 +113,6 @@ class JsonConfigRepository implements ConfigRepositoryInterface
      * 도트 노테이션으로 특정 설정값을 조회합니다.
      *
      * @param  string  $key  예: 'mail.host', 'general.site_name'
-     * @param  mixed  $default  값이 없을 때 돌려줄 기본값
-     * @return mixed 설정값 (없으면 $default)
      */
     public function get(string $key, mixed $default = null): mixed
     {
@@ -181,10 +131,6 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 도트 노테이션으로 특정 설정값을 저장합니다.
-     *
-     * @param  string  $key  설정 키 (카테고리.항목)
-     * @param  mixed  $value  저장할 값
-     * @return bool 저장 성공 여부
      */
     public function set(string $key, mixed $value): bool
     {
@@ -204,8 +150,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     /**
      * 여러 설정을 일괄 저장합니다.
      *
-     * @param  array<string, mixed>  $settings  도트 노테이션 키 ⇒ 값
-     * @return bool 저장 성공 여부
+     * @param  array<string, mixed>  $settings
      */
     public function setMany(array $settings): bool
     {
@@ -226,9 +171,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     /**
      * 특정 카테고리의 설정을 저장합니다.
      *
-     * @param  string  $category  카테고리명
-     * @param  array<string, mixed>  $settings  저장할 설정
-     * @return bool 저장 성공 여부
+     * @param  array<string, mixed>  $settings
      */
     public function saveCategory(string $category, array $settings): bool
     {
@@ -250,18 +193,8 @@ class JsonConfigRepository implements ConfigRepositoryInterface
         $path = $this->getCategoryPath($category);
         $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-        // 변환 실패(잘못된 UTF-8 등)면 파일을 열지 않는다 — 열고 비운 뒤 false 를 쓰면 설정 파일이 빈 채로 남았다(#161 F5)
-        if ($json === false) {
-            Log::error("설정 JSON 변환 실패 — 파일을 바꾸지 않습니다: {$category}", ['error' => json_last_error_msg()]);
-
-            return false;
-        }
-
         try {
             // 파일 잠금으로 동시 쓰기 방지
-            // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-            // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-            // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
             $fullPath = Storage::disk(self::STORAGE_DISK)->path($path);
             $handle = fopen($fullPath, 'c');
 
@@ -269,29 +202,17 @@ class JsonConfigRepository implements ConfigRepositoryInterface
                 return false;
             }
 
-            // 잠금을 못 잡거나 다 쓰지 못하면 실패로 답한다 — 7.1.4 까지는 잠금 실패 시 쓰지 않고도, 쓰기가 잘려도 성공(true)을
-            // 돌려 화면이 「저장됨」을 보였는데 값은 그대로였다(#161 F5)
-            if (! $this->lockForWrite($handle)) {
-                fclose($handle);
-                Log::error("설정 파일 잠금 실패 — 저장하지 않았습니다: {$category}");
-
-                return false;
+            if (flock($handle, LOCK_EX)) {
+                ftruncate($handle, 0);
+                fwrite($handle, $json);
+                fflush($handle);
+                flock($handle, LOCK_UN);
             }
 
-            $written = $this->writeLocked($handle, $json);
-            flock($handle, LOCK_UN);
             fclose($handle);
 
-            if (! $written) {
-                Log::error("설정 파일 쓰기 실패(일부만 기록됐거나 디스크에 반영되지 않음): {$category}");
-
-                return false;
-            }
-
-            // 캐시 무효화 — 저장한 카테고리와 전체 맵 양쪽을 비운다.
-            // 한쪽만 비우면 저장 직후 조회가 이전 값을 돌려준다.
+            // 캐시 무효화
             $this->cache = null;
-            unset($this->categoryCache[$category]);
 
             return true;
         } catch (\Exception $e) {
@@ -305,9 +226,6 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 설정 키 존재 여부를 확인합니다.
-     *
-     * @param  string  $key  설정 키 (카테고리.항목)
-     * @return bool 존재 여부
      */
     public function has(string $key): bool
     {
@@ -316,9 +234,6 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 특정 설정을 삭제합니다.
-     *
-     * @param  string  $key  설정 키 (카테고리.항목)
-     * @return bool 삭제 성공 여부
      */
     public function delete(string $key): bool
     {
@@ -354,9 +269,6 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 카테고리 존재 여부를 확인합니다.
-     *
-     * @param  string  $category  카테고리명
-     * @return bool 존재 여부
      */
     public function categoryExists(string $category): bool
     {
@@ -366,8 +278,7 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     /**
      * 설정 파일을 초기화합니다.
      *
-     * @param  array<string, array<string, mixed>>  $settings  기본값 위에 덮어쓸 설정
-     * @return bool 초기화 성공 여부
+     * @param  array<string, array<string, mixed>>  $settings
      */
     public function initialize(array $settings = []): bool
     {
@@ -386,91 +297,19 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     }
 
     /**
-     * 설정 폴더에 이미 있는 설정 JSON 파일 이름 목록을 돌려줍니다 (하위 폴더 제외).
-     *
-     * 설정을 기본값으로 다시 만드는 경로(`settings:migrate-to-json` 등)가 운영 중인 설정을 덮기 전에 확인하는 근거다.
-     *
-     * @return list<string> 설정 디스크 기준 파일 이름 (예: `general.json`)
-     */
-    public function existingSettingFiles(): array
-    {
-        // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-        // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-        $disk = Storage::disk(self::STORAGE_DISK);
-
-        if (! $disk->exists('.')) {
-            return [];
-        }
-
-        $files = array_values(array_filter($disk->files('.'), static fn (string $file): bool => str_ends_with($file, '.json')));
-        sort($files);
-
-        return array_map('basename', $files);
-    }
-
-    /**
-     * 설정 JSON 파일을 백업 폴더 아래 새 폴더로 그대로 복사합니다 (zip 확장 없이도 되돌릴 수 있는 사본).
-     *
-     * @param  string  $label  사본 폴더 이름 앞부분 (예: `migrate-to-json`)
-     * @return string 설정 디스크 기준 사본 폴더 경로 (예: `backups/migrate-to-json_2026-11-18_041500`)
-     *
-     * @throws \RuntimeException 파일을 복사하지 못했을 때
-     */
-    public function copySettingFiles(string $label): string
-    {
-        $this->ensureBackupDirectoryExists();
-
-        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
-        $directory = self::BACKUP_DIR.'/'.$label.'_'.now()->format('Y-m-d_His');
-        // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-        // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-        $disk = Storage::disk(self::STORAGE_DISK);
-        $disk->makeDirectory($directory);
-
-        foreach ($this->existingSettingFiles() as $file) {
-            if (! $disk->copy($file, $directory.'/'.$file)) {
-                throw new \RuntimeException(__('exceptions.settings.backup_creation_failed'));
-            }
-        }
-
-        return $directory;
-    }
-
-    /**
-     * 백업·복원이 쓰는 zip 확장이 있는지 확인합니다. (#151 — 없으면 `ZipArchive` 미정의로 500 이 났다)
-     *
-     * 이 저장소는 컨테이너 바인딩 이전에 `new` 로 만들어지므로 조회기는 호출 시점에 컨테이너에서 받는다.
-     *
-     * @return void 반환값 없음
-     *
-     * @throws PhpExtensionUnavailableException zip 확장이 없을 때
-     */
-    private function assertZipAvailable(): void
-    {
-        if (! app(PhpExtensionProbe::class)->loaded('zip')) {
-            throw new PhpExtensionUnavailableException('zip', 'settings.errors.zip_extension_required');
-        }
-    }
-
-    /**
      * 설정을 백업합니다.
      *
      * @return string 백업 파일 경로
      */
     public function backup(): string
     {
-        $this->assertZipAvailable();
         $this->ensureBackupDirectoryExists();
 
-        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $timestamp = now()->format('Y-m-d_His');
         $backupName = "backup_{$timestamp}.zip";
         $backupPath = self::BACKUP_DIR.'/'.$backupName;
 
         $zip = new \ZipArchive;
-        // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-        // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-        // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
         $fullBackupPath = Storage::disk(self::STORAGE_DISK)->path($backupPath);
 
         if ($zip->open($fullBackupPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
@@ -479,9 +318,6 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
         foreach ($this->getCategories() as $category) {
             $categoryPath = $this->getCategoryPath($category);
-            // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-            // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-            // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
             $fullCategoryPath = Storage::disk(self::STORAGE_DISK)->path($categoryPath);
 
             if (file_exists($fullCategoryPath)) {
@@ -496,22 +332,14 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 백업에서 설정을 복원합니다.
-     *
-     * @param  string  $backupPath  백업 파일 경로 (disk 기준)
-     * @return bool 복원 성공 여부
      */
     public function restore(string $backupPath): bool
     {
-        // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-        // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-        // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
         $fullBackupPath = Storage::disk(self::STORAGE_DISK)->path($backupPath);
 
         if (! file_exists($fullBackupPath)) {
             return false;
         }
-
-        $this->assertZipAvailable();
 
         $zip = new \ZipArchive;
 
@@ -528,16 +356,12 @@ class JsonConfigRepository implements ConfigRepositoryInterface
             if ($this->categoryExists($category)) {
                 $content = $zip->getFromIndex($i);
                 $categoryPath = $this->getCategoryPath($category);
-                // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-                // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-                // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
                 Storage::disk(self::STORAGE_DISK)->put($categoryPath, $content);
             }
         }
 
         $zip->close();
         $this->cache = null;
-        $this->categoryCache = [];
 
         return true;
     }
@@ -576,12 +400,10 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 기본 설정 파일을 로드합니다.
-     *
-     * @return void 반환값 없음
      */
     private function loadDefaultsFile(): void
     {
-        $path = $this->defaultsPath();
+        $path = config_path(self::DEFAULTS_FILE);
 
         if (! file_exists($path)) {
             Log::error('설정 기본값 파일을 찾을 수 없습니다. settings:install 명령을 실행하세요.', ['path' => $path]);
@@ -590,18 +412,9 @@ class JsonConfigRepository implements ConfigRepositoryInterface
             return;
         }
 
-        clearstatcache(true, $path);
-        $memoKey = $path."\0".@filemtime($path)."\0".@filesize($path);
-
-        if (self::$defaultsFileMemo !== null && self::$defaultsFileMemo['key'] === $memoKey) {
-            $this->defaultsCache = self::$defaultsFileMemo['data'];
-
-            return;
-        }
-
         try {
-            $content = $this->readDefaultsFile($path);
-            $data = json_decode((string) $content, true);
+            $content = file_get_contents($path);
+            $data = json_decode($content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
                 Log::error('설정 기본값 파일 JSON 파싱 실패', [
@@ -613,8 +426,6 @@ class JsonConfigRepository implements ConfigRepositoryInterface
             }
 
             $this->defaultsCache = $data;
-            // 정상 해석한 결과만 메모한다 — 읽기·파싱 실패의 빈 기본값을 프로세스 내내 붙잡지 않게
-            self::$defaultsFileMemo = ['key' => $memoKey, 'data' => $data];
         } catch (\Exception $e) {
             Log::error('설정 기본값 파일 로드 실패', ['error' => $e->getMessage()]);
             $this->defaultsCache = ['_meta' => ['categories' => []], 'defaults' => [], 'frontend_schema' => []];
@@ -622,60 +433,9 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     }
 
     /**
-     * 설정 파일에 배타 잠금을 겁니다(시험에서 실패를 흉내 낼 수 있게 분리).
-     *
-     * @param  resource  $handle  열린 파일 핸들
-     * @return bool 잠금 성공 여부
-     */
-    protected function lockForWrite($handle): bool
-    {
-        return flock($handle, LOCK_EX);
-    }
-
-    /**
-     * 잠긴 파일을 비우고 JSON 을 씁니다 — 모든 바이트를 쓰고 디스크로 내보냈을 때만 성공입니다(시험에서 실패를 흉내 낼 수 있게 분리).
-     *
-     * @param  resource  $handle  잠긴 파일 핸들
-     * @param  string  $json  쓸 JSON
-     * @return bool 쓰기 성공 여부
-     */
-    protected function writeLocked($handle, string $json): bool
-    {
-        if (! ftruncate($handle, 0)) {
-            return false;
-        }
-
-        $bytes = fwrite($handle, $json);
-
-        return $bytes === strlen($json) && fflush($handle);
-    }
-
-    /**
-     * 설정 기본값 파일 경로를 반환합니다.
-     *
-     * @return string 기본값 파일 절대 경로
-     */
-    protected function defaultsPath(): string
-    {
-        return config_path(self::DEFAULTS_FILE);
-    }
-
-    /**
-     * 설정 기본값 파일 내용을 읽습니다.
-     *
-     * @param  string  $path  파일 경로
-     * @return string|false 파일 내용 (실패 시 false)
-     */
-    protected function readDefaultsFile(string $path): string|false
-    {
-        return file_get_contents($path);
-    }
-
-    /**
      * 특정 카테고리의 기본값을 반환합니다.
      *
-     * @param  string  $category  설정 카테고리
-     * @return array<string, mixed> 카테고리 기본값
+     * @return array<string, mixed>
      */
     private function getDefaultsForCategory(string $category): array
     {
@@ -686,9 +446,6 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 카테고리 파일 경로를 반환합니다.
-     *
-     * @param  string  $category  설정 카테고리
-     * @return string 설정 디스크 기준 카테고리 파일 경로
      */
     private function getCategoryPath(string $category): string
     {
@@ -697,14 +454,9 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 설정 디렉토리가 존재하는지 확인하고 없으면 생성합니다.
-     *
-     * @return void 반환값 없음
      */
     private function ensureDirectoryExists(): void
     {
-        // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-        // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-        // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
         $disk = Storage::disk(self::STORAGE_DISK);
 
         if (! $disk->exists('.')) {
@@ -714,14 +466,9 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 백업 디렉토리가 존재하는지 확인하고 없으면 생성합니다.
-     *
-     * @return void 반환값 없음
      */
     private function ensureBackupDirectoryExists(): void
     {
-        // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
-        // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
-        // 설정 JSON 은 부팅 자체가 의존하는 자료라 드라이버 추상화보다 부팅 순서가 우선한다.
         $disk = Storage::disk(self::STORAGE_DISK);
 
         if (! $disk->exists(self::BACKUP_DIR)) {

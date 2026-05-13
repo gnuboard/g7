@@ -7,7 +7,6 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 
 /**
  * 주문 결제 Factory
@@ -17,19 +16,9 @@ class OrderPaymentFactory extends Factory
     protected $model = OrderPayment::class;
 
     /**
-     * 은행 코드-이름 쌍 (코드와 이름이 어긋난 행을 만들지 않도록 쌍으로 고른다)
-     *
-     * @var array<int, array{0: string, 1: string}>
-     */
-    private const BANKS = [
-        ['004', '국민은행'],
-        ['088', '신한은행'],
-        ['020', '우리은행'],
-        ['081', '하나은행'],
-    ];
-
-    /**
      * 기본 정의
+     *
+     * @return array
      */
     public function definition(): array
     {
@@ -39,18 +28,17 @@ class OrderPaymentFactory extends Factory
         return [
             'order_id' => Order::factory(),
             'payment_status' => PaymentStatusEnum::PAID,
-            // 결제 플러그인이 등록하는 실제 id 만 쓴다 (가짜 id 는 결제 상세·환불 화면이 PG 를 찾지 못한다)
-            'pg_provider' => $faker->randomElement(['tosspayments', 'kginicis', 'nhnkcp', 'nicepayments']),
+            'pg_provider' => $faker->randomElement(['tosspayments', 'inicis', 'nicepay']),
             'embedded_pg_provider' => null,
             'transaction_id' => $faker->uuid(),
             'merchant_order_id' => 'MO-'.strtoupper($faker->bothify('????-####-????')),
-            'payment_method' => PaymentMethodEnum::CARD->value,
+            'payment_method' => PaymentMethodEnum::CARD,
             'payment_device' => $faker->randomElement(['pc', 'mobile']),
             'paid_amount_local' => $amount,
             'paid_amount_base' => $amount,
             'vat_amount' => round($amount / 11, 2),
-            'currency' => $this->defaultCurrency(),
-            'currency_snapshot' => $this->defaultRateMap(),
+            'currency' => 'KRW',
+            'currency_snapshot' => ['KRW' => 1.0, 'USD' => 0.00074],
             'card_name' => $faker->randomElement(['신한카드', '삼성카드', 'KB국민카드', '현대카드']),
             'card_number_masked' => $faker->numerify('####-****-****-####'),
             'card_approval_number' => $faker->numerify('########'),
@@ -85,7 +73,7 @@ class OrderPaymentFactory extends Factory
             'refund_bank_name' => null,
             'refund_bank_account' => null,
             'refund_bank_holder' => null,
-            'receipt_url' => null,
+            'receipt_url' => $faker->optional()->url(),
             'payment_name' => $faker->words(3, true),
             'user_agent' => null,
             'payment_meta' => null,
@@ -96,35 +84,10 @@ class OrderPaymentFactory extends Factory
     }
 
     /**
-     * 설정의 기본 통화 코드를 반환합니다 (KRW 하드코딩 제거 — base 추종).
-     *
-     * @return string 기본 통화 코드
-     */
-    private function defaultCurrency(): string
-    {
-        return app(CurrencyConversionService::class)->getDefaultCurrency();
-    }
-
-    /**
-     * 통화코드 → 환율 맵을 반환합니다 (기본 통화=1.0).
-     *
-     * @return array<string, float> 통화코드별 환율
-     */
-    private function defaultRateMap(): array
-    {
-        $service = app(CurrencyConversionService::class);
-
-        $rates = [];
-        foreach ($service->getCurrencySettings() as $currency) {
-            $code = $currency['code'];
-            $rates[$code] = ($currency['is_default'] ?? false) ? 1.0 : (float) ($currency['exchange_rate'] ?? 0);
-        }
-
-        return $rates;
-    }
-
-    /**
      * 특정 주문의 결제
+     *
+     * @param  Order  $order
+     * @return static
      */
     public function forOrder(Order $order): static
     {
@@ -137,13 +100,15 @@ class OrderPaymentFactory extends Factory
 
     /**
      * 카드 결제
+     *
+     * @return static
      */
     public function card(): static
     {
         $faker = \fake();
 
         return $this->state(fn (array $attributes) => [
-            'payment_method' => PaymentMethodEnum::CARD->value,
+            'payment_method' => PaymentMethodEnum::CARD,
             'card_name' => $faker->randomElement(['신한카드', '삼성카드', 'KB국민카드', '현대카드']),
             'card_number_masked' => $faker->numerify('####-****-****-####'),
         ]);
@@ -151,21 +116,20 @@ class OrderPaymentFactory extends Factory
 
     /**
      * 무통장입금 결제
+     *
+     * @return static
      */
     public function directBank(): static
     {
         $faker = \fake();
-        [$bankCode, $bankName] = $faker->randomElement(self::BANKS);
 
         return $this->state(fn (array $attributes) => [
-            'payment_method' => PaymentMethodEnum::DBANK->value,
+            'payment_method' => PaymentMethodEnum::DBANK,
             'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
-            // 무통장입금은 PG 를 거치지 않는다 — OrderProcessingService::determinePgProvider() 와 같은 'manual'
-            'pg_provider' => 'manual',
+            'pg_provider' => '',
             'embedded_pg_provider' => null,
-            'transaction_id' => null,
-            'dbank_code' => $bankCode,
-            'dbank_name' => $bankName,
+            'dbank_code' => '088',
+            'dbank_name' => $faker->randomElement(['신한은행', '국민은행', '우리은행', '하나은행']),
             'dbank_account' => $faker->numerify('###-###-######'),
             'dbank_holder' => '(주)테스트몰',
             'depositor_name' => $faker->name(),
@@ -179,17 +143,18 @@ class OrderPaymentFactory extends Factory
 
     /**
      * 가상계좌 결제
+     *
+     * @return static
      */
     public function virtualAccount(): static
     {
         $faker = \fake();
-        [$bankCode, $bankName] = $faker->randomElement(self::BANKS);
 
         return $this->state(fn (array $attributes) => [
-            'payment_method' => PaymentMethodEnum::VBANK->value,
+            'payment_method' => PaymentMethodEnum::VBANK,
             'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
-            'vbank_code' => $bankCode,
-            'vbank_name' => $bankName,
+            'vbank_code' => '088',
+            'vbank_name' => $faker->randomElement(['신한은행', '국민은행', '우리은행']),
             'vbank_number' => $faker->numerify('###-###-######'),
             'vbank_holder' => $faker->name(),
             'vbank_due_at' => now()->addDays(7),
@@ -203,6 +168,8 @@ class OrderPaymentFactory extends Factory
 
     /**
      * 결제 대기 상태
+     *
+     * @return static
      */
     public function pending(): static
     {
@@ -214,6 +181,8 @@ class OrderPaymentFactory extends Factory
 
     /**
      * 결제 완료 상태
+     *
+     * @return static
      */
     public function completed(): static
     {
@@ -225,6 +194,8 @@ class OrderPaymentFactory extends Factory
 
     /**
      * 결제 실패 상태
+     *
+     * @return static
      */
     public function failed(): static
     {
@@ -236,6 +207,8 @@ class OrderPaymentFactory extends Factory
 
     /**
      * 취소 상태
+     *
+     * @return static
      */
     public function cancelled(): static
     {

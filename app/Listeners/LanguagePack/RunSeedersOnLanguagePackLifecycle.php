@@ -5,17 +5,11 @@ namespace App\Listeners\LanguagePack;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\LanguagePackScope;
-use App\Extension\ExtensionManager;
-use App\Extension\Helpers\ExtensionProviderRegistrar;
-use App\Extension\ModuleManager;
-use App\Extension\PluginManager;
-use App\Extension\Support\LifecycleWarnings;
 use App\Models\LanguagePack;
 use App\Providers\LanguagePackServiceProvider;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
-use Database\Seeders\CoreFieldDefinitionSeeder;
-use Database\Seeders\CoreScheduleSeeder;
+use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Foundation\Application;
@@ -36,7 +30,6 @@ use Throwable;
  *   - 신규 활성 언어팩의 seed/{entity}.json 필터를 동적으로 추가 등록 (boot 시점에만 등록되던 회귀 보완)
  *   - 시더는 GenericEntitySyncHelper 의 sync + cleanupStale 패턴이라 idempotent — user_overrides 보존
  *   - dot-path sub-key 단위 보존: 사용자가 ko 만 수정한 row 는 ko 보존, 신규 locale (ja) 자동 추가
- *   - 대상 확장이 비활성이거나, 활성 행만 남고 활성 디렉터리에 파일이 없으면 건너뛴다(경고 없음)
  *
  * @since 7.0.0-beta.4
  */
@@ -46,9 +39,8 @@ class RunSeedersOnLanguagePackLifecycle
     /** @var array<int, class-string> 코어 entity 시더 — translation 필터를 사용하는 시더만 등록 */
     private const CORE_ENTITY_SEEDERS = [
         NotificationDefinitionSeeder::class,
+        IdentityMessageDefinitionSeeder::class,
         IdentityPolicySeeder::class,
-        CoreScheduleSeeder::class,
-        CoreFieldDefinitionSeeder::class,
     ];
 
     /**
@@ -66,7 +58,6 @@ class RunSeedersOnLanguagePackLifecycle
      * 언어팩 활성화 시 호출됩니다.
      *
      * @param  LanguagePack  $pack  활성화된 언어팩
-     * @return void 반환값 없음
      */
     public function handleActivated(LanguagePack $pack): void
     {
@@ -80,7 +71,6 @@ class RunSeedersOnLanguagePackLifecycle
      * 수행하여 일관된 상태를 유지합니다.
      *
      * @param  LanguagePack  $pack  비활성화된 언어팩
-     * @return void 반환값 없음
      */
     public function handleDeactivated(LanguagePack $pack): void
     {
@@ -89,9 +79,6 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 언어팩의 scope 에 따라 적절한 시더를 재실행합니다.
-     *
-     * @param  LanguagePack  $pack  활성/비활성이 바뀐 언어팩
-     * @return void 반환값 없음
      */
     private function reseedForScope(LanguagePack $pack): void
     {
@@ -110,31 +97,26 @@ class RunSeedersOnLanguagePackLifecycle
                 default => null,
             };
         } catch (Throwable $e) {
-            // 시더 실패가 언어팩 활성화 트랜잭션을 깨뜨리지 않도록 계속 진행하되 경고 목록으로 알린다
+            // 시더 실패가 언어팩 활성화 트랜잭션을 깨뜨리지 않도록 로그만 남김
             Log::error('[language-pack] 시더 재실행 실패', [
                 'pack' => $pack->identifier,
                 'scope' => $pack->scope,
                 'target' => $pack->target_identifier,
                 'error' => $e->getMessage(),
             ]);
-            LifecycleWarnings::current()->add('language_pack_seed', (string) $pack->identifier, $e->getMessage());
         }
     }
 
     /**
      * LanguagePackRegistry 의 인스턴스 캐시를 무효화하고 supported_locales 를 갱신합니다.
-     *
-     * @return void 반환값 없음
      */
     private function refreshRegistry(): void
     {
-        // boot 시점에 등록된 seed 필터 클로저들은 injector→registry "인스턴스"를 캡처하고 있다.
-        // forgetInstance 로 바인딩을 교체하면 캡처된 구 인스턴스의 stale 캐시(활성 팩 목록)가
-        // 그대로 남아, 같은 프로세스에서 활성화된 신규 팩이 코어 시더의 번역 필터에 보이지
-        // 않는다 (오류 없이 해당 로케일만 미주입). 싱글톤을 유지한 채 내부 캐시만 무효화해
-        // 캡처된 참조에도 전파한다 (#597 에서 실측·교정).
+        // Singleton 캐시된 registry/injector 가 stale 활성 팩 목록을 들고 있을 수 있으므로 forget
+        $this->app->forgetInstance(LanguagePackRegistry::class);
+        $this->app->forgetInstance(LanguagePackSeedInjector::class);
+
         $registry = $this->app->make(LanguagePackRegistry::class);
-        $registry->invalidate();
         config([
             'app.supported_locales' => $registry->getActiveCoreLocales(),
             'app.locale_names' => $registry->getLocaleNames(),
@@ -150,8 +132,6 @@ class RunSeedersOnLanguagePackLifecycle
      *
      * 멱등성: 동일 키에 클로저를 추가 등록해도 LanguagePackSeedInjector 는 활성 팩에서
      * 한 번만 sub-key 머지하므로 결과 동일.
-     *
-     * @return void 반환값 없음
      */
     private function refreshExtensionSeedFilters(): void
     {
@@ -166,8 +146,6 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 코어 entity 시더 + 모든 활성 모듈/플러그인 시더를 재실행합니다.
-     *
-     * @return void 반환값 없음
      */
     private function reseedCoreScope(): void
     {
@@ -178,8 +156,6 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 코어 entity 시더 (translation 필터를 사용하는 것) 만 재실행.
-     *
-     * @return void 반환값 없음
      */
     private function runCoreEntitySeeders(): void
     {
@@ -190,15 +166,15 @@ class RunSeedersOnLanguagePackLifecycle
                     $seeder->run();
                 }
             } catch (Throwable $e) {
-                $this->warn('core_seed', $seederClass, $e->getMessage());
+                Log::warning("[language-pack] 코어 시더 실행 실패: {$seederClass}", [
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
     }
 
     /**
      * 모든 활성 모듈의 시더를 재실행합니다 (module:seed 명령).
-     *
-     * @return void 반환값 없음
      */
     private function runAllActiveModuleSeeders(): void
     {
@@ -209,8 +185,6 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 모든 활성 플러그인의 시더를 재실행합니다 (plugin:seed 명령).
-     *
-     * @return void 반환값 없음
      */
     private function runAllActivePluginSeeders(): void
     {
@@ -221,10 +195,6 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 단일 확장의 시더를 재실행합니다.
-     *
-     * @param  string  $type  확장 유형 (module | plugin)
-     * @param  string|null  $targetIdentifier  대상 확장 식별자
-     * @return void 반환값 없음
      */
     private function reseedExtensionTarget(string $type, ?string $targetIdentifier): void
     {
@@ -232,143 +202,44 @@ class RunSeedersOnLanguagePackLifecycle
             return;
         }
 
-        // 대상 확장이 비활성이면 건너뛴다 — 확장을 끌 때 그 언어팩이 함께 꺼지며 여기로 오는데, 비활성 확장의 시더 명령은
-        // 늘 거절한다(7.1.2 까지는 그 반환값을 버려 결과가 같았다). 반환값을 경고로 올린 뒤로는 끌 때마다 거짓 경고가 났다(7.1.3)
         if ($type === 'module') {
-            if (in_array($targetIdentifier, $this->moduleRepository->getActiveModuleIdentifiers(), true)) {
-                $this->runModuleSeeder($targetIdentifier);
-                $this->resyncFieldDefinitions('module', $targetIdentifier);
-            }
+            $this->runModuleSeeder($targetIdentifier);
         } elseif ($type === 'plugin') {
-            if (in_array($targetIdentifier, $this->pluginRepository->getActivePluginIdentifiers(), true)) {
-                $this->runPluginSeeder($targetIdentifier);
-                $this->resyncFieldDefinitions('plugin', $targetIdentifier);
-            }
-        }
-    }
-
-    /**
-     * 대상 확장의 회원 항목 선언을 다시 동기화합니다 (7.2.0).
-     *
-     * 확장이 선언한 항목의 이름은 선언 동기화 때 확장 언어 파일과 활성 언어팩 파일에서 읽어 DB 행에 저장된다
-     * (`ExtensionLangTexts`). 시더 명령은 선언을 다시 맞추지 않으므로, 팩을 켜도 항목 이름에 그 언어가 들어가지 않고
-     * 끈 뒤에도 남는다. 활성 디렉터리에 파일이 없는 확장은 건너뛴다(시더와 같은 기준).
-     *
-     * @param  string  $type  module 또는 plugin
-     * @param  string  $identifier  확장 식별자
-     * @return void 반환값 없음
-     */
-    private function resyncFieldDefinitions(string $type, string $identifier): void
-    {
-        if (! $this->hasActiveFiles($type === 'module' ? 'modules' : 'plugins', $identifier)) {
-            return;
-        }
-
-        try {
-            $manager = $this->app->make($type === 'module' ? ModuleManager::class : PluginManager::class);
-            $manager->resyncFieldDefinitions($identifier);
-        } catch (Throwable $e) {
-            $this->warn('field_definitions', $identifier, $e->getMessage());
+            $this->runPluginSeeder($targetIdentifier);
         }
     }
 
     /**
      * 모듈 시더를 안전하게 호출합니다.
-     *
-     * @param  string  $identifier  모듈 식별자
-     * @return void 반환값 없음
      */
     private function runModuleSeeder(string $identifier): void
     {
-        // DB 에는 활성으로 남았지만 활성 디렉터리에 파일이 없는 확장(파일만 지워진 사이트)은 건너뛴다 — 코드가 없어 돌지 않는
-        // 확장이라 다시 시딩할 것이 없고, 시더 명령은 「찾을 수 없습니다」로 실패해 언어팩 작업 전체를 「일부 실패」로 만든다
-        if (! $this->hasActiveFiles('modules', $identifier)) {
-            Log::info('[language-pack] 활성 디렉터리에 파일이 없는 확장의 시더 재실행을 건너뜁니다', ['type' => 'modules', 'identifier' => $identifier]);
-
-            return;
-        }
-
         try {
-            // 같은 요청에서 방금 설치·활성화된 확장이면 프로바이더가 없다 — 시더가 저장소를 해석하기 전에 등록(7.1.3)
-            ExtensionManager::registerExtensionAutoloadPaths('modules', $identifier);
-            ExtensionProviderRegistrar::ensureRegistered('modules', $identifier);
-
-            $exitCode = Artisan::call('module:seed', [
+            Artisan::call('module:seed', [
                 'identifier' => $identifier,
                 '--force' => true,
             ]);
-
-            // 반환값을 버리면 시더 실패가 조용히 묻힌다 — 경고 목록으로 올린다
-            if ($exitCode !== 0) {
-                $output = trim(Artisan::output());
-                $this->warn('module:seed', $identifier, $output !== '' ? $output : "exit code {$exitCode}");
-            }
         } catch (Throwable $e) {
-            $this->warn('module:seed', $identifier, $e->getMessage());
+            Log::warning("[language-pack] module:seed 실패: {$identifier}", [
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
     /**
      * 플러그인 시더를 안전하게 호출합니다.
-     *
-     * @param  string  $identifier  플러그인 식별자
-     * @return void 반환값 없음
      */
     private function runPluginSeeder(string $identifier): void
     {
-        // DB 에는 활성으로 남았지만 활성 디렉터리에 파일이 없는 확장(파일만 지워진 사이트)은 건너뛴다 — 코드가 없어 돌지 않는
-        // 확장이라 다시 시딩할 것이 없고, 시더 명령은 「찾을 수 없습니다」로 실패해 언어팩 작업 전체를 「일부 실패」로 만든다
-        if (! $this->hasActiveFiles('plugins', $identifier)) {
-            Log::info('[language-pack] 활성 디렉터리에 파일이 없는 확장의 시더 재실행을 건너뜁니다', ['type' => 'plugins', 'identifier' => $identifier]);
-
-            return;
-        }
-
         try {
-            // 같은 요청에서 방금 설치·활성화된 확장이면 프로바이더가 없다 — 시더가 저장소를 해석하기 전에 등록(7.1.3)
-            ExtensionManager::registerExtensionAutoloadPaths('plugins', $identifier);
-            ExtensionProviderRegistrar::ensureRegistered('plugins', $identifier);
-
-            $exitCode = Artisan::call('plugin:seed', [
+            Artisan::call('plugin:seed', [
                 'identifier' => $identifier,
                 '--force' => true,
             ]);
-
-            // 반환값을 버리면 시더 실패가 조용히 묻힌다 — 경고 목록으로 올린다
-            if ($exitCode !== 0) {
-                $output = trim(Artisan::output());
-                $this->warn('plugin:seed', $identifier, $output !== '' ? $output : "exit code {$exitCode}");
-            }
         } catch (Throwable $e) {
-            $this->warn('plugin:seed', $identifier, $e->getMessage());
+            Log::warning("[language-pack] plugin:seed 실패: {$identifier}", [
+                'error' => $e->getMessage(),
+            ]);
         }
-    }
-
-    /**
-     * 확장의 활성 디렉터리에 진입 파일(module.php · plugin.php)이 있는지 판정합니다.
-     *
-     * @param  string  $type  modules 또는 plugins
-     * @param  string  $identifier  확장 식별자
-     * @return bool 있으면 true
-     */
-    protected function hasActiveFiles(string $type, string $identifier): bool
-    {
-        $entry = $type === 'modules' ? 'module.php' : 'plugin.php';
-
-        return is_file(base_path("{$type}/{$identifier}/{$entry}"));
-    }
-
-    /**
-     * 시더 재실행 실패를 로그와 생명주기 경고 목록에 남깁니다 (언어팩 작업은 성공 유지).
-     *
-     * @param  string  $step  실패한 단계 (module:seed · plugin:seed · core_seed)
-     * @param  string  $target  확장 식별자 또는 시더 클래스
-     * @param  string  $message  실패 사유
-     * @return void 반환값 없음
-     */
-    private function warn(string $step, string $target, string $message): void
-    {
-        Log::warning("[language-pack] {$step} 실패: {$target}", ['error' => $message]);
-        LifecycleWarnings::current()->add('language_pack_seed', $target, $message);
     }
 }

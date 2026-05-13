@@ -7,24 +7,19 @@ use App\Seo\Contracts\SeoCacheManagerInterface;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Tests\TestCase;
 
 /**
  * 이커머스 SEO 설정 리스너 테스트
  *
  * 이커머스 모듈 설정 변경 시 SEO 관련 캐시 선별 무효화를 검증합니다.
  */
-class SeoSettingsCacheListenerTest extends ModuleTestCase
+class SeoSettingsCacheListenerTest extends TestCase
 {
     private SeoSettingsCacheListener $listener;
 
     private SeoCacheManagerInterface $cacheMock;
 
-    /**
-     * SEO 캐시 관리자를 목으로 바꿔 컨테이너에 넣고 리스너를 만듭니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,8 +34,6 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
      * SeoSettingsCacheListener 가 호출하는 sitemap 무효화를 mock 합니다.
      *
      * 새 시스템: app(CacheInterface::class)->forget('seo.sitemap')
-     *
-     * @return void 반환값 없음
      */
     private function mockSitemapForget(): void
     {
@@ -49,30 +42,16 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
         $this->app->instance(CacheInterface::class, $cacheInterfaceMock);
     }
 
-    /**
-     * Mockery 기대치를 검증하고 닫은 뒤 부모 정리를 실행합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
-        try {
-            Mockery::close();
-        } finally {
-            parent::tearDown();
-        }
+        Mockery::close();
+        parent::tearDown();
     }
 
     // ─── 훅 구독 등록 ──────────────────────────────────────
 
     /**
      * 훅 구독이 올바르게 등록되어 있는지 확인합니다.
-     *
-     * @scenario listener=settings, area=subscription
-     *
-     * @effects settings_listener_subscribes_module_settings_after_save
-     *
-     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_returns_correct_mapping(): void
     {
@@ -87,12 +66,6 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * 이커머스 모듈이 아닌 경우 무시하는지 확인
-     *
-     * @scenario listener=settings, area=invalidation
-     *
-     * @effects settings_listener_ignores_other_modules
-     *
-     * @return void 반환값 없음
      */
     public function test_ignores_non_ecommerce_module(): void
     {
@@ -107,12 +80,6 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * 상품 메타 설정 변경 시 shop/show 레이아웃만 무효화되는지 확인
-     *
-     * @scenario listener=settings, area=invalidation
-     *
-     * @effects product_meta_change_invalidates_shop_show
-     *
-     * @return void 반환값 없음
      */
     public function test_product_meta_change_invalidates_shop_show(): void
     {
@@ -135,12 +102,6 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * 카테고리 메타 설정 변경 시 shop/category + shop/index 무효화되는지 확인
-     *
-     * @scenario listener=settings, area=invalidation
-     *
-     * @effects category_meta_change_invalidates_category_and_index
-     *
-     * @return void 반환값 없음
      */
     public function test_category_meta_change_invalidates_shop_category_and_index(): void
     {
@@ -167,12 +128,6 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * 검색 메타 설정 변경 시 search/index 무효화되는지 확인
-     *
-     * @scenario listener=settings, area=invalidation
-     *
-     * @effects search_meta_change_invalidates_search_index
-     *
-     * @return void 반환값 없음
      */
     public function test_search_meta_change_invalidates_search_index(): void
     {
@@ -194,12 +149,6 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * seo_product_detail 토글 변경 시 shop/show + sitemap 무효화 확인
-     *
-     * @scenario listener=settings, area=invalidation
-     *
-     * @effects seo_product_detail_toggle_invalidates_shop_show_and_sitemap
-     *
-     * @return void 반환값 없음
      */
     public function test_seo_product_detail_toggle_invalidates_shop_show_and_sitemap(): void
     {
@@ -219,12 +168,6 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * seo_category 토글 변경 시 shop/category + shop/index + sitemap 무효화 확인
-     *
-     * @scenario listener=settings, area=invalidation
-     *
-     * @effects seo_category_toggle_invalidates_shop_layouts_and_sitemap
-     *
-     * @return void 반환값 없음
      */
     public function test_seo_category_toggle_invalidates_shop_layouts_and_sitemap(): void
     {
@@ -251,12 +194,6 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * SEO 관련 없는 설정만 변경 시 무효화 없음 확인
-     *
-     * @scenario listener=settings, area=invalidation
-     *
-     * @effects non_seo_settings_change_skips_invalidation
-     *
-     * @return void 반환값 없음
      */
     public function test_non_seo_settings_change_does_not_invalidate(): void
     {
@@ -273,12 +210,6 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * 예외 발생 시 graceful하게 처리되는지 확인
-     *
-     * @scenario listener=settings, area=failure
-     *
-     * @effects settings_cache_failure_logged_without_throwing
-     *
-     * @return void 반환값 없음
      */
     public function test_handles_exceptions_gracefully(): void
     {
@@ -300,12 +231,6 @@ class SeoSettingsCacheListenerTest extends ModuleTestCase
 
     /**
      * handle 메서드가 존재하는지 확인합니다 (HookListenerInterface 준수).
-     *
-     * @scenario listener=settings, area=subscription
-     *
-     * @effects settings_listener_handle_is_callable
-     *
-     * @return void 반환값 없음
      */
     public function test_handle_method_exists(): void
     {

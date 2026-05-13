@@ -6,128 +6,22 @@ use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Collection as SupportCollection;
 
 class LayoutRepository implements LayoutRepositoryInterface
 {
-    /** @var int 목록 조회 시 본문을 흘려 읽는 청크 크기 */
-    private const LIST_CHUNK_SIZE = 25;
-
     /**
      * 특정 템플릿의 모든 레이아웃 조회
-     *
-     * 편집 본문(`content`)은 읽지 않는다. 이 메서드의 남은 소비처는 캐시 무효화
-     * (`InvalidatesLayoutCache` 트레이트)뿐이고 그 경로는 캐시 키를 만드는 식별 컬럼만 쓰는데,
-     * 템플릿 하나에 수십~수백 레이아웃이 있으면 본문 JSON 전량이 메모리에 올라온다.
-     *
-     * 목록 응답은 이 메서드가 아니라 {@see getListByTemplateId()} 가 공급하고(본문에서 파생되는
-     * 설명·크기만 남기고 본문은 즉시 버린다), 본문 자체가 필요한 경로는 단건 조회
-     * (`findByName`)가 공급한다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @return Collection 레이아웃 컬렉션
      */
     public function getByTemplateId(int $templateId): Collection
     {
         return TemplateLayout::where('template_id', $templateId)
-            ->select([
-                'id', 'template_id', 'name', 'original_content_hash', 'original_content_size',
-                'extends', 'source_type', 'source_identifier', 'created_by', 'updated_by',
-                'lock_version', 'created_at', 'updated_at',
-            ])
             ->orderBy('name')
             ->get();
     }
 
     /**
-     * 목록 표시용 경량 레이아웃 행을 조회합니다.
-     *
-     * 목록 화면은 이름·설명·크기·수정일만 쓰고 본문은 상세 엔드포인트가 따로 제공한다.
-     * 그런데 `getByTemplateId()` 로 전체 컬럼을 읽으면 `content`(레이아웃 본문)까지 전부
-     * 메모리에 올라간다 — sirsoft-admin_basic 기준 102행 합계 17MB 이상이다.
-     *
-     * 여기서는 chunk 로 흘려 읽으며 본문에서 파생되는 값(설명·크기)만 뽑고 본문 자체는
-     * 즉시 버린다. 결과적으로 반환 컬렉션에 본문이 남지 않고, PHP 피크 메모리도 청크
-     * 단위로 묶인다.
-     *
-     * @param  int  $templateId  대상 템플릿 ID
-     * @return Collection<int, array> 목록 행 배열 (id, template_id, name, description, size, lock_version, created_at, updated_at)
-     */
-    public function getListByTemplateId(int $templateId): SupportCollection
-    {
-        $rows = collect();
-
-        // 순회 커서는 기본키다 — `chunkById` 는 `where id > lastId` 로 다음 페이지를 잡으므로
-        // 여기에 `orderBy('name')` 을 함께 걸면 정렬 순서와 커서 기준이 어긋나 행이 조용히
-        // 누락된다(실측: 102행 중 58행만 반환). 표시 정렬은 순회를 마친 뒤에 적용한다.
-        TemplateLayout::query()
-            ->where('template_id', $templateId)
-            ->select(['id', 'template_id', 'name', 'content', 'lock_version', 'created_at', 'updated_at'])
-            ->chunkById(self::LIST_CHUNK_SIZE, function (Collection $chunk) use ($rows) {
-                foreach ($chunk as $layout) {
-                    $content = $layout->content;
-                    $contentJson = is_array($content)
-                        ? json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-                        : '{}';
-
-                    $rows->push([
-                        'id' => $layout->id,
-                        'template_id' => $layout->template_id,
-                        'name' => $layout->name,
-                        // 본문에서 파생 — 이 값만 남기고 본문은 버린다
-                        'description' => $content['meta']['description'] ?? null,
-                        'size' => strlen($contentJson),
-                        'lock_version' => $layout->lock_version,
-                        'created_at' => $layout->created_at,
-                        'updated_at' => $layout->updated_at,
-                    ]);
-                }
-            });
-
-        // 표시 정렬은 순회와 분리 — 커서 기준(id)과 섞으면 행이 누락된다
-        return $rows->sortBy('name', SORT_STRING)->values();
-    }
-
-    /**
-     * 본문을 포함해 레이아웃을 **청크 단위로 흘려 읽습니다**.
-     *
-     * 내용 검색·참조 스캔처럼 본문이 꼭 필요한 경로를 위한 것이다. {@see getByTemplateId()} 는
-     * 캐시 무효화용이라 `content` 를 아예 select 하지 않으므로, 그것으로 본문을 읽으면 값이
-     * null 인 채로 조용히 빈 결과가 나온다.
-     *
-     * 한 번에 다 읽지 않는 이유는 {@see getListByTemplateId()} 와 같다 — sirsoft-admin_basic
-     * 기준 102행 합계 17MB 이상이라 전량 적재는 디버그 모드에서 메모리 한계를 넘는다.
-     * 콜백이 `false` 를 돌려주면 순회를 멈춘다(상한에 도달한 검색이 남은 행을 읽지 않게).
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  callable(TemplateLayout): (bool|null)  $callback  행마다 호출 (false 면 중단)
-     * @return void 반환값 없음
-     */
-    public function eachWithContent(int $templateId, callable $callback): void
-    {
-        // 순회 커서는 기본키다 — `orderBy('name')` 을 함께 걸면 커서 기준과 정렬이 어긋나
-        // 행이 조용히 누락된다(실측: 102행 중 58행). 표시 정렬이 필요한 호출부가 뒤에서 정렬한다.
-        TemplateLayout::query()
-            ->where('template_id', $templateId)
-            ->chunkById(self::LIST_CHUNK_SIZE, function (Collection $chunk) use ($callback): ?bool {
-                foreach ($chunk as $layout) {
-                    if ($callback($layout) === false) {
-                        return false;
-                    }
-                }
-
-                return null;
-            });
-    }
-
-    /**
      * 특정 레이아웃 조회 (템플릿 ID와 이름으로)
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
      */
     public function findByName(int $templateId, string $name): ?TemplateLayout
     {
@@ -137,32 +31,7 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
-     * 특정 레이아웃을 영구 삭제 (템플릿 ID와 이름으로)
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @return bool 삭제 여부 (대상 부재 시 false)
-     */
-    public function deleteByName(int $templateId, string $name): bool
-    {
-        $layout = TemplateLayout::where('template_id', $templateId)
-            ->where('name', $name)
-            ->first();
-
-        if (! $layout) {
-            return false;
-        }
-
-        $this->forceDelete($layout);
-
-        return true;
-    }
-
-    /**
      * ID로 레이아웃 조회
-     *
-     * @param  int  $id  레이아웃 ID
-     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
      */
     public function findById(int $id): ?TemplateLayout
     {
@@ -170,50 +39,7 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public function findWithTrashedByName(int $templateId, string $name): ?TemplateLayout
-    {
-        return TemplateLayout::withTrashed()
-            ->where('template_id', $templateId)
-            ->where('name', $name)
-            ->first();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function restoreTrashed(TemplateLayout $layout): TemplateLayout
-    {
-        $layout->restore();
-
-        return $layout;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function softDelete(TemplateLayout $layout): void
-    {
-        $layout->delete();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function forceDelete(TemplateLayout $layout): void
-    {
-        // 버전 이력을 먼저 지운다 — DB CASCADE 는 안전망일 뿐 삭제 경로가 기대지 않는다.
-        $this->deleteVersionsOf([(int) $layout->id]);
-        $layout->forceDelete();
-    }
-
-    /**
      * 레이아웃이 존재하는지 확인
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @return bool 존재 여부
      */
     public function exists(int $templateId, string $name): bool
     {
@@ -223,208 +49,13 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
-     * overlay 대상(`target_layout`)이 이 템플릿에 실재하는지 확인합니다 — 모듈 레이아웃의 논리 이름 포함.
-     *
-     * 모듈·플러그인 레이아웃은 `{모듈}.{layout_name}` 으로 저장되고 overlay 는 `layout_name`(논리 이름)을
-     * 가리키므로, `exists()` 의 정확 일치만 보면 모듈 화면을 겨냥한 조각은 어느 템플릿에서도 "부재" 로
-     * 판정된다(결제 플러그인의 주문 상세 overlay 가 그랬다). 서빙이 overlay 를 content 의 `layout_name`(논리 이름)으로
-     * 맞추므로, 여기서도 정확 일치 또는 `*.{name}` 접미 일치로 본다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $name  overlay 대상 레이아웃 이름 (논리 이름)
-     * @return bool 존재 여부
-     */
-    public function existsForOverlay(int $templateId, string $name): bool
-    {
-        // `_`·`%` 는 LIKE 와일드카드라 이스케이프한다 (레이아웃 이름에 `_` 가 흔하다).
-        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $name);
-
-        return TemplateLayout::where('template_id', $templateId)
-            ->where(function ($query) use ($name, $escaped): void {
-                $query->where('name', $name)->orWhere('name', 'like', '%.'.$escaped);
-            })
-            ->exists();
-    }
-
-    /**
-     * 특정 템플릿의 레이아웃 중 지정한 확장점(extension_point)을 정의한 것이 있는지 확인
-     *
-     * 레이아웃 content JSON 트리를 재귀 순회하여 `type: extension_point` 노드의
-     * `name` 이 일치하는지 검사합니다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $extensionPointName  확장점 이름
-     * @return bool 정의 존재 여부
-     */
-    public function hasExtensionPoint(int $templateId, string $extensionPointName): bool
-    {
-        // 1차 필터: content 에 extension_point 명이 포함된 레이아웃만 조회 (성능 최적화)
-        $layouts = TemplateLayout::where('template_id', $templateId)
-            ->where('content', 'like', '%'.$extensionPointName.'%')
-            ->get(['content']);
-
-        foreach ($layouts as $layout) {
-            if ($this->containsExtensionPoint($layout->content, $extensionPointName)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * 지정 extension_point 를 포함하는 레이아웃 이름 목록을 반환합니다.
-     *
-     * 확장 편집 모드에서 extension_point 확장의 대표 호스트 레이아웃 선택(picker)에 쓴다.
-     * 여러 레이아웃에 같은 확장점이 있으면 모두 반환하며, 클라이언트가 1개면 즉시 진입,
-     * 복수면 선택 모달을 띄운다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $extensionPointName  확장점 이름
-     * @return array<int, string> 호스트 레이아웃 이름 목록 (정렬됨)
-     */
-    public function findLayoutNamesWithExtensionPoint(int $templateId, string $extensionPointName): array
-    {
-        $layouts = TemplateLayout::where('template_id', $templateId)
-            ->where('content', 'like', '%'.$extensionPointName.'%')
-            ->get(['name', 'content']);
-
-        $names = [];
-        foreach ($layouts as $layout) {
-            if ($this->containsExtensionPoint($layout->content, $extensionPointName)) {
-                $names[] = $layout->name;
-            }
-        }
-
-        sort($names);
-
-        return $names;
-    }
-
-    /**
-     * 레이아웃 content 트리에 지정 노드 id 가 존재하는지 확인합니다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  레이아웃 이름
-     * @param  string  $nodeId  찾을 노드 id
-     * @return bool 노드 id 존재 여부
-     */
-    public function layoutContainsNodeId(int $templateId, string $layoutName, string $nodeId): bool
-    {
-        $layout = $this->findByNameWithOverride($templateId, $layoutName)
-            ?? $this->findByName($templateId, $layoutName);
-        if ($layout === null) {
-            return false;
-        }
-
-        $content = is_array($layout->content)
-            ? $layout->content
-            // layout-assoc-decode-ok: 노드 id 존재 판정 전용 — 저장·응답하지 않는다
-            : json_decode((string) $layout->content, true);
-
-        return is_array($content) && $this->containsNodeId($content, $nodeId);
-    }
-
-    /**
-     * content 트리를 재귀 순회하여 노드 id(`id` 또는 `props.id`)가 일치하는 노드를 검색합니다.
-     *
-     * @param  mixed  $node  탐색 노드 (배열 또는 스칼라)
-     * @param  string  $nodeId  찾을 노드 id
-     * @return bool 발견 여부
-     */
-    private function containsNodeId(mixed $node, string $nodeId): bool
-    {
-        if (! is_array($node)) {
-            return false;
-        }
-
-        $id = $node['id'] ?? ($node['props']['id'] ?? null);
-        if ($id === $nodeId) {
-            return true;
-        }
-
-        foreach ($node as $value) {
-            if (is_array($value) && $this->containsNodeId($value, $nodeId)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * 레이아웃 content 트리를 재귀 순회하여 extension_point 노드를 검색합니다.
-     *
-     * @param  mixed  $node  탐색 노드 (배열 또는 스칼라)
-     * @param  string  $extensionPointName  확장점 이름
-     * @return bool 발견 여부
-     */
-    private function containsExtensionPoint(mixed $node, string $extensionPointName): bool
-    {
-        if (! is_array($node)) {
-            return false;
-        }
-
-        // extension_point 노드 검출
-        if (($node['type'] ?? null) === 'extension_point' && ($node['name'] ?? null) === $extensionPointName) {
-            return true;
-        }
-
-        // 모든 하위 노드 재귀 탐색 (components / children / slots 등 구조 무관)
-        foreach ($node as $value) {
-            if (is_array($value) && $this->containsExtensionPoint($value, $extensionPointName)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * extends를 가진 자식 레이아웃 조회
-     *
-     * 상속 선언은 두 곳에 있을 수 있다 — `extends` 칸과 본문 최상위 `extends`. 템플릿 자기 레이아웃은
-     * 설치·갱신 때 칸을 비우고 본문으로만 상속하므로(편집기 저장 때만 칸이 채워진다), 칸만 보면
-     * 공통 레이아웃을 고쳐도 그것을 쓰는 화면들이 자식으로 잡히지 않아 캐시 무효화·삭제 차단이 빠진다.
-     * 병합(LayoutService)이 본문의 `extends` 를 읽으므로 본문 선언도 자식으로 본다.
-     *
-     * 본문은 먼저 "JSON 문자열 값이 부모 이름으로 끝나는" 행으로 거른 뒤 디코드한 최상위 `extends` 가 정확히
-     * 같을 때만 자식으로 확정한다 — 접두가 겹치는 다른 부모는 세지 않는다. 저장 JSON 은 `/` 를 `\/` 로 적을 수
-     * 있어 거르는 토큰은 마지막 세그먼트와 그 앞 구분자(`/` 또는 여는 따옴표)·닫는 따옴표로 만든다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $extendsName  부모 레이아웃 이름
-     * @return Collection 자식 레이아웃 컬렉션
      */
     public function getChildrenByExtends(int $templateId, string $extendsName): Collection
     {
-        $segments = explode('/', $extendsName);
-        $lastSegment = (string) end($segments);
-        // `_`·`%` 는 LIKE 와일드카드라 이스케이프한다 (레이아웃 이름에 `_` 가 흔하다).
-        $escaped = (count($segments) > 1 ? '/' : '"')
-            .str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $lastSegment)
-            .'"';
-
-        $children = new Collection;
-
-        TemplateLayout::query()
-            ->where('template_id', $templateId)
-            ->where(function ($query) use ($extendsName, $escaped): void {
-                $query->where('extends', $extendsName)
-                    ->orWhere('content', 'like', '%'.$escaped.'%');
-            })
-            ->chunkById(self::LIST_CHUNK_SIZE, function (Collection $chunk) use ($children, $extendsName): void {
-                foreach ($chunk as $layout) {
-                    $content = $layout->content;
-
-                    if ($layout->extends === $extendsName
-                        || (is_array($content) && ($content['extends'] ?? null) === $extendsName)) {
-                        $children->push($layout);
-                    }
-                }
-            });
-
-        return $children;
+        return TemplateLayout::where('template_id', $templateId)
+            ->where('extends', $extendsName)
+            ->get();
     }
 
     /**
@@ -452,65 +83,21 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
-     * 레이아웃 content + lock_version 동시 갱신 (낙관적 잠금)
-     *
-     * Service 가 호출 직전에 expected_lock_version 검증을 마친 상태로,
-     * 본 메서드는 content 교체와 lock_version 증가를 한 번의 UPDATE 로 수행한다.
-     *
-     * @param  int  $id  레이아웃 ID
-     * @param  array  $content  전체 레이아웃 JSON content
-     * @param  int  $newLockVersion  새 lock_version 값 (currentVersion + 1)
-     * @return TemplateLayout 업데이트된 레이아웃 모델
-     */
-    public function updateContent(int $id, array $content, int $newLockVersion): TemplateLayout
-    {
-        $layout = TemplateLayout::findOrFail($id);
-
-        $layout->content = $content;
-        $layout->extends = $content['extends'] ?? null;
-        $layout->lock_version = $newLockVersion;
-
-        $layout->save();
-
-        return $layout->fresh();
-    }
-
-    /**
      * 특정 레이아웃의 모든 버전 조회
-     *
-     * @param  int  $layoutId  레이아웃 ID
-     * @param  int  $limit  조회할 최대 버전 수 (버전 행은 정리되지 않고 쌓이므로 상한 필수)
-     * @return Collection 버전 컬렉션
      */
-    public function getVersionsByLayoutId(int $layoutId, int $limit = 100): Collection
+    public function getVersionsByLayoutId(int $layoutId): Collection
     {
-        // creator eager load — 버전 목록에 저장자 이름(created_by_name) 노출용 (N+1 회피).
-        //
-        // 목록이 쓰는 컬럼만 조회한다. `content` 는 버전마다 레이아웃 본문 사본이라, 상한이 있어도
-        // 100건이면 본문 100벌을 읽는다. 본문은 버전 비교 diff 전용이며 단건 조회가 공급한다.
-        // 정렬 기준은 `version` — 레이아웃 안에서 유일하다(uk_layout_version). 종전의
-        // `latest()`(created_at)는 같은 초에 저장된 버전들의 순서를 정하지 못해, 상한이 걸린
-        // 지금은 "어느 100건이 오는가" 까지 실행마다 달라질 수 있다.
-        return TemplateLayoutVersion::with('creator:'.User::displayColumns())
-            ->where('layout_id', $layoutId)
-            ->orderBy('version', 'desc')
-            ->limit($limit)
-            // 이 테이블에는 updated_at 이 없다 (버전 행은 불변 스냅샷이라 created_at 만 둔다)
-            ->get(['id', 'layout_id', 'version', 'changes_summary', 'created_by', 'created_at']);
+        return TemplateLayoutVersion::where('layout_id', $layoutId)
+            ->latest()
+            ->get();
     }
 
     /**
      * 특정 버전 조회
-     *
-     * @param  int  $layoutId  레이아웃 ID
-     * @param  int  $version  버전 번호
-     * @return TemplateLayoutVersion|null 찾은 버전 모델 또는 null
      */
     public function findVersionByNumber(int $layoutId, int $version): ?TemplateLayoutVersion
     {
-        // creator eager load — 단건 버전 조회(showVersion)도 저장자 이름 일관 노출.
-        return TemplateLayoutVersion::with('creator:'.User::displayColumns())
-            ->where('layout_id', $layoutId)
+        return TemplateLayoutVersion::where('layout_id', $layoutId)
             ->where('version', $version)
             ->first();
     }
@@ -518,9 +105,8 @@ class LayoutRepository implements LayoutRepositoryInterface
     /**
      * 템플릿 오버라이드 레이아웃 찾기
      *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  레이아웃 이름
-     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
+     * 템플릿에서 제공하는 오버라이드 레이아웃을 검색합니다.
+     * source_type = 'template'이고 source_identifier가 있는 레이아웃
      */
     public function findTemplateOverride(int $templateId, string $layoutName): ?TemplateLayout
     {
@@ -534,9 +120,8 @@ class LayoutRepository implements LayoutRepositoryInterface
     /**
      * 모듈 기본 레이아웃 찾기
      *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  레이아웃 이름
-     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
+     * 모듈에서 제공하는 기본 레이아웃을 검색합니다.
+     * source_type = 'module'인 레이아웃
      */
     public function findModuleLayout(int $templateId, string $layoutName): ?TemplateLayout
     {
@@ -549,10 +134,9 @@ class LayoutRepository implements LayoutRepositoryInterface
     /**
      * 특정 템플릿의 모든 레이아웃 이름 조회
      *
-     * @param  int  $templateId  템플릿 ID
-     * @return SupportCollection<int, string> 레이아웃 이름 컬렉션
+     * @return \Illuminate\Support\Collection<int, string>
      */
-    public function getLayoutNamesByTemplateId(int $templateId): SupportCollection
+    public function getLayoutNamesByTemplateId(int $templateId): \Illuminate\Support\Collection
     {
         return TemplateLayout::where('template_id', $templateId)
             ->pluck('name')
@@ -561,9 +145,6 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * 특정 모듈의 모든 레이아웃 조회
-     *
-     * @param  string  $moduleIdentifier  모듈 식별자
-     * @return Collection 레이아웃 컬렉션
      */
     public function getLayoutsByModule(string $moduleIdentifier): Collection
     {
@@ -574,9 +155,6 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * 특정 템플릿에서 오버라이드된 모든 레이아웃 조회
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @return Collection 오버라이드 레이아웃 컬렉션
      */
     public function getOverriddenLayouts(int $templateId): Collection
     {
@@ -588,10 +166,6 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * 특정 모듈의 레이아웃 중 템플릿에서 오버라이드된 것들 조회
-     *
-     * @param  string  $moduleIdentifier  모듈 식별자
-     * @param  int  $templateId  템플릿 ID
-     * @return Collection 오버라이드 레이아웃 컬렉션
      */
     public function getModuleLayoutOverrides(string $moduleIdentifier, int $templateId): Collection
     {
@@ -612,9 +186,10 @@ class LayoutRepository implements LayoutRepositoryInterface
     /**
      * 우선순위에 따라 레이아웃 조회 (오버라이드 우선)
      *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $name  레이아웃 이름
-     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
+     * 우선순위:
+     * 1. 템플릿 오버라이드 (source_type = 'template', source_identifier 있음)
+     * 2. 모듈 기본 레이아웃 (source_type = 'module')
+     * 3. 일반 템플릿 레이아웃 (source_type = 'template', source_identifier 없음)
      */
     public function findByNameWithOverride(int $templateId, string $name): ?TemplateLayout
     {
@@ -639,7 +214,6 @@ class LayoutRepository implements LayoutRepositoryInterface
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string|null  $moduleIdentifier  특정 모듈만 조회 (선택)
-     * @return Collection 모듈 레이아웃 컬렉션
      */
     public function findModuleLayouts(int $templateId, ?string $moduleIdentifier = null): Collection
     {
@@ -660,7 +234,6 @@ class LayoutRepository implements LayoutRepositoryInterface
      * @param  string|null  $sourceType  소스 타입 필터 ('template', 'module', 'plugin')
      * @param  string|null  $sourceIdentifier  소스 식별자 필터 (null이면 source_identifier가 null인 레코드만 조회)
      * @param  bool  $nullIdentifierOnly  true이면 source_identifier가 null인 레코드만 조회 (sourceIdentifier 파라미터가 null일 때만 적용)
-     * @return Collection 필터링된 레이아웃 컬렉션
      */
     public function getByTemplateIdWithFilter(
         int $templateId,
@@ -687,9 +260,6 @@ class LayoutRepository implements LayoutRepositoryInterface
 
     /**
      * 특정 플러그인의 모든 레이아웃 조회
-     *
-     * @param  string  $pluginIdentifier  플러그인 식별자
-     * @return Collection 레이아웃 컬렉션
      */
     public function getLayoutsByPlugin(string $pluginIdentifier): Collection
     {
@@ -703,7 +273,6 @@ class LayoutRepository implements LayoutRepositoryInterface
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string|null  $pluginIdentifier  특정 플러그인만 조회 (선택)
-     * @return Collection 플러그인 레이아웃 컬렉션
      */
     public function findPluginLayouts(int $templateId, ?string $pluginIdentifier = null): Collection
     {
@@ -715,25 +284,6 @@ class LayoutRepository implements LayoutRepositoryInterface
         }
 
         return $query->orderBy('name')->get();
-    }
-
-    /**
-     * 레이아웃 1건의 속성을 그대로 적어 넣습니다.
-     *
-     * 휴지통에 있는 행도 대상이다 — 복구 직후의 적재가 이 자리를 지난다.
-     *
-     * @param  int  $id  레이아웃 ID
-     * @param  array<string, mixed>  $attributes  적용할 속성 (열 이름 => 값)
-     * @return TemplateLayout 저장 후 다시 읽은 모델
-     */
-    public function saveAttributes(int $id, array $attributes): TemplateLayout
-    {
-        $layout = TemplateLayout::withTrashed()->findOrFail($id);
-
-        $layout->fill($attributes);
-        $layout->save();
-
-        return $layout->fresh();
     }
 
     /**
@@ -756,7 +306,10 @@ class LayoutRepository implements LayoutRepositoryInterface
      */
     public function getTrashedByModule(string $moduleIdentifier): Collection
     {
-        return $this->getTrashedBySource($moduleIdentifier, LayoutSourceType::Module);
+        return TemplateLayout::onlyTrashed()
+            ->where('source_type', LayoutSourceType::Module)
+            ->where('source_identifier', $moduleIdentifier)
+            ->get();
     }
 
     /**
@@ -767,71 +320,8 @@ class LayoutRepository implements LayoutRepositoryInterface
      */
     public function softDeleteByModule(string $moduleIdentifier): int
     {
-        return $this->softDeleteBySource($moduleIdentifier, LayoutSourceType::Module);
-    }
-
-    /**
-     * 특정 모듈의 레이아웃을 영구 삭제합니다 (soft delete 포함).
-     *
-     * @param  string  $moduleIdentifier  모듈 식별자
-     * @return int 삭제된 레코드 수
-     */
-    public function forceDeleteByModule(string $moduleIdentifier): int
-    {
-        return $this->forceDeleteBySource($moduleIdentifier, LayoutSourceType::Module);
-    }
-
-    /**
-     * 특정 모듈의 레이아웃 개수를 반환합니다 (soft delete 포함).
-     *
-     * @param  string  $moduleIdentifier  모듈 식별자
-     * @return int 레이아웃 개수
-     */
-    public function countByModule(string $moduleIdentifier): int
-    {
-        return $this->countBySource($moduleIdentifier, LayoutSourceType::Module);
-    }
-
-    /**
-     * 특정 모듈의 soft delete된 레이아웃을 복원합니다.
-     *
-     * @param  string  $moduleIdentifier  모듈 식별자
-     * @return int 복원된 레코드 수
-     */
-    public function restoreByModule(string $moduleIdentifier): int
-    {
-        return $this->restoreBySource($moduleIdentifier, LayoutSourceType::Module);
-    }
-
-    /**
-     * 출처(모듈·플러그인)의 soft delete 된 레이아웃을 조회합니다.
-     *
-     * 모듈 전용이던 `*ByModule` 을 플러그인 생명주기도 써서, 플러그인 레이아웃은 정리되지 않고 같은 식별자의
-     * 모듈 행이 대신 지워질 수 있었다(#712) — 출처 타입을 반드시 받는다.
-     *
-     * @param  string  $identifier  출처 식별자
-     * @param  LayoutSourceType  $sourceType  출처 타입
-     * @return Collection soft delete 된 레이아웃 컬렉션
-     */
-    public function getTrashedBySource(string $identifier, LayoutSourceType $sourceType): Collection
-    {
-        return TemplateLayout::onlyTrashed()
-            ->where('source_type', $sourceType)
-            ->where('source_identifier', $identifier)
-            ->get();
-    }
-
-    /**
-     * 출처의 레이아웃을 soft delete 합니다 (모델 이벤트가 돌도록 행 단위로 지운다).
-     *
-     * @param  string  $identifier  출처 식별자
-     * @param  LayoutSourceType  $sourceType  출처 타입
-     * @return int soft delete 된 레코드 수
-     */
-    public function softDeleteBySource(string $identifier, LayoutSourceType $sourceType): int
-    {
-        $layouts = TemplateLayout::where('source_type', $sourceType)
-            ->where('source_identifier', $identifier)
+        $layouts = TemplateLayout::where('source_type', LayoutSourceType::Module)
+            ->where('source_identifier', $moduleIdentifier)
             ->get();
 
         $deletedCount = 0;
@@ -844,53 +334,50 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
-     * 출처의 soft delete 된 레이아웃을 복원합니다.
+     * 특정 모듈의 레이아웃을 영구 삭제합니다 (soft delete 포함).
      *
-     * @param  string  $identifier  출처 식별자
-     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @param  string  $moduleIdentifier  모듈 식별자
+     * @return int 삭제된 레코드 수
+     */
+    public function forceDeleteByModule(string $moduleIdentifier): int
+    {
+        return TemplateLayout::withTrashed()
+            ->where('source_type', LayoutSourceType::Module)
+            ->where('source_identifier', $moduleIdentifier)
+            ->forceDelete();
+    }
+
+    /**
+     * 특정 모듈의 레이아웃 개수를 반환합니다 (soft delete 포함).
+     *
+     * @param  string  $moduleIdentifier  모듈 식별자
+     * @return int 레이아웃 개수
+     */
+    public function countByModule(string $moduleIdentifier): int
+    {
+        return TemplateLayout::withTrashed()
+            ->where('source_type', LayoutSourceType::Module)
+            ->where('source_identifier', $moduleIdentifier)
+            ->count();
+    }
+
+    /**
+     * 특정 모듈의 soft delete된 레이아웃을 복원합니다.
+     *
+     * @param  string  $moduleIdentifier  모듈 식별자
      * @return int 복원된 레코드 수
      */
-    public function restoreBySource(string $identifier, LayoutSourceType $sourceType): int
+    public function restoreByModule(string $moduleIdentifier): int
     {
+        $layouts = $this->getTrashedByModule($moduleIdentifier);
+
         $restoredCount = 0;
-        foreach ($this->getTrashedBySource($identifier, $sourceType) as $layout) {
+        foreach ($layouts as $layout) {
             $layout->restore();
             $restoredCount++;
         }
 
         return $restoredCount;
-    }
-
-    /**
-     * 출처의 레이아웃을 영구 삭제합니다 (soft delete 포함).
-     *
-     * @param  string  $identifier  출처 식별자
-     * @param  LayoutSourceType  $sourceType  출처 타입
-     * @return int 삭제된 레코드 수
-     */
-    public function forceDeleteBySource(string $identifier, LayoutSourceType $sourceType): int
-    {
-        $query = TemplateLayout::withTrashed()
-            ->where('source_type', $sourceType)
-            ->where('source_identifier', $identifier);
-        $this->deleteVersionsOf((clone $query)->pluck('id')->all());
-
-        return $query->forceDelete();
-    }
-
-    /**
-     * 출처의 레이아웃 개수를 반환합니다 (soft delete 포함).
-     *
-     * @param  string  $identifier  출처 식별자
-     * @param  LayoutSourceType  $sourceType  출처 타입
-     * @return int 레이아웃 개수
-     */
-    public function countBySource(string $identifier, LayoutSourceType $sourceType): int
-    {
-        return TemplateLayout::withTrashed()
-            ->where('source_type', $sourceType)
-            ->where('source_identifier', $identifier)
-            ->count();
     }
 
     /**
@@ -929,10 +416,9 @@ class LayoutRepository implements LayoutRepositoryInterface
      */
     public function deleteByTemplateId(int $templateId): int
     {
-        $query = TemplateLayout::withTrashed()->where('template_id', $templateId);
-        $this->deleteVersionsOf((clone $query)->pluck('id')->all());
-
-        return $query->forceDelete();
+        return TemplateLayout::withTrashed()
+            ->where('template_id', $templateId)
+            ->forceDelete();
     }
 
     /**
@@ -961,26 +447,6 @@ class LayoutRepository implements LayoutRepositoryInterface
     }
 
     /**
-     * 템플릿 설정 화면 행을 조회합니다 (#434).
-     *
-     * @param  string  $ownerIdentifier  설정 화면을 가진 템플릿 식별자
-     * @param  int|null  $hostTemplateId  등록된 관리자 템플릿 ID (null 이면 전체)
-     * @return Collection 레이아웃 컬렉션
-     */
-    public function getTemplateSettingsLayouts(string $ownerIdentifier, ?int $hostTemplateId = null): Collection
-    {
-        $query = TemplateLayout::where('source_type', LayoutSourceType::Template)
-            ->where('source_identifier', $ownerIdentifier)
-            ->where('name', TemplateLayout::templateSettingsLayoutName($ownerIdentifier));
-
-        if ($hostTemplateId !== null) {
-            $query->where('template_id', $hostTemplateId);
-        }
-
-        return $query->get();
-    }
-
-    /**
      * 특정 소스 식별자의 레이아웃을 모두 삭제합니다.
      * soft deleted된 레코드를 포함하여 영구 삭제합니다.
      *
@@ -989,41 +455,8 @@ class LayoutRepository implements LayoutRepositoryInterface
      */
     public function deleteBySourceIdentifier(string $sourceIdentifier): int
     {
-        $query = TemplateLayout::withTrashed()->where('source_identifier', $sourceIdentifier);
-        $this->deleteVersionsOf((clone $query)->pluck('id')->all());
-
-        return $query->forceDelete();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getWithTrashedBySource(string $identifier, LayoutSourceType $sourceType): Collection
-    {
         return TemplateLayout::withTrashed()
-            ->where('source_type', $sourceType)
-            ->where('source_identifier', $identifier)
-            ->get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getWithTrashedByTemplateId(int $templateId): Collection
-    {
-        return TemplateLayout::withTrashed()->where('template_id', $templateId)->get();
-    }
-
-    /**
-     * 레이아웃 행들의 버전 이력을 지웁니다.
-     *
-     * @param  array<int, int>  $layoutIds  레이아웃 ID 목록
-     * @return void 반환값 없음
-     */
-    private function deleteVersionsOf(array $layoutIds): void
-    {
-        foreach (array_chunk(array_values(array_filter($layoutIds)), 500) as $chunk) {
-            TemplateLayoutVersion::whereIn('layout_id', $chunk)->delete();
-        }
+            ->where('source_identifier', $sourceIdentifier)
+            ->forceDelete();
     }
 }

@@ -20,7 +20,7 @@ export interface FileUploaderContextValue {
 
   // 설정
   maxFiles: number;
-  maxSize?: number;
+  maxSize: number;
   accept?: string;
   endpoints: ApiEndpoints;
   confirmBeforeRemove: boolean;
@@ -61,8 +61,6 @@ export interface FileUploaderContextValue {
 
   // 인증된 이미지 URL 캐시
   authenticatedImageUrls: Map<number, string>;
-  /** 썸네일로 그리는 첨부도 원본 blob 을 받아 두게 한다 — 썸네일이 실패한 칸이 부른다 */
-  requestAuthenticatedImage: (ids: number[]) => void;
 }
 
 // ========== Context ==========

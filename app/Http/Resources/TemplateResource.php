@@ -2,13 +2,9 @@
 
 namespace App\Http\Resources;
 
-use App\Extension\CoreVersionChecker;
-use App\Extension\Helpers\DependencyEnricher;
-use App\Http\Resources\Traits\ExposesIntegratedBy;
-use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
-use App\Services\ExtensionStaticCacheService;
-use App\Support\LocalizedValue;
-use App\Support\TemplateExternals;
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
+use Composer\Semver\Semver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 
@@ -19,12 +15,6 @@ use Illuminate\Support\Facades\App;
  */
 class TemplateResource extends BaseApiResource
 {
-    use ExposesIntegratedBy;
-    use ExposesUpdateCoreCompatibility;
-
-    /** @var array<int, array<string, mixed>>|null 보강된 의존성 (목록 응답에서 요약·충족 판정이 같이 쓴다) */
-    private ?array $enrichedDependenciesCache = null;
-
     /**
      * 템플릿 목록용 리소스를 배열로 변환합니다 (간소화된 정보).
      *
@@ -40,26 +30,12 @@ class TemplateResource extends BaseApiResource
             'version' => $this->getValue('version'),
             'type' => $this->getValue('type'),
             'status' => $this->getValue('status'),
-            // 멈춘 업데이트 — 관리자 카드가 「업데이트 멈춤」 표시와 정리(다시 업데이트)·활성화 단추를 보인다
-            'stuck_update' => (bool) $this->getValue('stuck_update', false),
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getDependenciesSummary(),
-            // 버전 제약(7.1.4)이 실린 `integration_constraints` 를 우선한다 — 없으면(옛 정보 배열) 식별자 목록으로 보강
-            'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integration_constraints') ?? $this->getValue('integrations', [])),
-            // 이 템플릿을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
-            'integrated_by' => $this->integratedBy('template'),
             'dependencies_met' => $this->areDependenciesMet(),
-            'icon_url' => $this->getValue('icon_url'),
-            'icon_source' => $this->getValue('icon_source', 'none'),
-            // 템플릿 환경설정 화면 유무·경로 (#434) — 카드 더보기의 「설정」 이 읽는다(플러그인 목록과 같은 필드)
-            'has_settings' => (bool) $this->getValue('has_settings', false),
-            'settings_route' => $this->getValue('settings_route'),
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
-            // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
-            'integrity_status' => $this->getValue('integrity_status'),
-            'integrity_key_id' => $this->getValue('integrity_key_id'),
             'latest_version' => $this->getValue('latest_version'),
             'file_version' => $this->getValue('file_version'),
             'github_url' => $this->getValue('github_url'),
@@ -71,22 +47,6 @@ class TemplateResource extends BaseApiResource
             'deactivated_reason' => $this->getDeactivatedReasonValue(),
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
-            // 현재 매니페스트의 코어 요구 버전(g7_version) 충족 여부 — 설치·활성 가드
-            // (CoreVersionChecker::validateExtension)와 같은 판정이다. 화면은 이 값으로 설치 버튼과
-            // 켜기 스위치를 잠근다(안 잠그면 누른 뒤 422 core_version_mismatch 로 끝난다).
-            'core_compatible' => CoreVersionChecker::isCompatible(
-                is_string($this->getValue('requires_core')) ? $this->getValue('requires_core') : null
-            ),
-            // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
-            ...$this->updateCoreCompatibilityFields(),
-            // 업데이트 대상 판이 요구하는 의존·연동 중 못 미치는 것(업데이트가 있을 때만) — 업데이트 창이 실행 전에 경고한다.
-            ...$this->updateTargetRequirementFields(),
-            // 설치·레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712).
-            // `when()` 대신 펼침으로 둔다 — 리소스를 `toArray()` 로 직접 부르는 경로에서 MissingValue 가 새지 않게.
-            ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),
-            // 레이아웃 갱신 응답에만 — 판정별 개수·충돌 화면(`layout_preview`)과 운영자 관련 행 보고(`layout_sync`)
-            ...(is_array($this->getValue('layout_preview')) ? ['layout_preview' => $this->getValue('layout_preview')] : []),
-            ...(is_array($this->getValue('layout_sync')) ? ['layout_sync' => $this->getValue('layout_sync')] : []),
             ...$this->resourceMeta($request),
         ];
     }
@@ -94,7 +54,7 @@ class TemplateResource extends BaseApiResource
     /**
      * deactivated_reason 을 항상 string|null 로 직렬화합니다.
      *
-     * @return string|null 비활성화 사유 문자열 (없으면 null)
+     * @return string|null
      */
     protected function getDeactivatedReasonValue(): ?string
     {
@@ -110,7 +70,7 @@ class TemplateResource extends BaseApiResource
     /**
      * 리소스별 권한 매핑을 반환합니다.
      *
-     * @return array<string, string> 능력 키 → 권한 식별자 맵
+     * @return array<string, string>
      */
     protected function abilityMap(): array
     {
@@ -119,7 +79,6 @@ class TemplateResource extends BaseApiResource
             'can_activate' => 'core.templates.activate',
             'can_uninstall' => 'core.templates.uninstall',
             'can_edit_layouts' => 'core.templates.layouts.edit',
-            'can_update_settings' => 'core.templates.settings',
         ];
     }
 
@@ -138,9 +97,6 @@ class TemplateResource extends BaseApiResource
             'latest_version' => $this->getValue('latest_version'),
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
-            // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
-            'integrity_status' => $this->getValue('integrity_status'),
-            'integrity_key_id' => $this->getValue('integrity_key_id'),
             'file_version' => $this->getValue('file_version'),
             'type' => $this->getValue('type'),
             'status' => $this->getValue('status'),
@@ -156,38 +112,16 @@ class TemplateResource extends BaseApiResource
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
             // 상세 정보
-            // 상세 응답은 목록이 골라 둔 전역 자리를 통째로 덮는다(상세 창의 initGlobal).
-            // 여기서 빠뜨리면 창이 열린 뒤 아이콘만 사라지므로 목록과 같은 두 필드를 싣는다.
-            'icon_url' => $this->getValue('icon_url'),
-            'icon_source' => $this->getValue('icon_source', 'none'),
             'locales' => $this->getValue('locales', []),
             'layouts_count' => $this->getValue('layouts_count', 0),
             'components' => $this->getValue('components', ['basic' => [], 'composite' => []]),
             'license' => $this->getValue('license'),
             'metadata' => $this->getValue('metadata', []),
-            // 외부 리소스 (template.json externals) — 정규화 책임은 TemplateExternals 에 위임.
-            // `asset` 항목의 URL 해석에는 식별자와 캐시 버전이 필요하므로 뷰 컴포저
-            // (CollectsTemplateExternals) 와 같은 인자를 넘긴다 — 빠뜨리면 `asset` 항목이
-            // "식별자 미상" 으로 조용히 버려져 응답에서 사라진다.
-            'externals' => TemplateExternals::normalize(
-                $this->getValue('externals', []),
-                $this->getValue('identifier'),
-                // 트레이트를 사용하는 클래스 경유로 호출한다 — 트레이트 정적 메서드
-                // 직접 호출(`ClearsTemplateCaches::`)은 PHP 8.1+ E_DEPRECATED 라
-                // 템플릿 상세 응답마다 로그를 남긴다 (AssetUrl::staticExtBase 와 동형).
-                ExtensionStaticCacheService::getExtensionCacheVersion(),
-            ),
             // 의존성 상세 정보
             'dependencies' => $this->getDetailedDependencies(),
-            // 버전 제약(7.1.4)이 실린 `integration_constraints` 를 우선한다 — 없으면(옛 정보 배열) 식별자 목록으로 보강
-            'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integration_constraints') ?? $this->getValue('integrations', [])),
-            // 이 템플릿을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
-            'integrated_by' => $this->integratedBy('template'),
             // 타임스탬프
             'created_at' => $this->getValue('created_at'),
             'updated_at' => $this->getValue('updated_at'),
-            // 상세 창이 목록 행(abilities 포함)을 담던 전역을 이 응답으로 덮어쓰므로 권한 메타도 함께 싣는다.
-            ...$this->resourceMeta(request()),
         ];
     }
 
@@ -245,7 +179,10 @@ class TemplateResource extends BaseApiResource
 
         // 배열(다국어)이면 현재 로케일에 맞는 값 반환
         if (is_array($value)) {
-            return LocalizedValue::pick($value, App::getLocale());
+            $locale = App::getLocale();
+            $fallbackLocale = config('app.fallback_locale', 'ko');
+
+            return $value[$locale] ?? $value[$fallbackLocale] ?? reset($value) ?: null;
         }
 
         // Model의 getLocalizedName() 등의 메서드가 있으면 사용
@@ -260,41 +197,92 @@ class TemplateResource extends BaseApiResource
     /**
      * 의존성 요약 정보를 반환합니다 (목록용).
      *
-     * 카드가 미충족 의존을 빨간 글자·경고 아이콘·툴팁으로 그리도록 항목마다 충족 여부와 사유·버전을 싣습니다(#152).
-     * 판정은 활성화·런타임 503 과 같은 원천(DependencyEnricher)입니다.
-     *
-     * @return array{modules: array<int, array<string, mixed>>, plugins: array<int, array<string, mixed>>} 의존성 목록
+     * @return array 의존성 목록 ['modules' => [...], 'plugins' => [...]]
      */
     protected function getDependenciesSummary(): array
     {
-        $summary = ['modules' => [], 'plugins' => []];
+        $dependencies = $this->getValue('dependencies', []);
 
-        foreach ($this->enrichedDependencies() as $item) {
-            $summary[$item['type'] === 'module' ? 'modules' : 'plugins'][] = [
-                'identifier' => $item['identifier'],
-                // 이름이 비어 있으면(null·빈 문자열) 식별자로 대신한다 — 목록 카드는 이 값을 글자로 그린다(#727 React #31).
-                'name' => $item['name'] ?: $item['identifier'],
-                'type' => $item['type'],
-                'is_met' => $item['is_met'],
-                'status' => $item['status'],
-                'required_version' => $item['required_version'],
-                'installed_version' => $item['installed_version'],
-            ];
+        $moduleRepository = app(ModuleRepositoryInterface::class);
+        $pluginRepository = app(PluginRepositoryInterface::class);
+
+        $modules = [];
+        $plugins = [];
+
+        // 모듈 의존성 정보 추출 (identifier + name + type)
+        if (isset($dependencies['modules']) && is_array($dependencies['modules'])) {
+            foreach ($dependencies['modules'] as $moduleIdentifier => $versionConstraint) {
+                $module = $moduleRepository->findByIdentifier($moduleIdentifier);
+                $modules[] = [
+                    'identifier' => $moduleIdentifier,
+                    'name' => $module ? $this->getExtensionName($module) : $moduleIdentifier,
+                    'type' => 'module',
+                ];
+            }
         }
 
-        return $summary;
+        // 플러그인 의존성 정보 추출 (identifier + name + type)
+        if (isset($dependencies['plugins']) && is_array($dependencies['plugins'])) {
+            foreach ($dependencies['plugins'] as $pluginIdentifier => $versionConstraint) {
+                $plugin = $pluginRepository->findByIdentifier($pluginIdentifier);
+                $plugins[] = [
+                    'identifier' => $pluginIdentifier,
+                    'name' => $plugin ? $this->getExtensionName($plugin) : $pluginIdentifier,
+                    'type' => 'plugin',
+                ];
+            }
+        }
+
+        return [
+            'modules' => $modules,
+            'plugins' => $plugins,
+        ];
     }
 
     /**
-     * 모든 의존성이 충족되었는지 확인합니다 — 템플릿 활성화가 막는 조건과 같습니다.
+     * 모든 의존성이 충족되었는지 확인합니다.
      *
      * @return bool 모든 의존성 충족 여부
      */
     protected function areDependenciesMet(): bool
     {
-        foreach ($this->enrichedDependencies() as $item) {
-            if (! $item['is_met']) {
-                return false;
+        $dependencies = $this->getValue('dependencies', []);
+
+        // 의존성이 없으면 충족으로 간주
+        if (empty($dependencies)) {
+            return true;
+        }
+
+        $moduleRepository = app(ModuleRepositoryInterface::class);
+        $pluginRepository = app(PluginRepositoryInterface::class);
+
+        // 모듈 의존성 확인
+        if (isset($dependencies['modules']) && is_array($dependencies['modules'])) {
+            foreach ($dependencies['modules'] as $moduleIdentifier => $versionConstraint) {
+                $module = $moduleRepository->findActiveByIdentifier($moduleIdentifier);
+                if (! $module) {
+                    return false;
+                }
+
+                // 버전 체크
+                if (! $this->checkVersionConstraint($module->version, $versionConstraint)) {
+                    return false;
+                }
+            }
+        }
+
+        // 플러그인 의존성 확인
+        if (isset($dependencies['plugins']) && is_array($dependencies['plugins'])) {
+            foreach ($dependencies['plugins'] as $pluginIdentifier => $versionConstraint) {
+                $plugin = $pluginRepository->findActiveByIdentifier($pluginIdentifier);
+                if (! $plugin) {
+                    return false;
+                }
+
+                // 버전 체크
+                if (! $this->checkVersionConstraint($plugin->version, $versionConstraint)) {
+                    return false;
+                }
             }
         }
 
@@ -308,32 +296,111 @@ class TemplateResource extends BaseApiResource
      */
     protected function getDetailedDependencies(): array
     {
-        $detailed = ['modules' => [], 'plugins' => []];
+        $dependencies = $this->getValue('dependencies', []);
 
-        foreach ($this->enrichedDependencies() as $item) {
-            $detailed[$item['type'] === 'module' ? 'modules' : 'plugins'][] = [
-                'identifier' => $item['identifier'],
-                'name' => $item['name'],
-                'required_version' => $item['required_version'],
-                'installed_version' => $item['installed_version'],
-                'is_active' => $item['is_active'],
-                'is_met' => $item['is_met'],
-                'status' => $item['status'],
-            ];
+        $moduleRepository = app(ModuleRepositoryInterface::class);
+        $pluginRepository = app(PluginRepositoryInterface::class);
+
+        $moduleDeps = [];
+        $pluginDeps = [];
+
+        // 모듈 의존성 상세 정보
+        if (isset($dependencies['modules']) && is_array($dependencies['modules'])) {
+            foreach ($dependencies['modules'] as $moduleIdentifier => $versionConstraint) {
+                $module = $moduleRepository->findByIdentifier($moduleIdentifier);
+                $activeModule = $moduleRepository->findActiveByIdentifier($moduleIdentifier);
+
+                $installedVersion = $module?->version;
+                $isActive = (bool) $activeModule;
+                $isMet = $isActive && $installedVersion && $this->checkVersionConstraint($installedVersion, $versionConstraint);
+
+                $moduleDeps[] = [
+                    'identifier' => $moduleIdentifier,
+                    'name' => $this->getExtensionName($module),
+                    'required_version' => $versionConstraint,
+                    'installed_version' => $installedVersion,
+                    'is_active' => $isActive,
+                    'is_met' => $isMet,
+                ];
+            }
         }
 
-        return $detailed;
+        // 플러그인 의존성 상세 정보
+        if (isset($dependencies['plugins']) && is_array($dependencies['plugins'])) {
+            foreach ($dependencies['plugins'] as $pluginIdentifier => $versionConstraint) {
+                $plugin = $pluginRepository->findByIdentifier($pluginIdentifier);
+                $activePlugin = $pluginRepository->findActiveByIdentifier($pluginIdentifier);
+
+                $installedVersion = $plugin?->version;
+                $isActive = (bool) $activePlugin;
+                $isMet = $isActive && $installedVersion && $this->checkVersionConstraint($installedVersion, $versionConstraint);
+
+                $pluginDeps[] = [
+                    'identifier' => $pluginIdentifier,
+                    'name' => $this->getExtensionName($plugin),
+                    'required_version' => $versionConstraint,
+                    'installed_version' => $installedVersion,
+                    'is_active' => $isActive,
+                    'is_met' => $isMet,
+                ];
+            }
+        }
+
+        return [
+            'modules' => $moduleDeps,
+            'plugins' => $pluginDeps,
+        ];
     }
 
     /**
-     * manifest 의 dependencies 를 판정식 원천으로 보강합니다 (응답 한 번에 한 번만 조회).
+     * 버전 제약조건을 검증합니다.
      *
-     * @return array<int, array<string, mixed>> 보강된 의존성 목록 (DependencyEnricher::enrich 결과)
+     * @param  string  $installedVersion  설치된 버전
+     * @param  string  $versionConstraint  요구 버전 제약조건 (예: '>=1.0.0', '^2.0', '~1.2.3')
+     * @return bool 제약조건 충족 여부
      */
-    protected function enrichedDependencies(): array
+    protected function checkVersionConstraint(string $installedVersion, string $versionConstraint): bool
     {
-        $dependencies = $this->getValue('dependencies', []);
+        try {
+            return Semver::satisfies($installedVersion, $versionConstraint);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 
-        return $this->enrichedDependenciesCache ??= DependencyEnricher::enrich(is_array($dependencies) ? $dependencies : []);
+    /**
+     * 확장(모듈/플러그인)의 다국어 이름을 반환합니다.
+     *
+     * @param  object|null  $extension  확장 모델
+     * @return string|null 다국어 이름
+     */
+    protected function getExtensionName(?object $extension): ?string
+    {
+        if (! $extension) {
+            return null;
+        }
+
+        $name = $extension->name;
+
+        // 다국어 배열인 경우
+        if (is_array($name)) {
+            $locale = App::getLocale();
+            $fallbackLocale = config('app.fallback_locale', 'ko');
+
+            return $name[$locale] ?? $name[$fallbackLocale] ?? reset($name) ?: null;
+        }
+
+        // JSON 문자열인 경우
+        if (is_string($name) && str_starts_with($name, '{')) {
+            $decoded = json_decode($name, true);
+            if (is_array($decoded)) {
+                $locale = App::getLocale();
+                $fallbackLocale = config('app.fallback_locale', 'ko');
+
+                return $decoded[$locale] ?? $decoded[$fallbackLocale] ?? reset($decoded) ?: null;
+            }
+        }
+
+        return $name;
     }
 }

@@ -3,14 +3,12 @@
 namespace Tests\Feature\Api\Auth;
 
 use App\Enums\AttachmentSourceType;
-use App\Enums\PermissionType;
 use App\Models\Attachment;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -27,11 +25,6 @@ class ProfileControllerTest extends TestCase
 
     private string $token;
 
-    /**
-     * 프로필 권한을 가진 사용자와 인증 토큰을 준비한다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,9 +35,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 프로필 권한이 부여된 사용자 생성 헬퍼
-     *
-     * @param  array<int, string>  $permissions  부여할 권한 식별자 목록
-     * @return User 권한이 부여된 사용자
      */
     private function createUserWithPermissions(array $permissions = [
         'core.profile.read',
@@ -86,8 +76,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
-     *
-     * @return static 인증 토큰과 JSON 수신 헤더를 실은 테스트 케이스
      */
     private function authRequest(): static
     {
@@ -99,8 +87,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * JSON 요청 헬퍼 메서드
-     *
-     * @return static JSON 수신 헤더만 실은 테스트 케이스
      */
     private function jsonRequest(): static
     {
@@ -115,11 +101,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 인증 없이 프로필 조회 시 401 반환
-     *
-     * @scenario endpoint=show
-     * @effects profile_show_requires_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_show_returns_401_without_authentication(): void
     {
@@ -130,11 +111,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 인증 없이 프로필 수정 시 401 반환
-     *
-     * @scenario endpoint=update
-     * @effects profile_update_requires_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_update_returns_401_without_authentication(): void
     {
@@ -152,11 +128,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 프로필 조회 성공
-     *
-     * @scenario endpoint=show
-     * @effects profile_show_returns_success
-     *
-     * @return void 반환값 없음
      */
     public function test_show_returns_user_profile(): void
     {
@@ -168,11 +139,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 프로필 조회 시 필드 포함 확인
-     *
-     * @scenario endpoint=show
-     * @effects profile_show_returns_email_and_name
-     *
-     * @return void 반환값 없음
      */
     public function test_show_returns_profile_specific_fields(): void
     {
@@ -189,11 +155,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 프로필 수정 성공
-     *
-     * @scenario endpoint=update
-     * @effects profile_update_persists_name
-     *
-     * @return void 반환값 없음
      */
     public function test_update_modifies_profile_successfully(): void
     {
@@ -215,11 +176,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 이름 필수 검증
-     *
-     * @scenario endpoint=update
-     * @effects profile_update_requires_name
-     *
-     * @return void 반환값 없음
      */
     public function test_update_validates_name_required(): void
     {
@@ -233,11 +189,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 이메일 고유성 검증 (본인 제외)
-     *
-     * @scenario endpoint=update
-     * @effects profile_update_rejects_email_of_other_user
-     *
-     * @return void 반환값 없음
      */
     public function test_update_validates_email_unique_except_self(): void
     {
@@ -257,11 +208,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 본인 이메일은 유지 가능
-     *
-     * @scenario endpoint=update
-     * @effects profile_update_allows_own_email
-     *
-     * @return void 반환값 없음
      */
     public function test_update_allows_keeping_own_email(): void
     {
@@ -278,11 +224,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 비밀번호 변경 시 현재 비밀번호 필수
-     *
-     * @scenario endpoint=update
-     * @effects profile_update_password_requires_current_password
-     *
-     * @return void 반환값 없음
      */
     public function test_update_requires_current_password_for_password_change(): void
     {
@@ -299,11 +240,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 비밀번호 확인 검증
-     *
-     * @scenario endpoint=update
-     * @effects profile_update_password_requires_confirmation_match
-     *
-     * @return void 반환값 없음
      */
     public function test_update_validates_password_confirmed(): void
     {
@@ -325,11 +261,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 언어 설정 변경 성공
-     *
-     * @scenario endpoint=update_language
-     * @effects language_change_persists
-     *
-     * @return void 반환값 없음
      */
     public function test_update_language_changes_user_language(): void
     {
@@ -348,11 +279,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 지원하지 않는 언어 코드 검증
-     *
-     * @scenario endpoint=update_language
-     * @effects language_change_rejects_unsupported_locale
-     *
-     * @return void 반환값 없음
      */
     public function test_update_language_validates_supported_locales(): void
     {
@@ -369,11 +295,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 활동 로그 조회 (빈 배열 반환)
-     *
-     * @scenario endpoint=activity_log
-     * @effects activity_log_returns_empty_activities
-     *
-     * @return void 반환값 없음
      */
     public function test_activity_log_returns_empty_array(): void
     {
@@ -390,11 +311,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * /api/me로 프로필 조회 성공
-     *
-     * @scenario endpoint=show
-     * @effects me_show_returns_email_and_name
-     *
-     * @return void 반환값 없음
      */
     public function test_me_show_returns_user_profile(): void
     {
@@ -408,11 +324,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * /api/me 인증 없이 조회 시 401 반환
-     *
-     * @scenario endpoint=show
-     * @effects me_show_requires_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_me_show_returns_401_without_authentication(): void
     {
@@ -423,11 +334,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * /api/me로 프로필 수정 성공
-     *
-     * @scenario endpoint=update
-     * @effects me_update_persists_name
-     *
-     * @return void 반환값 없음
      */
     public function test_me_update_modifies_profile_successfully(): void
     {
@@ -449,11 +355,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * /api/me로 추가 필드 수정 성공 (mobile, phone, homepage 등)
-     *
-     * @scenario endpoint=update
-     * @effects me_update_persists_contact_and_intro_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_me_update_modifies_additional_fields(): void
     {
@@ -487,11 +388,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * mobile 필드 정규식 검증
-     *
-     * @scenario endpoint=update
-     * @effects me_update_rejects_invalid_mobile_format
-     *
-     * @return void 반환값 없음
      */
     public function test_me_update_validates_mobile_format(): void
     {
@@ -507,11 +403,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * phone 필드 정규식 검증
-     *
-     * @scenario endpoint=update
-     * @effects me_update_rejects_invalid_phone_format
-     *
-     * @return void 반환값 없음
      */
     public function test_me_update_validates_phone_format(): void
     {
@@ -531,11 +422,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 아바타 업로드 성공
-     *
-     * @scenario endpoint=avatar_upload
-     * @effects avatar_upload_creates_avatar_attachment
-     *
-     * @return void 반환값 없음
      */
     public function test_upload_avatar_successfully(): void
     {
@@ -560,11 +446,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 아바타 업로드 - 파일 필수 검증
-     *
-     * @scenario endpoint=avatar_upload
-     * @effects avatar_upload_requires_file
-     *
-     * @return void 반환값 없음
      */
     public function test_upload_avatar_requires_file(): void
     {
@@ -576,11 +457,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 아바타 업로드 - 이미지 형식만 허용
-     *
-     * @scenario endpoint=avatar_upload
-     * @effects avatar_upload_rejects_non_image
-     *
-     * @return void 반환값 없음
      */
     public function test_upload_avatar_only_accepts_images(): void
     {
@@ -598,11 +474,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 아바타 업로드 - 2MB 초과 시 실패
-     *
-     * @scenario endpoint=avatar_upload
-     * @effects avatar_upload_rejects_oversized_file
-     *
-     * @return void 반환값 없음
      */
     public function test_upload_avatar_validates_max_size(): void
     {
@@ -620,11 +491,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 아바타 삭제 성공
-     *
-     * @scenario endpoint=avatar_delete
-     * @effects avatar_delete_removes_attachment_record
-     *
-     * @return void 반환값 없음
      */
     public function test_delete_avatar_successfully(): void
     {
@@ -653,11 +519,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 아바타 없을 때 삭제 시도 - 404 반환
-     *
-     * @scenario endpoint=avatar_delete
-     * @effects avatar_delete_returns_404_without_avatar
-     *
-     * @return void 반환값 없음
      */
     public function test_delete_avatar_returns_404_when_no_avatar(): void
     {
@@ -673,11 +534,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 비밀번호 변경 성공
-     *
-     * @scenario endpoint=change_password
-     * @effects password_change_stores_new_hash
-     *
-     * @return void 반환값 없음
      */
     public function test_change_password_successfully(): void
     {
@@ -692,16 +548,11 @@ class ProfileControllerTest extends TestCase
 
         // 새 비밀번호로 로그인 가능 확인
         $this->user->refresh();
-        $this->assertTrue(Hash::check('newpassword456', $this->user->password));
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('newpassword456', $this->user->password));
     }
 
     /**
      * 현재 비밀번호가 틀린 경우 실패
-     *
-     * @scenario endpoint=change_password
-     * @effects password_change_rejects_wrong_current_password
-     *
-     * @return void 반환값 없음
      */
     public function test_change_password_fails_with_wrong_current_password(): void
     {
@@ -717,11 +568,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 비밀번호 확인이 일치하지 않는 경우 실패
-     *
-     * @scenario endpoint=change_password
-     * @effects password_change_rejects_confirmation_mismatch
-     *
-     * @return void 반환값 없음
      */
     public function test_change_password_fails_when_confirmation_does_not_match(): void
     {
@@ -737,11 +583,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 새 비밀번호가 8자 미만인 경우 실패
-     *
-     * @scenario endpoint=change_password
-     * @effects password_change_rejects_short_password
-     *
-     * @return void 반환값 없음
      */
     public function test_change_password_validates_minimum_length(): void
     {
@@ -757,11 +598,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 현재 비밀번호 필수 검증
-     *
-     * @scenario endpoint=change_password
-     * @effects password_change_requires_current_password
-     *
-     * @return void 반환값 없음
      */
     public function test_change_password_requires_current_password(): void
     {
@@ -776,11 +612,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 새 비밀번호 필수 검증
-     *
-     * @scenario endpoint=change_password
-     * @effects password_change_requires_new_password
-     *
-     * @return void 반환값 없음
      */
     public function test_change_password_requires_new_password(): void
     {
@@ -794,11 +625,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 비밀번호 확인 필수 검증
-     *
-     * @scenario endpoint=change_password
-     * @effects password_change_requires_confirmation
-     *
-     * @return void 반환값 없음
      */
     public function test_change_password_requires_password_confirmation(): void
     {
@@ -813,11 +639,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 인증 없이 비밀번호 변경 시 401 반환
-     *
-     * @scenario endpoint=change_password
-     * @effects password_change_requires_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_change_password_returns_401_without_authentication(): void
     {
@@ -836,11 +657,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 회원 탈퇴 성공
-     *
-     * @scenario endpoint=withdraw
-     * @effects self_withdraw_anonymizes_email_and_name, self_withdraw_sets_withdrawn_status, suffix_includes_user_id_for_structural_uniqueness
-     *
-     * @return void 반환값 없음
      */
     public function test_withdraw_user_successfully(): void
     {
@@ -860,13 +676,6 @@ class ProfileControllerTest extends TestCase
         $this->assertNotEquals($originalEmail, $this->user->email);
         $this->assertNotEquals($originalName, $this->user->name);
 
-        // 접미사 형식: 날짜 + 사용자 ID (같은 날 같은 이메일 재탈퇴 충돌 차단, 공개이슈 #112)
-        $this->assertMatchesRegularExpression(
-            '/_deleted_\d{8}_'.$this->user->id.'$/u',
-            $this->user->email,
-            '이메일 접미사에 사용자 ID 가 없으면 같은 날 재탈퇴에서 unique 충돌이 난다'
-        );
-
         // 탈퇴 상태로 변경되었는지 확인
         $this->assertEquals('withdrawn', $this->user->status);
         $this->assertNotNull($this->user->withdrawn_at);
@@ -874,11 +683,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 회원 탈퇴 후 토큰 삭제 확인
-     *
-     * @scenario endpoint=withdraw
-     * @effects self_withdraw_revokes_all_tokens
-     *
-     * @return void 반환값 없음
      */
     public function test_withdraw_revokes_all_tokens(): void
     {
@@ -897,11 +701,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 회원 탈퇴 후 아바타 Attachment 삭제 확인
-     *
-     * @scenario endpoint=withdraw
-     * @effects self_withdraw_deletes_avatar_attachment_and_file
-     *
-     * @return void 반환값 없음
      */
     public function test_withdraw_deletes_avatar_attachment(): void
     {
@@ -925,18 +724,10 @@ class ProfileControllerTest extends TestCase
 
         // Attachment 레코드 삭제 확인
         $this->assertDatabaseMissing('attachments', ['id' => $attachment->id]);
-
-        // 파일 삭제는 DB 커밋이 확정된 뒤에 수행된다 (공개이슈 #112)
-        Storage::disk('attachments')->assertMissing('attachments/avatars/test-avatar.jpg');
     }
 
     /**
      * 슈퍼 관리자는 탈퇴 불가
-     *
-     * @scenario endpoint=withdraw
-     * @effects blocked_withdraw_returns_422_not_500, self_withdraw_super_admin_account_untouched
-     *
-     * @return void 반환값 없음
      */
     public function test_withdraw_prevents_super_admin(): void
     {
@@ -951,8 +742,7 @@ class ProfileControllerTest extends TestCase
             'Accept' => 'application/json',
         ])->deleteJson('/api/me');
 
-        // 관리 anchor 보호는 잘못된 요청이지 서버 오류가 아니다 (공개이슈 #112)
-        $response->assertStatus(422);
+        $response->assertStatus(500); // Exception 발생
 
         // 슈퍼 관리자는 변경되지 않음
         $superAdmin->refresh();
@@ -962,18 +752,13 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 관리자는 탈퇴 불가
-     *
-     * @scenario endpoint=withdraw
-     * @effects blocked_withdraw_returns_422_not_500, self_withdraw_admin_account_untouched
-     *
-     * @return void 반환값 없음
      */
     public function test_withdraw_prevents_admin(): void
     {
         // 관리자 역할 생성 및 할당
-        $role = Role::factory()->create(['identifier' => 'admin']);
-        $permission = Permission::factory()->create([
-            'type' => PermissionType::Admin,
+        $role = \App\Models\Role::factory()->create(['identifier' => 'admin']);
+        $permission = \App\Models\Permission::factory()->create([
+            'type' => \App\Enums\PermissionType::Admin,
         ]);
         $role->permissions()->attach($permission);
 
@@ -988,8 +773,7 @@ class ProfileControllerTest extends TestCase
             'Accept' => 'application/json',
         ])->deleteJson('/api/me');
 
-        // 관리자 탈퇴 차단은 잘못된 요청이지 서버 오류가 아니다 (공개이슈 #112)
-        $response->assertStatus(422);
+        $response->assertStatus(500); // ValidationException 발생
 
         // 관리자는 변경되지 않음
         $admin->refresh();
@@ -999,11 +783,6 @@ class ProfileControllerTest extends TestCase
 
     /**
      * 탈퇴 시 닉네임에도 suffix 추가
-     *
-     * @scenario endpoint=withdraw
-     * @effects self_withdraw_nickname_gets_suffix_within_limit
-     *
-     * @return void 반환값 없음
      */
     public function test_withdraw_adds_suffix_to_nickname(): void
     {
@@ -1015,40 +794,10 @@ class ProfileControllerTest extends TestCase
 
         $this->user->refresh();
         $this->assertStringContainsString('_탈퇴', $this->user->nickname);
-
-        // 컬럼 상한(50자) 안에서 접미사가 붙는다 — 넘기면 저장 자체가 실패한다
-        $this->assertLessThanOrEqual(User::NICKNAME_MAX_LENGTH, mb_strlen($this->user->nickname));
-    }
-
-    /**
-     * 닉네임이 상한에 가까우면 앞을 잘라 접미사를 붙인다 (공개이슈 #112)
-     *
-     * @scenario endpoint=withdraw
-     * @effects long_values_truncated_within_column_limits, self_withdraw_truncated_nickname_keeps_user_id_suffix
-     *
-     * @return void 반환값 없음
-     */
-    public function test_withdraw_truncates_nickname_at_column_limit(): void
-    {
-        $this->user->update(['nickname' => str_repeat('가', User::NICKNAME_MAX_LENGTH)]);
-
-        $response = $this->authRequest()->deleteJson('/api/me');
-
-        $response->assertStatus(200);
-
-        $this->user->refresh();
-        $this->assertSame(User::NICKNAME_MAX_LENGTH, mb_strlen($this->user->nickname));
-        // 접미사에 회원 ID 가 붙는다(7.2.0 — 닉네임 중복 금지에서 재가입 후 재탈퇴가 겹치지 않게)
-        $this->assertStringEndsWith('_탈퇴_'.$this->user->id, $this->user->nickname);
     }
 
     /**
      * 탈퇴 인증 없이 요청 시 401 반환
-     *
-     * @scenario endpoint=withdraw
-     * @effects self_withdraw_requires_authentication
-     *
-     * @return void 반환값 없음
      */
     public function test_withdraw_returns_401_without_authentication(): void
     {

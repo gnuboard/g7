@@ -14,7 +14,6 @@ class ProductImageResource extends BaseApiResource
      * 리소스를 배열로 변환
      *
      * @param  Request  $request  요청
-     * @return array 추출 결과
      */
     public function toArray(Request $request): array
     {
@@ -22,9 +21,7 @@ class ProductImageResource extends BaseApiResource
             'id' => $this->id,
             'hash' => $this->hash,
             'original_filename' => $this->original_filename,
-            // 원본(공개 자산 디스크면 CDN 직접 주소) / 썸네일 기준(항상 API 서빙 주소)
             'download_url' => $this->download_url,
-            'preview_url' => $this->preview_url,
             'alt_text' => $this->alt_text,
             'alt_text_localized' => $this->alt_text_localized,
             'alt_text_current' => $this->getLocalizedAltText(),
@@ -39,5 +36,27 @@ class ProductImageResource extends BaseApiResource
             'mime_type' => $this->mime_type,
             'is_image' => str_starts_with($this->mime_type ?? '', 'image/'),
         ];
+    }
+
+    /**
+     * 파일 크기를 읽기 쉬운 형식으로 변환
+     *
+     * @param  int|null  $bytes  바이트 크기
+     * @return string
+     */
+    protected function formatFileSize(?int $bytes): string
+    {
+        if ($bytes === null || $bytes === 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $i = 0;
+        while ($bytes >= 1024 && $i < count($units) - 1) {
+            $bytes /= 1024;
+            $i++;
+        }
+
+        return round($bytes, 2).' '.$units[$i];
     }
 }

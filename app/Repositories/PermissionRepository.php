@@ -5,9 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Models\Permission;
-use App\Models\Role;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 
 class PermissionRepository implements PermissionRepositoryInterface
 {
@@ -30,21 +28,6 @@ class PermissionRepository implements PermissionRepositoryInterface
     public function findById(int $id): ?Permission
     {
         return Permission::find($id);
-    }
-
-    /**
-     * 여러 ID로 권한을 일괄 조회합니다.
-     *
-     * @param  array<int>  $ids  권한 ID 배열
-     * @return Collection 권한 컬렉션 (ID 기준)
-     */
-    public function getByIds(array $ids): Collection
-    {
-        if (empty($ids)) {
-            return new Collection;
-        }
-
-        return Permission::whereIn('id', $ids)->get();
     }
 
     /**
@@ -125,9 +108,6 @@ class PermissionRepository implements PermissionRepositoryInterface
     /**
      * 특정 확장의 모든 권한을 삭제합니다.
      *
-     * 역할 부여(`role_permissions`)·훅 매핑(`permission_hooks`)을 먼저 떼고 깊은 자식부터 지운다. 다른 출처의 자식 권한은
-     * 부모 연결만 끊는다 — DB CASCADE 에 기대면 그 자식까지 사라진다.
-     *
      * @param  ExtensionOwnerType  $type  확장 타입
      * @param  string|null  $identifier  확장 식별자
      * @return int 삭제된 레코드 수
@@ -140,44 +120,7 @@ class PermissionRepository implements PermissionRepositoryInterface
             $query->where('extension_identifier', $identifier);
         }
 
-        $permissions = $query->get();
-        if ($permissions->isEmpty()) {
-            return 0;
-        }
-
-        $ids = $permissions->pluck('id')->all();
-        Permission::query()->whereIn('parent_id', $ids)->whereNotIn('id', $ids)->update(['parent_id' => null]);
-
-        $byId = $permissions->keyBy('id');
-        $depth = function (Permission $permission) use ($byId): int {
-            $d = 0;
-            $seen = [];
-            while ($permission->parent_id !== null && $byId->has($permission->parent_id) && ! isset($seen[$permission->id])) {
-                $seen[$permission->id] = true;
-                $permission = $byId->get($permission->parent_id);
-                $d++;
-            }
-
-            return $d;
-        };
-
-        // 연결 행은 행마다 지우지 않고 ID 묶음으로 한 번에 지운다 (권한 수와 무관하게 쿼리 수 고정)
-        $rolePermissions = (new Permission)->roles();
-        $rolePermissions->newPivotStatement()->whereIn($rolePermissions->getForeignPivotKeyName(), $ids)->delete();
-        $hooks = (new Permission)->hooks();
-        $hooks->getRelated()->newQuery()->whereIn($hooks->getForeignKeyName(), $ids)->delete();
-
-        // 같은 깊이끼리 묶어 깊은 자식부터 지운다 — 부모 행이 자식보다 먼저 사라지지 않게 해 FK 동작(CASCADE·RESTRICT)에 기대지 않는다
-        $deleted = 0;
-        $levels = $permissions
-            ->groupBy(fn (Permission $p) => $depth($p))
-            ->sortKeysDesc()
-            ->map(fn ($level) => $level->pluck('id')->all());
-        foreach ($levels as $levelIds) {
-            $deleted += Permission::query()->whereIn('id', $levelIds)->delete();
-        }
-
-        return $deleted;
+        return $query->delete();
     }
 
     /**
@@ -188,17 +131,6 @@ class PermissionRepository implements PermissionRepositoryInterface
     public function getCorePermissions(): Collection
     {
         return Permission::where('extension_type', ExtensionOwnerType::Core)->get();
-    }
-
-    /**
-     * 한 권한의 바로 아래 자식 권한을 조회합니다 (소유 확장과 무관).
-     *
-     * @param  int  $parentId  부모 권한 ID
-     * @return Collection 자식 권한 컬렉션
-     */
-    public function getChildrenByParent(int $parentId): Collection
-    {
-        return Permission::query()->where('parent_id', $parentId)->orderBy('id')->get();
     }
 
     /**
@@ -225,65 +157,5 @@ class PermissionRepository implements PermissionRepositoryInterface
             ->whereNotNull('parent_id')
             ->pluck('id')
             ->toArray();
-    }
-
-    /**
-     * 스코프(self·role)가 붙었지만 라우트 스코프 메타(resource_route_key·owner_key)가 없는
-     * 역할-권한 부여를 조회합니다.
-     *
-     * @param  array<int, string>  $exemptIdentifiers  쿼리 스코프가 정본이라 제외할 권한 식별자
-     * @return array<int, array{role: string, permission: string, scope_type: string}> 부여 목록
-     */
-    public function getScopedGrantsWithoutOwnerMetadata(array $exemptIdentifiers): array
-    {
-        $roles = (new Role)->getTable();
-        $permissions = (new Permission)->getTable();
-
-        // audit:allow repository-raw-hardcoded-table reason: role_permissions 는 모델이 없는 피벗 테이블
-        return DB::table('role_permissions')
-            ->join($roles, "{$roles}.id", '=', 'role_permissions.role_id')
-            ->join($permissions, "{$permissions}.id", '=', 'role_permissions.permission_id')
-            ->whereNotNull('role_permissions.scope_type')
-            ->where(function ($q) use ($permissions) {
-                $q->whereNull("{$permissions}.resource_route_key")
-                    ->orWhereNull("{$permissions}.owner_key");
-            })
-            ->when($exemptIdentifiers !== [], fn ($q) => $q->whereNotIn("{$permissions}.identifier", $exemptIdentifiers))
-            ->orderBy("{$roles}.identifier")
-            ->orderBy("{$permissions}.identifier")
-            ->get(["{$roles}.identifier as role", "{$permissions}.identifier as permission", 'role_permissions.scope_type'])
-            ->map(static fn ($row) => [
-                'role' => $row->role,
-                'permission' => $row->permission,
-                'scope_type' => (string) $row->scope_type,
-            ])
-            ->all();
-    }
-
-    /**
-     * 한 역할의 부여 중 스코프(self·role)가 붙은 것을 조회합니다.
-     *
-     * @param  string  $roleIdentifier  역할 식별자 (예: guest)
-     * @return array<int, array{role: string, permission: string, scope_type: string}> 부여 목록
-     */
-    public function getScopedGrantsForRole(string $roleIdentifier): array
-    {
-        $roles = (new Role)->getTable();
-        $permissions = (new Permission)->getTable();
-
-        // audit:allow repository-raw-hardcoded-table reason: role_permissions 는 모델이 없는 피벗 테이블
-        return DB::table('role_permissions')
-            ->join($roles, "{$roles}.id", '=', 'role_permissions.role_id')
-            ->join($permissions, "{$permissions}.id", '=', 'role_permissions.permission_id')
-            ->where("{$roles}.identifier", $roleIdentifier)
-            ->whereNotNull('role_permissions.scope_type')
-            ->orderBy("{$permissions}.identifier")
-            ->get(["{$roles}.identifier as role", "{$permissions}.identifier as permission", 'role_permissions.scope_type'])
-            ->map(static fn ($row) => [
-                'role' => $row->role,
-                'permission' => $row->permission,
-                'scope_type' => (string) $row->scope_type,
-            ])
-            ->all();
     }
 }

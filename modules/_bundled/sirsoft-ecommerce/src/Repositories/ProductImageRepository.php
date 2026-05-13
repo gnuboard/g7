@@ -3,7 +3,6 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 
@@ -12,11 +11,6 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInter
  */
 class ProductImageRepository implements ProductImageRepositoryInterface
 {
-    /**
-     * 의존성을 주입받습니다.
-     *
-     * @param  ProductImage  $model  상품 이미지 모델
-     */
     public function __construct(
         protected ProductImage $model
     ) {}
@@ -27,24 +21,6 @@ class ProductImageRepository implements ProductImageRepositoryInterface
     public function findById(int $id): ?ProductImage
     {
         return $this->model->find($id);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function pluckProductIdsByIds(array $ids): array
-    {
-        if ($ids === []) {
-            return [];
-        }
-
-        return $this->model->newQuery()
-            ->whereIn('id', $ids)
-            ->whereNotNull('product_id')
-            ->distinct()
-            ->pluck('product_id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
     }
 
     /**
@@ -117,21 +93,6 @@ class ProductImageRepository implements ProductImageRepositoryInterface
     /**
      * {@inheritDoc}
      */
-    public function findStaleTempImages(Carbon $threshold, int $limit): Collection
-    {
-        return $this->model->newQuery()
-            ->whereNotNull('temp_key')
-            ->whereNull('product_id')
-            ->where('created_at', '<', $threshold)
-            ->orderBy('created_at')
-            ->orderBy('id')
-            ->limit($limit)
-            ->get(['id', 'temp_key', 'disk', 'path', 'created_at']);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public function linkTempImages(string $tempKey, int $productId): int
     {
         return $this->model
@@ -176,30 +137,5 @@ class ProductImageRepository implements ProductImageRepositoryInterface
         }
 
         return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function countByMimeTypes(array $mimeTypes): int
-    {
-        return $this->model->newQuery()
-            ->whereNotNull('product_id')
-            ->whereIn('mime_type', $mimeTypes)
-            ->count();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
-    {
-        return $this->model->newQuery()
-            ->whereNotNull('product_id')
-            ->whereIn('mime_type', $mimeTypes)
-            ->where('id', '>', $afterId)
-            ->orderBy('id')
-            ->limit($limit)
-            ->get(['id', 'disk', 'path', 'mime_type', 'width', 'height']);
     }
 }

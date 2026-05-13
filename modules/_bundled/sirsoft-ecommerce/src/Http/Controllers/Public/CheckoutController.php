@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Public;
 
-use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
@@ -10,11 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
-use Modules\Sirsoft\Ecommerce\Exceptions\CartEmptyException;
-use Modules\Sirsoft\Ecommerce\Exceptions\CartOperationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\CartUnavailableException;
-use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
-use Modules\Sirsoft\Ecommerce\Exceptions\TempOrderNotFoundException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\CheckoutRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\DeleteCheckoutRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\ExtendCheckoutRequest;
@@ -31,12 +26,6 @@ use Modules\Sirsoft\Ecommerce\Services\TempOrderService;
  */
 class CheckoutController extends PublicBaseController
 {
-    /**
-     * 체크아웃 컨트롤러를 생성합니다.
-     *
-     * @param  TempOrderService  $tempOrderService  임시 주문 서비스
-     * @param  CheckoutDataService  $checkoutDataService  주문서 화면 데이터 서비스
-     */
     public function __construct(
         private TempOrderService $tempOrderService,
         private CheckoutDataService $checkoutDataService
@@ -48,7 +37,7 @@ class CheckoutController extends PublicBaseController
      * 선택한 장바구니 아이템으로 임시 주문을 생성합니다.
      * 주문서 작성 페이지에서 사용할 임시 주문 데이터를 반환합니다.
      *
-     * @param  CheckoutRequest  $request  검증된 요청 데이터
+     * @param CheckoutRequest $request 검증된 요청 데이터
      * @return JsonResponse 임시 주문 정보를 포함한 JSON 응답
      */
     public function store(CheckoutRequest $request): JsonResponse
@@ -60,22 +49,12 @@ class CheckoutController extends PublicBaseController
             $cartKey = $request->header('X-Cart-Key');
             $validated = $request->validated();
 
-            // direct_items(바로 구매, 장바구니 미경유) vs item_ids(장바구니 경유) 분기
-            if (! empty($validated['direct_items'])) {
-                $tempOrder = $this->tempOrderService->createTempOrderFromDirectItems(
-                    items: $validated['direct_items'],
-                    userId: $userId,
-                    cartKey: $cartKey,
-                    usePoints: $validated['use_points'] ?? 0
-                );
-            } else {
-                $tempOrder = $this->tempOrderService->createTempOrderFromSelectedItems(
-                    cartIds: $validated['item_ids'],
-                    userId: $userId,
-                    cartKey: $cartKey,
-                    usePoints: $validated['use_points'] ?? 0
-                );
-            }
+            $tempOrder = $this->tempOrderService->createTempOrderFromSelectedItems(
+                cartIds: $validated['item_ids'],
+                userId: $userId,
+                cartKey: $cartKey,
+                usePoints: $validated['use_points'] ?? 0
+            );
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.checkout.created', [
                 'temp_order_id' => $tempOrder->id,
@@ -83,63 +62,27 @@ class CheckoutController extends PublicBaseController
                 'expires_at' => $tempOrder->expires_at->toIso8601String(),
             ], 201);
         } catch (CartUnavailableException $e) {
-            // 구매불가 상품 예외 처리 (재고부족 / 판매상태 / 구매대상제한)
-            // 구매 권한 문제면 사유를 구분해 안내 (재고/판매상태와 동일 문구로 묶이지 않도록)
-            $messageKey = $e->hasRestrictionIssue()
-                ? 'exceptions.purchase_not_allowed'
-                : 'exceptions.cart_unavailable';
-
+            // 구매불가 상품 예외 처리 (재고부족 또는 판매상태)
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
-                $messageKey,
+                'exceptions.cart_unavailable',
                 400,
                 [
                     'code' => 'cart_unavailable',
-                    'message' => $e->getUserMessage(),
                     'unavailable_items' => $e->getUnavailableItems(),
                     'has_stock_issue' => $e->hasStockIssue(),
                     'has_status_issue' => $e->hasStatusIssue(),
-                    'has_restriction_issue' => $e->hasRestrictionIssue(),
-                    'has_min_qty_issue' => $e->hasMinQtyIssue(),
-                    'has_max_qty_issue' => $e->hasMaxQtyIssue(),
                 ]
             );
-        } catch (MileageValidationException $e) {
-            // 마일리지 보유 잔액 초과 사용 요청 (U15) — generic 500 이 아닌 422 명시 차단
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'messages.checkout.create_failed',
-                422,
-                ['code' => 'mileage_exceeds_balance', 'message' => $e->getMessage()],
-            );
-        } catch (CartOperationException $e) {
-            // 바로 구매 항목의 옵션 없음 / 구매할 수 있는 옵션이 없는 상품 — 서버 오류(500)가 아닌 사유별 422.
-            // 메시지 키가 이미 `sirsoft-ecommerce::` 를 포함하므로 모듈 도메인을 다시 붙이지 않는다.
-            $messageKey = $e->getMessageKey();
-
-            return ResponseHelper::error(
-                $messageKey,
-                $e->getStatusCode(),
-                ['code' => $e->getReason()]
-            );
-        } catch (CartEmptyException $e) {
-            // 장바구니 비어있음 — i18n 문자열 매칭 대신 타입 분기 (U14/MP06)
-            Log::warning('Checkout store: cart empty', [
-                'message' => $e->getMessage(),
-            ]);
-
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.cart_empty',
-                400
-            );
         } catch (Exception $e) {
-            Log::error('Checkout store error', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            // 장바구니 비어있음 예외 처리
+            if (str_contains($e->getMessage(), 'cart_empty')) {
+                return ResponseHelper::moduleError(
+                    'sirsoft-ecommerce',
+                    'exceptions.cart_empty',
+                    400
+                );
+            }
 
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -156,7 +99,7 @@ class CheckoutController extends PublicBaseController
      * 쿼리 파라미터로 배송 주소를 전달하면 해당 주소 기준으로 배송비가 계산됩니다.
      * 도서산간 지역 여부는 우편번호 기반으로 배송정책에서 자동 판별됩니다.
      *
-     * @param  ShowCheckoutRequest  $request  검증된 요청 데이터
+     * @param ShowCheckoutRequest $request 검증된 요청 데이터
      * @return JsonResponse 임시 주문 정보를 포함한 JSON 응답
      *
      * @queryParam zipcode string 우편번호 (배송비 계산용)
@@ -172,11 +115,8 @@ class CheckoutController extends PublicBaseController
             $validated = $request->validated();
 
             // 검증된 파라미터에서 배송 주소 정보 추출
-            // 배송비 미리보기는 우편번호 없이 배송국가(country_code)만으로도 해당 국가 배송비를
-            // 계산해 보여줘야 한다(주문 성립 요건과 별개 — 우편번호 필수는 주문 확정 검증이 담당).
-            // 따라서 country_code 단독 전달도 ShippingAddress 생성 트리거에 포함한다(update 와 동일).
             $shippingAddress = null;
-            if (isset($validated['zipcode']) || isset($validated['region']) || isset($validated['country_code'])) {
+            if (isset($validated['zipcode']) || isset($validated['region'])) {
                 $shippingAddress = new ShippingAddress(
                     countryCode: $validated['country_code'] ?? 'KR',
                     zipcode: $validated['zipcode'] ?? null,
@@ -205,9 +145,6 @@ class CheckoutController extends PublicBaseController
                 $result['unavailable_items'] ?? []
             );
 
-            // [결제하기] 를 잠그는 키 — 주문 생성(`POST user/orders`)의 라우트 권한과 같다(비회원은 guest 역할로 판정).
-            $responseData['abilities'] = ['can_order' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create')];
-
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.checkout.fetched', $responseData);
         } catch (Exception $e) {
             Log::error('Checkout show error', [
@@ -231,7 +168,7 @@ class CheckoutController extends PublicBaseController
      * 쿠폰, 마일리지, 배송 주소 변경 시 호출하여 주문 금액을 재계산합니다.
      * 배송 주소에 따라 배송비가 달라질 수 있습니다.
      *
-     * @param  UpdateCheckoutRequest  $request  검증된 요청 데이터
+     * @param UpdateCheckoutRequest $request 검증된 요청 데이터
      * @return JsonResponse 재계산된 임시 주문 정보를 포함한 JSON 응답
      */
     public function update(UpdateCheckoutRequest $request): JsonResponse
@@ -282,36 +219,15 @@ class CheckoutController extends PublicBaseController
                 $userId
             );
 
-            // 화면이 주문서 데이터를 이 응답으로 통째로 바꾸므로 조회(show)와 같은 [결제하기] 권한 키를 싣는다
-            $responseData['abilities'] = ['can_order' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create')];
-
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.checkout.updated', $responseData);
-        } catch (TempOrderNotFoundException $e) {
-            // 만료/미존재 임시주문 — i18n 문자열 매칭 대신 타입 분기 (U14/MP06)
-            Log::warning('Checkout update: temp order not found', [
-                'message' => $e->getMessage(),
-            ]);
-
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.temp_order_not_found',
-                404
-            );
-        } catch (MileageValidationException $e) {
-            // 마일리지 보유 잔액 초과 사용 요청 (U15) — generic 500 이 아닌 422 명시 차단
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'messages.checkout.update_failed',
-                422,
-                ['code' => 'mileage_exceeds_balance', 'message' => $e->getMessage()],
-            );
         } catch (Exception $e) {
-            Log::error('Checkout update error', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            if (str_contains($e->getMessage(), 'temp_order_not_found')) {
+                return ResponseHelper::moduleError(
+                    'sirsoft-ecommerce',
+                    'exceptions.temp_order_not_found',
+                    404
+                );
+            }
 
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -324,7 +240,7 @@ class CheckoutController extends PublicBaseController
     /**
      * 임시 주문 삭제 (주문서 페이지 이탈 시)
      *
-     * @param  DeleteCheckoutRequest  $request  검증된 요청 데이터
+     * @param DeleteCheckoutRequest $request 검증된 요청 데이터
      * @return JsonResponse 삭제 결과를 포함한 JSON 응답
      */
     public function destroy(DeleteCheckoutRequest $request): JsonResponse
@@ -347,13 +263,6 @@ class CheckoutController extends PublicBaseController
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.checkout.deleted');
         } catch (Exception $e) {
-            Log::error('Checkout destroy error', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.checkout.delete_failed',
@@ -365,7 +274,7 @@ class CheckoutController extends PublicBaseController
     /**
      * 임시 주문 만료 시간 연장
      *
-     * @param  ExtendCheckoutRequest  $request  검증된 요청 데이터
+     * @param ExtendCheckoutRequest $request 검증된 요청 데이터
      * @return JsonResponse 연장된 만료 시간을 포함한 JSON 응답
      */
     public function extend(ExtendCheckoutRequest $request): JsonResponse
@@ -390,13 +299,6 @@ class CheckoutController extends PublicBaseController
                 'expires_at' => $tempOrder->expires_at->toIso8601String(),
             ]);
         } catch (Exception $e) {
-            Log::error('Checkout extend error', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'messages.checkout.extend_failed',
@@ -404,4 +306,5 @@ class CheckoutController extends PublicBaseController
             );
         }
     }
+
 }

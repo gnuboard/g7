@@ -2,10 +2,6 @@
 
 namespace App\Http\Requests\LanguagePack;
 
-use App\Extension\HookManager;
-use App\Http\Requests\Concerns\HasPackageIntegrityRules;
-use App\Http\Requests\LanguagePack\Concerns\ValidatesLanguagePackArchive;
-use App\Rules\LanguagePack\RequiresActivationPermission;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -13,9 +9,6 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class InstallFromFileRequest extends FormRequest
 {
-    use HasPackageIntegrityRules;
-    use ValidatesLanguagePackArchive;
-
     /**
      * 권한 체크는 라우트 미들웨어가 담당.
      *
@@ -33,19 +26,10 @@ class InstallFromFileRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = [
-            // 규칙은 미리보기와 **같은 하나**를 읽는다(trait) — 두 벌이면 한쪽만 고쳐졌을 때
-            // "설치는 되는데 미리보기는 안 되는 파일" 이 다시 생긴다.
-            'file' => $this->languagePackArchiveRules(),
-            // 설치 권한만으로 활성화까지 수행하지 못하게 한다 — 활성 팩만 require 경로에 배선된다.
-            'auto_activate' => ['nullable', 'boolean', new RequiresActivationPermission],
+        return [
+            'file' => ['required', 'file', 'max:10240', 'mimetypes:application/zip,application/x-zip-compressed,application/octet-stream'],
+            'auto_activate' => ['nullable', 'boolean'],
         ];
-
-        // 패키지 무결성 입력 — 미서명 계속(allow_unsigned)·서명 파일(signature) (7.2.0)
-        $rules = array_merge($rules, $this->packageIntegrityRules(signatureFile: true));
-
-        // 모듈/플러그인이 validation rules 를 동적으로 추가할 수 있도록 훅 제공
-        return HookManager::applyFilters('core.language_packs.install_from_file_validation_rules', $rules, $this);
     }
 
     /**
@@ -55,16 +39,11 @@ class InstallFromFileRequest extends FormRequest
      */
     public function messages(): array
     {
-        return $this->languagePackArchiveMessages() + $this->packageIntegrityMessages();
-    }
-
-    /**
-     * 검증 오류 문구에 쓸 칸 이름 라벨을 돌려줍니다.
-     *
-     * @return array<string, string> 라벨
-     */
-    public function attributes(): array
-    {
-        return $this->packageIntegrityAttributes();
+        return [
+            'file.required' => __('language_packs.validation.file_required'),
+            'file.file' => __('language_packs.validation.file_invalid'),
+            'file.max' => __('language_packs.validation.file_too_large'),
+            'file.mimetypes' => __('language_packs.validation.file_not_zip'),
+        ];
     }
 }

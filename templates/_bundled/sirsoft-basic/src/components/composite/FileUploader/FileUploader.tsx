@@ -16,19 +16,17 @@ import { forwardRef, useImperativeHandle, useMemo, useRef, useCallback } from 'r
 import { Div } from '../../basic/Div';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { ImageGallery, GalleryImage } from '../ImageGallery';
-import { attachmentThumbUrl } from '../../../support/thumbnail';
 
 import { FileUploaderProvider } from './FileUploaderContext';
-import { useFileUploader, directZoomSource } from './useFileUploader';
+import { useFileUploader } from './useFileUploader';
 import { FileDropZone } from './FileDropZone';
 import { FileList } from './FileList';
-import { useFocusRecovery } from './useFocusRecovery';
 import type { FileUploaderProps, FileUploaderRef, Attachment, PendingFile } from './types';
-import { t, resolveApiEndpoints } from './utils';
+import { t } from './utils';
 
-/** 안정적인 빈 배열 참조 — 매 렌더마다 새 [] 생성 방지 (useEffect 무한 루프 방지). 얼려 두어 공유 상수가 바뀌지 않게 한다(7.1.0) */
-const EMPTY_FILES = Object.freeze([]) as unknown as Attachment[];
-const EMPTY_ROLE_IDS = Object.freeze([]) as unknown as number[];
+/** 안정적인 빈 배열 참조 — 매 렌더마다 새 [] 생성 방지 (useEffect 무한 루프 방지) */
+const EMPTY_FILES: Attachment[] = [];
+const EMPTY_ROLE_IDS: number[] = [];
 
 // ========== Main Component ==========
 
@@ -40,14 +38,8 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       attachmentableId,
       collection = 'default',
       maxFiles = 10,
-      // 용량 상한은 **기본값을 두지 않는다**. 리터럴 기본(10MB)을 두면 상한을 넘기지 않은
-      // 화면까지 드롭존이 「각 10MB까지」를 광고하는데, 그 화면의 진짜 거절선은 서버 설정이라
-      // 한 화면에서 두 상한이 맞선다(#599 세션A 실측 SA-D5 — 클레임 신청서 안내 「1장당
-      // 2048KB」 ↔ 드롭존 「각 10MB까지」 · 원 계획서 고정값 image_max_size_kb=2048).
-      // 미선언이면 컴포지트는 상한을 말하지도, 스스로 거르지도 않는다 — 판정은 호출부 몫이다(S2-D10).
-      maxSize,
-      // 기본은 고른 순서대로 하나씩 — 게시판 서버가 도착 순서로 첨부 번호를 매기면 동시 업로드는 먼저 끝난 파일이 앞에 선다
-      maxConcurrentUploads = 1,
+      maxSize = 10,
+      maxConcurrentUploads = 3,
       accept,
       imageCompression: compressionOptions,
       roleIds = EMPTY_ROLE_IDS,
@@ -68,13 +60,15 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
       enablePrimarySelection = false,
       primaryFileId,
       onPrimaryChange,
-      id,
-      editorAttrs,
     },
     ref
   ) => {
-    // API 엔드포인트 — 사용자 템플릿에는 기본 주소가 없다(resolveApiEndpoints 참조)
-    const endpoints = resolveApiEndpoints(apiEndpoints);
+    // API 엔드포인트 기본값 설정 (User 템플릿용 기본 경로)
+    const endpoints = {
+      upload: apiEndpoints?.upload ?? '/api/attachments',
+      delete: apiEndpoints?.delete ?? '/api/attachments/:id',
+      reorder: apiEndpoints?.reorder ?? '/api/attachments/reorder',
+    };
 
     // onFilesChange 래퍼: ActionDispatcher 호환 형태로 변환
     // ActionDispatcher는 type: "change" → onChange prop으로 매핑하므로,
@@ -148,15 +142,8 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
         } else {
           // 기존 첨부파일은 인증된 URL 또는 다운로드 URL 사용
           const cachedUrl = uploader.authenticatedImageUrls.get(attachmentItem.id);
-          // 썸네일로 그리는 첨부는 업로더가 blob 을 받지 않을 수 있다. 확대 보기는 업로더가 받아 둔 blob → 미리보기 주소 순이고,
-          // 둘 다 없으면(다운로드 주소만 있는 권한 첨부) 확대 보기를 열 때 업로더가 받는 blob 을 기다린다 — 인증 없는
-          // 다운로드 주소를 열면 권한 첨부가 깨진다.
-          const thumbnailDrawn = Boolean(attachmentThumbUrl(attachmentItem, 'sm'));
-          const src = thumbnailDrawn
-            ? (cachedUrl || directZoomSource(attachmentItem) || '')
-            : (cachedUrl || attachmentItem.download_url);
           return {
-            src,
+            src: cachedUrl || attachmentItem.download_url,
             downloadUrl: attachmentItem.download_url,
             filename: attachmentItem.original_filename,
             title: attachmentItem.original_filename,
@@ -217,16 +204,11 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
 
       // 인증된 이미지 URL 캐시
       authenticatedImageUrls: uploader.authenticatedImageUrls,
-      requestAuthenticatedImage: uploader.requestAuthenticatedImage,
     }), [uploader, maxFiles, maxSize, accept, endpoints, confirmBeforeRemove]);
-
-    // 항목을 지우거나 파일을 고른 뒤 초점을 쥔 요소가 사라지면 가까운 자리로 초점을 돌린다(7.1.0 P-6)
-    const rootRef = useRef<HTMLDivElement>(null);
-    useFocusRecovery(rootRef);
 
     return (
       <FileUploaderProvider value={contextValue}>
-        <Div ref={rootRef} id={id} className={className} {...editorAttrs}>
+        <Div className={className}>
           {/* 드롭존 + 파일 목록 통합 영역 */}
           <FileDropZone
             isDragOver={uploader.isDragOver}

@@ -7,10 +7,7 @@
 
 import type { LayoutLoader } from './LayoutLoader';
 import type { DataSourceManager, DataSource } from './DataSourceManager';
-import type { GlobalHeaderRule } from './LayoutLoader';
 import { createLogger } from '../utils/Logger';
-import { suffixed } from '../support/assetUrl';
-import { TEMPLATE_ERROR_CONFIG_KEY, hasInlineTemplateConfigKeys, readInlineTemplateConfig } from './inlineTemplateConfig';
 
 const logger = createLogger('ErrorPageHandler');
 
@@ -49,28 +46,7 @@ export interface ErrorPageHandlerOptions {
     debug: boolean;
     renderFunction: RenderFunction;
     dataSourceManager: DataSourceManager;
-    /** 생성 시점 전역 상태 — `getGlobalState` 가 없을 때만 쓴다(하위 호환) */
     globalState?: Record<string, unknown>;
-    /**
-     * 그릴 때마다 지금의 전역 상태를 돌려준다 (@since engine-v1.83.0).
-     * 앱은 상태를 바꿀 때 전역 상태 객체를 새로 만들므로, 생성 때 받은 참조는 곧 옛 값이 된다.
-     */
-    getGlobalState?: () => Record<string, unknown>;
-    /** 그릴 때마다 지금 화면의 route·query 를 돌려준다 (@since engine-v1.83.0) */
-    getRouteContext?: () => { route: Record<string, unknown>; query: Record<string, unknown> };
-    /** 그릴 때마다 지금 레이아웃의 전역 헤더 규칙을 돌려준다 — 오류 화면 데이터 소스 요청에 싣는다 (@since engine-v1.83.0) */
-    getGlobalHeaders?: () => GlobalHeaderRule[];
-    /**
-     * 오류 화면을 그리기 직전에 바인딩 값 캐시를 비운다 (@since engine-v1.83.0).
-     * 같은 화면에서 403 → 500 을 연속으로 그리면 `{{errorCode}}` 가 경로 글자 키 캐시의 앞 값으로 그려졌다.
-     */
-    clearBindingCache?: () => void;
-    /**
-     * 템플릿에 그 코드의 오류 레이아웃도 `default` 도 없을 때(또는 error_config 가 없을 때) 엔진 내장 오류 화면을 그린다
-     * (engine-v1.95.0, #869 λ 4부 18). 종전에는 아무것도 그리지 않고 끝나 화면이 오류 전 모습(빈 장바구니 등)으로 남았다.
-     * 생략하면 종전처럼 false 로 끝난다(단위 시험·편집기 미리보기).
-     */
-    renderBuiltinFallback?: (errorCode: number) => void;
 }
 
 /**
@@ -84,11 +60,6 @@ export class ErrorPageHandler {
     private renderFunction: RenderFunction;
     private dataSourceManager: DataSourceManager;
     private globalState: Record<string, unknown>;
-    private getGlobalStateFn?: () => Record<string, unknown>;
-    private getRouteContextFn?: () => { route: Record<string, unknown>; query: Record<string, unknown> };
-    private getGlobalHeadersFn?: () => GlobalHeaderRule[];
-    private clearBindingCacheFn?: () => void;
-    private renderBuiltinFallbackFn?: (errorCode: number) => void;
     private errorConfig: ErrorConfig | null = null;
     private configLoaded: boolean = false;
 
@@ -100,33 +71,6 @@ export class ErrorPageHandler {
         this.renderFunction = options.renderFunction;
         this.dataSourceManager = options.dataSourceManager;
         this.globalState = options.globalState || {};
-        this.getGlobalStateFn = options.getGlobalState;
-        this.getRouteContextFn = options.getRouteContext;
-        this.getGlobalHeadersFn = options.getGlobalHeaders;
-        this.clearBindingCacheFn = options.clearBindingCache;
-        this.renderBuiltinFallbackFn = options.renderBuiltinFallback;
-    }
-
-    /**
-     * 템플릿 오류 레이아웃이 없을 때 엔진 내장 오류 화면으로 그린다 (engine-v1.95.0).
-     *
-     * @param errorCode 오류 코드
-     * @param reason 경고 로그에 남길 사유
-     * @param shouldRender 그리기 직전 판정
-     * @returns 그렸으면 true
-     */
-    private renderBuiltin(errorCode: number, reason: string, shouldRender?: () => boolean): boolean {
-        if (!this.renderBuiltinFallbackFn) {
-            return false;
-        }
-        if (shouldRender && !shouldRender()) {
-            logger.log(`Builtin error display ${errorCode} skipped — route changed while loading`);
-            return false;
-        }
-        logger.warn(`${reason} — rendering the engine builtin error display for code ${errorCode}`);
-        this.renderBuiltinFallbackFn(errorCode);
-
-        return true;
     }
 
     /**
@@ -137,23 +81,9 @@ export class ErrorPageHandler {
             return this.errorConfig;
         }
 
-        // 셸이 `error_config` 를 실었으면(template.json `expose` 선언, null 이면 「선언했고 값 없음」) API 를 부르지 않는다
-        // (@since engine-v1.96.0, #879). 실리지 않았으면 종전처럼 config API
-        const inline = readInlineTemplateConfig();
-        if (hasInlineTemplateConfigKeys(inline, [TEMPLATE_ERROR_CONFIG_KEY])) {
-            const value = inline![TEMPLATE_ERROR_CONFIG_KEY] as ErrorConfig | null;
-            this.errorConfig = value && typeof value === 'object' && (value as ErrorConfig).layouts ? value : null;
-            this.configLoaded = true;
-            if (this.debug) {
-                logger.log('Error config from shell:', this.errorConfig);
-            }
-
-            return this.errorConfig;
-        }
-
         try {
             // template.json fetch
-            const response = await fetch(suffixed(`/api/templates/${this.templateId}/config`, 'json'));
+            const response = await fetch(`/api/templates/${this.templateId}/config.json`);
 
             if (!response.ok) {
                 if (this.debug) {
@@ -204,30 +134,28 @@ export class ErrorPageHandler {
      *
      * @param errorCode 에러 코드 (404, 403, 500 등)
      * @param containerId 렌더링할 컨테이너 ID (기본값: 'app')
-     * @param shouldRender 그리기 직전 판정 — 거짓이면 그리지 않고 false (오류 레이아웃 적재 중 경로가 바뀐 경우, engine-v1.80.1)
      * @returns 렌더링 성공 여부
      */
-    async renderError(errorCode: number, containerId: string = 'app', shouldRender?: () => boolean): Promise<boolean> {
+    async renderError(errorCode: number, containerId: string = 'app'): Promise<boolean> {
         try {
             // 1. error_config 로드
             const config = await this.loadConfig();
 
             if (!config) {
-                // error_config 가 없는 템플릿 — 엔진 내장 오류 화면으로 그린다 (engine-v1.95.0, #869 λ 4부 18)
-                return this.renderBuiltin(errorCode, 'No error_config in template.json', shouldRender);
+                if (this.debug) {
+                    logger.warn('No error config available, cannot render error page');
+                }
+                return false;
             }
 
-            // 2. 에러 코드에 맞는 레이아웃 이름 찾기 — 없으면 템플릿의 공통 오류 레이아웃(`layouts.default`), 그것도 없으면 엔진 내장
-            //    오류 화면 (engine-v1.95.0, #869 λ 4부 18). 종전에는 아무것도 그리지 않고 끝나(예: 400) 화면이 오류 전 모습으로 남았다.
-            //    다른 코드의 레이아웃(500 등)으로 대신하지 않는다 — 그 레이아웃은 코드와 문구를 박아 두어(「500 서버 오류」) 다른 코드를 잘못 알린다
-            const codeLayout = config.layouts[errorCode] || config.layouts[String(errorCode)];
-            const layoutName = codeLayout || config.layouts.default;
+            // 2. 에러 코드에 맞는 레이아웃 이름 찾기
+            const layoutName = config.layouts[errorCode] || config.layouts[String(errorCode)];
 
             if (!layoutName) {
-                return this.renderBuiltin(errorCode, `No error layout for code ${errorCode} and no default in error_config`, shouldRender);
-            }
-            if (!codeLayout) {
-                logger.warn(`No error layout for code ${errorCode} — rendering error_config default layout: ${layoutName}`);
+                if (this.debug) {
+                    logger.warn(`No layout defined for error code: ${errorCode}`);
+                }
+                return false;
             }
 
             if (this.debug) {
@@ -248,17 +176,9 @@ export class ErrorPageHandler {
                 logger.log('Error layout loaded:', layoutData);
             }
 
-            // 지금의 전역 상태 사본 — initGlobal 은 이 사본에 쓴다(앱의 전역 상태 원본을 바꾸지 않는다, @since engine-v1.83.0)
-            const globalState: Record<string, unknown> = { ...(this.getGlobalStateFn ? this.getGlobalStateFn() : this.globalState) };
-            const routeContext = this.getRouteContextFn?.() ?? { route: {}, query: {} };
-
             // 4. data_sources fetch (레이아웃에 정의된 API 데이터 로드)
             let fetchedData: Record<string, unknown> = {};
-            // 일반 화면과 같이 if 조건으로 거른다 — 꺼진 모듈의 공통 데이터 소스를 오류 화면에서 부르지 않게 (@since engine-v1.84.0)
-            const dataSources: DataSource[] = this.dataSourceManager.filterByCondition(
-                layoutData.data_sources || [],
-                { route: routeContext.route as Record<string, string>, query: routeContext.query as Record<string, string>, _global: globalState }
-            );
+            const dataSources: DataSource[] = layoutData.data_sources || [];
 
             if (dataSources.length > 0) {
                 if (this.debug) {
@@ -277,11 +197,6 @@ export class ErrorPageHandler {
                 const allSourcesToFetch = [...blockingSources, ...progressiveSources];
 
                 if (allSourcesToFetch.length > 0) {
-                    // 레이아웃 전역 헤더를 오류 화면 요청에도 싣는다 (@since engine-v1.83.0)
-                    const globalHeaders = this.getGlobalHeadersFn?.() ?? [];
-                    if (globalHeaders.length > 0) {
-                        this.dataSourceManager.setGlobalHeaders(globalHeaders);
-                    }
                     try {
                         fetchedData = await this.dataSourceManager.fetchDataSources(
                             allSourcesToFetch,
@@ -302,11 +217,11 @@ export class ErrorPageHandler {
             // 5. initGlobal/initLocal 처리 (fetch된 데이터를 _global/_local에 매핑)
             const localInit: Record<string, unknown> = {};
             if (dataSources.length > 0) {
-                this.processInitOptions(dataSources, fetchedData, localInit, globalState);
+                this.processInitOptions(dataSources, fetchedData, localInit);
 
                 if (this.debug) {
                     logger.log('initOptions processed:', {
-                        globalKeys: Object.keys(globalState),
+                        globalKeys: Object.keys(this.globalState),
                         localKeys: Object.keys(localInit),
                     });
                 }
@@ -316,20 +231,9 @@ export class ErrorPageHandler {
             const dataContext: Record<string, unknown> = {
                 ...fetchedData,
                 errorCode,
-                route: routeContext.route,
-                query: routeContext.query,
-                _global: globalState,
+                _global: { ...this.globalState },
                 _local: { ...localInit },
             };
-
-            // 적재·데이터 fetch 동안 다른 화면으로 옮겼으면 그 화면을 덮지 않는다
-            if (shouldRender && !shouldRender()) {
-                logger.log(`Error page ${errorCode} skipped — route changed while loading`);
-                return false;
-            }
-
-            // 바인딩 값 캐시는 경로 글자가 키라 앞 오류 화면(`{{errorCode}}`)·앞 화면 값이 남는다 — 그리기 직전에 비운다 (@since engine-v1.83.0)
-            this.clearBindingCacheFn?.();
 
             await this.renderFunction({
                 containerId,
@@ -366,13 +270,11 @@ export class ErrorPageHandler {
      * @param dataSources 데이터 소스 정의 배열
      * @param fetchedData fetch된 데이터 (키: 데이터소스 ID)
      * @param localInit _local 상태에 매핑할 데이터 (출력용)
-     * @param globalState initGlobal 을 쓸 전역 상태 사본 (출력용, @since engine-v1.83.0 — 종전에는 앱 전역 상태 원본에 썼다)
      */
     private processInitOptions(
         dataSources: DataSource[],
         fetchedData: Record<string, unknown>,
-        localInit: Record<string, unknown>,
-        globalState: Record<string, unknown>
+        localInit: Record<string, unknown>
     ): void {
         for (const source of dataSources) {
             const rawData = fetchedData[source.id] as any;
@@ -401,11 +303,11 @@ export class ErrorPageHandler {
 
                 for (const item of items) {
                     if (typeof item === 'string') {
-                        globalState[item] = actualData;
+                        this.globalState[item] = actualData;
                         logger.log(`initGlobal: ${source.id}.data -> _global.${item}`);
                     } else if (typeof item === 'object' && item !== null && 'key' in item) {
                         const { key, path } = item as { key: string; path?: string };
-                        globalState[key] = path ? this.getValueByPath(actualData, path) : actualData;
+                        this.globalState[key] = path ? this.getValueByPath(actualData, path) : actualData;
                         logger.log(`initGlobal: ${source.id}.data${path ? '.' + path : ''} -> _global.${key}`);
                     }
                 }
@@ -425,14 +327,12 @@ export class ErrorPageHandler {
     }
 
     /**
-     * 전역 상태를 바꿉니다 (`getGlobalState` 를 주지 않은 생성에서 쓰는 값).
-     *
-     * 넘긴 상태로 교체한다 (@since engine-v1.83.0) — 종전에는 병합해, 앱에서 지운 키가 오류 화면에 남았다.
+     * 전역 상태를 업데이트합니다.
      *
      * @param state 새로운 전역 상태
      */
     updateGlobalState(state: Record<string, unknown>): void {
-        this.globalState = { ...state };
+        this.globalState = { ...this.globalState, ...state };
     }
 
     /**

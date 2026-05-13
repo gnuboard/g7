@@ -1,6 +1,6 @@
 # 템플릿 라우트/언어 파일 규칙
 
-> **관련 문서**: [README.md](README.md) | [template-basics.md](template-basics.md) | [template-security.md](template-security.md)
+> **관련 문서**: [index.md](index.md) | [template-basics.md](template-basics.md) | [template-security.md](template-security.md)
 
 ---
 
@@ -23,8 +23,6 @@
 
 **위치**: `/templates/[vendor-template]/routes.json`
 
-> 같은 주소가 `routes/custom.php`(개발자 화면, 7.2.0+)에도 등록되어 있으면 서버가 개발자 화면을 먼저 내보내므로 routes.json 의 그 경로는 열리지 않는다. 엔진 화면 안의 이동도 그 주소로는 전체 페이지 이동이 된다. [개발자 화면 가이드](../custom-development.md#2-라우트컨트롤러뷰)
-
 ### 구조
 
 ```json
@@ -35,7 +33,7 @@
       "layout_name": "admin_dashboard",
       "permissions": ["core.dashboard.view"],
       "meta": {
-        "title": "$t:admin.dashboard.title",
+        "title": "대시보드",
         "icon": "dashboard"
       }
     },
@@ -44,7 +42,7 @@
       "layout_name": "admin_users_list",
       "permissions": ["core.users.view"],
       "meta": {
-        "title": "$t:admin.users.page_title",
+        "title": "사용자 관리",
         "icon": "users"
       }
     }
@@ -59,40 +57,7 @@
 | `path` | 라우트 경로 (Laravel 라우트와 일치) |
 | `layout_name` | `template_layouts` 테이블의 레이아웃명 |
 | `permissions` | 필요한 권한 배열 (빈 배열 시 인증만 필요) |
-| `meta` | 메타 정보 (제목, 아이콘 등). `title` 은 번역 키(`$t:키`)로 적는다 — 화면 편집기의 라우트 목록과 방문 통계의 페이지 제목에 그대로 보이므로 한국어를 박으면 다른 언어 사이트에서도 한국어로 나온다 |
-| `requires` | (선택) 이 라우트에 필요한 활성 모듈·플러그인. 아래 [requires — 모듈이 꺼지면 라우트 숨기기](#requires--모듈이-꺼지면-라우트-숨기기) |
-
-### requires — 모듈이 꺼지면 라우트 숨기기
-
-> 코어 7.1.4 이상
-
-게시판·쇼핑몰처럼 **선택해서 쓰는 모듈**의 화면을 템플릿 routes.json 이 선언할 때, 그 모듈이 꺼진 사이트에서는 라우트를 내지 않게 한다.
-
-```json
-{
-  "routes": [
-    { "path": "*/boards", "layout": "board/boards", "requires": { "modules": ["sirsoft-board"] } },
-    { "path": "*/mypage/inquiries", "layout": "mypage/inquiries", "requires": { "modules": ["sirsoft-ecommerce", "sirsoft-board"] } },
-    { "path": "*/address", "layout": "address", "requires": { "plugins": ["sirsoft-daum_postcode"] } }
-  ]
-}
-```
-
-| 규칙 | 설명 |
-|------|------|
-| 형식 | `{"modules": [식별자, …], "plugins": [식별자, …]}` — 둘 다 선택 |
-| 판정 | 적힌 확장이 **모두** 활성일 때만 라우트를 낸다. 하나라도 꺼져 있으면 그 라우트는 없는 것처럼 404 가 된다 |
-| 적용 범위 | 공개 routes 응답(`/api/templates/{id}/routes.json`) · 검색봇 화면(SEO) · 사이트맵 · 정적 사본이 같은 결과를 쓴다. 모듈이 선언한 routes(모듈의 `resources/routes/` 아래 user.json·admin.json)에도 같은 키를 쓸 수 있다 |
-| 적용 안 함 | 레이아웃 편집기(꺼진 모듈의 화면도 편집할 수 있다) · `php artisan layout:check-installed` 의 라우트 대조 |
-| 형식 오류 | 모르는 유형(`templates`·`module` 등)·배열이 아닌 값·문자열이 아닌 식별자는 그 조건을 무시하고 라우트를 **남긴 뒤** 서버 로그에 경고를 남긴다. `php artisan layout:check-installed` 는 이런 라우트를 「routes.json requires 형식 오류」 표(템플릿·경로·출처·사유)로 알린다. `--json` 출력은 같은 목록을 `route_requires_warnings`(`template`·`path`·`source`·`code`·`type`·`reason`, `code` 는 `not_object`·`unknown_type`·`not_list`·`non_string_id`)로 싣는다 — 경고라서 `ok`·종료 코드에는 반영되지 않는다(7.1.4~). 오타 하나로 라우트가 조용히 사라지지 않게 하기 위해서다. 식별자 철자가 틀린 경우(`sirsoft-bord`)는 형식이 맞으므로 「꺼진 모듈」로 판정돼 라우트가 빠진다 |
-| 갱신 시점 | 모듈·플러그인을 켜고 끌 때 routes 캐시가 함께 갱신된다 |
-| 옛 코어 | 7.1.3 이하 코어는 이 키를 모르므로 모든 라우트를 낸다. 화면 안의 링크·데이터 호출은 레이아웃에서 `_global.activeModules` 로 따로 가린다 ([전역 상태 — 시스템 주입 속성](../frontend/state-management.md#시스템-주입-속성)) |
-
-`requires` 는 라우트만 숨긴다. 그 모듈을 가리키는 메뉴·링크·데이터소스는 레이아웃에서 같은 판정으로 가린다:
-
-```json
-{ "id": "boards", "endpoint": "/api/modules/sirsoft-board/boards", "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}" }
-```
+| `meta` | 메타 정보 (제목, 아이콘 등) |
 
 ---
 
@@ -108,7 +73,7 @@
 | 항목 | 규칙 |
 |------|------|
 | **파일 위치** | `/templates/{vendor-template}/lang/{locale}.json` |
-| **로케일 형식** | BCP 47 — 언어팩 설치 규칙과 같다 (예: `ko`, `ja`, `fil`, `zh-Hant`, `fil-PH`, `es-419`, 20자 이하). 판정 기준 클래스는 `App\Support\LocaleTag` |
+| **로케일 형식** | ISO 639-1 (2자리 소문자, 예: `ko`, `en`, `ja`) |
 | **제공 방식** | API 엔드포인트 (`/api/templates/{identifier}/lang/{locale}`) |
 | **검증** | supported_locales 확인, 경로 탈출 방지 |
 
@@ -179,9 +144,9 @@ class TemplateService
             return ['success' => false, 'error' => 'Template not active'];
         }
 
-        // 2. 로케일 형식 검증 — 언어팩 설치 규칙(BCP 47, 20자 이하)과 같은 기준
-        if (! LocaleTag::isValid($locale)) {
-            return ['success' => false, 'error' => 'invalid_locale'];
+        // 2. 로케일 형식 검증 (ISO 639-1: 2자리 소문자)
+        if (!preg_match('/^[a-z]{2}$/', $locale)) {
+            return ['success' => false, 'error' => 'Invalid locale format'];
         }
 
         // 3. supported_locales 확인
@@ -281,12 +246,12 @@ class TemplateLanguageController extends PublicBaseController
 ```php
 // routes/api.php
 Route::get('/templates/{identifier}/lang/{locale}', [TemplateLanguageController::class, 'getLanguageFile'])
-    ->where('locale', LocaleTag::PATTERN_BODY)
+    ->where('locale', '[a-z]{2}')
     ->name('api.templates.language');
 ```
 
 **주요 포인트**:
-- `where('locale', LocaleTag::PATTERN_BODY)`: 언어팩 설치 규칙(BCP 47)의 정규형만 허용 — `fil-ph`·`ZH-HANT`·`fil_PH` 는 404
+- `where('locale', '[a-z]{2}')`: ISO 639-1 형식만 허용
 - 라우트 레벨에서 잘못된 형식 차단
 
 ---
@@ -296,12 +261,9 @@ Route::get('/templates/{identifier}/lang/{locale}', [TemplateLanguageController:
 ### React 컴포넌트
 
 ```javascript
-// 템플릿 컴포넌트에서 언어 파일 로드
-import { apiUrl } from '../support/apiUrl';
-
+// React 컴포넌트에서 언어 파일 로드
 const loadLanguageFile = async (identifier, locale) => {
-  // 서버를 부르는 주소는 apiUrl() 을 거친다 (아래 주의 참조)
-  const response = await fetch(apiUrl(`/api/templates/${identifier}/lang/${locale}`));
+  const response = await fetch(`/api/templates/${identifier}/lang/${locale}`);
 
   if (!response.ok) {
     console.error('Failed to load language file');
@@ -315,29 +277,6 @@ const loadLanguageFile = async (identifier, locale) => {
 const translations = await loadLanguageFile('sirsoft-admin_basic', 'ko');
 console.log(translations.dashboard.title); // "대시보드"
 ```
-
-#### 주소는 루트 상대로 두지 않는다
-
-사이트는 문서 루트가 아니라 하위 폴더에 설치될 수 있다(`https://host/g7/`). 서버가 렌더한 주소에는
-마운트 접두사가 이미 붙어 있지만 **브라우저 안에서 만드는 주소**는 루트 상대(`/api/…`)라 접두사가 없다.
-`fetch('/api/…')` 를 그대로 쓰면 그 요청이 사이트 밖으로 나가고, 증상은 오류가 아니라
-**버튼이 조용히 무반응**인 것이다(문서 루트에 다른 사이트가 있으면 그쪽 응답을 받는다).
-
-확장 번들(템플릿·모듈·플러그인)은 코어와 **별도 IIFE** 라 코어 함수를 `import` 할 수 없다. 그래서 각 확장이
-`apiUrl.ts` 헬퍼를 바이트 동일한 사본으로 갖는다 — 코어 `G7Core.url.api` 에 위임하고, 코어 초기화 전에
-불릴 수 있는 진입점을 위해 같은 SSoT(`G7Config.basePath`)를 읽는 폴백을 둔다. 템플릿에서의 위치는
-`templates/{vendor-template}/src/support/apiUrl.ts` 다.
-
-| 헬퍼 | 부르는 자리 |
-|------|-------------|
-| `apiUrl(path)` | 서버를 부르는 주소 — `fetch` / `XMLHttpRequest` / `EventSource` |
-| `sitePath(path)` | 브라우저가 그대로 여는 주소 — `location.href` 대입 · `location.assign/replace` · `window.open` · `history.pushState`/`replaceState` 의 세 번째 인자 |
-| `routePath(path)` | 받아 온 주소를 라우트와 대조할 때 — `location.pathname` 을 패턴과 비교하기 직전에 접두사를 **벗긴다**. 벗기지 않으면 하위 폴더 사이트에서 그 대조가 항상 불일치라 해당 기능이 조용히 사라진다 |
-
-화면 링크(`<a href>`)는 템플릿 `A` 컴포넌트가 접두사를 붙이므로 날 `<a>` 를 직접 쓰지 않는다.
-`navigate` 핸들러의 `path` 는 라우터가 붙이므로 확장이 직접 붙이지 않는다.
-
-> 상세: [G7Core 전역 API 레퍼런스 "주소 조립 (G7Core.url)"](../frontend/g7core-api.md)
 
 ### Blade 템플릿
 
@@ -358,7 +297,7 @@ console.log(translations.dashboard.title); // "대시보드"
 ### 허용 (✅)
 
 - 활성화된 템플릿만 접근 가능
-- BCP 47 형식 검증 (`App\Support\LocaleTag::isValid()` — 문자 집합이 `[A-Za-z0-9-]` 뿐이라 경로 문자가 들어갈 수 없다)
+- ISO 639-1 형식 검증 (정규표현식: `/^[a-z]{2}$/`)
 - supported_locales 화이트리스트 확인
 - 경로 트래버설 방지 (`realpath()`, `str_starts_with()`)
 - 파일 확장자 검증 (`.json`만 허용)
@@ -421,8 +360,7 @@ console.log(translations.dashboard.title); // "대시보드"
 
 ## 관련 문서
 
-- [README.md](README.md) - 확장 시스템 가이드 인덱스
+- [index.md](index.md) - 확장 시스템 가이드 인덱스
 - [template-basics.md](template-basics.md) - 템플릿 기초
 - [template-security.md](template-security.md) - 템플릿 보안 정책
 - [template-caching.md](template-caching.md) - 템플릿 캐싱 전략
-- [custom-development.md](../custom-development.md) - 개발자 화면(`routes/custom.php`)과 템플릿 라우트의 우선순위

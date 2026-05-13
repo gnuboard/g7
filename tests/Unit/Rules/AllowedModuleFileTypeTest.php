@@ -13,7 +13,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_allows_javascript_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
 
         $jsFiles = ['dist/js/module.iife.js', 'app.js', 'script.mjs'];
 
@@ -32,7 +32,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_allows_css_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $validator = Validator::make(
             ['path' => 'dist/css/module.css'],
             ['path' => $rule]
@@ -46,7 +46,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_allows_json_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $validator = Validator::make(
             ['path' => 'data/config.json'],
             ['path' => $rule]
@@ -56,20 +56,17 @@ class AllowedModuleFileTypeTest extends TestCase
     }
 
     /**
-     * Source Map 파일이 차단되는지 테스트
-     *
-     * 소스맵에는 원본 코드 전문(sourcesContent)이 담기므로 서빙되면 안 된다.
-     * 플러그인/템플릿과 동일한 정책이다.
+     * Source Map 파일이 허용되는지 테스트
      */
-    public function test_blocks_sourcemap_files(): void
+    public function test_allows_sourcemap_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $validator = Validator::make(
             ['path' => 'dist/js/module.iife.js.map'],
             ['path' => $rule]
         );
 
-        $this->assertFalse($validator->passes());
+        $this->assertTrue($validator->passes());
     }
 
     /**
@@ -77,7 +74,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_allows_image_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $imageFiles = [
             'images/logo.png',
             'images/photo.jpg',
@@ -103,7 +100,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_allows_font_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $fontFiles = [
             'fonts/roboto.woff',
             'fonts/roboto.woff2',
@@ -127,7 +124,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_blocks_php_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $phpFiles = ['malicious.php', 'index.phtml', 'shell.php3', 'backdoor.php4', 'exploit.php5', 'hack.phps'];
 
         foreach ($phpFiles as $file) {
@@ -145,7 +142,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_blocks_executable_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $executableFiles = ['malware.exe', 'script.sh', 'run.bat', 'library.dll', 'module.so'];
 
         foreach ($executableFiles as $file) {
@@ -163,7 +160,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_blocks_script_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $scriptFiles = ['exploit.py', 'attack.rb', 'hack.pl', 'malicious.cgi'];
 
         foreach ($scriptFiles as $file) {
@@ -181,7 +178,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_blocks_server_script_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $serverScriptFiles = ['page.asp', 'app.aspx', 'index.jsp', 'api.jspx'];
 
         foreach ($serverScriptFiles as $file) {
@@ -199,7 +196,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_blocks_config_files(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $configFiles = ['.htaccess', '.htpasswd', '.env'];
 
         foreach ($configFiles as $file) {
@@ -217,7 +214,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_case_insensitive_blocking(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $caseVariations = ['MALICIOUS.PHP', 'Exploit.Php', 'SCRIPT.EXE', 'attack.PY'];
 
         foreach ($caseVariations as $file) {
@@ -241,10 +238,9 @@ class AllowedModuleFileTypeTest extends TestCase
         $this->assertContains('js', $extensions);
         $this->assertContains('css', $extensions);
         $this->assertContains('json', $extensions);
+        $this->assertContains('map', $extensions);
         $this->assertContains('png', $extensions);
         $this->assertContains('woff2', $extensions);
-        // 소스맵은 원본 코드가 노출되므로 허용 목록에서 제외 (플러그인/템플릿과 동일)
-        $this->assertNotContains('map', $extensions);
     }
 
     /**
@@ -252,7 +248,7 @@ class AllowedModuleFileTypeTest extends TestCase
      */
     public function test_blocks_non_string_value(): void
     {
-        $rule = new AllowedModuleFileType;
+        $rule = new AllowedModuleFileType();
         $validator = Validator::make(
             ['path' => ['array', 'value']],
             ['path' => $rule]

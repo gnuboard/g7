@@ -2,9 +2,6 @@
 
 namespace App\Seo;
 
-use App\Helpers\TimezoneHelper;
-use App\Support\LocalizedValue;
-use App\Thumbnails\ThumbnailUrl;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 
@@ -28,9 +25,6 @@ class PipeRegistry
      */
     private string $locale = 'ko';
 
-    /**
-     * 빌트인 파이프를 등록한 레지스트리를 생성합니다.
-     */
     public function __construct()
     {
         $this->registerBuiltInPipes();
@@ -40,7 +34,6 @@ class PipeRegistry
      * 현재 로케일을 설정합니다.
      *
      * @param  string  $locale  로케일 코드
-     * @return void 반환값 없음
      */
     public function setLocale(string $locale): void
     {
@@ -251,8 +244,6 @@ class PipeRegistry
      * 빌트인 파이프를 등록합니다.
      *
      * 프론트엔드 PipeRegistry.ts의 builtInPipes와 동일한 파이프를 PHP로 구현합니다.
-     *
-     * @return void 반환값 없음
      */
     private function registerBuiltInPipes(): void
     {
@@ -466,29 +457,9 @@ class PipeRegistry
                 return (string) $value;
             }
 
-            // 대상 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148 — 화면 localized 파이프와 같은 SSoT)
-            return LocalizedValue::pick($value, $locale ?? $this->locale) ?? '';
-        };
+            $targetLocale = $locale ?? $this->locale;
 
-        // ============================================
-        // 이미지 썸네일 파이프 (프론트 thumb·thumbSrcset 의 짝)
-        // ============================================
-
-        // 미러가 없으면 봇 화면이 조용히 원본 주소를 낸다 — 판정·덧붙임은 ThumbnailUrl 한 곳이다.
-        $this->pipes['thumb'] = function (mixed $value, mixed $preset = 'sm'): mixed {
-            if (! is_string($value) || $value === '' || ! is_string($preset) || trim($preset) === '') {
-                return $value;
-            }
-
-            return ThumbnailUrl::for($value, trim($preset));
-        };
-
-        $this->pipes['thumbSrcset'] = function (mixed $value, mixed $preset = 'sm'): string {
-            if (! is_string($value) || $value === '' || ! is_string($preset)) {
-                return '';
-            }
-
-            return ThumbnailUrl::srcset($value, $preset);
+            return $value[$targetLocale] ?? $value['ko'] ?? $value['en'] ?? (string) (reset($value) ?: '');
         };
     }
 
@@ -511,17 +482,11 @@ class PipeRegistry
             if ($value instanceof \DateTimeInterface) {
                 return Carbon::instance($value);
             }
-            // 순간값(숫자 타임스탬프·오프셋이 붙은 문자열)은 보는 사람 시간대로 옮긴다.
-            // 오프셋 없는 문자열은 이미 표시용 벽시계 값(예: *_formatted)으로 보고 그대로 둔다.
             if (is_numeric($value)) {
-                return Carbon::createFromTimestamp((int) $value)->setTimezone(TimezoneHelper::getUserTimezone());
+                return Carbon::createFromTimestamp((int) $value);
             }
             if (is_string($value)) {
-                $parsed = Carbon::parse($value);
-
-                return preg_match('/(Z|[+-]\d{2}:?\d{2})$/i', trim($value)) === 1
-                    ? $parsed->setTimezone(TimezoneHelper::getUserTimezone())
-                    : $parsed;
+                return Carbon::parse($value);
             }
         } catch (\Throwable) {
             return null;

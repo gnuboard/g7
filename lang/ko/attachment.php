@@ -27,14 +27,6 @@ return [
         'file_required' => '파일을 선택해주세요.',
         'file_invalid' => '유효한 파일이 아닙니다.',
         'file_max' => '파일 크기는 :maxMB를 초과할 수 없습니다.',
-        'file_extension_invalid' => '허용되지 않는 파일 형식입니다. 허용 형식: :extensions',
-        'file_mimetype_invalid' => '파일 내용이 허용된 형식과 일치하지 않습니다. 허용 형식: :extensions',
-        'file_empty' => '빈 파일(0바이트)은 올릴 수 없습니다.',
-        'favicon_svg_unsafe' => '파비콘 SVG 에 허용하지 않는 내용이 있습니다(스크립트·이벤트 속성·외부 참조·foreignObject 등, 100KB 이하): :reasons',
-        'favicon_ico_invalid' => '올바른 ICO 파일이 아닙니다.',
-        'favicon_too_large' => '파비콘 파일은 최대 :maxMB 까지 올릴 수 있습니다.',
-        'template_field_too_large' => '이 칸에는 최대 :max 까지 올릴 수 있습니다.',
-        'template_field_not_accepting' => '이 칸은 파일을 받지 않습니다.',
         'files_required' => '파일을 선택해주세요.',
         'files_array' => '파일 형식이 올바르지 않습니다.',
         'files_min' => '최소 1개 이상의 파일을 선택해주세요.',
@@ -71,35 +63,4 @@ return [
     'access_denied' => '이 첨부파일에 대한 접근 권한이 없습니다.',
     'update_denied' => '이 첨부파일에 대한 수정 권한이 없습니다.',
     'delete_denied' => '이 첨부파일에 대한 삭제 권한이 없습니다.',
-    // `attachments:prune-orphans` 명령 출력
-    'console' => [
-        'prune_orphans' => [
-            'disabled' => '고아 첨부 자동 정리가 꺼져 있어 실행하지 않았습니다. (upload.orphan_cleanup_enabled = false)',
-            'retention_below_minimum' => '고아 첨부 보존기간이 1일 미만이어서 정리를 수행하지 않았습니다.',
-            'dry_run' => '보존기간(:days일) 경과 고아 첨부: :count건',
-            'done' => '보존기간(:days일) 경과 고아 첨부 :scanned건 중 :deleted건을 삭제했습니다. (실패 :failed건)',
-        ],
-    ],
-    // 본문 미디어(편집기 본문에 넣는 이미지·동영상·오디오) — 코어 계약 (#883, 7.1.5)
-    'content_media' => [
-        'kind' => [
-            'image' => '이미지',
-            'video' => '동영상',
-            'audio' => '오디오',
-        ],
-        'validation' => [
-            'file_invalid' => '올바른 파일이 아닙니다.',
-            'kind_not_allowed' => '본문에 넣을 수 없는 파일 형식입니다. 넣을 수 있는 형식: :allowed',
-            'extension_not_allowed' => ':kind 파일은 :extensions 형식만 넣을 수 있습니다.',
-            'file_too_large' => ':kind 파일은 :maxMB 를 넘을 수 없습니다.',
-            'max_per_document_range' => '문서당 최대 개수는 1~:max 사이여야 합니다.',
-            'max_size_range' => ':kind 파일당 크기는 1~:maxMB 사이여야 합니다.',
-            'extension_not_candidate' => ':kind 형식은 :extensions 중에서만 고를 수 있습니다.',
-        ],
-        'errors' => [
-            'limit_exceeded' => '본문에 넣은 미디어가 :attempted개입니다. 문서당 최대 :limit개까지 넣을 수 있습니다.',
-            'upload_failed' => '본문 미디어를 올리지 못했습니다.',
-            'not_found' => '본문 미디어를 찾을 수 없습니다.',
-        ],
-    ],
 ];

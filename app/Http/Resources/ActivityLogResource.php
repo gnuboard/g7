@@ -2,8 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\ActivityLog;
-use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 
@@ -37,62 +35,17 @@ class ActivityLogResource extends BaseApiResource
             'properties' => $this->properties,
             ...$this->formatChangesOutput($this->changes),
             'has_changes' => ! empty($this->changes),
-            // 삭제 직전 기록(영구 삭제·선언 정리) — 펼친 자리에 대상·사유·본문 미리보기를 보인다(#888)
-            'snapshot' => $snapshot = $this->deletionSnapshot(),
-            'has_details' => ! empty($this->changes) || $snapshot !== null,
             'actor_name' => $this->actor_name,
             'user' => $this->user ? [
                 'uuid' => $this->user->uuid,
-                // 관리자 영역의 표시 이름. 실명은 회원 조회 권한이 있는 관리자에게만 real_name 으로 더해진다.
-                ...$this->memberNameFields($this->user, $request),
-                'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
+                'name' => $this->user->name,
+                'email' => $this->user->email,
             ] : [
-                // 행위자 회원이 없는 로그(시스템·CLI·탈퇴 회원). uuid 를 null 로 명시해 화면이
-                // 회원 메뉴(회원 정보 보기·이 사람으로 검색)를 그리지 않게 한다 — 종전에는 uuid
-                // 키가 없어 /admin/users/undefined 로 이동했다.
-                'uuid' => null,
-                'name' => $this->actor_name,
+                'name' => __('common.system'),
             ],
             'ip_address' => $this->ip_address,
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
             ...$this->resourceMeta($request),
-        ];
-    }
-
-    /** 본문 미리보기 길이 상한 (문자) */
-    private const SNAPSHOT_PREVIEW_LIMIT = 2000;
-
-    /**
-     * 삭제 직전 기록이면 화면용 요약을 만듭니다 — 아니면 null.
-     *
-     * 대상(화면·조각·키), 사유, 본문 미리보기(앞 2000자), 남긴 버전 수, 버전 상한을 넘었는지.
-     *
-     * @return array{target: string, reason: string|null, reason_label: string|null, content_preview: string, content_truncated: bool, version_count: int, versions_truncated: bool, has_operator_overrides: bool}|null 요약
-     */
-    private function deletionSnapshot(): ?array
-    {
-        $action = (string) $this->action;
-
-        // 판정은 「삭제 직전 기록만 보기」 필터(ActivityLog::scopeDeletionSnapshots)와 한 벌이다
-        if (! ActivityLog::isDeletionSnapshotAction($action)) {
-            return null;
-        }
-
-        $p = is_array($this->properties) ? $this->properties : [];
-        $target = (string) ($p['name'] ?? (isset($p['fragment_key']) ? ($p['target_name'] ?? '').':'.$p['fragment_key'] : ($p['key'] ?? $p['translation_key'] ?? '')));
-        $body = $p['content'] ?? $p['snapshot'] ?? $p['values'] ?? null;
-        $json = $body === null ? '' : (string) json_encode($body, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $reason = isset($p['reason']) ? (string) $p['reason'] : null;
-
-        return [
-            'target' => $target,
-            'reason' => $reason,
-            'reason_label' => $reason !== null ? __('activity_log.deletion_reason.'.$reason) : null,
-            'content_preview' => mb_substr($json, 0, self::SNAPSHOT_PREVIEW_LIMIT),
-            'content_truncated' => mb_strlen($json) > self::SNAPSHOT_PREVIEW_LIMIT,
-            'version_count' => is_array($p['versions'] ?? null) ? count($p['versions']) : 0,
-            'versions_truncated' => (bool) ($p['versions_truncated'] ?? false),
-            'has_operator_overrides' => (bool) ($p['has_operator_overrides'] ?? true),
         ];
     }
 
@@ -102,7 +55,7 @@ class ActivityLogResource extends BaseApiResource
      * 단일 수정: changes = [{field, old, new}, ...]
      * 일괄 수정: bulk_changes = [{model_id, changes: [{field, old, new}, ...]}, ...]
      *
-     * @param  array|null  $changes  원본 changes 데이터
+     * @param array|null $changes 원본 changes 데이터
      * @return array changes + bulk_changes 키를 포함하는 배열
      */
     private function formatChangesOutput(?array $changes): array
@@ -137,7 +90,7 @@ class ActivityLogResource extends BaseApiResource
      * 모델의 현재 $activityLogFields에서 'enum'으로 정의된 필드는
      * 동적으로 enum 라벨을 해석합니다.
      *
-     * @param  array  $changes  변경 항목 배열
+     * @param array $changes 변경 항목 배열
      * @return array 번역된 변경 항목 배열
      */
     private function translateChangeGroup(array $changes): array
@@ -184,7 +137,7 @@ class ActivityLogResource extends BaseApiResource
     /**
      * 다국어 JSON 값에서 현재 로케일 텍스트를 추출합니다.
      *
-     * @param  mixed  $value  원본 값 (배열이면 로케일 추출, 아니면 그대로 반환)
+     * @param mixed $value 원본 값 (배열이면 로케일 추출, 아니면 그대로 반환)
      * @return mixed 로케일 텍스트 또는 원본 값
      */
     private function extractLocaleValue(mixed $value): mixed
@@ -193,7 +146,10 @@ class ActivityLogResource extends BaseApiResource
             return $value;
         }
 
-        return LocalizedValue::pick($value, App::getLocale()) ?? $value;
+        $locale = App::getLocale();
+        $fallback = config('app.fallback_locale', 'en');
+
+        return $value[$locale] ?? $value[$fallback] ?? reset($value) ?: $value;
     }
 
     /**
@@ -224,8 +180,8 @@ class ActivityLogResource extends BaseApiResource
      * 하위 호환: 기존 DB 레코드에서 count 파라미터가 누락되어
      * `:count` 플레이스홀더가 미치환되는 문제를 방지합니다.
      *
-     * @param  string  $description  번역된 설명 문자열
-     * @param  array|null  $changes  변경 사항 데이터
+     * @param string $description 번역된 설명 문자열
+     * @param array|null $changes 변경 사항 데이터
      * @return string 보정된 설명 문자열
      */
     private function resolveUnreplacedCount(string $description, ?array $changes): string

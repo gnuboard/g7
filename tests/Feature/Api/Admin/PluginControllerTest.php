@@ -3,17 +3,12 @@
 namespace Tests\Feature\Api\Admin;
 
 use App\Enums\ExtensionOwnerType;
-use App\Enums\PermissionType;
-use App\Exceptions\PluginOperationException;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\PluginService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
-use Tests\Concerns\FakesGithubReleases;
 use Tests\TestCase;
 
 /**
@@ -23,24 +18,15 @@ use Tests\TestCase;
  */
 class PluginControllerTest extends TestCase
 {
-    use FakesGithubReleases;
     use RefreshDatabase;
 
     private User $admin;
 
     private string $token;
 
-    /**
-     * GitHub 접속을 막고 플러그인 전체 권한을 가진 관리자와 인증 토큰을 준비한다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
-
-        // 설치·업데이트 확인 경로의 GitHub 실제 접속 차단(테스트마다 최대 10초 대기 방지)
-        $this->fakeGithubReleases();
 
         $this->admin = $this->createAdminUser();
         $this->token = $this->admin->createToken('test-token')->plainTextToken;
@@ -50,7 +36,6 @@ class PluginControllerTest extends TestCase
      * 관리자 역할 생성 및 할당
      *
      * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
-     * @return User admin 역할과 테스트 역할이 할당된 사용자
      */
     private function createAdminUser(array $permissions = ['core.plugins.read', 'core.plugins.install', 'core.plugins.activate', 'core.plugins.uninstall']): User
     {
@@ -66,7 +51,7 @@ class PluginControllerTest extends TestCase
                     'description' => json_encode(['ko' => $permIdentifier.' 권한', 'en' => $permIdentifier.' Permission']),
                     'extension_type' => ExtensionOwnerType::Core,
                     'extension_identifier' => 'core',
-                    'type' => PermissionType::Admin,
+                    'type' => \App\Enums\PermissionType::Admin,
                 ]
             );
             $permissionIds[] = $permission->id;
@@ -111,8 +96,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
-     *
-     * @return static Bearer 토큰과 JSON Accept 헤더가 설정된 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -128,12 +111,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 인증 없이 플러그인 목록 조회 시 401 반환
-     *
-     * @scenario case=auth_guard
-     *
-     * @effects unauthenticated_request_rejected_401
-     *
-     * @return void 반환값 없음
      */
     public function test_index_returns_401_without_authentication(): void
     {
@@ -144,12 +121,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 권한 없이 플러그인 목록 조회 시 403 반환
-     *
-     * @scenario case=auth_guard
-     *
-     * @effects missing_permission_rejected_403
-     *
-     * @return void 반환값 없음
      */
     public function test_index_returns_403_without_permission(): void
     {
@@ -180,12 +151,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 설치 권한 없이 플러그인 설치 시 403 반환
-     *
-     * @scenario case=auth_guard
-     *
-     * @effects missing_permission_rejected_403
-     *
-     * @return void 반환값 없음
      */
     public function test_install_returns_403_without_install_permission(): void
     {
@@ -209,12 +174,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 페이지네이션된 플러그인 목록 조회 성공
-     *
-     * @scenario case=listing
-     *
-     * @effects plugin_list_paginated_with_filters
-     *
-     * @return void 반환값 없음
      */
     public function test_index_returns_paginated_plugins(): void
     {
@@ -239,12 +198,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 단일 검색어 필터 테스트
-     *
-     * @scenario case=listing
-     *
-     * @effects plugin_list_paginated_with_filters
-     *
-     * @return void 반환값 없음
      */
     public function test_index_supports_search_filter(): void
     {
@@ -256,12 +209,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 다중 검색 필터 테스트
-     *
-     * @scenario case=listing
-     *
-     * @effects plugin_list_paginated_with_filters
-     *
-     * @return void 반환값 없음
      */
     public function test_index_supports_multiple_filters(): void
     {
@@ -281,12 +228,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 상태 필터 테스트
-     *
-     * @scenario case=listing
-     *
-     * @effects plugin_list_paginated_with_filters
-     *
-     * @return void 반환값 없음
      */
     public function test_index_supports_status_filter(): void
     {
@@ -302,12 +243,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 설치된 플러그인만 조회
-     *
-     * @scenario case=listing
-     *
-     * @effects installed_endpoint_returns_only_installed
-     *
-     * @return void 반환값 없음
      */
     public function test_installed_returns_only_installed_plugins(): void
     {
@@ -319,12 +254,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 전체 권한 유저의 index 응답에 abilities 포함 확인
-     *
-     * @scenario case=listing
-     *
-     * @effects list_abilities_reflect_user_permissions
-     *
-     * @return void 반환값 없음
      */
     public function test_index_returns_abilities_for_full_permission_user(): void
     {
@@ -338,12 +267,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * read 전용 유저의 index 응답에 abilities false 확인
-     *
-     * @scenario case=listing
-     *
-     * @effects list_abilities_reflect_user_permissions
-     *
-     * @return void 반환값 없음
      */
     public function test_index_returns_false_abilities_for_read_only_user(): void
     {
@@ -367,12 +290,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 플러그인 상세 조회 성공
-     *
-     * @scenario case=detail
-     *
-     * @effects plugin_detail_returned_or_404
-     *
-     * @return void 반환값 없음
      */
     public function test_show_returns_plugin_details(): void
     {
@@ -386,12 +303,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 존재하지 않는 플러그인 조회 시 404 반환
-     *
-     * @scenario case=detail
-     *
-     * @effects plugin_detail_returned_or_404
-     *
-     * @return void 반환값 없음
      */
     public function test_show_returns_404_for_nonexistent_plugin(): void
     {
@@ -406,12 +317,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * plugin_name 필수 검증
-     *
-     * @scenario case=lifecycle
-     *
-     * @effects lifecycle_request_validates_plugin_name
-     *
-     * @return void 반환값 없음
      */
     public function test_install_validates_plugin_name_required(): void
     {
@@ -423,12 +328,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * plugin_name 최대 길이 검증
-     *
-     * @scenario case=lifecycle
-     *
-     * @effects lifecycle_request_validates_plugin_name
-     *
-     * @return void 반환값 없음
      */
     public function test_install_validates_plugin_name_max_length(): void
     {
@@ -446,12 +345,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * plugin_name 필수 검증
-     *
-     * @scenario case=lifecycle
-     *
-     * @effects lifecycle_request_validates_plugin_name
-     *
-     * @return void 반환값 없음
      */
     public function test_activate_validates_plugin_name_required(): void
     {
@@ -463,12 +356,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 활성화 요청 성공 (유효한 플러그인이 있는 경우)
-     *
-     * @scenario case=lifecycle
-     *
-     * @effects lifecycle_request_succeeds_for_valid_plugin
-     *
-     * @return void 반환값 없음
      */
     public function test_activate_returns_success_for_valid_plugin(): void
     {
@@ -488,12 +375,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * plugin_name 필수 검증
-     *
-     * @scenario case=lifecycle
-     *
-     * @effects lifecycle_request_validates_plugin_name
-     *
-     * @return void 반환값 없음
      */
     public function test_deactivate_validates_plugin_name_required(): void
     {
@@ -509,12 +390,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * plugin_name 필수 검증
-     *
-     * @scenario case=lifecycle
-     *
-     * @effects lifecycle_request_validates_plugin_name
-     *
-     * @return void 반환값 없음
      */
     public function test_uninstall_validates_plugin_name_required(): void
     {
@@ -526,12 +401,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 제거 요청 성공 (유효한 플러그인이 있는 경우)
-     *
-     * @scenario case=lifecycle
-     *
-     * @effects lifecycle_request_succeeds_for_valid_plugin
-     *
-     * @return void 반환값 없음
      */
     public function test_uninstall_returns_success(): void
     {
@@ -550,17 +419,11 @@ class PluginControllerTest extends TestCase
 
     /**
      * 플러그인 활성화 시 필요한 의존성이 충족되지 않으면 409 경고 응답
-     *
-     * @scenario case=dependency_guard
-     *
-     * @effects dependency_conflict_returns_409_unless_forced
-     *
-     * @return void 반환값 없음
      */
     public function test_activate_returns_409_when_dependencies_not_met(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('activatePlugin')
             ->with('test-plugin', false)
             ->andReturn([
@@ -574,7 +437,7 @@ class PluginControllerTest extends TestCase
                 ],
                 'message' => '플러그인 활성화를 위해 필요한 의존성이 충족되지 않았습니다.',
             ]);
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/activate', [
@@ -605,17 +468,11 @@ class PluginControllerTest extends TestCase
 
     /**
      * 플러그인 활성화 시 force=true로 의존성 경고 무시하고 강제 활성화
-     *
-     * @scenario case=dependency_guard
-     *
-     * @effects dependency_conflict_returns_409_unless_forced
-     *
-     * @return void 반환값 없음
      */
     public function test_activate_with_force_bypasses_dependency_check(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('activatePlugin')
             ->with('test-plugin', true)
             ->andReturn([
@@ -626,7 +483,7 @@ class PluginControllerTest extends TestCase
                     'status' => 'active',
                 ],
             ]);
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/activate', [
@@ -641,17 +498,11 @@ class PluginControllerTest extends TestCase
 
     /**
      * 플러그인 비활성화 시 의존하는 확장이 있으면 409 경고 응답
-     *
-     * @scenario case=dependency_guard
-     *
-     * @effects dependency_conflict_returns_409_unless_forced
-     *
-     * @return void 반환값 없음
      */
     public function test_deactivate_returns_409_when_dependents_exist(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('deactivatePlugin')
             ->with('test-plugin', false)
             ->andReturn([
@@ -666,7 +517,7 @@ class PluginControllerTest extends TestCase
                 ],
                 'message' => '이 플러그인에 의존하는 활성화된 확장이 있습니다.',
             ]);
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/deactivate', [
@@ -690,17 +541,11 @@ class PluginControllerTest extends TestCase
 
     /**
      * 플러그인 비활성화 시 force=true로 의존성 경고 무시하고 강제 비활성화
-     *
-     * @scenario case=dependency_guard
-     *
-     * @effects dependency_conflict_returns_409_unless_forced
-     *
-     * @return void 반환값 없음
      */
     public function test_deactivate_with_force_bypasses_dependent_check(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('deactivatePlugin')
             ->with('test-plugin', true)
             ->andReturn([
@@ -711,7 +556,7 @@ class PluginControllerTest extends TestCase
                     'status' => 'inactive',
                 ],
             ]);
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/deactivate', [
@@ -730,17 +575,11 @@ class PluginControllerTest extends TestCase
 
     /**
      * 플러그인 활성화 응답에 assets 정보가 포함됨
-     *
-     * @scenario case=lifecycle
-     *
-     * @effects lifecycle_response_includes_plugin_assets
-     *
-     * @return void 반환값 없음
      */
     public function test_activate_response_includes_assets_when_plugin_has_assets(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('activatePlugin')
             ->with('test-plugin', false)
             ->andReturn([
@@ -756,7 +595,7 @@ class PluginControllerTest extends TestCase
                     ],
                 ],
             ]);
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/activate', [
@@ -773,17 +612,11 @@ class PluginControllerTest extends TestCase
 
     /**
      * 플러그인 비활성화 응답에 assets 정보가 포함됨
-     *
-     * @scenario case=lifecycle
-     *
-     * @effects lifecycle_response_includes_plugin_assets
-     *
-     * @return void 반환값 없음
      */
     public function test_deactivate_response_includes_assets_when_plugin_has_assets(): void
     {
         // Arrange: PluginService를 Mock
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('deactivatePlugin')
             ->with('test-plugin', false)
             ->andReturn([
@@ -799,7 +632,7 @@ class PluginControllerTest extends TestCase
                     ],
                 ],
             ]);
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         // Act
         $response = $this->authRequest()->postJson('/api/admin/plugins/deactivate', [
@@ -819,18 +652,12 @@ class PluginControllerTest extends TestCase
 
     /**
      * CHANGELOG.md가 있는 플러그인의 changelog를 조회합니다.
-     *
-     * @scenario case=changelog
-     *
-     * @effects changelog_parsed_or_empty_when_missing
-     *
-     * @return void 반환값 없음
      */
     public function test_changelog_returns_parsed_entries(): void
     {
         $pluginPath = base_path('plugins/test-changelog-plg');
-        File::ensureDirectoryExists($pluginPath);
-        File::put($pluginPath.'/CHANGELOG.md', "# Changelog\n\n## [0.1.1] - 2026-02-25\n\n### Fixed\n- 버그 수정\n");
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($pluginPath);
+        \Illuminate\Support\Facades\File::put($pluginPath.'/CHANGELOG.md', "# Changelog\n\n## [0.1.1] - 2026-02-25\n\n### Fixed\n- 버그 수정\n");
 
         try {
             $response = $this->authRequest()->getJson('/api/admin/plugins/test-changelog-plg/changelog');
@@ -839,18 +666,12 @@ class PluginControllerTest extends TestCase
                 ->assertJsonPath('data.changelog.0.version', '0.1.1')
                 ->assertJsonPath('data.changelog.0.categories.0.name', 'Fixed');
         } finally {
-            File::deleteDirectory($pluginPath);
+            \Illuminate\Support\Facades\File::deleteDirectory($pluginPath);
         }
     }
 
     /**
      * CHANGELOG.md가 없는 플러그인은 빈 배열을 반환합니다.
-     *
-     * @scenario case=changelog
-     *
-     * @effects changelog_parsed_or_empty_when_missing
-     *
-     * @return void 반환값 없음
      */
     public function test_changelog_returns_empty_for_missing_file(): void
     {
@@ -862,12 +683,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 인증 없이 changelog 조회 시 401 반환
-     *
-     * @scenario case=changelog
-     *
-     * @effects unauthenticated_request_rejected_401
-     *
-     * @return void 반환값 없음
      */
     public function test_changelog_returns_401_without_authentication(): void
     {
@@ -881,12 +696,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 잘못된 형식의 플러그인 식별자로 설치 요청 시 422 반환
-     *
-     * @scenario case=identifier_validation
-     *
-     * @effects invalid_identifier_rejected_422
-     *
-     * @return void 반환값 없음
      */
     public function test_install_returns_422_for_invalid_identifier_format(): void
     {
@@ -900,12 +709,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 숫자로 시작하는 단어가 포함된 플러그인 식별자로 설치 요청 시 422 반환
-     *
-     * @scenario case=identifier_validation
-     *
-     * @effects invalid_identifier_rejected_422
-     *
-     * @return void 반환값 없음
      */
     public function test_install_returns_422_for_digit_starting_identifier(): void
     {
@@ -919,12 +722,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 특수문자가 포함된 플러그인 식별자로 설치 요청 시 422 반환
-     *
-     * @scenario case=identifier_validation
-     *
-     * @effects invalid_identifier_rejected_422
-     *
-     * @return void 반환값 없음
      */
     public function test_install_returns_422_for_special_char_identifier(): void
     {
@@ -942,12 +739,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 인증 없이 파일 업로드 설치 시 401 반환
-     *
-     * @scenario case=install_from_file
-     *
-     * @effects unauthenticated_request_rejected_401
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_401_without_authentication(): void
     {
@@ -958,12 +749,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 파일 없이 업로드 설치 요청 시 422 반환
-     *
-     * @scenario case=install_from_file
-     *
-     * @effects upload_install_validates_zip_file
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_422_without_file(): void
     {
@@ -975,12 +760,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 잘못된 파일 형식으로 업로드 시 422 반환
-     *
-     * @scenario case=install_from_file
-     *
-     * @effects upload_install_validates_zip_file
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_422_for_invalid_file_type(): void
     {
@@ -998,12 +777,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 파일 크기 초과 시 422 반환
-     *
-     * @scenario case=install_from_file
-     *
-     * @effects upload_install_validates_zip_file
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_422_for_oversized_file(): void
     {
@@ -1025,12 +798,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 설치 권한 없이 파일 업로드 설치 시 403 반환
-     *
-     * @scenario case=install_from_file
-     *
-     * @effects missing_permission_rejected_403
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_403_without_install_permission(): void
     {
@@ -1047,16 +814,10 @@ class PluginControllerTest extends TestCase
 
     /**
      * 유효한 ZIP 파일 업로드 시 PluginService::installFromZipFile 호출 확인
-     *
-     * @scenario case=install_from_file
-     *
-     * @effects upload_install_delegates_to_service
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_calls_service_with_valid_zip(): void
     {
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('installFromZipFile')
             ->once()
             ->andReturn([
@@ -1064,7 +825,7 @@ class PluginControllerTest extends TestCase
                 'name' => 'Test Plugin',
                 'version' => '1.0.0',
             ]);
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         $file = UploadedFile::fake()->create('plugin.zip', 100, 'application/zip');
 
@@ -1079,20 +840,14 @@ class PluginControllerTest extends TestCase
 
     /**
      * PluginService에서 RuntimeException 발생 시 422 반환
-     *
-     * @scenario case=install_from_file
-     *
-     * @effects install_domain_error_422_general_error_500
-     *
-     * @return void 반환값 없음
      */
-    public function test_install_from_file_returns_422_on_domain_exception(): void
+    public function test_install_from_file_returns_422_on_runtime_exception(): void
     {
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('installFromZipFile')
             ->once()
-            ->andThrow(new PluginOperationException('plugins.errors.plugin_json_not_found'));
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+            ->andThrow(new \RuntimeException('plugin.json을 찾을 수 없습니다.'));
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         $file = UploadedFile::fake()->create('plugin.zip', 100, 'application/zip');
 
@@ -1101,25 +856,19 @@ class PluginControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', __('plugins.errors.plugin_json_not_found'));
+        $response->assertJsonPath('message', 'plugin.json을 찾을 수 없습니다.');
     }
 
     /**
      * PluginService에서 일반 Exception 발생 시 500 반환
-     *
-     * @scenario case=install_from_file
-     *
-     * @effects install_domain_error_422_general_error_500
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_file_returns_500_on_general_exception(): void
     {
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('installFromZipFile')
             ->once()
             ->andThrow(new \Exception('예상치 못한 오류'));
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         $file = UploadedFile::fake()->create('plugin.zip', 100, 'application/zip');
 
@@ -1136,12 +885,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 인증 없이 GitHub 설치 시 401 반환
-     *
-     * @scenario case=install_from_github
-     *
-     * @effects unauthenticated_request_rejected_401
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_401_without_authentication(): void
     {
@@ -1152,12 +895,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * GitHub URL 없이 설치 요청 시 422 반환
-     *
-     * @scenario case=install_from_github
-     *
-     * @effects github_install_validates_url
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_422_without_url(): void
     {
@@ -1169,12 +906,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 잘못된 GitHub URL 형식으로 요청 시 422 반환
-     *
-     * @scenario case=install_from_github
-     *
-     * @effects github_install_validates_url
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_422_for_invalid_url(): void
     {
@@ -1188,12 +919,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * GitHub이 아닌 URL로 요청 시 422 반환
-     *
-     * @scenario case=install_from_github
-     *
-     * @effects github_install_validates_url
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_422_for_non_github_url(): void
     {
@@ -1207,12 +932,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 유효한 GitHub URL 형식 테스트
-     *
-     * @scenario case=install_from_github
-     *
-     * @effects github_install_validates_url
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_accepts_valid_github_url(): void
     {
@@ -1230,12 +949,6 @@ class PluginControllerTest extends TestCase
 
     /**
      * 설치 권한 없이 GitHub 설치 시 403 반환
-     *
-     * @scenario case=install_from_github
-     *
-     * @effects missing_permission_rejected_403
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_403_without_install_permission(): void
     {
@@ -1254,25 +967,19 @@ class PluginControllerTest extends TestCase
 
     /**
      * 유효한 GitHub URL로 설치 시 PluginService::installFromGithub 호출 확인
-     *
-     * @scenario case=install_from_github
-     *
-     * @effects github_install_delegates_to_service
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_calls_service_with_valid_url(): void
     {
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('installFromGithub')
             ->once()
-            ->with('https://github.com/sirsoft/sample-plugin', \Mockery::type(\App\Extension\Integrity\PackageIntegrityOptions::class))
+            ->with('https://github.com/sirsoft/sample-plugin')
             ->andReturn([
                 'identifier' => 'sirsoft-sampleplugin',
                 'name' => 'Sample Plugin',
                 'version' => '1.0.0',
             ]);
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/plugins/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-plugin',
@@ -1285,45 +992,33 @@ class PluginControllerTest extends TestCase
 
     /**
      * PluginService에서 RuntimeException 발생 시 422 반환
-     *
-     * @scenario case=install_from_github
-     *
-     * @effects install_domain_error_422_general_error_500
-     *
-     * @return void 반환값 없음
      */
-    public function test_install_from_github_returns_422_on_domain_exception(): void
+    public function test_install_from_github_returns_422_on_runtime_exception(): void
     {
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('installFromGithub')
             ->once()
-            ->andThrow(new PluginOperationException('plugins.errors.github_repo_not_found'));
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+            ->andThrow(new \RuntimeException('GitHub 저장소를 다운로드할 수 없습니다.'));
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/plugins/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-plugin',
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('message', __('plugins.errors.github_repo_not_found'));
+        $response->assertJsonPath('message', 'GitHub 저장소를 다운로드할 수 없습니다.');
     }
 
     /**
      * PluginService에서 일반 Exception 발생 시 500 반환
-     *
-     * @scenario case=install_from_github
-     *
-     * @effects install_domain_error_422_general_error_500
-     *
-     * @return void 반환값 없음
      */
     public function test_install_from_github_returns_500_on_general_exception(): void
     {
-        $pluginServiceMock = \Mockery::mock(PluginService::class);
+        $pluginServiceMock = \Mockery::mock(\App\Services\PluginService::class);
         $pluginServiceMock->shouldReceive('installFromGithub')
             ->once()
             ->andThrow(new \Exception('예상치 못한 오류'));
-        $this->app->instance(PluginService::class, $pluginServiceMock);
+        $this->app->instance(\App\Services\PluginService::class, $pluginServiceMock);
 
         $response = $this->authRequest()->postJson('/api/admin/plugins/install-from-github', [
             'github_url' => 'https://github.com/sirsoft/sample-plugin',

@@ -4,14 +4,9 @@ namespace App\Extension\Traits;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
-use App\Extension\Cache\CacheDriverFactory;
-use App\Extension\Support\ExtensionStatusMemo;
-use App\Extension\Support\IntegrationReverseIndex;
-use App\Models\IdentityPolicy;
+use App\Extension\Cache\CoreCacheDriver;
 use App\Models\Module;
-use App\Support\InstallerContext;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -33,58 +28,14 @@ trait CachesModuleStatus
             return [];
         }
 
-        return self::rememberNonEmpty(
+        return self::resolveStatusCache()->remember(
             'ext.modules.active_identifiers',
             fn () => Module::where('status', ExtensionStatus::Active->value)
                 ->pluck('identifier')
-                ->toArray()
+                ->toArray(),
+            (int) g7_core_settings('cache.extension_status_ttl', 86400),
+            ['ext.status', 'ext.modules']
         );
-    }
-
-    /**
-     * 목록 캐시를 조회하되, 빈 결과는 캐시에 남기지 않습니다.
-     *
-     * 확장 상태는 install/activate/update 도중 잠시 active 가 아닌 값으로 바뀐다. 그 창에서
-     * 누가 이 목록을 읽으면 빈 배열이 TTL(기본 하루) 동안 굳어, 작업이 끝난 뒤에도 모든 확장이
-     * 꺼진 것처럼 동작한다 — 관리자 화면이 통째로 404 가 되고 스스로 회복되지 않는다.
-     * 빈 결과는 재계산 비용이 사실상 없는 단순 조회이므로 캐시하지 않는 편이 안전하다.
-     *
-     * @param  string  $key  캐시 키
-     * @param  \Closure  $resolver  목록 계산 클로저
-     * @return array<string> 조회된 identifier 배열
-     */
-    private static function rememberNonEmpty(string $key, \Closure $resolver): array
-    {
-        // 같은 요청 안에서는 저장소를 한 번만 읽는다 — 목록은 요청 안에서 바뀌지 않고, 바뀌면 무효화가 메모도 비운다(#860)
-        $memo = ExtensionStatusMemo::current();
-        $memoized = $memo?->get($key);
-
-        if ($memoized !== null) {
-            return $memoized;
-        }
-
-        $cache = self::resolveStatusCache();
-        $cached = $cache->get($key);
-
-        if (is_array($cached) && $cached !== []) {
-            $memo?->put($key, $cached);
-
-            return $cached;
-        }
-
-        $fresh = $resolver();
-
-        if ($fresh !== []) {
-            $memo?->put($key, $fresh);
-            $cache->put(
-                $key,
-                $fresh,
-                (int) g7_core_settings('cache.extension_status_ttl', 86400),
-                ['ext.status', 'ext.modules']
-            );
-        }
-
-        return $fresh;
     }
 
     /**
@@ -98,31 +49,15 @@ trait CachesModuleStatus
             return [];
         }
 
-        return self::rememberNonEmpty(
+        return self::resolveStatusCache()->remember(
             'ext.modules.installed_identifiers',
             fn () => Module::whereIn('status', [
                 ExtensionStatus::Active->value,
                 ExtensionStatus::Inactive->value,
-            ])->pluck('identifier')->toArray()
+            ])->pluck('identifier')->toArray(),
+            (int) g7_core_settings('cache.extension_status_ttl', 86400),
+            ['ext.status', 'ext.modules']
         );
-    }
-
-    /**
-     * 상태와 무관하게 행이 있는 식별자 목록을 조회합니다 — 목록 화면의 「미설치」 판정용.
-     *
-     * 「설치됨」 캐시 목록은 active·inactive 만 센다. 진행 중 상태(installing·updating·uninstalling)에 멈춘 확장까지
-     * 미설치로 보면 관리자 목록에 같은 확장이 「업데이트 중」 카드와 「미설치 · 설치」 카드로 겹쳐 나온다(7.1.1 출시 전).
-     * 목록을 그릴 때만 부르므로 캐시하지 않는다.
-     *
-     * @return array<int, string> 식별자 목록
-     */
-    public static function getRecordedModuleIdentifiers(): array
-    {
-        if (! self::isExtensionTableReady('modules')) {
-            return [];
-        }
-
-        return Module::pluck('identifier')->toArray();
     }
 
     /**
@@ -136,21 +71,6 @@ trait CachesModuleStatus
         $cache = self::resolveStatusCache();
         $cache->forget('ext.modules.active_identifiers');
         $cache->forget('ext.modules.installed_identifiers');
-
-        // 같은 요청의 목록 메모도 버린다 — 상태를 바꾼 요청의 뒤쪽(활성화 직후 provider boot 등)이 새 목록을 보게(#860)
-        ExtensionStatusMemo::forgetCurrent('modules');
-
-        // 같은 요청에서 만든 선택 연동 역맵도 버린다 — 상태가 바뀐 뒤의 「연동 중인 확장」 응답이 옛 목록이 되지 않게(7.1.4)
-        IntegrationReverseIndex::flushCurrent();
-
-        // 본인인증 정책 색인(route·hook)은 활성 확장의 정책만 담는다 — 상태가 바뀌면 함께 비운다. 업데이트 중(updating)에는
-        // 그 확장의 정책이 빠진 색인이 만들어질 수 있어, 상태 복원(성공·롤백)이 비우지 않으면 캐시 수명 동안 그 확장의
-        // 정책이 걸리지 않는다(#869). 비우기 실패가 상태 변경을 깨지 않게 경고만 남긴다.
-        try {
-            IdentityPolicy::flushRouteScopeCache();
-        } catch (\Throwable $e) {
-            Log::warning('모듈 상태 변경 뒤 본인인증 정책 색인을 비우지 못했습니다', ['error' => $e->getMessage()]);
-        }
     }
 
     /**
@@ -159,17 +79,10 @@ trait CachesModuleStatus
      * 설치 완료 상태(`config('app.installer_completed')`)일 때는 테이블 존재를
      * 전제로 하여 `Schema::hasTable()` 호출을 건너뜁니다. 인스톨러 이전 환경이나
      * 테스트에서는 기존 체크 경로로 폴백합니다.
-     *
-     * 단, 마이그레이션 계열 명령 실행 중에는 `INSTALLER_COMPLETED=true` 라도 테이블이
-     * 아직 없을 수 있으므로(빈 DB 새 서버에 .env 복사 후 migrate 전) fast-path 를
-     * 신뢰하지 않고 실제 `Schema::hasTable()` 폴백으로 진입합니다.
-     *
-     * @param  string  $table  확인할 테이블 이름
-     * @return bool 테이블을 조회할 수 있으면 true
      */
     private static function isExtensionTableReady(string $table): bool
     {
-        if (! InstallerContext::isSchemaMutatingCommand() && config('app.installer_completed')) {
+        if (config('app.installer_completed')) {
             return true;
         }
 
@@ -184,15 +97,13 @@ trait CachesModuleStatus
 
     /**
      * CacheInterface 인스턴스를 lazy 조회합니다 (register 시점 안전).
-     *
-     * @return CacheInterface 컨테이너의 캐시, 조회 실패 시 기본 드라이버
      */
     private static function resolveStatusCache(): CacheInterface
     {
         try {
             return app(CacheInterface::class);
         } catch (\Throwable $e) {
-            return CacheDriverFactory::core();
+            return new CoreCacheDriver(config('cache.default', 'array'));
         }
     }
 }

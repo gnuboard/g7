@@ -21,8 +21,6 @@ describe('Router', () => {
   });
 
   describe('loadRoutes', () => {
-    // @scenario entry=initial
-    // @effects routes_loaded_from_api_with_cache_version
     it('API에서 라우트 목록을 성공적으로 로드해야 합니다', async () => {
       const mockRoutes = [
         { path: '/admin', layout: 'dashboard' },
@@ -44,8 +42,6 @@ describe('Router', () => {
     });
 
     // @since engine-v1.19.0
-    // @scenario entry=initial
-    // @effects routes_loaded_from_api_with_cache_version
     it('cacheVersion 전달 시 ?v= 쿼리 파라미터를 URL에 부착해야 합니다', async () => {
       const mockRoutes = [{ path: '/admin', layout: 'dashboard' }];
 
@@ -66,8 +62,6 @@ describe('Router', () => {
     });
 
     // @since engine-v1.19.0
-    // @scenario entry=initial
-    // @effects routes_loaded_from_api_with_cache_version
     it('cacheVersion 이 0 또는 undefined 이면 쿼리 파라미터 없이 호출해야 합니다', async () => {
       const mockRoutes = [{ path: '/admin', layout: 'dashboard' }];
 
@@ -86,8 +80,6 @@ describe('Router', () => {
       expect(global.fetch).toHaveBeenLastCalledWith('/api/templates/sirsoft-admin_basic/routes.json');
     });
 
-    // @scenario entry=initial
-    // @effects routes_loaded_from_api_with_cache_version
     it('API 호출 실패 시 에러를 던져야 합니다', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: false,
@@ -97,8 +89,6 @@ describe('Router', () => {
       await expect(router.loadRoutes()).rejects.toThrow('Failed to load routes: Not Found');
     });
 
-    // @scenario entry=initial
-    // @effects routes_loaded_from_api_with_cache_version
     it('success가 false일 때 에러를 던져야 합니다', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -111,8 +101,6 @@ describe('Router', () => {
       await expect(router.loadRoutes()).rejects.toThrow('Failed to load routes from API');
     });
 
-    // @scenario entry=initial
-    // @effects routes_loaded_from_api_with_cache_version
     it('잘못된 데이터 형식 시 에러를 던져야 합니다', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
@@ -147,8 +135,6 @@ describe('Router', () => {
       await router.loadRoutes();
     });
 
-    // @scenario path_shape=plain
-    // @effects route_pattern_matches_and_extracts_params
     it('정확한 경로 매칭을 수행해야 합니다', () => {
       const result = router.match('/admin');
 
@@ -157,8 +143,6 @@ describe('Router', () => {
       expect(result?.params).toEqual({});
     });
 
-    // @scenario path_shape=plain
-    // @effects route_pattern_matches_and_extracts_params
     it('동적 파라미터를 추출해야 합니다', () => {
       const result = router.match('/admin/users/123');
 
@@ -167,8 +151,6 @@ describe('Router', () => {
       expect(result?.params).toEqual({ id: '123' });
     });
 
-    // @scenario path_shape=plain
-    // @effects route_pattern_matches_and_extracts_params
     it('다중 동적 파라미터를 추출해야 합니다', () => {
       const result = router.match('/admin/posts/456/comments/789');
 
@@ -181,8 +163,6 @@ describe('Router', () => {
     });
 
     // TODO: 와일드카드 패턴(*)은 아직 미구현 - 현재는 */만 언어 prefix용으로 지원
-    // @scenario path_shape=plain
-    // @effects route_pattern_matches_and_extracts_params
     it.skip('와일드카드 패턴을 매칭해야 합니다', () => {
       const result = router.match('/admin/files/documents/2024/report.pdf');
 
@@ -191,24 +171,18 @@ describe('Router', () => {
       expect(result?.params).toEqual({});
     });
 
-    // @scenario path_shape=plain
-    // @effects route_pattern_matches_and_extracts_params
     it('매칭되지 않는 경로는 null을 반환해야 합니다', () => {
       const result = router.match('/unknown/path');
 
       expect(result).toBeNull();
     });
 
-    // @scenario path_shape=plain
-    // @effects route_pattern_matches_and_extracts_params
     it('부분 매칭은 수행하지 않아야 합니다', () => {
       const result = router.match('/admin/users/123/extra');
 
       expect(result).toBeNull();
     });
 
-    // @scenario path_shape=plain
-    // @effects route_pattern_matches_and_extracts_params
     it('첫 번째로 매칭되는 라우트를 반환해야 합니다', () => {
       // /admin/users는 /admin/users와 /admin/users/:id 둘 다 매칭 가능
       // 하지만 정확히 매칭되는 /admin/users를 먼저 반환해야 함
@@ -217,198 +191,6 @@ describe('Router', () => {
       expect(result).not.toBeNull();
       expect(result?.route.layout).toBe('user-list');
       expect(result?.params).toEqual({});
-    });
-
-    // 브라우저가 끝 슬래시가 붙은 경로(`/admin/`)로 진입해도, 끝 슬래시 없는
-    // 라우트 패턴(`/admin`)에 매칭되어야 한다. 미정규화 시 어떤 라우트에도
-    // 매칭되지 않아 404 로 떨어지고, 미인증 진입 시 로그인 리다이렉트 대신
-    // 404 가 노출되는 회귀가 발생한다.
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('끝 슬래시가 붙은 경로도 끝 슬래시 없는 라우트에 매칭해야 합니다', () => {
-      const result = router.match('/admin/');
-
-      expect(result).not.toBeNull();
-      expect(result?.route.layout).toBe('dashboard');
-      expect(result?.params).toEqual({});
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('끝 슬래시가 붙은 하위 경로도 매칭해야 합니다', () => {
-      const result = router.match('/admin/users/');
-
-      expect(result).not.toBeNull();
-      expect(result?.route.layout).toBe('user-list');
-      expect(result?.params).toEqual({});
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('끝 슬래시가 붙은 동적 파라미터 경로도 매칭하고 파라미터를 추출해야 합니다', () => {
-      const result = router.match('/admin/users/123/');
-
-      expect(result).not.toBeNull();
-      expect(result?.route.layout).toBe('user-detail');
-      expect(result?.params).toEqual({ id: '123' });
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('연속된 끝 슬래시도 정규화해야 합니다', () => {
-      const result = router.match('/admin//');
-
-      expect(result).not.toBeNull();
-      expect(result?.route.layout).toBe('dashboard');
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('루트 경로(/)는 끝 슬래시를 제거하지 않아야 합니다', () => {
-      // 루트만 있는 라우트를 임시로 주입해 루트 정규화 안전성을 검증한다.
-      router.setRoutes([{ path: '/', layout: 'home' }]);
-      const result = router.match('/');
-
-      expect(result).not.toBeNull();
-      expect(result?.route.layout).toBe('home');
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('중간의 연속 슬래시도 하나로 줄여 매칭해야 합니다 (공개#156)', () => {
-      const result = router.match('/admin//users');
-
-      expect(result).not.toBeNull();
-      expect(result?.route.layout).toBe('user-list');
-    });
-  });
-
-  // 끝·연속 슬래시 주소로 들어오면 매칭만 정규형으로 하던 종전 동작은 routeChange.path·로그인 redirect·
-  // 이후 화면 동일성 판정에 원본 `/x/` 를 남겼다. 진입 즉시 주소창을 정규형으로 바꾸고 이후 전부 정규형을 쓴다.
-  describe('주소 정규화 — 끝·연속 슬래시 주소를 정규형으로 replaceState (공개#156)', () => {
-    const originalLocation = window.location;
-    let fakeLocation: { pathname: string; search: string; hash: string; href: string };
-    let historyEntries: number;
-    let replaceSpy: ReturnType<typeof vi.spyOn>;
-    let pushSpy: ReturnType<typeof vi.spyOn>;
-
-    const setUrl = (url: string) => {
-      const parsed = new URL(url, 'https://site.test');
-      fakeLocation.pathname = parsed.pathname;
-      fakeLocation.search = parsed.search;
-      fakeLocation.hash = parsed.hash;
-    };
-
-    beforeEach(() => {
-      fakeLocation = { pathname: '/', search: '', hash: '', href: '' };
-      Object.defineProperty(window, 'location', { value: fakeLocation, writable: true, configurable: true });
-      historyEntries = 1;
-      replaceSpy = vi.spyOn(window.history, 'replaceState').mockImplementation((_state, _title, url) => {
-        if (url) setUrl(String(url));
-      });
-      pushSpy = vi.spyOn(window.history, 'pushState').mockImplementation((_state, _title, url) => {
-        historyEntries++;
-        if (url) setUrl(String(url));
-      });
-      router.setRoutes([
-        { path: '/', layout: 'home' },
-        { path: '/admin/settings', layout: 'admin_settings' },
-        { path: '/admin/users', layout: 'admin_users' },
-        { path: '/board/:slug', layout: 'board_index' },
-        { path: '/admin/secure', layout: 'admin_secure', auth_required: true, auth_type: 'admin' as const },
-      ]);
-    });
-
-    afterEach(() => {
-      replaceSpy.mockRestore();
-      pushSpy.mockRestore();
-      Object.defineProperty(window, 'location', { value: originalLocation, writable: true, configurable: true });
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('끝 슬래시 주소는 쿼리·해시를 보존해 정규형으로 1회 replaceState 하고 routeChange.path 도 정규형이다', async () => {
-      setUrl('/admin/settings/?tab=a#h');
-      const routeChangeHandler = vi.fn();
-      router.on('routeChange', routeChangeHandler);
-
-      await router.navigateToCurrentPath();
-
-      expect(replaceSpy).toHaveBeenCalledTimes(1);
-      expect(replaceSpy.mock.calls[0][2]).toBe('/admin/settings?tab=a#h');
-      expect(routeChangeHandler).toHaveBeenCalledWith(expect.objectContaining({ path: '/admin/settings', query: { tab: 'a' } }));
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('연속 슬래시 주소도 정규형으로 바꾼다', async () => {
-      setUrl('/board//free');
-      const routeChangeHandler = vi.fn();
-      router.on('routeChange', routeChangeHandler);
-
-      await router.navigateToCurrentPath();
-
-      expect(fakeLocation.pathname).toBe('/board/free');
-      expect(routeChangeHandler).toHaveBeenCalledWith(expect.objectContaining({ path: '/board/free', params: { slug: 'free' } }));
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('정규형·루트 주소는 replaceState 하지 않는다', async () => {
-      setUrl('/');
-      await router.navigateToCurrentPath();
-      setUrl('/admin/users?page=2');
-      await router.navigateToCurrentPath();
-
-      expect(replaceSpy).not.toHaveBeenCalled();
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('슬래시 주소로 navigate 해도 히스토리는 1개만 늘고 최종 주소는 정규형이다', async () => {
-      const routeChangeHandler = vi.fn();
-      router.on('routeChange', routeChangeHandler);
-
-      router.navigate('/admin/users/');
-      await vi.waitFor(() => expect(routeChangeHandler).toHaveBeenCalled());
-
-      expect(historyEntries).toBe(2);
-      expect(fakeLocation.pathname).toBe('/admin/users');
-      expect(routeChangeHandler).toHaveBeenCalledWith(expect.objectContaining({ path: '/admin/users' }));
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('미인증 진입의 로그인 복귀 주소에 끝 슬래시가 남지 않는다', async () => {
-      const authManager = {
-        isAuthenticated: vi.fn().mockReturnValue(false),
-        getAuthType: vi.fn().mockReturnValue(null),
-        checkAuth: vi.fn().mockResolvedValue(false),
-        getLastCheckStatus: vi.fn().mockReturnValue('unauthenticated'),
-        isRecentlyUnavailable: vi.fn().mockReturnValue(false),
-        getLoginRedirectUrl: vi.fn((_type: string, path: string) => `/admin/login?redirect=${encodeURIComponent(path)}`),
-      };
-      (AuthManager.getInstance as any).mockReturnValue(authManager);
-      setUrl('/admin/secure/');
-
-      await router.navigateToCurrentPath();
-
-      expect(authManager.getLoginRedirectUrl).toHaveBeenCalledWith('admin', '/admin/secure');
-      expect(fakeLocation.href).toBe('/admin/login?redirect=%2Fadmin%2Fsecure');
-    });
-
-    // @scenario path_shape=trailing_slash
-    // @effects client_router_normalizes_address_with_replace_state
-    it('뒤로 가기로 끝 슬래시 항목에 돌아와도 정규형으로 바꾼다', async () => {
-      const routeChangeHandler = vi.fn();
-      router.on('routeChange', routeChangeHandler);
-      setUrl('/admin/users/');
-
-      window.dispatchEvent(new PopStateEvent('popstate'));
-      await vi.waitFor(() => expect(routeChangeHandler).toHaveBeenCalled());
-
-      expect(fakeLocation.pathname).toBe('/admin/users');
-      expect(routeChangeHandler).toHaveBeenCalledWith(expect.objectContaining({ path: '/admin/users' }));
     });
   });
 
@@ -429,8 +211,6 @@ describe('Router', () => {
       await router.loadRoutes();
     });
 
-    // @scenario path_shape=plain
-    // @effects route_pattern_matches_and_extracts_params
     it('영숫자와 하이픈, 언더스코어를 포함한 파라미터를 추출해야 합니다', () => {
       const result = router.match('/test/user-id_123');
 
@@ -438,8 +218,6 @@ describe('Router', () => {
       expect(result?.params.param).toBe('user-id_123');
     });
 
-    // @scenario path_shape=plain
-    // @effects route_pattern_matches_and_extracts_params
     it('슬래시가 포함된 파라미터는 매칭하지 않아야 합니다', () => {
       const result = router.match('/test/invalid/path');
 
@@ -448,8 +226,6 @@ describe('Router', () => {
   });
 
   describe('getRoutes', () => {
-    // @scenario entry=initial
-    // @effects routes_loaded_from_api_with_cache_version
     it('로드된 라우트 목록의 복사본을 반환해야 합니다', async () => {
       const mockRoutes = [
         { path: '/admin', layout: 'dashboard' },
@@ -492,8 +268,6 @@ describe('Router', () => {
       await router.loadRoutes();
     });
 
-    // @scenario entry=initial
-    // @effects redirect_route_navigates_to_target
     it('리다이렉트 라우트를 매칭해야 합니다', () => {
       const result = router.match('/admin');
 
@@ -502,8 +276,6 @@ describe('Router', () => {
       expect(result?.route.auth_required).toBe(true);
     });
 
-    // @scenario entry=initial
-    // @effects redirect_route_navigates_to_target
     it('일반 라우트는 layout을 가져야 합니다', () => {
       const result = router.match('/admin/dashboard');
 
@@ -512,8 +284,6 @@ describe('Router', () => {
       expect(result?.route.redirect).toBeUndefined();
     });
 
-    // @scenario entry=initial
-    // @effects redirect_route_navigates_to_target
     it('navigateToCurrentPath에서 리다이렉트 라우트를 처리해야 합니다', async () => {
       // 리다이렉트 후 pathname이 변경되도록 시뮬레이션
       let currentPathname = '/admin';
@@ -533,7 +303,6 @@ describe('Router', () => {
         isAuthenticated: vi.fn().mockReturnValue(false),
         getAuthType: vi.fn().mockReturnValue(null),
         checkAuth: vi.fn().mockResolvedValue(true),
-        isRecentlyUnavailable: vi.fn().mockReturnValue(false),
         getLoginRedirectUrl: vi.fn(),
       };
       (AuthManager.getInstance as any).mockReturnValue(mockAuthManager);
@@ -586,8 +355,6 @@ describe('Router', () => {
         isAuthenticated: vi.fn().mockReturnValue(false),
         getAuthType: vi.fn().mockReturnValue(null),
         checkAuth: vi.fn(),
-        getLastCheckStatus: vi.fn().mockReturnValue('unauthenticated'),
-        isRecentlyUnavailable: vi.fn().mockReturnValue(false),
         getLoginRedirectUrl: vi.fn(),
       };
 
@@ -598,8 +365,6 @@ describe('Router', () => {
       vi.clearAllMocks();
     });
 
-    // @scenario auth=auth_required_guest
-    // @effects auth_required_route_redirects_guest_to_login
     it('auth_required가 true이고 미인증 시 로그인 페이지로 리다이렉트해야 합니다', async () => {
       Object.defineProperty(window, 'location', {
         value: { pathname: '/admin/dashboard', search: '', href: '' },
@@ -620,8 +385,6 @@ describe('Router', () => {
       expect(routeChangeHandler).not.toHaveBeenCalled();
     });
 
-    // @scenario auth=auth_required_guest
-    // @effects auth_required_route_redirects_guest_to_login
     it('auth_required가 true이고 인증됨 시 정상 렌더링해야 합니다', async () => {
       Object.defineProperty(window, 'location', {
         value: { pathname: '/admin/dashboard', search: '', href: '' },
@@ -644,8 +407,6 @@ describe('Router', () => {
       );
     });
 
-    // @scenario auth=auth_required_guest
-    // @effects auth_required_route_redirects_guest_to_login
     it('/admin 경로는 관리자 로그인 페이지로 리다이렉트해야 합니다', async () => {
       Object.defineProperty(window, 'location', {
         value: { pathname: '/admin/users', search: '', href: '' },
@@ -662,8 +423,6 @@ describe('Router', () => {
       expect(mockAuthManager.getLoginRedirectUrl).toHaveBeenCalledWith('admin', '/admin/users');
     });
 
-    // @scenario auth=auth_required_guest
-    // @effects auth_required_route_redirects_guest_to_login
     it('일반 경로는 사용자 로그인 페이지로 리다이렉트해야 합니다', async () => {
       Object.defineProperty(window, 'location', {
         value: { pathname: '/profile', search: '', href: '' },
@@ -680,8 +439,6 @@ describe('Router', () => {
       expect(mockAuthManager.getLoginRedirectUrl).toHaveBeenCalledWith('user', '/profile');
     });
 
-    // @scenario auth=auth_required_guest
-    // @effects auth_required_route_redirects_guest_to_login
     it('auth_required가 false인 경우 인증 검증을 수행하지 않아야 합니다', async () => {
       Object.defineProperty(window, 'location', {
         value: { pathname: '/admin/login', search: '', href: '' },
@@ -702,8 +459,6 @@ describe('Router', () => {
       );
     });
 
-    // @scenario auth=auth_required_guest
-    // @effects auth_required_route_redirects_guest_to_login
     it('라우트에 auth_type이 명시된 경우 해당 타입을 사용해야 합니다', async () => {
       Object.defineProperty(window, 'location', {
         value: { pathname: '/admin/users', search: '', href: '' },
@@ -718,106 +473,9 @@ describe('Router', () => {
       // auth_type이 'admin'으로 명시되어 있으므로 'admin'으로 호출
       expect(mockAuthManager.checkAuth).toHaveBeenCalledWith('admin');
     });
-
-    // 인증 확인이 서버 일시 오류로 끝났다(라우트 캐시 재생성 중 500) — 유효한 토큰을 가진 사람을 로그인 화면으로 보내지 않는다
-    // @scenario auth=auth_check_unavailable
-    // @effects auth_unavailable_does_not_redirect_to_login
-    it('인증 확인이 「확인 불가」면 로그인으로 보내지 않고 authUnavailable 을 알린다', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/admin/dashboard', search: '?tab=a', href: '' },
-        writable: true,
-        configurable: true,
-      });
-
-      mockAuthManager.checkAuth.mockResolvedValue(false);
-      mockAuthManager.getLastCheckStatus.mockReturnValue('unavailable');
-      mockAuthManager.getLoginRedirectUrl.mockReturnValue('/admin/login?redirect=%2Fadmin%2Fdashboard');
-
-      const routeChangeHandler = vi.fn();
-      const unavailableHandler = vi.fn();
-      router.on('routeChange', routeChangeHandler);
-      router.on('authUnavailable', unavailableHandler);
-
-      await router.navigateToCurrentPath();
-
-      expect(mockAuthManager.getLastCheckStatus).toHaveBeenCalledWith('admin');
-      expect(window.location.href).toBe('');
-      expect(unavailableHandler).toHaveBeenCalledWith({ path: '/admin/dashboard', authType: 'admin' });
-      expect(routeChangeHandler).not.toHaveBeenCalled();
-    });
-
-    // 부팅 preloadAuth 가 방금 「확인 불가」로 끝났으면 다시 묻지 않는다 — 같은 장애에 재시도를 한 번 더 하면 백지가 두 배로 길어진다(설계 확정 2026-11-08)
-    // @scenario auth=auth_check_unavailable
-    // @effects auth_unavailable_does_not_redirect_to_login
-    it('최근 「확인 불가」 결론이 있으면 다시 묻지 않고 곧바로 authUnavailable 을 알린다', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/admin/dashboard', search: '', href: '' },
-        writable: true,
-        configurable: true,
-      });
-
-      mockAuthManager.isRecentlyUnavailable.mockReturnValue(true);
-      mockAuthManager.getLastCheckStatus.mockReturnValue('unavailable');
-
-      const unavailableHandler = vi.fn();
-      router.on('authUnavailable', unavailableHandler);
-
-      await router.navigateToCurrentPath();
-
-      expect(mockAuthManager.isRecentlyUnavailable).toHaveBeenCalledWith('admin');
-      expect(mockAuthManager.checkAuth).not.toHaveBeenCalled();
-      expect(unavailableHandler).toHaveBeenCalledWith({ path: '/admin/dashboard', authType: 'admin' });
-      expect(window.location.href).toBe('');
-    });
-
-    // 재시도하는 사이 뒤로 가기로 다른 주소가 그려졌으면 그 위에 오류 화면을 덮지 않는다(popstate 는 navigate 대기열 밖)
-    // @scenario auth=auth_check_unavailable
-    // @effects auth_unavailable_does_not_redirect_to_login
-    it('인증 확인 중 주소가 바뀌었으면 authUnavailable 을 내지 않는다', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/admin/dashboard', search: '', href: '' },
-        writable: true,
-        configurable: true,
-      });
-
-      mockAuthManager.checkAuth.mockImplementation(async () => {
-        (window.location as any).pathname = '/admin/login';
-        return false;
-      });
-      mockAuthManager.getLastCheckStatus.mockReturnValue('unavailable');
-
-      const unavailableHandler = vi.fn();
-      router.on('authUnavailable', unavailableHandler);
-
-      await router.navigateToCurrentPath();
-
-      expect(unavailableHandler).not.toHaveBeenCalled();
-      expect(window.location.href).toBe('');
-    });
-
-    // 받는 쪽이 없으면(라우터만 쓰는 환경) 종전처럼 로그인으로 보낸다 — 빈 화면으로 멈추지 않게
-    // @scenario auth=auth_check_unavailable
-    // @effects auth_unavailable_does_not_redirect_to_login
-    it('authUnavailable 구독자가 없으면 종전처럼 로그인으로 보낸다', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/admin/dashboard', search: '', href: '' },
-        writable: true,
-        configurable: true,
-      });
-
-      mockAuthManager.checkAuth.mockResolvedValue(false);
-      mockAuthManager.getLastCheckStatus.mockReturnValue('unavailable');
-      mockAuthManager.getLoginRedirectUrl.mockReturnValue('/admin/login?redirect=%2Fadmin%2Fdashboard');
-
-      await router.navigateToCurrentPath();
-
-      expect(window.location.href).toBe('/admin/login?redirect=%2Fadmin%2Fdashboard');
-    });
   });
 
   describe('배열 쿼리 파라미터 파싱', () => {
-    // @scenario path_shape=plain
-    // @effects array_query_params_parsed_into_route_query
     it('같은 키의 여러 값을 배열로 파싱해야 합니다', async () => {
       const mockRoutes = [
         { path: '/admin/products', layout: 'products' },
@@ -857,8 +515,6 @@ describe('Router', () => {
       expect(capturedRoute.query['page']).toBe('1');
     });
 
-    // @scenario path_shape=plain
-    // @effects array_query_params_parsed_into_route_query
     it('단일 배열 값도 배열로 파싱해야 합니다 (key[] 형태)', async () => {
       const mockRoutes = [
         { path: '/admin/products', layout: 'products' },
@@ -897,8 +553,6 @@ describe('Router', () => {
       expect(capturedRoute.query['sales_status[]']).toEqual(['on_sale']);
     });
 
-    // @scenario path_shape=plain
-    // @effects array_query_params_parsed_into_route_query
     it('일반 파라미터는 문자열로 유지해야 합니다', async () => {
       const mockRoutes = [
         { path: '/admin/products', layout: 'products' },

@@ -1,9 +1,4 @@
 {
-    "editor": {
-        "data_source": {
-            "settings": "Settings"
-        }
-    },
     "name": "Hello Plugin",
     "description": "Learning minimal sample plugin (consumes Hello module hooks)",
     "settings": {
@@ -15,6 +10,5 @@
                 "hint": "When enabled, writes to hello-plugin.log on memo creation."
             }
         }
-    },
-    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
+    }
 }

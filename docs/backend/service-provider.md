@@ -1,6 +1,6 @@
 # 서비스 프로바이더 안전성
 
-> **목차**: [README.md](./README.md) | [enum.md](./enum.md) | [controllers.md](./controllers.md) | [service-repository.md](./service-repository.md) | [validation.md](./validation.md) | [exceptions.md](./exceptions.md) | [api-resources.md](./api-resources.md) | [routing.md](./routing.md) | [response-helper.md](./response-helper.md) | [middleware.md](./middleware.md) | [authentication.md](./authentication.md) | **service-provider.md**
+> **목차**: [index.md](./index.md) | [enum.md](./enum.md) | [controllers.md](./controllers.md) | [service-repository.md](./service-repository.md) | [validation.md](./validation.md) | [exceptions.md](./exceptions.md) | [api-resources.md](./api-resources.md) | [routing.md](./routing.md) | [response-helper.md](./response-helper.md) | [middleware.md](./middleware.md) | [authentication.md](./authentication.md) | **service-provider.md**
 
 ---
 
@@ -197,9 +197,6 @@ class TemplateService
 ```
 인스톨러 단계 1: composer install
 ├─ .env 없음 → ModuleRouteServiceProvider 스킵 ✅
-├─ vendor 재사용 분기 (vendor/autoload.php + composer.lock 존재)
-│  ├─ 개발용 패키지 감지 → 경고 카드·설치 로그 (설치는 계속)
-│  └─ 이전 환경의 컴파일 캐시 정리 (packages/services/config)
 └─ package:discover 정상 완료
 
 인스톨러 단계 2: .env 생성
@@ -337,14 +334,11 @@ protected function loadModuleRoutes(): void
 
 ### 동작 표
 
-| 환경 | `installer_completed` | 마이그레이션 명령 | 동작 |
-|------|----------------------|------------------|------|
-| 프로덕션 (설치 완료, 웹 요청) | `true` | 아님 | 가드 통과 → `hasTable` 스킵 (쿼리 0건) |
-| 설치 완료 `.env` 복사 + 빈 DB (마이그레이션 전) | `true` | **실행 중** | fast-path 무력화 → `hasTable` 폴백 (table not found 부팅 실패 방지) |
-| 인스톨러 실행 중 / 마이그레이션 전 | `false` (기본값) | — | 기존 `hasTable` 폴백 경로 (원본 동작 보존) |
-| 테스트 (`.env.testing` 에 플래그 없음) | `false` | — | 기존 `hasTable` 경로 |
-
-두 번째 행이 이 가드의 핵심 케이스다. `INSTALLER_COMPLETED=true` 가 적힌 `.env` 를 빈 DB 새 서버에 복사한 뒤 `php artisan migrate` 로 테이블을 만들기 **전** 에 앱이 부팅되면, fast-path 가 테이블 존재를 잘못 전제하여 뒤따르는 쿼리가 "table not found" 로 부팅을 깨뜨린다. 이 컨텍스트에서는 fast-path 를 신뢰하지 않고 실제 `hasTable` 검증 경로로 폴백해야 한다 (아래 "마이그레이션 컨텍스트 가드" 참조).
+| 환경 | `installer_completed` | 동작 |
+|------|----------------------|------|
+| 프로덕션 (설치 완료) | `true` | 가드 통과 → `hasTable` 스킵 (쿼리 0건) |
+| 인스톨러 실행 중 / 마이그레이션 전 | `false` (기본값) | 기존 `hasTable` 폴백 경로 (원본 동작 보존) |
+| 테스트 (`.env.testing` 에 플래그 없음) | `false` | 기존 `hasTable` 경로 |
 
 ### 적용 가이드
 
@@ -352,68 +346,7 @@ protected function loadModuleRoutes(): void
 - **`hasTable` 폴백 경로는 반드시 유지** — `installer_completed=false` 환경에서도 안전하게 부팅되어야 함
 - **try/catch 도 그대로 유지** — DB 연결 실패 시 안전한 스킵 계약 준수
 - 가드는 hasTable 체크 **전체 블록을 `if (! config('app.installer_completed'))` 로 래핑** 하는 형태
-- **fast-path 이후 쿼리가 try/catch 로 보호되지 않는 지점은 마이그레이션 컨텍스트 가드를 함께 적용** (아래 참조). 예외로 보호되는 지점은 빈 DB 에서도 안전하므로 불필요
-
-### 마이그레이션 컨텍스트 가드
-
-`installer_completed` fast-path 는 테이블 존재를 전제한다. 그러나 `INSTALLER_COMPLETED=true` 가 적힌 `.env` 를 빈 DB 새 서버에 복사한 뒤 `php artisan migrate` 로 테이블을 만들기 **전** 에 앱이 부팅되면, fast-path 가 `true` 를 반환하고 곧이어 실제 쿼리(`Model::where()->pluck()` 등)가 실행되어 "table not found" 로 부팅이 실패한다. 마이그레이션을 실행하려는 부팅에서 그 명령이 오히려 실패하는 닭-달걀 상태다.
-
-이를 막기 위해, 스키마를 파괴/재생성하는 마이그레이션 계열 콘솔 명령 판정을 `App\Support\InstallerContext::isSchemaMutatingCommand()` 로 단일 SSoT 화하고, fast-path 지점에 가드로 결합한다. 명령 리스트: `migrate`, `migrate:fresh`, `migrate:refresh`, `migrate:rollback`, `migrate:reset`, `db:wipe`.
-
-```php
-// App\Support\InstallerContext
-public static function isSchemaMutatingCommand(): bool
-{
-    if (! app()->runningInConsole()) {
-        return false;
-    }
-
-    return in_array(
-        $_SERVER['argv'][1] ?? null,
-        ['migrate', 'migrate:fresh', 'migrate:refresh', 'migrate:rollback', 'migrate:reset', 'db:wipe'],
-        true
-    );
-}
-```
-
-가드 결합 방식은 지점의 **논리 극성** 에 따라 다르다:
-
-- **Trait (fast-path 통과 조건)** — `&&` 로 결합. 마이그레이션 중이면 fast-path 를 건너뛰고 hasTable 폴백으로 진입.
-
-  ```php
-  if (! InstallerContext::isSchemaMutatingCommand() && config('app.installer_completed')) {
-      return true;
-  }
-  ```
-
-- **RouteServiceProvider (hasTable 검증 블록 진입 조건)** — `||` 로 결합. 마이그레이션 중이면 hasTable 검증 경로로 진입해 빈 DB 시 early return → 무방비 `pluck` 도달 차단.
-
-  ```php
-  if (! config('app.installer_completed') || InstallerContext::isSchemaMutatingCommand()) {
-      try {
-          if (! Schema::hasTable('modules')) {
-              return;
-          }
-          // ...
-      } catch (\Exception) {
-          return;
-      }
-  }
-  ```
-
-`isRegistryReady()` 처럼 fast-path 앞에서 조기 반환하는 지점은 `if (InstallerContext::isSchemaMutatingCommand()) { return false; }` 로 단순 게이트한다.
-
-#### 부류 A (가드 필수) vs 부류 B (불필요)
-
-| 부류 | 조건 | 예 | 조치 |
-|------|------|-----|------|
-| A | fast-path 이후 쿼리가 try/catch 로 **미보호** → 빈 DB 에서 부팅 실패 | `Caches{Module,Plugin,Template}Status`, `Module/PluginRouteServiceProvider` | 마이그레이션 컨텍스트 가드 적용 |
-| B | fast-path 이후 쿼리가 try/catch(\Throwable) 로 **보호** → 예외를 삼켜 안전한 기본값 반환 | `NotificationHookListener`, `IdentityPolicyRepository::{listHookTargets,activeExtensionIdentifiers}` | 가드 불필요 (예외 흡수로 안전) |
-
-### config 캐시 재생성 주의
-
-- `config:cache` 는 config 소스를 변경하는 라이프사이클에서 `App\Support\ConfigCacheHelper::rebuild()` 로 자동 재생성된다 (아래 "config 캐시 자동 재생성" 참조). `.env` 를 직접 편집한 경우처럼 헬퍼를 거치지 않는 변경은 여전히 `php artisan config:clear && php artisan config:cache` 를 수동 실행한다
-- `.env` 우선 모드(`G7_ENV_PRIORITY`)에서는 이 수동 재실행이 기능의 일부다 — `.env` 의 키 명시 여부는 config 빌드 시점에 `config/env-priority.php` 로 캡처되므로, `.env` 만 고치고 재빌드하지 않으면 잠금 상태가 갱신되지 않는다. 런타임 `env()` 로 명시 여부를 판별하면 `config:cache` 환경에서 항상 null 이라 판정이 영구 미발동한다. 상세: [admin-settings-access.md](admin-settings-access.md)
+- `config:cache` 를 사용하는 환경에서는 `.env` 값 변경 후 반드시 `php artisan config:clear && php artisan config:cache` 를 실행해야 함
 
 ### 확장 Trait 패턴
 
@@ -436,65 +369,6 @@ private static function isExtensionTableReady(string $table): bool
 }
 ```
 
-### 부팅 경로 Listener / Repository 적용
-
-ServiceProvider 와 Trait 외에도, `CoreServiceProvider::boot()` 말미(동적 훅 등록 / IDV 정책 동기화)에서 매 요청 실행되는 다음 지점도 동일 가드를 적용합니다:
-
-- `NotificationHookListener::registerDynamicHooks()` — `notification_definitions` 존재 확인 (단일 최대 비용)
-- `IdentityPolicyRepository::listHookTargets()` — `identity_policies` 존재 확인
-- `IdentityPolicyRepository::activeExtensionIdentifiers()` — `modules` / `plugins` 존재 확인 (테이블 부재 시 `null` 반환으로 필터 미적용 계약 보존)
-
-```php
-// hasTable 을 단독 조건이 아니라 installer_completed 와 && 로 단락.
-// 설치 완료 시 hasTable 호출 자체를 건너뛰고 후속 로직으로 진행한다.
-if (! config('app.installer_completed') && ! Schema::hasTable('notification_definitions')) {
-    return;
-}
-```
-
-`try/catch` 블록 안에 있는 Repository 조회는 catch 계약(테이블 부재/DB 오류 시 `[]` 또는 `null` 반환)을 그대로 보존한 채 조건만 확장한다.
-
-### 부팅 경로 정적 훅 등록 캐시
-
-`installer_completed` 가드가 부팅 시 DB 조회를 줄이는 것과 별개로, `CoreServiceProvider::boot()` 의 정적 훅 리스너 등록(`app/Listeners` 재귀 스캔 + 모듈/플러그인 `getHookListeners()` 클래스 로딩)은 `bootstrap/cache/hooks.php` 캐시로 매 요청 스캔·리플렉션을 제거한다. 캐시 부재/테스트 환경에서는 기존 스캔 경로로 안전 폴백하며, 등록 결과는 스캔 경로와 바이트 동일하다. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](../extension/hooks.md).
-
-### 부팅 중 번역 문구 로그 (BootDeferredLog)
-
-활성 언어팩(ja 등)의 번역 경로는 `LanguagePackServiceProvider` 의 booted 콜백에서 등록된다. 그보다 앞선 `register()`·`boot()`(예: `CoreServiceProvider` 의 확장 자동 비활성화 판정)에서 `Log::warning(__('…'))` 처럼 문구를 바로 만들면 사이트 언어가 ja 여도 폴백(ko) 문구로 기록된다. 부팅 중에도 불리는 번역 문구 로그는 `App\Support\BootDeferredLog::warning()`·`info()` 에 번역 키·치환값·맥락을 넘긴다 — 부팅 중이면 언어팩 등록 직후 사이트 언어로 한 번 남기고(언어팩이 없거나 설치 전이어도 비운다), booted 뒤에는 바로 남긴다.
-
-### 비활성 확장의 boot 부수효과 게이트 (`isExtensionActive`, 7.1.5)
-
-비활성 확장도 프로바이더는 등록된다 — 바인딩·번역·morphMap·명령은 설치 시더·관리 화면·다른 코드가 쓰기 때문이다. 그러나 **요청 처리에 끼어드는 부수효과**는 비활성 확장이 걸면 안 된다. `AbstractExtensionServiceProvider::isExtensionActive()` 가 그 판정이다.
-
-| 구분 | 예 | 처리 |
-| ------ | ------ | ------ |
-| (가) 다른 코드가 참조할 수 있는 선언 | 바인딩·scoped 등록, 번역, morphMap, config, 명령 등록 | 그대로 |
-| (나) 요청·큐 처리에 끼어드는 부수효과 | `RateLimiter::for`, `EncryptCookies::except`, `Queue::before/after`, 사이트맵 기여자, 요청마다 쓰는 `resolving` 콜백(알림 채널 드라이버 등록 포함 — 비활성 확장의 채널은 코어가 사용 가능 채널에서 먼저 빼므로 발송 경로가 드라이버를 찾지 않는다) | 게이트 안 |
-
-```php
-public function boot(): void
-{
-    parent::boot();
-
-    // method_exists 가드: 7.1.4 이하 코어에는 메서드가 없다 — 그때는 지금처럼 실행된다
-    if (! method_exists($this, 'isExtensionActive') || $this->isExtensionActive()) {
-        EncryptCookies::except(['my_receipt_token']);
-    }
-}
-```
-
-- 판정은 새 판정식이 아니라 코어 상태 목록(`getActiveModuleIdentifiers()`·`getActivePluginIdentifiers()`, 요청 메모 경유)을 본다.
-- 상태를 알 수 없으면 **참**이다 — 설치 미완료, 스키마를 바꾸는 artisan 명령, 코어 업데이트 중, 조회 실패.
-- 활성화 요청 안에서는 프로바이더가 상태를 쓰기 전에 이미 부팅돼 있으므로, 부수효과는 활성화 **다음 요청**의 첫 부팅부터 걸린다.
-- 제3자 확장에 강제하지는 않는다. 게이트를 쓰지 않은 확장은 7.1.4 까지처럼 상태와 무관하게 부수효과를 건다. 번들 확장의 가드 사용은 `BundledProviderActiveGateCompatTest` 가 잠근다.
-- 7.1.5 부터 기반 프로바이더에 `protected` 메서드 `isExtensionActive(): bool`·`activeIdentifiersForGate(): ?array` 가 있다. 확장 프로바이더가 같은 이름의 메서드를 이미 선언했다면 가시성(`private`)이나 반환형이 다를 때 PHP 가 클래스를 읽지 못하므로, 다른 이름으로 바꾼다.
-
-### 요청 단위 메모 (scoped)
-
-부팅·요청 처리에서 같은 값을 여러 번 읽는 객체는 `$this->app->scoped()` 로 두고 인스턴스에 메모한다(활성 확장 목록 `ExtensionStatusMemo`, 확장 미들웨어 레지스트리, 플러그인 설정 서비스, 동의 관리 매니저 등). scoped 인스턴스는 웹 요청마다 새로 만들어지고 큐 워커는 작업마다 비우므로 상주 프로세스에서도 옛 값이 남지 않는다. 같은 요청에서 값이 바뀌는 경로(상태 캐시 무효화·설정 저장)는 메모를 직접 비운다.
-
-> 시험에서 scoped 로 바뀐 클래스를 `$this->app->instance()` 로 바꿔 끼우면, 큐 워커처럼 `forgetScopedInstances()` 를 부르는 경로에서 그 목이 사라진다. 그런 시험은 `$this->app->scoped(클래스, fn () => $목)` 으로 묶는다.
-
 ### 주의사항
 
 - **인스톨러 설치 완료 시점에 `INSTALLER_COMPLETED=true` 가 `.env` 에 기록되어야 함** — G7 인스톨러(`public/install/includes/task-runner.php`)는 이를 이미 수행
@@ -511,7 +385,6 @@ public function boot(): void
 - [ ] `config('app.installer_completed')` 가드로 hasTable 블록 래핑 (성능 최적화)
 - [ ] 인스톨러 환경에서 테스트 수행 (`INSTALLER_COMPLETED` 미설정 상태)
 - [ ] `composer install` 단독 실행 테스트
-- [ ] `boot()` 중에 남기는 번역 문구 로그는 `BootDeferredLog` 로 남긴다 (언어팩 번역 등록 전이라 `__()` 가 폴백 문구가 됨)
 
 ---
 
@@ -535,39 +408,6 @@ php artisan migrate
 
 ---
 
-## config 캐시 자동 재생성 (ConfigCacheHelper)
-
-config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확장 목록)를 변경하는 라이프사이클은 `App\Support\ConfigCacheHelper::rebuild()` 를 호출해 config 캐시를 재빌드한다.
-
-### 배경
-
-과거 설정 변경/코어 업데이트/APP_KEY 재생성 등은 `config:clear` 만 하고 `config:cache` 를 재생성하지 않았다. 그 결과 관리자가 "시스템 최적화"(`optimizeSystem`)로 캐시를 만들어도, 이후 설정을 한 번 저장하면 캐시가 비워진 채 재생성되지 않아 이후 모든 요청이 config 파일을 재파싱했다(성능 손실). `rebuild()` 는 clear 직후 재생성까지 수행해 캐시가 비활성 상태로 잔존하지 않게 한다.
-
-### 정책
-
-- **환경 무관 항상 재생성** — config:cache 는 그 자체로 부팅 비용을 줄이고, G7 설정은 config 캐시에 박제되지 않고 매 요청 런타임 `Config::set()` 으로 재주입되므로(설정 stale 없음) 항상 켜두는 것이 이득이다.
-- **testing 환경**: `config:clear` 는 수행(값 반영 계약 유지)하되 `config:cache` 생성은 스킵(캐시된 config 가 다음 테스트로 누출되는 격리 파괴 방지).
-- **설치 미완료 상태**: 불완전 config 박제를 피하려 재생성을 스킵하고 clear 만 한다.
-- **local 개발 주의**: config:cache 가 켜지면 `config/*.php` 를 직접 수정해도 다음 요청에 반영되지 않는다. 이는 개발자가 `php artisan config:clear` 로 대응하는 개발자 책임 영역이다.
-- **먼저 지우지 않는다 (7.1.5)**: 설치된 환경의 `rebuild()` 는 `config:clear` 를 먼저 하지 않고, `config:cache` 의 출력 경로(`APP_CONFIG_CACHE`)를 같은 폴더의 임시 파일로 돌려 구운 뒤 실제 파일과 바꿔 끼운다(`App\Support\AtomicBootstrapCache`). 굽기가 실패하면 그때 `config:clear` 로 낡은 캐시를 지운다. 지운 뒤 굽는 사이에 들어온 요청이 비캐시 부팅·반쯤 쓰인 파일을 만나던 경합을 없앤다 — 라우트 캐시와 같은 방식(`docs/backend/routing.md` 「먼저 지우지 않는다」).
-
-### 적용 지점
-
-| 라이프사이클 | 재생성 위치 |
-| --- | --- |
-| 코어 설치 완료 | 인스톨러 `complete_flag` 직후 `config:cache` task (라우트 캐시도 같은 자리에서 굽는다 — `docs/backend/routing.md` 「갱신이 필요한 지점」) |
-| 코어 업데이트 | `CoreUpdateCommand` Step 11 완료 지점 |
-| 코어 업그레이드 스텝(단독 실행) | `ExecuteUpgradeStepsCommand` 캐시 정리 블록 (spawn 자식은 부모가 처리) |
-| 코어 관리자 설정 저장 / 캐시 정리 / GeoIP / APP_KEY | `SettingsService` / `GeoIpDatabaseService` 의 각 지점 |
-| 확장 설치/삭제/업데이트 | `ExtensionManager::updateComposerAutoload()` (오토로드·훅 캐시와 동일 생명주기) |
-| 확장 활성화/비활성화 | `ExtensionConfigCacheListener` (`core.*.activated` / `core.*.after_deactivate` 훅 구독) |
-
-`ExtensionConfigCacheListener` 의 구독 훅은 `getSubscribedHooks()` 에서 `'sync' => true` 로 선언한다. 훅 Action 리스너의 기본 등록 정책은 큐 디스패치(`HookListenerRegistrar`)인데, config 캐시 재생성을 큐로 미루면 (1) 워커 미가동 환경에서 영영 재생성되지 않고, (2) 확장 토글을 수행하는 CLI 커맨드(`plugin:deactivate` 등)는 실행 후 프로세스가 종료되어 큐 작업을 처리할 주체가 없다. config 캐시 재생성은 인프라 부수효과이므로 반드시 동기 실행한다. 회귀 방지 테스트: `ExtensionConfigCacheListenerTest::test_all_hooks_are_synchronous`.
-
-**확장별 개별 환경설정 저장(board/ecommerce/plugin SettingsService)은 재생성 대상이 아니다.** 확장 설정은 `config/*.php` 가 아니라 settings JSON 에 저장되고, 매 요청 `CoreServiceProvider::boot` 의 `loadModule/PluginSettingsToConfig` 가 런타임 `Config::set('g7_settings.*', 최신값)` 으로 config 캐시에 박제된 값을 덮어쓴다. 따라서 값 stale 이 없고(즉시 반영), config 캐시를 clear 하지도 않으므로(성능 손실 없음) 재생성이 실효가 없다.
-
----
-
 ## 관련 이슈
 
 - 인스톨러에서 `composer install` 시 DB 접근 오류
@@ -580,5 +420,4 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 
 - [middleware.md](./middleware.md) - 미들웨어 등록 규칙
 - [authentication.md](./authentication.md) - 인증 및 세션 처리
-- [custom-development.md](../custom-development.md) - 사이트 개발자의 `App\Custom\CustomServiceProvider`(있으면 코어가 마지막에 등록, 7.2.0+)
-- [README.md](./README.md) - 백엔드 가이드 인덱스
+- [index.md](./index.md) - 백엔드 가이드 인덱스

@@ -3,105 +3,15 @@
  *
  * troubleshooting-components.md, troubleshooting-components-*.md에 기록된 사례의 회귀 테스트입니다.
  *
- * @see 트러블슈팅 가이드 troubleshooting-components.md
- * @see 트러블슈팅 가이드 troubleshooting-components-datagrid.md
- * @see 트러블슈팅 가이드 troubleshooting-components-form.md
- * @see 트러블슈팅 가이드 troubleshooting-components-misc.md
+ * @see docs/frontend/troubleshooting-components.md
+ * @see docs/frontend/troubleshooting-components-datagrid.md
+ * @see docs/frontend/troubleshooting-components-form.md
+ * @see docs/frontend/troubleshooting-components-misc.md
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Logger } from '../../utils/Logger';
 import { hasExplicitSetStateForField } from '../FormContext';
-import { responsiveManager } from '../ResponsiveManager';
-import { hasPipes } from '../PipeRegistry';
-import { DataBindingEngine } from '../DataBindingEngine';
-import { deepMergeState } from '../DynamicRenderer';
-
-describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
-  /**
-   * 사례: 텍스트가 길어질수록 형제 버튼이 좁아지는데 오버플로 검사로는 안 잡힘
-   *
-   * 해결책이 `responsive.mobile`(0~767) 로 좁힌 2행 레이아웃에 의존한다.
-   * `portable`(0~1023) 이면 태블릿에서 불필요하게 줄바꿈된다.
-   * 여기서는 그 전제인 스코프 경계와 우선순위를 고정한다.
-   *
-   * @see 트러블슈팅 가이드 troubleshooting-components-misc.md "flex 압착(shrink) 관련 이슈"
-   */
-  describe('[사례 1] responsive 스코프 경계 — mobile(0~767) vs portable(0~1023)', () => {
-    // @scenario case=responsive_scope_boundary
-    // @effects responsive_scope_matches_width_range
-    it('mobile 은 767px 까지만 매칭되고 768px 부터는 미적용', () => {
-      const responsive = { mobile: { props: { className: 'flex-wrap' } } };
-
-      expect(responsiveManager.getMatchingKey(responsive, 320)).toBe('mobile');
-      expect(responsiveManager.getMatchingKey(responsive, 390)).toBe('mobile');
-      expect(responsiveManager.getMatchingKey(responsive, 767)).toBe('mobile');
-      // 768px 부터 태블릿 — 한 줄 유지 (버튼 261px + 21자 제목 323px = 584px < 735px)
-      expect(responsiveManager.getMatchingKey(responsive, 768)).toBeNull();
-      expect(responsiveManager.getMatchingKey(responsive, 1280)).toBeNull();
-    });
-
-    // @scenario case=responsive_scope_boundary
-    // @effects responsive_scope_matches_width_range
-    it('portable 은 1023px 까지 매칭되어 태블릿도 포함한다', () => {
-      const responsive = { portable: { props: { className: 'flex-wrap' } } };
-
-      expect(responsiveManager.getMatchingKey(responsive, 767)).toBe('portable');
-      expect(responsiveManager.getMatchingKey(responsive, 768)).toBe('portable');
-      expect(responsiveManager.getMatchingKey(responsive, 1023)).toBe('portable');
-      expect(responsiveManager.getMatchingKey(responsive, 1024)).toBeNull();
-    });
-
-    /**
-     * 사례: 안내 문구는 "페이지로 이동" 인데 실제로는 팝업이 열림 (경계 폭 1px)
-     *
-     * 확장이 화면 폭으로 동작을 고를 때 엔진과 같은 값을 읽어야 문구와 동작이 일치한다.
-     * 엔진이 `window.innerWidth` 를 본다는 전제가 깨지면(예: matchMedia 로 교체) 규정을 따른
-     * 모든 확장이 경계 폭에서 동시에 어긋나므로, 그 전제를 여기서 고정한다.
-     *
-     * 배경: 내부 트러블슈팅 사례 「확장 코드의 화면 폭 판정 관련 이슈」
-     * @see docs/frontend/responsive-layout.md "확장 코드에서 같은 경계를 판정할 때"
-     */
-    // @scenario case=responsive_scope_boundary
-    // @effects responsive_scope_matches_width_range
-    it('엔진은 window.innerWidth 로 현재 폭을 정한다 (matchMedia 아님)', () => {
-      vi.useFakeTimers();
-      const matchMedia = vi.fn(() => ({ matches: false }));
-      vi.stubGlobal('matchMedia', matchMedia);
-      const original = window.innerWidth;
-
-      try {
-        Object.defineProperty(window, 'innerWidth', { value: 1023, configurable: true });
-        // resize 를 태워 현재 폭을 다시 읽게 한다 (debounce 150ms)
-        window.dispatchEvent(new Event('resize'));
-        vi.advanceTimersByTime(200);
-
-        expect(responsiveManager.getWidth()).toBe(1023);
-        expect(responsiveManager.matches('portable')).toBe(true);
-        expect(matchMedia).not.toHaveBeenCalled();
-      } finally {
-        Object.defineProperty(window, 'innerWidth', { value: original, configurable: true });
-        window.dispatchEvent(new Event('resize'));
-        vi.advanceTimersByTime(200);
-        vi.unstubAllGlobals();
-        vi.useRealTimers();
-      }
-    });
-
-    // @scenario case=responsive_scope_boundary
-    // @effects responsive_scope_matches_width_range
-    it('mobile 과 portable 이 함께 정의되면 좁은 범위(mobile)가 우선한다', () => {
-      const responsive = {
-        portable: { props: { className: 'portable-wins' } },
-        mobile: { props: { className: 'mobile-wins' } },
-      };
-
-      expect(responsiveManager.getMatchingKey(responsive, 390)).toBe('mobile');
-      // 태블릿 구간에서는 mobile 이 매칭되지 않으므로 portable 로 폴백
-      expect(responsiveManager.getMatchingKey(responsive, 900)).toBe('portable');
-    });
-  });
-});
 
 describe('트러블슈팅 회귀 테스트 - DataGrid 컴포넌트', () => {
   beforeEach(() => {
@@ -113,8 +23,6 @@ describe('트러블슈팅 회귀 테스트 - DataGrid 컴포넌트', () => {
      * 증상: DataGrid에 데이터가 표시되지 않음
      * 해결: API 응답 구조에 맞게 바인딩 경로 수정
      */
-    // @scenario case=datagrid_response_path
-    // @effects datagrid_data_uses_nested_response_path
     it('API 응답이 { data: { data: [] } } 형태일 때 올바른 경로를 사용해야 함', () => {
       const apiResponse = {
         success: true,
@@ -142,8 +50,6 @@ describe('트러블슈팅 회귀 테스트 - DataGrid 컴포넌트', () => {
      * 증상: SubGrid에서 중첩 데이터가 표시되지 않음
      * 해결: row 컨텍스트에서 올바른 경로로 데이터 접근
      */
-    // @scenario case=expand_children_row_context
-    // @effects expand_children_reads_row_context
     it('expandChildren에서 row 컨텍스트를 통해 중첩 데이터에 접근해야 함', () => {
       const row = {
         id: 1,
@@ -164,8 +70,6 @@ describe('트러블슈팅 회귀 테스트 - DataGrid 컴포넌트', () => {
      * 증상: onExpandChange/onSelectionChange 이벤트가 발생하지 않음
      * 해결: 이벤트 핸들러를 actions 배열로 정의
      */
-    // @scenario case=datagrid_event_handler
-    // @effects datagrid_events_use_actions_array
     it('이벤트 핸들러는 actions 배열 형태로 정의해야 함', () => {
       const correctConfig = {
         actions: [
@@ -182,48 +86,11 @@ describe('트러블슈팅 회귀 테스트 - DataGrid 컴포넌트', () => {
     });
   });
 
-  describe('[사례 4] expandContext 객체 리터럴 fallback(|| {})이 단일 바인딩 정규식을 깨뜨림', () => {
-    /**
-     * 증상: expandContext 표현식에 `|| {}` 가 있으면 확장 영역이 항상 빈 값
-     *      (예: 데이터가 있어도 "연결 거래 없음" 고정)
-     * 원인: renderExpandContent 의 단일 바인딩 판별 정규식 /^\{\{([^}]+)\}\}$/ 은
-     *      `}` 를 허용하지 않아 `{{... || {} }}` 가 매칭 실패 → 평가 없이 원본 문자열 전달
-     * 해결: expandContext 값에서 객체 리터럴 fallback 제거 (`{{_local.x}}` 형태)
-     */
-    // renderExpandContent 의 단일 바인딩 판별 정규식 (G7CoreGlobals.ts 와 동일)
-    const SINGLE_BINDING_RE = /^\{\{([^}]+)\}\}$/;
-
-    // @scenario case=expand_context_object_fallback
-    // @effects object_fallback_breaks_single_binding_match
-    it('객체 리터럴 fallback(|| {})이 있는 expandContext 표현식은 단일 바인딩으로 인식되지 않는다', () => {
-      const broken = '{{_local.linkedTransactions || {} }}';
-      // 내부 `}` 때문에 정규식 매칭 실패 → 평가되지 못하고 문자열로 전달되는 버그 조건
-      expect(SINGLE_BINDING_RE.test(broken)).toBe(false);
-    });
-
-    // @scenario case=expand_context_object_fallback
-    // @effects object_fallback_breaks_single_binding_match
-    it('fallback 없는 단일 바인딩 표현식은 정상 매칭되어 평가된다', () => {
-      const fixed = '{{_local.linkedTransactions}}';
-      expect(SINGLE_BINDING_RE.test(fixed)).toBe(true);
-      expect(fixed.match(SINGLE_BINDING_RE)?.[1].trim()).toBe('_local.linkedTransactions');
-    });
-
-    // @scenario case=expand_context_object_fallback
-    // @effects object_fallback_breaks_single_binding_match
-    it('배열 fallback(?? [])은 `}` 가 없어 정상 매칭된다 (객체 fallback 만 함정)', () => {
-      const arrayFallback = '{{_local.items ?? []}}';
-      expect(SINGLE_BINDING_RE.test(arrayFallback)).toBe(true);
-    });
-  });
-
   describe('[동적 컬럼 사례 1] 동적 컬럼 체크해제가 즉시 다시 체크됨', () => {
     /**
      * 증상: ColumnSelector에서 컬럼 체크해제 시 즉시 다시 체크됨
      * 해결: controlled 상태 관리 및 낙관적 업데이트
      */
-    // @scenario case=dynamic_column_uncheck
-    // @effects visible_columns_change_applies_immediately
     it('visibleColumns 변경이 즉시 반영되어야 함', () => {
       let visibleColumns = ['id', 'name', 'price', 'status'];
 
@@ -248,8 +115,6 @@ describe('트러블슈팅 회귀 테스트 - DataGrid 컴포넌트', () => {
      * 증상: columns 배열의 width 속성이 무시됨
      * 해결: minWidth, maxWidth도 함께 설정
      */
-    // @scenario case=column_width
-    // @effects column_width_needs_min_max
     it('width와 함께 minWidth, maxWidth를 설정해야 함', () => {
       const column = {
         field: 'name',
@@ -272,8 +137,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
      * 증상: trackChanges 활성화 후에도 저장 버튼이 비활성화
      * 해결: Form의 initialValues와 현재 values 비교 로직 확인
      */
-    // @scenario case=form_track_changes
-    // @effects track_changes_sets_has_changes
     it('값 변경 시 hasChanges가 true가 되어야 함', () => {
       const initialValues = { name: 'Original' };
       let currentValues = { name: 'Original' };
@@ -294,10 +157,9 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
      * 증상: 입력 시 심한 버벅거림 발생
      * 해결: debounce 적용 및 불필요한 리렌더링 방지
      */
-    // @scenario case=form_input_lag
-    // @effects debounce_limits_state_updates
     it('debounce로 빈번한 상태 업데이트를 제한해야 함', () => {
       let updateCount = 0;
+      let lastValue = '';
 
       // debounce 시뮬레이션
       const debounce = (fn: Function, delay: number) => {
@@ -308,8 +170,9 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
         };
       };
 
-      const updateState = debounce((_value: string) => {
+      const updateState = debounce((value: string) => {
         updateCount++;
+        lastValue = value;
       }, 300);
 
       // 빠른 연속 입력
@@ -328,8 +191,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
      * 증상: dataKey 설정 후 수동 바인딩이 동작하지 않음
      * 해결: 하나의 방식만 사용하거나 parentFormContextProp={undefined} 설정
      */
-    // @scenario case=sortable_form_binding
-    // @effects sortable_clears_parent_form_context
     it('Sortable 내부에서는 parentFormContextProp을 undefined로 설정해야 함', () => {
       const sortableItemProps = {
         parentFormContextProp: undefined,
@@ -345,8 +206,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
      * 원인: 자동 바인딩이 라디오의 value prop을 상태값으로 덮어씀
      * 해결: autoBinding: false로 해당 필드의 자동 바인딩 비활성화
      */
-    // @scenario case=datakey_radio_checkbox_value
-    // @effects explicit_setstate_disables_auto_binding
     it('hasExplicitSetStateForField 유틸리티가 setState 대상 필드를 정확히 감지해야 함', () => {
       // hasExplicitSetStateForField는 유틸리티 함수로 제공 (레이아웃 분석 등에서 활용 가능)
       const radioActions = [
@@ -373,8 +232,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
       expect(hasExplicitSetStateForField(radioActions, 'form', 'title')).toBe(false);
     });
 
-    // @scenario case=datakey_radio_checkbox_value
-    // @effects explicit_setstate_disables_auto_binding
     it('autoBinding: false prop으로 자동 바인딩 비활성화가 가능해야 함', () => {
       // DynamicRenderer에서 autoBinding: false 감지 시 자동 바인딩 스킵
       // autoBinding prop은 HTML로 전달되지 않음 (자동 제거)
@@ -393,8 +250,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
       expect('autoBinding' in cleanProps).toBe(false);
     });
 
-    // @scenario case=datakey_radio_checkbox_value
-    // @effects explicit_setstate_disables_auto_binding
     it('autoBinding 미설정 필드는 종전대로 자동 바인딩 유지', () => {
       // 일반 텍스트 필드 - autoBinding 미설정 → 자동 바인딩 활성
       const noActions: any[] = [];
@@ -409,8 +264,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
      * 증상: API 에러 시 error.data가 비어있음
      * 해결: error.errors 사용
      */
-    // @scenario case=error_data_empty
-    // @effects api_error_lives_in_error_errors
     it('API 에러 응답은 error.errors에 있음', () => {
       const errorResponse = {
         success: false,
@@ -435,8 +288,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
      * 증상: Form 내부의 일반 Button 클릭 시 Form이 submit됨
      * 해결: type="button" 명시
      */
-    // @scenario case=form_button_submit
-    // @effects form_button_declares_type_button
     it('Form 내부 Button은 type="button"을 명시해야 함', () => {
       const buttonProps = {
         type: 'button', // 명시적으로 button 타입 설정
@@ -455,8 +306,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
      * 해결: 부모를 Label로 변경 + 자식 Input에 change 액션 부여
      */
 
-    // @scenario case=parent_click_checkbox_lag
-    // @effects checkbox_toggle_uses_label_and_change
     it('금지 패턴: 부모 Div click 액션 + 자식 controlled checkbox 액션 없음', () => {
       // ❌ 한 박자 지연 발생하는 결함 패턴
       const badPattern = {
@@ -482,8 +331,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
       // → 이 조합이 Phase 1 ① 단계의 fail 테스트가 검출한 결함
     });
 
-    // @scenario case=parent_click_checkbox_lag
-    // @effects checkbox_toggle_uses_label_and_change
     it('올바른 패턴: Label로 감싸기 + 자식 Input에 change 액션', () => {
       const goodPattern = {
         name: 'Label',
@@ -513,8 +360,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
       expect(changeAction.handler).toBe('setState');
     });
 
-    // @scenario case=parent_click_checkbox_lag
-    // @effects checkbox_toggle_uses_label_and_change
     it('Label 안 Label 중첩 금지 — 텍스트는 Span으로 다운그레이드', () => {
       const correctedPattern = {
         name: 'Label',
@@ -534,8 +379,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
       expect(nestedLabels.length).toBe(0);
     });
 
-    // @scenario case=parent_click_checkbox_lag
-    // @effects checkbox_toggle_uses_label_and_change
     it('자식 컨테이너에 pointer-events-none 사용 금지', () => {
       // 결함 차단 목적의 pointer-events-none은 본 패턴에서 불필요
       const goodPattern = {
@@ -553,8 +396,6 @@ describe('트러블슈팅 회귀 테스트 - Form 컴포넌트', () => {
       expect(innerDiv.props.className).not.toContain('pointer-events-none');
     });
 
-    // @scenario case=parent_click_checkbox_lag
-    // @effects checkbox_toggle_uses_label_and_change
     it('change 이벤트 vs click 이벤트 구분', () => {
       // React controlled checkbox는 change 이벤트로만 표준 동기화 가능
       const supportedEventsForControlledCheckbox = ['change'];
@@ -573,8 +414,6 @@ describe('트러블슈팅 회귀 테스트 - 기타 컴포넌트', () => {
      * 증상: Partial에서 props 접근 불가
      * 해결: data_sources ID 직접 참조
      */
-    // @scenario case=partial_props_binding
-    // @effects partial_references_data_source_directly
     it('Partial에서는 data_sources ID를 직접 참조해야 함', () => {
       // Partial 레이아웃
       const partialLayout = {
@@ -596,8 +435,6 @@ describe('트러블슈팅 회귀 테스트 - 기타 컴포넌트', () => {
      * 증상: route 파라미터가 undefined로 평가됨
      * 해결: route 정의에 params 설정 확인
      */
-    // @scenario case=route_identifier
-    // @effects route_exposes_dynamic_params
     it('route 객체에서 동적 파라미터에 접근할 수 있어야 함', () => {
       const route = {
         path: '/admin/products/:id',
@@ -615,10 +452,8 @@ describe('트러블슈팅 회귀 테스트 - 기타 컴포넌트', () => {
      * 증상: Select 초기값이 표시되지 않음
      * 해결: value prop과 options의 value 타입 일치 확인
      */
-    // @scenario case=select_value_type
-    // @effects select_value_type_matches_options
     it('value와 options의 value 타입이 일치해야 함', () => {
-      const options: Array<{ value: number | string; label: string }> = [
+      const options = [
         { value: 1, label: 'Option 1' },
         { value: 2, label: 'Option 2' },
       ];
@@ -641,8 +476,6 @@ describe('트러블슈팅 회귀 테스트 - 기타 컴포넌트', () => {
      * 증상: null과 '' 매칭 실패
      * 해결: null과 ''을 동일하게 처리하거나 명시적 값 설정
      */
-    // @scenario case=select_initial_all
-    // @effects select_matches_null_and_empty_string
     it('null과 빈 문자열 매칭을 처리해야 함', () => {
       const options = [
         { value: '', label: '전체' },
@@ -664,12 +497,13 @@ describe('트러블슈팅 회귀 테스트 - 기타 컴포넌트', () => {
      * 증상: Icon에 Tailwind 크기 클래스가 적용되지 않음
      * 해결: size prop 또는 className="text-*" 사용
      */
-    // @scenario case=icon_size_class
-    // @effects icon_uses_size_prop_or_text_class
     it('Icon은 size prop 또는 text-* 클래스를 사용해야 함', () => {
       // 올바른 사용
       const iconProps1 = { size: 'sm' };
       const iconProps2 = { className: 'text-sm' };
+
+      // 잘못된 사용 (무시됨)
+      const wrongProps = { className: 'w-4 h-4' };
 
       expect(iconProps1.size).toBe('sm');
       expect(iconProps2.className).toBe('text-sm');
@@ -681,8 +515,6 @@ describe('트러블슈팅 회귀 테스트 - 기타 컴포넌트', () => {
      * 증상: iteration 내부에서 item_var 접근 불가
      * 해결: 올바른 item_var 이름 사용
      */
-    // @scenario case=iteration_item_var
-    // @effects iteration_item_var_resolves_item
     it('iteration의 item_var를 정확히 참조해야 함', () => {
       const iteration = {
         source: '{{items}}',
@@ -697,7 +529,7 @@ describe('트러블슈팅 회귀 테스트 - 기타 컴포넌트', () => {
 
       // 각 아이템에서 item_var로 접근
       items.forEach((item, idx) => {
-        const context: Record<string, any> = { [iteration.item_var]: item, [iteration.index_var]: idx };
+        const context = { [iteration.item_var]: item, [iteration.index_var]: idx };
         expect(context.item.name).toBe(`Item ${idx + 1}`);
         expect(context.idx).toBe(idx);
       });
@@ -709,8 +541,6 @@ describe('트러블슈팅 회귀 테스트 - 기타 컴포넌트', () => {
      * 증상: 새로 추가된 아이템이 이전 아이템의 값을 상속
      * 해결: key prop에 고유 식별자 사용
      */
-    // @scenario case=iteration_dynamic_child_key
-    // @effects iteration_items_have_unique_keys
     it('각 iteration 아이템은 고유한 key를 가져야 함', () => {
       const items = [
         { id: 'uuid-1', name: 'Item 1' },
@@ -733,8 +563,6 @@ describe('트러블슈팅 회귀 테스트 - 기타 컴포넌트', () => {
      * 증상: modals를 객체 형식으로 정의하면 모달이 표시되지 않음
      * 해결: modals는 반드시 배열 형식으로 정의
      */
-    // @scenario case=modals_object_format
-    // @effects modals_must_be_array
     it('modals는 배열 형식이어야 함', () => {
       // 올바른 형식
       const correctModals = [
@@ -758,8 +586,6 @@ describe('트러블슈팅 회귀 테스트 - 기타 컴포넌트', () => {
      * 증상: {{handler()}} 형태로 호출하면 작동하지 않음
      * 해결: actions 배열로 정의
      */
-    // @scenario case=handler_as_function_call
-    // @effects handlers_defined_as_actions_array
     it('핸들러는 actions 배열로 정의해야 함', () => {
       // 잘못된 사용
       const wrongUsage = '{{myHandler()}}';
@@ -781,8 +607,6 @@ describe('트러블슈팅 회귀 테스트 - isolated 상태 스코프', () => {
      * 증상: target: "isolated" 설정이 무시됨
      * 해결: isolatedScopeId가 설정되어 있는지 확인
      */
-    // @scenario case=isolated_scope_fallback
-    // @effects isolated_state_requires_scope_id
     it('isolated 상태 사용 시 isolatedScopeId가 필요함', () => {
       const componentConfig = {
         isolatedScopeId: 'unique-scope-123',
@@ -798,8 +622,6 @@ describe('트러블슈팅 회귀 테스트 - isolated 상태 스코프', () => {
      * 증상: 같은 isolatedScopeId를 가진 컴포넌트들의 상태가 공유됨
      * 해결: 고유한 isolatedScopeId 사용
      */
-    // @scenario case=isolated_scope_id_collision
-    // @effects isolated_scope_id_globally_unique
     it('isolatedScopeId는 전역적으로 고유해야 함', () => {
       const scopes = new Set<string>();
 
@@ -853,60 +675,42 @@ describe('트러블슈팅 회귀 테스트 - Form 자동 바인딩 bindingType �
   };
 
   describe('[사례 1] bindingType: "checked" 컴포넌트 (Toggle, Checkbox, ChipCheckbox)', () => {
-    // @scenario case=binding_type_checked
-    // @effects checked_binding_type_binds_boolean
     it('boolean 값이면 isCheckedBinding이 true여야 함', () => {
       expect(calcIsCheckedBinding('checked', true)).toBe(true);
     });
 
-    // @scenario case=binding_type_checked
-    // @effects checked_binding_type_binds_boolean
     it('비-boolean 값이면 isCheckedBinding이 false여야 함', () => {
       expect(calcIsCheckedBinding('checked', 'true')).toBe(false);
     });
   });
 
   describe('[사례 2] bindingType: "checkable" 컴포넌트 (Input)', () => {
-    // @scenario case=binding_type_checkable
-    // @effects checkable_binding_depends_on_input_type
     it('boolean 값 + type="checkbox"이면 isCheckedBinding이 true여야 함', () => {
       expect(calcIsCheckedBinding('checkable', true, 'checkbox')).toBe(true);
     });
 
-    // @scenario case=binding_type_checkable
-    // @effects checkable_binding_depends_on_input_type
     it('boolean 값 + type="radio"이면 isCheckedBinding이 true여야 함', () => {
       expect(calcIsCheckedBinding('checkable', false, 'radio')).toBe(true);
     });
 
-    // @scenario case=binding_type_checkable
-    // @effects checkable_binding_depends_on_input_type
     it('boolean 값 + type="text"이면 isCheckedBinding이 false여야 함 (value 바인딩)', () => {
       expect(calcIsCheckedBinding('checkable', true, 'text')).toBe(false);
     });
 
-    // @scenario case=binding_type_checkable
-    // @effects checkable_binding_depends_on_input_type
     it('boolean 값 + type 미지정이면 isCheckedBinding이 false여야 함 (value 바인딩)', () => {
       expect(calcIsCheckedBinding('checkable', true, undefined)).toBe(false);
     });
   });
 
   describe('[사례 3] bindingType 미지정 컴포넌트 (RadioGroup, Select 등)', () => {
-    // @scenario case=binding_type_unset
-    // @effects unset_binding_type_uses_value_binding
     it('boolean 값이어도 isCheckedBinding이 false여야 함 (value 바인딩)', () => {
       expect(calcIsCheckedBinding(undefined, true)).toBe(false);
     });
 
-    // @scenario case=binding_type_unset
-    // @effects unset_binding_type_uses_value_binding
     it('metadata가 undefined여도 isCheckedBinding이 false여야 함', () => {
       expect(calcIsCheckedBinding(undefined, true, 'text')).toBe(false);
     });
 
-    // @scenario case=binding_type_unset
-    // @effects unset_binding_type_uses_value_binding
     it('RadioGroup에 boolean true가 바인딩되면 value="true"로 전달되어 String 비교 성공', () => {
       // RadioGroup 내부: String(option.value) === String(value)
       const radioValue = true; // Form 자동 바인딩으로 value={true} 전달
@@ -915,8 +719,6 @@ describe('트러블슈팅 회귀 테스트 - Form 자동 바인딩 bindingType �
       expect(String(optionValue) === String(radioValue)).toBe(true);
     });
 
-    // @scenario case=binding_type_unset
-    // @effects unset_binding_type_uses_value_binding
     it('RadioGroup에 boolean false가 바인딩되면 value="false"로 전달되어 String 비교 성공', () => {
       const radioValue = false;
       const optionValue = 'false';
@@ -926,165 +728,9 @@ describe('트러블슈팅 회귀 테스트 - Form 자동 바인딩 bindingType �
   });
 
   describe('[사례 4] 게시판 Input type="checkbox" 회귀 확인 (is_notice, is_secret)', () => {
-    // @scenario case=board_checkbox_input
-    // @effects board_checkbox_keeps_checked_binding
     it('Input(checkable) + type=checkbox + boolean 값 → checked 바인딩 유지', () => {
       // sirsoft-admin_basic/sirsoft-basic 모두 Input에 bindingType: "checkable" 등록
       expect(calcIsCheckedBinding('checkable', true, 'checkbox')).toBe(true);
-    });
-  });
-
-  /**
-   * [사례 5] 저장값이 null 이면 체크박스가 빈 문자열을 전송한다
-   *
-   * troubleshooting-components-form.md 사례 6 회귀 가드.
-   *
-   * bindingType: 'checked' 로 등록된 Checkbox 라도 현재 값이 boolean 이 아니면
-   * isCheckedBinding 이 false 가 되어 value 바인딩 분기로 떨어지고,
-   * 거기서 `currentValue ?? ''` 로 빈 문자열이 만들어진다.
-   * 그 빈 문자열이 서버에서 null 로 저장되면 기본값(false)을 덮어 영구 고착된다.
-   */
-  describe('[사례 5] 저장값이 boolean 이 아니면 value 바인딩으로 떨어져 빈 문자열이 된다', () => {
-    /** DynamicRenderer 의 value 바인딩 분기와 동일 (`effectiveValue = currentValue ?? ''`) */
-    const calcValueBindingValue = (currentValue: any): any => currentValue ?? '';
-
-    // @scenario case=non_boolean_saved_value
-    // @effects non_boolean_value_falls_to_value_binding
-    it('null 이면 Checkbox(checked) 여도 checked 바인딩이 아니다', () => {
-      expect(calcIsCheckedBinding('checked', null)).toBe(false);
-    });
-
-    // @scenario case=non_boolean_saved_value
-    // @effects non_boolean_value_falls_to_value_binding
-    it('undefined 여도 checked 바인딩이 아니다 (미저장 키)', () => {
-      expect(calcIsCheckedBinding('checked', undefined)).toBe(false);
-    });
-
-    // @scenario case=non_boolean_saved_value
-    // @effects non_boolean_value_falls_to_value_binding
-    it('null 이 value 바인딩으로 가면 빈 문자열이 전송된다 (고착의 시작점)', () => {
-      expect(calcValueBindingValue(null)).toBe('');
-      expect(calcValueBindingValue(undefined)).toBe('');
-    });
-
-    // @scenario case=non_boolean_saved_value
-    // @effects non_boolean_value_falls_to_value_binding
-    it('boolean 이면 정상적으로 checked 바인딩된다 (false 도 포함)', () => {
-      expect(calcIsCheckedBinding('checked', true)).toBe(true);
-      expect(calcIsCheckedBinding('checked', false)).toBe(true);
-    });
-
-    // @scenario case=non_boolean_saved_value
-    // @effects non_boolean_value_falls_to_value_binding
-    it('레이아웃이 !! 로 boolean 을 강제하면 null 이어도 checked 바인딩이 성립한다', () => {
-      // 해결책: props.checked = "{{!!_local.form?.x}}" → 항상 boolean
-      const nullable: unknown = null;
-      const coerced = !!nullable;
-      expect(typeof coerced).toBe('boolean');
-      expect(calcIsCheckedBinding('checked', coerced)).toBe(true);
-    });
-
-    // @scenario case=non_boolean_saved_value
-    // @effects non_boolean_value_falls_to_value_binding
-    it('$event.target.checked 는 항상 boolean 이므로 change 액션은 boolean 만 기록한다', () => {
-      // 해결책: change 액션이 setState 로 $event.target.checked 를 직접 쓴다
-      const eventChecked: boolean = true;
-      expect(typeof eventChecked).toBe('boolean');
-      expect(calcIsCheckedBinding('checked', eventChecked)).toBe(true);
-    });
-  });
-
-  /**
-   * [사례 6] initLocal 로는 null 고착을 막을 수 없다
-   *
-   * troubleshooting-components-form.md 사례 6 의 "initLocal 로는 막을 수 없다" 근거.
-   * deepMergeState 는 source 의 null 을 그대로 반영하므로, 레이아웃이 선언한
-   * boolean 기본값이 API 응답의 null 에 덮인다.
-   */
-  describe('[사례 6] deepMergeState 는 source 의 null 로 기본값을 덮는다', () => {
-    // @scenario case=deep_merge_null_default
-    // @effects deep_merge_null_overrides_default
-    it('deep 병합에서 null 이 boolean 기본값(false)을 덮는다', () => {
-      const layoutDefaults = { form: { method_card: false, method_samsungpay: false } };
-      const apiResponse = { form: { method_card: true, method_samsungpay: null } };
-
-      const merged = deepMergeState(layoutDefaults, apiResponse);
-
-      expect(merged.form.method_card).toBe(true);
-      // 기본값 false 가 남지 않고 null 로 덮인다 → 이것이 고착의 원인
-      expect(merged.form.method_samsungpay).toBeNull();
-      expect(typeof merged.form.method_samsungpay).not.toBe('boolean');
-    });
-
-    // @scenario case=deep_merge_null_default
-    // @effects deep_merge_null_overrides_default
-    it('shallow 병합(기본값)은 form 객체를 통째로 교체하므로 기본값이 아예 남지 않는다', () => {
-      const prev = { form: { method_card: false, method_samsungpay: false } };
-      const initData = { form: { method_card: true, method_samsungpay: null } };
-
-      // DynamicRenderer 의 shallow 분기: { ...prev, ...initDataWithoutMeta }
-      const merged = { ...prev, ...initData };
-
-      expect(merged.form).toEqual({ method_card: true, method_samsungpay: null });
-      expect(merged.form.method_samsungpay).toBeNull();
-    });
-  });
-
-  /**
-   * [사례 7] 자동바인딩 value 쓰기 경로는 e.target.value 를 무변환 저장한다
-   *
-   * troubleshooting-components-form.md 사례 8 회귀 가드 (공개 #97).
-   *
-   * bindingType 미지정(RadioGroup/Select)은 value 바인딩으로 떨어지는데,
-   * 그 쓰기 경로(autoOnChange)는 `eventOrValue?.target?.value !== undefined ?
-   * eventOrValue.target.value : eventOrValue` 로 DOM 문자열을 그대로 저장한다.
-   * DOM 라디오의 value 는 항상 문자열이므로 boolean 필드가 이 경로로 묶이면
-   * 클릭 순간 "true"/"false" 문자열이 되어 서버 boolean 규칙에서 422 가 된다.
-   * 표시 계층은 String === String 느슨 비교가 구제하므로 저장 시점에야 드러난다.
-   */
-  describe('[사례 7] 자동바인딩 value 쓰기 경로의 boolean 문자열화 (공개 #97)', () => {
-    /** DynamicRenderer 의 value 바인딩 autoOnChange 값 추출과 동일 */
-    const calcAutoOnChangeNewValue = (eventOrValue: any): any =>
-      eventOrValue?.target?.value !== undefined ? eventOrValue.target.value : eventOrValue;
-
-    // @scenario case=auto_binding_boolean_stringify
-    // @effects radio_boolean_cast_round_trips
-    it('라디오 change 이벤트의 e.target.value 는 문자열 그대로 저장된다 (무변환)', () => {
-      // DOM 라디오는 value 를 항상 문자열로 보고한다
-      const domEvent = { target: { value: 'false', name: 'is_combinable', type: 'radio' } };
-
-      const stored = calcAutoOnChangeNewValue(domEvent);
-
-      expect(stored).toBe('false');
-      expect(typeof stored).not.toBe('boolean'); // 이것이 서버 422 의 시작점
-    });
-
-    // @scenario case=auto_binding_boolean_stringify
-    // @effects radio_boolean_cast_round_trips
-    it('boolean 미지정 컴포넌트(RadioGroup)는 boolean 값도 value 바인딩이라 쓰기 경로가 이 함정을 탄다', () => {
-      // 표시(사례 3)는 value 바인딩으로 구제되지만, 쓰기는 문자열화된다
-      expect(calcIsCheckedBinding(undefined, true)).toBe(false); // value 바인딩 확정
-    });
-
-    // @scenario case=auto_binding_boolean_stringify
-    // @effects radio_boolean_cast_round_trips
-    it('해결: change 액션의 === "true" 캐스팅은 항상 boolean 을 기록한다', () => {
-      // 레이아웃: "form.is_combinable": "{{$event.target.value === 'true'}}"
-      const castYes = 'true' === 'true';
-      const castNo = ('false' as string) === 'true';
-
-      expect(castYes).toBe(true);
-      expect(castNo).toBe(false);
-      expect(typeof castYes).toBe('boolean');
-      expect(typeof castNo).toBe('boolean');
-    });
-
-    // @scenario case=auto_binding_boolean_stringify
-    // @effects radio_boolean_cast_round_trips
-    it('해결: 표시 바인딩 String(boolean) 은 옵션 문자열 값과 정확히 매칭된다', () => {
-      // 레이아웃: value: "{{String(_local.form?.is_combinable ?? true)}}"
-      expect(String(true)).toBe('true');
-      expect(String(false)).toBe('false');
     });
   });
 });
@@ -1095,8 +741,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
      * 증상: 필터 내장 페이지 진입 시 이중 렌더링(깜빡임) 발생
      * 해결: updateTemplateData()에 외부 SlotProvider 추가 + DynamicRenderer의 isRootRenderer SlotProvider 래핑 제거
      */
-    // @scenario case=render_tree_consistency
-    // @effects render_and_update_share_provider_tree
     it('renderTemplate과 updateTemplateData는 동일한 Provider 래핑 구조를 가져야 함', async () => {
       // template-engine.ts의 renderTemplate()과 updateTemplateData()가 동일한
       // React 트리 구조를 가지는지 검증하는 구조적 테스트
@@ -1124,10 +768,8 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(renderTemplateProviders).toEqual(updateTemplateDataProviders);
     });
 
-    // @scenario case=render_tree_consistency
-    // @effects render_and_update_share_provider_tree
     it('외부 SlotProvider가 모든 컴포넌트에 슬롯 컨텍스트를 제공해야 함', () => {
-      // _admin_base.g7.html은 여러 루트 컴포넌트(사이드바, 헤더, 콘텐츠 슬롯)를 가짐
+      // _admin_base.json은 여러 루트 컴포넌트(사이드바, 헤더, 콘텐츠 슬롯)를 가짐
       // isRootRenderer=true는 index===0(첫 컴포넌트)에만 적용됨
       // 외부 SlotProvider가 없으면 index>0 컴포넌트(콘텐츠 영역)에서 슬롯 시스템 미동작
 
@@ -1139,14 +781,12 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
 
       // 외부 SlotProvider: 모든 컴포넌트에 SlotProvider 컨텍스트 제공
       const externalSlotProvider = true;
-      components.forEach(() => {
+      components.forEach(comp => {
         const hasSlotContext = externalSlotProvider; // 외부에서 제공
         expect(hasSlotContext).toBe(true);
       });
     });
 
-    // @scenario case=render_tree_consistency
-    // @effects render_and_update_share_provider_tree
     it('외부 SlotProvider 불일치 시 이중 렌더링이 발생하는 원리를 검증', () => {
       // 수정 전: renderTemplate만 SlotProvider 있음
       const beforeFixRenderTree = ['TranslationProvider', 'TransitionProvider', 'ResponsiveProvider', 'SlotProvider'];
@@ -1162,12 +802,11 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(fixedRenderTree).toEqual(fixedUpdateTree); // 일치 → 이중 렌더링 없음
     });
 
-    // @scenario case=render_tree_consistency
-    // @effects render_and_update_share_provider_tree
     it('DynamicRenderer의 isRootRenderer는 SlotProvider를 래핑하지 않아야 함 (외부에서 제공)', () => {
       // DynamicRenderer에서 isRootRenderer=true 시 SlotProvider 래핑하면
       // 외부 SlotProvider와 이중 래핑 → context 오염 위험
       // isRootRenderer는 다른 용도(__g7ForcedLocalFields 클리어 등)로만 사용
+      const isRootRenderer = true;
       const dynamicRendererWrapsSlotProvider = false; // 외부에서 제공하므로 내부 래핑 불필요
       expect(dynamicRendererWrapsSlotProvider).toBe(false);
     });
@@ -1186,8 +825,21 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       return (layoutName && !componentDef._fromBase) ? `${componentDef.id}_${layoutName}` : componentDef.id;
     }
 
-    // @scenario case=spa_datagrid_remount_key
-    // @effects layout_name_key_forces_slot_remount
+    // children key 생성 로직 (DynamicRenderer.tsx 실제 로직과 동일)
+    // getRemountKey()는 단순 componentId 반환, layoutKey suffix는 별도 적용
+    function getChildKey(childDef: { id?: string; _fromBase?: boolean }, index: number, layoutKey: string): string {
+      // 1단계: _fromBase 체크
+      const baseKey = childDef._fromBase
+        ? (childDef.id || `child-${index}`)
+        : (childDef.id || `child-${index}`);  // getRemountKey는 단순 ID 반환 (_remountKeys 없는 경우)
+
+      // 2단계: non-_fromBase에 layoutKey suffix 추가
+      if (!childDef._fromBase && layoutKey) {
+        return `${baseKey}_${layoutKey}`;
+      }
+      return baseKey;
+    }
+
     it('슬롯 children(_fromBase 없음)은 layout_name이 다르면 key가 달라져야 함', () => {
       const slotChild = { id: 'product_form', _fromBase: undefined as boolean | undefined };
       const productLayoutName = 'admin_ecommerce_product_list';
@@ -1202,8 +854,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(orderKey).toBe('product_form_admin_ecommerce_order_list');
     });
 
-    // @scenario case=spa_datagrid_remount_key
-    // @effects layout_name_key_forces_slot_remount
     it('_fromBase 컴포넌트는 layout_name이 달라도 stable key 유지', () => {
       const baseComponent = { id: 'admin_layout_root', _fromBase: true };
       const productLayoutName = 'admin_ecommerce_product_list';
@@ -1217,8 +867,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(productKey).toBe('admin_layout_root');
     });
 
-    // @scenario case=spa_datagrid_remount_key
-    // @effects layout_name_key_forces_slot_remount
     it('layout_name이 없으면 componentDef.id만 사용 (하위 호환)', () => {
       const componentId = 'admin_layout';
       const layoutName = '';
@@ -1228,8 +876,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(key).toBe(componentId);
     });
 
-    // @scenario case=spa_datagrid_remount_key
-    // @effects layout_name_key_forces_slot_remount
     it('동일 레이아웃 내 updateTemplateData는 동일 key 유지 (불필요한 remount 방지)', () => {
       const slotChild = { id: 'admin_layout' };
       const layoutName = 'admin_ecommerce_order_list';
@@ -1264,10 +910,8 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       return baseKey;
     }
 
-    // @scenario case=extends_base_remount
-    // @effects from_base_components_keep_stable_key
     it('_fromBase: true 컴포넌트는 페이지 전환 시 stable key → 보존', () => {
-      // _admin_base.g7.html의 최상위 4개 컴포넌트 시뮬레이션
+      // _admin_base.json의 최상위 4개 컴포넌트 시뮬레이션
       const baseComponents = [
         { id: 'global_toast', _fromBase: true },
         { id: 'page_transition_indicator', _fromBase: true },
@@ -1286,8 +930,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       }
     });
 
-    // @scenario case=extends_base_remount
-    // @effects from_base_components_keep_stable_key
     it('_fromBase 없는 슬롯 children은 페이지 전환 시 다른 key → remount', () => {
       // 슬롯에 삽입되는 페이지 고유 컴포넌트
       const slotChildren = [
@@ -1305,8 +947,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       }
     });
 
-    // @scenario case=extends_base_remount
-    // @effects from_base_components_keep_stable_key
     it('_fromBase children(sidebar 등)은 stable key', () => {
       const sidebarChildren = [
         { id: 'sidebar_header', _fromBase: true },
@@ -1322,8 +962,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       }
     });
 
-    // @scenario case=extends_base_remount
-    // @effects from_base_components_keep_stable_key
     it('슬롯 래퍼(slot 매칭 컴포넌트)는 _fromBase 미마킹 → children key에 layoutKey suffix → remount', () => {
       // main_content(Container, slot="content")는 슬롯이 매칭되면 _fromBase 미마킹
       // 부모 DynamicRenderer(right_content_area, _fromBase)가 보존되어도
@@ -1342,8 +980,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(keyB).toBe(`main_content_${layoutB}`);
     });
 
-    // @scenario case=extends_base_remount
-    // @effects from_base_components_keep_stable_key
     it('슬롯 래퍼 조상(right_content_wrapper 등 _fromBase)은 보존되지만 non-_fromBase children은 remount', () => {
       // right_content_area(_fromBase: true)는 보존, 그 children인 main_content는 layoutKey로 remount
       const ancestor = { id: 'right_content_area', _fromBase: true };
@@ -1360,8 +996,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(getChildKey(slotWrapper, 0, layoutA)).not.toBe(getChildKey(slotWrapper, 0, layoutB));
     });
 
-    // @scenario case=extends_base_remount
-    // @effects from_base_components_keep_stable_key
     it('non-extends 레이아웃은 _fromBase 없음 → 전체 layout_name key (하위 호환)', () => {
       // extends를 사용하지 않는 레이아웃 — replaceSlots 미호출 → _fromBase 없음
       const nonExtendsComponents = [
@@ -1380,8 +1014,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       }
     });
 
-    // @scenario case=extends_base_remount
-    // @effects from_base_components_keep_stable_key
     it('환경설정 로고 변경 시 _global 리액티브 바인딩으로 갱신 (remount 불필요)', () => {
       // 사이드바 로고는 {{_global.settings?.general?.site_logo_url}}에 바인딩
       // _global setState → 리액티브 갱신 → stable key 상태에서도 정상 동작
@@ -1400,8 +1032,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(updatedGlobalState.settings.general.site_logo_url).toBe('/new-logo.png');
     });
 
-    // @scenario case=extends_base_remount
-    // @effects from_base_components_keep_stable_key
     it('_fromBase 보존 컴포넌트의 localDynamicState가 페이지 전환 시 초기화되어야 함', () => {
       // _fromBase: true인 admin_layout_root가 보존될 때,
       // 이전 페이지에서 설정된 localDynamicState(visibleFilters 등)가
@@ -1438,8 +1068,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(prevPageDynamicState.visibleFilters).toHaveLength(4);
     });
 
-    // @scenario case=extends_base_remount
-    // @effects from_base_components_keep_stable_key
     it('_fromBase 아닌 컴포넌트는 layoutKey 변경 시 localDynamicState 초기화 불필요 (remount)', () => {
       // 슬롯 children은 _fromBase가 없으므로 key에 layoutKey가 포함됨
       // → 페이지 전환 시 key 변경 → React가 unmount/remount → localDynamicState 자동 초기화
@@ -1457,151 +1085,12 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
     });
   });
 
-  describe('[슬롯 사례 5] slot 컴포넌트 포함 페이지 새로고침 시 React Hook 규칙 위반', () => {
-    /**
-     * 증상: 상품관리/주문관리/쿠폰관리 등 _partial_filter_section.g7.html을 사용하는 페이지에서
-     *       새로고침으로 직접 진입 시 "컴포넌트 로드 실패" 배너 (React error #300 / hook count mismatch)
-     *       navigate 진입 시에는 정상 동작
-     *
-     * 근본 원인: DynamicRenderer.tsx의 getBlurWrapperClasses useMemo가 early return 뒤에 위치
-     *   → slot 속성이 있는 컴포넌트는 early return으로 useMemo 미호출
-     *   → slot 속성이 없는 상위 컴포넌트는 useMemo 호출
-     *   → 렌더 사이클 간 hook 호출 개수 불일치 → React "Rendered fewer hooks" 에러
-     *
-     * 해결: useMemo를 early return(slot context 검사) 이전으로 이동
-     *   Rules of Hooks: Hook은 컴포넌트 함수 최상위에서 매 렌더마다 같은 순서로 호출
-     */
-
-    /**
-     * DynamicRenderer 렌더 로직 시뮬레이션
-     *
-     * @param hasSlotAttr slot 속성 유무
-     * @param slotContextEnabled globalSlotContextForRender.isEnabled 여부
-     * @param hookOrder hook 호출 순서 추적용 배열 (side-effect)
-     * @returns early return 여부
-     */
-    function simulateRenderBadOrder(
-      hasSlotAttr: boolean,
-      slotContextEnabled: boolean,
-      hookOrder: string[]
-    ): { returned: 'early' | 'normal' } {
-      // ❌ 잘못된 구조: early return이 useMemo보다 앞에 있음
-      if (hasSlotAttr && slotContextEnabled) {
-        // useMemo 미호출 → hook count 감소
-        return { returned: 'early' };
-      }
-      // useMemo 호출 시뮬레이션
-      hookOrder.push('useMemo:getBlurWrapperClasses');
-      return { returned: 'normal' };
-    }
-
-    function simulateRenderGoodOrder(
-      hasSlotAttr: boolean,
-      slotContextEnabled: boolean,
-      hookOrder: string[]
-    ): { returned: 'early' | 'normal' } {
-      // ✅ 올바른 구조: useMemo가 early return보다 앞
-      hookOrder.push('useMemo:getBlurWrapperClasses');
-      if (hasSlotAttr && slotContextEnabled) {
-        return { returned: 'early' };
-      }
-      return { returned: 'normal' };
-    }
-
-    // @scenario case=slot_hook_order
-    // @effects slot_hook_count_stays_constant
-    it('잘못된 구조: slot 유/무 컴포넌트 간 hook 호출 개수 불일치', () => {
-      // 상위 Div: slot 없음 → useMemo 호출 (hook count 1)
-      const parentHooks: string[] = [];
-      const parent = simulateRenderBadOrder(false, true, parentHooks);
-
-      // 자식 Div: slot 속성 있음 → early return → useMemo 미호출 (hook count 0)
-      const childHooks: string[] = [];
-      const child = simulateRenderBadOrder(true, true, childHooks);
-
-      expect(parent.returned).toBe('normal');
-      expect(child.returned).toBe('early');
-
-      // 같은 컴포넌트 함수인데 hook 호출 개수가 다름 → React Rules of Hooks 위반
-      expect(parentHooks.length).not.toBe(childHooks.length);
-      expect(parentHooks.length).toBe(1);
-      expect(childHooks.length).toBe(0);
-    });
-
-    // @scenario case=slot_hook_order
-    // @effects slot_hook_count_stays_constant
-    it('올바른 구조: slot 유/무 컴포넌트 모두 hook 호출 개수 일정', () => {
-      // 상위 Div: slot 없음 → useMemo 호출 → 정상 렌더
-      const parentHooks: string[] = [];
-      const parent = simulateRenderGoodOrder(false, true, parentHooks);
-
-      // 자식 Div: slot 속성 있음 → useMemo 호출 → early return
-      const childHooks: string[] = [];
-      const child = simulateRenderGoodOrder(true, true, childHooks);
-
-      expect(parent.returned).toBe('normal');
-      expect(child.returned).toBe('early');
-
-      // 양쪽 모두 hook count 동일 → Rules of Hooks 준수
-      expect(parentHooks.length).toBe(childHooks.length);
-      expect(parentHooks.length).toBe(1);
-      expect(childHooks.length).toBe(1);
-    });
-
-    // @scenario case=slot_hook_order
-    // @effects slot_hook_count_stays_constant
-    it('slot context 비활성 시에도 hook 호출 순서 일관성 유지', () => {
-      // slotContext.isEnabled = false → early return 미발생
-      const hooks1: string[] = [];
-      simulateRenderGoodOrder(true, false, hooks1);
-
-      const hooks2: string[] = [];
-      simulateRenderGoodOrder(false, false, hooks2);
-
-      // 두 경로 모두 useMemo 호출
-      expect(hooks1).toEqual(['useMemo:getBlurWrapperClasses']);
-      expect(hooks2).toEqual(['useMemo:getBlurWrapperClasses']);
-    });
-
-    // @scenario case=slot_hook_order
-    // @effects slot_hook_count_stays_constant
-    it('새로고침(초기 마운트) vs navigate(재렌더) 시 hook 카운트 동일', () => {
-      // 초기 마운트 시 hook count 기록
-      const initialHooks: string[] = [];
-      simulateRenderGoodOrder(true, true, initialHooks);
-
-      // 리렌더 시 hook count 기록
-      const rerenderHooks: string[] = [];
-      simulateRenderGoodOrder(true, true, rerenderHooks);
-
-      // 두 렌더 사이 hook count 동일해야 React가 안정적으로 동작
-      expect(initialHooks.length).toBe(rerenderHooks.length);
-    });
-
-    // @scenario case=slot_hook_order
-    // @effects slot_hook_count_stays_constant
-    it('머지 방어 가이드: DynamicRenderer의 useMemo는 모든 early return보다 앞에 위치해야 함', () => {
-      // DynamicRenderer.tsx 소스에서 getBlurWrapperClasses useMemo 위치 검증
-      // Rules of Hooks: "Hooks must be called at the top level"
-      //
-      // 자동 머지 시 feat 측 useMemo 블록이 main 측 early return 블록 뒤로 밀릴 수 있음
-      // → 코드 리뷰 시 반드시 hook 위치 검증
-      const sourceStructure = {
-        hookLine: 3738,     // getBlurWrapperClasses useMemo 시작 라인 (가변 — 대략)
-        earlyReturnLine: 3806, // globalSlotContextForRender return null 라인 (가변 — 대략)
-      };
-      expect(sourceStructure.hookLine).toBeLessThan(sourceStructure.earlyReturnLine);
-    });
-  });
-
   describe('[사례 7-1] cellChildren 표현식 결과 $t: 키가 번역되지 않고 그대로 노출', () => {
     /**
      * 증상: DataGrid cellChildren에서 삼항 연산자 결과 $t: 키가 번역되지 않음
      * 해결: renderItemChildren.resolveValue에 $t: 번역 후처리 추가 + 하이픈 정규식 수정
      * @since engine-v1.28.1
      */
-    // @scenario case=cellchildren_translation_token
-    // @effects cell_expression_translation_tokens_resolved
     it('preprocessTranslationTokens가 하이픈 포함 모듈키를 올바르게 처리해야 함', () => {
       // 하이픈 포함 키: sirsoft-page, sirsoft-board 등
       const hyphenRegex = /\$t:[a-zA-Z0-9._-]+/;
@@ -1615,8 +1104,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(hyphenRegex.test('$t:validation.required')).toBe(true);
     });
 
-    // @scenario case=cellchildren_translation_token
-    // @effects cell_expression_translation_tokens_resolved
     it('표현식 평가 결과가 $t: 문자열이면 번역 대상이어야 함', () => {
       // 삼항 연산자 평가 결과 시뮬레이션
       const expressionResult = '$t:sirsoft-page.admin.page.published_status.published';
@@ -1627,8 +1114,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(shouldTranslate).toBe(true);
     });
 
-    // @scenario case=cellchildren_translation_token
-    // @effects cell_expression_translation_tokens_resolved
     it('raw: 바인딩 결과는 $t: 패턴이 있어도 번역 면제', () => {
       const isRawBinding = true;
       const result = '$t:common.save';
@@ -1640,8 +1125,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(shouldTranslate).toBe(false);
     });
 
-    // @scenario case=cellchildren_translation_token
-    // @effects cell_expression_translation_tokens_resolved
     it('표현식 결과가 $t: 문자열이 아니면 번역 시도 안 함', () => {
       const normalResult = '활성';
 
@@ -1660,8 +1143,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
    * 해결: ref 기반 캐시 + 언마운트 전용 cleanup 분리
    */
   describe('[사례 22-1] FileUploader 갤러리 blob URL stale closure', () => {
-    // @scenario case=file_uploader_blob_stale
-    // @effects file_uploader_blob_cache_stays_fresh
     it('ref 기반 캐시는 existingFiles 변경 후에도 has() 체크가 최신 상태를 참조한다', () => {
       // state 기반 (버그): 클로저가 이전 렌더의 스냅샷 캡처
       let stateMap = new Map<number, string>();
@@ -1685,8 +1166,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(refMap.current.has(2)).toBe(true);
     });
 
-    // @scenario case=file_uploader_blob_stale
-    // @effects file_uploader_blob_cache_stays_fresh
     it('cleanup에서 revoke 후 Map을 clear하지 않으면 재로딩이 건너뛰어진다', () => {
       const urlCache = new Map<number, string>();
       urlCache.set(1, 'blob:url-1');
@@ -1723,8 +1202,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(refCache.current.has(2)).toBe(true);
     });
 
-    // @scenario case=file_uploader_blob_stale
-    // @effects file_uploader_blob_cache_stays_fresh
     it('비동기 로딩 중 cancelled 플래그로 stale 업데이트를 방지한다', async () => {
       let cancelled = false;
       const results: number[] = [];
@@ -1752,66 +1229,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(results.length).toBeLessThanOrEqual(3);
       // cancelled 플래그가 동작함을 확인
       expect(cancelled).toBe(true);
-    });
-  });
-});
-
-describe('트러블슈팅 회귀 테스트 - DataGrid cellChildren 파이프', () => {
-  /**
-   * 사례: cellChildren 단일 바인딩의 파이프가 적용되지 않아 셀이 비어 보임
-   *
-   * 단일 바인딩 판정 후 `|` 가 복잡 표현식 문자로 분류되어 evaluateExpression 으로
-   * 라우팅되면 안 된다. engine-v1.59.0 의 안전 평가기는 비트 연산자를 거부하므로
-   * raw 파이프가 흘러들면 예외가 된다(종전엔 조용한 비트 OR 오답이었다). 라우팅 판정 자체를 고정한다.
-   *
-   * 배경: 내부 트러블슈팅 사례 「DataGrid cellChildren 파이프 이슈」
-   * @see resources/js/core/template-engine/__tests__/renderItemChildren-pipe.test.ts (렌더 결과 검증)
-   */
-  describe('[사례 1] 파이프 판정이 복잡 표현식 판정보다 먼저 적용된다', () => {
-    // @scenario case=cellchildren_pipe_routing
-    // @effects cell_pipe_expressions_route_to_resolve_bindings
-    it('파이프 표현식은 hasPipes 로 먼저 걸러진다 (인자 유무 무관)', () => {
-      expect(hasPipes("row.created_at | datetime('YYYY-MM-DD HH:mm')")).toBe(true);
-      expect(hasPipes('row.price | number')).toBe(true);
-      expect(hasPipes('row.code | uppercase | truncate(2)')).toBe(true);
-    });
-
-    // @scenario case=cellchildren_pipe_routing
-    // @effects cell_pipe_expressions_route_to_resolve_bindings
-    it('논리 OR 와 따옴표 안의 | 는 파이프로 오인되지 않는다', () => {
-      expect(hasPipes("row.name || '-'")).toBe(false);
-      // 다국어 파라미터 구분자는 문자열 리터럴 내부이므로 파이프가 아니다
-      expect(hasPipes("row.flag ? '$t:common.badge|count=1' : ''")).toBe(false);
-    });
-
-    // @scenario case=cellchildren_pipe_routing
-    // @effects cell_pipe_expressions_route_to_resolve_bindings
-    it('파이프를 evaluateExpression 으로 보내면 거부된다 (라우팅 판정 고정)', () => {
-      const engine = new DataBindingEngine();
-      // engine-v1.59.0: 표현식은 화이트리스트 AST 평가기로 실행되며 비트 연산자(`|`)를
-      // 거부한다. 종전 `new Function` 기반에서는 인자 없는 파이프가 비트 OR 로 조용히
-      // 0 이 되고 인자 있는 파이프는 예외였다 — 이제 둘 다 명확히 예외로 거부된다.
-      // (파이프는 hasPipes 로 먼저 분리되어야 하며 evaluateExpression 에 raw 로 오면 안 됨)
-      expect(() =>
-        engine.evaluateExpression('row.code | uppercase', { row: { code: 'abc' } })
-      ).toThrow();
-      expect(() =>
-        engine.evaluateExpression("row.created_at | datetime('YYYY-MM-DD')", {
-          row: { created_at: '2024-01-15T14:30:00' },
-        })
-      ).toThrow();
-    });
-
-    // @scenario case=cellchildren_pipe_routing
-    // @effects cell_pipe_expressions_route_to_resolve_bindings
-    it('파이프 표현식은 resolveBindings 경로에서 서식이 적용된다', () => {
-      const engine = new DataBindingEngine();
-      expect(engine.resolveBindings('{{row.code | uppercase}}', { row: { code: 'abc' } })).toBe('ABC');
-      expect(
-        engine.resolveBindings("{{row.created_at | datetime('YYYY-MM-DD HH:mm')}}", {
-          row: { created_at: '2024-01-15T14:30:00' },
-        })
-      ).toBe('2024-01-15 14:30');
     });
   });
 });

@@ -7,23 +7,17 @@ use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Ecommerce\Models\Category;
-use Modules\Sirsoft\Ecommerce\Rules\NotCircularCategoryParent;
 
 /**
  * 카테고리 생성 요청
  */
 class CreateCategoryRequest extends FormRequest
 {
-    use ValidatesTempKey;
-
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
-     *
-     * @return bool 권한 검증 결과 (항상 true)
      */
     public function authorize(): bool
     {
@@ -34,8 +28,6 @@ class CreateCategoryRequest extends FormRequest
      * 검증 전 데이터 전처리
      *
      * 프론트엔드에서 문자열 "true"/"false"로 전송되는 boolean 값을 변환합니다.
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -51,16 +43,14 @@ class CreateCategoryRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, mixed> 필드별 검증 규칙
+     * @return array
      */
     public function rules(): array
     {
         $rules = [
             'name' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100)],
-            'description' => ['nullable', 'array', new TranslatableField],
-            // 생성 시에는 자기 자신이 아직 없어 순환이 불가하나, 수정 요청과 규칙 구성을
-            // 동일하게 유지해 두 엔드포인트의 검증 강도가 갈라지는 것을 막는다.
-            'parent_id' => ['nullable', Rule::exists(Category::class, 'id'), new NotCircularCategoryParent],
+            'description' => ['nullable', 'array', new TranslatableField()],
+            'parent_id' => ['nullable', Rule::exists(Category::class, 'id')],
             'slug' => [
                 'required',
                 'string',
@@ -71,7 +61,7 @@ class CreateCategoryRequest extends FormRequest
             'is_active' => 'boolean',
             'meta_title' => 'nullable|string|max:200',
             'meta_description' => 'nullable|string',
-            'temp_key' => $this->tempKeyRules(), // FileUploader temp_key (UUID — 저장 경로에 들어간다)
+            'temp_key' => 'nullable|string|max:64', // FileUploader temp_key
         ];
 
         // 훅을 통한 동적 규칙 확장
@@ -81,7 +71,7 @@ class CreateCategoryRequest extends FormRequest
     /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array<string, string> 규칙별 다국어 에러 메시지
+     * @return array
      */
     public function messages(): array
     {
@@ -91,20 +81,6 @@ class CreateCategoryRequest extends FormRequest
             'slug.unique' => __('sirsoft-ecommerce::validation.category.slug_unique'),
             'slug.regex' => __('sirsoft-ecommerce::validation.category.slug_format'),
             'parent_id.exists' => __('sirsoft-ecommerce::validation.category.parent_not_found'),
-        ];
-    }
-
-    /**
-     * 검증 오류 문구에 쓰는 필드 표시 이름
-     *
-     * 다국어 칸의 현재 언어 값을 비우면 「카테고리명의 한국어(ko) 값은 필수입니다.」처럼 칸 이름을 싣는다.
-     *
-     * @return array<string, string> 필드 키 → 표시 이름
-     */
-    public function attributes(): array
-    {
-        return [
-            'name' => __('sirsoft-ecommerce::validation.attributes.category_name'),
         ];
     }
 }

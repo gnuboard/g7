@@ -4,10 +4,6 @@ import { A } from '../basic/A';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
-import type { EditorAttrs } from '../../types';
-import { useRenderWidth } from '../../hooks/useRenderWidth';
-import { classAtWidth } from '../layout/widthBreakpoints';
-import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 /**
  * 빠른 링크 인터페이스
@@ -29,12 +25,6 @@ export interface AdminFooterProps {
   className?: string;
   copyrightModalId?: string;
   changelogModalId?: string;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -61,11 +51,7 @@ export const AdminFooter: React.FC<AdminFooterProps> = ({
   className = '',
   changelogModalId,
   copyrightModalId,
-  id,
-  editorAttrs,
 }) => {
-  // 줄 방향·구분점을 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
-  const renderWidth = useRenderWidth();
   const handleVersionClick = useCallback(() => {
     if (changelogModalId) {
       const G7Core = (window as any).G7Core;
@@ -145,26 +131,27 @@ export const AdminFooter: React.FC<AdminFooterProps> = ({
   }, [copyrightModalId]);
 
   return (
-    <Div className={`admin-footer ${className}`} id={id} {...editorAttrs}>
-      {/* 768 이상 가로 배치 — 폭 미디어가 없는 바탕(`admin-footer-bar`)에 렌더 폭으로 `flex-row` 를 더한다 */}
-      <Div className={`admin-footer-bar ${classAtWidth(renderWidth, 'md', 'flex-row')}`.trim()}>
+    <Div
+      className={`
+        bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4
+        ${className}
+      `}
+    >
+      <Div className="flex flex-col md:flex-row items-center justify-between gap-4">
         {/* 왼쪽: 저작권 및 버전 정보 */}
-        <Div className="admin-footer-group">
+        <Div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
           <Span
-            className={copyrightModalId ? `admin-footer-link-hover rounded ${FOCUS_VISIBLE_RING}` : ''}
+            className={copyrightModalId ? 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors' : ''}
             onClick={copyrightModalId ? handleCopyrightClick : undefined}
-            // 창을 여는 칸은 키보드로도 연다(#869 키보드 접근)
-            {...keyboardActivationProps(copyrightModalId ? handleCopyrightClick : undefined)}
           >
             {copyright}
           </Span>
           {version && (
             <>
-              <Span className={classAtWidth(renderWidth, 'md', 'inline', 'hidden')}>•</Span>
+              <Span className="hidden md:inline">•</Span>
               <Span
-                className={`flex-center gap-2 ${changelogModalId ? `admin-footer-link-hover rounded ${FOCUS_VISIBLE_RING}` : ''}`}
+                className={`flex items-center gap-2 ${changelogModalId ? 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors' : ''}`}
                 onClick={changelogModalId ? handleVersionClick : undefined}
-                {...keyboardActivationProps(changelogModalId ? handleVersionClick : undefined)}
               >
                 <Icon name={IconName.Tag} className="w-4 h-4" />
                 <Span>v{version}</Span>
@@ -175,10 +162,16 @@ export const AdminFooter: React.FC<AdminFooterProps> = ({
 
         {/* 오른쪽: 빠른 링크 */}
         {quickLinks.length > 0 && (
-          <Div className="flex-center gap-4">
+          <Div className="flex items-center gap-4">
             {quickLinks.map((link) => (
-              <A key={link.id} href={link.url} className="admin-footer-link">
-                {link.iconName && <Icon name={link.iconName} className="w-4 h-4" />}
+              <A
+                key={link.id}
+                href={link.url}
+                className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                {link.iconName && (
+                  <Icon name={link.iconName} className="w-4 h-4" />
+                )}
                 <Span>{link.label}</Span>
               </A>
             ))}

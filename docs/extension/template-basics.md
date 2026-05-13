@@ -1,7 +1,7 @@
 # 템플릿 시스템 기초
 
 > **위치**: `docs/extension/template-basics.md`
-> **관련 문서**: [README.md](./README.md) | [template-routing.md](./template-routing.md) | [template-security.md](./template-security.md)
+> **관련 문서**: [index.md](./index.md) | [template-routing.md](./template-routing.md) | [template-security.md](./template-security.md)
 
 ---
 
@@ -13,7 +13,6 @@
 3. 필수: template.json, routes.json, components.json
 4. 코어/템플릿 분리: 코어는 엔진, 템플릿은 컴포넌트
 5. 버전 히스토리: Admin만 지원, User는 미지원
-6. template.json `expose`: 엔진이 앱 시작 때 읽는 키를 화면 HTML 에 미리 실어 config API 왕복을 없앤다(선택)
 ```
 
 ---
@@ -43,21 +42,7 @@ G7의 템플릿 시스템은 JSON 기반 레이아웃 정의를 통해 동적으
 - 컴포넌트 재사용성 극대화
 - 다국어 및 권한 기반 렌더링
 
-> 템플릿 엔진을 쓰지 않고 Blade·Twig·HTML+jQuery·외부 프레임워크(Next.js 등)로 화면을 직접 만들려면 템플릿이 아니라 custom 예약 자리를 쓴다 — `routes/custom.php` 에 등록한 주소만 개발자 화면이 그리고 나머지는 템플릿이 그대로 그린다(7.2.0+). [개발자 화면 가이드](../custom-development.md)
-
 ---
-
-## 확장 컴포넌트 오버라이드
-
-템플릿은 확장(모듈/플러그인)이 제공한 컴포넌트를 자기 구현으로 갈아끼울 수 있다. 구현체는 `src/components/overrides/{확장식별자}/{이름}.tsx` 에 두고 `components.json` 의 `overrides[]` 에 대상·버전 제약을 선언한다 — 디렉토리명이 곧 대상 식별자이며, 레이아웃 오버라이드(`layouts/overrides/{확장식별자}/`)와 같은 규약이다.
-
-대체는 같은 이름 아래에서 일어나므로 **마크업 표면은 바뀌지 않는다** — 레이아웃은 오버라이드가 붙든 떨어지든 그대로다. 버전 제약이 대상과 맞지 않으면 대체본을 폐기하고 **원본이 자리를 지킨다**(화면이 조용히 사라지지 않는다).
-
-이 대체 권한은 템플릿에만 있다. 반대 방향(확장이 템플릿 컴포넌트를 대체)은 열려 있지 않다.
-
-규약 전문: **[extension-components.md](extension-components.md)**
-
-확장 화면의 **스타일**은 확장이 자기 CSS 로 싣는다. 템플릿이 그 모양을 바꾸려면 같은 관례(대상·허용 버전 선언, 맞지 않으면 원본으로 폴백)의 확장 CSS 덮기 파일을 둔다 — 아래 [확장 CSS 덮기 파일](#확장-css-덮기-파일-extension_css_overrides).
 
 ## 템플릿 타입
 
@@ -215,16 +200,6 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 
 ## 템플릿 메타데이터 (template.json)
 
-### icon 필드 (선택)
-
-템플릿도 자기 아이콘을 담을 수 있습니다. 보통은 `assets/icon.svg` 를 두면 되고, 다른
-경로를 쓸 때만 `template.json` 에 `"icon": "assets/brand/mark.svg"` 를 적습니다.
-규격과 표시 자리는 [확장 아이콘](extension-icons.md)에 있습니다.
-
-> `preview` · `thumbnail` · `screenshots` 는 **지원하지 않습니다.** 과거 일부 템플릿이
-> 선언했지만 코드가 읽지 않던 값이라 제거했습니다. 아이콘은 위 관례를 쓰세요.
-
-
 **위치**: `/templates/_bundled/[vendor-template]/template.json`
 
 ### 구조
@@ -243,26 +218,14 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
   "features": {
     "responsive": true,
     "darkMode": true,
-    "rtl": false,
-    "color_scheme": { "strategy": "ancestor-class", "selector": ".dark" }
+    "rtl": false
   },
   "assets": {
     "css": ["dist/bundle.css"],
     "js": ["dist/bundle.js"]
-  },
-  "externals": [
-    {
-      "id": "fontawesome",
-      "type": "style",
-      "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
-    }
-  ]
+  }
 }
 ```
-
-`assets.css` 는 화면 HTML 이 링크할 템플릿 CSS 목록입니다. 사용자·관리자 화면과 검색엔진용 화면 모두 **선언했고 설치본에 파일이 있는** 경로만 링크하며(`dist/` 를 뗀 자산 주소, 예: `templates/_bundled/sirsoft-basic/dist/css/components.css` → `/api/templates/assets/{id}?file=css/components.css`), CSS 를 쓰지 않는 템플릿은 `"css": []` 로 두면 CSS 링크가 실리지 않습니다.
-
-> **7.1.0 부터 달라진 점(직접 만든 템플릿 확인)**: 7.0.x 까지는 `assets.css` 선언과 무관하게 화면이 늘 `?file=css/components.css` 를 링크했습니다. 7.1.0 부터는 선언한 파일만 링크하고, 선언이 없거나 비어 있으면 대신 넣어 주는 기본값이 없습니다. 직접 만든 템플릿이 `templates/{템플릿 식별자}/dist/css/components.css` 를 산출하면서 `assets.css` 에 적지 않았다면 7.1.0 으로 올린 뒤 그 CSS 가 화면에 실리지 않아 스타일이 빠집니다. `template.json` 의 `assets.css` 에 `"dist/css/components.css"` 처럼 산출 경로를 적고 템플릿을 다시 설치·업데이트하세요. 번들 템플릿은 CSS 를 산출하는 두 템플릿(`sirsoft-admin_basic`·`sirsoft-basic`)이 선언돼 있고 나머지는 CSS 산출물이 없어 조치가 필요 없습니다.
 
 ### 필수 필드
 
@@ -275,208 +238,6 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 | `license` | 라이선스 유형 (예: `"MIT"`) — API 리소스의 `license` 필드로 노출 |
 | `type` | "admin" 또는 "user" |
 | `locales` | 지원 언어 배열 (`config('app.supported_locales')`와 매칭) |
-
-### 공개 전역 상태와 선택 연동 (state_contracts · integrations)
-
-템플릿도 다른 확장이 읽으라고 내놓는 전역 값을 `state_contracts` 로 선언하고(예: 기본 템플릿의 `shopBase` — 쇼핑몰 경로),
-있으면 연동되는 확장을 `integrations` 로 선언합니다. 형식과 규칙은 플러그인과 같습니다 —
-[전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts),
-[선택 연동](plugin-development.md#선택-연동-integrations). 템플릿은 같은 유형(admin·user)끼리 하나만 활성이므로, 템플릿을 바꿔 끼울 때는
-교체될 템플릿의 선언이 충돌 검사에서 빠집니다.
-
-#### 사용자 템플릿이 모듈 화면을 품을 때 (코어 7.1.4+)
-
-게시판·쇼핑몰처럼 사이트가 골라 쓰는 모듈의 화면을 사용자 템플릿이 함께 제공한다면, 그 모듈을 `dependencies` 가 아니라
-`integrations` 에 버전 제약으로 선언합니다. `dependencies` 에 두면 그 모듈을 켜지 않은 사이트는 템플릿을 설치할 수 없고, 이미 쓰던
-사이트는 모듈 하나만 꺼도 사용자 화면 전체가 「서비스 이용 불가」(503)가 됩니다.
-
-```json
-"dependencies": { "modules": {}, "plugins": {} },
-"integrations": {
-    "modules": { "sirsoft-board": ">=1.2.1", "sirsoft-ecommerce": ">=1.3.0", "sirsoft-page": ">=1.2.0" },
-    "plugins": { "sirsoft-daum_postcode": ">=1.0.0" }
-}
-```
-
-선택 연동으로 선언했으면 그 모듈이 꺼진 사이트에서 화면이 깨지지 않게 세 곳을 함께 가립니다.
-
-| 대상 | 방법 |
-| --- | --- |
-| 모듈 화면 라우트 | `routes.json` 라우트에 `"requires": {"modules": ["sirsoft-board"]}` — 모듈이 꺼지면 라우트·사이트맵·검색봇 화면에서 빠진다 ([템플릿 라우팅 — requires](template-routing.md)) |
-| 공통 화면의 데이터소스 | `"if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}"` + `"errorHandling": {"404": {"handler": "suppress"}}` — 헤더·홈·마이페이지처럼 어느 라우트에서든 쓰이는 레이아웃이 대상이다 |
-| 메뉴·링크·단추·컴포넌트 속성 | 같은 식을 노드 `if` 나 컴포넌트 속성(예: 헤더의 게시판 탭 표시 여부)에 쓴다. 플러그인은 `_global.activePlugins` |
-
-식은 한 모양만 씁니다 — `?? true` 를 빼면 이 값이 없는 옛 코어(7.1.3 이하)에서 화면이 사라집니다. 식의 규칙은
-[전역 상태 — 시스템 주입 속성](../frontend/state-management.md#시스템-주입-속성)에 있습니다. 정적 검사는 템플릿 레이아웃의 데이터소스가
-선택 연동 모듈의 API 를 이 가드 없이 부르면 오류로 봅니다 — 그 레이아웃을 쓰는 라우트가 모두 `requires` 로 그 모듈을 거는 경우만 예외입니다.
-
-옛 코어(7.1.3 이하)는 `requires` 와 `_global.activeModules` 를 모르므로 모든 화면을 「모두 켜짐」으로 그립니다. 그래서
-`g7_version` 을 올리지 않아도 기존 사이트의 화면은 그대로이고, 모듈을 골라 쓰는 단독 사용은 코어 7.1.4 이상에서 동작한다고
-CHANGELOG 에 적습니다.
-
-### 필수 브라우저 저장 키 (necessary_storage) — 7.1.3+
-
-템플릿 화면이 동의와 무관하게 써야 하는 브라우저 저장 키(색 모드, 사이드바 접힘 등)를 선언하는 **선택 필드**입니다. 쿠키 동의 플러그인은 동의 전 「필수」 목록 밖의 저장 키를 지우므로, 선언하지 않은 키는 동의 전에 지워질 수 있습니다. 코어는 활성 사용자·관리자 템플릿의 선언을 합쳐 `TemplateManager::getActiveTemplatesNecessaryStorage()` 로 내놓고, 동의 플러그인이 이를 자기 제공 목록에 더합니다(PHP 리스너가 없는 템플릿도 키를 등록할 수 있는 통로).
-
-```json
-"necessary_storage": {
-    "localStorage": ["g7_color_scheme", "g7_admin_sidebar_collapsed", "g7_filters_*"],
-    "sessionStorage": ["g7_dismissed_warnings"],
-    "cookie": []
-}
-```
-
-| 항목 | 규칙 |
-|------|------|
-| 저장소 키 | `localStorage` · `sessionStorage` · `cookie` (각각 문자열 배열, 생략 가능) |
-| 키 문자 | 영문·숫자와 `_` `.` `:` `@` `+` `-` |
-| 와일드카드 | 끝의 `*` 하나만 — 앞부분이 같은 키 모두와 매칭 (`g7_filters_*`) |
-| 길이 | 128자 이하 |
-| 틀린 항목 | 그 항목만 무시하고 경고 로그를 남긴다. 설치는 막지 않으며, 설치·업데이트 때는 결과의 생명주기 경고 목록(`warnings`)에도 실린다 |
-
-활성 템플릿의 선언만 반영됩니다 — 템플릿을 바꾸면 이전 템플릿이 선언한 키는 목록에서 빠집니다.
-
-코어 엔진이 쓰는 필수 키는 템플릿 선언과 별도로 `App\Support\CoreNecessaryStorage::keys()` 가 같은 형식(저장소 종류 → 키 목록)으로 돌려줍니다(7.1.5~, 지금은 비회원 최근 검색어 `localStorage` 의 `g7_search_history` 하나). 동의 플러그인은 이 목록도 필수 저장 허용 목록에 합칩니다(번들 `sirsoft-gdpr` 1.1.4~). 템플릿이 같은 키를 다시 선언할 필요는 없고, 운영자가 지울 수 없는 코어 선언이라 동의 플러그인 설정의 목록에는 나오지 않습니다.
-
-### 외부 리소스 (externals)
-
-`externals`는 admin/user 템플릿에 공통 적용되는 선택 필드입니다. 최초 HTML 문서에 정적으로 필요한 스타일, 웹폰트, 스크립트, 리소스 힌트를 선언합니다. `external_styles`는 사용하지 않습니다.
-
-자산을 가리키는 방법은 `asset`과 `url` 두 가지이며, 항목마다 **하나를 고릅니다**.
-
-- `asset` — 템플릿이 **자체 제공**하는 파일의 `dist/` 이하 경로. 구동 에셋은 자체 제공이 원칙이므로 이쪽이 기본입니다.
-- `url` — 절대 URL. 자체 제공이 불가능한 외부 서비스에만 씁니다.
-
-```json
-{
-    "type": "style",
-    "id": "font-awesome",
-    "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
-}
-```
-
-구동에 필요한 에셋을 제3자 CDN에서 실시간으로 받으면, 그 도달 실패는 예외도 로그도 남기지 않고 화면 기능만 사라집니다. 폐쇄망·방화벽·광고차단기 환경에서 재현되며 자체 서버 로그에 흔적이 없어 운영자가 원인을 특정할 수 없습니다. 라이브러리·웹폰트·아이콘은 `dist/vendor/{lib}/{version}/`에 동봉하고 `asset`으로 가리킵니다.
-
-| 속성 | 타입 | 필수 | 적용 type | 허용값/형식 | 렌더링/동작 |
-|---|---:|---:|---|---|---|
-| `id` | string | 권장 | all | 영문/숫자/`-`/`_` | HTML `id` 속성 |
-| `type` | string | 필수 | all | `style`, `webfont`, `script`, `preconnect`, `dns-prefetch`, `preload`, `modulepreload` | 출력 태그와 위치 결정 |
-| `asset` | string | `url`과 택일 | `preconnect`·`dns-prefetch` 제외 | `dist/` 이하 상대 경로 (`vendor/font-awesome/6.4.0/css/all.inlined.css`). `/`로 시작 금지, `..` 금지, `A-Za-z0-9._-/`만 허용 | 자산 URL 이중 모드와 정적 게시를 반영한 same-origin URL로 해석. `url`보다 우선하며, 둘 다 선언하면 `url`은 무시되고 경고가 남는다 |
-| `url` | string | `asset`과 택일 | all | `https://...` 또는 `/`로 시작하는 same-origin 경로 | link 계열은 `href`, script는 `src` |
-| `preconnect` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | `https://cdn.example.com` | 리소스보다 먼저 `<link rel="preconnect">` 출력, 중복 제거. **same-origin 항목에서는 무시** |
-| `crossorigin` | boolean/string | 선택 | `style`, `webfont`, `script`, `preconnect`, `preload`, `modulepreload` | `true`, `anonymous`, `use-credentials` | `true`는 `anonymous`로 정규화. **same-origin 항목에서는 무시** |
-| `integrity` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | SRI hash | HTML `integrity` |
-| `referrerpolicy` | string | 선택 | `style`, `webfont`, `script`, `preload`, `modulepreload` | 표준 referrer policy | HTML `referrerpolicy` |
-| `media` | string | 선택 | `style`, `webfont` | CSS media query | stylesheet link의 `media` |
-| `position` | string | 선택 | `script` | `head`, `before-core`, `before-template`, `body-end` | script 삽입 위치, 기본 `before-template` |
-| `async` | boolean | 선택 | `script` | `true`, `false` | `async`; `defer`와 동시 사용 불가 |
-| `defer` | boolean | 선택 | `script` | `true`, `false` | `defer` |
-| `as` | string | `preload` 필수 | `preload` | `style`, `script`, `font`, `image`, `fetch` 등 | preload의 `as` |
-| `mimeType` | string | 선택 | `preload`, `modulepreload` | MIME type | HTML `type` |
-| `fetchpriority` | string | 선택 | `preload`, `modulepreload` | `high`, `low`, `auto` | HTML `fetchpriority` |
-
-| `type` | 출력 위치 | HTML 결과 |
-|---|---|---|
-| `style` | head | `<link rel="stylesheet" href="...">` |
-| `webfont` | head | `<link rel="stylesheet" href="...">` |
-| `script` | `position` 기준 | `<script src="..."></script>` |
-| `preconnect` | head 상단 | `<link rel="preconnect" href="...">` |
-| `dns-prefetch` | head 상단 | `<link rel="dns-prefetch" href="...">` |
-| `preload` | head | `<link rel="preload" href="..." as="...">` |
-| `modulepreload` | head | `<link rel="modulepreload" href="...">` |
-
-`externals`는 페이지 최초 진입에 항상 필요한 리소스만 선언합니다. 라우트별 조건부 스크립트나 액션 실행 중 동적 로딩은 layout `scripts`와 `loadScript` 책임입니다.
-
-세 경로 모두 **같은 출처 정책**을 받습니다 — same-origin 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 상세: [module-assets.md](module-assets.md#trusted_script_hosts--외부-스크립트-신뢰-호스트) · [frontend/security.md](../frontend/security.md#외부-스크립트-신뢰-출처-허용목록)
-
-### 다크 모드 방식 (`features.color_scheme`)
-
-확장 화면은 확장이 자기 CSS 로 그리는데, 확장은 템플릿이 다크 모드를 어떻게 켜는지 모릅니다. 그래서 템플릿이 자기 다크 방식을 선언하면 코어가 그 방식에 맞춰 `<html data-g7-color-scheme="dark">`(또는 `"light"`)라는 **중립 표식**을 달고, 확장 CSS 는 이 표식만 봅니다(7.2.0+).
-
-| 선언 | 뜻 | 표식이 dark 가 되는 때 |
-| --- | --- | --- |
-| `{ "strategy": "ancestor-class", "selector": ".dark" }` | 템플릿이 루트 요소의 클래스로 다크를 켠다 | `<html>` 또는 `<body>` 가 `selector` 에 맞을 때. 클래스가 바뀌면 바로 따라간다 |
-| `{ "strategy": "media-query" }` | 시스템 설정을 따른다 | `prefers-color-scheme: dark` 일 때. 시스템 설정이 바뀌면 따라간다 |
-| `{ "strategy": "none" }` | 다크 모드가 없다 | 없음 — 늘 `light` |
-
-```json
-"features": {
-    "color_scheme": { "strategy": "ancestor-class", "selector": ".dark" }
-}
-```
-
-- 선언하지 않으면 `none` 으로 봅니다. 다크 모드가 있는 템플릿이 선언을 빠뜨리면 확장 화면만 늘 라이트로 그려집니다.
-- `strategy` 가 세 값 밖이거나 `ancestor-class` 에 `selector` 가 없으면 **템플릿 검증 오류**입니다 — 필수 필드가 빠진 것과 같이 그 템플릿을 불러오지 않고 오류 로그를 남깁니다.
-- 번들 템플릿: `sirsoft-basic`·`sirsoft-admin_basic` 은 `ancestor-class` + `.dark`, 학습용 `gnuboard7-hello_user_template`·`gnuboard7-hello_admin_template` 은 `none`.
-- 템플릿 자기 CSS 는 이 선언과 무관하게 종전 방식(예: Tailwind `dark:`)을 그대로 씁니다. 표식은 확장 CSS 를 위한 것입니다 — [dark-mode.md](../frontend/dark-mode.md#확장은-중립-표식을-쓴다).
-- `features.dark_mode`(불리언)는 표식을 만들지 않습니다. 다크 방식은 `color_scheme` 으로만 선언합니다.
-- 레이아웃 편집기 프리뷰의 다크 치환(`editor-spec.json` 의 `darkMode`)은 별개 선언이며 그대로 둡니다.
-
-### 확장 CSS 덮기 파일 (`extension_css_overrides`)
-
-템플릿은 확장(모듈·플러그인) 화면의 스타일을 확장 CSS 를 고치지 않고 자기 모양으로 바꿀 수 있습니다. 확장별 CSS 파일을 만들어 대상과 허용 버전을 선언합니다(7.2.0+).
-
-```json
-"extension_css_overrides": [
-    {
-        "target": "gnuboard7-hello_module",
-        "targetVersion": "^0.3",
-        "path": "dist/css/overrides/gnuboard7-hello_module.css"
-    }
-]
-```
-
-| 필드 | 필수 | 뜻 |
-| --- | --- | --- |
-| `target` | 필수 | 덮을 확장 식별자 |
-| `targetVersion` | 선택 | 대상 확장의 허용 버전 제약(Semver). 미선언이면 무제한 |
-| `path` | 필수 | 템플릿 빌드 산출물 경로 — `dist/` 아래, `..` 금지. 원본은 `src/styles/overrides/<확장식별자>.css` 에 두는 것이 관례 |
-
-- 대상이 활성이고 버전이 맞을 때만 화면에 실립니다. 버전이 맞지 않으면 빠지고(정보 로그) 화면은 확장 원래 모양이며, 대상이 꺼져 있거나 설치되지 않았으면 조용히 빠집니다.
-- 모든 확장 CSS 뒤, 운영자 추가 자산(`custom/`) 앞에 실립니다. 검색엔진용 화면도 같은 순서입니다.
-- 배열이 아니거나, 항목에 `target`·`dist/` 아래 `path` 가 없거나, `targetVersion` 을 해석할 수 없거나, 같은 `target` 을 두 번 선언하면 **템플릿 검증 오류**입니다(위 `features.color_scheme` 과 같은 처리).
-- 덮기 파일에는 대상 확장의 클래스만 씁니다. 판정·로드 순서·서빙 가공의 전문: [module-assets.md 「템플릿 확장 CSS 덮기」](module-assets.md#템플릿-확장-css-덮기)
-
-### 뒤로가기·새로고침 스크롤 기본값 (scroll_restoration) — engine-v1.85.0+
-
-뒤로/앞으로 가기·새로고침으로 화면에 돌아왔을 때의 스크롤 동작을 템플릿 전체에 거는 **선택 필드**입니다. 사용자·관리자 템플릿 모두 씁니다. 엔진은 앱 시작 때 `/api/templates/{identifier}/config.json`(이 파일을 그대로 내보낸다)으로 읽어 엔진 기본값 위에 깝니다. `expose` 에 선언하면 API 대신 화면 HTML 에 실린 값을 씁니다([첫 화면에 미리 싣는 키](#첫-화면에-미리-싣는-키-expose--engine-v1960)).
-
-```json
-"scroll_restoration": {
-  "mode": "restore",
-  "on_reload": true,
-  "wait": "height",
-  "timeout_ms": 5000,
-  "containers": [],
-  "snapshot": { "enabled": true, "ttl_seconds": 600, "revalidate": true, "item_key": "id", "state": [] }
-}
-```
-
-키·값·기본값은 레이아웃 `meta.scroll_restoration` 과 같습니다 — [layout-json.md](../frontend/layout-json.md#metascroll_restoration-뒤로-가기와-새로고침-스크롤-복원). 모든 키가 선택이고, 적지 않은 키는 엔진 기본값을 씁니다. 관리자 템플릿처럼 본문이 창이 아닌 안쪽 영역에서 스크롤되면 그 선택자를 `containers` 에 적습니다.
-
-| 단계 (뒤가 우선) | 어디서 정하나 |
-| --- | --- |
-| 엔진 기본값 | 코어 |
-| `template.json` `scroll_restoration` | 템플릿 제작자 — 배포 초깃값. 읽기 전용이며 템플릿을 업데이트하면 새 판으로 덮인다 |
-| 베이스 레이아웃 `meta.scroll_restoration` | 운영자 — 레이아웃 편집기에서 베이스 레이아웃(`_user_base`·`_admin_base` 등)의 [페이지 설정 → 스크롤] 탭. 「템플릿 기본값」으로 보인다 |
-| 화면 레이아웃 `meta.scroll_restoration` | 운영자 — 화면의 [페이지 설정 → 스크롤] 탭 |
-| `navigate` 의 `returnScroll` | 그 이동으로 떠난 화면에 뒤로 가기로 돌아올 때만 ([actions-handlers-navigation.md](../frontend/actions-handlers-navigation.md#returnscroll-옵션)) |
-
-운영자가 사이트에 맞게 고치는 값은 `template.json` 이 아니라 베이스 레이아웃에 둡니다 — `template.json` 은 업데이트 때 덮이고 쓰기 화면이 없습니다.
-
-### 첫 화면에 미리 싣는 키 (expose) — engine-v1.96.0+
-
-엔진은 앱을 시작할 때 template.json 의 몇 가지 값(`scroll_restoration`·`errorHandling`·`error_config`)을 읽습니다. 종전에는 이 값을 받으려고 첫 화면 전에 `/api/templates/{identifier}/config.json` 을 한 번 불렀습니다. 서버 왕복 한 번이 첫 화면을 그만큼 늦춥니다. 최상위 `expose` 에 키 이름을 적으면 서버가 그 키의 값만 화면 HTML(`G7Config.templateConfig`)에 함께 실어 보내고, 엔진은 API 를 부르지 않습니다.
-
-```json
-"expose": ["scroll_restoration", "errorHandling", "error_config"]
-```
-
-- **형식**: 최상위 키 이름의 배열입니다(선택 필드). 문자열이 아닌 항목, `a.b` 처럼 최상위 키 이름 모양이 아닌 항목, 예약 이름(`expose`·`cache_version`)은 무시합니다. 선언했는데 template.json 에 없는 키는 `null`(값 없음)로 실립니다.
-- **엔진의 판단**: 엔진은 키 단위로 봅니다. 앱 시작이 읽는 `scroll_restoration`·`errorHandling` 이 모두 실려 있으면(값이 `null` 이어도) API 를 부르지 않습니다. 하나라도 빠지면 API 를 한 번 불러 그 값을 씁니다 — 선언을 빠뜨려도 값을 잃지 않습니다. 오류 화면은 `error_config` 가 실려 있을 때만 API 를 건너뜁니다.
-- **하위 호환**: `expose` 가 없는 템플릿은 아무것도 싣지 않고, 엔진이 종전처럼 API 를 부릅니다. 이 필드를 모르는 이전 코어는 무시합니다. 레이아웃 편집기와 확장 상태 갱신은 최신 값을 확인하려고 계속 API 를 씁니다.
-- **공개 값**: 실린 값은 누구나 페이지 소스에서 볼 수 있습니다. config API 도 로그인 없이 template.json 을 그대로 돌려주므로 새로 드러나는 값은 아니지만, HTML 에는 선언한 키만 싣습니다. 비밀 값(키·토큰·내부 주소)은 template.json 에 두지 않습니다.
-- **설치·업데이트 경고**: `expose` 를 선언한 템플릿에서, `expose` 가 배열이 아니거나 위 세 키가 template.json 에 있는데 `expose` 에 없으면 설치·업데이트 결과에 경고가 나옵니다(설치는 그대로 됩니다). `expose` 를 아예 쓰지 않는 템플릿은 경고하지 않습니다.
 
 ---
 
@@ -501,29 +262,6 @@ CHANGELOG 에 적습니다.
 }
 ```
 
-### 코드 레이아웃이 없을 때의 대체 (engine-v1.95.0)
-
-`showErrorPage` 나 화면 처리가 부른 오류 코드에 맞는 레이아웃이 `layouts` 에 없으면 엔진은 다음 순서로 대신 그리고 경고 로그를 남긴다.
-
-1. 그 코드의 레이아웃 (`layouts["400"]` 등)
-2. 공통 오류 레이아웃 `layouts.default` (선택 키) — 코드별 레이아웃을 다 두지 않는 템플릿이 쓴다. 레이아웃은 `{{errorCode}}` 로 코드를 받는다
-3. 엔진 내장 오류 화면 — 템플릿 레이아웃 없이 「페이지 로딩 실패 (코드)」 와 새로고침 단추를 그린다(`error_config` 자체가 없을 때도 같다)
-
-다른 코드의 레이아웃(예: 500)으로 대신하지 않는다 — 오류 레이아웃은 코드와 문구를 박아 두는 경우가 많아(「500 서버 오류」) 다른 코드를 잘못 알린다. 종전에는 아무것도 그리지 않고 끝나 화면이 오류 전 모습으로 남았다.
-
-```json
-{
-  "error_config": {
-    "layouts": {
-      "404": "errors/404",
-      "403": "errors/403",
-      "500": "errors/500",
-      "default": "errors/default"
-    }
-  }
-}
-```
-
 ### 에러 레이아웃 파일 위치
 
 에러 레이아웃은 반드시 `layouts/errors/` 디렉토리에 위치해야 합니다:
@@ -534,27 +272,17 @@ templates/_bundled/[vendor-template]/
 ├── seo-config.json             # SEO 컴포넌트→HTML 매핑 설정 (선택)
 ├── LICENSE                     # 라이선스 전문 (MIT) — API 엔드포인트 `GET /api/admin/templates/{identifier}/license`로 제공
 ├── layouts/
-│   ├── dashboard.g7.html     # 일반 레이아웃 (소스 SSoT)
-│   ├── _admin_base.g7.html   # 베이스 레이아웃 (소스 SSoT)
+│   ├── dashboard.json        # 일반 레이아웃
+│   ├── _admin_base.json      # 베이스 레이아웃
 │   └── errors/               # 에러 레이아웃 전용
-│       ├── 404.g7.html
-│       ├── 403.g7.html
-│       └── 500.g7.html
+│       ├── 404.json
+│       ├── 403.json
+│       └── 500.json
 ```
-
-레이아웃 소스 SSoT 는 `.g7.html` 마크업이다 ([layout-markup.md](../frontend/layout-markup.md)). 설치 시 서버가 메모리로 JSON 컴파일해 DB 에 등록하며, 아래 예시의 JSON 은 그 산출 런타임 계약 키다 ([layout-json.md](../frontend/layout-json.md)).
 
 ### 에러 레이아웃 구조
 
 에러 레이아웃도 일반 레이아웃과 동일하게 `extends` + `slots` 패턴을 사용합니다:
-
-```html
-<slot name="content">
-  <empty-state icon="alert-triangle" title="$t:errors.404.title" description="$t:errors.404.description"/>
-</slot>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -589,7 +317,7 @@ templates/_bundled/[vendor-template]/
 
 ```
 중요: registerLayouts()는 특정 디렉토리만 스캔
-✅ 포함: layouts/*.{g7.html,json} (루트) + layouts/errors/*.{g7.html,json}
+✅ 포함: layouts/*.json (루트) + layouts/errors/*.json
 ❌ 제외: layouts/partials/ 등 기타 하위 디렉토리
 ```
 
@@ -597,9 +325,9 @@ templates/_bundled/[vendor-template]/
 
 | 디렉토리 | 스캔 여부 | 용도 |
 |----------|----------|------|
-| `layouts/*.{g7.html,json}` | ✅ 스캔 | 일반 레이아웃 |
-| `layouts/errors/*.{g7.html,json}` | ✅ 스캔 | 에러 페이지 레이아웃 |
-| `layouts/partials/*.{g7.html,json}` | ❌ 제외 | extends로 참조되는 부분 레이아웃 |
+| `layouts/*.json` | ✅ 스캔 | 일반 레이아웃 |
+| `layouts/errors/*.json` | ✅ 스캔 | 에러 페이지 레이아웃 |
+| `layouts/partials/*.json` | ❌ 제외 | extends로 참조되는 부분 레이아웃 |
 
 ### 이유
 
@@ -607,45 +335,26 @@ templates/_bundled/[vendor-template]/
 - 직접 라우팅되지 않으므로 DB에 별도 등록 불필요
 - 에러 레이아웃은 `ErrorPageHandler`에서 직접 조회하므로 DB 등록 필요
 
-### 구현 위치 — `ValidatesLayoutFiles::collectLayoutSources()`
-
-스캔은 `TemplateManager` 가 직접 하지 않는다. 세 Manager(템플릿·모듈·플러그인)가 공유하는
-`App\Extension\Traits\ValidatesLayoutFiles` 의 `collectLayoutSources()` 가 단일 지점이며,
-**`.g7.html` 소스가 있으면 그것을 우선**하고 짝 마크업이 없는 `.json` 만 직접 읽는다.
+### TemplateManager.php 구현
 
 ```php
-// ① 같은 전략으로 두 확장자를 각각 수집 (루트 + errors/)
-$jsonFiles   = File::glob("{$layoutsPath}/*.json");          // + errors/*.json
-$markupFiles = $this->scanMarkupLayoutFiles($layoutsPath, $recursive);  // *.g7.html
+// 루트 layouts 디렉토리의 JSON 파일만 스캔
+$layoutFiles = File::glob("{$layoutsPath}/*.json");
 
-// ② 마크업이 먼저 소스가 되고, 그 짝 `.json` 경로를 색인해 둔다
-foreach ($markupFiles as $markupFile) {
-    $markupJsonSiblings[preg_replace('/\.g7\.html$/i', '.json', $markupFile)] = true;
-    $sources[] = ['path' => $markupFile, 'markup' => true];
-}
-
-// ③ 짝 `.g7.html` 이 있는 `.json` 은 건너뛴다 (소스 SSoT 가 이긴다)
-foreach ($jsonFiles as $jsonFile) {
-    if (isset($markupJsonSiblings[$jsonFile])) {
-        continue;
-    }
-    $sources[] = ['path' => $jsonFile, 'markup' => false];
+// errors/ 디렉토리만 추가 스캔 (에러 페이지 레이아웃용)
+$errorsPath = "{$layoutsPath}/errors";
+if (File::exists($errorsPath)) {
+    $errorLayoutFiles = File::glob("{$errorsPath}/*.json");
+    $layoutFiles = array_merge($layoutFiles, $errorLayoutFiles);
 }
 ```
-
-`.g7.html` 은 설치 시점에 **메모리로 컴파일**해 등록 content 를 만들고 디스크에 산출 JSON 을 남기지
-않는다. `--layout-source=json`(`config('template.layout_markup.install_source')`)으로 우선순위를 뒤집을
-수 있으나, 짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 그대로 컴파일된다. 옵션을 생략하면 설정
-`LAYOUT_INSTALL_SOURCE` 를 따르고(7.1.1~), 관리자 설치·업데이트·레이아웃 갱신 창의 「고급 설정」에서 같은 선택을
-요청 한 번 단위로 할 수 있다. 조각(`partial`) 참조도 같은 우선순위를 쓰되, 실재하는 후보를 먼저 고른 뒤 그 경로 하나에만
-layouts 폴더 경계 검사를 한다 — 짝 `.g7.html` 이 없는 JSON 전용 조각이 리눅스 서버에서도 그대로 해석된다.
 
 ### 모듈 레이아웃 자동 등록
 
 모듈 활성화 시 레이아웃은 디렉토리 위치에 따라 해당 타입의 템플릿에 등록됩니다:
 
-- `modules/{module}/resources/layouts/admin/*.{g7.html,json}` → Admin 타입 템플릿에 등록
-- `modules/{module}/resources/layouts/user/*.{g7.html,json}` → User 타입 템플릿에 등록
+- `modules/{module}/resources/layouts/admin/*.json` → Admin 타입 템플릿에 등록
+- `modules/{module}/resources/layouts/user/*.json` → User 타입 템플릿에 등록
 
 이 동작은 `ModuleManager::registerModuleLayouts()`에서 처리됩니다.
 
@@ -783,15 +492,13 @@ GET /api/admin/templates/{templateName}/check-modified-layouts
 
 | 전략 | 동작 |
 |------|------|
-| `overwrite` (기본) | 새 버전의 레이아웃으로 덮어쓰기 (관리자 수정 사항 유실) |
-| `keep` | 고친 부분은 유지하고 손대지 않은 부분(조각·최상위 키·data_sources 항목)에는 새 버전을 병합. 같은 곳을 양쪽이 고쳤으면 운영자 것 유지 |
+| `apply_new` | 새 버전의 레이아웃으로 덮어쓰기 (관리자 수정 사항 유실) |
+| `keep_current` | 기존 레이아웃 유지 (새 버전 레이아웃 미적용) |
 
 ```text
 POST /api/admin/templates/{templateName}/update
-Body: { "layout_strategy": "keep" }
+Body: { "layout_strategy": "apply_new" }
 ```
-
-템플릿을 켜거나 사용자 템플릿을 바꿀 때도 같은 병합을 쓰므로 편집기로 고친 화면이 원본으로 돌아가지 않는다. 원본으로 되돌리려면 편집기의 「레이아웃 갱신」을 쓴다.
 
 > 상세: [extension-update-system.md](./extension-update-system.md)
 
@@ -803,27 +510,6 @@ Body: { "layout_strategy": "keep" }
 필수: 템플릿 수정/개발은 _bundled 디렉토리에서만 작업 (활성 디렉토리 직접 수정 금지)
 필수: _bundled 작업 완료 후 반영/검증은 업데이트 프로세스 사용
 ```
-
-### `custom/` 은 운영자 자리입니다 — 작성자가 선점하지 않습니다
-
-`templates/{identifier}/custom/` 은 **사이트 운영자**가 자기 CSS·JS 를 덧붙이는 자리입니다.
-확장 교체(업데이트·재설치)가 이 디렉토리만은 보존하므로, 운영자가 넣은 파일은 템플릿을
-업데이트해도 살아남습니다.
-
-그래서 템플릿 작성자는 `_bundled` 에 `custom/` 을 담아 배포하지 않습니다. 보존 계층은
-"덮어쓰지 않음" 이라, 작성자가 담은 파일은 이미 `custom/` 을 가진 사이트에서 **영영
-반영되지 않는 상태**가 됩니다. 작성자의 기본 스타일은 `src/styles/` 에 두고 빌드에
-포함시킵니다.
-
-| 대상 | 자리 | 빌드 | 업데이트 시 |
-|---|---|---|---|
-| 작성자 기본 스타일 | `src/styles/` | 필요 | 새 배포본으로 교체 |
-| 작성자 동봉 구동 자산 | `dist/vendor/{lib}/{version}/` | 불필요 | 새 배포본으로 교체 |
-| **운영자 추가 CSS·JS** | **`custom/`** | **불필요** | **보존** |
-
-운영자가 `dist/` 를 직접 고치는 것은 방법이 아닙니다 — 다음 빌드와 다음 업데이트에
-사라집니다. 로드 순서·`custom/assets.json` 선언 형식·외부 URL 등록 규칙은
-[module-assets.md 「사용자 추가 에셋」](module-assets.md) 을 참조하세요.
 
 ### 개발 워크플로우
 
@@ -915,10 +601,9 @@ SEO 페이지 생성기가 컴포넌트를 HTML로 변환할 때 사용하는 �
 
 ## 관련 문서
 
-- [README.md](./README.md) - 확장 시스템 인덱스
+- [index.md](./index.md) - 확장 시스템 인덱스
 - [template-routing.md](./template-routing.md) - 템플릿 라우트/언어 파일 규칙
 - [template-security.md](./template-security.md) - 템플릿 보안 정책
 - [template-caching.md](./template-caching.md) - 템플릿 캐싱 전략
 - [template-commands.md](./template-commands.md) - 템플릿 Artisan 커맨드
 - [extension-update-system.md](./extension-update-system.md) - 확장 업데이트 시스템
-- [custom-development.md](../custom-development.md) - 템플릿 엔진 대신 개발자가 직접 만든 화면(custom 예약 자리)

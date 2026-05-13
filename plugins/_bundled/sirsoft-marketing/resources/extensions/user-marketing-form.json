@@ -1,0 +1,759 @@
+{
+  "target_layout": "admin_user_form",
+  "data_sources": [
+    {
+      "id": "marketing_settings",
+      "type": "api",
+      "endpoint": "/api/plugins/sirsoft-marketing/settings",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_required": true
+    }
+  ],
+  "injections": [
+    {
+      "target_id": "user_form_tabs",
+      "position": "inject_props",
+      "props": {
+        "tabs": {
+          "_append": [
+            {
+              "id": "ext_marketing",
+              "label": "$t:admin.users.form.sections.marketing_consent",
+              "iconName": "puzzle-piece"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target_id": "extension_form_content",
+      "position": "append_child",
+      "components": [
+        {
+          "id": "ext_marketing_form_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "id": "ext_marketing",
+            "className": "scroll-mt-32"
+          },
+          "children": [
+            {
+              "id": "section_marketing_consent",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "bullhorn",
+                            "size": "md",
+                            "className": "text-gray-600 dark:text-gray-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "H3",
+                          "props": {
+                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:admin.users.form.sections.marketing_consent"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "ExtensionBadge",
+                      "props": {
+                        "type": "plugin",
+                        "identifier": "sirsoft-marketing",
+                        "installedPlugins": "{{_global.installedPlugins}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-1 gap-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "space-y-3"
+                      },
+                      "children": [
+                        {
+                          "id": "field_marketing_consent",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{(_local.form?.marketing_consent_enabled ?? _global.plugins['sirsoft-marketing']?.marketing_consent_enabled) === true}}",
+                          "props": {
+                            "className": "flex items-start gap-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Label",
+                              "props": {
+                                "className": "flex items-start gap-3 flex-1 cursor-pointer"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Checkbox",
+                                  "props": {
+                                    "name": "marketing_consent",
+                                    "className": "mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                  },
+                                  "actions": [
+                                    {
+                                      "type": "change",
+                                      "handler": "sequence",
+                                      "actions": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "local",
+                                            "form": "{{Object.assign({}, _local.form, { marketing_consent: $event.target.checked }, Object.fromEntries((_local.form?.channels ?? marketing_settings?.data?.channels ?? []).map(ch => [ch.key, $event.target.checked ? true : false])))}}"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex-1 space-y-1"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                      },
+                                      "text": "$t:sirsoft-marketing.marketing_consent"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-marketing.marketing_consent_desc"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "if": "{{(_local.form?.marketing_consent_terms_slug_set ?? (marketing_settings?.data?.marketing_consent_terms_slug ? true : false)) === true}}",
+                              "props": {
+                                "type": "button",
+                                "className": "text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5"
+                              },
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "sequence",
+                                  "actions": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "global",
+                                        "marketingTermsModalType": "marketing_consent",
+                                        "marketingTermsPageData": null,
+                                        "marketingTermsLoading": true
+                                      }
+                                    },
+                                    {
+                                      "handler": "openModal",
+                                      "target": "marketing_terms_modal"
+                                    },
+                                    {
+                                      "handler": "apiCall",
+                                      "target": "/api/modules/sirsoft-page/pages/{{_local.form?.marketing_consent_terms_slug ?? marketing_settings?.data?.marketing_consent_terms_slug}}",
+                                      "auth_mode": "optional",
+                                      "params": { "method": "GET" },
+                                      "onSuccess": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "global",
+                                            "marketingTermsPageData": "{{response.data}}",
+                                            "marketingTermsLoading": false
+                                          }
+                                        }
+                                      ],
+                                      "onError": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "global",
+                                            "marketingTermsLoading": false
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "$t:sirsoft-marketing.view_terms"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "field_channel",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{(_local.form?.marketing_consent_enabled ?? _global.plugins['sirsoft-marketing']?.marketing_consent_enabled) === true}}",
+                          "iteration": {
+                            "source": "(_local.form?.channels ?? marketing_settings?.data?.channels ?? []).filter(ch => ch.enabled !== false)",
+                            "item_var": "channel"
+                          },
+                          "props": {
+                            "className": "flex items-start gap-3 ml-8"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Label",
+                              "props": {
+                                "className": "flex items-start gap-3 flex-1 cursor-pointer"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Checkbox",
+                                  "props": {
+                                    "name": "{{channel.key}}",
+                                    "className": "mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                  },
+                                  "actions": [
+                                    {
+                                      "type": "change",
+                                      "handler": "sequence",
+                                      "actions": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "local",
+                                            "form": "{{Object.assign({}, _local.form, $event.target.checked ? { [channel.key]: true, marketing_consent: true } : { [channel.key]: false })}}"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex-1 space-y-1"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                      },
+                                      "text": "{{$get(channel.label_i18n, _global.locale, channel.label)}}"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "if": "{{channel.terms_slug_set === true}}",
+                              "props": {
+                                "type": "button",
+                                "className": "text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5"
+                              },
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "sequence",
+                                  "actions": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "global",
+                                        "marketingTermsModalType": "{{channel.key}}",
+                                        "marketingTermsPageData": null,
+                                        "marketingTermsLoading": true
+                                      }
+                                    },
+                                    {
+                                      "handler": "openModal",
+                                      "target": "marketing_terms_modal"
+                                    },
+                                    {
+                                      "handler": "apiCall",
+                                      "target": "/api/modules/sirsoft-page/pages/{{channel.terms_slug}}",
+                                      "auth_mode": "optional",
+                                      "params": { "method": "GET" },
+                                      "onSuccess": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "global",
+                                            "marketingTermsPageData": "{{response.data}}",
+                                            "marketingTermsLoading": false
+                                          }
+                                        }
+                                      ],
+                                      "onError": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "global",
+                                            "marketingTermsLoading": false
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "$t:sirsoft-marketing.view_terms"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "space-y-3"
+                      },
+                      "children": [
+                        {
+                          "id": "field_third_party_consent",
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{(_local.form?.third_party_consent_enabled ?? _global.plugins['sirsoft-marketing']?.third_party_consent_enabled) === true}}",
+                          "props": {
+                            "className": "flex items-start gap-3"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Label",
+                              "props": {
+                                "className": "flex items-start gap-3 flex-1 cursor-pointer"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Checkbox",
+                                  "props": {
+                                    "name": "third_party_consent",
+                                    "className": "mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                  },
+                                  "actions": [
+                                    {
+                                      "type": "change",
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "local",
+                                        "form": "{{Object.assign({}, _local.form, { third_party_consent: $event.target.checked })}}"
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex-1 space-y-1"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                      },
+                                      "text": "$t:sirsoft-marketing.third_party_consent"
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                      },
+                                      "text": "$t:sirsoft-marketing.third_party_consent_desc"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Button",
+                              "if": "{{(_local.form?.third_party_consent_terms_slug_set ?? (marketing_settings?.data?.third_party_consent_terms_slug ? true : false)) === true}}",
+                              "props": {
+                                "type": "button",
+                                "className": "text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5"
+                              },
+                              "actions": [
+                                {
+                                  "type": "click",
+                                  "handler": "sequence",
+                                  "actions": [
+                                    {
+                                      "handler": "setState",
+                                      "params": {
+                                        "target": "global",
+                                        "marketingTermsModalType": "third_party_consent",
+                                        "marketingTermsPageData": null,
+                                        "marketingTermsLoading": true
+                                      }
+                                    },
+                                    {
+                                      "handler": "openModal",
+                                      "target": "marketing_terms_modal"
+                                    },
+                                    {
+                                      "handler": "apiCall",
+                                      "target": "/api/modules/sirsoft-page/pages/{{_local.form?.third_party_consent_terms_slug ?? marketing_settings?.data?.third_party_consent_terms_slug}}",
+                                      "auth_mode": "optional",
+                                      "params": { "method": "GET" },
+                                      "onSuccess": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "global",
+                                            "marketingTermsPageData": "{{response.data}}",
+                                            "marketingTermsLoading": false
+                                          }
+                                        }
+                                      ],
+                                      "onError": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "global",
+                                            "marketingTermsLoading": false
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "$t:sirsoft-marketing.view_terms"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "if": "{{(_local.form?.info_disclosure_enabled ?? _global.plugins['sirsoft-marketing']?.info_disclosure_enabled) === true}}",
+                          "props": {
+                            "className": "space-y-1"
+                          },
+                          "children": [
+                            {
+                              "id": "field_info_disclosure",
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "flex items-start gap-3"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Label",
+                                  "props": {
+                                    "className": "flex items-start gap-3 flex-1 cursor-pointer"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Checkbox",
+                                      "props": {
+                                        "name": "info_disclosure",
+                                        "className": "mt-0.5 text-blue-600 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                      },
+                                      "actions": [
+                                        {
+                                          "type": "change",
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "local",
+                                            "form": "{{Object.assign({}, _local.form, { info_disclosure: $event.target.checked })}}"
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Div",
+                                      "props": {
+                                        "className": "flex-1 space-y-1"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "block text-sm font-medium text-gray-900 dark:text-white"
+                                          },
+                                          "text": "$t:sirsoft-marketing.info_disclosure"
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                          },
+                                          "text": "$t:sirsoft-marketing.info_disclosure_desc"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Button",
+                                  "if": "{{(_local.form?.info_disclosure_terms_slug_set ?? (marketing_settings?.data?.info_disclosure_terms_slug ? true : false)) === true}}",
+                                  "props": {
+                                    "type": "button",
+                                    "className": "text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5"
+                                  },
+                                  "actions": [
+                                    {
+                                      "type": "click",
+                                      "handler": "sequence",
+                                      "actions": [
+                                        {
+                                          "handler": "setState",
+                                          "params": {
+                                            "target": "global",
+                                            "marketingTermsModalType": "info_disclosure",
+                                            "marketingTermsPageData": null,
+                                            "marketingTermsLoading": true
+                                          }
+                                        },
+                                        {
+                                          "handler": "openModal",
+                                          "target": "marketing_terms_modal"
+                                        },
+                                        {
+                                          "handler": "apiCall",
+                                          "target": "/api/modules/sirsoft-page/pages/{{_local.form?.info_disclosure_terms_slug ?? marketing_settings?.data?.info_disclosure_terms_slug}}",
+                                          "auth_mode": "optional",
+                                          "params": { "method": "GET" },
+                                          "onSuccess": [
+                                            {
+                                              "handler": "setState",
+                                              "params": {
+                                                "target": "global",
+                                                "marketingTermsPageData": "{{response.data}}",
+                                                "marketingTermsLoading": false
+                                              }
+                                            }
+                                          ],
+                                          "onError": [
+                                            {
+                                              "handler": "setState",
+                                              "params": {
+                                                "target": "global",
+                                                "marketingTermsLoading": false
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "text": "$t:sirsoft-marketing.view_terms"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "block text-xs text-gray-400 dark:text-gray-500 ml-8"
+                              },
+                              "text": "$t:sirsoft-marketing.info_disclosure_warning"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "modals": [
+    {
+      "id": "marketing_terms_modal",
+      "type": "composite",
+      "name": "Modal",
+      "props": {
+        "title": {
+          "$switch": "{{_global.marketingTermsModalType}}",
+          "$cases": {
+            "marketing_consent": "$t:sirsoft-marketing.terms_modal_marketing_consent",
+            "email_subscription": "$t:sirsoft-marketing.terms_modal_email_subscription",
+            "third_party_consent": "$t:sirsoft-marketing.terms_modal_third_party_consent",
+            "info_disclosure": "$t:sirsoft-marketing.terms_modal_info_disclosure"
+          },
+          "$default": "{{_global.marketingTermsModalType ?? ''}}"
+        }
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Div",
+          "props": { "className": "flex flex-col" },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.marketingTermsLoading}}",
+              "props": { "className": "flex justify-center items-center py-12" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": { "name": "circle-notch", "className": "text-blue-600 animate-spin text-3xl" }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.marketingTermsPageData?.published_at}}",
+              "props": { "className": "flex-shrink-0 flex items-center gap-2 mb-3" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
+                  "text": "$t:sirsoft-marketing.terms_published_at: {{_global.marketingTermsPageData?.published_at | date}}"
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{_global.marketingTermsPageData}}",
+              "props": { "className": "flex-1 overflow-y-auto min-h-0 max-h-96" },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "HtmlContent",
+                  "props": {
+                    "content": "{{_global.marketingTermsPageData?.content ?? ''}}",
+                    "isHtml": "{{(_global.marketingTermsPageData?.content_mode ?? 'html') === 'html'}}",
+                    "className": "prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "if": "{{!_global.marketingTermsLoading && !_global.marketingTermsPageData}}",
+              "props": { "className": "py-8 text-center text-gray-500 dark:text-gray-400" },
+              "text": "$t:sirsoft-marketing.no_terms_content"
+            },
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": { "className": "flex-shrink-0 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700" },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Button",
+                  "props": {
+                    "type": "button",
+                    "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "closeModal"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Span",
+                      "text": "$t:common.close"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 200
+}
