@@ -731,6 +731,17 @@ class CoreUpdateCommand extends Command
         if ($force) {
             $command[] = '--force';
         }
+        // 부모는 이미 Step 9 (runMigrations + reloadCoreConfigAndResync, 라인 408-409),
+        // Step 11 (updateVersionInEnv + clearAllCaches, 라인 457-458), 번들 확장 일괄 업데이트
+        // prompt (라인 497-515) 를 자식 종료 후 실행하므로 자식 내부 중복 회피. 단독 실행 시
+        // (운영자 직접 호출) 옵션이 전달되지 않아 자식 기본값(5단계 모두 포함) 발동 →
+        // gnuboard/g7#34 의 운영자 수동 절차(migrate / resync / .env sed / cache:clear / module:update --source=bundled)
+        // 가 단일 명령으로 통합되어 단독 안전성 보장.
+        $command[] = '--skip-migrations';
+        $command[] = '--skip-resync';
+        $command[] = '--skip-version-env';
+        $command[] = '--skip-cache-clear';
+        $command[] = '--skip-bundled-updates';
 
         $commandLine = implode(' ', array_map('escapeshellarg', $command)).' 2>&1';
 

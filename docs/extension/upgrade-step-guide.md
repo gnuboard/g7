@@ -513,6 +513,23 @@ CoreUpdateCommand::handle                   └─ disableMaintenanceMode
 
 대신 사용자에게는 **스텝 전용** 명령 (`php artisan core:execute-upgrade-steps --from=<afterVersion> --to=<toVersion> --force`) 만 실행하도록 안내한다. 이 명령은 재다운로드·vendor 재설치 없이 남은 upgrade step 만 실행한다.
 
+#### 단독 실행 시 자동 수행되는 보조 단계 (beta.6+)
+
+`core:execute-upgrade-steps` 가 운영자에 의해 직접 호출 (HANDOFF 안내 또는 수동 복구) 되면, 부모 `CoreUpdateCommand` 가 평소 수행하던 다음 단계를 자동으로 함께 수행한다 — 단독 실행자가 별도 명령을 잇따라 실행할 필요가 없다.
+
+- 사전 단계: `runMigrations()`, `reloadCoreConfigAndResync()` (config/core.php 재로드 + 권한/메뉴/시더 동기화)
+- 사후 단계: `updateVersionInEnv($toVersion)`, `clearAllCaches()`, `runBundledExtensionUpdatePrompt()` (모듈/플러그인/템플릿/언어팩 일괄 업데이트)
+
+부모 `CoreUpdateCommand` 가 spawn 호출하는 경로에서는 다음 5개 옵션을 모두 자식 명령 라인에 추가해 중복 회피한다 — 부모는 이미 Step 9 / Step 11 / 번들 prompt 를 자식 종료 후 수행하기 때문이다.
+
+- `--skip-migrations`
+- `--skip-resync`
+- `--skip-version-env`
+- `--skip-cache-clear`
+- `--skip-bundled-updates`
+
+수동 복구 시나리오에서 사용자가 부분 단계만 제어하고 싶다면 위 옵션을 선택적으로 조합한다. 옵션을 모두 부여하면 부모 spawn 시나리오와 등가 — 본 명령은 upgrade step 만 실행한다.
+
 ### 사용 시점
 
 upgrade step 파일에서 아래 조건이 모두 성립할 때 사용한다:

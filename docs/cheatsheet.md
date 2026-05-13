@@ -122,6 +122,7 @@ php artisan migrate:rollback
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--force] [--no-backup] [--no-maintenance] [--vendor-mode=auto|composer|bundled]
+php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용 — 단독 호출 시 migration·resync·.env·캐시·번들 확장 일괄 업데이트 자동 수행. CoreUpdateCommand 내부 spawn 은 --skip-* 5개 옵션 자동 전달)
 
 # 모듈
 php artisan module:list
@@ -252,6 +253,7 @@ php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행
+php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용)
 
 # CLI (Artisan 커맨드)
 php artisan module:check-updates [identifier?]                   # 모듈 업데이트 확인
