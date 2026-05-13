@@ -3,18 +3,15 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
 use App\Contracts\Extension\StorageInterface;
-use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Mockery;
-use Mockery\MockInterface;
 use Modules\Sirsoft\Ecommerce\Enums\ReviewStatus;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
-use Modules\Sirsoft\Ecommerce\Repositories\ProductReviewImageRepository;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -30,10 +27,10 @@ class ProductReviewImageServiceTest extends ModuleTestCase
 {
     private ProductReviewImageService $service;
 
-    /** @var MockInterface&StorageInterface */
+    /** @var \Mockery\MockInterface&StorageInterface */
     private $storage;
 
-    /** @var MockInterface&EcommerceSettingsService */
+    /** @var \Mockery\MockInterface&EcommerceSettingsService */
     private $settingsService;
 
     private ProductReview $review;
@@ -49,8 +46,7 @@ class ProductReviewImageServiceTest extends ModuleTestCase
 
         $this->service = new ProductReviewImageService(
             $this->storage,
-            $this->settingsService,
-            new ProductReviewImageRepository(new ProductReviewImage)
+            $this->settingsService
         );
 
         $this->user = $this->createUser();
@@ -84,7 +80,7 @@ class ProductReviewImageServiceTest extends ModuleTestCase
 
         $this->settingsService
             ->shouldReceive('getSetting')
-            ->with('review_settings.max_images', Mockery::any())
+            ->with('review.max_images', Mockery::any())
             ->andReturn(5);
 
         $this->storage
@@ -117,26 +113,10 @@ class ProductReviewImageServiceTest extends ModuleTestCase
 
         $this->settingsService
             ->shouldReceive('getSetting')
-            ->with('review_settings.max_images', Mockery::any())
+            ->with('review.max_images', Mockery::any())
             ->andReturn(5);
 
         $file = UploadedFile::fake()->image('extra.jpg');
-
-        $this->expectException(\RuntimeException::class);
-
-        $this->service->upload($file, $this->review);
-    }
-
-    #[Test]
-    public function test_upload_blocks_first_image_when_max_images_zero(): void
-    {
-        // max_images=0 → 첫 업로드부터 차단 (이미지 첨부 완전 불가 정책)
-        $this->settingsService
-            ->shouldReceive('getSetting')
-            ->with('review_settings.max_images', Mockery::any())
-            ->andReturn(0);
-
-        $file = UploadedFile::fake()->image('blocked.jpg');
 
         $this->expectException(\RuntimeException::class);
 
@@ -178,51 +158,6 @@ class ProductReviewImageServiceTest extends ModuleTestCase
         $this->assertFalse($image->is_thumbnail);
     }
 
-    #[Test]
-    public function test_upload_fires_hooks(): void
-    {
-        // Arrange
-        $beforeUploadFired = false;
-        $afterUploadFired = false;
-        $filterApplied = false;
-
-        HookManager::addAction('sirsoft-ecommerce.review-image.before_upload', function () use (&$beforeUploadFired) {
-            $beforeUploadFired = true;
-        });
-
-        HookManager::addFilter('sirsoft-ecommerce.review-image.filter_upload_file', function ($file) use (&$filterApplied) {
-            $filterApplied = true;
-
-            // 반환 파일이 실제로 소비되는지 검증하기 위해 다른 이름/확장자의 파일을 반환
-            return UploadedFile::fake()->image('filtered.webp');
-        });
-
-        HookManager::addAction('sirsoft-ecommerce.review-image.after_upload', function () use (&$afterUploadFired) {
-            $afterUploadFired = true;
-        });
-
-        $file = UploadedFile::fake()->image('original.jpg');
-
-        $this->settingsService->shouldReceive('getSetting')->andReturn(5);
-        $this->storage->shouldReceive('put')->andReturn(true);
-        $this->storage->shouldReceive('getDisk')->andReturn('local');
-
-        // Act
-        $image = $this->service->upload($file, $this->review);
-
-        // Assert
-        $this->assertTrue($beforeUploadFired, 'before_upload hook should be fired');
-        $this->assertTrue($filterApplied, 'filter_upload_file hook should be applied');
-        $this->assertTrue($afterUploadFired, 'after_upload hook should be fired');
-        // 필터가 반환한 파일이 저장 파일명의 근거가 되어야 한다 (반환값 소비 증명)
-        $this->assertStringEndsWith('.webp', $image->stored_filename, 'filter return value should be consumed');
-
-        // Cleanup hooks
-        HookManager::clearAction('sirsoft-ecommerce.review-image.before_upload');
-        HookManager::clearFilter('sirsoft-ecommerce.review-image.filter_upload_file');
-        HookManager::clearAction('sirsoft-ecommerce.review-image.after_upload');
-    }
-
     // ========================================
     // delete() 테스트
     // ========================================
@@ -234,11 +169,6 @@ class ProductReviewImageServiceTest extends ModuleTestCase
             'review_id' => $this->review->id,
             'path' => 'reviews/1/test.jpg',
         ]);
-
-        // 삭제는 행 disk 기준으로 스토리지를 해석한다 (혼재 운용, 공개#100)
-        $this->storage
-            ->shouldReceive('getDisk')
-            ->andReturn('local');
 
         $this->storage
             ->shouldReceive('exists')
@@ -265,11 +195,6 @@ class ProductReviewImageServiceTest extends ModuleTestCase
             'review_id' => $this->review->id,
             'path' => 'reviews/1/missing.jpg',
         ]);
-
-        // 삭제는 행 disk 기준으로 스토리지를 해석한다 (혼재 운용, 공개#100)
-        $this->storage
-            ->shouldReceive('getDisk')
-            ->andReturn('local');
 
         $this->storage
             ->shouldReceive('exists')
@@ -331,11 +256,6 @@ class ProductReviewImageServiceTest extends ModuleTestCase
             'mime_type' => 'image/jpeg',
             'original_filename' => 'test.jpg',
         ]);
-
-        // 서빙은 행 disk 기준으로 스토리지를 해석한다 (혼재 운용, 공개#100)
-        $this->storage
-            ->shouldReceive('getDisk')
-            ->andReturn('local');
 
         $this->storage
             ->shouldReceive('response')

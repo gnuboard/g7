@@ -2,18 +2,12 @@
 
 namespace App\Extension;
 
-use App\Contracts\Extension\CacheableExtensionInterface;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\ModuleCacheDriver;
 use App\Extension\Storage\ModuleStorageDriver;
-use App\Extension\Traits\CollectsFragmentSources;
-use App\Extension\Traits\ReportsLifecycleFailure;
-use App\Support\ExtensionIntegrations;
-use App\Support\PublicAssetDisk;
-use App\Support\StateContracts;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -24,10 +18,8 @@ use ReflectionClass;
  * getIdentifier(), getVendor()는 디렉토리명에서 자동 추론됩니다.
  * getName(), getVersion(), getDescription()은 module.json에서 자동 파싱됩니다.
  */
-abstract class AbstractModule implements CacheableExtensionInterface, ModuleInterface
+abstract class AbstractModule implements ModuleInterface
 {
-    use ReportsLifecycleFailure;
-
     /**
      * 모듈 디렉토리 경로 (캐시)
      */
@@ -111,8 +103,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
 
     /**
      * 모듈 디렉토리 경로 반환
-     *
-     * @return string 모듈 디렉토리 절대 경로
      */
     protected function getModulePath(): string
     {
@@ -128,8 +118,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * 모듈 식별자 반환 (디렉토리명에서 자동 추론)
      *
      * 디렉토리명이 'sirsoft-sample'이면 식별자도 'sirsoft-sample'
-     *
-     * @return string 모듈 식별자
      */
     final public function getIdentifier(): string
     {
@@ -563,37 +551,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * 이 모듈이 등록할 HTTP 미들웨어 선언을 반환합니다.
-     *
-     * 모듈이 web/api 그룹에 미들웨어를 직접 넣는 대신, 코어의 self-gate 게이트
-     * (`ExtensionMiddlewareGate`)가 요청 시점에 라우트 이름·URI 를 각 선언의 `targets`
-     * 패턴과 대조해 매칭될 때만 해당 미들웨어를 실행합니다. 코어 IDV 정책의 라우트명
-     * 인덱스 조회 모델과 동일합니다. 미들웨어 클래스 자체는 게이트 로직을 갖지 않아도
-     * 됩니다 (순수하게 유지).
-     *
-     * 기본적으로 빈 배열 반환. 미들웨어가 필요한 모듈만 오버라이드합니다.
-     *
-     * @return array<int, array{class: class-string, groups: array<int, string>, timing?: string, targets: array<int, string>}>
-     *                                                                                                                          [
-     *                                                                                                                          [
-     *                                                                                                                          'class'   => VerifyGuestOrderToken::class,  // 미들웨어 FQCN (class_exists 검증)
-     *                                                                                                                          'groups'  => ['api'],       // 등록 그룹 배열: ['web'] | ['api'] | ['web','api']
-     *                                                                                                                          'timing'  => 'after_core',  // 'after_core'(기본, 코어 그룹 미들웨어 뒤) | 'before_core'(코어 전처리보다 먼저)
-     *                                                                                                                          'targets' => ['self'],      // 라우트명/URI 패턴 배열. 'self' = 자기 확장 prefix 자동 치환
-     *                                                                                                                          ],
-     *                                                                                                                          ]
-     *
-     * targets 카탈로그: 'self'(자기 라우트) | 'all_extensions'(모든 확장, 코어 제외) |
-     * 'core'(코어만) | 'everything'·'*'(전부) | 'module:{id}' | 'plugin:{id}' |
-     * 원시 라우트명 glob·brace(`api.modules.x.*`, `{a,b}`) | '/' 로 시작하는 URI 패턴(무명 라우트용).
-     * targets 누락/빈배열 시 등록 거부. 상세: docs/backend/middleware.md "확장 미들웨어 선언".
-     */
-    public function getMiddleware(): array
-    {
-        return [];
-    }
-
-    /**
      * Declarative i18n getter family — 모듈이 선언하는 다국어/SSoT 데이터 4종.
      *
      * 모두 default `[]` 반환 (override 미선택 시 무영향). 각 메서드 결과는 `ModuleManager` 가
@@ -603,7 +560,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * | 메서드                          | 도메인         | 동기화 위치                      | lang pack 필터                                    |
      * |--------------------------------|---------------|---------------------------------|--------------------------------------------------|
      * | `getNotificationDefinitions()` | 알림 정의      | `notification_definitions`     | `seed.{id}.notifications.translations`           |
-     * | `getIdentityMessages()`        | (deprecated) | 위 알림 정의로 변환·합류 (7.1.0) | `seed.{id}.notifications.translations` (type 키)  |
+     * | `getIdentityMessages()`        | IDV 메일       | `identity_message_definitions` | `seed.{id}.identity_messages.translations`       |
      * | `getIdentityPolicies()`        | IDV 정책       | `identity_policies`            | (lang pack seed 대상 외 — 다국어 필드 부재)        |
      * | `getIdentityPurposes()`        | IDV 목적       | 메모리 레지스트리 (DB 없음)      | (lang pack seed 대상 외 — `label_key` 참조)        |
      *
@@ -670,29 +627,46 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * (deprecated) 이 모듈이 등록할 본인인증 메시지 선언을 반환합니다 — 7.0.x 계약.
+     * 이 모듈이 등록할 IDV(본인인증) 메시지 정의/템플릿 선언을 반환합니다.
      *
-     * 7.1.0 부터 본인인증 메시지는 알림 정의(`notification_definitions`, category=identity)다.
-     * 새 선언은 `getNotificationDefinitions()` 에 `category => 'identity'` 로 적는다:
+     * `getIdentityPolicies()` / `getIdentityPurposes()` 와 동일한 패턴으로
+     * `ModuleManager` 가 activate/update 시 `IdentityMessageSyncHelper` 를 통해
+     * `identity_message_definitions` / `identity_message_templates` 테이블에 동기화하며,
+     * uninstall(deleteData=true) 시 자동 정리됩니다.
+     *
+     * 운영자가 관리자 UI 에서 수정한 필드(name/description/subject/body 등) 는
+     * `user_overrides` JSON 으로 보존됩니다.
+     *
+     * `extension_type='module'`, `extension_identifier=$this->getIdentifier()` 는
+     * Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다.
+     *
+     * 반환 형식 예:
      * ```php
-     * 'identity.purpose.checkout_verification' => [ // type 규칙: identity.purpose.{목적} / identity.policy.{정책 키}
-     *     'category' => 'identity',
-     *     'hook_prefix' => '{확장 식별자}',
-     *     'hooks' => [],
-     *     'channels' => ['mail'],
-     *     'name' => ['ko' => '...', 'en' => '...'],
-     *     'variables' => IdentityNotificationType::commonVariables(),
-     *     'templates' => [['channel' => 'mail', 'subject' => [...], 'body' => [...]]],
-     * ],
+     * return [
+     *     [
+     *         'provider_id' => 'g7:core.mail',
+     *         'scope_type' => IdentityMessageDefinition::SCOPE_PURPOSE,
+     *         'scope_value' => 'checkout_verification',
+     *         'name' => ['ko' => '결제 시 본인 확인', 'en' => 'Checkout Verification'],
+     *         'description' => ['ko' => '...', 'en' => '...'],
+     *         'channels' => ['mail'],
+     *         'variables' => [['key' => 'code', 'description' => '인증 코드']],
+     *         'templates' => [
+     *             [
+     *                 'channel' => 'mail',
+     *                 'subject' => ['ko' => '...', 'en' => '...'],
+     *                 'body' => ['ko' => '...', 'en' => '...'],
+     *             ],
+     *         ],
+     *     ],
+     * ];
      * ```
      *
-     * 이 메서드가 비어 있지 않으면 ModuleManager 가 알림 정의 동기화 때 변환해 합류시킨다
-     * (scope_type/scope_value → type, 메일 외 provider 는 메일 채널로 흡수, 다른 소유자와 type 이 겹치면
-     * 건너뜀). 옛 표(`identity_message_definitions/templates`)는 7.1.0 업그레이드에서 없어졌다.
+     * scope_type 권장:
+     * - `IdentityMessageDefinition::SCOPE_PURPOSE` — purpose 단위 메시지 (해당 purpose 트리거 시 우선)
+     * - `IdentityMessageDefinition::SCOPE_POLICY` — 특정 policy_key 전용 메시지 (가장 구체적, purpose 보다 우선)
      *
-     * @deprecated 7.1.0 — 8.0 에서 제거. `getNotificationDefinitions()` 에 category=identity 로 선언한다.
-     *
-     * @return array<int, array<string, mixed>> 옛 형식 선언 (provider_id, scope_type, scope_value, name, templates …)
+     * @return array<int, array<string, mixed>>
      */
     public function getIdentityMessages(): array
     {
@@ -702,7 +676,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     /**
      * 이 모듈이 등록할 알림 정의/템플릿 선언을 반환합니다.
      *
-     * `getIdentityPolicies()` 와 같은 선언형 패턴으로 `ModuleManager` 가 activate/update 시
+     * `getIdentityMessages()` 와 동일한 패턴으로 `ModuleManager` 가 activate/update 시
      * `NotificationSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
      * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 정리합니다.
      * uninstall(deleteData=true) 시에도 자동 정리됩니다.
@@ -739,90 +713,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * @return array<int, array<string, mixed>>
      */
     public function getNotificationDefinitions(): array
-    {
-        return [];
-    }
-
-    /**
-     * 성능 계측 프로파일 정의를 반환합니다.
-     *
-     * 이 모듈이 소유한 목록/화면/저장 경로/배치 중 성능을 재고 싶은 대상을 선언합니다.
-     * `g7:bench` 커맨드가 코어 `config/benchmark.php` 선언과 함께 수집합니다
-     * (`App\Benchmark\BenchmarkProfileRegistry`). 계측 대상을 코어 커맨드에 하드코딩하지
-     * 않는 이유는, 확장이 설치·제거되는 설치본마다 실제로 존재하는 대상이 다르기
-     * 때문입니다. 키는 모듈 내부에서만 고유하면 되고, 다른 확장과 겹치면 커맨드가
-     * `{식별자}/{키}` 로 지목합니다.
-     *
-     * `write` 축의 `callback` 은 클로저를 쓸 수 없습니다 — 코어 선언과 스키마를 공유하고
-     * 코어 쪽은 `config:cache` 대상이므로, 형식을 `'Fqcn'`(invokable) 또는
-     * `['Fqcn', 'method']` 로 통일합니다.
-     *
-     * @return array<string, array<string, mixed>> 프로파일 키 → 정의
-     *                                             [
-     *                                             'orders' => [
-     *                                             'type' => 'list',                       // list | screen | write | batch
-     *                                             'label' => '주문 목록',
-     *                                             'table' => 'ecommerce_orders',
-     *                                             'columns' => ['id', 'order_number', ...],
-     *                                             'order' => [['ordered_at', 'desc']],
-     *                                             'filters' => ['order_status' => 'paid'],
-     *                                             'soft_delete' => true,
-     *                                             ],
-     *                                             ]
-     */
-    public function getBenchmarkProfiles(): array
-    {
-        return [];
-    }
-
-    /**
-     * 방문자 통계 전환(목표) 선언을 반환합니다.
-     *
-     * 이 모듈이 방문자 통계에 공급하는 전환 지점을 미리 선언합니다. 코어는 선언된 목표만
-     * 기록하고(`G7Core.analytics.trackGoal()`·`ConversionRecorderInterface::record()`),
-     * 선언되지 않은 키는 수집 실패 목록에 `unknown_goal` 로 남깁니다. 기록 키는
-     * `{식별자}.{key}` 로 정규화됩니다. 모듈이 비활성화되면 목표는 등록부에서 빠지고
-     * 이미 쌓인 전환은 남습니다.
-     *
-     * @return array<int, array<string, mixed>> 목표 선언 목록
-     *                                          [[
-     *                                          'key' => 'order_completed',                // 영소문자·숫자·밑줄
-     *                                          'label' => ['ko' => '주문 완료', 'en' => 'Order completed'],
-     *                                          'category' => 'purchase',                  // purchase|signup|engagement|custom
-     *                                          'dedupe' => 'once_per_visit',              // every_time|once_per_visit|once_per_visitor
-     *                                          'attributes' => [
-     *                                          'revenue' => ['type' => 'decimal', 'required' => true, 'min' => 0],
-     *                                          'currency' => ['type' => 'enum', 'required' => true, 'values' => ['KRW', 'USD']],
-     *                                          ],
-     *                                          'attribution_window_days' => 30,
-     *                                          'dimensions' => ['board_id'],              // 이 모듈이 선언한 차원 키
-     *                                          ]]
-     */
-    public function getAnalyticsGoals(): array
-    {
-        return [];
-    }
-
-    /**
-     * 방문자 통계 분류 기준(dimension) 선언을 반환합니다.
-     *
-     * 브라우저의 `G7Core.analytics.setDimension()` 이나 서버 필터
-     * `core.analytics.resolve_dimensions` 로 넣는 차원 값은 여기 선언된 것만 원장에 남고,
-     * 집계는 `ext:{식별자}:{key}` 차원 행으로 만들어집니다. `pii` 가 참인 차원은 익명
-     * 모드에서 적재하지 않고 소급 익명화 때 지웁니다.
-     *
-     * @return array<int, array<string, mixed>> 차원 선언 목록
-     *                                          [[
-     *                                          'key' => 'board_id',
-     *                                          'scope' => 'action',                       // action|visit
-     *                                          'label' => ['ko' => '게시판', 'en' => 'Board'],
-     *                                          'value_type' => 'int',                     // int|string|enum
-     *                                          'max_cardinality' => 500,                  // 하루 집계 라벨 수 상한
-     *                                          'label_resolver' => 'resolveBoardLabels',  // (array $values): array<값, 이름>
-     *                                          'pii' => false,
-     *                                          ]]
-     */
-    public function getAnalyticsDimensions(): array
     {
         return [];
     }
@@ -961,23 +851,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * 매니페스트에 선언된 아이콘 상대경로 반환
-     *
-     * module.json 의 icon 필드 값을 그대로 돌려줍니다. 경로 규칙(확장 루트 기준 상대경로)과
-     * 규격(정사각·100KB 이하·안전한 SVG) 검증은 ExtensionIconResolver·
-     * ExtensionIconValidator 의 몫이며, 여기서는 선언값만 봅니다.
-     * 선언이 없으면 파일 관례(assets/icon.svg → png → webp)로 해석됩니다.
-     *
-     * @return string|null 아이콘 상대경로 (선언이 없으면 null)
-     */
-    public function getIcon(): ?string
-    {
-        $icon = $this->loadManifest()['icon'] ?? null;
-
-        return is_string($icon) && trim($icon) !== '' ? $icon : null;
-    }
-
-    /**
      * 모듈 메타데이터 반환
      *
      * 기본적으로 빈 배열 반환
@@ -988,63 +861,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getMetadata(): array
     {
         return [];
-    }
-
-    /**
-     * 이 모듈이 소유하는 전역 상태 공개 계약을 반환합니다.
-     *
-     * module.json 의 `state_contracts` 에서 읽습니다. 다른 확장이 **읽는** 전역 상태만 선언합니다(화면 전용 임시 값은
-     * 선언하지 않는다). 설치·활성화 때 다른 활성 확장이나 코어가 같은 이름을 소유하면 막히고, 프론트에는
-     * `G7Core.stateContracts` 로 공개됩니다({@see StateContracts}).
-     *
-     * @return array<string, array{description: array<string, string>, schema: array<string, mixed>, writers: array<int, string>}>
-     *                                                                                                                             이름 → 계약
-     *
-     * @since 7.1.0
-     */
-    public function getStateContracts(): array
-    {
-        return StateContracts::normalize($this->loadManifest()['state_contracts'] ?? []);
-    }
-
-    /**
-     * 함께 쓰면 연동되는(선택) 확장을 반환합니다.
-     *
-     * module.json 의 `integrations` 에서 읽습니다. `dependencies` 와 달리 설치·활성화를 막지 않습니다
-     * ({@see ExtensionIntegrations}).
-     *
-     * @return array{modules: array<int, string>, plugins: array<int, string>, templates: array<int, string>} 유형별 확장 식별자
-     *
-     * @since 7.1.0
-     */
-    public function getIntegrations(): array
-    {
-        return ExtensionIntegrations::normalize($this->loadManifest()['integrations'] ?? []);
-    }
-
-    /**
-     * 신뢰하는 외부 스크립트 호스트 목록을 반환합니다.
-     *
-     * module.json 의 `trusted_script_hosts` 배열에서 읽습니다. 이 모듈이 레이아웃
-     * `scripts[].src` 로 로드하는 외부 CDN 호스트를 선언합니다. 코어는 이 목록을
-     * 집계(AbstractModule/AbstractPlugin → TrustedScriptHosts)해 런타임 스크립트 로더·
-     * 저장측 검증·정적 검사가 same-origin 이 아닌 스크립트 중 **선언된 호스트만** 허용하도록
-     * 합니다 (KVE-2026-1915 신뢰 출처 허용목록).
-     *
-     * @return array<int, string> 신뢰 호스트명 목록 (예: ['cdn.example.com'])
-     */
-    public function getTrustedScriptHosts(): array
-    {
-        $hosts = $this->loadManifest()['trusted_script_hosts'] ?? [];
-
-        if (! is_array($hosts)) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            array_map(fn ($host) => is_string($host) ? trim($host) : '', $hosts),
-            fn ($host) => $host !== ''
-        ));
     }
 
     /**
@@ -1059,12 +875,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
 
     /**
      * 레이아웃 확장 파일 목록 반환
-     *
-     * **`.json` 만 돌려주는 것이 계약이다** — 소스(`.g7.html`) 판별은 여기가 아니라 **호출처**
-     * ({@see CollectsFragmentSources::collectFragmentSources()}) 소관이다.
-     * 호출처가 이 목록 위에 같은 디렉토리의 `.g7.html` 을 얹어 소스 SSoT 를 우선하고, 짝 마크업이
-     * 없는 `.json` 만 남긴다. 여기서 `.g7.html` 까지 반환하도록 바꾸면 확장 공개 표면이 바뀌어
-     * 번들 확장의 `g7_version` 상향 대상이 되고, 호출처의 짝 판별과 이중으로 겹친다.
      *
      * @return array<string> JSON 파일 경로 목록
      */
@@ -1187,69 +997,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * @return array Schema.org 형식 (@type 필수). 빈 배열 반환 시 미적용.
      */
     public function seoStructuredData(string $pageType, array $context, array $routeParams = []): array
-    {
-        return [];
-    }
-
-    /**
-     * OG 기본값 키별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
-     *
-     * `seoOgDefaults()` 가 반환하는 평문값은 운영 렌더링에 그대로 쓰이지만, 어느 데이터에서
-     * 왔는지(`{{product.data.name}}`)는 평문으로 resolve 되며 정보가 소실됩니다. 편집기
-     * [검색엔진] 탭은 자동값을 "상품 이름" 같은 **연결 칩**으로 보여주고 사용자가 다른
-     * 데이터로 교체할 수 있어야 하므로, 본 메서드가 키별 데이터 경로(표현식)와
-     * 사용자용 라벨을 함께 제공합니다.
-     *
-     * 운영 렌더링(`SeoRenderer`)은 본 메서드를 호출하지 않습니다 — 편집기 미리보기
-     * (`SeoOgPreviewService`)만 소비합니다. 미오버라이드(빈 배열)면 편집기는 종전대로
-     * resolve 된 평문을 보여줍니다(하위호환·평문 폴백).
-     *
-     * `label` 은 **번역 키 문자열**(`'sirsoft-ecommerce::seo.auto_value.product_name'`)로 선언하는 것을
-     * 권장합니다 — 편집기가 `__()` 로 해석하므로 모듈 lang 파일(+번들 언어팩)이 그 키를 번역하면
-     * 추가 언어(ja 등)에 자동 대응합니다. 인라인 다국어 맵(`['ko' => ..., 'en' => ...]`)도 허용하나
-     * 그 외 로케일은 en 폴백이라 언어팩에 대응하지 못합니다(하위호환용).
-     *
-     * @param  string  $pageType  레이아웃 meta.seo.page_type
-     * @return array<string, array{expr: string, label: string|array<string, string>}>
-     *                                                                                 키별 데이터 경로 메타 — 예:
-     *                                                                                 [
-     *                                                                                 'image' => ['expr' => '{{product.data.thumbnail_url}}', 'label' => 'vendor-module::seo.auto_value.product_image'],
-     *                                                                                 'image_alt' => ['expr' => '{{product.data.name}}', 'label' => 'vendor-module::seo.auto_value.product_name'],
-     *                                                                                 ]
-     */
-    public function seoOgDefaultMeta(string $pageType): array
-    {
-        return [];
-    }
-
-    /**
-     * Twitter 카드 기본값 키별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
-     *
-     * @param  string  $pageType  페이지 타입
-     * @return array<string, array{expr: string, label: string|array<string, string>}> 키별 데이터 경로 메타
-     *                                                                                 (label = 번역 키 권장 — seoOgDefaultMeta 참조)
-     */
-    public function seoTwitterDefaultMeta(string $pageType): array
-    {
-        return [];
-    }
-
-    /**
-     * 구조화 데이터 속성별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
-     *
-     * `seoStructuredData()` 의 중첩 객체를 점 경로 키로 평탄화한 기준으로 선언합니다
-     * (예: `offers.price`). 편집기가 자동 블록을 평탄 행으로 보여줄 때 각 값을 연결 칩으로
-     * 표시하는 근거입니다.
-     *
-     * @param  string  $pageType  페이지 타입
-     * @return array<string, array{expr: string, label: string|array<string, string>}>
-     *                                                                                 점 경로 키별 데이터 경로 메타 (label = 번역 키 권장 — seoOgDefaultMeta 참조) — 예:
-     *                                                                                 [
-     *                                                                                 'name' => ['expr' => '{{product.data.name}}', 'label' => 'vendor-module::seo.auto_value.product_name'],
-     *                                                                                 'offers.price' => ['expr' => '{{product.data.selling_price}}', 'label' => 'vendor-module::seo.auto_value.product_price'],
-     *                                                                                 ]
-     */
-    public function seoStructuredDataMeta(string $pageType): array
     {
         return [];
     }
@@ -1380,52 +1127,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * 빌드된 에셋의 절대 파일 경로를 반환합니다.
-     *
-     * `getBuiltAssetPaths()` 는 module.json 의 상대 output 경로를 돌려주므로
-     * 파일을 실제로 읽으려면 모듈 루트(`getModulePath()`: 활성 dir 또는 `_bundled`
-     * 실제 위치)를 앞에 붙여야 한다. 서버측 번들 병합(ExtensionBundleService)이
-     * `getAssetFilePath()` 의 `base_path("modules/{id}/...")` 하드코딩을 복제하지
-     * 않고 `_bundled` 확장에서도 정확한 경로를 얻도록 이 게터를 SSoT 로 쓴다.
-     *
-     * @return array 빌드된 에셋 절대 경로 배열 ['js' => '...', 'css' => '...']
-     */
-    public function getBuiltAssetAbsolutePaths(): array
-    {
-        $relative = $this->getBuiltAssetPaths();
-        $result = [];
-
-        foreach ($relative as $kind => $output) {
-            $result[$kind] = $this->getModulePath().'/'.$output;
-        }
-
-        return $result;
-    }
-
-    /**
-     * 매니페스트가 **선언한** 프론트엔드 자산의 절대 경로를 반환합니다 (파일 존재 여부 무관).
-     *
-     * `getBuiltAssetAbsolutePaths()` 는 `file_exists()` 게이트라 소실된 산출물이 목록에서
-     * 사라진다. 배포 중 `dist` 가 잠깐 비는 상태를 "선언은 있는데 파일이 없다" 로 세려면
-     * 선언 축을 그대로 돌려주는 통로가 필요하다 — 이 메서드가 그 축이다.
-     *
-     * @return array<string, string> kind('js'|'css') => 절대 경로 (선언된 kind 만)
-     */
-    public function getDeclaredAssetAbsolutePaths(): array
-    {
-        $assets = $this->getAssets();
-        $result = [];
-
-        foreach (['js', 'css'] as $kind) {
-            if (! empty($assets[$kind]['output'])) {
-                $result[$kind] = $this->getModulePath().'/'.$assets[$kind]['output'];
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * 모듈 스토리지 드라이버 인스턴스 반환
      *
      * 모듈별로 격리된 파일 저장소를 제공합니다.
@@ -1456,67 +1157,6 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getStorageDisk(): string
     {
         return 'modules';
-    }
-
-    /**
-     * 카테고리별 스토리지 인스턴스 캐시 (디스크명 키 memoize)
-     *
-     * @var array<string, StorageInterface>
-     */
-    private array $storageByDisk = [];
-
-    /**
-     * 카테고리별 스토리지 디스크 이름 반환
-     *
-     * 기본값은 getStorageDisk() 와 동일 (현행 동작 100% 보존).
-     * 특정 카테고리(예: 'images')만 다른 디스크를 쓰려면 모듈이 오버라이드합니다.
-     *
-     * 주의: 오버라이드 구현은 'settings' 카테고리에서 모듈 설정을 조회하면 안 됩니다 —
-     * 모듈 설정 로드가 getStorage()->get('settings', ...) 를 경유하므로 재귀 고리가 생깁니다.
-     * 모듈 설정 조회는 'images' 등 설정 저장과 무관한 카테고리에서만 수행합니다.
-     *
-     * @param  string  $category  카테고리 (settings, attachments, images, cache, temp)
-     * @return string 디스크 이름
-     */
-    public function getStorageDiskFor(string $category): string
-    {
-        return $this->getStorageDisk();
-    }
-
-    /**
-     * 카테고리별 스토리지 드라이버 인스턴스 반환
-     *
-     * getStorageDiskFor() 가 결정한 디스크의 드라이버를 디스크 단위로 memoize 하여 반환합니다.
-     * 기본 디스크와 동일하면 getStorage() 인스턴스를 그대로 재사용합니다.
-     *
-     * @param  string  $category  카테고리
-     * @return StorageInterface 스토리지 드라이버 인스턴스
-     */
-    public function getStorageFor(string $category): StorageInterface
-    {
-        $disk = $this->getStorageDiskFor($category);
-
-        if (! isset($this->storageByDisk[$disk])) {
-            $base = $this->getStorage();
-            $this->storageByDisk[$disk] = ($disk === $base->getDisk()) ? $base : $base->withDisk($disk);
-        }
-
-        return $this->storageByDisk[$disk];
-    }
-
-    /**
-     * 공개 자산 디스크 설정값을 해석합니다.
-     *
-     * 우선순위: 확장 개별 설정(override) > 코어 전역 설정(core.storage.public_asset_disk).
-     * 미설정('')/'none'/config 에 존재하지 않는 디스크(고아 플러그인 디스크)는 null 로
-     * 해석되어 호출측이 기존 디스크(스트리밍)로 폴백합니다.
-     *
-     * @param  string|null  $override  확장 개별 설정값 (''/null 이면 코어 전역 설정 사용)
-     * @return string|null 사용할 디스크 이름 (스트리밍 유지면 null)
-     */
-    protected function resolvePublicAssetDisk(?string $override = null): ?string
-    {
-        return PublicAssetDisk::resolve($override);
     }
 
     /**
@@ -1554,30 +1194,26 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     /**
      * 카테고리별 스토리지 기본 경로 반환
      *
-     * 카테고리가 다른 디스크로 배선돼 있으면(getStorageDiskFor 오버라이드) 그 디스크
-     * 기준 경로를 돌려줍니다. 기본 디스크를 보면 배선한 카테고리의 경로가 어긋납니다.
-     *
      * @param  string  $category  카테고리 (settings, attachments, images, cache, temp)
      * @return string 전체 파일 시스템 경로
      */
     public function getStorageBasePath(string $category): string
     {
-        return $this->getStorageFor($category)->getBasePath($category);
+        return $this->getStorage()->getBasePath($category);
     }
 
     /**
      * 파일의 공개 URL 반환
      *
-     * 카테고리에 배선된 디스크(getStorageDiskFor)가 직접 URL 을 지원하면 그 URL 을,
-     * 아니면 null 을 반환합니다 (별도 API 엔드포인트 사용). 기본 디스크를 보면
-     * 공개 자산 디스크로 옮긴 카테고리가 항상 null 을 받습니다.
+     * public disk인 경우 직접 URL을 반환하고,
+     * private disk인 경우 null을 반환합니다 (별도 API 엔드포인트 사용).
      *
      * @param  string  $category  카테고리
      * @param  string  $path  파일 경로
-     * @return string|null 파일 URL (직접 URL 불가 디스크인 경우 null)
+     * @return string|null 파일 URL (private disk인 경우 null)
      */
     public function getStorageUrl(string $category, string $path): ?string
     {
-        return $this->getStorageFor($category)->url($category, $path);
+        return $this->getStorage()->url($category, $path);
     }
 }

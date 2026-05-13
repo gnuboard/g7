@@ -27,41 +27,6 @@ class ProductListRequest extends FormRequest
     }
 
     /**
-     * 검증 전 입력을 정규화합니다.
-     *
-     * no_category / no_brand 를 boolean 으로 해석 가능한 문자열('true','1','false','0' 등)로
-     * 받아도 실제 boolean 으로 정규화하여 boolean rule 통과 + validated() 가 진짜 boolean 을
-     * 반환하도록 합니다. (레이아웃 외 직접 API 호출/북마크 URL ?no_category=true 도 안전 처리)
-     *
-     * boolean 으로 해석 불가능한 값(예: 'banana')은 정규화하지 않고 원본을 그대로 두어
-     * boolean rule 이 거부(422)하도록 합니다.
-     */
-    protected function prepareForValidation(): void
-    {
-        $merge = [];
-        foreach (['no_category', 'no_brand', 'with_options'] as $field) {
-            if (! $this->has($field)) {
-                continue;
-            }
-
-            // FILTER_NULL_ON_FAILURE: boolean 해석 불가 값은 null → 정규화 스킵(원본 유지 → boolean rule 거부)
-            $normalized = filter_var(
-                $this->input($field),
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            );
-
-            if ($normalized !== null) {
-                $merge[$field] = $normalized;
-            }
-        }
-
-        if (! empty($merge)) {
-            $this->merge($merge);
-        }
-    }
-
-    /**
      * 유효성 검사 규칙
      *
      * @return array
@@ -108,9 +73,6 @@ class ProductListRequest extends FormRequest
             // 배송정책
             'shipping_policy_id' => ['nullable', 'integer'],
 
-            // 옵션 상세 포함 여부 (기본 false — 목록은 개수/재고합계 집계만 내려준다)
-            'with_options' => ['nullable', 'boolean'],
-
             // 정렬 및 페이지네이션
             'sort_by' => ['nullable', 'in:created_at,updated_at,selling_price,stock_quantity,name'],
             'sort_order' => ['nullable', 'in:asc,desc'],
@@ -153,7 +115,6 @@ class ProductListRequest extends FormRequest
             'min_stock.integer' => __('sirsoft-ecommerce::validation.list.min_stock.integer'),
             'max_stock.integer' => __('sirsoft-ecommerce::validation.list.max_stock.integer'),
             'shipping_policy_id.integer' => __('sirsoft-ecommerce::validation.list.shipping_policy_id.integer'),
-            'with_options.boolean' => __('sirsoft-ecommerce::validation.list.with_options.boolean'),
             'sort_by.in' => __('sirsoft-ecommerce::validation.list.sort_by.in'),
             'sort_order.in' => __('sirsoft-ecommerce::validation.list.sort_order.in'),
             'per_page.integer' => __('sirsoft-ecommerce::validation.list.per_page.integer'),

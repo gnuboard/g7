@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Mockery;
 use Tests\TestCase;
 
 /**
@@ -26,17 +27,11 @@ class DashboardControllerTest extends TestCase
 
     private string $token;
 
-    /**
-     * 각 테스트 전에 공통 픽스처를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        // 리소스·시스템 알림 API 는 화면 카드와 같은 전용 권한을 요구한다(7.1.0 — 전에는 dashboard.read 하나로 열렸다).
-        $this->admin = $this->createAdminUser(['core.dashboard.read', 'core.dashboard.resources', 'core.dashboard.alerts']);
+        $this->admin = $this->createAdminUser();
         $this->token = $this->admin->createToken('test-token')->plainTextToken;
     }
 
@@ -45,7 +40,7 @@ class DashboardControllerTest extends TestCase
      *
      * @param  array  $permissions  사용자에게 부여할 권한 식별자 목록
      * @param  string|null  $scopeType  권한 스코프 타입 (null: 전체, 'self': 본인, 'role': 역할)
-     * @return User 생성된 관리자
+     * @return User
      */
     private function createAdminUser(array $permissions = ['core.dashboard.read'], ?string $scopeType = null): User
     {
@@ -130,7 +125,7 @@ class DashboardControllerTest extends TestCase
     /**
      * 인증 헤더와 함께 요청
      *
-     * @return $this 결과
+     * @return $this
      */
     private function authRequest(): static
     {
@@ -144,7 +139,7 @@ class DashboardControllerTest extends TestCase
      * 특정 사용자의 토큰으로 인증 요청
      *
      * @param  User  $user  인증할 사용자
-     * @return $this 결과
+     * @return $this
      */
     private function authAs(User $user): static
     {
@@ -160,30 +155,12 @@ class DashboardControllerTest extends TestCase
     // 인증/권한 테스트
     // ========================================================================
 
-    /**
-     * 인증 없이 통계를 조회하면 401 이다.
-     *
-     * @scenario area=stats
-     *
-     * @effects stats_returns_401_without_authentication
-     *
-     * @return void 반환값 없음
-     */
     public function test_stats_returns_401_without_authentication(): void
     {
         $response = $this->getJson('/api/admin/dashboard/stats');
         $response->assertStatus(401);
     }
 
-    /**
-     * 대시보드 조회 권한이 없으면 통계는 403 이다.
-     *
-     * @scenario area=stats
-     *
-     * @effects stats_returns_403_without_permission
-     *
-     * @return void 반환값 없음
-     */
     public function test_stats_returns_403_without_permission(): void
     {
         $user = $this->createAdminUser([]);
@@ -197,45 +174,18 @@ class DashboardControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /**
-     * 인증 없이 시스템 리소스를 조회하면 401 이다.
-     *
-     * @scenario area=resources
-     *
-     * @effects resources_returns_401_without_authentication
-     *
-     * @return void 반환값 없음
-     */
     public function test_resources_returns_401_without_authentication(): void
     {
         $response = $this->getJson('/api/admin/dashboard/resources');
         $response->assertStatus(401);
     }
 
-    /**
-     * 인증 없이 최근 활동을 조회하면 401 이다.
-     *
-     * @scenario area=activities
-     *
-     * @effects activities_returns_401_without_authentication
-     *
-     * @return void 반환값 없음
-     */
     public function test_activities_returns_401_without_authentication(): void
     {
         $response = $this->getJson('/api/admin/dashboard/activities');
         $response->assertStatus(401);
     }
 
-    /**
-     * 최근 활동 권한이 없으면 403 이다.
-     *
-     * @scenario area=activities
-     *
-     * @effects activities_returns_403_without_permission
-     *
-     * @return void 반환값 없음
-     */
     public function test_activities_returns_403_without_permission(): void
     {
         $user = $this->createAdminUser([]);
@@ -249,15 +199,6 @@ class DashboardControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    /**
-     * 인증 없이 시스템 알림을 조회하면 401 이다.
-     *
-     * @scenario area=alerts
-     *
-     * @effects alerts_returns_401_without_authentication
-     *
-     * @return void 반환값 없음
-     */
     public function test_alerts_returns_401_without_authentication(): void
     {
         $response = $this->getJson('/api/admin/dashboard/alerts');
@@ -268,15 +209,6 @@ class DashboardControllerTest extends TestCase
     // Stats API 테스트
     // ========================================================================
 
-    /**
-     * 통계 응답 구조를 확인한다.
-     *
-     * @scenario area=stats
-     *
-     * @effects stats_returns_correct_structure
-     *
-     * @return void 반환값 없음
-     */
     public function test_stats_returns_correct_structure(): void
     {
         $response = $this->authRequest()->getJson('/api/admin/dashboard/stats');
@@ -293,15 +225,6 @@ class DashboardControllerTest extends TestCase
             ]);
     }
 
-    /**
-     * 통계의 회원 수가 실제 회원 수와 같다.
-     *
-     * @scenario area=stats
-     *
-     * @effects stats_returns_correct_user_count
-     *
-     * @return void 반환값 없음
-     */
     public function test_stats_returns_correct_user_count(): void
     {
         User::factory()->count(5)->create();
@@ -315,15 +238,6 @@ class DashboardControllerTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $userCount); // 최소 admin 1명
     }
 
-    /**
-     * 회원이 늘면 증감 추세가 상승으로 나온다.
-     *
-     * @scenario area=stats
-     *
-     * @effects stats_user_trend_is_up_when_increased
-     *
-     * @return void 반환값 없음
-     */
     public function test_stats_user_trend_is_up_when_increased(): void
     {
         // 전월에 가입한 사용자 2명 생성
@@ -352,7 +266,7 @@ class DashboardControllerTest extends TestCase
      * 실제 시스템 명령(PowerShell, wmic 등) 호출을 피하고
      * 테스트 성능을 향상시키기 위해 모킹된 값을 반환합니다.
      *
-     * @return void 반환값 없음
+     * @return void
      */
     private function mockDashboardResourceService(): void
     {
@@ -365,50 +279,6 @@ class DashboardControllerTest extends TestCase
         });
     }
 
-    /**
-     * 내부 probe 가 예외를 던져도 리소스 조회가 200 으로 응답하는지 테스트 (공개#40).
-     *
-     * getSystemResources 전체를 mock 하지 않고 내부 probe(getCpuUsage)만 throw 시켜
-     * safeProbe 격리가 실제로 동작하는지 검증한다.
-     *
-     * @scenario area=resources
-     *
-     * @effects resources_returns_200_when_probe_fails
-     *
-     * @return void 반환값 없음
-     */
-    public function test_resources_returns_200_when_probe_fails(): void
-    {
-        $this->partialMock(DashboardService::class, function ($mock) {
-            $mock->shouldAllowMockingProtectedMethods();
-            $mock->shouldReceive('getCpuUsage')->andThrow(new \ErrorException('open_basedir restriction in effect'));
-            // memory/disk 는 실제 실행 (Windows/Linux 무관 정상 구조 반환)
-        });
-
-        $response = $this->authRequest()->getJson('/api/admin/dashboard/resources');
-
-        $response->assertStatus(200);
-        $this->assertSame('gray', $response->json('data.cpu.color'));
-        $this->assertSame(0, $response->json('data.cpu.percentage'));
-        // memory/disk 구조는 정상 유지
-        $response->assertJsonStructure([
-            'data' => [
-                'cpu' => ['percentage', 'color'],
-                'memory' => ['percentage', 'used', 'total', 'color'],
-                'disk' => ['percentage', 'used', 'total', 'color'],
-            ],
-        ]);
-    }
-
-    /**
-     * 시스템 리소스 응답 구조를 확인한다.
-     *
-     * @scenario area=resources
-     *
-     * @effects resources_returns_correct_structure
-     *
-     * @return void 반환값 없음
-     */
     public function test_resources_returns_correct_structure(): void
     {
         $this->mockDashboardResourceService();
@@ -426,15 +296,6 @@ class DashboardControllerTest extends TestCase
             ]);
     }
 
-    /**
-     * 리소스 사용률은 0~100 범위다.
-     *
-     * @scenario area=resources
-     *
-     * @effects resources_returns_valid_percentage_values
-     *
-     * @return void 반환값 없음
-     */
     public function test_resources_returns_valid_percentage_values(): void
     {
         $this->mockDashboardResourceService();
@@ -455,15 +316,6 @@ class DashboardControllerTest extends TestCase
         $this->assertLessThanOrEqual(100, $disk);
     }
 
-    /**
-     * 리소스 표시 색상이 정해진 값 안에 있다.
-     *
-     * @scenario area=resources
-     *
-     * @effects resources_returns_valid_color_values
-     *
-     * @return void 반환값 없음
-     */
     public function test_resources_returns_valid_color_values(): void
     {
         $this->mockDashboardResourceService();
@@ -487,15 +339,6 @@ class DashboardControllerTest extends TestCase
     // Activities API 테스트
     // ========================================================================
 
-    /**
-     * 최근 활동 응답 구조를 확인한다.
-     *
-     * @scenario area=activities
-     *
-     * @effects activities_returns_correct_structure
-     *
-     * @return void 반환값 없음
-     */
     public function test_activities_returns_correct_structure(): void
     {
         $user = $this->createAdminUser(['core.dashboard.activities']);
@@ -509,15 +352,6 @@ class DashboardControllerTest extends TestCase
             ]);
     }
 
-    /**
-     * 최근 활동이 활동 로그 내용을 싣는다.
-     *
-     * @scenario area=activities
-     *
-     * @effects activities_returns_activity_log_data
-     *
-     * @return void 반환값 없음
-     */
     public function test_activities_returns_activity_log_data(): void
     {
         $user = $this->createAdminUser(['core.dashboard.activities']);
@@ -535,15 +369,6 @@ class DashboardControllerTest extends TestCase
         $this->assertNotEmpty($response->json('data'));
     }
 
-    /**
-     * 최근 활동 응답은 배열이다.
-     *
-     * @scenario area=activities
-     *
-     * @effects activities_returns_array
-     *
-     * @return void 반환값 없음
-     */
     public function test_activities_returns_array(): void
     {
         $user = $this->createAdminUser(['core.dashboard.activities']);
@@ -554,15 +379,6 @@ class DashboardControllerTest extends TestCase
         $this->assertIsArray($response->json('data'));
     }
 
-    /**
-     * 활동 로그가 없으면 빈 배열이다.
-     *
-     * @scenario area=activities
-     *
-     * @effects activities_returns_empty_array_when_no_logs
-     *
-     * @return void 반환값 없음
-     */
     public function test_activities_returns_empty_array_when_no_logs(): void
     {
         $user = $this->createAdminUser(['core.dashboard.activities']);
@@ -574,15 +390,6 @@ class DashboardControllerTest extends TestCase
         $this->assertEmpty($response->json('data'));
     }
 
-    /**
-     * 최근 활동 항목에 필수 필드가 있다.
-     *
-     * @scenario area=activities
-     *
-     * @effects activities_item_has_required_fields
-     *
-     * @return void 반환값 없음
-     */
     public function test_activities_item_has_required_fields(): void
     {
         $user = $this->createAdminUser(['core.dashboard.activities']);
@@ -614,15 +421,6 @@ class DashboardControllerTest extends TestCase
     // Activities 스코프 권한 테스트
     // ========================================================================
 
-    /**
-     * 본인 범위 권한이면 자기 활동만 보인다.
-     *
-     * @scenario area=activities
-     *
-     * @effects activities_scope_self_returns_only_own_activities
-     *
-     * @return void 반환값 없음
-     */
     public function test_activities_scope_self_returns_only_own_activities(): void
     {
         // self 스코프로 활동 권한을 가진 사용자 생성
@@ -654,15 +452,6 @@ class DashboardControllerTest extends TestCase
         $this->assertCount(1, $activities);
     }
 
-    /**
-     * 전체 범위 권한이면 모든 활동이 보인다.
-     *
-     * @scenario area=activities
-     *
-     * @effects activities_scope_null_returns_all_activities
-     *
-     * @return void 반환값 없음
-     */
     public function test_activities_scope_null_returns_all_activities(): void
     {
         // 전체 스코프(null)로 활동 권한을 가진 사용자 생성
@@ -698,15 +487,6 @@ class DashboardControllerTest extends TestCase
     // Alerts API 테스트
     // ========================================================================
 
-    /**
-     * 시스템 알림 응답 구조를 확인한다.
-     *
-     * @scenario area=alerts
-     *
-     * @effects alerts_returns_correct_structure
-     *
-     * @return void 반환값 없음
-     */
     public function test_alerts_returns_correct_structure(): void
     {
         $response = $this->authRequest()->getJson('/api/admin/dashboard/alerts');
@@ -718,15 +498,6 @@ class DashboardControllerTest extends TestCase
             ]);
     }
 
-    /**
-     * 시스템 알림 응답은 배열이다.
-     *
-     * @scenario area=alerts
-     *
-     * @effects alerts_returns_array
-     *
-     * @return void 반환값 없음
-     */
     public function test_alerts_returns_array(): void
     {
         $response = $this->authRequest()->getJson('/api/admin/dashboard/alerts');
@@ -735,15 +506,6 @@ class DashboardControllerTest extends TestCase
         $this->assertIsArray($response->json('data'));
     }
 
-    /**
-     * 시스템 알림 항목에 필수 필드가 있다.
-     *
-     * @scenario area=alerts
-     *
-     * @effects alerts_item_has_required_fields
-     *
-     * @return void 반환값 없음
-     */
     public function test_alerts_item_has_required_fields(): void
     {
         $response = $this->authRequest()->getJson('/api/admin/dashboard/alerts');

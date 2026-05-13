@@ -3,18 +3,13 @@
 namespace Modules\Sirsoft\Board\Http\Requests\User;
 
 use App\Extension\HookManager;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ResolvesAllowedExtensions;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesTempKey;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
-use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
 use Modules\Sirsoft\Board\Rules\CooldownRule;
 use Modules\Sirsoft\Board\Rules\ParentPostValidationRule;
@@ -29,15 +24,8 @@ use Modules\Sirsoft\Board\Rules\ParentPostValidationRule;
  */
 class StorePostRequest extends FormRequest
 {
-    use ProvidesFallbackRuleMessages;
-    use ResolvesAllowedExtensions;
-    use ValidatesAttachmentCount;
-    use ValidatesTempKey;
-
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
-     *
-     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -45,38 +33,14 @@ class StorePostRequest extends FormRequest
     }
 
     /**
-     * 검증 전 입력값을 정규화합니다.
-     *
-     * 비밀글 여부를 문자열 "true"/"false" 로 보내는 클라이언트도 수용하도록
-     * boolean 으로 정규화합니다. (해석 불가값은 유지 → boolean 규칙이 422 처리)
-     *
-     * @return void 반환값 없음
-     */
-    protected function prepareForValidation(): void
-    {
-        $merge = [];
-
-        if ($this->has('is_secret')) {
-            $normalized = filter_var($this->input('is_secret'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-            if ($normalized !== null) {
-                $merge['is_secret'] = $normalized;
-            }
-        }
-
-        if ($merge) {
-            $this->merge($merge);
-        }
-    }
-
-    /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, mixed> 필드별 검증 규칙
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
         $slug = $this->route('slug');
-        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $slug);
+        $board = Board::where('slug', $slug)->first();
 
         // 게시판이 없으면 모듈 환경설정 기본값 사용
         $defaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
@@ -112,10 +76,9 @@ class StorePostRequest extends FormRequest
             'content_mode' => ['nullable', 'string', 'in:text,html'],
             'category' => ['nullable', 'string', 'max:50'],
             'is_secret' => ['nullable', 'boolean'],
-            // 사용자가 지정할 수 있는 상태는 published 뿐 — 블라인드·삭제는 관리 경로의 몫이다
-            'status' => ['nullable', 'string', Rule::in([PostStatus::Published->value])],
-            // temp_key는 게시판 존재 여부와 무관하게 항상 허용 (UUID 형식만 — 저장 경로에 들어간다)
-            'temp_key' => $this->tempKeyRules(),
+            'status' => ['nullable', 'string', Rule::in(PostStatus::values())],
+            // temp_key는 게시판 존재 여부와 무관하게 항상 허용
+            'temp_key' => ['nullable', 'string', 'max:64'],
         ];
 
         // 비회원인 경우 author_name, password 필수
@@ -150,18 +113,14 @@ class StorePostRequest extends FormRequest
         // 파일 업로드 검증 규칙 (게시판 설정에 따라)
         $useFileUpload = $board->use_file_upload ?? $defaults['use_file_upload'] ?? false;
         if ($useFileUpload) {
-            $maxFiles = $this->maxFileCount();
+            $maxFiles = $board->max_file_count ?? $defaults['max_file_count'] ?? 5;
             $maxSizeMB = $board->max_file_size ?? $defaults['max_file_size'] ?? 10;
             $maxSizeKB = $maxSizeMB * 1024;
-            // 게시판/기본값이 모두 비어 있으면(null 또는 []) 최종 기본 확장자로 폴백한다.
-            // 빈 배열을 그대로 쓰면 'extensions:' 빈 규칙이 되어 전 파일이 거부된다.
-            $allowedExtensions = $this->resolveAllowedExtensions(
-                $board->allowed_extensions,
-                $defaults['allowed_extensions'] ?? null
-            );
+            $allowedExtensions = $board->allowed_extensions ?? $defaults['allowed_extensions'] ?? ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'zip'];
+            $mimes = implode(',', $allowedExtensions);
+
             $rules['files'] = ['nullable', 'array', 'max:'.$maxFiles];
-            // 이름 확장자와 내용 추론 확장자가 모두 허용 목록에 들어야 통과 (첨부 단건 업로드와 같은 기준)
-            $rules['files.*'] = ['file', 'max:'.$maxSizeKB, ...$this->attachmentFileTypeRules($allowedExtensions)];
+            $rules['files.*'] = ['file', 'max:'.$maxSizeKB, 'mimes:'.$mimes];
         }
 
         // 훅: 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 필터 제공
@@ -169,22 +128,9 @@ class StorePostRequest extends FormRequest
     }
 
     /**
-     * 이 게시판의 첨부 파일 개수 상한을 구합니다 (게시판 설정 → 모듈 기본값 → 5).
-     *
-     * @return int 첨부 파일 개수 상한
-     */
-    private function maxFileCount(): int
-    {
-        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $this->route('slug'));
-        $defaults = g7_module_settings('sirsoft-board', 'basic_defaults', []);
-
-        return (int) ($board->max_file_count ?? $defaults['max_file_count'] ?? 5);
-    }
-
-    /**
      * 검증 오류 메시지 커스터마이징
      *
-     * @return array<string, string> 규칙별 오류 메시지
+     * @return array<string, string>
      */
     public function messages(): array
     {
@@ -204,18 +150,17 @@ class StorePostRequest extends FormRequest
             'parent_id.exists' => __('sirsoft-board::validation.post.parent_id.exists'),
             'is_notice.in' => __('sirsoft-board::validation.post.is_notice.guest_not_allowed'),
             'files.array' => __('sirsoft-board::validation.post.files.array'),
-            // 상한이 게시판 설정값이라 1 일 수 있다 — 검증기는 단·복수를 고르지 않으므로 여기서 고른다.
-            'files.max' => trans_choice('sirsoft-board::validation.post.files.max', $maxFiles = $this->maxFileCount(), ['max' => $maxFiles]),
+            'files.max' => __('sirsoft-board::validation.post.files.max'),
             'files.*.file' => __('sirsoft-board::validation.post.files.file'),
             'files.*.max' => __('sirsoft-board::validation.post.files.file_max'),
-            'files.*.extensions' => __('sirsoft-board::validation.post.files.mimes'),
+            'files.*.mimes' => __('sirsoft-board::validation.post.files.mimes'),
         ];
     }
 
     /**
      * 검증할 필드의 이름을 커스터마이징
      *
-     * @return array<string, string> 필드별 표시명
+     * @return array<string, string>
      */
     public function attributes(): array
     {
@@ -238,9 +183,7 @@ class StorePostRequest extends FormRequest
     /**
      * 검증 통과 후 비밀번호를 해싱합니다.
      *
-     * @param  string|null  $key  조회할 키 (null 이면 전체)
-     * @param  mixed  $default  키가 없을 때 반환할 기본값
-     * @return array<string, mixed> 해싱이 적용된 검증 통과 데이터
+     * @return array<string, mixed>
      */
     public function validated($key = null, $default = null): mixed
     {
@@ -257,19 +200,5 @@ class StorePostRequest extends FormRequest
         }
 
         return $validated;
-    }
-
-    /**
-     * 필드 단위 규칙으로 판정할 수 없는 첨부 총합을 검증합니다.
-     *
-     * @param  Validator  $validator  검증기
-     * @return void 반환값 없음
-     */
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator) {
-            $board = app(BoardRepositoryInterface::class)->findBySlug((string) $this->route('slug'));
-            $this->validateAttachmentTotal($validator, $board);
-        });
     }
 }

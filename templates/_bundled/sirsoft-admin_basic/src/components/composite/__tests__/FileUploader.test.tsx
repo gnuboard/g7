@@ -81,8 +81,6 @@ function createAttachment(overrides: Partial<Attachment> = {}): Attachment {
 }
 
 describe('FileUploader - initialFiles 동기화', () => {
-  // @scenario surface=initial_files
-  // @effects file_uploader_initial_files_sync_without_reset
   it('initialFiles 참조만 변경되고 내용이 같으면 existingFiles를 리셋하지 않는다', () => {
     // 부모 컴포넌트가 re-render될 때 새 [] 참조를 전달하는 시나리오
     const TestWrapper = () => {
@@ -122,8 +120,6 @@ describe('FileUploader - initialFiles 동기화', () => {
     expect(dropzoneAfter).toBeTruthy();
   });
 
-  // @scenario surface=initial_files
-  // @effects file_uploader_initial_files_sync_without_reset
   it('initialFiles 내용이 실제로 변경되면 existingFiles를 업데이트한다', () => {
     const attachment1 = createAttachment({ id: 1 });
     const attachment2 = createAttachment({ id: 2 });
@@ -195,8 +191,6 @@ describe('FileUploader - 업로드 응답 파싱 (useFileUploader 훅 직접 테
     delete (window as any).G7Core.api;
   });
 
-  // @scenario surface=upload
-  // @effects file_uploader_parses_upload_response_shapes
   it('uploadSingleFile이 올바른 응답을 파싱하여 pendingFile을 제거하고 existingFile에 추가한다', async () => {
     const uploadedAttachment = createAttachment({ id: 100, original_filename: 'uploaded.jpg' });
 
@@ -248,8 +242,6 @@ describe('FileUploader - 업로드 응답 파싱 (useFileUploader 훅 직접 테
     expect(result.current.existingFiles[0].id).toBe(100);
   });
 
-  // @scenario surface=upload
-  // @effects file_uploader_parses_upload_response_shapes
   it('uploadSingleFile 응답에 data가 없으면 pendingFile을 에러 상태로 전환한다', async () => {
     // API 응답에 data 없음 → response?.data = undefined → attachment null
     (window as any).G7Core.api.post = vi.fn().mockResolvedValue({
@@ -299,8 +291,6 @@ describe('FileUploader - 업로드 응답 파싱 (useFileUploader 훅 직접 테
     expect(result.current.pendingFiles[0].status).toBe('error');
   });
 
-  // @scenario surface=upload
-  // @effects file_uploader_parses_upload_response_shapes
   it('ResponseHelper 이중 래핑 응답(data.data)도 올바르게 파싱한다', async () => {
     const uploadedAttachment = createAttachment({ id: 200, original_filename: 'double-wrap.jpg' });
 
@@ -348,8 +338,6 @@ describe('FileUploader - 업로드 응답 파싱 (useFileUploader 훅 직접 테
     expect(result.current.existingFiles[0].hash).toBe('hash_200');
   });
 
-  // @scenario surface=upload
-  // @effects file_uploader_parses_upload_response_shapes
   it('단일 래핑 응답(data: Attachment)도 기존대로 정상 파싱한다', async () => {
     const uploadedAttachment = createAttachment({ id: 300, original_filename: 'single-wrap.jpg' });
 
@@ -387,149 +375,5 @@ describe('FileUploader - 업로드 응답 파싱 (useFileUploader 훅 직접 테
     expect(result.current.existingFiles).toHaveLength(1);
     expect(result.current.existingFiles[0].id).toBe(300);
     expect(result.current.existingFiles[0].original_filename).toBe('single-wrap.jpg');
-  });
-
-  // A24 ① — 개수 상한 초과 silent 무시 방지
-  // @scenario surface=upload
-  // @effects front_overflow_fires_upload_error, front_adds_up_to_limit_only
-  it('maxFiles 초과 시 onUploadError 로 안내하고 상한까지만 추가한다', async () => {
-    const onUploadError = vi.fn();
-
-    const { result } = renderHook(() =>
-      useFileUploader({
-        collection: 'test',
-        maxFiles: 2,
-        maxSize: 10,
-        maxConcurrentUploads: 3,
-        roleIds: STABLE_EMPTY_ROLE_IDS,
-        autoUpload: false,
-        initialFiles: STABLE_EMPTY_FILES,
-        confirmBeforeRemove: false,
-        onUploadError,
-        endpoints: defaultEndpoints,
-      })
-    );
-
-    // 상한(2)보다 많은 3개 선택
-    const f1 = new File(['1'], 'a.png', { type: 'image/png' });
-    const f2 = new File(['2'], 'b.png', { type: 'image/png' });
-    const f3 = new File(['3'], 'c.png', { type: 'image/png' });
-    const fileList = {
-      0: f1,
-      1: f2,
-      2: f3,
-      length: 3,
-      item: (i: number) => [f1, f2, f3][i],
-    } as unknown as FileList;
-
-    await act(async () => {
-      await result.current.handleFiles(fileList);
-    });
-
-    // 초과 안내 콜백 1회
-    expect(onUploadError).toHaveBeenCalledTimes(1);
-    // 상한까지만 추가 (2개)
-    expect(result.current.pendingFiles).toHaveLength(2);
-  });
-
-  // 업로드 트리거 이벤트 listener 가 기존+신규 이미지(allFiles)를 반환해야
-  // 저장 sequence 가 form.images 를 정확히 PUT body 에 실어 백엔드 삭제 회귀를 막는다.
-  // @scenario surface=upload
-  // @effects file_uploader_trigger_emit_keeps_order
-  it('업로드 후 트리거 이벤트 emit 결과의 allFiles 가 기존+신규를 드래그 없이 순서대로 담는다', async () => {
-    const uploaded = createAttachment({ id: 600, hash: 'h600', original_filename: 'fresh.jpg' });
-    (window as any).G7Core.api.post = vi.fn().mockResolvedValue({
-      success: true,
-      message: 'ok',
-      data: uploaded,
-    });
-
-    // 안정적인 참조 — 매 렌더마다 새 배열 생성 시 initialFiles 동기화 effect 무한 루프
-    const stableInitial: Attachment[] = [
-      createAttachment({ id: 401, hash: 'h401', original_filename: 'kept.jpg' }),
-    ];
-
-    const { result } = renderHook(() =>
-      useFileUploader({
-        collection: 'test',
-        maxFiles: 5,
-        maxSize: 10,
-        maxConcurrentUploads: 3,
-        roleIds: STABLE_EMPTY_ROLE_IDS,
-        autoUpload: false,
-        initialFiles: stableInitial,
-        confirmBeforeRemove: false,
-        endpoints: defaultEndpoints,
-        uploadTriggerEvent: 'upload:test_images',
-      })
-    );
-
-    // 신규 파일 1개 추가
-    const testFile = new File(['x'], 'fresh.png', { type: 'image/png' });
-    await act(async () => {
-      const fileList = { 0: testFile, length: 1, item: () => testFile } as unknown as FileList;
-      await result.current.handleFiles(fileList);
-    });
-
-    // 트리거 이벤트 emit → listener 가 업로드 후 allFiles 반환
-    let emitResults: any[] = [];
-    await act(async () => {
-      emitResults = await (window as any).G7Core.componentEvent.emit('upload:test_images');
-    });
-
-    expect(emitResults).toHaveLength(1);
-    const allFiles = emitResults[0].allFiles;
-    // 기존(401) + 신규(600) 두 장 모두 포함, 기존 → 신규 순서
-    expect(allFiles.map((f: any) => f.id)).toEqual([401, 600]);
-  });
-});
-
-describe('FileUploader - 좁은 칸 크기(size)의 첨부 목록', () => {
-  // 표 한 칸용(xs) 업로더는 드롭존만 줄고 첨부 목록은 화면 폭 기준 5열 격자를 그대로 써서,
-  // 265px 칸(내용 폭 177px)에서 썸네일이 30px 로 짜부라져 파일명이 「k.」처럼 잘리고
-  // 「1/1개 첨부됨」과 한도 안내가 한 줄에 끼어 두 줄로 접혔다(K1 실측 2026-10-06, 반응 유형 아이콘 칸).
-  const renderWithSize = (size?: 'md' | 'sm' | 'xs') =>
-    render(
-      <FileUploader
-        initialFiles={[createAttachment({ id: 7, original_filename: 'k.png' })]}
-        collection="reaction_type_icon"
-        maxFiles={1}
-        maxSize={1}
-        accept=".png,.jpg"
-        autoUpload={false}
-        size={size}
-      />
-    );
-
-  // @scenario surface=list_size
-  // @effects file_uploader_compact_list_fits_narrow_cell
-  it('xs 는 화면 폭과 무관하게 두 칸 격자로 썸네일을 그린다', () => {
-    const { container } = renderWithSize('xs');
-    const grid = container.querySelector('.grid') as HTMLElement;
-
-    expect(grid).toBeTruthy();
-    expect(grid.className).toContain('grid-cols-2');
-    expect(grid.className).not.toMatch(/(sm|md|lg):grid-cols-/);
-  });
-
-  // @scenario surface=list_size
-  // @effects file_uploader_compact_list_fits_narrow_cell
-  it('xs 는 첨부 개수와 한도 안내를 줄을 나눠 세운다', () => {
-    const { container } = renderWithSize('xs');
-    const footer = container.querySelector('.border-t') as HTMLElement;
-
-    expect(footer.className).toContain('flex-col');
-    expect(footer.className).not.toContain('justify-between');
-  });
-
-  // @scenario surface=list_size
-  // @effects file_uploader_default_list_unchanged
-  it('기본(md) 크기의 첨부 목록은 종전 격자와 한 줄 하단 정보를 그대로 쓴다', () => {
-    const { container } = renderWithSize();
-    const grid = container.querySelector('.grid') as HTMLElement;
-    const footer = container.querySelector('.border-t') as HTMLElement;
-
-    expect(grid.className).toContain('lg:grid-cols-5');
-    expect(footer.className).toContain('justify-between');
   });
 });

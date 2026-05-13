@@ -83,14 +83,14 @@ resources/js/core/template-engine/__tests__/
 ```
 modules/_bundled/{vendor-module}/
 ├── resources/
-│   ├── layouts/admin/*.g7.html        # ← 레이아웃 소스
+│   ├── layouts/admin/*.json           # ← 레이아웃 JSON
 │   └── js/__tests__/
 │       └── layouts/*.test.tsx         # ← 해당 레이아웃 테스트
 ├── package.json
 └── vitest.config.ts
 
 templates/_bundled/{vendor-template}/
-├── layouts/**/*.g7.html               # ← 레이아웃 소스
+├── layouts/**/*.json                  # ← 레이아웃 JSON
 ├── __tests__/
 │   └── layouts/*.test.tsx             # ← 해당 레이아웃 테스트
 └── vitest.config.ts
@@ -523,15 +523,6 @@ fetch().json() = { success: true, data: { data: [], meta: {} } }
 
 #### 버그 있는 레이아웃 예시
 
-```html
-<slot name="content">
-  <div data-ref="filter_row" data-slot="basic_filters"/>
-  <div data-ref="filter_display" data-slot="basic_filters"/>
-</slot>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "slots": {
@@ -556,15 +547,6 @@ fetch().json() = { success: true, data: { data: [], meta: {} } }
 위 레이아웃에서 `filter_row`는 `basic_filters` 슬롯에 등록되지만, 해당 슬롯을 렌더링하는 `SlotContainer`가 없어서 화면에 표시되지 않습니다.
 
 #### 올바른 레이아웃
-
-```html
-<slot name="content">
-  <div data-ref="filter_row" data-slot="basic_filters"/>
-  <slot-container data-ref="filter_container" slotId="basic_filters"/>
-</slot>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -604,12 +586,6 @@ fetch().json() = { success: true, data: { data: [], meta: {} } }
 
 #### 타입 불일치 예시
 
-```html
-<div data="{{coupons?.data || []}}">본문</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "props": {
@@ -621,12 +597,6 @@ fetch().json() = { success: true, data: { data: [], meta: {} } }
 `coupons?.data`는 `{ data: [], meta: {} }` 객체를 반환합니다. DataGrid는 배열을 기대하므로 `data_type_mismatch` 경고가 발생합니다.
 
 #### 올바른 바인딩
-
-```html
-<div data="{{coupons?.data?.data || []}}">본문</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

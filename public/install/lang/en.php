@@ -1,5 +1,4 @@
 <?php
-
 // /install/lang/en.php
 
 return [
@@ -52,8 +51,7 @@ return [
     'php_modules' => 'PHP Modules',
     'directory_permissions' => 'Directory Permissions',
     'disk_space' => 'Disk Space',
-    'https' => 'HTTPS',
-    'opcache' => 'OPcache',
+    'https_enabled' => 'HTTPS Enabled',
     'required' => 'Required',
     'enabled' => 'Enabled',
     'not_enabled' => 'Not Enabled',
@@ -96,7 +94,7 @@ return [
     'db_username' => 'Username',
     'db_password' => 'Password',
     'db_prefix' => 'Table Prefix',
-    'db_prefix_hint' => 'Prefix added to all table names. (e.g., g7_users, g7_posts) Up to 6 characters.',
+    'db_prefix_hint' => 'Prefix added to all table names. (e.g., g7_users, g7_posts)',
     'db_prefix_placeholder' => 'g7_',
     'test_write_db_connection' => 'Test Write DB Connection',
     'test_read_db_connection' => 'Test Read DB Connection',
@@ -140,15 +138,6 @@ return [
     'recommendation_env_permission' => 'Set .env file permissions to 644 (chmod 644 .env)',
     'recommendation_https' => 'Use HTTPS in production environment',
 
-    // .env permission hardening hint (Step 5 completion screen, shown when not 0600)
-    'env_hardening_hint_title' => '.env Permission Hardening (Optional)',
-    'env_hardening_hint_current_status' => 'Current .env permission is %s (owner: %s). The most secure permission is 0600 (owner read/write only). To apply additional hardening, run the appropriate command below with sudo based on your environment.',
-    'env_hardening_hint_option_strict' => 'CLI user = web server user (single-user environment)',
-    'env_hardening_hint_option_group' => 'CLI user ≠ web server user (self-hosted server, etc. — group-readable compromise)',
-    'env_hardening_hint_note' => 'Verify your environment before running. Applying the wrong permission may prevent the web server from reading .env and cause the site to stop responding.',
-    'cron_hint_title' => 'Register scheduled tasks (cron)',
-    'cron_hint_body' => 'Register the command below in cron to run every minute. Without it, visitor statistics are archived only when an administrator opens a statistics screen, and scheduled tasks such as automatic order cancellation, old data cleanup and report mails do not run.',
-
     // Step 5: Complete
     'installation_info' => 'Installation Information',
     'installation_complete_message' => 'Gnuboard7 has been successfully installed!',
@@ -175,8 +164,7 @@ return [
     'error_db_name_required' => 'Database name is required.',
     'error_db_username_required' => 'Database username is required.',
     'error_db_credentials_required' => 'Database name and username are required.',
-    'error_db_username_privileged' => 'For security reasons, G7 cannot be installed with the ":username" account. If a superuser account is compromised, the entire database is at risk. Please create a dedicated database user for G7, grant it only the privileges it needs, and enter that account instead.',
-    'error_db_prefix_too_long' => 'Table prefix may be up to :max characters. (entered: :current) A long prefix makes some table index names exceed the database identifier limit.',
+    'error_db_connection_failed' => 'Database connection failed.',
     'error_db_privileges_insufficient' => 'Insufficient database privileges.',
     'error_db_not_tested' => 'Please test the database connection first.',
     'error_write_db_not_tested' => 'Please test Write DB connection first.',
@@ -237,22 +225,6 @@ return [
     // HTTPS Messages
     'https_enabled' => 'HTTPS is enabled (recommended)',
     'https_disabled' => 'HTTPS is disabled. We recommend using HTTPS for security.',
-    'https_behind_proxy' => 'This site appears to be running behind a reverse proxy. Unless TRUSTED_PROXIES is set in .env after installation, the site address and visitor IP will be recognized from the proxy instead of the real visitor. (https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md)',
-
-    // OPcache Messages
-    'opcache_enabled' => 'OPcache is enabled (recommended)',
-    'opcache_disabled_short' => 'Disabled — pages load several times slower',
-    'opcache_disabled_warning' => 'OPcache is disabled. In this state, every single page view re-parses all of your site\'s PHP code from scratch. On identical hardware this can make responses several times slower, and the gap widens as traffic grows. You can continue the installation as-is, but if this server will be used in production we strongly recommend setting opcache.enable=1 in php.ini and restarting your web server.',
-    'opcache_unknown' => 'OPcache status could not be determined. Reading PHP settings is restricted on this server.',
-
-    // Composer Dependency Set Messages
-    'vendor_dev_packages' => 'Composer dependencies',
-    'vendor_dev_packages_none_short' => 'Production set (no dev packages)',
-    'vendor_dev_packages_none' => 'No development packages in vendor. (recommended)',
-    'vendor_dev_packages_detected_short' => ':count development package(s) present — not recommended for production',
-    'vendor_dev_packages_detected_warning' => 'The existing vendor directory contains :count development (require-dev) package(s). Installation can continue, but on a production server run composer install --no-dev --optimize-autoloader from the project root after installation to remove them. (The setup wizard installs the production set automatically only when vendor is absent.)',
-    'vendor_dev_packages_unknown' => 'Could not inspect vendor (installed.json missing or unrecognized).',
-    'vendor_dev_packages_no_vendor' => 'No vendor directory — the wizard installs the production set automatically.',
 
     // API Response Messages
     'api_method_not_allowed' => 'Only POST requests are allowed.',
@@ -291,9 +263,6 @@ return [
     'task_cache_clear' => 'Cleaning Up Temporary Files',
     'task_create_settings_json' => 'Creating Settings Files',
     'task_complete_flag' => 'Finalizing Installation',
-    'task_config_cache' => 'Building Configuration Cache',
-    'task_route_cache' => 'Building Route Cache',
-    'task_static_publish' => 'Publishing Static Bootstrap Resources',
     'task_unknown' => 'Unknown Task',
 
     // Task Group Names
@@ -330,8 +299,6 @@ return [
     'log_composer_installing_from_lock' => 'Installing dependencies from composer.lock...',
     'log_composer_fresh_install' => 'Installing new Composer dependencies...',
     'log_composer_cache_cleared' => 'Cleared previous package cache',
-    'log_composer_dev_packages_detected' => 'Existing vendor contains :count development package(s) (:packages)',
-    'warning_composer_dev_packages_kept' => 'Keeping the vendor directory that contains development packages. On a production site, run "composer install --no-dev --optimize-autoloader" after installation (installation continues)',
 
     // Error Messages - Worker (.env)
     'error_env_example_not_found' => '.env.example file not found',
@@ -394,19 +361,12 @@ return [
     'error_language_pack_install_failed' => 'Language pack installation failed',
     'log_language_pack_install_success' => 'Language pack installation completed',
     'warning_language_pack_install_partial' => 'Language pack install partially failed: :identifier (continuing)',
-    'warning_best_effort_task_failed' => ':task failed (installation continues)',
 
     // Error Messages - Worker (Cache)
     'error_cache_clear_failed' => 'Cache clearing failed',
-    'error_config_cache_failed' => 'Configuration cache build failed',
-    'error_route_cache_failed' => 'Route cache build failed (site still works; it is rebuilt when an extension is installed or changed)',
-    'error_static_publish_failed' => 'Static bootstrap resource publishing failed (site still works via API fallback)',
 
     // Log Messages - Worker (Cache)
     'log_cache_clear_success' => 'Cache clearing completed',
-    'log_config_cache_success' => 'Configuration cache built',
-    'log_route_cache_success' => 'Route cache built',
-    'log_static_publish_success' => 'Static bootstrap resources published',
 
     // Error Messages - Worker (Settings JSON)
     'error_settings_json_failed' => 'Settings file creation failed',
@@ -446,7 +406,7 @@ return [
     'abort_rollback_success' => '[Aborted] Rollback completed: :message',
     'abort_rollback_failed' => '[Aborted] Rollback failed: :message (continuing)',
     'abort_no_rollback_needed' => '[Aborted] No rollback needed. (current_task is null or already completed)',
-    'abort_by_user' => '[Aborted] User aborted installation. (Current task: :task)',
+    'abort_by_user' => "[Aborted] User aborted installation. (Current task: :task)",
     'abort_installation_stopped' => 'Installation aborted.',
 
     // Worker Failed Task Rollback Messages
@@ -570,7 +530,7 @@ return [
     'validation_incomplete_title' => 'Please complete the following items:',
     'confirm_leave_page' => 'Settings have not been saved. Are you sure you want to leave this page?',
     'installation_in_progress_alert' => 'Installation is in progress. Do you want to go back to the settings page?',
-    'confirm_go_to_settings' => 'Do you want to go back to the settings page?',
+    'confirm_go_to_settings' => "Do you want to go back to the settings page?",
     'confirm_go_to_settings_simple' => "Do you want to go back to the settings page?\n\nInstallation state will be reset and all tasks will start from the beginning.\n\n⚠️ Database tables will NOT be deleted automatically.\nPlease clean up manually using phpMyAdmin if needed.",
     'confirm_go_to_settings_title' => 'Go to Settings Page',
     'confirm_go_to_settings_desc' => 'Installation state will be reset and all tasks will start from the beginning.\n\n⚠️ Database tables will NOT be deleted automatically. Please clean up manually using phpMyAdmin if needed.',
@@ -628,7 +588,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'dependency_missing_tooltip' => 'Please resolve dependencies first',
     'dependency_precheck_failed' => 'Dependency precheck failed — return to Step 4 and select the missing modules/plugins',
 
-    // Step 3 existing database detection
+    // Step 3 existing database detection (issue #244)
     'db_existing_g7_badge' => 'Existing G7 installation detected',
     'db_existing_foreign_badge' => 'Foreign data detected',
     'db_existing_mixed_badge' => 'Mixed G7 + foreign tables',
@@ -636,16 +596,17 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'db_existing_foreign_title' => 'Foreign Data Detected',
     'db_existing_mixed_title' => 'Mixed Data Detected',
     'db_existing_generic_title' => 'Existing Tables Detected',
-    'db_existing_g7_desc' => 'The selected database already contains a G7 installation. Forcing the install will drop the existing G7 tables that start with the table prefix you entered. Back up first.',
-    'db_existing_foreign_desc' => 'The selected database contains unknown tables. Forcing the install will only drop tables that start with the table prefix you entered; tables with a different prefix are preserved. Back up first.',
-    'db_existing_mixed_desc' => 'The selected database contains a mix of G7 and other tables. Forcing the install will only drop tables that start with the table prefix you entered; tables with a different prefix are preserved.',
-    'db_existing_generic_desc' => 'The selected database contains existing tables. Forcing the install will only drop tables that start with the table prefix you entered.',
+    'db_existing_g7_desc' => 'The selected database already contains a G7 installation. Forcing the install will delete all existing data. Back up first.',
+    'db_existing_foreign_desc' => 'The selected database contains unknown tables. Forcing the install will drop all of them. Consider using another database or back up first.',
+    'db_existing_mixed_desc' => 'The selected database contains a mix of G7 and other tables. Forcing the install will drop all of them.',
+    'db_existing_generic_desc' => 'The selected database contains existing tables. Forcing the install will drop all of them.',
     'db_existing_tables_list' => 'Detected tables (up to 20):',
     'db_backup_guide' => 'Backup command example (verify host/user/database before running):',
-    'db_backup_confirmed' => 'I have backed up and agree that existing tables starting with my table prefix will be dropped',
+    'db_backup_confirmed' => 'I have backed up and agree that all existing tables will be dropped',
     'error_db_cleanup_consent_required' => 'You must consent to dropping existing tables before proceeding to the next step.',
-    'db_force_proceed_drop' => 'Drop existing tables and install',
+    'db_force_proceed_drop' => 'Drop all existing tables and install',
     'db_force_proceed_confirmed' => 'Force install mode (existing tables will be dropped)',
+    'cancel' => 'Cancel',
     'log_db_cleanup_skipped' => 'Skipping existing table cleanup (no action)',
     'log_db_cleanup_empty' => 'No existing tables. Skipping cleanup.',
     'log_db_cleanup_dropping' => 'Dropping {count} existing tables...',
@@ -709,10 +670,6 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
 
     // Installation stuck detection
     'error_installation_stuck' => 'Installation has stopped responding. The server worker may be stuck running a command. Please refresh and retry. If the problem persists, check storage/logs/installation.log.',
-    // Server returned a response with no body (gnuboard/g7#62)
-    'error_empty_server_response' => 'The server returned an empty response. The response may have failed to build because of the server configuration or characters used in the account name or path. Please check storage/logs/installation.log.',
-    'error_invalid_server_response' => 'The server response could not be parsed. It may contain an error message or warning mixed into the output. Please check storage/logs/installation.log.',
-    'error_polling_response_invalid' => 'Could not read the installation progress. The server is not returning a correctly formatted response. Please check storage/logs/installation.log and try again.',
     'extension_load_failed' => 'Failed to load extension list.',
     'no_admin_template_error' => 'Admin template is required but not found. Please ensure at least one admin template exists in the templates directory.',
     'selection_summary' => 'Selection Summary',
@@ -738,7 +695,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'deselect_all' => 'Deselect All',
 
     // install-worker.php i18n keys
-    'db_task_abort_detected_before_start' => '[DB Task] Abort detected before start - skipping task.',
+        'db_task_abort_detected_before_start' => '[DB Task] Abort detected before start - skipping task.',
     'db_task_failed_rollback_start' => '[DB Task] :task failed - starting rollback.',
     'db_task_abort_reason_connection' => 'Connection lost',
     'db_task_abort_reason_user' => 'User requested',
@@ -807,6 +764,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'abort_api_status_change' => '[Abort API] Changing installation_status to "aborted".',
     'abort_api_save_result' => '[Abort API] state.json save result: :result',
     'abort_api_verify_status' => '[Abort API] Verify after save - installation_status: :status',
+    'api_method_not_allowed' => 'Method not allowed.',
     'error_state_management' => 'State management error',
     'error_log_prefix' => '[Error] :error',
 
@@ -857,17 +815,6 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'core_update_settings' => 'Core Update Settings (Optional)',
     'core_update_pending_path' => 'Update Pending Directory Path',
     'core_update_pending_path_help' => 'Leave empty to use the default (storage/app/core_pending). Enter an absolute path or a path relative to the Gnuboard7 root to use a custom location.',
-
-    // 자산 URL 방식 (이슈 #486)
-    'asset_url_mode' => 'Asset file serving mode',
-    'asset_url_mode_extension' => 'Use file extensions (recommended)',
-    'asset_url_mode_extensionless' => 'No file extensions',
-    'asset_url_mode_help' => 'Detected automatically from your server setup. A static-file optimization rule (e.g. nginx location ~* \\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff2?)$) can intercept extension URLs and make pages fail to load; choose no extensions in that case.',
-    'asset_url_mode_detected_extension' => 'Detected: file extensions work fine on this server.',
-    'asset_url_mode_detected_extensionless' => 'Detected: a static-file optimization rule (e.g. nginx location ~* \\.(js|css|json|...)$) intercepts extension URLs, so no extensions was selected.',
-    'asset_url_mode_detected_unavailable' => 'Could not detect the serving mode — neither the extension nor the extensionless probe URL responded. This is usually not an asset-mode issue but a sign that the app is not yet responding at this URL (PHP/routing) or that a proxy or security rule (e.g. CSP) is blocking the probe requests. This item does not block installation, so you can continue; if pages look blank afterward, switch to no extensions under Admin > Settings > General.',
-    'asset_url_mode_checking' => 'Checking…',
-    'asset_url_mode_unknown' => 'Unknown',
     'core_update_github_url' => 'GitHub Repository URL',
     'core_update_github_url_help' => 'GitHub repository URL to check for core updates.',
     'core_update_github_token' => 'GitHub Access Token',
@@ -878,8 +825,6 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'core_pending_path_ok' => 'Path is valid.',
     'core_pending_info' => 'Owner: :owner, Group: :group, Permissions: :permissions',
     'error_core_pending_not_directory' => 'The specified path is not a directory.',
-    'error_env_value_line_break' => 'Line breaks are not allowed.',
-    'error_env_value_invalid_url' => 'This is not a valid URL (:value). Enter an address starting with http:// or https://.',
     'error_core_pending_not_writable' => 'Directory (:path) is not writable.',
     'error_core_pending_parent_not_writable' => 'Parent directory (:path) is not writable, cannot create automatically.',
     'error_path_required' => 'Please enter a path.',
@@ -904,8 +849,6 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'error_php_path_empty' => 'PHP binary path is empty.',
     'error_php_path_not_exists' => 'File does not exist: :path',
     'error_php_exec_failed' => 'PHP execution failed: :path',
-    'error_php_binary_path_not_allowed' => 'This PHP path format cannot be used (:path). Enter the absolute path of an executable on this server only — options (starting with -), relative paths, .., network paths (\\\\server\\share or //server/share) and scheme:// forms are not allowed.',
-    'error_composer_binary_path_not_allowed' => 'This Composer path format cannot be used (:path). Enter the absolute path of a composer executable on this server — the file name must be a composer variant (composer, composer.phar, composer2.phar and so on); other .phar names, network paths (\\\\server\\share or //server/share) and scheme:// forms are not allowed. For multi-PHP environments use the "absolute-php-path absolute-composer-path" format.',
     'error_php_version_too_low' => ':path — PHP :version (minimum :min required)',
     'error_php_version_parse_failed' => 'Failed to parse PHP version.',
     'error_php_cli_not_verified' => 'PHP CLI path has not been verified. Please click the "Verify Version" button.',
@@ -913,14 +856,6 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'error_composer_path_not_exists' => 'File does not exist: :path',
     'error_composer_exec_failed' => 'Composer execution failed: :path',
     'error_composer_version_parse_failed' => 'Failed to parse Composer version.',
-    'error_check_failed' => 'Check request failed. Please verify network or server status.',
-    'session_cookie_blocked_title' => 'Session Cookie Blocked',
-    'session_cookie_blocked_description' => 'Your browser is not preserving the installer session cookie (PHPSESSID), which may cause the installation to stall. You may proceed but it is not recommended — please try one of the workarounds below.',
-    'session_cookie_blocked_remedy_1' => 'Try a different browser. Incognito/Private windows usually have stricter cookie policies — a regular window is recommended.',
-    'session_cookie_blocked_remedy_2' => 'Disable cookie/site-data blocking in your browser and refresh the page.',
-    'session_cookie_blocked_remedy_3' => 'Access via IP or localhost instead of a domain name. Example: http://localhost:port/install/',
-    'session_cookie_blocked_technical_detail' => 'Technical detail: Installer session cookie round-trip verification failed. (Likely caused by SameSite policy, non-standard port, browser tracking protection, or similar combination.)',
-    'session_cookie_blocked_dismiss' => 'Dismiss warning',
     'success_composer_version' => ':path — Composer :version ✓',
     'composer_install_guide_title' => 'Composer Installation Guide',
     'composer_install_guide_message' => 'Composer is not installed. You can install it using the following methods:',
@@ -954,35 +889,6 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'required_files_fix_guide_combined' => '.env file creation and permission setup required. Run the following command:',
 
     // Relative path alternative
-    'storage_windows_readonly' => 'The storage folder has the ReadOnly attribute set.',
-    'storage_windows_readonly_message' => 'This is a file attribute, not an ACL, so icacls cannot clear it. Remove the ReadOnly attribute with the attrib command below first.',
-    'permission_readonly_fix_guide' => 'Run the command below to clear the ReadOnly attribute:',
-    'permission_readonly_hint' => '* Extracting archives, restoring backups, or sync tools often leave the ReadOnly attribute behind. If it still fails afterwards, follow up with icacls to grant permissions.',
     'or_relative_path' => 'Or from the G7 root directory:',
-
-    // Installation ownership (block state changes from other browser sessions)
-    'error_ownership_conflict' => 'Another browser session is running this installation. Continue in the browser that started it, or reclaim ownership with the recovery token.',
-    'error_csrf_invalid' => 'Invalid request token. Please refresh the page and try again.',
-    'error_state_conflict' => 'Another request changed the installation state first. Please refresh the page and try again.',
-    'error_db_config_changed' => 'The connection settings changed after the database connection test. Please test the connection again with the current settings.',
-    'error_install_plan_unverified' => 'No verified installation plan was found, so nothing was executed. Please start the installation again from the installation screen.',
-    'error_finalize_not_ready' => 'The installation has not completed yet.',
-    'drop_confirm_rejected' => 'The confirmation for deleting existing tables is not valid, so the installation continues without deleting them. If deletion is required, run the database connection test and the deletion consent again in Step 3.',
-    'log_drop_confirm_rejected' => '[Warning] Existing-table deletion confirmation is not valid; continuing without deletion (reason: :reason)',
-    'recovery_token_notice_title' => 'Keep your recovery token in a safe place',
-    'recovery_token_notice_desc' => 'If you close the browser or the session expires, this installation cannot be continued from another browser unless you enter the recovery token below. The token is shown only in this browser.',
-    'recovery_token_copy' => 'Copy',
-    'ownership_locked_title' => 'Installation in progress in another session',
-    'ownership_locked_desc' => 'Another browser session is running this installation, so its state cannot be changed from here. If you started this installation, enter the recovery token you were given to continue.',
-    'recovery_token_label' => 'Recovery token',
-    'recovery_token_placeholder' => 'xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx',
-    'recovery_submit' => 'Reclaim ownership',
-    'recovery_success' => 'Ownership reclaimed. Returning to the installation. A new recovery token has been issued, so please store it again.',
-    'error_recovery_token_invalid' => 'The recovery token is not valid.',
-    'error_recovery_rate_limited' => 'Too many failed recovery token attempts. Please try again in 15 minutes.',
-    'error_recovery_unavailable' => 'There is no installation in progress to reclaim. Please refresh the page.',
-    'ownership_reset_hint' => 'If you lost the recovery token, delete storage/installer-state.json on the server and start the installation again.',
-    'log_ownership_claimed' => '[Ownership] The installation owner session has been set.',
-    'log_ownership_reclaimed' => '[Ownership] Installation ownership was reclaimed with the recovery token.',
-    'log_ownership_reclaim_failed' => '[Ownership] Reclaim rejected: recovery token mismatch.',
 ];
+?>

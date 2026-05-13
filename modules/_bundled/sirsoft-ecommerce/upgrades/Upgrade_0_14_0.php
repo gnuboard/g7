@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * v0.14.0 업그레이드 스텝
  *
- * - 클레임 사유 테이블(ecommerce_claim_reasons) 존재 확인
+ * - 클래임 사유 테이블(ecommerce_claim_reasons) 존재 확인
  * - 기존 CancelReasonTypeEnum 7개 값을 DB 시드 데이터로 삽입
  */
 class Upgrade_0_14_0 implements UpgradeStepInterface
@@ -18,7 +18,7 @@ class Upgrade_0_14_0 implements UpgradeStepInterface
     /**
      * 업그레이드를 실행합니다.
      *
-     * @param  UpgradeContext  $context  업그레이드 컨텍스트
+     * @param UpgradeContext $context 업그레이드 컨텍스트
      */
     public function run(UpgradeContext $context): void
     {
@@ -30,7 +30,7 @@ class Upgrade_0_14_0 implements UpgradeStepInterface
      *
      * 이미 존재하는 code는 스킵합니다.
      *
-     * @param  UpgradeContext  $context  업그레이드 컨텍스트
+     * @param UpgradeContext $context 업그레이드 컨텍스트
      */
     private function seedDefaultRefundReasons(UpgradeContext $context): void
     {

@@ -57,92 +57,32 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
         </button>
     </div>
 
-    <?php require __DIR__.'/partials/recovery-token-notice.php'; ?>
-
     <!-- 완료 섹션 -->
     <?php
-    $completionButtons = '<a href="../admin/login" class="btn btn-success">'.htmlspecialchars(lang('go_to_admin_login')).'</a>';
+    $completionButtons = '<a href="../admin/login" class="btn btn-success">' . htmlspecialchars(lang('go_to_admin_login')) . '</a>';
 
-$coreVersion = getCoreAppVersion();
-$completionExtra = '<p class="result-version">'
-    .htmlspecialchars(lang('installed_version_label')).' '
-    .'<strong>'.htmlspecialchars($coreVersion).'</strong>'
-    .'</p>';
+    $coreVersion = getCoreAppVersion();
+    $completionExtra = '<p class="result-version">'
+        . htmlspecialchars(lang('installed_version_label')) . ' '
+        . '<strong>' . htmlspecialchars($coreVersion) . '</strong>'
+        . '</p>';
 
-// .env 권한 권장 강화 안내 — 0600 이 아니면 조건부 노출 (#371)
-// finalize-env.php 는 chmod 시도를 수행하지 않으므로 인스톨러 안내 단계의 권한
-// (예: 0664 + chgrp www-data) 이 그대로 유지됨. 운영자가 추가로 0600 적용을
-// 원할 수 있도록 현재 권한이 0600 미만 (그룹/기타 비트가 있음) 이면 명령 예시 노출.
-//
-// OS 가드: chmod/chgrp 는 POSIX 권한 모델 (Linux/macOS/BSD) 에서 동작.
-// Windows 만 명령이 무의미하므로 Windows 만 비노출.
-$envPath = BASE_PATH.'/.env';
-if (PHP_OS_FAMILY !== 'Windows' && is_file($envPath)) {
-    $envPerms = fileperms($envPath) & 0777;
-    if ($envPerms !== 0600) {
-        $envOwnerUid = @fileowner($envPath);
-        $envOwnerName = ($envOwnerUid !== false && function_exists('posix_getpwuid'))
-            ? (posix_getpwuid($envOwnerUid)['name'] ?? (string) $envOwnerUid)
-            : 'owner';
-        $webGroupName = function_exists('posix_getegid') && function_exists('posix_getgrgid')
-            ? (posix_getgrgid(posix_getegid())['name'] ?? 'www-data')
-            : 'www-data';
-
-        $hardeningCommandSameOwner = sprintf('chmod 600 %s', htmlspecialchars($envPath));
-        $hardeningCommandDifferentOwner = sprintf(
-            'sudo chgrp %s %s && sudo chmod 640 %s',
-            htmlspecialchars($webGroupName),
-            htmlspecialchars($envPath),
-            htmlspecialchars($envPath)
-        );
-
-        $completionExtra .= '<div class="env-hardening-hint">'
-            .'<p class="env-hardening-hint-title">'.htmlspecialchars(lang('env_hardening_hint_title')).'</p>'
-            .'<p class="env-hardening-hint-status">'
-            .sprintf(
-                htmlspecialchars(lang('env_hardening_hint_current_status')),
-                decoct($envPerms),
-                htmlspecialchars($envOwnerName)
-            )
-            .'</p>'
-            .'<p class="env-hardening-hint-option">'
-            .htmlspecialchars(lang('env_hardening_hint_option_strict'))
-            .'</p>'
-            .'<div class="code-box"><pre>'.$hardeningCommandSameOwner.'</pre></div>'
-            .'<p class="env-hardening-hint-option">'
-            .htmlspecialchars(lang('env_hardening_hint_option_group'))
-            .'</p>'
-            .'<div class="code-box"><pre>'.$hardeningCommandDifferentOwner.'</pre></div>'
-            .'<p class="env-hardening-hint-note">'.htmlspecialchars(lang('env_hardening_hint_note')).'</p>'
-            .'</div>';
-    }
-}
-
-// 예약 작업(cron) 등록 안내 — 스케줄러가 없으면 주문 자동취소·오래된 데이터 정리·메일 보고서 같은 예약 작업이
-// 돌지 않는다. 방문자 통계만은 관리자가 화면을 열 때 집계되지만 그 밖은 조용히 멈추므로 설치 직후에 알린다.
-$cronCommand = sprintf('* * * * * cd %s && php artisan schedule:run >> /dev/null 2>&1', htmlspecialchars(BASE_PATH));
-$completionExtra .= '<div class="env-hardening-hint cron-hint">'
-    .'<p class="env-hardening-hint-title">'.htmlspecialchars(lang('cron_hint_title')).'</p>'
-    .'<p class="env-hardening-hint-status">'.htmlspecialchars(lang('cron_hint_body')).'</p>'
-    .'<div class="code-box"><pre>'.$cronCommand.'</pre></div>'
-    .'</div>';
-
-echo renderInstallResultSection('completion', 'success', 'installation_completed', 'installation_complete_message', $completionButtons, $completionExtra);
-?>
+    echo renderInstallResultSection('completion', 'success', 'installation_completed', 'installation_complete_message', $completionButtons, $completionExtra);
+    ?>
 
     <!-- 중단 섹션 -->
     <?php
-$abortedButtons = '<button onclick="resumeInstallationFromAborted()" class="btn btn-primary">'.htmlspecialchars(lang('resume_continue')).'</button>
-                <button onclick="goToSettingsWithConfirm()" class="btn btn-secondary">'.htmlspecialchars(lang('back_to_settings')).'</button>';
-echo renderInstallResultSection('aborted', 'warning', 'installation_aborted', 'installation_aborted_message', $abortedButtons);
-?>
+    $abortedButtons = '<button onclick="resumeInstallationFromAborted()" class="btn btn-primary">' . htmlspecialchars(lang('resume_continue')) . '</button>
+                <button onclick="goToSettingsWithConfirm()" class="btn btn-secondary">' . htmlspecialchars(lang('back_to_settings')) . '</button>';
+    echo renderInstallResultSection('aborted', 'warning', 'installation_aborted', 'installation_aborted_message', $abortedButtons);
+    ?>
 
     <!-- 실패 섹션 -->
     <?php
-$failureButtons = '<button onclick="retryInstallation()" class="btn btn-primary">'.htmlspecialchars(lang('retry_installation')).'</button>
-                <button onclick="goToSettingsWithConfirm()" class="btn btn-secondary">'.htmlspecialchars(lang('back_to_settings')).'</button>';
-echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $failureButtons);
-?>
+    $failureButtons = '<button onclick="retryInstallation()" class="btn btn-primary">' . htmlspecialchars(lang('retry_installation')) . '</button>
+                <button onclick="goToSettingsWithConfirm()" class="btn btn-secondary">' . htmlspecialchars(lang('back_to_settings')) . '</button>';
+    echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $failureButtons);
+    ?>
 
     <!-- 설치 진행 방식 선택 (SSE / 폴링) -->
     <div class="requirement-card installation-mode-card" id="installation-mode-card">
@@ -231,9 +171,9 @@ $languagePacks = $selectedExtensions['language_packs'] ?? [];
 
 <script>
 // Step 5 전용 데이터 전달 (INSTALLER_BASE_URL과 INSTALLER_LANG는 footer.php에서 처리)
-window.INSTALLER_CONFIG = <?= installer_json_encode($config) ?>;
-window.INSTALLER_SELECTED_EXTENSIONS = <?= installer_json_encode($selectedExtensions) ?>;
-window.INSTALLER_EXTENSION_NAMES = <?= installer_json_encode($state['extension_names'] ?? []) ?>;
+window.INSTALLER_CONFIG = <?= json_encode($config) ?>;
+window.INSTALLER_SELECTED_EXTENSIONS = <?= json_encode($selectedExtensions) ?>;
+window.INSTALLER_EXTENSION_NAMES = <?= json_encode($state['extension_names'] ?? []) ?>;
 
 // 작업 그룹 정의
 window.INSTALLER_TASK_GROUPS = [
@@ -258,47 +198,47 @@ window.INSTALLER_TASK_GROUPS = [
     {
         id: 'admin_templates',
         labelKey: 'task_group_admin_templates',
-        tasks: <?= installer_json_encode(array_map(function ($tpl) {
+        tasks: <?= json_encode(array_map(function($tpl) {
             return [
                 ['id' => 'template_install', 'target' => $tpl],
-                ['id' => 'template_activate', 'target' => $tpl],
+                ['id' => 'template_activate', 'target' => $tpl]
             ];
         }, $adminTemplates)) ?>
     },
     {
         id: 'modules',
         labelKey: 'task_group_modules',
-        tasks: <?= installer_json_encode(array_map(function ($mod) {
+        tasks: <?= json_encode(array_map(function($mod) {
             return [
                 ['id' => 'module_install', 'target' => $mod],
-                ['id' => 'module_activate', 'target' => $mod],
+                ['id' => 'module_activate', 'target' => $mod]
             ];
         }, $modules)) ?>
     },
     {
         id: 'plugins',
         labelKey: 'task_group_plugins',
-        tasks: <?= installer_json_encode(array_map(function ($plg) {
+        tasks: <?= json_encode(array_map(function($plg) {
             return [
                 ['id' => 'plugin_install', 'target' => $plg],
-                ['id' => 'plugin_activate', 'target' => $plg],
+                ['id' => 'plugin_activate', 'target' => $plg]
             ];
         }, $plugins)) ?>
     },
     {
         id: 'user_templates',
         labelKey: 'task_group_user_templates',
-        tasks: <?= installer_json_encode(array_map(function ($tpl) {
+        tasks: <?= json_encode(array_map(function($tpl) {
             return [
                 ['id' => 'user_template_install', 'target' => $tpl],
-                ['id' => 'user_template_activate', 'target' => $tpl],
+                ['id' => 'user_template_activate', 'target' => $tpl]
             ];
         }, $userTemplates)) ?>
     },
     {
         id: 'language_packs',
         labelKey: 'task_group_language_packs',
-        tasks: <?= installer_json_encode(array_map(function ($pack) {
+        tasks: <?= json_encode(array_map(function($pack) {
             return ['id' => 'language_pack_install', 'target' => $pack];
         }, $languagePacks)) ?>
     },

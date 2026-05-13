@@ -3,20 +3,15 @@
 namespace App\Http\Resources;
 
 use App\Helpers\TimezoneHelper;
-use App\Http\Resources\Traits\ExposesMemberContact;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Http\Resources\MissingValue;
 use Illuminate\Support\Facades\App;
 
 class BaseApiResource extends JsonResource
 {
-    use ExposesMemberContact;
     use HasAbilityCheck;
-
     /**
      * 리소스를 배열로 변환합니다.
      *
@@ -128,76 +123,6 @@ class BaseApiResource extends JsonResource
     }
 
     /**
-     * 조건부 필드(`when()`)가 걸러지지 않은 배열에서 미충족 항목을 제거합니다.
-     *
-     * `toArray()` 결과는 Laravel 이 응답 직전에 `filter()` 로 `MissingValue` 를 걷어내지만,
-     * `toListArray()` 처럼 **배열을 그대로 컨트롤러에 넘기는 경로**는 그 단계를 거치지 않는다.
-     * 그대로 두면 조건 미충족 필드가 `"updated_at": {}` 같은 빈 객체로 응답에 실린다
-     * (예: `UPDATED_AT = null` 인 모델의 타임스탬프).
-     *
-     * @param  array<string, mixed>  $data  직렬화 결과
-     * @return array<string, mixed> 미충족 항목이 제거된 배열
-     */
-    protected function withoutMissing(array $data): array
-    {
-        return array_filter($data, fn ($value) => ! $value instanceof MissingValue);
-    }
-
-    /**
-     * 쿼리에서 계산된 집계 별칭(`withCount`/`withSum` 등)이 실제로 실려 있는지 판정합니다.
-     *
-     * 값 검사(`!== null`, `> 0`)로는 판정할 수 없다. SUM 은 대상 0건에서 NULL 을 돌려주고
-     * COUNT 는 0 을 돌려주므로, "집계하지 않았다" 와 "집계했더니 비어 있다" 가 구분되지 않는다.
-     * 속성 키의 존재 여부만이 두 상황을 가른다.
-     *
-     * @param  string  $alias  집계 별칭 (예: `options_count`)
-     * @return bool 집계가 실려 있는지 여부
-     */
-    protected function hasAggregate(string $alias): bool
-    {
-        $model = $this->unwrapResource();
-
-        return $model instanceof Model && array_key_exists($alias, $model->getAttributes());
-    }
-
-    /**
-     * 집계 별칭 값을 반환합니다. 집계가 실려 있지 않으면 기본값을 돌려줍니다.
-     *
-     * @param  string  $alias  집계 별칭
-     * @param  mixed  $default  집계 부재 시 사용할 값
-     * @return mixed 집계 값 또는 기본값
-     */
-    protected function aggregate(string $alias, mixed $default = null): mixed
-    {
-        $model = $this->unwrapResource();
-
-        if (! $model instanceof Model || ! array_key_exists($alias, $model->getAttributes())) {
-            return $default;
-        }
-
-        return $model->getAttributes()[$alias];
-    }
-
-    /**
-     * 리소스 래핑을 벗겨 원본 모델을 반환합니다.
-     *
-     * Resource 가 Resource 를 감싸는 경우(컬렉션 매핑 등)가 있어 한 겹만 벗기면 모델에
-     * 닿지 못한다.
-     *
-     * @return mixed 래핑이 제거된 리소스 본체
-     */
-    private function unwrapResource(): mixed
-    {
-        $model = $this->resource;
-
-        while ($model instanceof JsonResource) {
-            $model = $model->resource;
-        }
-
-        return $model;
-    }
-
-    /**
      * datetime 값을 사용자 timezone으로 변환하여 ISO8601 문자열로 반환합니다.
      *
      * @param  Carbon|null  $datetime  변환할 datetime
@@ -244,21 +169,6 @@ class BaseApiResource extends JsonResource
     }
 
     /**
-     * datetime 값을 사이트 기본 timezone으로 변환하여 Y-m-d H:i:s 형식으로 반환합니다.
-     *
-     * 보는 사람이 아니라 사이트를 기준으로 시각을 보여야 하는 화면에 씁니다 — 집계 경계가
-     * 사이트 자정에 잠긴 방문자 통계가 그렇습니다. 사용자 기준이 맞는 화면은
-     * `formatDateTimeStringForUser()` 를 씁니다.
-     *
-     * @param  Carbon|null  $datetime  변환할 datetime
-     * @return string|null Y-m-d H:i:s 형식의 datetime 문자열
-     */
-    protected function formatDateTimeStringForSite(?Carbon $datetime): ?string
-    {
-        return TimezoneHelper::toSiteDateTimeString($datetime);
-    }
-
-    /**
      * datetime 값을 사이트 기본 timezone으로 변환하여 datetime-local 호환 형식으로 반환합니다.
      *
      * HTML <input type="datetime-local"> 호환용 (Y-m-d\TH:i 형식).
@@ -273,39 +183,11 @@ class BaseApiResource extends JsonResource
 
     /**
      * 현재 요청의 타임존을 가져옵니다.
-     *
      * SetTimezone 미들웨어에서 설정한 값을 사용하며, 미설정 시 기본값을 반환합니다.
-     *
-     * @return string 타임존 이름 (예: Asia/Seoul)
      */
     protected function getUserTimezone(): string
     {
         return TimezoneHelper::getUserTimezone();
-    }
-
-    /**
-     * 파일 크기를 사람이 읽는 형식으로 바꿉니다.
-     *
-     * 파일을 싣는 리소스가 늘 때마다 같은 변환을 복제하면 단위·자릿수 규칙이 화면마다
-     * 갈린다 — 같은 파일이 상품에서는 `1.5 MB`, 클레임에서는 `1.46MB` 로 보이는 식이다.
-     *
-     * @param  int|null  $bytes  바이트 크기
-     * @return string 사람이 읽는 크기 (예: `1.5 MB`)
-     */
-    protected function formatFileSize(?int $bytes): string
-    {
-        if ($bytes === null || $bytes === 0) {
-            return '0 B';
-        }
-
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $index = 0;
-        while ($bytes >= 1024 && $index < count($units) - 1) {
-            $bytes /= 1024;
-            $index++;
-        }
-
-        return round($bytes, 2).' '.$units[$index];
     }
 
     /**

@@ -1,6 +1,6 @@
 # 미들웨어 등록 규칙
 
-> **참조**: [백엔드 가이드 인덱스](README.md) | [인증 시스템](authentication.md)
+> **참조**: [백엔드 가이드 인덱스](index.md) | [인증 시스템](authentication.md)
 
 ---
 
@@ -12,7 +12,6 @@
 3. 실행 순서: 전역 → 그룹(web/api) → 라우트 → 컨트롤러
 4. permission 미들웨어: scope_type 기반 접근 제어 (except/only/menu 옵션 폐기)
 5. scope 체크: Permission.resource_route_key + owner_key + role_permissions.scope_type
-6. 확장 미들웨어 → getMiddleware() 선언(self-gate). SP Kernel 직접 조작·라우트 파일 자기 FQCN 금지
 ```
 
 ---
@@ -22,7 +21,6 @@
 - [핵심 원칙](#핵심-원칙)
 - [미들웨어 실행 순서](#미들웨어-실행-순서)
 - [미들웨어 등록 방식](#미들웨어-등록-방식)
-- [확장 미들웨어 선언 (self-gate)](#확장-미들웨어-선언-self-gate)
 - [올바른 등록 예시](#올바른-등록-예시)
 - [문제 상황과 해결책](#문제-상황과-해결책)
 - [디버깅 방법](#디버깅-방법)
@@ -78,12 +76,11 @@
 
 | 방식 | 실행 시점 | Auth 사용 | 사용 사례 |
 |------|----------|----------|----------|
-| `append()` | 인증 **전** | ❌ 불가 | CORS, 로깅, IP 접근 제한 등 |
+| `append()` | 인증 **전** | ❌ 불가 | CORS, 로깅 등 |
 | `prepend()` | 인증 **전** (최우선) | ❌ 불가 | 보안 헤더 등 |
 | `appendToGroup('api', ...)` | 인증 **후** | ✅ 가능 | 사용자별 설정 |
 | `appendToGroup('web', ...)` | 인증 **후** | ✅ 가능 | 사용자별 설정 |
 | `alias()` | 라우트 지정 시 | ✅ 가능 | 권한 체크 등 |
-| `getMiddleware()` (확장 self-gate) | 요청 시점 대상 매칭 | timing 에 따름 | 확장(모듈/플러그인)의 미들웨어 — [아래 절](#확장-미들웨어-선언-self-gate) |
 
 ### append vs appendToGroup 차이
 
@@ -93,96 +90,6 @@
 | **실행 시점** | 모든 요청의 최초 | 그룹 미들웨어 순서에 따름 |
 | **인증 상태** | 인증 전 | 인증 후 (Sanctum 이후) |
 | **적용 범위** | 모든 라우트 | 해당 그룹(web/api) 라우트만 |
-
----
-
-## 확장 미들웨어 선언 (self-gate)
-
-확장(모듈/플러그인)은 자기 미들웨어를 web/api 그룹에 직접 넣지 않는다. 각 확장이 `getMiddleware()` 로 미들웨어와 그 부착 대상을 선언하고, 코어 게이트 래퍼(`ExtensionMiddlewareGate`)가 요청 시점에 라우트 이름·URI 를 대상 패턴과 대조해 매칭될 때만 해당 미들웨어를 실행한다. 코어 IDV 정책의 라우트명 인덱스 조회 모델과 동일하다.
-
-배경: 확장 라우트는 부팅 이후 지연 등록되고 확장 간 부팅 순서 보장이 없어, 부팅 시점에 다른 확장(또는 코어 특정 라우트)의 라우트를 순회해 미들웨어를 부착하는 방식은 성립하지 않는다. 요청 시점 매칭은 모든 라우트가 등록 완료된 뒤라 이 제약을 원천 회피한다.
-
-### getMiddleware() 스키마
-
-```php
-public function getMiddleware(): array
-{
-    return [
-        [
-            'class'   => VerifyGuestOrderToken::class,  // 미들웨어 FQCN (class_exists 검증)
-            'groups'  => ['api'],       // ['web'] | ['api'] | ['web','api']
-            'timing'  => 'after_core',  // 'after_core'(기본) | 'before_core'
-            'targets' => ['self'],      // 라우트명/URI 패턴 배열 (필수, 아래 카탈로그)
-        ],
-    ];
-}
-```
-
-| 필드 | 필수 | 의미 |
-|------|------|------|
-| `class` | O | 미들웨어 FQCN. `class_exists` 실패 시 등록 거부 |
-| `groups` | O | `['web']` \| `['api']` \| `['web','api']`. 빈 배열·미허용 그룹은 등록 거부 |
-| `timing` | X | `after_core`(기본, 코어 그룹 미들웨어 뒤) \| `before_core`(코어 전처리 전체보다 먼저). `before_core` 는 인증 결과·로케일에 의존하는 미들웨어에 쓰지 않는다 (응답 사전차단/전처리 전용) |
-| `targets` | O | 부착 대상 패턴 배열. 누락·빈 배열 시 등록 거부 |
-
-### targets 카탈로그
-
-| 값 | 의미 | 매칭 방식 |
-|----|------|----------|
-| `self` | 자기 확장 라우트 전체 | 항목 groups 의 각 그룹마다 `{group}.modules.{id}.*` / `{group}.plugins.{id}.*` prefix 로 치환 |
-| `all_extensions` | 모든 확장 라우트 (코어 제외) | 라우트명이 `*.modules.*` 또는 `*.plugins.*` |
-| `core` | 코어 라우트 전체 (확장 제외) | 라우트명이 확장 prefix 가 **아닌** 것 (negative 판별). 무명 라우트는 core 로 간주하지 않음 |
-| `everything` (별칭 `*`) | 코어 + 모든 확장 (전부) | 무조건 매칭 (무명 라우트 포함) |
-| `module:{id}` | 특정 모듈 라우트 전체 | `*.modules.{id}.*` |
-| `plugin:{id}` | 특정 플러그인 라우트 전체 | `*.plugins.{id}.*` |
-| 원시 glob 문자열 | 임의 라우트 이름 패턴 (`api.modules.foo.cart.*`) | `Str::is()` 라우트명 매칭 |
-| brace 문자열 | `{a,b}` 단일 그룹 전개 | 전개 후 각 glob 매칭 |
-| `/` 로 시작하는 URI 패턴 | 임의 요청 URI 패턴 (`/`, `/admin/*`) — 무명 라우트 타게팅용 | `$request->path()` 매칭 |
-
-`everything`·`*`, `all_extensions`, `core` 는 코어·타 확장에 개입하는 **광역 타게팅** 이다. 선언에 대상이 명문화되므로 감사 가능하며, 리뷰 시 주의 대상으로 표기한다. 자기 라우트 중 일부만 노려야 하면 `self` 대신 원시 glob 으로 정밀화한다.
-
-### targets 커버리지 규율
-
-인증·소유권 검증 같은 **보호형** 미들웨어는 라우트를 개별 나열하지 않고 **서브트리 glob** 으로 선언한다.
-
-| ❌ 금지 | ✅ 올바른 사용 |
-| ------- | -------------- |
-| 보호 대상 라우트를 하나씩 열거 | 서브트리 glob (`api.modules.foo.guest.orders.cash-receipt.*`) |
-| PHPDoc 에 부착 대상 **개수**를 기재 ("4개 라우트에만 부착") | 무엇을·왜 부착/제외하는지 서술만 남긴다 |
-| 상위 glob 으로 뭉뚱그리기 (`guest.orders.*`) | 인증 전 단계 라우트를 삼키지 않는 수준까지 정밀화 |
-
-개별 나열은 하위 라우트가 늘 때 갱신이 누락되어 **새 엔드포인트가 무보호로 열린다**. 실제로 현금영수증 라우트 2건이 추가될 때 targets 갱신이 누락돼 그 기능이 전면 불능이었다. glob 은 그 서브트리의 기본값을 '보호' 로 만들어 실패 방향을 안전한 쪽으로 뒤집는다. 개수를 문서에 박는 것 자체가 다음 누락의 씨앗이다.
-
-다만 상위 glob 이 **인증 전 단계** 라우트(토큰 발급 등)를 삼키면 기능이 통째로 막힌다 — 토큰을 받으러 오는 요청에는 아직 토큰이 없기 때문이다. 삼키는 경우에만 한 단계 아래로 정밀화하고, 제외 이유를 PHPDoc 에 남긴다.
-
-targets 정합성은 자동 검증이 불가능하다. 라우트 전체 이름이 확장 라우트 파일의 접미부와 모듈 로더가 부팅 시 붙이는 prefix 의 조합으로 결정될 뿐 아니라, "이 라우트가 보호되어야 하는가" 자체가 의미적 판단이기 때문이다. 그러므로 확장은 **계약 테스트**를 둔다:
-
-- `Route::getRoutes()` 에서 그 서브트리 라우트를 **전수 수집**하고, 클래스 상수로 선언한 면제 목록(사유 주석 필수)을 뺀 나머지가 전부 `resolveForRoute()` 결과에 그 미들웨어를 포함하는지 단언한다. 모집단을 라우트 테이블에서 파생시키므로, 새 라우트를 추가하고 targets 를 안 고치면 테스트를 손대지 않아도 자동으로 실패한다.
-- 면제 대상은 **미부착임을 별도로 단언**한다 (상위 glob 으로 뭉뚱그리는 회귀 차단).
-- 케이스 간 오염을 막으려면 `ExtensionMiddlewareRegistry::flush()` 를 `setUp`/`tearDown` 양쪽에서 호출한다 — 인덱스가 태그 캐시다.
-
-참조 구현: `modules/_bundled/sirsoft-ecommerce/tests/Unit/Providers/GuestOrderTokenMiddlewareRegistrationTest.php`
-
-미부착 시 응답이 다른 원인의 응답과 구별되지 않을 수 있다는 점도 함께 본다. 예컨대 토큰 미들웨어의 404 와 FormRequest 의 404 가 같은 코드·메시지면, "토큰 없이는 실패한다" 는 테스트는 **미들웨어가 아예 없어도 통과한다**. 구별을 위해 미들웨어 쪽 상태코드나 메시지를 갈라서는 안 된다 — 리소스 존재 여부가 응답으로 새어 열거 공격 표면이 생긴다. 동일 응답을 유지하고, 부착 증명은 위 계약 테스트가 담당한다.
-
-### 이중 매칭 (라우트명 + URI) — 무명 catch-all 대응
-
-target 이 `/` 로 시작하면 **URI 패턴**(`$request->path()` 매칭), 아니면 **라우트명 패턴**(`$request->route()?->getName()` 매칭)이다. 라우트명은 dot-notation 이라 `/` 로 시작하지 않으므로 구분이 명확하다. 코어 SSR 셸 catch-all 라우트는 `->name()` 이 없어(무명) 라우트명으로 타게팅할 수 없다 → 이런 무명 라우트를 대상으로 하려면 URI 패턴(`/`)이나 `everything` 을 쓴다. 라우트명 계열 target 은 무명 라우트에서 항상 miss 한다.
-
-### 게이트 동작과 무효화
-
-- 게이트 래퍼는 코어가 bootstrap 에서 web/api × before_core/after_core 로 4회 등록한다. 매칭 확장 미들웨어가 없으면 no-op 이라 확장 0개 환경에서도 무해하다.
-- registry 인덱스는 **활성 확장만** 포함한다. 비활성 확장의 미들웨어는 게이트가 실행하지 않는다.
-- 인덱스는 확장 활성/비활성/설치/제거/리로드 시 자동 무효화된다.
-
-### 금지 패턴
-
-| 금지 | 올바른 방식 |
-|------|------------|
-| 확장 SP `boot()` 에서 `HttpKernel::append/prepend/pushMiddlewareToGroup()` 직접 호출 | `getMiddleware()` 선언 |
-| 확장 SP 에서 `aliasMiddleware()` 직접 호출 | `getMiddleware()` 선언 |
-| 확장 라우트 파일에서 자기 `Http\Middleware\` FQCN 을 `->middleware(Foo::class)` 로 부착 | `getMiddleware()` 선언 |
-
 
 ---
 
@@ -210,12 +117,6 @@ target 이 `/` 로 시작하면 **URI 패턴**(`$request->path()` 매칭), 아�
 ```
 
 > **참고**: `EnsureFrontendRequestsAreStateful` (stateful)은 제거되었습니다. API 인증은 Bearer 토큰 전용이며, 세션은 `start.api.session` 미들웨어로 로그인/로그아웃 라우트에서만 생성됩니다. 상세: [authentication.md](authentication.md)
-
-### 전역 미들웨어에서 클라이언트 IP 를 볼 때 (IP 접근 제한 선례)
-
-IP 로 요청을 가르는 전역 미들웨어는 **`prepend()` 가 아니라 `append()`** 로 등록합니다. 신뢰 프록시를 적용하는 `TrustProxies` 가 라라벨 기본 전역 스택에 들어 있어, 그보다 **앞**에 두면 `$request->ip()` 가 프록시 주소로 보입니다 — 프록시 뒤 사이트에서는 모든 방문자가 한 IP 로 보여 판정이 통째로 무너집니다. `append()` 도 그룹·라우트 미들웨어보다는 먼저 돌므로, 라우트의 `withoutMiddleware()` 로 빠져나갈 수 없다는 성질은 그대로입니다.
-
-설정을 읽어 판정하는 미들웨어는 **읽기가 깨졌을 때 열어 두고 오류를 남깁니다**(fail-open). 닫아 두면 설정 파일 한 줄이 깨졌을 때 관리자를 포함한 전원이 잠기고, 복구 수단이 서버 셸뿐이 됩니다. 코어 구현과 운영자용 설명은 [IP 접근 제한](api/settings.md#ip-접근-제한-security-탭) 을 참고하세요.
 
 ---
 
@@ -495,13 +396,13 @@ if (Auth::check()) {  // ✅ 정상 작동! Sanctum 인증 후이므로
 - [권한 시스템](../extension/permissions.md) - scope_type 시스템 상세, resource_route_key/owner_key 매핑
 - [인증 시스템](authentication.md) - Sanctum 인증 및 세션 처리
 - [서비스 프로바이더 안전성](service-provider.md) - 프로바이더 등록 규칙
-- [백엔드 가이드 인덱스](README.md) - 전체 가이드 목록
+- [백엔드 가이드 인덱스](index.md) - 전체 가이드 목록
 
 ---
 
 ## 참고 이력
 
-- [SetTimezone 미들웨어 구현](../../app/Http/Middleware/SetTimezone.php)
+- [SetTimezone 미들웨어 리팩토링](../../history/20251127_1402_SetTimezone미들웨어리팩토링.md)
 
 ### SEO 미들웨어
 

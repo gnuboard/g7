@@ -4,22 +4,15 @@ namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
-use App\Helpers\InlineMediaPolicy;
-use App\Helpers\PermissionHelper;
-use App\Support\ImageResizer;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Modules\Sirsoft\Board\Enums\PostStatus;
-use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
+use App\Helpers\PermissionHelper;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
-use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -34,7 +27,6 @@ class AttachmentService
      * AttachmentService 생성자
      *
      * @param  AttachmentRepositoryInterface  $repository  첨부파일 리포지토리
-     * @param  BoardRepositoryInterface  $boardRepository  게시판 리포지토리
      * @param  StorageInterface  $storage  모듈 스토리지 드라이버
      */
     public function __construct(
@@ -42,57 +34,6 @@ class AttachmentService
         private BoardRepositoryInterface $boardRepository,
         private StorageInterface $storage
     ) {}
-
-    /**
-     * 첨부 개수가 게시판 상한을 넘지 않는지 검증합니다 (도메인 불변조건).
-     *
-     * 총합은 **직접 업로드 + `attachment_ids` + `temp_key` 임시첨부 + 기존 첨부** 4소스이고
-     * temp_key 쪽은 DB 조회가 필요하므로 FormRequest 만으로는 판정할 수 없습니다.
-     * 모든 연결 경로가 반드시 지나는 이 지점이 상한의 SSoT 입니다.
-     * (FormRequest 의 `files` max 규칙은 "글을 다 쓰고 저장 실패" 를 막는 UX 선차단이며
-     *  역할이 다릅니다 — 둘 다 필요합니다.)
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  int|null  $postId  게시글 ID (신규 작성 중이면 null)
-     * @param  int  $additional  이번에 추가하려는 첨부 개수
-     * @param  string|null  $tempKey  임시 업로드 키 (신규 작성 시 기존 임시첨부 합산용)
-     * @return void 반환값 없음
-     *
-     * @throws AttachmentLimitExceededException 상한 초과 시
-     */
-    public function assertAttachmentCountWithin(
-        string $slug,
-        ?int $postId,
-        int $additional,
-        ?string $tempKey = null
-    ): void {
-        if ($additional <= 0) {
-            return;
-        }
-
-        $board = $this->boardRepository->findBySlug($slug);
-        if (! $board) {
-            throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
-        }
-
-        $limit = (int) ($board->max_file_count ?? 0);
-        if ($limit <= 0) {
-            // 상한 미설정 게시판은 제한하지 않는다 (기존 동작 유지)
-            return;
-        }
-
-        $existing = 0;
-        if ($postId !== null) {
-            $existing = $this->repository->getByPost($slug, $postId, 'attachments')->count();
-        } elseif ($tempKey !== null) {
-            $existing = $this->repository->getByTempKey($slug, $tempKey, 'attachments')->count();
-        }
-
-        $total = $existing + $additional;
-        if ($total > $limit) {
-            throw new AttachmentLimitExceededException($limit, $total);
-        }
-    }
 
     /**
      * 단일 파일 업로드
@@ -114,15 +55,6 @@ class AttachmentService
         string $collection = 'attachments',
         ?string $tempKey = null
     ): Attachment {
-        // 글도 임시 키도 없는 업로드(업로드 후 attachment_ids 로 잇는 흐름)는 서버가 키를 만든다 —
-        // 비워 두면 임시 경로가 `{slug}/temp//파일` 이 되어 저장소 경로 가드가 거부한다
-        if (! $postId && ! $tempKey) {
-            $tempKey = Str::uuid()->toString();
-        }
-
-        // 개수 상한 최종 방어선 — 단일 업로드를 N 번 반복하는 경로도 여기서 막힌다
-        $this->assertAttachmentCountWithin($slug, $postId, 1, $tempKey);
-
         // Before 훅
         HookManager::doAction('sirsoft-board.attachment.before_upload', $slug, $file, $postId);
 
@@ -139,10 +71,6 @@ class AttachmentService
             // 신규 게시글: 임시 경로에 저장 (저장 시 최종 경로로 이동)
             $path = "{$slug}/temp/{$tempKey}/{$storedFilename}";
         }
-
-        // 환경설정 > 업로드의 최대 가로/세로·품질을 적용한다 (코어 설정이 모든 업로드 경로에 동일 적용).
-        // 임시 파일을 제자리에서 줄이므로 아래의 저장·크기 계산이 모두 축소본을 본다.
-        app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
         // 스토리지에 파일 저장 (category: 'attachments')
         $this->storage->put('attachments', $path, file_get_contents($file->getRealPath()));
@@ -215,14 +143,13 @@ class AttachmentService
     public function linkTempAttachments(string $slug, string $tempKey, int $postId): int
     {
         // 연결 대상 후보를 먼저 조회하여 링크 후 재조회 → 훅 발화를 위한 식별자 확보
-        // (getByTempKey → linkTempAttachments → findById 순)
         $tempAttachments = $this->repository->getByTempKey($slug, $tempKey);
 
         $linkedCount = $this->repository->linkTempAttachments($slug, $tempKey, $postId);
 
         // 각 첨부에 대해 after_link 훅 발화 → 카운트 리스너가 post_id 기준으로 동기화 가능
         foreach ($tempAttachments as $tempAttachment) {
-            $linked = $this->repository->findById($slug, $tempAttachment->id);
+            $linked = $this->repository->getById($slug, $tempAttachment->id);
             if ($linked && $linked->post_id === $postId) {
                 HookManager::doAction('sirsoft-board.attachment.after_link', $linked);
             }
@@ -241,11 +168,6 @@ class AttachmentService
      * - 임시 경로: {slug}/temp/{tempKey}/{filename}
      * - 최종 경로: {slug}/{Y/m/d}/{filename}
      *
-     * temp_key 는 요청에서 온 값이다. 연결할 임시 첨부(현재 사용자가 올린 것)가 한 건도
-     * 없으면 파일도 디렉토리도 건드리지 않고 0 을 반환한다 — 임시 디렉토리 정리는 실제로
-     * 옮긴 파일이 있을 때만 한다(KVE-2026-2349: 첨부 없이 보낸 temp_key 가 정리 경로를
-     * 모듈 저장소 루트로 끌어올려 전체가 삭제됐다).
-     *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $tempKey  임시 업로드 키
      * @param  int  $postId  게시글 ID
@@ -259,27 +181,10 @@ class AttachmentService
             throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
         }
 
-        $tempAttachments = $this->ownedTempAttachments($this->repository->getByTempKey($slug, $tempKey));
-
-        if ($tempAttachments->isEmpty()) {
-            return 0;
-        }
-
-        // 개수 상한 최종 방어선 — FormRequest 는 files[] 만 보므로 temp_key 경로가 그대로 뚫린다.
-        // 이미 연결된 첨부와 합산해 판정한다 (수정 시 기존 첨부 + 신규 임시첨부).
-        $this->assertAttachmentCountWithin($slug, $postId, $tempAttachments->count());
-
+        $tempAttachments = $this->repository->getByTempKey($slug, $tempKey);
         $linkedCount = 0;
-        // 컬렉션별 다음 번호 — 이미 첨부가 있는 글(수정 화면)에서는 기존 첨부의 마지막 번호 뒤에 붙인다.
-        // 임시 첨부는 임시 키 안에서 1 부터 번호를 받으므로 그대로 두면 기존 첨부와 같은 번호가 되어 목록 중간에 낀다.
-        // 새 글은 기존 첨부가 없어 1..N 이 된다(getByTempKey 가 order 순으로 돌려준다).
-        $nextOrders = [];
 
         foreach ($tempAttachments as $attachment) {
-            $collection = (string) $attachment->collection;
-            $nextOrders[$collection] ??= $this->repository->getMaxOrder($slug, $postId, $collection);
-            $nextOrders[$collection]++;
-
             // 최종 경로 생성 (기존 경로 규칙 유지)
             $newPath = "{$slug}/".date('Y/m/d')."/{$attachment->stored_filename}";
 
@@ -297,24 +202,12 @@ class AttachmentService
                 'post_id' => $postId,
                 'temp_key' => null,
                 'path' => $newPath,
-                'order' => $nextOrders[$collection],
             ]);
             $linkedCount++;
         }
 
-        // 임시 디렉토리 정리 — 부수 작업이라 실패해도 연결을 되돌리지 않는다. 막 옮긴 대용량 파일을 운영체제가
-        // 잠시 붙잡고 있으면(삭제 대기) 디렉토리 순회가 lstat 오류를 던졌고, 그 예외가 글 저장 전체를 500 으로
-        // 되돌려 파일은 본경로, DB 는 임시 경로를 가리키는 어긋남이 남았다(#703 실측). 정리에 실패해 남는 것은 빈
-        // 임시 디렉토리뿐이라 동작에는 영향이 없다(경고 로그로 남긴다).
-        try {
-            $this->storage->deleteDirectory('attachments', "{$slug}/temp/{$tempKey}");
-        } catch (\Throwable $e) {
-            Log::warning('게시판 임시 첨부 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
-                'board_slug' => $slug,
-                'temp_key' => $tempKey,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // 임시 디렉토리 정리
+        $this->storage->deleteDirectory('attachments', "{$slug}/temp/{$tempKey}");
 
         Log::info('게시판 임시 첨부파일 연결 완료', [
             'board_slug' => $slug,
@@ -332,61 +225,12 @@ class AttachmentService
     }
 
     /**
-     * `attachment_ids` 로 잇는 첨부 번호 중 남이 올린 임시 첨부를 뺍니다.
-     *
-     * 임시 키 경로(linkTempAttachmentsWithMove)는 소유자를 확인하는데, 번호로 잇는 경로는 확인하지
-     * 않아 첨부 번호(순번)만 알면 남이 올려 둔 임시 첨부를 자기 글에 붙일 수 있었다(2026-10-07 실측,
-     * KVE-2026-2349 후속). 요청 컨텍스트가 없는 콘솔 실행(시더·큐)은 종전처럼 판정하지 않는다.
-     *
-     * @param  array<int>  $ids  요청의 첨부파일 ID 배열
-     * @return array<int, int> 이을 수 있는 첨부파일 ID 배열
-     */
-    public function filterLinkableAttachmentIds(array $ids): array
-    {
-        if (empty($ids)) {
-            return [];
-        }
-
-        $userId = Auth::id();
-        if ($userId === null && app()->runningInConsole()) {
-            return array_values(array_map('intval', $ids));
-        }
-
-        $foreign = $this->repository->findForeignTempAttachmentIds($ids, $userId === null ? null : (int) $userId);
-
-        return array_values(array_diff(array_map('intval', $ids), $foreign));
-    }
-
-    /**
-     * 현재 사용자가 올린 임시 첨부만 남깁니다.
-     *
-     * 임시 키를 알아낸 다른 사용자가 남의 임시 첨부를 자기 글에 붙이거나 그 임시 디렉토리를
-     * 지우지 못하게 한다. 인증 컨텍스트가 없으면(콘솔·큐) 판정하지 않고, 비회원 업로드
-     * (created_by=null)는 키 소지만으로 판단한다.
-     *
-     * @param  Collection<int, Attachment>  $attachments  임시 첨부 목록
-     * @return Collection<int, Attachment> 현재 사용자 소유 임시 첨부
-     */
-    private function ownedTempAttachments(Collection $attachments): Collection
-    {
-        $userId = Auth::id();
-        if ($userId === null) {
-            return $attachments;
-        }
-
-        return $attachments
-            ->filter(fn (Attachment $attachment) => $attachment->created_by === null
-                || (int) $attachment->created_by === (int) $userId)
-            ->values();
-    }
-
-    /**
      * 임시 첨부파일 목록을 조회합니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $tempKey  임시 업로드 키
      * @param  string|null  $collection  컬렉션 필터
-     * @return Collection
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getTempAttachments(string $slug, string $tempKey, ?string $collection = null)
     {
@@ -406,121 +250,7 @@ class AttachmentService
     }
 
     /**
-     * 삭제된 게시글의 첨부파일 접근 권한을 검증합니다.
-     *
-     * 첨부가 속한 게시글이 삭제 상태이면 관리 권한(manager/admin.manage)
-     * 보유자만 접근을 허용합니다. 권한이 없으면 AccessDeniedHttpException 을 던집니다.
-     * 정상 게시글(또는 게시글 미연결 임시 첨부)은 통과시킵니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  Attachment  $attachment  첨부파일 모델
-     * @return void 반환값 없음
-     *
-     * @throws AccessDeniedHttpException 삭제글 첨부에 권한 없이 접근한 경우
-     */
-    private function assertDeletedPostAttachmentAccess(string $slug, Attachment $attachment): void
-    {
-        if (! $attachment->post_id) {
-            return;
-        }
-
-        if (! $this->repository->isPostDeleted($slug, $attachment->post_id)) {
-            return;
-        }
-
-        $canManage = PermissionHelper::check("sirsoft-board.{$slug}.manager")
-            || PermissionHelper::check("sirsoft-board.{$slug}.admin.manage");
-
-        if (! $canManage) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
-    }
-
-    /**
-     * 비밀글 첨부파일 접근 권한을 검증합니다(KVE-2026-1914).
-     *
-     * 첨부가 속한 게시글이 비밀글이면 SecretContentGate(SSoT) 판정을 통과한
-     * 요청(작성자 본인 또는 게시판 manager/posts.read-secret)에만 서빙합니다.
-     * 첨부 서빙은 상세 요청과 분리된 별도 요청이라 password_verified 는 세팅되지
-     * 않으므로, 비회원이 비밀번호로 검증한 경우는 이 경로에서 인정되지 않습니다
-     * (안전 측 실패 — 해시/ID 만으로 비밀글 첨부를 가져가는 것을 차단).
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  Attachment  $attachment  첨부파일 모델
-     * @return void 반환값 없음
-     *
-     * @throws AccessDeniedHttpException 비밀글 첨부에 권한 없이 접근한 경우
-     */
-    private function assertSecretPostAttachmentAccess(string $slug, Attachment $attachment): void
-    {
-        if (! $attachment->post_id) {
-            return;
-        }
-
-        $post = $this->repository->findPostForGate($slug, $attachment->post_id);
-
-        // 부모 글을 못 읽으면 막는다(fail-closed). 첨부에 post_id 가 있는데 그 글을 못 찾는
-        // 것은 정상 상태가 아니다 — 슬러그가 다른 게시판이거나 글이 사라진 경우이며, 통과시키면
-        // 게이트가 있어야 할 자리에서 무게이트가 된다. 조회는 withTrashed 라 소프트 삭제로는
-        // null 이 되지 않는다.
-        if (! $post) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
-
-        if (! $post->is_secret) {
-            return;
-        }
-
-        if (! app(SecretContentGate::class)->canView($post)) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
-    }
-
-    /**
-     * 블라인드된 게시글의 첨부파일 접근 권한을 검증합니다.
-     *
-     * 블라인드는 운영 제재라 본문은 작성자 본인과 게시판 관리자에게만 보인다(PostResource 의
-     * canViewBlindedContent). 첨부 서빙은 상세와 분리된 요청이라 같은 기준을 여기서 다시 건다 —
-     * 종전에는 화면만 첨부 영역을 숨기고 해시만으로 파일을 받을 수 있었다(2026-10-07 실측).
-     * 서명된 preview(게이트를 통과한 직렬화가 발급)는 getFileInfo 가 이 검사를 건너뛴다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  Attachment  $attachment  첨부파일 모델
-     * @return void 반환값 없음
-     *
-     * @throws AccessDeniedHttpException 블라인드 글 첨부에 권한 없이 접근한 경우
-     */
-    private function assertBlindedPostAttachmentAccess(string $slug, Attachment $attachment): void
-    {
-        if (! $attachment->post_id) {
-            return;
-        }
-
-        $post = $this->repository->findPostForGate($slug, $attachment->post_id);
-
-        if (! $post || $post->status !== PostStatus::Blinded) {
-            return;
-        }
-
-        $userId = Auth::id();
-        if ($userId !== null && $post->user_id !== null && (int) $post->user_id === (int) $userId) {
-            return;
-        }
-
-        $canManage = PermissionHelper::check("sirsoft-board.{$slug}.manager")
-            || PermissionHelper::check("sirsoft-board.{$slug}.admin.manage");
-
-        if (! $canManage) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
-    }
-
-    /**
      * ID로 첨부파일 조회
-     *
-     * 이 게시판 첨부가 없으면 이 게시판에 올린 임시 첨부(아직 글에 이어지지 않음, board_id=0)를 찾는다.
-     * 글쓰기 화면은 [저장] 때 첨부를 먼저 올리므로, 글 저장이 실패하면 업로더 목록에 임시 첨부가 남는다 —
-     * 그것을 지우는 요청이 「파일을 찾을 수 없습니다」(404)로 끝나지 않게 한다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  첨부파일 ID
@@ -528,19 +258,7 @@ class AttachmentService
      */
     public function getById(string $slug, int $id): ?Attachment
     {
-        return $this->findManageable($slug, $id);
-    }
-
-    /**
-     * 삭제·순서 변경 대상 첨부를 찾습니다 — 이 게시판 첨부, 없으면 이 게시판의 임시 첨부.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  int  $id  첨부파일 ID
-     * @return Attachment|null 첨부파일 또는 null
-     */
-    private function findManageable(string $slug, int $id): ?Attachment
-    {
-        return $this->repository->findById($slug, $id) ?? $this->repository->findTempById($slug, $id);
+        return $this->repository->findById($slug, $id);
     }
 
     /**
@@ -558,7 +276,7 @@ class AttachmentService
         }
 
         // 작성자 본인만 삭제 가능
-        return $attachment->created_by !== null && (int) $attachment->created_by === (int) $userId;
+        return $attachment->created_by === $userId;
     }
 
     /**
@@ -566,18 +284,15 @@ class AttachmentService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  첨부파일 ID
-     * @param  string  $context  호출 컨텍스트 (admin | user) — 스코프 권한 식별자 결정에 쓰인다
      * @return bool 삭제 성공 여부
      */
-    public function delete(string $slug, int $id, string $context = 'user'): bool
+    public function delete(string $slug, int $id): bool
     {
-        $attachment = $this->findManageable($slug, $id);
+        $attachment = $this->repository->findById($slug, $id);
 
         if (! $attachment) {
             return false;
         }
-
-        $this->assertAttachmentWithinScope($slug, $attachment, $context);
 
         // 삭제 후 재정렬을 위해 정보 저장
         $postId = $attachment->post_id;
@@ -586,9 +301,8 @@ class AttachmentService
         // Before 훅
         HookManager::doAction('sirsoft-board.attachment.before_delete', $attachment);
 
-        // 물리 파일은 삭제하지 않음 — 소프트 딜리트만 수행 (휴지통 복원 대비).
-        // 보존기간이 지난 뒤의 파일·기록 파기는 `sirsoft-board:prune-attachments` 가
-        // 담당한다 (purgeSoftDeleted). 운영자가 설정에서 켰을 때만 동작한다.
+        // 물리 파일은 삭제하지 않음 — 소프트 딜리트만 수행
+        // 추후 배치 작업(Artisan Command + Scheduler)으로 보존 기간 경과 후 정리 예정
 
         // DB에서 소프트 삭제
         $result = $this->repository->delete($slug, $id);
@@ -611,182 +325,14 @@ class AttachmentService
     }
 
     /**
-     * 게시글에 연결되지 않은 채 방치된 임시 첨부를 정리합니다.
-     *
-     * 글쓰기 폼에서 파일만 올리고 저장하지 않고 이탈하면 `temp_key` 만 남은 행과 그 파일이
-     * 남습니다. 연결 시점에 본경로로 옮겨지므로 `temp_key` 가 남아 있다는 것은 "끝내 연결되지
-     * 않았다" 는 뜻이고, 그래서 오탐 여지가 없습니다.
-     *
-     * 파일 → 행 순서를 지켜, 행이 먼저 사라져 파일을 못 찾는 상태를 만들지 않습니다.
-     *
-     * @param  int  $days  보존기간(일)
-     * @param  int  $limit  한 회차에 처리할 최대 건수
-     * @param  bool  $dryRun  true 면 대상만 세고 삭제하지 않음
-     * @return array{scanned: int, deleted: int, failed: int} 처리 결과
-     */
-    public function pruneTempUploads(int $days, int $limit, bool $dryRun = false): array
-    {
-        $threshold = Carbon::now()->subDays($days);
-        $attachments = $this->repository->findStaleTempAttachments($threshold, $limit);
-
-        $result = $this->purgeCollection($attachments, $dryRun, '임시 게시판 첨부');
-
-        if (! $dryRun) {
-            $this->removeEmptyTempDirectories($attachments);
-        }
-
-        return $result;
-    }
-
-    /**
-     * 파일을 모두 지운 temp_key 디렉토리를 정리합니다.
-     *
-     * 파일만 지우고 디렉토리를 남기면 폼 세션마다 빈 디렉토리가 쌓여, 정리를 돌려도
-     * 저장소에는 흔적이 계속 늘어납니다.
-     *
-     * 디렉토리에 파일이 남아 있으면(같은 temp_key 의 다른 첨부가 limit 에 걸려 이번 회차에서
-     * 빠진 경우 등) 삭제하지 않습니다.
-     *
-     * @param  Collection  $attachments  이번 회차에 처리한 첨부 목록
-     * @return void 반환값 없음
-     */
-    private function removeEmptyTempDirectories(Collection $attachments): void
-    {
-        $directories = [];
-
-        foreach ($attachments as $attachment) {
-            $directory = dirname((string) $attachment->path);
-
-            if ($directory === '' || $directory === '.') {
-                continue;
-            }
-
-            $directories[$attachment->disk.'|'.$directory] = [$attachment->disk, $directory];
-        }
-
-        foreach ($directories as [$disk, $directory]) {
-            $storage = $this->storageForRow($disk);
-
-            if ($storage->files('attachments', $directory) !== []) {
-                continue;
-            }
-
-            $storage->deleteDirectory('attachments', $directory);
-        }
-    }
-
-    /**
-     * 소프트 삭제된 지 보존기간이 지난 첨부를 파일까지 영구 파기합니다.
-     *
-     * 첨부 삭제는 소프트 삭제만 수행하므로 파일이 남아 있습니다. 게시글 복원
-     * (restoreCascadedByPostId)은 첨부의 `deleted_at` 이 보존기간 안에 있을 때에만 첨부까지
-     * 온전히 복원되므로, 보존기간은 휴지통 복원 가능 기간과 같게 유지해야 합니다.
-     *
-     * @param  int  $days  보존기간(일)
-     * @param  int  $limit  한 회차에 처리할 최대 건수
-     * @param  bool  $dryRun  true 면 대상만 세고 삭제하지 않음
-     * @return array{scanned: int, deleted: int, failed: int} 처리 결과
-     */
-    public function purgeSoftDeleted(int $days, int $limit, bool $dryRun = false): array
-    {
-        $threshold = Carbon::now()->subDays($days);
-        $attachments = $this->repository->findSoftDeletedOlderThan($threshold, $limit);
-
-        return $this->purgeCollection($attachments, $dryRun, '소프트 삭제 게시판 첨부');
-    }
-
-    /**
-     * 게시글들에 딸린 첨부를 파일과 기록째 즉시 파기합니다 (개인정보 보유기간 삭제 모드, 이슈 #636).
-     *
-     * 게시글 삭제는 첨부를 소프트 삭제만 하므로 파일이 남는다. 첨부 정리 설정이 꺼져 있으면
-     * 그 파일은 영원히 남아 「파기했다」가 거짓이 되므로, 보유기간 삭제는 첨부 정리 주기를
-     * 기다리지 않고 바로 지운다. 파일 삭제에 실패한 첨부는 기록을 남겨 다음 실행이 다시 시도한다.
-     *
-     * @param  array<int, int>  $postIds  게시글 ID 목록
-     * @return array{scanned: int, deleted: int, failed: int} 처리 결과
-     */
-    public function purgeByPostIds(array $postIds): array
-    {
-        return $this->purgeCollection(
-            $this->repository->findWithTrashedByPostIds($postIds),
-            false,
-            '보유기간 파기 게시글 첨부',
-        );
-    }
-
-    /**
-     * 첨부 컬렉션을 파일 → 기록 순으로 영구 파기합니다.
-     *
-     * @param  Collection  $attachments  대상 첨부 목록
-     * @param  bool  $dryRun  true 면 대상만 세고 삭제하지 않음
-     * @param  string  $label  로그용 대상 설명
-     * @return array{scanned: int, deleted: int, failed: int} 처리 결과
-     */
-    private function purgeCollection(Collection $attachments, bool $dryRun, string $label): array
-    {
-        $result = ['scanned' => $attachments->count(), 'deleted' => 0, 'failed' => 0];
-
-        if ($dryRun) {
-            return $result;
-        }
-
-        foreach ($attachments as $attachment) {
-            $storage = $this->storageForRow($attachment->disk);
-
-            if ($storage->exists('attachments', $attachment->path) && ! $storage->delete('attachments', $attachment->path)) {
-                Log::warning("{$label} 파일 삭제 실패 — 기록 보존", [
-                    'attachment_id' => $attachment->id,
-                    'disk' => $attachment->disk,
-                    'path' => $attachment->path,
-                ]);
-
-                $result['failed']++;
-
-                continue;
-            }
-
-            $this->repository->forceDelete($attachment);
-            $result['deleted']++;
-        }
-
-        return $result;
-    }
-
-    /**
-     * 첨부 행에 기록된 disk 기준 스토리지를 반환합니다.
-     *
-     * 디스크를 전환한 뒤에도 전환 이전 행의 파일을 그 행의 실제 저장 위치에서 지우기 위한
-     * 해석입니다. 미등록 disk(그 디스크를 제공하던 확장이 비활성화된 경우)는 주입 스토리지로
-     * 폴백합니다 — withDisk 로 미등록 disk 인스턴스를 만들면 이후 호출이 예외가 됩니다.
-     *
-     * @param  string|null  $disk  행의 disk 컬럼 값
-     * @return StorageInterface 행 disk 의 스토리지
-     */
-    private function storageForRow(?string $disk): StorageInterface
-    {
-        if ($disk === null || $disk === '' || $disk === $this->storage->getDisk()) {
-            return $this->storage;
-        }
-
-        if (config("filesystems.disks.{$disk}") === null) {
-            return $this->storage;
-        }
-
-        return $this->storage->withDisk($disk);
-    }
-
-    /**
      * 순서 변경
      *
      * @param  string  $slug  게시판 슬러그
      * @param  array<int, int>  $orders  첨부파일 ID => order 매핑
-     * @param  string  $context  호출 컨텍스트 (admin | user) — 스코프 권한 식별자 결정에 쓰인다
      * @return bool 성공 여부
      */
-    public function reorder(string $slug, array $orders, string $context = 'user'): bool
+    public function reorder(string $slug, array $orders): bool
     {
-        $this->assertReorderWithinScope($slug, $orders, $context);
-
         // Before 훅
         HookManager::doAction('sirsoft-board.attachment.before_reorder', $slug, $orders);
 
@@ -799,98 +345,11 @@ class AttachmentService
     }
 
     /**
-     * 첨부가 액터의 스코프 안에 있는지 검사합니다.
-     *
-     * 첨부 관리 라우트는 `{id}`(정수)로 선언돼 라우트 모델 바인딩이 일어나지 않고, 순서
-     * 변경은 아예 정적 경로다. 두 경우 모두 PermissionMiddleware 가 모델을 resolve 하지
-     * 못해 스코프 검사를 건너뛰므로(목록 엔드포인트로 간주) 서비스가 재적용한다.
-     * 사용자 경로는 컨트롤러가 `canDelete`(작성자 본인)로 막고 있었으나 관리자 경로는
-     * 그 대응물이 없어 비어 있었다 — 두 경로 모두 여기서 같은 판정을 받는다.
-     *
-     * 아직 글에 이어지지 않은 임시 첨부는 소유 글이 없으므로 **올린 사람**만 다룬다(관리자 경로 포함).
-     * 남이 올린 임시 첨부는 잇지도 지우지도 못한다는 KVE-2026-2349 기준과 같다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  Attachment  $attachment  대상 첨부
-     * @param  string  $context  호출 경로 (admin|user)
-     * @return void 반환값 없음
-     *
-     * @throws AccessDeniedHttpException 스코프 밖 첨부인 경우
-     */
-    private function assertAttachmentWithinScope(string $slug, Attachment $attachment, string $context): void
-    {
-        if ($attachment->post_id === null) {
-            $userId = Auth::id();
-
-            if ($userId === null || $attachment->created_by === null || (int) $attachment->created_by !== (int) $userId) {
-                throw new AccessDeniedHttpException(__('auth.scope_denied'));
-            }
-
-            return;
-        }
-
-        // 컨텍스트는 호출부가 명시한다 — PostService 가 쓰는 방식과 같다. 요청에서
-        // 컨트롤러 네임스페이스를 스니핑하는 사설 복제본이 이미 4곳에 있는데 5번째를
-        // 만들지 않는다.
-        $scopePermission = $context === 'admin'
-            ? "sirsoft-board.{$slug}.admin.attachments.upload"
-            : "sirsoft-board.{$slug}.attachments.upload";
-
-        if (! PermissionHelper::checkScopeAccess($attachment, $scopePermission)) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
-    }
-
-    /**
-     * 순서 변경 대상 첨부 전체가 액터의 스코프 안에 있는지 검사합니다.
-     *
-     * 순서는 집합 전체에 대한 하나의 배열이라 일부만 반영하면 나머지와 어긋난다 —
-     * 걸러내지 않고 전량 거부한다(코어 첨부/메뉴 순서 변경과 같은 의미론).
-     *
-     * 컨트롤러는 `[첨부 ID => 순서]` 맵을 넘긴다. 종전에는 값 쪽에서 `['id']` 를 찾아 맵 형식에서는
-     * 검사할 ID 가 하나도 남지 않았다(검사 전체가 건너뛰어짐 — 7.1.0 전수 실측 O-F1-1 후속에서 발견).
-     * 지금은 맵의 키를 ID 로 읽고, 목록 형식(`[{id, order}]`)도 그대로 받는다.
-     *
-     * 사용자 경로는 삭제(`canDelete`)와 같은 기준으로 자기가 올린 첨부만 순서를 바꾼다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  array<int, int|array{id: int, order: int}>  $orders  순서 데이터 (ID => 순서 맵 또는 목록)
-     * @param  string  $context  호출 경로 (admin|user)
-     * @return void 반환값 없음
-     *
-     * @throws AccessDeniedHttpException 스코프 밖 첨부가 하나라도 포함된 경우
-     */
-    private function assertReorderWithinScope(string $slug, array $orders, string $context): void
-    {
-        $ids = [];
-        foreach ($orders as $key => $item) {
-            $ids[] = is_array($item) ? (int) ($item['id'] ?? 0) : (int) $key;
-        }
-        $ids = array_values(array_unique(array_filter($ids)));
-
-        foreach ($ids as $id) {
-            $attachment = $this->findManageable($slug, $id);
-
-            // 이 게시판 소속이 아닌 id 는 통과시키지 않는다.
-            if (! $attachment) {
-                throw new AccessDeniedHttpException(__('auth.scope_denied'));
-            }
-
-            $this->assertAttachmentWithinScope($slug, $attachment, $context);
-
-            if ($context !== 'admin' && ! $this->canDelete($attachment, Auth::id())) {
-                throw new AccessDeniedHttpException(__('auth.scope_denied'));
-            }
-        }
-    }
-
-    /**
      * 삭제 후 남은 파일들의 순서를 재정렬합니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $postId  게시글 ID
      * @param  string  $collection  컬렉션명
-     * @return void 반환값 없음
      */
     protected function reorderAfterDelete(string $slug, int $postId, string $collection): void
     {
@@ -912,7 +371,7 @@ class AttachmentService
      * @param  string  $slug  게시판 슬러그
      * @param  int  $postId  게시글 ID
      * @param  string|null  $collection  컬렉션 필터
-     * @return Collection
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getAttachments(string $slug, int $postId, ?string $collection = null)
     {
@@ -926,7 +385,6 @@ class AttachmentService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  array<int>  $attachmentIds  첨부파일 ID 배열
-     * @return void 반환값 없음
      */
     public function rollbackUploadedFiles(string $slug, array $attachmentIds): void
     {
@@ -940,7 +398,6 @@ class AttachmentService
      *
      * @param  string  $slug  게시판 식별자
      * @param  int  $id  첨부파일 ID
-     * @param  string  $context  권한 컨텍스트 (admin | user)
      * @return StreamedResponse|null 파일 스트림 또는 없을 경우 null
      */
     public function download(string $slug, int $id, string $context = 'admin'): ?StreamedResponse
@@ -960,26 +417,10 @@ class AttachmentService
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
         }
 
-        // 삭제된 게시글의 첨부파일은 관리 권한자만 접근
-        $this->assertDeletedPostAttachmentAccess($slug, $attachment);
-
-        // 비밀글 첨부파일은 열람 권한자만 접근
-        $this->assertSecretPostAttachmentAccess($slug, $attachment);
-
-        // 블라인드 글 첨부는 작성자·게시판 관리자만 (관리자 화면 내려받기는 관리자 권한 미들웨어가 이미 가른다)
-        if ($context !== 'admin') {
-            $this->assertBlindedPostAttachmentAccess($slug, $attachment);
-        }
-
-        // 다운로드 활동이력 기록 훅
-        // 권한/삭제글 가드 통과 후 발화 → 차단된 시도는 기록하지 않음.
-        // $context('user'|'admin')는 로그 부가정보용 (log_type 은 요청 경로로 자동 결정).
-        HookManager::doAction('sirsoft-board.attachment.after_download', $attachment, $context);
-
         // RFC 5987에 따라 UTF-8 파일명 인코딩
         $encodedFilename = rawurlencode($attachment->original_filename);
 
-        $response = $this->storage->response(
+        return $this->storage->response(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
@@ -988,21 +429,10 @@ class AttachmentService
                 'Content-Disposition' => "attachment; filename=\"{$attachment->original_filename}\"; filename*=UTF-8''{$encodedFilename}",
             ]
         );
-
-        // nosniff — 다운로드 응답도 브라우저가 내용을 추측해 렌더하지 않도록 (KVE-2026-2366)
-        if ($response) {
-            InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
-        }
-
-        return $response;
     }
 
     /**
      * 첨부파일 URL 조회
-     *
-     * 게시판 첨부는 비밀글·삭제글 게이트가 걸린 서빙 경로를 통해서만 내보낸다.
-     * 직접 URL(CDN)로 바꾸면 그 게이트가 통째로 우회되므로, 게이트가 살아 있는
-     * 다운로드 서빙 URL 을 돌려준다.
      *
      * @param  string  $slug  게시판 식별자
      * @param  int  $id  첨부파일 ID
@@ -1012,7 +442,11 @@ class AttachmentService
     {
         $attachment = $this->repository->findById($slug, $id);
 
-        return $attachment?->download_url;
+        if (! $attachment) {
+            return null;
+        }
+
+        return $this->storage->url('attachments', $attachment->path);
     }
 
     /**
@@ -1038,16 +472,7 @@ class AttachmentService
             return null;
         }
 
-        // 삭제된 게시글의 첨부파일은 관리 권한자만 접근
-        $this->assertDeletedPostAttachmentAccess($slug, $attachment);
-
-        // 비밀글 첨부파일은 열람 권한자만 접근
-        $this->assertSecretPostAttachmentAccess($slug, $attachment);
-
-        // 블라인드 글 첨부는 작성자·게시판 관리자만
-        $this->assertBlindedPostAttachmentAccess($slug, $attachment);
-
-        $response = $this->storage->response(
+        return $this->storage->response(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
@@ -1056,13 +481,6 @@ class AttachmentService
                 'Content-Disposition' => 'inline',
             ]
         );
-
-        // 인라인은 래스터 이미지만 — is_image 가 이미 거르지만 서빙 응답에도 nosniff 를 건다 (KVE-2026-2366)
-        if ($response) {
-            InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
-        }
-
-        return $response;
     }
 
     /**
@@ -1071,33 +489,16 @@ class AttachmentService
      * 컨트롤러에서 fileResponse()로 캐싱 헤더와 함께 응답할 수 있도록
      * 파일 경로와 메타 정보를 반환합니다.
      *
-     * $signatureVerified 는 요청 URL 의 한시 서명이 검증된 경우다 — 서명은
-     * 비밀글·삭제글 게이트를 통과한 응답 직렬화(PostResource)만 발급하므로,
-     * 검증된 서명은 그 게이트 통과 자격의 위임으로 보고 콘텐츠 상태 게이트를
-     * 재적용하지 않는다 (<img> 는 인증 헤더를 실을 수 없는 렌더 경로).
-     *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  첨부파일 ID
-     * @param  bool  $signatureVerified  한시 서명 검증 통과 여부
      * @return array{path: string, mime_type: string, filename: string}|null 파일 정보 또는 null
      */
-    public function getFileInfo(string $slug, int $id, bool $signatureVerified = false): ?array
+    public function getFileInfo(string $slug, int $id): ?array
     {
         $attachment = $this->repository->findById($slug, $id);
 
         if (! $attachment) {
             return null;
-        }
-
-        if (! $signatureVerified) {
-            // 삭제된 게시글의 첨부파일은 관리 권한자만 접근
-            $this->assertDeletedPostAttachmentAccess($slug, $attachment);
-
-            // 비밀글 첨부파일은 열람 권한자만 접근
-            $this->assertSecretPostAttachmentAccess($slug, $attachment);
-
-            // 블라인드 글 첨부는 작성자·게시판 관리자만
-            $this->assertBlindedPostAttachmentAccess($slug, $attachment);
         }
 
         // 파일 존재 확인

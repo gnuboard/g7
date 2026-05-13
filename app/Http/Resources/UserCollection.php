@@ -4,7 +4,6 @@ namespace App\Http\Resources;
 
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class UserCollection extends BaseApiCollection
 {
@@ -18,14 +17,10 @@ class UserCollection extends BaseApiCollection
     protected function abilityMap(): array
     {
         return [
-            'can_read' => 'core.users.read',
             'can_create' => 'core.users.create',
             'can_update' => 'core.users.update',
             'can_delete' => 'core.users.delete',
-            // 역할 부여는 "사용자 관리"(core.users.update)의 일부다 — "역할 정의 수정"
-            // (core.permissions.update)이 아니다. 부여 가능한 개별 역할의 범위는 서버
-            // 상한(PermissionEscalationGuard)이 역할별로 강제한다.
-            'can_assign_roles' => 'core.users.update',
+            'can_assign_roles' => 'core.permissions.update',
         ];
     }
 
@@ -41,7 +36,7 @@ class UserCollection extends BaseApiCollection
             'data' => $this->mapWithRowNumber(function ($user) {
                 return (new UserResource($user))->toListArray(request());
             }),
-            'pagination' => $this->when($this->resource instanceof LengthAwarePaginator, [
+            'pagination' => $this->when($this->resource instanceof \Illuminate\Pagination\LengthAwarePaginator, [
                 'current_page' => $this->resource->currentPage(),
                 'last_page' => $this->resource->lastPage(),
                 'per_page' => $this->resource->perPage(),
@@ -61,7 +56,7 @@ class UserCollection extends BaseApiCollection
      */
     public function withStatistics(array $statistics = []): array
     {
-        $isPaginator = $this->resource instanceof LengthAwarePaginator;
+        $isPaginator = $this->resource instanceof \Illuminate\Pagination\LengthAwarePaginator;
 
         return [
             'data' => $this->mapWithRowNumber(function ($user) {
@@ -92,7 +87,7 @@ class UserCollection extends BaseApiCollection
             'data' => $this->mapWithRowNumber(function ($user) {
                 return (new UserResource($user))->withAdminInfo();
             }),
-            'pagination' => $this->when($this->resource instanceof LengthAwarePaginator, [
+            'pagination' => $this->when($this->resource instanceof \Illuminate\Pagination\LengthAwarePaginator, [
                 'current_page' => $this->resource->currentPage(),
                 'last_page' => $this->resource->lastPage(),
                 'per_page' => $this->resource->perPage(),
@@ -115,7 +110,7 @@ class UserCollection extends BaseApiCollection
             return [
                 'uuid' => $user->uuid,
                 'name' => $user->name,
-                'email' => $this->canExposeMemberEmail(null, $user->id) ? $user->email : null,
+                'email' => $user->email,
             ];
         })->toArray();
     }

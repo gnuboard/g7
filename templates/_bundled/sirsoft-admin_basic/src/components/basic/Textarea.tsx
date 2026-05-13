@@ -1,6 +1,4 @@
-// e2e:allow basic Textarea 디폴트 시맨틱(.textarea) 머지 — 외형만 변경, 동작 무변. 다음 사이클에 다른 composite 와 함께 E2E spec 일괄 작성 예정. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
 import React, { useRef, useCallback, useState, useEffect } from 'react';
-import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
@@ -26,8 +24,6 @@ export const Textarea: React.FC<TextareaProps> = ({
   const isComposingRef = useRef(false);
   // textarea 요소 참조
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // 곁 라벨을 이름으로 잇는다(7.1.0 J D-J7)
-  useAdjacentLabel(textareaRef as React.RefObject<HTMLElement | null>);
 
   // 내부 로컬 값 (IME 조합 중에도 화면에 표시됨)
   const [localValue, setLocalValue] = useState<string>(
@@ -89,25 +85,17 @@ export const Textarea: React.FC<TextareaProps> = ({
   );
 
   // HTML 표준 속성이 아닌 것들을 필터링 (템플릿 엔진 내부 속성)
-  // autoBinding: 레이아웃의 `:autoBinding="false"` — 엔진이 자동 바인딩 여부를 읽고 그대로 넘기는 속성이라 DOM 에 흘리면 React 가 경고한다
-  const { loadingactions, formdata, autoBinding, ...validProps } = props as any;
+  const { loadingactions, formdata, ...validProps } = props as any;
 
   // controlled/uncontrolled 구분
   const textareaValueProps = value !== undefined
     ? { value: localValue }
     : { defaultValue };
 
-  // .textarea 시맨틱(admin main.css)을 디폴트로 머지 → 호출처가 className 미지정해도 표준 외형
-  // 호출처가 이미 'textarea' 토큰을 명시한 경우 중복 prepend 방지.
-  const textareaTokens = (className ?? '').split(/\s+/).filter(Boolean);
-  const mergedClassName = textareaTokens.includes('textarea')
-    ? (className ?? '')
-    : ['textarea', className].filter(Boolean).join(' ');
-
   return (
     <textarea
       ref={textareaRef}
-      className={mergedClassName}
+      className={className}
       onChange={handleChange}
       onCompositionStart={handleCompositionStart}
       onCompositionEnd={handleCompositionEnd}

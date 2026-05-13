@@ -5,7 +5,7 @@
  * 다중 통화를 지원하며, 할인율 뱃지를 표시합니다.
  */
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
@@ -16,49 +16,16 @@ import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { H3 } from '../basic/H3';
 import { Img } from '../basic/Img';
-import type { EditorAttrs } from '../../types';
 
-/**
- * 선호 통화를 전역 상태에서 읽고, 변경을 구독하는 훅.
- *
- * 회귀 배경: 종전 `G7Core.state.get('preferredCurrency')` 는 key 를 무시하고
- * _global 전체 객체를 반환해(G7CoreGlobals: get: () => getGlobalState()) 통화 코드가
- * 아닌 객체가 들어가 multi_currency 조회가 항상 KRW 폴백되었고, 단발 get 이라 헤더에서
- * 통화를 바꿔도 카드가 리렌더되지 않았다(상품 리스트/검색/캐러셀 KRW 고정 결함).
- * → 전체 객체에서 `.preferredCurrency` 키로 접근 + state.subscribe 로 리렌더한다.
- *
- * 표시 통화 미설정 시에는 쇼핑몰 기본 통화로 폴백한다 — 특정 통화를 못 박으면
- * 그 통화를 쓰지 않는 상점에서 multi_currency 조회가 늘 빗나가 기준통화 폴백이 된다.
- *
- * @returns 현재 선호 통화 코드 (없으면 기본 통화, 그것도 없으면 빈 문자열)
- */
-const usePreferredCurrency = (): string => {
-  const read = (): string => {
-    const state = (window as any).G7Core?.state?.get?.();
-    return (state && (state.preferredCurrency || state.defaultCurrency)) || '';
-  };
-  const [currency, setCurrency] = useState<string>(read);
-
-  useEffect(() => {
-    const subscribe = (window as any).G7Core?.state?.subscribe;
-    // 구독 시점과 마운트 사이 변경분 보정
-    setCurrency(read());
-    if (typeof subscribe !== 'function') return;
-    const unsubscribe = subscribe((state: Record<string, any>) => {
-      setCurrency((state && (state.preferredCurrency || state.defaultCurrency)) || '');
-    });
-    return typeof unsubscribe === 'function' ? unsubscribe : undefined;
-  }, []);
-
-  return currency;
-};
+// G7Core 전역 상태 훅
+const useGlobalState = (key: string) =>
+  (window as any).G7Core?.state?.get?.(key);
 
 // G7Core.dispatch() navigate 헬퍼
-// preserveListQuery 면 목록 컨텍스트 왕복 규약(#75)에 따라 현재 URL 의 목록 상태를 승계한다.
-const navigate = (path: string, preserveListQuery = false) => {
+const navigate = (path: string) => {
   (window as any).G7Core?.dispatch?.({
     handler: 'navigate',
-    params: preserveListQuery ? { path, mergeQuery: true, query: {} } : { path },
+    params: { path },
   });
 };
 
@@ -75,8 +42,6 @@ interface ProductLabel {
 interface ProductCardProps {
   product: {
     id: number;
-    /** 상품코드 — 상세 페이지 링크 식별자 (product_code 기준 라우팅). 없으면 id 로 폴백 */
-    product_code?: string;
     name?: string | Record<string, string>;
     name_localized?: string;
     thumbnail_url: string;
@@ -111,27 +76,8 @@ interface ProductCardProps {
   onClick?: (productId: number) => void;
   /** 쇼핑몰 base 경로 (예: '/shop', '/store', '/') */
   shopBase?: string;
-  /**
-   * 목록 컨텍스트 왕복 보존 여부 (#75).
-   *
-   * 상품 목록 그리드처럼 이 카드가 페이지네이션 목록의 일부인 자리에서만 true 로 켠다.
-   * 켜면 상세로 이동할 때 현재 URL 의 page/sort/keyword/category 를 상세 URL 로 승계해,
-   * 상세의 '뒤로가기' 가 보던 목록 위치로 정확히 되돌아간다.
-   *
-   * 찜 목록·검색 결과처럼 다른 목록에서 상품 상세로 나가는 이동은 기본값(false)을 유지한다 —
-   * 그 목록의 페이지 상태를 상품 목록으로 옮기면 엉뚱한 위치로 복귀한다.
-   */
-  preserveListQuery?: boolean;
   /** 추가 CSS 클래스 */
   className?: string;
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-/**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -185,12 +131,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onClick,
   shopBase = '/shop',
-  preserveListQuery = false,
   className = '',
-  id,
-  editorAttrs,
 }) => {
-  const preferredCurrency = usePreferredCurrency();
+  const preferredCurrency = useGlobalState('preferredCurrency') || 'KRW';
 
   /**
    * 다중 통화 가격을 가져옵니다.
@@ -236,9 +179,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       onClick(product.id);
     } else {
       const base = shopBase === '/' ? '' : shopBase;
-      // 상세 페이지는 product_code 기준 라우팅. code 미제공 시 id 로 폴백(하위호환).
-      const identifier = product.product_code ?? product.id;
-      navigate(`${base}/products/${identifier}`, preserveListQuery);
+      navigate(`${base}/products/${product.id}`);
     }
   };
 
@@ -246,7 +187,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
     <Button
       onClick={handleClick}
       className={`block w-full text-left group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${className}`}
-      id={id} {...editorAttrs}
     >
       {/* 이미지 영역 */}
       <Div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">

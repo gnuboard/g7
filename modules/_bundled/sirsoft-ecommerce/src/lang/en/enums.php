@@ -6,25 +6,6 @@
  * Multilingual labels for enum values
  */
 return [
-    // Mileage transaction type (matches MileageTransactionTypeEnum values)
-    'mileage_transaction_type' => [
-        'purchase_earn' => 'Purchase Earn',
-        'admin_earn' => 'Admin Grant',
-        'order_use' => 'Order Use',
-        'admin_deduct' => 'Admin Deduct',
-        'expired' => 'Expired',
-        'refund_restore' => 'Refund Restore',
-        'order_cancel_restore' => 'Order Cancel Restore',
-        'earn_cancel' => 'Earn Cancel',
-        'refund_credit' => 'Refund Credit',
-    ],
-
-    // Mileage earn trigger (matches MileageEarnTriggerEnum values)
-    'mileage_earn_trigger' => [
-        'delivered' => 'Delivered',
-        'confirmed' => 'Order Confirmed',
-    ],
-
     'sales_status' => [
         'on_sale' => 'On Sale',
         'suspended' => 'Suspended',
@@ -48,7 +29,6 @@ return [
         'products' => 'Products',
         'orders' => 'Orders',
         'customers' => 'Customers',
-        'claims' => 'Claims',
     ],
     'date_type' => [
         'created_at' => 'Created Date',
@@ -72,15 +52,7 @@ return [
         'delivered' => 'Delivered',
         'confirmed' => 'Confirmed',
         'cancelled' => 'Cancelled',
-        'exchange_in_progress' => 'Exchange in Progress',
-        'return_in_progress' => 'Return in Progress',
-        'exchanged' => 'Exchanged',
-        'returned' => 'Returned',
-    ],
-
-    // 주문 상태 합산 카운터 라벨 — 마이페이지 목록 상단 건수 칸(OrderStatusEnum::statisticsFilterGroups)
-    'order_status_groups' => [
-        'preparing' => 'Preparing · Ready to Ship',
+        'partial_cancelled' => 'Partially Cancelled',
     ],
 
     // Payment Status (matches PaymentStatusEnum values)
@@ -279,85 +251,6 @@ return [
     // Claim Reason Type (matches ClaimReasonTypeEnum values)
     'claim_reason_type' => [
         'refund' => 'Refund/Cancel',
-        'exchange' => 'Exchange',
-        'return' => 'Return',
-    ],
-
-    // Order Adjustment Type (matches AdjustmentType values)
-    'adjustment_type' => [
-        'cancel' => 'Cancel',
-        'exchange' => 'Exchange',
-        'order_return' => 'Return',
-    ],
-
-    // Claim Type (matches ClaimTypeEnum values)
-    'claim_type' => [
-        'exchange' => 'Exchange',
-        'return' => 'Return',
-        'refund' => 'Refund',
-        'cancel' => 'Cancel',
-    ],
-
-    // Claim attachment uploader (matches ClaimImageUploaderTypeEnum values)
-    'claim_image_uploader_type' => [
-        'customer' => 'Customer',
-        'admin' => 'Staff',
-        'unknown' => 'Unknown',
-    ],
-
-    // Claim Charge Method (matches ClaimChargeMethodEnum values)
-    'claim_charge_method' => [
-        'pay_on_request' => 'Pay on Request',
-        'pay_on_approval' => 'Pay after Approval',
-        'deduct_from_refund' => 'Deduct from Refund',
-    ],
-
-    // Claim Payment Status (matches ClaimPaymentStatusEnum values)
-    'claim_payment_status' => [
-        'pending' => 'Payment Pending',
-        'paid' => 'Paid',
-        'failed' => 'Payment Failed',
-        'cancelled' => 'Payment Cancelled',
-        'refunded' => 'Refunded',
-    ],
-
-    // Claim Shipping Fee Mode (matches ClaimShippingFeeModeEnum values)
-    'claim_shipping_fee_mode' => [
-        'fixed' => 'Fixed Amount',
-        'original_policy' => 'Recalculate by Original Policy',
-    ],
-
-    // Exchange Status (matches ExchangeStatusEnum values)
-    'exchange_status' => [
-        'requested' => 'Exchange Requested',
-        'payment_pending' => 'Exchange Payment Pending',
-        'paid' => 'Exchange Payment Completed',
-        'approved' => 'Exchange Approved',
-        'on_hold' => 'Exchange On Hold',
-        'rejected' => 'Exchange Rejected',
-        'collection_ready' => 'Exchange Pickup Ready',
-        'collecting' => 'Exchange Pickup in Transit',
-        'collected' => 'Exchange Pickup Arrived',
-        'redelivery_ready' => 'Exchange Reshipment Ready',
-        'redelivering' => 'Exchange Reshipment in Transit',
-        'redelivered' => 'Exchange Reshipment Delivered',
-        'completed' => 'Exchange Completed',
-        'withdrawn' => 'Exchange Withdrawn',
-    ],
-
-    // Return Status (matches ReturnStatusEnum values)
-    'return_status' => [
-        'requested' => 'Return Requested',
-        'payment_pending' => 'Return Payment Pending',
-        'paid' => 'Return Payment Completed',
-        'approved' => 'Return Approved',
-        'on_hold' => 'Return On Hold',
-        'rejected' => 'Return Rejected',
-        'collection_ready' => 'Return Pickup Ready',
-        'collecting' => 'Return Pickup in Transit',
-        'collected' => 'Return Pickup Arrived',
-        'completed' => 'Return Completed',
-        'withdrawn' => 'Return Withdrawn',
     ],
 
     // Cancel Option Status (matches CancelOptionStatusEnum values)
@@ -374,56 +267,29 @@ return [
         'on_hold' => 'Refund On Hold',
         'completed' => 'Refund Completed',
         'rejected' => 'Refund Rejected',
-        'withdrawn' => 'Refund Withdrawn',
-    ],
-
-    // Refund Source Type (matches RefundSourceTypeEnum values)
-    'refund_source_type' => [
-        'cancel' => 'From order cancellation',
-        'return' => 'From return',
-        'exchange' => 'Exchange difference',
-        'direct' => 'Customer request',
-        'admin' => 'Filed by operator',
     ],
 
     // Refund Method (matches RefundMethodEnum values)
     'refund_method' => [
         'pg' => 'PG Refund',
         'bank' => 'Bank Transfer Refund',
-        'points' => 'Refund as mileage',
+        'points' => 'Points Refund',
     ],
 
     // Refund Priority (matches RefundPriorityEnum values)
-    // Request origin (plan 676 — source badge).
-    'request_source' => [
-        'customer' => 'Customer request',
-        'guest' => 'Guest request',
-        'admin' => 'Filed by seller',
-    ],
-
     'refund_priority' => [
         'pg_first' => 'Refund payment method (PG) first',
         'points_first' => 'Refund points first',
     ],
 
-    // Claim tracking direction (matches ClaimTrackingDirectionEnum values)
-    'claim_tracking_direction' => [
-        'collection' => 'Collection',
-        'redelivery' => 'Redelivery',
-    ],
-
-    // Exchange mode (matches ExchangeModeEnum values)
-    'exchange_mode' => [
-        'standard' => 'Standard exchange',
-        'advance' => 'Advance exchange',
-    ],
-
-    // Claim item collection state (matches ClaimItemCollectionStateEnum values)
-    'claim_item_collection_state' => [
-        'pending' => 'Awaiting collection',
-        'in_transit' => 'Collecting',
-        'collected' => 'Collected',
-        'unreturned' => 'Not returned',
+    // Refund Option Status (matches RefundOptionStatusEnum values)
+    'refund_option_status' => [
+        'requested' => 'Refund Requested',
+        'approved' => 'Refund Approved',
+        'processing' => 'Refund Processing',
+        'on_hold' => 'Refund On Hold',
+        'completed' => 'Completed',
+        'rejected' => 'Refund Rejected',
     ],
 
     // Review Status (ReviewStatus values)
@@ -436,41 +302,5 @@ return [
     'has_reply' => [
         'replied' => 'Replied',
         'not_replied' => 'Not Replied',
-    ],
-
-    // Shipping calculation API request fields (matches ShippingApiRequestField)
-    'shipping_api_request_field' => [
-        'policy_id' => 'Shipping policy ID',
-        'country_code' => 'Country code',
-        'items' => 'Order items',
-        'group_total' => 'Group total amount',
-        'total_quantity' => 'Total quantity',
-    ],
-
-    // Shipping calculation API HTTP method (matches ShippingApiHttpMethod)
-    'shipping_api_http_method' => [
-        'GET' => 'GET',
-        'POST' => 'POST',
-    ],
-
-    // Shipping calculation API auth type (matches ShippingApiAuthType)
-    'shipping_api_auth_type' => [
-        'none' => 'No authentication',
-        'bearer' => 'Bearer token',
-        'custom_header' => 'Custom header',
-    ],
-
-    // Shipping calculation API response type (matches ShippingApiResponseType)
-    'shipping_api_response_type' => [
-        'json' => 'JSON',
-        'text' => 'Text',
-    ],
-
-    // Delivery memo preset (matches DeliveryMemoPresetEnum)
-    'delivery_memo_preset' => [
-        'door' => 'Leave at door',
-        'security' => 'Leave with security',
-        'parcel_box' => 'Leave in parcel box',
-        'call' => 'Please call before delivery',
     ],
 ];

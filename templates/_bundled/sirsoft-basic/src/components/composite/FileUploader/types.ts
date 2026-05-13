@@ -4,8 +4,6 @@
  * @module composite/FileUploader/types
  */
 
-import type { EditorAttrs } from '../../../types';
-
 // ========== Types ==========
 
 export interface Attachment {
@@ -73,11 +71,7 @@ export interface FileUploaderProps {
   maxFiles?: number;
   /** 파일당 최대 크기 (MB) */
   maxSize?: number;
-  /**
-   * 동시 업로드 수 (기본 1 — 고른 순서대로 하나씩 올린다).
-   * 2 이상이면 빨리 올리지만, 서버가 도착 순서로 번호를 매기는 경우 저장 순서가 완료 순서가 된다.
-   * 화면 목록·완료 콜백·저장 목록은 어느 값이든 고른 순서를 지킨다.
-   */
+  /** 동시 업로드 수 */
   maxConcurrentUploads?: number;
   /** 허용 확장자 (예: ".jpg,.png,.pdf") */
   accept?: string;
@@ -157,10 +151,6 @@ export interface FileUploaderProps {
     /** 순서 변경 API (기본값: /api/attachments/reorder) */
     reorder?: string;
   };
-  /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID) */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 export interface FileUploaderRef {

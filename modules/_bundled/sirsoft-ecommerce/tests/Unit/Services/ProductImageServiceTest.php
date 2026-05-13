@@ -6,36 +6,37 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
-use Mockery\MockInterface;
-use Modules\Sirsoft\Ecommerce\Exceptions\ProductImageUploadLimitException;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
-use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 /**
  * ProductImageService 단위 테스트
  *
  * StorageInterface 기반 상품 이미지 업로드, 삭제, 순서변경, 임시연결 등을 테스트합니다.
  */
-class ProductImageServiceTest extends ModuleTestCase
+class ProductImageServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private ProductImageService $service;
 
-    /** @var MockInterface&ProductImageRepositoryInterface */
+    /** @var \Mockery\MockInterface&ProductImageRepositoryInterface */
     private $repository;
 
-    /** @var MockInterface&StorageInterface */
+    /** @var \Mockery\MockInterface&StorageInterface */
     private $storage;
 
-    /** @var MockInterface&ProductRepositoryInterface */
+    /** @var \Mockery\MockInterface&ProductRepositoryInterface */
     private $productRepository;
 
     private User $user;
@@ -84,12 +85,6 @@ class ProductImageServiceTest extends ModuleTestCase
             ->once()
             ->with($productId)
             ->andReturn($product);
-
-        // 개수 상한 검증용 현재 개수 조회 (안전망)
-        $this->repository
-            ->shouldReceive('getByProductId')
-            ->with($productId, 'main')
-            ->andReturn(new EloquentCollection([]));
 
         $this->storage
             ->shouldReceive('put')
@@ -151,12 +146,6 @@ class ProductImageServiceTest extends ModuleTestCase
         $tempKey = 'temp-uuid-789';
         $file = UploadedFile::fake()->image('temp-photo.png');
 
-        // 개수 상한 검증용 현재 개수 조회 (안전망)
-        $this->repository
-            ->shouldReceive('getByTempKey')
-            ->with($tempKey, 'main')
-            ->andReturn(new EloquentCollection([]));
-
         $this->storage
             ->shouldReceive('put')
             ->once()
@@ -202,52 +191,6 @@ class ProductImageServiceTest extends ModuleTestCase
     }
 
     #[Test]
-    public function test_upload_throws_when_product_image_limit_reached(): void
-    {
-        // Arrange: 상품에 이미 상한(20)만큼 이미지 존재
-        $productId = 1;
-        $file = UploadedFile::fake()->image('overflow.jpg');
-
-        $existing = new EloquentCollection(array_map(
-            fn ($i) => (new ProductImage(['collection' => 'main']))->forceFill(['id' => $i]),
-            range(1, 20),
-        ));
-
-        $this->repository
-            ->shouldReceive('getByProductId')
-            ->with($productId, 'main')
-            ->andReturn($existing);
-
-        // Act & Assert: 도메인 예외
-        $this->expectException(ProductImageUploadLimitException::class);
-
-        $this->service->upload($file, $productId);
-    }
-
-    #[Test]
-    public function test_upload_throws_when_temp_image_limit_reached(): void
-    {
-        // Arrange: 임시키에 이미 상한(20)만큼 이미지 존재
-        $tempKey = 'temp-limit-key';
-        $file = UploadedFile::fake()->image('overflow.png');
-
-        $existing = new EloquentCollection(array_map(
-            fn ($i) => (new ProductImage(['collection' => 'main']))->forceFill(['id' => $i]),
-            range(1, 20),
-        ));
-
-        $this->repository
-            ->shouldReceive('getByTempKey')
-            ->with($tempKey, 'main')
-            ->andReturn($existing);
-
-        // Act & Assert
-        $this->expectException(ProductImageUploadLimitException::class);
-
-        $this->service->upload($file, null, 'main', $tempKey);
-    }
-
-    #[Test]
     public function test_upload_fires_hooks(): void
     {
         // Arrange
@@ -272,7 +215,6 @@ class ProductImageServiceTest extends ModuleTestCase
         $product->id = 1;
 
         $this->productRepository->shouldReceive('find')->andReturn($product);
-        $this->repository->shouldReceive('getByProductId')->with(1, 'main')->andReturn(new EloquentCollection([]));
         $this->storage->shouldReceive('put')->andReturn(true);
         $this->storage->shouldReceive('getDisk')->andReturn('local');
         $this->repository->shouldReceive('getMaxSortOrder')->andReturn(0);
@@ -317,7 +259,7 @@ class ProductImageServiceTest extends ModuleTestCase
     }
 
     #[Test]
-    public function test_link_temp_images_moves_files_and_updates_records(): void
+    public function test_linkTempImages_moves_files_and_updates_records(): void
     {
         // Arrange
         $tempKey = 'temp-uuid-789';
@@ -406,7 +348,7 @@ class ProductImageServiceTest extends ModuleTestCase
     }
 
     #[Test]
-    public function test_copy_from_source_copies_file_and_creates_record(): void
+    public function test_copyFromSource_copies_file_and_creates_record(): void
     {
         // Arrange
         $sourceHash = 'abc123def456';
@@ -433,11 +375,6 @@ class ProductImageServiceTest extends ModuleTestCase
             ->once()
             ->with($sourceHash)
             ->andReturn($sourceImage);
-
-        // 복사는 원본 행 disk 기준으로 스토리지를 해석한다 (혼재 운용, 공개#100)
-        $this->storage
-            ->shouldReceive('getDisk')
-            ->andReturn('local');
 
         $this->storage
             ->shouldReceive('get')
@@ -489,7 +426,7 @@ class ProductImageServiceTest extends ModuleTestCase
     }
 
     #[Test]
-    public function test_copy_from_source_returns_null_when_source_not_found(): void
+    public function test_copyFromSource_returns_null_when_source_not_found(): void
     {
         // Arrange
         $this->repository
@@ -506,7 +443,7 @@ class ProductImageServiceTest extends ModuleTestCase
     }
 
     #[Test]
-    public function test_copy_from_source_returns_null_when_file_not_found(): void
+    public function test_copyFromSource_returns_null_when_file_not_found(): void
     {
         // Arrange
         $sourceImage = new ProductImage([
@@ -535,7 +472,7 @@ class ProductImageServiceTest extends ModuleTestCase
     }
 
     #[Test]
-    public function test_set_thumbnail_updates_thumbnail_flag(): void
+    public function test_setThumbnail_updates_thumbnail_flag(): void
     {
         // Arrange
         $productId = 1;

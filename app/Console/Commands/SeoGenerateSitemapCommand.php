@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\SitemapGenerationMode;
 use App\Jobs\GenerateSitemapJob;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
@@ -18,10 +17,7 @@ class SeoGenerateSitemapCommand extends Command
     /**
      * @var string 커맨드 시그니처
      */
-    protected $signature = 'seo:generate-sitemap
-        {--sync : 큐 드라이버를 무시하고 동기 실행}
-        {--rebuild : 저장소 상태와 무관하게 전체 재생성 (--mode=full 과 동일)}
-        {--mode=auto : 재생성 모드 (full|auto|incremental)}';
+    protected $signature = 'seo:generate-sitemap {--sync : 큐 드라이버를 무시하고 동기 실행}';
 
     /**
      * @var string 커맨드 설명
@@ -35,14 +31,6 @@ class SeoGenerateSitemapCommand extends Command
      */
     public function handle(): int
     {
-        $mode = $this->resolveMode();
-        if ($mode === null) {
-            $allowed = implode(', ', array_map(fn (SitemapGenerationMode $m): string => $m->value, SitemapGenerationMode::cases()));
-            $this->error('잘못된 모드입니다. 허용: '.$allowed);
-
-            return Command::INVALID;
-        }
-
         $forceSync = (bool) $this->option('sync');
         // queue.default 는 SettingsServiceProvider 가 drivers.queue_driver 와 동기화하되,
         // testing 환경에서는 phpunit.xml 값을 보존하므로 격리가 유지된다.
@@ -50,29 +38,13 @@ class SeoGenerateSitemapCommand extends Command
         $isSyncDriver = $connection === 'sync';
 
         if ($forceSync || $isSyncDriver) {
-            GenerateSitemapJob::dispatchSync($mode);
-            $this->info("Sitemap이 생성되었습니다. (모드: {$mode->value})");
+            GenerateSitemapJob::dispatchSync();
+            $this->info('Sitemap이 생성되었습니다.');
         } else {
-            GenerateSitemapJob::dispatch($mode);
-            $this->info("Sitemap 생성이 큐에 디스패치되었습니다. (모드: {$mode->value})");
+            GenerateSitemapJob::dispatch();
+            $this->info('Sitemap 생성이 큐에 디스패치되었습니다.');
         }
 
         return Command::SUCCESS;
-    }
-
-    /**
-     * --rebuild / --mode 옵션으로부터 재생성 모드를 해석합니다.
-     *
-     * --rebuild 는 --mode 보다 우선하며 Full 로 강제합니다.
-     *
-     * @return SitemapGenerationMode|null 재생성 모드 (유효하지 않으면 null)
-     */
-    private function resolveMode(): ?SitemapGenerationMode
-    {
-        if ((bool) $this->option('rebuild')) {
-            return SitemapGenerationMode::Full;
-        }
-
-        return SitemapGenerationMode::tryFrom((string) $this->option('mode'));
     }
 }

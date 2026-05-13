@@ -1,25 +1,22 @@
 <?php
-
-use App\Support\PrivilegedDatabaseAccounts;
-
 /**
  * 그누보드7 웹 인스톨러 메인 라우터
  *
  * @author sirsoft
  */
 
-require_once __DIR__.'/includes/config.php';
-require_once __DIR__.'/includes/functions.php';
-require_once __DIR__.'/includes/session.php';
-require_once __DIR__.'/includes/installer-state.php';
-require_once __DIR__.'/includes/request-handler.php';
-require_once __DIR__.'/api/_guard.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/session.php';
+require_once __DIR__ . '/includes/installer-state.php';
+require_once __DIR__ . '/includes/request-handler.php';
+require_once __DIR__ . '/api/_guard.php';
 installer_guard_or_410();
 
 $currentLang = getCurrentLanguage();
 
 // 세션 기반 단계 관리 (URL 파라미터 무시)
-if (! isset($_SESSION['installer_current_step'])) {
+if (!isset($_SESSION['installer_current_step'])) {
     // 세션이 없으면 state.json에서 현재 step 가져오기
     $state = getInstallationState();
 
@@ -36,10 +33,10 @@ $currentStep = $_SESSION['installer_current_step'];
 
 // URL 파라미터로 step 접근 시 알림 후 리다이렉트
 if (isset($_GET['step'])) {
-    $urlStep = (int) $_GET['step'];
+    $urlStep = (int)$_GET['step'];
 
     // 번역 로드
-    if (! isset($translations)) {
+    if (!isset($translations)) {
         $translations = loadTranslations($currentLang);
     }
 
@@ -49,14 +46,14 @@ if (isset($_GET['step'])) {
             lang('url_parameter_not_supported'),
             lang('url_parameter_redirect_message', [
                 'requested' => $urlStep,
-                'current' => $currentStep,
+                'current' => $currentStep
             ]),
-            INSTALLER_BASE_URL.'/'
+            INSTALLER_BASE_URL . '/'
         );
     }
 
     // 같은 경우에도 깔끔한 URL로 리다이렉트
-    header('Location: '.INSTALLER_BASE_URL.'/');
+    header('Location: ' . INSTALLER_BASE_URL . '/');
     exit;
 }
 
@@ -65,48 +62,27 @@ $errors = [];
 $formData = [];
 $error = null;
 
-// 설치 소유권 잠금 — 다른 브라우저 세션이 소유한 설치에는 어떤 단계 화면·POST 처리도 열지 않고
-// 복구 토큰 입력 화면만 보여준다. 같은 세션은 토큰 없이 그대로 재개한다.
-$ownershipLocked = installer_state_is_claimed($state)
-    && ! installer_session_is_owner($state)
-    && ! isInstallationCompleted();
-
 // Step 3 기본값 설정
-if (! $ownershipLocked && $currentStep === 3) {
+if ($currentStep === 3) {
     $defaults = DEFAULT_INSTALL_CONFIG;
-    // 서버가 아는 Host 는 프록시 뒤에서 내부 주소일 수 있다 — 저장된 값이 없으면 화면 스크립트가
-    // 운영자가 실제로 보고 있는 주소로 채운다(data-autofill). Host 헤더가 없어도 경고 없이 빈 값.
-    $requestHost = (string) ($_SERVER['HTTP_HOST'] ?? '');
-    $defaults['app_url'] = $requestHost === ''
-        ? ''
-        : (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http').'://'.$requestHost;
-    $defaults['app_url_autofill'] = ! isset($state['config']['app_url']);
+    $defaults['app_url'] = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'];
     $defaults['admin_language'] = getCurrentLanguage();
-    // state.json에서 비밀번호 제외된 config 복원 (폼에 비밀번호를 사전 입력하지 않음).
-    // state 에는 이미 비밀이 기록되지 않지만(이슈 #465), 레거시 state.json 이 남아 있는
-    // 환경에서도 평문이 HTML 로 렌더되지 않도록 프리필 단계에서 다시 제거한다.
+    // state.json에서 비밀번호 제외된 config 복원 (세션에서 비밀번호를 사전 입력하지 않음)
     $savedConfig = $state['config'] ?? $defaults;
-    unset(
-        $savedConfig['db_write_password'],
-        $savedConfig['db_read_password'],
-        $savedConfig['admin_password'],
-        $savedConfig['admin_password_confirm']
-    );
+    unset($savedConfig['db_write_password'], $savedConfig['db_read_password']);
     $formData = array_merge($defaults, $savedConfig);
 }
 
-if (! $ownershipLocked) {
-    // 설치 흐름 검증
-    validateInstallationFlow($currentStep, $state);
+// 설치 흐름 검증
+validateInstallationFlow($currentStep, $state);
 
-    // POST 요청 처리
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        handlePostRequest($currentStep, $currentLang, $formData, $errors, $error);
-    }
+// POST 요청 처리
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    handlePostRequest($currentStep, $currentLang, $formData, $errors, $error);
 }
 
 // 번역 로드
-if (! isset($translations)) {
+if (!isset($translations)) {
     $translations = loadTranslations($currentLang);
 }
 
@@ -115,9 +91,7 @@ if ($currentStep < 0 || $currentStep > 6) {
     $currentStep = 0;
 }
 
-$stepFile = $ownershipLocked
-    ? __DIR__.'/views/ownership-recovery.php'
-    : __DIR__.'/views/'.$currentStep.'-'.(STEP_FILE_MAP[$currentStep] ?? 'welcome').'.php';
+$stepFile = __DIR__ . '/views/' . $currentStep . '-' . (STEP_FILE_MAP[$currentStep] ?? 'welcome') . '.php';
 ?>
 <!DOCTYPE html>
 <html lang="<?= $currentLang ?>">
@@ -141,12 +115,11 @@ $stepFile = $ownershipLocked
     <title><?= lang('welcome_title') ?> - <?= lang('brand_name') ?></title>
 
     <!-- CSS -->
-    <!-- 아이콘: 설치 마법사는 SPA 부팅 전이라 자산 URL 헬퍼를 쓸 수 없으므로 상대 경로로 자체 제공한다 -->
-    <link rel="stylesheet" href="<?= INSTALLER_BASE_URL ?>/assets/vendor/font-awesome/6.5.1/css/all.inlined.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="<?= INSTALLER_BASE_URL ?>/assets/css/installer.css?v=<?= time() ?>">
 </head>
 <body>
-    <?php if ($currentStep > 0 && ! $ownershipLocked) { ?>
+    <?php if ($currentStep > 0): ?>
     <!-- Installer Header Bar -->
     <div class="installer-header-bar">
         <div class="installer-header-content">
@@ -169,7 +142,7 @@ $stepFile = $ownershipLocked
             </div>
         </div>
     </div>
-    <?php } ?>
+    <?php endif; ?>
 
     <!-- Main Content -->
     <?php
@@ -178,7 +151,7 @@ $stepFile = $ownershipLocked
     } else {
         showStepFileNotFoundError($currentStep);
     }
-?>
+    ?>
 
     <!-- Installer Footer -->
     <footer class="installer-footer">
@@ -189,14 +162,8 @@ $stepFile = $ownershipLocked
     <script>
         window.INSTALLER_BASE_URL = '<?= INSTALLER_BASE_URL ?>';
         window.CURRENT_STEP = <?= $currentStep ?>;
-        // 상태변경 API 요청 검증 토큰 (세션 CSRF) — 소유 토큰 원문은 페이지에 싣지 않는다
-        window.INSTALLER_CSRF = <?= installer_json_encode(installer_csrf_token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-        window.INSTALLER_OWNERSHIP_LOCKED = <?= $ownershipLocked ? 'true' : 'false' ?>;
-        window.INSTALLER_LANG = <?= installer_json_encode($translations ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-        window.INSTALLER_STATE_LOCALE = <?= installer_json_encode($state['g7_locale'] ?? null) ?>;
-        // DB 최고권한 계정 목록 — 서버 상수를 그대로 내려보내 JS 에 목록을 중복 정의하지 않는다.
-        // 클라이언트 검증은 즉시 피드백용이며, 실제 차단은 서버 3개 경로가 담당한다.
-        window.INSTALLER_BLOCKED_DB_ACCOUNTS = <?= installer_json_encode(PrivilegedDatabaseAccounts::BLOCKED) ?>;
+        window.INSTALLER_LANG = <?= json_encode($translations ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        window.INSTALLER_STATE_LOCALE = <?= json_encode($state['g7_locale'] ?? null) ?>;
     </script>
     <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installation-monitor.js?v=<?= time() ?>"></script>
     <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installer.js?v=<?= time() ?>"></script>

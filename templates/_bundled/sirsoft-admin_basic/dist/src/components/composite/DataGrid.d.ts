@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 import { IconName } from '../basic/IconTypes';
 import { ActionMenuItem } from './ActionMenu';
 export interface DataGridCellChild {
@@ -104,37 +103,8 @@ export interface DataGridProps {
     selectedIds?: (string | number)[];
     onSelectionChange?: (ids: (string | number)[]) => void;
     idField?: string;
-    /**
-     * 선택의 유효 범위.
-     *
-     * - `'page'`: 선택은 지금 그려진 행에서만 유효하다. 검색·필터·페이지 이동으로
-     *   행이 목록에서 빠지면 그 행의 선택도 함께 버린다. 일괄 처리 버튼이 달린
-     *   목록 화면은 이 값을 쓴다 — 그래야 "보이지 않는 행이 일괄 처리 대상" 이
-     *   되는 상태가 만들어지지 않는다.
-     * - `'free'`(기본): 선택을 컴포넌트가 건드리지 않는다. 선택 자체가 저장 대상인
-     *   폼(쿠폰 적용 대상 고르기 등)처럼, 목록에 안 보이는 항목도 선택으로 남아야
-     *   하는 화면용.
-     */
-    selectionScope?: 'page' | 'free';
-    /**
-     * 선택할 수 없는 행의 id 목록 (`idField` 값).
-     *
-     * 이 행들은 체크박스가 비활성으로 그려지고 전체 선택·전체 선택 여부 판정에서 빠진다.
-     * 서버가 일괄 요청 전체를 거절하는 대상(예: 회원 일괄 상태 변경의 로그인한 본인)을
-     * 화면이 고를 수 없게 할 때 쓴다. `selectionScope: 'page'` 면 선택 목록에 남아 있던
-     * 이 행들의 선택도 함께 버린다.
-     */
-    nonSelectableIds?: (string | number)[];
     showColumnSelector?: boolean;
     visibleColumns?: string[];
-    /**
-     * 표시 컬럼이 바뀌었을 때 호출됩니다.
-     *
-     * 같은 이름의 이벤트를 ColumnSelector 도 방출하는데 그쪽은 두 번째 인자로 발화 출처
-     * (`{ source: 'user' | 'init' | 'dynamic' }`)를 함께 싣습니다. 여기서는 싣지 않으므로,
-     * ColumnSelector 용으로 쓴 `$args[1].source` 가드를 이 이벤트에 그대로 옮기면 항상
-     * undefined 가 되어 그 액션이 조용히 죽습니다.
-     */
     onColumnVisibilityChange?: (fields: string[]) => void;
     responsiveBreakpoint?: number;
     cardRenderer?: (row: any, columns: DataGridColumn[]) => React.ReactNode;
@@ -143,20 +113,7 @@ export interface DataGridProps {
     alwaysShowPagination?: boolean;
     serverSidePagination?: boolean;
     serverCurrentPage?: number;
-    /**
-     * 서버가 알려준 마지막 페이지 번호
-     *
-     * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 서버가 `null` 을 보낸다.
-     * 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말하므로 null 을 그대로 흘려보낸다.
-     */
-    serverTotalPages?: number | null;
-    /**
-     * 다음 페이지 존재 여부 (총 건수를 모르는 목록에서 사용)
-     *
-     * 총 건수를 몰라도 서버는 이 값을 정확히 판정한다. 마지막 페이지를 계산할 수 없어도
-     * "다음" 이동은 이 값으로 끝까지 열어 둘 수 있다.
-     */
-    serverHasMorePages?: boolean;
+    serverTotalPages?: number;
     onPageChange?: (page: number) => void;
     prevText?: string;
     nextText?: string;
@@ -272,19 +229,9 @@ export interface DataGridProps {
      */
     subRowCondition?: string;
     /**
-     * 데이터 행에 덧붙일 CSS 클래스 (선택적)
-     *
-     * 행 유형을 배경색으로 구분할 때 쓴다. 마크업에서 행 표현식으로 넘기면
-     * 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) DataGrid 가 행마다 푼다.
-     * 예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`
-     *
-     * 선택 행 강조(`bg-blue-50`)보다 먼저 놓여 선택 상태가 덮어쓴다.
-     */
-    rowClassName?: string;
-    /**
      * 서브 행 셀의 CSS 클래스 (선택적)
      *
-     * @default "px-6 py-2 bg-gray-50 dark:bg-gray-900"
+     * @default "px-6 py-2 bg-gray-50 dark:bg-gray-750"
      */
     subRowClassName?: string;
     /**
@@ -322,8 +269,6 @@ export interface DataGridProps {
      * 미지정 시 footerCells를 key-value 형태로 자동 렌더링합니다.
      */
     footerCardChildren?: DataGridCellChild[];
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * DataGrid 집합 컴포넌트

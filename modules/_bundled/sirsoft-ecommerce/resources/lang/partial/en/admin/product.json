@@ -26,7 +26,6 @@
     "category": "Category",
     "no_category": "No Category",
     "date": "Date",
-    "date_type_select": "Date basis",
     "date_type": {
       "created_at": "Created Date",
       "updated_at": "Updated Date"
@@ -64,7 +63,6 @@
       "tax_free": "Tax Free"
     },
     "price": "Price",
-    "price_type_select": "Price basis",
     "price_type": {
       "selling_price": "Selling Price",
       "supply_price": "Supply Price",
@@ -89,17 +87,15 @@
     "edit_search": "Edit Search",
     "search": "Search",
     "reset": "Reset",
-    "save_preset": "Save Preset",
-    "view_user_page": "View on site"
+    "save_preset": "Save Preset"
   },
   "bulk_apply": "Apply",
   "bulk_success": "Selected products have been changed.",
   "bulk": {
     "no_selection": "No items selected.",
-    "update_success": "Updated — products {{products}} · options {{options}}.",
+    "update_success": "{{products}} products and {{options}} options have been updated.",
     "update_error": "Bulk update failed.",
     "option_update_success": "{{count}} options have been updated.",
-    "option_update_success_one": "{{count}} option has been updated.",
     "option_update_error": "Option bulk update failed."
   },
   "stock_options_hint": "Products with options manage stock per option",
@@ -138,7 +134,6 @@
       "price_desc": "Price High to Low"
     },
     "per_page": "{{count}} items",
-    "per_page_one": "{{count}} item",
     "excel_download": "Excel Download",
     "column": {
       "image": "Image",
@@ -193,10 +188,7 @@
         "safe_stock": "Safety Stock",
         "active": "Active"
       },
-      "no_options": "No options registered",
-      "loading": "Loading options...",
-      "load_failed": "Failed to load options.",
-      "retry": "Retry"
+      "no_options": "No options registered"
     },
     "shipping": {
       "free": "Free Shipping",
@@ -367,7 +359,6 @@
       },
       "items_header": "Item List",
       "items_count": "{{count}} items",
-      "items_count_one": "{{count}} item",
       "batch_change": "Set all items to 'See Details'",
       "table": {
         "order": "Order",
@@ -505,7 +496,8 @@
     },
     "modal": {
       "add_language": {
-        "title": "Add Language"
+        "title": "Add Language",
+        "description": "Select a language to add."
       },
       "label_period": {
         "title": "Label Period Settings",
@@ -541,14 +533,15 @@
     "placeholder": "Product form will be displayed here"
   },
   "modal": {
-    "multilingual_tag_edit_editor_label": "Edit multilingual tags",
     "preset_manage": {
       "title": "Preset Management",
+      "description": "Manage search presets.",
       "add_new": "Add New Preset",
       "empty": "No saved presets."
     },
     "preset_save": {
       "title": "Save Preset",
+      "description": "Save current search as preset.",
       "placeholder": "Enter preset name",
       "save": "Save"
     },
@@ -561,12 +554,12 @@
     },
     "bulk_price": {
       "title": "Bulk Price Change",
+      "description": "Change price of {{count}} selected products.",
       "method": "Change Method",
       "method_increase": "Increase",
       "method_decrease": "Decrease",
       "method_fixed": "Set to",
       "value": "Amount/Rate",
-      "unit": "Change unit",
       "unit_won": "KRW",
       "unit_percent": "%",
       "preview_increase": "Increase price by {{value}}{{unit}}.",
@@ -575,6 +568,7 @@
     },
     "bulk_stock": {
       "title": "Bulk Stock Change",
+      "description": "Change stock of {{count}} selected products.",
       "method": "Change Method",
       "method_increase": "Increase",
       "method_decrease": "Decrease",
@@ -596,10 +590,7 @@
       "stock": "Change stock by {{value}}.",
       "price_change": "Bulk price change",
       "stock_change": "Bulk stock change",
-      "no_changes": "No items to change.",
-      "error_section": "Change failed",
-      "options_aggregate": "{{product}} > all {{count}} options",
-      "options_aggregate_one": "{{product}} > {{count}} option"
+      "no_changes": "No items to change."
     },
     "bulk_placeholder": {
       "sales_status": "Select Sales Status",
@@ -607,12 +598,11 @@
     },
     "excel_download": {
       "title": "Excel Download",
+      "description": "Select download range.",
       "option_search": "Download by search condition",
       "option_search_desc": "{{count}} products will be downloaded.",
-      "option_search_desc_one": "{{count}} product will be downloaded.",
       "option_selected": "Download selected only",
       "option_selected_desc": "Only {{count}} products will be downloaded.",
-      "option_selected_desc_one": "Only {{count}} product will be downloaded.",
       "download": "Download"
     },
     "common": {
@@ -687,7 +677,6 @@
   "messages": {
     "deleted_success": "Product has been deleted.",
     "deleted_error": "An error occurred while deleting the product.",
-    "delete_check_error": "An error occurred while checking whether the product can be deleted.",
     "code_generate_error": "Failed to generate product code.",
     "label_period_saved": "Label period has been saved.",
     "label_period_removed": "Label period has been removed.",
@@ -707,8 +696,6 @@
     "bulk_summary_price_adjustment_inline": "Price Adjustment: {value}",
     "bulk_summary_stock": "Stock: {method} {value}",
     "bulk_summary_stock_inline": "Stock: {value}",
-    "bulk_summary_safe_stock": "Safe Stock: {value}",
-    "bulk_summary_is_active": "Active: {value}",
     "bulk_summary_option_name": "Option Name: {name}",
     "bulk_summary_sku": "SKU: {sku}",
     "bulk_summary_selected": "Selected"
@@ -837,22 +824,13 @@
     "option_name_placeholder": "Option name (e.g., Color)",
     "option_values_placeholder": "Enter option values separated by comma",
     "additional_title": "Product Additional Options",
-    "additional_hint": "Paid/free options customers can additionally select. Register a group name and choices (with surcharge). Up to 5 groups, 20 choices per group. (e.g., Engraving +5,000 KRW)",
-    "add_additional": "Add Option Group",
-    "additional_name_label": "Group Name",
-    "additional_name_placeholder": "e.g., Engraving",
-    "add_additional_value": "Add Choice",
-    "additional_value_name_label": "Choice Name",
-    "additional_value_name_placeholder": "e.g., Add Engraving",
-    "additional_value_price_label": "Surcharge",
-    "additional_value_default": "Default",
-    "additional_value_active": "Active",
-    "additional_value_allow_custom_text": "Custom text",
+    "additional_hint": "Additional options for customers to enter text directly. Up to 5 options can be added. (e.g., engraving text, gift message)",
+    "add_additional": "Add Additional Option",
+    "additional_name_label": "Option Name",
+    "additional_name_placeholder": "Engraving text",
     "no_additional": "No additional options registered",
-    "additional_clear_confirm": "All entered additional options will be removed. Continue?",
-    "auto_currency_hint": "Foreign prices are shown automatically using the exchange rate based on the selling price",
+    "auto_currency": "Auto-calculate multi-currency prices",
     "items_count": "{{count}} options",
-    "items_count_one": "{{count}} option",
     "required": "Required",
     "columns": {
       "default": "Default",
@@ -873,14 +851,11 @@
       "active": "Active",
       "required": "Required"
     },
-    "mileage_value_label": "Mileage amount",
-    "mileage_type_label": "Mileage unit",
     "mileage_type": {
       "fixed": "KRW",
       "percent": "%"
     },
     "option_count": "({count} options)",
-    "option_count_one": "({count} option)",
     "price_type": {
       "fixed": "Fixed Price",
       "additional": "Additional Amount"
@@ -893,12 +868,9 @@
       "input_max_3": "You can add up to 3 option inputs.",
       "name_value_required": "Please enter option name and values.",
       "generated": "{count} options have been generated.",
-      "generated_one": "{count} option has been generated.",
       "name_required": "Please enter option name.",
       "add_tool_applied": "Option add tool has been applied.",
-      "additional_max_5": "You can add up to 5 option groups.",
-      "additional_value_max_20": "You can add up to 20 choices per group.",
-      "additional_value_min_1": "At least one choice is required per group."
+      "additional_max_5": "You can add up to 5 additional options."
     }
   },
   "notice": {
@@ -987,7 +959,6 @@
     },
     "per_page": "Per Page",
     "total_count": "Total {{count}} items",
-    "total_count_one": "Total {{count}} item",
     "empty": "No activity history",
     "system": "System",
     "actor_action": {
@@ -1005,7 +976,6 @@
     "use_default": "Use default shipping policy",
     "default_badge": "Default",
     "empty_message": "No shipping policy",
-    "inactive_policy_warning": "The currently applied shipping policy has been deactivated. You can select another policy or keep it as is.",
     "detail": {
       "shipping_method": "Shipping Method",
       "carrier": "Carrier",
@@ -1084,13 +1054,12 @@
   },
   "images": {
     "drag_hint": "Drag to reorder",
-    "thumbnail_hint": "Click the ★ button to set the main image",
+    "thumbnail_hint": "First image will be the main image",
     "format_hint": "Supports JPG, PNG, GIF formats",
     "upload_complete": "Upload Complete",
     "deleted": "Image has been deleted.",
     "messages": {
       "max_count": "You can add up to {max} images.",
-      "max_count_one": "You can add up to {max} image.",
       "unsupported_format": "{name}: Unsupported format.",
       "size_exceeded": "{name}: Exceeds 10MB limit.",
       "upload_failed": "{name}: Upload failed"
@@ -1101,7 +1070,6 @@
     "no_subcategory": "No subcategories",
     "selected": "Selected",
     "max_count": "Up to {{count}} categories",
-    "max_count_one": "Up to {{count}} category",
     "max_5": "Max 5",
     "add_selected": "Add Selected Categories",
     "step_1": "Step 1",
@@ -1149,23 +1117,16 @@
   "labels": {
     "title": "Labels",
     "no_available": "No labels available.",
-    "add": "Add Label",
     "edit": "Edit",
     "remove": "Delete",
-    "unassign": "Unassign",
-    "delete": "Delete Label",
     "no_period": "No period set",
     "modal_title": "Label Settings",
-    "modal_title_create": "Create Label",
-    "modal_title_edit": "Edit Label",
-    "create_success": "Label created.",
+    "modal_description": "Set the label name, color, and display period.",
     "name": "Label Name",
     "color": "Color",
     "color_reset": "Reset Color",
     "start_date": "Start Date",
     "end_date": "End Date",
-    "started_at": "Select start date",
-    "ended_at": "Select end date",
     "end_date_hint": "Leave empty for indefinite",
     "date_preset": "Date Preset",
     "preset_7d": "7 Days",
@@ -1216,14 +1177,5 @@
     "manage_common_info": "Manage Common Info",
     "manage_notice_template": "Manage Product Notices",
     "create_shipping_policy": "Create Shipping Policy"
-  },
-  "selector_forbidden": {
-    "categories": "You do not have permission to view categories, so no category can be selected.",
-    "brands": "You do not have permission to view brands, so no brand can be selected.",
-    "notice_templates": "You do not have permission to view product notice templates, so templates cannot be loaded. You can still fill in the notice items manually.",
-    "common_infos": "You do not have permission to view common information, so none can be selected.",
-    "shipping_policies": "You do not have permission to view shipping policies, so no policy can be selected. If you save without choosing one, the policy already assigned is kept, or the default shipping policy applies if none is assigned.",
-    "product_labels": "You do not have permission to view product labels, so no label can be selected.",
-    "roles": "You do not have permission to load the member role list, so no role can be selected."
   }
 }

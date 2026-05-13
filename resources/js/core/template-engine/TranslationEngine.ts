@@ -13,115 +13,8 @@
  */
 
 import { createLogger } from '../utils/Logger';
-import { suffixed, extStaticUrl } from '../support/assetUrl';
-import { fetchStaticFirst } from '../support/fetchStaticFirst';
-// 순환 import (DataBindingEngine → TranslationEngine → DataBindingEngine) 이지만
-// 양쪽 모두 모듈 평가 시점이 아니라 메서드 실행 시점에만 서로를 참조하므로
-// live binding 이 채워진 뒤에 사용된다.
-import { dataBindingEngine } from './DataBindingEngine';
-import { hasPipes } from './PipeRegistry';
 
 const logger = createLogger('TranslationEngine');
-
-/**
- * replaceParams 파라미터 키별 정규식 쌍(`{{key}}`, `{key}`) 캐시 — 종전에는 파라미터마다 매 호출 새로 만들었다.
- *
- * - 키를 정규식 이스케이프하지 않는 현행 동작을 그대로 둔다(`a.b` 의 `.` 은 임의 문자).
- * - `new RegExp` 가 던지는 키(`(x` 등)는 캐시에 넣지 않아 호출마다 현행과 같은 예외가 난다.
- * - `String.prototype.replace` 는 g 정규식의 lastIndex 를 시작 시 0 으로 맞추므로 재사용해도 안전하다.
- *   캐시한 정규식을 test/exec 로 쓰면 lastIndex 가 남으니 replace 전용으로만 쓴다.
- *
- * @since engine-v1.74.0
- */
-export const REPLACE_PARAMS_REGEX_CACHE_LIMIT = 500;
-
-/** separateTrailingText 의 trailing 판정 — non-global match 전용이라 상수로 공유해도 상태가 남지 않는다 */
-const TRAILING_TEXT_PATTERN = /(\s+[^\p{L}\w=|&\s][^\p{L}\w=]*\s*)$/u;
-const replaceParamRegexCache = new Map<string, readonly [RegExp, RegExp]>();
-let replaceParamRegexHits = 0;
-let replaceParamRegexMisses = 0;
-
-function getReplaceParamPatterns(key: string): readonly [RegExp, RegExp] {
-  const cached = replaceParamRegexCache.get(key);
-  if (cached) {
-    replaceParamRegexHits++;
-    return cached;
-  }
-  replaceParamRegexMisses++;
-  const pair = [new RegExp(`\\{\\{${key}\\}\\}`, 'g'), new RegExp(`\\{${key}\\}`, 'g')] as const;
-  if (replaceParamRegexCache.size >= REPLACE_PARAMS_REGEX_CACHE_LIMIT) {
-    const oldest = replaceParamRegexCache.keys().next().value;
-    if (oldest !== undefined) replaceParamRegexCache.delete(oldest);
-  }
-  replaceParamRegexCache.set(key, pair);
-  return pair;
-}
-
-/**
- * replaceParams 정규식 캐시 통계(진단용).
- *
- * @return 적중·미스 횟수와 현재 크기
- */
-export function getReplaceParamsRegexCacheStats(): { hits: number; misses: number; size: number } {
-  return { hits: replaceParamRegexHits, misses: replaceParamRegexMisses, size: replaceParamRegexCache.size };
-}
-
-/**
- * 테스트 간 상태 누수를 막기 위해 캐시와 통계를 비운다.
- *
- * @return void
- */
-export function __resetReplaceParamsRegexCacheForTests(): void {
-  replaceParamRegexCache.clear();
-  replaceParamRegexHits = 0;
-  replaceParamRegexMisses = 0;
-}
-
-/** 로케일별 Intl.PluralRules 캐시 — 번역마다 새로 만들지 않는다 */
-const pluralRulesCache = new Map<string, Intl.PluralRules | null>();
-
-/**
- * 해석된 번역 인자에서 복수형 선택용 수(`count`)를 꺼냅니다.
- *
- * 숫자 표기(`1`·`-2`·`1.5`)만 수로 본다. 빈 값·천 단위 구분 기호가 든 값(`1,000`)·글자는 수가 아니라서
- * 복수형 선택을 하지 않는다(기본 키 = other 꼴이 그대로 나온다).
- *
- * @param params 해석된 번역 인자
- * @return 수, 수가 아니면 undefined
- * @since engine-v1.78.7
- */
-function pluralCount(params: TranslationParams): number | undefined {
-  if (!Object.prototype.hasOwnProperty.call(params, 'count')) return undefined;
-  const raw = params.count;
-  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : undefined;
-  const text = String(raw).trim();
-  return /^-?\d+(\.\d+)?$/.test(text) ? Number(text) : undefined;
-}
-
-/**
- * 로케일의 복수 범주(CLDR: zero·one·two·few·many·other)를 구합니다.
- *
- * 로케일을 모르거나 Intl.PluralRules 가 없으면 other(기본 키)로 본다.
- *
- * @param locale 사전 로케일
- * @param count 수
- * @return 복수 범주
- * @since engine-v1.78.7
- */
-function pluralCategory(locale: string, count: number): string {
-  let rules = pluralRulesCache.get(locale);
-  if (rules === undefined) {
-    try {
-      rules = typeof Intl !== 'undefined' && typeof Intl.PluralRules === 'function'
-        ? new Intl.PluralRules(locale)
-        : null;
-    } catch {
-      rules = null;
-    }
-    pluralRulesCache.set(locale, rules);
-  }
-  return rules ? rules.select(count) : 'other';
-}
 
 // ============================================================================
 // 타입 정의
@@ -328,31 +221,21 @@ export class TranslationEngine {
 
     try {
       // API 호출 (캐시 버전 쿼리 파라미터 추가, bustCache가 true면 타임스탬프도 추가)
-      // 자산 URL 모드에 따라 `.json` 접미사가 붙거나 빠진다.
-      // 이 경로는 편집기 전용이 아니라 **모든 페이지가 타는 런타임 공통 경로**라,
-      // 여기만 확장자를 직접 조립하면 extensionless 환경에서 다국어가 통째로 404 가 되어
-      // 이슈 #486 의 원래 증상(화면이 온전히 뜨지 않음)이 다국어 계층에서 재현된다.
-      const extraParams: string[] = [];
+      let url = `${apiBaseUrl}/templates/${templateId}/lang/${locale}.json`;
+
+      // 쿼리 파라미터 구성
+      const queryParams: string[] = [];
+      if (this.cacheVersion > 0) {
+        queryParams.push(`v=${this.cacheVersion}`);
+      }
       if (bustCache) {
-        extraParams.push(`_=${Date.now()}`);
+        queryParams.push(`_=${Date.now()}`);
+      }
+      if (queryParams.length > 0) {
+        url += `?${queryParams.join('&')}`;
       }
 
-      const url = suffixed(
-        `${apiBaseUrl}/templates/${templateId}/lang/${locale}`,
-        'json',
-        this.cacheVersion > 0 ? this.cacheVersion : null,
-        extraParams.length > 0 ? extraParams.join('&') : undefined,
-      );
-
-      // 정적 게시본(bake) 우선 (#122) — bustCache 재로드는 목적상 정적 캐시를
-      // 우회해야 하므로 legacy 직행. miss 는 fetchStaticFirst 가 legacy 로 폴백.
-      const staticUrl = ! bustCache && this.cacheVersion > 0
-        ? extStaticUrl(`templates/${templateId}/lang/${locale}.json`, this.cacheVersion)
-        : null;
-
-      const response = staticUrl !== null
-        ? await fetchStaticFirst(staticUrl, url, { label: `lang/${locale}.json` })
-        : await fetch(url);
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new TranslationError(
@@ -441,37 +324,30 @@ export class TranslationEngine {
     paramsStr?: string,
     dataContext?: any
   ): string {
+    // 번역 텍스트 조회 (폴백 포함)
+    const text = this.getTranslation(key, context);
+
     // 파라미터 문자열의 trailing 비파라미터 텍스트 정리
     const cleanedParamsStr = paramsStr ? this.cleanParamsStr(paramsStr) : paramsStr;
 
     // 파라미터 치환
     if (cleanedParamsStr) {
       const params = this.parseParams(cleanedParamsStr, dataContext);
-      // 복수형 선택은 해석된 `count` 값으로 한다(engine-v1.78.7).
-      const text = this.getTranslation(key, context, pluralCount(params));
       return this.replaceParams(text, params);
     }
 
-    // 번역 텍스트 조회 (폴백 포함)
-    return this.getTranslation(key, context);
+    return text;
   }
 
   /**
    * 번역 텍스트 조회 (폴백 규칙 적용)
    *
-   * `count` 가 수이면 사전마다 그 사전 로케일의 복수 범주로 `키_{범주}` 를 먼저 찾고, 없으면 기본 키를
-   * 쓴다. 기본 키가 other 꼴이라 `_other` 는 찾지 않는다. 현재 로케일 사전에 기본 키가 있으면 폴백 사전의
-   * 변형으로 넘어가지 않는다(문구는 언제나 한 로케일에서 나온다).
-   *
    * @param key 번역 키
    * @param context 번역 컨텍스트
-   * @param count 복수형 선택에 쓸 수 (없으면 복수형 선택 안 함)
-   * @since engine-v1.78.7 count 복수형 선택
    */
   private getTranslation(
     key: string,
-    context: TranslationContext,
-    count?: number
+    context: TranslationContext
   ): string {
     const { templateId, locale } = context;
 
@@ -479,7 +355,7 @@ export class TranslationEngine {
     const currentKey = `${templateId}:${locale}`;
     const current = this.translations.get(currentKey);
     if (current) {
-      const value = this.lookupWithPlural(current, key, locale, count);
+      const value = this.getNestedValue(current, key);
       // 빈 문자열도 유효한 번역 값이므로 !== null 체크
       if (value !== null) return value;
     }
@@ -489,40 +365,13 @@ export class TranslationEngine {
       const fallbackKey = `${templateId}:${this.options.fallbackLocale}`;
       const fallback = this.translations.get(fallbackKey);
       if (fallback) {
-        const value = this.lookupWithPlural(fallback, key, this.options.fallbackLocale, count);
+        const value = this.getNestedValue(fallback, key);
         if (value !== null) return value;
       }
     }
 
     // 3. 키 자체 반환 (번역 없음)
     return key;
-  }
-
-  /**
-   * 한 사전에서 복수형 변형을 먼저, 없으면 기본 키를 찾습니다.
-   *
-   * 변형은 기본 키가 있을 때만 쓴다 — `키_one` 만 있고 `키` 가 없는 사전은 그 키를 갖지 않은 것으로 보고
-   * 다음 사전(폴백)으로 넘긴다. 이렇게 해야 「현재 로케일에 없음 → 폴백」 판정이 종전과 같다.
-   *
-   * @param dict 번역 사전
-   * @param key 기본 키
-   * @param locale 이 사전의 로케일 (복수 범주 계산용)
-   * @param count 복수형 선택에 쓸 수
-   * @return 찾은 문구, 없으면 null
-   * @since engine-v1.78.7
-   */
-  private lookupWithPlural(
-    dict: TranslationDictionary,
-    key: string,
-    locale: string,
-    count?: number
-  ): string | null {
-    const base = this.getNestedValue(dict, key);
-    if (base === null || count === undefined) return base;
-    const category = pluralCategory(locale, count);
-    if (category === 'other') return base;
-    const variant = this.getNestedValue(dict, `${key}_${category}`);
-    return variant !== null ? variant : base;
   }
 
   /**
@@ -547,44 +396,6 @@ export class TranslationEngine {
 
     // 빈 문자열('')도 유효한 번역 값으로 처리
     return typeof current === 'string' ? current : null;
-  }
-
-  /**
-   * 단일 번역 키 값을 활성 사전에 낙관적으로 주입합니다.
-   *
-   * 레이아웃 편집기 인라인 편집으로 커스텀 키를 생성/수정한 직후, 서버 lang 을 재fetch 하는
-   * 비동기 동안 캔버스가 그 키를 raw(또는 옛 값)로 렌더하지 않도록, 입력한 값을 즉시 사전에
-   * 반영한다. 점선 경로(`custom.layout.2`)를 중첩 객체로 풀어 set 하며, 사전이 아직 없으면
-   * 생성한다. 이후 `loadTranslations(...,true)` 가 서버 권위 값으로 사전을 원자 교체한다.
-   *
-   * 사용자 페이지(비편집)에는 호출되지 않는다 — 편집기 전용 낙관적 경로.
-   *
-   * @param templateId 템플릿 식별자
-   * @param locale 대상 로케일
-   * @param key 번역 키 (점선 경로, `$t:` 접두 없이)
-   * @param value 주입할 값
-   * @return 없음
-   */
-  setTranslationValue(
-    templateId: string,
-    locale: string,
-    key: string,
-    value: string
-  ): void {
-    const cacheKey = `${templateId}:${locale}`;
-    const dict = this.translations.get(cacheKey) ?? {};
-    const parts = key.split('.');
-    let cursor: Record<string, unknown> = dict as Record<string, unknown>;
-    for (let i = 0; i < parts.length - 1; i += 1) {
-      const seg = parts[i];
-      const existing = cursor[seg];
-      if (existing == null || typeof existing !== 'object' || Array.isArray(existing)) {
-        cursor[seg] = {};
-      }
-      cursor = cursor[seg] as Record<string, unknown>;
-    }
-    cursor[parts[parts.length - 1]] = value;
-    this.translations.set(cacheKey, dict as TranslationDictionary);
   }
 
   /**
@@ -640,34 +451,15 @@ export class TranslationEngine {
     if (value.startsWith('{{') && value.endsWith('}}')) {
       const expression = value.slice(2, -2).trim();
 
-      // 파이프 필터(`{{x | datetime}}`)는 표현식 평가기가 모른다 — `|` 를 비트 연산자로
-      // 읽어 평가에 실패하고, 아래 catch 가 빈 문자열을 돌려주므로 문장에서 값만 조용히
-      // 사라진다("유효시간  까지"). 파이프 전용 평가기로 먼저 처리한다.
-      // @since engine-v1.65.0
-      if (hasPipes(expression) && dataContext) {
-        try {
-          const piped = dataBindingEngine.evaluatePipeExpression(expression, dataContext);
-          return String(piped ?? '');
-        } catch (error) {
-          logger.error('Pipe expression evaluation failed:', expression, error);
-          return '';
-        }
-      }
-
       // 복잡한 표현식인지 확인 (연산자, 괄호, 메서드 호출 등 포함)
       // 산술 연산자(+, -, *, /, %), 비교 연산자(<, >, =), 논리 연산자, 공백(피연산자 분리)도 포함
       const isComplexExpression = /[|&()[\]!?:+\-*/%<>=\s]/.test(expression);
 
       if (isComplexExpression && dataContext) {
-        // 평가는 엔진에 위임한다. 종전에는 `new Function(...Object.keys(dataContext))` 로
-        // 자체 평가해 `$localized(...)`/`$t(...)`/`$uuid()` 헬퍼와 optional chaining 전처리,
-        // 표현식 함수 캐시를 쓰지 못했다. 실패 시 조용히 빈 문자열이 되어 번역 문구에서
-        // 값만 사라졌다.
-        // (컨텍스트 키가 식별자가 아닐 때의 실패는 엔진 쪽 문제였고 engine-v1.56.2 에서
-        //  DataBindingEngine 이 그런 키를 제외하도록 고쳤다.)
-        // @since engine-v1.56.1
+        // JavaScript 표현식으로 평가
         try {
-          const resolved = dataBindingEngine.evaluateExpression(expression, dataContext);
+          const func = new Function(...Object.keys(dataContext), `return ${expression}`);
+          const resolved = func(...Object.values(dataContext));
           return String(resolved ?? '');
         } catch (error) {
           logger.error('Expression evaluation failed:', expression, error);
@@ -729,7 +521,7 @@ export class TranslationEngine {
 
     // 간단한 휴리스틱: 마지막에 공백 + 특수문자(/, \, 등)로 끝나면 trailing
     // \p{L}을 사용하여 유니코드 문자(한글 등)도 단어 문자로 인식
-    const trailingMatch = paramsStr.match(TRAILING_TEXT_PATTERN);
+    const trailingMatch = paramsStr.match(/(\s+[^\p{L}\w=|&\s][^\p{L}\w=]*\s*)$/u);
     if (trailingMatch) {
       return {
         cleanedParams: paramsStr.slice(0, -trailingMatch[1].length),
@@ -783,12 +575,12 @@ export class TranslationEngine {
     let result = text;
 
     for (const [key, value] of Object.entries(params)) {
-      const [doublePattern, singlePattern] = getReplaceParamPatterns(key);
-
       // {{key}} 형식 (이중 중괄호) 먼저 치환
+      const doublePattern = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
       result = result.replace(doublePattern, String(value));
 
       // {key} 형식 (단일 중괄호) 치환
+      const singlePattern = new RegExp(`\\{${key}\\}`, 'g');
       result = result.replace(singlePattern, String(value));
     }
 

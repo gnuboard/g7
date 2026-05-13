@@ -18,27 +18,19 @@ import * as ReactJSXRuntime from 'react/jsx-runtime';
 import { ComponentRegistry } from './ComponentRegistry';
 import { TranslationEngine, TranslationContext } from './TranslationEngine';
 import { ActionDispatcher } from './ActionDispatcher';
-import { DataBindingEngine, dataBindingEngine } from './DataBindingEngine';
-import { hasPipes } from './PipeRegistry';
-import { extractSingleBinding } from './BindingShape';
-import { evaluateStringCondition } from './helpers/ConditionEvaluator';
-import { addMissingLeafKeys } from './helpers/StateMerge';
-import type { RenderEnvironment } from './helpers/RenderEnvironment';
-import { DataSourceManager, dataSourceManager } from './DataSourceManager';
-import DynamicRenderer from './DynamicRenderer';
+import { DataBindingEngine } from './DataBindingEngine';
 import { useTransitionState } from './TransitionContext';
-import { useTranslation, TranslationProvider, TranslationReactContext } from './TranslationContext';
-import { useResponsive, ResponsiveProvider, ResponsiveContext } from './ResponsiveContext';
-import { responsiveManager, BREAKPOINT_PRESETS } from './ResponsiveManager';
+import { useTranslation } from './TranslationContext';
+import { useResponsive } from './ResponsiveContext';
 import { AuthManager } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
-import { CONSENT_CHANGED_EVENT, getConsentRuntime } from '../consent';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
 import { WebSocketManager } from '../websocket/WebSocketManager';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
-// DiagnosticEngine/ServerConnector/StyleTracker/DevToolsPanel 은 정적 import 하지 않는다 —
-// 디버그 전용 무거운 모듈은 별도 lazy 번들(devtools.min.js)로 분리되어 initDevToolsAPI() 가
-// isEnabled() 참일 때만 런타임 <script> 주입으로 로드한다. @since engine-v1.51.0
+import { DiagnosticEngine } from '../devtools/DiagnosticEngine';
+import { getServerConnector } from '../devtools/ServerConnector';
+import { DevToolsPanel } from '../devtools/ui/DevToolsPanel';
+import { getStyleTracker } from '../devtools/StyleTracker';
 import type { DiagnosticCategory } from '../devtools/types';
 import {
   renderItemChildren,
@@ -58,25 +50,6 @@ import {
 } from '../hooks/useControllableState';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import { IdentityGuardInterceptor, IDENTITY_REDIRECT_STASH_KEY } from '../identity/IdentityGuardInterceptor';
-import { loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
-import { getEngineFlags, setEngineFlags } from './EngineFlags';
-import {
-  templateAsset,
-  templateAssetDir,
-  moduleAsset,
-  pluginAsset,
-  convertToCurrentMode,
-} from '../support/assetUrl';
-import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
-import { isLocaleSwitching, stashForLocaleSwitch, takeLocaleSwitchHandoff } from './localeSwitchHandoff';
-import {
-  notifyAssetFailure,
-  drainExternalAssetFailures,
-  clearAssetFailure,
-  clearAllAssetFailures,
-  getAssetFailures,
-  retryAssetFailures,
-} from '../assets/AssetFailureNotice';
 
 const logger = createLogger('G7CoreGlobals');
 
@@ -184,11 +157,7 @@ export interface G7DevToolsInterface {
   }): void;
 
   /** 네트워크 요청 시작 추적 */
-  trackRequest(
-    url: string,
-    method: string,
-    options?: { requestBody?: any; dataSourceId?: string },
-  ): string;
+  trackRequest(url: string, method: string): string;
 
   /** 네트워크 요청 완료 추적 */
   completeRequest(requestId: string, statusCode: number, response?: any): void;
@@ -201,10 +170,6 @@ export interface G7DevToolsInterface {
     id: string;
     type: 'api' | 'static' | 'route_params' | 'query_params' | 'websocket';
     endpoint?: string;
-    method?: string;
-    autoFetch?: boolean;
-    initLocal?: any;
-    initGlobal?: any;
   }): void;
 
   /** 데이터소스 로딩 시작 추적 */
@@ -677,80 +642,6 @@ function initReactGlobals(): void {
 }
 
 /**
- * 방문자 동의 파사드 초기화 — `G7Core.consent` (engine-v1.78.0, #639)
- *
- * 다른 확장이 동의를 관리하는 확장의 경로를 몰라도 동의 상태를 읽고 구독할 수 있게 한다. 런타임은 코어
- * 동의 런타임(`resources/js/core/consent`) 하나이고, 이 파사드는 그것을 감싸기만 한다.
- *
- * - `getSnapshot()` — 현재 스냅샷 사본 (`_global.consent` 와 같은 모양). 런타임이 없는 화면(관리자)에서는 null.
- * - `refresh()` — 다시 조회해 최신 스냅샷을 돌려준다. 런타임이 없으면 null.
- * - `subscribe(listener)` — 변경(`consent:changed`)을 구독하고 **해제 함수**를 돌려준다.
- *
- * @param G7Core 전역 G7Core 객체
- */
-function initConsentAPI(G7Core: any): void {
-  G7Core.consent = Object.freeze({
-    getSnapshot: () => getConsentRuntime()?.getSnapshot() ?? null,
-    refresh: async () => {
-      const runtime = getConsentRuntime();
-      return runtime ? runtime.refresh() : null;
-    },
-    subscribe: (listener: (snapshot: unknown) => void): (() => void) => {
-      if (typeof listener !== 'function') return () => {};
-      return G7Core.componentEvent.on(CONSENT_CHANGED_EVENT, listener);
-    },
-  });
-}
-
-/**
- * 전역 상태 공개 계약 조회 API 초기화 — `G7Core.stateContracts` (engine-v1.78.0, #639)
- *
- * 서버가 인라인한 `G7Config.stateContracts`(코어 예약 + 활성 확장이 manifest `state_contracts` 로 선언한
- * 공개 전역 상태)를 읽기 전용으로 노출한다. 다른 확장이 읽는 `_global.{이름}` 의 소유자·모양·쓰기 허용 주체를
- * 코드에서 확인할 수 있다.
- *
- * - `get(name)` — 계약 하나 (없으면 null)
- * - `list()` — 계약 전부 (이름 → 계약)
- * - `ownerOf(name)` — 소유자 키 (`core`·`module:{id}`·`plugin:{id}`·`template:{id}`, 없으면 null)
- *
- * @param G7Core 전역 G7Core 객체
- */
-function initStateContractsAPI(G7Core: any): void {
-  const raw = (window as any).G7Config?.stateContracts;
-  const contracts: Record<string, any> = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-  const frozen: Record<string, any> = {};
-
-  for (const [name, contract] of Object.entries(contracts)) {
-    frozen[name] = deepFreeze(JSON.parse(JSON.stringify(contract ?? {})));
-  }
-  Object.freeze(frozen);
-
-  // 이름은 자기 속성으로만 찾는다 — `get('constructor')` 처럼 Object 원형 속성이 계약으로 보이지 않게.
-  const own = (name: string): any => (Object.prototype.hasOwnProperty.call(frozen, name) ? frozen[name] : null);
-
-  G7Core.stateContracts = Object.freeze({
-    get: (name: string) => own(name),
-    list: () => frozen,
-    ownerOf: (name: string) => own(name)?.owner ?? null,
-  });
-}
-
-/**
- * 객체를 깊게 동결한다 (읽기 전용 노출용).
- *
- * @param value 동결할 값
- * @returns 같은 값
- */
-function deepFreeze<T>(value: T): T {
-  if (value && typeof value === 'object') {
-    Object.values(value as Record<string, unknown>).forEach((child) => deepFreeze(child));
-    Object.freeze(value);
-  }
-
-  return value;
-}
-
-/**
  * 컴포넌트 이벤트 시스템 초기화
  *
  * 컴포넌트 간 통신을 위한 이벤트 시스템을 제공합니다.
@@ -847,218 +738,6 @@ function initComponentEventSystem(G7Core: any): void {
 }
 
 /**
- * 코어 런타임 표면을 `window.G7Core.__runtime` 으로 노출 — 편집기 lazy 번들 공유용.
- *
- * @since engine-v1.51.0
- *
- * 레이아웃 편집기 셸은 별도 번들(`layout-editor.min.js`)로 지연 로드된다(메인 번들 비대화
- * 회피). 편집기는 코어 런타임의 렌더러/엔진/컨텍스트를 재사용해야 하는데, 이때 **동일 인스턴스
- * 동일성**이 강제된다:
- *
- * - `getInstance()` 싱글톤(TranslationEngine 등)을 편집기 번들이 재번들하면 편집기 사본의
- *   싱글톤이 메인 번들과 fork → 번역/데이터소스 상태가 어긋난다.
- * - React Context(TranslationReactContext/ResponsiveContext 등)를 재번들하면 `createContext()`
- *   가 두 번 실행돼 Context 객체 참조가 달라짐 → 편집기의 `useContext` 가 빈 값을 읽는다.
- * - `DynamicRenderer` 는 사실상 코어 런타임 전체(ActionDispatcher/DataBindingEngine/모든
- *   Context/sortable)를 끌어오므로, 재번들 시 코어 대부분이 편집기 번들에 중복된다.
- *
- * 이를 막기 위해 메인 번들이 이 런타임 표면을 `G7Core.__runtime` 에 노출하고, 편집기 빌드는
- * `resolve.alias` 로 `../DynamicRenderer` 등 상대 경로를 `G7Core.__runtime` 재export shim 으로
- * 치환한다(편집기 소스는 무수정). 결과적으로 편집기 번들은 코어 런타임을 0바이트 중복으로
- * **빌려 쓰고**, 싱글톤/컨텍스트 동일성이 자동 보장된다.
- *
- * 메인 `<script>` 는 동기 선행 실행되므로, 편집기 IIFE 가 실행될 때 `__runtime` 은 항상 존재한다.
- *
- * @param G7Core - window.G7Core 전역 객체
- */
-function initCoreRuntimeExports(G7Core: any): void {
-  // 이미 노출돼 있으면 멱등 (중복 init 방지)
-  if (G7Core.__runtime) return;
-
-  // 노출 대상 = 편집기가 layout-editor/ 밖으로 직접 import 하는 11개 모듈의 런타임 값만.
-  // (Slot/Transition Provider 는 편집기가 직접 import 하지 않고 메인 번들 renderTemplate 이
-  //  wrapping 하므로 __runtime 미포함. DynamicRenderer 내부의 Slot/Transition 의존은 메인 번들
-  //  DynamicRenderer 에 이미 번들돼 있어 별도 공유 불필요.)
-  G7Core.__runtime = {
-    // 렌더러 (default export) — 프리뷰 캔버스
-    DynamicRenderer,
-    // 엔진/레지스트리 클래스 (getInstance 싱글톤)
-    ComponentRegistry,
-    TranslationEngine,
-    DataSourceManager,
-    dataSourceManager,
-    DataBindingEngine,
-    dataBindingEngine,
-    ActionDispatcher,
-    // 번역 컨텍스트 (Context 객체 동일성 필수)
-    TranslationReactContext,
-    TranslationProvider,
-    useTranslation,
-    // 반응형 컨텍스트/매니저
-    ResponsiveContext,
-    ResponsiveProvider,
-    useResponsive,
-    responsiveManager,
-    BREAKPOINT_PRESETS,
-    // 인증/로거
-    AuthManager,
-    createLogger,
-    // DevTools 추적 코어 (디버그 lazy 번들이 패널/진단엔진에서 공유) @since engine-v1.51.0
-    G7DevToolsCore,
-  };
-
-  logger.log('전역 객체 window.G7Core.__runtime(코어 런타임 표면)에 노출됨');
-}
-
-/**
- * `G7Core.layoutEditor` 예약 접수함(ready 큐) 초기화 —.
- *
- * 레이아웃 편집기 확장점(`registerWidget`/`registerNodeEditor`/`registerCanvasOverlay`)은
- * 편집기 셸(lazy 번들)이 로드될 때 `exposeLayoutEditorGlobals` 가 **실제 레지스트리 함수**로
- * 노출한다. 그러나 템플릿 `initTemplate` 은 편집기 로드 **이전**에 실행되므로, 그 시점에
- * `G7Core.layoutEditor` 가 없으면 등록이 허공으로 사라진다.
- *
- * 이를 막기 위해 메인 번들에서 **경량 stub** 을 항상 먼저 노출한다. stub 의 register* 는
- * 등록 요청을 `__queue` 에 적재만 하고, `onReady(cb)` 는 `__readyCallbacks` 에 예약한다.
- * 편집기 셸 로드 시 `exposeLayoutEditorGlobals` 가 실제 함수로 교체하면서 `__queue` 를
- * 일괄 flush + `__readyCallbacks` 호출한다(그 후의 호출은 즉시 등록). 이미 실제 API 가
- * 노출돼 있으면(편집기 먼저 로드) stub 으로 덮지 않는다.
- *
- * 메인 번들 추가분은 함수 3개 + 배열 2개뿐(번들 비대화 ~0). 큐/콜백 공유 상태는 코드
- * 분할(메인 vs 편집기 번들) 경계를 넘어야 하므로 모듈 변수가 아니라 `G7Core.layoutEditor`
- * **객체 자체**(`__queue`/`__readyCallbacks`)에 둔다.
- */
-function initLayoutEditorStub(G7Core: any): void {
-  // 편집기 셸이 먼저 로드돼 실제 API 가 이미 있으면 stub 으로 덮지 않는다.
-  if (G7Core.layoutEditor && G7Core.layoutEditor.__isStub !== true) return;
-  if (G7Core.layoutEditor && G7Core.layoutEditor.__isStub === true) return; // 중복 init 멱등
-
-  const queue: Array<[string, ...unknown[]]> = [];
-  const readyCallbacks: Array<() => void> = [];
-
-  G7Core.layoutEditor = {
-    __isStub: true,
-    __queue: queue,
-    __readyCallbacks: readyCallbacks,
-    registerWidget: (name: string, comp: unknown) => queue.push(['widget', name, comp]),
-    registerNodeEditor: (kind: string, comp: unknown) => queue.push(['nodeEditor', kind, comp]),
-    registerCanvasOverlay: (kind: string, overlay: unknown) =>
-      queue.push(['canvasOverlay', kind, overlay]),
-    /** 편집기 ready 시 호출될 콜백 예약. 이미 ready 면(=stub 아님) 즉시 호출은 실제 API 책임 */
-    onReady: (cb: () => void) => {
-      if (typeof cb === 'function') readyCallbacks.push(cb);
-    },
-  };
-
-  logger.log('전역 객체 window.G7Core.layoutEditor 예약 접수함(stub) 노출됨');
-}
-
-/**
- * 자산 URL·자산 실패 안내 API 초기화
- *
- * 확장(모듈·플러그인·템플릿)의 IIFE 번들은 코어의 `assetUrl.ts` 를 import 할 수 없다
- * — 별도 번들이라 모듈 그래프가 이어지지 않는다. 그래서 확장이 자기 동봉 자산의 URL 을
- * 만들려면 `/api/plugins/assets/...` 를 **문자열로 조립**하는 수밖에 없었는데, 그러면
- * 자산 URL 이중 모드(확장자 없는 서버)에서 그 자산만 404 가 된다.
- *
- * `G7Core.asset.*` 이 그 seam 이다 — 서버측 `AssetUrl` 과 같은 규약으로 URL 을 만든다.
- * `G7Core.assets.*` 는 그 자산을 끝내 못 불러왔을 때의 안내·재시도 표면이다.
- *
- * @param G7Core 전역 객체
- * @return void
- * @since engine-v1.62.0
- */
-function initAssetUrlAPI(G7Core: any): void {
-  /**
-   * 확장 자산 URL 생성기.
-   *
-   * 템플릿은 서버가 `dist/` 를 자동 부가하므로 `path` 에 `dist/` 를 포함하지 않는다
-   * (모듈·플러그인은 확장 루트 기준이라 `dist/` 를 직접 포함 — 서버측과 동일한 비대칭).
-   */
-  G7Core.asset = {
-    /** 템플릿 자산 URL (`dist/` 이하 경로) */
-    template: (identifier: string, path: string, version?: number | string | null): string =>
-      templateAsset(identifier, path, version),
-    /**
-     * 템플릿 자산 **디렉토리** URL — AMD 로더·워커처럼 디렉토리 접두에 파일명을
-     * 이어 붙이는 소비자용. 확장자 없는 모드에서 404 일 수 있으므로 폴백이 필요하다.
-     */
-    templateDir: (identifier: string, path: string): string => templateAssetDir(identifier, path),
-    /** 모듈 자산 URL (모듈 루트 기준 경로) */
-    module: (identifier: string, path: string, version?: number | string | null): string =>
-      moduleAsset(identifier, path, version),
-    /** 플러그인 자산 URL (플러그인 루트 기준 경로) */
-    plugin: (identifier: string, path: string, version?: number | string | null): string =>
-      pluginAsset(identifier, path, version),
-    /** 서버가 확장자 형태로 굳혀 내려준 URL 을 현재 모드로 보정 */
-    convertToCurrentMode: (url: string): string => convertToCurrentMode(url),
-    /**
-     * 재시도 계층을 갖춘 스크립트 로더.
-     *
-     * 확장이 자기 자산을 런타임에 직접 로드할 때 쓴다. 확장 번들이 코어 모듈을
-     * import 할 수 없어 각자 `document.createElement('script')` 를 쓰면, 코어가
-     * 갖춘 재시도·실패 표면화 계층이 그 경로에만 없게 된다.
-     *
-     * `url` 은 레이아웃 `scripts[]` 와 **같은 출처 정책**을 받는다 — same-origin 절대
-     * 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 한다.
-     * 이 seam 만 게이트가 없으면 저장측 검증을 우회한 원격 코드 로드 통로가 된다.
-     *
-     * @since engine-v1.64.0 출처 게이트 추가 (미신뢰 URL 은 reject)
-     */
-    loadScript: (
-      url: string,
-      attrs?: Record<string, string>,
-      options?: Record<string, unknown>
-    ): Promise<void> => {
-      if (!isAllowedScriptSrc(url, getTrustedScriptHosts())) {
-        return Promise.reject(
-          new Error(
-            `Blocked untrusted script src (same-origin path or declared trusted host required): ${url}`
-          )
-        );
-      }
-
-      return loadScriptWithRetry(url, attrs, options as any);
-    },
-    /**
-     * 스크립트 URL 이 주입 허용 대상인지 판정합니다.
-     *
-     * 로더를 쓸 수 없는 주입(iframe `document.write` 등)이 같은 판정을 재사용하는 통로다.
-     *
-     * @since engine-v1.64.0
-     */
-    isAllowedScriptSrc: (url: string): boolean =>
-      isAllowedScriptSrc(url, getTrustedScriptHosts()),
-    /** 재시도 계층을 갖춘 스타일시트 로더 */
-    loadStylesheet: (
-      url: string,
-      attrs?: Record<string, string>,
-      options?: Record<string, unknown>
-    ): Promise<void> => loadStylesheetWithRetry(url, attrs, options as any),
-  };
-
-  /**
-   * 자산 로드 실패 안내.
-   *
-   * 실패를 화면에 표면화하지 않으면 사용자에게는 "빈 자리" 로만 나타나고, 자체 서버
-   * 로그에도 흔적이 남지 않아 운영자가 원인을 특정할 수 없다.
-   */
-  G7Core.assets = {
-    notifyFailure: notifyAssetFailure,
-    clearFailure: clearAssetFailure,
-    clearAll: clearAllAssetFailures,
-    getFailures: getAssetFailures,
-    retryAll: retryAssetFailures,
-  };
-
-  // 서버가 심은 템플릿 externals 는 엔진보다 먼저 평가되므로 실패가 대기열에 쌓여 있다.
-  // 여기서 비우지 않으면 아이콘 폰트·글꼴 실패가 화면에 영영 드러나지 않는다.
-  drainExternalAssetFailures();
-
-  logger.log('전역 객체 window.G7Core.asset / window.G7Core.assets 노출됨');
-}
-
-/**
  * 번역 관련 API 초기화
  */
 function initTranslationAPI(G7Core: any, deps: G7CoreDependencies): void {
@@ -1130,55 +809,9 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
   G7Core.createLogger = createLogger;
   logger.log('전역 객체 window.G7Core.createLogger에 노출됨');
 
-  /**
-   * 셀 렌더 래퍼가 쓸 렌더 환경을 고른다 — `renderEnv` 우선, 없으면 `componentContext.renderEnvRef.current`.
-   *
-   * 레이아웃 편집기 미리보기에서는 이 값이 미리보기 폭·콘텐츠 언어·격리 dispatcher·편집 대상 템플릿
-   * 레지스트리·편집 모드를 담는다. 편집기 밖에서는 루트 렌더러의 값(=호스트 값)이다(#141).
-   *
-   * @param renderEnv 호출자가 명시한 렌더 환경
-   * @param componentContext 호출자가 넘긴 부모 컴포넌트 컨텍스트
-   * @returns 렌더 환경, 없으면 null
-   * @since engine-v1.75.2
-   */
-  const pickRenderEnv = (renderEnv: RenderEnvironment | null | undefined, componentContext: any): RenderEnvironment | null =>
-    renderEnv ?? componentContext?.renderEnvRef?.current ?? null;
-
-  /**
-   * 렌더 환경에서 renderItemChildren 옵션으로 옮길 값만 뽑는다(빈 필드는 빼서 호스트 기본값을 덮지 않는다).
-   *
-   * @param env 렌더 환경
-   * @returns 옵션 조각
-   * @since engine-v1.75.2
-   */
-  const renderEnvToOptions = (env: RenderEnvironment | null): Record<string, any> => {
-    if (!env) return {};
-    const picked: Record<string, any> = {};
-    for (const key of ['responsiveWidth', 'translationContext', 'translationEngine', 'bindingEngine', 'actionDispatcher', 'isEditMode'] as const) {
-      if (env[key] !== undefined && env[key] !== null) picked[key] = env[key];
-    }
-    return picked;
-  };
-
-  /**
-   * 컴포넌트 맵에 렌더 환경 레지스트리를 덮는다 — 환경 레지스트리가 이기고, 기본 맵에만 있는 항목은 남긴다.
-   *
-   * @param baseMap 호출자 맵 또는 호스트 맵
-   * @param env 렌더 환경
-   * @returns 합친 맵
-   * @since engine-v1.75.2
-   */
-  const withEnvComponents = (baseMap: Record<string, any>, env: RenderEnvironment | null): Record<string, any> => {
-    const envMap = env?.componentRegistry?.getComponentMap?.();
-    return envMap ? { ...baseMap, ...envMap } : baseMap;
-  };
-
   // renderItemChildren 노출 (반복 아이템의 자식 컴포넌트 렌더링용)
   // CardGrid 등에서 호출 시 translationContext, translationEngine, bindingEngine, actionDispatcher를 자동 주입
   // 전역 상태(_global, _local, _computed)도 컨텍스트에 자동 병합하여 cellChildren에서 접근 가능
-  //
-  // 값 우선순위: 명시 options > 렌더 환경(options.renderEnv 또는 options.componentContext.renderEnvRef.current)
-  // > 호스트 state. 렌더 환경에 레지스트리가 있으면 컴포넌트 맵도 그것을 우선한다. @since engine-v1.75.2 (#141)
   G7Core.renderItemChildren = (
     children: any[],
     itemContext: Record<string, any>,
@@ -1216,51 +849,16 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       return componentId || fallbackKey;
     };
 
-    // options가 없거나 필요한 엔진이 없으면 렌더 환경 → 현재 state 순으로 자동 주입
-    const env = pickRenderEnv(options?.renderEnv, options?.componentContext);
+    // options가 없거나 필요한 엔진이 없으면 현재 state에서 자동 주입
     const mergedOptions = {
       translationContext: state.translationContext,
       translationEngine: state.translationEngine,
       bindingEngine: state.bindingEngine,
       actionDispatcher: state.actionDispatcher,
-      ...renderEnvToOptions(env),
       getRemountKey, // remount 지원 추가
       ...options,
     };
-    return renderItemChildren(children, mergedContext, withEnvComponents(componentMap, env), keyPrefix, mergedOptions);
-  };
-
-  /**
-   * 조건 문자열 평가 노출 (템플릿 컴포넌트용)
-   *
-   * 템플릿 컴포넌트가 `new Function('row', ...)` 로 자체 평가기를 두면 엔진과 판정이
-   * 갈린다 — 실제로 `_local`/`_global` 을 참조하는 조건에서 두 컴포넌트가 예외를 서로
-   * 다르게 처리해 한쪽은 자식이 사라지고 다른 쪽은 항상 표시되는 **반대 방향** 결과가 났다.
-   * 이 API 는 엔진의 `evaluateStringCondition` 을 그대로 쓰고, 전역/로컬/계산 상태를
-   * 컨텍스트에 병합해 넘긴다.
-   *
-   * @param condition 조건 문자열 (예: `"{{row.charge_policy !== 'free'}}"`)
-   * @param extraContext 추가 컨텍스트 (예: `{ row }`)
-   * @returns 평가 결과. 조건이 비어 있으면 true
-   *
-   * @since engine-v1.56.1
-   */
-  G7Core.evaluateCondition = (condition: string, extraContext?: Record<string, any>): boolean => {
-    if (!condition) return true;
-
-    const state = deps.getState();
-    const templateApp = (window as any).__templateApp;
-    const globalStateContent = templateApp?.getGlobalState?.() || {};
-
-    const context = {
-      _global: globalStateContent,
-      _local: globalStateContent._local || {},
-      _computed: globalStateContent._computed || {},
-      ...(extraContext || {}),
-    };
-
-    const engine = state.bindingEngine ?? dataBindingEngine;
-    return evaluateStringCondition(condition, context, engine);
+    return renderItemChildren(children, mergedContext, componentMap, keyPrefix, mergedOptions);
   };
 
   // getComponentMap 노출 (CardGrid 등에서 전체 컴포넌트 맵 접근용)
@@ -1277,8 +875,6 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * @param layoutDefs component_layout 정의 배열
    * @param itemContext 항목별 컨텍스트 (예: { item: option, index: 0, isSelected: true })
    * @param keyPrefix React key prefix
-   * @param options 선택. 렌더 환경과 명시 값 — 우선순위는 명시 값 > `renderEnv` >
-   *   `componentContext.renderEnvRef.current` > 호스트 값 (@since engine-v1.75.2, #141)
    * @returns React 요소 배열
    *
    * @example
@@ -1287,29 +883,20 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * const itemElements = G7Core.renderComponentLayout(
    *   __componentLayoutDefs?.item,
    *   { item: option, index, isSelected },
-   *   `item-${index}`,
-   *   { renderEnv: __componentContext?.renderEnvRef?.current }
+   *   `item-${index}`
    * );
    * ```
    */
   G7Core.renderComponentLayout = (
     layoutDefs: any[] | undefined,
     itemContext: Record<string, any>,
-    keyPrefix?: string,
-    options?: {
-      renderEnv?: RenderEnvironment | null;
-      componentContext?: { renderEnvRef?: { current: RenderEnvironment | null } };
-      responsiveWidth?: number;
-      translationContext?: TranslationContext;
-      actionDispatcher?: any;
-    }
+    keyPrefix?: string
   ): React.ReactNode => {
     if (!layoutDefs || !Array.isArray(layoutDefs) || layoutDefs.length === 0) {
       return null;
     }
 
-    const env = pickRenderEnv(options?.renderEnv, options?.componentContext);
-    const componentMap = withEnvComponents(ComponentRegistry.getInstance().getComponentMap(), env);
+    const componentMap = ComponentRegistry.getInstance().getComponentMap();
     const state = deps.getState();
 
     // 전역 상태 가져오기 (remount 지원을 위해)
@@ -1317,11 +904,8 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
     const globalState = templateApp?.getGlobalState?.() || {};
 
     // 전역 상태를 컨텍스트에 병합 (remount 키 접근을 위해)
-    // `getGlobalState()` 결과가 **곧 `_global` 의 내용물**이다 — 같은 파일 1077행이 그 규약을 쓴다.
-    // 여기에 `._global` 을 한 번 더 붙이면 언제나 `{}` 라, 이 자리는 engine-v1.70.0 이전까지
-    // `_global` 을 통째로 비운 채 넘겼다(`_remountKeys` 도 함께 비어 remount 키가 서지 않는다).
     const mergedContext = {
-      _global: globalState,
+      _global: globalState._global || {},
       _local: globalState._local || {},
       _computed: globalState._computed || {},
       ...itemContext,
@@ -1345,13 +929,9 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       keyPrefix,
       {
         translationContext: state.translationContext,
-        translationEngine: state.translationEngine ?? undefined,
-        bindingEngine: state.bindingEngine ?? undefined,
+        translationEngine: state.translationEngine,
+        bindingEngine: state.bindingEngine,
         actionDispatcher: state.actionDispatcher,
-        ...renderEnvToOptions(env),
-        ...(options?.responsiveWidth !== undefined ? { responsiveWidth: options.responsiveWidth } : {}),
-        ...(options?.translationContext ? { translationContext: options.translationContext } : {}),
-        ...(options?.actionDispatcher ? { actionDispatcher: options.actionDispatcher } : {}),
         getRemountKey,
       }
     );
@@ -1369,9 +949,6 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
    * @param config.componentContext 부모 컴포넌트 컨텍스트 (state, setState)
    * @param config.componentMap 컴포넌트 맵 (선택, 없으면 자동 조회)
    * @param config.keyPrefix React key prefix
-   * @param config.renderEnv 렌더 환경 (선택). 없으면 `componentContext.renderEnvRef.current` 를 쓴다.
-   *   폭·번역·엔진·dispatcher·레지스트리·편집 모드가 호스트 값보다 우선한다 (@since engine-v1.75.2, #141)
-   * @param config.responsiveWidth responsive 분기 폭 명시값 (선택, @since engine-v1.75.2)
    * @returns React 요소 배열
    *
    * @example
@@ -1401,15 +978,9 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       setState?: (updates: Record<string, any>) => void;
       stateRef?: { current: Record<string, any> };
       computedRef?: { current: Record<string, any> };
-      /** @since engine-v1.75.2 */
-      renderEnvRef?: { current: RenderEnvironment | null };
     };
     componentMap?: Record<string, React.ComponentType<any>>;
     keyPrefix: string;
-    /** @since engine-v1.75.2 */
-    renderEnv?: RenderEnvironment | null;
-    /** @since engine-v1.75.2 */
-    responsiveWidth?: number;
   }): React.ReactNode => {
     const { children, row, expandContext, componentContext, keyPrefix } = config;
 
@@ -1417,11 +988,8 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       return null;
     }
 
-    // 렌더 환경 (미리보기 값) — 명시 renderEnv > componentContext.renderEnvRef.current > 호스트 (#141)
-    const env = pickRenderEnv(config.renderEnv, componentContext);
-
     // 컴포넌트 맵 조회 (없으면 자동)
-    const componentMap = withEnvComponents(config.componentMap || ComponentRegistry.getInstance().getComponentMap(), env);
+    const componentMap = config.componentMap || ComponentRegistry.getInstance().getComponentMap();
     const state = deps.getState();
 
     // 1. 전역 상태 가져오기
@@ -1443,7 +1011,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
     const latestComputed = componentContext?.computedRef?.current ?? globalState._computed ?? {};
 
     // 4. expandContext 바인딩 표현식 자동 평가
-    const bindingEngine = env?.bindingEngine ?? state.bindingEngine ?? G7Core.getDataBindingEngine?.();
+    const bindingEngine = state.bindingEngine ?? G7Core.getDataBindingEngine?.();
     const evalContext = {
       ...globalState,
       _local: mergedLocal,
@@ -1460,20 +1028,14 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
         // resolveObject는 DEFAULT_SKIP_BINDING_KEYS 때문에 expandContext 내부 키를 스킵할 수 있음
         for (const [key, value] of Object.entries(expandContext)) {
           if (typeof value === 'string') {
-            // 단일 Mustache 표현식인지 확인 ({{expr}} 형태).
-            // 판정은 BindingShape 정본 — 종전 `^\{\{([^}]+)\}\}$` 은 식 안에 `}` 가
-            // 들어간 경우(`?? {}` 등)를 단일 바인딩으로 보지 못해 보간 경로로 흘렸다.
-            // @since engine-v1.55.0
-            const expr = extractSingleBinding(value);
-            if (expr !== null) {
+            // 단일 Mustache 표현식인지 확인 ({{expr}} 형태)
+            const singleBindingMatch = value.match(/^\{\{([^}]+)\}\}$/);
+            if (singleBindingMatch) {
               // 단일 바인딩 표현식: evaluateExpression 사용하여 원본 타입 유지
               // resolveBindings는 문자열 보간용이라 배열/객체를 JSON 문자열로 변환함
+              const expr = singleBindingMatch[1].trim();
               try {
-                // 파이프 표현식은 evaluatePipeExpression 으로 평가한다 — evaluateExpression 은
-                // `|` 를 JS 비트 OR 로 보므로 파이프가 적용되지 않는다. @since engine-v1.54.10
-                resolvedExpandContext[key] = hasPipes(expr)
-                  ? bindingEngine.evaluatePipeExpression(expr, evalContext, { skipCache: true })
-                  : bindingEngine.evaluateExpression(expr, evalContext, { skipCache: true });
+                resolvedExpandContext[key] = bindingEngine.evaluateExpression(expr, evalContext, { skipCache: true });
               } catch (e) {
                 // 평가 실패 시 undefined (폴백 처리는 표현식 자체에서 || 로 처리)
                 resolvedExpandContext[key] = undefined;
@@ -1497,8 +1059,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       item: row,
       $item: row,
       _local: mergedLocal,
-      // 위 cellChildren 과 같은 이유로 `._global` 을 떼었다 — `state.get()` 이 이미 `_global` 이다.
-      _global: globalState,
+      _global: globalState._global || {},
       _computed: globalState._computed || {},
       ...resolvedExpandContext,
     };
@@ -1520,8 +1081,6 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       translationEngine: state.translationEngine ?? undefined,
       bindingEngine: state.bindingEngine ?? undefined,
       actionDispatcher: state.actionDispatcher,
-      ...renderEnvToOptions(env),
-      ...(config.responsiveWidth !== undefined ? { responsiveWidth: config.responsiveWidth } : {}),
       componentContext,
       getRemountKey,
     });
@@ -1813,10 +1372,48 @@ function hasOnlyNumericKeys(obj: Record<string, any>): boolean {
  * @param source 병합할 소스 객체
  * @returns 병합된 결과 객체
  */
-// addMissingLeafKeys 는 engine-v1.63.3 에서 helpers/StateMerge 로 이동했다.
-// ActionDispatcher 의 handleSetState COMPONENT path 가 같은 보충 규칙을 써야 하는데
-// G7CoreGlobals → ActionDispatcher import 가 이미 있어 역방향 값 import 가 순환이 되기 때문이다.
-// 동작은 원문 그대로다 (사례 13 회귀 테스트가 잠금 역할).
+/**
+ * base 객체에 없는 leaf 키만 extra에서 추가합니다.
+ *
+ * deepMerge와 달리 base에 이미 존재하는 값(배열 포함)은 절대 덮어쓰지 않습니다.
+ * extra에만 존재하는 키는 재귀적으로 추가됩니다.
+ *
+ * 용도: setLocal에서 dynamicLocal(actionContext.state)의 setState 전용 키를 globalLocal에
+ * 안전하게 추가할 때 사용. dynamicLocal의 stale 배열(init_actions 기본값)이 globalLocal의
+ * 정상 API 데이터를 덮어쓰는 것을 방지합니다.
+ *
+ * @since engine-v1.41.0
+ *
+ * @example
+ * ```ts
+ * const base = { form: { category_ids: [381, 384], name: 'A' } };
+ * const extra = { form: { category_ids: [], options: [] }, selectedProducts: [1] };
+ * addMissingLeafKeys(base, extra);
+ * // → { form: { category_ids: [381, 384], name: 'A', options: [] }, selectedProducts: [1] }
+ * // base의 category_ids는 보존, extra의 selectedProducts와 options는 추가
+ * ```
+ */
+function addMissingLeafKeys(base: Record<string, any>, extra: Record<string, any>): Record<string, any> {
+  const result = { ...base };
+  for (const key of Object.keys(extra)) {
+    if (!(key in result)) {
+      // base에 없는 키: extra 값 그대로 추가
+      result[key] = extra[key];
+    } else if (
+      result[key] !== null &&
+      typeof result[key] === 'object' &&
+      !Array.isArray(result[key]) &&
+      extra[key] !== null &&
+      typeof extra[key] === 'object' &&
+      !Array.isArray(extra[key])
+    ) {
+      // 양쪽 모두 plain object: 재귀적으로 처리
+      result[key] = addMissingLeafKeys(result[key], extra[key]);
+    }
+    // base에 이미 존재하는 leaf 값(배열, 문자열, 숫자 등): 건너뜀 (base 값 보존)
+  }
+  return result;
+}
 
 function deepMerge(target: Record<string, any>, source: Record<string, any>): Record<string, any> {
   // 특수 케이스: target이 배열이고 source가 숫자 키만 가진 객체인 경우
@@ -2032,11 +1629,6 @@ function initStateAPI(G7Core: any): void {
           if (targetContext?.setState) {
             // 함수형 업데이트를 사용하여 항상 최신 상태와 병합
             // React setState는 비동기이므로 스냅샷 대신 함수형 업데이트 필수
-            //
-            // scope:'parent'|'root' 은 `_local` 정본이 아니라 레이아웃 컨텍스트 스택의
-            // 부모/루트 슬롯을 대상으로 한다. 여기서 저장소 B 를 함께 쓰면 모달의 쓰기가
-            // 페이지 _local 을 오염시킨다(사례 29).
-            // audit:allow local-store-write-must-mirror 부모/루트 슬롯 전용 (위 사유)
             targetContext.setState((currentLocal: Record<string, any>) => {
               if (mergeMode === 'replace') return converted;
               if (mergeMode === 'shallow') return { ...(currentLocal || {}), ...converted };
@@ -2184,7 +1776,7 @@ function initStateAPI(G7Core: any): void {
       // handlerContext.state(버튼 클릭 시점의 componentContext.state)를 사용해야 함.
       //
       // ──────────────────────────────────────────────────────────────────
-      // [모달 scope 제한사항] ( 분석, 2026-03-25)
+      // [모달 scope 제한사항] (Issue #29 분석, 2026-03-25)
       //
       // 현재 getLocal()은 항상 페이지의 globalLocal을 반환한다.
       // modals 섹션의 isolated scope 모달 내부 커스텀 핸들러에서 호출해도
@@ -2202,7 +1794,7 @@ function initStateAPI(G7Core: any): void {
       // 현재 우회책: 모달에서 onMount setState를 사용하지 않고,
       // 모달 열기 전 핸들러에서 setLocal()로 페이지 _local에 초기화 후 modal.open().
       // 이렇게 하면 모달이 페이지 _local을 그대로 상속하여 getLocal/setLocal과 일관.
-      // (사용자 취소 모달 _modal_cancel.g7.html, 관리자 취소 모달 _modal_cancel_order.g7.html)
+      // (사용자 취소 모달 _modal_cancel.json, 관리자 취소 모달 _modal_cancel_order.json)
       //
       // [향후 리팩토링 방향]
       // getLocal()/setLocal()을 모달-인식(modal-aware)으로 개선:
@@ -2516,31 +2108,7 @@ function initStateAPI(G7Core: any): void {
       // globalState._local도 함께 업데이트해야 후속 getLocal() 호출이 최신 값을 반환함.
       const templateApp = (window as any).__templateApp;
       if (templateApp?.setGlobalState) {
-        // 저장소 B 쓰기의 base 는 live B 다 (engine-v1.63.3 / 공개 이슈 #130 과 같은 정책).
-        //
-        // `merged` 는 부모 컨텍스트의 **저장소 A**(`parentEntry.state._local`)를 base 로 만든 값이다.
-        // `setGlobalState` 는 `_local` 을 얕게 병합하므로 그것을 그대로 쓰면 B 가 통째 교체되고,
-        // A 가 아직 받지 못한 값(예: selfManaged 플러그인이 B 에만 쓴 편집기 본문)이 사라진다.
-        // 부모 컨텍스트가 페이지 루트일 때 그 A 스냅샷은 B 보다 뒤처져 있을 수 있다(사례 21).
-        //
-        // 그래서 B 에는 live B + 변경 키만 얹고, A 전용 키는 `addMissingLeafKeys` 로 보충한다.
-        // 저장소 A 경로(`parentEntry.setState`)와 pending 은 종전 그대로 둔다 — 그쪽 base 를
-        // 바꾸면 React 전용 배열이 B 초기값으로 덮이는 사례 22 위험이 생긴다.
-        //
-        // `merge: 'replace'` 는 의도적 리셋이므로 제외한다(사례 17).
-        const canonicalLocal = templateApp.getGlobalState?.()?._local;
-        const canUseCanonical = mergeMode !== 'replace'
-          && !!canonicalLocal && typeof canonicalLocal === 'object' && !Array.isArray(canonicalLocal);
-
-        const canonicalMerged = canUseCanonical
-          ? (mergeMode === 'shallow'
-            ? { ...(canonicalLocal as Record<string, any>), ...converted }
-            : deepMerge(canonicalLocal as Record<string, any>, converted))
-          : undefined;
-
-        templateApp.setGlobalState({
-          _local: canonicalMerged ? addMissingLeafKeys(canonicalMerged, merged) : merged,
-        });
+        templateApp.setGlobalState({ _local: merged });
       }
 
       parentEntry.setState(merged);
@@ -2857,27 +2425,14 @@ function initLocaleAPI(G7Core: any, deps: G7CoreDependencies): void {
     /**
      * 로케일을 변경합니다.
      * @param locale 변경할 로케일 (예: 'ko', 'en')
-     * @param options persist: false 면 로그인 회원의 언어를 저장하지 않는다(호출자가 이미 저장한 경우 — 요청 1회) @since engine-v1.79.0
      */
-    change: async (locale: string, options?: { persist?: boolean }) => {
+    change: async (locale: string) => {
       const templateApp = (window as any).__templateApp;
       if (templateApp?.changeLocale) {
-        await (options ? templateApp.changeLocale(locale, options) : templateApp.changeLocale(locale));
+        await templateApp.changeLocale(locale);
       } else {
         logger.warn('G7Core.locale.change: TemplateApp이 초기화되지 않았습니다.');
       }
-    },
-    /**
-     * 언어 전환 인계 저장소 — 언어 전환은 같은 화면을 새로 마운트하므로, 컴포넌트 안에만 있는 저장 전
-     * 상태(업로더가 고른 대기 파일 등)를 언마운트 때 맡기고 새 인스턴스가 마운트 때 되찾는다.
-     * `stash` 는 언어 전환 중에만 받고, `take` 는 한 번 꺼내면 지운다. 다음 화면 이동이 시작되면 남은 값은 버린다.
-     *
-     * @since engine-v1.79.0
-     */
-    handoff: {
-      isSwitching: (): boolean => isLocaleSwitching(),
-      stash: (key: string, value: unknown): boolean => stashForLocaleSwitch(key, value),
-      take: <T = unknown>(key: string): T | undefined => takeLocaleSwitchHandoff<T>(key),
     },
   };
 
@@ -2922,23 +2477,6 @@ function initToastAPI(G7Core: any): void {
 }
 
 /**
- * 모달 상태(activeModal·modalStack)를 담은 전역 상태를 읽습니다.
- *
- * `G7Core.state.get()` 은 `_global` 의 **내용물**을 바로 돌려준다(`TemplateApp.getGlobalState()`). 예전 구현은
- * `state._global?.modalStack` 을 읽어 화면에서는 isOpen 이 늘 false·getStack 이 늘 [] 였다(#712 실측). 감싼 모양을
- * 돌려주는 호스트도 읽도록 `_global` 이 있으면 그쪽을 쓴다.
- *
- * @param G7Core G7Core 전역 객체
- * @returns activeModal·modalStack 을 담은 전역 상태
- * @since engine-v1.75.2
- */
-function modalGlobalState(G7Core: any): { activeModal?: string | null; modalStack?: string[] } {
-  const state = G7Core.state?.get?.() || {};
-
-  return state._global && typeof state._global === 'object' ? state._global : state;
-}
-
-/**
  * 모달 관리 API 초기화
  */
 function initModalAPI(G7Core: any): void {
@@ -2976,16 +2514,17 @@ function initModalAPI(G7Core: any): void {
      * @param modalId 확인할 모달의 ID
      */
     isOpen: (modalId: string) => {
-      const global = modalGlobalState(G7Core);
-      return global.activeModal === modalId ||
-             global.modalStack?.includes(modalId) ||
+      const state = G7Core.state.get();
+      return state._global?.activeModal === modalId ||
+             state._global?.modalStack?.includes(modalId) ||
              false;
     },
     /**
      * 현재 열린 모달 스택을 반환합니다.
      */
     getStack: () => {
-      return modalGlobalState(G7Core).modalStack || [];
+      const state = G7Core.state.get();
+      return state._global?.modalStack || [];
     },
   };
 
@@ -3273,7 +2812,7 @@ function initCoreAPIs(G7Core: any, deps: G7CoreDependencies): void {
   // options.transitionOverlayTarget: 호출별 transition_overlay.target 동적 override (@since engine-v1.36.0)
   G7Core.updateQueryParams = async (
     newPath: string,
-    options?: { transitionOverlayTarget?: string; refetchDataSourceIds?: string[] }
+    options?: { transitionOverlayTarget?: string }
   ) => {
     const templateApp = (window as any).__templateApp;
     if (templateApp?.updateQueryParams) {
@@ -3349,16 +2888,6 @@ function initSlotAPI(G7Core: any, deps: G7CoreDependencies): void {
   };
 
   /**
-   * 엔진 안전 스위치 — 표현식 컴파일 캐시·AST 캐시·computed 스코프 물려받기를 기능별로 끈다.
-   *
-   * 개발자 콘솔·확장 스크립트 전용이다(서버 설정·관리자 화면 없음):
-   * `G7Core.engineFlags.set({ computedScopeInheritance: false })`. 끄면 수정 전 계산 경로가 된다.
-   *
-   * @since engine-v1.74.0
-   */
-  G7Core.engineFlags = { get: getEngineFlags, set: setEngineFlags };
-
-  /**
    * ActionDispatcher를 가져옵니다.
    */
   G7Core.getActionDispatcher = () => {
@@ -3366,6 +2895,164 @@ function initSlotAPI(G7Core: any, deps: G7CoreDependencies): void {
   };
 
   logger.log('전역 객체 window.G7Core 슬롯 API에 노출됨 (getSlotContext, getDynamicRenderer 등)');
+}
+
+/**
+ * 위지윅 편집기 API 초기화
+ *
+ * 위지윅 레이아웃 편집기 관련 전역 API를 window.G7Core에 노출합니다.
+ *
+ * @since engine-v1.11.0
+ *
+ * @example
+ * ```ts
+ * // 편집 모드 확인
+ * if (G7Core.wysiwyg.isEditMode()) {
+ *   // 편집 모드 전용 로직
+ * }
+ *
+ * // 편집 모드로 진입
+ * G7Core.wysiwyg.enterEditMode('home', 'sirsoft-basic');
+ *
+ * // 편집 모드 종료
+ * G7Core.wysiwyg.exitEditMode();
+ * ```
+ */
+function initWysiwygEditorAPI(G7Core: any): void {
+  // 편집 모드 상태 (전역)
+  let editModeEnabled = false;
+  let currentLayoutName: string | null = null;
+  let currentTemplateId: string | null = null;
+
+  G7Core.wysiwyg = {
+    /**
+     * 현재 편집 모드 여부를 반환합니다.
+     *
+     * @returns boolean 편집 모드 여부
+     */
+    isEditMode: (): boolean => {
+      return editModeEnabled;
+    },
+
+    /**
+     * 편집 모드를 활성화합니다.
+     *
+     * @param layoutName 편집할 레이아웃명
+     * @param templateId 템플릿 ID
+     */
+    setEditMode: (layoutName: string, templateId: string): void => {
+      editModeEnabled = true;
+      currentLayoutName = layoutName;
+      currentTemplateId = templateId;
+      logger.log(`위지윅 편집 모드 활성화: ${layoutName} (${templateId})`);
+    },
+
+    /**
+     * 편집 모드를 비활성화합니다.
+     */
+    clearEditMode: (): void => {
+      editModeEnabled = false;
+      currentLayoutName = null;
+      currentTemplateId = null;
+      logger.log('위지윅 편집 모드 비활성화');
+    },
+
+    /**
+     * 현재 편집 중인 레이아웃명을 반환합니다.
+     *
+     * @returns string | null 레이아웃명 또는 null
+     */
+    getCurrentLayoutName: (): string | null => {
+      return currentLayoutName;
+    },
+
+    /**
+     * 현재 편집 중인 템플릿 ID를 반환합니다.
+     *
+     * @returns string | null 템플릿 ID 또는 null
+     */
+    getCurrentTemplateId: (): string | null => {
+      return currentTemplateId;
+    },
+
+    /**
+     * URL 쿼리 파라미터에서 편집 모드 여부를 확인합니다.
+     *
+     * @returns boolean 편집 모드 여부
+     */
+    isEditModeFromUrl: (): boolean => {
+      if (typeof window === 'undefined') {
+        return false;
+      }
+      const params = new URLSearchParams(window.location.search);
+      return params.get('mode') === 'edit';
+    },
+
+    /**
+     * 편집 모드 URL을 생성합니다.
+     * 라우트 기반 URL 형식: /{route}?mode=edit&template={templateId}
+     *
+     * @param route 라우트 경로 (예: '/', '/shop', '/board/posts')
+     * @param templateId 템플릿 ID (예: 'sirsoft-basic')
+     * @returns string 편집 모드 URL
+     */
+    getEditModeUrl: (route: string, templateId: string): string => {
+      const baseUrl = window.location.origin;
+      // 라우트가 '/'로 시작하지 않으면 추가
+      const normalizedRoute = route.startsWith('/') ? route : `/${route}`;
+      return `${baseUrl}${normalizedRoute}?mode=edit&template=${encodeURIComponent(templateId)}`;
+    },
+
+    /**
+     * 편집 모드로 진입합니다. (페이지 이동)
+     * 라우트 기반으로 편집 모드에 진입합니다.
+     *
+     * @param route 라우트 경로 (예: '/', '/shop', '/board/posts')
+     * @param templateId 템플릿 ID (예: 'sirsoft-basic')
+     */
+    enterEditMode: (route: string, templateId: string): void => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+      const url = G7Core.wysiwyg.getEditModeUrl(route, templateId);
+      window.location.href = url;
+    },
+
+    /**
+     * 편집 모드를 종료하고 일반 페이지로 이동합니다.
+     * mode, template 파라미터를 제거하고 현재 라우트에 머무릅니다.
+     */
+    exitEditMode: (): void => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      params.delete('mode');
+      params.delete('template');
+      const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+      window.location.href = newUrl;
+    },
+
+    /**
+     * 위지윅 편집기 모듈 버전을 반환합니다.
+     *
+     * @returns string 버전 문자열
+     */
+    getVersion: (): string => {
+      return '1.0.0';
+    },
+
+    /**
+     * 현재 구현된 Phase를 반환합니다.
+     *
+     * @returns number Phase 번호
+     */
+    getPhase: (): number => {
+      return 1;
+    },
+  };
+
+  logger.log('전역 객체 window.G7Core 위지윅 편집기 API에 노출됨 (wysiwyg)');
 }
 
 /**
@@ -3389,27 +3076,8 @@ function initIdentityAPI(G7Core: any): void {
     /** 모달 launcher 등록 (템플릿 부트스트랩에서 호출) */
     setLauncher: IdentityGuardInterceptor.setLauncher.bind(IdentityGuardInterceptor),
 
-    /**
-     * 428 응답을 처리합니다 (challenge 모달 launcher 호출 후 성공 시 원 요청 재실행).
-     *
-     * ActionDispatcher.handleApiCall 의 자동 인터셉트와 동일한 launcher 플로우를,
-     * 직접 fetch/G7Core.api 로 요청하는 모듈 JS 핸들러(예: 입금확인)가 재사용하기 위한 진입점.
-     * verify 성공 시 재실행 Response 를, 취소/실패/return_request 부재 시 null 을 반환한다.
-     */
-    handle: IdentityGuardInterceptor.handle.bind(IdentityGuardInterceptor),
-
-    /** 응답이 428 IDV 요구 응답인지 판별 */
-    isIdentityRequired: IdentityGuardInterceptor.isIdentityRequired.bind(IdentityGuardInterceptor),
-
     /** 등록된 launcher 가 있는지 여부 */
     hasLauncher: IdentityGuardInterceptor.hasLauncher.bind(IdentityGuardInterceptor),
-
-    /**
-     * challenge 가 자기 고유의 도메인 안내(성인인증 실패 등)를 사용자에게 표출했음을 표시.
-     * 호출 시 코어 toast 핸들러가 동일 사이클의 generic IDV 가드 토스트("본인 확인이 필요합니다") 1건을 skip.
-     * provider 플러그인이 "본인확인 성공 + 부가목적 미달" 실패를 안내한 직후 호출한다.
-     */
-    markDomainNoticeShown: IdentityGuardInterceptor.markDomainNoticeShown.bind(IdentityGuardInterceptor),
 
     /** external_redirect 흐름 — sessionStorage stash + window.location 이동 */
     redirectExternally: IdentityGuardInterceptor.redirectExternally.bind(IdentityGuardInterceptor),
@@ -3452,17 +3120,9 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
 
   const G7Core = (window as any).G7Core;
 
-  // 코어 런타임 표면 노출 (편집기 lazy 번들이 __runtime 재export shim 으로 공유)
-  initCoreRuntimeExports(G7Core);
-
   // 각 API 그룹 초기화
   initComponentEventSystem(G7Core);
-  initConsentAPI(G7Core);
-  initStateContractsAPI(G7Core);
-  // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)
-  initLayoutEditorStub(G7Core);
   initCoreAPIs(G7Core, deps);
-  initAssetUrlAPI(G7Core);
   initTranslationAPI(G7Core, deps);
   initHelperAPIs(G7Core, deps);
   initDispatchAPI(G7Core);
@@ -3477,6 +3137,7 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   initPluginAPI(G7Core);
   initModuleAPI(G7Core);
   initSlotAPI(G7Core, deps);
+  initWysiwygEditorAPI(G7Core);
   initIdentityAPI(G7Core);
 
   logger.log('G7Core 전역 객체 초기화 완료');
@@ -4105,86 +3766,6 @@ export function initDevToolsInterface(): void {
  * G7DevTools.server.dumpState()
  * ```
  */
-/**
- * DevTools 디버그 전용 모듈(패널 UI/진단엔진/서버커넥터/스타일추적기)의 lazy 번들 타입.
- * @since engine-v1.51.0
- */
-interface DevToolsBundle {
-  DiagnosticEngine: any;
-  getServerConnector: () => any;
-  getStyleTracker: () => any;
-  DevToolsPanel: any;
-}
-
-let devToolsBundleLoadPromise: Promise<DevToolsBundle> | null = null;
-
-/**
- * DevTools lazy 번들(devtools.min.js)을 로드하고 디버그 전용 모듈 4종을 반환한다.
- *
- * @since engine-v1.51.0
- *
- * 디버그 모드에서만 호출된다. 이미 로드됨(멱등)/진행 중(in-flight 병합)/미로드(1회 주입)
- * 를 구분한다.
- *
- * @returns DevTools 디버그 전용 모듈 묶음
- * @throws {Error} 스크립트 로드 실패 또는 모듈 미노출 시
- */
-export function loadDevToolsBundle(): Promise<DevToolsBundle> {
-  const G7Core = (window as any).G7Core;
-
-  if (G7Core?.__devtools) {
-    return Promise.resolve(G7Core.__devtools as DevToolsBundle);
-  }
-  if (devToolsBundleLoadPromise) {
-    return devToolsBundleLoadPromise;
-  }
-
-  devToolsBundleLoadPromise = new Promise<DevToolsBundle>((resolve, reject) => {
-    const src = (window as any).G7Config?.coreDevToolsAsset || '/build/core/devtools.min.js';
-    const scriptId = 'g7-devtools-bundle';
-
-    const onReady = () => {
-      const bundle = (window as any).G7Core?.__devtools;
-      if (bundle) {
-        resolve(bundle as DevToolsBundle);
-      } else {
-        reject(new Error('DevTools 번들 로드됨 — 그러나 __devtools 미노출'));
-      }
-    };
-
-    (window as any).G7Core = (window as any).G7Core || {};
-    (window as any).G7Core.__onDevToolsReady = onReady;
-
-    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
-    if (existing) {
-      existing.addEventListener('load', onReady, { once: true });
-      existing.addEventListener(
-        'error',
-        () => reject(new Error(`DevTools 번들 로드 실패: ${src}`)),
-        { once: true }
-      );
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = src;
-    script.async = false;
-    script.addEventListener('load', onReady, { once: true });
-    script.addEventListener(
-      'error',
-      () => {
-        devToolsBundleLoadPromise = null;
-        reject(new Error(`DevTools 번들 로드 실패: ${src}`));
-      },
-      { once: true }
-    );
-    document.head.appendChild(script);
-  });
-
-  return devToolsBundleLoadPromise;
-}
-
 export function initDevToolsAPI(): void {
   const G7Core = (window as any).G7Core;
   if (!G7Core) {
@@ -4194,7 +3775,7 @@ export function initDevToolsAPI(): void {
   const devToolsCore = G7DevToolsCore.getInstance();
   devToolsCore.initialize();
 
-  // DevTools가 비활성화된 경우 최소 API만 노출 (devtools.min.js 미로드 — 초기 payload 절감)
+  // DevTools가 비활성화된 경우 최소 API만 노출
   if (!devToolsCore.isEnabled()) {
     (window as any).G7DevTools = {
       isEnabled: () => false,
@@ -4207,31 +3788,6 @@ export function initDevToolsAPI(): void {
     logger.log('G7DevTools 비활성화됨 (디버그 모드 꺼짐)');
     return;
   }
-
-  // 디버그 모드 — DevTools lazy 번들 로드 후 전체 API 활성화 (fire-and-forget)
-  void setupDevToolsWhenEnabled(G7Core, devToolsCore);
-}
-
-/**
- * 디버그 모드에서 DevTools lazy 번들을 로드하고 전체 API 를 활성화한다.
- *
- * @since engine-v1.51.0
- *
- * @param G7Core - window.G7Core 전역 객체
- * @param devToolsCore - G7DevToolsCore 싱글톤 인스턴스
- */
-async function setupDevToolsWhenEnabled(G7Core: any, devToolsCore: any): Promise<void> {
-  let bundle: DevToolsBundle;
-  try {
-    bundle = await loadDevToolsBundle();
-  } catch (error) {
-    logger.warn('DevTools 번들 로드 실패 — 최소 API 로 폴백:', error);
-    (window as any).G7DevTools = { isEnabled: () => false, enable: () => {} };
-    flushEarlyLogs();
-    return;
-  }
-
-  const { DiagnosticEngine, getServerConnector, getStyleTracker } = bundle;
 
   // G7Core.devTools 인터페이스 초기화 (renderItemChildren 등에서 사용)
   initDevToolsInterface();
@@ -4507,8 +4063,8 @@ async function setupDevToolsWhenEnabled(G7Core: any, devToolsCore: any): Promise
 
   logger.log('G7DevTools 전역 객체 초기화 완료 (window.G7DevTools)');
 
-  // DevToolsPanel UI 렌더링 (lazy 번들에서 로드한 컴포넌트 전달)
-  renderDevToolsPanel(bundle.DevToolsPanel);
+  // DevToolsPanel UI 렌더링
+  renderDevToolsPanel();
 }
 
 /**
@@ -4516,10 +4072,8 @@ async function setupDevToolsWhenEnabled(G7Core: any, devToolsCore: any): Promise
  *
  * 별도의 DOM 컨테이너를 생성하여 메인 앱과 독립적으로 렌더링합니다.
  * 디버그 모드가 활성화된 경우에만 렌더링됩니다.
- *
- * @param DevToolsPanel - lazy 번들(devtools.min.js)에서 로드한 패널 컴포넌트
  */
-function renderDevToolsPanel(DevToolsPanel: any): void {
+function renderDevToolsPanel(): void {
   // 이미 렌더링되어 있으면 스킵
   if (document.getElementById('g7-devtools-root')) {
     logger.log('DevToolsPanel 이미 렌더링됨');

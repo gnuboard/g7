@@ -10,7 +10,6 @@ import React, { useState, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-import { secretContentHeaders } from '../../../support/secretContentHeaders';
 import { Div } from '../../basic/Div';
 import { Button } from '../../basic/Button';
 import { Span } from '../../basic/Span';
@@ -20,7 +19,6 @@ import { Img } from '../../basic/Img';
 
 import type { Attachment, PendingFile } from './types';
 import { getFileIcon, t } from './utils';
-import { isCrossOriginAssetUrl } from '../assetOrigin';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -81,23 +79,13 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
       return;
     }
 
-    // 공개 자산 디스크(S3/CDN)가 준 교차 출처 URL 은 인증이 필요 없는 공개 자산이다.
-    // XHR 로 가져오면 CORS 미설정 CDN 에서 실패하므로 URL 을 그대로 사용한다.
-    if (isCrossOriginAssetUrl(downloadUrl)) {
-      setAuthenticatedImageUrl(downloadUrl);
-      return;
-    }
-
     let isMounted = true;
     let objectUrl: string | undefined;
 
     const loadAuthenticatedImage = async () => {
       try {
-        // 비밀글 첨부는 서버가 열람 권한을 재확인한다. globalHeaders 는 이 경로에
-        // 적용되지 않으므로 열람 확인 토큰을 직접 싣는다 (없으면 빈 객체라 영향 없음).
         const blob = await G7Core.api.get(downloadUrl, {
           responseType: 'blob',
-          headers: secretContentHeaders(),
         });
         if (isMounted && blob) {
           objectUrl = URL.createObjectURL(blob);
@@ -125,7 +113,6 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
     <Div
       ref={setNodeRef}
       style={style}
-      data-uploader-item=""
       className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
     >
       {/* 썸네일 영역 */}
@@ -161,9 +148,9 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
         {/* 업로드/압축 진행률 오버레이 */}
         {(isUploading || isCompressing) && (
           <Div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
-            <Div className="w-3/4 h-2 bg-gray-700 dark:bg-gray-600 rounded-full overflow-hidden">
+            <Div className="w-3/4 h-2 bg-gray-700 rounded-full overflow-hidden">
               <Div
-                className="h-full bg-blue-500 dark:bg-blue-400 transition-all"
+                className="h-full bg-blue-500 transition-all"
                 style={{ width: `${progress}%` }}
               />
             </Div>
@@ -173,7 +160,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
 
         {/* 에러 오버레이 */}
         {hasError && (
-          <Div className="absolute inset-0 bg-red-500/50 dark:bg-red-600/50 flex items-center justify-center">
+          <Div className="absolute inset-0 bg-red-500/50 flex items-center justify-center">
             <I className="fa-solid fa-exclamation-triangle text-2xl text-white" />
           </Div>
         )}
@@ -182,7 +169,6 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
         {onPrimaryClick && (
           <Button
             type="button"
-            data-uploader-action="primary"
             onClick={(e) => {
               e.stopPropagation();
               onPrimaryClick();
@@ -190,46 +176,40 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
             className={`absolute top-1.5 left-1.5 z-10 p-1 rounded-full transition-colors ${
               isPrimary
                 ? 'bg-yellow-500 text-white'
-                : 'bg-gray-800/50 text-gray-300 hover:bg-yellow-500 hover:text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                : 'bg-gray-800/50 text-gray-300 hover:bg-yellow-500 hover:text-white opacity-0 group-hover:opacity-100'
             }`}
             title={isPrimary ? t('attachment.primary_image') : t('attachment.set_as_primary')}
-            aria-label={isPrimary ? t('attachment.primary_image') : t('attachment.set_as_primary')}
           >
-            <I className="fa-solid fa-star text-xs" aria-hidden="true" />
+            <I className="fa-solid fa-star text-xs" />
           </Button>
         )}
 
-        {/* 호버 시 액션 버튼들 — 키보드 초점이 썸네일 안에 있을 때도 보여야 어느 단추에 초점이 있는지 보인다 */}
-        <Div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 group-focus-within:bg-black/40 transition-colors flex items-start justify-end p-1 gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+        {/* 호버 시 액션 버튼들 */}
+        <Div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-start justify-end p-1 gap-1 opacity-0 group-hover:opacity-100">
           {/* 드래그 핸들 */}
           <Button
             type="button"
-            data-uploader-action="drag"
             {...attributes}
             {...listeners}
             className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-gray-600 dark:text-gray-300 hover:bg-white cursor-grab active:cursor-grabbing"
             title={t('attachment.drag_to_reorder')}
-            aria-label={t('attachment.drag_to_reorder')}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 아이콘만 있는 단추 — 글꼴 아이콘의 CSS 글리프가 title 보다 먼저 이름으로 잡히므로 이름은 aria-label 로 달고 아이콘은 숨긴다 */}
-            <I className="fa-solid fa-grip-vertical text-sm" aria-hidden="true" />
+            <I className="fa-solid fa-grip-vertical text-sm" />
           </Button>
 
           {/* 다운로드 버튼 (기존 첨부파일만) */}
           {!isPending && onDownload && (
             <Button
               type="button"
-              data-uploader-action="download"
               onClick={(e) => {
                 e.stopPropagation();
                 onDownload();
               }}
               className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-blue-500 hover:bg-white"
               title={t('common.download')}
-              aria-label={t('common.download')}
             >
-              <I className="fa-solid fa-download text-sm" aria-hidden="true" />
+              <I className="fa-solid fa-download text-sm" />
             </Button>
           )}
 
@@ -237,23 +217,20 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
           {hasError && onRetry && (
             <Button
               type="button"
-              data-uploader-action="retry"
               onClick={(e) => {
                 e.stopPropagation();
                 onRetry();
               }}
               className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-orange-500 hover:bg-white"
               title={t('common.retry')}
-              aria-label={t('common.retry')}
             >
-              <I className="fa-solid fa-arrow-rotate-right text-sm" aria-hidden="true" />
+              <I className="fa-solid fa-arrow-rotate-right text-sm" />
             </Button>
           )}
 
           {/* 삭제 버튼 */}
           <Button
             type="button"
-            data-uploader-action="remove"
             onClick={(e) => {
               e.stopPropagation();
               onRemove();
@@ -261,9 +238,8 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
             disabled={isUploading || isCompressing}
             className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-red-500 hover:bg-white disabled:opacity-50"
             title={t('common.delete')}
-            aria-label={t('common.delete')}
           >
-            <I className="fa-solid fa-times text-sm" aria-hidden="true" />
+            <I className="fa-solid fa-times text-sm" />
           </Button>
         </Div>
       </Div>

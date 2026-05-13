@@ -8,15 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
-use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 
 /**
  * 주문 옵션 모델
- *
- * @property int $quantity 이 행이 지금 가진 수량(분할로 떼어 낸 수량은 빠져 있음)
- * @property int $cancelled_quantity 이 행에서 취소로 떼어 낸 수량의 누적(이력 — 집계 감산항 아님)
  */
 class OrderOption extends Model
 {
@@ -28,16 +24,11 @@ class OrderOption extends Model
      * @var array<string, array>
      */
     public static array $activityLogFields = [
-        'option_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.option_status', 'type' => 'enum', 'enum' => OrderStatusEnum::class],
+        'option_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.option_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum::class],
         'quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.quantity', 'type' => 'number'],
         'cancelled_quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.cancelled_quantity', 'type' => 'number'],
     ];
 
-    /**
-     * 모델 팩토리를 반환합니다.
-     *
-     * @return OrderOptionFactory 주문 옵션 팩토리
-     */
     protected static function newFactory()
     {
         return OrderOptionFactory::new();
@@ -67,7 +58,6 @@ class OrderOption extends Model
         'subtotal_weight',
         'subtotal_volume',
         'unit_price',
-        'additional_options_total',
         'subtotal_price',
         'subtotal_discount_amount',
         'product_coupon_discount_amount',
@@ -77,33 +67,27 @@ class OrderOption extends Model
         'subtotal_points_used_amount',
         'subtotal_deposit_used_amount',
         'subtotal_paid_amount',
-        'subtotal_cash_equivalent_amount',
         'subtotal_tax_amount',
         'subtotal_tax_free_amount',
         'subtotal_earned_points_amount',
         'product_snapshot',
         'option_snapshot',
-        'additional_options_snapshot',
         'promotions_applied_snapshot',
         'confirmed_at',
-        'delivered_at',
         'external_option_id',
         'external_meta',
         // 다중 통화 컬럼 (JSON)
         'mc_unit_price',
-        'mc_additional_options_total',
         'mc_subtotal_price',
         'mc_product_coupon_discount_amount',
         'mc_order_coupon_discount_amount',
         'mc_coupon_discount_amount',
         'mc_code_discount_amount',
         'mc_subtotal_points_used_amount',
-        'mc_subtotal_earned_points_amount',
         'mc_subtotal_deposit_used_amount',
         'mc_subtotal_tax_amount',
         'mc_subtotal_tax_free_amount',
         'mc_final_amount',
-        'mc_subtotal_cash_equivalent_amount',
     ];
 
     protected $casts = [
@@ -114,7 +98,6 @@ class OrderOption extends Model
         'subtotal_weight' => 'decimal:3',
         'subtotal_volume' => 'decimal:3',
         'unit_price' => 'decimal:2',
-        'additional_options_total' => 'decimal:2',
         'subtotal_price' => 'decimal:2',
         'subtotal_discount_amount' => 'decimal:2',
         'product_coupon_discount_amount' => 'decimal:2',
@@ -124,7 +107,6 @@ class OrderOption extends Model
         'subtotal_points_used_amount' => 'decimal:2',
         'subtotal_deposit_used_amount' => 'decimal:2',
         'subtotal_paid_amount' => 'decimal:2',
-        'subtotal_cash_equivalent_amount' => 'decimal:2',
         'subtotal_tax_amount' => 'decimal:2',
         'subtotal_tax_free_amount' => 'decimal:2',
         'subtotal_earned_points_amount' => 'decimal:2',
@@ -134,29 +116,24 @@ class OrderOption extends Model
         'option_value' => 'array',
         'product_snapshot' => 'array',
         'option_snapshot' => 'array',
-        'additional_options_snapshot' => 'array',
         'promotions_applied_snapshot' => 'array',
         'external_meta' => 'array',
         'confirmed_at' => 'datetime',
-        'delivered_at' => 'datetime',
         'option_status' => OrderStatusEnum::class,
         'is_stock_deducted' => 'boolean',
         'source_type' => OrderOptionSourceTypeEnum::class,
         // 다중 통화 컬럼 (JSON)
         'mc_unit_price' => 'array',
-        'mc_additional_options_total' => 'array',
         'mc_subtotal_price' => 'array',
         'mc_product_coupon_discount_amount' => 'array',
         'mc_order_coupon_discount_amount' => 'array',
         'mc_coupon_discount_amount' => 'array',
         'mc_code_discount_amount' => 'array',
         'mc_subtotal_points_used_amount' => 'array',
-        'mc_subtotal_earned_points_amount' => 'array',
         'mc_subtotal_deposit_used_amount' => 'array',
         'mc_subtotal_tax_amount' => 'array',
         'mc_subtotal_tax_free_amount' => 'array',
         'mc_final_amount' => 'array',
-        'mc_subtotal_cash_equivalent_amount' => 'array',
     ];
 
     /**
@@ -274,61 +251,6 @@ class OrderOption extends Model
     }
 
     /**
-     * 주문 시점 스냅샷 기준 단가 정가를 구합니다.
-     *
-     * 옵션 스냅샷에 정가가 있으면 그 값을, 없으면 상품 정가에 옵션 조정액을 더한다 — 판매가가
-     * 조정액을 더해 저장되므로 정가도 같은 규칙이어야 한다(ProductOption::getListPrice,
-     * CalculationSnapshotPresenter 와 같은 식). 조정액을 빼먹으면 블루(+3,000) 옵션의 정가가
-     * 판매가보다 낮게 찍힌다(실측 2026-10-03: 정가 ¥4,000 / 판매가 ¥5,000).
-     *
-     * @return float|null 정가 (스냅샷에 정가 근거가 없으면 null)
-     */
-    public function getSnapshotListPrice(): ?float
-    {
-        return self::resolveListPriceFromSnapshots($this->option_snapshot ?? [], $this->product_snapshot ?? []);
-    }
-
-    /**
-     * 옵션·상품 스냅샷으로 단가 정가를 구합니다 — 주문 상품 정가 규칙의 단일 원천.
-     *
-     * 옵션 스냅샷 정가가 있으면 그 값, 없으면 상품 정가 + 옵션 조정액이다. 상품 정가도 없으면 null.
-     * 주문 상세 리소스(getSnapshotListPrice)와 클레임 비교 카드(CalculationSnapshotPresenter)가 함께 쓴다.
-     *
-     * @param  array  $optionSnapshot  옵션 스냅샷
-     * @param  array  $productSnapshot  상품 스냅샷
-     * @return float|null 정가 (근거가 없으면 null)
-     */
-    public static function resolveListPriceFromSnapshots(array $optionSnapshot, array $productSnapshot): ?float
-    {
-        if (isset($optionSnapshot['list_price'])) {
-            return (float) $optionSnapshot['list_price'];
-        }
-
-        $productListPrice = $productSnapshot['list_price'] ?? null;
-        if ($productListPrice === null) {
-            return null;
-        }
-
-        return (float) $productListPrice + (float) ($optionSnapshot['price_adjustment'] ?? 0);
-    }
-
-    /**
-     * 정가가 없으면 판매 단가(상품 판매가 + 옵션 조정액)로 대신한 단가 정가를 구합니다.
-     *
-     * 주문 상세가 정가 근거가 없을 때 판매 단가로 대신하는 것과 같은 규칙이다 — 클레임 비교 카드가 0 + 조정액을
-     * 정가로 쓰면 같은 주문의 두 화면 값이 갈린다.
-     *
-     * @param  array  $optionSnapshot  옵션 스냅샷
-     * @param  array  $productSnapshot  상품 스냅샷
-     * @return float 정가 또는 판매 단가
-     */
-    public static function resolveListOrUnitPriceFromSnapshots(array $optionSnapshot, array $productSnapshot): float
-    {
-        return self::resolveListPriceFromSnapshots($optionSnapshot, $productSnapshot)
-            ?? (float) ($productSnapshot['selling_price'] ?? 0) + (float) ($optionSnapshot['price_adjustment'] ?? 0);
-    }
-
-    /**
      * 할인 후 실결제 금액 계산
      *
      * @return float 실결제 금액
@@ -349,19 +271,5 @@ class OrderOption extends Model
     public function review(): HasOne
     {
         return $this->hasOne(ProductReview::class, 'order_option_id');
-    }
-
-    /**
-     * 구매 적립 마일리지 거래 관계
-     *
-     * 이 주문옵션에 대해 실제 발행된 구매 적립(purchase_earn) 거래입니다.
-     * FK 없이 order_option_id 컬럼만 참조하며, 적립예정액의 실제 적립 여부 판정에 사용됩니다.
-     *
-     * @return HasMany 구매 적립 거래와의 관계
-     */
-    public function purchaseEarnTransactions(): HasMany
-    {
-        return $this->hasMany(MileageTransaction::class, 'order_option_id')
-            ->where('type', MileageTransactionTypeEnum::PURCHASE_EARN->value);
     }
 }

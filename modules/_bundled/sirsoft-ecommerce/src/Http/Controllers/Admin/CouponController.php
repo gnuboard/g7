@@ -5,31 +5,21 @@ namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Ecommerce\Exceptions\CouponNotIssuableException;
-use Modules\Sirsoft\Ecommerce\Exceptions\CouponOperationException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\BulkUpdateCouponStatusRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CouponIssuesListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\CouponListRequest;
-use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\IssueCouponDirectRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreCouponRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateCouponRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\CouponCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\CouponIssueCollection;
-use Modules\Sirsoft\Ecommerce\Http\Resources\CouponIssueResource;
 use Modules\Sirsoft\Ecommerce\Http\Resources\CouponResource;
 use Modules\Sirsoft\Ecommerce\Services\CouponService;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 쿠폰 관리 컨트롤러
  */
 class CouponController extends AdminBaseController
 {
-    /**
-     * 쿠폰 서비스를 주입받습니다.
-     *
-     * @param  CouponService  $couponService  쿠폰 서비스
-     */
     public function __construct(
         private CouponService $couponService
     ) {}
@@ -37,8 +27,8 @@ class CouponController extends AdminBaseController
     /**
      * 쿠폰 목록 조회
      *
-     * @param  CouponListRequest  $request  목록 검색/필터 요청
-     * @return JsonResponse 쿠폰 목록 응답
+     * @param CouponListRequest $request
+     * @return JsonResponse
      */
     public function index(CouponListRequest $request): JsonResponse
     {
@@ -57,8 +47,8 @@ class CouponController extends AdminBaseController
     /**
      * 쿠폰 생성
      *
-     * @param  StoreCouponRequest  $request  쿠폰 생성 요청
-     * @return JsonResponse 생성된 쿠폰 응답
+     * @param StoreCouponRequest $request
+     * @return JsonResponse
      */
     public function store(StoreCouponRequest $request): JsonResponse
     {
@@ -75,8 +65,8 @@ class CouponController extends AdminBaseController
     /**
      * 쿠폰 상세 조회
      *
-     * @param  int  $id  쿠폰 ID
-     * @return JsonResponse 쿠폰 상세 응답
+     * @param int $id
+     * @return JsonResponse
      */
     public function show(int $id): JsonResponse
     {
@@ -100,9 +90,9 @@ class CouponController extends AdminBaseController
     /**
      * 쿠폰 수정
      *
-     * @param  UpdateCouponRequest  $request  쿠폰 수정 요청
-     * @param  int  $id  쿠폰 ID
-     * @return JsonResponse 수정된 쿠폰 응답
+     * @param UpdateCouponRequest $request
+     * @param int $id
+     * @return JsonResponse
      */
     public function update(UpdateCouponRequest $request, int $id): JsonResponse
     {
@@ -114,21 +104,11 @@ class CouponController extends AdminBaseController
                 'messages.coupons.updated',
                 new CouponResource($coupon)
             );
-        } catch (CouponOperationException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (\Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
-        } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -136,8 +116,8 @@ class CouponController extends AdminBaseController
     /**
      * 쿠폰 삭제
      *
-     * @param  int  $id  쿠폰 ID
-     * @return JsonResponse 삭제 결과 응답
+     * @param int $id
+     * @return JsonResponse
      */
     public function destroy(int $id): JsonResponse
     {
@@ -149,21 +129,11 @@ class CouponController extends AdminBaseController
                 'messages.coupons.deleted',
                 $result
             );
-        } catch (CouponOperationException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
+        } catch (\Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
                 400
-            );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
-        } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
             );
         }
     }
@@ -171,8 +141,8 @@ class CouponController extends AdminBaseController
     /**
      * 일괄 발급상태 변경
      *
-     * @param  BulkUpdateCouponStatusRequest  $request  일괄 상태 변경 요청
-     * @return JsonResponse 변경 결과 응답
+     * @param BulkUpdateCouponStatusRequest $request
+     * @return JsonResponse
      */
     public function bulkUpdateStatus(BulkUpdateCouponStatusRequest $request): JsonResponse
     {
@@ -193,104 +163,11 @@ class CouponController extends AdminBaseController
     }
 
     /**
-     * 쿠폰 직접 발급 (관리자가 지정한 회원들에게 즉시 발급)
-     *
-     * @param  IssueCouponDirectRequest  $request  직접 발급 요청(user_uuids)
-     * @param  int  $id  쿠폰 ID
-     * @return JsonResponse 발급 결과 응답(발급/스킵 건수)
-     */
-    public function issueDirect(IssueCouponDirectRequest $request, int $id): JsonResponse
-    {
-        try {
-            // 회원 식별은 uuid 로 받아 FormRequest 에서 내부 정수 ID 로 해석 (관리자 UI 는 uuid 만 노출)
-            $result = $this->couponService->issueDirectly($id, $request->resolvedUserIds());
-
-            $messageKey = empty($result['skipped'])
-                ? 'messages.coupons.direct_issued'
-                : 'messages.coupons.direct_issued_with_skip';
-
-            return ResponseHelper::moduleSuccess(
-                'sirsoft-ecommerce',
-                $messageKey,
-                $result,
-                200,
-                ['issued' => $result['issued'], 'skipped' => count($result['skipped']), 'count' => $result['issued']]
-            );
-        } catch (CouponNotIssuableException $e) {
-            // 발급기간 만료·수량 소진·발급중단 같은 발급 관문 거절은 운영자가 고칠 수 있는
-            // 도메인 조건이다. 500 으로 뭉개면 「작업 처리 중 오류가 발생했습니다」만 남아
-            // 무엇을 고쳐야 하는지 알 수 없다 — 사용자 다운로드 경로(UserCouponController)와
-            // 같이 사유 식별자를 메시지 키로 넘겨 400 으로 돌려준다.
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'messages.coupon.'.$e->getReason(),
-                400
-            );
-        } catch (CouponOperationException $e) {
-            // 도메인 규칙 위반 — 운영자에게 안내 가능한 상황이므로 기존 400 유지
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                400
-            );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
-        } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
-            );
-        }
-    }
-
-    /**
-     * 쿠폰 발급 취소 (미사용 발급 건을 취소 처리)
-     *
-     * @param  int  $id  쿠폰 ID
-     * @param  int  $issueId  발급 내역 ID
-     * @return JsonResponse 취소 결과 응답
-     */
-    public function cancelIssue(int $id, int $issueId): JsonResponse
-    {
-        try {
-            $issue = $this->couponService->cancelIssue($id, $issueId);
-
-            return ResponseHelper::moduleSuccess(
-                'sirsoft-ecommerce',
-                'messages.coupons.issue_cancelled',
-                new CouponIssueResource($issue)
-            );
-        } catch (CouponOperationException $e) {
-            // 취소 불가 사유(미존재/미사용 아님)를 전용 키로 안내 — 예외 메시지 원문 대신
-            // 키로 응답을 구성한다.
-            $messageKey = $e->getMessageKey();
-
-            return ResponseHelper::error(
-                $messageKey,
-                400,
-                null,
-                $e->getMessageParams()
-            );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
-        } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
-            return ResponseHelper::moduleError(
-                'sirsoft-ecommerce',
-                'exceptions.operation_failed',
-                500
-            );
-        }
-    }
-
-    /**
      * 쿠폰 발급 내역 조회
      *
-     * @param  CouponIssuesListRequest  $request  발급 내역 조회 요청
-     * @param  int  $id  쿠폰 ID
-     * @return JsonResponse 발급 내역 응답
+     * @param CouponIssuesListRequest $request
+     * @param int $id
+     * @return JsonResponse
      */
     public function issues(CouponIssuesListRequest $request, int $id): JsonResponse
     {
@@ -309,24 +186,11 @@ class CouponController extends AdminBaseController
                 'messages.coupons.issues_retrieved',
                 new CouponIssueCollection($issues)
             );
-        } catch (CouponOperationException $e) {
-            // 쿠폰 미존재 등 도메인 사유 — 운영자에게 안내 가능하므로 기존 400 유지
-            $messageKey = $e->getMessageKey();
-
-            return ResponseHelper::error(
-                $messageKey,
-                400,
-                null,
-                $e->getMessageParams()
-            );
-        } catch (AccessDeniedHttpException $e) {
-            return ResponseHelper::forbidden('auth.scope_denied');
         } catch (\Exception $e) {
-            // 서버 결함/인프라 장애 — 4xx 로 뭉개면 장애가 입력 오류로 위장된다
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
                 'exceptions.operation_failed',
-                500
+                400
             );
         }
     }

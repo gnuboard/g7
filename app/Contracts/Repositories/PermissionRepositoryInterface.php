@@ -32,14 +32,6 @@ interface PermissionRepositoryInterface
     public function findByIdentifier(string $identifier): ?Permission;
 
     /**
-     * 여러 ID로 권한을 일괄 조회합니다.
-     *
-     * @param  array<int>  $ids  권한 ID 배열
-     * @return Collection 권한 컬렉션 (ID 기준)
-     */
-    public function getByIds(array $ids): Collection;
-
-    /**
      * 새로운 권한을 생성합니다.
      *
      * @param  array  $data  권한 생성 데이터
@@ -111,13 +103,4 @@ interface PermissionRepositoryInterface
      * @return array 할당 가능한 권한 ID 배열
      */
     public function getAssignableIds(): array;
-
-    /**
-     * 스코프(self·role)가 붙었지만 라우트 스코프 메타(resource_route_key·owner_key)가 없는
-     * 역할-권한 부여를 조회합니다.
-     *
-     * @param  array<int, string>  $exemptIdentifiers  쿼리 스코프가 정본이라 제외할 권한 식별자
-     * @return array<int, array{role: string, permission: string, scope_type: string}> 부여 목록
-     */
-    public function getScopedGrantsWithoutOwnerMetadata(array $exemptIdentifiers): array;
 }

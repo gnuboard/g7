@@ -2,82 +2,43 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
-use App\Extension\HookManager;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\MissingValue;
-use Modules\Sirsoft\Ecommerce\Http\Resources\Concerns\LocalizesCountryName;
-use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
-use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesAdditionalOptions;
-use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesClaims;
-use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
-use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 
 /**
  * 주문 목록 리소스
  */
 class OrderListResource extends BaseApiResource
 {
-    use HasMultiCurrencyPrices;
-    use LocalizesCountryName;
-    use SummarizesAdditionalOptions;
-    use SummarizesClaims;
-
     /**
      * 리소스를 배열로 변환
      *
-     * @param  Request  $request  요청
-     * @return array 관리자 주문 목록 리소스 배열
+     * @param Request $request 요청
+     * @return array
      */
     public function toArray(Request $request): array
     {
-        // 주문 시점 기준 통화 — 과거 주문의 *_formatted 는 설정 변경과 무관하게 이 통화로 고정 표기한다.
-        $orderCurrency = $this->resolveOrderBaseCurrencyCode($this->resource);
-        // 주문 시점 통화 스냅샷 — 소수 자릿수를 현재 설정이 아닌 주문 시점 값으로 고정 (공개 #91 후속).
-        $currencySnapshot = $this->resource->currency_snapshot ?? null;
-        $this->withCurrencySnapshot($currencySnapshot);
-
-        // 결제 통화(order_currency) — 유저가 선택·결제한 통화. base 통화와 다를 때 함께 표기.
-        $paymentCurrency = $this->currency
-            ?: (data_get($this->currency_snapshot, 'order_currency') ?: $orderCurrency);
-
-        // OrderCollection 은 이 배열을 `toArray()` 로 직접 받아 응답에 싣는다 — Laravel 이 응답
-        // 직전에 수행하는 MissingValue 제거를 거치지 않으므로 여기서 걸러낸다.
-        return $this->withoutMissing([
+        return [
             'id' => $this->id,
             'order_number' => $this->order_number,
             'order_status' => $this->order_status,
             'order_status_label' => $this->order_status ? $this->order_status->label() : null,
             'order_status_variant' => $this->order_status ? $this->order_status->variant() : null,
-            // 아이콘 의미 토큰(status-*) — 글리프 이름이 아니다. 템플릿 Icon 이 해석한다.
-            'order_status_icon' => $this->order_status ? $this->order_status->icon() : null,
-            // 금액 표기 기준 통화(base) + 결제 통화(order_currency) + 교차 통화 여부.
-            'base_currency' => $orderCurrency,
-            'payment_currency' => $paymentCurrency,
-            'is_cross_currency' => $paymentCurrency !== $orderCurrency,
-            // 부분취소 파생 플래그 — 일부 옵션만 취소된 주문(별도 order_status 아님). 보조 뱃지 표시용.
-            'is_partially_cancelled' => $this->resolveIsPartiallyCancelled(),
 
             // 금액
-            'total_amount' => $this->roundToOrderCurrency($this->total_amount, $orderCurrency),
-            'total_amount_formatted' => $this->formatOrderCurrency($this->total_amount, $orderCurrency),
-            'total_shipping_amount' => $this->roundToOrderCurrency($this->total_shipping_amount, $orderCurrency),
-            'total_shipping_amount_formatted' => $this->formatOrderCurrency($this->total_shipping_amount, $orderCurrency),
-            'total_paid_amount' => $this->roundToOrderCurrency($this->total_paid_amount, $orderCurrency),
-            'total_paid_amount_formatted' => $this->formatOrderCurrency($this->total_paid_amount, $orderCurrency),
-            'total_unpaid_amount' => $this->roundToOrderCurrency($this->total_amount - $this->total_paid_amount, $orderCurrency),
-            'total_unpaid_amount_formatted' => $this->formatOrderCurrency($this->total_amount - $this->total_paid_amount, $orderCurrency),
-            'total_cancelled_amount' => $this->roundToOrderCurrency($this->total_cancelled_amount, $orderCurrency),
-            'total_refunded_amount' => $this->roundToOrderCurrency($this->total_refunded_amount, $orderCurrency),
+            'total_amount' => $this->total_amount,
+            'total_amount_formatted' => number_format($this->total_amount).'원',
+            'total_shipping_amount' => $this->total_shipping_amount,
+            'total_shipping_amount_formatted' => number_format($this->total_shipping_amount).'원',
+            'total_paid_amount' => $this->total_paid_amount,
+            'total_paid_amount_formatted' => number_format($this->total_paid_amount).'원',
+            'total_unpaid_amount' => $this->total_amount - $this->total_paid_amount,
+            'total_unpaid_amount_formatted' => number_format($this->total_amount - $this->total_paid_amount).'원',
+            'total_cancelled_amount' => $this->total_cancelled_amount,
+            'total_refunded_amount' => $this->total_refunded_amount,
 
-            // 마일리지 (목록 표시용 — 사용/적립). 마일리지는 base_currency 단일 정산.
-            'total_points_used_amount' => $this->roundToOrderCurrency($this->total_points_used_amount, $orderCurrency),
-            'total_points_used_amount_formatted' => $this->formatOrderCurrency($this->total_points_used_amount, $orderCurrency),
-            'total_earned_points_amount' => $this->roundToOrderCurrency($this->total_earned_points_amount, $orderCurrency),
-            'total_earned_points_amount_formatted' => $this->formatEarnedPoints($this->total_earned_points_amount),
-
-            // 일시 — raw ISO 와 사용자 타임존 변환된 *_formatted 를 함께 제공 (OrderResource 와 동일 패턴)
-            'ordered_at' => $this->ordered_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: paired with *_formatted user-tz field
+            // 일시
+            'ordered_at' => $this->ordered_at?->toIso8601String(),
             'ordered_at_formatted' => $this->formatDateTimeStringForUser($this->ordered_at),
 
             // 구매환경
@@ -94,27 +55,23 @@ class OrderListResource extends BaseApiResource
             ]),
 
             // 첫 번째 옵션 (대표 상품 표시용)
-            'first_option' => $this->whenFirstOptionAvailable(function ($firstOption) {
+            'first_option' => $this->whenLoaded('options', function () {
+                $firstOption = $this->options->first();
                 $productName = $firstOption?->product_name;
-                // 매직 프로퍼티(Eloquent accessor)를 reset() 에 직접 넘기면 PHP 8.3 에서
-                // "Indirect modification of overloaded property" 경고가 발생하므로 지역 변수로 받는다.
-                $optionName = $firstOption?->product_option_name;
 
                 return [
                     'product_name' => is_array($productName)
                         ? ($productName[app()->getLocale()] ?? reset($productName) ?: '')
                         : ($productName ?? ''),
-                    'product_option_name' => is_array($optionName)
-                        ? ($optionName[app()->getLocale()] ?? reset($optionName) ?: '')
-                        : ($optionName ?? ''),
+                    'product_option_name' => is_array($firstOption?->product_option_name)
+                        ? ($firstOption->product_option_name[app()->getLocale()] ?? reset($firstOption->product_option_name) ?: '')
+                        : ($firstOption?->product_option_name ?? ''),
                     'product_code' => $firstOption?->product_snapshot['product_code'] ?? null,
                     'quantity' => $firstOption?->quantity,
                     'thumbnail_url' => $firstOption?->product_snapshot['thumbnail_url'] ?? null,
-                    // 추가옵션 요약 (스냅샷 기반 — 첫 1건 + "외 N건", custom_text 병기)
-                    'additional_options_summary' => $this->summarizeAdditionalOptions($firstOption),
                 ];
             }),
-            'options_count' => $this->resolveOptionsCount(),
+            'options_count' => $this->whenLoaded('options', fn () => $this->options->count()),
 
             // 주문자/수령인
             'address' => $this->whenLoaded('shippingAddress', fn () => [
@@ -127,23 +84,17 @@ class OrderListResource extends BaseApiResource
             // 결제
             'payment' => $this->whenLoaded('payment', fn () => [
                 'payment_method' => $this->payment->payment_method,
-                'payment_method_label' => $this->payment->payment_method ? $this->payment->paymentMethodLabel() : null,
-                // 화면 표시용 라벨 — 간편결제처럼 PG 만 아는 원 수단은 결제 플러그인이 채운다(없으면 null → 화면은 기본 라벨)
-                'payment_method_display_label' => $this->resolvePaymentMethodDisplayLabel(),
+                'payment_method_label' => $this->payment->payment_method ? $this->payment->payment_method->label() : null,
             ]),
 
-            // 배송 (대표 1건)
-            //
-            // 목록 조회는 `firstShipping` 만 로드한다. 종전 호출자(전체 `shippings` 를 로드하는
-            // 경로)도 그대로 동작하도록 두 관계를 모두 본다 — 어느 쪽도 로드돼 있지 않으면
-            // 필드 자체를 싣지 않는다(빈 객체 누출 방지).
-            'shipping' => $this->whenAnyShippingLoaded(function () {
-                $shipping = $this->resolveRepresentativeShipping();
+            // 배송 (첫 번째)
+            'shipping' => $this->whenLoaded('shippings', function () {
+                $shipping = $this->shippings->first();
 
                 return [
                     'shipping_type' => $shipping?->shipping_type,
                     'shipping_type_label' => $shipping?->shipping_type
-                        ? ShippingType::getCachedByCode($shipping->shipping_type)?->getLocalizedName()
+                        ? \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($shipping->shipping_type)?->getLocalizedName()
                         : null,
                     'shipping_method_label' => $this->resolveSnapshotMethodLabel($shipping),
                     'carrier_name' => $shipping?->carrier?->getLocalizedName(),
@@ -151,138 +102,9 @@ class OrderListResource extends BaseApiResource
                 ];
             }),
 
-            // 클레임 요약 (D22 — '클레임' 컬럼). 로드 여부는 Repository 가 정하며 목록은
-            // 항상 싣는다 — 컬럼을 끄더라도 응답에는 있다(표시 여부는 화면의 판단이다).
-            'claim_summary' => $this->resolveClaimSummary(),
-
             // 권한 정보 (is_owner + abilities)
             ...$this->resourceMeta($request),
-        ]);
-    }
-
-    /**
-     * 대표 옵션이 확보된 경우에만 콜백 결과를 반환합니다.
-     *
-     * 목록 경로는 `firstOption`(대표 1건)만 로드한다. 상세/일괄 경로처럼 `options` 전량이
-     * 로드된 컬렉션도 같은 필드를 그리므로 두 경로 모두 받는다. 어느 쪽도 로드되지 않았으면
-     * 필드 자체를 내보내지 않는다.
-     *
-     * @param  callable  $callback  대표 옵션을 받아 표시용 배열을 만드는 콜백
-     * @return array<string, mixed>|MissingValue 표시용 배열 또는 미충족 표식
-     */
-    private function whenFirstOptionAvailable(callable $callback): array|MissingValue
-    {
-        if ($this->resource->relationLoaded('firstOption')) {
-            return $callback($this->resource->firstOption);
-        }
-
-        if ($this->resource->relationLoaded('options')) {
-            return $callback($this->resource->options->first());
-        }
-
-        return new MissingValue;
-    }
-
-    /**
-     * 배송 관계가 어느 형태로든 로드돼 있을 때만 콜백 결과를 싣습니다.
-     *
-     * 목록은 대표 1건(`firstShipping`)만 로드하고, 전체를 로드하는 종전 경로도 남아 있다.
-     * 둘 다 없으면 `MissingValue` 를 돌려 필드를 통째로 뺀다 — 로드하지 않은 관계를 빈 값으로
-     * 채우면 "배송 정보가 없다" 는 사실이 아닌 단언이 응답에 실린다.
-     *
-     * @param  callable  $callback  배송 표현을 만드는 콜백
-     * @return array<string, mixed>|MissingValue 배송 표현 또는 미충족 표식
-     */
-    private function whenAnyShippingLoaded(callable $callback): array|MissingValue
-    {
-        if (
-            $this->resource->relationLoaded('firstShipping')
-            || $this->resource->relationLoaded('shippings')
-        ) {
-            return $callback();
-        }
-
-        return new MissingValue;
-    }
-
-    /**
-     * 대표 배송 레코드를 반환합니다.
-     *
-     * @return OrderShipping|null 대표 배송 (없으면 null)
-     */
-    private function resolveRepresentativeShipping(): ?OrderShipping
-    {
-        if ($this->resource->relationLoaded('firstShipping')) {
-            return $this->resource->firstShipping;
-        }
-
-        return $this->resource->relationLoaded('shippings')
-            ? $this->resource->shippings->first()
-            : null;
-    }
-
-    /**
-     * 전체 옵션 수를 반환합니다.
-     *
-     * 목록은 DB 집계(`options_count`)를 쓰고, 옵션이 전량 로드된 경로는 컬렉션 길이를 쓴다.
-     * 집계 별칭 유무는 값이 아니라 속성 키로 판정한다 — 옵션 0건의 `0` 과 "집계 안 함" 은
-     * 값으로 구분되지 않는다.
-     *
-     * @return int|MissingValue 옵션 수 또는 미충족 표식
-     */
-    private function resolveOptionsCount(): int|MissingValue
-    {
-        if ($this->hasAggregate('options_count')) {
-            return (int) $this->aggregate('options_count', 0);
-        }
-
-        if ($this->resource->relationLoaded('options')) {
-            return $this->resource->options->count();
-        }
-
-        return new MissingValue;
-    }
-
-    /**
-     * 부분취소 여부를 반환합니다.
-     *
-     * 취소된 옵션이 있으면서 남은 옵션도 있는 상태를 뜻한다. 목록은 옵션을 순회하지 않고
-     * 집계 두 개(전체 수 / 취소 수)로 같은 판정을 얻는다.
-     *
-     * @return bool 부분취소 여부
-     */
-    private function resolveIsPartiallyCancelled(): bool
-    {
-        if ($this->hasAggregate('options_count') && $this->hasAggregate('cancelled_options_count')) {
-            $cancelled = (int) $this->aggregate('cancelled_options_count', 0);
-
-            return $cancelled > 0 && (int) $this->aggregate('options_count', 0) > $cancelled;
-        }
-
-        return $this->resource->relationLoaded('options')
-            ? $this->resource->isPartiallyCancelled()
-            : false;
-    }
-
-    /**
-     * 결제수단의 화면 표시용 라벨을 해석합니다.
-     *
-     * 간편결제(PAYCO·네이버페이 등)처럼 원 결제수단을 PG 만 아는 경우, 그 PG 플러그인이 필터 훅
-     * `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 라벨을 채운다. 이 모듈은 PG 를 모르므로
-     * 직접 조립하지 않는다. 한 목록에 여러 PG 의 주문이 섞이므로 구독자는 자기 결제(`pg_provider`)가 아니면
-     * 받은 값을 그대로 돌려줘야 한다. 아무도 채우지 않으면 null 이고 화면은 기본 라벨(`payment_method_label`)을 쓴다.
-     *
-     * @return string|null 표시용 라벨 (없으면 null)
-     */
-    private function resolvePaymentMethodDisplayLabel(): ?string
-    {
-        $label = HookManager::applyFilters(
-            'sirsoft-ecommerce.order.filter_payment_method_display_label',
-            null,
-            $this->payment
-        );
-
-        return is_string($label) && $label !== '' ? $label : null;
+        ];
     }
 
     /**
@@ -301,7 +123,7 @@ class OrderListResource extends BaseApiResource
     /**
      * 소유자 필드명을 반환합니다.
      *
-     * @return string|null 소유자 컬럼명
+     * @return string|null
      */
     protected function ownerField(): ?string
     {
@@ -309,12 +131,37 @@ class OrderListResource extends BaseApiResource
     }
 
     /**
+     * 국가 코드를 다국어 국가명 객체로 변환합니다.
+     *
+     * @param  string|null  $countryCode  ISO alpha-2 국가 코드
+     * @return array|null 다국어 객체 (예: {ko: '한국', en: 'South Korea'})
+     */
+    private function getCountryLocalizedName(?string $countryCode): ?array
+    {
+        if (! $countryCode) {
+            return null;
+        }
+
+        $countryCode = strtoupper($countryCode);
+        $localizedNames = config('countries.localized_names', []);
+
+        $result = [];
+        foreach ($localizedNames as $locale => $names) {
+            if (isset($names[$countryCode])) {
+                $result[$locale] = $names[$countryCode];
+            }
+        }
+
+        return ! empty($result) ? $result : null;
+    }
+
+    /**
      * 스냅샷 기반 배송방법 라벨을 해석합니다.
      *
-     * @param  OrderShipping|null  $shipping  배송 레코드
-     * @return string|null 배송방법 라벨 (없으면 null)
+     * @param \Modules\Sirsoft\Ecommerce\Models\OrderShipping|null $shipping 배송 레코드
+     * @return string|null
      */
-    private function resolveSnapshotMethodLabel(?OrderShipping $shipping): ?string
+    private function resolveSnapshotMethodLabel(?\Modules\Sirsoft\Ecommerce\Models\OrderShipping $shipping): ?string
     {
         if (! $shipping) {
             return null;
@@ -338,6 +185,6 @@ class OrderListResource extends BaseApiResource
             return null;
         }
 
-        return ShippingType::getCachedByCode($method)?->getLocalizedName();
+        return \Modules\Sirsoft\Ecommerce\Models\ShippingType::getCachedByCode($method)?->getLocalizedName();
     }
 }

@@ -1,18 +1,10 @@
+import { setLocaleHandler } from './setLocaleHandler';
 import { setThemeHandler, initThemeHandler } from './setThemeHandler';
 import { scrollToSectionHandler } from './scrollToSectionHandler';
 import { initMenuFromUrlHandler } from './initMenuFromUrlHandler';
 import { initFilterVisibilityHandler, saveFilterVisibilityHandler, toggleFilterVisibilityHandler, resetFilterVisibilityHandler } from './filterVisibilityHandler';
 import { saveMultilingualTagHandler, cancelMultilingualTagHandler, updateMultilingualTagValueHandler } from './multilingualTagHandler';
 import { setDateRangeHandler } from './setDateRangeHandler';
-import { loadVisibleFiltersHandler } from './loadVisibleFiltersHandler';
-import { setUserFilterExtHandler } from './setUserFilterExtHandler';
-import { setAnalyticsPeriodHandler } from './setAnalyticsPeriodHandler';
-import { toggleSidebarHandler, initSidebarHandler } from './sidebarHandler';
-import { downloadAttachmentHandler } from './downloadAttachment';
-import { downloadMarkupFileHandler } from './downloadMarkupFile';
-import { copyMarkupToClipboardHandler } from './copyMarkupToClipboard';
-import { checkAssetUrlModeDriftHandler, detectAssetUrlModeHandler } from './detectAssetUrlModeHandler';
-import { rememberIdentityClaimHandler } from './identityLauncher';
 /**
  * 핸들러 맵
  *
@@ -22,9 +14,7 @@ import { rememberIdentityClaimHandler } from './identityLauncher';
  * 새로운 핸들러 추가 시 여기에만 등록하면 자동으로 ActionDispatcher에 등록됩니다.
  */
 export declare const handlerMap: {
-    readonly rememberIdentityClaim: typeof rememberIdentityClaimHandler;
-    readonly detectAssetUrlMode: typeof detectAssetUrlModeHandler;
-    readonly checkAssetUrlModeDrift: typeof checkAssetUrlModeDriftHandler;
+    readonly setLocale: typeof setLocaleHandler;
     readonly setTheme: typeof setThemeHandler;
     readonly initTheme: typeof initThemeHandler;
     readonly scrollToSection: typeof scrollToSectionHandler;
@@ -37,12 +27,4 @@ export declare const handlerMap: {
     readonly cancelMultilingualTag: typeof cancelMultilingualTagHandler;
     readonly updateMultilingualTagValue: typeof updateMultilingualTagValueHandler;
     readonly setDateRange: typeof setDateRangeHandler;
-    readonly loadVisibleFilters: typeof loadVisibleFiltersHandler;
-    readonly setUserFilterExt: typeof setUserFilterExtHandler;
-    readonly setAnalyticsPeriod: typeof setAnalyticsPeriodHandler;
-    readonly toggleSidebar: typeof toggleSidebarHandler;
-    readonly initSidebar: typeof initSidebarHandler;
-    readonly downloadAttachment: typeof downloadAttachmentHandler;
-    readonly downloadMarkupFile: typeof downloadMarkupFileHandler;
-    readonly copyMarkupToClipboard: typeof copyMarkupToClipboardHandler;
 };

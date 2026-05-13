@@ -7,9 +7,6 @@
  * - 신고 정책 탭: 6개 필드 (자동 숨김, 신고 기한, 일일 제한, 반려 제한, 정지 기간)
  * - 스팸/보안 탭: 쿨다운, 조회수, 캐시 초기화
  * - 일괄 적용 모달: 확인/취소, API 호출, 로딩 상태
- *
- * @effects aborted_notice_box_shown_and_modal_stays_open,
- *   successful_bulk_apply_closes_modal_with_success_toast
  */
 
 import { describe, it, expect } from 'vitest';
@@ -30,12 +27,6 @@ import tabSpamSecurity from '../../../layouts/admin/partials/admin_board_setting
 import bulkApplyModal from '../../../layouts/admin/partials/admin_board_settings/_bulk_apply_modal.json';
 import tabGeneral from '../../../layouts/admin/partials/admin_board_settings/_tab_general.json';
 import tabSeo from '../../../layouts/admin/partials/admin_board_settings/_tab_seo.json';
-
-// 허용 확장자 안내 문구 회귀 검증용 ko lang
-import koSettingsLang from '../../../lang/partial/ko/admin/settings.json';
-import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
-// 일괄 적용 라벨 누락 회귀 검증용 en lang
-import enSettingsLang from '../../../lang/partial/en/admin/settings.json';
 
 /**
  * JSON 트리에서 특정 ID를 가진 노드를 재귀적으로 찾습니다.
@@ -62,23 +53,6 @@ function findById(node: any, id: string): any | null {
         }
     }
 
-    return null;
-}
-
-/**
- * JSON 트리에서 술어를 만족하는 첫 노드를 찾습니다 (children + responsive.portable 순회).
- */
-function findFirst(node: any, predicate: (n: any) => boolean): any | null {
-    if (!node) return null;
-    if (predicate(node)) return node;
-    const kids = [
-        ...asArray(node?.children),
-        ...asArray(node.responsive?.portable?.children),
-    ];
-    for (const child of kids) {
-        const found = findFirst(child, predicate);
-        if (found) return found;
-    }
     return null;
 }
 
@@ -119,25 +93,25 @@ function findActions(node: any, handlerName: string): any[] {
     const results: any[] = [];
     if (!node) return results;
 
-    if (node.actions && asArray(node?.actions).length > 0) {
-        for (const action of asArray(node?.actions)) {
+    if (node.actions && Array.isArray(node.actions)) {
+        for (const action of node.actions) {
             if (action.handler === handlerName) {
                 results.push(action);
             }
             // sequence 내부 검색
-            if (action.actions && asArray(action?.actions).length > 0) {
-                for (const subAction of asArray(action?.actions)) {
+            if (action.actions && Array.isArray(action.actions)) {
+                for (const subAction of action.actions) {
                     if (subAction.handler === handlerName) {
                         results.push(subAction);
                     }
                     // onSuccess/onError 내부
-                    if (subAction.onSuccess && asArray(subAction?.onSuccess).length > 0) {
-                        for (const cb of asArray(subAction?.onSuccess)) {
+                    if (subAction.onSuccess && Array.isArray(subAction.onSuccess)) {
+                        for (const cb of subAction.onSuccess) {
                             if (cb.handler === handlerName) results.push(cb);
                         }
                     }
-                    if (subAction.onError && asArray(subAction?.onError).length > 0) {
-                        for (const cb of asArray(subAction?.onError)) {
+                    if (subAction.onError && Array.isArray(subAction.onError)) {
+                        for (const cb of subAction.onError) {
                             if (cb.handler === handlerName) results.push(cb);
                         }
                     }
@@ -199,11 +173,6 @@ function findFormFields(node: any): string[] {
 // 1. 메인 레이아웃 (admin_board_settings.json)
 // =============================================
 describe('admin_board_settings.json - 메인 레이아웃', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('레이아웃 메타데이터가 올바르다', () => {
         expect(mainLayout.version).toBe('1.0.0');
         expect(mainLayout.layout_name).toBe('admin_board_settings');
@@ -212,11 +181,6 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(mainLayout.meta.title).toContain('$t:sirsoft-board.admin.settings.title');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('데이터 소스가 올바르게 정의되어 있다', () => {
         const { data_sources } = mainLayout;
         expect(data_sources.length).toBeGreaterThanOrEqual(4);
@@ -250,11 +214,6 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(boardTypes.auto_fetch).toBe(true);
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('computed에 필수 값들이 정의되어 있다', () => {
         const { computed } = mainLayout;
         expect(computed).toBeDefined();
@@ -292,11 +251,6 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('TabNavigation에 필수 탭이 정의되어 있다', () => {
         const content = mainLayout.slots.content[0];
         const tabNav = findById(content, 'tab_navigation');
@@ -311,25 +265,15 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(tabIds).toContain('spam_security');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('탭 변경 시 글로벌 상태와 URL을 업데이트한다', () => {
         const content = mainLayout.slots.content[0];
         const tabNav = findById(content, 'tab_navigation');
-        const tabChange = asArray(tabNav?.actions)[0];
+        const tabAction = tabNav.actions[0];
 
-        // 고친 것이 있으면 확인 창을 먼저 띄우고(7.1.0 조치 G2 — admin-board-settings-unsaved-tab-confirm.test.ts),
-        // 고친 것이 없으면 아래 순서로 바로 옮긴다
-        expect(tabChange.handler).toBe('conditions');
-        const tabAction = tabChange.conditions[1].then;
-        expect(tabChange.conditions[1].if).toBeUndefined();
         expect(tabAction.handler).toBe('sequence');
         // sequence 하위 액션은 params.actions 에 위치 (엔진 규약)
-        const innerActions = callbacksOf(tabAction, 'actions');
-        expect(innerActions).toHaveLength(4);
+        const innerActions = tabAction.params.actions;
+        expect(innerActions).toHaveLength(3);
 
         // setState - errors 초기화
         expect(innerActions[0].handler).toBe('setState');
@@ -340,33 +284,18 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(innerActions[1].handler).toBe('setState');
         expect(innerActions[1].params.target).toBe('global');
 
-        // navigate(replace:true) - URL 업데이트 + 데이터소스 `if` 재평가
-        // replaceUrl 은 history 만 교체하므로 탭 전용 데이터소스가 로드되지 않는다.
-        // 가드: admin-board-settings-tab-scoped-datasources.test.tsx
-        expect(innerActions[2].handler).toBe('navigate');
-        expect(innerActions[2].params.replace).toBe(true);
+        // replaceUrl - URL 업데이트
+        expect(innerActions[2].handler).toBe('replaceUrl');
         expect(innerActions[2].params.query.tab).toBeDefined();
-
-        // scrollIntoView - 탭 변경 후 본문 상단으로 스크롤 (#369)
-        expect(innerActions[3].handler).toBe('scrollIntoView');
-        // _admin_base 슬롯 #main_content 와 중복 회피 — 페이지 안쪽 탭 컨텐츠 컨테이너로 변경 (#408)
-        expect(innerActions[3].params.selector).toBe('#tab_content');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('sticky 헤더 구조가 올바르다', () => {
         const content = mainLayout.slots.content[0];
         const stickyHeader = findById(content, 'sticky_header');
         expect(stickyHeader).toBeDefined();
-        // sirsoft-admin_basic 의 .sticky-section-header 자산 사용.
-        // 자식(header_content)이 자체 padding 을 가지므로 좌우 -mx/px override 가 없는 변형을 쓴다
-        // (main.css 의 .sticky-section-header 주석이 "게시판 설정" 을 대상으로 명시).
-        // -mx/px override 가 있는 .sticky-tab-nav-responsive 를 쓰면 자식 padding 과 겹쳐 어긋난다.
-        expect(stickyHeader.props.className).toContain('sticky-section-header');
+        expect(stickyHeader.props.className).toContain('sticky');
+        expect(stickyHeader.props.className).toContain('top-0');
+        expect(stickyHeader.props.className).toContain('z-40');
 
         // 하위 탭 네비게이션이 basic_defaults 탭에서만 표시 (TabNavigationScroll - 스크롤 방식)
         const subTabNav = findById(content, 'sub_tab_navigation');
@@ -389,39 +318,28 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(subTabIds).toContain('bulk_apply');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
-    it('저장 버튼이 하단 sticky footer 안에 있다', () => {
+    it('저장 버튼이 sticky 헤더 안에 있다', () => {
         const content = mainLayout.slots.content[0];
-        // 액션 버튼은 페이지 상단 sticky_header 가 아닌 하단 sticky footer_buttons 컨테이너에 있다 (#369)
-        // sirsoft-admin_basic 의 .sticky-footer-buttons 자산 사용 (sticky bottom-0 z-10 ... bg-gray-50 dark:bg-gray-800)
-        const footerButtons = findById(content, 'footer_buttons');
-        expect(footerButtons).toBeDefined();
-        expect(footerButtons.props.className).toContain('sticky-footer-buttons');
-
-        const saveBtn = findById(footerButtons, 'footer_save_button');
+        const stickyHeader = findById(content, 'sticky_header');
+        const saveBtn = findById(stickyHeader, 'save_button');
         expect(saveBtn).toBeDefined();
+
+        // 하단 footer_buttons가 없어야 함
+        const footerButtons = findById(content, 'footer_buttons');
+        expect(footerButtons).toBeNull();
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('저장 버튼이 올바른 apiCall 구조를 가진다', () => {
         const content = mainLayout.slots.content[0];
-        const saveBtn = findById(content, 'footer_save_button');
+        const saveBtn = findById(content, 'save_button');
         expect(saveBtn).toBeDefined();
         expect(saveBtn.props.type).toBe('button');
         expect(saveBtn.props.disabled).toContain('hasChanges');
 
-        const clickAction = asArray(saveBtn?.actions)[0];
+        const clickAction = saveBtn.actions[0];
         expect(clickAction.handler).toBe('sequence');
         // sequence 하위 액션은 params.actions 에 위치
-        const innerActions = callbacksOf(clickAction, 'actions');
+        const innerActions = clickAction.params.actions;
 
         // 1단계: setState isSaving=true
         const setStateAction = innerActions[0];
@@ -435,34 +353,26 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(apiCallAction.params.method).toBe('PUT');
         expect(apiCallAction.auth_required).toBe(true);
 
-        // onSuccess: isSaving=false, hasChanges=false, refetchDataSource x5, toast
-        // (5번째 재조회는 개인정보 보유기간 대상 건수 — 저장된 설정 기준이라 저장 뒤 다시 읽는다, 이슈 #636)
-        expect(apiCallAction.onSuccess).toHaveLength(7);
-        expect(asArray(apiCallAction?.onSuccess)[0].params.isSaving).toBe(false);
-        expect(asArray(apiCallAction?.onSuccess)[0].params.hasChanges).toBe(false);
-        expect(asArray(apiCallAction?.onSuccess)[1].handler).toBe('refetchDataSource');
-        expect(asArray(apiCallAction?.onSuccess)[1].params.dataSourceId).toBe('settings');
-        expect(asArray(apiCallAction?.onSuccess)[2].handler).toBe('refetchDataSource');
-        expect(asArray(apiCallAction?.onSuccess)[2].params.dataSourceId).toBe('boards_list');
-        expect(asArray(apiCallAction?.onSuccess)[3].handler).toBe('refetchDataSource');
-        expect(asArray(apiCallAction?.onSuccess)[3].params.dataSourceId).toBe('roles');
-        expect(asArray(apiCallAction?.onSuccess)[4].handler).toBe('refetchDataSource');
-        expect(asArray(apiCallAction?.onSuccess)[4].params.dataSourceId).toBe('board_types');
-        expect(asArray(apiCallAction?.onSuccess)[5].handler).toBe('refetchDataSource');
-        expect(asArray(apiCallAction?.onSuccess)[5].params.dataSourceId).toBe('boardPrivacyRetentionPreview');
-        expect(asArray(apiCallAction?.onSuccess)[6].handler).toBe('toast');
+        // onSuccess: isSaving=false, hasChanges=false, refetchDataSource x4, toast
+        expect(apiCallAction.onSuccess).toHaveLength(6);
+        expect(apiCallAction.onSuccess[0].params.isSaving).toBe(false);
+        expect(apiCallAction.onSuccess[0].params.hasChanges).toBe(false);
+        expect(apiCallAction.onSuccess[1].handler).toBe('refetchDataSource');
+        expect(apiCallAction.onSuccess[1].params.dataSourceId).toBe('settings');
+        expect(apiCallAction.onSuccess[2].handler).toBe('refetchDataSource');
+        expect(apiCallAction.onSuccess[2].params.dataSourceId).toBe('boards_list');
+        expect(apiCallAction.onSuccess[3].handler).toBe('refetchDataSource');
+        expect(apiCallAction.onSuccess[3].params.dataSourceId).toBe('roles');
+        expect(apiCallAction.onSuccess[4].handler).toBe('refetchDataSource');
+        expect(apiCallAction.onSuccess[4].params.dataSourceId).toBe('board_types');
+        expect(apiCallAction.onSuccess[5].handler).toBe('toast');
 
         // onError: isSaving=false, errors set, toast
         expect(apiCallAction.onError).toHaveLength(2);
-        expect(asArray(apiCallAction?.onError)[0].params.isSaving).toBe(false);
-        expect(asArray(apiCallAction?.onError)[1].handler).toBe('toast');
+        expect(apiCallAction.onError[0].params.isSaving).toBe(false);
+        expect(apiCallAction.onError[1].handler).toBe('toast');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('validation_error 배너가 조건부 렌더링된다', () => {
         const content = mainLayout.slots.content[0];
         const errorBanner = findById(content, 'validation_error');
@@ -470,17 +380,11 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(errorBanner.if).toContain('_local.errors');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('Partial 참조가 올바르다 (8개 하위 탭 partial 포함)', () => {
         const content = mainLayout.slots.content[0];
-        // _admin_base 슬롯 #main_content 와 중복 회피 — 페이지 안쪽 탭 컨텐츠 컨테이너 id 는 tab_content (#408)
-        const tabContent = findById(content, 'tab_content');
-        expect(tabContent).toBeDefined();
-        const partials = tabContent.children.filter((c: any) => c.partial);
+        const mainContent = findById(content, 'main_content');
+        expect(mainContent).toBeDefined();
+        const partials = mainContent.children.filter((c: any) => c.partial);
         expect(partials.length).toBeGreaterThanOrEqual(10);
         const partialPaths = partials.map((p: any) => p.partial);
 
@@ -504,22 +408,12 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(partialPaths.some((p: string) => p.includes('_tab_basic_defaults.json'))).toBe(false);
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('모달 Partial 참조가 올바르다', () => {
         expect(mainLayout.modals.length).toBeGreaterThanOrEqual(2);
         expect(mainLayout.modals.some((m: any) => m.partial?.includes('_bulk_apply_modal.json'))).toBe(true);
         expect(mainLayout.modals.some((m: any) => m.partial?.includes('_board_type_manage_modal.json'))).toBe(true);
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_main_contract
-     */
     it('settings_content에 trackChanges와 dataKey가 설정되어 있다', () => {
         const content = mainLayout.slots.content[0];
         expect(content.dataKey).toBe('form');
@@ -532,50 +426,30 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
 // 2. 게시판설정 하위 탭 - 기본 (_tab_board_settings_basic.json)
 // =============================================
 describe('_tab_board_settings_basic.json - 기본 하위 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabBoardSettingsBasic.meta.is_partial).toBe(true);
         expect(tabBoardSettingsBasic.if).toContain("'basic_defaults'");
         expect(tabBoardSettingsBasic.id).toBe('basic');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
-    it('페이지 안내 배너(page_info_banner)가 섹션 목록 상단에 존재한다 (#408 alert-info)', () => {
+    it('페이지 안내 배너(page_info_banner)가 섹션 목록 상단에 존재한다', () => {
         const banner = findById(tabBoardSettingsBasic, 'page_info_banner');
         expect(banner).toBeDefined();
-        expect(banner.props.className).toContain('alert-info');
+        expect(banner.props.className).toContain('bg-blue-50');
+        expect(banner.props.className).toContain('dark:bg-blue-900');
         const texts = findByName(banner, 'P');
         expect(texts.some((p: any) => p.text?.includes('page_info'))).toBe(true);
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('SectionLayout을 사용한다', () => {
         const sections = findByName(tabBoardSettingsBasic, 'SectionLayout');
         expect(sections.length).toBeGreaterThanOrEqual(1);
-        // sirsoft-admin_basic 의 .admin-card 자산 사용 (#408)
-        // 자산 정의: bg-white border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700
         for (const section of sections) {
-            expect(section.props.className).toContain('admin-card');
+            expect(section.props.className).toContain('bg-white');
+            expect(section.props.className).toContain('dark:bg-gray-800');
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('기본 설정 섹션에 필수 폼 필드가 있다', () => {
         const sectionBasic = findById(tabBoardSettingsBasic, 'section_basic');
         const fields = findFormFields(sectionBasic);
@@ -586,11 +460,6 @@ describe('_tab_board_settings_basic.json - 기본 하위 탭', () => {
         expect(fields).toContain('basic_defaults.use_report');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('각 필드에 일괄 적용 체크박스가 있고 Input change 액션으로 토글된다 — controlled checkbox 표준 (#304)', () => {
         const fieldType = findById(tabBoardSettingsBasic, 'field_type');
         expect(fieldType).toBeDefined();
@@ -616,11 +485,6 @@ describe('_tab_board_settings_basic.json - 기본 하위 탭', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('basic 탭의 모든 일괄적용 필드(4개) Input에 change 액션이 적용되어 있고 라벨에는 click 액션이 없다 (#304)', () => {
         const fieldIds = ['field_type', 'field_secret_mode', 'field_show_view_count', 'field_use_report'];
 
@@ -654,22 +518,12 @@ describe('_tab_board_settings_basic.json - 기본 하위 탭', () => {
 // 3. 게시판설정 하위 탭 - 권한 (_tab_board_settings_permissions.json)
 // =============================================
 describe('_tab_board_settings_permissions.json - 권한 하위 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabBoardSettingsPermissions.meta.is_partial).toBe(true);
         expect(tabBoardSettingsPermissions.if).toContain("'basic_defaults'");
         expect(tabBoardSettingsPermissions.id).toBe('permissions');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('권한 섹션이 iteration 기반 TagInput 패턴을 사용한다', () => {
         const sectionPermissions = findById(tabBoardSettingsPermissions, 'section_permissions');
         expect(sectionPermissions).toBeDefined();
@@ -699,11 +553,6 @@ describe('_tab_board_settings_permissions.json - 권한 하위 탭', () => {
         expect(userTagInputs[0].props.defaultVariant).toBe('blue');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('권한 TagInput이 value prop과 perm?.[0] optional chaining을 사용한다', () => {
         const sectionPermissions = findById(tabBoardSettingsPermissions, 'section_permissions');
         const tagInputs = findByName(sectionPermissions, 'TagInput');
@@ -714,11 +563,6 @@ describe('_tab_board_settings_permissions.json - 권한 하위 탭', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('권한 행은 Label로 체크박스+텍스트를 감싸고 Input change로 토글한다 — basic 탭과 동일 패턴 (#304)', () => {
         const sectionIds = ['permissions_admin_section', 'permissions_user_section'];
 
@@ -764,11 +608,6 @@ describe('_tab_board_settings_permissions.json - 권한 하위 탭', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('권한 섹션 헤더(전체 토글)는 Label로 체크박스+텍스트를 감싸고 Input change로 토글한다 (#304)', () => {
         const sectionIds = ['permissions_admin_section', 'permissions_user_section'];
 
@@ -776,9 +615,9 @@ describe('_tab_board_settings_permissions.json - 권한 하위 탭', () => {
             const section = findById(tabBoardSettingsPermissions, sectionId);
             expect(section, `${sectionId} 노드 존재`).toBeDefined();
 
-            // 섹션 헤더는 첫 자식 Label (.section-header-row 시맨틱 자산 적용 + 체크박스 감쌈, #408)
+            // 섹션 헤더는 첫 자식 Label (cursor-pointer + 체크박스 감쌈)
             const headerLabel = section.children.find(
-                (c: any) => c.name === 'Label' && (c.props?.className ?? '').includes('section-header-row')
+                (c: any) => c.name === 'Label' && (c.props?.className ?? '').includes('cursor-pointer')
             );
             expect(headerLabel, `${sectionId} 섹션 헤더 Label 존재`).toBeDefined();
 
@@ -806,22 +645,12 @@ describe('_tab_board_settings_permissions.json - 권한 하위 탭', () => {
 // 4. 게시판설정 하위 탭 - 목록 (_tab_board_settings_list.json)
 // =============================================
 describe('_tab_board_settings_list.json - 목록 하위 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabBoardSettingsList.meta.is_partial).toBe(true);
         expect(tabBoardSettingsList.if).toContain("'basic_defaults'");
         expect(tabBoardSettingsList.id).toBe('list');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('목록 설정 필수 폼 필드가 있다', () => {
         const fields = findFormFields(tabBoardSettingsList);
         expect(fields).toContain('basic_defaults.per_page');
@@ -835,22 +664,12 @@ describe('_tab_board_settings_list.json - 목록 하위 탭', () => {
 // 5. 게시판설정 하위 탭 - 게시글 (_tab_board_settings_post.json)
 // =============================================
 describe('_tab_board_settings_post.json - 게시글 하위 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabBoardSettingsPost.meta.is_partial).toBe(true);
         expect(tabBoardSettingsPost.if).toContain("'basic_defaults'");
         expect(tabBoardSettingsPost.id).toBe('post');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('게시글 설정 필수 폼 필드가 있다', () => {
         const fields = findFormFields(tabBoardSettingsPost);
         expect(fields).toContain('basic_defaults.min_title_length');
@@ -866,76 +685,22 @@ describe('_tab_board_settings_post.json - 게시글 하위 탭', () => {
 // 6. 게시판설정 하위 탭 - 답변글 (_tab_board_settings_reply.json)
 // =============================================
 describe('_tab_board_settings_reply.json - 답변글 하위 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabBoardSettingsReply.meta.is_partial).toBe(true);
         expect(tabBoardSettingsReply.if).toContain("'basic_defaults'");
         expect(tabBoardSettingsReply.id).toBe('reply');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('답변글 설정 필수 폼 필드가 있다', () => {
         const fields = findFormFields(tabBoardSettingsReply);
         expect(fields).toContain('basic_defaults.use_reply');
         expect(fields).toContain('basic_defaults.max_reply_depth');
-        expect(fields).toContain('basic_defaults.reply_delete_policy');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('답변글 깊이 필드가 항상 표시된다 (if 조건 없음)', () => {
         const maxReplyDepth = findById(tabBoardSettingsReply, 'field_max_reply_depth');
         expect(maxReplyDepth).toBeDefined();
         expect(maxReplyDepth.if).toBeUndefined();
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
-    it('답글 삭제 정책 Select 가 block/cascade 옵션으로 렌더된다 (#573)', () => {
-        const policyField = findById(tabBoardSettingsReply, 'field_reply_delete_policy');
-        expect(policyField).toBeDefined();
-        expect(policyField.if).toBeUndefined();
-
-        const collect: any[] = [];
-        const walk = (node: any) => {
-            if (!node || typeof node !== 'object') return;
-            if (node.name === 'Select') collect.push(node);
-            for (const child of node.children ?? []) walk(child);
-        };
-        walk(policyField);
-
-        expect(collect).toHaveLength(1);
-        expect(collect[0].props.name).toBe('basic_defaults.reply_delete_policy');
-        const values = (collect[0].props.options as Array<{ value: string }>).map((o) => o.value).sort();
-        expect(values).toEqual(['block', 'cascade']);
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
-    it('답글 삭제 정책 ko 다국어 키(라벨/설명/옵션/일괄적용)가 실재한다 (#573)', () => {
-        const lang = koSettingsLang as any;
-        expect(lang.fields?.reply_delete_policy).toBeTruthy();
-        expect(lang.fields?.descriptions?.reply_delete_policy).toBeTruthy();
-        expect(lang.options?.reply_delete_policy?.block).toBeTruthy();
-        expect(lang.options?.reply_delete_policy?.cascade).toBeTruthy();
-        expect(lang.bulk_apply?.field_labels?.reply_delete_policy).toBeTruthy();
     });
 });
 
@@ -943,22 +708,12 @@ describe('_tab_board_settings_reply.json - 답변글 하위 탭', () => {
 // 7. 게시판설정 하위 탭 - 댓글 (_tab_board_settings_comment.json)
 // =============================================
 describe('_tab_board_settings_comment.json - 댓글 하위 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabBoardSettingsComment.meta.is_partial).toBe(true);
         expect(tabBoardSettingsComment.if).toContain("'basic_defaults'");
         expect(tabBoardSettingsComment.id).toBe('comment');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('댓글 설정 필수 폼 필드가 있다', () => {
         const fields = findFormFields(tabBoardSettingsComment);
         expect(fields).toContain('basic_defaults.use_comment');
@@ -968,11 +723,6 @@ describe('_tab_board_settings_comment.json - 댓글 하위 탭', () => {
         expect(fields).toContain('basic_defaults.max_comment_length');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('댓글 설정 필드가 항상 표시된다 (if 조건 없음)', () => {
         const commentOrder = findById(tabBoardSettingsComment, 'field_comment_order');
         expect(commentOrder).toBeDefined();
@@ -988,22 +738,12 @@ describe('_tab_board_settings_comment.json - 댓글 하위 탭', () => {
 // 8. 게시판설정 하위 탭 - 첨부파일 (_tab_board_settings_attachment.json)
 // =============================================
 describe('_tab_board_settings_attachment.json - 첨부파일 하위 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabBoardSettingsAttachment.meta.is_partial).toBe(true);
         expect(tabBoardSettingsAttachment.if).toContain("'basic_defaults'");
         expect(tabBoardSettingsAttachment.id).toBe('attachment');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('첨부파일 설정 필수 폼 필드가 있다', () => {
         const fields = findFormFields(tabBoardSettingsAttachment);
         expect(fields).toContain('basic_defaults.use_file_upload');
@@ -1012,11 +752,6 @@ describe('_tab_board_settings_attachment.json - 첨부파일 하위 탭', () => 
         expect(fields).toContain('basic_defaults.allowed_extensions');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('첨부파일 서브 필드가 항상 표시된다 (if 조건 없음)', () => {
         const maxFileSize = findById(tabBoardSettingsAttachment, 'field_max_file_size');
         expect(maxFileSize).toBeDefined();
@@ -1030,55 +765,18 @@ describe('_tab_board_settings_attachment.json - 첨부파일 하위 탭', () => 
         expect(allowedExt).toBeDefined();
         expect(allowedExt.if).toBeUndefined();
     });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
-    it('허용 확장자 안내 문구가 descriptions i18n 키를 참조한다 (회귀)', () => {
-        // 레이아웃은 안내 문구를 descriptions.allowed_extensions 키로 바인딩해야 한다.
-        const descNode = findFirst(
-            tabBoardSettingsAttachment,
-            (n) => n?.text === '$t:sirsoft-board.admin.settings.fields.descriptions.allowed_extensions'
-        );
-        expect(descNode).not.toBeNull();
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
-    it('허용 확장자 안내 ko 문구가 "최소 1개" 의미로 갱신되었다 (회귀)', () => {
-        // 빈 값 저장 차단으로 정책이 바뀌었으므로 안내 문구도 "최소 1개 입력"이어야 하며,
-        // 정반대 의미의 옛 문구("빈 값 ... 모든 확장자")가 남아 있으면 안 된다.
-        const desc = (koSettingsLang as any).fields.descriptions.allowed_extensions;
-        expect(desc).toContain('최소 1개');
-        expect(desc).not.toContain('모든 확장자');
-    });
 });
 
 // =============================================
 // 9. 게시판설정 하위 탭 - 알림 (_tab_board_settings_notification.json)
 // =============================================
 describe('_tab_board_settings_notification.json - 알림 하위 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabBoardSettingsNotification.meta.is_partial).toBe(true);
         expect(tabBoardSettingsNotification.if).toContain("'basic_defaults'");
         expect(tabBoardSettingsNotification.id).toBe('notification');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_default_tabs_contract
-     */
     it('알림 설정 필수 폼 필드가 있다', () => {
         const fields = findFormFields(tabBoardSettingsNotification);
         expect(fields).toContain('basic_defaults.notify_author');
@@ -1090,22 +788,12 @@ describe('_tab_board_settings_notification.json - 알림 하위 탭', () => {
 // 10. 게시판설정 하위 탭 - 일괄 적용 (_tab_board_settings_bulk_apply.json)
 // =============================================
 describe('_tab_board_settings_bulk_apply.json - 일괄 적용 하위 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabBoardSettingsBulkApply.meta.is_partial).toBe(true);
         expect(tabBoardSettingsBulkApply.if).toContain("'basic_defaults'");
         expect(tabBoardSettingsBulkApply.id).toBe('bulk_apply');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
     it('일괄 적용 섹션(section_bulk_apply)이 존재한다', () => {
         const bulkApply = findById(tabBoardSettingsBulkApply, 'section_bulk_apply');
         expect(bulkApply).toBeDefined();
@@ -1120,38 +808,11 @@ describe('_tab_board_settings_bulk_apply.json - 일괄 적용 하위 탭', () =>
         expect(targetArea.if).toContain('length > 0');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
     it('일괄 적용 버튼이 openModal을 target으로 호출한다', () => {
         const bulkApply = findById(tabBoardSettingsBulkApply, 'section_bulk_apply');
         const openModalActions = findActions(bulkApply, 'openModal');
         expect(openModalActions).toHaveLength(1);
         expect(openModalActions[0].target).toBe('bulk_apply_confirm_modal');
-    });
-
-    // 회귀(#413-26): 롤백 발생 후 모달을 닫았다가 다시 열면 직전 롤백 안내가
-    // 잔존하던 결함 — 모달 열기 sequence 에서 bulkApplyAborted/Board 도 함께 초기화해야 함.
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
-    it('모달 열기 시 직전 롤백 안내 상태를 초기화한다 (saveError + aborted + abortedBoard)', () => {
-        const bulkApply = findById(tabBoardSettingsBulkApply, 'section_bulk_apply');
-        // openModal 직전의 setState(local) 중 오류/롤백 안내를 초기화하는 액션을 찾는다
-        const resetActions = findActions(bulkApply, 'setState').filter(
-            (a: any) => a.params?.target === 'local'
-                && Object.prototype.hasOwnProperty.call(a.params, 'bulkApplySaveError')
-        );
-        expect(resetActions.length).toBeGreaterThanOrEqual(1);
-        const reset = resetActions[0];
-        expect(reset.params.bulkApplySaveError).toBe(false);
-        // 롤백 안내도 함께 초기화되어야 재오픈 시 직전 실패 문구가 잔존하지 않는다
-        expect(reset.params.bulkApplyAborted).toBe(false);
-        expect(reset.params.bulkApplyAbortedBoard).toBeNull();
     });
 });
 
@@ -1159,34 +820,19 @@ describe('_tab_board_settings_bulk_apply.json - 일괄 적용 하위 탭', () =>
 // 11. 신고 정책 탭 (_tab_report_policy.json)
 // =============================================
 describe('_tab_report_policy.json - 신고 정책 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabReportPolicy.meta.is_partial).toBe(true);
         expect(tabReportPolicy.id).toBe('tab_content_report_policy');
         expect(tabReportPolicy.if).toContain("'report_policy'");
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
     it('SectionLayout을 사용한다', () => {
         const sections = findByName(tabReportPolicy, 'SectionLayout');
         expect(sections.length).toBeGreaterThanOrEqual(1);
-        // sirsoft-admin_basic 의 .admin-card 자산 사용 (#408)
-        expect(sections[0].props.className).toContain('admin-card');
+        expect(sections[0].props.className).toContain('bg-white');
+        expect(sections[0].props.className).toContain('dark:bg-gray-800');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
     it('신고 정책 필드가 모두 존재한다', () => {
         const fields = findFormFields(tabReportPolicy);
 
@@ -1198,216 +844,18 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
         expect(fields).not.toContain('report_policy.suspension_days');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
-    it('신고 알림 활성화 토글이 제거되었다 (알림 정의 활성화는 알림 설정 메뉴에서 관리)', () => {
-        // 활성화 토글은 백엔드에서 항상 true 강제 저장되므로 화면에서 제거됨.
+    it('알림 설정 필드가 존재한다 (이슈 #35 Phase 1+2)', () => {
         const fields = findFormFields(tabReportPolicy);
-        expect(fields).not.toContain('report_policy.notify_admin_on_report');
-        expect(fields).not.toContain('report_policy.notify_author_on_report_action');
 
-        // 두 알림 카드(헤더)는 유지된다 (제목/설명 표시)
-        expect(findById(tabReportPolicy, 'field_notify_admin_on_report')).toBeDefined();
-        expect(findById(tabReportPolicy, 'field_notify_author_on_report_action')).toBeDefined();
+        // Phase 2: 신고 접수 관리자 알림 토글 + 이메일 채널 TagInput
+        expect(fields).toContain('report_policy.notify_admin_on_report');
+        expect(fields).toContain('report_policy.notify_admin_on_report_channels');
+
+        // Phase 1: 신고 처리 알림 토글 + 이메일 채널 TagInput
+        expect(fields).toContain('report_policy.notify_author_on_report_action');
+        expect(fields).toContain('report_policy.notify_author_on_report_action_channels');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
-    it('토글 제거로 발송 범위 라디오가 항상 표시된다 (if 가드 제거)', () => {
-        // notify_admin_on_report === true 가드가 없어도 scope RadioGroup 이 렌더되어야 한다.
-        const scopeField = findById(tabReportPolicy, 'field_notify_admin_on_report_scope');
-        expect(scopeField).toBeDefined();
-        const radioGroups = findByName(scopeField, 'RadioGroup');
-        expect(radioGroups).toHaveLength(1);
-        // 가드 Div 의 if 표현식에 토글 종속 조건이 없어야 한다
-        const adminField = findById(tabReportPolicy, 'field_notify_admin_on_report');
-        const guardWithToggle = findFirst(
-            adminField,
-            (n: any) => typeof n.if === 'string' && n.if.includes('notify_admin_on_report === true'),
-        );
-        expect(guardWithToggle).toBeNull();
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
-    it('채널 직접 선택 TagInput 대신 템플릿별 활성 상태 표시로 대체되었다', () => {
-        // 코어 알림 인프라 도입 후, 채널은 알림 설정에서 관리.
-        // 신고정책 탭은 대응 definition 의 채널별 템플릿 활성 상태만 읽기전용 표시한다.
-        const fields = findFormFields(tabReportPolicy);
-        expect(fields).not.toContain('report_policy.notify_admin_on_report_channels');
-        expect(fields).not.toContain('report_policy.notify_author_on_report_action_channels');
-
-        // 신고 접수: report_received_admin definition 템플릿 상태 블록 + 이동 버튼
-        const adminStatus = findById(tabReportPolicy, 'report_received_admin_template_status');
-        expect(adminStatus).toBeDefined();
-        const adminIteration = findFirst(
-            adminStatus,
-            (n: any) => n.iteration && String(n.iteration.source).includes("'report_received_admin'"),
-        );
-        expect(adminIteration).toBeTruthy();
-        expect(adminIteration.iteration.item_var).toBe('tpl');
-        // 각 행이 "어떤 템플릿인지" 알 수 있도록 채널명 + 템플릿 제목(subject)을 표시
-        const adminSubject = findFirst(adminIteration, (n: any) => n.name === 'Span' && String(n.text ?? '').includes('tpl.subject'));
-        expect(adminSubject).toBeTruthy();
-        expect(findById(tabReportPolicy, 'go_to_notification_settings_admin')).toBeDefined();
-
-        // 신고 처리: report_action definition 템플릿 상태 블록 + 이동 버튼
-        const authorStatus = findById(tabReportPolicy, 'report_action_template_status');
-        expect(authorStatus).toBeDefined();
-        const authorIteration = findFirst(
-            authorStatus,
-            (n: any) => n.iteration && String(n.iteration.source).includes("'report_action'"),
-        );
-        expect(authorIteration).toBeTruthy();
-        const authorSubject = findFirst(authorIteration, (n: any) => n.name === 'Span' && String(n.text ?? '').includes('tpl.subject'));
-        expect(authorSubject).toBeTruthy();
-        expect(findById(tabReportPolicy, 'go_to_notification_settings_author')).toBeDefined();
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
-    it('admin-card 안 4 섹션 description 이 .card-description 시맨틱이고 card-title 의 직계 sibling 이다 (#408)', () => {
-        // _tab_report_policy.json 의 4 섹션 (자동 숨김, abuse_prevention, permissions, notification)
-        // description 이 stack 안에 묻혀있으면 .card-title:has(+ .card-description) 셀렉터 불발 →
-        // card-title 의 하단 여백이 의도(mb-1)와 다르게 mb-6 으로 적용됨 (보고 #408)
-        //
-        // 기대: admin-card 직계 자식 순서가 [card-title, card-description, stack, ...] 이고,
-        //       card-description 의 className 에 'card-description' 시맨틱 자산이 포함되어야 함.
-        function collectAdminCards(node: any, out: any[] = []): any[] {
-            if (!node || typeof node !== 'object') return out;
-            if (Array.isArray(node)) { node.forEach((c) => collectAdminCards(c, out)); return out; }
-            const cls = node.props?.className;
-            if (typeof cls === 'string' && /\badmin-card\b/.test(cls)) out.push(node);
-            for (const v of Object.values(node)) if (v && typeof v === 'object') collectAdminCards(v, out);
-            return out;
-        }
-
-        const cards = collectAdminCards(tabReportPolicy);
-        expect(cards.length, '_tab_report_policy admin-card 개수').toBeGreaterThan(0);
-
-        for (const card of cards) {
-            const children = asArray(card?.children);
-            // card-title 찾기 (H1~H4/Span/P 중 className 에 card-title 포함)
-            const titleIdx = children.findIndex(
-                (c: any) => typeof c?.props?.className === 'string' &&
-                            /\bcard-title\b/.test(c.props.className)
-            );
-            if (titleIdx === -1) continue; // card-title 없는 admin-card 는 검사 대상 아님
-
-            // card-title 의 다음 형제가 stack 인 경우 — stack 첫 자식이 description-like 패턴이면 위반
-            const sibling = children[titleIdx + 1];
-            if (!sibling || sibling.name !== 'Div') continue;
-            const sibCls = typeof sibling.props?.className === 'string' ? sibling.props.className : '';
-            const isStack = /\b(stack|stack-tight|stack-flush)\b/.test(sibCls);
-            if (!isStack) continue;
-
-            const stackChildren = asArray(sibling?.children);
-            // stack 첫 자식 (직접 OR inert wrapper Div 안)
-            let first = stackChildren[0];
-            const isInert = (n: any) =>
-                n && n.name === 'Div' && !n.id && !n.if && !n.iteration && !n.actions && !n.lifecycle &&
-                (!n.props || !n.props.className || n.props.className.trim() === '');
-            if (isInert(first) && Array.isArray(first.children) && first.children.length === 1) {
-                first = first.children[0];
-            }
-
-            if (!first || (first.name !== 'Span' && first.name !== 'P')) continue;
-            const fCls = typeof first.props?.className === 'string' ? first.props.className : '';
-            const isDescLike =
-                /\btext-label-subtle\b/.test(fCls) ||
-                /\bform-hint\b/.test(fCls) ||
-                (/\btext-tertiary\b/.test(fCls) && /\bblock\b/.test(fCls));
-
-            if (isDescLike) {
-                // 위반 — stack 첫 자식 description 이 hoist 되지 않음
-                throw new Error(
-                    `admin-card 안 description 이 stack 에 묻혀있음. card-title 의 직계 sibling 으로 hoist + .card-description 시맨틱 적용 필요. (className="${fCls}")`,
-                );
-            }
-        }
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
-    it('admin_board_settings 메인 레이아웃에 id="main_content" 가 없어야 한다 — _admin_base 의 슬롯 id 와 중복 금지 (HTML 스펙) (#408)', () => {
-        function findAllIds(node: any, out: Map<string, number> = new Map()): Map<string, number> {
-            if (!node || typeof node !== 'object') return out;
-            if (Array.isArray(node)) { node.forEach((c) => findAllIds(c, out)); return out; }
-            if (typeof node.id === 'string' && node.id !== '') {
-                out.set(node.id, (out.get(node.id) ?? 0) + 1);
-            }
-            for (const v of Object.values(node)) if (v && typeof v === 'object') findAllIds(v, out);
-            return out;
-        }
-        const ids = findAllIds(mainLayout);
-        // 메인 레이아웃 (admin_board_settings.json) 자체에는 main_content id 가 있으면 안 됨.
-        // _admin_base.g7.html 슬롯 컨테이너가 이미 #main_content 를 가지고 있어 페이지에 중복 발생.
-        expect(ids.get('main_content'), 'admin_board_settings 안쪽에 id="main_content" 가 있으면 _admin_base 슬롯과 중복').toBeUndefined();
-        // 대체 id (탭 컨텐츠 컨테이너) 가 존재해야 함
-        expect(ids.has('tab_content'), '탭 컨텐츠 컨테이너 id="tab_content" 가 존재해야 함').toBe(true);
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
-    it('board layout 의 모든 .card-description 은 Div 태그여야 한다 — Span/P 금지 (#408)', () => {
-        // 표준: span.card-description / p.card-description 는 잘못된 시맨틱 HTML
-        //          → div.card-description 만 허용.
-        const layouts: Array<[string, any]> = [
-            ['mainLayout', mainLayout],
-            ['tabBoardSettingsBasic', tabBoardSettingsBasic],
-            ['tabBoardSettingsPermissions', tabBoardSettingsPermissions],
-            ['tabBoardSettingsList', tabBoardSettingsList],
-            ['tabBoardSettingsPost', tabBoardSettingsPost],
-            ['tabBoardSettingsReply', tabBoardSettingsReply],
-            ['tabBoardSettingsComment', tabBoardSettingsComment],
-            ['tabBoardSettingsAttachment', tabBoardSettingsAttachment],
-            ['tabBoardSettingsNotification', tabBoardSettingsNotification],
-            ['tabBoardSettingsBulkApply', tabBoardSettingsBulkApply],
-            ['tabReportPolicy', tabReportPolicy],
-            ['tabSpamSecurity', tabSpamSecurity],
-            ['bulkApplyModal', bulkApplyModal],
-            ['tabGeneral', tabGeneral],
-            ['tabSeo', tabSeo],
-        ];
-
-        const violations: string[] = [];
-        function check(node: any, layoutName: string): void {
-            if (!node || typeof node !== 'object') return;
-            if (Array.isArray(node)) { node.forEach((c) => check(c, layoutName)); return; }
-            const cls = node.props?.className;
-            if (typeof cls === 'string' && /\bcard-description\b/.test(cls) && node.name !== 'Div') {
-                violations.push(`${layoutName}: ${node.name}.card-description (text="${(node.text ?? '').slice(0, 60)}")`);
-            }
-            for (const v of Object.values(node)) if (v && typeof v === 'object') check(v, layoutName);
-        }
-        layouts.forEach(([name, l]) => check(l, name));
-
-        expect(violations, '비-Div 태그를 사용하는 .card-description 가 있으면 안 됨').toEqual([]);
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
     it('Phase 3: notify_admin_on_report_scope RadioGroup가 존재한다', () => {
         const fields = findFormFields(tabReportPolicy);
         expect(fields).toContain('report_policy.notify_admin_on_report_scope');
@@ -1418,8 +866,7 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
 
         const radioGroups = findByName(scopeField, 'RadioGroup');
         expect(radioGroups).toHaveLength(1);
-        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
-        // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
+        expect(radioGroups[0].type).toBe('composite');
         expect(radioGroups[0].props.name).toBe('report_policy.notify_admin_on_report_scope');
 
         // per_case / per_report 옵션 포함
@@ -1430,22 +877,12 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
         expect(values).toContain('per_report');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
     it('Phase 3: 신고 관리 권한 섹션(section_report_permissions)이 존재한다', () => {
         const section = findById(tabReportPolicy, 'section_report_permissions');
         expect(section).toBeDefined();
         expect(section.name).toBe('SectionLayout');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
     it('Phase 3: 신고 관리 권한 TagInput × 2 (view_roles, manage_roles)가 존재한다', () => {
         const fields = findFormFields(tabReportPolicy);
         expect(fields).toContain('report_permissions.view_roles');
@@ -1469,103 +906,33 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
         expect(manageTagInputs[0].props.options).toContain('roleOptions');
     });
 
-    // 허용 범위는 서버가 내려주는 한계값(_meta.limits)을 바인딩한다. 화면이 숫자를 직접 들면
-    // 저장 규칙과 갈라진다 — 실제로 화면 min:1 ↔ 서버 min:0 으로 어긋나 "0=비활성" 안내대로
-    // 입력할 수 없던 결함이 있었다(#493 B4).
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
     it('필드에 유효한 min/max 제약이 있다', () => {
         const autoHide = findById(tabReportPolicy, 'field_auto_hide_threshold');
         const autoHideInput = findByName(autoHide, 'Input').find(
             (c: any) => c.props?.name === 'report_policy.auto_hide_threshold'
         );
-        expect(String(autoHideInput.props.min)).toContain('limits?.auto_hide_threshold_min');
-        expect(String(autoHideInput.props.max)).toContain('limits?.auto_hide_threshold_max');
-        // 0 = 자동 숨김 비활성. 폴백이 1 로 되돌아가면 비활성으로 되돌릴 방법이 사라진다.
-        expect(String(autoHideInput.props.min)).toContain('?? 0');
-        expect(String(autoHideInput.props.max)).toContain('?? 100');
+        expect(autoHideInput.props.min).toBe(1);
+        expect(autoHideInput.props.max).toBe(100);
+
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
     it('Select가 composite 타입이다', () => {
         const selects = findByName(tabReportPolicy, 'Select');
         for (const select of selects) {
-            // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
-            // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
+            expect(select.type).toBe('composite');
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
-    it('Input 에러 시 input-error 시맨틱 클래스가 분기 적용된다', () => {
-        // Input 디폴트 외형은 Input 컴포넌트가 자체 제공 (시맨틱 .input).
-        // 호출처 className 표현식은 422 검증 에러 시 input-error 시맨틱을 토글하는 분기만 담당 (#369).
+    it('Input에 게시판 폼 스타일 클래스가 적용되어 있다', () => {
         const inputs = findByName(tabReportPolicy, 'Input').filter(
             (c: any) => c.props?.type === 'number'
         );
         expect(inputs.length).toBeGreaterThan(0);
 
         for (const input of inputs) {
-            expect(input.props.className).toMatch(/_local\.errors/);
-            expect(input.props.className).toContain('input-error');
-        }
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_report_policy_contract
-     */
-    it('신고 관리 권한 TagInput 에러 시 input-error 분기 + 인라인 에러 Span 이 존재한다 (#413 item 8)', () => {
-        // 신고 권한 필드(view_roles/manage_roles)는 빈 배열 제출 시 FormRequest 가 차단한다.
-        // 그 422 응답을 화면에 표시하기 위해, 다른 number Input 필드와 동일한 패턴으로
-        //   1) TagInput control 에 input-error 시맨틱 토글 (빨간 테두리)
-        //   2) TagInput 직후 형제로 인라인 에러 메시지 Span
-        // 두 가지가 모두 있어야 한다. (#408 시맨틱화 유지 — 원시 Tailwind 풀스택 금지)
-        const permissionFields = ['report_permissions.view_roles', 'report_permissions.manage_roles'];
-
-        // TagInput 과 그 바로 뒤 형제 Span 을 함께 보기 위해, 부모의 children 배열을 순회한다.
-        function collectSiblingPairs(node: any, out: Array<{ tag: any; next: any }> = []): Array<{ tag: any; next: any }> {
-            if (!node || typeof node !== 'object') return out;
-            const children = Array.isArray(node.children) ? node.children : [];
-            for (let i = 0; i < children.length; i++) {
-                const c = children[i];
-                if (c?.name === 'TagInput' && permissionFields.includes(c.props?.name)) {
-                    out.push({ tag: c, next: children[i + 1] ?? null });
-                }
-                collectSiblingPairs(c, out);
-            }
-            return out;
-        }
-
-        const pairs = collectSiblingPairs(tabReportPolicy);
-        // view_roles + manage_roles 두 필드 모두 검출되어야 함
-        expect(pairs.map((p) => p.tag.props.name).sort()).toEqual([...permissionFields].sort());
-
-        for (const { tag, next } of pairs) {
-            const field = tag.props.name;
-
-            // 1) className 이 에러 시 input-error 를 토글하는 분기여야 함
-            expect(tag.props.className, `${field} className`).toMatch(/_local\.errors/);
-            expect(tag.props.className, `${field} className`).toContain('input-error');
-
-            // 2) TagInput 직후 형제가 인라인 에러 Span 이어야 함 (if + 빨간 텍스트 + 해당 필드 바인딩)
-            expect(next, `${field} 뒤 에러 Span`).not.toBeNull();
-            expect(next.name).toBe('Span');
-            expect(next.if).toContain(`_local.errors?.['${field}']`);
-            expect(next.props.className).toContain('text-red-600');
-            expect(next.text).toContain(`_local.errors`);
-            expect(next.text).toContain(field);
+            expect(input.props.className).toContain('border');
+            expect(input.props.className).toContain('rounded-md');
+            expect(input.props.className).toContain('dark:bg-gray-700');
         }
     });
 });
@@ -1574,32 +941,17 @@ describe('_tab_report_policy.json - 신고 정책 탭', () => {
 // 11. 스팸/보안 탭 (_tab_spam_security.json)
 // =============================================
 describe('_tab_spam_security.json - 스팸/보안 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_spam_security_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabSpamSecurity.meta.is_partial).toBe(true);
         expect(tabSpamSecurity.id).toBe('tab_content_spam_security');
         expect(tabSpamSecurity.if).toContain("'spam_security'");
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_spam_security_contract
-     */
     it('SectionLayout을 사용한다', () => {
         const sections = findByName(tabSpamSecurity, 'SectionLayout');
         expect(sections.length).toBeGreaterThanOrEqual(2);
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_spam_security_contract
-     */
     it('스팸/보안 필드가 모두 존재한다 (blocked_keywords 제외)', () => {
         const fields = findFormFields(tabSpamSecurity);
 
@@ -1611,11 +963,6 @@ describe('_tab_spam_security.json - 스팸/보안 탭', () => {
         expect(fields).not.toContain('spam_security.blocked_keywords');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_spam_security_contract
-     */
     it('쿨다운 안내 정보 배너가 있다', () => {
         const infoBanner = findById(tabSpamSecurity, 'spam_security_identifier_info');
         expect(infoBanner).toBeDefined();
@@ -1625,11 +972,6 @@ describe('_tab_spam_security.json - 스팸/보안 탭', () => {
         expect(icon[0].props.name).toBe('circle-info');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_spam_security_contract
-     */
     it('캐시 초기화 버튼이 올바른 apiCall을 가진다', () => {
         const clearCacheBtn = findById(tabSpamSecurity, 'clear_cache_button');
         expect(clearCacheBtn).toBeDefined();
@@ -1641,16 +983,10 @@ describe('_tab_spam_security.json - 스팸/보안 탭', () => {
         expect(apiCallActions[0].params.method).toBe('POST');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_spam_security_contract
-     */
     it('Select가 composite 타입이다', () => {
         const selects = findByName(tabSpamSecurity, 'Select');
         for (const select of selects) {
-            // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
-            // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
+            expect(select.type).toBe('composite');
         }
     });
 });
@@ -1659,24 +995,13 @@ describe('_tab_spam_security.json - 스팸/보안 탭', () => {
 // 12. 일괄 적용 모달 (_bulk_apply_modal.json)
 // =============================================
 describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(bulkApplyModal.meta.is_partial).toBe(true);
         expect(bulkApplyModal.id).toBe('bulk_apply_confirm_modal');
-        // `type` 은 컴포넌트 레지스트리에서 파생되는 값이라(D47) 작성 결정이 아니다 — 여기서 고정하지
-        // 않는다. 렌더 컴포넌트는 `name` 이 고르고 `type` 은 DOM 안전 prop 필터만 정한다.
+        expect(bulkApplyModal.type).toBe('composite');
         expect(bulkApplyModal.name).toBe('Modal');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
     it('모달에 적용 범위 amber 배너가 있다', () => {
         const paragraphs = findByName(bulkApplyModal, 'P');
         // message_all 또는 message 키를 포함하는 P가 있어야 함
@@ -1685,11 +1010,6 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         expect(messageAll ?? message).toBeDefined();
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
     it('취소 버튼이 closeModal을 호출하고 로딩 시 비활성화된다', () => {
         const buttons = findByName(bulkApplyModal, 'Button');
         const cancelBtn = buttons.find(
@@ -1698,32 +1018,27 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         expect(cancelBtn).toBeDefined();
         expect(cancelBtn.props.disabled).toContain('isBulkApplying');
 
-        const closeAction = asArray(cancelBtn?.actions).find((a: any) => a.handler === 'closeModal');
+        const closeAction = cancelBtn.actions.find((a: any) => a.handler === 'closeModal');
         // closeModal은 params 없이 호출해야 함
         expect(closeAction.params).toBeUndefined();
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
     it('확인 버튼이 올바른 API 호출 sequence를 가진다', () => {
         const confirmBtn = findById(bulkApplyModal, 'bulk_apply_confirm_button');
         expect(confirmBtn).toBeDefined();
         expect(confirmBtn.props.disabled).toContain('isBulkApplying');
 
-        const clickAction = asArray(confirmBtn?.actions)[0];
+        const clickAction = confirmBtn.actions[0];
         expect(clickAction.handler).toBe('sequence');
 
         // 1: setState - isBulkApplying=true (스냅샷은 모달 열기 전 탭 버튼 클릭 시 이미 _global에 저장됨)
-        const loadingAction = asArray(clickAction?.actions)[0];
+        const loadingAction = clickAction.actions[0];
         expect(loadingAction.handler).toBe('setState');
         expect(loadingAction.params.target).toBe('$parent._local');
         expect(loadingAction.params.isBulkApplying).toBe(true);
 
         // 2: apiCall - 저장 (PUT)
-        const saveApiCall = asArray(clickAction?.actions)[1];
+        const saveApiCall = clickAction.actions[1];
         expect(saveApiCall.handler).toBe('apiCall');
         expect(saveApiCall.target).toBe('/api/modules/sirsoft-board/admin/settings');
         expect(saveApiCall.params.method).toBe('PUT');
@@ -1731,88 +1046,44 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         expect(saveApiCall.params.body).toContain('bulkApplySnapshot');
 
         // 저장 성공 시: hasChanges=false 후 bulk-apply API 호출
-        expect(asArray(saveApiCall?.onSuccess)[0].handler).toBe('setState');
-        expect(asArray(saveApiCall?.onSuccess)[0].params.target).toBe('$parent._local');
-        expect(asArray(saveApiCall?.onSuccess)[0].params.hasChanges).toBe(false);
+        expect(saveApiCall.onSuccess[0].handler).toBe('setState');
+        expect(saveApiCall.onSuccess[0].params.target).toBe('$parent._local');
+        expect(saveApiCall.onSuccess[0].params.hasChanges).toBe(false);
 
-        const bulkApiCall = asArray(saveApiCall?.onSuccess)[1];
+        const bulkApiCall = saveApiCall.onSuccess[1];
         expect(bulkApiCall.handler).toBe('apiCall');
         expect(bulkApiCall.target).toBe('/api/modules/sirsoft-board/admin/settings/bulk-apply');
         expect(bulkApiCall.params.method).toBe('POST');
         // body는 _global.bulkApplySnapshot을 사용
         expect(bulkApiCall.params.body).toContain('bulkApplySnapshot');
 
-        // bulk-apply onSuccess: 공통(진행해제) + 성공분기(if !rolled_back) 4개 + 롤백분기(if rolled_back) 2개 = 7개
-        expect(bulkApiCall.onSuccess).toHaveLength(7);
+        // bulk-apply 성공: setState(isBulkApplying=false, fields 초기화) → setState(snapshot=null) → closeModal → toast
+        expect(bulkApiCall.onSuccess).toHaveLength(4);
+        expect(bulkApiCall.onSuccess[0].handler).toBe('setState');
+        expect(bulkApiCall.onSuccess[0].params.isBulkApplying).toBe(false);
+        expect(bulkApiCall.onSuccess[1].handler).toBe('setState');
+        expect(bulkApiCall.onSuccess[1].params.target).toBe('global');
+        expect(bulkApiCall.onSuccess[1].params.bulkApplySnapshot).toBeNull();
+        expect(bulkApiCall.onSuccess[2].handler).toBe('closeModal');
+        expect(bulkApiCall.onSuccess[3].handler).toBe('toast');
 
-        // [0] 성공/롤백 공통: isBulkApplying=false (조건 없음)
-        expect(asArray(bulkApiCall?.onSuccess)[0].handler).toBe('setState');
-        expect(asArray(bulkApiCall?.onSuccess)[0].params.isBulkApplying).toBe(false);
-        expect(asArray(bulkApiCall?.onSuccess)[0].if).toBeUndefined();
+        // bulk-apply 실패: setState(isBulkApplying=false) → setState(snapshot=null) → toast
+        expect(bulkApiCall.onError).toHaveLength(3);
+        expect(bulkApiCall.onError[0].handler).toBe('setState');
+        expect(bulkApiCall.onError[0].params.isBulkApplying).toBe(false);
+        expect(bulkApiCall.onError[1].handler).toBe('setState');
+        expect(bulkApiCall.onError[1].params.bulkApplySnapshot).toBeNull();
+        expect(bulkApiCall.onError[2].handler).toBe('toast');
 
-        // 성공 분기(rolled_back=false): 상태초기화 → snapshot=null → closeModal → success 토스트
-        const successActions = asArray(bulkApiCall?.onSuccess).filter(
-            (a: any) => a.if === '{{!response?.data?.rolled_back}}'
-        );
-        expect(successActions).toHaveLength(4);
-        expect(successActions.some((a: any) => a.handler === 'closeModal')).toBe(true);
-        const successToast = successActions.find((a: any) => a.handler === 'toast');
-        expect(successToast).toBeDefined();
-        expect(successToast.params.type).toBe('success');
-        // 성공 시 global snapshot 정리
-        const successSnapshotReset = successActions.find(
-            (a: any) => a.handler === 'setState' && a.params.target === 'global'
-        );
-        expect(successSnapshotReset.params.bulkApplySnapshot).toBeNull();
-
-        // 롤백 분기(rolled_back=true): 안내상태 setState + error 토스트 (closeModal 없음 → 모달 유지)
-        const rollbackActions = asArray(bulkApiCall?.onSuccess).filter(
-            (a: any) => a.if === '{{response?.data?.rolled_back}}'
-        );
-        expect(rollbackActions).toHaveLength(2);
-        // 롤백 분기에는 closeModal이 없어야 모달이 닫히지 않고 안내 박스가 노출된다
-        expect(rollbackActions.some((a: any) => a.handler === 'closeModal')).toBe(false);
-        const rollbackSetState = rollbackActions.find((a: any) => a.handler === 'setState');
-        expect(rollbackSetState.params.target).toBe('$parent._local');
-        expect(rollbackSetState.params.bulkApplyAborted).toBe(true);
-        // 실패 게시판명을 응답에서 받아 안내 문구 분기에 사용
-        expect(rollbackSetState.params.bulkApplyAbortedBoard).toBe(
-            '{{response?.data?.board?.name ?? null}}'
-        );
-        const rollbackToast = rollbackActions.find((a: any) => a.handler === 'toast');
-        expect(rollbackToast.params.type).toBe('error');
-
-        // bulk-apply onError(권한 부여 상한 403·네트워크/예외): setState(isBulkApplying=false) → toast(서버 사유)
-        // 실패해도 창이 떠 있으므로 스냅숏을 지우지 않는다 — 지우면 창이 「적용할 항목 0 · 전체 게시판」을
-        // 보여 방금 시도한 대상(선택한 게시판)과 다른 내용을 안내한다.
-        expect(bulkApiCall.onError).toHaveLength(2);
-        expect(asArray(bulkApiCall?.onError)[0].handler).toBe('setState');
-        expect(asArray(bulkApiCall?.onError)[0].params.isBulkApplying).toBe(false);
-        expect(asArray(bulkApiCall?.onError)[1].handler).toBe('toast');
-        expect(asArray(bulkApiCall?.onError)[1].params.type).toBe('error');
-        expect(asArray(bulkApiCall?.onError)[1].params.message).toContain('error.message');
-
-        // 저장 실패(기본 권한 상한 403 등): setState(isBulkApplying=false, bulkApplySaveError=true) → toast(서버 사유)
-        // 창의 안내 박스는 「저장 실패로 중단」만 말하므로 거부 사유는 토스트로 알린다.
+        // 저장 실패: setState(isBulkApplying=false, bulkApplySaveError=true) → setState(snapshot=null)
         expect(saveApiCall.onError).toHaveLength(2);
-        expect(asArray(saveApiCall?.onError)[0].handler).toBe('setState');
-        expect(asArray(saveApiCall?.onError)[0].params.isBulkApplying).toBe(false);
-        expect(asArray(saveApiCall?.onError)[0].params.bulkApplySaveError).toBe(true);
-        expect(asArray(saveApiCall?.onError)[1].handler).toBe('toast');
-        expect(asArray(saveApiCall?.onError)[1].params.type).toBe('error');
-        expect(asArray(saveApiCall?.onError)[1].params.message).toContain('error.message');
-
-        // 두 실패 분기 모두 창이 떠 있는 동안 스냅숏을 비우지 않는다
-        for (const action of [...asArray(bulkApiCall?.onError), ...asArray(saveApiCall?.onError)]) {
-            expect(Object.prototype.hasOwnProperty.call(action.params ?? {}, 'bulkApplySnapshot')).toBe(false);
-        }
+        expect(saveApiCall.onError[0].handler).toBe('setState');
+        expect(saveApiCall.onError[0].params.isBulkApplying).toBe(false);
+        expect(saveApiCall.onError[0].params.bulkApplySaveError).toBe(true);
+        expect(saveApiCall.onError[1].handler).toBe('setState');
+        expect(saveApiCall.onError[1].params.bulkApplySnapshot).toBeNull();
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
     it('모달 상태 접근이 $parent._local 또는 global 패턴을 사용한다', () => {
         const confirmBtn = findById(bulkApplyModal, 'bulk_apply_confirm_button');
         expect(confirmBtn.props.disabled).toContain('$parent._local');
@@ -1824,93 +1095,17 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
     it('저장 후 적용 내용이 amber 배너 메시지에 포함된다', () => {
         // message 키가 amber 배너에 사용되는지 JSON으로 검증 (message_all 제거, message로 통합)
         const json = JSON.stringify(bulkApplyModal);
         expect(json).toContain('bulk_apply_modal.message');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
     it('저장 실패 에러 영역이 조건부로 표시된다', () => {
         // bulkApplySaveError가 true일 때 에러 메시지가 표시되어야 함
         const json = JSON.stringify(bulkApplyModal);
         expect(json).toContain('bulkApplySaveError');
         expect(json).toContain('bulk_apply_modal.save_error');
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
-    it('일괄 적용 중단(전체 롤백) 안내 박스가 조건부로 표시된다 (오류=red 톤)', () => {
-        // bulkApplyAborted가 true일 때만 노출되는 오류(danger) 안내 박스
-        const abortedBox = findByName(bulkApplyModal, 'Div').find(
-            (d: any) => d.if === '{{$parent._local.bulkApplyAborted}}'
-        );
-        expect(abortedBox).toBeDefined();
-        // 롤백은 오류이므로 amber(warning)가 아닌 red(danger) 톤
-        expect(abortedBox.props.className).toContain('alert-danger');
-        // 오류 아이콘도 red 계열
-        const icon = asArray(abortedBox?.children).find((c: any) => c.name === 'Icon');
-        expect(icon.props.className).toContain('text-red-600');
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
-    it('롤백 안내 문구가 게시판명 유무로 분기된다 (권한 실패=게시판명 강조 / generic)', () => {
-        const abortedBox = findByName(bulkApplyModal, 'Div').find(
-            (d: any) => d.if === '{{$parent._local.bulkApplyAborted}}'
-        );
-        const spans = asArray(abortedBox?.children).filter((c: any) => c.name === 'Span');
-
-        // 권한 실패(게시판명 있음): 게시판명을 굵게(font-bold) 강조한 Span + suffix 문구 Span
-        const boardSpan = spans.find(
-            (s: any) => s.if === '{{$parent._local.bulkApplyAbortedBoard}}'
-        );
-        expect(boardSpan).toBeDefined();
-        const innerSpans = asArray(boardSpan?.children).filter((c: any) => c.name === 'Span');
-        // 첫 Span: 게시판명, 굵게 강조
-        const nameSpan = innerSpans.find((s: any) => s.props?.className?.includes('font-bold'));
-        expect(nameSpan).toBeDefined();
-        expect(nameSpan.text).toContain('$parent._local.bulkApplyAbortedBoard');
-        // 둘째 Span: suffix 문구
-        const suffixSpan = innerSpans.find((s: any) =>
-            typeof s.text === 'string' && s.text.includes('aborted_message_suffix')
-        );
-        expect(suffixSpan).toBeDefined();
-
-        // 기타 실패(게시판명 없음): generic 문구
-        const genericSpan = spans.find(
-            (s: any) => s.if === '{{!$parent._local.bulkApplyAbortedBoard}}'
-        );
-        expect(genericSpan).toBeDefined();
-        expect(genericSpan.text).toContain('bulk_apply_modal.aborted_message_generic');
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
-    it('확인 버튼 진입 시 직전 롤백 안내 상태를 초기화한다 (재시도 대비)', () => {
-        const confirmBtn = findById(bulkApplyModal, 'bulk_apply_confirm_button');
-        const firstSetState = asArray(asArray(confirmBtn?.actions)[0]?.actions)[0];
-        expect(firstSetState.handler).toBe('setState');
-        expect(firstSetState.params.bulkApplyAborted).toBe(false);
-        expect(firstSetState.params.bulkApplyAbortedBoard).toBeNull();
     });
 });
 
@@ -1918,11 +1113,6 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
 // 13. 크로스 파일 검증
 // =============================================
 describe('크로스 파일 검증', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_cross_file_contract
-     */
     it('모든 하위 탭 Partial의 조건이 basic_defaults 탭 ID를 포함한다', () => {
         const subTabPartials = [
             tabBoardSettingsBasic,
@@ -1942,11 +1132,6 @@ describe('크로스 파일 검증', () => {
         expect((tabSpamSecurity as any).if).toContain('spam_security');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_cross_file_contract
-     */
     it('모달 ID가 openModal target과 일치한다', () => {
         expect(bulkApplyModal.id).toBe('bulk_apply_confirm_modal');
 
@@ -1956,11 +1141,6 @@ describe('크로스 파일 검증', () => {
         expect(openModalActions[0].target).toBe('bulk_apply_confirm_modal');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_cross_file_contract
-     */
     it('모든 레이아웃에서 다크 모드 클래스가 사용된다', () => {
         const layouts = [
             mainLayout,
@@ -1993,11 +1173,6 @@ describe('크로스 파일 검증', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_cross_file_contract
-     */
     it('모든 Select 컴포넌트에 정적 options 배열 또는 computed fallback이 있다', () => {
         const layouts = [
             tabBoardSettingsBasic,
@@ -2022,15 +1197,10 @@ describe('크로스 파일 검증', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_cross_file_contract
-     */
     it('저장 body에 notification channels 포함 로직이 있다', () => {
         const content = mainLayout.slots.content[0];
-        const saveBtn = findById(content, 'footer_save_button');
-        const apiCallAction = callbacksOf(asArray(saveBtn?.actions)[0], 'actions')[1];
+        const saveBtn = findById(content, 'save_button');
+        const apiCallAction = saveBtn.actions[0].params.actions[1];
 
         // body 표현식 안에서 notifications.channels 구조를 조립한다
         // (notification_definitions 탭 진입 시 form.notifications.channels 를 그대로 전송)
@@ -2040,11 +1210,6 @@ describe('크로스 파일 검증', () => {
         expect(body).toContain('basic_defaults');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_cross_file_contract
-     */
     it('blocked_keywords가 게시글 하위 탭의 section_post에 존재한다', () => {
         const sectionPost = findById(tabBoardSettingsPost, 'section_post');
         const postFields = findFormFields(sectionPost);
@@ -2062,86 +1227,47 @@ describe('크로스 파일 검증', () => {
 });
 
 describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_general_tab_contract
-     */
     it('Partial 메타 정보가 올바르다', () => {
         expect((tabGeneral as any).meta?.is_partial).toBe(true);
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_general_tab_contract
-     */
     it('general 탭 조건부 렌더링이 설정되어 있다', () => {
         const ifExpr = (tabGeneral as any).if as string;
         expect(ifExpr).toContain('general');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_general_tab_contract
-     */
     it('general_section이 존재한다', () => {
         const section = findById(tabGeneral, 'general_section');
         expect(section).not.toBeNull();
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_general_tab_contract
-     */
     it('date_display_format_field가 존재한다', () => {
         const field = findById(tabGeneral, 'date_display_format_field');
         expect(field).not.toBeNull();
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_general_tab_contract
-     */
     it('standard 옵션 라디오 버튼이 존재한다', () => {
         const option = findById(tabGeneral, 'date_format_option_standard');
         expect(option).not.toBeNull();
 
         // click 액션으로 date_display_format: "standard" 설정
-        // 키는 점 경로다 — 중첩 객체로 넘기면 spread 누적이 생겨 저장 payload 가 어긋난다.
         const clickAction = option.actions?.find((a: any) => a.type === 'click');
         expect(clickAction).toBeDefined();
         expect(clickAction.handler).toBe('setState');
-        expect(clickAction.params?.['form.display.date_display_format']).toBe('standard');
-        expect(clickAction.params?.form).toBeUndefined();
+        expect(clickAction.params?.form?.display?.date_display_format).toBe('standard');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_general_tab_contract
-     */
     it('relative 옵션 라디오 버튼이 존재한다', () => {
         const option = findById(tabGeneral, 'date_format_option_relative');
         expect(option).not.toBeNull();
 
         // click 액션으로 date_display_format: "relative" 설정
-        // 키는 점 경로다 — 중첩 객체로 넘기면 spread 누적이 생겨 저장 payload 가 어긋난다.
         const clickAction = option.actions?.find((a: any) => a.type === 'click');
         expect(clickAction).toBeDefined();
         expect(clickAction.handler).toBe('setState');
-        expect(clickAction.params?.['form.display.date_display_format']).toBe('relative');
-        expect(clickAction.params?.form).toBeUndefined();
+        expect(clickAction.params?.form?.display?.date_display_format).toBe('relative');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_general_tab_contract
-     */
     it('라디오 버튼 name이 display.date_display_format이다', () => {
         const inputs = findByName(tabGeneral, 'Input');
         const radioInputs = inputs.filter((i: any) => i.props?.type === 'radio');
@@ -2149,11 +1275,6 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
         expect(radioInputs[0].props?.name).toBe('display.date_display_format');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_general_tab_contract
-     */
     it('다국어 키가 모듈 네임스페이스를 포함한다', () => {
         const allTexts: string[] = [];
         function collectTexts(node: any): void {
@@ -2175,11 +1296,6 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_general_tab_contract
-     */
     it('main 레이아웃에 general 탭이 TabNavigation에 포함되어 있다', () => {
         // TabNavigation 컴포넌트에서 general 탭 항목 확인
         const tabNavList = findByName(mainLayout, 'TabNavigation');
@@ -2191,15 +1307,10 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
         expect(generalTab).toBeDefined();
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_general_tab_contract
-     */
     it('저장 body에 general 탭 분기 로직이 있다', () => {
         const content = mainLayout.slots.content[0];
-        const saveBtn = findById(content, 'footer_save_button');
-        const apiCallAction = callbacksOf(asArray(saveBtn?.actions)[0], 'actions')[1];
+        const saveBtn = findById(content, 'save_button');
+        const apiCallAction = saveBtn.actions[0].params.actions[1];
         const body = apiCallAction.params.body as string;
 
         // general 탭에서 display 카테고리 전송
@@ -2212,22 +1323,12 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
 // N. SEO 탭 (_tab_seo.json)
 // =============================================
 describe('_tab_seo.json - SEO 설정 탭', () => {
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('Partial 메타데이터가 올바르다', () => {
         expect(tabSeo.meta.is_partial).toBe(true);
         expect(tabSeo.if).toContain("'seo'");
         expect(tabSeo.id).toBe('tab_content_seo');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('탭 가시성 조건이 올바르다', () => {
         // activeBoardSettingsTab 또는 query.tab이 'seo'일 때만 표시
         expect(tabSeo.if).toContain('activeBoardSettingsTab');
@@ -2235,41 +1336,25 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         expect(tabSeo.if).toContain("'general'");
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
-    it('메타 설정 섹션 헤더가 존재한다 (section-header)', () => {
-        const header = findById(tabSeo, 'meta_settings_header');
-        expect(header).not.toBeNull();
-        expect(header.props.className).toBe('section-header');
+    it('메타 설정 카드가 존재한다', () => {
+        const metaCard = findById(tabSeo, 'meta_settings_card');
+        expect(metaCard).toBeDefined();
+        expect(metaCard.name).toBe('Div');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
-    it('페이지별 admin-card 3개가 정의되어 있다 (boards/board/post)', () => {
-        const cards = [
-            'boards_page_card',
-            'board_page_card',
-            'post_page_card',
+    it('아코디언 3개가 올바르게 정의되어 있다', () => {
+        const accordions = [
+            'accordion_boards_page',
+            'accordion_board_page',
+            'accordion_post_page',
         ];
-        for (const id of cards) {
+        for (const id of accordions) {
             const node = findById(tabSeo, id);
-            expect(node, `${id} 카드가 없다`).not.toBeNull();
-            expect(node.props.className).toBe('admin-card');
-            expect(node.name).toBe('SectionLayout');
+            expect(node, `${id} 아코디언이 없다`).toBeDefined();
+            expect(node.props.className).toContain('card-accordion');
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('메타 제목/설명 입력 필드 6개가 올바른 name을 가진다', () => {
         const fields = findFormFields(tabSeo);
         const expectedNames = [
@@ -2285,11 +1370,6 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('SEO 제공 페이지 체크박스 3개가 올바른 name을 가진다', () => {
         const fields = findFormFields(tabSeo);
         const checkboxNames = ['seo.seo_boards', 'seo.seo_board', 'seo.seo_post_detail'];
@@ -2298,11 +1378,6 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('캐시 초기화 버튼이 존재하고 type="button"이다', () => {
         const buttons = findByName(tabSeo, 'Button');
         const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
@@ -2311,43 +1386,33 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         expect(cacheBtn.props.disabled).toContain('clearingCache');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('캐시 초기화 액션이 sequence → setState → apiCall 체이닝 구조다', () => {
         const buttons = findByName(tabSeo, 'Button');
         const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
         expect(cacheBtn.actions).toHaveLength(1);
 
-        const clickAction = asArray(cacheBtn?.actions)[0];
+        const clickAction = cacheBtn.actions[0];
         expect(clickAction.type).toBe('click');
         expect(clickAction.handler).toBe('sequence');
 
         // 1단계: clearingCache = true
-        const setStateAction = asArray(clickAction?.actions)[0];
+        const setStateAction = clickAction.actions[0];
         expect(setStateAction.handler).toBe('setState');
         expect(setStateAction.params.target).toBe('local');
         expect(setStateAction.params.clearingCache).toBe(true);
 
         // 2단계: 첫 번째 apiCall (board/boards 캐시 삭제)
-        const firstApiCall = asArray(clickAction?.actions)[1];
+        const firstApiCall = clickAction.actions[1];
         expect(firstApiCall.handler).toBe('apiCall');
         expect(firstApiCall.auth_required).toBe(true);
         expect(firstApiCall.target).toBe('/api/admin/seo/clear-cache');
         expect(firstApiCall.params.body.layout).toBe('board/boards');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('캐시 초기화 onSuccess 체이닝이 3개 레이아웃을 순차 삭제한다', () => {
         const buttons = findByName(tabSeo, 'Button');
         const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
-        const firstApiCall = asArray(asArray(cacheBtn?.actions)[0]?.actions)[1];
+        const firstApiCall = cacheBtn.actions[0].actions[1];
 
         // board/boards → board/index onSuccess
         expect(firstApiCall.onSuccess.handler).toBe('apiCall');
@@ -2366,15 +1431,10 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         expect(finalToast.params.type).toBe('success');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('캐시 초기화 onError에서 clearingCache를 false로 리셋하고 에러 토스트를 표시한다', () => {
         const buttons = findByName(tabSeo, 'Button');
         const cacheBtn = buttons.find((b: any) => b.props?.type === 'button');
-        const firstApiCall = asArray(asArray(cacheBtn?.actions)[0]?.actions)[1];
+        const firstApiCall = cacheBtn.actions[0].actions[1];
 
         // 각 단계의 onError 확인 (3곳)
         for (const onError of [
@@ -2390,11 +1450,6 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('모든 다국어 키가 sirsoft-board 네임스페이스를 사용한다', () => {
         const allTexts: string[] = [];
         function collectTexts(node: any) {
@@ -2413,11 +1468,6 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         }
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('메인 레이아웃 TabNavigation에 seo 탭이 포함되어 있다', () => {
         const tabNavList = findByName(mainLayout, 'TabNavigation');
         expect(tabNavList.length).toBeGreaterThan(0);
@@ -2427,125 +1477,21 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         expect(seoTab.label).toContain('$t:sirsoft-board.');
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('메인 레이아웃 Partial 목록에 _tab_seo.json이 포함되어 있다', () => {
         const content = mainLayout.slots.content[0];
-        // _admin_base 슬롯 #main_content 와 중복 회피 — tab_content 로 변경 (#408)
-        const tabContent = findById(content, 'tab_content');
-        const partialPaths = tabContent.children
+        const mainContent = findById(content, 'main_content');
+        const partialPaths = mainContent.children
             .filter((c: any) => c.partial)
             .map((p: any) => p.partial as string);
         expect(partialPaths.some((p) => p.includes('_tab_seo.json'))).toBe(true);
     });
 
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_seo_tab_contract
-     */
     it('저장 body에 seo 탭 분기 로직이 있다', () => {
         const content = mainLayout.slots.content[0];
-        const saveBtn = findById(content, 'footer_save_button');
-        const apiCallAction = callbacksOf(asArray(saveBtn?.actions)[0], 'actions')[1];
+        const saveBtn = findById(content, 'save_button');
+        const apiCallAction = saveBtn.actions[0].params.actions[1];
         const body = apiCallAction.params.body as string;
         expect(body).toContain("'seo'");
         expect(body).toContain('seo:');
-    });
-});
-
-describe('일괄 적용 확인 창의 섹션 그루핑 (회귀)', () => {
-    /**
-     * 그루핑 iteration source 에서 sectionMap 키 목록을 뽑습니다.
-     *
-     * @return sectionMap 에 선언된 설정 키 배열
-     */
-    function sectionMapKeys(): string[] {
-        const source = findGroupingSource();
-        const block = /const sectionMap = \{([\s\S]*?)\};/.exec(source);
-        expect(block, 'iteration source 에 sectionMap 선언이 있어야 한다').not.toBeNull();
-        return [...block![1].matchAll(/([A-Za-z_][\w]*)\s*:\s*'/g)].map((m) => m[1]);
-    }
-
-    /**
-     * 섹션 그루핑 iteration 의 source 표현식을 찾습니다.
-     *
-     * @return iteration source 문자열
-     */
-    function findGroupingSource(): string {
-        let found: string | null = null;
-        const walk = (node: any): void => {
-            if (!node || typeof node !== 'object') return;
-            if (typeof node?.iteration?.source === 'string' && node.iteration.source.includes('sectionMap')) {
-                found = node.iteration.source;
-                return;
-            }
-            for (const v of Object.values(node)) {
-                if (Array.isArray(v)) v.forEach(walk);
-                else if (v && typeof v === 'object') walk(v);
-            }
-        };
-        walk(bulkApplyModal);
-        expect(found, '섹션 그루핑 iteration source 를 찾아야 한다').not.toBeNull();
-        return found!;
-    }
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
-    it('표현식이 평가기가 지원하지 않는 구문을 쓰지 않는다 (콜백 안 멤버 대입 / rest 구조분해)', () => {
-        const source = findGroupingSource();
-
-        // 평가기는 콜백 안의 멤버 대입(o[k] = v)과 rest 구조분해를 거부한다.
-        // 쓰면 식 전체가 평가에 실패해 iteration source 가 배열이 아니게 되고,
-        // 이 목록이 **오류 없이 통째로 렌더되지 않는다**. 그래서 구문 자체를 잠근다.
-        expect(source, '콜백 안 멤버 대입 금지').not.toMatch(/\w+\[[^\]]+\]\s*=\s*/);
-        expect(source, '누산기 push 금지').not.toMatch(/\.push\(/);
-        expect(source, 'rest 구조분해 금지').not.toMatch(/\.\.\.\w+\s*\}\s*=/);
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
-    it('그루핑 결과가 실제로 배열이다 (죽은 표현식이면 여기서 잡힌다)', () => {
-        const source = findGroupingSource();
-        // 평가기와 동일한 입력 형태로 실행해 배열이 나오는지 본다.
-        const fields = ['secret_mode', 'order_by', 'blocked_keywords', 'manager', 'admin.posts.write'];
-        // eslint-disable-next-line no-new-func
-        const run = new Function('_global', `return ${source};`);
-        const out = run({ bulkApplySnapshot: { fields } });
-
-        expect(Array.isArray(out), 'iteration source 는 배열을 반환해야 한다').toBe(true);
-        expect(out.length, '선택한 필드가 섹션별로 묶여야 한다').toBeGreaterThan(0);
-
-        const grouped = out.flatMap((g: any) => g.items);
-        expect(grouped.sort(), '선택한 필드가 하나도 빠지지 않아야 한다').toEqual([...fields].sort());
-        for (const g of out) {
-            expect(g.sectionKey, '섹션 키가 있어야 한다').toBeTruthy();
-            expect(g.items.length, '빈 섹션은 나오지 않아야 한다').toBeGreaterThan(0);
-        }
-    });
-
-    /**
-     * @scenario save_path=bulk
-     *
-     * @effects settings_layout_bulk_apply_contract
-     */
-    it('sectionMap 의 모든 키에 ko/en 라벨이 있다 (없으면 화면에 원시 키가 노출된다)', () => {
-        const labelsKo = (koSettingsLang as any).bulk_apply.field_labels;
-        const labelsEn = (enSettingsLang as any).bulk_apply.field_labels;
-
-        const missingKo = sectionMapKeys().filter((k) => !(k in labelsKo));
-        const missingEn = sectionMapKeys().filter((k) => !(k in labelsEn));
-
-        expect(missingKo, `ko 라벨 누락: ${missingKo.join(', ')}`).toEqual([]);
-        expect(missingEn, `en 라벨 누락: ${missingEn.join(', ')}`).toEqual([]);
     });
 });

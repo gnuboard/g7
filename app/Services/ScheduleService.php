@@ -7,22 +7,18 @@ use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Enums\ScheduleResultStatus;
 use App\Enums\ScheduleTriggerType;
 use App\Enums\ScheduleType;
-use App\Exceptions\ScheduleExecutionException;
 use App\Extension\HookManager;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
-use App\Support\OutboundUrlValidator;
-use App\Support\ScheduleCommandValidator;
 use Exception;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\Console\Output\BufferedOutput;
 
 class ScheduleService
 {
@@ -122,16 +118,13 @@ class ScheduleService
     public function delete(Schedule $schedule): bool
     {
         try {
-            // 이력만 지워지고 스케줄은 남는 상태를 막기 위해 두 단계를 하나로 묶는다.
-            $result = DB::transaction(function () use ($schedule) {
-                // before_delete 훅 실행
-                HookManager::doAction('core.schedule.before_delete', $schedule);
+            // before_delete 훅 실행
+            HookManager::doAction('core.schedule.before_delete', $schedule);
 
-                // 실행 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
-                $schedule->histories()->delete();
+            // 실행 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
+            $schedule->histories()->delete();
 
-                return $this->scheduleRepository->delete($schedule);
-            });
+            $result = $this->scheduleRepository->delete($schedule);
 
             // after_delete 훅 실행
             HookManager::doAction('core.schedule.after_delete', $schedule->id);
@@ -212,13 +205,10 @@ class ScheduleService
                 'output' => $result['output'] ?? null,
             ]);
 
-            // 스케줄 상태 업데이트 (다음 실행 시각은 모델이 계산, 영속화는 Repository 경유)
+            // 스케줄 상태 업데이트
             $schedule->last_result = ScheduleResultStatus::Success;
             $schedule->calculateNextRunAt();
-            $this->scheduleRepository->update($schedule, [
-                'last_result' => ScheduleResultStatus::Success,
-                'next_run_at' => $schedule->next_run_at,
-            ]);
+            $schedule->save();
 
             // after_run 훅 실행
             HookManager::doAction('core.schedule.after_run', $schedule, $history);
@@ -234,21 +224,13 @@ class ScheduleService
                 'error_output' => $e->getMessage(),
             ]);
 
-            // 스케줄 상태 업데이트 (다음 실행 시각은 모델이 계산, 영속화는 Repository 경유)
+            // 스케줄 상태 업데이트
             $schedule->last_result = ScheduleResultStatus::Failed;
             $schedule->calculateNextRunAt();
-            $this->scheduleRepository->update($schedule, [
-                'last_result' => ScheduleResultStatus::Failed,
-                'next_run_at' => $schedule->next_run_at,
-            ]);
+            $schedule->save();
 
-            // 거부 사유는 error 레벨 한 줄만 보는 알림 파이프라인에서도 보여야 한다 —
-            // 별도 warning 로그에만 남기면 그 경로에서는 "왜 막혔는지" 가 유실된다.
             Log::error('Schedule execution failed', [
                 'schedule_id' => $schedule->id,
-                'type' => $schedule->type->value,
-                'command' => $schedule->command,
-                'reason' => $e instanceof ScheduleExecutionException ? $e->reasonCode : null,
                 'error' => $e->getMessage(),
             ]);
 
@@ -263,30 +245,12 @@ class ScheduleService
      *
      * @param  Schedule  $schedule  스케줄
      * @return array 실행 결과
-     *
-     * @throws ScheduleExecutionException 차단목록에 걸린 명령일 때
      */
     private function executeArtisanCommand(Schedule $schedule): array
     {
-        // 저장 시점 검증 도입 이전 데이터나 DB 직접 수정으로 들어온 값을 방어한다
-        // (isUrlCallAllowed 와 동일 사유 — 실행 직전이 마지막 방어선).
-        $verdict = ScheduleCommandValidator::inspectArtisanCommand($schedule->command);
+        $output = '';
 
-        if (! $verdict['allowed']) {
-            // 업그레이드 점검 스텝을 두지 않으므로, 거부 사유는 이 로그가 유일한 운영 진단 통로다.
-            Log::warning('Schedule artisan command rejected', [
-                'schedule_id' => $schedule->id,
-                'command' => $schedule->command,
-                'reason' => $verdict['reason'],
-            ]);
-
-            throw ScheduleExecutionException::artisanNotAllowed($verdict['reason']);
-        }
-
-        // 문자열이 아닌 (명령명, 인자배열) 로 넘겨 StringInput 재파싱을 경유하지 않는다 —
-        // parameters 가 비어 있으면 Laravel 이 문자열 전체를 다시 파싱해
-        // 검증한 이름과 다른 명령이 실행될 수 있다.
-        Artisan::call($verdict['name'], $verdict['parameters'], new BufferedOutput);
+        Artisan::call($schedule->command, [], new \Symfony\Component\Console\Output\BufferedOutput);
 
         return [
             'output' => Artisan::output(),
@@ -300,26 +264,16 @@ class ScheduleService
      * @param  Schedule  $schedule  스케줄
      * @return array 실행 결과
      *
-     * @throws ScheduleExecutionException 차단목록에 걸렸거나 실행이 실패했을 때
+     * @throws Exception 실행 실패 시
      */
     private function executeShellCommand(Schedule $schedule): array
     {
-        // 저장 시점 검증 도입 이전 데이터나 DB 직접 수정으로 들어온 값을 방어한다
-        // (isUrlCallAllowed 와 동일 사유 — 실행 직전이 마지막 방어선).
-        $arguments = ScheduleCommandValidator::tokenizeShellCommand($schedule->command);
-
-        if ($arguments === null || ! ScheduleCommandValidator::isShellCommandAllowed($schedule->command)) {
-            throw ScheduleExecutionException::shellNotAllowed();
-        }
-
         $timeout = $schedule->timeout ?? 60;
 
-        // 문자열이 아닌 인자 배열로 넘겨 `/bin/sh -c` 를 경유하지 않는다 —
-        // 파이프·`;`·`$()` 같은 셸 메타문자가 명령으로 해석될 여지를 없앤다.
-        $result = Process::timeout($timeout)->run($arguments);
+        $result = Process::timeout($timeout)->run($schedule->command);
 
         if ($result->failed()) {
-            throw ScheduleExecutionException::shellCommandFailed($result->errorOutput(), $result->exitCode());
+            throw new Exception($result->errorOutput() ?: __('schedule.shell_command_failed'), $result->exitCode());
         }
 
         return [
@@ -334,49 +288,22 @@ class ScheduleService
      * @param  Schedule  $schedule  스케줄
      * @return array 실행 결과
      *
-     * @throws ScheduleExecutionException 내부망 URL 이거나 호출이 실패했을 때
+     * @throws Exception 호출 실패 시
      */
     private function executeUrlCall(Schedule $schedule): array
     {
-        // 저장된 URL 이 그대로 서버의 outbound 목적지가 되므로, 실행 직전에도 내부망 주소를 차단한다
-        // (저장 시점 검증 도입 이전 데이터나 DB 직접 수정으로 들어온 값 방어).
-        if (! $this->isUrlCallAllowed($schedule->command)) {
-            throw ScheduleExecutionException::urlNotPublic();
-        }
-
         $timeout = $schedule->timeout ?? 30;
 
         $response = Http::timeout($timeout)->get($schedule->command);
 
         if ($response->failed()) {
-            throw ScheduleExecutionException::httpRequestFailed($response->status());
+            throw new Exception(__('schedule.http_request_failed', ['status' => $response->status()]), $response->status());
         }
 
         return [
             'output' => 'HTTP Status: '.$response->status()."\n".$response->body(),
             'exit_code' => 0,
         ];
-    }
-
-    /**
-     * 스케줄의 URL 호출이 허용되는 목적지인지 판정합니다.
-     *
-     * 사설 IP·localhost 등 내부 네트워크 주소는 기본 차단하되, 사내 엔드포인트를 주기 호출하는
-     * 정당한 운영을 위해 `security.allow_internal_outbound_urls` 로 허용할 수 있습니다.
-     * 허용하더라도 userinfo 위장·비 HTTP scheme 은 계속 거부합니다.
-     *
-     * @param  string  $url  스케줄에 저장된 호출 URL
-     * @return bool 호출을 허용하면 true
-     */
-    private function isUrlCallAllowed(string $url): bool
-    {
-        $options = ['schemes' => ['http', 'https']];
-
-        if ((bool) g7_core_settings('security.allow_internal_outbound_urls', false)) {
-            return OutboundUrlValidator::isStructurallySafeUrl($url, $options);
-        }
-
-        return OutboundUrlValidator::isPublicHttpUrl($url, $options);
     }
 
     /**
@@ -489,26 +416,6 @@ class ScheduleService
         return [
             'deleted_count' => $deletedCount,
         ];
-    }
-
-    /**
-     * 보존 기간이 지난 실행 이력을 정리합니다 (자동 파기).
-     *
-     * 운영자가 고른 ID 를 지우는 bulkDeleteHistory 와 달리 대상을 기간으로 정하고
-     * 사람 없이 예약 실행되므로 별개의 훅을 발행합니다.
-     *
-     * @param  int  $days  보존 기간 (일)
-     * @return int 삭제된 건수
-     */
-    public function pruneHistory(int $days): int
-    {
-        HookManager::doAction('core.schedule.before_prune_history', $days);
-
-        $deletedCount = $this->historyRepository->deleteOlderThan($days);
-
-        HookManager::doAction('core.schedule.after_prune_history', $days, $deletedCount);
-
-        return $deletedCount;
     }
 
     /**

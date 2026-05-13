@@ -8,10 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
 
 /**
  * 레이아웃 확장 모델
@@ -22,18 +19,15 @@ use Illuminate\Support\Carbon;
  * @property int $template_id 템플릿 ID
  * @property LayoutExtensionType $extension_type 확장 타입
  * @property string $target_name 타겟 이름
- * @property string|null $fragment_key 조각 식별자 (소스 파일 기본 이름, 확장자 제외)
  * @property LayoutSourceType $source_type 출처 타입
  * @property string $source_identifier 출처 식별자
  * @property string|null $override_target 오버라이드 대상
  * @property array $content 확장 정의 JSON
- * @property string|null $original_content_hash 원본 확장 콘텐츠 SHA-256 해시
- * @property int|null $original_content_size 원본 확장 콘텐츠 바이트 크기
  * @property int $priority 우선순위
  * @property bool $is_active 활성 상태
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property Carbon|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read Template $template 템플릿 관계
  */
 class LayoutExtension extends Model
@@ -56,28 +50,12 @@ class LayoutExtension extends Model
         'template_id',
         'extension_type',
         'target_name',
-        'fragment_key',
         'source_type',
         'source_identifier',
         'override_target',
         'content',
-        'original_content_hash',
-        'original_content_size',
-        'original_content',
         'priority',
         'is_active',
-        'lock_version',
-    ];
-
-    /**
-     * 직렬화에서 숨길 속성 — 원본 본문은 3자 병합 기준 전용이라 API 응답·편집기로 내보내지 않는다.
-     *
-     * 캐스트를 두지 않는다: 문자열 그대로 두어야 빈 map(`{}`) 모양이 보존된다.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'original_content',
     ];
 
     /**
@@ -93,7 +71,6 @@ class LayoutExtension extends Model
             'content' => 'array',
             'priority' => 'integer',
             'is_active' => 'boolean',
-            'lock_version' => 'integer',
         ];
     }
 
@@ -108,30 +85,9 @@ class LayoutExtension extends Model
     }
 
     /**
-     * 버전 이력 관계
-     *
-     * @return HasMany
-     */
-    public function versions(): HasMany
-    {
-        return $this->hasMany(TemplateLayoutExtensionVersion::class, 'extension_id');
-    }
-
-    /**
-     * 최신 버전 관계
-     *
-     * @return HasOne
-     */
-    public function latestVersion(): HasOne
-    {
-        return $this->hasOne(TemplateLayoutExtensionVersion::class, 'extension_id')
-            ->orderByDesc('version');
-    }
-
-    /**
      * 활성 확장만 조회
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopeActive(Builder $query): Builder
@@ -142,7 +98,7 @@ class LayoutExtension extends Model
     /**
      * Extension Point 타입만 조회
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopeExtensionPoints(Builder $query): Builder
@@ -153,7 +109,7 @@ class LayoutExtension extends Model
     /**
      * Overlay 타입만 조회
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopeOverlays(Builder $query): Builder
@@ -164,9 +120,9 @@ class LayoutExtension extends Model
     /**
      * 특정 출처의 확장만 조회
      *
-     * @param  Builder  $query
-     * @param  LayoutSourceType  $sourceType
-     * @param  string  $identifier
+     * @param Builder $query
+     * @param LayoutSourceType $sourceType
+     * @param string $identifier
      * @return Builder
      */
     public function scopeBySource(Builder $query, LayoutSourceType $sourceType, string $identifier): Builder
@@ -178,7 +134,7 @@ class LayoutExtension extends Model
     /**
      * 우선순위 순으로 정렬
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopeOrdered(Builder $query): Builder
@@ -190,7 +146,7 @@ class LayoutExtension extends Model
     /**
      * 템플릿 오버라이드만 조회
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopeTemplateOverrides(Builder $query): Builder
@@ -201,8 +157,8 @@ class LayoutExtension extends Model
     /**
      * 특정 모듈/플러그인에 대한 템플릿 오버라이드 조회
      *
-     * @param  string  $overrideTarget  오버라이드 대상 모듈/플러그인 식별자
-     * @param  Builder  $query
+     * @param Builder $query
+     * @param string $overrideTarget 오버라이드 대상 모듈/플러그인 식별자
      * @return Builder
      */
     public function scopeOverridingTarget(Builder $query, string $overrideTarget): Builder
@@ -213,7 +169,7 @@ class LayoutExtension extends Model
     /**
      * 모듈 출처만 조회
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopeFromModules(Builder $query): Builder
@@ -224,7 +180,7 @@ class LayoutExtension extends Model
     /**
      * 플러그인 출처만 조회
      *
-     * @param  Builder  $query
+     * @param Builder $query
      * @return Builder
      */
     public function scopeFromPlugins(Builder $query): Builder

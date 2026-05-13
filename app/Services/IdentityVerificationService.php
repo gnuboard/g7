@@ -4,14 +4,11 @@ namespace App\Services;
 
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
-use App\Enums\IdentityVerificationStatus;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\User;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 /**
  * 본인인증 유스케이스 서비스.
@@ -115,10 +112,6 @@ class IdentityVerificationService
     /**
      * Challenge 를 취소합니다.
      *
-     * before/after_cancel 훅을 발행하여 외부 plugin 이 자기 record (예: 이니시스의 challenge_mapping)
-     * 를 cancel 시점에 정리할 수 있도록 한다. 다른 라이프사이클 이벤트(before/after_request,
-     * before/after_verify) 와 일관된 hook 페어 구조 유지.
-     *
      * @param  string  $challengeId  Challenge UUID
      * @return bool 취소 성공 여부 (대상 challenge 가 없으면 false)
      */
@@ -126,26 +119,15 @@ class IdentityVerificationService
     {
         $log = $this->logRepository->findById($challengeId);
 
-        HookManager::doAction('core.identity.before_cancel', $challengeId, $log);
-
         if (! $log) {
-            HookManager::doAction('core.identity.after_cancel', $challengeId, null, false);
-
             return false;
         }
 
-        $result = $this->manager->get($log->provider_id)->cancel($challengeId);
-
-        HookManager::doAction('core.identity.after_cancel', $challengeId, $log, $result);
-
-        return $result;
+        return $this->manager->get($log->provider_id)->cancel($challengeId);
     }
 
     /**
      * verification_token 을 소비(consume)합니다 — signup_before_submit 정책 통과 시 재사용 방지.
-     *
-     * before/after_consume_token 훅을 발행하여 외부 plugin 이 token 소비 시점에 자기 후속 작업
-     * (예: 이니시스의 가입 완료 후 record 영속화) 을 listener 로 분리할 수 있도록 한다.
      *
      * @param  string  $token  IDV 발행 verification_token
      * @return bool consume 성공 여부 (verified 로그 부재 시 false)
@@ -154,21 +136,13 @@ class IdentityVerificationService
     {
         $log = $this->logRepository->findVerifiedForToken($token, 'signup');
 
-        HookManager::doAction('core.identity.before_consume_token', $token, $log);
-
         if (! $log) {
-            HookManager::doAction('core.identity.after_consume_token', $token, null, false);
-
             return false;
         }
 
-        $result = $this->logRepository->updateById($log->id, [
+        return $this->logRepository->updateById($log->id, [
             'consumed_at' => now(),
         ]);
-
-        HookManager::doAction('core.identity.after_consume_token', $token, $log, $result);
-
-        return $result;
     }
 
     /**
@@ -177,15 +151,11 @@ class IdentityVerificationService
      * 비동기 검증 흐름(Stripe Identity / 토스인증 push / 외부 redirect 콜백 대기) 에서 클라이언트가
      * `GET /api/identity/challenges/{id}` 로 상태를 폴링할 때 사용합니다.
      *
-     * 반환 필드는 코드 본체·내부 metadata·시도 횟수를 제외한 공개 안전 필드만:
-     * - id / status / provider_id / purpose / render_hint / expires_at / max_attempts / public_payload
-     *
-     * max_attempts 는 정책 상수라 노출해도 무방하며, 프론트 풀페이지 (`auth/identity_challenge.g7.html`) 가
-     * 시도 한도 표시에 사용한다. 누적 시도 횟수(attempts)는 싣지 않는다 — 사유는 반환 지점 주석 참조.
+     * 반환 필드는 시도 횟수·코드 본체·내부 metadata 를 제외한 공개 안전 필드만:
+     * - id / status / render_hint / expires_at / public_payload (요청 폴링에 필요한 최소집합)
      *
      * @param  string  $challengeId  Challenge UUID
      * @return array<string, mixed>|null 공개 상태 또는 null (없는 경우)
-     *
      * @since engine-v1.46.0
      */
     public function getStatus(string $challengeId): ?array
@@ -202,53 +172,13 @@ class IdentityVerificationService
             $publicPayload = $log->properties['public_payload'];
         }
 
-        // 누적 시도 횟수(attempts) 는 노출하지 않는다.
-        // 이 엔드포인트는 권한 가드 없는 공개 폴링용이라 challenge id 만 알면 누구나 조회할 수 있고,
-        // 남의 인증 시도 실패 횟수가 드러나면 잠금 직전까지 시도 횟수를 맞춰 보는 데 쓰일 수 있다.
-        // 상한(max_attempts) 은 정책 상수라 노출해도 무방하다 — 아래 반환 배열의 주석 참조.
         return [
             'id' => $log->id,
             'status' => $log->status->value,
-            'provider_id' => $log->provider_id,
-            'purpose' => $log->purpose,
             'render_hint' => $log->render_hint,
             'expires_at' => optional($log->expires_at)->toIso8601String(),
-            // 시도 횟수(attempts)는 공개 폴링 응답에 싣지 않는다 — challenge id 만 알면 누구나
-            // 조회할 수 있는 경로라, 남의 인증 시도가 몇 번 실패했는지가 드러나고 잠금 직전까지
-            // 시도 횟수를 맞춰 보는 데도 쓰일 수 있다. 상한(max_attempts)은 정책 상수라 노출해도
-            // 무방하며, 화면의 '남은 시도 횟수' 는 모달이 자기 시도를 세어 표시하므로 영향이 없다.
-            'max_attempts' => (int) $log->max_attempts,
             'public_payload' => $publicPayload,
         ];
-    }
-
-    /**
-     * 지정 purpose 로 검증을 마친 challenge 의 대상 사용자를 반환합니다.
-     *
-     * 로그인 2단계 인증처럼 **아직 인증되지 않은 주체**를 challenge 로만 식별해야 하는 흐름에서
-     * 사용합니다. `getStatus()` 는 challenge id 만 알면 누구나 조회할 수 있는 공개 폴링 경로라
-     * `user_id` 를 싣지 않으므로, 주체 해석은 이 메서드로 분리합니다.
-     *
-     * purpose 를 인자로 받아 대조하는 이유: 다른 용도(가입·비밀번호 재설정)로 발급된 challenge 를
-     * 들고 와 로그인하는 것을 막기 위함입니다.
-     *
-     * @param  string  $challengeId  Challenge UUID
-     * @param  string  $purpose  기대하는 purpose
-     * @return User|null 검증 완료된 대상 사용자 (조건 불일치 시 null)
-     */
-    public function resolveVerifiedUser(string $challengeId, string $purpose): ?User
-    {
-        $log = $this->logRepository->findById($challengeId);
-
-        if (! $log || $log->purpose !== $purpose || $log->verified_at === null) {
-            return null;
-        }
-
-        if ($log->user_id === null) {
-            return null;
-        }
-
-        return $this->userRepository->findById((int) $log->user_id);
     }
 
     /**
@@ -262,7 +192,6 @@ class IdentityVerificationService
      * @param  array<string, mixed>  $input  provider 가 보낸 페이로드 (code/token/state 등)
      * @param  array<string, mixed>  $context  origin 정보 (origin_type=callback)
      * @return VerificationResult provider 의 검증 결과 (challenge mismatch 시 failure)
-     *
      * @since engine-v1.46.0
      */
     public function handleProviderCallback(string $providerId, string $challengeId, array $input, array $context = []): VerificationResult
@@ -283,74 +212,5 @@ class IdentityVerificationService
         $context['origin_identifier'] = $context['origin_identifier'] ?? "/api/identity/callback/{$providerId}";
 
         return $this->verify($challengeId, $input, $context);
-    }
-
-    /**
-     * 링크 방식 challenge 에 시작 화면만 아는 일회용 비밀값을 발급합니다.
-     *
-     * 링크 방식은 확인을 메일 링크(다른 기기일 수 있음)가 하므로, 인증을 시작한 화면은 확인 결과의 토큰을
-     * 받을 길이 없다. 시작 응답에만 이 비밀값을 주고(저장은 해시만), 확인이 끝나면 `claim()` 으로 토큰을
-     * 받아 가게 한다. 인증번호 방식은 시작 화면이 직접 확인하므로 발급하지 않는다.
-     *
-     * @param  string  $challengeId  Challenge UUID
-     * @return string|null 비밀값 (링크 방식이 아니거나 challenge 가 없으면 null)
-     */
-    public function issueClaimSecret(string $challengeId): ?string
-    {
-        $log = $this->logRepository->findById($challengeId);
-        if (! $log || $log->render_hint !== 'link') {
-            return null;
-        }
-
-        $secret = Str::random(48);
-        $metadata = is_array($log->metadata) ? $log->metadata : [];
-        $metadata['claim_secret_hash'] = hash('sha256', $secret);
-
-        $this->logRepository->updateById($log->id, ['metadata' => $metadata]);
-
-        return $secret;
-    }
-
-    /**
-     * 시작 화면이 링크 방식 challenge 의 확인 결과 토큰을 받아 갑니다 (한 번만).
-     *
-     * 반환 status: `verified`(토큰 포함) · `pending`(아직 링크를 열지 않음) · `denied`(비밀값 불일치·발급 안 됨)
-     * · `claimed`(이미 받아 감) · 그 밖의 종료 상태(`expired`·`failed`·`cancelled` 등).
-     *
-     * @param  string  $challengeId  Challenge UUID
-     * @param  string  $secret  시작 응답으로 받은 비밀값
-     * @return array{status: string, verification_token?: string} 결과
-     */
-    public function claim(string $challengeId, string $secret): array
-    {
-        $log = $this->logRepository->findById($challengeId);
-        $hash = is_array($log?->metadata) ? ($log->metadata['claim_secret_hash'] ?? null) : null;
-
-        if (! $log || ! is_string($hash) || ! hash_equals($hash, hash('sha256', $secret))) {
-            return ['status' => 'denied'];
-        }
-
-        $status = $log->status->value;
-        if (in_array($status, [
-            IdentityVerificationStatus::Requested->value,
-            IdentityVerificationStatus::Sent->value,
-            IdentityVerificationStatus::Processing->value,
-        ], true)) {
-            return ['status' => $log->expires_at && $log->expires_at->isPast() ? IdentityVerificationStatus::Expired->value : 'pending'];
-        }
-
-        if ($status !== IdentityVerificationStatus::Verified->value) {
-            return ['status' => $status];
-        }
-
-        if (! empty($log->metadata['claimed_at']) || $log->consumed_at !== null || ! is_string($log->verification_token)) {
-            return ['status' => 'claimed'];
-        }
-
-        $metadata = $log->metadata;
-        $metadata['claimed_at'] = Carbon::now()->toIso8601String();
-        $this->logRepository->updateById($log->id, ['metadata' => $metadata]);
-
-        return ['status' => IdentityVerificationStatus::Verified->value, 'verification_token' => $log->verification_token];
     }
 }

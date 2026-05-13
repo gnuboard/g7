@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Extension\ExtensionManager;
-use App\Extension\Testing\ExtensionTestAllowlist;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,26 +25,16 @@ class ModuleServiceProvider extends ServiceProvider
             return;
         }
 
-        $allowlistActive = ExtensionTestAllowlist::isActive();
-
-        foreach ($this->discoverModuleServiceProviders($modulesPath) as $provider) {
-            // 테스트 환경 확장 격리: allowlist 밖 모듈의 ServiceProvider 등록 차단
-            if ($allowlistActive && ! ExtensionTestAllowlist::isAllowed('module', $provider['name'])) {
-                continue;
-            }
-
-            $this->app->register($provider['class']);
+        foreach ($this->discoverModuleServiceProviders($modulesPath) as $providerClass) {
+            $this->app->register($providerClass);
         }
     }
 
     /**
      * modules 디렉토리를 스캔하여 모든 모듈의 ServiceProvider 클래스들을 발견합니다.
      *
-     * 각 항목은 모듈 디렉토리명('name')과 ServiceProvider 클래스명('class')을
-     * 함께 담습니다. 디렉토리명은 테스트 환경 확장 격리 가드에 사용됩니다.
-     *
      * @param  string  $modulesPath  모듈 디렉토리 경로
-     * @return array<array{name: string, class: string}> ServiceProvider 정보 배열
+     * @return array<string> ServiceProvider 클래스명 배열
      */
     protected function discoverModuleServiceProviders(string $modulesPath): array
     {
@@ -67,7 +56,7 @@ class ModuleServiceProvider extends ServiceProvider
                 $providerClass = $this->resolveProviderClass($moduleName, $providerFile);
 
                 if ($providerClass && class_exists($providerClass)) {
-                    $providers[] = ['name' => $moduleName, 'class' => $providerClass];
+                    $providers[] = $providerClass;
                 }
             }
         }

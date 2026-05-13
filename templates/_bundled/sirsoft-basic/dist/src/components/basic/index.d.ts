@@ -37,5 +37,7 @@ export { Section, type SectionProps } from './Section';
 export { Svg, type SvgProps } from './Svg';
 export { Icon, type IconProps } from './Icon';
 export { Code, type CodeProps } from './Code';
+export { Footer, type FooterProps } from './Footer';
+export { Header, type HeaderProps } from './Header';
 export { Hr, type HrProps } from './Hr';
 export { IconName, type IconStyle, type IconSize } from './IconTypes';

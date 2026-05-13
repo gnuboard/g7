@@ -1,18 +1,13 @@
 <?php
 
-// audit:allow job-generator-needs-scale-test 이번 변경은 리스너 1건을 해석하는 지점에 가드를 더한 것으로,
-// 처리 건수에 따라 동작이 달라지는 경로(배치·생성기)를 도입하지 않는다. 디스패치 단위 의미는 종전과 동일.
-
 namespace App\Jobs;
 
 use App\Extension\HookArgumentSerializer;
 use App\Extension\HookContextCapture;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -28,6 +23,8 @@ class DispatchHookListenerJob implements ShouldQueue
 
     /**
      * 최대 재시도 횟수
+     *
+     * @var int
      */
     public int $tries = 3;
 
@@ -49,71 +46,23 @@ class DispatchHookListenerJob implements ShouldQueue
     /**
      * Job을 실행합니다.
      *
-     * @return void 반환값 없음
+     * @return void
      */
     public function handle(): void
     {
-        // 큐 드라이버가 sync 면 이 Job 은 원 HTTP 요청과 **같은 컨테이너**에서 실행된다.
-        // restore() 가 재구성 Request 를 바인딩하면 그 뒤로 이어지는 같은 요청의 코드는
-        // 헤더·입력·메서드가 전부 지워진 가짜 GET 요청을 보게 된다 — 뒤 순위 훅 리스너가
-        // 전송 헤더를 읽지 못해 조용히 건너뛰는 사고가 여기서 난다.
-        // 워커 프로세스에서는 원래 바인딩이 없어 아래 원복이 아무 일도 하지 않는다.
-        $previousRequest = app()->bound('request') ? app('request') : null;
-        // 데몬 워커는 컨테이너를 작업 간에 재사용하므로, 복원한 진입점도 끝나면 되돌린다
-        // — 남겨 두면 다음 작업(다른 진입점에서 온 것)이 이 값을 물려받는다.
-        $previousOrigin = app()->bound(HookContextCapture::ORIGIN_BINDING)
-            ? app(HookContextCapture::ORIGIN_BINDING)
-            : null;
-        // 인증 사용자도 같은 이유로 되돌린다. restore() 는 컨텍스트에 user_id 가 없으면 인증을 건드리지
-        // 않으므로, 앞 작업(회원)이 setUser() 한 사용자가 다음 작업(CLI·스케줄러)에 남아 활동 로그
-        // 행위자가 그 회원으로 기록됐다(#138 실측). hasUser() 로 읽어 인증 해석을 새로 일으키지 않는다.
-        $previousUser = Auth::hasUser() ? Auth::user() : null;
+        // 큐 워커 컨텍스트에 원래 요청의 Auth/Request/Locale 복원
+        // (Job 종료 시 컨테이너 폐기되므로 finally 원복 불필요)
+        HookContextCapture::restore($this->context);
 
-        try {
-            HookContextCapture::restore($this->context);
-
-            $args = HookArgumentSerializer::deserialize($this->serializedArgs);
-
-            try {
-                $listener = app($this->listenerClass);
-            } catch (BindingResolutionException $e) {
-                // 리스너를 만들 수 없다는 것은 그 확장이 이 런타임에 배선되지 않았다는 뜻이다.
-                // Action 훅은 부가 작업이므로 호출자의 작업까지 함께 실패시키지 않고 기록만 남긴다
-                // (큐 드라이버가 sync 인 환경에서 원 요청이 500 이 되는 것을 막는다).
-                Log::warning('훅 리스너를 해석할 수 없어 건너뜁니다 (확장 미배선)', [
-                    'listener' => $this->listenerClass,
-                    'method' => $this->method,
-                    'exception' => $e->getMessage(),
-                ]);
-
-                return;
-            }
-
-            $listener->{$this->method}(...$args);
-        } finally {
-            if ($previousRequest !== null) {
-                app()->instance('request', $previousRequest);
-            }
-
-            if ($previousOrigin !== null) {
-                app()->instance(HookContextCapture::ORIGIN_BINDING, $previousOrigin);
-            } else {
-                app()->forgetInstance(HookContextCapture::ORIGIN_BINDING);
-            }
-
-            if ($previousUser !== null) {
-                Auth::setUser($previousUser);
-            } else {
-                Auth::forgetUser();
-            }
-        }
+        $args = HookArgumentSerializer::deserialize($this->serializedArgs);
+        app($this->listenerClass)->{$this->method}(...$args);
     }
 
     /**
      * Job 실패 시 로그를 기록합니다.
      *
      * @param  \Throwable  $exception  발생한 예외
-     * @return void 반환값 없음
+     * @return void
      */
     public function failed(\Throwable $exception): void
     {
@@ -128,7 +77,7 @@ class DispatchHookListenerJob implements ShouldQueue
     /**
      * Job의 표시 이름을 반환합니다.
      *
-     * @return string 리스너 클래스와 메서드를 담은 표시 이름
+     * @return string
      */
     public function displayName(): string
     {

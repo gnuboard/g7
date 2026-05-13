@@ -5,7 +5,7 @@
         "ko": "Hello 사용자 템플릿",
         "en": "Hello User Template"
     },
-    "version": "0.2.0",
+    "version": "0.1.0-beta.1",
     "license": "MIT",
     "description": {
         "ko": "학습용 최소 샘플 사용자 템플릿 (Basic 8개 컴포넌트)",
@@ -13,43 +13,29 @@
     },
     "type": "user",
     "hidden": true,
-    "locales": [
-        "ko",
-        "en"
-    ],
+    "locales": ["ko", "en"],
     "author": {
         "name": "gnuboard7",
         "email": "contact@gnuboard.com",
         "url": "https://gnuboard.com"
     },
-    "release_date": "2026-10-10",
-    "g7_version": ">=7.1.0",
+    "release_date": "2026-04-21",
+    "g7_version": ">=7.0.0-beta.4",
     "dependencies": {
         "modules": {
-            "gnuboard7-hello_module": ">=0.2.0"
+            "gnuboard7-hello_module": ">=0.1.0-beta.1"
         },
         "plugins": {}
     },
-    "github_url": "https://github.com/gnuboard/g7-template-gnuboard7-hello_user_template",
-    "github_changelog_url": "https://github.com/gnuboard/g7-template-gnuboard7-hello_user_template/blob/main/CHANGELOG.md",
     "assets": {
-        "css": [],
-        "js": [
-            "dist/js/components.iife.js"
-        ],
+        "css": ["dist/css/components.css"],
+        "js": ["dist/js/components.iife.js"],
         "fonts": [],
         "images": []
     },
     "components": {
         "basic": [
-            "div",
-            "button",
-            "h1",
-            "h2",
-            "h3",
-            "a",
-            "span",
-            "img"
+            "div", "button", "h1", "h2", "h3", "a", "span", "img"
         ],
         "composite": [],
         "layout": []
@@ -64,13 +50,6 @@
             "maintenance": "errors/maintenance"
         }
     },
-    "externals": [
-        {
-            "id": "fontawesome",
-            "type": "style",
-            "asset": "vendor/font-awesome/6.4.0/css/all.inlined.css"
-        }
-    ],
     "features": {
         "dark_mode": false,
         "responsive": false,

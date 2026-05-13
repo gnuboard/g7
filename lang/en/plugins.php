@@ -87,7 +87,6 @@ return [
 
     // Error messages
     'errors' => [
-        'uninstall_blocked_by_dependents' => 'This plugin cannot be uninstalled while extensions that depend on it are active. Deactivate or uninstall them first: :extensions',
         'force_update_no_source' => 'Cannot force update :plugin. Neither bundle nor GitHub URL is available.',
         'downgrade_blocked' => 'Downgrade blocked (:from → :to). Use --force to allow intentional downgrades.',
         'invalid_permission_structure' => 'Invalid permission structure for plugin ":identifier": :reason',
@@ -103,8 +102,7 @@ return [
         'layout_validation_json_error' => 'Failed to parse JSON in layout file :file: :error',
         'layout_validation_missing_name' => 'layout_name is missing in layout file :file.',
         'layout_validation_partial_error' => 'Failed to process partial in layout file :file: :error (partial: :partial)',
-        'layout_validation_markup_error' => 'Failed to compile markup in layout file :file: :error',
-        'layout_validation_validation_failed' => 'Layout validation failed for plugin :identifier. :count error found.|Layout validation failed for plugin :identifier. :count errors found.',
+        'layout_validation_validation_failed' => 'Layout validation failed for plugin :identifier. :count error(s) found: :error',
         'operation_in_progress' => 'Plugin ":name" is currently :status. Please wait until the operation is complete.',
         'github_api_failed' => 'GitHub API call failed: :error',
         'invalid_github_url' => 'Invalid GitHub URL.',
@@ -128,6 +126,17 @@ return [
         'install_failed' => 'Plugin installation failed: :error',
     ],
 
+    // Validation messages (FormRequest)
+    'validation' => [
+        'github_url_required' => 'GitHub URL is required.',
+        'github_url_invalid' => 'Invalid URL format.',
+        'github_url_format' => 'Must be a GitHub repository URL. (e.g., https://github.com/owner/repo)',
+        'file_required' => 'Please select a file to install.',
+        'file_invalid' => 'Invalid file.',
+        'file_must_be_zip' => 'Only ZIP files can be uploaded.',
+        'file_max_size' => 'File size must not exceed :sizeMB.',
+    ],
+
     // Artisan command messages
     'commands' => [
         'list' => [
@@ -144,15 +153,15 @@ return [
                 'uninstalled' => 'Not Installed',
             ],
             'no_plugins' => 'No plugins found.',
-            'summary' => 'Total :total plugin (Installed: :installed, Active: :active)|Total :total plugins (Installed: :installed, Active: :active)',
+            'summary' => 'Total :total plugins (Installed: :installed, Active: :active)',
             'invalid_status' => 'Invalid status. (installed, uninstalled, active, inactive)',
         ],
         'install' => [
             'success' => 'Plugin ":plugin" installed successfully',
             'vendor' => 'Vendor: :vendor',
             'version' => 'Version: :version',
-            'roles_created' => ':count role created|:count roles created',
-            'permissions_created' => ':count permission created|:count permissions created',
+            'roles_created' => ':count roles created',
+            'permissions_created' => ':count permissions created',
             'already_installed' => 'Plugin ":plugin" is already installed.',
             'force_reinstall' => 'Force reinstalling plugin ":plugin" (overwriting active directory)...',
         ],
@@ -160,26 +169,25 @@ return [
             'success' => 'Plugin ":plugin" activated successfully',
             'not_installed' => 'Plugin ":plugin" is not installed.',
             'already_active' => 'Plugin ":plugin" is already active.',
-            'layouts_registered' => ':count layout registered|:count layouts registered',
+            'layouts_registered' => ':count layouts registered',
         ],
         'deactivate' => [
             'success' => 'Plugin ":plugin" deactivated successfully',
             'not_installed' => 'Plugin ":plugin" is not installed.',
             'not_active' => 'Plugin ":plugin" is not active.',
             'warning' => 'Plugin routes and features have been deactivated.',
-            'layouts_deleted' => ':count layout deleted|:count layouts deleted',
+            'layouts_deleted' => ':count layouts deleted',
         ],
         'uninstall' => [
             'success' => 'Plugin ":plugin" uninstalled successfully',
-            'roles_deleted' => ':count role deleted|:count roles deleted',
-            'permissions_deleted' => ':count permission deleted|:count permissions deleted',
-            'layouts_deleted' => ':count layout deleted|:count layouts deleted',
-            'custom_preserved' => 'Operator files (:directory) were archived to :archive.',
+            'roles_deleted' => ':count roles deleted',
+            'permissions_deleted' => ':count permissions deleted',
+            'layouts_deleted' => ':count layouts deleted',
             'confirm_prompt' => 'Are you sure you want to uninstall plugin ":plugin"?',
             'confirm_details' => [
-                'roles' => '- :count role will be deleted.|- :count roles will be deleted.',
-                'permissions' => '- :count permission will be deleted.|- :count permissions will be deleted.',
-                'layouts' => '- :count layout will be deleted.|- :count layouts will be deleted.',
+                'roles' => '- :count roles will be deleted.',
+                'permissions' => '- :count permissions will be deleted.',
+                'layouts' => '- :count layouts will be deleted.',
                 'data' => '- All plugin data will be deleted.',
             ],
             'confirm_question' => 'Do you really want to delete?',
@@ -189,8 +197,8 @@ return [
         'cache_clear' => [
             'clearing_all' => 'Clearing all plugin caches...',
             'clearing_single' => 'Clearing plugin ":plugin" cache...',
-            'success_all' => 'Plugin cache cleared (:count item)|Plugin cache cleared (:count items)',
-            'success_single' => 'Plugin ":plugin" cache cleared (:count item)|Plugin ":plugin" cache cleared (:count items)',
+            'success_all' => 'Plugin cache cleared (:count items)',
+            'success_single' => 'Plugin ":plugin" cache cleared (:count items)',
         ],
         'check_updates' => [
             'not_installed' => 'Plugin ":plugin" is not installed.',
@@ -220,9 +228,6 @@ return [
             'aborted' => 'Update cancelled.',
             'backup_restored' => 'Previous version has been restored from backup.',
             'force_mode' => 'Force update mode: Skipping version comparison and reinstalling.',
-            'layout_strategy' => 'Layout strategy: :strategy',
-            'modified_layouts_warning' => ':count operator-modified layout/extension fragment will be overwritten:|:count operator-modified layouts/extension fragments will be overwritten:',
-            'modified_layout_item' => '  - :name (modified: :date)',
         ],
     ],
 
@@ -241,18 +246,8 @@ return [
         'updated' => 'Plugin settings updated successfully.',
     ],
 
-    // Validation messages (FormRequest)
+    // Validation messages
     'validation' => [
-        // GitHub / file upload installation
-        'github_url_required' => 'GitHub URL is required.',
-        'github_url_invalid' => 'Invalid URL format.',
-        'github_url_format' => 'Must be a GitHub repository URL. (e.g., https://github.com/owner/repo)',
-        'file_required' => 'Please select a file to install.',
-        'file_invalid' => 'Invalid file.',
-        'file_must_be_zip' => 'Only ZIP files can be uploaded.',
-        'file_max_size' => 'File size must not exceed :sizeMB.',
-
-        // Plugin name / listing
         'plugin_name_required' => 'Plugin name is required.',
         'plugin_name_string' => 'Plugin name must be a string.',
         'plugin_name_max' => 'Plugin name must not exceed :max characters.',

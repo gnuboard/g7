@@ -1,13 +1,13 @@
 {
-    "comment": "할인코드 등록 (운영자) — 쿠폰과 달리 코드 문자열을 받아 적용하는 방식이라, 코드를 자동 생성할지\n  직접 지정할지와 공개/비공개 여부가 입력의 축이 된다. 아직 저장 배선 없이 폼 골격만 서 있다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_promotion_discount_code_create",
+    "permissions": [],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.title",
         "description": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.description"
     },
-    "initLocal": {
+    "state": {
         "form": {
             "is_visible": true,
             "benefit_type": "product",
@@ -32,39 +32,36 @@
         "selectedProducts": [],
         "selectedCategories": []
     },
-    "permissions": [
-        "sirsoft-ecommerce.promotion-coupon.create"
-    ],
     "slots": {
         "content": [
             {
                 "id": "discount_code_create_content",
                 "type": "basic",
                 "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "admin-page-content-compact"
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900 min-h-screen"
                         }
                     }
-                },
-                "props": {
-                    "className": "admin-page-content"
                 },
                 "children": [
                     {
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
+                        "props": {
+                            "className": "flex items-start justify-between gap-4 mb-6"
+                        },
                         "responsive": {
                             "portable": {
                                 "props": {
-                                    "className": "row-stack mb-6"
+                                    "className": "flex flex-col gap-4 mb-6"
                                 }
                             }
-                        },
-                        "props": {
-                            "className": "flex-start justify-between gap-4 mb-6"
                         },
                         "children": [
                             {
@@ -72,23 +69,13 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-3"
+                                    "className": "flex items-center gap-3"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/promotion-discount-codes"
-                                                }
-                                            }
-                                        ],
                                         "props": {
-                                            "aria-label": "$t:common.back",
                                             "type": "button",
                                             "className": "btn btn-icon"
                                         },
@@ -98,7 +85,16 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrow-left",
-                                                    "className": "text-xl"
+                                                    "className": "w-5 h-5"
+                                                }
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/promotion-discount-codes"
                                                 }
                                             }
                                         ]
@@ -132,12 +128,17 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 flex-shrink-0"
+                                    "className": "flex items-center gap-2 flex-shrink-0"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-outline"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.common.cancel",
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -146,12 +147,7 @@
                                                     "path": "/admin/ecommerce/promotion-discount-codes"
                                                 }
                                             }
-                                        ],
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-outline"
-                                        },
-                                        "text": "$t:sirsoft-ecommerce.common.cancel"
+                                        ]
                                     },
                                     {
                                         "type": "basic",
@@ -166,7 +162,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "save",
-                                                    "className": "text-base mr-1.5"
+                                                    "className": "w-4 h-4 mr-1.5"
                                                 }
                                             },
                                             {
@@ -185,7 +181,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "card mb-6"
                         },
                         "children": [
                             {
@@ -193,7 +189,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 mb-4"
+                                    "className": "flex items-center gap-2 mb-4"
                                 },
                                 "children": [
                                     {
@@ -201,7 +197,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "eye",
-                                            "className": "text-xl text-gray-700 dark:text-gray-300"
+                                            "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
                                         }
                                     },
                                     {
@@ -219,7 +215,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-4"
+                                    "className": "flex items-center gap-4"
                                 },
                                 "children": [
                                     {
@@ -234,7 +230,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-3"
+                                            "className": "flex items-center gap-3"
                                         },
                                         "children": [
                                             {
@@ -297,7 +293,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "card mb-6"
                         },
                         "children": [
                             {
@@ -305,7 +301,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 mb-4"
+                                    "className": "flex items-center gap-2 mb-4"
                                 },
                                 "children": [
                                     {
@@ -313,7 +309,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "user",
-                                            "className": "text-xl text-gray-700 dark:text-gray-300"
+                                            "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
                                         }
                                     },
                                     {
@@ -331,7 +327,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "mb-4 flex-between"
+                                    "className": "mb-4 flex items-center justify-between"
                                 },
                                 "children": [
                                     {
@@ -364,7 +360,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.benefit_type"
                                     },
@@ -372,14 +368,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-6"
+                                            "className": "flex items-center gap-6"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -407,7 +403,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -434,7 +430,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -473,7 +469,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.code_type"
                                     },
@@ -481,14 +477,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-6"
+                                            "className": "flex items-center gap-6"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -516,7 +512,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -555,7 +551,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "children": [
                                             {
@@ -567,7 +563,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-required"
+                                                    "className": "text-red-500 dark:text-red-400 ml-1"
                                                 },
                                                 "text": "*"
                                             }
@@ -579,7 +575,7 @@
                                         "props": {
                                             "type": "text",
                                             "name": "discount_code_name",
-                                            "className": "input",
+                                            "className": "input w-full",
                                             "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.discount_code_name"
                                         }
                                     }
@@ -594,7 +590,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.discount_code_description"
                                     },
@@ -617,7 +613,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "card mb-6"
                         },
                         "children": [
                             {
@@ -625,7 +621,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 mb-4"
+                                    "className": "flex items-center gap-2 mb-4"
                                 },
                                 "children": [
                                     {
@@ -633,7 +629,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "globe",
-                                            "className": "text-xl text-gray-700 dark:text-gray-300"
+                                            "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
                                         }
                                     },
                                     {
@@ -648,8 +644,8 @@
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
-                                            "name": "circle-question",
-                                            "className": "text-base text-gray-400 dark:text-gray-500 ml-auto cursor-pointer"
+                                            "name": "help-circle",
+                                            "className": "w-4 h-4 text-gray-400 dark:text-gray-500 ml-auto cursor-pointer"
                                         }
                                     }
                                 ]
@@ -666,7 +662,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "children": [
                                             {
@@ -678,7 +674,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-required"
+                                                    "className": "text-red-500 dark:text-red-400 ml-1"
                                                 },
                                                 "text": "*"
                                             }
@@ -688,14 +684,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "stack-tight"
+                                            "className": "flex flex-col gap-3"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "flex items-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -709,11 +705,10 @@
                                                         }
                                                     },
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "benefit_unit_fixed",
-                                                            "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.benefit_unit_fixed",
                                                             "className": "w-20",
                                                             "value": "{{_local.form.benefit_unit_fixed}}",
                                                             "options": [
@@ -730,7 +725,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2 flex-wrap"
+                                                    "className": "flex items-center gap-2 flex-wrap"
                                                 },
                                                 "children": [
                                                     {
@@ -744,11 +739,10 @@
                                                         }
                                                     },
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "benefit_unit_rate",
-                                                            "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.benefit_unit_rate",
                                                             "className": "w-20",
                                                             "value": "{{_local.form.benefit_unit_rate}}",
                                                             "options": [
@@ -803,7 +797,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.min_order_amount"
                                     },
@@ -811,7 +805,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "flex items-center gap-2"
                                         },
                                         "children": [
                                             {
@@ -845,7 +839,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "children": [
                                             {
@@ -857,7 +851,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-required"
+                                                    "className": "text-red-500 dark:text-red-400 ml-1"
                                                 },
                                                 "text": "*"
                                             }
@@ -867,7 +861,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "flex items-center gap-2"
                                         },
                                         "children": [
                                             {
@@ -882,7 +876,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                                                            "className": "w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                                                         }
                                                     },
                                                     {
@@ -917,7 +911,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                                                            "className": "w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                                                         }
                                                     },
                                                     {
@@ -943,7 +937,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "card mb-6"
                         },
                         "children": [
                             {
@@ -951,15 +945,15 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 mb-4"
+                                    "className": "flex items-center gap-2 mb-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "props": {
-                                            "name": "gear",
-                                            "className": "text-xl text-gray-700 dark:text-gray-300"
+                                            "name": "settings",
+                                            "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
                                         }
                                     },
                                     {
@@ -984,7 +978,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.code_generation_method"
                                     },
@@ -992,14 +986,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-6"
+                                            "className": "flex items-center gap-6"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1027,7 +1021,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1066,7 +1060,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.discount_code"
                                     },
@@ -1074,11 +1068,11 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "flex items-center gap-2"
                                         },
                                         "children": [
                                             {
-                                                "type": "basic",
+                                                "type": "composite",
                                                 "name": "Select",
                                                 "props": {
                                                     "name": "code_length",
@@ -1125,7 +1119,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "children": [
                                             {
@@ -1137,7 +1131,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-required"
+                                                    "className": "text-red-500 dark:text-red-400 ml-1"
                                                 },
                                                 "text": "*"
                                             }
@@ -1147,14 +1141,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-6"
+                                            "className": "flex items-center gap-6"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1182,7 +1176,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1234,7 +1228,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "card mb-6"
                         },
                         "children": [
                             {
@@ -1242,7 +1236,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 mb-4"
+                                    "className": "flex items-center gap-2 mb-4"
                                 },
                                 "children": [
                                     {
@@ -1250,7 +1244,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "ban",
-                                            "className": "text-xl text-gray-700 dark:text-gray-300"
+                                            "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
                                         }
                                     },
                                     {
@@ -1272,7 +1266,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "form-label mb-2"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.apply_target"
                                     },
@@ -1280,14 +1274,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-6"
+                                            "className": "flex items-center gap-6"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1315,7 +1309,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1342,7 +1336,7 @@
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "flex-center gap-2 cursor-pointer"
+                                                    "className": "flex items-center gap-2 cursor-pointer"
                                                 },
                                                 "children": [
                                                     {
@@ -1372,75 +1366,51 @@
                         ]
                     },
                     {
-                        "id": "footer_buttons",
+                        "id": "bottom_actions",
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "sticky-footer-buttons-between"
+                            "className": "flex justify-end items-center gap-2"
                         },
                         "children": [
                             {
                                 "type": "basic",
-                                "name": "Div",
+                                "name": "Button",
                                 "props": {
-                                    "className": ""
-                                }
+                                    "type": "button",
+                                    "className": "btn btn-outline"
+                                },
+                                "text": "$t:sirsoft-ecommerce.common.cancel",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/promotion-discount-codes"
+                                        }
+                                    }
+                                ]
                             },
                             {
                                 "type": "basic",
-                                "name": "Div",
+                                "name": "Button",
                                 "props": {
-                                    "className": "flex-center gap-3"
+                                    "type": "button",
+                                    "className": "btn btn-primary"
                                 },
                                 "children": [
                                     {
-                                        "id": "cancel_button",
                                         "type": "basic",
-                                        "name": "Button",
-                                        "actions": [
-                                            {
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/promotion-discount-codes"
-                                                }
-                                            }
-                                        ],
+                                        "name": "Icon",
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn btn-secondary"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "$t:sirsoft-ecommerce.common.cancel"
-                                            }
-                                        ]
+                                            "name": "save",
+                                            "className": "w-4 h-4 mr-1.5"
+                                        }
                                     },
                                     {
-                                        "id": "save_button",
                                         "type": "basic",
-                                        "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "props": {
-                                                    "name": "save",
-                                                    "className": "text-base"
-                                                }
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "$t:sirsoft-ecommerce.common.save"
-                                            }
-                                        ]
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-ecommerce.common.save"
                                     }
                                 ]
                             }

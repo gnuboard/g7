@@ -2,8 +2,6 @@
 
 namespace App\Extension\Helpers;
 
-use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
-use App\Listeners\Identity\EnforceIdentityPolicyListener;
 use App\Models\IdentityPolicy;
 use Illuminate\Support\Facades\Log;
 
@@ -21,13 +19,6 @@ use Illuminate\Support\Facades\Log;
 class IdentityPolicySyncHelper
 {
     /**
-     * @param  IdentityPolicyRepositoryInterface  $repository  정책 데이터 접근 Repository
-     */
-    public function __construct(
-        protected IdentityPolicyRepositoryInterface $repository,
-    ) {}
-
-    /**
      * 정책을 동기화합니다 (user_overrides 보존 upsert).
      *
      * 신규: 생성
@@ -38,7 +29,7 @@ class IdentityPolicySyncHelper
      */
     public function syncPolicy(array $data): IdentityPolicy
     {
-        $policy = IdentityPolicy::syncOrCreateFromUpgrade(
+        return IdentityPolicy::syncOrCreateFromUpgrade(
             ['key' => $data['key']],
             [
                 'scope' => $data['scope'] ?? 'route',
@@ -55,15 +46,6 @@ class IdentityPolicySyncHelper
                 'fail_mode' => $data['fail_mode'] ?? 'block',
             ]
         );
-
-        // scope=hook 정책이 새로 적재되면 그 target 에 enforce 구독을 멱등 (재)바인딩한다.
-        // 코어 리스너 자동발견은 부팅 전반부에 1회만 일어나 그 시점에 없던 모듈 hook target 을
-        // 놓치므로, 정책이 DB 에 적재되는 이 시점에 보충한다(이미 바인딩된 target 은 멱등 스킵).
-        if (($policy->scope instanceof \BackedEnum ? $policy->scope->value : $policy->scope) === 'hook') {
-            EnforceIdentityPolicyListener::syncDynamicHookSubscriptions();
-        }
-
-        return $policy;
     }
 
     /**
@@ -81,9 +63,16 @@ class IdentityPolicySyncHelper
         string $sourceIdentifier,
         array $currentKeys,
     ): int {
-        $targets = $this->repository->findStale($sourceType, $sourceIdentifier, $currentKeys);
+        $query = IdentityPolicy::query()
+            ->where('source_type', $sourceType)
+            ->where('source_identifier', $sourceIdentifier);
+
+        if (! empty($currentKeys)) {
+            $query->whereNotIn('key', $currentKeys);
+        }
+
+        $targets = $query->get(['id', 'key']);
         foreach ($targets as $policy) {
-            // per-model delete — deleted 이벤트로 라우트 스코프 캐시가 flush 된다(bulk delete 와 차이).
             $policy->delete();
         }
 

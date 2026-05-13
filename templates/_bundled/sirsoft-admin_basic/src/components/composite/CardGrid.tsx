@@ -3,7 +3,6 @@ import { Div } from '../basic/Div';
 import { P } from '../basic/P';
 import { ActionMenuItem } from './ActionMenu';
 import { Pagination } from './Pagination';
-import type { EditorAttrs } from '../../types';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:CardGrid')) ?? {
@@ -103,24 +102,6 @@ export interface CardGridProps {
   showSkeleton?: boolean;              // 스켈레톤 표시 여부 (기본값: true)
   skeletonCount?: number;              // 스켈레톤 개수 (기본값: gridColumns)
   skeletonCellChildren?: CardGridCellChild[];  // 커스텀 스켈레톤 정의
-
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
-
-  /**
-   * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트
-   *
-   * `renderEnvRef.current` 는 이 CardGrid 를 그린 렌더러의 렌더 환경(폭·언어·dispatcher·레지스트리·
-   * 편집 모드)이다. 셀을 그릴 때 이 값을 넘겨, 레이아웃 편집기 미리보기에서 셀이 브라우저 창 폭·
-   * 호스트 언어가 아니라 미리보기 값을 따르게 한다(#141).
-   *
-   * @internal 템플릿 엔진 내부 사용
-   */
-  __componentContext?: { renderEnvRef?: { current: Record<string, any> | null } };
 }
 
 /**
@@ -134,21 +115,46 @@ const getComponentMap = (): Record<string, React.ComponentType<any>> => {
 
 /**
  * 조건 문자열을 평가합니다.
- *
- * 판정은 엔진(`G7Core.evaluateCondition`)에 위임합니다. 종전에는 이 파일이
- * `new Function('row', ...)` 로 자체 평가기를 두어 엔진과 판정이 갈렸고,
- * `_local`/`_global` 을 참조하는 조건에서 예외가 나면 여기서는 `false`(자식이 사라짐),
- * DataGrid 에서는 `true`(항상 표시)로 **반대 방향** 결과가 났습니다.
+ * 복잡한 JavaScript 표현식도 지원합니다 (&&, ||, length 등)
  */
 const evaluateCondition = (condition: string, row: any): boolean => {
   if (!condition) return true;
 
-  const G7Core = (window as any).G7Core;
-  if (typeof G7Core?.evaluateCondition === 'function') {
-    return G7Core.evaluateCondition(condition, { row, item: row, $item: row });
+  const match = condition.match(/^\{\{(.+)\}\}$/);
+  if (!match) return true;
+
+  const expr = match[1].trim();
+
+  // 디버깅: row 데이터와 표현식 확인
+  logger.log('evaluateCondition:', { condition, expr, row, rowStatus: row?.status });
+
+  // 복잡한 표현식 (&&, ||, length, > 등)이 포함된 경우 eval 사용
+  if (/[&|<>=!]/.test(expr) || expr.includes('.length')) {
+    try {
+      // row 컨텍스트에서 표현식 평가
+      // eslint-disable-next-line no-new-func
+      const evaluator = new Function('row', `return ${expr}`);
+      const result = !!evaluator(row);
+      logger.log('evaluateCondition result:', result);
+      return result;
+    } catch (error) {
+      logger.warn('evaluateCondition: 표현식 평가 실패:', expr, error);
+      return false;
+    }
   }
 
-  logger.warn('G7Core.evaluateCondition 미노출 — 조건을 평가할 수 없습니다:', condition);
+  // !row.field 패턴
+  if (expr.startsWith('!row.')) {
+    const field = expr.slice(5);
+    return !row[field];
+  }
+
+  // row.field 패턴
+  if (expr.startsWith('row.')) {
+    const field = expr.slice(4);
+    return !!row[field];
+  }
+
   return true;
 };
 
@@ -193,13 +199,13 @@ const processActionMenuActions = (
           const actionId = item.onClick;
           const actionDef = actionsMap.get(actionId);
 
-          // 실행은 코어 공개 API `G7Core.dispatch` 로 한다. 카드 행 컨텍스트(row·$value·index)를
-          // 바인딩 데이터로 넘겨 `{{row.id}}` 같은 표현식이 그 카드의 행으로 풀리게 한다.
-          if (actionDef && typeof G7Core?.dispatch === 'function') {
+          if (actionDef && G7Core?.ActionDispatcher) {
             return {
               ...item,
               onClick: () => {
-                G7Core.dispatch(actionDef, { componentContext: { data: { ...context } } });
+                // 액션 컨텍스트 생성 (row 데이터 포함)
+                const actionContext = { ...context };
+                G7Core.ActionDispatcher.dispatch(actionDef, actionContext);
               },
             };
           }
@@ -232,10 +238,6 @@ const processActionMenuActions = (
 /**
  * cellChildren 배열을 React 요소로 렌더링합니다.
  * DataGrid의 renderCellChildren 패턴을 따릅니다.
- *
- * `renderEnv` 는 렌더 환경(폭·언어·dispatcher·레지스트리·편집 모드)이다. `componentContext` 를
- * 넘기지 않는 이유: 넘기면 셀의 `_local` 이 CardGrid 렌더러의 상태로 병합되고 setState 대상도
- * 바뀐다 — 렌더 환경만 필요하므로 상태를 병합하지 않는 `renderEnv` 통로를 쓴다(#141).
  */
 const renderCellChildren = (
   cellChildren: CardGridCellChild[],
@@ -243,8 +245,7 @@ const renderCellChildren = (
   index: number,
   keyPrefix: string = '',
   rowActions?: ActionMenuItem[],
-  onRowActionHandler?: (actionId: string | number, row: any) => void,
-  renderEnv?: Record<string, any> | null
+  onRowActionHandler?: (actionId: string | number, row: any) => void
 ): React.ReactNode => {
   const G7Core = (window as any).G7Core;
 
@@ -280,8 +281,7 @@ const renderCellChildren = (
         processedChildren,
         context,
         componentMap,
-        keyPrefix,
-        { renderEnv }
+        keyPrefix
       );
     } catch (error) {
       return (
@@ -422,9 +422,6 @@ export const CardGrid: React.FC<CardGridProps> = ({
   showSkeleton = true,
   skeletonCount,
   skeletonCellChildren,
-  id,
-  editorAttrs,
-  __componentContext,
 }) => {
   // props로 전달된 값이 없으면 다국어 키 사용
   const resolvedEmptyMessage = emptyMessage ?? t('common.no_data');
@@ -435,17 +432,11 @@ export const CardGrid: React.FC<CardGridProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
 
   // 반응형 상태 구독 - cellChildren 내 responsive 속성 지원을 위해 필요
-  // 화면 크기 변경 시 CardGrid가 리렌더링되어 renderItemChildren이 새로운 너비로 재실행됨.
-  // 반환 폭은 Provider 폭(편집기 미리보기에서는 기기 폭)이라 셀의 responsive 분기 폭으로 넘긴다(#141).
+  // 화면 크기 변경 시 CardGrid가 리렌더링되어 renderItemChildren이 새로운 너비로 재실행됨
+  // 훅 호출 자체가 리렌더링을 트리거하므로 반환값은 사용하지 않음 (void 처리)
   const G7Core = (window as any).G7Core;
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const responsive = G7Core?.useResponsive?.();
-
-  // 셀 렌더 환경 — 이 CardGrid 를 그린 렌더러의 환경에 자기 Provider 폭을 얹는다(#141)
-  const renderEnv = {
-    ...(__componentContext?.renderEnvRef?.current ?? {}),
-    ...(typeof responsive?.width === 'number' ? { responsiveWidth: responsive.width } : {}),
-  };
+  G7Core?.useResponsive?.();
 
   // 서버/클라이언트 페이지 정보
   const effectiveCurrentPage = serverSidePagination ? (serverCurrentPage ?? 1) : currentPage;
@@ -544,7 +535,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     const effectiveSkeletonCount = skeletonCount ?? gridColumns;
 
     return (
-      <Div className={`grid ${gridClasses} gap-${gap} ${className}`} style={style} id={id} {...editorAttrs}>
+      <Div className={`grid ${gridClasses} gap-${gap} ${className}`} style={style}>
         {Array.from({ length: effectiveSkeletonCount }).map((_, index) => (
           <Div
             key={`skeleton-${index}`}
@@ -560,7 +551,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   // 빈 데이터 상태
   if (paginatedData.length === 0) {
     return (
-      <Div className={className} style={style} id={id} {...editorAttrs}>
+      <Div className={className} style={style}>
         <Div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-12">
           <P className="text-center text-gray-600 dark:text-gray-400">
             {resolvedEmptyMessage}
@@ -576,12 +567,12 @@ export const CardGrid: React.FC<CardGridProps> = ({
     (alwaysShowPagination || effectiveTotalPages > 1);
 
   return (
-    <Div className={className} style={style} id={id} {...editorAttrs}>
+    <Div className={className} style={style}>
       {/* 카드 그리드 */}
       <Div className={`grid ${gridClasses} gap-${gap}`}>
         {paginatedData.map((row, index) => (
           <Div key={row[idField] || index} className={cardClassName}>
-            {renderCellChildren(cellChildren, row, index, `card-${index}`, rowActions, handleRowAction, renderEnv)}
+            {renderCellChildren(cellChildren, row, index, `card-${index}`, rowActions, handleRowAction)}
           </Div>
         ))}
       </Div>

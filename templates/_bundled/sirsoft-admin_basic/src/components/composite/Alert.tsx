@@ -1,17 +1,9 @@
-// e2e:allow편집기 추가 직후 type 미지정 시 크래시("컴포넌트 로드 실패") 결함#4 수정(typeConfig 폴백). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/속성편집/저장200/reload영속/게스트 사용자화면 렌더)로 수행, 단위 회귀는 Alert.test.tsx 결함#4 describe.
 import React from 'react';
 import { Div } from '../basic/Div';
 import { P } from '../basic/P';
 import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
-import type { EditorAttrs } from '../../types';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
 
 /**
  * 알림 타입
@@ -43,15 +35,6 @@ export interface AlertProps {
    * 사용자 정의 클래스
    */
   className?: string;
-
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -84,56 +67,64 @@ export const Alert: React.FC<AlertProps> = ({
   dismissible = false,
   onDismiss,
   className = '',
-  id,
-  editorAttrs,
 }) => {
-  // 타입별 시맨틱 클래스 및 아이콘 매핑
+  // 타입별 색상 및 아이콘 매핑
   const typeConfig = {
     info: {
-      containerClass: 'alert-info',
-      iconClass: 'alert-icon-info',
-      textClass: 'alert-text-info',
+      bgColor: 'bg-blue-100 dark:bg-blue-900',
+      borderColor: 'border-blue-400 dark:border-blue-600',
+      textColor: 'text-blue-800 dark:text-blue-200',
+      iconColor: 'text-blue-600 dark:text-blue-400',
       icon: IconName.InfoCircle,
     },
     success: {
-      containerClass: 'alert-success',
-      iconClass: 'alert-icon-success',
-      textClass: 'alert-text-success',
+      bgColor: 'bg-green-100 dark:bg-green-900',
+      borderColor: 'border-green-400 dark:border-green-600',
+      textColor: 'text-green-800 dark:text-green-200',
+      iconColor: 'text-green-600 dark:text-green-400',
       icon: IconName.CheckCircle,
     },
     warning: {
-      containerClass: 'alert-warning',
-      iconClass: 'alert-icon-warning',
-      textClass: 'alert-text-warning',
+      bgColor: 'bg-yellow-100 dark:bg-yellow-900',
+      borderColor: 'border-yellow-400 dark:border-yellow-600',
+      textColor: 'text-yellow-800 dark:text-yellow-200',
+      iconColor: 'text-yellow-600 dark:text-yellow-400',
       icon: IconName.ExclamationTriangle,
     },
     error: {
-      containerClass: 'alert-error',
-      iconClass: 'alert-icon-error',
-      textClass: 'alert-text-error',
+      bgColor: 'bg-red-100 dark:bg-red-900',
+      borderColor: 'border-red-400 dark:border-red-600',
+      textColor: 'text-red-800 dark:text-red-200',
+      iconColor: 'text-red-600 dark:text-red-400',
       icon: IconName.TimesCircle,
     },
   };
 
-  // type 미지정/미지원 값일 때도 크래시하지 않도록 info 로 폴백한다(레이아웃 편집기에서
-  // 컴포넌트를 추가한 직후 작성자가 type 을 지정하기 전 상태를 안전하게 렌더).
-  const config = typeConfig[type] ?? typeConfig.info;
+  const config = typeConfig[type];
+
+  // 컨테이너 클래스 조합
+  const containerClasses = `
+    flex items-start gap-3 p-4 rounded-lg border
+    ${config.bgColor}
+    ${config.borderColor}
+    ${className}
+  `.trim().replace(/\s+/g, ' ');
 
   return (
     <Div
-      className={`${config.containerClass} ${className}`}
+      className={containerClasses}
       role="alert"
       aria-live="polite"
-      id={id} {...editorAttrs}
     >
-      {/* 아이콘 — 유형은 색과 문구가 전하므로 꾸밈으로 숨긴다(종전 영문 이름 「warning icon」 이 읽혔다, 7.1.0 O-C3b-3) */}
+      {/* 아이콘 */}
       <Icon
         name={config.icon}
-        className={config.iconClass}
+        className={`${config.iconColor} flex-shrink-0 mt-0.5`}
+        ariaLabel={`${type} icon`}
       />
 
       {/* 메시지 */}
-      <P className={config.textClass}>
+      <P className={`flex-1 ${config.textColor} text-sm`}>
         {message}
       </P>
 
@@ -141,12 +132,13 @@ export const Alert: React.FC<AlertProps> = ({
       {dismissible && (
         <Button
           onClick={onDismiss}
-          className={`alert-dismiss ${config.textClass}`}
-          aria-label={tOr('common.close_alert', 'Close alert')}
+          className={`${config.textColor} hover:opacity-70 flex-shrink-0 bg-transparent border-0 p-0 cursor-pointer`}
+          aria-label="Close alert"
         >
           <Icon
             name={IconName.Times}
-            className={config.iconClass}
+            className={config.iconColor}
+            ariaLabel="Close"
           />
         </Button>
       )}

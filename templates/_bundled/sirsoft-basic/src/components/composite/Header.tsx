@@ -1,4 +1,3 @@
-// e2e:allow 알림 권한 prop 의 미전달 기본값만 true 로(NotificationCenter 와 동일). 기본 레이아웃은 권한 값을 명시로 넘겨 표준 설치 화면은 불변이고, 미전달은 keep 으로 남은 옛 _user_base 에서만 생긴다 — 단위 회귀는 HeaderNotificationAbilities.test.tsx.
 /**
  * Header 컴포넌트
  *
@@ -13,7 +12,7 @@
  * └─────────────────────────────────────────────────────────────────┘
  */
 
-import React, { useState, useRef, useEffect, useId } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 // 기본 컴포넌트 import
 import { Div } from '../basic/Div';
@@ -33,9 +32,6 @@ import { ThemeToggle } from './ThemeToggle';
 
 // Avatar 컴포넌트 import
 import { Avatar } from './Avatar';
-
-// SlotContainer — 헤더 통화 등 모듈 주입 UI 를 떙겨 렌더 (헤더는 주입 모듈을 모름)
-import { SlotContainer } from './SlotContainer';
 
 // NotificationCenter 컴포넌트 import
 import { NotificationCenter, type NotificationItem } from './NotificationCenter';
@@ -91,8 +87,6 @@ interface HeaderProps {
   shopBase?: string;
   /** 추가 CSS 클래스 */
   className?: string;
-  /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */
-  editorAttrs?: Record<string, unknown>;
 
   // ===== 알림센터 드롭다운 Props =====
   /** 알림 목록 (NotificationCenter에 전달) */
@@ -103,14 +97,6 @@ interface HeaderProps {
   notificationLoading?: boolean;
   /** "안 읽은 알림만" 필터 상태 */
   notificationUnreadOnly?: boolean;
-  /**
-   * 알림 읽음 처리 권한 — false 면 [모두 읽음] 숨김·닫을 때 읽음 처리 생략.
-   * 기본값 true(NotificationCenter 와 같음): 권한이 없으면 레이아웃이 abilities 를 읽어 false 를 명시한다.
-   * 값이 오지 않는 경우(루트 레이아웃을 keep 으로 업데이트해 바인딩이 없는 사이트)에 기능을 숨기지 않으며, 최종 방어선은 서버 403.
-   */
-  notificationCanUpdate?: boolean;
-  /** 알림 삭제 권한 — false 면 [모두 삭제]·개별 삭제 숨김. 기본값 true(위와 같은 이유) */
-  notificationCanDelete?: boolean;
   /** 알림 드롭다운 제목 */
   notificationTitleText?: string;
   /** 알림 없음 텍스트 */
@@ -171,14 +157,11 @@ const Header: React.FC<HeaderProps> = ({
   currentLocale = 'ko',
   shopBase = '/shop',
   className = '',
-  editorAttrs,
   // 알림센터
   notifications = [],
   notificationHasMore = false,
   notificationLoading = false,
   notificationUnreadOnly = false,
-  notificationCanUpdate = true,
-  notificationCanDelete = true,
   notificationTitleText,
   notificationEmptyText,
   notificationMarkAllReadText,
@@ -195,18 +178,10 @@ const Header: React.FC<HeaderProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMoreBoards, setShowMoreBoards] = useState(false);
-  const [showLangMenu, setShowLangMenu] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
-  const langMenuRef = useRef<HTMLDivElement>(null);
-  // 언어 메뉴는 listbox 패턴이다(7.1.0 O-PF-1, 관리자 템플릿 LanguageSelector 와 같은 계약) — 단추가 aria-controls 로
-  // 목록을 가리키고, 열면 현재 언어 항목에 초점을 두며 ↓/↑/Home/End 로 옮기고 Enter 로 고른다. Esc 는 닫고 단추로.
-  const langListboxId = `${useId()}-language-listbox`;
-  const langTriggerRef = useRef<HTMLButtonElement>(null);
-  const langOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const langPendingFocusRef = useRef<number | null>(null);
 
   // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준 — 위지윅 overrideWidth 호환)
   const G7Core = (window as any).G7Core;
@@ -223,7 +198,6 @@ const Header: React.FC<HeaderProps> = ({
 
     // G7Core의 navigate 이벤트 감지
     const originalPushState = history.pushState;
-    // audit:allow extension-private-core-internals reason: 템플릿 자기 컴포넌트가 원본 pushState 를 그대로 호출하고 현재 경로만 갱신하는 래퍼
     history.pushState = function(...args) {
       originalPushState.apply(this, args);
       setCurrentPath(window.location.pathname);
@@ -231,7 +205,6 @@ const Header: React.FC<HeaderProps> = ({
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
-      // audit:allow extension-private-core-internals reason: 템플릿 자기 컴포넌트가 언마운트 시 위 래퍼를 걷어 원본 pushState 를 되돌린다
       history.pushState = originalPushState;
     };
   }, []);
@@ -271,9 +244,6 @@ const Header: React.FC<HeaderProps> = ({
       if (moreButtonRef.current && !moreButtonRef.current.contains(event.target as Node)) {
         setShowMoreBoards(false);
       }
-      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
-        setShowLangMenu(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -297,94 +267,17 @@ const Header: React.FC<HeaderProps> = ({
     });
   };
 
-  // 언어 메뉴가 열린 뒤 맡겨 둔 항목으로 초점을 옮긴다
-  useEffect(() => {
-    if (!showLangMenu || langPendingFocusRef.current === null) return;
-    langOptionRefs.current[langPendingFocusRef.current]?.focus();
-    langPendingFocusRef.current = null;
-  }, [showLangMenu]);
-
-  // 언어 메뉴를 연다 — 초점은 현재 언어 항목(없으면 where 쪽 끝 항목)
-  const openLangMenu = (where: 'first' | 'last' = 'first') => {
-    const locales = availableLocales ?? [];
-    const selected = locales.indexOf(currentLocale);
-    const index = selected >= 0 ? selected : (where === 'last' ? locales.length - 1 : 0);
-    if (showLangMenu) {
-      langOptionRefs.current[index]?.focus();
-      return;
-    }
-    langPendingFocusRef.current = index;
-    setShowLangMenu(true);
-  };
-
-  // 언어 메뉴를 닫는다(returnFocus 면 단추로 초점)
-  const closeLangMenu = (returnFocus: boolean) => {
-    setShowLangMenu(false);
-    if (returnFocus) langTriggerRef.current?.focus();
-  };
-
-  // 언어 단추 키보드 — ↓/↑ 는 목록을 열고 항목으로 들어간다(Enter·Space 는 단추 기본 동작인 클릭)
-  const handleLangTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      openLangMenu(event.key === 'ArrowUp' ? 'last' : 'first');
-    }
-  };
-
-  // 언어 목록 키보드 — 항목 사이 이동, Esc 로 닫기, Tab 으로 벗어나면 닫기
-  const handleLangListboxKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const count = availableLocales?.length ?? 0;
-    if (count === 0) return;
-    const current = langOptionRefs.current.findIndex((el) => el === document.activeElement);
-    let next: number | null = null;
-    switch (event.key) {
-      case 'ArrowDown':
-        next = current < 0 ? 0 : (current + 1) % count;
-        break;
-      case 'ArrowUp':
-        next = current < 0 ? count - 1 : (current - 1 + count) % count;
-        break;
-      case 'Home':
-        next = 0;
-        break;
-      case 'End':
-        next = count - 1;
-        break;
-      case 'Escape':
-        event.preventDefault();
-        event.stopPropagation();
-        closeLangMenu(true);
-        return;
-      case 'Tab':
-        closeLangMenu(false);
-        return;
-      default:
-        return;
-    }
-    event.preventDefault();
-    langOptionRefs.current[next]?.focus();
-  };
-
-  // 언어 변경 핸들러 — 헤더 독립 언어 버튼(코어 기능)에서 호출. setLocale 은 비회원도 동작.
+  // 언어 변경 핸들러
   const handleLocaleChange = (locale: string) => {
     (window as any).G7Core?.dispatch?.({
       handler: 'setLocale',
       target: locale,
     });
-    // 고른 뒤 초점은 언어 단추로 돌린다(목록 항목이 사라지며 초점이 문서 맨 위로 빠지지 않게)
-    closeLangMenu(true);
+    setShowUserMenu(false);
   };
 
-  // 로케일 코드 → 표시명 (활성 언어팩 native_name 우선, 폴백 사전)
-  const getLocaleName = (locale: string): string =>
-    (window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale] ??
-    (locale === 'ko' ? '한국어' : locale === 'en' ? 'English' : locale === 'ja' ? '日本語' : locale === 'zh' ? '中文' : locale === 'es' ? 'Español' : locale === 'fr' ? 'Français' : locale === 'de' ? 'Deutsch' : locale.toUpperCase());
-
   return (
-    <HeaderBasic
-      {...((editorAttrs ?? {}) as Record<string, never>)}
-      className={`sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${className}`}
-    >
+    <HeaderBasic className={`sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 ${className}`}>
       {/* 상단 바 */}
       <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Div className="flex items-center justify-between h-16">
@@ -433,8 +326,6 @@ const Header: React.FC<HeaderProps> = ({
                 hasMore={notificationHasMore}
                 loading={notificationLoading}
                 unreadOnly={notificationUnreadOnly}
-                canUpdate={notificationCanUpdate}
-                canDelete={notificationCanDelete}
                 titleText={notificationTitleText ?? t('mypage.notifications.title')}
                 emptyText={notificationEmptyText ?? t('mypage.notifications.empty')}
                 markAllReadText={notificationMarkAllReadText ?? t('mypage.notifications.mark_all_read')}
@@ -452,74 +343,14 @@ const Header: React.FC<HeaderProps> = ({
             )}
 
             {/* 장바구니 */}
-            <Button onClick={() => navigate(`${shopBase}/cart`)} aria-label={t('nav.cart_with_count', { count: cartCount })} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+            <Button onClick={() => navigate(`${shopBase}/cart`)} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
               <Icon name="shopping-cart" className="w-5 h-5" />
               {cartCount > 0 && (
-                <Span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center text-xs bg-blue-500 dark:bg-blue-600 text-white rounded-full">
+                <Span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs bg-blue-500 text-white rounded-full">
                   {cartCount > 99 ? '99+' : cartCount}
                 </Span>
               )}
             </Button>
-
-            {/* 언어 선택 — 헤더 독립 버튼(코어 기능, 비회원 포함 전체 노출). 공간 절약 위해 아이콘+로케일 코드만.
-                언어는 항상 존재(이커머스 무관) → 템플릿 헤더 내장. */}
-            {availableLocales && availableLocales.length > 1 && (
-              <Div ref={langMenuRef} className="relative">
-                <Button
-                  ref={langTriggerRef}
-                  onClick={() => (showLangMenu ? closeLangMenu(false) : openLangMenu())}
-                  onKeyDown={handleLangTriggerKeyDown}
-                  className="flex items-center gap-1.5 px-2.5 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition-colors"
-                  aria-haspopup="listbox"
-                  aria-expanded={showLangMenu}
-                  aria-controls={showLangMenu ? langListboxId : undefined}
-                  aria-label={t('common.language')}
-                >
-                  <Icon name="globe" className="w-4 h-4" />
-                  <Span className="font-medium uppercase">{currentLocale}</Span>
-                  <Icon name="chevron-down" className="w-3 h-3" />
-                </Button>
-                {showLangMenu && (
-                  <Div
-                    id={langListboxId}
-                    role="listbox"
-                    aria-label={t('common.language')}
-                    onKeyDown={handleLangListboxKeyDown}
-                    className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-50 overflow-hidden"
-                  >
-                    {availableLocales.map((locale, index) => {
-                      const isActive = locale === currentLocale;
-                      return (
-                        <Button
-                          key={locale}
-                          ref={(el: HTMLButtonElement | null) => { langOptionRefs.current[index] = el; }}
-                          type="button"
-                          role="option"
-                          aria-selected={isActive}
-                          tabIndex={isActive ? 0 : -1}
-                          onClick={() => handleLocaleChange(locale)}
-                          className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors ${
-                            isActive
-                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                          }`}
-                        >
-                          <Icon name="globe" className="w-4 h-4" />
-                          <Span className="flex-1 font-medium">{getLocaleName(locale)}</Span>
-                          {isActive && <Icon name="check" className="w-4 h-4" />}
-                        </Button>
-                      );
-                    })}
-                  </Div>
-                )}
-              </Div>
-            )}
-
-            {/* 통화 선택 — 이커머스 모듈이 'header_currency' 슬롯에 주입(layout_extensions).
-                헤더는 슬롯 이름만 알고 통화/모듈을 모름. 모듈 비활성 시 빈 슬롯 → 미렌더(인프라 자동 게이트).
-                id 지정 필수 — 같은 슬롯이 모바일 헤더 SlotContainer 와 동시 렌더되므로 주입 컴포넌트
-                root id 가 컨테이너별로 스코프되도록(SlotContainer 가 id 로 자식 root id 를 고유화) 한다. */}
-            <SlotContainer slotId="header_currency" id="header_currency_slot_desktop" className="flex items-center" />
 
             {/* 사용자 메뉴 */}
             {user?.uuid ? (
@@ -584,37 +415,54 @@ const Header: React.FC<HeaderProps> = ({
                       </Button>
                     </Div>
 
-                    {/* 언어 선택은 헤더 독립 버튼으로 일원화(드롭다운에서 제거) — 비회원도 헤더에서 전환 가능 */}
+                    {/* 언어 선택 (availableLocales가 있을 때만 표시) */}
+                    {availableLocales && availableLocales.length > 1 && (
+                      <>
+                        <Hr className="my-1 border-gray-200 dark:border-gray-700" />
+                        <Div className="py-1">
+                          <Div className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                            {t('common.language')}
+                          </Div>
+                          {availableLocales.map((locale) => (
+                            <Button
+                              key={locale}
+                              onClick={() => handleLocaleChange(locale)}
+                              className={`block w-full text-left px-4 py-2 text-sm cursor-pointer ${
+                                locale === currentLocale
+                                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              <Icon name="globe" className="inline w-4 h-4 mr-2" />
+                              {(window as any).G7Core?.state?.get?.('_global.appConfig.localeNames')?.[locale] ?? (locale === 'ko' ? '한국어' : locale === 'en' ? 'English' : locale === 'ja' ? '日本語' : locale === 'zh' ? '中文' : locale === 'es' ? 'Español' : locale === 'fr' ? 'Français' : locale === 'de' ? 'Deutsch' : locale.toUpperCase())}
+                            </Button>
+                          ))}
+                        </Div>
+                      </>
+                    )}
 
                     <Hr className="my-1 border-gray-200 dark:border-gray-700" />
                     <Button
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                     >
-                      <Icon name="right-from-bracket" className="inline w-4 h-4 mr-2" />
+                      <Icon name="log-out" className="inline w-4 h-4 mr-2" />
                       {t('auth.logout')}
                     </Button>
                   </Div>
                 )}
               </Div>
             ) : (
-              <Div className="flex items-center gap-1.5">
-                {/* 주문조회 — 로그인 페이지로 진입. 회원은 로그인 후 redirect 파라미터로 마이페이지 주문 내역으로 이동, 비회원은 로그인 페이지의 '비회원 주문 조회' 링크로 폼 진입. 로그아웃된 회원이 비회원 페이지에서 막다른 길에 빠지는 케이스를 차단한다. */}
-                <Button
-                  onClick={() => navigate('/login?redirect=/mypage/orders')}
-                  className="px-2.5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                >
-                  {t('shop.guest_order_form.nav_link')}
-                </Button>
+              <Div className="flex items-center gap-2">
                 <Button
                   onClick={() => navigate('/login')}
-                  className="px-2.5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                 >
                   {t('auth.login')}
                 </Button>
                 <Button
                   onClick={() => navigate('/register')}
-                  className="ml-1 px-3 py-2 text-sm font-medium text-white bg-emerald-500 dark:bg-emerald-600 rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-500 cursor-pointer"
+                  className="px-4 py-2 text-sm font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 cursor-pointer"
                 >
                   {t('auth.register_link')}
                 </Button>
@@ -625,10 +473,9 @@ const Header: React.FC<HeaderProps> = ({
             {isMobile && (
               <Button
                 onClick={onMobileMenuOpen}
-                aria-label={t('user.menu')}
                 className="p-2 text-gray-600 dark:text-gray-400"
               >
-                <Icon name="menu" className="w-6 h-6 text-2xl leading-none" />
+                <Icon name="menu" className="w-6 h-6" />
               </Button>
             )}
           </Div>
@@ -640,14 +487,14 @@ const Header: React.FC<HeaderProps> = ({
       <Nav className="border-t border-gray-200 dark:border-gray-800">
         <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Div className="flex items-center gap-1 h-12 overflow-x-auto">
-            <Button onClick={() => navigate('/')} className={getNavButtonClass(isActiveRoute('/', true))} data-testid="nav-home">
+            <Button onClick={() => navigate('/')} className={getNavButtonClass(isActiveRoute('/', true))}>
               {t('nav.home')}
             </Button>
-            <Button onClick={() => navigate('/boards/popular')} className={`flex items-center gap-1 ${getNavButtonClass(isActiveRoute('/boards/popular'))}`} data-testid="nav-popular">
+            <Button onClick={() => navigate('/boards/popular')} className={`flex items-center gap-1 ${getNavButtonClass(isActiveRoute('/boards/popular'))}`}>
               <Span className="text-orange-500">🔥</Span>
               {t('nav.popular')}
             </Button>
-            <Button onClick={() => navigate(`${shopBase === '/' ? '' : shopBase}/products`)} className={`flex items-center gap-1 ${getNavButtonClass(isShopActive())}`} data-testid="nav-shop">
+            <Button onClick={() => navigate(`${shopBase === '/' ? '' : shopBase}/products`)} className={`flex items-center gap-1 ${getNavButtonClass(isShopActive())}`}>
               <Span>🛒</Span>
               {t('nav.shop')}
             </Button>

@@ -8,31 +8,24 @@
 
         <title>{{ config('app.name', '그누보드7') }}</title>
 
-        <!-- 템플릿 외부 리소스 (template.json의 externals) -->
-        @include('partials.template-externals-head')
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+
+        <!-- Font Awesome CDN -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         <!-- Fallback UI 스타일 -->
         @if(empty($activeUserTemplate))
         @include('partials.error-fallback-styles')
         @endif
 
-        {{-- 자산 URL 자가 복구 헬퍼 — CSS <link> 의 onerror 보다 먼저 정의되어야 한다 --}}
-        @include('partials.asset-url-recovery')
-
         <!-- 템플릿 컴포넌트 스타일 -->
         @if(!empty($activeUserTemplate))
-        {{-- onerror: 정적 최적화 서버에서 확장자 붙은 CSS 가 가로채였을 때
-             확장자 없는 형태로 1회 교체한다(무스타일 화면 방지). 링크당 1회. --}}
-        {{-- 템플릿이 선언하고(template.json assets.css) 산출물이 있는 CSS 만 링크한다(Composer 가 고름).
-             CSS 를 선언하지 않은 템플릿에 없는 파일 링크를 넣으면 화면마다 요청 실패가 남는다. --}}
-        @foreach($templateStylesheets ?? [] as $templateStylesheet)
-        <link rel="stylesheet"
-              href="{{ \App\Support\AssetUrl::templateAsset($activeUserTemplate, $templateStylesheet, $extensionCacheVersion) }}"
-              onerror="window.__g7AssetUrl && window.__g7AssetUrl.recoverStylesheet(this);">
-        @endforeach
+        <link rel="stylesheet" href="/api/templates/assets/{{ $activeUserTemplate }}/css/components.css?v={{ time() }}">
         @endif
     </head>
-    <body>
+    <body class="font-sans antialiased">
         <!-- React 렌더링 루트 -->
         <div id="app" data-template-id="{{ $activeUserTemplate ?? '' }}">
             <!-- Progressive Enhancement: 템플릿 없음 Fallback UI -->
@@ -50,42 +43,7 @@
                 modules: @json($moduleSettings ?? []),
                 moduleAssets: @json($moduleAssets ?? []),
                 pluginAssets: @json($pluginAssets ?? []),
-                bundleUrls: @json($bundleUrls ?? null),
-                customAssets: @json($customAssets ?? []),
-                {{-- 이번 렌더가 `?custom=off` 로 자산을 껐는지. URL 은 SPA 부팅이 다시 쓰면서
-                     쿼리를 잃을 수 있으므로, 화면은 URL 이 아니라 **서버가 실제로 한 일**을 본다. --}}
-                customAssetsDisabled: @json($customAssetsDisabled ?? false),
-                activeModules: @json($activeModulesMeta ?? []),
-                activePlugins: @json($activePluginsMeta ?? []),
-                trustedScriptHosts: @json($trustedScriptHosts ?? []),
-                // 전역 상태 공개 계약 (코어 예약 + 활성 확장 선언) — G7Core.stateContracts 가 읽는다
-                stateContracts: @json((object) ($stateContracts ?? [])),
-                // 코어 동의 런타임 첫 값 (제공자 없음 none / 있음 unknown — 회원 판별 전이라 ready 를 싣지 않는다)
-                consentInitial: @json($consentInitial ?? null),
-                appConfig: @json($appConfig ?? []),
-                // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
-                // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,
-                // 미빌드 상태 대비 file_exists 가드.
-                coreEditorAsset: '{{ asset('build/core/layout-editor.min.js') }}?v={{ file_exists(public_path('build/core/layout-editor.min.js')) ? filemtime(public_path('build/core/layout-editor.min.js')) : 0 }}',
-                // DevTools lazy 번들 URL — 디버그 모드에서만 런타임 <script> 주입으로 로드.
-                coreDevToolsAsset: '{{ asset('build/core/devtools.min.js') }}?v={{ file_exists(public_path('build/core/devtools.min.js')) ? filemtime(public_path('build/core/devtools.min.js')) : 0 }}',
-                // 확장 캐시 버전 SSoT — 클라이언트 fetch (`?v=`) 동반 필수.
-                // 자세한 설명은 admin.blade.php 참조.
-                cache_version: {{ (int) ($extensionCacheVersion ?? 0) }},
-                @if(($staticExtBase = \App\Support\AssetUrl::staticExtBase()) !== null)
-                // 정적 게시(bake) 베이스 — 게이트(프로덕션·kill-switch·게시 완료) 통과 시에만
-                // 주입된다. 프론트 로더가 routes/lang/components 를 이 경로에서 우선 수신 (#122).
-                staticBase: '{{ $staticExtBase }}',
-                @endif
-                // 자산 URL 모드 — 'extension'(기본) | 'extensionless'.
-                // 정적 최적화 블록(location ~* \.(js|css|json)$)이 동적 응답을 가로채는
-                // 서버에서 확장자 없는 형태로 전환한다. 부트스트랩 자가 복구가 실패 시
-                // 이 값을 런타임에 뒤집으므로 최상위 키로 노출한다(설정값 SSoT 는
-                // G7Config.settings.general.asset_url_mode).
-                // 자가 복구가 <head> 에서 이미 전환을 확정했다면 그 값을 잇는다.
-                // 이 대입은 G7Config 객체를 통째로 교체하므로, 독립 전역을 읽지 않으면
-                // 복원/전환 결과가 여기서 덮여 사라진다.
-                assetUrlMode: window.__g7AssetUrlMode || '{{ \App\Support\AssetUrl::mode() }}'
+                appConfig: @json($appConfig ?? [])
             };
             @if(isset($errorCode) && isset($errorLayout))
             // 에러 상태 정보 (503 의존성 미충족 등)
@@ -97,31 +55,32 @@
             @endif
         </script>
 
-        @include('partials.template-externals-scripts', ['position' => 'before-core'])
+        <!-- 코어 렌더링 엔진 -->
+        <script src="{{ asset('build/core/template-engine.min.js') }}?v={{ filemtime(public_path('build/core/template-engine.min.js')) }}"></script>
 
-        {{-- 코어 엔진 + 템플릿 컴포넌트 번들 로드 → 초기화 (재시도 + 폴백 UI) --}}
-        @include('partials.bootstrap-scripts', [
-            'templateType' => 'user',
-            {{-- 코어 엔진 번들은 public/ 의 실물 정적 파일이라 자산 URL 이중 모드 대상이 아니다.
-                 미빌드 상태에서 filemtime() 이 warning 을 내지 않도록 file_exists 가드
-                 (coreEditorAsset/coreDevToolsAsset 와 동일 패턴). --}}
-            'coreEngineSrc' => asset('build/core/template-engine.min.js') . '?v=' . (file_exists(public_path('build/core/template-engine.min.js')) ? filemtime(public_path('build/core/template-engine.min.js')) : 0),
-            'componentsSrc' => \App\Support\AssetUrl::templateAsset($activeUserTemplate, 'js/components.iife.js', $extensionCacheVersion),
-            'initConfig' => array_filter([
-                'templateId' => $activeUserTemplate,
-                'templateType' => 'user',
-                'locale' => app()->getLocale(),
-                'debug' => (bool) config('app.debug'),
-                'websocket' => config('broadcasting.connections.reverb.key') ? [
-                    'appKey' => config('broadcasting.connections.reverb.key'),
-                    'host' => config('g7.websocket.client.host', config('broadcasting.connections.reverb.options.host', 'localhost')),
-                    'port' => (int) config('g7.websocket.client.port', config('broadcasting.connections.reverb.options.port', 80)),
-                    'scheme' => config('g7.websocket.client.scheme', config('broadcasting.connections.reverb.options.scheme', 'https')),
-                ] : null,
-            ], fn ($value) => $value !== null),
-        ])
+        <!-- 템플릿 컴포넌트 번들 (IIFE) -->
+        <script src="/api/templates/assets/{{ $activeUserTemplate }}/js/components.iife.js?v={{ time() }}"></script>
 
-        @include('partials.template-externals-scripts', ['position' => 'body-end'])
+        <!-- 템플릿 엔진 초기화 (TemplateApp 사용) -->
+        <script>
+            // TemplateApp을 통한 초기화 (DOMContentLoaded 이벤트에서 자동으로 초기화됨)
+            if (window.G7Core && window.G7Core.initTemplateApp) {
+                window.G7Core.initTemplateApp({
+                    templateId: '{{ $activeUserTemplate }}',
+                    templateType: 'user',
+                    locale: '{{ app()->getLocale() }}',
+                    debug: {{ config('app.debug') ? 'true' : 'false' }}@if(config('broadcasting.connections.reverb.key')),
+                    websocket: {
+                        appKey: '{{ config('broadcasting.connections.reverb.key') }}',
+                        host: '{{ config('g7.websocket.client.host', config('broadcasting.connections.reverb.options.host', 'localhost')) }}',
+                        port: {{ config('g7.websocket.client.port', config('broadcasting.connections.reverb.options.port', 80)) }},
+                        scheme: '{{ config('g7.websocket.client.scheme', config('broadcasting.connections.reverb.options.scheme', 'https')) }}'
+                    }@endif
+                });
+            } else {
+                console.error('[User] G7Core.initTemplateApp is not available');
+            }
+        </script>
         @endif
     </body>
 </html>

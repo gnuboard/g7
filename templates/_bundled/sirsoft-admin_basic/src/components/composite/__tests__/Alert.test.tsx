@@ -4,23 +4,17 @@ import { Alert } from '../Alert';
 
 describe('Alert 컴포넌트', () => {
   describe('기본 렌더링', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('메시지가 렌더링된다', () => {
       render(<Alert type="info" message="테스트 메시지" />);
       expect(screen.getByText('테스트 메시지')).toBeTruthy();
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('role="alert" 속성이 있다', () => {
       const { container } = render(<Alert type="info" message="테스트 메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
       expect(alertElement).toBeTruthy();
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('aria-live="polite" 속성이 있다', () => {
       const { container } = render(<Alert type="info" message="테스트 메시지" />);
       const alertElement = container.querySelector('[aria-live="polite"]');
@@ -29,116 +23,90 @@ describe('Alert 컴포넌트', () => {
   });
 
   describe('type별 렌더링 - info', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('info 타입은 파란색 스타일이 적용된다', () => {
       const { container } = render(<Alert type="info" message="정보 메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement?.className).toContain('alert-info');
+      expect(alertElement?.className).toContain('bg-blue-100');
+      expect(alertElement?.className).toContain('border-blue-400');
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('info 타입은 info-circle 아이콘이 표시된다', () => {
       const { container } = render(<Alert type="info" message="정보 메시지" />);
       const iconElement = container.querySelector('.fa-info-circle');
       expect(iconElement).toBeTruthy();
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
-    it('info 아이콘은 꾸밈으로 숨고 영문 이름을 내지 않는다', () => {
+    it('info 아이콘에 올바른 aria-label이 있다', () => {
       const { container } = render(<Alert type="info" message="정보 메시지" />);
-      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「info icon」 을 달지 않는다(7.1.0 O-C3b-3)
-      expect(container.querySelector('[aria-label="info icon"]')).toBeNull();
-      expect(container.querySelector('i[aria-hidden="true"]')).toBeTruthy();
+      const iconElement = container.querySelector('[aria-label="info icon"]');
+      expect(iconElement).toBeTruthy();
     });
   });
 
   describe('type별 렌더링 - success', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('success 타입은 초록색 스타일이 적용된다', () => {
       const { container } = render(<Alert type="success" message="성공 메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement?.className).toContain('alert-success');
+      expect(alertElement?.className).toContain('bg-green-100');
+      expect(alertElement?.className).toContain('border-green-400');
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('success 타입은 check-circle 아이콘이 표시된다', () => {
       const { container } = render(<Alert type="success" message="성공 메시지" />);
       const iconElement = container.querySelector('.fa-check-circle');
       expect(iconElement).toBeTruthy();
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
-    it('success 아이콘은 꾸밈으로 숨고 영문 이름을 내지 않는다', () => {
+    it('success 아이콘에 올바른 aria-label이 있다', () => {
       const { container } = render(<Alert type="success" message="성공 메시지" />);
-      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「success icon」 을 달지 않는다(7.1.0 O-C3b-3)
-      expect(container.querySelector('[aria-label="success icon"]')).toBeNull();
-      expect(container.querySelector('i[aria-hidden="true"]')).toBeTruthy();
+      const iconElement = container.querySelector('[aria-label="success icon"]');
+      expect(iconElement).toBeTruthy();
     });
   });
 
   describe('type별 렌더링 - warning', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('warning 타입은 노란색 스타일이 적용된다', () => {
       const { container } = render(<Alert type="warning" message="경고 메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement?.className).toContain('alert-warning');
+      expect(alertElement?.className).toContain('bg-yellow-100');
+      expect(alertElement?.className).toContain('border-yellow-400');
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('warning 타입은 exclamation-triangle 아이콘이 표시된다', () => {
       const { container } = render(<Alert type="warning" message="경고 메시지" />);
       const iconElement = container.querySelector('.fa-exclamation-triangle');
       expect(iconElement).toBeTruthy();
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
-    it('warning 아이콘은 꾸밈으로 숨고 영문 이름을 내지 않는다', () => {
+    it('warning 아이콘에 올바른 aria-label이 있다', () => {
       const { container } = render(<Alert type="warning" message="경고 메시지" />);
-      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「warning icon」 을 달지 않는다(7.1.0 O-C3b-3)
-      expect(container.querySelector('[aria-label="warning icon"]')).toBeNull();
-      expect(container.querySelector('i[aria-hidden="true"]')).toBeTruthy();
+      const iconElement = container.querySelector('[aria-label="warning icon"]');
+      expect(iconElement).toBeTruthy();
     });
   });
 
   describe('type별 렌더링 - error', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('error 타입은 빨간색 스타일이 적용된다', () => {
       const { container } = render(<Alert type="error" message="에러 메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement?.className).toContain('alert-error');
+      expect(alertElement?.className).toContain('bg-red-100');
+      expect(alertElement?.className).toContain('border-red-400');
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('error 타입은 times-circle 아이콘이 표시된다', () => {
       const { container } = render(<Alert type="error" message="에러 메시지" />);
       const iconElement = container.querySelector('.fa-times-circle');
       expect(iconElement).toBeTruthy();
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
-    it('error 아이콘은 꾸밈으로 숨고 영문 이름을 내지 않는다', () => {
+    it('error 아이콘에 올바른 aria-label이 있다', () => {
       const { container } = render(<Alert type="error" message="에러 메시지" />);
-      // 유형은 색과 문구가 전한다 — 아이콘은 꾸밈(aria-hidden)이고 종전 영문 이름 「error icon」 을 달지 않는다(7.1.0 O-C3b-3)
-      expect(container.querySelector('[aria-label="error icon"]')).toBeNull();
-      expect(container.querySelector('i[aria-hidden="true"]')).toBeTruthy();
+      const iconElement = container.querySelector('[aria-label="error icon"]');
+      expect(iconElement).toBeTruthy();
     });
   });
 
   describe('dismissible 옵션', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('dismissible이 false일 때 닫기 버튼이 렌더링되지 않는다', () => {
       const { container } = render(
         <Alert type="info" message="메시지" dismissible={false} />
@@ -147,8 +115,6 @@ describe('Alert 컴포넌트', () => {
       expect(closeButton).toBeNull();
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('dismissible이 true일 때 닫기 버튼이 렌더링된다', () => {
       const { container } = render(
         <Alert type="info" message="메시지" dismissible={true} />
@@ -157,16 +123,12 @@ describe('Alert 컴포넌트', () => {
       expect(closeButton).toBeTruthy();
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('dismissible 기본값은 false이다', () => {
       const { container } = render(<Alert type="info" message="메시지" />);
       const closeButton = container.querySelector('[aria-label="Close alert"]');
       expect(closeButton).toBeNull();
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('닫기 버튼에 times 아이콘이 표시된다', () => {
       const { container } = render(
         <Alert type="info" message="메시지" dismissible={true} />
@@ -177,8 +139,6 @@ describe('Alert 컴포넌트', () => {
   });
 
   describe('onDismiss 콜백', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('닫기 버튼 클릭 시 onDismiss 콜백이 호출된다', () => {
       const onDismiss = vi.fn();
       const { container } = render(
@@ -192,8 +152,6 @@ describe('Alert 컴포넌트', () => {
       expect(onDismiss).toHaveBeenCalledTimes(1);
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('dismissible이 false면 onDismiss는 호출되지 않는다', () => {
       const onDismiss = vi.fn();
       const { container } = render(
@@ -206,8 +164,6 @@ describe('Alert 컴포넌트', () => {
       expect(onDismiss).not.toHaveBeenCalled();
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('닫기 버튼을 여러 번 클릭하면 onDismiss가 여러 번 호출된다', () => {
       const onDismiss = vi.fn();
       const { container } = render(
@@ -225,8 +181,6 @@ describe('Alert 컴포넌트', () => {
   });
 
   describe('사용자 정의 Props', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('사용자 정의 클래스가 적용된다', () => {
       const { container } = render(
         <Alert type="info" message="메시지" className="custom-alert" />
@@ -235,21 +189,18 @@ describe('Alert 컴포넌트', () => {
       expect(alertElement?.className).toContain('custom-alert');
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('사용자 정의 클래스가 기본 클래스와 함께 적용된다', () => {
       const { container } = render(
         <Alert type="info" message="메시지" className="custom-class" />
       );
       const alertElement = container.querySelector('[role="alert"]');
       expect(alertElement?.className).toContain('custom-class');
-      expect(alertElement?.className).toContain('alert-info');
+      expect(alertElement?.className).toContain('bg-blue-100');
+      expect(alertElement?.className).toContain('border-blue-400');
     });
   });
 
   describe('복합 시나리오', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('모든 type별 dismissible 알림이 정상 동작한다', () => {
       const onDismissInfo = vi.fn();
       const onDismissSuccess = vi.fn();
@@ -286,8 +237,6 @@ describe('Alert 컴포넌트', () => {
       expect(onDismissError).toHaveBeenCalledTimes(1);
     });
 
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
     it('긴 메시지도 정상적으로 표시된다', () => {
       const longMessage = '이것은 매우 긴 메시지입니다. '.repeat(10);
       const { container } = render(<Alert type="info" message={longMessage} />);
@@ -298,39 +247,11 @@ describe('Alert 컴포넌트', () => {
   });
 
   describe('다크 모드 클래스', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
-    it('시맨틱 타입 클래스가 포함된다', () => {
+    it('다크 모드 클래스가 포함된다', () => {
       const { container } = render(<Alert type="info" message="메시지" />);
       const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement?.className).toContain('alert-info');
-    });
-  });
-
-  // 편집기에서 Alert 를 추가한 직후(작성자가 type 미지정 / 잘못된
-  // defaultNode 키) typeConfig[type] 가 undefined → config.containerClass 접근 크래시로
-  // "컴포넌트 로드 실패" 폴백이 떴다. type 미지정/미지원 값에도 크래시 없이 info 로 폴백해야 한다.
-  describe('결함#4 — type 미지정/미지원 안전 폴백', () => {
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
-    it('type 미지정 시 크래시 없이 info 스타일로 렌더된다', () => {
-      const { container } = render(<Alert message="타입 없는 메시지" />);
-      const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement).toBeTruthy();
-      expect(alertElement?.className).toContain('alert-info');
-      expect(screen.getByText('타입 없는 메시지')).toBeTruthy();
-    });
-
-    // @scenario component=alert
-    // @effects alert_contract_with_decorative_icon
-    it('미지원 type 값에도 크래시 없이 info 로 폴백한다', () => {
-      const { container } = render(
-        // 의도적으로 typeConfig 에 없는 값 주입(런타임 안전성 검증)
-        <Alert type={'banana' as never} message="잘못된 타입" />
-      );
-      const alertElement = container.querySelector('[role="alert"]');
-      expect(alertElement).toBeTruthy();
-      expect(alertElement?.className).toContain('alert-info');
+      expect(alertElement?.className).toContain('dark:bg-blue-900');
+      expect(alertElement?.className).toContain('dark:border-blue-600');
     });
   });
 });

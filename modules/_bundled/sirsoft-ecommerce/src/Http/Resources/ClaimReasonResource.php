@@ -3,18 +3,17 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
-use Illuminate\Http\Request;
 
 /**
- * 클레임 사유 API 리소스
+ * 클래임 사유 API 리소스
  */
 class ClaimReasonResource extends BaseApiResource
 {
     /**
      * Transform the resource into an array.
      *
-     * @param  Request  $request
-     * @return array<string, mixed> 변환된 배열
+     * @param \Illuminate\Http\Request $request
+     * @return array
      */
     public function toArray($request): array
     {

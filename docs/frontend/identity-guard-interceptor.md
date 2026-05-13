@@ -10,7 +10,6 @@
 3. launcher 반환 타입 = Promise<VerificationResult> (engine-v1.46.0+)
 4. handle() 가 verified 시 return_request.url 에 ?verification_token=... query 자동 부착 후 fetch
 5. defaultLauncher — launcher 미등록 시 토스트 + /identity/challenge?return=... navigate 폴백
-6. 인증 대상(email/phone)은 흐름이 apiCall `identity_target` 으로 선언 → handle() 이 payload.target 에 병합 → launcher 가 사용 (engine-v1.51.0+)
 ```
 
 ## 정적 API 전체
@@ -24,11 +23,7 @@ class IdentityGuardInterceptor {
 
   // 응답 감지
   static isIdentityRequired(status: number, body: unknown): body is IdentityResponse428
-  static async handle(
-    response: IdentityResponse428,
-    originalRequest?: Pick<RequestInit, 'body' | 'headers' | 'credentials'>,
-    target?: IdentityVerificationTarget,   // engine-v1.51.0+ — 흐름이 선언한 인증 대상
-  ): Promise<Response | null>
+  static async handle(response: IdentityResponse428): Promise<Response | null>
 
   // Deferred resolver — 모달 ↔ launcher Promise 통신
   static createDeferred(): Promise<VerificationResult>
@@ -105,7 +100,6 @@ G7Core 미초기화 환경: `console.error` 만 출력 + `failed/G7_NOT_READY` �
 
 ```text
 1. payload.redirect_url 누락 → failed/MISSING_REDIRECT_URL
-   payload.redirect_url 이 실행 스킴(javascript:/vbscript:/data:) → failed/UNSAFE_REDIRECT_URL (이동하지 않음)
 2. sessionStorage[g7.identity.redirectStash] = JSON({ return_url, payload, stashed_at })
 3. window.location.href = redirect_url
 4. Promise<never>

@@ -201,11 +201,6 @@
             "required": false,
             "description": "표시할 규칙 키 목록 (minLength, hasUppercase, hasLowercase, hasNumber, hasSpecial)"
           },
-          "enableRules": {
-            "type": "array",
-            "required": false,
-            "description": "켤 검증 규칙 목록. 파라미터는 「규칙:값」 (minLength:N, maxLength:N, hasUppercase, hasLowercase, hasNumber, hasSpecial, noSpaces, minTypes:N). hasSpecial 은 서버와 같은 유니코드 구두점·기호·공백 범주로 판정하고, minTypes 는 영문·숫자·특수문자 세 종류 중 N종 이상 섞였는지 본다(서버 「문자 종류 조합」과 같다). 보안 환경설정 값으로 식을 만들어 바인딩한다 — 예: {{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)]}}"
-          },
           "wrapperClassName": {
             "type": "string",
             "required": false,
@@ -412,76 +407,10 @@
         }
       },
       {
-        "name": "Thead",
-        "type": "basic",
-        "description": "HTML thead element wrapper",
-        "path": "src/components/basic/Thead.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "Tbody",
-        "type": "basic",
-        "description": "HTML tbody element wrapper",
-        "path": "src/components/basic/Tbody.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "Tr",
-        "type": "basic",
-        "description": "HTML tr element wrapper",
-        "path": "src/components/basic/Tr.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "Th",
-        "type": "basic",
-        "description": "HTML th element wrapper",
-        "path": "src/components/basic/Th.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "Td",
-        "type": "basic",
-        "description": "HTML td element wrapper",
-        "path": "src/components/basic/Td.tsx",
-        "props": {
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
         "name": "Icon",
         "type": "basic",
         "description": "FontAwesome icon wrapper",
         "path": "src/components/basic/Icon.tsx",
-        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -511,6 +440,32 @@
             "required": false,
             "description": "대체 텍스트"
           },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Footer",
+        "type": "basic",
+        "description": "HTML footer element wrapper",
+        "path": "src/components/basic/Footer.tsx",
+        "props": {
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
+        "name": "Header",
+        "type": "basic",
+        "description": "HTML header element wrapper",
+        "path": "src/components/basic/Header.tsx",
+        "props": {
           "className": {
             "type": "string",
             "required": false,
@@ -699,6 +654,29 @@
         }
       },
       {
+        "name": "PostReactions",
+        "type": "composite",
+        "description": "게시글 리액션 버튼 그룹",
+        "path": "src/components/composite/PostReactions.tsx",
+        "props": {
+          "postId": {
+            "type": "number",
+            "required": true,
+            "description": "게시글 ID"
+          },
+          "reactions": {
+            "type": "object",
+            "required": false,
+            "description": "리액션 데이터"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
         "name": "SocialLoginButtons",
         "type": "composite",
         "description": "소셜 로그인 버튼 그룹",
@@ -707,11 +685,7 @@
           "providers": {
             "type": "array",
             "required": false,
-            "default": [
-              "google",
-              "naver",
-              "kakao"
-            ],
+            "default": ["google", "naver", "kakao"],
             "description": "활성화할 소셜 로그인 프로바이더"
           },
           "className": {
@@ -870,83 +844,20 @@
         "description": "알림 센터 드롭다운 — 알림 목록 표시, 무한스크롤, 읽음 추적, 안 읽은 필터, 개별/전체 삭제",
         "path": "src/components/composite/NotificationCenter.tsx",
         "props": {
-          "notifications": {
-            "type": "array",
-            "required": false,
-            "default": [],
-            "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data)"
-          },
-          "unreadCount": {
-            "type": "number",
-            "required": false,
-            "default": 0,
-            "description": "서버 기반 미읽음 알림 수"
-          },
-          "hasMore": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "추가 로드 가능 여부 (무한스크롤)"
-          },
-          "loading": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "로딩 상태"
-          },
-          "titleText": {
-            "type": "string",
-            "required": false,
-            "default": "알림",
-            "description": "드롭다운 제목"
-          },
-          "emptyText": {
-            "type": "string",
-            "required": false,
-            "description": "알림 없음 텍스트"
-          },
-          "markAllReadText": {
-            "type": "string",
-            "required": false,
-            "description": "모두 읽음 버튼 텍스트"
-          },
-          "deleteAllText": {
-            "type": "string",
-            "required": false,
-            "description": "모두 삭제 버튼 텍스트"
-          },
-          "unreadOnlyText": {
-            "type": "string",
-            "required": false,
-            "description": "안 읽은 알림만 체크박스 텍스트"
-          },
-          "unreadOnly": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "안 읽은 알림만 필터 상태"
-          },
-          "dropdownAlign": {
-            "type": "string",
-            "required": false,
-            "default": "right",
-            "description": "드롭다운 정렬 방향 (right/left)"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "추가 CSS 클래스"
-          }
+          "notifications": { "type": "array", "required": false, "default": [], "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data)" },
+          "unreadCount": { "type": "number", "required": false, "default": 0, "description": "서버 기반 미읽음 알림 수" },
+          "hasMore": { "type": "boolean", "required": false, "default": false, "description": "추가 로드 가능 여부 (무한스크롤)" },
+          "loading": { "type": "boolean", "required": false, "default": false, "description": "로딩 상태" },
+          "titleText": { "type": "string", "required": false, "default": "알림", "description": "드롭다운 제목" },
+          "emptyText": { "type": "string", "required": false, "description": "알림 없음 텍스트" },
+          "markAllReadText": { "type": "string", "required": false, "description": "모두 읽음 버튼 텍스트" },
+          "deleteAllText": { "type": "string", "required": false, "description": "모두 삭제 버튼 텍스트" },
+          "unreadOnlyText": { "type": "string", "required": false, "description": "안 읽은 알림만 체크박스 텍스트" },
+          "unreadOnly": { "type": "boolean", "required": false, "default": false, "description": "안 읽은 알림만 필터 상태" },
+          "dropdownAlign": { "type": "string", "required": false, "default": "right", "description": "드롭다운 정렬 방향 (right/left)" },
+          "className": { "type": "string", "required": false, "description": "추가 CSS 클래스" }
         },
-        "events": [
-          "onClose",
-          "onNotificationClick",
-          "onLoadMore",
-          "onMarkAllRead",
-          "onDeleteAll",
-          "onDelete",
-          "onUnreadOnlyToggle"
-        ]
+        "events": ["onClose", "onNotificationClick", "onLoadMore", "onMarkAllRead", "onDeleteAll", "onDelete", "onUnreadOnlyToggle"]
       },
       {
         "name": "Pagination",
@@ -961,8 +872,8 @@
           },
           "totalPages": {
             "type": "number",
-            "required": false,
-            "description": "전체 페이지 수. 총 건수를 정확히 세지 못한 목록은 null (페이지 번호 목록과 마지막 페이지 점프가 감춰지고 이전/다음만 남음)"
+            "required": true,
+            "description": "전체 페이지 수"
           },
           "maxVisiblePages": {
             "type": "number",
@@ -975,21 +886,6 @@
             "required": false,
             "default": true,
             "description": "처음/마지막 버튼 표시 여부"
-          },
-          "showFirst": {
-            "type": "boolean",
-            "required": false,
-            "description": "처음 버튼 표시 여부 (미지정 시 showFirstLast 를 따름)"
-          },
-          "showLast": {
-            "type": "boolean",
-            "required": false,
-            "description": "마지막 버튼 표시 여부 (미지정 시 showFirstLast 를 따름). 총 건수가 부정확해 totalPages 가 null 이면 이 값과 무관하게 감춰짐"
-          },
-          "hasMorePages": {
-            "type": "boolean",
-            "required": false,
-            "description": "다음 페이지 존재 여부. 총 건수를 모르는 목록에서 '다음' 버튼 활성 여부를 이 값으로 판정"
           },
           "prevText": {
             "type": "string",
@@ -1059,7 +955,6 @@
         "type": "composite",
         "description": "사용자 아바타 (이미지 또는 이름 첫 글자)",
         "path": "src/components/composite/Avatar.tsx",
-        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -1090,60 +985,10 @@
         }
       },
       {
-        "name": "VisitorCounter",
-        "type": "composite",
-        "description": "방문자 카운터 (오늘·어제·최대·전체) — 순수 표시 컴포넌트, 데이터는 레이아웃 데이터소스가 넘긴다",
-        "path": "src/components/composite/VisitorCounter.tsx",
-        "autoBinding": false,
-        "props": {
-          "today": {
-            "type": "number",
-            "required": false,
-            "default": 0,
-            "description": "오늘 방문자"
-          },
-          "yesterday": {
-            "type": "number",
-            "required": false,
-            "default": 0,
-            "description": "어제 방문자"
-          },
-          "max": {
-            "type": "number",
-            "required": false,
-            "default": 0,
-            "description": "하루 최대 방문자"
-          },
-          "total": {
-            "type": "number",
-            "required": false,
-            "default": 0,
-            "description": "전체 방문자(일별 순방문자 합)"
-          },
-          "layout": {
-            "type": "string",
-            "required": false,
-            "default": "row",
-            "description": "배치 (row | column) — row 는 모바일에서 2×2"
-          },
-          "labels": {
-            "type": "object",
-            "required": false,
-            "description": "항목 라벨 { today, yesterday, max, total }"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
         "name": "UserInfo",
         "type": "composite",
         "description": "사용자 정보 표시 및 드롭다운 메뉴 (이름, 서브텍스트, 프로필 링크, 비회원 배지)",
         "path": "src/components/composite/UserInfo.tsx",
-        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -1188,34 +1033,6 @@
             "type": "string",
             "required": false,
             "description": "레이아웃 JSON에서 text 속성으로 전달되는 이름"
-          },
-          "author": {
-            "type": "object",
-            "required": false,
-            "description": "작성자 객체 (name/id/is_guest/status 를 일괄 전달). 개별 props 가 우선"
-          },
-          "subTextTitle": {
-            "type": "string",
-            "required": false,
-            "description": "서브 텍스트의 title 속성 (툴팁)"
-          },
-          "isWithdrawn": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "탈퇴 회원 여부 (author.status === 'withdrawn' 와 OR)"
-          },
-          "layout": {
-            "type": "string",
-            "required": false,
-            "default": "vertical",
-            "description": "레이아웃 방향 (vertical | horizontal)"
-          },
-          "stopPropagation": {
-            "type": "boolean",
-            "required": false,
-            "default": false,
-            "description": "클릭 이벤트 버블링 방지 (목록 행 안에서 쓸 때 행 선택 발화 차단). 액션 top-level 키 stopPropagation 과 이름만 같은 별개 표면"
           },
           "menuItems": {
             "type": "array",
@@ -1265,30 +1082,6 @@
             "type": "object",
             "required": false,
             "description": "DOMPurify 설정 객체"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "BrandMark",
-        "type": "composite",
-        "description": "결제 브랜드 마크 (색 배지 또는 인라인 SVG 로고, DOMPurify 화이트리스트 sanitize)",
-        "path": "src/components/composite/BrandMark.tsx",
-        "props": {
-          "brandMark": {
-            "type": "object",
-            "required": false,
-            "description": "브랜드 마크 데이터 { text, class } 또는 { svg }"
-          },
-          "size": {
-            "type": "number",
-            "required": false,
-            "default": 32,
-            "description": "마크 컨테이너 크기(px)"
           },
           "className": {
             "type": "string",
@@ -1350,46 +1143,6 @@
         "description": "모달 다이얼로그 (ESC 키 닫기, 포커스 트랩, 오버레이 클릭 닫기)",
         "path": "src/components/composite/Modal.tsx",
         "props": {
-          "closeOnBackdropClick": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "Backdrop(오버레이) 클릭 시 모달 닫기 여부"
-          },
-          "closeOnOverlayClick": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "closeOnBackdropClick 별칭 (레이아웃 JSON 호환)"
-          },
-          "showCloseButton": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "헤더 닫기 버튼 표시 여부"
-          },
-          "closeOnEscape": {
-            "type": "boolean",
-            "required": false,
-            "default": true,
-            "description": "ESC 키로 모달 닫기 허용 여부"
-          },
-          "icon": {
-            "type": "string",
-            "required": false,
-            "description": "제목 앞에 표시할 Font Awesome 아이콘 이름"
-          },
-          "iconClassName": {
-            "type": "string",
-            "required": false,
-            "default": "text-gray-500 dark:text-gray-400",
-            "description": "아이콘 클래스"
-          },
-          "style": {
-            "type": "CSSProperties",
-            "required": false,
-            "description": "인라인 스타일"
-          },
           "isOpen": {
             "type": "boolean",
             "required": true,
@@ -1405,16 +1158,11 @@
             "required": false,
             "description": "모달 제목"
           },
-          "size": {
-            "type": "string",
-            "required": false,
-            "description": "이름 있는 너비 단계 (sm/small 400px, md/medium 500px, lg/large 720px, xl 900px, 2xl 1120px). width 를 함께 주면 width 가 우선하며, 모르는 값은 기본 500px 으로 떨어진다"
-          },
           "width": {
             "type": "string",
             "required": false,
             "default": "500px",
-            "description": "모달 너비 CSS 값 (size 보다 우선)"
+            "description": "모달 너비"
           },
           "className": {
             "type": "string",
@@ -1591,29 +1339,6 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "SlotContainer",
-        "type": "composite",
-        "description": "동적 슬롯 컨테이너 — 레이아웃 JSON 노드(slot)/확장 주입 조각을 떙겨 렌더 (빈 슬롯=미렌더). 헤더 통화 등 모듈 주입 UI 소비",
-        "path": "src/components/composite/SlotContainer.tsx",
-        "props": {
-          "slotId": {
-            "type": "string",
-            "required": true,
-            "description": "렌더할 슬롯 ID"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "컨테이너 클래스"
-          },
-          "emptyContent": {
-            "type": "node",
-            "required": false,
-            "description": "빈 슬롯일 때 표시할 내용"
           }
         }
       },

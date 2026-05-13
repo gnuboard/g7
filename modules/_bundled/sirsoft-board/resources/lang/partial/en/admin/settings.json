@@ -2,18 +2,11 @@
   "title": "Board Settings",
   "description": "Configure default settings for new boards and manage global board policies.",
   "read_only_message": "You have read-only access. Contact an administrator if you need to make changes.",
-  "board_types_no_permission": "You need the board create permission to manage board types.",
   "page_info": "Manage default settings applied when creating new boards. Check the checkbox next to each item to bulk-apply it to existing boards.",
   "validation_error": "Please check the input values.",
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
   "unsaved_changes": "You have unsaved changes.",
-  "unsaved_tab_modal": {
-    "title": "Unsaved changes",
-    "message": "You have unsaved changes on this tab. If you switch tabs, your changes will be discarded and the saved values will be restored.",
-    "btn_stay": "Stay on this tab",
-    "btn_leave": "Leave without saving"
-  },
   "tabs": {
     "general": "General",
     "basic_defaults": "Board Settings",
@@ -22,8 +15,7 @@
     "seo": "SEO Settings",
     "mail_templates": "Mail Templates",
     "notification_definitions": "Notification Settings",
-    "identity_policies": "Identity Policies",
-    "privacy_retention": "Privacy Retention"
+    "identity_policies": "Identity Policies"
   },
   "board_settings_tabs": {
     "basic": "Basic",
@@ -34,8 +26,7 @@
     "comment": "Comment",
     "attachment": "Attachment",
     "notification": "Notification",
-    "bulk_apply": "Bulk Apply",
-    "bulk_members": "Bulk Managers/Staff"
+    "bulk_apply": "Bulk Apply"
   },
   "sections": {
     "general": "General",
@@ -69,15 +60,9 @@
     "report_notification": "Report Notification",
     "report_notification_description": "Configure which administrators receive notifications and how notifications are sent when a report is submitted.",
     "report_permissions": "Report Management Permissions",
-    "report_permissions_description": "Assign roles that can view the report list and process reports (approve, reject, or blind). Admin notifications for new reports are sent based on the 'Process Reports Permission' role.",
-    "attachment_cleanup": "Attachment Cleanup",
-    "attachment_cleanup_description": "Decide when the files of deleted attachments are destroyed. Temporary attachments uploaded while writing but never saved are cleaned up daily regardless of this setting."
+    "report_permissions_description": "Assign roles that can view the report list and process reports (approve, reject, or blind). Admin notifications for new reports are sent based on the 'Process Reports Permission' role."
   },
   "fields": {
-    "attachment_purge_enabled": "Purge Deleted Attachments",
-    "attachment_purge_enabled_hint": "Off by default — the operator must turn it on for the daily automatic cleanup to run. When on, files and records of attachments deleted longer ago than the retention period are permanently removed. Cleanup commands run directly on the server are not affected by this setting.",
-    "attachment_purge_retention_days": "Deleted Attachment Retention (days)",
-    "attachment_purge_retention_days_hint": "Restoring a post from the trash also restores attachments within this period. Keep it aligned with your trash retention window. (1 ~ 3650 days)",
     "type": "Board Type",
     "secret_mode": "Secret Mode",
     "per_page": "Posts per Page (PC)",
@@ -93,7 +78,7 @@
     "max_content_length": "Maximum Content Length",
     "use_reply": "Enable Reply Posts",
     "max_reply_depth": "Max Reply Depth",
-    "reply_delete_policy": "Reply Delete Policy",
+    "max_reply_depth_hint": "Enter a value between 1 and 5",
     "use_comment": "Enable Comments",
     "comment_order": "Comment Sort Order",
     "min_comment_length": "Min Comment Length",
@@ -111,20 +96,17 @@
     "notify_author": "Author Notification",
     "notify_author_description": "Send email to the original author when a comment or reply is posted",
     "use_report": "Enable Reports",
-    "use_scrap": "Enable Scrap",
-    "use_reaction": "Enable Reactions",
-    "active_reaction_types": "Select Reaction Types",
     "auto_hide_threshold": "Auto Blind Threshold",
-    "auto_hide_threshold_hint": "Automatically blind content when reports reach this count. (0=disabled, 1–100)",
+    "auto_hide_threshold_hint": "Automatically blind content when reports reach this count. (0=disabled, 1\u2013100)",
     "auto_hide_target": "Blind Target",
     "auto_hide_target_hint": "Select the target for auto blind processing.",
     "daily_report_limit": "Daily Report Limit",
-    "daily_report_limit_hint": "Max reports per user per day across all boards. 0 = no limit. (0–100)",
+    "daily_report_limit_hint": "Max reports per user per day across all boards. 0 = no limit. (0\u2013100)",
     "rejection_limit_count": "Rejection Limit (count)",
     "rejection_limit_days": "Rejection Limit Period (days)",
-    "rejection_limit_hint": "Reporting is blocked once rejections within this period reach the limit. 0 count = no limit. (Count: 0–50, Period: 1–365 days)",
+    "rejection_limit_hint": "Reporting will be blocked when rejections exceed the limit within this period. 0 count = no limit. (Count: 0\u201350, Period: 1\u2013365 days)",
     "report_cooldown_seconds": "Report Cooldown (sec)",
-    "report_cooldown_seconds_hint": "Minimum interval between consecutive reports. 0 = no limit. (0–3600 sec)",
+    "report_cooldown_seconds_hint": "Minimum interval between consecutive reports. 0 = no limit. (0\u20133600 sec)",
     "notify_author_on_report_action": "Report Action Notification",
     "notify_author_on_report_action_description": "Send a notification to the author when their content is processed (blinded/deleted/restored) due to reports",
     "notify_admin_on_report": "Report Received Admin Notification",
@@ -139,30 +121,24 @@
     "notify_author_on_report_action_channels_placeholder": "Select channels",
     "notify_author_on_report_action_channels_help": "Author notifications will be sent through the selected channels",
     "notification_channels": {
-      "mail": "Email",
-      "database": "Site Notification"
+        "mail": "Email",
+        "database": "Site Notification"
     },
-    "report_notification_template_status_title": "Delivery Status by Channel",
-    "report_notification_template_status_active": "Active",
-    "report_notification_template_status_inactive": "Inactive",
-    "report_notification_template_status_empty": "No notification templates are linked.",
-    "report_notification_template_status_hint": "Per-channel delivery, templates and recipients are managed in the Notification Settings menu.",
-    "report_notification_go_to_settings": "Go to Notification Settings",
     "report_view_roles": "View Reports Permission",
     "report_view_roles_description": "Permission to view the report list and report details.",
     "report_manage_roles": "Process Reports Permission",
     "report_manage_roles_description": "Permission to approve, reject, or blind reports. Admin notifications on report submission are also sent to roles with this permission.",
-    "blocked_keywords": "Blocked Keywords",
-    "blocked_keywords_placeholder": "Type a keyword and press Enter",
+    "blocked_keywords": "Restricted Keywords",
+    "blocked_keywords_placeholder": "Type keyword and press Enter",
     "blocked_keywords_description": "List of keywords to block in posts and comments",
     "blocked_keywords_hint": "Posts or comments containing registered keywords will be blocked",
     "post_cooldown_seconds": "Post Cooldown (sec)",
-    "post_cooldown_seconds_hint": "Wait time between consecutive posts by the same user (0–3600 sec, 0 = no limit)",
+    "post_cooldown_seconds_hint": "Wait time between consecutive posts by the same user (0\u20133600 sec, 0 = no limit)",
     "comment_cooldown_seconds": "Comment Cooldown (sec)",
-    "comment_cooldown_seconds_hint": "Wait time between consecutive comments by the same user (0–3600 sec, 0 = no limit)",
+    "comment_cooldown_seconds_hint": "Wait time between consecutive comments by the same user (0\u20133600 sec, 0 = no limit)",
     "spam_security_identifier_info": "Cooldown and view count deduplication identify members by user_id and guests by IP address",
     "view_count_cache_ttl": "View Count Cache TTL (sec)",
-    "view_count_cache_ttl_hint": "Cache duration for view count deduplication (60–604800 sec, max 7 days)",
+    "view_count_cache_ttl_hint": "Cache duration for view count deduplication (60\u2013604800 sec, max 7 days)",
     "date_display_format": "Date Display Format",
     "date_display_format_hint": "Choose how dates are displayed in post and comment lists. Applied immediately across all boards on the user-facing pages.",
     "clear_cache": "Clear Cache",
@@ -174,42 +150,37 @@
       "secret_mode": "Set the default behavior for the secret post feature",
       "show_view_count": "Display view count on post list and detail pages",
       "use_report": "Enable reporting of inappropriate posts and comments",
-      "use_scrap": "Enable the scrap feature that lets members save posts to their personal collection",
-      "use_reaction": "Enable reactions such as recommend/not recommend on posts",
       "new_display_hours": "Duration to display [New] badge after posting (in hours)",
-      "per_page": "Number of posts to display per page on desktop ({{min}}–{{max}})",
-      "per_page_mobile": "Number of posts to display per page on mobile ({{min}}–{{max}})",
+      "per_page": "Number of posts to display per page on desktop",
+      "per_page_mobile": "Number of posts to display per page on mobile",
       "order_by": "Set the default sort criteria for the post list",
       "order_direction": "Set the default sort direction for the post list",
-      "min_title_length": "Set the minimum character count for post titles ({{min}}–{{max}})",
-      "max_title_length": "Set the maximum character count for post titles ({{min}}–{{max}})",
-      "min_content_length": "Set the minimum character count for post content ({{min}}–{{max}})",
-      "max_content_length": "Set the maximum character count for post content ({{min}}–{{max}})",
+      "min_title_length": "Set the minimum character count for post titles",
+      "max_title_length": "Set the maximum character count for post titles",
+      "min_content_length": "Set the minimum character count for post content",
+      "max_content_length": "Set the maximum character count for post content",
       "use_reply": "Must be ON to apply reply post feature to new boards.",
-      "max_reply_depth": "Set the maximum nesting depth for replies ({{min}}–{{max}})",
-      "reply_delete_policy": "Set what happens when deleting a post that has replies",
+      "max_reply_depth": "Set the maximum nesting depth for replies (1-5)",
       "blocked_keywords": "Posts or comments containing registered keywords will be blocked",
       "use_comment": "Must be ON to apply comment feature to new boards. Comment detail settings below will also apply.",
       "comment_order": "Set the default sort direction for comments",
-      "min_comment_length": "Set the minimum character count for comments ({{min}}–{{max}})",
-      "max_comment_length": "Set the maximum character count for comments ({{min}}–{{max}})",
-      "max_comment_depth": "Set the maximum nesting depth for nested comments. Setting to 0 disables the nested comment feature ({{min}}–{{max}})",
+      "min_comment_length": "Set the minimum character count for comments",
+      "max_comment_length": "Set the maximum character count for comments",
+      "max_comment_depth": "Set the maximum nesting depth for nested comments. Setting to 0 disables the nested comment feature (0-10)",
       "use_file_upload": "Must be ON to apply file attachment feature to new boards.",
-      "max_file_size": "Maximum file size for uploads (in MB, {{min}}–{{max}})",
-      "max_file_count": "Maximum number of files per post ({{min}}–{{max}})",
-      "allowed_extensions": "Enter at least one allowed file extension",
-      "use_comment_reaction": "Show reaction buttons on comments too. Works only on boards where \"Enable Reactions\" is on."
-    },
-    "use_comment_reaction": "Enable Comment Reactions"
+      "max_file_size": "Maximum file size for uploads (in MB)",
+      "max_file_count": "Maximum number of files per post",
+      "allowed_extensions": "Leave empty to allow all file extensions"
+    }
   },
   "options": {
     "date_display_format": {
       "standard": "Standard",
       "standard_description": "Recent posts show as 'N min ago / N hours ago', this year as 'MM-DD', older as 'YY-MM-DD'",
-      "standard_example": "e.g. 3 min ago · 2 hours ago · 03-18 · 24-12-25",
+      "standard_example": "e.g. 3 min ago \u00b7 2 hours ago \u00b7 03-18 \u00b7 24-12-25",
       "relative": "Relative",
-      "relative_description": "All dates shown as relative time (N min · N hours · N days · N months · N years ago)",
-      "relative_example": "e.g. 3 min ago · 2 hours ago · 5 days ago · 3 months ago · 2 years ago"
+      "relative_description": "All dates shown as relative time (N min \u00b7 N hours \u00b7 N days \u00b7 N months \u00b7 N years ago)",
+      "relative_example": "e.g. 3 min ago \u00b7 2 hours ago \u00b7 5 days ago \u00b7 3 months ago \u00b7 2 years ago"
     },
     "type": {
       "basic": "Basic",
@@ -220,10 +191,6 @@
       "disabled": "Disabled",
       "enabled": "Optional",
       "always": "Always Secret"
-    },
-    "reply_delete_policy": {
-      "block": "Block deletion",
-      "cascade": "Delete together"
     },
     "order_by": {
       "created_at": "Latest",
@@ -272,7 +239,6 @@
       "posts.read": "View Posts",
       "posts.write": "Create/Edit/Delete Posts",
       "posts.read-secret": "View Secret Posts",
-      "posts.write-notice": "Create Notice Posts",
       "comments.read": "View Comments",
       "comments.write": "Create/Edit/Delete Comments",
       "attachments.upload": "Upload/Delete Files",
@@ -293,10 +259,8 @@
     "target_boards": "Target Boards",
     "apply_all": "All Boards",
     "apply_selected": "Selected Boards",
-    "select_boards_hint": "Search and select the boards to apply this to below.",
     "select_boards_placeholder": "Select boards",
     "apply_button": "Bulk Apply",
-    "no_permission": "Bulk apply requires both the board settings update and board update permissions.",
     "no_fields_selected": "No items selected.",
     "no_boards_selected": "No boards selected.",
     "checked_fields_notice": "All settings will be saved, then only the checked items will be bulk applied.",
@@ -310,15 +274,11 @@
       "secret_mode": "Secret Mode",
       "use_comment": "Enable Comments",
       "use_reply": "Enable Replies",
-      "use_reaction": "Enable Reactions",
-      "use_comment_reaction": "Enable Comment Reactions",
       "max_reply_depth": "Max Reply Depth",
-      "reply_delete_policy": "Reply Delete Policy",
       "max_comment_depth": "Max Comment Depth",
       "comment_order": "Comment Sort Order",
       "show_view_count": "Show View Count",
       "use_report": "Enable Reports",
-      "use_scrap": "Enable Scrap",
       "min_title_length": "Min Title Length",
       "max_title_length": "Max Title Length",
       "min_content_length": "Min Content Length",
@@ -332,7 +292,6 @@
       "notify_admin_on_post": "Admin Notification",
       "notify_author": "Author Notification",
       "new_display_hours": "New Post Display Hours",
-      "blocked_keywords": "Blocked Keywords",
       "default_board_permissions": "Default Permissions",
       "manager": "Manage Board"
     }
@@ -345,7 +304,6 @@
     "warning": "This action cannot be undone. Existing settings of the target boards will be overwritten.",
     "confirm": "Save & Apply",
     "success": "Settings applied to {{count}} boards.",
-    "success_one": "Settings applied to {{count}} board.",
     "error": "Bulk apply failed.",
     "selected_fields": "Items to Apply",
     "selected_boards": "Boards to Apply",
@@ -355,12 +313,7 @@
     "select_boards_required": "Please select at least one board.",
     "save_and_apply_info": "Upon confirmation, all settings in the current tab will be saved, and only the checked items will be bulk applied to the selected boards.",
     "save_error": "Failed to save settings. Bulk apply has been cancelled.",
-    "permission_notice": "The selected permission items will replace the existing roles of each board with the current settings. However, the manager and step roles of each board are preserved as-is.",
-    "aborted_title": "Bulk Apply Failed",
-    "aborted_message": "An error occurred while updating permissions for {{board}}, so all changes have been cancelled.",
-    "aborted_message_suffix": ": an error occurred while updating its permissions, so all changes have been cancelled.",
-    "aborted_message_generic": "An error occurred during bulk apply, so all changes have been cancelled.",
-    "aborted_toast": "Bulk apply failed, so all changes have been cancelled."
+    "permission_notice": "The selected permission items will replace the existing roles of each board with the current settings. However, the manager and step roles of each board are preserved as-is."
   },
   "seo": {
     "meta_settings": {
@@ -392,7 +345,6 @@
       "cache_management": "SEO Cache Management",
       "cache_description": "Manually clear the SEO cache for board pages. The cache is automatically cleared when settings are saved.",
       "clear_cache": "Clear SEO Cache",
-      "clear_cache_no_permission": "You need the site settings update permission to clear the SEO cache.",
       "clear_cache_success": "SEO cache has been cleared.",
       "clear_cache_error": "Failed to clear SEO cache."
     }
@@ -410,17 +362,16 @@
     "reset_success": "Notification settings have been reset to default.",
     "reset_failed": "Failed to reset notification settings.",
     "reset_modal": {
-      "title": "Reset to Default",
-      "confirm_message": "All channel templates of this notification will be restored to defaults.",
-      "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
-      "target_label": "Target:",
-      "btn_confirm": "Reset",
-      "btn_confirming": "Resetting..."
+        "title": "Reset to Default",
+        "confirm_message": "All channel templates of this notification will be restored to defaults.",
+        "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
+        "target_label": "Target:",
+        "btn_confirm": "Reset",
+        "btn_confirming": "Resetting..."
     },
     "no_template_for_channel": "No template for this channel.",
     "body_preview": "Body Preview",
     "total_count": "Total {{count}} items",
-    "total_count_one": "Total {{count}} item",
     "per_page_label": "Per page",
     "empty_message": "No notification settings found.",
     "types": {
@@ -451,7 +402,6 @@
     }
   },
   "identity": {
-    "policy_form_editor_label": "Add/edit identity policy",
     "intro_title": "Board Identity Verification Policies",
     "intro": "Manage policies declared by the board module and policies added by operators. Module default policies allow only enabled/grace adjustments; operator-defined policies can be freely edited or removed in core settings.",
     "purposes_section_title": "Identity Purposes Registered by This Module",
@@ -465,8 +415,6 @@
     "enable_success": "Policy enabled.",
     "disable_success": "Policy disabled.",
     "toggle_failed": "Failed to update policy state.",
-    "no_read_permission": "You do not have permission to view identity verification policies. The \"View board identity policies\" permission is required.",
-    "read_only_notice": "You do not have permission to change identity verification policies, so they are shown read-only. Adding, editing, or deleting policies requires the \"Update board identity policies\" permission.",
     "col": {
       "key": "Key",
       "scope": "Scope",
@@ -488,143 +436,5 @@
       "plugin": "Plugin",
       "admin": "Admin"
     }
-  },
-  "reaction_types": {
-    "title": "Reaction Types",
-    "add_button": "Add Type",
-    "empty": "No reaction types yet. Add one with \"Add Type\", then save.",
-    "none_hint": "Add a type in the editor below first.",
-    "form": {
-      "code": "Code",
-      "name": "Name",
-      "name_placeholder": "e.g. Like",
-      "confirm": "Add"
-    },
-    "columns": {
-      "order": "Order",
-      "code": "Code",
-      "name": "Name",
-      "icon": "Icon",
-      "is_active": "Active",
-      "reaction_count": "Reactions"
-    },
-    "actions": {
-      "move_up": "Move up",
-      "move_down": "Move down"
-    },
-    "badges": {
-      "inactive": "Inactive"
-    },
-    "validation": {
-      "code_required": "Enter a code",
-      "code_duplicate": "That code already exists",
-      "code_format": "Use 2-50 characters: start with a lowercase letter, then lowercase letters, digits or underscores (_)",
-      "name_required": "Enter the name in the default language"
-    },
-    "confirm_delete": "Delete this reaction type? It applies once you save.",
-    "icon_remove_confirm_title": "Delete Icon",
-    "icon_remove_confirm_message": "Delete this icon? The uploaded file is removed right away, even before you save, and this cannot be undone. The default icon will be used instead.",
-    "messages": {
-      "icon_upload_failed": "Couldn't upload the icon — use a PNG, JPG, GIF or WEBP image up to 1MB",
-      "icon_delete_failed": "Failed to delete the icon"
-    },
-    "delete_blocked_suffix": " reactions use this type, so it cannot be deleted — you can turn it off instead",
-    "delete_blocked_suffix_one": " reaction uses this type, so it cannot be deleted — you can turn it off instead"
-  },
-  "privacy_retention": {
-    "title": "Privacy Retention",
-    "description": "Automatically erases the author IP of posts and comments and the author information of guest posts once their retention period has passed, every day. Announce the retention period and erasure method in your privacy policy before turning this on.",
-    "enabled": "Automatic retention processing",
-    "enabled_hint": "When on, the core privacy retention job (runs daily) processes board data by the two rules below. Processed data cannot be restored.",
-    "target_count": "{{count}} targets",
-    "target_count_one": "{{count}} target",
-    "ip_retention_days": "Author IP retention period (days)",
-    "ip_retention_days_hint": "Erases the author IP of every post and comment, including members' posts, once this many days have passed since writing. Access records must be kept for at least 1 year (2 years for large operators), so do not set a shorter period.",
-    "guest_retention_days": "Guest author information retention period (days)",
-    "guest_retention_days_hint": "Processes posts and comments written by guests with the method below once this many days have passed since writing. 0 means they are not processed.",
-    "guest_mode": "Guest post processing mode",
-    "guest_mode_hint": "Anonymize hides only the author name and keeps the post. Delete removes the post from lists and erases its title, content and attached files.",
-    "modes": {
-      "anonymize": "Anonymize (hide author name)",
-      "delete": "Delete"
-    },
-    "delete_warning": "Deletion cannot be undone. Replies and comments under a guest post (including members' ones) are deleted with it, and attached files are erased immediately.",
-    "preview_hint": "Target counts are based on the saved settings. If you changed a value, save first and check again.",
-    "withdrawn_notice": "Posts by withdrawn members are shown as “Withdrawn user”, so they are not processed here. Member information erasure is configured in the Privacy tab of the core settings.",
-    "targets": {
-      "row_ip": "Author IPs (posts and comments)",
-      "row_guest": "Guest author information (posts and comments)",
-      "count": "{{count}} targets",
-      "count_one": "{{count}} target",
-      "view": "View targets",
-      "title_ip": "Author IPs to be erased (posts and comments)",
-      "title_guest": "Guest author information to be processed (posts and comments)",
-      "total": "{{count}} in total",
-      "empty": "There are no targets.",
-      "loading": "Loading...",
-      "close": "Close",
-      "editor_label": "Board retention targets"
-    },
-    "manual_run": {
-      "run": "Run now",
-      "save_first_hint": "You have unsaved changes. Manual runs use the saved settings, so save first.",
-      "status_active": "{{status}} — queued {{at}} · {{by}}",
-      "last_completed": "Last manual run: {{at}} · {{by}} · {{count}} processed",
-      "last_failed": "Last manual run failed: {{at}} · {{by}} — {{error}}",
-      "unknown_requester": "Unknown",
-      "modal_title": "{{target}} — manual run",
-      "confirm_desc": "Run once now without waiting for the scheduler. The job is queued and processed in order; the result appears on this screen when it finishes.",
-      "count_label": "To be processed",
-      "count_value": "{{count}}",
-      "loading": "Counting...",
-      "mode_label": "Method",
-      "modes": {
-        "anonymize": "Anonymize",
-        "delete": "Delete",
-        "erase_ip": "Erase author IP"
-      },
-      "disabled_notice": "Automatic runs are off. A manual run ignores the toggle and processes once with the saved settings.",
-      "irreversible": "This cannot be undone. Check the count and the target list before running.",
-      "queue_hint": "A queue worker must be running. You cannot run the same target again until its queued job finishes.",
-      "cancel": "Cancel",
-      "execute": "Run",
-      "executing": "Queuing...",
-      "queued_toast": "The run has been queued. The result will appear when it finishes.",
-      "queue_failed": "Could not queue the run.",
-      "preview_failed": "Could not load the target count.",
-      "editor_label": "Board retention manual run"
-    }
-  },
-  "bulk_members": {
-    "title": "Bulk Assign Board Managers/Staff",
-    "description": "Add or remove members as managers or staff of multiple boards at once.",
-    "target_label": "Target boards",
-    "target_all": "All boards",
-    "target_selected": "Selected boards",
-    "boards_count": "{{count}} boards",
-    "boards_count_one": "{{count}} board",
-    "type_label": "Type",
-    "type_manager": "Manager",
-    "type_step": "Staff",
-    "users_label": "Members",
-    "mode_label": "Action",
-    "mode_add": "Add",
-    "mode_remove": "Remove",
-    "hint": "Boards that would be left with no manager are skipped when removing.",
-    "apply": "Apply",
-    "confirm_title": "Bulk Assign Board Managers/Staff",
-    "confirm_add_manager": "Add the selected members as board managers.",
-    "confirm_add_step": "Add the selected members as board staff.",
-    "confirm_remove_manager": "Remove the selected members from board managers.",
-    "confirm_remove_step": "Remove the selected members from board staff.",
-    "result_summary": "{{updated}} boards changed, {{skipped}} skipped, {{unchanged}} unchanged",
-    "result_summary_one": "{{updated}} board changed, {{skipped}} skipped, {{unchanged}} unchanged",
-    "reason_last_manager": "Would leave no manager",
-    "reason_scope": "Outside your scope",
-    "reason_not_grantable": "Cannot grant this role (insufficient permission)",
-    "reason_role_missing": "Board role record missing (data damaged)",
-    "no_permission": "You need permission to edit boards to assign managers or staff in bulk.",
-    "load_failed": "Could not load the board list, so bulk assignment is unavailable. Please reopen this page shortly.",
-    "failed": "Failed to assign board managers/staff in bulk."
   }
 }

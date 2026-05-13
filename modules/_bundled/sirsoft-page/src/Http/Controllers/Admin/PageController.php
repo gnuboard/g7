@@ -3,9 +3,7 @@
 namespace Modules\Sirsoft\Page\Http\Controllers\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Page\Http\Requests\BulkChangePageStatusRequest;
 use Modules\Sirsoft\Page\Http\Requests\ChangePageStatusRequest;
 use Modules\Sirsoft\Page\Http\Requests\CheckSlugRequest;
@@ -46,7 +44,7 @@ class PageController extends AdminBaseController
     {
         try {
             $validated = $request->validated();
-            $perPage = $validated['per_page'] ?? 20;
+            $perPage = $validated['per_page'] ?? 15;
             $pages = $this->pageService->getPages(
                 array_filter($validated, fn ($v) => $v !== null),
                 $perPage
@@ -78,14 +76,6 @@ class PageController extends AdminBaseController
                 new PageResource($page),
                 201
             );
-        } catch (AttachmentLimitExceededException $e) {
-            // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error(
-                $e->getMessageKey(),
-                422,
-                ['code' => 'attachment_limit_exceeded'],
-                $e->getMessageParams()
-            );
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.page.create_failed', 500, $e->getMessage());
         }
@@ -107,7 +97,7 @@ class PageController extends AdminBaseController
                 'sirsoft-page::messages.page.fetch_success',
                 new PageResource($page)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -134,15 +124,7 @@ class PageController extends AdminBaseController
                 'sirsoft-page::messages.page.update_success',
                 new PageResource($page)
             );
-        } catch (AttachmentLimitExceededException $e) {
-            // 첨부 개수 상한 초과 — generic 500 이 아닌 422 명시 차단
-            return $this->error(
-                $e->getMessageKey(),
-                422,
-                ['code' => 'attachment_limit_exceeded'],
-                $e->getMessageParams()
-            );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -164,7 +146,7 @@ class PageController extends AdminBaseController
             $this->pageService->deletePage($page);
 
             return $this->success('sirsoft-page::messages.page.delete_success');
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -209,7 +191,7 @@ class PageController extends AdminBaseController
                 'sirsoft-page::messages.page.publish_success',
                 new PageResource($page)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -230,12 +212,9 @@ class PageController extends AdminBaseController
             $validated = $request->validated();
             $count = $this->pageService->bulkChangePublishStatus($validated['ids'], $validated['published']);
 
-            return $this->success(
-                'sirsoft-page::messages.page.bulk_publish_success',
-                ['count' => $count],
-                200,
-                ['count' => $count],
-            );
+            return $this->success('sirsoft-page::messages.page.bulk_publish_success', [
+                'count' => $count,
+            ]);
         } catch (\Exception $e) {
             return $this->error('sirsoft-page::messages.page.bulk_publish_failed', 500, $e->getMessage());
         }
@@ -257,7 +236,7 @@ class PageController extends AdminBaseController
                 'sirsoft-page::messages.page.fetch_success',
                 PageVersionResource::collection($versions)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -277,15 +256,14 @@ class PageController extends AdminBaseController
     {
         try {
             $this->pageService->getPage($id);
-            // 경로의 페이지에 속한 버전만 조회 (교차 페이지 접근 차단)
-            $version = $this->pageService->getVersion($id, $versionId);
+            $version = $this->pageService->getVersion($versionId);
             $version->load('creator');
 
             return $this->successWithResource(
                 'sirsoft-page::messages.page.fetch_success',
                 new PageVersionResource($version)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);
@@ -312,7 +290,7 @@ class PageController extends AdminBaseController
                 'sirsoft-page::messages.page.restore_success',
                 new PageResource($page)
             );
-        } catch (ModelNotFoundException) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('sirsoft-page::messages.page.not_found');
         } catch (AccessDeniedHttpException) {
             return $this->error('auth.scope_denied', 403);

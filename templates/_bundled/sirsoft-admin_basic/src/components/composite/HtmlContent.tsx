@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
 import { Div } from '../basic/Div';
-import type { EditorAttrs } from '../../types';
 
 export interface HtmlContentProps {
   /**
@@ -33,13 +32,6 @@ export interface HtmlContentProps {
    * content보다 우선순위가 높음
    */
   text?: string;
-
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -77,8 +69,6 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
   isHtml = true,
   className = '',
   purifyConfig,
-  id,
-  editorAttrs,
 }) => {
   // text prop이 우선순위가 높음 (레이아웃 JSON에서 사용)
   const actualContent = text ?? content ?? '';
@@ -98,7 +88,7 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
     `.trim().replace(/\s+/g, ' ');
 
     return (
-      <Div className={textClasses} id={id} {...editorAttrs}>
+      <Div className={textClasses}>
         {actualContent}
       </Div>
     );
@@ -193,7 +183,6 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
     <Div
       className={containerClasses}
       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-      id={id} {...editorAttrs}
     />
   );
 };

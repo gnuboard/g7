@@ -1,4 +1,0 @@
-{
-  "name": "Bizppurio メッセージ発送",
-  "description": "Bizppurio 連動 SMS/LMS・カカオ アラート トーク発送プラグインです。コア通知システムチャネルとして文字・アラートトークを発送し、発送結果を webhook で受信します。"
-}

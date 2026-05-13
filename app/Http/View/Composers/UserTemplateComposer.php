@@ -3,23 +3,14 @@
 namespace App\Http\View\Composers;
 
 use App\Exceptions\TemplateNotFoundException;
-use App\Extension\Consent\ConsentManager;
-use App\Extension\Consent\ConsentSnapshot;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
-use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
-use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
-use App\Http\View\Composers\Traits\CollectsCustomAssets;
-use App\Http\View\Composers\Traits\CollectsExtensionAssets;
-use App\Http\View\Composers\Traits\CollectsTemplateExternals;
-use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
 use App\Services\ModuleSettingsService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
-use App\Support\StateContracts;
-use App\Support\TrustedScriptHosts;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
@@ -29,12 +20,6 @@ use Illuminate\View\View;
  */
 class UserTemplateComposer
 {
-    use CollectsActiveExtensionMeta;
-    use CollectsCustomAssets;
-    use CollectsExtensionAssets;
-    use CollectsTemplateExternals;
-    use CollectsTemplateStylesheets;
-
     /**
      * 서비스 주입
      *
@@ -44,7 +29,6 @@ class UserTemplateComposer
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
      * @param  ModuleManager  $moduleManager  모듈 매니저
      * @param  PluginManager  $pluginManager  플러그인 매니저
-     * @param  TemplateManager  $templateManager  템플릿 매니저
      */
     public function __construct(
         private TemplateService $templateService,
@@ -52,15 +36,13 @@ class UserTemplateComposer
         private ModuleSettingsService $moduleSettingsService,
         private PluginSettingsService $pluginSettingsService,
         private ModuleManager $moduleManager,
-        private PluginManager $pluginManager,
-        private TemplateManager $templateManager
+        private PluginManager $pluginManager
     ) {}
 
     /**
      * 뷰에 데이터 바인딩
      *
      * @param  View  $view  뷰 인스턴스
-     * @return void 반환값 없음
      */
     public function compose(View $view): void
     {
@@ -76,23 +58,6 @@ class UserTemplateComposer
         } catch (\Exception $e) {
             $frontendSettings = [];
         }
-
-        // 동의 연동 모드 트래커가 「동의를 확인할 곳이 있는가」를 알아야 한다. 코어는 어느 확장이
-        // 답하는지 모르고, 동의 제공자 선택 상태가 none 이 아닌지만 계산해 싣는다(설정이 아니라 계산값).
-        $governsConsent = false;
-        try {
-            $governsConsent = app(ConsentManager::class)->selection()->governsConsent();
-        } catch (\Throwable $e) {
-            $governsConsent = false;
-        }
-
-        if (isset($frontendSettings['analytics']) && is_array($frontendSettings['analytics'])) {
-            $frontendSettings['analytics']['consent_provider'] = $governsConsent;
-        }
-
-        // 코어 동의 런타임의 첫 값 — 회원 토큰은 브라우저 저장소에 있어 이 시점에는 누구의 동의인지 모른다.
-        // 그래서 `ready` 를 싣지 않고, 제공자가 없으면 `none`, 있으면 `unknown` 으로 두고 런타임이 곧바로 조회한다.
-        $consentInitial = $governsConsent ? ConsentSnapshot::unknown()->toArray() : ConsentSnapshot::none()->toArray();
 
         // 활성화된 플러그인 설정 조회
         try {
@@ -114,11 +79,6 @@ class UserTemplateComposer
         // 활성화된 플러그인의 프론트엔드 에셋 정보 수집
         $pluginAssets = $this->collectPluginAssets();
 
-        // 활성 확장(모듈/플러그인) 메타 — 레이아웃 편집기 SSoT
-        // 기존 modules/plugins 키는 hasSettings() 필터로 활성 전수가 아님
-        $activeModulesMeta = $this->collectActiveModulesMeta();
-        $activePluginsMeta = $this->collectActivePluginsMeta();
-
         // 프론트엔드에 노출할 앱 config 값 조회
         try {
             $appConfig = $this->settingsService->getAppConfigForFrontend();
@@ -126,39 +86,138 @@ class UserTemplateComposer
             $appConfig = [];
         }
 
-        // 확장 기능 캐시 버전 (브라우저 캐시 무효화용)
-        $extensionCacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
-
-        // 템플릿의 외부 리소스 정보 수집
-        // (자체 제공 `asset` 항목의 URL 을 만들 때 캐시 버전이 필요해 뒤로 옮겼다)
-        $templateExternals = $this->collectTemplateExternals($activeTemplate, $extensionCacheVersion);
-
-        // 확장 프론트엔드 병합 번들 URL (상시 ON — 활성 에셋이 없으면 null)
-        $bundleUrls = $this->buildExtensionBundleUrls($moduleAssets, $pluginAssets, $extensionCacheVersion);
-
-        // 신뢰 외부 스크립트 호스트 — 레이아웃 scripts[].src same-origin 예외 허용목록
-        // (KVE-2026-1915: 확장이 manifest 로 선언한 CDN 호스트만 런타임 로더가 허용)
-        $trustedScriptHosts = TrustedScriptHosts::hosts();
-
         $view->with('activeUserTemplate', $activeTemplate);
-        $view->with('extensionCacheVersion', $extensionCacheVersion);
         $view->with('frontendSettings', $frontendSettings);
         $view->with('pluginSettings', $pluginSettings);
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);
         $view->with('pluginAssets', $pluginAssets);
-        $view->with('bundleUrls', $bundleUrls);
-        $view->with('activeModulesMeta', $activeModulesMeta);
-        $view->with('activePluginsMeta', $activePluginsMeta);
         $view->with('appConfig', $appConfig);
-        $view->with('templateExternals', $templateExternals);
-        // 템플릿이 선언하고 산출물이 있는 CSS 만 링크한다 — CSS 없는 템플릿에 없는 파일 요청을 남기지 않는다
-        $view->with('templateStylesheets', $this->collectTemplateStylesheets($activeTemplate));
-        $view->with('customAssets', $this->collectCustomAssets($activeTemplate));
-        $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
-        $view->with('trustedScriptHosts', $trustedScriptHosts);
-        // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)
-        $view->with('stateContracts', StateContracts::forFrontend());
-        $view->with('consentInitial', $consentInitial);
+    }
+
+    /**
+     * 활성화된 모듈의 프론트엔드 에셋 정보를 수집합니다.
+     *
+     * @return array<string, array{js?: string, css?: string, priority: int, external?: array}>
+     */
+    private function collectModuleAssets(): array
+    {
+        $assets = [];
+
+        try {
+            // ModuleManager에서 활성화된 모듈 목록 조회
+            $activeModules = $this->moduleManager->getActiveModules();
+
+            // 캐시 버전 조회 (브라우저 캐시 무효화용)
+            $cacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
+
+            foreach ($activeModules as $identifier => $module) {
+                // 모듈에 에셋이 있는지 확인
+                if (! $module->hasAssets()) {
+                    continue;
+                }
+
+                $builtPaths = $module->getBuiltAssetPaths();
+                $loadingConfig = $module->getAssetLoadingConfig();
+                $assetConfig = $module->getAssets();
+
+                // global 전략인 경우에만 수집 (layout, lazy는 레이아웃에서 처리)
+                if ($loadingConfig['strategy'] !== 'global') {
+                    continue;
+                }
+
+                $moduleAsset = [
+                    'priority' => $loadingConfig['priority'],
+                ];
+
+                // JS 빌드 경로 (캐시 버전 파라미터 추가)
+                if (! empty($builtPaths['js'])) {
+                    $moduleAsset['js'] = "/api/modules/assets/{$identifier}/".$builtPaths['js']."?v={$cacheVersion}";
+                }
+
+                // CSS 빌드 경로 (캐시 버전 파라미터 추가)
+                if (! empty($builtPaths['css'])) {
+                    $moduleAsset['css'] = "/api/modules/assets/{$identifier}/".$builtPaths['css']."?v={$cacheVersion}";
+                }
+
+                // 외부 스크립트 (조건부 로드용)
+                if (! empty($assetConfig['external'])) {
+                    $moduleAsset['external'] = $assetConfig['external'];
+                }
+
+                $assets[$identifier] = $moduleAsset;
+            }
+
+            // 우선순위 기준 정렬 (낮을수록 먼저)
+            uasort($assets, fn ($a, $b) => $a['priority'] <=> $b['priority']);
+        } catch (\Exception $e) {
+            // 에러 발생 시 빈 배열 반환 (에셋 로드 실패해도 앱 진행)
+            Log::warning('Failed to collect module assets: '.$e->getMessage());
+        }
+
+        return $assets;
+    }
+
+    /**
+     * 활성화된 플러그인의 프론트엔드 에셋 정보를 수집합니다.
+     *
+     * @return array<string, array{js?: string, css?: string, priority: int, external?: array}>
+     */
+    private function collectPluginAssets(): array
+    {
+        $assets = [];
+
+        try {
+            // PluginManager에서 활성화된 플러그인 목록 조회
+            $activePlugins = $this->pluginManager->getActivePlugins();
+
+            // 캐시 버전 조회 (브라우저 캐시 무효화용)
+            $cacheVersion = ClearsTemplateCaches::getExtensionCacheVersion();
+
+            foreach ($activePlugins as $identifier => $plugin) {
+                // 플러그인에 에셋이 있는지 확인
+                if (! $plugin->hasAssets()) {
+                    continue;
+                }
+
+                $builtPaths = $plugin->getBuiltAssetPaths();
+                $loadingConfig = $plugin->getAssetLoadingConfig();
+                $assetConfig = $plugin->getAssets();
+
+                // global 전략인 경우에만 수집 (layout, lazy는 레이아웃에서 처리)
+                if ($loadingConfig['strategy'] !== 'global') {
+                    continue;
+                }
+
+                $pluginAsset = [
+                    'priority' => $loadingConfig['priority'],
+                ];
+
+                // JS 빌드 경로 (캐시 버전 파라미터 추가)
+                if (! empty($builtPaths['js'])) {
+                    $pluginAsset['js'] = "/api/plugins/assets/{$identifier}/".$builtPaths['js']."?v={$cacheVersion}";
+                }
+
+                // CSS 빌드 경로 (캐시 버전 파라미터 추가)
+                if (! empty($builtPaths['css'])) {
+                    $pluginAsset['css'] = "/api/plugins/assets/{$identifier}/".$builtPaths['css']."?v={$cacheVersion}";
+                }
+
+                // 외부 스크립트 (조건부 로드용)
+                if (! empty($assetConfig['external'])) {
+                    $pluginAsset['external'] = $assetConfig['external'];
+                }
+
+                $assets[$identifier] = $pluginAsset;
+            }
+
+            // 우선순위 기준 정렬 (낮을수록 먼저)
+            uasort($assets, fn ($a, $b) => $a['priority'] <=> $b['priority']);
+        } catch (\Exception $e) {
+            // 에러 발생 시 빈 배열 반환 (에셋 로드 실패해도 앱 진행)
+            Log::warning('Failed to collect plugin assets: '.$e->getMessage());
+        }
+
+        return $assets;
     }
 }

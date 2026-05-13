@@ -4,10 +4,7 @@ namespace Modules\Sirsoft\Board\Http\Controllers\User;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Board\Http\Requests\User\IndexBoardRequest;
-use Modules\Sirsoft\Board\Http\Requests\User\PopularBoardsRequest;
-use Modules\Sirsoft\Board\Http\Requests\User\PopularPostsRequest;
-use Modules\Sirsoft\Board\Http\Requests\User\RecentPostsRequest;
+use Illuminate\Http\Request;
 use Modules\Sirsoft\Board\Http\Resources\BoardMenuResource;
 use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Services\BoardService;
@@ -40,17 +37,16 @@ class BoardController extends PublicBaseController
      * - 각 게시판별 최신글 N개 포함 (답변글, 삭제, 블라인드 제외)
      * - limit 파라미터로 게시글 개수 조절 가능 (기본: 0, 최대: 10)
      *
-     * @param  IndexBoardRequest  $request
+     * @param  Request  $request
      * @return JsonResponse
      */
-    public function index(IndexBoardRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        // 활성 게시판 중 호출자가 열람 가능한 게시판만 조회 — 디렉토리와 내장 최근글이
-        // 비공개 게시판·글 제목의 우회 노출로가 되지 않게 한다 (최근글·인기글과 동일 기준)
-        $boards = $this->boardService->getReadableActiveBoards();
+        // 활성화된 게시판만 조회
+        $boards = $this->boardService->getActiveBoards();
 
         // limit 파라미터 (0이면 최신글 미포함, 최대 10개)
-        $recentPostsLimit = $request->recentPostsLimit();
+        $recentPostsLimit = min(max((int) $request->input('limit', 0), 0), 10);
 
         // toListArray() 메서드를 사용하여 경량 데이터 반환
         $data = $boards->map(function ($board) use ($recentPostsLimit) {
@@ -132,12 +128,14 @@ class BoardController extends PublicBaseController
      * 모든 게시판의 최근 게시글을 통합하여 반환합니다.
      * - 기본 5개, 최대 20개까지 조회 가능
      *
-     * @param  RecentPostsRequest  $request
+     * @param  Request  $request
      * @return JsonResponse
      */
-    public function recentPosts(RecentPostsRequest $request): JsonResponse
+    public function recentPosts(Request $request): JsonResponse
     {
-        return $this->success('common.success', $this->boardService->getCachedRecentPosts($request->limit()));
+        $limit = min((int) $request->input('limit', 5), 20);
+
+        return $this->success('common.success', $this->boardService->getCachedRecentPosts($limit));
     }
 
     /**
@@ -148,16 +146,19 @@ class BoardController extends PublicBaseController
      * - 기간별 필터링: today, week, month, year (기본: week)
      * - period=all은 하위 호환을 위해 year로 매핑
      *
-     * @param  PopularPostsRequest  $request
+     * @param  Request  $request
      * @return JsonResponse
      */
-    public function popular(PopularPostsRequest $request): JsonResponse
+    public function popular(Request $request): JsonResponse
     {
-        // period 의 all → year 매핑(하위 호환)은 FormRequest 접근자가 담당한다.
-        return $this->success(
-            'common.success',
-            $this->boardService->getCachedPopularPosts($request->period(), $request->limit())
-        );
+        $period = $request->input('period', 'week');
+        // all → year 매핑 (하위 호환)
+        if ($period === 'all') {
+            $period = 'year';
+        }
+        $limit = min((int) $request->input('limit', 20), 50);
+
+        return $this->success('common.success', $this->boardService->getCachedPopularPosts($period, $limit));
     }
 
     /**
@@ -166,11 +167,13 @@ class BoardController extends PublicBaseController
      * 게시글 수가 많은 순으로 게시판 목록을 반환합니다.
      * - 기본 4개, 최대 20개까지 조회 가능
      *
-     * @param  PopularBoardsRequest  $request
+     * @param  Request  $request
      * @return JsonResponse
      */
-    public function popularBoards(PopularBoardsRequest $request): JsonResponse
+    public function popularBoards(Request $request): JsonResponse
     {
-        return $this->success('common.success', $this->boardService->getCachedPopularBoards($request->limit()));
+        $limit = min((int) $request->input('limit', 4), 20);
+
+        return $this->success('common.success', $this->boardService->getCachedPopularBoards($limit));
     }
 }

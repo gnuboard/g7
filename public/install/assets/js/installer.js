@@ -96,20 +96,6 @@
         return window.INSTALLER_LANG && window.INSTALLER_LANG[key] ? window.INSTALLER_LANG[key] : key;
     }
 
-    /**
-     * 상태변경 API 요청 헤더 — 세션 CSRF 토큰을 싣는다.
-     *
-     * 설치 소유권은 서버가 세션으로 판정하므로 소유 토큰 원문은 보내지 않는다.
-     *
-     * @return {Object} fetch headers
-     */
-    function stateChangeHeaders() {
-        return {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': window.INSTALLER_CSRF || '',
-        };
-    }
-
     // =========================================================================
     // Step 1: 라이선스 동의 체크박스
     // =========================================================================
@@ -150,30 +136,11 @@
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
-            // 빈 본문(HTTP 200 + Content-Length 0)을 response.json() 에 넘기면
-            // "Unexpected end of JSON input" 이라는, 원인도 조치도 알 수 없는 문구가 화면에 뜬다.
-            // (gnuboard/g7#62 — 한글 계정명 환경에서 실제로 발생했다)
-            // 사람이 읽고 조치할 수 있는 안내로 바꾼다.
-            const text = await response.text();
-
-            if (text.trim() === '') {
-                throw new Error(lang('error_empty_server_response'));
-            }
-
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (parseError) {
-                throw new Error(lang('error_invalid_server_response'));
-            }
+            const data = await response.json();
 
             const resultHtml = renderRequirements(data);
             document.getElementById('requirements-result').innerHTML = resultHtml;
             document.getElementById('navigation-buttons').classList.remove('hidden');
-
-            // 자산 URL 방식은 브라우저만 판정할 수 있어 카드 삽입 후 비동기로 채운다.
-            // await 하지 않는다 — 프로브가 늦거나 실패해도 요구사항 화면을 막지 않는다.
-            refreshAssetUrlModeCard();
 
             // 버튼 표시 제어
             const recheckBtn = document.getElementById('recheck-btn');
@@ -268,9 +235,6 @@
         const notExistsPaths = []; // mkdir 대상 (not_exists)
         const failedDirRelPaths = []; // 상대경로
         const notExistsRelPaths = []; // 상대경로 (not_exists)
-        // Windows ReadOnly 속성이 원인인 경로가 하나라도 있으면 attrib -R 안내를 함께 노출한다.
-        // (ReadOnly 는 ACL 이 아니라 파일 속성이라 icacls 로는 해소되지 않는다)
-        let hasWindowsReadOnly = false;
         if (!allDirsPassed) {
             // 계층적 디렉토리 에러 메시지 생성
             let dirErrorHtml = `${lang('error_directory_permissions')}<ul style="margin-top: 0.5rem;">`;
@@ -295,19 +259,6 @@
                         // not_writable, not_readable, subdirectory_issues 등 모두 chmod 대상
                         failedDirPaths.push(fullPath);
                         failedDirRelPaths.push(relPath);
-
-                        if (info.error_type === 'windows_readonly') {
-                            hasWindowsReadOnly = true;
-                        }
-                    }
-
-                    // 하위 디렉토리 중 ReadOnly 속성이 원인인 항목이 있는지 확인
-                    if (Array.isArray(info.failed_subdirectories)) {
-                        info.failed_subdirectories.forEach(subdir => {
-                            if (subdir && typeof subdir === 'object' && subdir.windows_readonly) {
-                                hasWindowsReadOnly = true;
-                            }
-                        });
                     }
                     dirErrorHtml += `<li>${path}`;
 
@@ -434,7 +385,7 @@
         // 6. HTTPS 카드
         const httpsStatusClass = data.https.enabled ? 'status-pass' : 'status-warning';
         html += renderSingleItemCard(
-            lang('https'),
+            lang('https_enabled'),
             httpsStatusClass,
             data.https.enabled ? lang('enabled') : lang('not_enabled'),
             '',
@@ -490,78 +441,6 @@
                 '',
                 false
             );
-        }
-
-        // 9. OPcache 카드 (성능 권장, 필수 아님)
-        // failedRequirements.push() 를 하지 않는다 — 비활성이어도 설치는 진행된다.
-        if (data.opcache) {
-            let opcacheStatusClass, opcacheStatusText;
-            if (data.opcache.enabled === null) {
-                // ini_get 이 차단된 환경 — 확인 불가 (경고도 차단도 아님)
-                opcacheStatusClass = 'status-warning';
-                opcacheStatusText = lang('opcache_unknown');
-            } else if (data.opcache.enabled) {
-                opcacheStatusClass = 'status-pass';
-                opcacheStatusText = lang('enabled');
-            } else {
-                // 단순히 '비활성화됨' 만 보이면 경고의 실질(성능 저하)이 전달되지 않는다.
-                opcacheStatusClass = 'status-warning';
-                opcacheStatusText = lang('opcache_disabled_short');
-            }
-            html += renderSingleItemCard(
-                lang('opcache'),
-                opcacheStatusClass,
-                opcacheStatusText,
-                '',
-                false
-            );
-        }
-
-        // 9-1. Composer 의존성 구성 카드 (권장 사항, 필수 아님)
-        // failedRequirements.push() 를 하지 않는다 — 개발용 패키지가 섞여 있어도 설치는 진행된다.
-        // vendor 자체가 없으면 마법사가 운영용 구성으로 자동 설치하므로 카드를 그리지 않는다.
-        if (data.vendor_dev_packages && data.vendor_dev_packages.vendor_exists) {
-            const vendorInfo = data.vendor_dev_packages;
-            let vendorStatusClass, vendorStatusText, vendorHint = '';
-            if (vendorInfo.dev === true) {
-                // 단순히 '개발용 포함' 만 보이면 이후 코어 업데이트가 깨진다는 실질이 전달되지 않는다.
-                vendorStatusClass = 'status-warning';
-                vendorStatusText = lang('vendor_dev_packages_detected_short')
-                    .replace(':count', (vendorInfo.packages || []).length);
-                vendorHint = lang('vendor_dev_packages_detected_warning')
-                    .replace(':count', (vendorInfo.packages || []).length);
-            } else if (vendorInfo.dev === false) {
-                vendorStatusClass = 'status-pass';
-                vendorStatusText = lang('vendor_dev_packages_none_short');
-            } else {
-                // installed.json 부재·형식 불명 — 확인 불가 (경고도 차단도 아님)
-                vendorStatusClass = 'status-pass';
-                vendorStatusText = lang('vendor_dev_packages_unknown');
-            }
-            html += renderSingleItemCard(
-                lang('vendor_dev_packages'),
-                vendorStatusClass,
-                vendorStatusText,
-                '',
-                false
-            );
-            if (vendorHint) {
-                html += `<p class="fix-guide-hint" style="margin-top: 0.75rem;">${vendorHint}</p>`;
-            }
-        }
-
-        // 10. 자산 URL 방식 카드 (안내 항목, 필수 아님)
-        // 서버는 판정할 수 없으므로(loopback 이 vhost·프록시를 우회) "확인 중" 으로 먼저
-        // 그리고 refreshAssetUrlModeCard() 가 브라우저 프로브 결과로 갱신한다.
-        // failedRequirements.push() 를 하지 않는다 — 어느 방식이든 정상 동작이다.
-        if (data.asset_url_mode) {
-            html += `<div id="asset-url-mode-card">${renderSingleItemCard(
-                lang('asset_url_mode'),
-                'status-warning',
-                lang('asset_url_mode_checking'),
-                '',
-                false
-            )}</div>`;
         }
 
         html += '</div>';
@@ -662,20 +541,6 @@
                 if (isWindows) {
                     const winDirPaths = failedDirPaths.map(p => p.replace(/\//g, '\\'));
                     const winDirCommands = winDirPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
-
-                    // ReadOnly 속성이 원인이면 icacls 로는 해소되지 않는다(ACL 이 아니라 파일 속성).
-                    // attrib -R 안내를 먼저 노출한다.
-                    if (hasWindowsReadOnly) {
-                        // 폴더 자체와 안쪽을 따로 푼다 — `attrib -R "<폴더>" /D /S` 는 폴더 자체만 풀고 안쪽은 읽기 전용으로 남긴다.
-                        const winRoCommands = winDirPaths.flatMap(p => [`attrib -R "${p}"`, `attrib -R "${p}\\*" /S /D`]);
-                        html += `<p class="fix-guide-label">${lang('permission_readonly_fix_guide')}</p>`;
-                        html += '<div class="code-box">';
-                        html += `<pre class="fix-command">${escapeHtml(winRoCommands.join('\n'))}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
-                        html += '</div>';
-                        html += `<p class="fix-guide-hint">${lang('permission_readonly_hint')}</p>`;
-                    }
-
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winDirCommands.join('\n'))}</pre>`;
@@ -845,14 +710,8 @@
         const badgeText = isRequired ? lang('badge_required') : lang('badge_optional');
         const badgeClass = isRequired ? 'badge-required' : 'badge-optional';
 
-        // 상태를 아이콘에만 반영하면 통과/경고 카드가 같은 색으로 보여 경각심이 전달되지 않는다.
-        // 카드 자체에 수식자를 부여해 스캔만으로 문제 항목이 드러나게 한다.
-        const cardModifier = statusClass === 'status-warning'
-            ? ' requirement-card--warning'
-            : (statusClass === 'status-fail' ? ' requirement-card--fail' : '');
-
         return `
-            <div class="requirement-card${cardModifier}">
+            <div class="requirement-card">
                 <div class="requirement-card-header header-single">
                     <div class="header-left">
                         ${statusIcon}
@@ -1121,14 +980,14 @@
             const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/check-configuration.php?action=test-db`;
             const response = await fetch(apiUrl, {
                 method: 'POST',
-                headers: stateChangeHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dbData)
             });
 
             const result = await response.json();
 
             if (result.success) {
-                // Write DB 기존 테이블 감지: 인라인 상세 카드로 표시
+                // Write DB 기존 테이블 감지: 인라인 상세 카드로 표시 (이슈 #244 대응)
                 // 요구사항: 모달 대신 페이지 본문에 즉시 노출, 백업 동의 체크박스로
                 // 다음 단계 진행 여부 제어. 실제 삭제는 Step 5의 db_cleanup task에서 수행.
                 let existingCardHtml = '';
@@ -1177,13 +1036,6 @@
                         </div>
                     `;
                     window.__g7_existing_tables = info;
-                    // 서버가 발급한 삭제 확인 토큰 — 설치 시작 시 drop_tables 와 함께 제시해야
-                    // 삭제가 실행된다 (요청 본문의 액션 값만으로는 삭제되지 않음).
-                    if (result.drop_confirm) {
-                        sessionStorage.setItem('drop_confirm', result.drop_confirm);
-                    } else {
-                        sessionStorage.removeItem('drop_confirm');
-                    }
                     // FormValidator에 동의 요구 등록
                     if (typeof FormValidator !== 'undefined') {
                         FormValidator.setDbCleanupRequired(true);
@@ -1193,7 +1045,6 @@
                     // 빈 DB → 동의 요구 해제 + sessionStorage 정리
                     window.__g7_existing_tables = null;
                     sessionStorage.removeItem('existing_db_action');
-                    sessionStorage.removeItem('drop_confirm');
                     if (typeof FormValidator !== 'undefined') {
                         FormValidator.setDbCleanupRequired(false);
                         FormValidator.setDbCleanupConsented(false);
@@ -1298,7 +1149,7 @@
             write: false,
             read: false
         },
-        // 기존 DB 테이블 감지 시 삭제 동의 추적
+        // 기존 DB 테이블 감지 시 삭제 동의 추적 (이슈 #244)
         dbCleanup: {
             required: false,    // Write DB 테스트 결과 기존 테이블 감지 여부
             consented: false,   // 사용자가 백업 완료 + 삭제 동의 체크 여부
@@ -1537,39 +1388,6 @@
     }
 
     /**
-     * DB 최고권한 계정명 여부 판정
-     *
-     * 목록은 서버(App\Support\PrivilegedDatabaseAccounts::BLOCKED)에서 내려온 값을
-     * 그대로 쓴다. JS 에 목록을 중복 정의하면 서버와 어긋날 수 있다.
-     * 비교는 서버와 동일하게 소문자·트림 기준.
-     *
-     * @param {string} username 검사할 DB 사용자명
-     * @returns {boolean} 최고권한 계정이면 true
-     */
-    function isPrivilegedDbAccount(username) {
-        var blocked = window.INSTALLER_BLOCKED_DB_ACCOUNTS;
-
-        // 서버 목록이 없으면 클라이언트 판정을 포기한다 (서버 검증이 최종 방어선).
-        if (!Array.isArray(blocked)) {
-            return false;
-        }
-
-        return blocked.indexOf(String(username || '').trim().toLowerCase()) !== -1;
-    }
-
-    /**
-     * 최고권한 계정 차단 메시지를 생성한다.
-     *
-     * JS 의 lang() 은 서버 lang() 과 달리 치환을 지원하지 않으므로 호출부에서 수동 치환한다.
-     *
-     * @param {string} username 입력된 DB 사용자명
-     * @returns {string} 치환된 메시지
-     */
-    function privilegedDbAccountMessage(username) {
-        return getLangMessage('error_db_username_privileged').replace(':username', username);
-    }
-
-    /**
      * 필드 검증
      */
     function validateField(field) {
@@ -1620,14 +1438,6 @@
             return false;
         }
 
-        // DB 사용자명 검증 — 최고권한 계정은 보안상 사용할 수 없다.
-        if ((fieldName === 'db_write_username' || fieldName === 'db_read_username') && value) {
-            if (isPrivilegedDbAccount(value)) {
-                showFieldError(field, privilegedDbAccountMessage(value));
-                return false;
-            }
-        }
-
         // DB Prefix 검증 (선택 사항이지만, 입력 시 형식 검증)
         if (fieldName === 'db_prefix' && value) {
             // 영문 소문자로 시작해야 함
@@ -1638,15 +1448,6 @@
             // 영문 소문자, 숫자, 언더스코어만 허용
             if (!/^[a-z][a-z0-9_]*$/.test(value)) {
                 showFieldError(field, getLangMessage('validation_alpha_num_underscore').replace(':field', getLangMessage('fields.db_prefix')));
-                return false;
-            }
-            // 접두사 길이 제한 — 길면 자동 생성 인덱스명이 DB 한도(64자)를 초과한다.
-            // 서버 MAX_DB_PREFIX_LENGTH 와 동일한 값을 유지한다.
-            var maxPrefixLength = field.maxLength && field.maxLength > 0 ? field.maxLength : 6;
-            if (value.length > maxPrefixLength) {
-                showFieldError(field, getLangMessage('error_db_prefix_too_long')
-                    .replace(':max', maxPrefixLength)
-                    .replace(':current', value.length));
                 return false;
             }
         }
@@ -1672,153 +1473,10 @@
     /**
      * 실시간 검증 초기화
      */
-    /**
-     * 자산 URL 방식을 브라우저에서 판정한다 (이슈 #486 §6·§7).
-     *
-     * Step 2 요구사항 카드와 Step 3 설정 폼이 **같은 함수를 쓴다.** 판정 로직을 두 벌
-     * 두면 한쪽만 고쳐져 화면마다 다른 답을 내놓는다 (이 이슈에서 이미 URL 생성부가
-     * 그렇게 어긋났다).
-     *
-     * 정적 최적화 블록(`location ~* \.(js|css|json)$`)은 정규식 location 이라 프리픽스
-     * location 보다 먼저 매칭되고, 그 안에 PHP 핸들러가 없으면 확장자 붙은 동적 응답이
-     * PHP 에 도달하지 못한 채 404 가 된다. 설치 시점에 판정해 두지 않으면 설치 직후
-     * 첫 화면부터 백지가 된다.
-     *
-     * 판정은 **쌍으로** 던진다. 단일 프로브는 "PHP 자체가 죽음" 과 구분되지 않는다.
-     *
-     *   probe.js 실패 + probe 성공 = 정적 블록 가로채기 확정 → extensionless
-     *   둘 다 성공                  = extension
-     *   둘 다 실패                  = PHP/라우팅 문제 (모드 문제 아님) → 판정 보류
-     *
-     * 성공 판정은 상태코드가 아니라 **본문의 매직 토큰**으로 한다. 상태코드만 보면
-     * "404 대신 200 + 에러 HTML" 이나 catch-all 200 페이지를 반환하는 설정에서
-     * 영원히 오판한다.
-     */
-    async function probeAssetUrlMode(base) {
-        const TOKEN = 'G7_ASSET_PROBE_OK';
-        const root = (base || '').replace(/\/+$/, '');
-
-        /**
-         * 프로브 1건을 던져 매직 토큰 포함 여부를 반환한다.
-         */
-        const probe = async (path) => {
-            try {
-                const res = await fetch(`${root}${path}`, { cache: 'no-store', credentials: 'omit' });
-                if (!res.ok) return false;
-
-                // Content-Type 도 함께 본다 (L6). 토큰만 검사해도 200+HTML 오판은
-                // 걸러지지만, 계획서는 두 신호를 모두 요구한다.
-                const contentType = res.headers.get('content-type') || '';
-                if (!/javascript|ecmascript/i.test(contentType)) return false;
-
-                return (await res.text()).includes(TOKEN);
-            } catch (e) {
-                return false;
-            }
-        };
-
-        const [withExt, withoutExt] = await Promise.all([
-            probe('/api/system/asset-probe.js'),
-            probe('/api/system/asset-probe'),
-        ]);
-
-        if (withExt && withoutExt) {
-            return 'extension';
-        }
-        if (!withExt && withoutExt) {
-            return 'extensionless';
-        }
-
-        // 둘 다 실패 = 모드 문제가 아니다(PHP/라우팅 장애). 빈 문자열로 판정 보류.
-        return '';
-    }
-
-    /**
-     * Laravel 앱 루트 경로를 반환한다 (`INSTALLER_BASE_URL` 은 항상 `/install` 로 끝난다).
-     *
-     * Step 2 에는 `app_url` 입력이 아직 없으므로 현재 origin 기준으로 조립한다.
-     */
-    function getAppRootUrl() {
-        const base = (window.INSTALLER_BASE_URL || '').replace(/\/install$/, '');
-
-        return `${window.location.origin}${base}`;
-    }
-
-    /**
-     * Step 2 요구사항 카드의 자산 URL 방식 항목을 프로브 결과로 갱신한다 (§7).
-     *
-     * 서버는 이 값을 판정할 수 없어(loopback 이 vhost·프록시를 우회) 카드가 먼저
-     * "확인 중" 으로 그려진 뒤 여기서 채워진다. 통과/실패 게이트가 아니라 안내 항목이라
-     * `failedRequirements` 에 넣지 않는다 — 어느 방식이든 정상 동작이다.
-     */
-    async function refreshAssetUrlModeCard() {
-        const slot = document.getElementById('asset-url-mode-card');
-        if (!slot) return;
-
-        const detected = await probeAssetUrlMode(getAppRootUrl());
-
-        // 확장자 미사용은 "서버가 확장자 주소를 가로채고 있다" 는 신호이므로 눈에 띄게 둔다.
-        // 판정 불가도 마찬가지 — 설치 후 백지 화면의 예고일 수 있다.
-        const statusClass = detected === 'extension' ? 'status-pass' : 'status-warning';
-        const label = detected === 'extension'
-            ? lang('asset_url_mode_extension')
-            : (detected === 'extensionless' ? lang('asset_url_mode_extensionless') : lang('asset_url_mode_unknown'));
-
-        // 경고 상태(확장자 미사용 자동 선택 / 확인 불가)는 "왜 그런지" 를 설명 문구로
-        // 함께 보인다 — 짧은 라벨("확인 불가")만으로는 어떤 상황인지 알 수 없다.
-        // "확인 불가" 는 두 프로브가 모두 실패한 상태라 에셋 방식 문제가 아니라
-        // 앱 미응답·프록시·CSP 등 다른 원인일 수 있으므로 그 내용을 상세히 안내한다.
-        let note = '';
-        if (detected === 'extensionless') {
-            note = lang('asset_url_mode_detected_extensionless');
-        } else if (detected === '') {
-            note = lang('asset_url_mode_detected_unavailable');
-        }
-        const noteHtml = note ? `<p class="fix-guide-hint">${note}</p>` : '';
-
-        // 카드 내부를 부분 수정하지 않고 통째로 다시 그린다 — 아이콘·수식자 클래스가
-        // renderSingleItemCard 안에서 statusClass 로 함께 결정되므로, 밖에서 일부만
-        // 건드리면 아이콘과 카드 색이 어긋난다.
-        slot.innerHTML = renderSingleItemCard(lang('asset_url_mode'), statusClass, label, '', false) + noteHtml;
-    }
-
-    async function detectAssetUrlMode() {
-        const field = document.getElementById('asset_url_mode');
-        if (!field) return;
-
-        const base = (document.querySelector('[name="app_url"]')?.value || '').replace(/\/+$/, '');
-        const detected = await probeAssetUrlMode(base);
-
-        field.value = detected;
-
-        // 수동 override — 감지 결과를 기본 선택으로 채우고 관리자가 바꿀 수 있게 한다.
-        // 프로브가 CSP/프록시 등으로 둘 다 실패하면 자동 판정이 불가하므로,
-        // 손댈 수단이 없으면 설치를 마친 뒤에야 문제를 알게 된다.
-        const select = document.getElementById('asset_url_mode_select');
-        const status = document.getElementById('asset_url_mode_status');
-        if (select) {
-            select.value = detected || 'extension';
-            select.addEventListener('change', function () {
-                field.value = this.value;
-            });
-            // 감지 실패 시에도 select 값이 hidden 에 반영되도록 초기 동기화
-            field.value = select.value;
-        }
-        if (status) {
-            status.textContent = status.getAttribute(
-                detected ? `data-msg-${detected}` : 'data-msg-unavailable'
-            ) || '';
-            status.classList.remove('hidden');
-        }
-    }
-
     function initRealTimeValidation() {
         // Step 3 (config-form)이 있는 경우에만 실행
         const configForm = document.getElementById('config-form');
         if (!configForm) return;
-
-        // 자산 URL 방식 자동 감지 (비차단 — 실패해도 설치 진행에 지장 없음)
-        detectAssetUrlMode();
 
         const fieldsToValidate = [
             'app_name',
@@ -1972,11 +1630,6 @@
         }
         if (!dbWriteUsername || !dbWriteUsername.value.trim()) {
             errors.push({ field: dbWriteUsername, message: lang('error_db_username_required') });
-        } else if (isPrivilegedDbAccount(dbWriteUsername.value)) {
-            errors.push({
-                field: dbWriteUsername,
-                message: privilegedDbAccountMessage(dbWriteUsername.value.trim()),
-            });
         }
 
         // Read DB 사용 시 Read DB 필드 확인
@@ -1994,11 +1647,6 @@
             }
             if (!dbReadUsername || !dbReadUsername.value.trim()) {
                 errors.push({ field: dbReadUsername, message: lang('error_db_username_required') });
-            } else if (isPrivilegedDbAccount(dbReadUsername.value)) {
-                errors.push({
-                    field: dbReadUsername,
-                    message: privilegedDbAccountMessage(dbReadUsername.value.trim()),
-                });
             }
         }
 
@@ -2097,13 +1745,6 @@
      * Step 3 폼 제출 이벤트 초기화
      */
     function initStep3FormSubmit() {
-        // 사이트 주소 기본값: 저장된 값이 없으면 운영자가 실제로 보고 있는 주소(앱 루트)로 채운다 —
-        // 서버가 아는 Host 는 프록시 뒤에서 내부 주소·http 일 수 있다.
-        const appUrlInput = document.getElementById('app_url');
-        if (appUrlInput && appUrlInput.dataset.autofill === '1') {
-            appUrlInput.value = getAppRootUrl();
-        }
-
         const form = document.getElementById('config-form');
         if (form) {
             form.addEventListener('submit', function(e) {
@@ -2303,15 +1944,6 @@
         else if (type === 'modules') iconClass = 'fa-cube';
         else if (type === 'plugins') iconClass = 'fa-plug';
 
-        // 확장이 아이콘을 동봉했으면 유형 글리프 대신 그 그림을 그린다.
-        // 서버(scan-extensions.php)가 검증기를 통과한 바이트만 data URI 로 보내지만,
-        // innerHTML 조립이라 여기서도 형태를 다시 검사한다 — 정규식이 따옴표·꺾쇠를
-        // 배제하므로 속성 탈출이 성립하지 않는다.
-        const DATA_URI_RE = /^data:image\/(svg\+xml|png|webp);base64,[A-Za-z0-9+/]+=*$/;
-        const iconHtml = (typeof item.icon_data_uri === 'string' && DATA_URI_RE.test(item.icon_data_uri))
-            ? '<img class="extension-card-icon-img" src="' + item.icon_data_uri + '" alt="" loading="lazy">'
-            : '<i class="fas ' + iconClass + '"></i>';
-
         const name = getLocalizedText(item.name) || item.identifier;
         const description = getLocalizedText(item.description);
         const version = item.version || '1.0.0';
@@ -2337,7 +1969,7 @@
 
         card.innerHTML =
             '<div class="extension-card-header">' +
-                '<div class="extension-card-icon">' + iconHtml + '</div>' +
+                '<div class="extension-card-icon"><i class="fas ' + iconClass + '"></i></div>' +
                 '<div class="extension-card-info">' +
                     '<h4 class="extension-card-name">' + escapeHtml(name) + '</h4>' +
                     '<div class="extension-card-meta">v' + escapeHtml(version) + (author ? ' · ' + escapeHtml(author) : '') + '</div>' +
@@ -3220,7 +2852,7 @@
         try {
             const response = await fetch(INSTALLER_BASE_URL + '/api/save-extensions.php', {
                 method: 'POST',
-                headers: stateChangeHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...selectedExtensions,
                     extension_names: extensionNames
@@ -3346,7 +2978,7 @@
     }
 
     /**
-     * 기존 DB 테이블 경고 모달 표시.
+     * 기존 DB 테이블 경고 모달 표시 (이슈 #244 대응).
      *
      * DB 테스트 배지를 클릭하면 호출되며, 사용자에게 백업 안내 + 강제 진행 옵션을 제공합니다.
      * "기존 테이블 모두 삭제 후 설치"를 선택하면 sessionStorage에 existing_db_action=drop_tables 저장.
@@ -3586,27 +3218,18 @@
             const saveConfigUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-process.php`;
 
             const existingDbAction = sessionStorage.getItem('existing_db_action') || 'skip';
-            const dropConfirm = existingDbAction === 'drop_tables'
-                ? (sessionStorage.getItem('drop_confirm') || '')
-                : '';
 
             const response = await fetch(saveConfigUrl, {
                 method: 'POST',
-                headers: stateChangeHeaders(),
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     config: configData,
                     installation_mode: installationMode,
                     existing_db_action: existingDbAction,
-                    drop_confirm: dropConfirm,
                 }),
             });
 
             const result = await response.json();
-
-            // 삭제 확인이 거부돼 삭제 없이 진행되는 경우 — 사용자에게 알린다
-            if (result.success && result.drop_confirm_rejected && result.warning) {
-                addLogMessage(result.warning);
-            }
 
             if (!result.success) {
                 if (result.env_required) {
@@ -3953,31 +3576,6 @@
 
 
     /**
-     * 결과/안내 섹션을 뷰포트로 부드럽게 스크롤합니다.
-     *
-     * 완료/실패/중단 안내는 페이지 최상단에 있는데, 설치 진행 중에는 사용자가 로그를 보느라
-     * 화면이 하단에 머물러 있는 경우가 많다. 그대로 두면 안내가 표시되어도 눈에 들어오지
-     * 않는다. 이미 최상단이면 스크롤은 no-op 이라 새로고침 복원 경로에서도 무해하다.
-     *
-     * 헤더 바가 sticky 이므로 섹션 상단이 가려지지 않도록 CSS 의 scroll-margin-top 이
-     * 여백을 확보한다 (installer.css 의 .result-section, #env-setup-section).
-     *
-     * @param {HTMLElement|null} sectionEl 스크롤 대상 섹션
-     */
-    function scrollResultIntoView(sectionEl) {
-        if (!sectionEl) return;
-
-        // 모션 최소화를 선호하는 사용자는 즉시 이동
-        const reduceMotion = window.matchMedia
-            && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-        sectionEl.scrollIntoView({
-            behavior: reduceMotion ? 'auto' : 'smooth',
-            block: 'start',
-        });
-    }
-
-    /**
      * 완료 섹션 표시
      */
     function showCompletionSection(data) {
@@ -4054,17 +3652,11 @@
             fetch('/install/api/finalize-env.php', {
                 method: 'POST',
                 keepalive: true,
-                headers: {
-                    'X-Installer-Finalize': '1',
-                    'X-CSRF-Token': window.INSTALLER_CSRF || '',
-                },
+                headers: { 'X-Installer-Finalize': '1' },
             }).catch(() => { /* 의도된 abort */ });
         } catch (_) {
             // fetch 자체가 실패해도 무시 — runtime.php 가 보존되어 다음 부팅 시 앱 정상 동작
         }
-
-        // 완료 안내로 스크롤 (타이틀 숨김·카드 접기로 문서 높이가 바뀐 뒤에 호출)
-        scrollResultIntoView(completionSection);
     }
 
     /**
@@ -4207,9 +3799,6 @@
                 failureSection.style.opacity = '1';
             }, 100);
         }
-
-        // 실패 안내로 스크롤 (카드 body 를 펼친 뒤에 호출)
-        scrollResultIntoView(failureSection);
     }
 
     /**
@@ -4355,7 +3944,7 @@
                 const abortUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=abort`;
                 fetch(abortUrl, {
                     method: 'POST',
-                    headers: stateChangeHeaders(),
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
                 }).then(() => {
 
@@ -4543,9 +4132,6 @@
                 setTaskStatus(nextTask.id, 'aborted', nextTask.target || null);
             }
         }
-
-        // 중단 안내로 스크롤 (로그 렌더링으로 문서 높이가 늘어난 뒤에 호출)
-        scrollResultIntoView(abortedSection);
     }
 
     /**
@@ -4566,7 +4152,7 @@
                 // 상태 초기화 API 호출
                 const response = await fetch(getStateApiUrl('reset'), {
                     method: 'POST',
-                    headers: stateChangeHeaders(),
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
                 });
 
@@ -4612,10 +4198,7 @@
                     const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=abort`;
 
                     // sendBeacon은 페이지 언로드 중에도 전송을 보장
-                    navigator.sendBeacon(apiUrl, new Blob(
-                        [JSON.stringify({ csrf_token: window.INSTALLER_CSRF || '' })],
-                        { type: 'application/json' }
-                    ));
+                    navigator.sendBeacon(apiUrl, new Blob([JSON.stringify({})], {type: 'application/json'}));
                 }
             });
 
@@ -4671,7 +4254,7 @@
             // Abort API 호출
             const response = await fetch(getStateApiUrl('abort'), {
                 method: 'POST',
-                headers: stateChangeHeaders()
+                headers: { 'Content-Type': 'application/json' }
             });
 
             const result = await response.json();
@@ -5224,52 +4807,6 @@
      *
      * @param {HTMLButtonElement} btn 클릭된 복사 버튼
      */
-    /**
-     * 복구 토큰으로 설치 소유권 되찾기 (소유권 잠금 화면)
-     *
-     * @param {Event} event submit 이벤트
-     * @returns {boolean} 기본 폼 제출 방지용 false
-     */
-    async function submitRecoveryToken(event) {
-        if (event) event.preventDefault();
-
-        const input = document.getElementById('recovery-token-input');
-        const button = document.getElementById('recovery-submit-btn');
-        const resultBox = document.getElementById('recovery-result');
-        if (!input || !resultBox) return false;
-
-        const showResult = (message, isSuccess) => {
-            resultBox.textContent = message;
-            resultBox.classList.remove('hidden', 'alert-error', 'alert-success');
-            resultBox.classList.add(isSuccess ? 'alert-success' : 'alert-error');
-        };
-
-        if (button) button.disabled = true;
-
-        try {
-            const response = await fetch(getStateApiUrl('reclaim'), {
-                method: 'POST',
-                headers: stateChangeHeaders(),
-                body: JSON.stringify({ recovery_token: input.value }),
-            });
-            const result = await response.json();
-
-            if (result.success) {
-                showResult(result.message || lang('recovery_success'), true);
-                setTimeout(() => { window.location.href = `${window.INSTALLER_BASE_URL}/`; }, 1500);
-                return false;
-            }
-
-            showResult(result.message || lang('error_recovery_token_invalid'), false);
-        } catch (error) {
-            showResult(`${lang('error')}: ${error.message}`, false);
-        }
-
-        if (button) button.disabled = false;
-        return false;
-    }
-    window.submitRecoveryToken = submitRecoveryToken;
-
     function copyPermissionCommand(btn) {
         const pre = btn.previousElementSibling;
         if (!pre) return;
@@ -5409,9 +4946,6 @@
         if (statusEl) {
             statusEl.classList.add('hidden');
         }
-
-        // 안내 섹션으로 스크롤 (목록·명령어를 채운 뒤에 호출)
-        scrollResultIntoView(section);
     }
 
     /**

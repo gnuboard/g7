@@ -5,11 +5,9 @@
  *
  * HTML/JavaScript 이스케이프, 데이터베이스 연결, 권한 검증, 에러 로깅 등의
  * 공통 유틸리티 함수를 제공합니다.
+ *
+ * @package G7\Installer
  */
-
-// UTF-8 정규화 / JSON 출력 헬퍼 (js_escape · getWebServerUser 가 사용)
-require_once __DIR__.'/utf8.php';
-require_once __DIR__.'/env-value.php';
 
 /**
  * HTML 이스케이프 함수
@@ -35,12 +33,9 @@ if (! function_exists('e')) {
  */
 function js_escape(mixed $value): string
 {
-    $json = installer_json_encode(
-        $value,
-        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE
-    );
+    $json = json_encode($value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
 
-    if ($json === '') {
+    if ($json === false) {
         return '""';
     }
 
@@ -50,9 +45,8 @@ function js_escape(mixed $value): string
 /**
  * 데이터베이스 연결 생성
  *
- * @param  array  $config  데이터베이스 연결 정보 배열
- * @param  bool  $isReadDb  Read DB 여부 (true: read, false: write)
- *
+ * @param array $config 데이터베이스 연결 정보 배열
+ * @param bool $isReadDb Read DB 여부 (true: read, false: write)
  * @throws PDOException 연결 실패 시
  */
 function getDatabaseConnection(array $config, bool $isReadDb = false): PDO
@@ -103,9 +97,9 @@ function getDatabaseConnection(array $config, bool $isReadDb = false): PDO
 /**
  * 데이터베이스 권한 검증
  *
- * @param  PDO  $pdo  PDO 연결 객체
- * @param  string  $database  데이터베이스명
- * @param  bool  $isReadDb  Read DB 여부 (true: read, false: write)
+ * @param PDO $pdo PDO 연결 객체
+ * @param string $database 데이터베이스명
+ * @param bool $isReadDb Read DB 여부 (true: read, false: write)
  * @return array{has_all: bool, required: array<string>, found: array<string>, missing: array<string>}
  */
 function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = false): array
@@ -171,7 +165,7 @@ function checkDatabasePrivileges(PDO $pdo, string $database, bool $isReadDb = fa
  *
  * Synology DSM 등 PHP-FPM root 실행 환경 + 비대화형 컨텍스트 대응.
  */
-if (! function_exists('applyInstallerComposerEnvVars')) {
+if (!function_exists('applyInstallerComposerEnvVars')) {
     function applyInstallerComposerEnvVars(): void
     {
         putenv('COMPOSER_ALLOW_SUPERUSER=1');
@@ -186,7 +180,7 @@ if (! function_exists('applyInstallerComposerEnvVars')) {
  *
  * @return array<string, string>
  */
-if (! function_exists('buildInstallerComposerEnv')) {
+if (!function_exists('buildInstallerComposerEnv')) {
     function buildInstallerComposerEnv(): array
     {
         return [
@@ -199,13 +193,13 @@ if (! function_exists('buildInstallerComposerEnv')) {
 /**
  * 인스톨러 에러 로깅
  *
- * @param  string  $message  에러 메시지
- * @param  Throwable|null  $exception  예외 객체 (선택)
+ * @param string $message 에러 메시지
+ * @param Throwable|null $exception 예외 객체 (선택)
  */
 function logInstallationError(string $message, ?Throwable $exception = null): void
 {
-    $logDir = BASE_PATH.'/storage/logs';
-    $logFile = $logDir.'/installer.log';
+    $logDir = BASE_PATH . '/storage/logs';
+    $logFile = $logDir . '/installer.log';
 
     // 로그 디렉토리 생성
     if (! is_dir($logDir)) {
@@ -218,13 +212,13 @@ function logInstallationError(string $message, ?Throwable $exception = null): vo
 
     if ($exception !== null) {
         $logMessage .= "\n";
-        $logMessage .= 'Exception: '.get_class($exception)."\n";
+        $logMessage .= "Exception: " . get_class($exception) . "\n";
         $logMessage .= "Message: {$exception->getMessage()}\n";
         $logMessage .= "File: {$exception->getFile()}:{$exception->getLine()}\n";
         $logMessage .= "Trace:\n{$exception->getTraceAsString()}\n";
     }
 
-    $logMessage .= "\n".str_repeat('-', 80)."\n\n";
+    $logMessage .= "\n" . str_repeat('-', 80) . "\n\n";
 
     // 로그 파일에 기록
     @file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
@@ -238,7 +232,7 @@ function logInstallationError(string $message, ?Throwable $exception = null): vo
 function detectBrowserLanguage(): ?string
 {
     // HTTP_ACCEPT_LANGUAGE 헤더가 없으면 null 반환
-    if (! isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+    if (!isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
         return null;
     }
 
@@ -292,14 +286,14 @@ function getCurrentLanguage(): string
 /**
  * 지정된 언어의 번역 파일을 로드합니다.
  *
- * @param  string  $lang  언어 코드 (예: 'ko', 'en')
+ * @param string $lang 언어 코드 (예: 'ko', 'en')
  * @return array<string, mixed> 번역 배열, 파일이 없으면 빈 배열
  */
 function loadTranslations(string $lang): array
 {
-    $langFile = __DIR__."/../lang/{$lang}.php";
+    $langFile = __DIR__ . "/../lang/{$lang}.php";
 
-    if (! file_exists($langFile)) {
+    if (!file_exists($langFile)) {
         return [];
     }
 
@@ -314,15 +308,15 @@ function loadTranslations(string $lang): array
  * global $translations 배열에서 키에 해당하는 값을 찾아 반환합니다.
  * 키가 존재하지 않으면 키 자체를 반환합니다.
  *
- * @param  string  $key  번역 키 (예: 'welcome_title', 'next_step')
- * @param  array  $replace  치환할 플레이스홀더 배열 (예: ['current' => '8.2', 'min' => '8.2'])
+ * @param string $key 번역 키 (예: 'welcome_title', 'next_step')
+ * @param array $replace 치환할 플레이스홀더 배열 (예: ['current' => '8.2', 'min' => '8.2'])
  */
 if (! function_exists('lang')) {
     function lang(string $key, array $replace = []): string
     {
         global $translations;
 
-        if (! isset($translations) || ! is_array($translations)) {
+        if (!isset($translations) || !is_array($translations)) {
             return $key;
         }
 
@@ -340,7 +334,7 @@ if (! function_exists('lang')) {
 /**
  * 설치 단계 이름을 반환합니다.
  *
- * @param  int  $step  단계 번호 (0~5, 6은 예약됨)
+ * @param int $step 단계 번호 (0~5, 6은 예약됨)
  * @return string 단계명 번역 키
  */
 function getStepName(int $step): string
@@ -361,7 +355,7 @@ function getStepName(int $step): string
 /**
  * 설치 작업 이름을 반환합니다.
  *
- * @param  string  $task  작업 ID (예: 'composer_check', 'env_create')
+ * @param string $task 작업 ID (예: 'composer_check', 'env_create')
  * @return string 작업명 번역 키
  */
 function getTaskName(string $task): string
@@ -400,12 +394,12 @@ function getTaskName(string $task): string
 /**
  * 지정한 Step으로 리다이렉트합니다.
  *
- * @param  int  $step  이동할 단계 번호
+ * @param int $step 이동할 단계 번호
  */
 function redirectToStep(int $step): void
 {
     $_SESSION['installer_current_step'] = $step;
-    header('Location: '.INSTALLER_BASE_URL.'/');
+    header("Location: " . INSTALLER_BASE_URL . "/");
     exit;
 }
 
@@ -417,12 +411,12 @@ function redirectToStep(int $step): void
  * - state.json: 다른 브라우저에서 재개 시 사용, 설치 완료 후 Laravel 본체에 전달
  * - localStorage: JavaScript에서 직접 관리 (0-welcome.php에서 처리)
  *
- * @param  string  $lang  언어 코드 ('ko' 또는 'en')
+ * @param string $lang 언어 코드 ('ko' 또는 'en')
  */
 function handleLanguageChange(string $lang): void
 {
     // 지원하는 언어만 허용
-    if (! array_key_exists($lang, SUPPORTED_LANGUAGES)) {
+    if (!array_key_exists($lang, SUPPORTED_LANGUAGES)) {
         return;
     }
 
@@ -438,9 +432,9 @@ function handleLanguageChange(string $lang): void
 /**
  * 현재 단계의 상태를 업데이트합니다.
  *
- * @param  int  $step  완료할 단계 번호
- * @param  int  $nextStep  다음 단계 번호
- * @param  array  $additionalData  추가로 저장할 state 데이터 (예: ['config' => $data])
+ * @param int $step 완료할 단계 번호
+ * @param int $nextStep 다음 단계 번호
+ * @param array $additionalData 추가로 저장할 state 데이터 (예: ['config' => $data])
  */
 function updateStepStatus(int $step, int $nextStep, array $additionalData = []): void
 {
@@ -448,7 +442,7 @@ function updateStepStatus(int $step, int $nextStep, array $additionalData = []):
     $state['current_step'] = $nextStep;
     $state['step_status'][$step] = 'completed';
 
-    if (! empty($additionalData)) {
+    if (!empty($additionalData)) {
         $state = array_merge($state, $additionalData);
     }
 
@@ -461,7 +455,6 @@ function updateStepStatus(int $step, int $nextStep, array $additionalData = []):
 function isInstallationRunning(): bool
 {
     $state = getInstallationState();
-
     return isset($state['installation_status']) && $state['installation_status'] === 'running';
 }
 
@@ -473,7 +466,7 @@ function showInstallationRunningAlert(): void
     global $translations;
 
     // 번역이 로드되지 않은 경우 로드
-    if (! isset($translations)) {
+    if (!isset($translations)) {
         $translations = loadTranslations(getCurrentLanguage());
     }
 
@@ -481,7 +474,7 @@ function showInstallationRunningAlert(): void
     showAlertAndRedirect(
         lang('installation_in_progress'),
         lang('installation_in_progress_message'),
-        INSTALLER_BASE_URL.'/'
+        INSTALLER_BASE_URL . '/'
     );
 }
 
@@ -493,7 +486,7 @@ function showInstallationCompletedAlert(): void
     global $translations;
 
     // 번역이 로드되지 않은 경우 로드
-    if (! isset($translations)) {
+    if (!isset($translations)) {
         $translations = loadTranslations(getCurrentLanguage());
     }
 
@@ -507,15 +500,15 @@ function showInstallationCompletedAlert(): void
 /**
  * 알럿을 표시하고 지정된 URL로 리다이렉트합니다.
  *
- * @param  string  $title  페이지 제목
- * @param  string  $message  알럿 메시지
- * @param  string  $redirectUrl  리다이렉트 URL
+ * @param string $title 페이지 제목
+ * @param string $message 알럿 메시지
+ * @param string $redirectUrl 리다이렉트 URL
  */
 function showAlertAndRedirect(string $title, string $message, string $redirectUrl): void
 {
     global $translations;
 
-    if (! isset($translations)) {
+    if (!isset($translations)) {
         $translations = loadTranslations(getCurrentLanguage());
     }
 
@@ -525,16 +518,16 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
     $redirectUrl = htmlspecialchars($redirectUrl);
 
     echo '<!DOCTYPE html>';
-    echo '<html lang="'.$lang.'">';
+    echo '<html lang="' . $lang . '">';
     echo '<head>';
     echo '<meta charset="UTF-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
-    echo '<title>'.$title.'</title>';
+    echo '<title>' . $title . '</title>';
     echo '</head>';
     echo '<body>';
     echo '<script>';
-    echo 'alert("'.$message.'");';
-    echo 'window.location.href = "'.$redirectUrl.'";';
+    echo 'alert("' . $message . '");';
+    echo 'window.location.href = "' . $redirectUrl . '";';
     echo '</script>';
     echo '</body>';
     echo '</html>';
@@ -544,7 +537,7 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
 /**
  * 단계 파일을 찾을 수 없을 때 에러 페이지를 표시합니다.
  *
- * @param  int  $currentStep  현재 단계 번호
+ * @param int $currentStep 현재 단계 번호
  */
 function showStepFileNotFoundError(int $currentStep): void
 {
@@ -560,9 +553,9 @@ function showStepFileNotFoundError(int $currentStep): void
     echo '</span>';
     echo lang('error');
     echo '</h1>';
-    echo '<p class="installer-description">'.lang('error_step_file_not_found').'</p>';
+    echo '<p class="installer-description">' . lang('error_step_file_not_found') . '</p>';
     echo '<div class="btn-group">';
-    echo '<a href="'.INSTALLER_BASE_URL.'/" class="btn btn-secondary">← '.lang('previous').'</a>';
+    echo '<a href="' . INSTALLER_BASE_URL . '/" class="btn btn-secondary">← ' . lang('previous') . '</a>';
     echo '</div>';
     echo '</div>';
 }
@@ -572,26 +565,24 @@ function showStepFileNotFoundError(int $currentStep): void
  *
  * DB 연결 정보가 변경되었는지 감지하기 위해 사용됩니다.
  *
- * @param  array  $config  폼 데이터 배열
- * @param  string  $prefix  DB 접두사 ('db_write' 또는 'db_read')
+ * @param array $config 폼 데이터 배열
+ * @param string $prefix DB 접두사 ('db_write' 또는 'db_read')
  * @return string MD5 해시값
  */
 function getDatabaseFieldHash(array $config, string $prefix): string
 {
-    // json-encode:allow — 캐시 키 계산용 md5 입력, 응답으로 나가지 않는다.
-    // 플래그를 바꾸면 해시값이 달라져 "필드가 바뀌었다" 는 오판이 생기므로 그대로 둔다.
     return md5(json_encode([
         $config["{$prefix}_host"] ?? '',
         $config["{$prefix}_port"] ?? '',
         $config["{$prefix}_database"] ?? '',
-        $config["{$prefix}_username"] ?? '',
+        $config["{$prefix}_username"] ?? ''
     ]));
 }
 
 /**
  * SVG 아이콘을 반환합니다.
  *
- * @param  string  $type  아이콘 타입 ('success', 'warning', 'error')
+ * @param string $type 아이콘 타입 ('success', 'warning', 'error')
  * @return string SVG HTML
  */
 function getSvgIcon(string $type): string
@@ -618,12 +609,12 @@ function getSvgIcon(string $type): string
 /**
  * 설치 결과 섹션 HTML을 렌더링합니다.
  *
- * @param  string  $sectionId  섹션 ID ('completion', 'aborted', 'failure')
- * @param  string  $iconType  아이콘 타입 ('success', 'warning', 'error')
- * @param  string  $titleKey  제목 번역 키
- * @param  string  $messageKey  메시지 번역 키 (failure인 경우 동적)
- * @param  string  $buttonsHtml  버튼 HTML
- * @param  string  $extraHtml  메시지 하단에 추가로 렌더링할 HTML (이미 escape 된 상태로 전달)
+ * @param string $sectionId 섹션 ID ('completion', 'aborted', 'failure')
+ * @param string $iconType 아이콘 타입 ('success', 'warning', 'error')
+ * @param string $titleKey 제목 번역 키
+ * @param string $messageKey 메시지 번역 키 (failure인 경우 동적)
+ * @param string $buttonsHtml 버튼 HTML
+ * @param string $extraHtml 메시지 하단에 추가로 렌더링할 HTML (이미 escape 된 상태로 전달)
  * @return string 결과 섹션 HTML
  */
 function renderInstallResultSection(string $sectionId, string $iconType, string $titleKey, string $messageKey, string $buttonsHtml, string $extraHtml = ''): string
@@ -634,7 +625,7 @@ function renderInstallResultSection(string $sectionId, string $iconType, string 
     // failure는 동적 메시지이므로 번역하지 않음
     $message = $sectionId === 'failure'
         ? '<div class="result-message" id="failure-message"></div>'
-        : '<p class="result-message">'.htmlspecialchars(lang($messageKey)).'</p>';
+        : '<p class="result-message">' . htmlspecialchars(lang($messageKey)) . '</p>';
 
     return <<<HTML
     <div id="{$sectionId}-section" class="result-section hidden">
@@ -666,8 +657,8 @@ function renderInstallResultSection(string $sectionId, string $iconType, string 
 function getCoreAppVersion(): string
 {
     foreach (['/.env', '/.env.example'] as $relative) {
-        $path = BASE_PATH.$relative;
-        if (! is_readable($path)) {
+        $path = BASE_PATH . $relative;
+        if (!is_readable($path)) {
             continue;
         }
         $content = @file_get_contents($path);
@@ -685,8 +676,8 @@ function getCoreAppVersion(): string
 /**
  * Progress indicator HTML을 렌더링합니다.
  *
- * @param  int  $currentStep  현재 단계 번호
- * @param  int  $totalSteps  전체 단계 수 (기본값: 7, Step 0~6)
+ * @param int $currentStep 현재 단계 번호
+ * @param int $totalSteps 전체 단계 수 (기본값: 7, Step 0~6)
  * @return string Progress indicator HTML
  */
 function renderProgressIndicator(int $currentStep, int $totalSteps = 7): string
@@ -699,10 +690,9 @@ function renderProgressIndicator(int $currentStep, int $totalSteps = 7): string
         } elseif ($i === $currentStep) {
             $class .= ' active';
         }
-        $html .= '<div class="'.$class.'"></div>';
+        $html .= '<div class="' . $class . '"></div>';
     }
     $html .= '</div>';
-
     return $html;
 }
 
@@ -719,28 +709,23 @@ function getWebServerUser(): ?string
     // 1. posix 확장 (가장 신뢰도 높음)
     if (function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
         $info = posix_getpwuid(posix_geteuid());
-        if ($info && ! empty($info['name'])) {
+        if ($info && !empty($info['name'])) {
             return $info['name'];
         }
     }
 
     // 2. exec('whoami')
-    //
-    // whoami 는 UTF-8 이 아니라 그 명령을 실행한 콘솔의 코드페이지로 출력한다.
-    // 한국어 Windows(OEM 949)에서 계정명에 한글이 있으면 invalid UTF-8 바이트가 들어오고,
-    // 그 값이 응답에 실리면 json_encode 가 false 를 반환해 빈 본문(HTTP 200)이 나간다
-    // (gnuboard/g7#62). 반환 전에 반드시 정규화한다.
     if (function_exists('exec')) {
         $user = @exec('whoami');
-        if (! empty($user)) {
-            return installer_normalize_process_output(trim($user), 'whoami');
+        if (!empty($user)) {
+            return trim($user);
         }
     }
 
     // 3. 환경변수
     $envUser = getenv('USER') ?: getenv('APACHE_RUN_USER') ?: null;
-    if (! empty($envUser)) {
-        return installer_normalize_process_output($envUser, 'env:USER');
+    if (!empty($envUser)) {
+        return $envUser;
     }
 
     return null;
@@ -755,14 +740,14 @@ function getWebServerGroup(): ?string
 {
     if (function_exists('posix_getegid') && function_exists('posix_getgrgid')) {
         $info = posix_getgrgid(posix_getegid());
-        if ($info && ! empty($info['name'])) {
+        if ($info && !empty($info['name'])) {
             return $info['name'];
         }
     }
 
     $envGroup = getenv('APACHE_RUN_GROUP') ?: null;
-    if (! empty($envGroup)) {
-        return installer_normalize_process_output($envGroup, 'env:APACHE_RUN_GROUP');
+    if (!empty($envGroup)) {
+        return $envGroup;
     }
 
     return null;
@@ -773,7 +758,7 @@ function getWebServerGroup(): ?string
  *
  * posix 확장이 없거나 확인할 수 없는 경우 null을 반환합니다.
  *
- * @param  string  $path  파일/디렉토리 경로
+ * @param string $path 파일/디렉토리 경로
  * @return string|null 소유자 이름 또는 null
  */
 function getFileOwnerName(string $path): ?string
@@ -785,7 +770,7 @@ function getFileOwnerName(string $path): ?string
 
     if (function_exists('posix_getpwuid')) {
         $info = @posix_getpwuid($uid);
-        if ($info && ! empty($info['name'])) {
+        if ($info && !empty($info['name'])) {
             return $info['name'];
         }
     }
@@ -799,7 +784,7 @@ function getFileOwnerName(string $path): ?string
  *
  * posix 확장이 없거나 확인할 수 없는 경우 null을 반환합니다.
  *
- * @param  string  $path  파일/디렉토리 경로
+ * @param string $path 파일/디렉토리 경로
  * @return string|null 그룹 이름 또는 null
  */
 function getFileGroupName(string $path): ?string
@@ -811,7 +796,7 @@ function getFileGroupName(string $path): ?string
 
     if (function_exists('posix_getgrgid')) {
         $info = @posix_getgrgid($gid);
-        if ($info && ! empty($info['name'])) {
+        if ($info && !empty($info['name'])) {
             return $info['name'];
         }
     }
@@ -832,7 +817,7 @@ function getChownTarget(): string
     $user = getWebServerUser() ?? 'www-data';
     $group = getWebServerGroup() ?? $user;
 
-    return $user.':'.$group;
+    return $user . ':' . $group;
 }
 
 /**
@@ -841,7 +826,7 @@ function getChownTarget(): string
  * Step 0과 Step 2에서 재사용 가능한 공통 함수입니다.
  * 디렉토리를 생성하지 않고 존재 여부와 권한만 체크합니다.
  *
- * @param  array<string, bool>  $directories  체크할 디렉토리 경로 배열 (키: 경로, 값: 재귀 체크 여부)
+ * @param array<string, bool> $directories 체크할 디렉토리 경로 배열 (키: 경로, 값: 재귀 체크 여부)
  * @return array{all_passed: bool, results: array<string, array{exists: bool, writable: bool, permissions: string, required_permissions: string, passed: bool, has_subdirectory_issues: bool, failed_subdirectories: array<string>}>}
  */
 function checkDirectoryPermissions(array $directories): array
@@ -857,7 +842,7 @@ function checkDirectoryPermissions(array $directories): array
     $webServerUser = getWebServerUser();
 
     foreach ($directories as $path => $checkRecursive) {
-        $fullPath = BASE_PATH.'/'.$path;
+        $fullPath = BASE_PATH . '/' . $path;
 
         // 디렉토리 존재 여부 확인 (생성하지 않음)
         $exists = is_dir($fullPath);
@@ -898,41 +883,26 @@ function checkDirectoryPermissions(array $directories): array
         $parentPassed = $writable && $readable;
 
         // 최종 통과 여부: 상위 + 하위 모두 통과해야 함
-        $passed = $parentPassed && ! $hasSubdirectoryIssues;
+        $passed = $parentPassed && !$hasSubdirectoryIssues;
 
         // 에러 타입 구분
         // ownership_mismatch: 권한 비트는 0755 이상이지만 소유자가 웹서버 사용자와 달라
         //                     실제 쓰기 불가 (전통적 Apache: 파일 소유자 != www-data)
         $errorType = null;
-        if (! $exists) {
+        if (!$exists) {
             $errorType = 'not_exists';
-        } elseif (! $writable) {
-            // Windows: ReadOnly 속성이 걸려 있으면 icacls 로는 해소되지 않는다.
-            // ACL 안내보다 먼저 판별해 attrib -R 을 안내한다.
-            if (hasWindowsReadOnlyAttribute($fullPath)) {
-                $errorType = 'windows_readonly';
-            }
+        } elseif (!$writable) {
             // 권한 비트가 충분(0755+)한데도 쓰기 불가 → 소유권 불일치 가능성
-            elseif ($permsOctal >= 0755 && $webServerUser && $owner && $owner !== $webServerUser) {
+            if ($permsOctal >= 0755 && $webServerUser && $owner && $owner !== $webServerUser) {
                 $errorType = 'ownership_mismatch';
             } else {
                 $errorType = 'not_writable';
             }
-        } elseif (! $readable) {
+        } elseif (!$readable) {
             $errorType = 'not_readable';
         } elseif ($hasSubdirectoryIssues) {
-            // 상위는 OK, 하위 디렉토리만 문제.
-            // 하위 중 하나라도 ReadOnly 속성이 원인이면 icacls 안내로는 해소되지 않으므로
-            // 상위 결과에도 그 사실을 올려 attrib -R 안내가 함께 노출되게 한다.
-            $hasReadOnlySubdirectory = false;
-            foreach ($failedSubdirectories as $failedSubdirectory) {
-                if (! empty($failedSubdirectory['windows_readonly'])) {
-                    $hasReadOnlySubdirectory = true;
-                    break;
-                }
-            }
-
-            $errorType = $hasReadOnlySubdirectory ? 'windows_readonly' : 'subdirectory_issues';
+            // 상위는 OK, 하위 디렉토리만 문제
+            $errorType = 'subdirectory_issues';
         }
 
         $results[$path] = [
@@ -950,7 +920,7 @@ function checkDirectoryPermissions(array $directories): array
             'failed_subdirectories' => $failedSubdirectories,
         ];
 
-        if (! $passed) {
+        if (!$passed) {
             $allPassed = false;
         }
     }
@@ -964,22 +934,14 @@ function checkDirectoryPermissions(array $directories): array
 /**
  * 디렉토리의 하위를 재귀적으로 체크하여 권한이 없는 경로와 권한 정보 반환
  *
- * 깊이 제한(maxDepth)을 둔다 (dev-g7#445 후속): storage 처럼 하위에 수만 개
- * 디렉토리가 누적되는 경로(예: storage/framework/testing/)를 무한 재귀로 순회하면
- * 인스톨러 2단계(요구사항 검증) 응답이 수 초 이상 지연된다. 쓰기 권한 문제는 트리
- * 상위 얕은 깊이에서 결정되므로(상위가 쓰기 가능하면 하위도 통상 상속), 제한 깊이까지만
- * 검사해 성능과 안내 유효성을 모두 확보한다.
- *
- * @param  string  $path  체크할 디렉토리 경로
- * @param  int  $maxDepth  재귀 최대 깊이 (0 = 현재 디렉토리의 직속 하위만). 기본 1
- * @param  int  $currentDepth  내부 재귀용 현재 깊이 (호출자는 지정하지 않음)
+ * @param string $path 체크할 디렉토리 경로
  * @return array<array{path: string, permissions: string}> 권한이 없는 하위 디렉토리 정보 배열
  */
-function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $currentDepth = 0): array
+function checkSubdirectoriesRecursive(string $path): array
 {
     $failedPaths = [];
 
-    if (! is_dir($path)) {
+    if (!is_dir($path)) {
         return $failedPaths;
     }
 
@@ -1000,21 +962,21 @@ function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $curr
             continue;
         }
 
-        $itemPath = $path.DIRECTORY_SEPARATOR.$item;
+        $itemPath = $path . DIRECTORY_SEPARATOR . $item;
 
         // 디렉토리인지 확인 (심볼릭 링크 제외)
-        if (! is_dir($itemPath) || is_link($itemPath)) {
+        if (!is_dir($itemPath) || is_link($itemPath)) {
             continue;
         }
 
         // 절대 경로를 상대 경로로 변환
-        $relativePath = str_replace(BASE_PATH.'/', '', $itemPath);
+        $relativePath = str_replace(BASE_PATH . '/', '', $itemPath);
         $relativePath = str_replace('\\', '/', $relativePath);
 
         // 쓰기 권한 체크
         $isWritable = is_writable($itemPath);
 
-        if (! $isWritable) {
+        if (!$isWritable) {
             // 권한 코드 가져오기
             $perms = fileperms($itemPath);
             $permissions = substr(sprintf('%o', $perms), -3);
@@ -1022,21 +984,15 @@ function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $curr
             $failedPaths[] = [
                 'path' => $relativePath,
                 'permissions' => $permissions,
-                // Windows ReadOnly 속성이 원인이면 icacls 가 아니라 attrib -R 이 필요하다.
-                'windows_readonly' => hasWindowsReadOnlyAttribute($itemPath),
             ];
         }
 
         // 재귀적으로 하위 디렉토리 체크 (권한 없어도 계속 진행)
-        // 깊이 제한 도달 시 더 내려가지 않는다 — storage/framework/testing 등에 누적된
-        // 수만 개 하위 디렉토리를 순회해 인스톨러 2단계가 지연되던 문제 차단 (dev-g7#445 후속).
-        if ($currentDepth < $maxDepth) {
-            try {
-                $subFailed = checkSubdirectoriesRecursive($itemPath, $maxDepth, $currentDepth + 1);
-                $failedPaths = array_merge($failedPaths, $subFailed);
-            } catch (Exception $e) {
-                // 하위 디렉토리 체크 실패해도 계속 진행
-            }
+        try {
+            $subFailed = checkSubdirectoriesRecursive($itemPath);
+            $failedPaths = array_merge($failedPaths, $subFailed);
+        } catch (Exception $e) {
+            // 하위 디렉토리 체크 실패해도 계속 진행
         }
     }
 
@@ -1048,12 +1004,12 @@ function checkSubdirectoriesRecursive(string $path, int $maxDepth = 1, int $curr
  *
  * 루트 LICENSE 파일을 읽습니다. (한국어 번역 + 영문 원문 통합)
  *
- * @param  string  $lang  언어 코드 (미사용, 하위 호환성 유지)
+ * @param string $lang 언어 코드 (미사용, 하위 호환성 유지)
  * @return string 라이선스 파일 내용
  */
 function loadLicenseFile(string $lang): string
 {
-    $licenseFile = __DIR__.'/../../../LICENSE';
+    $licenseFile = __DIR__ . '/../../../LICENSE';
 
     if (file_exists($licenseFile)) {
         return file_get_contents($licenseFile);
@@ -1062,28 +1018,33 @@ function loadLicenseFile(string $lang): string
     return lang('license_not_found');
 }
 
-if (! function_exists('escapeEnvValue')) {
-    /**
-     * .env 값 이스케이프
-     *
-     * 특수 문자가 포함된 값을 .env 파일에 안전하게 기록할 수 있도록 큰따옴표로 감싸고
-     * 내부 큰따옴표와 백슬래시를 이스케이프합니다.
-     *
-     * installer-runtime.php 가 동일 함수를 polyfill 로 선언하므로 function_exists
-     * 가드가 필수다. 가드가 없으면 installer-runtime.php 가 functions.php 보다 먼저
-     * 로드되는 엔드포인트(install-process.php)에서 "Cannot redeclare" fatal 이 발생해
-     * JSON 응답이 통째로 유실된다 (설치 시작 즉시 실패).
-     *
-     * @param  string  $value  이스케이프할 값
-     * @return string 큰따옴표로 감싸고 내부 큰따옴표와 백슬래시를 이스케이프한 값
-     */
-    function escapeEnvValue(string $value): string
-    {
-        // 직렬화 정책은 serializeEnvValue 단일 관문이 소유한다 (KVE-2026-2042).
-        // 이 이름은 하위호환 별칭일 뿐이며, 개행을 조용히 지우던 종전 동작은 남기지 않는다 —
-        // 남겨 두면 다음 호출자가 그 경로로 같은 결함을 다시 들여온다.
-        return serializeEnvValue($value);
+/**
+ * .env 값 이스케이프
+ *
+ * 특수 문자가 포함된 값을 .env 파일에 안전하게 기록할 수 있도록 큰따옴표로 감싸고
+ * 내부 큰따옴표와 백슬래시를 이스케이프합니다.
+ *
+ * @param string $value 이스케이프할 값
+ * @return string 큰따옴표로 감싸고 내부 큰따옴표와 백슬래시를 이스케이프한 값
+ */
+function escapeEnvValue(string $value): string
+{
+    // 개행 문자는 .env 라인 구분자이므로 사용자 입력에 포함되면 추가 변수 라인이 주입될 수 있다.
+    // CR/LF 모두 제거 — DB 비밀번호·바이너리 경로·토큰 등 정상 값에는 개행이 들어갈 일이 없다.
+    if ($value !== '') {
+        $value = str_replace(["\r", "\n"], '', $value);
     }
+
+    // 빈 값은 빈 따옴표로
+    if ($value === '') {
+        return '""';
+    }
+
+    // 큰따옴표와 백슬래시를 이스케이프
+    $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
+
+    // 큰따옴표로 감싸기
+    return '"' . $escaped . '"';
 }
 
 /**
@@ -1096,8 +1057,8 @@ if (! function_exists('escapeEnvValue')) {
  */
 function generateEnvContent(): ?string
 {
-    $envExamplePath = BASE_PATH.'/.env.example';
-    if (! file_exists($envExamplePath)) {
+    $envExamplePath = BASE_PATH . '/.env.example';
+    if (!file_exists($envExamplePath)) {
         return null;
     }
 
@@ -1108,41 +1069,39 @@ function generateEnvContent(): ?string
     // 데이터베이스 설정 치환
     $replacements = [
         'DB_CONNECTION=mysql' => 'DB_CONNECTION=mysql',
-        'DB_WRITE_HOST=127.0.0.1' => 'DB_WRITE_HOST='.serializeEnvValue((string) ($config['db_write_host'] ?? '127.0.0.1')),
-        'DB_WRITE_PORT=3306' => 'DB_WRITE_PORT='.serializeEnvValue((string) ($config['db_write_port'] ?? '3306')),
-        'DB_WRITE_DATABASE=g7' => 'DB_WRITE_DATABASE='.serializeEnvValue((string) ($config['db_write_database'] ?? 'g7')),
-        'DB_WRITE_USERNAME=root' => 'DB_WRITE_USERNAME='.serializeEnvValue((string) ($config['db_write_username'] ?? 'root')),
-        'DB_WRITE_PASSWORD=' => 'DB_WRITE_PASSWORD='.serializeEnvValue((string) ($config['db_write_password'] ?? '')),
-        'DB_PREFIX=g7_' => 'DB_PREFIX='.serializeEnvValue((string) ($config['db_prefix'] ?? 'g7_')),
+        'DB_WRITE_HOST=127.0.0.1' => 'DB_WRITE_HOST=' . ($config['db_write_host'] ?? '127.0.0.1'),
+        'DB_WRITE_PORT=3306' => 'DB_WRITE_PORT=' . ($config['db_write_port'] ?? '3306'),
+        'DB_WRITE_DATABASE=g7' => 'DB_WRITE_DATABASE=' . ($config['db_write_database'] ?? 'g7'),
+        'DB_WRITE_USERNAME=root' => 'DB_WRITE_USERNAME=' . ($config['db_write_username'] ?? 'root'),
+        'DB_WRITE_PASSWORD=' => 'DB_WRITE_PASSWORD=' . escapeEnvValue($config['db_write_password'] ?? ''),
+        'DB_PREFIX=g7_' => 'DB_PREFIX=' . ($config['db_prefix'] ?? 'g7_'),
     ];
 
     // Read DB 설정
-    if (! empty($config['use_read_db']) && $config['use_read_db']) {
-        $replacements['DB_READ_HOST='] = 'DB_READ_HOST='.serializeEnvValue((string) ($config['db_read_host'] ?? '127.0.0.1'));
-        $replacements['DB_READ_PORT='] = 'DB_READ_PORT='.serializeEnvValue((string) ($config['db_read_port'] ?? '3306'));
-        $replacements['DB_READ_DATABASE='] = 'DB_READ_DATABASE='.serializeEnvValue((string) ($config['db_read_database'] ?? 'g7'));
-        $replacements['DB_READ_USERNAME='] = 'DB_READ_USERNAME='.serializeEnvValue((string) ($config['db_read_username'] ?? 'root'));
-        $replacements['DB_READ_PASSWORD='] = 'DB_READ_PASSWORD='.serializeEnvValue((string) ($config['db_read_password'] ?? ''));
+    if (!empty($config['use_read_db']) && $config['use_read_db']) {
+        $replacements['DB_READ_HOST='] = 'DB_READ_HOST=' . ($config['db_read_host'] ?? '127.0.0.1');
+        $replacements['DB_READ_PORT='] = 'DB_READ_PORT=' . ($config['db_read_port'] ?? '3306');
+        $replacements['DB_READ_DATABASE='] = 'DB_READ_DATABASE=' . ($config['db_read_database'] ?? 'g7');
+        $replacements['DB_READ_USERNAME='] = 'DB_READ_USERNAME=' . ($config['db_read_username'] ?? 'root');
+        $replacements['DB_READ_PASSWORD='] = 'DB_READ_PASSWORD=' . escapeEnvValue($config['db_read_password'] ?? '');
     } else {
-        // Read DB를 사용하지 않는 경우 DB_READ_* 를 빈 값으로 둔다.
-        // config/database.php 의 write fallback(Elvis) 이 SELECT 를 write DB 로 넘기므로
-        // .env 에 write 값을 중복 기록하지 않는다 (write 변경 시 read stale 방지). (이슈 #63)
-        $replacements['DB_READ_HOST='] = 'DB_READ_HOST=';
-        $replacements['DB_READ_PORT='] = 'DB_READ_PORT=';
-        $replacements['DB_READ_DATABASE='] = 'DB_READ_DATABASE=';
-        $replacements['DB_READ_USERNAME='] = 'DB_READ_USERNAME=';
-        $replacements['DB_READ_PASSWORD='] = 'DB_READ_PASSWORD=';
+        // Read DB를 사용하지 않는 경우 Write DB 정보와 동일하게 설정
+        $replacements['DB_READ_HOST='] = 'DB_READ_HOST=' . ($config['db_write_host'] ?? '127.0.0.1');
+        $replacements['DB_READ_PORT='] = 'DB_READ_PORT=' . ($config['db_write_port'] ?? '3306');
+        $replacements['DB_READ_DATABASE='] = 'DB_READ_DATABASE=' . ($config['db_write_database'] ?? 'g7');
+        $replacements['DB_READ_USERNAME='] = 'DB_READ_USERNAME=' . ($config['db_write_username'] ?? 'root');
+        $replacements['DB_READ_PASSWORD='] = 'DB_READ_PASSWORD=' . escapeEnvValue($config['db_write_password'] ?? '');
     }
 
     // 앱 설정 치환
-    $replacements['APP_NAME=그누보드7'] = 'APP_NAME='.serializeEnvValue((string) ($config['app_name'] ?? '그누보드7'));
-    $replacements['APP_ENV=production'] = 'APP_ENV='.serializeEnvValue((string) ($config['app_env'] ?? 'production'));
-    $replacements['APP_URL=http://localhost'] = 'APP_URL='.serializeEnvValue((string) ($config['app_url'] ?? 'http://localhost'));
+    $replacements['APP_NAME=그누보드7'] = 'APP_NAME="' . ($config['app_name'] ?? '그누보드7') . '"';
+    $replacements['APP_ENV=production'] = 'APP_ENV=' . ($config['app_env'] ?? 'production');
+    $replacements['APP_URL=http://localhost'] = 'APP_URL=' . ($config['app_url'] ?? 'http://localhost');
 
     // 언어 설정
     $currentLang = getCurrentLanguage();
-    $replacements['APP_LOCALE=ko'] = 'APP_LOCALE='.$currentLang;
-    $replacements['APP_FAKER_LOCALE=ko_KR'] = 'APP_FAKER_LOCALE='.($currentLang === 'ko' ? 'ko_KR' : 'en_US');
+    $replacements['APP_LOCALE=ko'] = 'APP_LOCALE=' . $currentLang;
+    $replacements['APP_FAKER_LOCALE=ko_KR'] = 'APP_FAKER_LOCALE=' . ($currentLang === 'ko' ? 'ko_KR' : 'en_US');
 
     if (isset($config['app_env']) && $config['app_env'] !== 'production') {
         $replacements['APP_DEBUG=false'] = 'APP_DEBUG=true';
@@ -1153,15 +1112,15 @@ function generateEnvContent(): ?string
     $coreGithubUrl = $config['core_update_github_url'] ?? 'https://github.com/gnuboard/g7';
     $coreGithubToken = $config['core_update_github_token'] ?? '';
 
-    $replacements['G7_UPDATE_PENDING_PATH='] = 'G7_UPDATE_PENDING_PATH='.serializeEnvValue((string) $corePendingPath);
-    $replacements['G7_UPDATE_GITHUB_URL=https://github.com/gnuboard/g7'] = 'G7_UPDATE_GITHUB_URL='.serializeEnvValue((string) $coreGithubUrl);
-    $replacements['G7_UPDATE_GITHUB_TOKEN='] = 'G7_UPDATE_GITHUB_TOKEN='.serializeEnvValue((string) $coreGithubToken);
+    $replacements['G7_UPDATE_PENDING_PATH='] = 'G7_UPDATE_PENDING_PATH=' . escapeEnvValue($corePendingPath);
+    $replacements['G7_UPDATE_GITHUB_URL=https://github.com/gnuboard/g7'] = 'G7_UPDATE_GITHUB_URL=' . $coreGithubUrl;
+    $replacements['G7_UPDATE_GITHUB_TOKEN='] = 'G7_UPDATE_GITHUB_TOKEN=' . escapeEnvValue($coreGithubToken);
 
     // PHP CLI / Composer 바이너리 경로 치환
     $phpBinary = $config['php_binary'] ?? 'php';
     $composerBinary = $config['composer_binary'] ?? '';
-    $replacements['PHP_BINARY=php'] = 'PHP_BINARY='.serializeEnvValue((string) $phpBinary);
-    $replacements['COMPOSER_BINARY='] = 'COMPOSER_BINARY='.serializeEnvValue((string) $composerBinary);
+    $replacements['PHP_BINARY=php'] = 'PHP_BINARY=' . escapeEnvValue($phpBinary);
+    $replacements['COMPOSER_BINARY='] = 'COMPOSER_BINARY=' . escapeEnvValue($composerBinary);
 
     foreach ($replacements as $search => $replace) {
         $envContent = str_replace($search, $replace, $envContent);
@@ -1181,77 +1140,24 @@ function isWindows(): bool
 }
 
 /**
- * Windows 읽기 전용(ReadOnly) 속성이 걸린 디렉토리인지 판별합니다.
- *
- * ReadOnly 는 ACL(접근 제어 목록)이 아니라 파일 속성이다. 두 값은 서로 독립이라
- * icacls 로 Everyone:(OI)(CI)F 를 부여해도 ReadOnly 가 남아 있으면 PHP 의
- * is_writable() 은 계속 false 를 반환한다. 이 경우 안내된 icacls 명령을 몇 번
- * 실행해도 같은 실패 화면이 반복되므로(압축 해제·백업 복원·동기화 도구가 흔한 원인),
- * 원인을 따로 식별해 attrib -R 안내로 유도한다.
- *
- * @param  string  $path  검사할 경로
- * @return bool ReadOnly 속성이 설정되어 있으면 true (Windows 아니면 항상 false)
- */
-function hasWindowsReadOnlyAttribute(string $path): bool
-{
-    if (! isWindows() || ! file_exists($path)) {
-        return false;
-    }
-
-    // PHP 는 Windows 파일 속성을 직접 노출하지 않는다. COM 이 있으면 정확히 읽는다.
-    // FILE_ATTRIBUTE_READONLY = 0x1
-    if (class_exists('COM')) {
-        try {
-            $fso = new COM('Scripting.FileSystemObject');
-            $target = is_dir($path) ? $fso->GetFolder($path) : $fso->GetFile($path);
-
-            return ((int) $target->Attributes & 0x1) === 0x1;
-        } catch (Throwable $e) {
-            // COM 사용 불가 시 아래 폴백으로 진행
-        }
-    }
-
-    // 폴백: attrib 로 속성 문자열을 조회한다. 첫 필드에 R 이 있으면 ReadOnly.
-    // ACL 문제를 ReadOnly 로 오진하면 엉뚱한 명령을 안내하게 되므로, 확인되지
-    // 않으면 false 를 반환해 기존 icacls 안내를 유지한다.
-    if (! function_exists('exec')) {
-        return false;
-    }
-
-    $output = [];
-    $exitCode = 1;
-    @exec('attrib '.escapeshellarg($path).' 2>&1', $output, $exitCode);
-
-    if ($exitCode !== 0 || $output === []) {
-        return false;
-    }
-
-    // 출력 예: "A    R          C:\path\to\dir"  → 경로 앞 속성 플래그 구간만 검사
-    $line = (string) ($output[0] ?? '');
-    $flags = substr($line, 0, max(0, strpos($line, ':') - 1));
-
-    return strpos($flags, 'R') !== false;
-}
-
-/**
  * OS에 맞는 .env 파일 복사 명령어를 반환합니다.
  *
- * @param  string  $basePath  프로젝트 루트 경로 (빈 문자열이면 상대 경로 사용)
+ * @param string $basePath 프로젝트 루트 경로 (빈 문자열이면 상대 경로 사용)
  * @return string 복사 명령어
  */
 function getEnvCopyCommand(string $basePath = ''): string
 {
     if (isWindows()) {
-        $source = $basePath ? $basePath.'\\.env.example' : '.env.example';
-        $dest = $basePath ? $basePath.'\\.env' : '.env';
+        $source = $basePath ? $basePath . '\\.env.example' : '.env.example';
+        $dest = $basePath ? $basePath . '\\.env' : '.env';
 
-        return 'copy '.str_replace('/', '\\', $source).' '.str_replace('/', '\\', $dest);
+        return 'copy ' . str_replace('/', '\\', $source) . ' ' . str_replace('/', '\\', $dest);
     }
 
-    $source = $basePath ? $basePath.'/.env.example' : '.env.example';
-    $dest = $basePath ? $basePath.'/.env' : '.env';
+    $source = $basePath ? $basePath . '/.env.example' : '.env.example';
+    $dest = $basePath ? $basePath . '/.env' : '.env';
 
-    return 'cp '.$source.' '.$dest;
+    return 'cp ' . $source . ' ' . $dest;
 }
 
 /**
@@ -1261,8 +1167,8 @@ function getEnvCopyCommand(string $basePath = ''): string
  * chown/setgid 의존성을 제거하여 공유호스팅 호환성 확보.
  * 실제 통과 기준은 is_writable() && is_readable()이므로 비트 값은 참고용.
  *
- * @param  string  $pathList  대상 경로 (공백 구분)
- * @param  string  $mode  'ownership' (디렉토리) 또는 'file' (파일)
+ * @param string $pathList 대상 경로 (공백 구분)
+ * @param string $mode 'ownership' (디렉토리) 또는 'file' (파일)
  * @return string 권한 수정 명령어
  */
 function getPermissionFixCommand(string $pathList, string $mode = 'ownership'): string
@@ -1270,29 +1176,22 @@ function getPermissionFixCommand(string $pathList, string $mode = 'ownership'): 
     if (isWindows()) {
         $winPath = str_replace('/', '\\', $pathList);
         if ($mode === 'file') {
-            return 'icacls '.$winPath.' /grant Everyone:F';
+            return 'icacls ' . $winPath . ' /grant Everyone:F';
         }
 
-        if ($mode === 'windows_readonly') {
-            // 두 줄이 필요하다 — `attrib -R "<폴더>" /D /S` 는 경로를 파일 사양으로 읽어 폴더 자체만 풀고
-            // 안쪽 파일·하위 폴더는 읽기 전용으로 남긴다(2026-09-23 Windows 실측). 안쪽은 `<폴더>\*` 로 푼다.
-            $target = trim($winPath, '"');
-
-            return 'attrib -R "'.$target.'"'."\n".'attrib -R "'.$target.'\\*" /S /D';
-        }
-
-        return 'icacls '.$winPath.' /grant Everyone:(OI)(CI)F /T';
+        return 'icacls ' . $winPath . ' /grant Everyone:(OI)(CI)F /T';
     }
 
     if ($mode === 'file') {
-        return 'chmod 644 '.$pathList;
+        return 'chmod 644 ' . $pathList;
     }
 
-    return 'chmod -R 755 '.$pathList;
+    return 'chmod -R 755 ' . $pathList;
 }
 
+
 /**
- * 기존 DB 테이블 감지.
+ * 기존 DB 테이블 감지 (이슈 #244 대응).
  *
  * Write DB에 테이블이 존재하는지 확인하고, G7 시그니처 테이블과 비교하여
  * 설치 진행 가능 여부를 판정합니다.
@@ -1303,8 +1202,9 @@ function getPermissionFixCommand(string $pathList, string $mode = 'ownership'): 
  * - 'mixed'        : G7 일부 + 기타 혼재
  * - 'foreign_data' : G7 시그니처 없음 + 기타 테이블 존재
  *
- * @param  PDO  $pdo  연결된 PDO 인스턴스
- * @param  string  $database  대상 데이터베이스명
+ * @param PDO $pdo 연결된 PDO 인스턴스
+ * @param string $database 대상 데이터베이스명
+ * @return array
  */
 function checkExistingTables(PDO $pdo, string $database, string $tablePrefix = ''): array
 {
@@ -1337,7 +1237,7 @@ function checkExistingTables(PDO $pdo, string $database, string $tablePrefix = '
     // G7 핵심 시그니처 테이블 — 정책 결정: 4개 모두 일치 시 "G7 설치됨"으로 판단
     // 테이블 prefix를 적용하여 비교 (예: prefix='g7_'이면 'g7_users', 'g7_migrations' 등)
     $coreSignatures = ['users', 'migrations', 'roles', 'permissions'];
-    $g7Signatures = array_map(fn ($t) => $tablePrefix.$t, $coreSignatures);
+    $g7Signatures = array_map(fn ($t) => $tablePrefix . $t, $coreSignatures);
     $g7TablesFound = array_values(array_intersect($g7Signatures, $tables));
 
     $severity = 'foreign_data';
@@ -1355,34 +1255,4 @@ function checkExistingTables(PDO $pdo, string $database, string $tablePrefix = '
         'all_tables' => $tables,
         'severity' => $severity,
     ];
-}
-
-if (! function_exists('filterTablesByPrefix')) {
-    /**
-     * 기존 테이블 목록을 db_prefix 로 필터링합니다.
-     *
-     * drop_tables 동의의 의미는 "이 prefix 로 설치되는 G7 테이블을 지우고 다시 설치"이므로,
-     * 입력한 prefix 로 시작하는 테이블만 삭제 대상으로 선별합니다. prefix 가 없는
-     * 다른 애플리케이션/이전 설치의 테이블은 동일 DB 를 공유하더라도 보존합니다.
-     *
-     * 빈 prefix 는 전체 일치가 되어 모든 테이블이 삭제되는 위험이 있으므로,
-     * 데이터 손실 방어를 위해 빈 목록(삭제 대상 없음)을 반환합니다.
-     *
-     * @param  array  $tables  SHOW TABLES 로 조회한 전체 테이블 목록
-     * @param  string  $prefix  사용자가 입력한 테이블 prefix (예: 'g7_')
-     * @return array prefix 로 시작하는 테이블만 담은 목록
-     */
-    function filterTablesByPrefix(array $tables, string $prefix): array
-    {
-        if ($prefix === '') {
-            return [];
-        }
-
-        $prefixLength = strlen($prefix);
-
-        return array_values(array_filter(
-            $tables,
-            fn ($table) => strncmp((string) $table, $prefix, $prefixLength) === 0
-        ));
-    }
 }

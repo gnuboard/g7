@@ -3,7 +3,6 @@
 namespace Tests\Unit\Extension;
 
 use App\Extension\Helpers\FileHandleHelper;
-use PHPUnit\Framework\Attributes\RequiresOperatingSystemFamily;
 use Tests\TestCase;
 
 /**
@@ -17,11 +16,6 @@ class FileHandleHelperTest extends TestCase
 {
     private string $tempDir;
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,11 +29,6 @@ class FileHandleHelperTest extends TestCase
         file_put_contents($this->tempDir.DIRECTORY_SEPARATOR.'subdir'.DIRECTORY_SEPARATOR.'nested.txt', 'nested content');
     }
 
-    /**
-     * 테스트가 남긴 상태를 정리합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         // 임시 디렉토리 정리
@@ -50,12 +39,6 @@ class FileHandleHelperTest extends TestCase
 
     /**
      * isWindows()가 현재 환경에 맞는 값을 반환하는지 확인합니다.
-     *
-     * @scenario concern=file_lock, extension_type=agnostic
-     *
-     * @effects windows_detection_matches_os_family
-     *
-     * @return void 반환값 없음
      */
     public function test_is_windows_returns_correct_value(): void
     {
@@ -65,12 +48,6 @@ class FileHandleHelperTest extends TestCase
 
     /**
      * 잠금이 없는 디렉토리에서 빈 배열을 반환하는지 확인합니다.
-     *
-     * @scenario concern=file_lock, extension_type=agnostic
-     *
-     * @effects find_locking_processes_returns_empty_when_no_locks
-     *
-     * @return void 반환값 없음
      */
     public function test_find_locking_processes_returns_empty_when_no_locks(): void
     {
@@ -83,12 +60,6 @@ class FileHandleHelperTest extends TestCase
 
     /**
      * 존재하지 않는 디렉토리에서 빈 배열을 반환하는지 확인합니다.
-     *
-     * @scenario concern=file_lock, extension_type=agnostic
-     *
-     * @effects find_locking_processes_returns_empty_for_nonexistent_dir
-     *
-     * @return void 반환값 없음
      */
     public function test_find_locking_processes_returns_empty_for_nonexistent_dir(): void
     {
@@ -100,12 +71,6 @@ class FileHandleHelperTest extends TestCase
 
     /**
      * 빈 프로세스 배열에 대해 killProcesses가 빈 결과를 반환하는지 확인합니다.
-     *
-     * @scenario concern=file_lock, extension_type=agnostic
-     *
-     * @effects kill_processes_with_empty_array_returns_empty
-     *
-     * @return void 반환값 없음
      */
     public function test_kill_processes_with_empty_array_returns_empty(): void
     {
@@ -119,12 +84,6 @@ class FileHandleHelperTest extends TestCase
 
     /**
      * 시스템 프로세스가 종료 대상에서 제외되는지 확인합니다.
-     *
-     * @scenario concern=file_lock, extension_type=agnostic
-     *
-     * @effects kill_processes_protects_system_processes
-     *
-     * @return void 반환값 없음
      */
     public function test_kill_processes_protects_system_processes(): void
     {
@@ -147,12 +106,6 @@ class FileHandleHelperTest extends TestCase
 
     /**
      * releaseLocks가 잠금 없는 디렉토리에서 true를 반환하는지 확인합니다.
-     *
-     * @scenario concern=file_lock, extension_type=agnostic
-     *
-     * @effects release_locks_returns_true_when_no_locks
-     *
-     * @return void 반환값 없음
      */
     public function test_release_locks_returns_true_when_no_locks(): void
     {
@@ -162,19 +115,10 @@ class FileHandleHelperTest extends TestCase
     }
 
     /**
-     * releaseLocks 는 잠금이 없는 디렉터리에서도 감지 시작 안내를 출력 콜백으로 내보내고,
-     * 종료할 프로세스가 없으므로 종료 시도 없이 성공을 돌려준다.
+     * releaseLocks 출력 콜백이 호출되는지 확인합니다 (잠금 있는 경우).
      *
-     * 종전에는 `@requires OS Windows` 가 PHP_OS(Windows 에서는 WINNT)와 맞지 않아 어느 환경에서도
-     * 돌지 않았고, 그사이 구현이 시작 안내를 늘 내보내도록 바뀌어 「메시지 없음」 기대가 어긋나 있었다.
-     *
-     * @scenario concern=file_lock, extension_type=agnostic
-     *
-     * @effects release_locks_calls_output_callback
-     *
-     * @return void 반환값 없음
+     * @requires OS Windows
      */
-    #[RequiresOperatingSystemFamily('Windows')]
     public function test_release_locks_calls_output_callback(): void
     {
         $messages = [];
@@ -182,25 +126,18 @@ class FileHandleHelperTest extends TestCase
             $messages[] = $message;
         };
 
-        $released = FileHandleHelper::releaseLocks($this->tempDir, $callback);
+        // 잠금 없는 디렉토리에서는 콜백이 호출되지 않아야 함
+        FileHandleHelper::releaseLocks($this->tempDir, $callback);
 
-        $this->assertTrue($released, '잠금이 없으면 성공을 돌려줘야 함');
-        $this->assertStringContainsString($this->tempDir, implode("\n", $messages), '감지 시작 안내가 콜백으로 나가야 함');
-        foreach ($messages as $message) {
-            $this->assertStringNotContainsString('종료 시도', $message, '잠금이 없으면 프로세스 종료를 시도하지 않아야 함');
-        }
+        // 잠금이 없으므로 메시지가 없어야 함
+        $this->assertEmpty($messages);
     }
 
     /**
      * Windows에서 파일 잠금 감지가 동작하는지 통합 테스트합니다.
      *
-     * @scenario concern=file_lock, extension_type=agnostic
-     *
-     * @effects detect_locked_file_on_windows
-     *
-     * @return void 반환값 없음
+     * @requires OS Windows
      */
-    #[RequiresOperatingSystemFamily('Windows')]
     public function test_detect_locked_file_on_windows(): void
     {
         $filePath = $this->tempDir.DIRECTORY_SEPARATOR.'locked.txt';
@@ -232,12 +169,6 @@ class FileHandleHelperTest extends TestCase
 
     /**
      * maxFiles 파라미터가 샘플링을 제한하는지 확인합니다.
-     *
-     * @scenario concern=file_lock, extension_type=agnostic
-     *
-     * @effects find_locking_processes_respects_max_files
-     *
-     * @return void 반환값 없음
      */
     public function test_find_locking_processes_respects_max_files(): void
     {
@@ -254,12 +185,6 @@ class FileHandleHelperTest extends TestCase
 
     /**
      * 프로세스 배열 구조가 올바른지 확인합니다.
-     *
-     * @scenario concern=file_lock, extension_type=agnostic
-     *
-     * @effects kill_result_accounts_for_every_process
-     *
-     * @return void 반환값 없음
      */
     public function test_process_array_structure(): void
     {
@@ -280,9 +205,6 @@ class FileHandleHelperTest extends TestCase
 
     /**
      * 재귀적 디렉토리 삭제 헬퍼
-     *
-     * @param  string  $path  지울 디렉터리
-     * @return void 반환값 없음
      */
     private function removeDirectory(string $path): void
     {
@@ -308,10 +230,6 @@ class FileHandleHelperTest extends TestCase
 
     /**
      * 문자열 포함 확인 헬퍼
-     *
-     * @param  string  $needle  찾을 문자열
-     * @param  string  $haystack  대상 문자열
-     * @return void 반환값 없음
      */
     private function assertStringContains(string $needle, string $haystack): void
     {

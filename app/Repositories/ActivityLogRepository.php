@@ -5,17 +5,9 @@ namespace App\Repositories;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Helpers\PermissionHelper;
 use App\Helpers\TimezoneHelper;
-use App\Http\Resources\BaseApiCollection;
 use App\Models\ActivityLog;
-use App\Repositories\Concerns\DeletesInBatches;
 use App\Repositories\Concerns\HasMultipleSearchFilters;
-use App\Repositories\Concerns\PaginatesWithDeferredJoin;
-use App\Repositories\Concerns\ResolvesSortSpec;
-use App\Support\Query\KeysetPaginator;
-use App\Support\Query\PaginationLimits;
-use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,27 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ActivityLogRepository implements ActivityLogRepositoryInterface
 {
-    use DeletesInBatches;
     use HasMultipleSearchFilters;
-    use PaginatesWithDeferredJoin;
-    use ResolvesSortSpec;
-
-    /**
-     * 활동 로그 목록 정렬 허용 컬럼
-     *
-     * 요청 값을 그대로 orderBy 에 넘기면 없는 컬럼으로 SQL 오류가 나거나 인덱스 없는 컬럼
-     * 정렬을 강제할 수 있다.
-     *
-     * @var array<int, string>
-     */
-    private const SORTABLE_COLUMNS = [
-        'id',
-        'created_at',
-        'action',
-        'log_type',
-        'user_id',
-    ];
-
     /**
      * 특정 모델의 활동 로그를 페이지네이션하여 조회합니다.
      *
@@ -54,8 +26,8 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
      */
     public function getPaginatedForModel(Model $model, array $filters = []): LengthAwarePaginator
     {
-        $sortOrder = $this->normalizeSortDirection($filters['sort_order'] ?? null);
-        $query = ActivityLog::forModel($model);
+        $sortOrder = $filters['sort_order'] ?? 'desc';
+        $query = ActivityLog::forModel($model)->orderBy('created_at', $sortOrder);
 
         if (isset($filters['action'])) {
             $query->action($filters['action']);
@@ -65,31 +37,18 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
             $query->byUser($filters['user_id']);
         }
 
-        // 컬럼을 좁히지 않는 이유는 getPaginated() 와 같다 — 리소스가 변경 내역을 그대로 노출한다
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: [['column' => 'created_at', 'direction' => $sortOrder]],
-            perPage: (int) ($filters['per_page'] ?? 15),
-            // 로그 테이블은 계속 쌓이기만 한다. 총 건수는 상한까지만 세고 "다음" 이동은
-            // per_page + 1 실측으로 끝까지 열어 둔다 (계산 불가는 마지막 페이지 번호 하나뿐).
-            resultCap: PaginationLimits::resultCap('admin.activity_logs'),
-        );
+        return $query->paginate($filters['per_page'] ?? 15);
     }
 
     /**
      * 활동 로그 목록을 페이지네이션하여 조회합니다.
      *
-     * 요청에 `cursor` 가 있으면 키셋(커서) 방식으로, 없으면 페이지 번호 방식으로 응답합니다.
-     * 두 방식의 응답 봉투 차이는 {@see BaseApiCollection} 이 흡수합니다.
-     *
      * @param  array  $filters  필터 조건
-     * @return LengthAwarePaginator|CursorPaginator 페이지네이션된 로그 목록
+     * @return LengthAwarePaginator 페이지네이션된 로그 목록
      */
-    public function getPaginated(array $filters = []): LengthAwarePaginator|CursorPaginator
+    public function getPaginated(array $filters = []): LengthAwarePaginator
     {
-        // 관계는 지연 조인의 outer 에서만 로드한다 (inner 는 키 컬럼만 조회한다)
-        $query = ActivityLog::query();
+        $query = ActivityLog::query()->with('user:id,uuid,name,email');
 
         // 스코프 기반 권한 필터링 (self: 본인 로그만, role: 소유역할 로그, null: 전체)
         PermissionHelper::applyPermissionScope($query, 'core.activities.read');
@@ -133,41 +92,11 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
             $query->where('created_at', '<=', TimezoneHelper::fromSiteDateTime($filters['date_to']));
         }
 
-        $sort = $this->resolveSortSpec($filters, self::SORTABLE_COLUMNS, 'created_at');
-        $perPage = (int) ($filters['per_page'] ?? 15);
+        $sortBy = $filters['sort_by'] ?? 'created_at';
+        $sortOrder = $filters['sort_order'] ?? 'desc';
+        $query->orderBy($sortBy, $sortOrder);
 
-        // 커서를 받은 요청은 키셋으로 응답한다. 로그는 계속 쌓이기만 해서 깊은 페이지를
-        // OFFSET 으로 훑으면 건너뛸 행을 실제로 읽어야 하지만, 커서는 직전 페이지의 정렬
-        // 키를 WHERE 경계로 삼아 깊이와 무관하게 일정하다.
-        // 커서 모드에서는 OFFSET 자체가 없으므로 지연 조인이 해결하려던 문제도 함께 사라진다.
-        $sortKeys = array_map(
-            static fn (array $spec): array => [$spec['column'], $spec['direction']],
-            $sort
-        );
-
-        if (! empty($filters['cursor']) && KeysetPaginator::supports($sortKeys, self::SORTABLE_COLUMNS)) {
-            return KeysetPaginator::paginate(
-                query: $query->with('user:id,uuid,name,email'),
-                perPage: $perPage,
-                sortKeys: $sortKeys,
-                uniqueKey: 'id',
-                cursor: (string) $filters['cursor'],
-            );
-        }
-
-        // 목록 컬럼을 좁히지 않는 이유: 활동 로그 리소스는 변경 내역(mediumText `changes`)과
-        // 부가 정보(`properties`)까지 그대로 노출하므로 컬럼을 빼면 응답 계약이 바뀐다.
-        // 지연 조인만으로도 이 넓은 컬럼들을 읽는 행 수가 이번 페이지 분량으로 고정된다.
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: $sort,
-            perPage: $perPage,
-            relations: ['user:id,uuid,name,email'],
-            // 로그 테이블은 계속 쌓이기만 한다. 총 건수는 상한까지만 세고 "다음" 이동은
-            // per_page + 1 실측으로 끝까지 열어 둔다 (계산 불가는 마지막 페이지 번호 하나뿐).
-            resultCap: PaginationLimits::resultCap('admin.activity_logs'),
-        );
+        return $query->paginate($filters['per_page'] ?? 15);
     }
 
     /**
@@ -176,10 +105,10 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
      * action/description 필드는 영어 키를 저장하므로,
      * 검색어가 번역된 라벨과 일치하는 원본 키도 함께 검색합니다.
      *
-     * @param  Builder  $query  쿼리 빌더
-     * @param  string  $search  검색어
-     * @param  string  $searchType  검색 유형 (all, action, description, ip_address)
-     * @return void 반환값 없음
+     * @param \Illuminate\Database\Eloquent\Builder $query 쿼리 빌더
+     * @param string $search 검색어
+     * @param string $searchType 검색 유형 (all, action, description, ip_address)
+     * @return void
      */
     private function applyBilingualSearch($query, string $search, string $searchType): void
     {
@@ -217,7 +146,7 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
     /**
      * 번역된 액션 라벨로 원본 action 값을 역추적합니다.
      *
-     * @param  string  $searchLower  소문자 검색어
+     * @param string $searchLower 소문자 검색어
      * @return array<string> 일치하는 action 값 목록
      */
     private function findActionsByTranslatedLabel(string $searchLower): array
@@ -250,7 +179,7 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
     /**
      * 번역된 설명 텍스트로 원본 description_key를 역추적합니다.
      *
-     * @param  string  $searchLower  소문자 검색어
+     * @param string $searchLower 소문자 검색어
      * @return array<string> 일치하는 description_key 목록
      */
     private function findDescriptionKeysByTranslatedText(string $searchLower): array
@@ -271,7 +200,7 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
     /**
      * 활동 로그를 삭제합니다.
      *
-     * @param  int  $id  삭제할 활동 로그 ID
+     * @param int $id 삭제할 활동 로그 ID
      * @return bool 삭제 성공 여부
      */
     public function delete(int $id): bool
@@ -282,7 +211,7 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
     /**
      * 여러 활동 로그를 일괄 삭제합니다.
      *
-     * @param  array<int>  $ids  삭제할 활동 로그 ID 목록
+     * @param array<int> $ids 삭제할 활동 로그 ID 목록
      * @return int 삭제된 건수
      */
     public function deleteMany(array $ids): int
@@ -318,47 +247,5 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
     public function anonymizeUserId(int $userId): int
     {
         return ActivityLog::where('user_id', $userId)->update(['user_id' => null]);
-    }
-
-    /**
-     * 보존 기간이 지난 활동 로그를 삭제합니다.
-     *
-     * 보존 기간 하한(1일)은 이 계층이 소유한다 — 파기는 되돌릴 수 없으므로 호출자마다
-     * 다시 막지 않고 실제로 지우는 자리에서 한 번 막는다.
-     *
-     * @param  int  $days  보존 기간 (일)
-     * @param  array<int, string>  $exceptActions  이 파기에서 빼는 액션(따로 더 오래 보관하는 액션)
-     * @return int 삭제된 건수
-     */
-    public function deleteOlderThan(int $days, array $exceptActions = []): int
-    {
-        $query = ActivityLog::where('created_at', '<', now()->subDays(max(1, $days)));
-
-        if ($exceptActions !== []) {
-            $query->whereNotIn('action', array_values($exceptActions));
-        }
-
-        return $this->deleteInBatches($query);
-    }
-
-    /**
-     * 지정한 액션의 로그 중 보존 기간이 지난 것만 삭제합니다.
-     *
-     * 보존 기간 하한(1일)은 deleteOlderThan 과 같은 이유로 여기서 막는다.
-     *
-     * @param  int  $days  보존 기간 (일)
-     * @param  array<int, string>  $actions  대상 액션 (비어 있으면 아무것도 지우지 않는다)
-     * @return int 삭제된 건수
-     */
-    public function deleteOlderThanForActions(int $days, array $actions): int
-    {
-        if ($actions === []) {
-            return 0;
-        }
-
-        return $this->deleteInBatches(
-            ActivityLog::where('created_at', '<', now()->subDays(max(1, $days)))
-                ->whereIn('action', array_values($actions))
-        );
     }
 }

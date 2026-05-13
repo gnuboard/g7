@@ -75,13 +75,12 @@
             },
             "children": [
               {
-                "id": "template_list_items_{{templateIdx}}",
+                "id": "template_list_items",
                 "type": "basic",
                 "name": "Div",
                 "iteration": {
                   "source": "{{templates?.data ?? []}}",
-                  "item_var": "template",
-                  "index_var": "templateIdx"
+                  "item_var": "template"
                 },
                 "children": [
                   {

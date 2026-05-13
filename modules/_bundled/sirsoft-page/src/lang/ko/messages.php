@@ -31,13 +31,11 @@ return [
     'attachment' => [
         'not_found' => '첨부파일을 찾을 수 없습니다.',
         'file_not_found' => '첨부파일이 스토리지에 존재하지 않습니다.',
-        'preview_not_supported' => '미리보기를 제공하지 않는 파일 형식입니다.',
         'upload_success' => '첨부파일이 업로드되었습니다.',
         'upload_failed' => '첨부파일 업로드에 실패했습니다.',
         'delete_success' => '첨부파일이 삭제되었습니다.',
         'delete_failed' => '첨부파일 삭제에 실패했습니다.',
         'reorder_success' => '첨부파일 순서가 변경되었습니다.',
-        'settings_success' => '첨부 설정을 조회했습니다.',
         'reorder_failed' => '첨부파일 순서 변경에 실패했습니다.',
     ],
 
@@ -48,6 +46,5 @@ return [
         'version_belongs_to_different_page' => '지정된 버전이 해당 페이지에 속하지 않습니다.',
         'permission_denied' => '권한이 없습니다.',
         'validation_failed' => '입력값이 올바르지 않습니다.',
-        'attachment_limit_exceeded' => '첨부파일은 최대 :limit개까지 등록할 수 있습니다. (요청: :attempted개)',
     ],
 ];

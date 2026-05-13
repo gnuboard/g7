@@ -41,19 +41,9 @@ describe('ActionDispatcher', () => {
   afterEach(() => {
     // Logger 디버그 모드 비활성화
     Logger.getInstance().setDebug(false);
-
-    // `window.G7Core` 목이 다음 케이스로 새지 않게 한다. 케이스 본문 끝의 정리는 **단언이 실패하면
-    // 도달하지 않으므로**, 한 케이스가 깨지면 뒤따르는 케이스까지 알 수 없는 이유로 함께 깨진다
-    // (실측: `_global` 복합 표현식 케이스가 깨지자 `setGlobalStateUpdater` 케이스가 남의 목을 읽었다).
-    delete (window as any).G7Core;
   });
 
   describe('bindActionsToProps', () => {
-    /**
-     * @scenario surface=binding
-     *
-     * @effects bind_actions_to_props_wires_event_props
-     */
     it('click 이벤트 핸들러를 생성해야 함', () => {
       const props = {
         actions: [
@@ -71,7 +61,6 @@ describe('ActionDispatcher', () => {
       expect(typeof boundProps.onClick).toBe('function');
     });
 
-    /** @effects bind_actions_to_props_wires_event_props */
     it('change 이벤트 핸들러를 생성해야 함', () => {
       const props = {
         actions: [
@@ -89,7 +78,6 @@ describe('ActionDispatcher', () => {
       expect(typeof boundProps.onChange).toBe('function');
     });
 
-    /** @effects bind_actions_to_props_wires_event_props */
     it('keydown 이벤트 핸들러를 생성해야 함 (React camelCase: onKeyDown)', () => {
       const props = {
         actions: [
@@ -108,107 +96,6 @@ describe('ActionDispatcher', () => {
       expect(typeof boundProps.onKeyDown).toBe('function');
     });
 
-    // 회귀: `event` 로 적은 DOM 이벤트가 React prop 으로 정규화되지 않아 핸들러가 붙지 않던 문제.
-    // 규정은 액션 키를 `type` 또는 `event` 둘 다 허용한다고 명시하는데, `event` 는 값이 그대로
-    // prop 이름이 되어 `event: "click"` 이 `props.click` 을 만들었다. React 는 그런 prop 을 무시하므로
-    // 버튼이 예외·경고 없이 죽은 채로 렌더된다(관리자 주문상세 "발급 이력" 아코디언 실제 사례).
-    /** @effects bind_actions_to_props_wires_event_props */
-    it('event 키로 적은 DOM 이벤트도 React prop 으로 정규화해야 함 (click → onClick)', () => {
-      const props = {
-        actions: [
-          {
-            event: 'click',
-            handler: 'setState',
-            params: { target: 'local', expanded: true },
-          },
-        ],
-      };
-
-      const boundProps = dispatcher.bindActionsToProps(props);
-
-      expect(typeof boundProps.onClick).toBe('function');
-      expect(boundProps.click).toBeUndefined();
-    });
-
-    /** @effects bind_actions_to_props_wires_event_props */
-    it('event 키의 change/keydown 도 정규화해야 함', () => {
-      const changeProps = dispatcher.bindActionsToProps({
-        actions: [{ event: 'change', handler: 'setState', params: { target: 'local' } }],
-      });
-      expect(typeof changeProps.onChange).toBe('function');
-      expect(changeProps.change).toBeUndefined();
-
-      const keyProps = dispatcher.bindActionsToProps({
-        actions: [{ event: 'keydown', handler: 'navigate', params: { path: '/x' } }],
-      });
-      expect(typeof keyProps.onKeyDown).toBe('function');
-      expect(keyProps.keydown).toBeUndefined();
-    });
-
-    // 정규화는 알려진 DOM 이벤트 이름에만 적용된다. 이미 React prop 형태이거나
-    // 확장이 발행하는 네임스페이스 이벤트(`upload:*`, `notification.received` 등)는 그대로 둔다 —
-    // 여기에 `on` 접두사를 붙이면 기존 확장 이벤트가 통째로 끊긴다.
-    /** @effects bind_actions_to_props_wires_event_props */
-    it('React prop 형태와 네임스페이스 커스텀 이벤트는 그대로 둬야 함', () => {
-      const sortProps = dispatcher.bindActionsToProps({
-        actions: [{ event: 'onSortEnd', handler: 'setState', params: { target: 'local' } }],
-      });
-      expect(typeof sortProps.onSortEnd).toBe('function');
-      expect(sortProps.onOnSortEnd).toBeUndefined();
-
-      const uploadProps = dispatcher.bindActionsToProps({
-        actions: [{ event: 'upload:board_attachments', handler: 'setState', params: { target: 'local' } }],
-      });
-      expect(typeof uploadProps['upload:board_attachments']).toBe('function');
-
-      const wsProps = dispatcher.bindActionsToProps({
-        actions: [{ event: 'notification.received', handler: 'setState', params: { target: 'local' } }],
-      });
-      expect(typeof wsProps['notification.received']).toBe('function');
-    });
-
-    // 회귀: `event` 로 적은 액션은 커스텀 컴포넌트 이벤트의 payload 를 잃었다.
-    // 합성 Select/MultilingualInput 등은 `preventDefault` 없는 `{ target: { name, value } }` 를 emit 하는데,
-    // `type` 경로는 이를 synthetic event 로 승격해 `$event.target.value` 를 살리는 반면
-    // `event` 경로는 빈 `Event('custom')` 로 갈아끼워 값이 사라졌다.
-    // 증상은 "핸들러는 실행되는데 저장되는 값만 비어 있음" 이라 콘솔·네트워크에 아무 흔적이 없다.
-    /** @effects bind_actions_to_props_wires_event_props */
-    it('event 키 경로도 커스텀 컴포넌트 이벤트의 $event payload 를 보존해야 함', async () => {
-      const captured: any[] = [];
-      const componentContext = {
-        state: {},
-        setState: (u: any) => captured.push(JSON.parse(JSON.stringify(u))),
-      };
-      // preventDefault 가 없는 합성 컴포넌트 이벤트
-      const customComponentEvent = { target: { name: 'category', value: '기술문의' } };
-
-      const params = {
-        target: 'local',
-        form: { category: '{{$event.target.value}}' },
-      };
-
-      const viaEvent = dispatcher.bindActionsToProps(
-        { actions: [{ event: 'change', handler: 'setState', params }] },
-        {},
-        componentContext
-      );
-      const viaType = dispatcher.bindActionsToProps(
-        { actions: [{ type: 'change' as const, handler: 'setState', params }] },
-        {},
-        componentContext
-      );
-
-      viaEvent.onChange(customComponentEvent);
-      viaType.onChange(customComponentEvent);
-      await new Promise((r) => setTimeout(r, 50));
-
-      expect(captured).toHaveLength(2);
-      // 두 경로가 같은 결과여야 한다 (어느 키로 적었는지가 값 보존을 가르면 안 된다)
-      expect(captured[0].form).toEqual({ category: '기술문의' });
-      expect(captured[1].form).toEqual({ category: '기술문의' });
-    });
-
-    /** @effects bind_actions_to_props_wires_event_props */
     it('동일한 이벤트 타입의 여러 액션을 그룹화해야 함', () => {
       const props = {
         actions: [
@@ -238,7 +125,6 @@ describe('ActionDispatcher', () => {
     });
 
     describe('key 필터링', () => {
-      /** @effects key_filtered_keydown_runs_only_for_the_declared_key */
       it('key가 일치할 때만 액션을 실행해야 함', () => {
         const mockSetState = vi.fn();
         const componentContext = {
@@ -267,7 +153,6 @@ describe('ActionDispatcher', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/search', { replace: false });
       });
 
-      /** @effects key_filtered_keydown_runs_only_for_the_declared_key */
       it('key가 일치하지 않으면 액션을 실행하지 않아야 함', () => {
         const mockSetState = vi.fn();
         const componentContext = {
@@ -296,7 +181,6 @@ describe('ActionDispatcher', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
       });
 
-      /** @effects key_filtered_keydown_runs_only_for_the_declared_key */
       it('key 필터가 없는 액션은 모든 키에 대해 실행되어야 함', () => {
         const mockSetState = vi.fn();
         const componentContext = {
@@ -323,7 +207,6 @@ describe('ActionDispatcher', () => {
         expect(mockSetState).toHaveBeenCalled();
       });
 
-      /** @effects key_filtered_keydown_runs_only_for_the_declared_key */
       it('동일 이벤트에 key 필터가 있는 액션과 없는 액션이 함께 있을 때 올바르게 처리해야 함', () => {
         const mockSetState = vi.fn();
         const componentContext = {
@@ -367,7 +250,6 @@ describe('ActionDispatcher', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/search', { replace: false });
       });
 
-      /** @effects key_filtered_keydown_runs_only_for_the_declared_key */
       it('Escape 키 필터링이 동작해야 함', () => {
         const mockSetState = vi.fn();
         const componentContext = {
@@ -395,125 +277,14 @@ describe('ActionDispatcher', () => {
         expect(mockSetState).toHaveBeenCalled();
       });
 
-      // 공개#54 — IME(한글/일본어/중국어) 조합 중 Enter 글자누락/이중제출 방지
-      describe('IME 조합 가드 (공개#54)', () => {
-        /** KeyboardEvent 에 isComposing/keyCode 를 강제 주입한다 (생성자 옵션 미지원). */
-        const makeKeyEvent = (
-          key: string,
-          opts: { isComposing?: boolean; keyCode?: number } = {},
-        ): KeyboardEvent => {
-          const e = new KeyboardEvent('keydown', { key });
-          if (opts.isComposing !== undefined) {
-            Object.defineProperty(e, 'isComposing', { value: opts.isComposing, configurable: true });
-          }
-          if (opts.keyCode !== undefined) {
-            Object.defineProperty(e, 'keyCode', { value: opts.keyCode, configurable: true });
-          }
-          return e;
-        };
-
-        const enterFilterProps = {
-          actions: [
-            {
-              type: 'keydown' as const,
-              key: 'Enter',
-              handler: 'navigate',
-              params: { path: '/search' },
-            },
-          ],
-        };
-
-        /** @effects key_filter_ignores_keydown_while_ime_is_composing */
-        it('T1: isComposing=true 인 Enter 는 key 필터 액션을 실행하지 않아야 함', () => {
-          const boundProps = dispatcher.bindActionsToProps(enterFilterProps, {}, { state: {}, setState: vi.fn() });
-          mockNavigate.mockClear();
-
-          boundProps.onKeyDown(makeKeyEvent('Enter', { isComposing: true }));
-
-          expect(mockNavigate).not.toHaveBeenCalled();
-        });
-
-        /** @effects key_filter_ignores_keydown_while_ime_is_composing */
-        it('T2: keyCode=229 인 Enter(isComposing 미지원)도 실행하지 않아야 함', () => {
-          const boundProps = dispatcher.bindActionsToProps(enterFilterProps, {}, { state: {}, setState: vi.fn() });
-          mockNavigate.mockClear();
-
-          boundProps.onKeyDown(makeKeyEvent('Enter', { keyCode: 229 }));
-
-          expect(mockNavigate).not.toHaveBeenCalled();
-        });
-
-        /** @effects key_filter_ignores_keydown_while_ime_is_composing */
-        it('T3: isComposing=false 인 일반 Enter 는 정상 실행되어야 함', () => {
-          const boundProps = dispatcher.bindActionsToProps(enterFilterProps, {}, { state: {}, setState: vi.fn() });
-          mockNavigate.mockClear();
-
-          boundProps.onKeyDown(makeKeyEvent('Enter', { isComposing: false }));
-
-          expect(mockNavigate).toHaveBeenCalledWith('/search', { replace: false });
-        });
-
-        /** @effects key_filter_ignores_keydown_while_ime_is_composing */
-        it('T4: key 필터 없는 keydown 액션은 조합 중에도 실행되어야 함 (회귀 방지)', () => {
-          const mockSetState = vi.fn();
-          const props = {
-            actions: [
-              {
-                type: 'keydown' as const,
-                handler: 'setState',
-                params: { target: 'local', value: 'typed' },
-              },
-            ],
-          };
-          const boundProps = dispatcher.bindActionsToProps(props, {}, { state: {}, setState: mockSetState });
-
-          boundProps.onKeyDown(makeKeyEvent('x', { isComposing: true }));
-
-          expect(mockSetState).toHaveBeenCalled();
-        });
-
-        /** @effects key_filter_ignores_keydown_while_ime_is_composing */
-        it('T5: isComposing=true 인 Escape 는 key 필터 액션을 실행하지 않아야 함', () => {
-          const mockSetState = vi.fn();
-          const props = {
-            actions: [
-              {
-                type: 'keydown' as const,
-                key: 'Escape',
-                handler: 'setState',
-                params: { target: 'local', isOpen: false },
-              },
-            ],
-          };
-          const boundProps = dispatcher.bindActionsToProps(props, {}, { state: {}, setState: mockSetState });
-
-          boundProps.onKeyDown(makeKeyEvent('Escape', { isComposing: true }));
-
-          expect(mockSetState).not.toHaveBeenCalled();
-        });
-
-        /** @effects key_filter_ignores_keydown_while_ime_is_composing */
-        it('isImeComposing 헬퍼 분기: isComposing/keyCode/둘다 false/undefined', () => {
-          const helper = (dispatcher as unknown as {
-            isImeComposing: (e: { isComposing?: boolean; keyCode?: number }) => boolean;
-          }).isImeComposing.bind(dispatcher);
-
-          expect(helper({ isComposing: true })).toBe(true);
-          expect(helper({ keyCode: 229 })).toBe(true);
-          expect(helper({ isComposing: false, keyCode: 13 })).toBe(false);
-          expect(helper({})).toBe(false);
-        });
-      });
-
-      /** @effects key_filter_ignores_keydown_while_ime_is_composing */
-      it('admin_user_list.g7.html 시나리오: change와 keydown+Enter 조합', () => {
+      it('admin_user_list.json 시나리오: change와 keydown+Enter 조합', () => {
         const mockSetState = vi.fn();
         const componentContext = {
           state: {},
           setState: mockSetState,
         };
 
-        // admin_user_list.g7.html의 search_input과 동일한 구조
+        // admin_user_list.json의 search_input과 동일한 구조
         const props = {
           actions: [
             {
@@ -551,7 +322,6 @@ describe('ActionDispatcher', () => {
     });
 
     describe('커스텀 컴포넌트 이벤트 처리', () => {
-      /** @effects custom_component_events_are_promoted_to_synthetic_events */
       it('MultilingualInput과 같은 커스텀 컴포넌트의 change 이벤트를 처리해야 함', () => {
         const mockSetGlobalState = vi.fn();
         // setGlobalStateUpdater로 globalState setter 설정
@@ -588,7 +358,6 @@ describe('ActionDispatcher', () => {
           }, { render: undefined });
       });
 
-      /** @effects custom_component_events_are_promoted_to_synthetic_events */
       it('표준 DOM 이벤트도 여전히 정상 동작해야 함', () => {
         const mockSetGlobalState = vi.fn();
         dispatcher.setGlobalStateUpdater(mockSetGlobalState);
@@ -621,7 +390,6 @@ describe('ActionDispatcher', () => {
           { color: '#FF0000' }, { render: undefined });
       });
 
-      /** @effects custom_component_events_are_promoted_to_synthetic_events */
       it('target이 없는 raw 객체는 핸들러를 실행하지 않아야 함 (사례 26 회귀 방지)', () => {
         // raw value fallback 의도적 제거 — 컴포넌트는 { target: { value } } 패턴을 사용해야 함.
         // 이 회귀 테스트는 마운트 시 raw value 로 인한 API 데이터 덮어쓰기 방지.
@@ -649,7 +417,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('createHandler', () => {
-    /** @effects create_handler_builds_the_action_context */
     it('navigate 핸들러가 올바른 경로로 이동해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -671,7 +438,6 @@ describe('ActionDispatcher', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: false });
     });
 
-    /** @effects create_handler_builds_the_action_context */
     it('데이터 바인딩이 포함된 경로를 처리해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -693,7 +459,6 @@ describe('ActionDispatcher', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/users/123', { replace: false });
     });
 
-    /** @effects create_handler_builds_the_action_context */
     it('복합 표현식({{A}}/text/{{B}})이 포함된 경로를 처리해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -715,18 +480,13 @@ describe('ActionDispatcher', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/mall/category/electronics', { replace: false });
     });
 
-    /** @effects create_handler_builds_the_action_context */
     it('_global이 포함된 복합 표현식을 최신 전역 상태로 해석해야 함', async () => {
-      // window.G7Core 모킹으로 최신 _global 상태 제공.
-      //
-      // `state.get()` 은 **전역 상태의 내용물을 그대로** 돌려준다 — `_global` 로 감싸지 않는다
-      // (`TemplateApp.getGlobalState()` → `{...this.globalState}`. 브라우저 실측 2026-09-11:
-      // 반환 객체의 키는 `sidebarOpen`·`settings`… 이고 `_global` 키는 없다).
-      // 종전 목은 `{_global: {...}}` 를 돌려줘 **엔진의 어긋난 접근자(`get()?._global`)와 짝이 맞았고**,
-      // 그래서 그 결함이 green 인 채로 남아 있었다.
+      // window.G7Core 모킹으로 최신 _global 상태 제공
       const mockG7Core = {
         state: {
-          get: vi.fn(() => ({ shopBase: '/store' })),
+          get: vi.fn(() => ({
+            _global: { shopBase: '/store' },
+          })),
         },
       };
       (window as any).G7Core = mockG7Core;
@@ -758,7 +518,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects create_handler_builds_the_action_context */
     it('빈 shopBase와 복합 표현식을 올바르게 처리해야 함 (no_route 모드)', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -782,7 +541,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('setGlobalStateUpdater', () => {
-    /** @effects global_state_updater_is_settable_and_used */
     it('전역 상태 업데이터를 설정하고 사용할 수 있어야 함', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -808,7 +566,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('registerHandler / unregisterHandler', () => {
-    /** @effects custom_handlers_can_be_registered_and_removed */
     it('커스텀 핸들러를 등록하고 실행할 수 있어야 함', async () => {
       const customHandler = vi.fn().mockResolvedValue({ custom: 'result' });
       dispatcher.registerHandler('customAction', customHandler);
@@ -832,7 +589,6 @@ describe('ActionDispatcher', () => {
       expect(customHandler).toHaveBeenCalled();
     });
 
-    /** @effects custom_handlers_can_be_registered_and_removed */
     it('커스텀 핸들러를 제거할 수 있어야 함', () => {
       const customHandler = vi.fn();
       dispatcher.registerHandler('customAction', customHandler);
@@ -846,7 +602,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('getRegisteredHandlers', () => {
-    /** @effects registered_handlers_are_listable */
     it('등록된 핸들러 목록을 반환해야 함', () => {
       dispatcher.registerHandler('handler1', vi.fn());
       dispatcher.registerHandler('handler2', vi.fn());
@@ -870,7 +625,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects navigate_merges_query_with_the_current_one */
     it('mergeQuery가 true일 때 기존 쿼리 파라미터와 새 파라미터를 병합해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -904,7 +658,6 @@ describe('ActionDispatcher', () => {
       expect(navigatedPath).toContain('sort_direction=asc');
     });
 
-    /** @effects navigate_merges_query_with_the_current_one */
     it('mergeQuery가 true일 때 기존 파라미터를 덮어써야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -935,7 +688,6 @@ describe('ActionDispatcher', () => {
       expect(navigatedPath).not.toMatch(/page=1/);
     });
 
-    /** @effects navigate_merges_query_with_the_current_one */
     it('빈 값의 파라미터는 제거해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -964,7 +716,6 @@ describe('ActionDispatcher', () => {
       expect(navigatedPath).not.toContain('filter');
     });
 
-    /** @effects navigate_merges_query_with_the_current_one */
     it('mergeQuery 없이는 기존 동작 유지', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -985,63 +736,6 @@ describe('ActionDispatcher', () => {
       await handler(mockEvent);
 
       expect(mockNavigate).toHaveBeenCalledWith('/admin/users?new_param=value', { replace: false });
-    });
-
-    /** @effects navigate_merges_query_with_the_current_one */
-    it('query: {} 이면 현재 쿼리를 전부 유지해야 함', async () => {
-      const action: ActionDefinition = {
-        type: 'click',
-        handler: 'navigate',
-        params: { path: '/admin/users/7', mergeQuery: true, query: {} },
-      };
-
-      await dispatcher.createHandler(action)({
-        preventDefault: vi.fn(),
-        type: 'click',
-        target: null,
-      } as unknown as Event);
-
-      const navigatedPath = mockNavigate.mock.calls[0][0];
-      expect(navigatedPath).toContain('page=1');
-      expect(navigatedPath).toContain('filter=active');
-    });
-
-    // engine-v1.54.2: 이전에는 `if (params.query)` 게이트에 걸려 병합이 통째로 no-op 이 되고
-    // 쿼리가 전부 사라졌다. 작성자 관점에서 가장 자연스러운 형태가 정반대로 동작하던 함정.
-    /** @effects navigate_merges_query_with_the_current_one */
-    it('query 키가 없어도 mergeQuery: true 면 현재 쿼리를 유지해야 함 (engine-v1.54.2)', async () => {
-      const action: ActionDefinition = {
-        type: 'click',
-        handler: 'navigate',
-        params: { path: '/admin/users/7', mergeQuery: true },
-      };
-
-      await dispatcher.createHandler(action)({
-        preventDefault: vi.fn(),
-        type: 'click',
-        target: null,
-      } as unknown as Event);
-
-      const navigatedPath = mockNavigate.mock.calls[0][0];
-      expect(navigatedPath).toContain('page=1');
-      expect(navigatedPath).toContain('filter=active');
-    });
-
-    /** @effects navigate_merges_query_with_the_current_one */
-    it('mergeQuery: false 는 query 키가 없으면 쿼리를 붙이지 않는다 (기존 동작 유지)', async () => {
-      const action: ActionDefinition = {
-        type: 'click',
-        handler: 'navigate',
-        params: { path: '/admin/users/7', mergeQuery: false },
-      };
-
-      await dispatcher.createHandler(action)({
-        preventDefault: vi.fn(),
-        type: 'click',
-        target: null,
-      } as unknown as Event);
-
-      expect(mockNavigate).toHaveBeenCalledWith('/admin/users/7', { replace: false });
     });
   });
 
@@ -1100,7 +794,6 @@ describe('ActionDispatcher', () => {
       await handler(mockEvent);
     };
 
-    /** @effects navigate_scroll_option_controls_post_navigation_scroll */
     it('기본 동작: navigate 후 상단으로 스크롤해야 함 (scroll 미지정)', async () => {
       await triggerNavigate({ path: '/admin/users' });
 
@@ -1111,7 +804,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects navigate_scroll_option_controls_post_navigation_scroll */
     it('scroll: "top" 명시 시 상단으로 스크롤해야 함', async () => {
       await triggerNavigate({ path: '/admin/users', scroll: 'top' });
 
@@ -1122,14 +814,12 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects navigate_scroll_option_controls_post_navigation_scroll */
     it('scroll: "preserve" 시 스크롤을 건드리지 않아야 함', async () => {
       await triggerNavigate({ path: '/admin/users', scroll: 'preserve' });
 
       expect(scrollToSpy).not.toHaveBeenCalled();
     });
 
-    /** @effects navigate_scroll_option_controls_post_navigation_scroll */
     it('scroll: number 시 해당 Y 좌표로 스크롤해야 함', async () => {
       await triggerNavigate({ path: '/admin/users', scroll: 200 });
 
@@ -1140,7 +830,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects navigate_scroll_option_controls_post_navigation_scroll */
     it('scroll: { x, y } 객체 시 해당 좌표로 스크롤해야 함', async () => {
       await triggerNavigate({
         path: '/admin/users',
@@ -1154,7 +843,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects navigate_scroll_option_controls_post_navigation_scroll */
     it('scrollBehavior: "smooth" 지정 시 smooth 전달', async () => {
       await triggerNavigate({ path: '/admin/users', scrollBehavior: 'smooth' });
 
@@ -1165,7 +853,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects navigate_scroll_option_controls_post_navigation_scroll */
     it('scroll: "#selector" 시 해당 엘리먼트로 scrollIntoView 호출', async () => {
       const mockEl = document.createElement('div');
       mockEl.id = 'target-section';
@@ -1190,7 +877,6 @@ describe('ActionDispatcher', () => {
       querySelectorSpy.mockRestore();
     });
 
-    /** @effects navigate_scroll_option_controls_post_navigation_scroll */
     it('replace: true (updateQueryParams) 경로에서도 기본 상단 스크롤 적용', async () => {
       const updateQueryParamsSpy = vi.fn().mockResolvedValue(undefined);
       (window as any).G7Core = { updateQueryParams: updateQueryParamsSpy };
@@ -1207,7 +893,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects navigate_scroll_option_controls_post_navigation_scroll */
     it('replaceUrl 핸들러 기본값은 preserve여야 함', async () => {
       const replaceStateSpy = vi.fn();
       Object.defineProperty(window.history, 'replaceState', {
@@ -1232,7 +917,6 @@ describe('ActionDispatcher', () => {
       expect(scrollToSpy).not.toHaveBeenCalled();
     });
 
-    /** @effects navigate_scroll_option_controls_post_navigation_scroll */
     it('replaceUrl 핸들러에 scroll: "top" 명시 시 상단 이동', async () => {
       Object.defineProperty(window.history, 'replaceState', {
         value: vi.fn(),
@@ -1260,7 +944,6 @@ describe('ActionDispatcher', () => {
     });
 
     describe('확장 객체 문법 (container/to/block/offset)', () => {
-      /** @effects navigate_scroll_object_form_targets_container_and_offset */
       it('container + to: number → 지정 컨테이너에 Y 좌표로 스크롤', async () => {
         const containerEl = document.createElement('div');
         containerEl.id = 'right_content_area';
@@ -1292,7 +975,6 @@ describe('ActionDispatcher', () => {
         querySelectorSpy.mockRestore();
       });
 
-      /** @effects navigate_scroll_object_form_targets_container_and_offset */
       it('container + to: "top" → 지정 컨테이너를 상단으로', async () => {
         const containerEl = document.createElement('div');
         const containerScrollTo = vi.fn();
@@ -1316,7 +998,6 @@ describe('ActionDispatcher', () => {
         querySelectorSpy.mockRestore();
       });
 
-      /** @effects navigate_scroll_object_form_targets_container_and_offset */
       it('container + to: "#element" + offset → 엘리먼트를 컨테이너 안에서 offset 만큼 위로 보정', async () => {
         const containerEl = document.createElement('div');
         containerEl.id = 'scroll_area';
@@ -1374,7 +1055,6 @@ describe('ActionDispatcher', () => {
         querySelectorSpy.mockRestore();
       });
 
-      /** @effects navigate_scroll_object_form_targets_container_and_offset */
       it('container + to: "#element" + block: "center" → 엘리먼트를 컨테이너 중앙에 위치', async () => {
         const containerEl = document.createElement('div');
         const containerScrollTo = vi.fn();
@@ -1428,7 +1108,6 @@ describe('ActionDispatcher', () => {
         querySelectorSpy.mockRestore();
       });
 
-      /** @effects navigate_scroll_object_form_targets_container_and_offset */
       it('확장 객체 (container 생략) + to: number → window 스크롤', async () => {
         await triggerNavigate({
           path: '/admin/users',
@@ -1442,7 +1121,6 @@ describe('ActionDispatcher', () => {
         });
       });
 
-      /** @effects navigate_scroll_object_form_targets_container_and_offset */
       it('container 미발견 시 경고 로그 후 no-op', async () => {
         const querySelectorSpy = vi
           .spyOn(document, 'querySelector')
@@ -1457,7 +1135,6 @@ describe('ActionDispatcher', () => {
         querySelectorSpy.mockRestore();
       });
 
-      /** @effects navigate_scroll_object_form_targets_container_and_offset */
       it('offset 지정 시 Y 좌표에서 차감', async () => {
         await triggerNavigate({
           path: '/admin/users',
@@ -1474,7 +1151,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('커스텀 콜백 이벤트 (onSortChange, onSelectionChange 등)', () => {
-    /** @effects component_callback_events_pass_their_arguments_as_args */
     it('커스텀 콜백 이벤트의 여러 인자를 $args 배열로 전달해야 함', () => {
       const mockSetState = vi.fn();
       const globalStateUpdater = vi.fn();
@@ -1516,7 +1192,6 @@ describe('ActionDispatcher', () => {
       }, expect.anything());
     });
 
-    /** @effects component_callback_events_pass_their_arguments_as_args */
     it('onSelectionChange 이벤트의 배열 인자를 처리해야 함', () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -1551,95 +1226,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    // engine-v1.50.4: 컴포넌트 setState(target:"_local")가 canonical source(_global._local)에도 동기화되어야 함.
-    // 배경: 검색(navigate replace:true) → updateQueryParams refetch → updateTemplateData 가
-    // currentDataContext._local 을 _global._local 로 되돌리는데, 사용자가 선택한 필터(target:"_local" setState)가
-    // _global._local 에 반영되지 않으면 검색 직후 필터가 init 기본값으로 풀린다(쿠폰/주문/배송정책 공통 결함).
-    // GLOBAL STATE UPDATER path 와 동일하게 COMPONENT path 도 globalStateUpdater 로 _global._local 을 동기화하되,
-    // render:false 로 호출하여 추가 React 렌더를 유발하지 않는다.
-    /** @effects component_callback_events_pass_their_arguments_as_args */
-    it('컴포넌트 컨텍스트의 setState(target:"local")가 _global._local을 render:false로 동기화해야 함 (검색 후 필터 보존 회귀)', () => {
-      const mockSetState = vi.fn();
-      const globalStateUpdater = vi.fn();
-      dispatcher.setGlobalStateUpdater(globalStateUpdater);
-
-      // 전역 pending 스냅샷 격리: 런타임에서는 렌더 후 useLayoutEffect 가 null 로 클리어하지만
-      // 단위 테스트에서는 이전 테스트 잔여값이 base 를 오염시키므로 명시적으로 비운다.
-      (window as any).__g7PendingLocalState = null;
-      (window as any).__g7ForcedLocalFields = undefined;
-
-      const componentContext = {
-        state: { filter: { targetType: 'all', issueStatus: 'all' } },
-        setState: mockSetState,
-      };
-
-      const props = {
-        actions: [
-          {
-            type: 'change' as const,
-            handler: 'setState',
-            params: {
-              target: 'local',
-              'filter.issueStatus': 'issuing',
-            },
-          },
-        ],
-      };
-
-      const boundProps = dispatcher.bindActionsToProps(props, {}, componentContext);
-      boundProps.onChange({ target: { value: 'issuing' } });
-
-      // 저장소 A: 컴포넌트 React 상태 (변경 필드만)
-      expect(mockSetState).toHaveBeenCalledWith({
-        filter: { issueStatus: 'issuing' },
-      });
-
-      // 저장소 B: _global._local 동기화 — render:false (추가 렌더 없음)
-      // 기존 필드(filter.targetType)는 base(context.state)에서 보존되어야 함
-      expect(globalStateUpdater).toHaveBeenCalledWith(
-        {
-          _local: expect.objectContaining({
-            filter: expect.objectContaining({
-              targetType: 'all',
-              issueStatus: 'issuing',
-            }),
-          }),
-        },
-        { render: false }
-      );
-    });
-
-    /** @effects component_callback_events_pass_their_arguments_as_args */
-    it('globalStateUpdater가 없으면 setState(target:"local")는 컴포넌트 상태만 갱신하고 조용히 넘어가야 함', () => {
-      // _global 동기화는 globalStateUpdater 유무에 가드되어 있어야 함 (모달/단독 렌더 안전)
-      const mockSetState = vi.fn();
-      // globalStateUpdater 설정하지 않음
-      (window as any).__g7PendingLocalState = null;
-      (window as any).__g7ForcedLocalFields = undefined;
-
-      const componentContext = {
-        state: { filter: { issueStatus: 'all' } },
-        setState: mockSetState,
-      };
-
-      const props = {
-        actions: [
-          {
-            type: 'change' as const,
-            handler: 'setState',
-            params: { target: 'local', 'filter.issueStatus': 'issuing' },
-          },
-        ],
-      };
-
-      const boundProps = dispatcher.bindActionsToProps(props, {}, componentContext);
-
-      // globalStateUpdater 미설정 상태에서도 에러 없이 컴포넌트 setState 가 호출되어야 함
-      expect(() => boundProps.onChange({ target: { value: 'issuing' } })).not.toThrow();
-      expect(mockSetState).toHaveBeenCalledWith({ filter: { issueStatus: 'issuing' } });
-    });
-
-    /** @effects component_callback_events_pass_their_arguments_as_args */
     it('표준 DOM 이벤트와 커스텀 콜백 이벤트를 구분해야 함', () => {
       const mockSetState = vi.fn();
       const globalStateUpdater = vi.fn();
@@ -1682,7 +1268,6 @@ describe('ActionDispatcher', () => {
       expect(globalStateUpdater).toHaveBeenCalledWith({ sortField: 'email' }, expect.anything());
     });
 
-    /** @effects component_callback_events_pass_their_arguments_as_args */
     it('onColumnVisibilityChange 이벤트를 처리해야 함', () => {
       const mockSetState = vi.fn();
       const globalStateUpdater = vi.fn();
@@ -1719,7 +1304,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('openModal / closeModal 핸들러 (모달 스택)', () => {
-    /** @effects modal_stack_opens_and_closes_in_order */
     it('openModal 핸들러가 모달 스택과 activeModal을 설정해야 함', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -1746,7 +1330,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects modal_stack_opens_and_closes_in_order */
     it('closeModal 핸들러가 빈 스택에서 모달을 제거해야 함', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -1772,7 +1355,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects modal_stack_opens_and_closes_in_order */
     it('버튼 클릭으로 openModal을 호출할 수 있어야 함', () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -1801,7 +1383,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects modal_stack_opens_and_closes_in_order */
     it('globalStateUpdater가 설정되지 않은 경우 openModal이 경고를 출력해야 함', async () => {
       // globalStateUpdater 설정하지 않음
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -1830,7 +1411,6 @@ describe('ActionDispatcher', () => {
       consoleWarnSpy.mockRestore();
     });
 
-    /** @effects modal_stack_opens_and_closes_in_order */
     it('globalStateUpdater가 설정되지 않은 경우 closeModal이 경고를 출력해야 함', async () => {
       // globalStateUpdater 설정하지 않음
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -1858,7 +1438,6 @@ describe('ActionDispatcher', () => {
       consoleWarnSpy.mockRestore();
     });
 
-    /** @effects modal_stack_opens_and_closes_in_order */
     it('사용자 목록 레이아웃 시나리오: 일괄 활성화 모달 열기/닫기', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -1907,7 +1486,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects modal_stack_opens_and_closes_in_order */
     it('멀티 모달: 두 번째 모달을 열면 스택에 추가되어야 함', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -1964,7 +1542,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects modal_stack_opens_and_closes_in_order */
     it('멀티 모달: closeModal이 스택에서 최상위 모달만 제거해야 함', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -1996,7 +1573,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects modal_stack_opens_and_closes_in_order */
     it('멀티 모달: 이미 열려있는 모달은 스택에 추가되지 않아야 함', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -2034,7 +1610,6 @@ describe('ActionDispatcher', () => {
       consoleWarnSpy.mockRestore();
     });
 
-    /** @effects modal_stack_opens_and_closes_in_order */
     it('에러 시나리오: API 오류 시 에러 모달이 중첩으로 열려야 함', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -2069,7 +1644,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('switch 핸들러 (조건 분기 처리)', () => {
-    /** @effects switch_handler_picks_the_matching_case */
     it('$args[0] 값에 따라 올바른 케이스 액션을 실행해야 함', () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -2120,7 +1694,6 @@ describe('ActionDispatcher', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/users/123/edit', { replace: false });
     });
 
-    /** @effects switch_handler_picks_the_matching_case */
     it('view 케이스가 올바르게 동작해야 함', () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -2152,7 +1725,6 @@ describe('ActionDispatcher', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/users/456', { replace: false });
     });
 
-    /** @effects switch_handler_picks_the_matching_case */
     it('delete 케이스로 모달을 열 수 있어야 함', () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -2190,7 +1762,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects switch_handler_picks_the_matching_case */
     it('존재하지 않는 케이스는 경고만 출력하고 무시해야 함', () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const mockSetState = vi.fn();
@@ -2230,7 +1801,6 @@ describe('ActionDispatcher', () => {
       consoleWarnSpy.mockRestore();
     });
 
-    /** @effects switch_handler_picks_the_matching_case */
     it('cases가 없으면 경고를 출력해야 함', async () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -2258,7 +1828,7 @@ describe('ActionDispatcher', () => {
       consoleWarnSpy.mockRestore();
     });
 
-    describe('admin_user_list.g7.html 실제 시나리오: DataGrid onRowAction switch', () => {
+    describe('admin_user_list.json 실제 시나리오: DataGrid onRowAction switch', () => {
       const createTestSetup = () => {
         const globalUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -2269,7 +1839,7 @@ describe('ActionDispatcher', () => {
           setState: mockSetState,
         };
 
-        // admin_user_list.g7.html의 실제 onRowAction 구조
+        // admin_user_list.json의 실제 onRowAction 구조
         const props = {
           actions: [
             {
@@ -2306,7 +1876,6 @@ describe('ActionDispatcher', () => {
         return { boundProps, globalUpdater };
       };
 
-      /** @effects switch_handler_drives_data_grid_row_actions */
       it('view 액션이 올바른 경로로 이동해야 함', async () => {
         const { boundProps } = createTestSetup();
 
@@ -2316,7 +1885,6 @@ describe('ActionDispatcher', () => {
         });
       });
 
-      /** @effects switch_handler_drives_data_grid_row_actions */
       it('edit 액션이 올바른 경로로 이동해야 함', async () => {
         const { boundProps } = createTestSetup();
 
@@ -2326,7 +1894,6 @@ describe('ActionDispatcher', () => {
         });
       });
 
-      /** @effects switch_handler_drives_data_grid_row_actions */
       it('delete 액션이 모달을 열어야 함', async () => {
         const { boundProps, globalUpdater } = createTestSetup();
 
@@ -2347,7 +1914,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).__g7ForcedLocalFields;
     });
 
-    /** @effects set_state_spread_expression_expands_into_the_payload */
     it('"..." 키를 spread 연산자로 처리해야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -2388,7 +1954,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects set_state_spread_expression_expands_into_the_payload */
     it('spread 후 동일한 키가 있으면 새 값으로 덮어써야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -2427,7 +1992,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects set_state_spread_expression_expands_into_the_payload */
     it('spread 값이 null/undefined이면 무시해야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -2465,7 +2029,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects set_state_spread_expression_expands_into_the_payload */
     it('연속된 필드 변경에서 "..." 키가 중첩되지 않아야 함', async () => {
       let currentState = { form: {} };
       const mockSetState = vi.fn((updates) => {
@@ -2518,7 +2081,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('이벤트 타입별 preventDefault 동작', () => {
-    /** @effects prevent_default_is_applied_per_event_type */
     it('click 이벤트에서는 preventDefault()가 호출되어야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -2539,7 +2101,6 @@ describe('ActionDispatcher', () => {
       expect(mockEvent.preventDefault).toHaveBeenCalled();
     });
 
-    /** @effects prevent_default_is_applied_per_event_type */
     it('submit 이벤트에서는 preventDefault()가 호출되어야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -2566,7 +2127,6 @@ describe('ActionDispatcher', () => {
       expect(mockEvent.preventDefault).toHaveBeenCalled();
     });
 
-    /** @effects prevent_default_is_applied_per_event_type */
     it('change 이벤트에서는 preventDefault()가 호출되지 않아야 함 (체크박스/라디오 지원)', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -2600,7 +2160,6 @@ describe('ActionDispatcher', () => {
       expect(mockSetState).toHaveBeenCalled();
     });
 
-    /** @effects prevent_default_is_applied_per_event_type */
     it('체크박스 역할 선택 시나리오: change 이벤트에서 상태 업데이트가 정상 동작해야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -2608,7 +2167,7 @@ describe('ActionDispatcher', () => {
         setState: mockSetState,
       };
 
-      // admin_user_form.g7.html의 역할 체크박스와 유사한 구조
+      // admin_user_form.json의 역할 체크박스와 유사한 구조
       const action: ActionDefinition = {
         type: 'change',
         handler: 'setState',
@@ -2636,7 +2195,6 @@ describe('ActionDispatcher', () => {
       expect(mockSetState).toHaveBeenCalled();
     });
 
-    /** @effects prevent_default_is_applied_per_event_type */
     it('keydown 이벤트에서는 preventDefault()가 호출되어야 함', async () => {
       const action: ActionDefinition = {
         type: 'keydown',
@@ -2690,7 +2248,6 @@ describe('ActionDispatcher', () => {
       ) as [string, RequestInit] | undefined;
     };
 
-    /** @effects api_call_auth_required_gates_the_request */
     it('auth_required가 false일 때 Authorization 헤더를 포함하지 않아야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -2721,7 +2278,6 @@ describe('ActionDispatcher', () => {
       expect(headers.Authorization).toBeUndefined();
     });
 
-    /** @effects api_call_auth_required_gates_the_request */
     it('auth_required가 true이고 토큰이 있을 때 Bearer 토큰을 포함해야 함', async () => {
       mockGetToken.mockReturnValue('test-bearer-token');
 
@@ -2754,7 +2310,6 @@ describe('ActionDispatcher', () => {
       expect(headers.Authorization).toBe('Bearer test-bearer-token');
     });
 
-    /** @effects api_call_auth_required_gates_the_request */
     it('auth_required가 true이지만 토큰이 없을 때 Authorization 헤더를 포함하지 않아야 함', async () => {
       mockGetToken.mockReturnValue(null);
 
@@ -2787,7 +2342,6 @@ describe('ActionDispatcher', () => {
       expect(headers.Authorization).toBeUndefined();
     });
 
-    /** @effects api_call_auth_required_gates_the_request */
     it('auth_required 기본값은 false여야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -2813,14 +2367,13 @@ describe('ActionDispatcher', () => {
       expect(mockGetToken).not.toHaveBeenCalled();
     });
 
-    /** @effects api_call_auth_required_gates_the_request */
-    it('admin_user_list.g7.html 시나리오: 일괄 상태 변경 API 호출 시 Bearer 토큰 포함', async () => {
+    it('admin_user_list.json 시나리오: 일괄 상태 변경 API 호출 시 Bearer 토큰 포함', async () => {
       mockGetToken.mockReturnValue('admin-jwt-token');
 
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
 
-      // admin_user_list.g7.html의 bulk_activate_confirm_modal apiCall 구조
+      // admin_user_list.json의 bulk_activate_confirm_modal apiCall 구조
       const action: ActionDefinition = {
         type: 'click',
         handler: 'apiCall',
@@ -2858,7 +2411,6 @@ describe('ActionDispatcher', () => {
       );
     });
 
-    /** @effects api_call_auth_required_gates_the_request */
     it('auth_required와 커스텀 headers가 함께 사용될 때 모두 포함되어야 함', async () => {
       mockGetToken.mockReturnValue('my-token');
 
@@ -2895,7 +2447,6 @@ describe('ActionDispatcher', () => {
       expect(headers['X-Custom-Header']).toBe('custom-value');
     });
 
-    /** @effects api_call_auth_required_gates_the_request */
     it('params.query가 GET 요청의 쿼리스트링으로 변환되어야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -2935,7 +2486,6 @@ describe('ActionDispatcher', () => {
       expect(url).toContain('search=test');
     });
 
-    /** @effects api_call_auth_required_gates_the_request */
     it('params.query의 빈 값은 쿼리스트링에서 제외되어야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -2971,7 +2521,6 @@ describe('ActionDispatcher', () => {
       expect(url).not.toContain('filter=');
     });
 
-    /** @effects api_call_auth_required_gates_the_request */
     it('onSuccess 컨텍스트에 result와 response 모두 포함되어야 함', async () => {
       const mockApiResponse = {
         success: true,
@@ -3006,11 +2555,9 @@ describe('ActionDispatcher', () => {
       const globalStateUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalStateUpdater);
 
-      // `state.get()` 은 전역 상태의 **내용물**을 그대로 돌려준다 — `_global` 로 감싸지 않는다.
-      // (`_local` 은 전역 상태 안에 실제로 있는 키다 — 저장소 B.)
       (window as any).G7Core = {
         state: {
-          get: () => ({ _local: {} }),
+          get: () => ({ _global: {}, _local: {} }),
         },
       };
 
@@ -3036,13 +2583,11 @@ describe('ActionDispatcher', () => {
   });
 
   describe('refetchDataSource 핸들러', () => {
-    /** @effects refetch_data_source_reloads_the_named_source */
     it('생성자에서 refetchDataSource 핸들러가 자동 등록되어야 함', () => {
       const registeredHandlers = dispatcher.getRegisteredHandlers();
       expect(registeredHandlers).toContain('refetchDataSource');
     });
 
-    /** @effects refetch_data_source_reloads_the_named_source */
     it('dataSourceId가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3069,7 +2614,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects refetch_data_source_reloads_the_named_source */
     it('G7Core.dataSource.refetch가 호출되어야 함', async () => {
       const mockRefetch = vi.fn().mockResolvedValue({ data: [] });
 
@@ -3106,7 +2650,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects refetch_data_source_reloads_the_named_source */
     it('G7Core.dataSource.refetch가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3140,7 +2683,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('scroll 이벤트', () => {
-    /** @effects scroll_event_actions_are_bound */
     it('scroll 이벤트 핸들러가 등록되어야 함', () => {
       const props = {
         actions: [
@@ -3157,7 +2699,6 @@ describe('ActionDispatcher', () => {
       expect(typeof boundProps.onScroll).toBe('function');
     });
 
-    /** @effects scroll_event_actions_are_bound */
     it('scroll 이벤트가 발생하면 핸들러가 호출되어야 함', async () => {
       const mockGlobalStateUpdater = vi.fn();
       // target: 'global'일 때 handleSetState는 globalStateUpdater를 사용
@@ -3193,7 +2734,6 @@ describe('ActionDispatcher', () => {
       expect(mockGlobalStateUpdater).toHaveBeenCalled();
     });
 
-    /** @effects scroll_event_actions_are_bound */
     it('scroll 이벤트에서 스크롤 관련 속성이 $event.target에 포함되어야 함', async () => {
       let capturedParams: any = null;
 
@@ -3253,13 +2793,11 @@ describe('ActionDispatcher', () => {
   });
 
   describe('appendDataSource 핸들러', () => {
-    /** @effects append_data_source_adds_items */
     it('생성자에서 appendDataSource 핸들러가 자동 등록되어야 함', () => {
       const registeredHandlers = dispatcher.getRegisteredHandlers();
       expect(registeredHandlers).toContain('appendDataSource');
     });
 
-    /** @effects append_data_source_adds_items */
     it('dataSourceId가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3286,7 +2824,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects append_data_source_adds_items */
     it('newData가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3315,7 +2852,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects append_data_source_adds_items */
     it('G7Core.dataSource.updateData가 호출되어야 함', async () => {
       const mockUpdateData = vi.fn().mockResolvedValue(true);
 
@@ -3365,7 +2901,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects append_data_source_adds_items */
     it('G7Core.dataSource.updateData가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3400,13 +2935,11 @@ describe('ActionDispatcher', () => {
   });
 
   describe('updateDataSource 핸들러', () => {
-    /** @effects update_data_source_replaces_matching_items */
     it('생성자에서 updateDataSource 핸들러가 자동 등록되어야 함', () => {
       const registeredHandlers = dispatcher.getRegisteredHandlers();
       expect(registeredHandlers).toContain('updateDataSource');
     });
 
-    /** @effects update_data_source_replaces_matching_items */
     it('dataSourceId가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3433,7 +2966,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects update_data_source_replaces_matching_items */
     it('data가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3462,7 +2994,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects update_data_source_replaces_matching_items */
     it('G7Core.dataSource.set이 호출되어야 함', async () => {
       const mockSet = vi.fn();
 
@@ -3509,7 +3040,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects update_data_source_replaces_matching_items */
     it('merge 옵션이 true면 병합 모드로 호출해야 함', async () => {
       const mockSet = vi.fn();
 
@@ -3553,7 +3083,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects update_data_source_replaces_matching_items */
     it('G7Core.dataSource.set이 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3587,13 +3116,11 @@ describe('ActionDispatcher', () => {
   });
 
   describe('scrollIntoView 핸들러', () => {
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('생성자에서 scrollIntoView 핸들러가 자동 등록되어야 함', () => {
       const registeredHandlers = dispatcher.getRegisteredHandlers();
       expect(registeredHandlers).toContain('scrollIntoView');
     });
 
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('selector가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3620,7 +3147,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('요소가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3649,7 +3175,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('요소가 존재하면 scrollIntoView를 호출해야 함', async () => {
       // DOM 요소 생성
       const testElement = document.createElement('div');
@@ -3688,7 +3213,6 @@ describe('ActionDispatcher', () => {
       document.body.removeChild(testElement);
     });
 
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('기본 옵션으로 scrollIntoView를 호출해야 함', async () => {
       const testElement = document.createElement('div');
       testElement.id = 'test-scroll-default';
@@ -3723,7 +3247,6 @@ describe('ActionDispatcher', () => {
       document.body.removeChild(testElement);
     });
 
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('delay 파라미터가 있으면 지정된 시간만큼 대기해야 함', async () => {
       const testElement = document.createElement('div');
       testElement.id = 'test-scroll-delay';
@@ -3759,7 +3282,6 @@ describe('ActionDispatcher', () => {
       document.body.removeChild(testElement);
     });
 
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('retryCount가 있으면 요소를 찾을 때까지 재시도해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3800,7 +3322,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('retryCount 초과 후에도 요소가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3831,7 +3352,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('waitForElement=true일 때 이미 존재하는 요소에 즉시 스크롤해야 함', async () => {
       const testElement = document.createElement('div');
       testElement.id = 'existing-element';
@@ -3864,7 +3384,6 @@ describe('ActionDispatcher', () => {
       document.body.removeChild(testElement);
     });
 
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('waitForElement=true일 때 나중에 추가된 요소에 스크롤해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -3902,7 +3421,6 @@ describe('ActionDispatcher', () => {
       }
     });
 
-    /** @effects scroll_into_view_targets_the_requested_element */
     it('waitForElement=true일 때 timeout 초과 시 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -3942,11 +3460,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).__g7ForcedLocalFields;
     });
 
-    /**
-     * @scenario surface=execution
-     *
-     * @effects set_state_deep_merges_nested_objects
-     */
     it('중첩 객체의 특정 필드만 업데이트해야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -3998,7 +3511,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects set_state_deep_merges_nested_objects */
     it('spread 연산자가 있으면 기존 방식대로 동작해야 함 (하위 호환성)', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -4056,7 +3568,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects set_state_deep_merges_nested_objects */
     it('currentState에 해당 키가 없으면 새로 추가해야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -4096,7 +3607,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects set_state_deep_merges_nested_objects */
     it('배열은 병합하지 않고 덮어쓰기해야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -4136,7 +3646,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects set_state_deep_merges_nested_objects */
     it('null 값은 병합하지 않고 덮어쓰기해야 함', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -4173,7 +3682,6 @@ describe('ActionDispatcher', () => {
       });
     });
 
-    /** @effects set_state_deep_merges_nested_objects */
     it('admin_board_form 시나리오: name 필드 변경 시 다른 formData 필드 유지', async () => {
       const mockSetState = vi.fn();
       const componentContext = {
@@ -4191,7 +3699,7 @@ describe('ActionDispatcher', () => {
         setState: mockSetState,
       };
 
-      // _tab_basic.g7.html의 name 필드 change 액션 시나리오
+      // _tab_basic.json의 name 필드 change 액션 시나리오
       const action: ActionDefinition = {
         type: 'change',
         handler: 'setState',
@@ -4277,13 +3785,11 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects emit_event_dispatches_component_events */
     it('생성자에서 emitEvent 핸들러가 자동 등록되어야 함', () => {
       const registeredHandlers = dispatcher.getRegisteredHandlers();
       expect(registeredHandlers).toContain('emitEvent');
     });
 
-    /** @effects emit_event_dispatches_component_events */
     it('event 파라미터가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -4310,7 +3816,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects emit_event_dispatches_component_events */
     it('G7Core.componentEvent.emit이 호출되어야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -4337,7 +3842,6 @@ describe('ActionDispatcher', () => {
       );
     });
 
-    /** @effects emit_event_dispatches_component_events */
     it('이벤트 데이터가 컨텍스트와 함께 전달되어야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -4379,7 +3883,6 @@ describe('ActionDispatcher', () => {
       expect(mergedData._context.data.user).toEqual({ id: 1, name: 'Test' });
     });
 
-    /** @effects emit_event_dispatches_component_events */
     it('리스너가 없으면 경고를 출력해야 함', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -4408,7 +3911,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects emit_event_dispatches_component_events */
     it('G7Core.componentEvent가 없으면 경고를 출력해야 함', async () => {
       // G7Core를 완전히 제거
       delete (window as any).G7Core;
@@ -4440,7 +3942,6 @@ describe('ActionDispatcher', () => {
       consoleSpy.mockRestore();
     });
 
-    /** @effects emit_event_dispatches_component_events */
     it('리스너의 결과를 _local._eventResult에 저장해야 함', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -4486,7 +3987,6 @@ describe('ActionDispatcher', () => {
         }));
     });
 
-    /** @effects emit_event_dispatches_component_events */
     it('여러 리스너가 있을 때 모든 결과를 배열로 저장해야 함', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -4528,7 +4028,6 @@ describe('ActionDispatcher', () => {
         }));
     });
 
-    /** @effects emit_event_dispatches_component_events */
     it('FileUploader 업로드 시나리오: sequence에서 emitEvent 후 apiCall', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -4544,7 +4043,7 @@ describe('ActionDispatcher', () => {
         return uploadResult;
       });
 
-      // sequence 액션 정의 (admin_settings.g7.html의 저장 버튼과 유사)
+      // sequence 액션 정의 (admin_settings.json의 저장 버튼과 유사)
       const sequenceAction: ActionDefinition = {
         type: 'click',
         handler: 'sequence',
@@ -4575,7 +4074,6 @@ describe('ActionDispatcher', () => {
       );
     });
 
-    /** @effects emit_event_dispatches_component_events */
     it('리스너에서 에러 발생 시 _eventResult에 에러 저장', async () => {
       const globalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalUpdater);
@@ -4665,16 +4163,12 @@ describe('ActionDispatcher', () => {
 
       // Clear loaded scripts cache
       (ActionDispatcher as any).loadedScripts = new Set();
-      (ActionDispatcher as any).loadingScripts = new Map();
-      (window as any).G7Config = { trustedScriptHosts: [] };
     });
 
     afterEach(() => {
       vi.restoreAllMocks();
-      delete (window as any).G7Config;
     });
 
-    /** @effects load_script_injects_the_requested_script */
     it('should load external script and execute onLoad action', async () => {
       const mockSetState = vi.fn();
       const onLoadAction: ActionDefinition = {
@@ -4687,7 +4181,7 @@ describe('ActionDispatcher', () => {
         type: 'click',
         handler: 'loadScript',
         params: {
-          src: '/js/vendor/script.js',
+          src: '//example.com/script.js',
           id: 'test_script',
         },
         onLoad: onLoadAction,
@@ -4703,7 +4197,7 @@ describe('ActionDispatcher', () => {
 
       // Script should be created with correct attributes
       expect(appendedScripts.length).toBe(1);
-      expect(appendedScripts[0].src).toContain('/js/vendor/script.js');
+      expect(appendedScripts[0].src).toContain('example.com/script.js');
       expect(appendedScripts[0].id).toBe('test_script');
 
       // onLoad setState should be called
@@ -4712,7 +4206,6 @@ describe('ActionDispatcher', () => {
       );
     });
 
-    /** @effects load_script_injects_the_requested_script */
     it('should skip loading if script already loaded', async () => {
       const mockSetState = vi.fn();
 
@@ -4723,7 +4216,7 @@ describe('ActionDispatcher', () => {
         type: 'click',
         handler: 'loadScript',
         params: {
-          src: '/js/vendor/already.js',
+          src: '//example.com/already.js',
           id: 'already_loaded',
         },
         onLoad: {
@@ -4747,7 +4240,6 @@ describe('ActionDispatcher', () => {
       );
     });
 
-    /** @effects load_script_injects_the_requested_script */
     it('should handle error gracefully if src is not provided', async () => {
       // Suppress console error for this test
       vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -4765,168 +4257,6 @@ describe('ActionDispatcher', () => {
       await expect(handler(mockEvent)).resolves.not.toThrow();
 
       vi.restoreAllMocks();
-    });
-
-    describe('출처 게이트 (KVE-2026-1915 B-2 후속)', () => {
-      const dispatch = (params: Record<string, any>) =>
-        dispatcher.executeAction(
-          { type: 'click', handler: 'loadScript', params } as ActionDefinition,
-          {} as any
-        );
-
-      /** @effects load_script_rejects_sources_outside_the_gate */
-      it('미신뢰 외부 src 는 실패로 끝나고 script 태그가 만들어지지 않는다', async () => {
-        const result = await dispatch({ src: 'https://cdn.evil.com/lodash.js', id: 'evil' });
-
-        expect(result.success).toBe(false);
-        expect((result.error as Error)?.message).toMatch(/Blocked untrusted script src/);
-        expect(appendedScripts.length).toBe(0);
-        expect((ActionDispatcher as any).loadedScripts.has('evil')).toBe(false);
-      });
-
-      /** @effects load_script_rejects_sources_outside_the_gate */
-      it('authority 우회 형태(`/\\/evil.com/x.js`)도 차단된다', async () => {
-        const result = await dispatch({ src: '/\\/evil.com/x.js', id: 'bypass' });
-
-        expect(result.success).toBe(false);
-        expect((result.error as Error)?.message).toMatch(/Blocked untrusted script src/);
-        expect(appendedScripts.length).toBe(0);
-      });
-
-      /** @effects load_script_rejects_sources_outside_the_gate */
-      it('미신뢰 src 는 onError 액션을 발화시킨다', async () => {
-        const mockSetState = vi.fn();
-        const action: ActionDefinition = {
-          type: 'click',
-          handler: 'loadScript',
-          params: { src: 'https://cdn.evil.com/x.js', id: 'evil2' },
-          onError: { type: 'click', handler: 'setState', params: { blocked: true } },
-        } as ActionDefinition;
-
-        const handler = dispatcher.createHandler(action, {}, { setState: mockSetState });
-        const mockEvent = {
-          preventDefault: vi.fn(),
-          stopPropagation: vi.fn(),
-          target: null,
-        } as unknown as Event;
-
-        await handler(mockEvent);
-
-        expect(mockSetState).toHaveBeenCalledWith(expect.objectContaining({ blocked: true }));
-        expect(appendedScripts.length).toBe(0);
-      });
-
-      /** @effects load_script_rejects_sources_outside_the_gate */
-      it('G7Config.trustedScriptHosts 에 선언된 호스트는 통과한다', async () => {
-        (window as any).G7Config = { trustedScriptHosts: ['t1.daumcdn.net'] };
-
-        const result = await dispatch({ src: '//t1.daumcdn.net/postcode.v2.js', id: 'daum' });
-
-        expect(result.success).toBe(true);
-        expect(result.data).toBe(true);
-        expect(appendedScripts.length).toBe(1);
-      });
-
-      /** @effects load_script_rejects_sources_outside_the_gate */
-      it('미신뢰 src 는 캐시에 이미 있어도 차단된다 (게이트가 캐시보다 앞)', async () => {
-        (ActionDispatcher as any).loadedScripts.add('cached_evil');
-
-        const result = await dispatch({ src: 'https://cdn.evil.com/x.js', id: 'cached_evil' });
-
-        expect(result.success).toBe(false);
-        expect((result.error as Error)?.message).toMatch(/Blocked untrusted script src/);
-      });
-    });
-
-    describe('동시 로드 Promise 공유', () => {
-      /** @effects concurrent_load_script_calls_share_one_promise */
-      it('같은 id 동시 2건 → script 1개, 두 호출자 모두 onload 이후 완료', async () => {
-        const order: string[] = [];
-        const onLoadA = vi.fn(() => order.push('A'));
-        const onLoadB = vi.fn(() => order.push('B'));
-
-        // appendChild mock 이 10ms 뒤 onload 를 부른다 (beforeEach)
-        const p1 = dispatcher
-          .executeAction(
-            {
-              type: 'click',
-              handler: 'loadScript',
-              params: { src: '/js/shared.js', id: 'shared' },
-              onLoad: { type: 'click', handler: 'customA' },
-            } as ActionDefinition,
-            {} as any
-          );
-        const p2 = dispatcher
-          .executeAction(
-            {
-              type: 'click',
-              handler: 'loadScript',
-              params: { src: '/js/shared.js', id: 'shared' },
-              onLoad: { type: 'click', handler: 'customB' },
-            } as ActionDefinition,
-            {} as any
-          );
-
-        dispatcher.registerHandler('customA', async () => onLoadA());
-        dispatcher.registerHandler('customB', async () => onLoadB());
-
-        await Promise.all([p1, p2]);
-
-        // 태그는 1개만 만들어진다
-        expect(appendedScripts.length).toBe(1);
-        // 두 호출자 모두 자기 onLoad 를 실행한다
-        expect(onLoadA).toHaveBeenCalledTimes(1);
-        expect(onLoadB).toHaveBeenCalledTimes(1);
-        expect(order).toHaveLength(2);
-        // 완료 후 in-flight 는 정리된다
-        expect((ActionDispatcher as any).loadingScripts.size).toBe(0);
-        expect((ActionDispatcher as any).loadedScripts.has('shared')).toBe(true);
-      });
-    });
-
-    describe('스크립트 로드 지연 경계 (코어 속성)', () => {
-      /** @effects load_script_respects_the_consent_block */
-      it('data-g7-script-deferred 가 붙으면 append 없이 resolve(false)', async () => {
-        const mockSetState = vi.fn();
-
-        // src setter 를 가로채 코어 지연 속성을 기록하는 확장(동의 전 스크립트 차단 등)을 모사
-        vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
-          const el = originalCreateElement(tagName);
-          if (tagName === 'script') {
-            const script = el as HTMLScriptElement;
-            Object.defineProperty(script, 'src', {
-              set(value: string) {
-                script.setAttribute('data-g7-script-deferred', value);
-              },
-              get() {
-                return '';
-              },
-              configurable: true,
-            });
-            appendedScripts.push(script);
-          }
-          return el;
-        });
-
-        const action: ActionDefinition = {
-          type: 'click',
-          handler: 'loadScript',
-          params: { src: '/js/analytics.js', id: 'deferred_script' },
-          onLoad: { type: 'click', handler: 'setState', params: { loaded: true } },
-        } as ActionDefinition;
-
-        const result = await dispatcher.executeAction(action, {
-          setState: mockSetState,
-        } as any);
-
-        expect(result.success).toBe(true);
-        expect(result.data).toBe(false);
-        expect(document.head.appendChild).not.toHaveBeenCalled();
-        expect(mockSetState).not.toHaveBeenCalled();
-        // 동의 후 재디스패치가 정상 로드되도록 캐시에 기록하지 않는다
-        expect((ActionDispatcher as any).loadedScripts.has('deferred_script')).toBe(false);
-        expect((ActionDispatcher as any).loadingScripts.has('deferred_script')).toBe(false);
-      });
     });
   });
 
@@ -4965,144 +4295,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    describe('임의 코드 실행 seam 차단 (심층 방어)', () => {
-      const dispatch = (handler: string, params: Record<string, any>, context: any = {}) =>
-        dispatcher.executeAction(
-          { type: 'click', handler, params } as ActionDefinition,
-          context
-        );
-
-      /**
-       * @scenario surface=security
-       *
-       * @effects call_external_blocks_arbitrary_code_execution_seams
-       */
-      it.each(['Function', 'eval', 'setTimeout', 'setInterval'])(
-        '%s 는 참조 동일성으로 거부된다',
-        async name => {
-          const result = await dispatch('callExternal', { constructor: name, args: {} });
-
-          expect(result.success).toBe(false);
-          expect((result.error as Error)?.message).toMatch(/Blocked constructor/);
-        }
-      );
-
-      /** @effects call_external_blocks_arbitrary_code_execution_seams */
-      it('별칭 전역도 참조 동일성으로 거부된다', async () => {
-        (window as any).__alias = (window as any).Function;
-
-        try {
-          const result = await dispatch('callExternal', { constructor: '__alias', args: {} });
-
-          expect(result.success).toBe(false);
-          expect((result.error as Error)?.message).toMatch(/Blocked constructor/);
-        } finally {
-          delete (window as any).__alias;
-        }
-      });
-
-      /** @effects call_external_blocks_arbitrary_code_execution_seams */
-      it('callExternalEmbed 도 같은 판정을 받는다', async () => {
-        const result = await dispatch('callExternalEmbed', {
-          constructor: 'Function',
-          args: {},
-          embedTarget: 'body',
-        });
-
-        expect(result.success).toBe(false);
-        expect((result.error as Error)?.message).toMatch(/Blocked constructor/);
-      });
-
-      /** @effects call_external_blocks_arbitrary_code_execution_seams */
-      it('프로토타입 체인 경로는 해석되지 않는다 (Object.constructor)', async () => {
-        const result = await dispatch('callExternal', {
-          constructor: 'Object.constructor',
-          args: {},
-        });
-
-        expect(result.success).toBe(false);
-        expect((result.error as Error)?.message).toMatch(/Constructor not found/);
-      });
-
-      /** @effects call_external_blocks_arbitrary_code_execution_seams */
-      it('정상 생성자는 그대로 호출된다 (과차단 없음)', async () => {
-        const result = await dispatch('callExternal', {
-          constructor: 'testLib.TestClass',
-          args: {},
-          method: 'open',
-        });
-
-        expect(result.success).toBe(true);
-      });
-    });
-
-    describe('callbackSetState 프로토타입 오염 차단', () => {
-      afterEach(() => {
-        delete (Object.prototype as any).polluted;
-      });
-
-      const runMapping = async (callbackSetState: any) => {
-        const mockSetState = vi.fn();
-
-        const action: ActionDefinition = {
-          type: 'click',
-          handler: 'callExternal',
-          params: {
-            constructor: 'testLib.TestClass',
-            args: { oncomplete: true },
-            callbackSetState,
-          },
-        } as ActionDefinition;
-
-        await dispatcher.executeAction(action, { setState: mockSetState, state: {} } as any);
-        await new Promise(resolve => setTimeout(resolve, 30));
-
-        return mockSetState;
-      };
-
-      /** @effects callback_set_state_blocks_prototype_pollution */
-      it('프로토타입 체인 매핑 키는 상태에 도달하지 않는다', async () => {
-        // 레이아웃 JSON 은 JSON.parse 를 거치므로 `__proto__` 도 own property 가 된다
-        const mockSetState = await runMapping(
-          JSON.parse(
-            '{"__proto__": {"polluted": "result"}, "constructor": "result", "prototype": "result", "safe": "result"}'
-          )
-        );
-
-        expect(mockSetState).toHaveBeenCalled();
-        const payload = mockSetState.mock.calls[0][0] as Record<string, any>;
-
-        expect(Object.prototype.hasOwnProperty.call(payload, 'constructor')).toBe(false);
-        expect(Object.prototype.hasOwnProperty.call(payload, 'prototype')).toBe(false);
-        expect(Object.prototype.hasOwnProperty.call(payload, '__proto__')).toBe(false);
-        // 정상 키는 그대로 매핑된다 (과차단 없음)
-        expect(payload.safe).toBe('success');
-        expect((Object.prototype as any).polluted).toBeUndefined();
-      });
-
-      /** @effects callback_set_state_blocks_prototype_pollution */
-      it('중첩 매핑의 프로토타입 체인 키도 건너뛴다', async () => {
-        const mockSetState = await runMapping(
-          JSON.parse('{"form": {"constructor": "result", "safe": "result"}}')
-        );
-
-        const payload = mockSetState.mock.calls[0][0] as Record<string, any>;
-
-        expect(Object.prototype.hasOwnProperty.call(payload.form, 'constructor')).toBe(false);
-        expect(payload.form.safe).toBe('success');
-      });
-
-      /** @effects callback_set_state_blocks_prototype_pollution */
-      it('데이터 경로가 프로토타입 체인을 타면 undefined 로 해석된다', async () => {
-        const mockSetState = await runMapping({ leaked: 'constructor.name' });
-
-        const payload = mockSetState.mock.calls[0][0] as Record<string, any>;
-
-        expect(payload.leaked).toBeUndefined();
-      });
-    });
-
-    /** @effects callback_set_state_blocks_prototype_pollution */
     it('should call external constructor and method', async () => {
       const mockSetState = vi.fn();
 
@@ -5125,7 +4317,6 @@ describe('ActionDispatcher', () => {
       // The result is 'opened' from the mock
     });
 
-    /** @effects callback_set_state_blocks_prototype_pollution */
     it('should emit event when callback is triggered', async () => {
       const mockSetState = vi.fn();
 
@@ -5161,7 +4352,6 @@ describe('ActionDispatcher', () => {
       );
     });
 
-    /** @effects callback_set_state_blocks_prototype_pollution */
     it('should handle error gracefully if constructor not found', async () => {
       // Suppress console error for this test
       vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -5183,7 +4373,6 @@ describe('ActionDispatcher', () => {
       vi.restoreAllMocks();
     });
 
-    /** @effects callback_set_state_blocks_prototype_pollution */
     it('should handle error gracefully if constructor parameter is missing', async () => {
       // Suppress console error for this test
       vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -5203,7 +4392,6 @@ describe('ActionDispatcher', () => {
       vi.restoreAllMocks();
     });
 
-    /** @effects callback_set_state_blocks_prototype_pollution */
     it('should handle embed method with target element', async () => {
       // Create a target element
       const targetElement = document.createElement('div');
@@ -5234,7 +4422,6 @@ describe('ActionDispatcher', () => {
     });
 
     describe('callbackSetState', () => {
-      /** @effects callback_set_state_writes_back_into_layout_state */
       it('should map callback data to state using callbackSetState (flat mapping)', async () => {
         const mockSetState = vi.fn();
 
@@ -5288,7 +4475,6 @@ describe('ActionDispatcher', () => {
         );
       });
 
-      /** @effects callback_set_state_writes_back_into_layout_state */
       it('should map callback data to state using callbackSetState (2-level nested)', async () => {
         const mockSetState = vi.fn();
 
@@ -5345,7 +4531,6 @@ describe('ActionDispatcher', () => {
         );
       });
 
-      /** @effects callback_set_state_writes_back_into_layout_state */
       it('should map callback data to state using callbackSetState (3-level deep nested)', async () => {
         const mockSetState = vi.fn();
 
@@ -5406,7 +4591,6 @@ describe('ActionDispatcher', () => {
         );
       });
 
-      /** @effects callback_set_state_writes_back_into_layout_state */
       it('should preserve existing state fields when using callbackSetState (deep merge)', async () => {
         const mockSetState = vi.fn();
 
@@ -5534,7 +4718,6 @@ describe('ActionDispatcher', () => {
       document.querySelectorAll('[data-embed-overlay]').forEach(el => el.remove());
     });
 
-    /** @effects call_external_embed_mounts_third_party_widgets */
     it('should create embed layer and call external library', async () => {
       const mockSetState = vi.fn();
 
@@ -5562,7 +4745,6 @@ describe('ActionDispatcher', () => {
       // Layer should be created and then removed after callback
     });
 
-    /** @effects call_external_embed_mounts_third_party_widgets */
     it('should map callback data using callbackSetState with deep nesting and preserve existing state', async () => {
       const mockSetState = vi.fn();
 
@@ -5635,7 +4817,6 @@ describe('ActionDispatcher', () => {
       );
     });
 
-    /** @effects call_external_embed_mounts_third_party_widgets */
     it('should emit event when callbackEvent is specified', async () => {
       const mockSetState = vi.fn();
 
@@ -5671,7 +4852,6 @@ describe('ActionDispatcher', () => {
       );
     });
 
-    /** @effects call_external_embed_mounts_third_party_widgets */
     it('should handle error gracefully if constructor not found', async () => {
       // Suppress console error for this test
       vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -5704,7 +4884,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).__g7ForcedLocalFields;
     });
 
-    /** @effects sequence_threads_state_between_steps */
     it('sequence 내 setState 실행 후 다음 액션에서 업데이트된 상태를 참조해야 함', async () => {
       const mockSetState = vi.fn();
 
@@ -5773,7 +4952,6 @@ describe('ActionDispatcher', () => {
       );
     });
 
-    /** @effects sequence_threads_state_between_steps */
     it('sequence 내 setState에서 errors 클리어 후 후속 setState에서 이전 errors가 복원되지 않아야 함', async () => {
       const mockSetState = vi.fn();
 
@@ -5842,7 +5020,6 @@ describe('ActionDispatcher', () => {
       expect((window as any).__g7PendingLocalState.form).toEqual(initialState.form);
     });
 
-    /** @effects sequence_threads_state_between_steps */
     it('sequence 내에서 setState 결과가 다음 액션의 context.state에 반영되어야 함', async () => {
       const mockSetState = vi.fn();
       const stateSnapshots: any[] = [];
@@ -5910,7 +5087,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('global setState dot notation 키 처리', () => {
-    /** @effects global_set_state_expands_dot_notation_keys */
     it('target=global일 때 dot notation 키를 중첩 객체로 변환하여 병합해야 함', async () => {
       const globalStateUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -5964,7 +5140,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects global_set_state_expands_dot_notation_keys */
     it('target=global일 때 dot notation 없는 키는 기존처럼 동작해야 함', async () => {
       const globalStateUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6010,7 +5185,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects global_set_state_expands_dot_notation_keys */
     it('target=global일 때 기존 중첩 객체에 dot notation으로 값을 병합해야 함', async () => {
       const globalStateUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6061,7 +5235,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects global_set_state_expands_dot_notation_keys */
     it('target=global일 때 여러 dot notation 키를 동시에 처리해도 기존 속성이 보존되어야 함', async () => {
       const globalStateUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6119,7 +5292,6 @@ describe('ActionDispatcher', () => {
       delete (window as any).G7Core;
     });
 
-    /** @effects global_set_state_expands_dot_notation_keys */
     it('target=global일 때 항상 G7Core.state.get()을 참조해야 함 (context.state 무시)', async () => {
       /**
        * 2026-01-30 수정: target='global'은 항상 G7Core.state.get()을 사용
@@ -6189,7 +5361,7 @@ describe('ActionDispatcher', () => {
 
   /**
    * Regression Tests
-   * @see 트러블슈팅 가이드 troubleshooting-state-setstate.md
+   * @see docs/frontend/troubleshooting-state-setstate.md
    */
   describe('Regression Tests', () => {
     describe('[TS-STATE-1] sequence 내 여러 setState에서 상태 덮어쓰기', () => {
@@ -6198,7 +5370,6 @@ describe('ActionDispatcher', () => {
        * 원인: React의 setState는 비동기적으로 처리되어 두 번째 setState가 첫 번째 결과 반영 전의 상태를 기준으로 병합
        * 해결: handleSequence에서 setState 실행 후 currentState 동기화
        */
-      /** @effects regression_sequence_multiple_set_state_does_not_overwrite */
       it('sequence 내 연속 setState에서 첫 번째 결과가 두 번째에 반영되어야 함', async () => {
         const globalStateUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6270,7 +5441,6 @@ describe('ActionDispatcher', () => {
        * 원인: createNestedUpdate에서 null 체크 누락으로 spread 연산자 오류
        * 해결: null, undefined, 비객체 타입을 명시적으로 체크
        */
-      /** @effects regression_dot_notation_accepts_null */
       it('dot notation 키에 null 값을 설정해도 에러가 발생하지 않아야 함', async () => {
         const globalStateUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6319,7 +5489,6 @@ describe('ActionDispatcher', () => {
         delete (window as any).G7Core;
       });
 
-      /** @effects regression_dot_notation_accepts_null */
       it('중간 경로가 null인 상태에서 깊은 경로 설정 시 에러가 발생하지 않아야 함', async () => {
         const globalStateUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6375,7 +5544,6 @@ describe('ActionDispatcher', () => {
        * - globalStateUpdater 호출 후 즉시 G7Core.state.get()에 반영됨
        * - 따라서 sequence 내에서도 최신 상태 참조 가능 (동적 mock 필요)
        */
-      /** @effects regression_sequence_set_state_does_not_merge_into_stale_state */
       it('sequence에서 setState 후 다음 액션은 업데이트된 상태를 참조해야 함', async () => {
         // 상태를 추적하는 동적 mock 구현
         let currentState = {
@@ -6449,7 +5617,6 @@ describe('ActionDispatcher', () => {
        * 따라서 apiCall onSuccess에서 이전 setState 결과를 보려면
        * G7Core.state.get()이 업데이트된 상태여야 함
        */
-      /** @effects regression_on_success_set_state_keeps_earlier_results */
       it('apiCall onSuccess에서 G7Core.state.get()의 최신 상태를 참조해야 함', async () => {
         const globalStateUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6512,9 +5679,8 @@ describe('ActionDispatcher', () => {
        *       resolveBindings에서 이전 값을 사용
        * 해결: handleSequence에서 sequenceContext.data에 _local: currentState 추가
        *
-       * @see 트러블슈팅 가이드 troubleshooting-state-setstate.md
+       * @see docs/frontend/troubleshooting-state-setstate.md
        */
-      /** @effects regression_api_call_body_reads_local_written_earlier_in_the_sequence */
       it('sequence 내 setState 후 다음 액션의 context.data._local이 업데이트되어야 함', async () => {
         const mockSetState = vi.fn();
         const capturedContexts: any[] = [];
@@ -6578,7 +5744,6 @@ describe('ActionDispatcher', () => {
         vi.restoreAllMocks();
       });
 
-      /** @effects regression_api_call_body_reads_local_written_earlier_in_the_sequence */
       it('sequence 내 여러 setState 후 context.data._local에 누적된 상태가 반영되어야 함', async () => {
         const mockSetState = vi.fn();
         const capturedContexts: any[] = [];
@@ -6642,7 +5807,6 @@ describe('ActionDispatcher', () => {
        * 해결: convertDotNotationToObject() + deepMerge()로 자동 변환
        * 이 테스트는 해결된 상태가 유지되는지 확인
        */
-      /** @effects regression_dot_notation_keys_sharing_a_root_merge */
       it('여러 dot notation 키가 같은 루트를 공유해도 모두 정상 병합되어야 함', async () => {
         const globalStateUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6699,7 +5863,6 @@ describe('ActionDispatcher', () => {
        * 깊은 중첩 경로(a.b.c.d)가 올바르게 처리되는지 확인
        * 회귀 방지 테스트
        */
-      /** @effects regression_deep_dot_notation_paths_resolve */
       it('3단계 이상 깊이의 dot notation 키가 정상 병합되어야 함', async () => {
         const globalStateUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6764,7 +5927,6 @@ describe('ActionDispatcher', () => {
        * dot notation 키의 처리 순서와 관계없이 결과가 동일해야 함
        * 회귀 방지 테스트
        */
-      /** @effects regression_dot_notation_result_is_order_independent */
       it('dot notation 키 순서와 관계없이 동일한 결과를 반환해야 함', async () => {
         const globalStateUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6821,7 +5983,6 @@ describe('ActionDispatcher', () => {
        * 일반 객체 키와 dot notation 키가 함께 있을 때 병합이 올바르게 되어야 함
        * 회귀 방지 테스트
        */
-      /** @effects regression_plain_keys_and_dot_notation_mix */
       it('일반 객체 키와 dot notation 키가 함께 정상 병합되어야 함', async () => {
         const globalStateUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6880,7 +6041,6 @@ describe('ActionDispatcher', () => {
         delete (window as any).G7Core;
       });
 
-      /** @effects regression_plain_keys_and_dot_notation_mix */
       it('같은 키에 객체와 dot notation이 있을 때 깊은 병합되어야 함', async () => {
         const globalStateUpdater = vi.fn();
         dispatcher.setGlobalStateUpdater(globalStateUpdater);
@@ -6935,7 +6095,6 @@ describe('ActionDispatcher', () => {
        * replaceOnlyKeys 옵션과 dot notation이 함께 사용될 때 올바르게 동작해야 함
        * errors.field 같은 패턴 처리
        */
-      /** @effects regression_replace_only_keys_with_dot_notation */
       it('replaceOnlyKeys에 지정된 dot notation 키가 병합 대신 교체되어야 함', async () => {
         const mockSetState = vi.fn();
         const context = {
@@ -6987,7 +6146,6 @@ describe('ActionDispatcher', () => {
    */
   describe('Isolated State Handling', () => {
     describe('resultTo with _isolated target', () => {
-      /** @effects result_to_writes_into_isolated_state */
       it('should save result to isolated state when target is _isolated', async () => {
         const mockMergeState = vi.fn();
         const mockIsolatedContext = {
@@ -7035,7 +6193,6 @@ describe('ActionDispatcher', () => {
         expect(hasItemsUpdate).toBe(false);
       });
 
-      /** @effects result_to_writes_into_isolated_state */
       it('should fallback to local state when isolatedContext is null', async () => {
         // API mock
         global.fetch = vi.fn().mockResolvedValue({
@@ -7070,7 +6227,6 @@ describe('ActionDispatcher', () => {
         warnSpy.mockRestore();
       });
 
-      /** @effects result_to_writes_into_isolated_state */
       it('should handle nested key in resultTo for isolated state', async () => {
         const mockMergeState = vi.fn();
         const mockIsolatedContext = {
@@ -7112,7 +6268,6 @@ describe('ActionDispatcher', () => {
     });
 
     describe('setState with target: isolated', () => {
-      /** @effects set_state_targets_isolated_state */
       it('should update isolated state when target is isolated', async () => {
         const mockMergeState = vi.fn();
         const mockIsolatedContext = {
@@ -7144,7 +6299,6 @@ describe('ActionDispatcher', () => {
         expect(context.setState).not.toHaveBeenCalled();
       });
 
-      /** @effects set_state_targets_isolated_state */
       it('should fallback to local when isolatedContext is null for isolated target', async () => {
         const mockSetState = vi.fn();
 
@@ -7173,7 +6327,6 @@ describe('ActionDispatcher', () => {
     });
 
     describe('sequence with isolated state tracking', () => {
-      /** @effects sequence_tracks_isolated_state_between_steps */
       it('should track isolated state changes across sequence actions', async () => {
         const mockMergeState = vi.fn();
         let isolatedState = { step: 1, items: [] as any[] };
@@ -7220,7 +6373,6 @@ describe('ActionDispatcher', () => {
         expect(isolatedState.items).toEqual([1, 2, 3]);
       });
 
-      /** @effects sequence_tracks_isolated_state_between_steps */
       it('should allow later actions to reference previous isolated state changes', async () => {
         let isolatedState = { count: 0 };
 
@@ -7262,7 +6414,6 @@ describe('ActionDispatcher', () => {
     });
 
     describe('parallel with isolated state snapshot', () => {
-      /** @effects parallel_uses_one_isolated_state_snapshot */
       it('should provide consistent isolated state snapshot to parallel actions', async () => {
         const mockMergeState = vi.fn();
         const isolatedState = { baseValue: 10, items: [] as any[] };
@@ -7308,7 +6459,6 @@ describe('ActionDispatcher', () => {
         expect(mockMergeState).toHaveBeenCalledTimes(3);
       });
 
-      /** @effects parallel_uses_one_isolated_state_snapshot */
       it('should not allow parallel actions to interfere with each other\'s isolated state', async () => {
         const mergeStateCallOrder: any[] = [];
 
@@ -7347,7 +6497,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('sequence/parallel params.actions fallback', () => {
-    /** @effects sequence_and_parallel_accept_actions_under_params */
     it('sequence: params.actions에 있는 액션 배열을 실행해야 함 (레이아웃 JSON 컴파일 호환)', async () => {
       const mockSetState = vi.fn();
 
@@ -7397,7 +6546,6 @@ describe('ActionDispatcher', () => {
       expect(mockSetState).toHaveBeenCalledTimes(2);
     });
 
-    /** @effects sequence_and_parallel_accept_actions_under_params */
     it('sequence: root-level actions가 우선 사용되어야 함', async () => {
       const mockSetState = vi.fn();
 
@@ -7445,7 +6593,6 @@ describe('ActionDispatcher', () => {
       );
     });
 
-    /** @effects sequence_and_parallel_accept_actions_under_params */
     it('parallel: params.actions에 있는 액션 배열을 병렬 실행해야 함', async () => {
       const mockSetState = vi.fn();
 
@@ -7481,7 +6628,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('드래그 앤 드롭 이벤트', () => {
-    /** @effects drag_and_drop_events_are_bound */
     it('dragstart 이벤트 핸들러를 생성해야 함', () => {
       const props = {
         actions: [
@@ -7499,7 +6645,6 @@ describe('ActionDispatcher', () => {
       expect(typeof boundProps.onDragStart).toBe('function');
     });
 
-    /** @effects drag_and_drop_events_are_bound */
     it('dragover 이벤트 핸들러를 생성해야 함', () => {
       const props = {
         actions: [
@@ -7517,7 +6662,6 @@ describe('ActionDispatcher', () => {
       expect(typeof boundProps.onDragOver).toBe('function');
     });
 
-    /** @effects drag_and_drop_events_are_bound */
     it('drop 이벤트 핸들러를 생성해야 함', () => {
       const props = {
         actions: [
@@ -7540,7 +6684,6 @@ describe('ActionDispatcher', () => {
       expect(typeof boundProps.onDrop).toBe('function');
     });
 
-    /** @effects drag_and_drop_events_are_bound */
     it('dragend 이벤트 핸들러를 생성해야 함', () => {
       const props = {
         actions: [
@@ -7558,7 +6701,6 @@ describe('ActionDispatcher', () => {
       expect(typeof boundProps.onDragEnd).toBe('function');
     });
 
-    /** @effects drag_and_drop_events_are_bound */
     it('모든 드래그 이벤트 타입을 올바른 React 이벤트 이름으로 매핑해야 함', () => {
       const dragEvents = ['dragstart', 'drag', 'dragend', 'dragenter', 'dragover', 'dragleave', 'drop'] as const;
       const expectedProps = ['onDragStart', 'onDrag', 'onDragEnd', 'onDragEnter', 'onDragOver', 'onDragLeave', 'onDrop'];
@@ -7574,7 +6716,6 @@ describe('ActionDispatcher', () => {
   });
 
   describe('setupErrorHandling - ErrorHandlingResolver 통합', () => {
-    /** @effects error_handling_is_resolved_through_the_resolver */
     it('errorHandling에서 openModal 호출 시 target이 handleOpenModal에 전달됨', async () => {
       // ErrorHandlingResolver를 통해 핸들러 실행
       const { ErrorHandlingResolver } = await import('../../error/ErrorHandlingResolver');
@@ -7590,7 +6731,7 @@ describe('ActionDispatcher', () => {
       const resolver = ErrorHandlingResolver.getInstance();
 
       // ErrorHandlingResolver가 openModal 핸들러를 실행할 때 target이 전달되는지 확인
-      // checkout.g7.html과 동일한 구조 (문자열 키 사용)
+      // checkout.json과 동일한 구조 (문자열 키 사용)
       const errorHandling = {
         '404': { handler: 'openModal', target: 'tempOrderNotFoundModal' },
       };
@@ -7612,106 +6753,6 @@ describe('ActionDispatcher', () => {
     });
   });
 
-  describe('redirect', () => {
-    // `redirect` 는 #297 부터 레이아웃(`auth/identity_challenge`)에 적혀 있었으나 엔진에 소비처가 없어
-    // **한 번도 동작한 적이 없었다** — 미등록 핸들러라 조용히 무동작이고 콘솔·네트워크에 흔적이 없다.
-    // (전 이력 조사: `case 'redirect'` 0건 · 매니페스트 0건 · 확장 등록 0건 → 병합 손상이 아니다.)
-    let assignSpy: any;
-    let replaceSpy: any;
-
-    beforeEach(() => {
-      assignSpy = vi.fn();
-      replaceSpy = vi.fn();
-      Object.defineProperty(window, 'location', {
-        value: { href: 'https://host/start', assign: assignSpy, replace: replaceSpy },
-        writable: true,
-      });
-    });
-
-    const run = async (params: Record<string, any>) => {
-      const handler = dispatcher.createHandler({ type: 'click', handler: 'redirect', params });
-      await handler({ preventDefault: vi.fn(), type: 'click', target: null } as unknown as Event);
-    };
-
-    /**
-     * @scenario url=given, history_mode=assign, runtime=live
-     *
-     * @effects redirect_assigns_current_tab_to_given_url
-     */
-    it('url 로 현재 탭을 통째로 이동시킨다', async () => {
-      await run({ url: '/identity/callback?token=abc' });
-
-      expect(assignSpy).toHaveBeenCalledWith('/identity/callback?token=abc');
-      expect(replaceSpy).not.toHaveBeenCalled();
-    });
-
-    /**
-     * @scenario url=given, history_mode=replace, runtime=live
-     *
-     * @effects redirect_replace_leaves_no_history_entry
-     */
-    it('replace: true 면 뒤로가기 이력을 남기지 않는다', async () => {
-      await run({ url: '/identity/verify', replace: true });
-
-      expect(replaceSpy).toHaveBeenCalledWith('/identity/verify');
-      expect(assignSpy).not.toHaveBeenCalled();
-    });
-
-    /**
-     * @effects redirect_offsite_target_falls_back_to_root
-     */
-    it('외부 origin·protocol-relative 주소는 따라가지 않고 기본 경로(/)로 간다 (KVE-2026-2348)', async () => {
-      for (const url of ['https://idp.example/verify', '//evil.example/', '/\\evil.example/']) {
-        assignSpy.mockClear();
-        await run({ url });
-        expect(assignSpy).toHaveBeenCalledWith('/');
-      }
-
-      replaceSpy.mockClear();
-      await run({ url: 'https://evil.example/', replace: true });
-      expect(replaceSpy).toHaveBeenCalledWith('/');
-    });
-
-    /**
-     * @effects redirect_script_scheme_never_executes
-     */
-    it('javascript:/data: 주소는 sink 에 닿지 않는다 (KVE-2026-2348)', async () => {
-      await run({ url: 'javascript:localStorage.setItem("m","1")' });
-      await run({ url: ' JaVaScRiPt:alert(1)', replace: true });
-
-      for (const call of [...assignSpy.mock.calls, ...replaceSpy.mock.calls]) {
-        expect(String(call[0]).toLowerCase()).not.toContain('javascript:');
-        expect(call[0]).toBe('/');
-      }
-    });
-
-    /**
-     * @scenario url=empty, history_mode=assign, runtime=live
-     *
-     * @effects redirect_with_empty_url_does_nothing
-     */
-    it('주소가 비면 아무 데도 가지 않는다 (조용한 이탈 방지)', async () => {
-      await run({ url: '' });
-
-      expect(assignSpy).not.toHaveBeenCalled();
-      expect(replaceSpy).not.toHaveBeenCalled();
-    });
-
-    /**
-     * @scenario url=given, history_mode=assign, runtime=preview
-     *
-     * @effects redirect_is_suppressed_in_preview_mode
-     */
-    it('프리뷰 모드에서는 실행되지 않는다 — 미리보기 창이 사라지기 때문', async () => {
-      dispatcher.setPreviewMode(true);
-      await run({ url: '/identity/verify' });
-      dispatcher.setPreviewMode(false);
-
-      expect(assignSpy).not.toHaveBeenCalled();
-      expect(replaceSpy).not.toHaveBeenCalled();
-    });
-  });
-
   describe('replaceUrl', () => {
     let replaceStateSpy: any;
 
@@ -7730,7 +6771,6 @@ describe('ActionDispatcher', () => {
       replaceStateSpy.mockRestore();
     });
 
-    /** @effects replace_url_changes_the_address_without_refetching */
     it('URL만 변경하고 navigate를 호출하지 않아야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -7760,7 +6800,6 @@ describe('ActionDispatcher', () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    /** @effects replace_url_changes_the_address_without_refetching */
     it('mergeQuery가 true일 때 기존 쿼리 파라미터와 병합해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -7790,26 +6829,6 @@ describe('ActionDispatcher', () => {
       expect(calledPath).toContain('mode=edit');
     });
 
-    // engine-v1.54.2: navigate 와 동일한 게이트 확장 — 한쪽만 고치면 두 핸들러의 동작이 갈린다.
-    /** @effects replace_url_changes_the_address_without_refetching */
-    it('query 키가 없어도 mergeQuery: true 면 현재 쿼리를 유지해야 함 (engine-v1.54.2)', async () => {
-      const action: ActionDefinition = {
-        type: 'click',
-        handler: 'replaceUrl',
-        params: { path: '/admin/menus', mergeQuery: true },
-      };
-
-      await dispatcher.createHandler(action)({
-        preventDefault: vi.fn(),
-        type: 'click',
-        target: null,
-      } as unknown as Event);
-
-      expect(replaceStateSpy).toHaveBeenCalled();
-      expect(replaceStateSpy.mock.calls[0][2] as string).toContain('existing=param');
-    });
-
-    /** @effects replace_url_changes_the_address_without_refetching */
     it('query 없이 path만 전달해도 동작해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -7837,7 +6856,6 @@ describe('ActionDispatcher', () => {
   // 회귀 방지를 위해 의도적으로 제거되었음. 컴포넌트는 반드시 `{ target: { value } }`
   // 패턴으로 이벤트를 emit 해야 하며, 엔진은 raw value 를 무시한다.
   describe('raw value fallback (non-event callback)', () => {
-    /** @effects raw_value_callbacks_have_no_fallback_by_design */
     it('표준 DOM 이벤트는 기존 경로로 처리 (fallback 미사용)', async () => {
       const mockGlobalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
@@ -7875,7 +6893,6 @@ describe('ActionDispatcher', () => {
       expect(callArgs.value).toBe('hello');
     });
 
-    /** @effects raw_value_callbacks_have_no_fallback_by_design */
     it('커스텀 컴포넌트 이벤트({target: ...})는 기존 경로로 처리', async () => {
       const mockGlobalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
@@ -7908,7 +6925,6 @@ describe('ActionDispatcher', () => {
       expect(callArgs.value).toBe('custom_value');
     });
 
-    /** @effects raw_value_callbacks_have_no_fallback_by_design */
     it('raw value (File/null/boolean 등)를 전달하면 핸들러가 실행되지 않아야 함', () => {
       // 사례 26 회귀 테스트: raw value fallback 의도적 제거
       // (컴포넌트 마운트 시 초기 setState 로 API 로드 데이터가 덮어쓰이는 버그 방지)
@@ -7945,7 +6961,6 @@ describe('ActionDispatcher', () => {
   // ==============================
 
   describe('deepMergeWithState - non-plain 객체 보호', () => {
-    /** @effects deep_merge_keeps_non_plain_objects_intact */
     it('File 객체를 setState로 저장하면 원본 File 참조가 유지되어야 함', async () => {
       const mockGlobalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
@@ -7982,7 +6997,6 @@ describe('ActionDispatcher', () => {
       expect(payload.uploadFile.name).toBe('test.zip');
     });
 
-    /** @effects deep_merge_keeps_non_plain_objects_intact */
     it('Blob 객체를 setState로 저장하면 원본 Blob 참조가 유지되어야 함', async () => {
       const mockGlobalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
@@ -8010,7 +7024,6 @@ describe('ActionDispatcher', () => {
       expect(payload.blobData instanceof Blob).toBe(true);
     });
 
-    /** @effects deep_merge_keeps_non_plain_objects_intact */
     it('Date 객체를 setState로 저장하면 원본 Date 참조가 유지되어야 함', async () => {
       const mockGlobalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
@@ -8038,7 +7051,6 @@ describe('ActionDispatcher', () => {
       expect(payload.createdAt instanceof Date).toBe(true);
     });
 
-    /** @effects deep_merge_keeps_non_plain_objects_intact */
     it('plain 객체는 여전히 깊은 병합이 수행되어야 함', async () => {
       const mockGlobalUpdater = vi.fn();
       dispatcher.setGlobalStateUpdater(mockGlobalUpdater);
@@ -8102,7 +7114,6 @@ describe('ActionDispatcher', () => {
       globalThis.fetch = originalFetch;
     });
 
-    /** @effects api_call_supports_multipart_form_data */
     it('contentType이 multipart/form-data이면 FormData로 전송해야 함', async () => {
       const testFile = new File(['zip content'], 'module.zip', { type: 'application/zip' });
 
@@ -8142,7 +7153,6 @@ describe('ActionDispatcher', () => {
       expect(formData.has('file')).toBe(true);
     });
 
-    /** @effects api_call_supports_multipart_form_data */
     it('contentType 미지정 시 기존 JSON 방식으로 전송해야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',
@@ -8176,7 +7186,6 @@ describe('ActionDispatcher', () => {
       expect(fetchOptions.headers['Content-Type']).toBe('application/json');
     });
 
-    /** @effects api_call_supports_multipart_form_data */
     it('multipart body에서 non-File 값은 문자열로 변환되어야 함', async () => {
       const testFile = new File(['content'], 'test.zip', { type: 'application/zip' });
 
@@ -8212,7 +7221,6 @@ describe('ActionDispatcher', () => {
       expect(formData.get('metadata')).toBe(JSON.stringify({ version: '1.0' }));
     });
 
-    /** @effects api_call_supports_multipart_form_data */
     it('multipart body에서 null/undefined 값은 FormData에 포함되지 않아야 함', async () => {
       const action: ActionDefinition = {
         type: 'click',

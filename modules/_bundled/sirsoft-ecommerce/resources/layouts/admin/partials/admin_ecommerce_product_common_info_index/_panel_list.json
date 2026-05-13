@@ -1,5 +1,4 @@
 {
-    "comment": "공통정보 화면 왼쪽 목록. 브랜드·분류와 달리 **쪽 넘김이 아니라 무한 스크롤**이다 — 목록 끝에\n  닿으면 다음 쪽을 받아 기존 배열 뒤에 이어 붙인다.\n  그 진행 상태(현재 쪽·더 있는지·불러오는 중)는 `_global.infiniteScroll` 이 쥐고 있고, 검색어는\n  URL 에 남는다. 검색이 바뀌면 주소가 바뀌어 화면이 다시 뜨므로 스크롤 상태도 함께 초기화된다.\n  항목을 고를 때 **편집 중이면 곧바로 넘어가지 않는다** — 고른 항목을 `_global.pendingItem*` 에\n  잡아 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 그 창이다.\n  행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다.",
     "meta": {
         "is_partial": true,
         "description": "Common Info List Panel - Left Sidebar"
@@ -7,15 +6,16 @@
     "id": "common_info_list_panel",
     "type": "basic",
     "name": "Div",
+    "props": {
+        "className": "col-span-1-lg bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 flex flex-col"
+    },
     "lifecycle": {
         "onMount": [
             {
+                "type": "click",
                 "handler": "sirsoft-ecommerce.initCommonInfoFromUrl"
             }
         ]
-    },
-    "props": {
-        "className": "admin-card col-span-1-lg flex flex-col"
     },
     "children": [
         {
@@ -23,14 +23,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "px-4 panel-header"
+                "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2"
+                        "className": "flex items-center gap-2"
                     },
                     "children": [
                         {
@@ -38,15 +38,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "info-circle",
-                                "className": "text-gray-700 dark:text-gray-300",
-                                "size": "md"
+                                "className": "w-5 h-5 text-gray-700 dark:text-gray-300"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "text-heading"
+                                "className": "text-sm font-medium text-gray-900 dark:text-white"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.common_info.list.title"
                         },
@@ -56,7 +55,7 @@
                             "props": {
                                 "className": "px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                             },
-                            "text": "{{commonInfos?.data?.pagination?.total ?? commonInfos?.data?.data?.length ?? 0}}"
+                            "text": "{{commonInfos?.data?.data?.length ?? 0}}"
                         }
                     ]
                 }
@@ -67,15 +66,19 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "px-4 panel-header"
+                "className": "px-4 py-3 border-b border-gray-200 dark:border-gray-700"
             },
             "children": [
                 {
                     "type": "composite",
                     "name": "SearchBar",
+                    "props": {
+                        "placeholder": "$t:sirsoft-ecommerce.admin.common_info.list.search_placeholder",
+                        "value": "{{query.search || ''}}",
+                        "className": "w-full"
+                    },
                     "actions": [
                         {
-                            "comment": "검색 — 조건을 URL 에 실어 다시 들어간다. 화면이 다시 뜨면서 무한 스크롤 상태도 함께 처음으로 돌아간다.",
                             "type": "submit",
                             "handler": "navigate",
                             "params": {
@@ -86,12 +89,7 @@
                                 }
                             }
                         }
-                    ],
-                    "props": {
-                        "placeholder": "$t:sirsoft-ecommerce.admin.common_info.list.search_placeholder",
-                        "value": "{{query.search || ''}}",
-                        "className": "w-full"
-                    }
+                    ]
                 }
             ]
         },
@@ -100,10 +98,13 @@
             "type": "basic",
             "name": "Div",
             "if": "{{(commonInfos?.data?.data?.length ?? 0) > 0}}",
+            "props": {
+                "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto"
+            },
             "actions": [
                 {
-                    "comment": "무한 스크롤. 스크롤 이벤트는 초당 수십 번 오므로 대기시간(200ms)을 두고, 그 뒤에도 세 조건이\n          모두 참일 때만 요청한다 — 바닥 100px 안에 닿았고 · 더 받을 것이 남았고 · 지금 받는 중이 아님.\n          받은 쪽은 갈아끼우지 않고 **뒤에 이어 붙인다**(`append-data-source`). 갈아끼우면 위로 스크롤\n          했을 때 앞 쪽이 사라진다.\n          실패해도 '받는 중' 깃발은 반드시 푼다 — 안 풀면 위 조건이 영영 거짓이라 스크롤이 죽는다.",
                     "type": "scroll",
+                    "debounce": 200,
                     "handler": "sequence",
                     "actions": [
                         {
@@ -135,8 +136,8 @@
                                         },
                                         {
                                             "handler": "apiCall",
-                                            "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos",
                                             "auth_required": true,
+                                            "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos",
                                             "params": {
                                                 "method": "GET",
                                                 "query": {
@@ -150,8 +151,8 @@
                                                     "handler": "appendDataSource",
                                                     "params": {
                                                         "dataSourceId": "commonInfos",
-                                                        "dataPath": "data.data",
-                                                        "newData": "{{response.data.data}}"
+                                                        "dataPath": "data",
+                                                        "newData": "{{response.data}}"
                                                     }
                                                 },
                                                 {
@@ -159,48 +160,47 @@
                                                     "params": {
                                                         "target": "global",
                                                         "infiniteScroll.currentPage": "{{_global.infiniteScroll.currentPage + 1}}",
-                                                        "infiniteScroll.hasMore": "{{response.data?.pagination?.has_more_pages ?? false}}",
+                                                        "infiniteScroll.hasMore": "{{(response.data?.length ?? 0) >= 20}}",
                                                         "infiniteScroll.isLoadingMore": false
                                                     }
                                                 }
                                             ],
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "infiniteScroll.isLoadingMore": false
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "infiniteScroll.isLoadingMore": false
+                                                    }
                                                 }
-                                            }
+                                            ]
                                         }
                                     ]
                                 }
                             }
                         }
-                    ],
-                    "debounce": 200
+                    ]
                 }
             ],
-            "props": {
-                "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto"
-            },
             "children": [
                 {
-                    "id": "common_info_list_items_{{itemIdx}}",
+                    "id": "common_info_list_items",
                     "type": "basic",
                     "name": "Div",
                     "iteration": {
                         "source": "{{commonInfos?.data?.data ?? []}}",
-                        "item_var": "item",
-                        "index_var": "itemIdx"
+                        "item_var": "item"
                     },
                     "children": [
                         {
                             "id": "common_info_item_{{item.id}}",
                             "type": "basic",
                             "name": "Div",
+                            "props": {
+                                "className": "{{_global.selectedId === item.id ? 'py-2.5 px-3 mb-2 rounded-lg border cursor-pointer bg-blue-50 dark:bg-blue-900/30 border-blue-500' : 'py-2.5 px-3 mb-2 rounded-lg border cursor-pointer bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}}"
+                            },
                             "actions": [
                                 {
-                                    "comment": "항목 선택 — 편집·등록·복사 중이면 곧바로 넘어가지 않고 고른 항목을 대기 자리에 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 그 창이다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -240,14 +240,9 @@
                                                             }
                                                         },
                                                         {
-                                                            "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75).",
                                                             "handler": "replaceUrl",
                                                             "params": {
-                                                                "mergeQuery": true,
-                                                                "query": {
-                                                                    "id": "{{item.id}}",
-                                                                    "mode": "view"
-                                                                }
+                                                                "query": { "id": "{{item.id}}", "mode": "view" }
                                                             }
                                                         }
                                                     ]
@@ -257,29 +252,26 @@
                                     ]
                                 }
                             ],
-                            "props": {
-                                "className": "{{_global.selectedId === item.id ? 'admin-card-selected' : 'admin-card-clickable'}}"
-                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-between"
+                                        "className": "flex items-center justify-between"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-2 flex-1 min-w-0"
+                                                "className": "flex items-center gap-2 flex-1 min-w-0"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-primary text-sm font-medium truncate"
+                                                        "className": "text-sm text-gray-900 dark:text-white font-medium truncate"
                                                     },
                                                     "text": "{{$localized(item.name)}}"
                                                 },
@@ -288,7 +280,7 @@
                                                     "name": "Span",
                                                     "if": "{{item.is_default}}",
                                                     "props": {
-                                                        "className": "text-secondary px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0"
+                                                        "className": "px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 flex-shrink-0"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.common_info.list.default"
                                                 }
@@ -297,13 +289,17 @@
                                         {
                                             "type": "composite",
                                             "name": "Toggle",
+                                            "props": {
+                                                "size": "sm",
+                                                "checked": "{{item.is_active}}",
+                                                "disabled": "{{!item.abilities?.can_update}}"
+                                            },
                                             "actions": [
                                                 {
-                                                    "comment": "행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다.",
                                                     "type": "change",
                                                     "handler": "apiCall",
-                                                    "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{item.id}}/toggle-active",
                                                     "auth_required": true,
+                                                    "target": "/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{item.id}}/toggle-active",
                                                     "params": {
                                                         "method": "PATCH"
                                                     },
@@ -337,21 +333,18 @@
                                                             }
                                                         }
                                                     ],
-                                                    "onError": {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message}}"
+                                                    "onError": [
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message}}"
+                                                            }
                                                         }
-                                                    },
+                                                    ],
                                                     "stopPropagation": true
                                                 }
-                                            ],
-                                            "props": {
-                                                "size": "sm",
-                                                "checked": "{{item.is_active}}",
-                                                "disabled": "{{!item.abilities?.can_update}}"
-                                            }
+                                            ]
                                         }
                                     ]
                                 },
@@ -359,7 +352,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-1 form-hint"
+                                        "className": "flex items-center gap-1 mt-1 text-xs text-gray-500 dark:text-gray-400"
                                     },
                                     "children": [
                                         {
@@ -403,7 +396,7 @@
             "name": "Div",
             "if": "{{(commonInfos?.data?.data?.length ?? 0) === 0}}",
             "props": {
-                "className": "flex-center flex-1 justify-center gap-3 px-4 py-8"
+                "className": "flex-1 flex items-center justify-center gap-3 px-4 py-8"
             },
             "children": [
                 {
@@ -411,15 +404,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "info-circle",
-                        "className": "text-gray-400 dark:text-gray-500",
-                        "size": "md"
+                        "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-label-subtle"
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.common_info.list.empty"
                 }

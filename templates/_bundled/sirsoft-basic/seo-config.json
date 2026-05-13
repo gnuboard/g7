@@ -12,7 +12,7 @@
         "role", "aria-label", "aria-describedby", "data-testid", "style"
     ],
     "stylesheets": [
-        "vendor/font-awesome/6.4.0/css/all.inlined.css"
+        "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     ],
     "self_closing": ["img", "input", "hr", "br"],
     "seo_overrides": {
@@ -34,13 +34,6 @@
             "item_tag": "span",
             "item_content": "{label}",
             "badge_field": "badge"
-        },
-        "select_options": {
-            "type": "iterate",
-            "source": "$props_source",
-            "item_tag": "option",
-            "item_attrs": { "value": "{value}" },
-            "item_content": "{label|label_key|text|name}"
         },
         "text_format": {
             "type": "format"
@@ -192,12 +185,7 @@
         "Th": { "tag": "th" },
         "Td": { "tag": "td" },
         "Label": { "tag": "label" },
-        "Select": {
-            "tag": "select",
-            "render": "select_options",
-            "props_source": "options"
-        },
-        "Option": { "tag": "option" },
+        "Select": { "tag": "select" },
         "Textarea": { "tag": "textarea" },
         "Strong": { "tag": "strong" },
         "Em": { "tag": "em" },
@@ -309,6 +297,10 @@
             "props_source": "images"
         },
         "QuantitySelector": {
+            "tag": "div",
+            "skip": true
+        },
+        "PostReactions": {
             "tag": "div",
             "skip": true
         },

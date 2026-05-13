@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\Admin\Identity;
 
 use App\Enums\IdentityPolicySourceType;
 use App\Http\Controllers\Api\Base\AdminBaseController;
-use App\Http\Requests\Identity\AdminIdentityPolicyDestroyRequest;
 use App\Http\Requests\Identity\AdminIdentityPolicyIndexRequest;
 use App\Http\Requests\Identity\AdminIdentityPolicyResetFieldRequest;
 use App\Http\Requests\Identity\AdminIdentityPolicyStoreRequest;
@@ -13,27 +12,23 @@ use App\Http\Resources\Identity\PolicyCollection;
 use App\Http\Resources\Identity\PolicyResource;
 use App\Services\IdentityPolicyService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * 관리자 — IDV 정책 CRUD 컨트롤러.
  *
  * S1d 서브섹션(DataGrid + 편집 모달)을 위한 API.
- * 선언형 정책(source_type != 'admin')은 키(key)/시점(scope)/위치(target) 만 readonly 이며,
- * 그 외 필드(purpose/provider_id/grace_minutes/applies_to/priority/fail_mode/enabled/conditions)는
- * 운영자가 자유로이 편집할 수 있습니다. 편집 시 user_overrides JSON 에 필드명이 append 되어
- * Seeder 재실행 시 보존됩니다.
+ * 선언형 정책(source_type != 'admin')은 enabled/grace_minutes/provider_id/fail_mode/conditions 5개 필드만
+ * 편집 가능하며, 편집 시 user_overrides JSON 에 필드명이 append 되어 Seeder 재실행 시 보존됩니다.
  */
 class AdminIdentityPolicyController extends AdminBaseController
 {
     /**
      * source_type = core/module/plugin 정책이 수정 가능한 필드 화이트리스트.
      *
-     * key/scope/target 은 확장이 발행하는 훅/라우트 지점 식별자라 변경 시 정책이 실제 지점과
-     * 어긋나므로 제외한다. 나머지("어떻게 인증할지")는 운영자 자유 편집 대상이다.
-     *
      * @var list<string>
      */
-    protected const LIMITED_EDITABLE_FIELDS = ['enabled', 'grace_minutes', 'provider_id', 'fail_mode', 'conditions', 'purpose', 'applies_to', 'priority'];
+    protected const LIMITED_EDITABLE_FIELDS = ['enabled', 'grace_minutes', 'provider_id', 'fail_mode', 'conditions'];
 
     /**
      * @param  IdentityPolicyService  $policyService  정책 유스케이스 Service
@@ -60,7 +55,7 @@ class AdminIdentityPolicyController extends AdminBaseController
         $paginated = $this->policyService->search($filters, $perPage);
         $collection = (new PolicyCollection($paginated))->toArray($request);
 
-        return $this->success('common.success', [
+        return $this->success('messages.success', [
             'data' => $collection['data'],
             'abilities' => $collection['abilities'] ?? [],
             'meta' => [
@@ -83,7 +78,7 @@ class AdminIdentityPolicyController extends AdminBaseController
         $policy = $this->policyService->createAdminPolicy($request->validated());
 
         return $this->success(
-            'common.created',
+            'messages.created',
             (new PolicyResource($policy))->toArray($request),
             201,
         );
@@ -101,7 +96,7 @@ class AdminIdentityPolicyController extends AdminBaseController
         $policy = $this->policyService->findById($id);
 
         if (! $policy) {
-            return $this->error('common.not_found', 404);
+            return $this->error('messages.not_found', 404);
         }
 
         $validated = $request->validated();
@@ -119,13 +114,13 @@ class AdminIdentityPolicyController extends AdminBaseController
         }
 
         if (! $this->policyService->updatePolicy($policy, $validated)) {
-            return $this->error('common.failed', 500);
+            return $this->error('messages.failed', 500);
         }
 
         $policy->refresh();
 
         return $this->success(
-            'common.updated',
+            'messages.updated',
             (new PolicyResource($policy))->toArray($request),
         );
     }
@@ -133,25 +128,25 @@ class AdminIdentityPolicyController extends AdminBaseController
     /**
      * 정책을 삭제합니다 (source_type='admin' 정책만 가능, 선언형 정책은 비활성화로 대체).
      *
-     * @param  AdminIdentityPolicyDestroyRequest  $request  검증된 요청
+     * @param  Request  $request  HTTP 요청
      * @param  int  $id  정책 ID
-     * @return JsonResponse 삭제 결과 응답
+     * @return JsonResponse
      */
-    public function destroy(AdminIdentityPolicyDestroyRequest $request, int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $policy = $this->policyService->findById($id);
 
         if (! $policy) {
-            return $this->error('common.not_found', 404);
+            return $this->error('messages.not_found', 404);
         }
 
         if ($policy->source_type !== IdentityPolicySourceType::Admin) {
-            return $this->forbidden('identity.errors.cannot_delete_system_policy');
+            return $this->forbidden('messages.cannot_delete_system_resource');
         }
 
         return $this->policyService->deleteAdminPolicy($policy)
-            ? $this->success('common.deleted')
-            : $this->error('common.failed', 500);
+            ? $this->success('messages.deleted')
+            : $this->error('messages.failed', 500);
     }
 
     /**
@@ -170,7 +165,7 @@ class AdminIdentityPolicyController extends AdminBaseController
         $policy = $this->policyService->findById($id);
 
         if (! $policy) {
-            return $this->error('common.not_found', 404);
+            return $this->error('messages.not_found', 404);
         }
 
         if ($policy->source_type === IdentityPolicySourceType::Admin) {
@@ -184,6 +179,6 @@ class AdminIdentityPolicyController extends AdminBaseController
             return $this->error('identity.errors.reset_field_failed', 422);
         }
 
-        return $this->successWithResource('common.success', new PolicyResource($policy->fresh()));
+        return $this->successWithResource('messages.success', new PolicyResource($policy->fresh()));
     }
 }

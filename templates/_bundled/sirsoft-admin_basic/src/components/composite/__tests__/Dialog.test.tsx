@@ -104,7 +104,7 @@ describe('Dialog', () => {
     render(<Dialog {...mockProps} actions={actions} />);
 
     const button = screen.getByText('위험');
-    expect(button).toHaveClass('dialog-btn-danger');
+    expect(button).toHaveClass('bg-red-600');
   });
 
   it('width prop이 적용됨', () => {

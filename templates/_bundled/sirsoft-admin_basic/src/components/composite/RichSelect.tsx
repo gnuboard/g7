@@ -3,22 +3,18 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { Svg } from '../basic/Svg';
-import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
 
 // G7Core.renderComponentLayout() 헬퍼 참조
-// renderEnv 는 이 RichSelect 를 그린 렌더러의 렌더 환경 — 레이아웃 편집기 미리보기에서 항목이
-// 호스트 언어·dispatcher 대신 미리보기 값으로 그려지게 한다(#141).
 const renderComponentLayout = (
   layoutDefs: any[] | undefined,
   itemContext: Record<string, any>,
-  keyPrefix?: string,
-  renderEnv?: Record<string, any> | null
+  keyPrefix?: string
 ): React.ReactNode => {
-  return (window as any).G7Core?.renderComponentLayout?.(layoutDefs, itemContext, keyPrefix, { renderEnv }) ?? null;
+  return (window as any).G7Core?.renderComponentLayout?.(layoutDefs, itemContext, keyPrefix) ?? null;
 };
 
 export interface RichSelectOption {
@@ -67,17 +63,6 @@ export interface RichSelectProps {
     /** 선택된 항목 표시용 레이아웃 정의 */
     selected?: any[];
   };
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
-  /**
-   * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트 — `renderEnvRef.current` 를 component_layout 렌더에 넘긴다(#141)
-   * @internal 템플릿 엔진 내부 사용
-   */
-  __componentContext?: { renderEnvRef?: { current: Record<string, any> | null } };
 }
 
 /**
@@ -127,13 +112,8 @@ export const RichSelect: React.FC<RichSelectProps> = ({
   children,
   selectedChildren,
   __componentLayoutDefs,
-  id,
-  editorAttrs,
-  __componentContext,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  // 렌더 시점의 렌더 환경(호출 시점 값을 읽는다 — ref 라 매 렌더 최신)
-  const renderEnv = __componentContext?.renderEnvRef?.current ?? null;
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -210,8 +190,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
       const rendered = renderComponentLayout(
         __componentLayoutDefs.selected,
         { item: selectedOption, isSelected: true },
-        'selected',
-        renderEnv
+        'selected'
       );
       if (rendered) return rendered;
     }
@@ -244,7 +223,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
   );
 
   return (
-    <Div ref={containerRef} className={`relative ${className}`} id={id} {...editorAttrs}>
+    <Div ref={containerRef} className={`relative ${className}`}>
       {/* 트리거 버튼 */}
       <Button
         ref={buttonRef}
@@ -255,7 +234,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
           w-full px-4 py-2.5
           bg-gray-100 dark:bg-gray-700
           border-0 rounded-xl
-          text-sm text-gray-700 dark:text-gray-200 font-medium
+          text-gray-700 dark:text-gray-200 font-medium
           focus:ring-2 focus:ring-blue-500 focus:outline-none
           flex items-center justify-between gap-2
           text-left cursor-pointer
@@ -296,7 +275,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
                     onClick={() => !option.disabled && handleSelect(option.value)}
                     disabled={option.disabled}
                     className={`
-                      w-full px-4 py-3 text-left text-sm
+                      w-full px-4 py-3 text-left
                       hover:bg-gray-100 dark:hover:bg-gray-700
                       transition-colors
                       ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
@@ -313,8 +292,7 @@ export const RichSelect: React.FC<RichSelectProps> = ({
                       ? renderComponentLayout(
                           __componentLayoutDefs.item,
                           { item: option, index, isSelected },
-                          `item-${index}`,
-                          renderEnv
+                          `item-${index}`
                         )
                       : /* 2. children이 있으면 사용 */
                         children

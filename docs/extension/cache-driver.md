@@ -10,7 +10,6 @@
 3. 접두사로 캐시 키 격리: g7:core:{key}, g7:module.{id}:{key}, g7:plugin.{id}:{key}
 4. TTL은 g7_core_settings('cache.*')로 중앙 관리 (하드코딩 금지)
 5. Service 생성자에서 CacheInterface 타입힌트하면 자동 주입
-6. 쓰기 실패는 fail-soft — put/forget/putMany 는 false, remember 는 콜백 결과 반환 + 경고 로그 (캐시는 최적화라 페이지를 죽이지 않는다)
 ```
 
 ---
@@ -129,83 +128,6 @@ class EcommerceModule extends AbstractModule
         return 'redis'; // 기본값(config('cache.default')) 대신 redis 사용
     }
 }
-```
-
----
-
-## 확장에서 cache 바인딩
-
-플러그인 / 모듈 ServiceProvider 는 **글로벌 `CacheInterface` / `StorageInterface` 바인딩을 덮어쓰지 않는다**. 글로벌 재바인딩은 다음 결함을 만든다:
-
-- ServiceProvider 등록 순서가 늦은 확장이 코어 `app(CacheInterface::class)` 를 자신의 도메인으로 누수
-- 코어 LayoutService 등의 `$this->cache->put('ext.cache_version', ...)` 가 플러그인 도메인으로 작성됨 → 변경이 화면에 반영 안 됨
-- 코어/타 확장이 같은 글로벌 바인딩을 공유하면서 상호 간섭
-
-### 금지 패턴
-
-```php
-// plugins/_bundled/foo/src/Providers/FooServiceProvider.php — 금지
-public function register(): void
-{
-    $this->app->singleton(CacheInterface::class, function () {
-        return new PluginCacheDriver('foo');
-    });
-}
-```
-
-자동으로 차단된다. 면제 표지 불허.
-
-### 표준 패턴 — contextual binding
-
-`BasePluginServiceProvider` / `BaseModuleServiceProvider` 의 `$cacheServices` 배열에 캐시 의존 서비스 클래스만 등록하면, 해당 클래스 생성자의 `CacheInterface` 인자에 본 확장 도메인의 `PluginCacheDriver` / `ModuleCacheDriver` 가 자동 주입된다. 글로벌 코어 바인딩은 그대로 보존된다.
-
-## 플러그인에서 사용하기
-
-### 플러그인 1단계: BasePluginServiceProvider 상속 + cacheServices 등록
-
-```php
-class FooPluginServiceProvider extends BasePluginServiceProvider
-{
-    protected string $pluginIdentifier = 'vendor-foo_plugin';
-
-    protected array $cacheServices = [
-        FooService::class,
-        FooListener::class,
-    ];
-}
-```
-
-### 플러그인 2단계: Service 생성자에서 CacheInterface 주입
-
-모듈과 동일하다 (§"모듈에서 사용하기" §2단계 참조). 키 prefix 만 `g7:plugin.{identifier}:` 로 다르다.
-
-### 플러그인 3단계 (선택): 캐시 스토어 오버라이드
-
-```php
-class FooPlugin extends AbstractPlugin
-{
-    public function getCacheStore(): string
-    {
-        return 'redis';
-    }
-}
-```
-
-### Listener / 동적 인스턴스 생성 시
-
-Listener 가 직접 `new MyService(cache: app(CacheInterface::class), ...)` 로 생성하면 글로벌 바인딩 (코어 도메인) 이 주입되어 도메인이 누수된다. 컨테이너 해석에 위임해야 contextual binding 이 적용된다:
-
-```php
-// 금지 — 글로벌 코어 캐시가 주입됨
-$service = new MyService(
-    cache: app(CacheInterface::class),
-);
-
-// 표준 — $cacheServices 의 contextual binding 적용
-$service = app()->makeWith(MyService::class, [
-    'config' => $dynamicConfig,
-    // cache 인자는 생략 → contextual binding 으로 자동 주입
-]);
 ```
 
 ---

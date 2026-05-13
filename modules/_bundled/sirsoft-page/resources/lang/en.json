@@ -1,14 +1,4 @@
 {
-  "editor": {
-    "data_source": {
-      "page": "Page",
-      "pageData": "Page Data",
-      "pages": "Pages",
-      "versions": "Versions",
-      "attachmentSettings": "Attachment Settings",
-      "createAbility": "Create Permission Check"
-    }
-  },
   "admin": {
     "$partial": "partial/en/admin.json"
   }

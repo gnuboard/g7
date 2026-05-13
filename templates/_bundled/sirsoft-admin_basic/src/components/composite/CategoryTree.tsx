@@ -1,12 +1,9 @@
-// e2e:allow편집기 선택 결함#8 수정(빈 데이터 분기에 id/editorAttrs 부착). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 CategoryTree.test.tsx 빈 상태 editorAttrs describe.
 import React, { useCallback, useMemo } from 'react';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Checkbox } from '../basic/Checkbox';
-import type { EditorAttrs } from '../../types';
-import { HighlightText } from '../shared/HighlightText';
 
 /**
  * 카테고리 노드 인터페이스 (CategoryResource API 응답 기반)
@@ -40,12 +37,32 @@ export interface CategoryTreeProps {
   onToggle?: (expandedIds: number[]) => void;
   /** 선택 변경 콜백: (selectedIds: number[]) => void */
   onSelectionChange?: (selectedIds: number[]) => void;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
+}
+
+/**
+ * 텍스트에서 키워드를 하이라이트하여 렌더링합니다.
+ */
+function HighlightText({ text, keyword }: { text: string; keyword: string }) {
+  if (!keyword || !text) {
+    return <>{text}</>;
+  }
+
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === keyword.toLowerCase() ? (
+          <Span key={i} className="bg-yellow-200 dark:bg-yellow-700 rounded px-0.5">
+            {part}
+          </Span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
 }
 
 /**
@@ -90,8 +107,6 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
   className = '',
   onToggle,
   onSelectionChange,
-  id,
-  editorAttrs,
 }) => {
   /**
    * 노드 펼치기/접기 토글
@@ -245,21 +260,15 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
   };
 
   if (data.length === 0) {
-    // 빈 상태 분기도 루트에 id/editorAttrs 부착 — 편집기에서 선택 가능해야 함
-    // (모든 렌더 분기 패리티: 빈 데이터로 추가 시 이 분기로 진입)
     return (
-      <Div
-        className={`text-sm text-gray-400 dark:text-gray-500 py-4 text-center ${className}`}
-        id={id}
-        {...editorAttrs}
-      >
+      <Div className={`text-sm text-gray-400 dark:text-gray-500 py-4 text-center ${className}`}>
         데이터가 없습니다.
       </Div>
     );
   }
 
   return (
-    <Div className={`border border-gray-200 dark:border-gray-700 rounded-lg p-2 max-h-80 overflow-y-auto ${className}`} id={id} {...editorAttrs}>
+    <Div className={`border border-gray-200 dark:border-gray-700 rounded-lg p-2 max-h-80 overflow-y-auto ${className}`}>
       {data.map((node) => renderNode(node, 0))}
     </Div>
   );

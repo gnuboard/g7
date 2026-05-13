@@ -1,9 +1,33 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { copyFileSync, mkdirSync, readdirSync } from 'fs';
+
+// 다국어 파일 복사 플러그인
+function copyLangFiles() {
+    return {
+        name: 'copy-lang-files',
+        closeBundle() {
+            const srcLangDir = path.resolve(__dirname, 'resources/js/core/lang');
+            const destLangDir = path.resolve(__dirname, 'public/build/core/lang');
+
+            mkdirSync(destLangDir, { recursive: true });
+
+            // lang 디렉토리의 모든 .json 파일 복사
+            const files = readdirSync(srcLangDir).filter(file => file.endsWith('.json'));
+
+            files.forEach(file => {
+                const src = path.join(srcLangDir, file);
+                const dest = path.join(destLangDir, file);
+                copyFileSync(src, dest);
+                console.log(`✓ Copied ${file} to public/build/core/lang/`);
+            });
+        }
+    };
+}
 
 export default defineConfig({
-    plugins: [react()],
+    plugins: [react(), copyLangFiles()],
     publicDir: false,
     // 환경 변수 정의 (React 빌드용)
     define: {
@@ -33,9 +57,7 @@ export default defineConfig({
             },
         },
         minify: 'esbuild',
-        // 배포용 빌드(--production)는 G7_BUILD_SOURCEMAP=0 을 주입해 소스맵을 생성하지 않는다.
-        // 미설정(로컬 npm run build)이면 생성 — 개발 디버깅 경험을 유지한다.
-        sourcemap: !['0', 'false'].includes(process.env.G7_BUILD_SOURCEMAP ?? ''),
+        sourcemap: true,
         target: 'es2020',
     },
     resolve: {

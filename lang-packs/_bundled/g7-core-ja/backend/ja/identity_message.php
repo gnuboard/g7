@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'definition_list_success' => 'IDVメッセージ定義リストを取得しました。',
+    'definition_list_failed' => 'IDVメッセージ定義リスト取得に失敗しました。',
+    'definition_show_success' => 'IDVメッセージ定義詳細を取得しました。',
+    'definition_show_failed' => 'IDVメッセージ定義詳細取得に失敗しました。',
+    'definition_created' => 'IDVメッセージ定義が作成されました。',
+    'definition_create_failed' => 'IDVメッセージ定義作成に失敗しました。',
+    'definition_updated' => 'IDVメッセージ定義が編集されました。',
+    'definition_update_failed' => 'IDVメッセージ定義編集に失敗しました。',
+    'definition_toggled' => 'IDVメッセージ定義の有効状態が変更されました。',
+    'definition_toggle_failed' => 'IDVメッセージ定義有効状態変更に失敗しました。',
+    'definition_reset' => 'IDVメッセージ定義がデフォルト値に復元されました。',
+    'definition_reset_failed' => 'IDVメッセージ定義デフォルト値復元に失敗しました。',
+    'definition_deleted' => 'IDVメッセージ定義が削除されました。',
+    'definition_delete_failed' => 'IDVメッセージ定義削除に失敗しました。',
+    'definition_delete_forbidden' => 'シード済みのデフォルトメッセージ定義は削除できません。',
+    'template_updated' => 'IDVメッセージテンプレートが編集されました。',
+    'template_update_failed' => 'IDVメッセージテンプレート編集に失敗しました。',
+    'template_toggled' => 'IDVメッセージテンプレートの有効状態が変更されました。',
+    'template_toggle_failed' => 'IDVメッセージテンプレート有効状態変更に失敗しました。',
+    'template_reset' => 'IDVメッセージテンプレートがデフォルト値に復元されました。',
+    'template_reset_failed' => 'IDVメッセージテンプレートデフォルト値復元に失敗しました。',
+    'template_preview_success' => 'IDVメッセージテンプレートプレビューを生成しました。',
+    'template_preview_failed' => 'IDVメッセージテンプレートプレビュー生成に失敗しました。',
+];

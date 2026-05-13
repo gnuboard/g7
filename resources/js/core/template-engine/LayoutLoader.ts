@@ -16,8 +16,6 @@
 import type { ComponentRegistry } from './ComponentRegistry';
 import type { ErrorHandlingMap } from '../types/ErrorHandling';
 import { createLogger } from '../utils/Logger';
-import { fetchWithRetry } from './networkResilience';
-import { suffixed } from '../support/assetUrl';
 import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
 import { getApiClient } from '../api/ApiClient';
 
@@ -99,14 +97,6 @@ export interface LayoutScript {
   src: string;
   /** 스크립트 요소 ID (중복 로드 방지용, 필수) */
   id: string;
-  /**
-   * 로드 실패 안내에 쓸 사람이 읽는 이름 (선택적, `$t:키` 허용)
-   *
-   * 없으면 일반 이름(「화면 기능 스크립트」)으로 안내한다 — id 는 안내에 쓰지 않는다.
-   *
-   * @since engine-v1.79.0
-   */
-  label?: string;
   /** 조건부 로드 표현식 (선택적, 예: "{{_global.pluginActive}}") */
   if?: string;
   /**
@@ -726,17 +716,8 @@ export class LayoutLoader {
     }
 
     // 캐시 미스 - 새로운 로딩 Promise 생성 및 캐시에 저장
-    // 실패한 promise 를 캐시에 남기면 이후 모든 재요청이 그 rejection 을 그대로 재사용해
-    // 영구 실패가 된다(네트워크가 복구돼도 다시 시도할 기회가 없다). 실패 시 캐시에서 제거.
-    // @since engine-v1.53.0
     const loadPromise = this.fetchLayout(templateId, layoutPath);
     this.layoutCache.set(cacheKey, loadPromise);
-
-    loadPromise.catch(() => {
-      if (this.layoutCache.get(cacheKey) === loadPromise) {
-        this.layoutCache.delete(cacheKey);
-      }
-    });
 
     return loadPromise;
   }
@@ -753,14 +734,14 @@ export class LayoutLoader {
     try {
       // API 엔드포인트 구성 (캐시 버전 쿼리 파라미터 추가)
       // 시스템 레이아웃 분기: __preview__ 는 별도 API 엔드포인트 사용
-      const version = this.cacheVersion > 0 ? this.cacheVersion : null;
-      let apiUrl: string;
+      let baseUrl: string;
       if (layoutPath.startsWith('__preview__/')) {
         const token = layoutPath.replace('__preview__/', '');
-        apiUrl = suffixed(`/api/layouts/preview/${token}`, 'json', version);
+        baseUrl = `/api/layouts/preview/${token}.json`;
       } else {
-        apiUrl = suffixed(`/api/layouts/${templateId}/${layoutPath}`, 'json', version);
+        baseUrl = `/api/layouts/${templateId}/${layoutPath}.json`;
       }
+      const apiUrl = this.cacheVersion > 0 ? `${baseUrl}?v=${this.cacheVersion}` : baseUrl;
 
       logger.log('Fetching layout from API:', apiUrl);
 
@@ -775,10 +756,7 @@ export class LayoutLoader {
       }
 
       // API 호출 (인증 헤더 포함)
-      // 네트워크 일시 실패(응답 없음)에만 재시도한다. 401 등 HTTP 응답은 그대로 넘어와
-      // 아래 상태코드 분기가 종전대로 동작한다 (두 재시도는 계층이 달라 중첩되지 않는다).
-      // @since engine-v1.53.0
-      const response = await fetchWithRetry(apiUrl, { init: { headers }, label: `layout: ${layoutPath}` });
+      const response = await fetch(apiUrl, { headers });
 
       // JSON 파싱 (에러 응답도 JSON일 수 있으므로 먼저 파싱)
       let responseData: any;

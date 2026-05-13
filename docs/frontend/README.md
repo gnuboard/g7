@@ -36,6 +36,13 @@
 ---
 
 <!-- AUTO-GENERATED-START: frontend-readme-docs -->
+### 템플릿별 레퍼런스
+
+| 템플릿 식별자 | 컴포넌트 | 핸들러 | 레이아웃 |
+|--------------|---------|--------|--------|
+| `sirsoft-admin_basic` | [components.md](templates/sirsoft-admin_basic/components.md) | [handlers.md](templates/sirsoft-admin_basic/handlers.md) | [layouts.md](templates/sirsoft-admin_basic/layouts.md) |
+| `sirsoft-basic` | [components.md](templates/sirsoft-basic/components.md) | [handlers.md](templates/sirsoft-basic/handlers.md) | [layouts.md](templates/sirsoft-basic/layouts.md) |
+
 ### 컴포넌트 개발
 
 | 문서 | 설명 |
@@ -78,7 +85,6 @@
 | [layout-json-features.md](layout-json-features.md) | 레이아웃 JSON - 기능 (에러 핸들링, 초기화, 모달, 액션) |
 | [layout-json-inheritance.md](layout-json-inheritance.md) | 레이아웃 JSON - 상속 (Extends, Partial, 병합) |
 | [layout-json.md](layout-json.md) | 레이아웃 JSON 스키마 |
-| [layout-markup.md](layout-markup.md) | 레이아웃 마크업 (`.g7.html`) 형식 |
 | [state-management-advanced.md](state-management-advanced.md) | 상태 관리 - 고급 기능 |
 | [state-management-forms.md](state-management-forms.md) | 상태 관리 - 폼 자동 바인딩 및 setState |
 | [state-management.md](state-management.md) | 전역 상태 관리 |
@@ -117,8 +123,6 @@
 
 | 문서 | 설명 |
 |------|------|
-| [admin-list-filter-convention.md](admin-list-filter-convention.md) | 관리자 목록 필터 컨벤션 |
-| [analytics-tracker.md](analytics-tracker.md) | 방문자 통계 트래커 |
 | [identity-guard-interceptor.md](identity-guard-interceptor.md) | IdentityGuardInterceptor — 코어 본인인증 인터셉터 레퍼런스 |
 | [identity-verification-ui.md](identity-verification-ui.md) | 본인인증(IDV) 공통 UI 가이드 |
 
@@ -138,12 +142,6 @@
 ---
 
 ## 데이터 바인딩 문법 (빠른 참조)
-
-```html
-<div title="{{user.name}}" userId="{{route.id}}" label="$t:dashboard.title" total="{{users?.data?.total ?? 0}}">본문</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -171,7 +169,7 @@
 
 ## 관련 문서
 
-- [AGENTS.md](../../AGENTS.md) - 그누보드7 개발 가이드 (메인)
+- [AGENTS.md](../../../AGENTS.md) - 그누보드7 개발 가이드 (메인)
 - [backend/](../backend/) - 백엔드 개발 규칙
 - [database-guide.md](../database-guide.md) - 데이터베이스 규칙
 - [testing-guide.md](../testing-guide.md) - 테스트 규칙

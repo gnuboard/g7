@@ -45,8 +45,6 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
-import type { EditorAttrs } from '../../types';
-import { isSameOriginRequest } from '../../support/sameOriginRequest';
 
 // G7Core 참조
 const getG7Core = () => (window as any).G7Core;
@@ -86,7 +84,7 @@ export interface AuthorInfo {
   /** 아바타 URL */
   avatar?: string;
   /** 사용자 상태 */
-  status?: 'active' | 'inactive' | 'blocked' | 'withdrawn' | 'dormant' | 'pending_verification';
+  status?: 'active' | 'inactive' | 'blocked' | 'withdrawn';
   /** 비회원 여부 */
   is_guest?: boolean;
 }
@@ -179,15 +177,6 @@ export interface UserInfoProps {
   hideMenuItems?: string[];
   /** 기본 메뉴에 추가할 항목 */
   appendMenuItems?: MenuItemConfig[];
-
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-/**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 // 레이아웃별 컨테이너 클래스
@@ -245,8 +234,6 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   menuItems,
   hideMenuItems = [],
   appendMenuItems = [],
-  id,
-  editorAttrs,
 }) => {
   // 명시적 props > author 추출값 순서로 결정
   const actualUserId = userId ?? author?.uuid;
@@ -343,8 +330,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
       const g7Core = getG7Core();
       if (g7Core?.navigate) {
         g7Core.navigate(path);
-      } else if (isSameOriginNavPath(path)) {
-        // 보안: 엔진 navigate 가 없을 때의 폴백도 같은 출처 경로로만 이동한다(메뉴 데이터의 외부 주소 차단).
+      } else {
         window.location.href = path;
       }
     }
@@ -379,7 +365,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   // 비회원인 경우
   if (actualIsGuest || !actualUserId) {
     return (
-      <Div className={containerClass} id={id} {...editorAttrs}>
+      <Div className={containerClass}>
         <Div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
           <Span>{actualName}</Span>
           <Span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
@@ -394,7 +380,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   // 탈퇴한 사용자인 경우
   if (actualIsWithdrawn) {
     return (
-      <Div className={containerClass} id={id} {...editorAttrs}>
+      <Div className={containerClass}>
         <Span className="text-gray-400 dark:text-gray-500 line-through">
           {actualName}
         </Span>
@@ -413,7 +399,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     : `${defaultColorClass} font-medium`.trim();
 
   return (
-    <Div ref={containerRef} className={`relative inline-block ${className}`} id={id} {...editorAttrs}>
+    <Div ref={containerRef} className={`relative inline-block ${className}`}>
       <Div className={LAYOUT_CLASSES[layout]}>
         <Button
           ref={buttonRef}
@@ -450,19 +436,3 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     </Div>
   );
 };
-
-/**
- * 이동 폴백이 따라가도 되는 같은 출처 주소인지 판정합니다.
- *
- * `/` 하나로 시작하는 경로(`//`·`/\` 제외)는 문서 주소와 무관하게 같은 출처이고, 그 밖의 주소는 출처를 비교한다.
- *
- * @param target 이동할 주소
- * @returns 같은 출처면 true
- */
-function isSameOriginNavPath(target: unknown): boolean {
-  if (typeof target === 'string' && /^\/(?![/\\])/.test(target)) {
-    return true;
-  }
-
-  return isSameOriginRequest(target);
-}

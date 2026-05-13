@@ -1,0 +1,21 @@
+{
+    "identifier": "sirsoft-verification",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "본인인증",
+        "en": "Identity Verification"
+    },
+    "version": "1.0.0-beta.1",
+    "license": "MIT",
+    "description": {
+        "ko": "휴대폰 인증, 아이핀 인증 등 본인인증 기능을 제공하는 플러그인",
+        "en": "Plugin providing identity verification features including mobile and i-PIN verification"
+    },
+    "g7_version": ">=7.0.0-beta.1",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-verification",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-verification/blob/main/CHANGELOG.md"
+}

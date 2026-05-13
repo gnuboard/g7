@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-// @tailwindcss/vite 대신 @tailwindcss/postcss 사용 (postcss.config.js)
-// @source 지시문이 PostCSS에서만 작동함
+import tailwindcss from '@tailwindcss/vite';
 import dts from 'vite-plugin-dts';
 import path from 'path';
 
@@ -12,12 +11,11 @@ export default defineConfig({
 
   plugins: [
     react(),
-    // Tailwind CSS는 postcss.config.js에서 @tailwindcss/postcss로 처리
+    tailwindcss(),
     dts({
       insertTypesEntry: true,
       include: ['src/**/*.ts', 'src/**/*.tsx'],
-      // 테스트 폴더의 공용 도우미(`*TestUtils.ts`)는 테스트 파일명 규칙에 걸리지 않아 배포 타입에 섞인다 — 폴더째 뺀다.
-      exclude: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/__tests__/**/*', 'node_modules'],
+      exclude: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'node_modules'],
     }),
   ],
 
@@ -32,12 +30,10 @@ export default defineConfig({
 
     // 빌드 출력 설정
     outDir: 'dist',
-    emptyOutDir: false, // 동봉 vendor 보존 — 산출물 정리는 빌드 커맨드가 한다
+    emptyOutDir: true,
 
     // 소스맵 생성
-    // 배포용 빌드(--production)는 G7_BUILD_SOURCEMAP=0 을 주입해 소스맵을 생성하지 않는다.
-    // 미설정(로컬 npm run build)이면 생성 — 개발 디버깅 경험을 유지한다.
-    sourcemap: !['0', 'false'].includes(process.env.G7_BUILD_SOURCEMAP ?? ''),
+    sourcemap: true,
 
     // 외부 종속성 (번들에 포함하지 않음)
     rollupOptions: {

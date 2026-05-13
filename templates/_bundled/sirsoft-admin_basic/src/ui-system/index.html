@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>그누보드7 Admin Design Guide</title>
+  <link rel="stylesheet" href="../../dist/css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    .preview-section {
+      margin-bottom: 3rem;
+    }
+    .preview-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #111827;
+    }
+    .dark .preview-title {
+      color: #f9fafb;
+    }
+    .preview-nav-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .preview-nav-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .dark .preview-nav-card {
+      background: #1f2937;
+      border-color: #374151;
+    }
+    .preview-nav-card:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .dark .preview-nav-card:hover {
+      border-color: #60a5fa;
+    }
+    .preview-nav-card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 0.5rem;
+    }
+    .dark .preview-nav-card-title {
+      color: #f9fafb;
+    }
+    .preview-nav-card-description {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+    .dark .preview-nav-card-description {
+      color: #9ca3af;
+    }
+    .preview-nav-card-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      background: #f3f4f6;
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      color: #6b7280;
+    }
+    .dark .preview-nav-card-icon {
+      background: #374151;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <!-- Dark Mode Toggle -->
+  <div class="fixed top-4 right-4 z-50">
+    <button id="darkModeToggle" class="btn btn-secondary">
+      <i class="fas fa-moon dark:hidden"></i>
+      <i class="fas fa-sun hidden dark:inline"></i>
+      <span class="dark:hidden">다크모드</span>
+      <span class="hidden dark:inline">라이트모드</span>
+    </button>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">그누보드7 Admin Design Guide</h1>
+    <p class="text-gray-600 dark:text-gray-400 mb-8">관리자 템플릿 컴포넌트 스타일 가이드</p>
+
+    <section class="preview-section">
+      <h2 class="preview-title">카테고리</h2>
+      <div class="preview-nav-grid">
+        <a href="colors.html" class="preview-nav-card">
+          <div class="preview-nav-card-icon">
+            <i class="fas fa-palette"></i>
+          </div>
+          <h3 class="preview-nav-card-title">Colors</h3>
+          <p class="preview-nav-card-description">텍스트 색상, 가격 표시 색상 등 전역 색상 스타일</p>
+        </a>
+
+        <a href="typography.html" class="preview-nav-card">
+          <div class="preview-nav-card-icon">
+            <i class="fas fa-font"></i>
+          </div>
+          <h3 class="preview-nav-card-title">Typography</h3>
+          <p class="preview-nav-card-description">폼 레이블, 제목, 설명 등 타이포그래피 스타일</p>
+        </a>
+
+        <a href="ui-elements.html" class="preview-nav-card">
+          <div class="preview-nav-card-icon">
+            <i class="fas fa-hand-pointer"></i>
+          </div>
+          <h3 class="preview-nav-card-title">UI Elements</h3>
+          <p class="preview-nav-card-description">버튼, 인풋, 폼 요소, 뱃지</p>
+        </a>
+
+        <a href="components.html" class="preview-nav-card">
+          <div class="preview-nav-card-icon">
+            <i class="fas fa-puzzle-piece"></i>
+          </div>
+          <h3 class="preview-nav-card-title">Components</h3>
+          <p class="preview-nav-card-description">테이블, 모달, 카드, 탭, 토스트, 드롭다운, 커스텀 셀렉트</p>
+        </a>
+
+        <a href="layout.html" class="preview-nav-card">
+          <div class="preview-nav-card-icon">
+            <i class="fas fa-th-large"></i>
+          </div>
+          <h3 class="preview-nav-card-title">Layout</h3>
+          <p class="preview-nav-card-description">페이지 헤더, 반응형 그리드 등 레이아웃 스타일</p>
+        </a>
+
+        <a href="other.html" class="preview-nav-card">
+          <div class="preview-nav-card-icon">
+            <i class="fas fa-ellipsis-h"></i>
+          </div>
+          <h3 class="preview-nav-card-title">Other</h3>
+          <p class="preview-nav-card-description">페이지네이션, 디바이더, 이미지, 아바타 등</p>
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/preview.js"></script>
+</body>
+</html>

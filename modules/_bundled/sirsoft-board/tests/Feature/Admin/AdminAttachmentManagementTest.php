@@ -9,7 +9,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
-use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 관리자 첨부파일 관리 API 테스트
@@ -19,10 +18,11 @@ use PHPUnit\Framework\Attributes\Group;
  * - 권한 부재 시 403, 미인증 시 401 응답
  * - 삭제 후 attachments_count 감소 (PostCountSyncListener 동작)
  * - 존재하지 않는 파일 삭제/다운로드 → 404
+ *
+ * @group board
+ * @group admin
+ * @group attachment
  */
-#[Group('board')]
-#[Group('admin')]
-#[Group('attachment')]
 class AdminAttachmentManagementTest extends BoardTestCase
 {
     private User $adminWithUpload;
@@ -31,22 +31,11 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     private User $regularUser;
 
-    /**
-     * 테스트 게시판 슬러그를 반환합니다.
-     *
-     * @return string 게시판 슬러그
-     */
     protected function getTestBoardSlug(): string
     {
         return 'admin-attach-mgmt';
     }
 
-    /**
-     * 테스트 게시판 기본 속성을 반환합니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @return array 게시판 속성
-     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -59,11 +48,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
         ];
     }
 
-    /**
-     * 테스트 환경을 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -90,10 +74,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 권한 있는 관리자가 임시 업로드 → 201 + DB 레코드 생성
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_upload_succeeds, uuid_temp_key_accepted
      */
     public function test_admin_can_upload_attachment_as_temp(): void
     {
@@ -103,7 +83,7 @@ class AdminAttachmentManagementTest extends BoardTestCase
             $this->url('/attachments'),
             [
                 'file' => $file,
-                'temp_key' => '5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6',
+                'temp_key' => 'test-temp-key-001',
             ]
         );
 
@@ -116,10 +96,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 게시글에 직접 첨부파일 업로드 (post_id 있음) → 201
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_upload_succeeds
      */
     public function test_admin_can_upload_attachment_to_post(): void
     {
@@ -144,10 +120,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 미인증 요청 → 401
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_upload_requires_auth_and_permission
      */
     public function test_unauthenticated_cannot_upload(): void
     {
@@ -155,16 +127,12 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
         $this->postJson(
             $this->url('/attachments'),
-            ['file' => $file, 'temp_key' => '5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6']
+            ['file' => $file, 'temp_key' => 'key']
         )->assertStatus(401);
     }
 
     /**
      * 권한 없는 사용자 → 403
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_upload_requires_auth_and_permission
      */
     public function test_user_without_permission_cannot_upload(): void
     {
@@ -172,7 +140,7 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
         $this->actingAs($this->regularUser)->postJson(
             $this->url('/attachments'),
-            ['file' => $file, 'temp_key' => '5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6']
+            ['file' => $file, 'temp_key' => 'key']
         )->assertStatus(403);
     }
 
@@ -182,10 +150,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 권한 있는 관리자가 첨부파일 삭제 → 200 + soft delete
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_delete_soft_deletes_and_syncs_count
      */
     public function test_admin_can_delete_attachment(): void
     {
@@ -201,10 +165,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 삭제 후 attachments_count 감소 (PostCountSyncListener 동작)
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_delete_soft_deletes_and_syncs_count
      */
     public function test_delete_attachment_decrements_attachments_count(): void
     {
@@ -224,10 +184,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 존재하지 않는 첨부파일 삭제 → 404
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_delete_rejects_missing_or_forbidden
      */
     public function test_delete_nonexistent_attachment_returns_404(): void
     {
@@ -238,10 +194,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 권한 없는 사용자 삭제 → 403
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_delete_rejects_missing_or_forbidden
      */
     public function test_user_without_permission_cannot_delete(): void
     {
@@ -259,10 +211,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 권한 있는 관리자가 순서 변경 → 200
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_reorder_requires_permission
      */
     public function test_admin_can_reorder_attachments(): void
     {
@@ -287,10 +235,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 권한 없는 사용자 순서 변경 → 403
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_reorder_requires_permission
      */
     public function test_user_without_permission_cannot_reorder(): void
     {
@@ -309,17 +253,13 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 권한 있는 관리자가 해시로 다운로드 → 200 (streamed response)
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_download_by_hash_requires_permission
      */
     public function test_admin_can_download_attachment_by_hash(): void
     {
         $postId = $this->createTestPost();
         $hash = 'dlhash123456';
         Storage::fake('public');
-        Storage::disk('public')->put('admin-attach-mgmt/2025/01/01/file.pdf', 'file content');
+        Storage::disk('public')->put("admin-attach-mgmt/2025/01/01/file.pdf", 'file content');
 
         $this->createTestAttachment($postId, [
             'hash' => $hash,
@@ -339,10 +279,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 존재하지 않는 해시로 다운로드 → 404
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_download_by_hash_requires_permission
      */
     public function test_download_nonexistent_hash_returns_404(): void
     {
@@ -353,10 +289,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 다운로드 권한 없는 사용자 → 403
-     *
-     * @return void 반환값 없음
-     *
-     * @effects admin_download_by_hash_requires_permission
      */
     public function test_user_without_download_permission_cannot_download(): void
     {
@@ -375,9 +307,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * Admin attachment API URL 생성
-     *
-     * @param  string  $suffix  게시판 하위 경로
-     * @return string 관리자 API 경로
      */
     private function url(string $suffix): string
     {
@@ -388,10 +317,6 @@ class AdminAttachmentManagementTest extends BoardTestCase
 
     /**
      * 테스트용 첨부파일을 직접 DB에 생성합니다.
-     *
-     * @param  int  $postId  게시글 ID
-     * @param  array  $attributes  덮어쓸 첨부 속성
-     * @return int 생성된 첨부 ID
      */
     private function createTestAttachment(int $postId, array $attributes = []): int
     {

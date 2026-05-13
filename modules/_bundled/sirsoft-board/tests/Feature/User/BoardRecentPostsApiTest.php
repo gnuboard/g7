@@ -5,29 +5,24 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
-use App\Http\Middleware\PermissionMiddleware;
-use App\Models\Permission;
-use App\Models\Role;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
-use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 최근 게시글 API 테스트
  *
  * 홈 페이지에서 사용할 최근 게시글 통합 조회 API의 동작을 검증합니다.
+ *
+ * @group board
+ * @group board-recent-posts
  */
-#[Group('board')]
-#[Group('board-recent-posts')]
 class BoardRecentPostsApiTest extends ModuleTestCase
 {
     /**
      * 테스트 환경 설정
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -42,8 +37,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
 
     /**
      * 테스트 종료 후 정리
-     *
-     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -52,12 +45,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
 
     /**
      * 최근 게시글 API가 올바른 구조로 응답하는지 테스트
-     *
-     * @scenario listing=recent_posts, request_case=default
-     *
-     * @effects recent_posts_returns_correct_structure
-     *
-     * @return void 반환값 없음
      */
     public function test_recent_posts_returns_correct_structure(): void
     {
@@ -74,12 +61,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
 
     /**
      * 기본 limit이 5개인지 테스트
-     *
-     * @scenario listing=recent_posts, request_case=default
-     *
-     * @effects recent_posts_default_limit_is_five
-     *
-     * @return void 반환값 없음
      */
     public function test_recent_posts_default_limit_is_five(): void
     {
@@ -98,12 +79,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
 
     /**
      * limit 파라미터가 동작하는지 테스트
-     *
-     * @scenario listing=recent_posts, request_case=paging_parameter
-     *
-     * @effects recent_posts_respects_limit_parameter
-     *
-     * @return void 반환값 없음
      */
     public function test_recent_posts_respects_limit_parameter(): void
     {
@@ -122,12 +97,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
 
     /**
      * limit 최대값이 20인지 테스트
-     *
-     * @scenario listing=recent_posts, request_case=paging_parameter
-     *
-     * @effects recent_posts_max_limit_is_twenty
-     *
-     * @return void 반환값 없음
      */
     public function test_recent_posts_max_limit_is_twenty(): void
     {
@@ -146,12 +115,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
 
     /**
      * 게시판이 없을 때 빈 배열을 반환하는지 테스트
-     *
-     * @scenario listing=recent_posts, request_case=empty_source
-     *
-     * @effects recent_posts_returns_empty_when_no_boards
-     *
-     * @return void 반환값 없음
      */
     public function test_recent_posts_returns_empty_when_no_boards(): void
     {
@@ -170,12 +133,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
 
     /**
      * 최신순으로 정렬되는지 테스트
-     *
-     * @scenario listing=recent_posts, request_case=default
-     *
-     * @effects recent_posts_sorted_by_created_at_desc
-     *
-     * @return void 반환값 없음
      */
     public function test_recent_posts_sorted_by_created_at_desc(): void
     {
@@ -199,12 +156,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
 
     /**
      * 결과가 캐시되는지 테스트
-     *
-     * @scenario listing=recent_posts, request_case=default
-     *
-     * @effects recent_posts_are_cached
-     *
-     * @return void 반환값 없음
      */
     public function test_recent_posts_are_cached(): void
     {
@@ -215,8 +166,8 @@ class BoardRecentPostsApiTest extends ModuleTestCase
         $response1 = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=5');
         $response1->assertStatus(200);
 
-        // 캐시 키 확인 (ModuleCacheDriver 접두사 `g7:module.sirsoft-board:` + key, 게시판 이름이 언어별 값이라 키에 언어가 붙는다)
-        $this->assertTrue(Cache::has('g7:module.sirsoft-board:recent_posts_5_'.app()->getLocale()));
+        // 캐시 키 확인 (ModuleCacheDriver 접두사 `g7:module.sirsoft-board:` + key)
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:recent_posts_5'));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=5');
@@ -227,26 +178,17 @@ class BoardRecentPostsApiTest extends ModuleTestCase
     }
 
     /**
-     * 비밀글이 포함되어 is_secret 필드가 반환되는지 테스트.
-     *
-     * 비밀글도 제목은 공개한다(본문만 보호) — 2026-02-04 확정 정책.
-     * (게시판별 열람 권한 필터는 별도 — createBoardWithPosts 가 guest read 권한을 부여한다.)
-     *
-     * @scenario listing=recent_posts, request_case=default
-     *
-     * @effects recent_posts_includes_secret_posts_with_is_secret_field
-     *
-     * @return void 반환값 없음
+     * 비밀글이 포함되어 is_secret 필드가 반환되는지 테스트
      */
     public function test_recent_posts_includes_secret_posts_with_is_secret_field(): void
     {
-        // Given: 공개글 + 비밀글 혼합 생성 (i%2==0 이 비밀글, 게시판에 guest read 권한 부여됨)
-        $this->createBoardWithPosts(4, includingSecret: true);
+        // Given: 비밀글 포함 게시글 생성
+        $this->createBoardWithPosts(3, includingSecret: true);
 
-        // When: API 호출 (비로그인)
+        // When: API 호출
         $response = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent');
 
-        // Then: is_secret 필드 포함 및 비밀글도 응답에 포함
+        // Then: is_secret 필드 포함 및 비밀글 반환
         $response->assertStatus(200);
         $data = $response->json('data');
 
@@ -257,28 +199,21 @@ class BoardRecentPostsApiTest extends ModuleTestCase
             $this->assertArrayHasKey('is_secret', $post);
         }
 
-        // 비밀글이 포함되어 있어야 함 (제목 공개 정책 — 비밀글도 목록/최근글에 표시)
+        // 비밀글이 포함되어 있어야 함
         $secretPosts = array_filter($data, fn ($post) => $post['is_secret'] === true);
-        $this->assertNotEmpty($secretPosts, '비밀글이 응답에 포함되어야 합니다(제목 공개).');
+        $this->assertNotEmpty($secretPosts, '비밀글이 응답에 포함되어야 합니다');
     }
 
     /**
-     * 비밀글도 제목이 정상적으로 표시되는지 테스트 (제목 공개 정책 — 본문만 보호).
-     *
-     * @scenario listing=recent_posts, request_case=default
-     *
-     * @effects secret_post_title_is_visible_in_recent_posts
-     *
-     * @return void 반환값 없음
+     * 비밀글도 제목이 정상적으로 표시되는지 테스트
      */
     public function test_secret_post_title_is_visible_in_recent_posts(): void
     {
-        // Given: 비밀글이 있는 게시판 생성 (guest read 권한 부여)
+        // Given: 비밀글이 있는 게시판 생성
         $board = Board::factory()->create([
             'is_active' => true,
             'name' => ['ko' => '비밀게시판', 'en' => 'Secret Board'],
         ]);
-        $this->grantGuestRead($board);
 
         DB::table('board_posts')->insert([
             'board_id' => $board->id,
@@ -292,10 +227,10 @@ class BoardRecentPostsApiTest extends ModuleTestCase
             'updated_at' => now(),
         ]);
 
-        // When: API 호출 (비로그인)
+        // When: API 호출
         $response = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent');
 
-        // Then: 비밀글 제목이 보여야 함 (마스킹 안 됨 — 제목 공개 정책)
+        // Then: 비밀글 제목이 보여야 함 (마스킹 안 됨)
         $response->assertStatus(200);
         $data = $response->json('data');
 
@@ -306,13 +241,7 @@ class BoardRecentPostsApiTest extends ModuleTestCase
     }
 
     /**
-     * 최근 게시글 응답에 created_at(Y-m-d H:i:s 포맷)과 created_at_formatted(표시용) 필드가 포함되는지 확인
-     *
-     * @scenario listing=recent_posts, request_case=default
-     *
-     * @effects recent_posts_includes_created_at_and_created_at_formatted
-     *
-     * @return void 반환값 없음
+     * 최근 게시글 응답에 created_at(요일 포함 포맷)과 created_at_formatted(표시용) 필드가 포함되는지 확인
      */
     public function test_recent_posts_includes_created_at_and_created_at_formatted(): void
     {
@@ -329,9 +258,9 @@ class BoardRecentPostsApiTest extends ModuleTestCase
         $this->assertNotEmpty($data);
         $item = $data[0];
 
-        // created_at: 전체 날짜+시간 포맷 (사용자 타임존)
+        // created_at: 요일 포함 전체 날짜 포맷
         $this->assertArrayHasKey('created_at', $item);
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $item['created_at']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} [가-힣]+요일 \d{2}:\d{2}$/', $item['created_at']);
 
         // created_at_formatted: 표시용 포맷 (비어있지 않은 문자열)
         $this->assertArrayHasKey('created_at_formatted', $item);
@@ -339,48 +268,10 @@ class BoardRecentPostsApiTest extends ModuleTestCase
     }
 
     /**
-     * 최근글·인기글 캐시는 언어와 무관하게 공유되지 않고, 시간에 따라 바뀌는 값은 응답 시점에 다시 센다.
-     *
-     * 2026-10-07 실측(O-K1-14·O-N4 → K4-D8): 캐시 키에 언어가 없어 영어 화면이 먼저 채운 캐시를
-     * 한국어 화면이 그대로 받아 게시판 이름·「10 minutes ago」가 영어로 나왔고, 「n분 전」·New 배지가
-     * 캐시를 채운 시점에 굳었다.
-     *
-     * @scenario listing=recent_posts, request_case=default
-     *
-     * @effects recent_and_popular_cache_follow_request_locale_and_time
-     *
-     * @return void 반환값 없음
-     */
-    public function test_recent_and_popular_cache_follow_request_locale_and_time(): void
-    {
-        $board = $this->createBoardWithPosts(1);
-        $board->update(['name' => ['ko' => '한국어 게시판', 'en' => 'English Board']]);
-        DB::table('board_posts')->where('board_id', $board->id)->update(['view_count' => 7]);
-
-        $recentEn = $this->withHeader('Accept-Language', 'en')->getJson('/api/modules/sirsoft-board/boards/posts/recent')->assertOk();
-        $this->assertSame('English Board', $recentEn->json('data.0.board_name'));
-        $this->assertTrue((bool) $recentEn->json('data.0.is_new'));
-
-        $recentKo = $this->withHeader('Accept-Language', 'ko')->getJson('/api/modules/sirsoft-board/boards/posts/recent')->assertOk();
-        $this->assertSame('한국어 게시판', $recentKo->json('data.0.board_name'), '영어로 채운 캐시가 한국어 응답에 섞였다');
-
-        $popularEn = $this->withHeader('Accept-Language', 'en')->getJson('/api/modules/sirsoft-board/boards/popular')->assertOk();
-        $popularKo = $this->withHeader('Accept-Language', 'ko')->getJson('/api/modules/sirsoft-board/boards/popular')->assertOk();
-        $this->assertSame('English Board', $popularEn->json('data.0.board_name'));
-        $this->assertSame('한국어 게시판', $popularKo->json('data.0.board_name'), '인기글 캐시도 언어가 섞였다');
-
-        // 캐시를 비우지 않은 채 25시간 뒤 — 신규 표시 기간(24시간)이 지나 New 가 꺼져야 한다
-        $this->travel(25)->hours();
-        $later = $this->withHeader('Accept-Language', 'ko')->getJson('/api/modules/sirsoft-board/boards/posts/recent')->assertOk();
-        $this->assertFalse((bool) $later->json('data.0.is_new'), 'New 배지가 캐시를 채운 시점에 굳었다');
-        $this->assertSame($recentKo->json('data.0.id'), $later->json('data.0.id'));
-    }
-
-    /**
      * 게시판과 게시글을 생성하는 헬퍼
      *
-     * @param  int  $postCount  생성할 게시글 수
-     * @param  bool  $includingSecret  비밀글 포함 여부
+     * @param int $postCount 생성할 게시글 수
+     * @param bool $includingSecret 비밀글 포함 여부
      * @return Board 생성된 게시판
      */
     private function createBoardWithPosts(int $postCount, bool $includingSecret = false): Board
@@ -388,10 +279,6 @@ class BoardRecentPostsApiTest extends ModuleTestCase
         $board = Board::factory()->create([
             'is_active' => true,
         ]);
-
-        // 공개 최근글은 게시판별 열람 권한(posts.read)을 통과한 게시판만 노출한다.
-        // 프로덕션에서 공개 게시판은 guest read 권한을 갖도록 생성되므로 동일하게 부여한다.
-        $this->grantGuestRead($board);
 
         for ($i = 0; $i < $postCount; $i++) {
             $isSecret = $includingSecret && ($i % 2 === 0);
@@ -411,30 +298,5 @@ class BoardRecentPostsApiTest extends ModuleTestCase
         }
 
         return $board;
-    }
-
-    /**
-     * 게시판에 비회원(guest) 읽기 권한(posts.read)을 부여합니다.
-     *
-     * 공개 최근글 API 는 게시판별 열람 권한을 응답 시점에 적용하므로,
-     * 공개 노출을 기대하는 테스트 게시판은 프로덕션처럼 guest read 권한을 갖춰야 한다.
-     *
-     * @param  Board  $board  대상 게시판
-     * @return void 반환값 없음
-     */
-    private function grantGuestRead(Board $board): void
-    {
-        $guestRole = Role::where('identifier', 'guest')->first();
-        if (! $guestRole) {
-            return;
-        }
-
-        $perm = Permission::firstOrCreate(
-            ['identifier' => "sirsoft-board.{$board->slug}.posts.read"],
-            ['name' => ['ko' => 'read', 'en' => 'read'], 'type' => 'user']
-        );
-        $guestRole->permissions()->syncWithoutDetaching([$perm->id]);
-
-        PermissionMiddleware::clearGuestRoleCache();
     }
 }

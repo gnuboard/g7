@@ -1,4 +1,3 @@
-// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file admin-user-delete-modal.test.tsx
  * @description 사용자 삭제 모달 레이아웃 테스트
@@ -15,7 +14,6 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ==============================
 // 테스트
@@ -96,8 +94,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       );
       expect(spinnerIcon).toBeDefined();
       expect(spinnerIcon.if).toBe('{{_global.isDeleting}}');
-      // .spinner-sm 시맨틱 자산이 w-4 h-4 + animate-spin 흡수 (#408)
-      expect(spinnerIcon.props.className).toContain('spinner-sm');
+      expect(spinnerIcon.props.className).toContain('animate-spin');
 
       // 텍스트 삼항 연산자
       const textSpan = deleteButton.children.find((c: any) => c.name === 'Span');
@@ -114,7 +111,7 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
-      expect(deleteButton.props.className).toContain('flex-center gap-2');
+      expect(deleteButton.props.className).toContain('flex items-center gap-2');
       expect(deleteButton.props.className).toContain('disabled:opacity-50');
       expect(deleteButton.props.className).toContain('disabled:cursor-not-allowed');
     });
@@ -129,10 +126,10 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const deleteButton = footerDiv.children[1];
 
       // sequence > apiCall 추출
-      const sequenceAction = actionsOf(deleteButton)[0];
+      const sequenceAction = deleteButton.actions[0];
       expect(sequenceAction.handler).toBe('sequence');
 
-      const apiCallAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'apiCall');
+      const apiCallAction = sequenceAction.actions.find((a: any) => a.handler === 'apiCall');
       expect(apiCallAction).toBeDefined();
 
       // onSuccess 핸들러 순서 검증 (setState → refetchDataSource → toast → closeModal)
@@ -153,8 +150,8 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
-      const sequenceAction = actionsOf(deleteButton)[0];
-      const apiCallAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'apiCall');
+      const sequenceAction = deleteButton.actions[0];
+      const apiCallAction = sequenceAction.actions.find((a: any) => a.handler === 'apiCall');
 
       // onError 핸들러 검증
       const onError = apiCallAction.onError;
@@ -173,8 +170,8 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
-      const sequenceAction = actionsOf(deleteButton)[0];
-      const apiCallAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'apiCall');
+      const sequenceAction = deleteButton.actions[0];
+      const apiCallAction = sequenceAction.actions.find((a: any) => a.handler === 'apiCall');
 
       const onError = apiCallAction.onError;
       const toastAction = onError.find((a: any) => a.handler === 'toast');
@@ -187,17 +184,15 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
   });
 
   describe('삭제 버튼 스타일 규정 준수', () => {
-    it('취소 버튼이 .btn .btn-secondary 표준 시맨틱으로 정렬되어 있다 (.btn 안에 disabled 시각 처리 포함)', () => {
+    it('취소 버튼에 disabled:opacity-50 disabled:cursor-not-allowed가 있어야 한다', () => {
       const layout = require('../../layouts/admin_user_list.json');
       const modals = layout.modals;
       const deleteModal = modals.find((m: any) => m.id === 'delete_confirm_modal');
       const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const cancelButton = footerDiv.children[0];
 
-      // .btn CSS 시맨틱이 disabled:opacity-50 disabled:cursor-not-allowed 를 흡수.
-      // 호출처는 시맨틱 클래스만 명시하면 disabled 시각 처리가 자동 적용된다.
-      expect(cancelButton.props.className).toContain('btn');
-      expect(cancelButton.props.className).toContain('btn-secondary');
+      expect(cancelButton.props.className).toContain('disabled:opacity-50');
+      expect(cancelButton.props.className).toContain('disabled:cursor-not-allowed');
     });
 
     it('삭제 버튼은 bg-red-600 스타일이어야 한다 (위험 작업)', () => {

@@ -3,24 +3,15 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
-use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\HookManager;
-use App\Helpers\InlineMediaPolicy;
-use App\Support\ImageResizer;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\ProductImageCollection;
-use Modules\Sirsoft\Ecommerce\Exceptions\ProductImageUploadLimitException;
-use Modules\Sirsoft\Ecommerce\Exceptions\ResourceScopeMismatchException;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -30,9 +21,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class ProductImageService
 {
-    use ResolvesRowStorage;
-    use ResolvesStoredExtension;
-
     /**
      * ProductImageService 생성자
      *
@@ -73,9 +61,6 @@ class ProductImageService
             $tempKey = Str::uuid()->toString();
         }
 
-        // 컬렉션당 이미지 개수 상한 검증 (도메인 불변식 — 프론트 우회 안전망)
-        $this->assertWithinImageLimit($productId, $tempKey, $collection);
-
         // Before 훅
         HookManager::doAction('sirsoft-ecommerce.product-image.before_upload', $file, $productId);
 
@@ -83,7 +68,7 @@ class ProductImageService
         $file = HookManager::applyFilters('sirsoft-ecommerce.product-image.filter_upload_file', $file);
 
         // 저장 경로 결정
-        $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
+        $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
 
         if ($productId) {
             $product = $this->productRepository->find($productId);
@@ -93,9 +78,6 @@ class ProductImageService
         }
 
         // 스토리지에 파일 저장 (category: 'images')
-        // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
-        app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
-
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
 
         // Disk 정보는 스토리지 드라이버에서 가져옴
@@ -151,32 +133,6 @@ class ProductImageService
     }
 
     /**
-     * 컬렉션당 이미지 개수 상한을 초과하지 않는지 검증합니다.
-     *
-     * 상품당(또는 임시키당) 이미지 수가 상한에 도달했으면 도메인 예외를 던집니다.
-     * 입력 형식 검증이 아니라 도메인 불변식(상품당 이미지 수 상한)이므로 Service 레벨이 정당합니다.
-     *
-     * @param  int|null  $productId  상품 ID
-     * @param  string|null  $tempKey  임시 업로드 키
-     * @param  string  $collection  컬렉션명
-     * @return void
-     *
-     * @throws ProductImageUploadLimitException 상한 도달 시
-     */
-    protected function assertWithinImageLimit(?int $productId, ?string $tempKey, string $collection): void
-    {
-        $max = ProductImageCollection::MAX_IMAGES_PER_COLLECTION;
-
-        $currentCount = $productId
-            ? $this->repository->getByProductId($productId, $collection)->count()
-            : ($tempKey ? $this->repository->getByTempKey($tempKey, $collection)->count() : 0);
-
-        if ($currentCount >= $max) {
-            throw new ProductImageUploadLimitException($max);
-        }
-    }
-
-    /**
      * 임시 이미지를 상품에 연결합니다.
      *
      * 경로 패턴:
@@ -193,13 +149,6 @@ class ProductImageService
     public function linkTempImages(string $tempKey, int $productId, string $productCode): int
     {
         $tempImages = $this->repository->getByTempKey($tempKey);
-
-        // 연결할 임시 이미지가 없으면 디렉토리 정리도 하지 않는다 — temp_key 는 요청에서 온 값이라
-        // 조회 결과 없이 정리 경로를 만들면 사용자 입력으로 삭제 대상을 고르게 된다 (KVE-2026-2349)
-        if ($tempImages->isEmpty()) {
-            return 0;
-        }
-
         $linkedCount = 0;
 
         // 기존 이미지의 최대 sort_order 조회 (복사 이미지 뒤에 배치)
@@ -209,12 +158,11 @@ class ProductImageService
             // 새 경로 생성: products/{productCode}/{filename}
             $newPath = "products/{$productCode}/{$image->stored_filename}";
 
-            // 파일 이동 (get + put + delete) — 행 disk 기준 (이동 후에도 행 disk 불변)
-            $rowStorage = $this->storageForRow($image->disk);
-            $content = $rowStorage->get('images', $image->path);
+            // 파일 이동 (get + put + delete)
+            $content = $this->storage->get('images', $image->path);
             if ($content) {
-                $rowStorage->put('images', $newPath, $content);
-                $rowStorage->delete('images', $image->path);
+                $this->storage->put('images', $newPath, $content);
+                $this->storage->delete('images', $image->path);
             }
 
             // DB 업데이트: product_id 설정, temp_key 제거, path 변경, sort_order 재배치, is_thumbnail 해제
@@ -229,20 +177,8 @@ class ProductImageService
             $linkedCount++;
         }
 
-        // 빈 임시 디렉토리 정리 — 임시 행이 여러 disk 에 걸칠 수 있어 disk 별로 정리.
-        // 부수 작업이라 실패해도 연결을 되돌리지 않는다 — 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면
-        // 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(#703 게시판 실측).
-        try {
-            foreach ($tempImages->pluck('disk')->filter()->unique() as $tempDisk) {
-                $this->storageForRow($tempDisk)->deleteDirectory('images', "products/temp/{$tempKey}");
-            }
-            $this->storage->deleteDirectory('images', "products/temp/{$tempKey}");
-        } catch (\Throwable $e) {
-            Log::warning('상품 임시 이미지 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
-                'temp_key' => $tempKey,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // 빈 임시 디렉토리 정리
+        $this->storage->deleteDirectory('images', "products/temp/{$tempKey}");
 
         return $linkedCount;
     }
@@ -252,7 +188,7 @@ class ProductImageService
      *
      * @param  string  $tempKey  임시 업로드 키
      * @param  string|null  $collection  컬렉션 필터
-     * @return Collection
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getTempImages(string $tempKey, ?string $collection = null)
     {
@@ -263,7 +199,7 @@ class ProductImageService
      * 해시로 이미지 조회
      *
      * @param  string  $hash  이미지 해시 (12자)
-     * @return ProductImage|null 조회된 이미지 (없으면 null)
+     * @return ProductImage|null
      */
     public function findByHash(string $hash): ?ProductImage
     {
@@ -291,10 +227,9 @@ class ProductImageService
         // Before 훅
         HookManager::doAction('sirsoft-ecommerce.product-image.before_delete', $image);
 
-        // 스토리지에서 파일 삭제 — 행 disk 기준
-        $rowStorage = $this->storageForRow($image->disk);
-        if ($rowStorage->exists('images', $image->path)) {
-            $rowStorage->delete('images', $image->path);
+        // 스토리지에서 파일 삭제
+        if ($this->storage->exists('images', $image->path)) {
+            $this->storage->delete('images', $image->path);
         }
 
         // DB에서 삭제
@@ -341,19 +276,11 @@ class ProductImageService
      * @param  int  $productId  상품 ID
      * @param  int  $imageId  이미지 ID
      * @return bool 성공 여부
-     *
-     * @throws ResourceScopeMismatchException 이미지가 해당 상품에 속하지 않는 경우
      */
     public function setThumbnail(int $productId, int $imageId): bool
     {
-        $images = $this->repository->getByProductId($productId);
-
-        // 대상 이미지가 이 상품에 속하는지 먼저 확인 (교차 상품 오염 차단)
-        if ($images->firstWhere('id', $imageId) === null) {
-            throw new ResourceScopeMismatchException('sirsoft-ecommerce::exceptions.product_image_not_in_product');
-        }
-
         // 기존 대표 이미지 해제
+        $images = $this->repository->getByProductId($productId);
         foreach ($images as $image) {
             if ($image->is_thumbnail) {
                 $this->repository->update($image->id, ['is_thumbnail' => false]);
@@ -380,7 +307,7 @@ class ProductImageService
             return null;
         }
 
-        $response = $this->storageForRow($image->disk)->response(
+        $response = $this->storage->response(
             'images',
             $image->path,
             $image->original_filename,
@@ -394,14 +321,11 @@ class ProductImageService
             Log::error('상품 이미지 스토리지에 없음', [
                 'product_image_id' => $image->id,
                 'path' => $image->path,
-                'disk' => $image->disk ?: $this->storage->getDisk(),
+                'disk' => $this->storage->getDisk(),
             ]);
 
             return null;
         }
-
-        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366)
-        InlineMediaPolicy::harden($response, $image->mime_type, $image->original_filename);
 
         return $response;
     }
@@ -439,11 +363,10 @@ class ProductImageService
         $newStoredFilename = Str::uuid().'.'.$extension;
         $newPath = "products/{$targetProductCode}/{$newStoredFilename}";
 
-        // 파일 복사 — 원본 행 disk 기준 (신규 행도 원본과 같은 disk 로 기록됨)
-        $sourceStorage = $this->storageForRow($source->disk);
-        $content = $sourceStorage->get('images', $source->path);
+        // 파일 복사
+        $content = $this->storage->get('images', $source->path);
         if ($content) {
-            $sourceStorage->put('images', $newPath, $content);
+            $this->storage->put('images', $newPath, $content);
         } else {
             Log::warning('상품 이미지 복사 실패: 원본 파일 없음', [
                 'hash' => $sourceHash,
@@ -478,155 +401,19 @@ class ProductImageService
      * 상품 이미지 폴더 전체를 삭제합니다.
      * 실제 경로: storage/app/modules/sirsoft-ecommerce/images/products/{productCode}/
      *
-     * 상품 코드가 저장소 경로 규칙에 맞지 않으면(허용 문자 규칙 이전에 저장된 코드) 폴더를 지우지 않고
-     * 경고만 남긴 뒤 false 를 돌려준다 — 이미지 폴더 때문에 상품 삭제 자체가 막히지 않게 한다.
-     *
      * @param  int  $productId  상품 ID
-     * @return bool 삭제 성공 여부 (대상 디스크 전체 기준)
+     * @return bool 삭제 성공 여부
      */
     public function deleteByProductId(int $productId): bool
     {
-        try {
-            return $this->deleteProductDirectories($productId);
-        } catch (UnsafeStoragePathException $e) {
-            Log::warning('상품 코드가 저장소 경로 규칙에 맞지 않아 이미지 폴더를 지우지 못했습니다 — 수동 정리가 필요합니다', [
-                'product_id' => $productId,
-                'reason' => $e->getReason(),
-            ]);
-
-            return false;
-        }
-    }
-
-    /**
-     * 상품 이미지 폴더를 행이 실린 디스크별로 삭제합니다.
-     *
-     * @param  int  $productId  상품 ID
-     * @return bool 삭제 성공 여부 (대상 디스크 전체 기준)
-     *
-     * @throws UnsafeStoragePathException 상품 코드가 저장소 경로 규칙에 맞지 않을 때
-     */
-    private function deleteProductDirectories(int $productId): bool
-    {
         $product = $this->productRepository->find($productId);
 
-        // 행이 여러 disk 에 걸칠 수 있어(디스크 전환 후 혼재) disk 별로 디렉토리 삭제.
-        // 빈 disk(디스크 컬럼 도입 전 구 데이터)는 주입 스토리지 소속으로 정규화한다.
-        $rowDisks = $this->repository->getByProductId($productId)
-            ->pluck('disk')
-            ->map(fn ($disk) => ($disk === null || $disk === '') ? $this->storage->getDisk() : $disk)
-            ->unique();
-
-        $directory = $product
-            ? "products/{$product->product_code}"
-            // 폴백: product_id 기반 (기존 데이터 호환)
-            : "products/{$productId}";
-
-        if ($rowDisks->isEmpty()) {
-            // 행이 없으면 주입 스토리지의 잔여 디렉토리만 정리 (기존 동작 보존)
-            return $this->storage->deleteDirectory('images', $directory);
+        if ($product) {
+            return $this->storage->deleteDirectory('images', "products/{$product->product_code}");
         }
 
-        $results = [];
-        foreach ($rowDisks as $rowDisk) {
-            $results[] = $this->storageForRow($rowDisk)->deleteDirectory('images', $directory);
-        }
-
-        // 행이 실리지 않은 주입 스토리지의 잔여 파일도 정리 시도하되 반환값에는
-        // 반영하지 않는다 — 행 기준으로는 지울 것이 없는 디스크의 실패가 혼재 행
-        // 삭제 성공을 false 로 오염시키면 안 된다 (반환값 = 행이 실린 디스크 전체 기준)
-        if (! $rowDisks->contains($this->storage->getDisk())) {
-            $this->storage->deleteDirectory('images', $directory);
-        }
-
-        return ! in_array(false, $results, true);
-    }
-
-    /**
-     * 상품에 연결되지 않은 채 방치된 임시 이미지를 정리합니다.
-     *
-     * 상품 등록 폼에서 이미지를 올린 뒤 저장하지 않고 이탈하면 `temp_key` 만 남은 행과
-     * 그 파일이 남습니다. 연결 시점에 본경로로 옮겨지므로 `temp_key` 가 남아 있다는 것은
-     * "끝내 연결되지 않았다" 는 뜻이고, 그래서 오탐 여지가 없습니다.
-     *
-     * 파일은 행마다 기록된 disk 를 향해 지웁니다 (디스크 전환 이후 혼재 대응).
-     * 파일 → 행 순서를 지켜, 행이 먼저 사라져 파일을 못 찾는 상태를 만들지 않습니다.
-     *
-     * @param  int  $days  보존기간(일)
-     * @param  int  $limit  한 회차에 처리할 최대 건수
-     * @param  bool  $dryRun  true 면 대상만 세고 삭제하지 않음
-     * @return array{scanned: int, deleted: int, failed: int} 처리 결과
-     */
-    public function pruneTempUploads(int $days, int $limit, bool $dryRun = false): array
-    {
-        $threshold = Carbon::now()->subDays($days);
-        $images = $this->repository->findStaleTempImages($threshold, $limit);
-
-        $result = ['scanned' => $images->count(), 'deleted' => 0, 'failed' => 0];
-
-        if ($dryRun) {
-            return $result;
-        }
-
-        foreach ($images as $image) {
-            $rowStorage = $this->storageForRow($image->disk);
-
-            if ($rowStorage->exists('images', $image->path) && ! $rowStorage->delete('images', $image->path)) {
-                Log::warning('임시 상품 이미지 파일 삭제 실패 — 기록 보존', [
-                    'image_id' => $image->id,
-                    'disk' => $image->disk,
-                    'path' => $image->path,
-                ]);
-
-                $result['failed']++;
-
-                continue;
-            }
-
-            $this->repository->delete($image->id);
-            $result['deleted']++;
-        }
-
-        $this->removeEmptyTempDirectories($images);
-
-        return $result;
-    }
-
-    /**
-     * 파일을 모두 지운 temp_key 디렉토리를 정리합니다.
-     *
-     * 파일만 지우고 디렉토리를 남기면 폼 세션마다 빈 디렉토리가 쌓여, 정리를 돌려도
-     * 저장소에는 흔적이 계속 늘어납니다.
-     *
-     * 디렉토리에 파일이 남아 있으면(같은 temp_key 의 다른 이미지가 limit 에 걸려 이번 회차에서
-     * 빠졌거나 파일 삭제에 실패한 경우 등) 삭제하지 않습니다.
-     *
-     * @param  Collection  $images  이번 회차에 처리한 이미지 목록
-     * @return void
-     */
-    private function removeEmptyTempDirectories(Collection $images): void
-    {
-        $directories = [];
-
-        foreach ($images as $image) {
-            $directory = dirname((string) $image->path);
-
-            if ($directory === '' || $directory === '.') {
-                continue;
-            }
-
-            $directories[$image->disk.'|'.$directory] = [$image->disk, $directory];
-        }
-
-        foreach ($directories as [$disk, $directory]) {
-            $storage = $this->storageForRow($disk);
-
-            if ($storage->files('images', $directory) !== []) {
-                continue;
-            }
-
-            $storage->deleteDirectory('images', $directory);
-        }
+        // 폴백: product_id 기반 (기존 데이터 호환)
+        return $this->storage->deleteDirectory('images', "products/{$productId}");
     }
 
     /**
@@ -634,7 +421,7 @@ class ProductImageService
      *
      * @param  int  $productId  상품 ID
      * @param  string|null  $collection  컬렉션 필터
-     * @return Collection
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getImages(int $productId, ?string $collection = null)
     {
@@ -661,7 +448,6 @@ class ProductImageService
      *
      * @param  int  $productId  상품 ID
      * @param  string  $collection  컬렉션명
-     * @return void
      */
     protected function reorderAfterDelete(int $productId, string|ProductImageCollection $collection): void
     {

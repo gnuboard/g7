@@ -2,9 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
-use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
-use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
 use App\Rules\ValidExtensionIdentifier;
@@ -15,16 +13,13 @@ use Illuminate\Support\Facades\Validator;
 class InstallTemplateCommand extends Command
 {
     use HasProgressBar;
-    use RendersLayoutSyncResult;
-    use SelectsLayoutInstallSource;
 
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'template:install
         {identifier : 템플릿 식별자 (디렉토리명)}
-        {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}
-        {--layout-source=auto : 레이아웃 설치 소스 (auto|json) — json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
+        {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}';
 
     /**
      * The console command description.
@@ -33,9 +28,6 @@ class InstallTemplateCommand extends Command
 
     /**
      * 템플릿 관리자 및 리포지토리
-     *
-     * @param  TemplateManager  $templateManager  템플릿 설치를 수행하는 매니저
-     * @param  TemplateRepositoryInterface  $templateRepository  설치 결과 조회 리포지토리
      */
     public function __construct(
         private TemplateManager $templateManager,
@@ -46,16 +38,9 @@ class InstallTemplateCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int 종료 코드
      */
     public function handle(): int
     {
-        // `--layout-source` 검증 + 런타임 반영 (알 수 없는 값이면 즉시 실패).
-        if (! $this->applyLayoutInstallSource()) {
-            return self::FAILURE;
-        }
-
         $identifier = $this->argument('identifier');
 
         // 식별자 형식 검증
@@ -100,8 +85,7 @@ class InstallTemplateCommand extends Command
                 $this->info('✅ '.__('templates.commands.install.success', ['template' => $identifier]));
                 $this->info('   - '.__('templates.commands.install.type', ['type' => __('templates.types.'.$template->type)]));
                 $this->info('   - '.__('templates.commands.install.version', ['version' => $template->version]));
-                $this->info('   - '.trans_choice('templates.commands.install.layouts_created', $template->layouts()->count()));
-                $this->renderLayoutIncludeWarnings($this->templateManager->takeLastLayoutWarnings());
+                $this->info('   - '.__('templates.commands.install.layouts_created', ['count' => $template->layouts()->count()]));
 
                 Log::info(__('templates.commands.install.success', ['template' => $identifier]));
 

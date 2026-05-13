@@ -1,0 +1,21 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_language_packs_install_modal",
+    "permissions": ["core.language_packs.install"],
+    "meta": {
+        "title": "$t:admin.language_packs.install_modal.title"
+    },
+    "state": {
+        "installTab": "zip",
+        "installFile": null,
+        "githubUrl": "",
+        "downloadUrl": "",
+        "checksum": "",
+        "autoActivate": false
+    },
+    "slots": {
+        "content": [
+            { "$partial": "partials/admin_language_pack_list/_modal_install" }
+        ]
+    }
+}

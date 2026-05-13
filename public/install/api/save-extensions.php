@@ -6,7 +6,6 @@
  * 사용자가 선택한 확장 기능 목록을 state.json에 저장합니다.
  *
  * @method POST
- *
  * @body {
  *   "admin_templates": ["sirsoft-admin_basic"],
  *   "user_templates": ["sirsoft-basic"],
@@ -27,12 +26,11 @@ header('Content-Type: application/json; charset=utf-8');
 define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3));
 
 // 세션 및 설정 포함
-require_once dirname(__DIR__).'/includes/session.php';
-require_once dirname(__DIR__).'/includes/config.php';
-require_once dirname(__DIR__).'/includes/installer-state.php';
-require_once dirname(__DIR__).'/includes/functions.php';
-require_once dirname(__DIR__).'/includes/installer-ownership.php';
-require_once __DIR__.'/_guard.php';
+require_once dirname(__DIR__) . '/includes/session.php';
+require_once dirname(__DIR__) . '/includes/config.php';
+require_once dirname(__DIR__) . '/includes/installer-state.php';
+require_once dirname(__DIR__) . '/includes/functions.php';
+require_once __DIR__ . '/_guard.php';
 installer_guard_or_410();
 
 // 다국어 로드
@@ -42,25 +40,19 @@ $translations = loadTranslations($currentLang);
 // POST 요청만 허용
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo installer_json_encode([
+    echo json_encode([
         'success' => false,
         'error' => lang('api_method_not_allowed'),
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// 설치 소유권 + 요청 검증 — 소유 세션만 설치할 확장 목록을 바꿀 수 있다.
-$state = getInstallationState();
-installer_require_owner($state);
-installer_require_csrf();
-$generation = (int) ($state['generation'] ?? 0);
-
 // 요청 본문 파싱
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (json_last_error() !== JSON_ERROR_NONE) {
     http_response_code(400);
-    echo installer_json_encode([
+    echo json_encode([
         'success' => false,
         'error' => lang('api_invalid_request'),
     ], JSON_UNESCAPED_UNICODE);
@@ -96,7 +88,7 @@ $extensionNames = isset($input['extension_names']) && is_array($input['extension
 // 관리자 템플릿은 최소 1개 필수
 if (empty($adminTemplates)) {
     http_response_code(400);
-    echo installer_json_encode([
+    echo json_encode([
         'success' => false,
         'error' => lang('error_admin_template_required'),
     ], JSON_UNESCAPED_UNICODE);
@@ -122,9 +114,9 @@ $identifierGroups = [
 ];
 foreach ($identifierGroups as $groupKey => $ids) {
     foreach ($ids as $id) {
-        if (! preg_match($identifierPattern, $id)) {
+        if (!preg_match($identifierPattern, $id)) {
             http_response_code(400);
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => false,
                 'error' => lang('error_invalid_extension_identifier', ['identifier' => $id, 'group' => $groupKey]),
             ], JSON_UNESCAPED_UNICODE);
@@ -134,6 +126,9 @@ foreach ($identifierGroups as $groupKey => $ids) {
 }
 
 try {
+    // 현재 상태 가져오기
+    $state = getInstallationState();
+
     // selected_extensions 업데이트
     $state['selected_extensions'] = [
         'admin_templates' => $adminTemplates,
@@ -155,9 +150,11 @@ try {
     // 세션도 동기화 (Step 5로 이동 허용)
     $_SESSION['installer_current_step'] = 5;
 
-    // 상태 저장 — 읽은 뒤 다른 상태변경이 먼저 커밋됐으면 덮어쓰지 않는다 (CAS).
-    if (! saveInstallationStateCas($state, $generation)) {
-        installer_json_error(409, 'state_conflict', lang('error_state_conflict'));
+    // 상태 저장
+    $saved = saveInstallationState($state);
+
+    if (!$saved) {
+        throw new Exception(lang('state_save_failed'));
     }
 
     // 로그 기록
@@ -170,7 +167,7 @@ try {
     ]));
 
     // 성공 응답
-    echo installer_json_encode([
+    echo json_encode([
         'success' => true,
         'message' => lang('log_extensions_saved'),
         'data' => [
@@ -181,7 +178,7 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo installer_json_encode([
+    echo json_encode([
         'success' => false,
         'error' => $e->getMessage(),
     ], JSON_UNESCAPED_UNICODE);

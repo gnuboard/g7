@@ -19,7 +19,6 @@
  */
 
 import { createLogger } from '../utils/Logger';
-import { isDangerousScheme, isSameOriginRequestUrl } from '../support/navPolicy';
 import {
   IDENTITY_REDIRECT_STASH_KEY,
   type IdentityResponse428,
@@ -34,7 +33,6 @@ const logger = createLogger('IdentityGuardInterceptor');
 export type {
   IdentityResponse428,
   IdentityRedirectStash,
-  IdentityVerificationTarget,
   ModalLauncher,
   VerificationPayload,
   VerificationResult,
@@ -55,23 +53,6 @@ export class IdentityGuardInterceptor {
     | null = null;
 
   /**
-   * challenge 레이어(모달/launcher)가 이번 IDV 사이클에서 자기 고유의 도메인 안내를
-   * 사용자에게 이미 표출했음을 표시하는 1회성 플래그.
-   *
-   * 배경: 본인확인은 성공했으나 부가 목적(성인인증 등)을 충족하지 못해 challenge 가
-   * 실패로 종료되면, provider 가 "성인 인증이 필요합니다" 같은 고유 사유를 토스트로 표출한다.
-   * 그 직후 코어가 원 428 을 onError 로 흘려보내면 원 요청의 generic 가드 토스트
-   * ("본인 확인이 필요합니다")가 중복으로 뜬다. 이 플래그가 set 되어 있으면 코어 toast 핸들러가
-   * 동일 사이클의 generic IDV 가드 토스트 1건을 skip 한다.
-   *
-   * 일반 본인인증 실패(본인확인 자체 실패/취소)는 이 플래그를 set 하지 않으므로
-   * generic 가드 토스트가 그대로 유지된다 — provider 무지식의 범용 신호다.
-   *
-   * @since engine-v1.50.0
-   */
-  private static domainNoticeShown = false;
-
-  /**
    * 모달 launcher 를 등록합니다.
    *
    * launcher 는 모달 open / 풀페이지 navigate / 외부 SDK 호출 등 UI 진입을 책임지며,
@@ -89,34 +70,6 @@ export class IdentityGuardInterceptor {
    */
   static hasLauncher(): boolean {
     return this.launcher !== null;
-  }
-
-  /**
-   * challenge 레이어가 자기 고유의 도메인 안내(성인인증 실패 등)를 사용자에게 표출했음을 표시한다.
-   *
-   * provider(예: 이니시스 플러그인)가 "본인확인은 성공했으나 부가 목적 미달" 실패를 사용자에게
-   * 안내한 직후 호출한다. 코어 toast 핸들러가 동일 사이클의 generic IDV 가드 토스트를 1회 skip 한다.
-   * 호출 시점은 항상 코어가 원 428 을 onError 로 흘려보내기 직전(resolveIdentityChallenge 통보 전)이어야 한다.
-   *
-   * @since engine-v1.50.0
-   */
-  static markDomainNoticeShown(): void {
-    this.domainNoticeShown = true;
-  }
-
-  /**
-   * 도메인 안내 표출 플래그를 읽고 즉시 소비(해제)한다.
-   *
-   * 코어 toast 핸들러가 generic IDV 가드 토스트를 띄우기 직전 1회 호출한다.
-   * true 면 그 토스트를 skip 하고, 플래그는 소비되어 다음 토스트부터는 정상 표출된다.
-   *
-   * @returns 직전 challenge 가 도메인 안내를 표출했으면 true (그리고 플래그 해제)
-   * @since engine-v1.50.0
-   */
-  static consumeDomainNoticeShown(): boolean {
-    const shown = this.domainNoticeShown;
-    this.domainNoticeShown = false;
-    return shown;
   }
 
   /**
@@ -181,41 +134,21 @@ export class IdentityGuardInterceptor {
    *
    * @param response 428 JSON 본문
    * @param originalRequest 원 요청 RequestInit (body, headers, credentials) — 미전달 시 빈 body 로 fallback
-   * @param target 흐름이 선언한 인증 대상(이메일·전화) — apiCall `identity_target` 에서 평가된 값.
-   *   launcher 가 challenge 시작 시 사용한다. 비로그인 게스트 흐름의 핵심 (서버는 화면 입력값을 모름).
    * @returns 재실행 응답 또는 null (사용자 취소 / 실패 / return_request 없음)
    */
   static async handle(
     response: IdentityResponse428,
     originalRequest?: Pick<RequestInit, 'body' | 'headers' | 'credentials'>,
-    target?: { email?: string; phone?: string },
   ): Promise<Response | null> {
-    // 새 challenge 진입 — 이전 사이클의 미소비 도메인 안내 플래그를 정리한다.
-    // (이전 사이클에서 onError 가드 토스트가 없어 consume 되지 않은 stale 플래그가
-    // 이번 사이클의 가드 토스트를 잘못 skip 하는 것을 차단)
-    this.domainNoticeShown = false;
     const launcher = this.launcher ?? defaultLauncher;
-    // 흐름이 선언한 target 을 payload 에 병합 — launcher 는 payload.target 한 곳에서 읽는다.
-    // email/phone 둘 다 빈 값이면 병합하지 않음(로그인 사용자는 서버 세션 도출).
-    const hasTarget = !!(target && (target.email || target.phone));
-    const verification: VerificationPayload = hasTarget
-      ? { ...response.verification, target }
-      : response.verification;
-    const result = await launcher(verification);
+    const result = await launcher(response.verification);
 
     if (result.status !== 'verified') {
       return null;
     }
 
-    const returnReq = verification.return_request;
+    const returnReq = response.verification.return_request;
     if (!returnReq) {
-      return null;
-    }
-
-    // 보안: 재요청은 원 요청의 헤더(인증 포함)와 검증 토큰을 싣는다 — 같은 출처 주소일 때만 보낸다.
-    if (!isSameOriginRequestUrl(returnReq.url)) {
-      logger.warn('return_request.url 이 같은 출처가 아니라 재요청하지 않습니다.', returnReq.url);
-
       return null;
     }
 
@@ -254,17 +187,6 @@ export class IdentityGuardInterceptor {
       });
     }
 
-    // 제공자 외부 인증 페이지(https)는 정당한 이동이지만 실행 스킴은 현재 origin 에서
-    // 코드를 돌리는 sink 가 된다 — 이동 전에 막는다.
-    if (isDangerousScheme(redirectUrl)) {
-      logger.error('redirectExternally: 실행 스킴 redirect_url 은 이동하지 않습니다.');
-      return Promise.resolve({
-        status: 'failed',
-        failureCode: 'UNSAFE_REDIRECT_URL',
-        reason: 'verification.redirect_url uses an executable scheme',
-      });
-    }
-
     if (typeof window !== 'undefined') {
       const stash: IdentityRedirectStash = {
         return_url: window.location.href,
@@ -299,7 +221,6 @@ export class IdentityGuardInterceptor {
       }
     }
     this.launcher = null;
-    this.domainNoticeShown = false;
   }
 }
 
@@ -382,10 +303,7 @@ export const defaultLauncher: ModalLauncher = async (payload) => {
     /* ignore */
   }
 
-  // 챌린지 화면은 `query.return_url` 을 읽는다 — 같은 출처 경로+쿼리만 넘긴다(절대 주소 아님). 해시는
-  // 빼는데, 챌린지 화면의 복귀 이동(mergeQuery)이 쿼리를 덧붙일 때 해시 안으로 들어가지 않게 하기 위해서다.
-  const returnPath = `${window.location.pathname}${window.location.search}`;
-  const challengePath = `/identity/challenge?return_url=${encodeURIComponent(returnPath)}`;
+  const challengePath = `/identity/challenge?return=${encodeURIComponent(returnUrl)}`;
   try {
     await G7Core.dispatch({
       handler: 'navigate',

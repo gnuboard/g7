@@ -26,7 +26,6 @@
     "category": "카테고리",
     "no_category": "카테고리 미등록",
     "date": "날짜",
-    "date_type_select": "날짜 기준",
     "date_type": {
       "created_at": "등록일",
       "updated_at": "수정일"
@@ -64,7 +63,6 @@
       "tax_free": "비과세"
     },
     "price": "가격",
-    "price_type_select": "가격 기준",
     "price_type": {
       "selling_price": "판매가",
       "supply_price": "공급가",
@@ -89,8 +87,7 @@
     "edit_search": "검색 편집",
     "search": "검색",
     "reset": "초기화",
-    "save_preset": "프리셋 저장",
-    "view_user_page": "유저 화면 보기"
+    "save_preset": "프리셋 저장"
   },
   "bulk_apply": "일괄 적용",
   "bulk_success": "선택한 상품이 일괄 변경되었습니다.",
@@ -191,10 +188,7 @@
         "safe_stock": "안전재고",
         "active": "사용"
       },
-      "no_options": "등록된 옵션이 없습니다",
-      "loading": "옵션을 불러오는 중입니다...",
-      "load_failed": "옵션을 불러오지 못했습니다.",
-      "retry": "다시 시도"
+      "no_options": "등록된 옵션이 없습니다"
     },
     "shipping": {
       "free": "무료배송",
@@ -502,7 +496,8 @@
     },
     "modal": {
       "add_language": {
-        "title": "언어 추가"
+        "title": "언어 추가",
+        "description": "추가할 언어를 선택하세요."
       },
       "label_period": {
         "title": "라벨 기간 설정",
@@ -538,14 +533,15 @@
     "placeholder": "상품 폼이 여기에 표시됩니다"
   },
   "modal": {
-    "multilingual_tag_edit_editor_label": "다국어 태그 편집",
     "preset_manage": {
       "title": "프리셋 관리",
+      "description": "검색 프리셋을 관리합니다.",
       "add_new": "새 프리셋 추가",
       "empty": "저장된 프리셋이 없습니다."
     },
     "preset_save": {
       "title": "프리셋 저장",
+      "description": "현재 검색 조건을 프리셋으로 저장합니다.",
       "placeholder": "프리셋 이름을 입력하세요",
       "save": "저장"
     },
@@ -558,20 +554,21 @@
     },
     "bulk_price": {
       "title": "판매가 일괄 변경",
+      "description": "선택한 {{count}}개 상품의 판매가를 변경합니다.",
       "method": "변경 방식",
       "method_increase": "인상",
       "method_decrease": "인하",
       "method_fixed": "으로 변경",
       "value": "변경 금액/비율",
-      "unit": "변경 단위",
       "unit_won": "원",
       "unit_percent": "%",
       "preview_increase": "판매가를 {{value}}{{unit}} 인상합니다.",
       "preview_decrease": "판매가를 {{value}}{{unit}} 인하합니다.",
-      "preview_fixed": "판매가를 다음 값으로 변경합니다: {{value}}{{unit}}"
+      "preview_fixed": "판매가를 {{value}}{{unit}}(으)로 변경합니다."
     },
     "bulk_stock": {
       "title": "재고 일괄 변경",
+      "description": "선택한 {{count}}개 상품의 재고를 변경합니다.",
       "method": "변경 방식",
       "method_increase": "증가",
       "method_decrease": "감소",
@@ -579,7 +576,7 @@
       "value": "변경 수량",
       "preview_increase": "재고를 {{value}}개 증가합니다.",
       "preview_decrease": "재고를 {{value}}개 감소합니다.",
-      "preview_set": "재고를 {{value}}개로 변경합니다."
+      "preview_set": "재고를 {{value}}개(으)로 변경합니다."
     },
     "bulk_confirm": {
       "title": "일괄 변경 확인",
@@ -587,15 +584,13 @@
       "bulk_changes_section": "일괄 변경 조건",
       "products_section": "변경될 상품 ({{count}}개)",
       "options_section": "변경될 옵션 ({{count}}개)",
-      "sales_status": "판매 상태를 다음으로 변경합니다: {{value}}",
-      "display_status": "전시 상태를 다음으로 변경합니다: {{value}}",
+      "sales_status": "판매 상태를 {{value}}(으)로 변경합니다.",
+      "display_status": "전시 상태를 {{value}}(으)로 변경합니다.",
       "price": "판매가를 {{value}} 변경합니다.",
       "stock": "재고를 {{value}} 변경합니다.",
       "price_change": "판매가 일괄 변경",
       "stock_change": "재고 일괄 변경",
-      "no_changes": "변경할 항목이 없습니다.",
-      "error_section": "변경에 실패했습니다",
-      "options_aggregate": "{{product}} > 옵션 {{count}}개 전체"
+      "no_changes": "변경할 항목이 없습니다."
     },
     "bulk_placeholder": {
       "sales_status": "판매 상태 선택",
@@ -603,6 +598,7 @@
     },
     "excel_download": {
       "title": "엑셀 다운로드",
+      "description": "다운로드할 주문서 범위를 선택하세요.",
       "option_search": "현재 검색 조건으로 다운로드",
       "option_search_desc": "총 {{count}}개의 상품이 다운로드됩니다.",
       "option_selected": "선택한 상품만 다운로드",
@@ -681,7 +677,6 @@
   "messages": {
     "deleted_success": "상품이 삭제되었습니다.",
     "deleted_error": "상품 삭제 중 오류가 발생했습니다.",
-    "delete_check_error": "삭제 가능 여부를 확인하는 중 오류가 발생했습니다.",
     "code_generate_error": "상품코드 생성에 실패했습니다.",
     "label_period_saved": "라벨 기간이 저장되었습니다.",
     "label_period_removed": "라벨 기간이 제거되었습니다.",
@@ -701,8 +696,6 @@
     "bulk_summary_price_adjustment_inline": "조정가: {value}",
     "bulk_summary_stock": "재고: {method} {value}",
     "bulk_summary_stock_inline": "재고: {value}",
-    "bulk_summary_safe_stock": "안전재고: {value}",
-    "bulk_summary_is_active": "사용: {value}",
     "bulk_summary_option_name": "옵션명: {name}",
     "bulk_summary_sku": "SKU: {sku}",
     "bulk_summary_selected": "선택됨"
@@ -831,20 +824,12 @@
     "option_name_placeholder": "옵션명 (예: 색상)",
     "option_values_placeholder": "옵션값을 쉼표(,)로 구분하여 입력",
     "additional_title": "상품추가옵션",
-    "additional_hint": "고객이 추가로 선택하는 유료/무료 옵션입니다. 그룹명과 선택지(추가금)를 등록하세요. 최대 5개 그룹, 그룹당 선택지 20개까지 가능합니다. (예: 각인 추가 +5,000원)",
-    "add_additional": "추가옵션 그룹 추가",
-    "additional_name_label": "그룹명",
-    "additional_name_placeholder": "예: 각인",
-    "add_additional_value": "선택지 추가",
-    "additional_value_name_label": "선택지명",
-    "additional_value_name_placeholder": "예: 각인 추가",
-    "additional_value_price_label": "추가금",
-    "additional_value_default": "기본",
-    "additional_value_active": "사용",
-    "additional_value_allow_custom_text": "직접입력",
+    "additional_hint": "고객이 직접 텍스트를 입력할 수 있는 추가 옵션입니다. 최대 5개까지 추가 가능합니다. (예: 각인 문구, 선물 메시지 등)",
+    "add_additional": "추가옵션 추가",
+    "additional_name_label": "옵션명",
+    "additional_name_placeholder": "각인 문구",
     "no_additional": "등록된 추가옵션이 없습니다",
-    "additional_clear_confirm": "입력한 추가옵션이 모두 삭제됩니다. 계속하시겠습니까?",
-    "auto_currency_hint": "외화 가격은 판매가 기준 환율로 자동 표시됩니다",
+    "auto_currency": "다중통화 가격 자동계산",
     "items_count": "{{count}}개 옵션",
     "required": "필수",
     "columns": {
@@ -866,8 +851,6 @@
       "active": "사용",
       "required": "필수"
     },
-    "mileage_value_label": "마일리지 적립값",
-    "mileage_type_label": "마일리지 적립 단위",
     "mileage_type": {
       "fixed": "원",
       "percent": "%"
@@ -887,9 +870,7 @@
       "generated": "{count}개의 옵션이 생성되었습니다.",
       "name_required": "옵션 이름을 입력해주세요.",
       "add_tool_applied": "옵션추가도구가 적용되었습니다.",
-      "additional_max_5": "추가옵션 그룹은 최대 5개까지 추가할 수 있습니다.",
-      "additional_value_max_20": "선택지는 그룹당 최대 20개까지 추가할 수 있습니다.",
-      "additional_value_min_1": "그룹당 선택지는 최소 1개가 필요합니다."
+      "additional_max_5": "최대 5개까지 추가할 수 있습니다."
     }
   },
   "notice": {
@@ -995,7 +976,6 @@
     "use_default": "기본 배송정책 사용",
     "default_badge": "기본",
     "empty_message": "배송정책이 없습니다",
-    "inactive_policy_warning": "현재 적용 중인 배송정책이 비활성화되었습니다. 다른 배송정책을 선택하거나 그대로 유지할 수 있습니다.",
     "detail": {
       "shipping_method": "배송방법",
       "carrier": "운송사",
@@ -1074,7 +1054,7 @@
   },
   "images": {
     "drag_hint": "드래그하여 순서를 변경하세요",
-    "thumbnail_hint": "★ 버튼을 눌러 대표 이미지를 지정하세요",
+    "thumbnail_hint": "첫번째 이미지가 대표 이미지가 됩니다",
     "format_hint": "JPG, PNG, GIF 형식 지원",
     "upload_complete": "업로드 완료",
     "deleted": "이미지가 삭제되었습니다.",
@@ -1137,23 +1117,16 @@
   "labels": {
     "title": "라벨",
     "no_available": "등록된 라벨이 없습니다.",
-    "add": "라벨 추가",
     "edit": "수정",
     "remove": "삭제",
-    "unassign": "할당 해제",
-    "delete": "라벨 삭제",
     "no_period": "기간 미설정",
     "modal_title": "라벨 설정",
-    "modal_title_create": "라벨 등록",
-    "modal_title_edit": "라벨 수정",
-    "create_success": "라벨이 등록되었습니다.",
+    "modal_description": "라벨의 이름, 색상, 적용 기간을 설정합니다.",
     "name": "라벨명",
     "color": "색상",
     "color_reset": "색상 초기화",
     "start_date": "시작일",
     "end_date": "종료일",
-    "started_at": "시작일 선택",
-    "ended_at": "종료일 선택",
     "end_date_hint": "비워두면 무기한 적용",
     "date_preset": "기간 프리셋",
     "preset_7d": "7일",
@@ -1167,7 +1140,7 @@
     "preview": "미리보기",
     "delete_modal": {
       "title": "라벨 삭제",
-      "message": " 라벨을 삭제하시겠습니까?",
+      "message": "을(를) 삭제하시겠습니까?",
       "description": "삭제된 라벨은 모든 상품에서 제거됩니다.",
       "deleting": "삭제 중..."
     },
@@ -1204,14 +1177,5 @@
     "manage_common_info": "공통정보 관리",
     "manage_notice_template": "상품정보제공고시 관리",
     "create_shipping_policy": "배송정책 생성"
-  },
-  "selector_forbidden": {
-    "categories": "분류 조회 권한이 없어 분류를 고를 수 없습니다.",
-    "brands": "브랜드 조회 권한이 없어 브랜드를 고를 수 없습니다.",
-    "notice_templates": "상품정보제공고시 템플릿 조회 권한이 없어 템플릿을 불러올 수 없습니다. 고시 항목은 직접 입력할 수 있습니다.",
-    "common_infos": "공통정보 조회 권한이 없어 공통정보를 고를 수 없습니다.",
-    "shipping_policies": "배송정책 조회 권한이 없어 배송정책을 고를 수 없습니다. 새로 지정하지 않고 저장하면 이미 지정된 배송정책이, 지정된 것이 없으면 기본 배송정책이 적용됩니다.",
-    "product_labels": "상품 라벨 조회 권한이 없어 라벨을 고를 수 없습니다.",
-    "roles": "회원 등급 목록을 불러올 권한이 없어 등급을 고를 수 없습니다."
   }
 }

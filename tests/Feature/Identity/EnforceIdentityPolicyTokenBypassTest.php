@@ -10,7 +10,6 @@ use App\Models\IdentityVerificationLog;
 use Database\Seeders\IdentityPolicySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -60,7 +59,6 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
             'core.mail' => ['g7:core.mail'],
             'hypothetical.sms' => ['g7:plugin.sms'],
             'hypothetical.kcp' => ['g7:plugin.kcp'],
-            'plugin.nhnkcp' => ['nhnkcp'],
         ];
     }
 
@@ -92,7 +90,7 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         $this->middleware->handle($request, function () use (&$passed) {
             $passed = true;
 
-            return new Response('ok');
+            return new \Illuminate\Http\Response('ok');
         }, $policyKey);
 
         $this->assertTrue($passed, "policy={$policyKey} 가 token 으로 통과하지 못함");
@@ -124,7 +122,7 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         ]);
 
         $this->expectException(IdentityVerificationRequiredException::class);
-        $this->middleware->handle($request, fn () => new Response('ok'), $policyKey);
+        $this->middleware->handle($request, fn () => new \Illuminate\Http\Response('ok'), $policyKey);
     }
 
     #[DataProvider('enforcedPolicyMatrix')]
@@ -153,7 +151,7 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         ]);
 
         $this->expectException(IdentityVerificationRequiredException::class);
-        $this->middleware->handle($request, fn () => new Response('ok'), $policyKey);
+        $this->middleware->handle($request, fn () => new \Illuminate\Http\Response('ok'), $policyKey);
     }
 
     #[DataProvider('enforcedPolicyMatrix')]
@@ -181,7 +179,7 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         ]);
 
         $this->expectException(IdentityVerificationRequiredException::class);
-        $this->middleware->handle($request, fn () => new Response('ok'), $policyKey);
+        $this->middleware->handle($request, fn () => new \Illuminate\Http\Response('ok'), $policyKey);
     }
 
     public function test_forged_token_not_in_db_does_not_bypass(): void
@@ -194,7 +192,7 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         ]);
 
         $this->expectException(IdentityVerificationRequiredException::class);
-        $this->middleware->handle($request, fn () => new Response('ok'), 'core.auth.signup_before_submit');
+        $this->middleware->handle($request, fn () => new \Illuminate\Http\Response('ok'), 'core.auth.signup_before_submit');
     }
 
     public function test_token_target_mismatch_does_not_bypass(): void
@@ -222,12 +220,13 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         ]);
 
         $this->expectException(IdentityVerificationRequiredException::class);
-        $this->middleware->handle($request, fn () => new Response('ok'), 'core.auth.signup_before_submit');
+        $this->middleware->handle($request, fn () => new \Illuminate\Http\Response('ok'), 'core.auth.signup_before_submit');
     }
 
     /**
      * provider 비종속성 — provider_id 가 무엇이든 IdentityVerificationLog 인프라(verified/token/target_hash)만
      * 따르면 동일하게 통과. 새 provider(SMS/KCP/외부 SDK 등) 추가 시 이 동작이 자동 보장됨.
+     *
      */
     #[DataProvider('providerMatrix')]
     public function test_token_bypass_is_provider_agnostic(string $providerId): void
@@ -257,7 +256,7 @@ class EnforceIdentityPolicyTokenBypassTest extends TestCase
         $this->middleware->handle($request, function () use (&$passed) {
             $passed = true;
 
-            return new Response('ok');
+            return new \Illuminate\Http\Response('ok');
         }, 'core.auth.signup_before_submit');
 
         $this->assertTrue($passed, "provider={$providerId} 토큰 우회가 동작하지 않음");
