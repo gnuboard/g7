@@ -1,6 +1,5 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
-import { EditorAttrs } from '../../types';
 export interface ChipCheckboxProps {
     value: string;
     checked?: boolean;
@@ -11,14 +10,6 @@ export interface ChipCheckboxProps {
     className?: string;
     style?: React.CSSProperties;
     onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-    /** 비활성 — 체크 입력을 막고 흐리게 보인다(레이아웃 읽기 전용 게이트) */
-    disabled?: boolean;
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * ChipCheckbox 집합 컴포넌트

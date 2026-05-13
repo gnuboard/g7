@@ -1,7 +1,7 @@
 # 컴포넌트 타입별 개발 규칙
 
 > **메인 문서**: [components.md](components.md)
-> **관련 문서**: [layout-json-components.md](layout-json-components.md) | [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
+> **관련 문서**: [layout-json-components.md](layout-json-components.md) | [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md)
 
 ---
 
@@ -90,19 +90,6 @@ Input 컴포넌트는 한글 등 IME(Input Method Editor) 조합 입력을 올�
 ```
 
 **검색 입력 필드 예시** (keypress 사용):
-```html
-<input data-ref="search_input" type="text" placeholder="검색어 입력...">
-  <on type="change">
-    <set-state target="global" searchQuery="{{$event.target.value}}"/>
-  </on>
-  <on type="keypress" key="Enter">
-    <navigate path="/search?q={{_global.searchQuery}}"/>
-  </on>
-</input>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "id": "search_input",
@@ -161,60 +148,6 @@ Input 컴포넌트는 한글 등 IME(Input Method Editor) 조합 입력을 올�
 4. **HTML 태그 직접 사용 금지**: `<div>`, `<button>` 등 HTML 태그 직접 사용 불가
 5. **집합 컴포넌트 재사용 우선**: 새로운 집합 컴포넌트 개발 시 기존 집합 컴포넌트를 재사용할 수 있는지 우선 검토
 6. **Props 기본값 참조 안정성 필수**: 배열/객체 기본값은 모듈 레벨 상수 사용 (무한 렌더 루프 방지)
-7. **`editorAttrs` 패스스루 필수** (레이아웃 편집기 nesting 대상): editor-spec `nesting.draggable` 에 등재된 composite/layout 컴포넌트는 `editorAttrs?: EditorAttrs` 를 받아 **시각적 루트 요소에 `{...editorAttrs}` 로 spread** 해야 한다 (§ "editorAttrs 패스스루" 참조)
-
-### editorAttrs 패스스루 (레이아웃 편집기 nesting 컴포넌트)
-
-편집 모드에서 코어 `DynamicRenderer` 는 각 컴포넌트에 `data-editor-*` 표식(드롭 슬롯/선택/드래그 DOM 쿼리용)과 선택/hover 핸들러를 **단일 `editorAttrs` 객체**로 주입한다. composite/layout 컴포넌트는 도메인 prop 만 명시 구조분해하고 미명시 props 를 DOM 으로 흘리지 않으므로, `editorAttrs` 를 받아 루트에 spread 하지 않으면 그 노드가 편집기에서 누락된다(편집기는 `[data-editor-path]` DOM 쿼리로 동작 — 컨테이너 노드가 누락되면 자식을 컨테이너 밖으로 옮기는 드롭 슬롯이 생성되지 않음).
-
-```tsx
-import type { EditorAttrs } from '../../types';
-
-export interface FooProps {
-  /* ...도메인 prop 전부 명시 구조분해... */
-  editorAttrs?: EditorAttrs; // 편집기 주입 속성 (편집 모드 전용)
-}
-
-export const Foo = ({ /* 도메인 prop */, editorAttrs }: FooProps) => (
-  <Div className={...} {...editorAttrs}>{children}</Div> // 시각적 루트에 spread
-);
-```
-
-| 구분 | editorAttrs 수신 | 이유 |
-|------|------------------|------|
-| basic (`{...props}` 패스스루) | 불필요 | 코어가 주입한 개별 `data-editor-*` 키가 `{...props}` 로 DOM 도달 |
-| composite / layout | **필수** | 도메인 prop 만 구조분해 → 개별 키 유실 → `editorAttrs` 명시 수신 + 루트 spread 필요 |
-| 서드파티 모달 / Portal | 면제 | interface 주석에 `editorAttrs 패스스루 — 모달 예외` 명기 |
-
-- 사용자 페이지(비편집)에서는 `editorAttrs` 미주입 → `{...editorAttrs}` 가 no-op → DOM 구조/속성 불변 (프리뷰 ↔ 사용자 페이지 패리티 유지).
-- `editorAttrs` 만 spread 하므로 도메인 prop 누출/HTML 동명 prop 타입 충돌이 없다. (`React.HTMLAttributes` 상속 + `{...rest}` 방식은 도메인 prop 누출 위험으로 채택 안 함.)
-- 자동 검출: 자동 검증이 nesting.draggable 의 composite/layout 컴포넌트가 `editorAttrs` 를 받지 않으면 차단한다. 모듈·플러그인 editor-spec `componentPalette` 에 올린 확장 컴포넌트도 같은 검사를 받는다 — 기본 판본(`resources/js/components/`), 템플릿 전용 판본(`for/<템플릿>/`), 템플릿 대체본(`src/components/overrides/<확장>/`) 모두. 의도적 면제는 파일 헤더 `// editor-attrs:allow <사유>`.
-
-### 요소 id 패스스루 (코어 일괄 ID)
-
-레이아웃 편집기 코어는 모든 draggable 컴포넌트의 [속성] 탭 최상단에 "요소 ID" 컨트롤을 일괄 제공한다(값 = 표준 `node.props.id`, 코어는 강제 DOM 주입 안 함). 따라서 draggable 컴포넌트는 `editorAttrs` 와 별개로 **`id` prop 을 받아 시각적 루트에 전달**해야 그 id 가 실제 DOM 에 닿는다.
-
-```tsx
-export interface FooProps {
-  id?: string; // DOM id (코어 일괄 ID)
-  // ... 도메인 prop ...
-  editorAttrs?: EditorAttrs;
-}
-
-export const Foo = ({ id, /* 도메인 prop */, editorAttrs }: FooProps) => (
-  <Div id={id} className={...} {...editorAttrs}>{children}</Div> // id 를 루트에 명시 전달
-);
-```
-
-| 구분 | id 수신/전달 | 비고 |
-|------|------------|------|
-| basic (`{...props}`/`{...validProps}` 패스스루) | 불필요 | id 가 props 스프레드로 DOM 도달 |
-| composite / layout (도메인 prop 만 구조분해) | **필수** | `id?: string` 수신 + 루트에 `id={id}` 명시 전달 |
-| 서드파티 모달 / Portal (인라인 루트 없음) | 면제 + **opt-out** | 인라인 DOM 이 없어 id 부착 불가 → 그 컴포넌트 capability 에 `"coreProps": false` 선언(코어 id 컨트롤 미노출). 예: ImageGallery(Lightbox) |
-
-- 여러 렌더 분기(variant 별 root)가 있으면 **모든 root 분기**에 `id={id}` 를 전달한다(누락 분기는 그 variant 에서 id 미반영).
-- id 값이 이미 `{{바인딩}}` 이거나 컴포넌트/핸들러가 동적 id 를 쓰면, 코어 id 컨트롤은 "바인딩됨(코드 편집)" 디그레이드로 표시해 덮어쓰기를 차단한다(작성자 정적 값만 편집).
-- 코어 id 컨트롤은 HTML 안전 문자(영문자/숫자/`-`/`_`/`:`/`.`)만 허용하고 한글·공백 등은 자동 제거한다(`sanitizeElementId`).
 
 ### 올바른 패턴
 
@@ -465,5 +398,5 @@ export const Container: React.FC<ContainerProps> = ({ children }) => (
 - [컴포넌트 개발 규칙 인덱스](components.md)
 - [컴포넌트 패턴](components-patterns.md)
 - [컴포넌트 고급 기능](components-advanced.md)
-- [sirsoft-admin_basic 컴포넌트](../../templates/_bundled/sirsoft-admin_basic/docs/components.md)
-- [sirsoft-basic 컴포넌트](../../templates/_bundled/sirsoft-basic/docs/components.md)
+- [sirsoft-admin_basic 컴포넌트](templates/sirsoft-admin_basic/components.md)
+- [sirsoft-basic 컴포넌트](templates/sirsoft-basic/components.md)

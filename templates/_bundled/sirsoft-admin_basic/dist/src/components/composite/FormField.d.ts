@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 export interface FormFieldProps {
     /** 필드 레이블 */
     label?: string;
@@ -19,12 +18,6 @@ export interface FormFieldProps {
     horizontal?: boolean;
     /** 레이블 너비 (수평 레이아웃 시) */
     labelWidth?: string;
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * FormField 컴포넌트

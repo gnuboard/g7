@@ -57,7 +57,7 @@ class ActivityLog extends Model
     /**
      * 속성 캐스팅
      *
-     * @return array<string, string> 속성별 캐스트 타입
+     * @return array<string, string>
      */
     protected function casts(): array
     {
@@ -72,8 +72,6 @@ class ActivityLog extends Model
 
     /**
      * 모델 생성 시 created_at 자동 설정
-     *
-     * @return void 반환값 없음
      */
     protected static function boot(): void
     {
@@ -89,7 +87,7 @@ class ActivityLog extends Model
     /**
      * 대상 모델 관계 (Polymorphic)
      *
-     * @return MorphTo 활동 대상 모델 다형 관계
+     * @return MorphTo
      */
     public function loggable(): MorphTo
     {
@@ -99,7 +97,7 @@ class ActivityLog extends Model
     /**
      * 사용자 관계
      *
-     * @return BelongsTo 행위자 사용자 관계
+     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -113,7 +111,7 @@ class ActivityLog extends Model
      * 'core.activity_log.filter_description_params' 필터 훅을 통해
      * 모듈이 properties의 ID를 엔티티 이름으로 변환할 수 있습니다.
      *
-     * @return string 현재 로케일로 번역한 설명 (description_key 가 없으면 빈 문자열)
+     * @return string
      */
     public function getLocalizedDescriptionAttribute(): string
     {
@@ -142,25 +140,13 @@ class ActivityLog extends Model
             return $value;
         }, $params);
 
-        // 문구가 `단수|복수` 로 바뀌기 전에 저장된 행은 수를 `count` 없이 다른 이름(`attempts`·`days` 등)으로만
-        // 담았다 — 그대로 두면 두 문장이 이어져 나오므로, 처음 나오는 수 치환값으로 고른다.
-        if (! isset($params['count']) && str_contains((string) __($this->description_key), '|')) {
-            foreach ($params as $value) {
-                if (is_int($value) || is_float($value) || (is_string($value) && is_numeric($value))) {
-                    $params['count'] = $value;
-                    break;
-                }
-            }
-        }
-
-        // 저장된 `count` 가 있으면 `단수|복수` 문구를 그 수로 고른다 (예: 「1 item」/「3 items」).
-        return trans_count($this->description_key, $params);
+        return __($this->description_key, $params);
     }
 
     /**
      * 로그 유형 라벨을 반환합니다.
      *
-     * @return string 현재 로케일의 로그 유형 라벨
+     * @return string
      */
     public function getLogTypeLabelAttribute(): string
     {
@@ -180,7 +166,7 @@ class ActivityLog extends Model
      *   1) loggable_type FQCN (가장 정확)
      *   2) properties.extension_origin (loggable 없는 케이스 — 호출 시점 trait 자동 주입)
      *
-     * @return string 현재 로케일의 액션 라벨
+     * @return string
      */
     public function getActionLabelAttribute(): string
     {
@@ -240,44 +226,17 @@ class ActivityLog extends Model
             return $origin;
         }
 
-        // 출처 자동 주입(extension_origin) 이전에 쌓인 행은 properties 가 비어 있다 — 설명 키가
-        // 확장 lang 네임스페이스(`sirsoft-ecommerce::...`)면 그것이 출처다(#138 실측 ⑧).
-        $descriptionKey = (string) ($this->description_key ?? '');
-        if (str_contains($descriptionKey, '::')) {
-            return strstr($descriptionKey, '::', true) ?: null;
-        }
-
         return null;
     }
 
     /**
      * 행위자 이름을 반환합니다.
      *
-     * 회원이 없는 로그는 "시스템" 이다. 그중 CLI(Artisan 커맨드·스케줄러)에서 남은 로그는
-     * properties.via 로 구분해 "시스템(CLI)" 로 표기한다. 'console' 은 via 를 먼저 도입한
-     * 커맨드(security:ip-restriction)의 표기라 같은 뜻으로 받는다.
-     *
-     * @return string 회원 이름, 또는 시스템 / 시스템(CLI) 라벨
+     * @return string
      */
     public function getActorNameAttribute(): string
     {
-        if ($this->user) {
-            return (string) $this->user->name;
-        }
-
-        return $this->isCliOrigin() ? __('common.system_cli') : __('common.system');
-    }
-
-    /**
-     * CLI 진입점에서 남은 로그인지 판정합니다.
-     *
-     * @return bool properties.via 가 cli/console 이면 true
-     */
-    public function isCliOrigin(): bool
-    {
-        $via = is_array($this->properties) ? ($this->properties['via'] ?? null) : null;
-
-        return in_array($via, ['cli', 'console'], true);
+        return $this->user?->name ?? __('common.system');
     }
 
     /**
@@ -286,7 +245,7 @@ class ActivityLog extends Model
      * FQCN에서 클래스명만 추출합니다.
      * 예: 'Modules\Sirsoft\Ecommerce\Models\Product' → 'Product'
      *
-     * @return string|null 클래스 짧은 이름 (대상 타입이 없으면 null)
+     * @return string|null
      */
     public function getLoggableTypeDisplayAttribute(): ?string
     {
@@ -302,7 +261,7 @@ class ActivityLog extends Model
     /**
      * 관리자 활동 로그만 필터링하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
+     * @param Builder $query 쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeAdmin(Builder $query): Builder
@@ -313,7 +272,7 @@ class ActivityLog extends Model
     /**
      * 사용자 활동 로그만 필터링하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
+     * @param Builder $query 쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeUserLog(Builder $query): Builder
@@ -324,7 +283,7 @@ class ActivityLog extends Model
     /**
      * 시스템 활동 로그만 필터링하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
+     * @param Builder $query 쿼리 빌더
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeSystem(Builder $query): Builder
@@ -335,8 +294,8 @@ class ActivityLog extends Model
     /**
      * 특정 모델에 대한 로그만 필터링하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
-     * @param  Model  $model  대상 모델
+     * @param Builder $query 쿼리 빌더
+     * @param Model $model 대상 모델
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeForModel(Builder $query, Model $model): Builder
@@ -349,8 +308,8 @@ class ActivityLog extends Model
     /**
      * 특정 액션에 대한 로그만 필터링하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
-     * @param  string  $action  액션 유형
+     * @param Builder $query 쿼리 빌더
+     * @param string $action 액션 유형
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeAction(Builder $query, string $action): Builder
@@ -361,8 +320,8 @@ class ActivityLog extends Model
     /**
      * 특정 사용자의 로그만 필터링하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
-     * @param  int  $userId  사용자 ID
+     * @param Builder $query 쿼리 빌더
+     * @param int $userId 사용자 ID
      * @return Builder 필터링된 쿼리 빌더
      */
     public function scopeByUser(Builder $query, int $userId): Builder
@@ -373,7 +332,7 @@ class ActivityLog extends Model
     /**
      * 최신순으로 정렬하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
+     * @param Builder $query 쿼리 빌더
      * @return Builder 정렬된 쿼리 빌더
      */
     public function scopeLatest(Builder $query): Builder

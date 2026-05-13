@@ -17,6 +17,7 @@ return [
 
     // 상품 설정
     'product' => [
+        'per_page' => 12,
         'max_images' => 10,
         'max_image_size' => 5 * 1024 * 1024, // 5MB
         'allowed_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
@@ -24,13 +25,17 @@ return [
 
     // 주문 설정
     'order' => [
+        'per_page' => 20,
         'order_number_prefix' => 'ORD',
     ],
 
     // 결제 설정
     'payment' => [
-        // 미입금 주문 자동취소 기한은 관리자 환경설정 order_settings.auto_cancel_days 가 SSoT 다.
-        // 여기에 같은 이름의 값을 두면 두 번째 SSoT 가 되어 어느 쪽이 적용되는지 알 수 없어진다.
+        // PG 가상계좌 입금 기한 (일)
+        'vbank_due_days' => 3,
+
+        // 수동 무통장입금 입금 기한 (일)
+        'dbank_due_days' => 7,
 
         // 입금 기한 만료 시 자동 취소 여부
         'auto_cancel_expired' => true,
@@ -66,85 +71,20 @@ return [
         'guest_cart_lifetime' => 7 * 24 * 60, // 7일 (분 단위)
     ],
 
+    // 카테고리 설정
+    'category' => [
+        'image_disk' => 'local',
+    ],
+
+    // 브랜드 설정
+    'brand' => [
+        'image_disk' => 'local',
+    ],
+
     // 리뷰 설정
     'review' => [
         'write_deadline_days' => 90,   // 구매확정 후 리뷰 작성 가능 기간 (일)
         'max_images' => 5,             // 리뷰 이미지 최대 업로드 수
         'max_image_size_mb' => 10,     // 리뷰 이미지 최대 크기 (MB)
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | 환경설정 입력 한계값
-    |--------------------------------------------------------------------------
-    | 관리자 환경설정 화면의 숫자 입력 경계값(min/max)과 저장 검증 규칙이 공유하는 단일 출처.
-    | 규칙(StoreEcommerceSettingsRequest)이 이 값을 읽어 규칙 문자열을 만들고,
-    | 화면은 설정 응답의 `_meta.limits` 로 같은 값을 받아 바인딩한다.
-    */
-    'limits' => [
-        // 주문
-        'auto_cancel_days_min' => 1,
-        'auto_cancel_days_max' => 30,
-        // 결제창까지 갔으나 결제가 성립하지 않은 주문의 만료 기준(분).
-        // 0 은 "그 부류는 정리하지 않음" 을 뜻한다 — 운영자가 끌 수 있는 여지를 남긴다.
-        'pending_order_expire_minutes_min' => 0,
-        'pending_order_expire_minutes_max' => 20160,
-        'cart_expiry_days_min' => 1,
-        'cart_expiry_days_max' => 365,
-
-        // 마일리지 (전역)
-        'default_earn_rate_min' => 0,
-        'default_earn_rate_max' => 100,
-        'earn_delay_days_min' => 0,
-        'earn_delay_days_max' => 365,
-        'expiry_days_min' => 1,
-        'expiry_days_max' => 3650,
-        'expiry_notification_days_before_min' => 1,
-        'expiry_notification_days_before_max' => 365,
-
-        // 마일리지 (통화별 규칙 행)
-        'point_value_min' => 0.001,
-        'min_use_amount_min' => 0,
-        'use_unit_min' => 1,
-        'max_use_percent_min' => 0,
-        'max_use_percent_max' => 100,
-        'max_use_value_min' => 0,
-        'max_use_value_max' => 1000000000,
-
-        // 통화 행
-        'decimal_places_min' => 0,
-        'decimal_places_max' => 8,
-
-        // 개인정보 보유기간 (이슈 #636) — 종결 주문의 주문자·수령인 정보 보유기간(년).
-        // 하한 5년: 전자상거래법 §6(계약·청약철회·대금결제·재화공급 기록 5년 보존) — 그보다 짧게
-        // 파기하면 법정 보존 의무 위반이라 서버가 막는다.
-        'privacy_retention_years_min' => 5,
-        'privacy_retention_years_max' => 20,
-
-        // 리뷰
-        'write_deadline_days_min' => 1,
-        'write_deadline_days_max' => 365,
-        'max_images_min' => 0,
-        'max_images_max' => 20,
-        'max_image_size_mb_min' => 1,
-        'max_image_size_mb_max' => 50,
-
-        // 클레임 (교환/반품/환불/취소)
-        'claim_max_images_min' => 1,
-        'claim_max_images_max' => 20,
-        'claim_image_max_size_kb_min' => 128,
-        'claim_image_max_size_kb_max' => 20480,
-        'claim_request_period_days_min' => 1,
-        'claim_request_period_days_max' => 365,
-        // 선교환 헌 상품 반송 기한 (일) — 쇼핑몰 설정 `claim.advance_exchange_collection_due_days`
-        'advance_exchange_collection_due_days_min' => 1,
-        'advance_exchange_collection_due_days_max' => 90,
-    ],
-
-    // 관리자 대시보드 이커머스 영역 설정
-    'dashboard' => [
-        'scheduler_enabled' => true,   // 판매 현황 집계 스케줄러(hourly) 활성화 여부
-        'recent_limit' => 5,           // 최신 리뷰/미답변 문의 카드 표시 건수
-        'graph_days' => 7,             // 판매 추세 차트 표시 일수
     ],
 ];

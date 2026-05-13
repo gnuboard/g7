@@ -1,8 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
-import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
-import { isSameOriginRequestUrl } from '../support/navPolicy';
 import type { G7DevToolsCore } from '../devtools/G7DevToolsCore';
 
 const logger = createLogger('ApiClient');
@@ -23,12 +21,6 @@ function getDevTools(): G7DevToolsCore | null {
 interface AxiosConfigWithDevTools extends InternalAxiosRequestConfig {
   _devToolsRequestId?: string | null;
   _retry?: boolean;
-  /**
-   * IDV 428 인터셉트 시 challenge 에 사용할 인증 대상(이메일·전화).
-   * axios(G7Core.api) 직접 호출 경로에서 호출자가 config 에 실어 보내면 인터셉터가 launcher 로 전달.
-   * apiCall(handleApiCall) 경로의 `identity_target` 액션 속성과 동일한 역할.
-   */
-  identity_target?: { email?: string; phone?: string };
 }
 
 /**
@@ -118,20 +110,8 @@ class ApiClient {
 
   /**
    * 토큰 저장
-   *
-   * 문자열이 아닌 값은 저장하지 않는다. `localStorage` 는 무엇을 넣든 문자열로 바꿔
-   * 저장하므로 `undefined` 를 넘기면 `"undefined"` 라는 truthy 문자열이 남고, 이후
-   * 모든 요청이 `Bearer undefined` 로 나가 401 로 튕긴다 — 화면에는 "세션이 만료되었습니다"
-   * 로 보여 원인을 추적할 단서가 남지 않는다.
-   *
-   * @since engine-v1.65.0
    */
   setToken(token: string): void {
-    if (typeof token !== 'string' || token === '') {
-      logger.warn('Ignoring invalid auth token — token must be a non-empty string.');
-      return;
-    }
-
     if (typeof window !== 'undefined') {
       localStorage.setItem(this.TOKEN_KEY, token);
     }
@@ -145,22 +125,6 @@ class ApiClient {
       return localStorage.getItem(this.TOKEN_KEY);
     }
     return null;
-  }
-
-  /**
-   * 요청 대상이 현재 문서와 같은 출처인지 판정합니다.
-   *
-   * 확장이 `fetch` 로 직접 요청하면서 `getToken()` 을 실을 때, 대상이 레이아웃 prop·응답 본문처럼
-   * 바깥에서 정해지는 값이면 먼저 이 판정을 거친다 — 교차 출처 대상에 토큰을 실으면 레이아웃 편집
-   * 권한만으로 관리자 토큰을 외부로 보낼 수 있다(KVE-2026-2350). 판정은 apiCall 과 같은
-   * `navPolicy.isSameOriginRequestUrl`(fetch 와 같은 URL 파서)이다.
-   *
-   * @param url 요청 대상 (절대·상대 모두)
-   * @returns 같은 출처면 true (문자열이 아니거나 파싱할 수 없으면 false)
-   * @since engine-v1.73.0
-   */
-  isSameOriginUrl(url: unknown): boolean {
-    return isSameOriginRequestUrl(url);
   }
 
   /**
@@ -184,12 +148,8 @@ class ApiClient {
           config.baseURL = '';
         }
 
-        // 인증 토큰은 동일 출처 요청에만 첨부한다. 공개 자산 디스크(S3/CDN)를 켜면
-        // 첨부 URL 이 외부 origin 절대 URL 이 되는데, 그 요청에 Authorization 을 실으면
-        // ① 세션 토큰이 제3자 origin 의 접근 로그에 남고
-        // ② 안전목록 밖 헤더라 preflight 가 발생해 CORS 미설정 CDN 에서는 이미지가 통째로 실패한다.
         const token = this.getToken();
-        if (token && config.headers && !this.isCrossOriginRequest(config.url)) {
+        if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
@@ -249,14 +209,8 @@ class ApiClient {
         ];
         const shouldSkipUnauthorized = skipUnauthorizedPatterns.some(pattern => requestUrl.includes(pattern));
 
-        // 401 Unauthorized 처리 — 동일 출처 요청만. 교차 출처 서버의 401 은 우리 세션 상태가 아니며,
-        // 갱신한 토큰을 헤더에 직접 붙여 그 외부 주소로 재시도하게 된다(KVE-2026-2350).
-        if (
-          error.response?.status === 401
-          && !originalRequest?._retry
-          && !shouldSkipUnauthorized
-          && !this.isCrossOriginRequest(requestUrl)
-        ) {
+        // 401 Unauthorized 처리
+        if (error.response?.status === 401 && !originalRequest?._retry && !shouldSkipUnauthorized) {
           originalRequest!._retry = true;
 
           // AuthManager를 통한 토큰 갱신 시도
@@ -290,76 +244,6 @@ class ApiClient {
         if (error.response?.status === 401 && shouldSkipUnauthorized) {
           this.completeDevToolsRequest(originalRequest, error);
           return Promise.reject(error);
-        }
-
-        // 428 본인인증 필요 처리 (IDV) — apiCall(handleApiCall, native fetch) 경로는
-        // ActionDispatcher 가 IdentityGuardInterceptor 로 자동 인터셉트하지만, G7Core.api(axios)
-        // 직접 호출 경로(입금확인/주문취소 등 모듈 JS 핸들러)는 이 인터셉터를 거치지 않아 모듈마다
-        // 428 분기를 수동 추가해야 했고 누락 위험이 있었다(취소 핸들러 미노출 회귀). 여기서 중앙
-        // 처리하면 axios 를 쓰는 모든 호출이 본인인증 모달 → verify → 원 요청 재실행을 자동 수행한다.
-        // 교차 출처 응답의 428 은 따르지 않는다 — launcher 가 응답의 challenge_start_url 로 토큰을 실어
-        // 보내므로 외부 서버가 428 을 흉내 내면 토큰을 받아 간다(KVE-2026-2350). 토큰 첨부와 같은 출처 판정.
-        if (
-          !this.isCrossOriginRequest(originalRequest?.url)
-          && IdentityGuardInterceptor.isIdentityRequired(error.response?.status, error.response?.data)
-        ) {
-          this.completeDevToolsRequest(originalRequest, error);
-
-          // 원 요청 헤더(Authorization 포함)/body 를 재실행에 그대로 재사용 — 누락 시 백엔드가
-          // 인증 실패(401) 또는 빈 body(422)로 응답할 수 있다.
-          const replayHeaders: Record<string, string> = {};
-          const rawHeaders = (originalRequest?.headers ?? {}) as Record<string, unknown>;
-          for (const [k, v] of Object.entries(rawHeaders)) {
-            if (typeof v === 'string') {
-              replayHeaders[k] = v;
-            }
-          }
-          let replayBody: BodyInit | undefined;
-          if (originalRequest?.data !== undefined && originalRequest?.data !== null) {
-            replayBody = typeof originalRequest.data === 'string'
-              ? originalRequest.data
-              : JSON.stringify(originalRequest.data);
-            replayHeaders['Content-Type'] = replayHeaders['Content-Type'] ?? 'application/json';
-          }
-
-          // 호출자가 config.identity_target 으로 선언한 인증 대상(비로그인 흐름) 을 launcher 로 전달.
-          const identityTarget = (originalRequest as AxiosConfigWithDevTools | undefined)
-            ?.identity_target;
-
-          const replayed = await IdentityGuardInterceptor.handle(
-            error.response.data,
-            {
-              headers: replayHeaders,
-              body: replayBody,
-              credentials: 'same-origin',
-            },
-            identityTarget
-          );
-
-          // 사용자 취소 / verify 실패 / return_request 없음 → 원 에러 그대로 전파
-          if (!replayed) {
-            return Promise.reject(error);
-          }
-
-          // 재실행 성공 → fetch Response 를 axios 응답 형태로 변환해 정상 흐름으로 반환.
-          let replayData: any = null;
-          try {
-            replayData = await replayed.json();
-          } catch {
-            replayData = null;
-          }
-          if (!replayed.ok) {
-            // 재실행이 또 실패하면 그 응답을 에러로 전파
-            return Promise.reject(Object.assign(new Error('replay failed'), {
-              response: { status: replayed.status, data: replayData },
-            }));
-          }
-
-          return {
-            ...error.response,
-            status: replayed.status,
-            data: replayData,
-          } as AxiosResponse;
         }
 
         // 403 Forbidden 처리 - onUnauthorized를 호출하지 않고 onError로 처리
@@ -476,32 +360,6 @@ class ApiClient {
     } else {
       // 요청 설정 중 오류
       devTools.failRequest(requestId, error.message || 'Request error');
-    }
-  }
-
-  /**
-   * 요청 URL 이 현재 문서와 다른 출처인지 판정합니다.
-   *
-   * 상대 경로는 항상 동일 출처입니다. 절대 URL(`https://…`)과 프로토콜 상대
-   * URL(`//host/…`)만 출처를 비교하며, 파싱 불가하거나 브라우저 밖(SSR/테스트)
-   * 이면 동일 출처로 간주해 기존 동작을 유지합니다.
-   *
-   * @param  url  요청 URL (Axios config.url)
-   * @return bool 교차 출처 여부
-   */
-  private isCrossOriginRequest(url?: string): boolean {
-    if (!url || typeof window === 'undefined' || !window.location) {
-      return false;
-    }
-
-    if (!/^(https?:)?\/\//i.test(url)) {
-      return false;
-    }
-
-    try {
-      return new URL(url, window.location.href).origin !== window.location.origin;
-    } catch {
-      return false;
     }
   }
 

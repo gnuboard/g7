@@ -1,20 +1,16 @@
 {
-    "comment": "쿠폰 등록·수정 폼의 기본 정보 구역 — 이름·기간·발급 방식이 여기 있다.\n  발급 방식(다운로드/자동)이 **뒤따르는 화면을 좌우한다** — 자동을 고르면 발급 조건 칸이 나타나고,\n  그 초깃값도 여기서 함께 정해 준다. 폼 전체가 이 조각의 선택에 따라 자란다는 뜻이다.\n  값은 이 조각의 지역 상태가 아니라 **부모 폼의 `_local.form`** 에 쌓인다 — 저장은 화면 하단\n  한 곳에서 한 번에 하고, 조각들은 같은 그릇을 나눠 쓴다.",
-    "meta": {
-        "is_partial": true
-    },
     "id": "basic_info_section",
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "card"
     },
     "children": [
         {
             "type": "basic",
             "name": "H2",
             "props": {
-                "className": "card-title"
+                "className": "card-title mb-4"
             },
             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.basic_info"
         },
@@ -39,13 +35,6 @@
                         {
                             "type": "composite",
                             "name": "RadioGroup",
-                            "responsive": {
-                                "mobile": {
-                                    "props": {
-                                        "inline": false
-                                    }
-                                }
-                            },
                             "props": {
                                 "name": "target_type",
                                 "inline": true,
@@ -63,6 +52,13 @@
                                         "value": "shipping_fee"
                                     }
                                 ]
+                            },
+                            "responsive": {
+                                "mobile": {
+                                    "props": {
+                                        "inline": false
+                                    }
+                                }
                             }
                         }
                     ]
@@ -81,24 +77,6 @@
                         {
                             "type": "composite",
                             "name": "RadioGroup",
-                            "responsive": {
-                                "mobile": {
-                                    "props": {
-                                        "inline": false
-                                    }
-                                }
-                            },
-                            "actions": [
-                                {
-                                    "comment": "발급 방식 선택. 고른 값 자체는 라디오가 폼에 담고, 이 액션은 **딸린 발급 조건의 초깃값**을 함께 맞춘다 — 자동이면 가입 시, 아니면 수동. 이것이 없으면 자동으로 바꾼 직후 조건 칸이 빈 채로 뜬다.",
-                                    "type": "change",
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "_local",
-                                        "form.issue_condition": "{{$event.target.value === 'auto' ? 'signup' : 'manual'}}"
-                                    }
-                                }
-                            ],
                             "props": {
                                 "name": "issue_method",
                                 "inline": true,
@@ -116,7 +94,24 @@
                                         "value": "auto"
                                     }
                                 ]
-                            }
+                            },
+                            "responsive": {
+                                "mobile": {
+                                    "props": {
+                                        "inline": false
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "form.issue_condition": "{{$event.target.value === 'auto' ? 'signup' : 'manual'}}"
+                                    }
+                                }
+                            ]
                         }
                     ]
                 },
@@ -135,13 +130,6 @@
                         {
                             "type": "composite",
                             "name": "RadioGroup",
-                            "responsive": {
-                                "mobile": {
-                                    "props": {
-                                        "inline": false
-                                    }
-                                }
-                            },
                             "props": {
                                 "name": "issue_condition",
                                 "inline": true,
@@ -159,6 +147,13 @@
                                         "value": "birthday"
                                     }
                                 ]
+                            },
+                            "responsive": {
+                                "mobile": {
+                                    "props": {
+                                        "inline": false
+                                    }
+                                }
                             }
                         }
                     ]
@@ -187,35 +182,6 @@
                                     }
                                 ]
                             }
-                        }
-                    ]
-                },
-                {
-                    "comment": "직접발급 선택 시: 발급 위치 안내 (쿠폰 목록의 직접발급 버튼)",
-                    "id": "direct_issue_guide",
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{_local.form?.issue_method === 'direct'}}",
-                    "props": {
-                        "className": "flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "info",
-                                "size": "sm",
-                                "className": "text-blue-500 dark:text-blue-400 flex-shrink-0"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "text-sm text-blue-700 dark:text-blue-300"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.direct_issue_guide"
                         }
                     ]
                 },

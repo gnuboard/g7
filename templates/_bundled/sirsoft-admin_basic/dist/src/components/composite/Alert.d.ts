@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 /**
  * 알림 타입
  */
@@ -25,14 +24,6 @@ export interface AlertProps {
      * 사용자 정의 클래스
      */
     className?: string;
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /**
-     * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-     */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * Alert 알림 컴포넌트

@@ -4,15 +4,6 @@ import { Img } from '../basic/Img';
 import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
-import type { EditorAttrs } from '../../types';
-import { isSameOriginRequest } from '../../support/sameOriginRequest';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
 
 // G7Core 전역 객체 접근 헬퍼
 const G7Core = () => (window as any).G7Core;
@@ -47,12 +38,6 @@ export interface AdminSidebarProps {
   className?: string;
   /** 현재 로케일 (다국어 메뉴 이름 표시용). 미지정 시 G7Core.locale.current() 자동 사용 */
   currentLocale?: string;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -83,17 +68,13 @@ export interface AdminSidebarProps {
  */
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   logo,
-  logoAlt: logoAltProp,
+  logoAlt = 'Logo',
   menu = [],
   collapsed = false,
   onToggleCollapse,
   className = '',
   currentLocale: currentLocaleProp,
-  id,
-  editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
-  const logoAlt = logoAltProp ?? tOr('common.logo', 'Logo');
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(new Set());
   const [locale, setLocale] = useState<string>(currentLocaleProp || G7Core()?.locale?.current?.() || 'ko');
   const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
@@ -130,10 +111,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     if (!g7core?.state?.subscribe) return;
 
     const unsubscribe = g7core.state.subscribe((state: any) => {
-      // 현재 로케일의 출처는 엔진 하나다 — `_global.locale` 은 어디서도 채워지지 않는 경로라
-      // 항상 undefined 로 떨어졌다(엔진은 `state.locale` → 전역 변수 `$locale` 로만 노출한다).
-      // 폴백이 뒤에 있어 동작은 정상이었지만, 죽은 경로를 앞에 두면 다음 사람이 그것을 선례로 복사한다.
-      const newLocale = g7core?.locale?.current?.() || 'ko';
+      const newLocale = state?._global?.locale || g7core?.locale?.current?.() || 'ko';
       setLocale(newLocale);
 
       // 현재 경로 업데이트
@@ -141,8 +119,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       setCurrentPath(newPath);
     });
 
-    // 언마운트 시 구독 해제 — 코어는 해제 함수를 돌려준다(함수가 아니면 정리할 것이 없다)
-    return typeof unsubscribe === 'function' ? unsubscribe : undefined;
+    return unsubscribe;
   }, []);
 
   // 브라우저 뒤로가기/앞으로가기 감지
@@ -164,7 +141,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   /**
    * 특정 경로가 메뉴 URL과 일치하는지 확인
-   * 접두사 매칭 시 가장 구체적인(가장 긴) 매칭만 활성화 ()
+   * 접두사 매칭 시 가장 구체적인(가장 긴) 매칭만 활성화 (Issue #37)
    *
    * @param url 메뉴 URL
    * @param path 확인할 경로
@@ -220,7 +197,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   /**
    * 메뉴 URL이 현재 경로와 일치하는지 확인
-   * 접두사 매칭 시 가장 구체적인 매칭만 활성화 ()
+   * 접두사 매칭 시 가장 구체적인 매칭만 활성화 (Issue #37)
    *
    * @param url 메뉴 URL
    * @returns 활성 여부
@@ -289,8 +266,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         handler: 'navigate',
         params: { path: url },
       });
-    } else if (isSameOriginNavPath(url)) {
-      // fallback: 전체 페이지 리로드 — 보안: 같은 출처 경로로만(메뉴 데이터의 외부 주소 차단)
+    } else {
+      // fallback: 전체 페이지 리로드
       window.location.href = url;
     }
   };
@@ -298,38 +275,25 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   /**
    * 메뉴 아이템 렌더링 (재귀)
    */
-  const renderMenuItem = (item: MenuItem, level: number = 0, isLast: boolean = false): React.ReactNode => {
+  const renderMenuItem = (item: MenuItem, level: number = 0): React.ReactNode => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems.has(item.id);
-    // padding-left 는 .admin-sidebar-item (px-3 → 12px) / .admin-sidebar-subitem
-    // (pl-[30px]) 시맨틱 자산에 흡수됨.
+    const paddingLeft = level * 16 + 16;
     const label = getMenuLabel(item.name);
-    const isSubItem = level > 0;
 
     // 활성 메뉴 판별
     const isActive = isActiveMenu(item.url);
     const hasActiveDescendant = hasActiveChild(item);
 
     // 스타일 클래스
-    const baseClass = isSubItem ? 'admin-sidebar-subitem' : 'admin-sidebar-item';
-    const activeClass = 'admin-sidebar-item-active';
-    const activeParentClass = 'admin-sidebar-item-active-parent';
-    const defaultClass = 'admin-sidebar-item-default';
-    const disabledClass = 'admin-sidebar-item-disabled';
+    const baseClass = 'w-full flex items-center justify-between px-4 py-3 transition-colors';
+    const activeClass = 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-l-4 border-blue-500';
+    const activeParentClass = 'text-blue-600 dark:text-blue-400';
+    const defaultClass = 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700';
+    const disabledClass = 'text-gray-400 dark:text-gray-500 cursor-default';
 
     return (
-      <Div key={item.id} className={isSubItem ? 'relative group' : ''}>
-        {/* 서브메뉴 트리라인 */}
-        {isSubItem && (
-          <>
-            {/* 세로선 (마지막 아이템이 아닐 때만) */}
-            {!isLast && (
-              <Div className="admin-sidebar-tree-line-vertical" />
-            )}
-            {/* 커브드 연결선 */}
-            <Div className="admin-sidebar-tree-line-curve" />
-          </>
-        )}
+      <Div key={item.id}>
         {/* 메뉴 아이템 */}
         {hasChildren && item.url ? (
           // 하위 메뉴 + URL 있는 경우: 텍스트 클릭 → 네비게이션, chevron 클릭 → 토글
@@ -339,6 +303,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               ${isActive ? activeClass : hasActiveDescendant ? activeParentClass : defaultClass}
               ${collapsed ? 'justify-center' : ''}
             `}
+            style={{ paddingLeft: collapsed ? undefined : `${paddingLeft}px` }}
           >
             <Button
               onClick={(event) => handleNavigate(event, item.url!)}
@@ -352,9 +317,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               {!collapsed && <Span className="truncate">{label}</Span>}
             </Button>
             {!collapsed && (
-              <Div className="admin-sidebar-chevron-trail">
+              <Div className="flex items-center gap-1">
                 {item.module_id && (
-                  <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
+                  <I className="fas fa-cube w-3 h-3 mr-2 text-gray-400 dark:text-gray-500 opacity-60" title="모듈 메뉴" />
                 )}
                 <Button
                   onClick={() => toggleExpand(item.id)}
@@ -377,22 +342,23 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               ${hasActiveDescendant ? activeParentClass : defaultClass}
               ${collapsed ? 'justify-center' : ''}
             `}
+            style={{ paddingLeft: collapsed ? undefined : `${paddingLeft}px` }}
           >
-            <Div className="admin-sidebar-item-content">
+            <Div className="flex items-center">
               {item.icon && (
-                <Div className="admin-sidebar-icon-box">
-                  <I className={item.icon} />
-                </Div>
+                <I
+                  className={`${item.icon} ${collapsed ? '' : 'mr-3'} w-5 h-5 flex items-center justify-center`}
+                />
               )}
               {!collapsed && <Span>{label}</Span>}
             </Div>
             {!collapsed && (
-              <Div className="admin-sidebar-chevron-trail">
+              <Div className="flex items-center gap-1">
                 {item.module_id && (
-                  <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
+                  <I className="fas fa-cube w-3 h-3 mr-2 text-gray-400 dark:text-gray-500 opacity-60" title="모듈 메뉴" />
                 )}
                 <I
-                  className={`fas fa-chevron-right w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                  className={`fas fa-chevron-down w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                 />
               </Div>
             )}
@@ -407,17 +373,18 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               ${collapsed ? 'justify-center' : ''}
               text-left
             `}
+            style={{ paddingLeft: collapsed ? undefined : `${paddingLeft}px` }}
           >
-            <Div className="admin-sidebar-item-content">
+            <Div className="flex items-center">
               {item.icon && (
-                <Div className="admin-sidebar-icon-box">
-                  <I className={item.icon} />
-                </Div>
+                <I
+                  className={`${item.icon} ${collapsed ? '' : 'mr-3'} w-5 h-5 flex items-center justify-center`}
+                />
               )}
               {!collapsed && <Span>{label}</Span>}
             </Div>
             {!collapsed && item.module_id && (
-              <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
+              <I className="fas fa-cube w-3 h-3 mr-2 text-gray-400 dark:text-gray-500 opacity-60" title="모듈 메뉴" />
             )}
           </Button>
         ) : (
@@ -429,27 +396,26 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               ${collapsed ? 'justify-center' : ''}
               text-left
             `}
+            style={{ paddingLeft: collapsed ? undefined : `${paddingLeft}px` }}
           >
-            <Div className="admin-sidebar-item-content">
+            <Div className="flex items-center">
               {item.icon && (
-                <Div className="admin-sidebar-icon-box">
-                  <I className={item.icon} />
-                </Div>
+                <I
+                  className={`${item.icon} ${collapsed ? '' : 'mr-3'} w-5 h-5 flex items-center justify-center`}
+                />
               )}
               {!collapsed && <Span>{label}</Span>}
             </Div>
             {!collapsed && item.module_id && (
-              <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
+              <I className="fas fa-cube w-3 h-3 mr-2 text-gray-400 dark:text-gray-500 opacity-60" title="모듈 메뉴" />
             )}
           </Button>
         )}
 
         {/* 하위 메뉴 */}
         {hasChildren && !collapsed && isExpanded && (
-          <Div className="relative ml-2">
-            {item.children!.map((child, index) =>
-              renderMenuItem(child, level + 1, index === item.children!.length - 1)
-            )}
+          <Div className="bg-gray-50 dark:bg-gray-900">
+            {item.children!.map((child) => renderMenuItem(child, level + 1))}
           </Div>
         )}
       </Div>
@@ -457,10 +423,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   };
 
   return (
-    <Div className={className} id={id} {...editorAttrs}>
+    <Div className={className}>
       {/* 로고 영역 (선택적) */}
       {(logo || onToggleCollapse) && (
-        <Div className="admin-sidebar-header">
+        <Div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
           {logo && !collapsed && (
             <Img
               src={logo}
@@ -471,11 +437,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           {onToggleCollapse && (
             <Button
               onClick={onToggleCollapse}
-              className="admin-sidebar-collapse-btn"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
               aria-label={collapsed ? t('common.expand_sidebar') : t('common.collapse_sidebar')}
             >
               <I
-                className={`${collapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'} w-5 h-5 text-slate-600 dark:text-slate-400`}
+                className={`${collapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'} w-5 h-5 text-gray-600 dark:text-gray-400`}
               />
             </Button>
           )}
@@ -483,25 +449,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       )}
 
       {/* 메뉴 영역 */}
-      <Div className="admin-sidebar-menu-list">
-        {menu.map((item, index) => renderMenuItem(item, 0, index === menu.length - 1))}
+      <Div>
+        {menu.map((item) => renderMenuItem(item))}
       </Div>
     </Div>
   );
 };
-
-/**
- * 이동 폴백이 따라가도 되는 같은 출처 주소인지 판정합니다.
- *
- * `/` 하나로 시작하는 경로(`//`·`/\` 제외)는 문서 주소와 무관하게 같은 출처이고, 그 밖의 주소는 출처를 비교한다.
- *
- * @param target 이동할 주소
- * @returns 같은 출처면 true
- */
-function isSameOriginNavPath(target: unknown): boolean {
-  if (typeof target === 'string' && /^\/(?![/\\])/.test(target)) {
-    return true;
-  }
-
-  return isSameOriginRequest(target);
-}

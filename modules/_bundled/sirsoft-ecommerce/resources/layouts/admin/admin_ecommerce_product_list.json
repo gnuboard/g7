@@ -1,116 +1,40 @@
 {
-    "comment": "상품 목록 (운영자) — 조회 조건을 전부 URL 쿼리에 싣고, 자주 쓰는 조합은 「검색 프리셋」으로\n  저장해 불러 쓴다. 목록 위 일괄처리 줄에서 판매·진열 상태와 가격·재고를 선택 건에 한꺼번에\n  적용하는데, 상품 단위와 옵션 단위 선택이 따로라 둘을 함께 들고 다닌다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_product_list",
+    "permissions": [
+        "sirsoft-ecommerce.products.read"
+    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.product.title"
     },
-    "data_sources": [
-        {
-            "id": "products",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.products",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/products",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "params": {
-                "page": "{{query.page || 1}}",
-                "per_page": "{{query.per_page || 20}}",
-                "sort_by": "{{query.sort_by || 'created_at'}}",
-                "sort_order": "{{query.sort_order || 'desc'}}",
-                "search_field": "{{query.search_field}}",
-                "search_keyword": "{{query.search_keyword}}",
-                "category_id": "{{query.category_id4 || query.category_id3 || query.category_id2 || query.category_id1}}",
-                "no_category": "{{query.no_category === 'true' ? true : null}}",
-                "sales_status": "{{query['sales_status[]']}}",
-                "display_status": "{{query.display_status}}",
-                "brand_id": "{{query.brand_id}}",
-                "no_brand": "{{query.no_brand === 'true' ? true : null}}",
-                "tax_status": "{{query.tax_status}}",
-                "date_type": "{{query.date_type}}",
-                "start_date": "{{query.start_date}}",
-                "end_date": "{{query.end_date}}",
-                "price_type": "{{query.price_type}}",
-                "min_price": "{{query.min_price}}",
-                "max_price": "{{query.max_price}}",
-                "min_stock": "{{query.min_stock}}",
-                "max_stock": "{{query.max_stock}}",
-                "shipping_policy_id": "{{query.shipping_policy_id}}"
-            },
-            "errorHandling": {
-                "403": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
-                },
-                "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
-                }
-            },
-            "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 분류는 4단계 중 가장 깊이 고른 것 하나만 넘기고, 「미등록」 필터는 값이 없다는 뜻이라 별도 참거짓으로 보낸다"
-        },
-        {
-            "id": "presets",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.presets",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/presets",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background",
-            "params": {
-                "target_screen": "products"
-            },
-            "comment": "이 화면에 저장해 둔 검색 프리셋. 프리셋은 화면마다 따로 관리되므로 대상 화면을 지정해 받는다"
-        },
-        {
-            "id": "brands",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.brands",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/brands",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background",
-            "params": {
-                "per_page": 100
-            },
-            "comment": "브랜드 필터 선택지. 목록 표시를 막지 않도록 뒤늦게 받는다"
-        },
-        {
-            "id": "categories",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.categories",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/categories",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background",
-            "params": {
-                "hierarchical": "1"
-            },
-            "comment": "분류 필터의 4단 선택지. 계층 전체를 한 번에 받아 두고 아래 computed 가 단계별로 잘라 쓴다 — 단계를 고를 때마다 서버를 부르지 않기 위해서다"
-        },
-        {
-            "id": "shipping_policies",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.shipping_policies",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/active",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background",
-            "comment": "배송정책 필터 선택지 — 사용 중인 것만 받는다"
-        }
-    ],
-    "initLocal": {
+    "computed": {
+        "optionCurrencyColumns": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default && c.exchange_rate).map(c => ({ field: 'multi_currency_selling_price.' + c.code, header: $localized(c.name) || c.code, currencyCode: c.code }))}}",
+        "filteredOptionCurrencyColumns": "{{(_computed.optionCurrencyColumns || []).filter(col => (_local.visibleColumns || []).includes(col.field))}}",
+        "filteredOptionColumns": "{{(_local.optionColumns || []).filter(col => (_local.visibleColumns || []).includes(col.field))}}",
+        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
+        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
+        "filterDisplayStatus": "{{_local.filter.displayStatus ?? query.display_status ?? 'all'}}",
+        "filterTaxStatus": "{{_local.filter.taxStatus ?? query.tax_status ?? 'all'}}",
+        "filterDateType": "{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}",
+        "filterStartDate": "{{_local.filter.startDate ?? query.start_date ?? ''}}",
+        "filterEndDate": "{{_local.filter.endDate ?? query.end_date ?? ''}}",
+        "filterPriceType": "{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}",
+        "filterMinPrice": "{{_local.filter.minPrice ?? query.min_price ?? ''}}",
+        "filterMaxPrice": "{{_local.filter.maxPrice ?? query.max_price ?? ''}}",
+        "filterMinStock": "{{_local.filter.minStock ?? query.min_stock ?? ''}}",
+        "filterMaxStock": "{{_local.filter.maxStock ?? query.max_stock ?? ''}}",
+        "filterShippingPolicy": "{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}",
+        "filterBrandId": "{{_local.filter.brandId ?? query.brand_id ?? ''}}",
+        "filterCategoryId": "{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || ''}}",
+        "brandOptions": "{{(brands?.data?.data || []).map(b => ({ value: b.id, label: b.localized_name }))}}",
+        "category1Options": "{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}",
+        "category2Options": "{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
+        "category3Options": "{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
+        "category4Options": "{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_parent' }]}}",
+        "shippingPolicyOptions": "{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}"
+    },
+    "state": {
         "showDetailFilter": false,
         "filter": {
             "selectedPreset": "",
@@ -180,6 +104,8 @@
             "salesStatus",
             "displayStatus"
         ],
+        "productColumns": [],
+        "optionColumns": [],
         "selectedOptionIds": [],
         "productFieldErrors": [],
         "optionFieldErrors": [],
@@ -204,58 +130,18 @@
             }
         }
     },
-    "computed": {
-        "currencyDisplayColumns": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default && c.exchange_rate).map(c => ({ currencyCode: c.code }))}}",
-        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
-        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
-        "filterDisplayStatus": "{{_local.filter.displayStatus ?? query.display_status ?? 'all'}}",
-        "filterTaxStatus": "{{_local.filter.taxStatus ?? query.tax_status ?? 'all'}}",
-        "filterDateType": "{{_local.filter.dateType ?? query.date_type ?? 'created_at'}}",
-        "filterStartDate": "{{_local.filter.startDate ?? query.start_date ?? ''}}",
-        "filterEndDate": "{{_local.filter.endDate ?? query.end_date ?? ''}}",
-        "filterPriceType": "{{_local.filter.priceType ?? query.price_type ?? 'selling_price'}}",
-        "filterMinPrice": "{{_local.filter.minPrice ?? query.min_price ?? ''}}",
-        "filterMaxPrice": "{{_local.filter.maxPrice ?? query.max_price ?? ''}}",
-        "filterMinStock": "{{_local.filter.minStock ?? query.min_stock ?? ''}}",
-        "filterMaxStock": "{{_local.filter.maxStock ?? query.max_stock ?? ''}}",
-        "filterShippingPolicy": "{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}",
-        "filterBrandId": "{{_local.filter.brandId ?? query.brand_id ?? ''}}",
-        "filterCategoryId": "{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || ''}}",
-        "brandOptions": "{{(brands?.data?.data || []).map(b => ({ value: b.id, label: b.localized_name }))}}",
-        "category1Options": "{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}",
-        "category2Options": "{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}",
-        "category3Options": "{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}",
-        "category4Options": "{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : [{ value: '', label: '$t:sirsoft-ecommerce.admin.product.category.select_prev' }]}}",
-        "shippingPolicyOptions": "{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}"
-    },
-    "permissions": [
-        "sirsoft-ecommerce.products.read"
-    ],
     "transition_overlay": {
         "wait_for": [
             "products"
         ]
     },
     "named_actions": {
-        "resetExpandedOptionState": {
-            "comment": "목록 구성이 바뀌는 이동(검색·정렬·페이지·프리셋·초기화) 앞에 둔다. 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.\n       목록 구성이 바뀌는 이동(검색·정렬·페이지·프리셋·초기화) 앞에 둔다. 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.",
-            "handler": "setState",
-            "params": {
-                "target": "local",
-                "expandedRows": [],
-                "optionsLoadingIds": [],
-                "optionsErrorIds": [],
-                "selectedOptionIds": []
-            }
-        },
-        "searchProductsNavigate": {
-            "comment": "필터 값을 URL 로 옮겨 목록을 다시 세운다. 값이 비면 키를 아예 빼는 것(null)이 요점이다 — 빈 문자열로 남기면 서버가 그 조건을 걸린 것으로 읽어 결과가 통째로 사라진다. 페이지는 늘 1로 되돌린다",
+        "searchProducts": {
             "handler": "navigate",
             "params": {
                 "path": "/admin/ecommerce/products",
                 "replace": true,
                 "mergeQuery": true,
-                "transition_overlay_target": "product_datagrid__body",
                 "query": {
                     "page": 1,
                     "search_field": "{{$computed.filterSearchField !== 'all' ? $computed.filterSearchField : null}}",
@@ -264,11 +150,11 @@
                     "category_id2": "{{_local.filter.category2 || null}}",
                     "category_id3": "{{_local.filter.category3 || null}}",
                     "category_id4": "{{_local.filter.category4 || null}}",
-                    "no_category": "{{(_local.filter.noCategoryRegistered ?? (query.no_category === 'true')) ? true : null}}",
+                    "no_category": "{{(_local.filter.noCategoryRegistered ?? (query.no_category === 'true')) ? 'true' : null}}",
                     "sales_status": "{{((_local.filter.salesStatus ?? query['sales_status[]'] ?? []) || []).length > 0 ? (_local.filter.salesStatus ?? query['sales_status[]']) : null}}",
                     "display_status": "{{$computed.filterDisplayStatus !== 'all' ? $computed.filterDisplayStatus : null}}",
                     "brand_id": "{{$computed.filterBrandId || null}}",
-                    "no_brand": "{{(_local.filter.noBrandRegistered ?? (query.no_brand === 'true')) ? true : null}}",
+                    "no_brand": "{{(_local.filter.noBrandRegistered ?? (query.no_brand === 'true')) ? 'true' : null}}",
                     "tax_status": "{{$computed.filterTaxStatus !== 'all' ? $computed.filterTaxStatus : null}}",
                     "date_type": "{{$computed.filterDateType}}",
                     "start_date": "{{$computed.filterStartDate || null}}",
@@ -279,22 +165,105 @@
                     "min_stock": "{{$computed.filterMinStock || null}}",
                     "max_stock": "{{$computed.filterMaxStock || null}}",
                     "shipping_policy_id": "{{$computed.filterShippingPolicy || null}}"
+                },
+                "transition_overlay_target": "product_datagrid__body"
+            }
+        }
+    },
+    "data_sources": [
+        {
+            "id": "products",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/products",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "sort_by": "{{query.sort_by || 'created_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "category_id": "{{query.category_id4 || query.category_id3 || query.category_id2 || query.category_id1}}",
+                "no_category": "{{query.no_category}}",
+                "sales_status": "{{query['sales_status[]']}}",
+                "display_status": "{{query.display_status}}",
+                "brand_id": "{{query.brand_id}}",
+                "no_brand": "{{query.no_brand}}",
+                "tax_status": "{{query.tax_status}}",
+                "date_type": "{{query.date_type}}",
+                "start_date": "{{query.start_date}}",
+                "end_date": "{{query.end_date}}",
+                "price_type": "{{query.price_type}}",
+                "min_price": "{{query.min_price}}",
+                "max_price": "{{query.max_price}}",
+                "min_stock": "{{query.min_stock}}",
+                "max_stock": "{{query.max_stock}}",
+                "shipping_policy_id": "{{query.shipping_policy_id}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
                 }
             }
         },
-        "searchProducts": {
-            "comment": "검색 진입점. 주소를 바꾸기 전에 펼쳐 둔 옵션 행 상태를 먼저 비운다 — 결과가 바뀌면 그 행들은 더 이상 같은 상품이 아니다",
-            "handler": "sequence",
-            "actions": [
-                {
-                    "actionRef": "resetExpandedOptionState"
-                },
-                {
-                    "actionRef": "searchProductsNavigate"
-                }
-            ]
+        {
+            "id": "presets",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/presets",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "target_screen": "products"
+            }
+        },
+        {
+            "id": "brands",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/brands",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "per_page": 100
+            }
+        },
+        {
+            "id": "categories",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/categories",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "hierarchical": "1"
+            }
+        },
+        {
+            "id": "shipping_policies",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background"
         }
-    },
+    ],
     "init_actions": [
         {
             "handler": "setState",
@@ -329,6 +298,26 @@
             }
         },
         {
+            "handler": "sirsoft-ecommerce.buildProductColumns",
+            "params": {
+                "currencies": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []}}"
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "productColumns"
+            }
+        },
+        {
+            "handler": "sirsoft-ecommerce.buildOptionColumns",
+            "params": {
+                "currencies": "{{_global.modules['sirsoft-ecommerce']?.language_currency?.currencies || []}}"
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "optionColumns"
+            }
+        },
+        {
             "handler": "sirsoft-ecommerce.loadVisibleFilters",
             "params": {
                 "id": "admin_ecommerce_product_filters",
@@ -354,25 +343,13 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
                 },
                 "children": [
                     {
                         "id": "filter_visibility_selector",
                         "type": "composite",
                         "name": "FilterVisibilitySelector",
-                        "actions": [
-                            {
-                                "comment": "화면에 세울 필터 목록만 바꾼다 — 저장은 컴포넌트가 사용자별 설정으로 직접 처리한다",
-                                "type": "change",
-                                "event": "onFilterVisibilityChange",
-                                "handler": "setState",
-                                "params": {
-                                    "target": "_local",
-                                    "visibleFilters": "{{$args[0]}}"
-                                }
-                            }
-                        ],
                         "props": {
                             "id": "admin_ecommerce_product_filters",
                             "visibleFilters": "{{_local.visibleFilters}}",
@@ -384,14 +361,25 @@
                                 "salesStatus",
                                 "displayStatus"
                             ]
-                        }
+                        },
+                        "actions": [
+                            {
+                                "event": "onFilterVisibilityChange",
+                                "type": "change",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "visibleFilters": "{{$args[0]}}"
+                                }
+                            }
+                        ]
                     },
                     {
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between mb-6"
+                            "className": "flex items-center justify-between mb-6"
                         },
                         "children": [
                             {
@@ -406,35 +394,23 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2"
+                                    "className": "flex items-center gap-2"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "actions": [
-                                            {
-                                                "comment": "새로고침 — 보고 있던 목록(같은 조건·페이지)을 다시 부른다. 종전에는 처리기가 없어 눌러도 아무 일이 없었다.",
-                                                "type": "click",
-                                                "handler": "refetchDataSource",
-                                                "params": {
-                                                    "dataSourceId": "products"
-                                                }
-                                            }
-                                        ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-icon",
-                                            "aria-label": "$t:common.refresh",
-                                            "title": "$t:common.refresh"
+                                            "className": "btn btn-icon"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "arrows-rotate",
-                                                    "className": "text-xl"
+                                                    "name": "refresh-cw",
+                                                    "className": "w-5 h-5"
                                                 }
                                             }
                                         ]
@@ -442,18 +418,6 @@
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "actions": [
-                                            {
-                                                "comment": "새 상품 등록. 등록을 취소하고 돌아왔을 때 보던 목록이 그대로 서도록 목록 상태를 넘긴다",
-                                                "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/products/create",
-                                                    "mergeQuery": true,
-                                                    "query": {}
-                                                }
-                                            }
-                                        ],
                                         "props": {
                                             "type": "button",
                                             "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
@@ -465,13 +429,22 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "plus",
-                                                    "className": "text-base"
+                                                    "className": "w-4 h-4"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "text": "$t:sirsoft-ecommerce.admin.product.add"
+                                            }
+                                        ],
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/products/create"
+                                                }
                                             }
                                         ]
                                     }
@@ -495,14 +468,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
+                                    "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-3"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-body font-medium whitespace-nowrap"
+                                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.product.selected_count|count={{(_local.selectedItems || []).length}}"
                                     },
@@ -510,23 +483,12 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center flex-wrap gap-2"
+                                            "className": "flex flex-wrap items-center gap-2"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Select",
-                                                "actions": [
-                                                    {
-                                                        "comment": "고르기만 하고 보내지 않는다 — 실제 반영은 오른쪽 「일괄적용」이 확인 창을 거쳐 한다",
-                                                        "type": "change",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "_local",
-                                                            "bulkSalesStatus": "{{$event.target.value}}"
-                                                        }
-                                                    }
-                                                ],
                                                 "props": {
                                                     "name": "bulkSalesStatus",
                                                     "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
@@ -551,22 +513,21 @@
                                                             "label": "$t:sirsoft-ecommerce.enums.sales_status.sold_out"
                                                         }
                                                     ]
-                                                }
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Select",
+                                                },
                                                 "actions": [
                                                     {
-                                                        "comment": "판매 상태와 짝을 이루는 진열 상태 — 둘 중 고른 것만 일괄적용에 실린다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "_local",
-                                                            "bulkDisplayStatus": "{{$event.target.value}}"
+                                                            "bulkSalesStatus": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ],
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
                                                 "props": {
                                                     "name": "bulkDisplayStatus",
                                                     "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
@@ -587,7 +548,17 @@
                                                             "label": "$t:sirsoft-ecommerce.enums.display_status.hidden"
                                                         }
                                                     ]
-                                                }
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "bulkDisplayStatus": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
                                             }
                                         ]
                                     },
@@ -595,22 +566,15 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "flex items-center gap-2"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "openModal",
-                                                        "target": "modal_bulk_price"
-                                                    }
-                                                ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "{{_global.bulkPriceCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
+                                                    "className": "{{_global.bulkPriceCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
                                                     "disabled": "{{products?.data?.abilities?.can_update !== true}}"
                                                 },
                                                 "children": [
@@ -629,22 +593,21 @@
                                                         },
                                                         "text": "({{_global.bulkPriceCondition}})"
                                                     }
+                                                ],
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "openModal",
+                                                        "target": "modal_bulk_price"
+                                                    }
                                                 ]
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "openModal",
-                                                        "target": "modal_bulk_stock"
-                                                    }
-                                                ],
                                                 "props": {
                                                     "type": "button",
-                                                    "data-testid": "product-bulk-stock-open",
-                                                    "className": "{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
+                                                    "className": "{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
                                                     "disabled": "{{products?.data?.abilities?.can_update !== true}}"
                                                 },
                                                 "children": [
@@ -663,6 +626,13 @@
                                                         },
                                                         "text": "({{_global.bulkStockCondition}})"
                                                     }
+                                                ],
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "openModal",
+                                                        "target": "modal_bulk_stock"
+                                                    }
                                                 ]
                                             }
                                         ]
@@ -675,9 +645,14 @@
                                         }
                                     },
                                     {
-                                        "comment": "일괄 적용. 고른 값과 대상(상품·옵션 양쪽)을 전역으로 옮긴 뒤 확인 데이터를 만들고 창을 연다 — 창은 별도 컨텍스트라 이 화면의 폼 상태를 읽지 못한다",
                                         "type": "basic",
                                         "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "disabled": "{{((!_local.selectedItems || _local.selectedItems.length === 0) && (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.product.bulk_apply",
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -689,6 +664,8 @@
                                                             "target": "global",
                                                             "bulkSalesStatus": "{{_local.bulkSalesStatus}}",
                                                             "bulkDisplayStatus": "{{_local.bulkDisplayStatus}}",
+                                                            "bulkPriceCondition": "{{_local.bulkPriceCondition}}",
+                                                            "bulkStockCondition": "{{_local.bulkStockCondition}}",
                                                             "bulkSelectedItems": "{{_local.selectedItems}}",
                                                             "bulkSelectedOptionIds": "{{_local.selectedOptionIds}}"
                                                         }
@@ -702,14 +679,7 @@
                                                     }
                                                 ]
                                             }
-                                        ],
-                                        "props": {
-                                            "type": "button",
-                                            "data-testid": "product-bulk-apply",
-                                            "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                            "disabled": "{{((!_local.selectedItems || _local.selectedItems.length === 0) && (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}"
-                                        },
-                                        "text": "$t:sirsoft-ecommerce.admin.product.bulk_apply"
+                                        ]
                                     }
                                 ]
                             },
@@ -718,14 +688,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-between flex-wrap gap-3 mb-4"
+                                    "className": "flex flex-wrap items-center justify-between gap-3 mb-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-label"
+                                            "className": "text-sm text-gray-600 dark:text-gray-400"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.product.total_count|count={{products?.data?.pagination?.total || 0}}"
                                     },
@@ -733,47 +703,12 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-3"
+                                            "className": "flex items-center gap-3"
                                         },
                                         "children": [
                                             {
-                                                "comment": "정렬 선택. 값 하나에 필드와 방향이 함께 담겨 있고, 바꿀 때 펼침 상태를 비운 뒤 주소를 바꾼다 — 두 일을 함께 해야 해서 아래 블록이 두 액션으로 나뉜다",
-                                                "type": "basic",
+                                                "type": "composite",
                                                 "name": "Select",
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "sequence",
-                                                        "actions": [
-                                                            {
-                                                                "comment": "정렬이 바뀌면 행 구성이 통째로 달라진다 — 펼침 상태를 이어받으면 옵션이 아직 없는 행이 펼쳐진 채로 빈 영역을 보인다.",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "expandedRows": [],
-                                                                    "optionsLoadingIds": [],
-                                                                    "optionsErrorIds": [],
-                                                                    "selectedOptionIds": []
-                                                                }
-                                                            },
-                                                            {
-                                                                "comment": "선택값은 `필드명_방향` 한 덩어리라 마지막 마디를 방향으로 떼어 낸다(`selling_price_asc` 처럼 필드명 자체에 밑줄이 있어 앞쪽은 다시 이어 붙인다)",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/ecommerce/products",
-                                                                    "replace": true,
-                                                                    "mergeQuery": true,
-                                                                    "transition_overlay_target": "product_datagrid__body",
-                                                                    "query": {
-                                                                        "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
-                                                                        "sort_order": "{{$event.target.value.split('_').pop()}}",
-                                                                        "page": 1
-                                                                    }
-                                                                }
-                                                            }
-                                                        ]
-                                                    }
-                                                ],
                                                 "props": {
                                                     "name": "sortBy",
                                                     "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
@@ -812,28 +747,28 @@
                                                             "label": "$t:sirsoft-ecommerce.admin.product.sort.stock_desc"
                                                         }
                                                     ]
-                                                }
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Select",
+                                                },
                                                 "actions": [
                                                     {
-                                                        "comment": "한 쪽에 담는 수가 달라지면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {
                                                             "path": "/admin/ecommerce/products",
                                                             "replace": true,
                                                             "mergeQuery": true,
-                                                            "transition_overlay_target": "product_datagrid__body",
                                                             "query": {
-                                                                "per_page": "{{$event.target.value}}",
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
                                                                 "page": 1
-                                                            }
+                                                            },
+                                                            "transition_overlay_target": "product_datagrid__body"
                                                         }
                                                     }
-                                                ],
+                                                ]
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Select",
                                                 "props": {
                                                     "name": "perPage",
                                                     "className": "w-24 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
@@ -856,37 +791,53 @@
                                                             "label": "100"
                                                         }
                                                     ]
-                                                }
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/products",
+                                                            "replace": true,
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "per_page": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            },
+                                                            "transition_overlay_target": "product_datagrid__body"
+                                                        }
+                                                    }
+                                                ]
                                             },
                                             {
+                                                "if": false,
                                                 "comment": "엑셀 다운로드 미제공 - 숨김 처리",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "if": false,
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "openModal",
-                                                        "target": "modal_excel_download"
-                                                    }
-                                                ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
+                                                    "className": "flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "download",
-                                                            "className": "text-base"
+                                                            "name": "arrow-down-tray",
+                                                            "className": "w-4 h-4"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "text": "$t:sirsoft-ecommerce.admin.product.excel_download"
+                                                    }
+                                                ],
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "openModal",
+                                                        "target": "modal_excel_download"
                                                     }
                                                 ]
                                             }
@@ -905,43 +856,33 @@
     },
     "modals": [
         {
-            "comment": "검색 프리셋 관리",
             "partial": "partials/admin_ecommerce_product_list/_modal_preset_manage.json"
         },
         {
-            "comment": "지금 걸린 조건을 새 프리셋으로 저장",
             "partial": "partials/admin_ecommerce_product_list/_modal_preset_save.json"
         },
         {
-            "comment": "프리셋 이름 바꾸기",
             "partial": "partials/admin_ecommerce_product_list/_modal_preset_edit.json"
         },
         {
-            "comment": "프리셋 삭제 확인",
             "partial": "partials/admin_ecommerce_product_list/_modal_preset_delete_confirm.json"
         },
         {
-            "comment": "가격 일괄 변경 — 얼마를 더할지·뺄지·몇 %로 할지 정한다(적용은 「일괄적용」에서 함께 나간다)",
             "partial": "partials/admin_ecommerce_product_list/_modal_bulk_price.json"
         },
         {
-            "comment": "재고 일괄 변경 — 위 가격 창과 같은 방식이다",
             "partial": "partials/admin_ecommerce_product_list/_modal_bulk_stock.json"
         },
         {
-            "comment": "일괄적용 확인 — 무엇을 몇 건에 적용하는지 보여 주고 여기서 실제로 보낸다",
             "partial": "partials/admin_ecommerce_product_list/_modal_bulk_confirm.json"
         },
         {
-            "comment": "엑셀 내려받기 (이 화면에서는 여는 버튼이 숨겨져 있다)",
             "partial": "partials/admin_ecommerce_product_list/_modal_excel_download.json"
         },
         {
-            "comment": "상품 삭제 확인 — 주문·장바구니에 걸려 있으면 사유와 함께 삭제를 막는다",
             "partial": "partials/admin_ecommerce_product_list/_modal_delete_confirm.json"
         },
         {
-            "comment": "상품 복사 — 어느 구획을 가져올지 고르고 등록 폼을 복사 진입으로 연다",
             "partial": "partials/admin_ecommerce_product_list/_modal_copy_product.json"
         }
     ]

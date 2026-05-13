@@ -131,8 +131,7 @@ class ModuleCollection extends BaseApiCollection
         return [
             'meta' => [
                 'total_modules' => $this->collection->count(),
-                // 목록 행은 매니저가 만든 배열이라 활성 여부가 status 로 온다(is_active 키는 없다, #736 O-F2)
-                'active_modules' => $this->collection->filter(fn ($m) => ($m['status'] ?? null) === 'active')->count(),
+                'active_modules' => $this->collection->where('is_active', true)->count(),
                 'system_modules' => $this->collection->where('is_system', true)->count(),
                 'user_modules' => $this->collection->where('is_system', false)->count(),
                 'total_installs' => $this->collection->sum('install_count'),

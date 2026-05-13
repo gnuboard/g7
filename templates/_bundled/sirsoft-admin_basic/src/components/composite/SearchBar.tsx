@@ -6,7 +6,6 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
-import type { EditorAttrs } from '../../types';
 
 // G7Core 참조
 const G7Core = () => (window as any).G7Core;
@@ -30,12 +29,6 @@ export interface SearchBarProps {
   showSuggestions?: boolean;
   className?: string; // 외부 className (w-full 등)은 G7Core.style.mergeClasses로 내부 기본 클래스를 오버라이드
   style?: React.CSSProperties;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -91,8 +84,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   showSuggestions = false,
   className = '',
   style,
-  id,
-  editorAttrs,
 }) => {
   // props로 전달된 값이 없으면 다국어 키 사용
   const resolvedPlaceholder = placeholder ?? t('common.search_placeholder');
@@ -101,21 +92,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const previousValueRef = React.useRef<string>('');
-
-  // blur 후 제안목록을 닫는 지연 타이머. 제안 항목 클릭이 blur 보다 먼저 처리되도록 200ms 미룬다.
-  // 그 사이에 컴포넌트가 사라지면(라우팅·조건부 렌더·테스트 teardown) 타이머는 여전히 살아 있어
-  // 언마운트된 컴포넌트의 setState 를 호출한다 — 실제로 Vitest 가 teardown 이후 발화한 이 타이머를
-  // unhandled error 로 잡아 스위트 종료코드를 1 로 만들었다(테스트 실패는 0건이라 더 눈에 안 띄었다).
-  const blurTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (blurTimerRef.current !== null) {
-        clearTimeout(blurTimerRef.current);
-      }
-    },
-    [],
-  );
 
   const value = controlledValue !== undefined ? controlledValue : internalValue;
   const shouldShowSuggestions = showSuggestions && isFocused && suggestions.length > 0 && value.length > 0;
@@ -168,7 +144,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <Div ref={containerRef} className="relative" style={style} id={id} {...editorAttrs}>
+    <Div ref={containerRef} className="relative" style={style}>
       <Form onSubmit={handleSubmit} className="relative">
         <Div className={`relative flex items-center ${showButton ? 'gap-2' : ''}`}>
           {/* Input wrapper */}
@@ -185,15 +161,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               value={value}
               onChange={handleChange}
               onFocus={() => setIsFocused(true)}
-              onBlur={() => {
-                if (blurTimerRef.current !== null) {
-                  clearTimeout(blurTimerRef.current);
-                }
-                blurTimerRef.current = setTimeout(() => {
-                  blurTimerRef.current = null;
-                  setIsFocused(false);
-                }, 200);
-              }}
+              onBlur={() => setTimeout(() => setIsFocused(false), 200)}
               placeholder={resolvedPlaceholder}
               className={inputClassName}
             />

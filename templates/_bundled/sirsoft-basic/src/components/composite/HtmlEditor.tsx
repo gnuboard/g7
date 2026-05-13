@@ -5,7 +5,6 @@ import { Button } from '../basic/Button';
 import { Textarea } from '../basic/Textarea';
 import { Input } from '../basic/Input';
 import { HtmlContent } from './HtmlContent';
-import type { EditorAttrs } from '../../types';
 
 // G7Core 참조
 const G7Core = () => (window as any).G7Core;
@@ -91,20 +90,6 @@ export interface HtmlEditorProps {
    * 읽기 전용 모드
    */
   readOnly?: boolean;
-
-  /**
-   * 비활성 — readOnly 와 같이 다룬다(관리자 템플릿 HtmlEditor 와 같은 계약)
-   */
-  disabled?: boolean;
-
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-/**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -141,13 +126,8 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
   className = '',
   name = 'content',
   htmlFieldName = 'content_mode',
-  readOnly: readOnlyProp = false,
-  disabled = false,
-  id,
-  editorAttrs,
+  readOnly = false,
 }) => {
-  // disabled 도 읽기 전용으로 다룬다(레이아웃 읽기 전용 게이트 계약)
-  const readOnly = readOnlyProp || disabled;
   // HTML 모드 내부 상태 (Toggle과 동기화)
   const [isHtml, setIsHtml] = useState(isHtmlProp);
 
@@ -208,7 +188,7 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
   }, []);
 
   return (
-    <Div className={`space-y-2 ${className}`} id={id} {...editorAttrs}>
+    <Div className={`space-y-2 ${className}`}>
       {/* 라벨 및 HTML 모드 토글 */}
       <Div className="flex items-center justify-between">
 

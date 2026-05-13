@@ -180,22 +180,6 @@ HookManager::broadcast("core.user.notifications.{$user->uuid}", 'notification.re
 브로드캐스팅은 부가 기능이므로 실패해도 메인 작업(사용자 업데이트, 주문 처리, 알림 발송 등)을 중단시키지 않습니다. 개별 리스너에서 try-catch를 추가할 필요가 없습니다.
 
 > **중요**: 웹소켓 OFF 시 `broadcasting.default`가 `'null'`로 강제되는 동작은 `.env`의 `BROADCAST_CONNECTION` 값을 무시하고 적용됩니다. 따라서 운영자가 환경설정에서 OFF한 경우, `.env`에 `REVERB_HOST=localhost` 등이 남아 있어도 broadcast 시도가 발생하지 않습니다. 알림 시스템(mail/database 채널)은 이 설정과 독립적으로 정상 동작합니다.
->
-> 예외: `.env` 우선 모드(`G7_ENV_PRIORITY=true`)를 켜고 `.env` 에 `BROADCAST_CONNECTION` 을 명시한 설치에서는 이 강제가 적용되지 않습니다 — 웹소켓 계층 전체의 권위가 `.env` 로 넘어가고 관리자 토글이 그 설치에서 무력화됩니다. 자세한 규약은 [admin-settings-access.md](admin-settings-access.md) "env 우선 모드" 를 참조하세요.
-
-#### 웹소켓 토글은 전 계층 SSoT (송신 · 프론트연결 · 채널인증)
-
-웹소켓 사용 OFF 는 **송신 계층만** 막는 것이 아니라 다음 세 계층을 모두 차단합니다 (`websocket_enabled` 가 단일 SSoT):
-
-| 계층 | OFF 시 동작 | 구현 |
-|------|------------|------|
-| ① 백엔드 송신 | `broadcasting.default='null'` → `HookManager::broadcast()` 즉시 return | `applyWebsocketConfig()` |
-| ② 프론트 연결 | `broadcasting.connections.reverb.key` 를 빈 문자열로 무력화 → Blade `@if(reverb.key)` false → 브라우저 WebSocket 미연결 | `applyWebsocketConfig()` OFF 분기 |
-| ③ 채널 인증 | `POST /api/broadcasting/auth` 가 `broadcasting.default==='null'` 이면 403 | `routes/api.php` 가드 |
-
-따라서 `.env` 에 `REVERB_APP_KEY` 가 살아 있고 Reverb 서버가 운영자 OS 레벨로 기동 중이어도, 토글 OFF 면 프론트가 연결을 시도하지 않고 직접 연결 시도도 채널 인증 단계에서 거부됩니다. `.env` 는 토글 ON 일 때만 자격증명·endpoint 소스로 사용됩니다.
-
-단, `.env` 우선 모드를 켜고 `BROADCAST_CONNECTION` 을 명시한 설치는 예외입니다. 그 설치에서는 마스터 토글이 잠겨 위 세 계층 모두 `.env`/config 기본값을 따르며, 관리자 화면의 토글은 잠금 표시와 함께 편집 불가가 됩니다.
 
 ### 채널 타입
 
@@ -215,18 +199,9 @@ HookManager::broadcast("core.user.notifications.{$user->uuid}", 'notification.re
 
 | 소스 | 패턴 | 예시 |
 |------|------|------|
-| 코어 | `core.*` | `core.admin.dashboard`, `core.admin.seo.sitemap`, `core.user.notifications.{id}` |
+| 코어 | `core.*` | `core.admin.dashboard`, `core.user.notifications.{id}` |
 | 모듈 | `module.{identifier}.*` | `module.sirsoft-ecommerce.orders.{id}` |
 | 플러그인 | `plugin.{identifier}.*` | `plugin.sirsoft-payment.status.{id}` |
-
-### 코어 방송 채널 목록
-
-| 채널 | 이벤트 | 인증 권한 | 페이로드 |
-|------|--------|----------|----------|
-| `core.admin.dashboard` | `dashboard.stats.updated` | `core.dashboard.read` | `{type, data}` |
-| `core.admin.seo.sitemap` | `sitemap.progress.updated` | `core.settings.read` | `{realtime_enabled, progress}` (상태 API `data` 와 동형) |
-
-> `core.admin.seo.sitemap` 은 Sitemap 생성 진행상황을 실시간 전달합니다. Reverb OFF 면 방송이 자동 skip 되고 프론트가 상태 API 폴링으로 폴백합니다. payload 가 상태 API 응답 `data` 와 동형이라 websocket 데이터소스 `target_source` 교체 후에도 UI 바인딩이 유지됩니다.
 
 ---
 
@@ -325,11 +300,6 @@ Broadcast::channel('core.user.notifications.{uuid}', function ($user, $uuid) {
 // 관리자 대시보드 채널 - 권한 체크
 Broadcast::channel('core.admin.dashboard', function ($user) {
     return $user->hasPermission('core.dashboard.read');
-});
-
-// 관리자 Sitemap 생성 진행상황 채널 - SEO 설정 읽기 권한
-Broadcast::channel('core.admin.seo.sitemap', function ($user) {
-    return $user->hasPermission('core.settings.read');
 });
 
 // 모듈 리소스 채널 (모듈의 getChannels()로 자동 등록 — 참고용 예시)

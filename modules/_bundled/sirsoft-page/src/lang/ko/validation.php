@@ -59,14 +59,6 @@ return [
         'max' => '검색어는 최대 :max자까지 입력 가능합니다.',
     ],
 
-    // 검증 오류에 표시할 사용자 친화적 필드명
-    'attributes' => [
-        'search' => '검색어',
-        'temp_key' => '임시 첨부 키',
-        'title' => '페이지 제목',
-        'content' => '페이지 본문',
-    ],
-
     // search_field 검증 메시지
     'search_field' => [
         'in' => '검색 필드는 all, title, slug 중 하나여야 합니다.',
@@ -100,7 +92,6 @@ return [
             'file' => '올바른 파일 형식이 아닙니다.',
             'max' => '파일 크기는 :maxKB를 초과할 수 없습니다.',
             'mimes' => '허용되지 않는 파일 형식입니다.',
-            'mimetypes' => '허용되지 않는 파일 형식입니다.',
         ],
         'order' => [
             'required' => '순서 정보는 필수입니다.',

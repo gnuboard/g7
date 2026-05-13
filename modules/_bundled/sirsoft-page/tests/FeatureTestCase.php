@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Page\Tests;
 
 use App\Enums\ExtensionStatus;
 use App\Models\Module;
+use Illuminate\Support\Facades\Route;
 
 /**
  * Page 모듈 Feature 테스트 베이스 클래스
@@ -15,8 +16,6 @@ abstract class FeatureTestCase extends ModuleTestCase
 {
     /**
      * 테스트 환경 설정
-     *
-     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -25,14 +24,12 @@ abstract class FeatureTestCase extends ModuleTestCase
         // 모듈을 활성화 상태로 등록 (테스트 환경)
         $this->registerModuleAsActive();
 
-        // 모듈 라우트를 수동으로 등록 (부모 ModuleTestCase 의 등록·이름 조회표 재구성을 그대로 쓴다 — 사본 override 금지)
+        // 모듈 라우트를 수동으로 등록
         $this->registerModuleRoutes();
     }
 
     /**
      * 모듈을 활성화 상태로 등록합니다.
-     *
-     * @return void 반환값 없음
      */
     protected function registerModuleAsActive(): void
     {
@@ -48,5 +45,20 @@ abstract class FeatureTestCase extends ModuleTestCase
             'version' => '0.1.1',
             'config' => [],
         ]);
+    }
+
+    /**
+     * 모듈 라우트를 등록합니다.
+     */
+    protected function registerModuleRoutes(): void
+    {
+        $apiRoutesFile = $this->getModuleBasePath().'/src/routes/api.php';
+
+        if (file_exists($apiRoutesFile)) {
+            Route::prefix('api/modules/sirsoft-page')
+                ->name('api.modules.sirsoft-page.')
+                ->middleware('api')
+                ->group($apiRoutesFile);
+        }
     }
 }

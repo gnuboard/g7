@@ -1,0 +1,228 @@
+{
+  "target_layout": "admin_user_detail",
+  "injections": [
+    {
+      "target_id": "user_detail_tabs",
+      "position": "inject_props",
+      "props": {
+        "tabs": {
+          "_append": [
+            {
+              "id": "ext_verification",
+              "label": "$t:admin.users.form.sections.verification_info",
+              "iconName": "puzzle-piece"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target_id": "extension_tab_content",
+      "position": "append_child",
+      "components": [
+        {
+          "id": "ext_verification_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "id": "ext_verification",
+            "className": "scroll-mt-32"
+          },
+          "children": [
+            {
+              "id": "section_verification_info",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Icon",
+                          "props": {
+                            "name": "shield",
+                            "className": "w-5 h-5 text-gray-600 dark:text-gray-400"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "H3",
+                          "props": {
+                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                          },
+                          "text": "$t:admin.users.form.sections.verification_info"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "composite",
+                      "name": "ExtensionBadge",
+                      "props": {
+                        "type": "plugin",
+                        "identifier": "sirsoft-verification",
+                        "installedPlugins": "{{_global.installedPlugins}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                  },
+                  "children": [
+                    {
+                      "id": "field_verification_method",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:admin.users.form.verification.method"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-sm text-gray-900 dark:text-white"
+                          },
+                          "text": "{{user?.data?.verification_method === 'mobile' ? '$t:admin.users.form.verification.method_mobile' : user?.data?.verification_method === 'ipin' ? '$t:admin.users.form.verification.method_ipin' : '$t:admin.users.form.verification.method_none'}}"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_identity_verified",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:admin.users.detail.identity_verification"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "condition": "{{user?.data?.identity_verified}}",
+                              "props": {
+                                "name": "check-circle",
+                                "className": "w-4 h-4 text-green-500"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm text-gray-900 dark:text-white"
+                              },
+                              "text": "{{user?.data?.identity_verified ? '$t:admin.users.detail.verified' : '$t:admin.users.detail.not_verified'}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_adult_verified",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:admin.users.detail.adult_verification"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-1"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Icon",
+                              "condition": "{{user?.data?.adult_verified}}",
+                              "props": {
+                                "name": "check-circle",
+                                "className": "w-4 h-4 text-green-500"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm text-gray-900 dark:text-white"
+                              },
+                              "text": "{{user?.data?.adult_verified ? '$t:admin.users.detail.verified' : '$t:admin.users.detail.not_verified'}}"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_verification_history",
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1"
+                          },
+                          "text": "$t:admin.users.form.verification.verification_history"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-sm text-gray-900 dark:text-white"
+                          },
+                          "text": "{{user?.data?.verification_history ?? '-'}}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 100
+}

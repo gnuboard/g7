@@ -1,6 +1,5 @@
 import { default as React } from 'react';
 import { ActionMenuItem } from './ActionMenu';
-import { EditorAttrs } from '../../types';
 /**
  * CardGrid 셀 자식 요소 타입
  */
@@ -61,26 +60,6 @@ export interface CardGridProps {
     showSkeleton?: boolean;
     skeletonCount?: number;
     skeletonCellChildren?: CardGridCellChild[];
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
-    /**
-     * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트
-     *
-     * `renderEnvRef.current` 는 이 CardGrid 를 그린 렌더러의 렌더 환경(폭·언어·dispatcher·레지스트리·
-     * 편집 모드)이다. 셀을 그릴 때 이 값을 넘겨, 레이아웃 편집기 미리보기에서 셀이 브라우저 창 폭·
-     * 호스트 언어가 아니라 미리보기 값을 따르게 한다(#141).
-     *
-     * @internal 템플릿 엔진 내부 사용
-     */
-    __componentContext?: {
-        renderEnvRef?: {
-            current: Record<string, any> | null;
-        };
-    };
 }
 /**
  * CardGrid 집합 컴포넌트

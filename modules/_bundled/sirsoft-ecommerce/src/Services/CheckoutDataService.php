@@ -2,9 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
-use App\Extension\HookManager;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
-use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
 use Modules\Sirsoft\Ecommerce\Http\Resources\CheckoutItemResource;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 
@@ -16,53 +14,20 @@ use Modules\Sirsoft\Ecommerce\Models\TempOrder;
  */
 class CheckoutDataService
 {
-    /**
-     * 체크아웃 데이터 서비스를 생성합니다.
-     *
-     * @param  UserCouponService  $userCouponService  회원 쿠폰 서비스
-     * @param  UserMileageService  $userMileageService  회원 마일리지 서비스
-     * @param  EcommerceSettingsService  $settings  쇼핑몰 설정 서비스
-     * @param  CurrencyConversionService  $currencyConversion  통화 환산 서비스
-     * @param  CheckoutPaymentMethodFilter  $paymentMethodFilter  결제 통화별 결제수단 필터
-     * @param  PaymentMethodResolver  $paymentMethodResolver  결제수단 카탈로그 해석기
-     */
     public function __construct(
         protected UserCouponService $userCouponService,
-        protected UserMileageService $userMileageService,
-        protected EcommerceSettingsService $settings,
-        protected CurrencyConversionService $currencyConversion,
-        protected CheckoutPaymentMethodFilter $paymentMethodFilter,
-        protected PaymentMethodResolver $paymentMethodResolver,
+        protected UserMileageService $userMileageService
     ) {}
-
-    /**
-     * 결제 통화에서 고를 수 있는 결제수단 id 목록을 만듭니다 (#639 D17).
-     *
-     * 후보는 결제수단 화이트리스트 전체이고, 통화 판정은 확장이 필터 훅으로 뺀다. 통화는 계산 결과의 결제 통화를 먼저
-     * 쓰고, 없으면 주문 생성과 같은 규칙으로 구한다.
-     *
-     * @param  array  $calculationArray  계산 결과 배열
-     * @return array<int, string> 허용 결제수단 id
-     */
-    protected function buildAllowedPaymentMethods(array $calculationArray): array
-    {
-        $currency = $calculationArray['summary']['selected_payment_currency'] ?? null;
-
-        return $this->paymentMethodFilter->allowedFor(
-            $this->paymentMethodResolver->allValidIds(),
-            is_string($currency) && $currency !== '' ? $currency : $this->paymentMethodFilter->currentCurrency(),
-        );
-    }
 
     /**
      * 체크아웃 응답 데이터 구성
      *
      * TempOrder와 계산 결과를 기반으로 쿠폰, 마일리지, 상품 정보를 조합합니다.
      *
-     * @param  TempOrder  $tempOrder  임시 주문
-     * @param  OrderCalculationResult|array  $calculation  계산 결과 (DTO 또는 배열)
-     * @param  int|null  $userId  사용자 ID (비회원인 경우 null)
-     * @param  array  $unavailableItems  구매불가 상품 목록 (선택)
+     * @param TempOrder $tempOrder 임시 주문
+     * @param OrderCalculationResult|array $calculation 계산 결과 (DTO 또는 배열)
+     * @param int|null $userId 사용자 ID (비회원인 경우 null)
+     * @param array $unavailableItems 구매불가 상품 목록 (선택)
      * @return array 체크아웃 응답 데이터
      */
     public function buildResponseData(TempOrder $tempOrder, OrderCalculationResult|array $calculation, ?int $userId, array $unavailableItems = []): array
@@ -84,15 +49,11 @@ class CheckoutDataService
             $mileageInfo = $couponData['mileage_info'];
         }
 
-        // 현재 선택된 상품 쿠폰 (optionId => [발급ID, ...]) — per_user_limit 중복 비활성화 계산용
-        $selectedItemCoupons = $tempOrder->getPromotions()['item_coupons'] ?? [];
-
         // 상품 정보 enrichment
         $enrichedItems = CheckoutItemResource::collectionFromArray(
             $tempOrder->items ?? [],
             $calculationArray['items'] ?? [],
-            $productCoupons,
-            $selectedItemCoupons
+            $productCoupons
         );
 
         $response = [
@@ -105,18 +66,6 @@ class CheckoutDataService
             'expires_at' => $tempOrder->expires_at->toIso8601String(),
             'available_coupons' => $availableCoupons,
             'mileage' => $mileageInfo,
-            // 쿠폰 검증 오류 소프트 표면화 (U14/MP06): 위반 쿠폰은 할인에서 자동 제외되되
-            // 프론트가 사유(min_amount/per_user_limit/not_combinable 등)를 안내할 수 있도록 최상위 노출.
-            'validation_errors' => $calculationArray['validation_errors'] ?? [],
-            // 선택된 배송국가로 배송 불가한 상품이 1개라도 있으면 주문하기 차단 플래그 (D1 — layer 2)
-            'has_unshippable_items' => collect($enrichedItems)
-                ->contains(fn ($i) => ($i['is_shippable_to_selected_country'] ?? true) === false),
-            'selected_shipping_country' => ResolveShippingCountry::getCountry(),
-            // 무료배송 기준액 결제통화 환산 (B7 — 다통화 정합)
-            'free_shipping' => $this->buildFreeShippingInfo($calculationArray),
-            // 결제 통화에서 고를 수 있는 결제수단 id (#639 D17) — 템플릿이 결제수단 버튼을 이 목록으로 거른다.
-            // 주문 생성 검증(CreateOrderRequest)과 같은 판정이다.
-            'allowed_payment_methods' => $this->buildAllowedPaymentMethods($calculationArray),
         ];
 
         // 구매불가 상품이 있는 경우에만 포함
@@ -127,7 +76,7 @@ class CheckoutDataService
         }
 
         // 필터 훅: 체크아웃 응답 데이터 변환 (외부 확장이 본인인증 hint 등 추가 가능)
-        $response = HookManager::applyFilters(
+        $response = \App\Extension\HookManager::applyFilters(
             'sirsoft-ecommerce.checkout.filter_response_data',
             $response,
             $tempOrder,
@@ -138,42 +87,11 @@ class CheckoutDataService
     }
 
     /**
-     * 무료배송 기준액 정보를 구성합니다. (B7 — 결제통화 환산)
-     *
-     * free_shipping_threshold 는 base 통화 정수이므로, 다통화 환경에서 결제통화 환산값을 함께
-     * 노출해 체크아웃 안내("X원 더 담으면 무료배송")가 결제통화로 표시되도록 한다.
-     *
-     * @param  array  $calculationArray  계산 결과 배열 (현재 소계 기준 잔여액 산출용)
-     * @return array{enabled: bool, threshold_base: int, threshold_multi_currency: array, remaining_base: int, remaining_multi_currency: array}
-     */
-    protected function buildFreeShippingInfo(array $calculationArray): array
-    {
-        $shipping = $this->settings->getSettings('shipping');
-        $enabled = (bool) ($shipping['free_shipping_enabled'] ?? false);
-        $threshold = (int) ($shipping['free_shipping_threshold'] ?? 0);
-
-        $subtotal = (int) ($calculationArray['summary']['subtotal'] ?? 0);
-        $remaining = max(0, $threshold - $subtotal);
-
-        return [
-            'enabled' => $enabled,
-            'threshold_base' => $threshold,
-            'threshold_multi_currency' => $threshold > 0
-                ? $this->currencyConversion->convertToMultiCurrency($threshold)
-                : [],
-            'remaining_base' => $remaining,
-            'remaining_multi_currency' => $remaining > 0
-                ? $this->currencyConversion->convertToMultiCurrency($remaining)
-                : [],
-        ];
-    }
-
-    /**
      * 쿠폰 및 마일리지 데이터 조회
      *
-     * @param  TempOrder  $tempOrder  임시 주문
-     * @param  array  $calculationArray  계산 결과 배열
-     * @param  int  $userId  사용자 ID
+     * @param TempOrder $tempOrder 임시 주문
+     * @param array $calculationArray 계산 결과 배열
+     * @param int $userId 사용자 ID
      * @return array 쿠폰/마일리지 데이터
      */
     protected function buildCouponData(TempOrder $tempOrder, array $calculationArray, int $userId): array
@@ -199,17 +117,9 @@ class CheckoutDataService
             $itemSubtotals
         );
 
-        // 마일리지 조회.
-        // 안내 기준 금액은 서버 검증(validateUsage)과 동일하게 "마일리지 차감 전 결제금액"이다.
-        // subtotal 로 안내하면 쿠폰·배송비 반영 후 실제 허용액보다 크게 안내되어
-        // "화면이 허용한 값인데 결제에서 422" 가 된다.
-        $paymentAmount = (int) ($calculationArray['summary']['payment_amount'] ?? $subtotal);
+        // 마일리지 조회
         $mileageInfo = $this->userMileageService->getBalance($userId);
-        $mileageInfo['max_usable'] = $this->userMileageService->getMaxUsable($userId, $paymentAmount);
-        // 기본 통화 사용 규칙 미설정 시 사용 불가(M2) — 적립(enabled)과 분리된 "사용 가능" 플래그
-        $mileageInfo['usable'] = $this->userMileageService->isMileageUsable();
-        // 사용 정책(최소 사용액/사용 단위/정책상 최대) — 입력 UI 가 서버 판정과 같은 기준을 쓰도록 노출
-        $mileageInfo['usage_policy'] = $this->userMileageService->getUsagePolicy($paymentAmount);
+        $mileageInfo['max_usable'] = $this->userMileageService->getMaxUsable($userId, $subtotal);
 
         return [
             'available_coupons' => $availableCoupons,
@@ -223,7 +133,7 @@ class CheckoutDataService
      *
      * 동일 상품이 여러 옵션으로 존재할 수 있으므로 product_id 기준으로 합산합니다.
      *
-     * @param  array  $calculationItems  계산 결과의 items 배열
+     * @param array $calculationItems 계산 결과의 items 배열
      * @return array 상품별 소계 (product_id => subtotal)
      */
     protected function calculateItemSubtotals(array $calculationItems): array

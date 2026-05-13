@@ -2,48 +2,31 @@
 
 namespace Modules\Sirsoft\Board\Database\Seeders\Sample;
 
-use App\Enums\UserStatus;
-use App\Extension\Storage\ModuleStorageDriver;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Traits\HasSeederCounts;
-use Carbon\Carbon;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Modules\Sirsoft\Board\Database\Seeders\Sample\Concerns\ModeratesSampleContent;
-use Modules\Sirsoft\Board\Database\Seeders\Sample\Concerns\SampleRunRegistry;
-use Modules\Sirsoft\Board\Database\Seeders\Sample\Concerns\SyncsBoardCounts;
-use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Models\Board;
-use Modules\Sirsoft\Board\Services\BoardDashboardService;
 
 /**
  * 게시글/댓글 샘플 시더
  *
- * 샘플 게시판(POSTS_COUNT 의 slug)에 테스트용 게시글과 댓글을 생성합니다.
- * 게시판 설정(secret_mode, use_comment, use_reply, reply_delete_policy 등)에 따라 데이터를 생성합니다.
+ * 각 게시판에 테스트용 게시글과 댓글을 생성합니다.
+ * 게시판 설정(secret_mode, use_comment, use_reply 등)에 따라 데이터를 생성합니다.
  *
- * 불변식:
- * - 운영자가 만든 게시판에는 글을 만들지 않는다 (샘플 slug 만)
- * - 작성자는 활성 회원, 관리자 전용 글쓰기 게시판(notice·event)과 공지글은 관리자만
- * - 삭제된 원글 아래 댓글·첨부·답글은 운영 경로처럼 trigger_type='cascade' 로 함께 소프트 삭제
- * - 답글 삭제 정책이 block 인 게시판은 답글 달린 원글을 삭제 상태로 만들지 않는다
- * - 비회원 글의 첨부 created_by 는 null, 모든 시각은 원글 → 자식 → 조치 순서
- * - 댓글 상태 분포: 블라인드 약 5%, 작성자 삭제 약 3%, 비밀 댓글 약 5%(비밀글 게시판)
+ * 개선사항:
+ * - 답변글 다단계 depth (max_reply_depth 활용)
+ * - 대댓글 다단계 depth (max_comment_depth 활용)
+ * - 관리자/스텝 역할 사용자 활용
+ * - 게시판별 try-catch 및 진행 로그
  */
 class PostSampleSeeder extends Seeder
 {
     use HasSeederCounts;
-    use ModeratesSampleContent;
-    use SyncsBoardCounts;
-
-    /**
-     * 시드 직후 대시보드 집계(board_stats)를 채울 일수 — 샘플 글의 「이번달」 분포(최대 30일 전)를 덮는다
-     */
-    private const STATS_AGGREGATE_DAYS = 30;
 
     /**
      * 게시판별 콘텐츠 템플릿
@@ -253,11 +236,11 @@ class PostSampleSeeder extends Seeder
      * - archive : 10건 — 비활성 게시판, ASC 정렬 확인용
      */
     private const POSTS_COUNT = [
-        'notice' => 15,
-        'free' => 30,
+        'notice'  => 15,
+        'free'    => 30,
         'gallery' => 20,
-        'event' => 10,
-        'qna' => 30,
+        'event'   => 10,
+        'qna'     => 30,
         'members' => 25,
         'inquiry' => 20,
         'archive' => 10,
@@ -277,67 +260,36 @@ class PostSampleSeeder extends Seeder
 
     /**
      * 관리자 사용자
+     *
+     * @var User|null
      */
     private ?User $adminUser = null;
 
     /**
      * 스텝 사용자
+     *
+     * @var User|null
      */
     private ?User $stepUser = null;
 
     /**
      * 시더 실행
-     *
-     * @return void 반환값 없음
      */
     public function run(): void
     {
         $this->command->info('게시글/댓글 샘플 데이터 생성 중...');
 
-        // 쿼리 로그 비활성화 (메모리 절약 — 수백~수천 건 INSERT 시 필수).
-        // 쿼리 이벤트 디스패처도 잠시 끄되, 같은 프로세스에서 뒤에 도는 시더(전체 모듈 시드)의
-        // 쿼리 이벤트 리스너가 꺼진 채 남지 않도록 끝에서 반드시 되돌린다(B-25).
+        // 쿼리 로그 비활성화 (메모리 절약 — 수백~수천 건 INSERT 시 필수)
         DB::disableQueryLog();
-        $connection = DB::connection();
-        $dispatcher = $connection->getEventDispatcher();
-        $connection->unsetEventDispatcher();
+        DB::connection()->unsetEventDispatcher();
 
-        try {
-            $boardIds = $this->seedPosts();
-        } finally {
-            if ($dispatcher !== null) {
-                $connection->setEventDispatcher($dispatcher);
-            }
-        }
-
-        if ($boardIds === []) {
-            return;
-        }
-
-        // 대시보드 그래프·증감률은 board_stats 집계 행을 읽는다. 시간별 스케줄러는 최근 7일만 집계하므로
-        // 시드 직후 그래프와 직전 기간 비교가 비지 않도록 샘플 글이 퍼진 최근 30일을 한 번 집계한다(B-15).
-        try {
-            app(BoardDashboardService::class)->aggregateRecentDays(self::STATS_AGGREGATE_DAYS);
-            $this->command->info('  ✅ 대시보드 집계(board_stats) 최근 '.self::STATS_AGGREGATE_DAYS.'일 갱신 완료');
-        } catch (\Throwable $e) {
-            $this->command->warn('  ⚠ 대시보드 집계 실패(시드는 계속): '.$e->getMessage());
-        }
-    }
-
-    /**
-     * 샘플 게시판마다 게시글·답글·댓글·첨부를 만들고 카운트 컬럼을 맞춥니다.
-     *
-     * @return array<int, int> 처리한 샘플 게시판 ID (작성자가 없어 건너뛰면 빈 배열)
-     */
-    private function seedPosts(): array
-    {
-        // 활성 회원만 작성자로 쓴다 — 차단·휴면·탈퇴 회원이 쓴 샘플 글은 화면에서 설명할 수 없다(B-12)
-        $users = User::where('status', UserStatus::Active->value)->orderBy('id')->limit(20)->get();
+        // 테스트 사용자 조회 (더 많은 사용자 확보)
+        $users = User::limit(20)->get();
 
         if ($users->isEmpty()) {
-            $this->command->error('활성 회원이 없습니다. DummyUserSeeder를 먼저 실행하세요.');
+            $this->command->error('사용자가 없습니다. DummyUserSeeder를 먼저 실행하세요.');
 
-            return [];
+            return;
         }
 
         // 관리자/스텝 사용자 조회
@@ -363,15 +315,9 @@ class PostSampleSeeder extends Seeder
         // 샘플 이미지 파일 미리 생성 (5개)
         $this->createSampleImageFiles();
 
-        // 샘플 게시판에만 게시글 생성 — 운영자가 만든 게시판에는 샘플 글을 넣지 않는다(B-21).
-        // 상품 문의 게시판(product-inquiry)은 이커머스 샘플 시더가 문의 피벗과 함께 채우므로 여기서 제외한다.
-        $boards = Board::whereIn('slug', array_keys(self::POSTS_COUNT))->get();
+        // 모든 게시판에 게시글 생성
+        $boards = Board::all();
         $totalStats = ['posts' => 0, 'replies' => 0, 'comments' => 0];
-
-        // 이번 실행에서 만든 글·댓글·첨부의 id 범위 — 활동 로그 샘플은 이 범위에만 로그를 만든다
-        foreach (['board_posts', 'board_comments', 'board_attachments'] as $table) {
-            SampleRunRegistry::markBefore($table);
-        }
 
         foreach ($boards as $board) {
             try {
@@ -390,30 +336,14 @@ class PostSampleSeeder extends Seeder
             gc_collect_cycles();
         }
 
-        foreach (['board_posts', 'board_comments', 'board_attachments'] as $table) {
-            SampleRunRegistry::markAfter($table);
-        }
-
         $this->command->info('');
         $this->command->info("게시글/댓글 샘플 데이터 생성 완료 — 총 게시글 {$totalStats['posts']}개, 답변글 {$totalStats['replies']}개, 댓글 {$totalStats['comments']}개");
-
-        // 시드는 모델 이벤트(BoardCommentsCountSyncListener / PostCountSyncListener)를
-        // 우회하는 raw INSERT 라 캐시 컬럼이 갱신되지 않는다. 시드 직후 게시글 상세 화면에서
-        // 댓글/답글 영역이 "comments_count > 0" 조건으로 가려져 표시 안 되는 결함이 발생하므로
-        // 일괄 재집계로 actual count 와 일치시킨다 (soft delete 제외, 샘플 게시판만).
-        $this->command->info('비정규화 카운트 컬럼 동기화 중...');
-        $boardIds = $boards->pluck('id')->all();
-        $this->syncBoardCounts($boardIds);
-        $this->command->info('  ✅ 게시글·댓글·게시판 카운트 컬럼 갱신 완료');
-
-        return $boardIds;
     }
 
     /**
      * 관리자/스텝 역할 사용자를 조회합니다.
      *
-     * @param  Collection  $users  사용자 목록
-     * @return void 반환값 없음
+     * @param  \Illuminate\Support\Collection  $users  사용자 목록
      */
     private function resolveRoleUsers($users): void
     {
@@ -442,17 +372,12 @@ class PostSampleSeeder extends Seeder
      * 샘플 이미지 파일을 미리 생성합니다.
      *
      * 5개의 샘플 이미지를 storage/app/modules/sirsoft-board/attachments/samples/ 에 저장합니다.
-     *
-     * @return void 반환값 없음
      */
     private function createSampleImageFiles(): void
     {
         $this->command->info('  - 샘플 이미지 파일 생성 중...');
 
         $datePath = date('Y/m/d');
-
-        // 모듈 스토리지 드라이버 경유 — 최종 경로는 {identifier}/attachments/{path} 로 종전과 동일
-        $storage = new ModuleStorageDriver('sirsoft-board', 'modules');
 
         for ($i = 0; $i < self::SAMPLE_IMAGE_COUNT; $i++) {
             $filename = Str::uuid().'.jpg';
@@ -468,7 +393,7 @@ class PostSampleSeeder extends Seeder
 
             // 스토리지에 파일 저장
             $storagePath = "sirsoft-board/attachments/{$path}";
-            $storage->put('attachments', $path, $imageContent);
+            Storage::disk('modules')->put($storagePath, $imageContent);
 
             // 파일 정보 저장
             $this->sampleImages[] = [
@@ -487,7 +412,7 @@ class PostSampleSeeder extends Seeder
      * 특정 게시판에 게시글과 댓글을 생성합니다.
      *
      * @param  Board  $board  게시판
-     * @param  Collection  $users  사용자 목록
+     * @param  \Illuminate\Support\Collection  $users  사용자 목록
      * @param  float  $ratio  게시글 수 스케일링 비율
      * @return array{posts: int, replies: int, comments: int} 생성 통계
      */
@@ -528,24 +453,15 @@ class PostSampleSeeder extends Seeder
         $weekCount = (int) ($totalPosts * 0.30);
         $monthCount = (int) ($totalPosts * 0.40);
 
-        // 관리자 전용 글쓰기 게시판(notice·event 등 posts.write 에 user 역할이 없는 게시판)은 관리자만 작성
-        $adminOnlyWrite = ! $this->boardAllowsRoleWrite($board, 'user');
-
         for ($i = 0; $i < $totalPosts; $i++) {
             $templateIndex = $i % $templateCount;
             $template = $contentTemplates[$templateIndex];
 
-            // 공지글 처리 - notice 게시판 제외, 다른 게시판은 5% 확률.
-            // 공지는 posts.write-notice(기본 관리자) 보유자만 올릴 수 있으므로 작성자를 관리자로 고정한다(B-11).
-            $isNotice = ($board->slug !== 'notice') && $this->adminUser !== null && (rand(1, 20) === 1);
+            // 비회원 게시글 - 권한 확인 후 30% 확률로 생성
+            $isGuest = $allowGuestPost && rand(1, 10) <= 3;
 
-            // 비회원 게시글 - 권한 확인 후 30% 확률로 생성 (공지는 비회원 불가)
-            $isGuest = ! $isNotice && $allowGuestPost && rand(1, 10) <= 3;
-
-            // 작성자 결정: 관리자 전용 게시판·공지글은 관리자, 나머지는 역할 혼합
-            $user = ($isNotice || $adminOnlyWrite)
-                ? ($this->adminUser ?? $users[0])
-                : $this->pickAuthor($users, $i);
+            // 작성자 결정: notice는 관리자만, 나머지는 역할 혼합
+            $user = $this->pickAuthor($board, $users, $i);
 
             // 카테고리 설정 (있는 경우)
             $category = null;
@@ -556,26 +472,42 @@ class PostSampleSeeder extends Seeder
             // 비밀글 처리 - secret_mode 기반
             $isSecret = $this->determineIsSecret($board);
 
-            // 날짜 분포에 따른 created_at 설정
-            $createdAt = $this->generateCreatedAt($i, $todayCount, $weekCount, $monthCount);
-
-            // 상태 랜덤 설정 (published: 70%, blinded: 20%, deleted: 10%).
-            // 삭제는 자식(답글·댓글·첨부)을 만든 뒤 운영 경로처럼 연쇄 처리한다 — 여기서는 표시만.
+            // 상태 랜덤 설정 (published: 70%, blinded: 20%, deleted: 10%)
             $statusRand = rand(1, 100);
-            $shouldDelete = $statusRand <= 10;
             $status = 'published';
+            $deletedAt = null;
             $actionLogs = null;
 
-            if (! $shouldDelete && $statusRand <= 30) {
-                // 20% 블라인드 — 조치 시각은 작성 뒤
+            if ($statusRand <= 10) {
+                // 10% 삭제
+                $status = 'deleted';
+                $deletedAt = now()->subDays(rand(1, 5));
+                $actionLogs = [[
+                    'action' => 'delete',
+                    'reason' => '부적절한 내용으로 인한 삭제',
+                    'admin_id' => $this->adminUser?->id ?? $user->id,
+                    'admin_name' => $this->adminUser?->name ?? $user->name,
+                    'ip_address' => '127.0.0.1',
+                    'created_at' => $deletedAt,
+                ]];
+            } elseif ($statusRand <= 30) {
+                // 20% 블라인드
                 $status = 'blinded';
-                $actionLogs = [$this->buildSampleActionLog(
-                    'blind',
-                    '커뮤니티 가이드 위반',
-                    $this->clampToNow($createdAt->copy()->addHours(rand(1, 72))),
-                    $user
-                )];
+                $actionLogs = [[
+                    'action' => 'blind',
+                    'reason' => '커뮤니티 가이드 위반',
+                    'admin_id' => $this->adminUser?->id ?? $user->id,
+                    'admin_name' => $this->adminUser?->name ?? $user->name,
+                    'ip_address' => '127.0.0.1',
+                    'created_at' => now()->subDays(rand(1, 5)),
+                ]];
             }
+
+            // 공지글 처리 - notice 게시판 제외, 다른 게시판은 5% 확률
+            $isNotice = ($board->slug !== 'notice') && (rand(1, 20) === 1);
+
+            // 날짜 분포에 따른 created_at 설정
+            $createdAt = $this->generateCreatedAt($i, $todayCount, $weekCount, $monthCount);
 
             // 조회수: 최근 게시글일수록 적게 (현실적인 분포)
             $viewCount = match (true) {
@@ -588,7 +520,7 @@ class PostSampleSeeder extends Seeder
             // 게시글 생성
             $postData = [
                 'category' => $category,
-                'title' => ($isNotice ? '[공지] ' : '').$template['title'],
+                'title' => ($isNotice && $board->slug !== 'notice' ? '[공지] ' : '').$template['title'],
                 'content' => $template['content'],
                 'content_mode' => 'html',
                 'user_id' => $isGuest ? null : $user->id,
@@ -605,7 +537,7 @@ class PostSampleSeeder extends Seeder
                 'depth' => 0,
                 'created_at' => $createdAt,
                 'updated_at' => $createdAt,
-                'deleted_at' => null,
+                'deleted_at' => $deletedAt,
             ];
 
             $postData['board_id'] = $board->id;
@@ -617,8 +549,7 @@ class PostSampleSeeder extends Seeder
                 // gallery는 85% (일부는 이미지 없음), 나머지는 50% 확률
                 $attachmentChance = ($board->type === 'gallery') ? 85 : 50;
                 if (rand(1, 100) <= $attachmentChance) {
-                    // 비회원 글의 첨부 소유자는 비어 있어야 첨부 권한 범위(owner_key=created_by)와 맞는다(B-24)
-                    $this->createAttachmentsForPost($board->id, $postId, $isGuest ? null : $user->id, $createdAt);
+                    $this->createAttachmentsForPost($board->id, $postId, $user->id ?? null);
                 }
             }
 
@@ -634,13 +565,8 @@ class PostSampleSeeder extends Seeder
                 $commentCount += $this->createCommentsForPost(
                     $board, $postId, $createdAt, $users, $i,
                     $todayCount, $weekCount, $monthCount,
-                    $allowGuestComment, $isSecret
+                    $allowGuestComment
                 );
-            }
-
-            // 삭제 — 원글과 그 아래 댓글·첨부·답글을 같은 시각에 연쇄 소프트 삭제(B-2)
-            if ($shouldDelete) {
-                $this->deleteSamplePostWithCascade($board, $postId, $createdAt, $user, '부적절한 내용으로 인한 삭제');
             }
         }
 
@@ -664,7 +590,7 @@ class PostSampleSeeder extends Seeder
      * - 일반글 + 이미지 있음
      *
      * @param  Board  $board  게시판
-     * @param  Collection  $users  사용자 목록
+     * @param  \Illuminate\Support\Collection  $users  사용자 목록
      * @return array{posts: int, replies: int, comments: int} 생성 통계
      */
     private function createBadgeCasePosts(Board $board, $users): array
@@ -673,12 +599,8 @@ class PostSampleSeeder extends Seeder
 
         $postCount = 0;
         $replyCount = 0;
-        $adminUser = $this->adminUser ?? $users->first();
-        // 관리자 전용 글쓰기 게시판(event 등)은 배지 케이스 글도 관리자가 쓴다(B-11).
-        // 그 밖의 게시판은 관리자가 아닌 첫 활성 회원을 작성자로 쓴다.
-        $user = $this->boardAllowsRoleWrite($board, 'user')
-            ? ($users->first(fn (User $u) => $u->id !== $adminUser->id) ?? $users->first())
-            : $adminUser;
+        $user = $users->first();
+        $adminUser = $this->adminUser ?? $user;
 
         // 카테고리 (있으면 첫 번째, 없으면 null)
         $firstCategory = (! empty($board->categories) && is_array($board->categories))
@@ -703,8 +625,7 @@ class PostSampleSeeder extends Seeder
                 'deleted_at' => null,
             ];
 
-            // 배지 케이스 글은 3~6시간 전 작성 — 아래 답글(1시간 전)·댓글(2시간·1시간 전)보다 앞서야 한다
-            $now = now()->subHours(rand(3, 6))->subMinutes(rand(0, 59));
+            $now = now()->subMinutes(rand(1, 30));
             $defaults['created_at'] = $now;
             $defaults['updated_at'] = $now;
 
@@ -749,37 +670,47 @@ class PostSampleSeeder extends Seeder
         }
         $postCount++;
 
-        // ③ 블라인드 + 이미지 있음 (조치 시각은 작성 뒤 — 지금)
+        // ③ 블라인드 + 이미지 있음
+        $blindedAt = now()->subDays(1);
         $postId = $insertPost([
             'title' => '블라인드 처리된 게시글',
             'content' => '<p>이 게시글은 블라인드 처리되었습니다.</p>',
             'user_id' => $user->id,
             'status' => 'blinded',
-            'action_logs' => json_encode([
-                $this->buildSampleActionLog('blind', '커뮤니티 가이드 위반', now(), $adminUser),
-            ]),
+            'action_logs' => json_encode([[
+                'action' => 'blind',
+                'reason' => '커뮤니티 가이드 위반',
+                'admin_id' => $adminUser->id,
+                'admin_name' => $adminUser->name,
+                'ip_address' => '127.0.0.1',
+                'created_at' => $blindedAt,
+            ]]),
         ]);
         if ($board->use_file_upload) {
             $this->createAttachmentsForPost($board->id, $postId, $user->id);
         }
         $postCount++;
 
-        // ④ 삭제됨 + 이미지 있음 — 첨부를 만든 뒤 운영 경로처럼 원글·첨부를 함께 소프트 삭제(B-2)
+        // ④ 삭제됨 + 이미지 있음
+        $deletedAt = now()->subDays(2);
         $postId = $insertPost([
             'title' => '삭제된 게시글',
             'content' => '<p>이 게시글은 삭제되었습니다.</p>',
             'user_id' => $user->id,
+            'status' => 'deleted',
+            'deleted_at' => $deletedAt,
+            'action_logs' => json_encode([[
+                'action' => 'delete',
+                'reason' => '부적절한 내용',
+                'admin_id' => $adminUser->id,
+                'admin_name' => $adminUser->name,
+                'ip_address' => '127.0.0.1',
+                'created_at' => $deletedAt,
+            ]]),
         ]);
         if ($board->use_file_upload) {
             $this->createAttachmentsForPost($board->id, $postId, $user->id);
         }
-        $this->deleteSamplePostWithCascade(
-            $board,
-            $postId,
-            Carbon::parse(DB::table('board_posts')->where('id', $postId)->value('created_at')),
-            $adminUser,
-            '부적절한 내용'
-        );
         $postCount++;
 
         // ⑤ 비밀글 (secret_mode가 disabled가 아닌 경우만)
@@ -912,16 +843,22 @@ class PostSampleSeeder extends Seeder
     }
 
     /**
-     * 게시글 작성자를 결정합니다 (일반 회원 + 관리자/스텝 혼합).
+     * 게시글 작성자를 결정합니다.
      *
-     * 관리자 전용 게시판·공지글은 호출부가 관리자로 고정한다.
+     * notice는 관리자만, 나머지는 일반 사용자 + 관리자/스텝 혼합
      *
-     * @param  Collection  $users  사용자 목록 (활성 회원)
+     * @param  Board  $board  게시판
+     * @param  \Illuminate\Support\Collection  $users  사용자 목록
      * @param  int  $index  현재 인덱스
      * @return User 작성자
      */
-    private function pickAuthor($users, int $index): User
+    private function pickAuthor(Board $board, $users, int $index): User
     {
+        // notice 게시판은 관리자만 작성
+        if ($board->slug === 'notice') {
+            return $this->adminUser ?? $users[0];
+        }
+
         // 10% 확률로 관리자, 5% 확률로 스텝
         $roleRand = rand(1, 100);
         if ($roleRand <= 10 && $this->adminUser) {
@@ -935,86 +872,6 @@ class PostSampleSeeder extends Seeder
     }
 
     /**
-     * 운영 경로(PostService::buildActionLog)와 같은 모양의 조치 이력 1건을 만듭니다.
-     *
-     * 시각은 `Y-m-d H:i:s` 문자열이다 — Carbon 을 그대로 json_encode 하면 ISO8601(`...000000Z`)이 되어
-     * 운영 데이터와 형식이 갈린다(B-22).
-     *
-     * @param  string  $action  조치 (blind, delete 등)
-     * @param  string|null  $reason  사유
-     * @param  Carbon  $at  조치 시각
-     * @param  User|null  $fallback  관리자가 없을 때 처리자로 쓸 사용자
-     * @return array<string, mixed> 조치 이력
-     */
-    private function buildSampleActionLog(string $action, ?string $reason, Carbon $at, ?User $fallback = null): array
-    {
-        $actor = $this->adminUser ?? $fallback;
-
-        return $this->sampleActionLog($action, $reason, $at, $actor?->id, $actor?->name);
-    }
-
-    /**
-     * 샘플 원글을 삭제 상태로 만들고 그 아래 댓글·첨부·답글을 연쇄 소프트 삭제합니다.
-     *
-     * 운영 경로(PostService::executeDelete)와 같은 결과를 남긴다 — 원글은 status=deleted·조치 이력,
-     * 자식은 trigger_type='cascade' 와 같은 deleted_at. 삭제 시각은 가장 늦은 자식 뒤로 잡는다.
-     * 답글 삭제 정책이 block 인 게시판에서 살아 있는 답글이 달린 원글은 운영자도 지울 수 없으므로
-     * 삭제하지 않고 게시 상태로 둔다.
-     *
-     * @param  Board  $board  게시판
-     * @param  int  $postId  원글 ID
-     * @param  Carbon  $createdAt  원글 작성 시각
-     * @param  User|null  $fallback  관리자가 없을 때 처리자로 쓸 사용자
-     * @param  string  $reason  삭제 사유
-     * @return bool 삭제했으면 true (block 정책으로 건너뛰면 false)
-     */
-    private function deleteSamplePostWithCascade(Board $board, int $postId, Carbon $createdAt, ?User $fallback, string $reason): bool
-    {
-        $descendantIds = $this->collectSampleDescendantPostIds($board->id, $postId);
-
-        if ($descendantIds !== [] && $this->replyDeletePolicyOf($board) === ReplyDeletePolicy::Block) {
-            return false;
-        }
-
-        $postIds = array_merge([$postId], $descendantIds);
-
-        $latest = collect([
-            $createdAt,
-            DB::table('board_posts')->whereIn('id', $postIds)->max('created_at'),
-            DB::table('board_comments')->where('board_id', $board->id)->whereIn('post_id', $postIds)->max('created_at'),
-        ])->filter()->map(fn ($t) => $t instanceof Carbon ? $t : Carbon::parse($t))->max();
-
-        $deletedAt = $this->clampToNow($latest->copy()->addHours(rand(1, 48)));
-
-        $this->softDeleteSamplePostCascade(
-            $board->id,
-            $postId,
-            $deletedAt,
-            'admin',
-            $this->buildSampleActionLog('delete', $reason, $deletedAt, $fallback)
-        );
-
-        return true;
-    }
-
-    /**
-     * 게시판의 답글 삭제 정책을 돌려줍니다 (값이 없으면 cascade).
-     *
-     * @param  Board  $board  게시판
-     * @return ReplyDeletePolicy 답글 삭제 정책
-     */
-    private function replyDeletePolicyOf(Board $board): ReplyDeletePolicy
-    {
-        $policy = $board->reply_delete_policy;
-
-        if ($policy instanceof ReplyDeletePolicy) {
-            return $policy;
-        }
-
-        return ReplyDeletePolicy::tryFrom((string) $policy) ?? ReplyDeletePolicy::Cascade;
-    }
-
-    /**
      * 게시글에 대한 답변글을 다단계로 생성합니다.
      *
      * @param  Board  $board  게시판
@@ -1022,8 +879,8 @@ class PostSampleSeeder extends Seeder
      * @param  string|null  $category  카테고리
      * @param  array  $template  콘텐츠 템플릿
      * @param  bool  $isSecret  비밀글 여부
-     * @param  Carbon  $createdAt  원본 게시글 생성일
-     * @param  Collection  $users  사용자 목록
+     * @param  \Carbon\Carbon  $createdAt  원본 게시글 생성일
+     * @param  \Illuminate\Support\Collection  $users  사용자 목록
      * @return int 생성된 답변글 수
      */
     private function createRepliesForPost(
@@ -1032,7 +889,7 @@ class PostSampleSeeder extends Seeder
         ?string $category,
         array $template,
         bool $isSecret,
-        Carbon $createdAt,
+        \Carbon\Carbon $createdAt,
         $users
     ): int {
         // inquiry 게시판은 95% 확률, 나머지는 30% 확률
@@ -1049,9 +906,7 @@ class PostSampleSeeder extends Seeder
         $replyUser = ($board->slug === 'inquiry')
             ? ($this->stepUser ?? $this->adminUser ?? $users[count($users) - 1])
             : ($this->adminUser ?? $users[count($users) - 1]);
-        // 부모 글 시각 + (1~72시간) 으로 자식 시각을 미루되, 현재 시각을 절대 넘기지 않는다.
-        // 부모 글이 "오늘 분포" 로 만들어졌을 때 자식이 미래로 밀려 대시보드/목록의 created_at 정렬이 뒤집히는 회귀 방지.
-        $replyCreatedAt = $this->clampToNow($createdAt->copy()->addHours(rand(1, 72)));
+        $replyCreatedAt = $createdAt->copy()->addHours(rand(1, 72));
         $answerTemplate = self::ANSWER_TEMPLATES[array_rand(self::ANSWER_TEMPLATES)];
 
         $replyId = DB::table('board_posts')->insertGetId([
@@ -1089,7 +944,7 @@ class PostSampleSeeder extends Seeder
                 ? $users[rand(0, count($users) - 1)]
                 : ($this->stepUser ?? $this->adminUser ?? $users[count($users) - 1]);
 
-            $depthCreatedAt = $this->clampToNow($replyCreatedAt->copy()->addHours(rand(1, 48)));
+            $depthCreatedAt = $replyCreatedAt->copy()->addHours(rand(1, 48));
 
             $nestedTemplates = self::NESTED_ANSWER_TEMPLATES[$depth] ?? self::NESTED_ANSWER_TEMPLATES[3] ?? self::ANSWER_TEMPLATES;
             $nestedContent = $nestedTemplates[array_rand($nestedTemplates)];
@@ -1130,8 +985,8 @@ class PostSampleSeeder extends Seeder
      *
      * @param  Board  $board  게시판
      * @param  int  $postId  게시글 ID
-     * @param  Carbon  $createdAt  게시글 생성일
-     * @param  Collection  $users  사용자 목록
+     * @param  \Carbon\Carbon  $createdAt  게시글 생성일
+     * @param  \Illuminate\Support\Collection  $users  사용자 목록
      * @param  int  $postIndex  게시글 인덱스 (날짜 분포 결정용)
      * @param  int  $todayCount  오늘 게시글 수
      * @param  int  $weekCount  이번주 게시글 수
@@ -1142,7 +997,7 @@ class PostSampleSeeder extends Seeder
     private function createCommentsForPost(
         Board $board,
         int $postId,
-        Carbon $createdAt,
+        \Carbon\Carbon $createdAt,
         $users,
         int $postIndex,
         int $todayCount,
@@ -1150,9 +1005,6 @@ class PostSampleSeeder extends Seeder
         int $monthCount,
         bool $allowGuestComment
     ): int {
-        // 비밀 댓글은 비밀글을 쓸 수 있는 게시판에서만 시연한다
-        $secretCommentAllowed = $board->secret_mode?->value !== 'disabled';
-
         $commentCount = 0;
         $maxCommentDepth = $board->max_comment_depth ?? 1;
 
@@ -1171,42 +1023,8 @@ class PostSampleSeeder extends Seeder
             // 작성자: 일부는 관리자/스텝
             $commentUser = $this->pickCommentAuthor($users);
 
-            // 댓글은 게시글보다 0~7일 후 작성하되, 현재 시각을 넘지 않도록 clamp.
-            $commentCreatedAt = $this->clampToNow($createdAt->copy()->addHours(rand(1, 168)));
-
-            // 상태 분포 — 작성자 삭제 약 3%, 블라인드 약 5%(관리자 조치), 나머지 게시.
-            // 조치 시각은 작성 뒤로 잡는다.
-            $statusRand = rand(1, 100);
-            $commentStatus = 'published';
-            $commentTrigger = 'admin';
-            $commentActionLogs = null;
-            $commentDeletedAt = null;
-
-            if ($statusRand <= 3) {
-                $commentStatus = 'deleted';
-                $commentTrigger = 'user';
-                $commentDeletedAt = $this->clampToNow($commentCreatedAt->copy()->addHours(rand(1, 24)));
-                $actor = $isGuestComment ? null : $commentUser;
-                $commentActionLogs = [[
-                    'action' => 'delete',
-                    'reason' => null,
-                    'admin_id' => $actor?->id,
-                    'admin_name' => $actor?->name ?? 'Unknown',
-                    'ip_address' => '127.0.0.1',
-                    'created_at' => $commentDeletedAt->toDateTimeString(),
-                ]];
-            } elseif ($statusRand <= 8) {
-                $commentStatus = 'blinded';
-                $commentActionLogs = [$this->buildSampleActionLog(
-                    'blind',
-                    '커뮤니티 가이드 위반',
-                    $this->clampToNow($commentCreatedAt->copy()->addHours(rand(1, 48))),
-                    $commentUser
-                )];
-            }
-
-            // 비밀 댓글 약 5% (비밀글을 쓸 수 있는 게시판만)
-            $isSecretComment = $secretCommentAllowed && rand(1, 100) <= 5;
+            // 댓글은 게시글보다 0~7일 후 작성
+            $commentCreatedAt = $createdAt->copy()->addHours(rand(1, 168));
 
             $commentId = DB::table('board_comments')->insertGetId([
                 'board_id' => $board->id,
@@ -1216,21 +1034,19 @@ class PostSampleSeeder extends Seeder
                 'author_name' => $isGuestComment ? '익명'.rand(1, 100) : null,
                 'password' => $isGuestComment ? $this->getGuestPassword() : null,
                 'content' => self::COMMENT_TEMPLATES[array_rand(self::COMMENT_TEMPLATES)],
-                'is_secret' => $isSecretComment,
-                'status' => $commentStatus,
-                'trigger_type' => $commentTrigger,
-                'action_logs' => $commentActionLogs ? json_encode($commentActionLogs) : null,
+                'is_secret' => false,
+                'status' => 'published',
+                'trigger_type' => 'admin',
                 'depth' => 0,
                 'ip_address' => '127.0.0.1',
                 'created_at' => $commentCreatedAt,
-                'updated_at' => $commentDeletedAt ?? $commentCreatedAt,
-                'deleted_at' => $commentDeletedAt,
+                'updated_at' => $commentCreatedAt,
             ]);
 
             $commentCount++;
 
-            // 다단계 대댓글 체인 생성 (게시 상태 댓글만, 50% 확률로 시작, depth별 감소)
-            if ($commentStatus === 'published' && rand(0, 1) === 1 && $maxCommentDepth > 0) {
+            // 다단계 대댓글 체인 생성 (50% 확률로 시작, depth별 감소)
+            if (rand(0, 1) === 1 && $maxCommentDepth > 0) {
                 $commentCount += $this->createNestedComments(
                     $board, $postId, $commentId, $commentCreatedAt, $users, $maxCommentDepth
                 );
@@ -1246,8 +1062,8 @@ class PostSampleSeeder extends Seeder
      * @param  Board  $board  게시판
      * @param  int  $postId  게시글 ID
      * @param  int  $parentCommentId  부모 댓글 ID
-     * @param  Carbon  $parentCreatedAt  부모 댓글 생성일
-     * @param  Collection  $users  사용자 목록
+     * @param  \Carbon\Carbon  $parentCreatedAt  부모 댓글 생성일
+     * @param  \Illuminate\Support\Collection  $users  사용자 목록
      * @param  int  $maxDepth  최대 depth
      * @return int 생성된 대댓글 수
      */
@@ -1255,7 +1071,7 @@ class PostSampleSeeder extends Seeder
         Board $board,
         int $postId,
         int $parentCommentId,
-        Carbon $parentCreatedAt,
+        \Carbon\Carbon $parentCreatedAt,
         $users,
         int $maxDepth
     ): int {
@@ -1277,7 +1093,7 @@ class PostSampleSeeder extends Seeder
             }
 
             $replyUser = $this->pickCommentAuthor($users);
-            $replyCreatedAt = $this->clampToNow($currentCreatedAt->copy()->addHours(rand(1, 48)));
+            $replyCreatedAt = $currentCreatedAt->copy()->addHours(rand(1, 48));
 
             // depth별 템플릿 선택
             $templates = self::NESTED_REPLY_TEMPLATES[$depth] ?? self::NESTED_REPLY_TEMPLATES[3] ?? self::NESTED_REPLY_TEMPLATES[1];
@@ -1313,7 +1129,7 @@ class PostSampleSeeder extends Seeder
      *
      * 8% 관리자, 5% 스텝, 나머지 일반 사용자
      *
-     * @param  Collection  $users  사용자 목록
+     * @param  \Illuminate\Support\Collection  $users  사용자 목록
      * @return User 작성자
      */
     private function pickCommentAuthor($users): User
@@ -1338,8 +1154,8 @@ class PostSampleSeeder extends Seeder
     private function determineIsSecret(Board $board): bool
     {
         return match ($board->secret_mode->value) {
-            'always' => true,              // 항상 비밀글 (members, inquiry)
-            'disabled' => false,           // 절대 비밀글 아님 (notice, gallery, event, archive)
+            'always' => true,              // 항상 비밀글 (inquiry)
+            'disabled' => false,           // 절대 비밀글 아님 (notice, gallery, members)
             'enabled' => rand(1, 5) === 1, // 20% 확률 (free, qna)
             default => false,
         };
@@ -1361,9 +1177,9 @@ class PostSampleSeeder extends Seeder
      * @param  int  $todayCount  오늘 게시글 수 (방금~24시간 전)
      * @param  int  $weekCount  이번주 게시글 수 (1~7일 전)
      * @param  int  $monthCount  이번달 게시글 수 (8~30일 전)
-     * @return Carbon 생성일
+     * @return \Carbon\Carbon 생성일
      */
-    private function generateCreatedAt(int $index, int $todayCount, int $weekCount, int $monthCount): Carbon
+    private function generateCreatedAt(int $index, int $todayCount, int $weekCount, int $monthCount): \Carbon\Carbon
     {
         if ($index < $todayCount) {
             // 오늘: 방금 전 ~ 23시간 전 (모든 분/시간 구간 커버)
@@ -1396,23 +1212,6 @@ class PostSampleSeeder extends Seeder
     }
 
     /**
-     * Carbon 시각이 현재 시각을 넘으면 현재 시각으로 clamp 합니다.
-     *
-     * 답글/댓글 시드가 부모의 created_at + addHours() 로 자식 시각을 미루는 구조라
-     * 부모가 "오늘" 분포로 만들어진 경우 자식이 미래로 밀려 들어가 대시보드/목록 정렬을 뒤집는 회귀가 생긴다.
-     * 이 헬퍼로 모든 자식 시각의 상한을 now() 로 잡아 미래 created_at 발생 자체를 차단한다.
-     *
-     * @param  Carbon  $time  계산된 자식 시각
-     * @return Carbon 현재 시각 이하의 시각
-     */
-    private function clampToNow(Carbon $time): Carbon
-    {
-        $now = now();
-
-        return $time->greaterThan($now) ? $now : $time;
-    }
-
-    /**
      * 게시판이 비회원 글쓰기를 허용하는지 확인합니다.
      *
      * @param  Board  $board  게시판
@@ -1435,33 +1234,6 @@ class PostSampleSeeder extends Seeder
         }
 
         return $permission->roles()->where('identifier', 'guest')->exists();
-    }
-
-    /**
-     * 게시판 글쓰기 권한(posts.write)에 지정한 역할이 들어 있는지 확인합니다.
-     *
-     * notice·event 처럼 user 역할이 빠진 게시판은 관리자 전용 글쓰기 게시판이다.
-     *
-     * @param  Board  $board  게시판
-     * @param  string  $roleIdentifier  역할 식별자 (user, guest 등)
-     * @return bool 역할이 글쓰기 권한을 가지면 true (역할 지정이 없으면 전체 허용으로 true)
-     */
-    private function boardAllowsRoleWrite(Board $board, string $roleIdentifier): bool
-    {
-        $permission = Permission::where(
-            'identifier',
-            "sirsoft-board.{$board->slug}.posts.write"
-        )->first();
-
-        if (! $permission) {
-            return false;
-        }
-
-        if ($permission->roles()->count() === 0) {
-            return true;
-        }
-
-        return $permission->roles()->where('identifier', $roleIdentifier)->exists();
     }
 
     /**
@@ -1521,14 +1293,10 @@ class PostSampleSeeder extends Seeder
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $postId  게시글 ID
-     * @param  int|null  $userId  사용자 ID (비회원 글이면 null)
-     * @param  Carbon|null  $createdAt  첨부 시각 (글 작성 시각, 없으면 지금)
-     * @return void 반환값 없음
+     * @param  int|null  $userId  사용자 ID
      */
-    private function createAttachmentsForPost(int $boardId, int $postId, ?int $userId, ?Carbon $createdAt = null): void
+    private function createAttachmentsForPost(int $boardId, int $postId, ?int $userId): void
     {
-        $attachedAt = $createdAt ?? now();
-
         // 첨부파일 개수 랜덤 (1~3개)
         $attachmentCount = rand(1, 3);
 
@@ -1558,8 +1326,8 @@ class PostSampleSeeder extends Seeder
                     'order' => $i + 1,
                     'meta' => $meta,
                     'created_by' => $userId,
-                    'created_at' => $attachedAt,
-                    'updated_at' => $attachedAt,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
             } catch (\Exception $e) {
                 // 오류 발생 시 스킵하고 계속 진행

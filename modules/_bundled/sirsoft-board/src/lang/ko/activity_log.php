@@ -4,25 +4,16 @@ return [
     // 액션 라벨 (마지막 세그먼트 기준).
     // ActivityLog::getActionLabelAttribute 가 모듈 origin 라벨을 자체 lang 에서 우선 조회.
     'action' => [
-        'add' => '반응 등록',
         'add_to_menu' => '메뉴 추가',
         'blind' => '블라인드',
-        'change' => '반응 변경',
         'blind_content' => '콘텐츠 블라인드',
         'bulk_apply' => '일괄 적용',
-        'bulk_apply_aborted' => '일괄 적용 중단',
         'bulk_update_status' => '일괄 상태 변경',
-        'cancel' => '취소',
         'create' => '생성',
         'delete' => '삭제',
         'delete_content' => '콘텐츠 삭제',
-        'download' => '다운로드',
-        'remove' => '반응 취소',
-        'remove_from_menu' => '메뉴 제거',
         'restore' => '복원',
         'restore_content' => '콘텐츠 복원',
-        'scrap' => '스크랩',
-        'unscrap' => '스크랩 해제',
         'update' => '수정',
         'update_status' => '상태 변경',
         'upload' => '업로드',
@@ -37,11 +28,9 @@ return [
         'board_delete' => '게시판 삭제 (:board_name)',
         'board_copy' => '게시판 복사 (:board_name)',
         'board_add_to_menu' => '게시판 메뉴 추가 (:board_name)',
-        'board_remove_from_menu' => '게시판 메뉴 제거 (:board_name)',
 
         // 게시판 유형 (Admin)
         'board_type_index' => '게시판 유형 목록 조회',
-        'board_type_show' => '게시판 유형 상세 조회 (:type_name)',
         'board_type_create' => '게시판 유형 생성 (:type_name)',
         'board_type_update' => '게시판 유형 수정 (:type_name)',
         'board_type_delete' => '게시판 유형 삭제 (:type_name)',
@@ -63,7 +52,6 @@ return [
         // 첨부파일
         'board_attachment_upload' => '첨부파일 업로드 (게시물: :post_id)',
         'board_attachment_delete' => '첨부파일 삭제 (게시물: :post_id)',
-        'board_attachment_download' => '첨부파일 다운로드 (게시물: :post_id)',
         'board_attachment_reorder' => '첨부파일 순서 변경 (게시물: :post_id)',
 
         // 신고 관리 (Admin)
@@ -74,29 +62,15 @@ return [
         'report_restore_content' => '신고 콘텐츠 복원 (ID: :report_id)',
         'report_blind_content' => '신고 콘텐츠 블라인드 (ID: :report_id)',
         'report_delete_content' => '신고 콘텐츠 삭제 (ID: :report_id)',
-        'report_cancel' => '신고 취소 (ID: :report_id)',
-
-        // 스크랩
-        'scrap_add' => '게시글 스크랩 (ID: :post_id)',
-        'scrap_remove' => '게시글 스크랩 해제 (ID: :post_id)',
-        // 반응 (추천/비추천)
-        'reaction_add' => '반응 등록 (게시판: :board_name, 제목: :title, 유형: :reaction_type)',
-        'reaction_change' => '반응 변경 (게시판: :board_name, 제목: :title, 유형: :reaction_type)',
-        'reaction_remove' => '반응 취소 (게시판: :board_name, 제목: :title)',
-        'comment_reaction_add' => '댓글 반응 등록 (게시판: :board_name, 글 ID: :post_id, 댓글 ID: :comment_id, 유형: :reaction_type)',
-        'comment_reaction_change' => '댓글 반응 변경 (게시판: :board_name, 글 ID: :post_id, 댓글 ID: :comment_id, 유형: :reaction_type)',
-        'comment_reaction_remove' => '댓글 반응 취소 (게시판: :board_name, 글 ID: :post_id, 댓글 ID: :comment_id)',
 
         // 게시판 설정
         'board_settings_index' => '게시판 설정 조회',
         'board_settings_bulk_apply' => '게시판 설정 일괄 적용',
-        'board_settings_bulk_apply_aborted' => '게시판 설정 일괄 적용 중단 (전체 롤백, 실패 게시판: :failed_board_name, :failed_at/:total)',
     ],
 
     // ChangeDetector 필드 라벨
     'fields' => [
         // Board
-        'name' => '게시판명',
         'is_active' => '활성 여부',
         'per_page' => '페이지당 게시물 수',
         'per_page_mobile' => '모바일 페이지당 게시물 수',
@@ -108,10 +82,7 @@ return [
         'use_comment' => '댓글 사용',
         'use_reply' => '답글 사용',
         'max_reply_depth' => '최대 답글 깊이',
-        'reply_delete_policy' => '답글 삭제 방식',
         'use_report' => '신고 사용',
-        'use_scrap' => '스크랩 사용',
-        'use_comment_reaction' => '댓글 반응 사용',
         'use_file_upload' => '파일 업로드 사용',
         'max_file_size' => '최대 파일 크기',
         'max_file_count' => '최대 파일 수',

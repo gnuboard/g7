@@ -1,13 +1,13 @@
 {
-    "comment": "할인코드 목록 (운영자) — 쿠폰과 달리 코드 문자열을 받아 적용하는 판촉 수단이라, 혜택 종류\n  (상품값/배송비)와 코드 종류(공개코드/일회용코드)가 조회의 두 축이 된다. 아직 데이터소스가 없어\n  표가 예시 값으로 박혀 있는 골격 단계이고, 필터 입력만 _local 에 살아 있다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_promotion_discount_code_index",
+    "permissions": [],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.promotion_discount_code.title",
         "description": "$t:sirsoft-ecommerce.admin.promotion_discount_code.description"
     },
-    "initLocal": {
+    "state": {
         "searchField": "all",
         "searchKeyword": "",
         "benefitType": "",
@@ -23,46 +23,43 @@
         "selectAll": false,
         "bulkStatus": ""
     },
-    "permissions": [
-        "sirsoft-ecommerce.promotion-coupon.read"
-    ],
     "slots": {
         "content": [
             {
                 "id": "discount_code_content",
                 "type": "basic",
                 "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "admin-page-content-compact"
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900 min-h-screen"
                         }
                     }
-                },
-                "props": {
-                    "className": "admin-page-content"
                 },
                 "children": [
                     {
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
+                        "props": {
+                            "className": "flex items-start justify-between mb-6"
+                        },
                         "responsive": {
                             "portable": {
                                 "props": {
-                                    "className": "row-stack mb-6"
+                                    "className": "flex flex-col gap-4 mb-6"
                                 }
                             }
-                        },
-                        "props": {
-                            "className": "flex-start justify-between mb-6"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-3"
+                                    "className": "flex items-center gap-3"
                                 },
                                 "children": [
                                     {
@@ -70,7 +67,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "percent",
-                                            "className": "text-2xl text-gray-700 dark:text-gray-300"
+                                            "className": "w-6 h-6 text-gray-700 dark:text-gray-300"
                                         }
                                     },
                                     {
@@ -110,7 +107,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "plus",
-                                            "className": "text-base"
+                                            "className": "w-4 h-4"
                                         }
                                     },
                                     {
@@ -127,38 +124,27 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "card mb-6"
                         },
                         "children": [
                             {
                                 "id": "search_row",
                                 "type": "basic",
                                 "name": "Div",
+                                "props": {
+                                    "className": "flex flex-wrap items-center gap-3 mb-6"
+                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "row-stack mb-6"
+                                            "className": "flex flex-col gap-3 mb-6"
                                         }
                                     }
                                 },
-                                "props": {
-                                    "className": "flex-center flex-wrap gap-3 mb-6"
-                                },
                                 "children": [
                                     {
-                                        "type": "basic",
+                                        "type": "composite",
                                         "name": "Select",
-                                        "actions": [
-                                            {
-                                                "comment": "검색 대상만 바꾼다 — 코드 이름과 코드 문자열 중 어디를 볼지 정하는 자리다",
-                                                "type": "change",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "_local",
-                                                    "searchField": "{{$event.target.value}}"
-                                                }
-                                            }
-                                        ],
                                         "props": {
                                             "name": "searchField",
                                             "className": "w-32",
@@ -177,49 +163,14 @@
                                                     "label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.search.field.discount_code"
                                                 }
                                             ]
-                                        }
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Div",
-                                        "responsive": {
-                                            "portable": {
-                                                "props": {
-                                                    "className": "w-full relative"
-                                                }
-                                            }
                                         },
-                                        "props": {
-                                            "className": "flex-1 min-w-64 relative"
-                                        },
-                                        "children": [
+                                        "actions": [
                                             {
-                                                "type": "basic",
-                                                "name": "Input",
-                                                "actions": [
-                                                    {
-                                                        "comment": "입력을 마칠 때 담는다",
-                                                        "type": "change",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "_local",
-                                                            "searchKeyword": "{{$event.target.value}}"
-                                                        }
-                                                    }
-                                                ],
-                                                "props": {
-                                                    "type": "text",
-                                                    "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.search.placeholder",
-                                                    "className": "input pr-10",
-                                                    "value": "{{_local.searchKeyword}}"
-                                                }
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "props": {
-                                                    "name": "search",
-                                                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "_local",
+                                                    "searchField": "{{$event.target.value}}"
                                                 }
                                             }
                                         ]
@@ -228,7 +179,51 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "flex-1 min-w-64 relative"
+                                        },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "w-full relative"
+                                                }
+                                            }
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.search.placeholder",
+                                                    "className": "input w-full pr-10",
+                                                    "value": "{{_local.searchKeyword}}"
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "searchKeyword": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "search",
+                                                    "className": "w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-center gap-2"
                                         },
                                         "children": [
                                             {
@@ -243,8 +238,8 @@
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "sliders",
-                                                            "className": "text-base"
+                                                            "name": "settings-2",
+                                                            "className": "w-4 h-4"
                                                         }
                                                     },
                                                     {
@@ -275,7 +270,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "filter",
-                                                            "className": "text-base"
+                                                            "className": "w-4 h-4"
                                                         }
                                                     },
                                                     {
@@ -294,7 +289,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "space-y-4 filter-grid"
+                                    "className": "space-y-4"
                                 },
                                 "children": [
                                     {
@@ -324,15 +319,21 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "flex-center gap-2 cursor-pointer"
+                                                            "className": "flex items-center gap-2 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "props": {
+                                                                    "type": "radio",
+                                                                    "name": "benefitType",
+                                                                    "value": "",
+                                                                    "className": "radio",
+                                                                    "checked": "{{_local.benefitType === ''}}"
+                                                                },
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "혜택 종류를 가리지 않고 모두",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -340,14 +341,7 @@
                                                                             "benefitType": ""
                                                                         }
                                                                     }
-                                                                ],
-                                                                "props": {
-                                                                    "type": "radio",
-                                                                    "name": "benefitType",
-                                                                    "value": "",
-                                                                    "className": "radio",
-                                                                    "checked": "{{_local.benefitType === ''}}"
-                                                                }
+                                                                ]
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -363,15 +357,21 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "flex-center gap-2 cursor-pointer"
+                                                            "className": "flex items-center gap-2 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "props": {
+                                                                    "type": "radio",
+                                                                    "name": "benefitType",
+                                                                    "value": "product",
+                                                                    "className": "radio",
+                                                                    "checked": "{{_local.benefitType === 'product'}}"
+                                                                },
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "상품값을 깎는 코드",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -379,14 +379,7 @@
                                                                             "benefitType": "product"
                                                                         }
                                                                     }
-                                                                ],
-                                                                "props": {
-                                                                    "type": "radio",
-                                                                    "name": "benefitType",
-                                                                    "value": "product",
-                                                                    "className": "radio",
-                                                                    "checked": "{{_local.benefitType === 'product'}}"
-                                                                }
+                                                                ]
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -402,15 +395,21 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "flex-center gap-2 cursor-pointer"
+                                                            "className": "flex items-center gap-2 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "props": {
+                                                                    "type": "radio",
+                                                                    "name": "benefitType",
+                                                                    "value": "shipping_fee",
+                                                                    "className": "radio",
+                                                                    "checked": "{{_local.benefitType === 'shipping_fee'}}"
+                                                                },
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "배송비를 깎는 코드 — 상품값과 계산 대상이 달라 따로 가른다",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -418,14 +417,7 @@
                                                                             "benefitType": "shipping_fee"
                                                                         }
                                                                     }
-                                                                ],
-                                                                "props": {
-                                                                    "type": "radio",
-                                                                    "name": "benefitType",
-                                                                    "value": "shipping_fee",
-                                                                    "className": "radio",
-                                                                    "checked": "{{_local.benefitType === 'shipping_fee'}}"
-                                                                }
+                                                                ]
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -468,15 +460,21 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "flex-center gap-2 cursor-pointer"
+                                                            "className": "flex items-center gap-2 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "props": {
+                                                                    "type": "radio",
+                                                                    "name": "codeType",
+                                                                    "value": "",
+                                                                    "className": "radio",
+                                                                    "checked": "{{_local.codeType === ''}}"
+                                                                },
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "코드 종류를 가리지 않고 모두",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -484,14 +482,7 @@
                                                                             "codeType": ""
                                                                         }
                                                                     }
-                                                                ],
-                                                                "props": {
-                                                                    "type": "radio",
-                                                                    "name": "codeType",
-                                                                    "value": "",
-                                                                    "className": "radio",
-                                                                    "checked": "{{_local.codeType === ''}}"
-                                                                }
+                                                                ]
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -507,15 +498,21 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "flex-center gap-2 cursor-pointer"
+                                                            "className": "flex items-center gap-2 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "props": {
+                                                                    "type": "radio",
+                                                                    "name": "codeType",
+                                                                    "value": "public_code",
+                                                                    "className": "radio",
+                                                                    "checked": "{{_local.codeType === 'public_code'}}"
+                                                                },
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "공개코드 — 하나를 여럿이 함께 쓴다",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -523,14 +520,7 @@
                                                                             "codeType": "public_code"
                                                                         }
                                                                     }
-                                                                ],
-                                                                "props": {
-                                                                    "type": "radio",
-                                                                    "name": "codeType",
-                                                                    "value": "public_code",
-                                                                    "className": "radio",
-                                                                    "checked": "{{_local.codeType === 'public_code'}}"
-                                                                }
+                                                                ]
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -546,15 +536,21 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "flex-center gap-2 cursor-pointer"
+                                                            "className": "flex items-center gap-2 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "props": {
+                                                                    "type": "radio",
+                                                                    "name": "codeType",
+                                                                    "value": "one_time_code",
+                                                                    "className": "radio",
+                                                                    "checked": "{{_local.codeType === 'one_time_code'}}"
+                                                                },
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "일회용코드 — 한 번 쓰면 소진되므로 발급 수량만큼 코드가 따로 만들어진다",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -562,14 +558,7 @@
                                                                             "codeType": "one_time_code"
                                                                         }
                                                                     }
-                                                                ],
-                                                                "props": {
-                                                                    "type": "radio",
-                                                                    "name": "codeType",
-                                                                    "value": "one_time_code",
-                                                                    "className": "radio",
-                                                                    "checked": "{{_local.codeType === 'one_time_code'}}"
-                                                                }
+                                                                ]
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -592,6 +581,13 @@
                                         "props": {
                                             "className": "filter-row"
                                         },
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "filter-row-vertical"
+                                                }
+                                            }
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -604,6 +600,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "props": {
+                                                    "className": "flex items-center gap-2"
+                                                },
                                                 "responsive": {
                                                     "portable": {
                                                         "props": {
@@ -611,34 +610,12 @@
                                                         }
                                                     }
                                                 },
-                                                "props": {
-                                                    "className": "flex-center gap-2"
-                                                },
                                                 "children": [
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Select",
-                                                        "responsive": {
-                                                            "portable": {
-                                                                "props": {
-                                                                    "className": "w-full"
-                                                                }
-                                                            }
-                                                        },
-                                                        "actions": [
-                                                            {
-                                                                "comment": "아래 금액 범위를 정액(원)으로 읽을지 정률(%)로 읽을지 정한다 — 같은 숫자라도 뜻이 달라진다",
-                                                                "type": "change",
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "_local",
-                                                                    "benefitAmountType": "{{$event.target.value}}"
-                                                                }
-                                                            }
-                                                        ],
                                                         "props": {
                                                             "name": "benefitAmountType",
-                                                            "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount_unit",
                                                             "className": "w-24",
                                                             "value": "{{_local.benefitAmountType}}",
                                                             "options": [
@@ -655,18 +632,41 @@
                                                                     "label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.rate"
                                                                 }
                                                             ]
-                                                        }
+                                                        },
+                                                        "responsive": {
+                                                            "portable": {
+                                                                "props": {
+                                                                    "className": "w-full"
+                                                                }
+                                                            }
+                                                        },
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "_local",
+                                                                    "benefitAmountType": "{{$event.target.value}}"
+                                                                }
+                                                            }
+                                                        ]
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-2"
+                                                            "className": "flex items-center gap-2"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.min",
+                                                                    "className": "input w-28",
+                                                                    "value": "{{_local.benefitMin}}"
+                                                                },
                                                                 "responsive": {
                                                                     "portable": {
                                                                         "props": {
@@ -676,7 +676,6 @@
                                                                 },
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "혜택 하한",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -684,13 +683,7 @@
                                                                             "benefitMin": "{{$event.target.value}}"
                                                                         }
                                                                     }
-                                                                ],
-                                                                "props": {
-                                                                    "type": "text",
-                                                                    "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.min",
-                                                                    "className": "input w-28",
-                                                                    "value": "{{_local.benefitMin}}"
-                                                                }
+                                                                ]
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -703,6 +696,12 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.max",
+                                                                    "className": "input w-28",
+                                                                    "value": "{{_local.benefitMax}}"
+                                                                },
                                                                 "responsive": {
                                                                     "portable": {
                                                                         "props": {
@@ -712,7 +711,6 @@
                                                                 },
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "혜택 상한",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -720,13 +718,7 @@
                                                                             "benefitMax": "{{$event.target.value}}"
                                                                         }
                                                                     }
-                                                                ],
-                                                                "props": {
-                                                                    "type": "text",
-                                                                    "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.max",
-                                                                    "className": "input w-28",
-                                                                    "value": "{{_local.benefitMax}}"
-                                                                }
+                                                                ]
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -762,14 +754,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2 flex-wrap"
+                                                    "className": "flex items-center gap-2 flex-wrap"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-2"
+                                                            "className": "flex items-center gap-2"
                                                         },
                                                         "children": [
                                                             {
@@ -784,15 +776,20 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "calendar",
-                                                                            "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                                                                            "className": "w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
                                                                         }
                                                                     },
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Input",
+                                                                        "props": {
+                                                                            "type": "text",
+                                                                            "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.start_date",
+                                                                            "className": "input w-32 pl-10",
+                                                                            "value": "{{_local.startDate}}"
+                                                                        },
                                                                         "actions": [
                                                                             {
-                                                                                "comment": "유효기간 시작일",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -800,13 +797,7 @@
                                                                                     "startDate": "{{$event.target.value}}"
                                                                                 }
                                                                             }
-                                                                        ],
-                                                                        "props": {
-                                                                            "type": "text",
-                                                                            "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.start_date",
-                                                                            "className": "input w-32 pl-10",
-                                                                            "value": "{{_local.startDate}}"
-                                                                        }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             },
@@ -830,15 +821,20 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "calendar",
-                                                                            "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                                                                            "className": "w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
                                                                         }
                                                                     },
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Input",
+                                                                        "props": {
+                                                                            "type": "text",
+                                                                            "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.end_date",
+                                                                            "className": "input w-32 pl-10",
+                                                                            "value": "{{_local.endDate}}"
+                                                                        },
                                                                         "actions": [
                                                                             {
-                                                                                "comment": "유효기간 종료일",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -846,13 +842,7 @@
                                                                                     "endDate": "{{$event.target.value}}"
                                                                                 }
                                                                             }
-                                                                        ],
-                                                                        "props": {
-                                                                            "type": "text",
-                                                                            "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.end_date",
-                                                                            "className": "input w-32 pl-10",
-                                                                            "value": "{{_local.endDate}}"
-                                                                        }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -862,7 +852,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-1"
+                                                            "className": "flex items-center gap-1"
                                                         },
                                                         "children": [
                                                             {
@@ -948,7 +938,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "search",
-                                                    "className": "text-base"
+                                                    "className": "w-4 h-4"
                                                 }
                                             },
                                             {
@@ -970,8 +960,8 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "arrows-rotate",
-                                                    "className": "text-base"
+                                                    "name": "refresh-cw",
+                                                    "className": "w-4 h-4"
                                                 }
                                             },
                                             {
@@ -990,28 +980,28 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "card mb-6"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
+                                "props": {
+                                    "className": "flex items-center justify-between"
+                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
-                                            "className": "row-stack"
+                                            "className": "flex flex-col gap-3"
                                         }
                                     }
-                                },
-                                "props": {
-                                    "className": "flex-between"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-3"
+                                            "className": "flex items-center gap-3"
                                         },
                                         "children": [
                                             {
@@ -1020,22 +1010,11 @@
                                                 "props": {
                                                     "className": "text-sm text-secondary"
                                                 },
-                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.selected_count|count=0"
+                                                "text": "0$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.selected_count"
                                             },
                                             {
-                                                "type": "basic",
+                                                "type": "composite",
                                                 "name": "Select",
-                                                "actions": [
-                                                    {
-                                                        "comment": "고르기만 하고 보내지 않는다 — 실제 반영은 오른쪽 「일괄변경」이 확인 창을 거쳐 한다",
-                                                        "type": "change",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "_local",
-                                                            "bulkStatus": "{{$event.target.value}}"
-                                                        }
-                                                    }
-                                                ],
                                                 "props": {
                                                     "name": "bulkStatus",
                                                     "className": "w-32",
@@ -1054,25 +1033,35 @@
                                                             "label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.status.inactive"
                                                         }
                                                     ]
-                                                }
+                                                },
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "bulkStatus": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ]
                                             }
                                         ]
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Button",
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-primary"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.actions.bulk_change",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "openModal",
                                                 "target": "modal_status_change"
                                             }
-                                        ],
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-primary"
-                                        },
-                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.actions.bulk_change"
+                                        ]
                                     }
                                 ]
                             }
@@ -1082,15 +1071,15 @@
                         "id": "table_header",
                         "type": "basic",
                         "name": "Div",
+                        "props": {
+                            "className": "flex items-center justify-between mb-4"
+                        },
                         "responsive": {
                             "portable": {
                                 "props": {
-                                    "className": "row-stack mb-4"
+                                    "className": "flex flex-col gap-3 mb-4"
                                 }
                             }
-                        },
-                        "props": {
-                            "className": "flex-between mb-4"
                         },
                         "children": [
                             {
@@ -1099,29 +1088,18 @@
                                 "props": {
                                     "className": "text-sm text-secondary"
                                 },
-                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.total_count|count=2"
+                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.total_count"
                             },
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-3"
+                                    "className": "flex items-center gap-3"
                                 },
                                 "children": [
                                     {
-                                        "type": "basic",
+                                        "type": "composite",
                                         "name": "Select",
-                                        "actions": [
-                                            {
-                                                "comment": "정렬 기준",
-                                                "type": "change",
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "_local",
-                                                    "sortBy": "{{$event.target.value}}"
-                                                }
-                                            }
-                                        ],
                                         "props": {
                                             "name": "sortBy",
                                             "className": "w-40",
@@ -1144,22 +1122,21 @@
                                                     "label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.sort.discount_code_name_desc"
                                                 }
                                             ]
-                                        }
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Select",
+                                        },
                                         "actions": [
                                             {
-                                                "comment": "한 쪽에 담을 건수",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "_local",
-                                                    "perPage": "{{$event.target.value}}"
+                                                    "sortBy": "{{$event.target.value}}"
                                                 }
                                             }
-                                        ],
+                                        ]
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "Select",
                                         "props": {
                                             "name": "perPage",
                                             "className": "w-20",
@@ -1167,18 +1144,28 @@
                                             "options": [
                                                 {
                                                     "value": "10",
-                                                    "label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=10"
+                                                    "label": "10$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page"
                                                 },
                                                 {
                                                     "value": "20",
-                                                    "label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=20"
+                                                    "label": "20$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page"
                                                 },
                                                 {
                                                     "value": "50",
-                                                    "label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=50"
+                                                    "label": "50$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page"
                                                 }
                                             ]
-                                        }
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "_local",
+                                                    "perPage": "{{$event.target.value}}"
+                                                }
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -1188,6 +1175,9 @@
                         "id": "data_table_container",
                         "type": "basic",
                         "name": "Div",
+                        "props": {
+                            "className": "md:table-container"
+                        },
                         "responsive": {
                             "portable": {
                                 "children": [
@@ -1195,12 +1185,15 @@
                                         "id": "mobile_cards_container",
                                         "type": "basic",
                                         "name": "Div",
+                                        "props": {
+                                            "className": "space-y-4"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "admin-card"
+                                                    "className": "card p-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1214,7 +1207,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-center gap-2"
+                                                                    "className": "flex items-center gap-2"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1239,7 +1232,6 @@
                                                                 "type": "basic",
                                                                 "name": "Button",
                                                                 "props": {
-                                                                    "aria-label": "$t:common.more_actions",
                                                                     "type": "button",
                                                                     "className": "btn-icon"
                                                                 },
@@ -1248,8 +1240,8 @@
                                                                         "type": "basic",
                                                                         "name": "Icon",
                                                                         "props": {
-                                                                            "name": "ellipsis",
-                                                                            "className": "text-base"
+                                                                            "name": "more-horizontal",
+                                                                            "className": "w-4 h-4"
                                                                         }
                                                                     }
                                                                 ]
@@ -1268,7 +1260,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-2 mb-3"
+                                                            "className": "flex items-center gap-2 mb-3"
                                                         },
                                                         "children": [
                                                             {
@@ -1358,7 +1350,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-between"
+                                                                    "className": "flex justify-between items-center"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1373,7 +1365,7 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex-center gap-2"
+                                                                            "className": "flex items-center gap-2"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -1397,7 +1389,7 @@
                                                                                         "name": "Icon",
                                                                                         "props": {
                                                                                             "name": "eye",
-                                                                                            "className": "text-xs"
+                                                                                            "className": "w-3 h-3"
                                                                                         }
                                                                                     },
                                                                                     {
@@ -1415,7 +1407,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-between"
+                                                                    "className": "flex justify-between items-center"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1444,7 +1436,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "admin-card"
+                                                    "className": "card p-4"
                                                 },
                                                 "children": [
                                                     {
@@ -1458,7 +1450,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-center gap-2"
+                                                                    "className": "flex items-center gap-2"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1483,7 +1475,6 @@
                                                                 "type": "basic",
                                                                 "name": "Button",
                                                                 "props": {
-                                                                    "aria-label": "$t:common.more_actions",
                                                                     "type": "button",
                                                                     "className": "btn-icon"
                                                                 },
@@ -1492,8 +1483,8 @@
                                                                         "type": "basic",
                                                                         "name": "Icon",
                                                                         "props": {
-                                                                            "name": "ellipsis",
-                                                                            "className": "text-base"
+                                                                            "name": "more-horizontal",
+                                                                            "className": "w-4 h-4"
                                                                         }
                                                                     }
                                                                 ]
@@ -1512,7 +1503,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-2 mb-3"
+                                                            "className": "flex items-center gap-2 mb-3"
                                                         },
                                                         "children": [
                                                             {
@@ -1602,7 +1593,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-between"
+                                                                    "className": "flex justify-between items-center"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1617,7 +1608,7 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex-center gap-2"
+                                                                            "className": "flex items-center gap-2"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -1641,7 +1632,7 @@
                                                                                         "name": "Icon",
                                                                                         "props": {
                                                                                             "name": "eye",
-                                                                                            "className": "text-xs"
+                                                                                            "className": "w-3 h-3"
                                                                                         }
                                                                                     },
                                                                                     {
@@ -1659,7 +1650,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-between"
+                                                                    "className": "flex justify-between items-center"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1691,358 +1682,47 @@
                         },
                         "children": [
                             {
-                                "comment": "테두리 상자는 데스크톱 표에만 — 모바일은 위 카드가 스스로 상자다(옛 `md:table-container` 는 자산에 반응형 접두를 붙여 생성되지 않았다).",
-                                "id": "data_table_box",
+                                "id": "data_table",
                                 "type": "basic",
-                                "name": "Div",
+                                "name": "Table",
                                 "props": {
-                                    "className": "table-container"
+                                    "className": "table"
                                 },
                                 "children": [
                                     {
-                                        "id": "data_table",
                                         "type": "basic",
-                                        "name": "Table",
+                                        "name": "Thead",
                                         "props": {
-                                            "className": "table"
+                                            "className": "bg-gray-50 dark:bg-gray-800"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
-                                                "name": "Thead",
-                                                "props": {
-                                                    "className": "bg-gray-50 dark:bg-gray-800"
-                                                },
+                                                "name": "Tr",
                                                 "children": [
                                                     {
                                                         "type": "basic",
-                                                        "name": "Tr",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 w-10"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Th",
+                                                                "name": "Input",
                                                                 "props": {
-                                                                    "className": "px-4 py-3 w-10"
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox",
+                                                                    "checked": "{{_local.selectAll}}"
                                                                 },
-                                                                "children": [
+                                                                "actions": [
                                                                     {
-                                                                        "type": "basic",
-                                                                        "name": "Input",
-                                                                        "actions": [
-                                                                            {
-                                                                                "comment": "머리글 전체선택 — 체크값이 아니라 지금 상태를 뒤집는다(표가 예시 행이라 개별 선택과 아직 이어져 있지 않다)",
-                                                                                "type": "change",
-                                                                                "handler": "setState",
-                                                                                "params": {
-                                                                                    "target": "_local",
-                                                                                    "selectAll": "{{!_local.selectAll}}"
-                                                                                }
-                                                                            }
-                                                                        ],
-                                                                        "props": {
-                                                                            "type": "checkbox",
-                                                                            "className": "checkbox",
-                                                                            "checked": "{{_local.selectAll}}"
+                                                                        "type": "change",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "selectAll": "{{!_local.selectAll}}"
                                                                         }
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.no"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.benefit_type"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.code_type"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.discount_code_name"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.code_info"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.benefit"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.validity_period"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.history"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.created_at"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.status"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Th",
-                                                                "props": {
-                                                                    "className": "text-table-header px-4 py-3 text-left"
-                                                                },
-                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.actions"
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Tbody",
-                                                "props": {
-                                                    "className": "divider-list bg-white dark:bg-gray-900"
-                                                },
-                                                "children": [
-                                                    {
-                                                        "type": "basic",
-                                                        "name": "Tr",
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Input",
-                                                                        "props": {
-                                                                            "type": "checkbox",
-                                                                            "className": "checkbox"
-                                                                        }
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3 text-sm text-secondary"
-                                                                },
-                                                                "text": "1"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "badge badge-green"
-                                                                        },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "badge badge-blue"
-                                                                        },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.public_code"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "A",
-                                                                        "props": {
-                                                                            "href": "#",
-                                                                            "className": "text-blue-600 dark:text-blue-400 hover:underline"
-                                                                        },
-                                                                        "text": "신규회원 10% 할인코"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3 text-sm text-secondary"
-                                                                },
-                                                                "text": "53572"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "props": {
-                                                                            "className": "flex-center gap-1"
-                                                                        },
-                                                                        "children": [
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Span",
-                                                                                "props": {
-                                                                                    "className": "badge badge-cyan"
-                                                                                },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.rate"
-                                                                            },
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Span",
-                                                                                "props": {
-                                                                                    "className": "text-sm text-primary"
-                                                                                },
-                                                                                "text": "10%"
-                                                                            },
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Span",
-                                                                                "props": {
-                                                                                    "className": "text-xs text-secondary"
-                                                                                },
-                                                                                "text": "(최대 10,000원)"
-                                                                            }
-                                                                        ]
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3 text-sm text-secondary"
-                                                                },
-                                                                "text": "2025-12-16 ~ 2025-12-30"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3 text-sm text-primary"
-                                                                },
-                                                                "text": "8 / 8"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3 text-sm text-secondary"
-                                                                },
-                                                                "text": "2025-12-18 17:58"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "badge badge-green"
-                                                                        },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Button",
-                                                                        "props": {
-                                                                            "aria-label": "$t:common.more_actions",
-                                                                            "type": "button",
-                                                                            "className": "btn-icon"
-                                                                        },
-                                                                        "children": [
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Icon",
-                                                                                "props": {
-                                                                                    "name": "ellipsis",
-                                                                                    "className": "text-base"
-                                                                                }
-                                                                            }
-                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -2050,193 +1730,490 @@
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Tr",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.no"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.benefit_type"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.code_type"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.discount_code_name"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.code_info"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.benefit"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.validity_period"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.history"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.created_at"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.status"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Th",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.actions"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Tbody",
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Tr",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Td",
+                                                                "name": "Input",
                                                                 "props": {
-                                                                    "className": "px-4 py-3"
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-sm text-secondary"
+                                                        },
+                                                        "text": "1"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "badge badge-green"
+                                                                },
+                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "badge badge-blue"
+                                                                },
+                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.public_code"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "A",
+                                                                "props": {
+                                                                    "href": "#",
+                                                                    "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                                },
+                                                                "text": "신규회원 10% 할인코"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-sm text-secondary"
+                                                        },
+                                                        "text": "53572"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex items-center gap-1"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
-                                                                        "name": "Input",
+                                                                        "name": "Span",
                                                                         "props": {
-                                                                            "type": "checkbox",
-                                                                            "className": "checkbox"
+                                                                            "className": "badge badge-cyan"
+                                                                        },
+                                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.rate"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-sm text-primary"
+                                                                        },
+                                                                        "text": "10%"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-xs text-secondary"
+                                                                        },
+                                                                        "text": "(최대 10,000원)"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-sm text-secondary"
+                                                        },
+                                                        "text": "2025-12-16 ~ 2025-12-30"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-sm text-primary"
+                                                        },
+                                                        "text": "8 / 8"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-sm text-secondary"
+                                                        },
+                                                        "text": "2025-12-18 17:58"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "badge badge-green"
+                                                                },
+                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "btn-icon"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "props": {
+                                                                            "name": "more-horizontal",
+                                                                            "className": "w-4 h-4"
                                                                         }
                                                                     }
                                                                 ]
-                                                            },
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Tr",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Td",
+                                                                "name": "Input",
                                                                 "props": {
-                                                                    "className": "px-4 py-3 text-sm text-secondary"
+                                                                    "type": "checkbox",
+                                                                    "className": "checkbox"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-sm text-secondary"
+                                                        },
+                                                        "text": "2"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "badge badge-green"
                                                                 },
-                                                                "text": "2"
-                                                            },
+                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Td",
+                                                                "name": "Span",
                                                                 "props": {
-                                                                    "className": "px-4 py-3"
+                                                                    "className": "badge badge-pink"
                                                                 },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "badge badge-green"
-                                                                        },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product"
-                                                                    }
-                                                                ]
-                                                            },
+                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.one_time_code"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Td",
+                                                                "name": "A",
                                                                 "props": {
-                                                                    "className": "px-4 py-3"
+                                                                    "href": "#",
+                                                                    "className": "text-blue-600 dark:text-blue-400 hover:underline"
                                                                 },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Span",
-                                                                        "props": {
-                                                                            "className": "badge badge-pink"
-                                                                        },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.one_time_code"
-                                                                    }
-                                                                ]
-                                                            },
+                                                                "text": "첫구매 5천원 할인"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-sm text-secondary"
+                                                        },
+                                                        "text": "FIRST5000"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Td",
+                                                                "name": "Div",
                                                                 "props": {
-                                                                    "className": "px-4 py-3"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "A",
-                                                                        "props": {
-                                                                            "href": "#",
-                                                                            "className": "text-blue-600 dark:text-blue-400 hover:underline"
-                                                                        },
-                                                                        "text": "첫구매 5천원 할인"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3 text-sm text-secondary"
-                                                                },
-                                                                "text": "FIRST5000"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3"
-                                                                },
-                                                                "children": [
-                                                                    {
-                                                                        "type": "basic",
-                                                                        "name": "Div",
-                                                                        "props": {
-                                                                            "className": "flex-center gap-1"
-                                                                        },
-                                                                        "children": [
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Span",
-                                                                                "props": {
-                                                                                    "className": "badge badge-indigo"
-                                                                                },
-                                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.fixed"
-                                                                            },
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Span",
-                                                                                "props": {
-                                                                                    "className": "text-sm text-primary"
-                                                                                },
-                                                                                "text": "5,000원"
-                                                                            }
-                                                                        ]
-                                                                    }
-                                                                ]
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3 text-sm text-secondary"
-                                                                },
-                                                                "text": "2025-12-01 ~ 2025-12-31"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3 text-sm text-primary"
-                                                                },
-                                                                "text": "89 / 152"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3 text-sm text-secondary"
-                                                                },
-                                                                "text": "2025-12-01 10:00"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Td",
-                                                                "props": {
-                                                                    "className": "px-4 py-3"
+                                                                    "className": "flex items-center gap-1"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge badge-green"
+                                                                            "className": "badge badge-indigo"
                                                                         },
-                                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.fixed"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-sm text-primary"
+                                                                        },
+                                                                        "text": "5,000원"
                                                                     }
                                                                 ]
-                                                            },
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-sm text-secondary"
+                                                        },
+                                                        "text": "2025-12-01 ~ 2025-12-31"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-sm text-primary"
+                                                        },
+                                                        "text": "89 / 152"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3 text-sm text-secondary"
+                                                        },
+                                                        "text": "2025-12-01 10:00"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "Td",
+                                                                "name": "Span",
                                                                 "props": {
-                                                                    "className": "px-4 py-3"
+                                                                    "className": "badge badge-green"
+                                                                },
+                                                                "text": "$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Td",
+                                                        "props": {
+                                                            "className": "px-4 py-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "btn-icon"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
-                                                                        "name": "Button",
+                                                                        "name": "Icon",
                                                                         "props": {
-                                                                            "aria-label": "$t:common.more_actions",
-                                                                            "type": "button",
-                                                                            "className": "btn-icon"
-                                                                        },
-                                                                        "children": [
-                                                                            {
-                                                                                "type": "basic",
-                                                                                "name": "Icon",
-                                                                                "props": {
-                                                                                    "name": "ellipsis",
-                                                                                    "className": "text-base"
-                                                                                }
-                                                                            }
-                                                                        ]
+                                                                            "name": "more-horizontal",
+                                                                            "className": "w-4 h-4"
+                                                                        }
                                                                     }
                                                                 ]
                                                             }
@@ -2269,7 +2246,6 @@
                                         "type": "basic",
                                         "name": "Button",
                                         "props": {
-                                            "aria-label": "$t:common.first_page",
                                             "type": "button",
                                             "className": "pagination-btn",
                                             "disabled": true
@@ -2279,8 +2255,8 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "angles-left",
-                                                    "className": "text-base"
+                                                    "name": "chevrons-left",
+                                                    "className": "w-4 h-4"
                                                 }
                                             }
                                         ]
@@ -2289,7 +2265,6 @@
                                         "type": "basic",
                                         "name": "Button",
                                         "props": {
-                                            "aria-label": "$t:common.prev_page",
                                             "type": "button",
                                             "className": "pagination-btn",
                                             "disabled": true
@@ -2300,7 +2275,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "chevron-left",
-                                                    "className": "text-base"
+                                                    "className": "w-4 h-4"
                                                 }
                                             }
                                         ]
@@ -2336,7 +2311,6 @@
                                         "type": "basic",
                                         "name": "Button",
                                         "props": {
-                                            "aria-label": "$t:common.next_page",
                                             "type": "button",
                                             "className": "pagination-btn"
                                         },
@@ -2346,7 +2320,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "chevron-right",
-                                                    "className": "text-base"
+                                                    "className": "w-4 h-4"
                                                 }
                                             }
                                         ]
@@ -2355,7 +2329,6 @@
                                         "type": "basic",
                                         "name": "Button",
                                         "props": {
-                                            "aria-label": "$t:common.last_page",
                                             "type": "button",
                                             "className": "pagination-btn"
                                         },
@@ -2364,8 +2337,8 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "angles-right",
-                                                    "className": "text-base"
+                                                    "name": "chevrons-right",
+                                                    "className": "w-4 h-4"
                                                 }
                                             }
                                         ]
@@ -2380,11 +2353,9 @@
     },
     "modals": [
         {
-            "comment": "선택한 코드들의 사용 상태를 한꺼번에 바꾸기 전 확인",
             "partial": "partials/admin_ecommerce_promotion_discount_code_index/_modal_status_change.json"
         },
         {
-            "comment": "할인코드 삭제 확인",
             "partial": "partials/admin_ecommerce_promotion_discount_code_index/_modal_delete_confirm.json"
         }
     ]

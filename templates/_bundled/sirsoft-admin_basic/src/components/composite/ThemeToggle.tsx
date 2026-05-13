@@ -4,14 +4,6 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
-import type { EditorAttrs } from '../../types';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
-const tOr = (key: string, fallback: string): string => {
-  const translated = (window as any).G7Core?.t?.(key);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
-
 
 /**
  * 테마 모드 타입
@@ -32,12 +24,6 @@ export interface ThemeToggleProps {
   lightText?: string;
   /** 다크 모드 텍스트 (다국어 키 사용 권장) */
   darkText?: string;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -102,16 +88,10 @@ const getInitialTheme = (): ThemeMode => {
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   onThemeChange,
   className = '',
-  autoText: autoTextProp,
-  lightText: lightTextProp,
-  darkText: darkTextProp,
-  id,
-  editorAttrs,
+  autoText = 'System',
+  lightText = 'Light',
+  darkText = 'Dark',
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
-  const autoText = autoTextProp ?? tOr('admin.theme.auto', 'System');
-  const lightText = lightTextProp ?? tOr('admin.theme.light', 'Light');
-  const darkText = darkTextProp ?? tOr('admin.theme.dark', 'Dark');
   // 초기 테마를 즉시 로드하고 적용
   const initialTheme = getInitialTheme();
   const [currentMode, setCurrentMode] = useState<ThemeMode>(initialTheme);
@@ -174,17 +154,16 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   };
 
   return (
-    <Div ref={menuRef} className={`relative ${className}`} id={id} {...editorAttrs}>
+    <Div ref={menuRef} className={`relative ${className}`}>
       {/* 테마 토글 버튼 */}
       <Button
         onClick={() => setShowMenu(!showMenu)}
-        className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-        aria-label={tOr('common.theme_select', 'Theme')}
-        aria-expanded={showMenu}
+        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        aria-label="Toggle theme"
       >
         <Icon
           name={getCurrentIcon()}
-          className="text-sm text-slate-500 dark:text-slate-400"
+          className="w-5 h-5 text-gray-600 dark:text-gray-400"
         />
       </Button>
 
@@ -195,7 +174,6 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             {/* 자동 모드 */}
             <Button
               onClick={() => handleThemeChange('auto')}
-              aria-pressed={currentMode === 'auto'}
               className={`
                 w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors
                 ${currentMode === 'auto' ? 'bg-gray-50 dark:bg-gray-700' : ''}
@@ -217,7 +195,6 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             {/* 라이트 모드 */}
             <Button
               onClick={() => handleThemeChange('light')}
-              aria-pressed={currentMode === 'light'}
               className={`
                 w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors
                 ${currentMode === 'light' ? 'bg-gray-50 dark:bg-gray-700' : ''}
@@ -239,7 +216,6 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
             {/* 다크 모드 */}
             <Button
               onClick={() => handleThemeChange('dark')}
-              aria-pressed={currentMode === 'dark'}
               className={`
                 w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors
                 ${currentMode === 'dark' ? 'bg-gray-50 dark:bg-gray-700' : ''}

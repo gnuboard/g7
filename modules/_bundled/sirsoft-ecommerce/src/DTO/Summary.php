@@ -2,8 +2,6 @@
 
 namespace Modules\Sirsoft\Ecommerce\DTO;
 
-use Modules\Sirsoft\Ecommerce\Support\EarnedPointsFormatter;
-
 /**
  * 주문 계산 합계 정보 DTO
  *
@@ -23,7 +21,6 @@ class Summary
      * @param  int  $shippingDiscount  배송비 할인
      * @param  int  $taxableAmount  과세 금액 합계
      * @param  int  $taxFreeAmount  면세 금액 합계
-     * @param  int  $vatAmount  부가세 합계 (옵션별 세율 반영, 과세표준에 내재된 금액)
      * @param  int  $pointsEarning  적립 예정 마일리지 합계
      * @param  int  $pointsUsed  사용 마일리지 합계
      * @param  int  $paymentAmount  결제금액 (마일리지 사용 전)
@@ -31,9 +28,9 @@ class Summary
      * @param  MultiCurrencyPrices|null  $multiCurrency  다중 통화 변환 금액
      * @param  string|null  $selectedPaymentCurrency  선택된 결제 통화
      * @param  array<string, mixed>  $metadata  플러그인 확장용 메타데이터
-     *                                          - deposit_used: 예치금 사용 합계 (예치금 플러그인)
-     *                                          - gift_card_used: 상품권 사용 합계 (상품권 플러그인)
-     *                                          - grade_discount: 회원등급 할인 합계 (회원등급 플러그인)
+     *         - deposit_used: 예치금 사용 합계 (예치금 플러그인)
+     *         - gift_card_used: 상품권 사용 합계 (상품권 플러그인)
+     *         - grade_discount: 회원등급 할인 합계 (회원등급 플러그인)
      */
     public function __construct(
         public int $subtotal = 0,
@@ -47,7 +44,6 @@ class Summary
         public int $shippingDiscount = 0,
         public int $taxableAmount = 0,
         public int $taxFreeAmount = 0,
-        public int $vatAmount = 0,
         public int $pointsEarning = 0,
         public int $pointsUsed = 0,
         public int $paymentAmount = 0,
@@ -59,8 +55,6 @@ class Summary
 
     /**
      * 총 할인금액을 계산합니다.
-     *
-     * @return int 총 할인금액
      */
     public function calculateTotalDiscount(): int
     {
@@ -89,8 +83,6 @@ class Summary
 
     /**
      * 최종 지불금액을 계산합니다.
-     *
-     * @return int 최종 지불금액
      */
     public function calculateFinalAmount(): int
     {
@@ -99,8 +91,6 @@ class Summary
 
     /**
      * 배열로 변환합니다.
-     *
-     * @return array<string, mixed> 직렬화된 합계 배열
      */
     public function toArray(): array
     {
@@ -126,17 +116,11 @@ class Summary
             'shipping_discount_formatted' => ecommerce_format_price($this->shippingDiscount),
             'taxable_amount' => $this->taxableAmount,
             'tax_free_amount' => $this->taxFreeAmount,
-            'vat_amount' => $this->vatAmount,
             'points_earning' => $this->pointsEarning,
             'total_mileage' => $this->pointsEarning,
-            // 적립 표기는 공용 포맷터 한 곳이다(단위 글자는 다국어 키) — 주문 응답·신청 미리보기와 같은 문자열.
-            'mileage_formatted' => EarnedPointsFormatter::format($this->pointsEarning),
+            'mileage_formatted' => number_format($this->pointsEarning).'P',
             'points_used' => $this->pointsUsed,
-            // 마일리지 사용액(차감) 포맷 — 다른 금액과 동일한 통화 포맷 (요약/결제완료 화면이 바인딩).
-            // 마일리지는 base_currency 단일 정산이므로 multi_currency 변환 없이 루트 키로만 제공.
-            'points_used_formatted' => ecommerce_format_price($this->pointsUsed),
             'payment_amount' => $this->paymentAmount,
-            'payment_amount_formatted' => ecommerce_format_price($this->paymentAmount),
             'final_amount' => $this->finalAmount,
             'final_amount_formatted' => ecommerce_format_price($this->finalAmount),
             // 하위 호환 (deprecated)
@@ -165,7 +149,6 @@ class Summary
      * 배열에서 DTO를 생성합니다.
      *
      * @param  array  $data  배열 데이터
-     * @return self 생성된 Summary DTO
      */
     public static function fromArray(array $data): self
     {
@@ -181,7 +164,6 @@ class Summary
             shippingDiscount: $data['shipping_discount'] ?? 0,
             taxableAmount: $data['taxable_amount'] ?? 0,
             taxFreeAmount: $data['tax_free_amount'] ?? 0,
-            vatAmount: $data['vat_amount'] ?? 0,
             pointsEarning: $data['points_earning'] ?? 0,
             pointsUsed: $data['points_used'] ?? 0,
             paymentAmount: $data['payment_amount'] ?? 0,

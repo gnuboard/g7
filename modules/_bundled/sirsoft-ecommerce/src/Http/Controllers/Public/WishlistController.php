@@ -6,9 +6,9 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\ToggleWishlistRequest;
-use Modules\Sirsoft\Ecommerce\Http\Requests\User\WishlistListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\WishlistCollection;
 use Modules\Sirsoft\Ecommerce\Services\ProductWishlistService;
 
@@ -26,7 +26,7 @@ class WishlistController extends PublicBaseController
     /**
      * 찜 토글 (추가/제거)
      *
-     * @param  ToggleWishlistRequest  $request  검증된 요청
+     * @param ToggleWishlistRequest $request 검증된 요청
      * @return JsonResponse 토글 결과
      */
     public function toggle(ToggleWishlistRequest $request): JsonResponse
@@ -47,25 +47,23 @@ class WishlistController extends PublicBaseController
                 'added' => $result['added'],
             ]);
         } catch (Exception $e) {
-            // 상태코드를 생략하면 ResponseHelper 기본값 400 이 되어 서버 오류가
-            // "입력 오류"로 위장된다 — 찜 토글에 도메인 예외는 없다.
-            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.toggle_failed', 500);
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.toggle_failed');
         }
     }
 
     /**
      * 사용자 찜 목록 조회
      *
-     * @param  WishlistListRequest  $request  목록 조회 요청 (페이지네이션 상·하한 검증)
+     * @param Request $request 요청
      * @return JsonResponse 찜 목록
      */
-    public function index(WishlistListRequest $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
             $this->logApiUsage('wishlist.index');
 
             $userId = Auth::id();
-            $perPage = (int) ($request->validated()['per_page'] ?? 20);
+            $perPage = min((int) $request->input('per_page', 20), 100);
 
             $wishlists = $this->wishlistService->getByUser($userId, $perPage);
 
@@ -75,16 +73,14 @@ class WishlistController extends PublicBaseController
                 new WishlistCollection($wishlists)
             );
         } catch (Exception $e) {
-            // 상태코드를 생략하면 ResponseHelper 기본값 400 이 되어 조회 실패가
-            // "입력 오류"로 위장된다 — 목록 조회에 도메인 예외는 없다.
-            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.retrieve_failed', 500);
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.retrieve_failed');
         }
     }
 
     /**
      * 찜 삭제
      *
-     * @param  int  $id  찜 ID
+     * @param int $id 찜 ID
      * @return JsonResponse 삭제 결과
      */
     public function destroy(int $id): JsonResponse
@@ -101,8 +97,7 @@ class WishlistController extends PublicBaseController
 
             return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.wishlist.removed');
         } catch (Exception $e) {
-            // 상태코드 생략 시 기본값 400 — 삭제 실패는 서버 오류다 (미존재는 위에서 404 로 분기)
-            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.delete_failed', 500);
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.wishlist.delete_failed');
         }
     }
 }

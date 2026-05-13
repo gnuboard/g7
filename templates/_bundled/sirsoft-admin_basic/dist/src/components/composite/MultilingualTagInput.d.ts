@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 /** 다국어 값 객체 */
 export interface MultilingualValue {
     [locale: string]: string;
@@ -47,12 +46,6 @@ export interface MultilingualTagInputProps {
         state: Record<string, any>;
         setState: (updates: any) => void;
     };
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * 다국어 태그 입력 컴포넌트

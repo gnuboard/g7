@@ -18,13 +18,8 @@ import 'yet-another-react-lightbox/styles.css';
 import 'yet-another-react-lightbox/plugins/counter.css';
 import 'yet-another-react-lightbox/plugins/thumbnails.css';
 
-import { secretContentHeaders } from '../../support/secretContentHeaders';
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
-import { isCrossOriginAssetUrl } from './assetOrigin';
-import { Div } from '../basic/Div';
-import { Img } from '../basic/Img';
-import type { EditorAttrs } from '../../types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -75,18 +70,6 @@ export interface ImageGalleryProps {
   showThumbnails?: boolean;
   /** 커스텀 다운로드 핸들러 (제공 시 기본 다운로드 로직 대신 실행) */
   onDownload?: (image: GalleryImage, index: number) => void;
-  /**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용).
-   * 본 컴포넌트는 서드파티 Lightbox 모달(`createPortal` 로 body 렌더)이라 런타임에는
-   * 인라인 DOM 이 없다. 편집 모드(editorAttrs 존재)에서는 캔버스 선택·속성 편집이
-   * 가능하도록 인라인 placeholder(이미지 썸네일 그리드)를 대신 렌더하고 거기에
-   * editorAttrs·id 를 부착한다. 런타임(editorAttrs 미주입)은 종전 Lightbox 동작 그대로.
-   *
-   */
-  editorAttrs?: EditorAttrs;
-
-  /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID — 편집 placeholder 루트에 부착) */
-  id?: string;
 }
 
 // ========== Helper Functions ==========
@@ -96,11 +79,8 @@ export interface ImageGalleryProps {
  */
 const downloadAuthenticatedFile = async (url: string, filename: string): Promise<void> => {
   try {
-    // 비밀글 첨부는 서버가 열람 권한을 재확인한다. globalHeaders 는 이 경로에 적용되지
-    // 않으므로 열람 확인 토큰을 여기서 직접 싣는다 (없으면 빈 객체라 영향 없음).
     const blob = await G7Core.api.get(url, {
       responseType: 'blob',
-      headers: secretContentHeaders(),
     });
 
     if (blob) {
@@ -139,9 +119,7 @@ export const executeImageDownload = async (image: GalleryImage): Promise<void> =
   const downloadUrl = image.downloadUrl || image.src;
   const filename = image.filename || image.title || 'image';
 
-  // 공개 자산 디스크(S3/CDN)의 교차 출처 URL 은 인증이 필요 없는 공개 자산이다.
-  // 인증 XHR 로 가져오면 CORS 미설정 CDN 에서 실패하므로 일반 링크 다운로드를 쓴다.
-  if (image.downloadRequiresAuth && !isCrossOriginAssetUrl(downloadUrl)) {
+  if (image.downloadRequiresAuth) {
     await downloadAuthenticatedFile(downloadUrl, filename);
   } else {
     downloadFile(downloadUrl, filename);
@@ -207,8 +185,6 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   showDownload = true,
   showThumbnails = true,
   onDownload,
-  editorAttrs,
-  id,
 }) => {
   // 현재 슬라이드 인덱스 (다운로드 버튼용)
   const [currentIndex, setCurrentIndex] = useState(startIndex);
@@ -237,37 +213,6 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
-
-  // 편집 모드(편집기 캔버스) — Lightbox 모달은 인라인 DOM 이 없어 선택·편집 불가.
-  // editorAttrs 가 주입되면 인라인 placeholder(썸네일 그리드)를 대신 렌더해
-  // 캔버스에서 선택·속성 편집이 가능하게 한다. 런타임(editorAttrs 미주입)은 미진입.
-  // (Hooks 규칙 — 모든 hook 호출 이후에 분기 return)
-  if (editorAttrs) {
-    const previewImages = (images ?? []).slice(0, 4);
-    return (
-      <Div
-        id={id}
-        className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800"
-        {...editorAttrs}
-      >
-        {previewImages.length > 0 ? (
-          previewImages.map((image, index) => (
-            <Img
-              key={index}
-              src={image.thumbnail || image.src}
-              alt={image.title || ''}
-              className="w-full aspect-square object-cover rounded bg-gray-200 dark:bg-gray-700"
-            />
-          ))
-        ) : (
-          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-gray-400 dark:text-gray-500">
-            <I className="fa-regular fa-images mr-2" />
-            {t('editor.component.image_gallery')}
-          </Div>
-        )}
-      </Div>
-    );
-  }
 
   return (
     <Lightbox

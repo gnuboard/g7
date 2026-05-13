@@ -1,18 +1,9 @@
-// e2e:allow편집기 passthrough 결함#2 수정(admin 동기, data-editor-*/id 를 시각적 루트 Div 로 라우팅). 단위 회귀는 FileInput.test.tsx passthrough describe.
 import React, { forwardRef, useRef, useCallback, useState } from 'react';
 import { Div } from './Div';
 import { Span } from './Span';
 import { Svg } from './Svg';
 import { Input } from './Input';
 import { Button } from './Button';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 지우기 단추 이름·용량 초과 문구·기본 단추/안내 글자가 언어와 무관하게 영어였다(7.1.0 영역 J D-J8, 관측 O-F3).
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
-
 
 export interface FileInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange' | 'onError'> {
   /** 허용되는 파일 확장자 (예: ".zip,.pdf") */
@@ -39,31 +30,15 @@ export const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({
   maxSize,
   onChange,
   onError,
-  buttonText,
-  placeholder,
+  buttonText = 'Browse',
+  placeholder = 'No file selected',
   className = '',
   disabled,
   ...props
 }, ref) => {
   const internalRef = useRef<HTMLInputElement>(null);
-  const resolvedButtonText = buttonText ?? tOr('common.file_input.browse', 'Browse');
-  const resolvedPlaceholder = placeholder ?? tOr('common.file_input.no_file', 'No file selected');
   const inputRef = (ref as React.RefObject<HTMLInputElement>) || internalRef;
   const [fileName, setFileName] = useState<string>('');
-
-  // 레이아웃 편집기 식별 표식(data-editor-*) 과 DOM id 는 시각적 루트(<Div>)에 부착해야
-  // 캔버스에서 선택/편집이 닿는다. basic 컴포넌트라 DynamicRenderer 가 개별 data-editor-*
-  // 키를 props 로 주입하는데, 숨겨진 <Input className="hidden"> 는 0×0 이라 식별 표식이 닿아도
-  // 선택 불가. 식별/표식 키만 분리해 루트로 보낸다.
-  const rootEditorProps: Record<string, unknown> = {};
-  const inputProps: Record<string, unknown> = {};
-  Object.entries(props as Record<string, unknown>).forEach(([key, val]) => {
-    if (key.startsWith('data-editor-') || key === 'id' || key === 'onMouseMove' || key === 'onMouseLeave') {
-      rootEditorProps[key] = val;
-    } else {
-      inputProps[key] = val;
-    }
-  });
 
   const handleClick = useCallback(() => {
     if (!disabled && inputRef.current) {
@@ -82,7 +57,7 @@ export const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({
 
     // 파일 크기 검증 (MB 단위)
     if (maxSize && file.size > maxSize * 1024 * 1024) {
-      const errorMsg = tOr('common.file_input.too_large', `File size exceeds ${maxSize}MB limit`, { size: maxSize });
+      const errorMsg = `File size exceeds ${maxSize}MB limit`;
       onError?.(errorMsg);
       // 입력 초기화
       if (inputRef.current) {
@@ -106,7 +81,7 @@ export const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({
   }, [onChange, inputRef]);
 
   return (
-    <Div className={`flex items-center gap-2 ${className}`} {...rootEditorProps}>
+    <Div className={`flex items-center gap-2 ${className}`}>
       <Input
         ref={inputRef}
         type="file"
@@ -114,7 +89,7 @@ export const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({
         onChange={handleChange as any}
         disabled={disabled}
         className="hidden"
-        {...inputProps}
+        {...props}
       />
       <Button
         type="button"
@@ -122,17 +97,17 @@ export const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({
         disabled={disabled}
         className="px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {resolvedButtonText}
+        {buttonText}
       </Button>
       <Span className="flex-1 text-sm text-gray-600 dark:text-gray-400 truncate">
-        {fileName || resolvedPlaceholder}
+        {fileName || placeholder}
       </Span>
       {fileName && !disabled && (
         <Button
           type="button"
           onClick={handleClear}
           className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-          aria-label={tOr('common.file_input.clear', 'Clear file')}
+          aria-label="Clear file"
         >
           <Svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

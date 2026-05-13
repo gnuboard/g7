@@ -1,15 +1,5 @@
 {
   "admin": {
     "$partial": "partial/admin.json"
-  },
-  "editor": {
-    "data_source": {
-      "page": "ページ",
-      "pageData": "ページデータ",
-      "pages": "ページ一覧",
-      "versions": "バージョン履歴",
-      "attachmentSettings": "添付設定",
-      "createAbility": "登録権限の確認"
-    }
   }
 }

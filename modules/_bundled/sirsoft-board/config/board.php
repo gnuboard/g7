@@ -82,10 +82,6 @@ return [
             'description' => ['ko' => '비밀글 조회', 'en' => 'View secret posts'],
             'scope' => ['resource_route_key' => 'post', 'owner_key' => 'user_id'],
         ],
-        'posts.write-notice' => [
-            'name' => ['ko' => '공지 등록', 'en' => 'Create Notice Posts'],
-            'description' => ['ko' => '게시글을 공지로 등록/해제', 'en' => 'Set and unset posts as notice'],
-        ],
         'comments.read' => [
             'name' => ['ko' => '댓글 조회', 'en' => 'View Comments'],
             'description' => ['ko' => '댓글 목록 조회', 'en' => 'View comment list'],
@@ -125,19 +121,19 @@ return [
         'min_title_length_min' => 0,
         'min_title_length_max' => 200,
         'max_title_length_min' => 1,
-        'max_title_length_max' => 1000,
+        'max_title_length_max' => 200,
 
         // 내용 길이 제한 (LONGTEXT)
         'min_content_length_min' => 0,
         'min_content_length_max' => 10000,
         'max_content_length_min' => 1,
-        'max_content_length_max' => 100000,
+        'max_content_length_max' => 50000,
 
         // 댓글 길이 제한 (TEXT)
         'min_comment_length_min' => 0,
         'min_comment_length_max' => 1000,
         'max_comment_length_min' => 1,
-        'max_comment_length_max' => 10000,
+        'max_comment_length_max' => 1000,
 
         // 파일 업로드 제한 (MB 단위)
         'max_file_size_min' => 1,
@@ -147,10 +143,6 @@ return [
 
         'category_max' => 50,
 
-        // 신규 게시글 NEW 배지 표시 기간 (시간 단위, 0 = 표시 안 함)
-        'new_display_hours_min' => 0,
-        'new_display_hours_max' => 720,
-
         // 답글 깊이 제한
         'max_reply_depth_min' => 1,
         'max_reply_depth_max' => 10,
@@ -158,38 +150,6 @@ return [
         // 대댓글 깊이 제한
         'max_comment_depth_min' => 0,
         'max_comment_depth_max' => 10,
-
-        // 삭제 첨부 영구 정리 보존기간 (일)
-        'attachment_purge_retention_days_min' => 1,
-        'attachment_purge_retention_days_max' => 3650,
-
-        // 개인정보 보유기간 (일) — 게시물·댓글 작성 IP / 비회원 작성자 정보 (이슈 #636)
-        // IP 하한 1일: 0 은 「작성 즉시 파기」가 되어 스팸·분쟁 대응 근거가 사라진다.
-        // 비회원 하한 0: 0 은 「비회원 축 미적용」을 뜻한다(파기하지 않음).
-        'privacy_ip_retention_days_min' => 1,
-        'privacy_ip_retention_days_max' => 3650,
-        'privacy_guest_retention_days_min' => 0,
-        'privacy_guest_retention_days_max' => 3650,
-
-        // 신고 정책
-        'auto_hide_threshold_min' => 0,
-        'auto_hide_threshold_max' => 100,
-        'daily_report_limit_min' => 0,
-        'daily_report_limit_max' => 100,
-        'rejection_limit_count_min' => 0,
-        'rejection_limit_count_max' => 50,
-        'rejection_limit_days_min' => 1,
-        'rejection_limit_days_max' => 365,
-
-        // 스팸/보안 쿨다운 (초)
-        'post_cooldown_seconds_min' => 0,
-        'post_cooldown_seconds_max' => 3600,
-        'comment_cooldown_seconds_min' => 0,
-        'comment_cooldown_seconds_max' => 3600,
-        'report_cooldown_seconds_min' => 0,
-        'report_cooldown_seconds_max' => 3600,
-        'view_count_cache_ttl_min' => 60,
-        'view_count_cache_ttl_max' => 604800,
     ],
 
     /*

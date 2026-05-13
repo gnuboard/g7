@@ -1,6 +1,6 @@
 # 다크 모드 지원 (engine-v1.1.0+)
 
-> **상위 문서**: [프론트엔드 가이드 인덱스](README.md)
+> **상위 문서**: [프론트엔드 가이드 인덱스](index.md)
 
 그누보드7 템플릿 시스템은 Tailwind CSS dark mode variant를 활용하여 다크 모드를 전면 지원합니다.
 
@@ -25,7 +25,7 @@
 | `sirsoft-admin_basic` | 미선언 | ThemeToggle 존재, dark: variant 동작 |
 | `sirsoft-basic` | `true` | template.json에 선언, 완전 지원 |
 
-> 상세 컴포넌트 목록: [sirsoft-admin_basic](../../templates/_bundled/sirsoft-admin_basic/docs/components.md), [sirsoft-basic](../../templates/_bundled/sirsoft-basic/docs/components.md)
+> 상세 컴포넌트 목록: [sirsoft-admin_basic](templates/sirsoft-admin_basic/components.md), [sirsoft-basic](templates/sirsoft-basic/components.md)
 
 ---
 
@@ -176,38 +176,26 @@ export const Card: React.FC<CardProps> = ({ title, content }) => {
 
 ## 4. 레이아웃 JSON에서 다크 모드 사용
 
-```html
-<div class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-  <h2 class="text-gray-900 dark:text-white font-bold mb-2">$t:dashboard.title</h2>
-  <p class="text-gray-600 dark:text-gray-400">{{stats.description}}</p>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
-  "type": "basic",
-  "name": "Div",
+  "type": "Div",
   "props": {
     "className": "bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
   },
   "children": [
     {
-      "type": "basic",
-      "name": "H2",
+      "type": "H2",
       "props": {
-        "className": "text-gray-900 dark:text-white font-bold mb-2"
-      },
-      "text": "$t:dashboard.title"
+        "className": "text-gray-900 dark:text-white font-bold mb-2",
+        "text": "$t:dashboard.title"
+      }
     },
     {
-      "type": "basic",
-      "name": "P",
+      "type": "P",
       "props": {
-        "className": "text-gray-600 dark:text-gray-400"
-      },
-      "text": "{{stats.description}}"
+        "className": "text-gray-600 dark:text-gray-400",
+        "text": "{{stats.description}}"
+      }
     }
   ]
 }
@@ -218,12 +206,6 @@ export const Card: React.FC<CardProps> = ({ title, content }) => {
 ## 5. ThemeToggle 컴포넌트
 
 다크 모드 전환은 `ThemeToggle` composite 컴포넌트를 사용:
-
-```html
-<theme-toggle class="p-2"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

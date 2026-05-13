@@ -1,4 +1,3 @@
-// e2e:allow커스텀 드롭다운 루트 props spread 타입 안전 캐스팅(admin 동기). 단위 회귀는 Select.test.tsx.
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Div } from './Div';
@@ -6,24 +5,6 @@ import { Button } from './Button';
 import { Span } from './Span';
 import { Svg } from './Svg';
 import { Input } from './Input';
-
-/** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 validate R4, admin_basic D-J11 대칭) */
-const selectSearchPlaceholder = (): string => {
-  const translated = (window as any).G7Core?.t?.('common.search_placeholder');
-  return typeof translated === 'string' && translated !== 'common.search_placeholder' ? translated : 'Search...';
-};
-
-/** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 validate R4) */
-const selectSearchLabel = (): string => {
-  const translated = (window as any).G7Core?.t?.('common.search');
-  return typeof translated === 'string' && translated !== 'common.search' ? translated : 'Search';
-};
-
-/** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 validate R4) */
-const selectNoResults = (): string => {
-  const translated = (window as any).G7Core?.t?.('common.no_results');
-  return typeof translated === 'string' && translated !== 'common.no_results' ? translated : 'No results';
-};
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:Select')) ?? {
@@ -47,12 +28,6 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   searchable?: boolean;
   /** 검색 input placeholder */
   searchPlaceholder?: string;
-  /**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용). Select 는 커스텀 드롭다운 루트에
-   * 개별 data-editor-* 키를 spread 해야 선택/편집이 닿는다(커스텀 루트
-   * passthrough). basic 컴포넌트라 `{...props}` 로 DOM 표준 속성(id 등)도 함께 흐른다.
-   */
-  editorAttrs?: Record<string, unknown>;
 }
 
 /**
@@ -92,7 +67,6 @@ export const Select: React.FC<SelectProps> = ({
   disabled,
   searchable = false,
   searchPlaceholder,
-  editorAttrs,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -263,7 +237,6 @@ export const Select: React.FC<SelectProps> = ({
         value={value}
         onChange={onChange as React.ChangeEventHandler<HTMLSelectElement>}
         disabled={disabled}
-        {...editorAttrs}
         {...props}
       >
         {children}
@@ -279,13 +252,8 @@ export const Select: React.FC<SelectProps> = ({
     ? `${className}${hasTextColor ? '' : ' text-gray-700 dark:text-gray-200'}`
     : `w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none ${className}`;
 
-  // props 는 SelectHTMLAttributes 기반이라 Div(HTMLDivElement) 에 직접 spread 시 타입 불일치.
-  // 런타임 동작(편집기 data-editor-* / id 등 DOM 표준 속성 passthrough)은 동일하므로
-  // DOM-safe 레코드로 캐스팅해 커스텀 드롭다운 루트에 전달한다.
-  const rootDomProps = { ...editorAttrs, ...props } as Record<string, unknown>;
-
   return (
-    <Div ref={containerRef} className="relative" {...rootDomProps}>
+    <Div ref={containerRef} className="relative">
       <Button
         ref={buttonRef}
         type="button"
@@ -320,17 +288,17 @@ export const Select: React.FC<SelectProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                placeholder={searchPlaceholder ?? selectSearchPlaceholder()}
+                placeholder={searchPlaceholder ?? 'Search...'}
                 className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 role="searchbox"
-                aria-label={searchPlaceholder ?? selectSearchLabel()}
+                aria-label={searchPlaceholder ?? 'Search'}
               />
             </Div>
           )}
           <Div className="py-2 max-h-60 overflow-auto">
             {visibleOptions && visibleOptions.length === 0 && (
               <Div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                {searchTerm ? selectNoResults() : ''}
+                {searchTerm ? 'No results' : ''}
               </Div>
             )}
             {(visibleOptions ?? []).map((option) => {

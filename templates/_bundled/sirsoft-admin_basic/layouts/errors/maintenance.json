@@ -1,7 +1,6 @@
 {
-    "comment": "점검 모드(`php artisan down`)일 때의 안내 화면. 에러 코드는 503 이지만 원인이 장애가 아니라\n  운영자의 의도이므로 `errors/503` 과 문구·아이콘을 분리했다.\n  나가는 버튼을 두지 않는다 — 점검 중에는 어느 관리자 화면으로 보내도 같은 자리로 돌아온다.",
     "version": "1.0.0",
-    "layout_name": "errors/maintenance",
+    "layout_name": "maintenance",
     "extends": "_admin_base",
     "meta": {
         "title": "$t:errors.maintenance.title",
@@ -15,7 +14,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "flex-center flex-col justify-center min-h-[60vh] text-center p-8"
+                    "className": "flex flex-col items-center justify-center min-h-[60vh] text-center p-8"
                 },
                 "children": [
                     {
@@ -23,14 +22,14 @@
                         "name": "Icon",
                         "props": {
                             "name": "gear",
-                            "className": "text-8xl text-blue-500 dark:text-blue-400 mb-6 animate-spin"
+                            "className": "w-24 h-24 text-blue-500 dark:text-blue-400 mb-6 animate-spin"
                         }
                     },
                     {
                         "type": "basic",
                         "name": "H1",
                         "props": {
-                            "className": "text-primary text-3xl font-bold mb-4"
+                            "className": "text-3xl font-bold text-gray-900 dark:text-white mb-4"
                         },
                         "text": "$t:errors.maintenance.title"
                     },
@@ -38,7 +37,7 @@
                         "type": "basic",
                         "name": "P",
                         "props": {
-                            "className": "text-secondary text-lg mb-2 max-w-md"
+                            "className": "text-lg text-gray-600 dark:text-gray-400 mb-2 max-w-md"
                         },
                         "text": "$t:errors.maintenance.message"
                     },

@@ -3,14 +3,10 @@
 namespace Modules\Sirsoft\Board\Http\Requests;
 
 use App\Extension\HookManager;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\PostStatus;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesAttachmentCount;
-use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesTempKey;
-use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
 
 /**
@@ -18,14 +14,8 @@ use Modules\Sirsoft\Board\Rules\BlockedKeywordsRule;
  */
 class UpdatePostRequest extends FormRequest
 {
-    use ProvidesFallbackRuleMessages;
-    use ValidatesAttachmentCount;
-    use ValidatesTempKey;
-
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
-     *
-     * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
     public function authorize(): bool
     {
@@ -40,7 +30,7 @@ class UpdatePostRequest extends FormRequest
     public function rules(): array
     {
         $slug = $this->route('slug');
-        $board = app(BoardRepositoryInterface::class)->findBySlug((string) $slug);
+        $board = Board::where('slug', $slug)->first();
 
         if (! $board) {
             return [];
@@ -73,8 +63,8 @@ class UpdatePostRequest extends FormRequest
             'status' => ['nullable', 'string', Rule::in(PostStatus::values())],
             'attachment_ids' => ['nullable', 'array'],
             'attachment_ids.*' => ['integer', 'min:1'],
-            // temp_key는 게시판 존재 여부와 무관하게 항상 허용 (UUID 형식만 — 저장 경로에 들어간다)
-            'temp_key' => $this->tempKeyRules(),
+            // temp_key는 게시판 존재 여부와 무관하게 항상 허용
+            'temp_key' => ['nullable', 'string', 'max:64'],
         ];
 
         // 훅: 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 필터 제공
@@ -116,22 +106,5 @@ class UpdatePostRequest extends FormRequest
             'is_secret' => __('sirsoft-board::validation.attributes.post.is_secret'),
             'status' => __('sirsoft-board::validation.attributes.post.status'),
         ];
-    }
-
-    /**
-     * 필드 단위 규칙으로 판정할 수 없는 첨부 총합을 검증합니다.
-     *
-     * 수정은 이미 연결된 첨부와 합산해 판정합니다.
-     *
-     * @param  Validator  $validator  검증기
-     * @return void
-     */
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator) {
-            $board = app(BoardRepositoryInterface::class)->findBySlug((string) $this->route('slug'));
-            $postId = $this->route('id');
-            $this->validateAttachmentTotal($validator, $board, is_numeric($postId) ? (int) $postId : null);
-        });
     }
 }

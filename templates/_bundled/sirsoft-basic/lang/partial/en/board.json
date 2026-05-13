@@ -1,10 +1,6 @@
 {
   "loading_posts": "Loading posts...",
   "view_board": "View Board",
-  "admin_links": {
-    "posts": "Admin posts",
-    "manage": "Board settings"
-  },
   "no": "No.",
   "title": "Title",
   "author": "Author",
@@ -12,9 +8,8 @@
   "created_at": "Date",
   "views": "Views",
   "views_count": "{{count}} views",
-  "views_count_one": "{{count}} view",
   "write": "Write",
-  "search_placeholder": "Enter a search term",
+  "search_placeholder": "Search by title, content, author...",
   "board_not_found": "Board not found",
   "board_not_found_description": "The board does not exist or has been deactivated.",
   "no_posts": "No posts available",
@@ -52,7 +47,6 @@
     "empty": "No boards registered."
   },
   "post_count": "{{count}} posts",
-  "post_count_one": "{{count}} post",
   "list": "List",
   "post": {
     "author": "Author",
@@ -68,11 +62,6 @@
     "reply": "Reply",
     "report": "Report",
     "reported": "Reported",
-    "scrap": "Scrap",
-    "scrapped": "Scrapped",
-    "scrap_login_required": "Login is required for this feature.",
-    "scrap_added": "Post scrapped.",
-    "scrap_removed": "Scrap removed.",
     "report_post": "Report Post",
     "report_comment": "Report Comment",
     "report_reason": "Report Reason",
@@ -92,7 +81,6 @@
   "comment": {
     "title": "Comments",
     "count": "{{count}} comments",
-    "count_one": "{{count}} comment",
     "write_placeholder": "Write a comment",
     "submit": "Submit",
     "reply": "Reply",
@@ -104,7 +92,6 @@
     "blinded_comment": "This comment has been blinded.",
     "deleted_comment_content": "This comment has been deleted.",
     "blinded_comment_content": "This comment has been blinded.",
-    "secret_comment": "This is a secret comment.",
     "view_original": "View Original",
     "hide_original": "Hide Original"
   },
@@ -146,10 +133,11 @@
     "incorrect": "Password is incorrect."
   },
   "reaction": {
-    "login_required": "You need to sign in to use this feature.",
-    "failed": "Failed to process the reaction. Please try again.",
-    "self_post_denied": "You cannot react to your own post.",
-    "self_comment_denied": "You cannot react to your own comment."
+    "like": "Like",
+    "laugh": "Funny",
+    "agree": "Agree",
+    "thanks": "Thanks",
+    "wow": "Wow"
   },
   "attachments": {
     "title": "Attachments",
@@ -182,7 +170,6 @@
     "content_placeholder": "Enter content...",
     "attachments": "Attachments",
     "attachments_desc": "Max {{maxFiles}} files, {{maxSize}}MB each",
-    "attachments_desc_one": "Max {{maxFiles}} file, {{maxSize}}MB",
     "secret_post": "Secret Post",
     "secret_post_always": "This board always creates secret posts",
     "secret_description": "Only the author and administrators can view",
@@ -222,7 +209,7 @@
   "edit_post": "Edit Post",
   "edit_post_description": "Edit your post",
   "no_write_permission": "You don't have permission to write",
-  "login_required": "Login is required to view this page",
+  "login_required": "Login is required",
   "login_required_to_write": "Please login to write a post",
   "no_comments_yet": "No comments yet. Be the first to comment!",
   "blinded_comment_disabled": "Comments cannot be written on blinded posts",
@@ -240,11 +227,5 @@
       "confirm_remove_attachment_title": "Delete Attachment",
       "confirm_remove_attachment_message": "The file will be deleted immediately. This action cannot be undone regardless of saving the post."
     }
-  },
-  "search_fields": {
-    "title_content": "Title + content",
-    "title": "Title",
-    "content": "Content",
-    "author": "Author"
   }
 }

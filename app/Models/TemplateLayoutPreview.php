@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,12 +13,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $token
  * @property int $template_id
  * @property string $layout_name
- * @property string $preview_type
- * @property int|null $extension_id
  * @property array $content
  * @property int $admin_id
- * @property Carbon $expires_at
- * @property Carbon $created_at
+ * @property \Carbon\Carbon $expires_at
+ * @property \Carbon\Carbon $created_at
  */
 class TemplateLayoutPreview extends Model
 {
@@ -37,8 +34,6 @@ class TemplateLayoutPreview extends Model
         'token',
         'template_id',
         'layout_name',
-        'preview_type',
-        'extension_id',
         'content',
         'admin_id',
         'expires_at',
@@ -59,6 +54,8 @@ class TemplateLayoutPreview extends Model
 
     /**
      * 템플릿 관계
+     *
+     * @return BelongsTo
      */
     public function template(): BelongsTo
     {
@@ -67,6 +64,8 @@ class TemplateLayoutPreview extends Model
 
     /**
      * 생성 관리자 관계
+     *
+     * @return BelongsTo
      */
     public function admin(): BelongsTo
     {
@@ -76,7 +75,8 @@ class TemplateLayoutPreview extends Model
     /**
      * 만료되지 않은 미리보기만 조회하는 스코프
      *
-     * @param  Builder  $query  쿼리 빌더
+     * @param Builder $query 쿼리 빌더
+     * @return Builder
      */
     public function scopeNotExpired(Builder $query): Builder
     {

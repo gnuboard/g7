@@ -26,7 +26,6 @@
     "category": "カテゴリ",
     "no_category": "カテゴリ未登録",
     "date": "日付",
-    "date_type_select": "日付の基準",
     "date_type": {
       "created_at": "登録日",
       "updated_at": "編集日"
@@ -64,7 +63,6 @@
       "tax_free": "非課税"
     },
     "price": "価格",
-    "price_type_select": "価格の基準",
     "price_type": {
       "selling_price": "販売価格",
       "supply_price": "仕入価格",
@@ -89,8 +87,7 @@
     "edit_search": "検索編集",
     "search": "検索",
     "reset": "初期化",
-    "save_preset": "プリセット保存",
-    "view_user_page": "ユーザー画面を表示"
+    "save_preset": "プリセット保存"
   },
   "bulk_apply": "一括適用",
   "bulk_success": "選択された商品が一括変更されました。",
@@ -191,10 +188,7 @@
         "safe_stock": "安全在庫",
         "active": "使用"
       },
-      "no_options": "登録されたオプションがありません",
-      "loading": "オプションを読み込み中です...",
-      "load_failed": "オプションの読み込みに失敗しました。",
-      "retry": "再試行"
+      "no_options": "登録されたオプションがありません"
     },
     "shipping": {
       "free": "送料無料",
@@ -502,7 +496,8 @@
     },
     "modal": {
       "add_language": {
-        "title": "言語を追加"
+        "title": "言語を追加",
+        "description": "追加する言語を選択してください。"
       },
       "label_period": {
         "title": "ラベル期間設定",
@@ -540,11 +535,13 @@
   "modal": {
     "preset_manage": {
       "title": "プリセット管理",
+      "description": "検索プリセットを管理します。",
       "add_new": "新しいプリセットを追加",
       "empty": "保存されたプリセットがありません。"
     },
     "preset_save": {
       "title": "プリセット保存",
+      "description": "現在の検索条件をプリセットとして保存します。",
       "placeholder": "プリセット名を入力してください",
       "save": "保存"
     },
@@ -557,12 +554,12 @@
     },
     "bulk_price": {
       "title": "販売価格一括変更",
+      "description": "選択した{{count}}個の商品の販売価格を変更します。",
       "method": "変更方式",
       "method_increase": "値上げ",
       "method_decrease": "値下げ",
       "method_fixed": "に変更",
       "value": "変更金額/比率",
-      "unit": "変更の単位",
       "unit_won": "円",
       "unit_percent": "%",
       "preview_increase": "販売価格を{{value}}{{unit}}値上げします。",
@@ -571,6 +568,7 @@
     },
     "bulk_stock": {
       "title": "在庫一括変更",
+      "description": "選択した{{count}}個の商品の在庫を変更します。",
       "method": "変更方式",
       "method_increase": "増加",
       "method_decrease": "減少",
@@ -592,9 +590,7 @@
       "stock": "在庫を{{value}}変更します。",
       "price_change": "販売価格一括変更",
       "stock_change": "在庫一括変更",
-      "no_changes": "変更する項目がありません。",
-      "error_section": "変更に失敗しました",
-      "options_aggregate": "{{product}} > オプション {{count}}個すべて"
+      "no_changes": "変更する項目がありません。"
     },
     "bulk_placeholder": {
       "sales_status": "販売ステータス選択",
@@ -602,6 +598,7 @@
     },
     "excel_download": {
       "title": "エクセルダウンロード",
+      "description": "ダウンロードする注文書の範囲を選択してください。",
       "option_search": "現在の検索条件でダウンロード",
       "option_search_desc": "合計{{count}}個の商品がダウンロードされます。",
       "option_selected": "選択した商品のみダウンロード",
@@ -664,8 +661,7 @@
       "more_fields": "個フィールドさらに表示",
       "info": "テンプレートは告示情報入力時に素早く読み込んで使用できます。",
       "save_button": "テンプレート保存"
-    },
-    "multilingual_tag_edit_editor_label": "多言語タグ編集"
+    }
   },
   "description": {
     "mode_html": "HTML",
@@ -702,10 +698,7 @@
     "bulk_summary_stock_inline": "在庫:{value}",
     "bulk_summary_option_name": "オプション名:{name}",
     "bulk_summary_sku": "SKU: {sku}",
-    "bulk_summary_selected": "選択されました",
-    "delete_check_error": "削除可能かどうかを確認中にエラーが発生しました。",
-    "bulk_summary_safe_stock": "安全在庫: {value}",
-    "bulk_summary_is_active": "使用: {value}"
+    "bulk_summary_selected": "選択されました"
   },
   "buttons": {
     "auto_generate": "自動生成",
@@ -836,6 +829,7 @@
     "additional_name_label": "オプション名",
     "additional_name_placeholder": "刻印文句",
     "no_additional": "登録された追加オプションはありません",
+    "auto_currency": "多通貨価格自動計算",
     "items_count": "{{count}}個オプション",
     "required": "必須",
     "columns": {
@@ -857,8 +851,6 @@
       "active": "使用",
       "required": "必須"
     },
-    "mileage_value_label": "マイレージ積立値",
-    "mileage_type_label": "マイレージ積立単位",
     "mileage_type": {
       "fixed": "円",
       "percent": "%"
@@ -878,19 +870,8 @@
       "generated": "{count}個のオプションが作成されました",
       "name_required": "オプション名を入力してください",
       "add_tool_applied": "オプション追加ツールが適用されました",
-      "additional_max_5": "最大5個まで追加できます",
-      "additional_value_max_20": "選択肢はグループごとに最大20個まで追加できます。",
-      "additional_value_min_1": "グループごとに最小1つの選択肢が必要です。"
-    },
-    "additional_clear_confirm": "入力した追加オプションがすべて削除されます。続行しますか?",
-    "auto_currency_hint": "外貨価格は売上価格基準の為替レートで自動表示されます",
-    "add_additional_value": "選択肢を追加",
-    "additional_value_name_label": "選択肢名",
-    "additional_value_name_placeholder": "例：刻印を追加",
-    "additional_value_price_label": "追加料金",
-    "additional_value_default": "デフォルト",
-    "additional_value_active": "使用",
-    "additional_value_allow_custom_text": "直接入力"
+      "additional_max_5": "最大5個まで追加できます"
+    }
   },
   "notice": {
     "tab_existing_template": "テンプレート選択",
@@ -1005,8 +986,7 @@
       "extra_fee": "追加配送料",
       "condition": "配送条件",
       "return_exchange_fee": "返品·交換料"
-    },
-    "inactive_policy_warning": "現在適用中の配送ポリシーが無効化されました。別の配送ポリシーを選択するか、そのまま維持することができます。"
+    }
   },
   "price": {
     "base_currency": "デフォルト通貨",
@@ -1141,6 +1121,7 @@
     "remove": "削除",
     "no_period": "期間未設定",
     "modal_title": "ラベル設定",
+    "modal_description": "ラベルの名前、色、適用期間を設定します。",
     "name": "ラベル名",
     "color": "色",
     "color_reset": "色をリセット",
@@ -1173,15 +1154,7 @@
       "preset_14d": "14日",
       "preset_30d": "30日",
       "preset_permanent": "永久"
-    },
-    "add": "ラベルを追加",
-    "unassign": "割り当て解除",
-    "delete": "ラベルを削除",
-    "modal_title_create": "ラベルを登録",
-    "modal_title_edit": "ラベルを編集",
-    "create_success": "ラベルが登録されました。",
-    "started_at": "開始日を選択",
-    "ended_at": "終了日を選択"
+    }
   },
   "roles": {
     "system": "システムロール",
@@ -1204,14 +1177,5 @@
     "manage_common_info": "共通情報管理",
     "manage_notice_template": "商品情報提供告示管理",
     "create_shipping_policy": "配送ポリシーを作成"
-  },
-  "selector_forbidden": {
-    "categories": "カテゴリの閲覧権限がないため、カテゴリを選択できません。",
-    "brands": "ブランドの閲覧権限がないため、ブランドを選択できません。",
-    "notice_templates": "商品情報提供告示テンプレートの閲覧権限がないため、テンプレートを読み込めません。告示項目は直接入力できます。",
-    "common_infos": "共通情報の閲覧権限がないため、共通情報を選択できません。",
-    "shipping_policies": "配送ポリシーの閲覧権限がないため、配送ポリシーを選択できません。指定せずに保存すると、既に指定されている配送ポリシーが、指定がなければ基本配送ポリシーが適用されます。",
-    "product_labels": "商品ラベルの閲覧権限がないため、ラベルを選択できません。",
-    "roles": "会員等級の一覧を読み込む権限がないため、等級を選択できません。"
   }
 }

@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
-use App\Support\ConfigCacheHelper;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -369,8 +369,8 @@ class GeoIpDatabaseService
             $current['last_updated_at'] = now()->toIso8601String();
             $this->configRepository->saveCategory('geoip', $current);
 
-            // config 캐시 재로드 강제 + 즉시 재생성 (clear 만 하면 캐시 비활성 잔존).
-            ConfigCacheHelper::rebuild();
+            // Laravel config 캐시 재로드 강제
+            Artisan::call('config:clear');
         } catch (\Throwable $e) {
             Log::warning('GeoIP last_updated_at 갱신 실패', ['error' => $e->getMessage()]);
         }

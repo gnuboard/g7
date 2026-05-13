@@ -38,7 +38,7 @@ class MenuResource extends BaseApiResource
 
             'children' => $this->whenLoaded('children', function () {
                 return $this->children->map(function ($child) {
-                    $data = [
+                    return [
                         'id' => $child->id,
                         'name' => $child->name,  // 다국어 객체 그대로 반환
                         'slug' => $child->slug,
@@ -49,36 +49,22 @@ class MenuResource extends BaseApiResource
                         'parent_id' => $child->parent_id,
                         'extension_type' => $child->extension_type?->value,
                         'extension_identifier' => $child->extension_identifier,
-                    ];
-
-                    // 역할은 로드된 경우에만 싣는다. 미로드 시 `[]` 를 돌려주면 "역할 제한이
-                    // 없다" 는 사실이 아닌 단언이 되어, 화면이 그 값을 그대로 저장에 실어
-                    // 보내면 해당 메뉴의 역할 제한이 통째로 지워진다. 키 자체를 생략해
-                    // 소비 측이 "모른다" 를 구분할 수 있게 한다 (단건 조회로 보강).
-                    if ($child->relationLoaded('roles')) {
-                        $data['roles'] = $child->roles->map(function ($role) {
+                        'roles' => $child->relationLoaded('roles') ? $child->roles->map(function ($role) {
                             return [
                                 'id' => $role->id,
                                 'name' => $role->name,
                                 'permission_type' => $role->pivot->permission_type ?? null,
                             ];
-                        })->values();
-                    }
-
-                    // 관리 목록은 행마다 부여된 역할을 ID 만으로 보인다(이름은 화면이 역할 목록에서 찾는다).
-                    if ($child->getAttribute('assigned_role_ids') !== null) {
-                        $data['role_ids'] = $child->getAttribute('assigned_role_ids');
-                    }
-
-                    return $data;
+                        }) : [],
+                    ];
                 })->sortBy('order')->values();
             }),
 
-            'creator' => $this->whenLoaded('creator', function () use ($request) {
+            'creator' => $this->whenLoaded('creator', function () {
                 return $this->creator ? [
                     'uuid' => $this->creator->uuid,
                     'name' => $this->creator->name,
-                    'email' => $this->canExposeMemberEmail($request, $this->creator->id) ? $this->creator->email : null,
+                    'email' => $this->creator->email,
                 ] : null;
             }),
 
@@ -91,12 +77,6 @@ class MenuResource extends BaseApiResource
                     ];
                 });
             }),
-
-            // 관리 목록 전용 — 이 메뉴에 부여된 역할 ID (MenuService::getFilteredMenusForManagement 가 붙인다)
-            'role_ids' => $this->when(
-                $this->getValue('assigned_role_ids') !== null,
-                fn () => $this->getValue('assigned_role_ids')
-            ),
 
             // 통계 정보
             'children_count' => $this->when(

@@ -1,29 +1,9 @@
-// e2e:allow basic Input 디폴트 시맨틱(.input/.checkbox/.radio) 머지 — 동작 무변, 외형 통일 시범. 패턴 확정 후 다음 사이클에 E2E spec 일괄 작성 예정. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
 import React, { useRef, useCallback, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
 }
-
-// 타입별 디폴트 시맨틱 클래스 (admin main.css 정의)
-// 호출처 className 은 뒤에 머지되어 덮어쓸 수 있음 (의미 토큰/override 모두 지원)
-const resolveDefaultSemanticClass = (type: string): string => {
-  if (type === 'checkbox') return 'checkbox';
-  if (type === 'radio') return 'radio';
-  return 'input';
-};
-
-// 호출처 className 에 이미 시맨틱 토큰이 포함된 경우 prepend 를 스킵하여
-// "input input" 같은 중복 발생을 방지. 기존 호출처가 명시적으로 시맨틱을 적던 패턴 호환.
-const composeSemanticClassName = (type: string, className: string): string => {
-  const semantic = resolveDefaultSemanticClass(type);
-  if (!className) return semantic;
-  const tokens = className.split(/\s+/).filter(Boolean);
-  if (tokens.includes(semantic)) return className;
-  return `${semantic} ${className}`;
-};
 
 /**
  * 기본 입력 필드 컴포넌트
@@ -50,10 +30,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   // radio/checkbox 타입인지 확인
   const isCheckableType = type === 'radio' || type === 'checkbox';
 
-  // 디폴트 시맨틱 + 호출처 className 머지 (호출처가 의미 토큰만 명시해도 시맨틱은 자동 적용)
-  // 호출처가 이미 시맨틱 토큰을 명시한 경우 중복 prepend 방지.
-  const mergedClassName = composeSemanticClassName(type, className);
-
   // IME 조합 중인지 추적 (text input에만 필요)
   const isComposingRef = useRef(false);
   // input 요소 참조
@@ -67,39 +43,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
     (value as string) ?? (defaultValue as string) ?? ''
   );
 
-  // 이 입력이 onChange 로 내보낸 값 (외부 value 가 따라잡으면 비운다)
-  const emittedValuesRef = useRef<string[]>([]);
-
-  /**
-   * 내보낸 값을 기록합니다 (늦게 돌아온 메아리 판별용).
-   *
-   * @param emitted 내보낸 값
-   */
-  const rememberEmitted = (emitted: string) => {
-    emittedValuesRef.current.push(emitted);
-    if (emittedValuesRef.current.length > 50) {
-      emittedValuesRef.current.shift();
-    }
-  };
-
   // 외부 value prop이 변경되면 로컬 값도 동기화 (text input에만 적용)
-  // 포커스 중에는 내 입력이 debounce 로 늦게 돌아온 값(내가 내보낸 값)이면 건너뛴다(stale value 플리커 방지).
-  // 내가 내보낸 적 없는 값으로 바뀌면 외부가 바꾼 것이므로 포커스 중이어도 따른다 — 종전에는 포커스 중 동기화를
-  // 통째로 건너뛰어, 같은 화면끼리 이동해 폼이 비워져도 칸에 이전 입력이 남았다(#736 S2: 회원 수정 화면 비밀번호).
+  // 단, 사용자가 입력 중(포커스 상태)이면 동기화 건너뜀 (debounce 대기 중 stale value 플리커 방지)
   useEffect(() => {
     if (!isCheckableType && !isComposingRef.current && value !== undefined) {
-      const next = value as string;
-      const emitted = emittedValuesRef.current;
       const isFocused = internalRef.current && document.activeElement === internalRef.current;
-      if (isFocused && emitted.includes(next)) {
-        // 마지막으로 내보낸 값까지 따라잡았으면 기록을 비운다
-        if (emitted[emitted.length - 1] === next) {
-          emittedValuesRef.current = [];
-        }
+      if (isFocused) {
         return;
       }
-      emittedValuesRef.current = [];
-      setLocalValue(next);
+      setLocalValue(value as string);
     }
   }, [value, isCheckableType]);
 
@@ -115,7 +67,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
         // 현재 input의 실제 값을 사용
         const currentValue = (e.target as HTMLInputElement).value;
         setLocalValue(currentValue);
-        rememberEmitted(currentValue);
 
         // 새로운 ChangeEvent 생성
         const changeEvent = new Event('change', { bubbles: true }) as unknown as React.ChangeEvent<HTMLInputElement>;
@@ -144,7 +95,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
       if (isComposingRef.current) {
         return;
       }
-      rememberEmitted(newValue);
       if (onChange) {
         onChange(e);
       }
@@ -166,11 +116,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   );
 
   // HTML 표준 속성이 아닌 것들을 필터링 (템플릿 엔진 내부 속성)
-  // autoBinding: 레이아웃의 `:autoBinding="false"` — 엔진이 자동 바인딩 여부를 읽고 그대로 넘기는 속성이라 DOM 에 흘리면 React 가 경고한다
-  const { loadingactions, formdata, autoBinding, ...validProps } = props as any;
-
-  // 곁 라벨(`<label class="form-label">`)을 이름으로 잇는다 — 없으면 placeholder 값이 이름으로 읽혔다(7.1.0 J D-J7)
-  useAdjacentLabel(internalRef as React.RefObject<HTMLElement | null>, !isCheckableType);
+  const { loadingactions, formdata, ...validProps } = props as any;
 
   // radio/checkbox: checked 속성 사용
   // text input: value 속성 사용 (IME 처리 포함)
@@ -179,7 +125,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
       <input
         ref={internalRef}
         type={type}
-        className={mergedClassName}
+        className={className}
         onChange={onChange}
         checked={checked}
         defaultChecked={defaultChecked}
@@ -198,7 +144,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
     <input
       ref={internalRef}
       type={type}
-      className={mergedClassName}
+      className={className}
       onChange={handleChange}
       onKeyPress={handleKeyPress}
       onCompositionStart={handleCompositionStart}

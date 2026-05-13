@@ -1,6 +1,6 @@
 # API 응답 규칙 (ResponseHelper)
 
-> **관련 문서**: [README.md](README.md) | [controllers.md](controllers.md) | [api-resources.md](api-resources.md)
+> **관련 문서**: [index.md](index.md) | [controllers.md](controllers.md) | [api-resources.md](api-resources.md)
 
 ---
 
@@ -95,15 +95,6 @@ return ResponseHelper::success('plugins.settings.updated', $settings);
 return ResponseHelper::success($data, 'messages.success');  // 인수 순서 틀림
 ```
 
-### 개수에 따른 단수·복수 메시지
-
-`$messageParams` 에 숫자 `count` 가 있으면 메시지를 그 수로 고른다(`trans_count()` — 사전 값이 `단수|복수` 꼴일 때 1 이면 단수, 그 밖은 복수). 수 자리표시자 이름이 다르면(`:limit` 등) 같은 수를 `count` 로도 넘긴다. 사전 작성법은 [module-i18n.md 「수에 따른 단수·복수 (백엔드)」](../extension/module-i18n.md#수에-따른-단수복수-백엔드).
-
-```php
-// en: ':count item deleted.|:count items deleted.'  →  「1 item deleted.」 / 「3 items deleted.」
-return ResponseHelper::success('messages.items.bulk_deleted', $result, 200, ['count' => $deleted]);
-```
-
 ---
 
 ## 데이터 소스용 API ⭐
@@ -148,13 +139,6 @@ return ResponseHelper::success('messages.success', $data);
 ---
 
 ## 프론트엔드 바인딩
-
-```html
-<data-source id="admin_menu" endpoint="/api/admin/menus"/>
-<json key="components">[{"props":{"menu":"{{admin_menu.data}}"}}]</json>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -243,14 +227,6 @@ class AuthController extends AdminBaseController
 ## 인증 처리
 
 데이터 소스에서 `auth_required: true`로 설정된 경우:
-
-```html
-<partial name="doc_example">
-<json>{"version":"1.0.0","id":"current_user","type":"api","endpoint":"/api/admin/auth/user","auth_required":true,"components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
-</partial>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -390,14 +366,6 @@ public function index(Request $request): JsonResponse
 ## 라우트/쿼리 파라미터 처리
 
 데이터 소스에서 파라미터 바인딩:
-
-```html
-<json key="id">"product_detail"</json>
-<json key="endpoint">"/api/admin/products/{{route.id}}"</json>
-<json key="params">{"include":"{{query.include}}"}</json>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -619,30 +587,9 @@ class PublicLayoutController extends PublicBaseController
 
 ---
 
-## JSON 인코딩 옵션 (JSON_UNESCAPED_UNICODE)
-
-모든 `response()->json()` 호출은 `ResponseHelper::JSON_ENCODE_OPTIONS`(= `JSON_UNESCAPED_UNICODE`)를 인코딩 옵션으로 전달한다. 한글 등 멀티바이트 문자를 `\uXXXX`(6바이트)로 이스케이프하지 않고 raw UTF-8(한글 3바이트)로 직렬화하여 응답 전송 크기를 줄인다. 다국어 팩(lang) 응답처럼 한글 비중이 큰 페이로드에서 절감 효과가 크다.
-
-```php
-// ✅ 올바른 사용 — 네 번째 인자로 옵션 전달
-return response()->json($payload, $status, [], ResponseHelper::JSON_ENCODE_OPTIONS);
-
-// 헤더 배열이 필요한 경우 (세 번째 인자)
-return response()->json($payload, $status, ['Cache-Control' => '...'], ResponseHelper::JSON_ENCODE_OPTIONS);
-
-// ❌ 옵션 누락 — 한글이 \uXXXX 로 팽창
-return response()->json($payload, $status);
-```
-
-`ResponseHelper` 의 모든 메서드(`success`/`error`/`validationError`/… )와 `BaseApiController::successWithCache`/`cachedJsonResponse` 는 이미 이 옵션을 적용한다. 컨트롤러/서비스는 `ResponseHelper` 를 사용하면 자동으로 적용되므로 별도 조치가 불필요하다. `response()->json()` 을 직접 호출하는 신규 코드에서만 옵션 전달을 잊지 않는다.
-
-> 슬래시 언이스케이프(`JSON_UNESCAPED_SLASHES`)는 적용하지 않는다 — endpoint 경로의 `\/` 는 크기 영향이 미미하고, 기존 응답 본문 정확 매칭 테스트의 안전성을 우선한다.
-
----
-
 ## 관련 문서
 
-- [README.md](README.md) - 백엔드 가이드 인덱스
+- [index.md](index.md) - 백엔드 가이드 인덱스
 - [controllers.md](controllers.md) - 컨트롤러 계층 구조
 - [api-resources.md](api-resources.md) - API 리소스 규칙
 - [routing.md](routing.md) - 라우트 네이밍 및 경로

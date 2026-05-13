@@ -1,16 +1,22 @@
 {
-    "comment": "상품정보제공고시 템플릿 관리 (운영자) — 상품 등록 시 불러 쓸 고시 항목 묶음을 여기서 만든다.\n  왼쪽 목록은 무한 스크롤이라 페이지 상태를 전역에 두고, 오른쪽 패널이 조회·수정·등록을 겸한다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_product_notice_index",
+    "permissions": [
+        "sirsoft-ecommerce.product-notice-templates.read"
+    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.product_notice_template.title",
         "description": "$t:sirsoft-ecommerce.admin.product_notice_template.description"
     },
+    "transition_overlay": {
+        "wait_for": [
+            "templates"
+        ]
+    },
     "data_sources": [
         {
             "id": "templates",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.templates",
             "type": "api",
             "endpoint": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates",
             "method": "GET",
@@ -47,78 +53,39 @@
                     ],
                     "is_active": true
                 }
-            },
-            "comment": "첫 20건만 받고 나머지는 목록 패널의 무한 스크롤이 이어 붙인다. 검색어는 URL 쿼리를 그대로 넘기므로 주소가 바뀌면 처음부터 다시 받는다"
+            }
         }
     ],
-    "initLocal": {
-        "form": {
-            "name": [],
-            "fields": [],
-            "is_active": true
-        },
-        "isSaving": false,
-        "errors": null,
-        "deleteModal": {
-            "isOpen": false,
-            "templateId": null,
-            "templateName": ""
-        },
-        "editingModal": {
-            "isOpen": false
-        },
-        "bulkChangeModal": {
-            "isOpen": false
-        }
-    },
-    "initGlobal": {
-        "infiniteScroll": {
-            "currentPage": 1,
-            "hasMore": true,
-            "isLoadingMore": false
-        },
-        "selectedTemplateId": null,
-        "selectedTemplate": null,
-        "panelMode": "view"
-    },
-    "permissions": [
-        "sirsoft-ecommerce.product-notice-templates.read"
-    ],
-    "transition_overlay": {
-        "wait_for": [
-            "templates"
-        ]
-    },
     "slots": {
         "content": [
             {
                 "id": "notice_page_content",
                 "type": "basic",
                 "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 h-[calc(100vh-64px)] overflow-hidden"
+                },
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "admin-page-content-compact"
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900 h-[calc(100vh-64px)] overflow-hidden"
                         }
                     }
-                },
-                "props": {
-                    "className": "admin-page-content"
                 },
                 "children": [
                     {
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
+                        "props": {
+                            "className": "flex items-start justify-between gap-4 mb-6"
+                        },
                         "responsive": {
                             "portable": {
                                 "props": {
-                                    "className": "row-stack mb-6"
+                                    "className": "flex flex-col gap-4 mb-6"
                                 }
                             }
-                        },
-                        "props": {
-                            "className": "flex-start justify-between gap-4 mb-6"
                         },
                         "children": [
                             {
@@ -149,29 +116,27 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 flex-shrink-0"
+                                    "className": "flex items-center gap-2 flex-shrink-0"
                                 },
                                 "children": [
                                     {
                                         "id": "refresh_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "props": {
+                                            "className": "p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-800 transition-colors",
+                                            "aria-label": "$t:sirsoft-ecommerce.common.refresh"
+                                        },
                                         "actions": [
                                             {
-                                                "comment": "검색어와 쌓인 스크롤 페이지를 함께 떨어뜨린다 — 소스만 다시 태우면 이어 붙인 목록이 남는다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
                                                     "path": "/admin/ecommerce/product-notices",
-                                                    "mergeQuery": true,
-                                                    "query": {}
+                                                    "mergeQuery": false
                                                 }
                                             }
                                         ],
-                                        "props": {
-                                            "className": "btn-icon",
-                                            "aria-label": "$t:sirsoft-ecommerce.common.refresh"
-                                        },
                                         "children": [
                                             {
                                                 "id": "refresh_icon",
@@ -179,7 +144,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "refresh",
-                                                    "className": "text-xl"
+                                                    "className": "w-5 h-5"
                                                 }
                                             }
                                         ]
@@ -188,9 +153,12 @@
                                         "id": "add_template_button",
                                         "type": "basic",
                                         "name": "Button",
+                                        "props": {
+                                            "disabled": "{{templates?.data?.abilities?.can_create !== true}}",
+                                            "className": "flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        },
                                         "actions": [
                                             {
-                                                "comment": "오른쪽 패널을 등록 모드로 전환. 빈 폼에 항목 한 줄을 미리 넣어 두는 것은 항목이 0개인 템플릿은 저장할 수 없기 때문이다",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -231,17 +199,13 @@
                                                 ]
                                             }
                                         ],
-                                        "props": {
-                                            "disabled": "{{templates?.data?.abilities?.can_create !== true}}",
-                                            "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "plus",
-                                                    "className": "text-base"
+                                                    "className": "w-4 h-4"
                                                 }
                                             },
                                             {
@@ -256,7 +220,7 @@
                         ]
                     },
                     {
-                        "id": "panel_layout",
+                        "id": "main_content",
                         "type": "basic",
                         "name": "Div",
                         "blur_until_loaded": true,
@@ -265,9 +229,11 @@
                         },
                         "children": [
                             {
+                                "id": "left_panel",
                                 "partial": "partials/admin_ecommerce_product_notice_index/_panel_list.json"
                             },
                             {
+                                "id": "right_panel",
                                 "partial": "partials/admin_ecommerce_product_notice_index/_panel_detail.json"
                             }
                         ]
@@ -278,16 +244,43 @@
     },
     "modals": [
         {
-            "comment": "템플릿 삭제 확인",
             "partial": "partials/admin_ecommerce_product_notice_index/_modal_delete_confirm.json"
         },
         {
-            "comment": "편집 중 다른 템플릿으로 넘어갈 때 저장하지 않은 입력을 버릴지 묻는다",
             "partial": "partials/admin_ecommerce_product_notice_index/_modal_editing_confirm.json"
         },
         {
-            "comment": "이 템플릿을 쓰는 상품들의 고시 내용을 한꺼번에 갈아 끼울지 묻는다",
             "partial": "partials/admin_ecommerce_product_notice_index/_modal_bulk_change.json"
         }
-    ]
+    ],
+    "initGlobal": {
+        "infiniteScroll": {
+            "currentPage": 1,
+            "hasMore": true,
+            "isLoadingMore": false
+        },
+        "selectedTemplateId": null,
+        "selectedTemplate": null,
+        "panelMode": "view"
+    },
+    "initLocal": {
+        "form": {
+            "name": [],
+            "fields": [],
+            "is_active": true
+        },
+        "isSaving": false,
+        "errors": null,
+        "deleteModal": {
+            "isOpen": false,
+            "templateId": null,
+            "templateName": ""
+        },
+        "editingModal": {
+            "isOpen": false
+        },
+        "bulkChangeModal": {
+            "isOpen": false
+        }
+    }
 }

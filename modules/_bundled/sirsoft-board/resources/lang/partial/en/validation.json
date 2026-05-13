@@ -61,6 +61,9 @@
     },
     "password": {
       "min": "Password must be at least :min characters."
+    },
+    "ip_address": {
+      "required": "IP address is required."
     }
   },
   "board": {

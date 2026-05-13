@@ -1,7 +1,6 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
 import { BreadcrumbItem } from './Breadcrumb';
-import { EditorAttrs } from '../../types';
 /**
  * 탭 아이템 인터페이스
  */
@@ -35,17 +34,11 @@ export interface PageHeaderProps {
     actions?: ActionButton[];
     className?: string;
     children?: React.ReactNode;
-    /**
-     * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-     */
-    id?: string;
-    /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * PageHeader 컴포넌트
  *
- * 페이지 헤더 - admin_dashboard.g7.html의 page_header 스타일과 동일
+ * 페이지 헤더 - admin_dashboard.json의 page_header 스타일과 동일
  * 배경색 없음, flex items-center justify-between mb-6 레이아웃
  *
  * @example

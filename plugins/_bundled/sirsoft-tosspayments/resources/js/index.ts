@@ -5,10 +5,7 @@
  * 레이아웃 JSON에서 "sirsoft-tosspayments.requestPayment" 형태로 호출할 수 있게 합니다.
  */
 
-// 설정 화면 상태 유틸리티(접두 클래스) — 빌드가 dist/css/plugin.css 로 뽑아낸다
-import '../css/main.css';
 import { handlerMap } from './handlers';
-import { reportPaymentFailureOnReturn } from './paymentCloseReport';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
 
@@ -65,11 +62,6 @@ function registerHandlers(): number {
  * ActionDispatcher가 아직 준비되지 않았으면 최대 5초간 재시도합니다.
  */
 function initPlugin(): void {
-    // 결제 실패로 돌아온 화면이면 서버에 보고한다. 브라우저 리턴 콜백은 인증이 없어 주문
-    // 상태를 바꾸지 않으므로, 소유권을 대조하는 close-report 가 정당한 실패를 기록하는
-    // 유일한 경로다. 저장해 둔 정보가 없으면 아무 일도 하지 않는다.
-    void reportPaymentFailureOnReturn();
-
     const doInit = () => {
         const count = registerHandlers();
 

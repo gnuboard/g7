@@ -8,7 +8,6 @@
 import type { LayoutLoader } from './LayoutLoader';
 import type { DataSourceManager, DataSource } from './DataSourceManager';
 import { createLogger } from '../utils/Logger';
-import { suffixed } from '../support/assetUrl';
 
 const logger = createLogger('ErrorPageHandler');
 
@@ -84,7 +83,7 @@ export class ErrorPageHandler {
 
         try {
             // template.json fetch
-            const response = await fetch(suffixed(`/api/templates/${this.templateId}/config`, 'json'));
+            const response = await fetch(`/api/templates/${this.templateId}/config.json`);
 
             if (!response.ok) {
                 if (this.debug) {

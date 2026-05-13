@@ -13,10 +13,6 @@ return [
         'ids_required' => 'Please select activity logs to delete.',
         'ids_min' => 'Please select at least one activity log to delete.',
         'id_not_found' => 'The selected activity log was not found.',
-        'log_type_invalid' => 'The selected log type is invalid.',
-        'date_range_invalid' => 'The end date must be the same as or after the start date.',
-        'per_page_min' => 'Items per page must be at least 1.',
-        'per_page_max' => 'Items per page must not exceed 100.',
     ],
 
     // Log type labels
@@ -32,14 +28,12 @@ return [
         'create' => 'Created',
         'updated' => 'Updated',
         'update' => 'Updated',
-        'rename' => 'Renamed',
         'deleted' => 'Deleted',
         'delete' => 'Deleted',
         'login' => 'Login',
         'logout' => 'Logout',
         'login_failed' => 'Login failed',
         'account_locked' => 'Account locked',
-        'account_unlocked' => 'Account unlocked',
         'request' => 'Request',
         'expired' => 'Expired',
         'verify' => 'Identity verified',
@@ -61,7 +55,6 @@ return [
         'bulk_update' => 'Bulk Updated',
         'bulk_delete' => 'Bulk Deleted',
         'bulk_update_status' => 'Bulk Status Changed',
-        'bulk_roles' => 'Roles Bulk Changed',
         'refund' => 'Refunded',
         'publish' => 'Published',
         'register' => 'Registered',
@@ -81,42 +74,7 @@ return [
         'version_restore' => 'Version Restored',
         'reset' => 'Reset',
 
-        // IP access restriction (security.*) — compound words that do not collide with existing segments
-        // (so the 4th-stage "last segment" lookup never attaches an unrelated label)
-        'ip_blocked' => 'IP Access Blocked',
-        'ip_restriction_disabled' => 'IP Restriction Disabled',
-
-        // Dormant accounts (user.dormant_*)
-        'dormant_restored' => 'Dormancy Lifted',
-        'dormant_converted' => 'Marked Dormant',
-        'dormant_withdrawn' => 'Dormant Account Withdrawn',
-
-        // Password policy (auth.password_*) — compound words that do not collide with existing segments
-        'password_change' => 'Password Changed',
-        'password_change_postpone' => 'Password Change Postponed',
-        'password_expiry_logout' => 'Signed Out on Password Expiry',
-
-        // Role change from the user create/edit form (user.roles_update, #736) — a compound distinct from bulk_roles
-        'roles_update' => 'Roles Changed',
-
-        // Privacy manual run (privacy.manual_run_*) — compound words that do not collide with common segments
-        'manual_run_queued' => 'Privacy action manual run queued',
-        'manual_run_finished' => 'Privacy action manual run finished',
-
         // Ecommerce/Board common
-
-        // Analytics operations (analytics.*) — label for the list "Action" column, separate from the description text
-        'analytics' => [
-            'settings_updated' => 'Analytics settings updated',
-            'privacy_mode_changed' => 'Analytics privacy mode changed',
-            'data_purged' => 'All analytics data purged',
-            'anonymized' => 'Analytics anonymized retroactively',
-            'subject_exported' => 'Data subject visits exported',
-            'subject_deleted' => 'Data subject visits deleted',
-            'opt_out_changed' => 'Analytics opt-out changed',
-            'archive_requested' => 'Analytics archived manually',
-            'extension_purged' => 'Extension analytics cleaned up',
-        ],
     ],
 
     // Description templates (used as description_key)
@@ -133,12 +91,7 @@ return [
         'user_search' => 'User search performed',
         'user_check_email' => 'Email duplication checked',
         'user_update_language' => 'User language setting changed',
-        'user_bulk_update_status' => 'Users status bulk updated (:count item)|Users status bulk updated (:count items)',
-        'user_bulk_roles' => 'User roles bulk changed (ID: :user_id)',
-        'user_roles_update' => 'User roles changed (ID: :user_id, added: :added, removed: :removed)',
-
-        // Member notification inbox (admin deleting a member's received notifications)
-        'member_notification_bulk_delete' => 'Member notifications bulk deleted (:count item)|Member notifications bulk deleted (:count items)',
+        'user_bulk_update_status' => 'Users status bulk updated (:count items)',
 
         // Role management
         'role_index' => 'Role list viewed',
@@ -183,36 +136,14 @@ return [
         'settings_test_driver_connection' => 'Driver connection tested',
 
         // Authentication
-        'auth_login' => 'Login',
-        'auth_admin_login' => 'Admin login',
-        'auth_logout' => 'Logout',
-        'auth_admin_logout' => 'Admin logout',
+        'auth_login' => 'Admin login',
+        'auth_logout' => 'Admin logout',
         'auth_register' => 'User registered',
         'auth_forgot_password' => 'Password reset requested',
         'auth_reset_password' => 'Password reset',
         'auth_record_consents' => 'Consent recorded',
         'auth_login_failed' => 'Login failed (:email)',
-        'auth_account_locked' => 'Account locked (:attempts attempt, :minutes min lockout)|Account locked (:attempts attempts, :minutes min lockout)',
-        'auth_account_locked_permanently' => 'Account locked permanently (:attempts attempt, administrator unlock or password reset required)|Account locked permanently (:attempts attempts, administrator unlock or password reset required)',
-        'auth_account_unlocked' => 'Account unlocked (:email)',
-        'auth_account_unlocked_by_password_reset' => 'Account unlocked by password reset (:email)',
-        'auth_password_change_self' => 'Password changed (by the member)',
-        'auth_password_change_by_admin' => 'Administrator set a member password (ID: :user_id)',
-        'auth_password_change_on_login_expired' => 'Password changed at sign-in (expired)',
-        'auth_password_change_on_login_admin_assigned' => 'Password changed at sign-in (set by an administrator)',
-        'auth_password_change_postpone' => 'Password change postponed (until :until)',
-        'auth_password_expiry_logout' => 'Signed out on password expiry (ID: :user_id, :count device)|Signed out on password expiry (ID: :user_id, :count devices)',
-
-        // Security — IP access restriction
-        'security_ip_blocked' => 'IP access blocked (:ip → :path)',
-        'user_dormant_restored' => 'Dormancy lifted by sign-in (ID: :user_id)',
-        'user_dormant_converted' => 'Marked dormant after long inactivity (ID: :user_id)',
-        'user_dormant_withdrawn' => 'Withdrawn after the dormancy period (ID: :user_id)',
-        'privacy_manual_run_queued' => 'Privacy action manual run queued (:target)',
-        'privacy_manual_run_queued_skip_waiting' => 'Privacy action manual run queued — waiting period skipped (:target)',
-        'privacy_manual_run_completed' => 'Privacy action manual run completed (:target, :count item)|Privacy action manual run completed (:target, :count items)',
-        'privacy_manual_run_failed' => 'Privacy action manual run failed (:target)',
-        'security_ip_restriction_disabled' => 'IP access restriction emergency-disabled (console)',
+        'auth_account_locked' => 'Account locked (:attempts attempts, :minutes min lockout)',
 
         // Schedule management
         'schedule_index' => 'Schedule list viewed',
@@ -222,8 +153,8 @@ return [
         'schedule_delete' => 'Schedule deleted (ID: :schedule_id)',
         'schedule_run' => 'Schedule manually executed (ID: :schedule_id)',
         'schedule_duplicate' => 'Schedule duplicated',
-        'schedule_bulk_update_status' => 'Schedule status bulk updated (:count item)|Schedule status bulk updated (:count items)',
-        'schedule_bulk_delete' => 'Schedules bulk deleted (:count item)|Schedules bulk deleted (:count items)',
+        'schedule_bulk_update_status' => 'Schedule status bulk updated (:count items)',
+        'schedule_bulk_delete' => 'Schedules bulk deleted (:count items)',
         'schedule_statistics' => 'Schedule statistics viewed',
         'schedule_history' => 'Schedule execution history viewed (ID: :schedule_id)',
         'schedule_delete_history' => 'Schedule history deleted',
@@ -248,9 +179,6 @@ return [
         'layout_versions_index' => 'Layout versions viewed (:layout_path)',
         'layout_version_show' => 'Layout version viewed (:layout_path)',
         'layout_version_restore' => 'Layout version restored (:layout_path)',
-        'layout_create' => 'Layout file created (:layout_path)',
-        'layout_rename' => 'Layout file renamed (:layout_path → :new_path)',
-        'layout_delete' => 'Layout file deleted (:layout_path)',
 
         // Mail template management
         'mail_template_update' => 'Mail template updated (:template_name)',
@@ -309,10 +237,6 @@ return [
         'template_install_from_file' => 'Template installed from file',
         'template_install_from_github' => 'Template installed from GitHub',
         'template_refresh_layouts' => 'Template layouts refreshed (:template_name)',
-        'custom_asset_save' => 'Custom asset saved (:identifier — :path)',
-        'custom_asset_upload' => 'Custom asset uploaded (:identifier — :path)',
-        'custom_asset_delete' => 'Custom asset deleted (:identifier — :path)',
-        'custom_asset_rename' => 'Custom asset renamed (:identifier — :path)',
 
         // Core update
         'core_update_check' => 'Core update checked',
@@ -321,7 +245,7 @@ return [
         // Activity log
         'activity_log_index' => 'Activity log list viewed',
         'activity_log_delete' => 'Activity log deleted (ID: :log_id)',
-        'activity_log_bulk_delete' => 'Activity logs bulk deleted (:count entry)|Activity logs bulk deleted (:count entries)',
+        'activity_log_bulk_delete' => 'Activity logs bulk deleted (:count entries)',
     ],
 
     // ChangeDetector field labels
@@ -365,22 +289,5 @@ return [
         'subject' => 'Subject',
         'body' => 'Body',
         'is_default' => 'Default',
-    ],
-
-    // Analytics operations
-    'analytics' => [
-        'settings_updated' => 'Analytics settings updated',
-        'privacy_mode_changed' => 'Analytics privacy mode changed (:mode)',
-        'data_purged' => 'All analytics data purged',
-        'anonymized' => 'Analytics data anonymized retroactively',
-        'subject_exported' => 'Data subject visits exported (:subject)',
-        'subject_deleted' => 'Data subject visits deleted (:subject)',
-        'opt_out_changed' => 'Administrator opt-out setting changed',
-        'archive_requested' => 'Analytics archiving run manually (:run_type)',
-        'extension_purged' => 'Extension analytics data cleaned up (:identifier)',
-    ],
-    // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨 (#727)
-    'layout_sync' => [
-        'operator_modified' => 'Operator-modified',
     ],
 ];

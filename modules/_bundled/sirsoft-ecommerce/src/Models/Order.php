@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -24,7 +23,7 @@ class Order extends Model
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
-        'order_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.order_status', 'type' => 'enum', 'enum' => OrderStatusEnum::class],
+        'order_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.order_status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum::class],
         'total_amount' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.total_amount', 'type' => 'currency'],
         'total_paid_amount' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.total_paid_amount', 'type' => 'currency'],
         'total_discount_amount' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.total_discount_amount', 'type' => 'currency'],
@@ -51,7 +50,7 @@ class Order extends Model
      *
      * @param  mixed  $value  라우트 파라미터 값 (ID 또는 order_number)
      * @param  string|null  $field  검색할 필드명
-     * @return Model|null
+     * @return \Illuminate\Database\Eloquent\Model|null
      */
     public function resolveRouteBinding($value, $field = null)
     {
@@ -71,7 +70,6 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'order_number',
-        'guest_lookup_password_hash',
         'order_status',
         'order_device',
         'is_first_order',
@@ -93,11 +91,9 @@ class Order extends Model
         'total_vat_amount',
         'total_tax_free_amount',
         'total_points_used_amount',
-        'is_mileage_deducted',
         'total_deposit_used_amount',
         'total_paid_amount',
         'total_due_amount',
-        'total_cash_equivalent_amount',
         'total_cancelled_amount',
         'total_refunded_amount',
         'total_refunded_points_amount',
@@ -110,12 +106,10 @@ class Order extends Model
         'paid_at',
         'payment_due_at',
         'confirmed_at',
-        'cancelled_at',
         'admin_memo',
         'promotions_applied_snapshot',
         'shipping_policy_applied_snapshot',
         'promotions_available_snapshot',
-        'mileage_policy_snapshot',
         'order_meta',
         // 다중 통화 컬럼 (JSON)
         'mc_subtotal_amount',
@@ -134,16 +128,6 @@ class Order extends Model
         'mc_total_tax_free_amount',
         'mc_total_amount',
         'mc_total_paid_amount',
-        'mc_total_cash_equivalent_amount',
-    ];
-
-    /**
-     * 직렬화 시 숨길 속성 (API 응답·배열 변환 노출 차단)
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'guest_lookup_password_hash',
     ];
 
     protected $casts = [
@@ -164,11 +148,9 @@ class Order extends Model
         'total_vat_amount' => 'decimal:2',
         'total_tax_free_amount' => 'decimal:2',
         'total_points_used_amount' => 'decimal:2',
-        'is_mileage_deducted' => 'boolean',
         'total_deposit_used_amount' => 'decimal:2',
         'total_paid_amount' => 'decimal:2',
         'total_due_amount' => 'decimal:2',
-        'total_cash_equivalent_amount' => 'decimal:2',
         'total_cancelled_amount' => 'decimal:2',
         'total_refunded_amount' => 'decimal:2',
         'total_refunded_points_amount' => 'decimal:2',
@@ -181,11 +163,9 @@ class Order extends Model
         'paid_at' => 'datetime',
         'payment_due_at' => 'datetime',
         'confirmed_at' => 'datetime',
-        'cancelled_at' => 'datetime',
         'promotions_applied_snapshot' => 'array',
         'shipping_policy_applied_snapshot' => 'array',
         'promotions_available_snapshot' => 'array',
-        'mileage_policy_snapshot' => 'array',
         'order_meta' => 'array',
         'order_status' => OrderStatusEnum::class,
         'order_device' => DeviceTypeEnum::class,
@@ -206,7 +186,6 @@ class Order extends Model
         'mc_total_tax_free_amount' => 'array',
         'mc_total_amount' => 'array',
         'mc_total_paid_amount' => 'array',
-        'mc_total_cash_equivalent_amount' => 'array',
     ];
 
     /**
@@ -227,21 +206,6 @@ class Order extends Model
     public function options(): HasMany
     {
         return $this->hasMany(OrderOption::class, 'order_id');
-    }
-
-    /**
-     * 대표 주문 옵션 관계 (가장 먼저 담긴 1건)
-     *
-     * 목록 화면은 대표 상품 1건만 그린다. `options` 를 통째로 eager load 한 뒤 `first()` 로
-     * 1건만 쓰면 한 페이지를 여는 것만으로 그 페이지 전 주문의 모든 옵션이 메모리에 올라온다.
-     * eager load 의 `limit(1)` 은 부모별이 아니라 배치 쿼리 전체에 걸리므로 쓸 수 없고,
-     * 관계 자체를 "가장 오래된 1건" 으로 좁히는 이 방식이라야 주문별 1건이 보장된다.
-     *
-     * @return HasOne 대표 주문 옵션과의 관계
-     */
-    public function firstOption(): HasOne
-    {
-        return $this->hasOne(OrderOption::class, 'order_id')->oldestOfMany();
     }
 
     /**
@@ -297,16 +261,6 @@ class Order extends Model
     }
 
     /**
-     * 현금영수증 이력 관계
-     *
-     * @return HasMany 현금영수증 이력 모델과의 관계
-     */
-    public function cashReceipts(): HasMany
-    {
-        return $this->hasMany(OrderCashReceipt::class, 'order_id');
-    }
-
-    /**
      * 배송 관계
      *
      * @return HasMany 배송 모델과의 관계
@@ -314,21 +268,6 @@ class Order extends Model
     public function shippings(): HasMany
     {
         return $this->hasMany(OrderShipping::class, 'order_id');
-    }
-
-    /**
-     * 대표 배송 관계 (가장 먼저 생성된 1건)
-     *
-     * 목록 화면은 배송 정보 중 대표 1건(배송유형·배송방법·택배사·송장번호)만 그린다.
-     * `shippings` 를 통째로 eager load 한 뒤 `first()` 로 1건만 쓰면, 분할 배송이 많은 주문일수록
-     * 쓰지 않는 배송 행이 페이지 전체에 실린다. `firstOption` 과 같은 이유로 `oldestOfMany()` 를
-     * 쓴다 — eager load 의 `limit(1)` 은 배치 쿼리 전체에 걸려 첫 주문만 대표를 갖게 된다.
-     *
-     * @return HasOne 대표 배송과의 관계
-     */
-    public function firstShipping(): HasOne
-    {
-        return $this->hasOne(OrderShipping::class, 'order_id')->oldestOfMany();
     }
 
     /**
@@ -362,36 +301,6 @@ class Order extends Model
     }
 
     /**
-     * 교환 신청 이력 관계
-     *
-     * @return HasMany 교환 신청서 모델과의 관계
-     */
-    public function exchanges(): HasMany
-    {
-        return $this->hasMany(OrderExchange::class, 'order_id');
-    }
-
-    /**
-     * 반품 신청 이력 관계
-     *
-     * @return HasMany 반품 신청서 모델과의 관계
-     */
-    public function returns(): HasMany
-    {
-        return $this->hasMany(OrderReturn::class, 'order_id');
-    }
-
-    /**
-     * 클레임 추가결제 이력 관계
-     *
-     * @return HasMany 클레임 추가결제 모델과의 관계
-     */
-    public function claimPayments(): HasMany
-    {
-        return $this->hasMany(ClaimPayment::class, 'order_id');
-    }
-
-    /**
      * 주문자명 반환 (배송지 기준)
      *
      * @return string|null 주문자명
@@ -399,39 +308,6 @@ class Order extends Model
     public function getOrdererName(): ?string
     {
         return $this->shippingAddress?->orderer_name;
-    }
-
-    /**
-     * 주문자 이메일 반환 (배송지 기준)
-     *
-     * @return string|null 주문자 이메일
-     */
-    public function getOrdererEmail(): ?string
-    {
-        return $this->shippingAddress?->orderer_email;
-    }
-
-    /**
-     * 주문자 선호 언어를 반환합니다. (배송지 기준)
-     *
-     * 주문 시점의 화면 언어 스냅샷으로, 비회원 알림 발송 언어를 결정하는 데 사용됩니다.
-     * 저장값이 없으면(구버전 주문) null 을 반환해 수신 측에서 기본 로케일로 폴백합니다.
-     *
-     * @return string|null 주문자 선호 언어 또는 null
-     */
-    public function getOrdererLocale(): ?string
-    {
-        return $this->shippingAddress?->orderer_locale;
-    }
-
-    /**
-     * 비회원 주문 여부를 반환합니다.
-     *
-     * @return bool 회원 미연결(user_id = null) 주문이면 true
-     */
-    public function isGuestOrder(): bool
-    {
-        return $this->user_id === null;
     }
 
     /**
@@ -481,7 +357,7 @@ class Order extends Model
      */
     public function getPaymentMethodLabel(): ?string
     {
-        return $this->payment?->paymentMethodLabel();
+        return $this->payment?->payment_method?->getLabel();
     }
 
     /**
@@ -499,8 +375,6 @@ class Order extends Model
             return false;
         }
 
-        // 부분취소는 별도 상태가 아니라 잔여 옵션 기준 진행 상태(payment_complete 등)로 환원되므로,
-        // 잔여 항목 재취소는 그 진행 상태가 이미 취소 가능 목록에 있어 자연히 허용된다(partial_cancelled 제거).
         $defaultStatuses = [
             OrderStatusEnum::PENDING_ORDER,
             OrderStatusEnum::PENDING_PAYMENT,
@@ -596,55 +470,5 @@ class Order extends Model
     public function isConfirmable(): bool
     {
         return $this->order_status === OrderStatusEnum::DELIVERED;
-    }
-
-    /**
-     * 부분취소 상태 여부를 반환합니다 (파생 플래그).
-     *
-     * 부분취소는 별도 주문 상태(partial_cancelled)가 아니라 "취소된 옵션이 있으면서
-     * 잔여 활성 옵션도 존재"하는 파생 상태다. 주문 상태(order_status)는 잔여 활성 옵션 기준으로
-     * 결정되고, "일부가 취소되었다"는 사실은 이 플래그로 노출한다 (2026-06-22, partial_cancelled 제거).
-     *
-     * @return bool 일부 옵션만 취소된 주문이면 true
-     */
-    public function isPartiallyCancelled(): bool
-    {
-        $cancelledCount = $this->options
-            ? $this->options->where('option_status', OrderStatusEnum::CANCELLED)->count()
-            : $this->options()->where('option_status', OrderStatusEnum::CANCELLED->value)->count();
-
-        if ($cancelledCount === 0) {
-            return false;
-        }
-
-        $activeCount = $this->options
-            ? $this->options->where('option_status', '!=', OrderStatusEnum::CANCELLED)->count()
-            : $this->options()->where('option_status', '!=', OrderStatusEnum::CANCELLED->value)->count();
-
-        return $activeCount > 0;
-    }
-
-    /**
-     * 주문 금액을 지금 덮고 있는 행(회계 주체)만 돌려줍니다.
-     *
-     * 재계산 입력(`OrderAdjustmentService::buildRecalcInput()`)과 같은 판정이다 — 취소 행과 교환완료
-     * (`EXCHANGED`)로 닫힌 원 행은 빼고(후속 행이 승계), 원 행이 아직 교환 진행 중인 후속 행도 뺀다
-     * (원 행이 주체). 반품 행은 금액을 덮은 채 남으므로 포함한다. 헤더 합계(판매가·결제액)가 이 행들의
-     * 값이므로, 화면의 정가·수량 합계도 이 행들로 세어야 같은 기준이 된다.
-     *
-     * @return Collection<int, OrderOption> 회계 주체 행
-     */
-    public function accountableOptions(): Collection
-    {
-        $exchangedSourceIds = $this->options
-            ->filter(fn (OrderOption $option) => $option->option_status === OrderStatusEnum::EXCHANGED)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
-
-        return $this->options
-            ->reject(fn (OrderOption $option) => in_array($option->option_status, [OrderStatusEnum::CANCELLED, OrderStatusEnum::EXCHANGED], true))
-            ->reject(fn (OrderOption $option) => $option->isExchanged() && ! in_array((int) $option->source_option_id, $exchangedSourceIds, true))
-            ->values();
     }
 }

@@ -4,8 +4,8 @@ namespace Modules\Sirsoft\Page\Tests\Feature\Repositories;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Page\Models\Page;
-use Modules\Sirsoft\Page\Providers\PageServiceProvider;
 use Modules\Sirsoft\Page\Repositories\PageRepository;
 use Tests\TestCase;
 
@@ -19,9 +19,6 @@ use Tests\TestCase;
  * 따라서 이 스위트만 매 테스트 fresh DB + commit 되는 INSERT 로 FULLTEXT 경로를
  * 실제 검증한다. (ModuleTestCase 의 DatabaseTransactions 와 상호배타.)
  */
-// audit:allow test-extension-base-class reason: InnoDB FULLTEXT 는 커밋된 행만 색인하므로
-// ModuleTestCase 의 DatabaseTransactions 와 상호배타 — RefreshDatabase + 수동 정리로 격리하고
-// 모듈 부팅(오토로드/Provider/마이그레이션)은 setUp 이 동일 로직으로 수행한다
 class PageRepositorySearchTest extends TestCase
 {
     use RefreshDatabase;
@@ -53,7 +50,7 @@ class PageRepositorySearchTest extends TestCase
         $this->registerModuleAutoload();
 
         // 모듈 ServiceProvider 등록 (Repository 바인딩)
-        $this->app->register(PageServiceProvider::class);
+        $this->app->register(\Modules\Sirsoft\Page\Providers\PageServiceProvider::class);
 
         // 모듈 마이그레이션 실행 (pages 테이블)
         $this->artisan('migrate', [
@@ -71,7 +68,7 @@ class PageRepositorySearchTest extends TestCase
      */
     protected function tearDown(): void
     {
-        Page::query()->forceDelete();
+        Page::query()->withTrashed()->forceDelete();
 
         if (isset($this->user)) {
             User::where('id', $this->user->id)->delete();
@@ -107,12 +104,8 @@ class PageRepositorySearchTest extends TestCase
                 $file = $moduleBasePath.'/src/'.str_replace('\\', '/', $relativeClass).'.php';
             }
 
-            if (file_exists($file)
-                && ! class_exists($class, false) && ! interface_exists($class, false)
-                && ! trait_exists($class, false) && ! enum_exists($class, false)) {
-                // 활성 디렉토리 사본이 이미 로드된 심볼을 다시 선언하면 fatal 이 된다 —
-                // 선언 여부를 자체 확인하고 require_once 로 이중 방어한다
-                require_once $file;
+            if (file_exists($file)) {
+                require $file;
             }
         });
     }
@@ -127,48 +120,8 @@ class PageRepositorySearchTest extends TestCase
 
         $result = $this->repository->searchByKeyword('이용약관');
 
-        $this->assertEquals(1, $result->total());
-        $this->assertEquals('test-terms-search', $result->getCollection()->first()->slug);
-    }
-
-    /**
-     * 제목만으로 매칭되는지 확인 (본문·슬러그에는 키워드가 없다).
-     *
-     * 회귀 배경 (#492 D-25): 운영 DB 에서 제목 검색이 어떤 키워드로도 0 건이었다
-     * (`이용약관` / `약관` / `Terms` / `Service` 전부 0, 같은 행을 `LIKE` 로는 찾음).
-     * 기존 제목 테스트는 초록이었는데, 본문에 같은 낱말이 들어 있어 **content 매칭으로**
-     * 통과하고 있었기 때문이다. 이 케이스는 본문·슬러그에서 키워드를 완전히 제거해
-     * 제목 경로만 남긴다.
-     *
-     * 주의: 이 테스트는 fresh 테스트 DB 에서는 수정 전에도 통과한다(그 DB 의 FT 인덱스는
-     * 정상 동작한다). 운영 DB 의 FT 인덱스 상태 차이를 재현하지는 못하며, 여기서 잠그는 것은
-     * **제목 검색이 본문 매칭에 얹혀 통과하지 않는다**는 계약이다.
-     */
-    public function test_search_by_keyword_matches_title_only(): void
-    {
-        $this->createPublishedPage('이용약관', 'aaa-bbb-ccc', '본문에는 검색어가 없습니다.');
-
-        $koFull = $this->repository->searchByKeyword('이용약관');
-        $koPartial = $this->repository->searchByKeyword('약관');
-
-        $this->assertEquals(1, $koFull->total(), '제목 전체 일치가 검색되지 않았다');
-        $this->assertEquals('aaa-bbb-ccc', $koFull->getCollection()->first()->slug);
-        $this->assertEquals(1, $koPartial->total(), '제목 부분 일치가 검색되지 않았다');
-    }
-
-    /**
-     * 다른 로케일(en) 제목으로도 검색되는지 확인.
-     */
-    public function test_search_by_keyword_matches_other_locale_title(): void
-    {
-        $page = $this->createPublishedPage('이용약관', 'ddd-eee-fff', '본문에는 검색어가 없습니다.');
-        $page->title = ['ko' => '이용약관', 'en' => 'Terms of Service'];
-        $page->save();
-
-        $result = $this->repository->searchByKeyword('Terms');
-
-        $this->assertEquals(1, $result->total(), '영문 제목으로 검색되지 않았다');
-        $this->assertEquals('ddd-eee-fff', $result->getCollection()->first()->slug);
+        $this->assertEquals(1, $result['total']);
+        $this->assertEquals('test-terms-search', $result['items']->first()->slug);
     }
 
     /**
@@ -181,8 +134,8 @@ class PageRepositorySearchTest extends TestCase
 
         $result = $this->repository->searchByKeyword('쿠키 정책');
 
-        $this->assertEquals(1, $result->total());
-        $this->assertEquals('test-guide-search', $result->getCollection()->first()->slug);
+        $this->assertEquals(1, $result['total']);
+        $this->assertEquals('test-guide-search', $result['items']->first()->slug);
     }
 
     /**
@@ -195,10 +148,7 @@ class PageRepositorySearchTest extends TestCase
 
         $count = $this->repository->countByKeyword('사이트 점검');
 
-        // 건수만 세는 자리도 정확도를 함께 돌려준다 (#519) — 상한에 걸려 잘린 값이
-        // 정확한 것처럼 화면에 나가지 않도록.
-        $this->assertSame(1, $count->total);
-        $this->assertTrue($count->totalRelation()->isExact());
+        $this->assertEquals(1, $count);
     }
 
     /**
@@ -211,7 +161,7 @@ class PageRepositorySearchTest extends TestCase
 
         $result = $this->repository->searchByKeyword('독점 서비스');
 
-        $this->assertEquals(0, $result->total());
+        $this->assertEquals(0, $result['total']);
     }
 
     // ─── 헬퍼 ────────────────────────────────────────────

@@ -3,7 +3,6 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
-import type { EditorAttrs } from '../../types';
 
 /**
  * G7Core 다국어 헬퍼
@@ -40,15 +39,6 @@ export interface ExpandableContentProps {
    * children 렌더링
    */
   children?: React.ReactNode;
-
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-/**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -78,8 +68,6 @@ export const ExpandableContent: React.FC<ExpandableContentProps> = ({
   collapseText,
   className = '',
   children,
-  id,
-  editorAttrs,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpand, setNeedsExpand] = useState(false);
@@ -132,7 +120,7 @@ export const ExpandableContent: React.FC<ExpandableContentProps> = ({
   const resolvedCollapseText = collapseText || t('sirsoft-ecommerce.shop.product.collapse_detail');
 
   return (
-    <Div className={className} id={id} {...editorAttrs}>
+    <Div className={className}>
       {/* 콘텐츠 컨테이너 */}
       <Div className="relative">
         <Div

@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Extension\ExtensionManager;
-use App\Extension\Testing\ExtensionTestAllowlist;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,26 +25,16 @@ class PluginServiceProvider extends ServiceProvider
             return;
         }
 
-        $allowlistActive = ExtensionTestAllowlist::isActive();
-
-        foreach ($this->discoverPluginServiceProviders($pluginsPath) as $provider) {
-            // 테스트 환경 확장 격리: allowlist 밖 플러그인의 ServiceProvider 등록 차단
-            if ($allowlistActive && ! ExtensionTestAllowlist::isAllowed('plugin', $provider['name'])) {
-                continue;
-            }
-
-            $this->app->register($provider['class']);
+        foreach ($this->discoverPluginServiceProviders($pluginsPath) as $providerClass) {
+            $this->app->register($providerClass);
         }
     }
 
     /**
      * plugins 디렉토리를 스캔하여 모든 플러그인의 ServiceProvider 클래스들을 발견합니다.
      *
-     * 각 항목은 플러그인 디렉토리명('name')과 ServiceProvider 클래스명('class')을
-     * 함께 담습니다. 디렉토리명은 테스트 환경 확장 격리 가드에 사용됩니다.
-     *
      * @param  string  $pluginsPath  플러그인 디렉토리 경로
-     * @return array<array{name: string, class: string}> ServiceProvider 정보 배열
+     * @return array<string> ServiceProvider 클래스명 배열
      */
     protected function discoverPluginServiceProviders(string $pluginsPath): array
     {
@@ -67,7 +56,7 @@ class PluginServiceProvider extends ServiceProvider
                 $providerClass = $this->resolveProviderClass($pluginName, $providerFile);
 
                 if ($providerClass && class_exists($providerClass)) {
-                    $providers[] = ['name' => $pluginName, 'class' => $providerClass];
+                    $providers[] = $providerClass;
                 }
             }
         }

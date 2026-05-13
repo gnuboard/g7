@@ -105,32 +105,25 @@ export const Card = ({ title }) => (
 
 ### Step 3: 기본 레이아웃 정의
 
-`/layouts/*.g7.html`(소스 SSoT)에 기본 레이아웃 정의 — 설치 시 서버가 JSON 으로 컴파일해 DB 등록:
+`/layouts/*.json`에 기본 레이아웃 정의:
 
-- 마크업 형식은 `.g7.html` 마크업 ([layout-markup.md](layout-markup.md)). 문서 봉투는 `<layout>` 이고, `name` 은 파일 경로에서 오는 레이아웃 식별자다
+- JSON 스키마 준수
 - 데이터 바인딩/다국어 활용
-
-```html
-<layout name="admin_dashboard" version="1.0.0">
-  <page-header title="$t:dashboard.title"/>
-</layout>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
   "version": "1.0.0",
-  "layout_name": "admin_dashboard",
-  "components": [
-    {
-      "type": "composite",
-      "name": "PageHeader",
-      "props": {
-        "title": "$t:dashboard.title"
+  "layout": {
+    "name": "AdminLayout",
+    "children": [
+      {
+        "name": "PageHeader",
+        "props": {
+          "title": "$t:dashboard.title"
+        }
       }
-    }
-  ]
+    ]
+  }
 }
 ```
 
@@ -290,14 +283,6 @@ export type HandlerName = keyof typeof handlerMap;
 
 **init_actions (레이아웃 로드 시)**:
 
-```html
-<init>
-  <action handler="initTheme" target="{{query.theme}}"/>
-</init>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "init_actions": [
@@ -316,10 +301,10 @@ export type HandlerName = keyof typeof handlerMap;
   "id": "my_component",
   "lifecycle": {
     "onMount": [
-      { "handler": "loadData", "target": "{{route.id}}" }
+      { "type": "click", "handler": "loadData", "target": "{{route.id}}" }
     ],
     "onUnmount": [
-      { "handler": "cleanup" }
+      { "type": "click", "handler": "cleanup" }
     ]
   }
 }
@@ -442,27 +427,6 @@ export default defineConfig({
 
 ---
 
-## 4-1. 운영자가 CSS·JS 를 덧붙이는 자리 (`custom/`)
-
-템플릿 소스(`src/styles/`)를 고치고 빌드하는 방법은 **템플릿 작성자**의 방법입니다. 운영자에게는
-부적합합니다 — Node.js 가 필요하고, 그렇게 넣은 파일은 다음 템플릿 업데이트에 사라집니다.
-빌드 산출물(`dist/css/`)을 직접 고치는 것도 다음 빌드에 사라집니다.
-
-운영자는 활성 템플릿 디렉토리의 `custom/` 에 파일을 놓습니다.
-
-```
-templates/{템플릿-식별자}/custom/custom.css
-```
-
-- 빌드하지 않습니다. 파일을 놓으면 다음 요청부터 적용됩니다.
-- 템플릿을 업데이트해도 이 디렉토리는 보존됩니다.
-- 적용 순서는 **템플릿·확장 스타일보다 뒤**라서 재정의가 그대로 반영됩니다.
-- 여러 파일을 놓으면 파일명 오름차순으로 적용됩니다(`10-`, `20-` 접두사로 순서를 정할 수 있습니다).
-- 폰트·이미지 같은 파일도 같은 디렉토리에 두고 CSS 에서 상대 경로로 참조합니다.
-- 순서를 바꾸거나 일부만 싣고 싶으면 `custom/assets.json` 에 선언합니다.
-
-모듈·플러그인도 같은 규약을 씁니다. 상세: [module-assets.md](../extension/module-assets.md) "사용자 추가 에셋".
-
 ## 5. 템플릿 네이밍 규칙
 
 ### 형식
@@ -535,12 +499,6 @@ templates/{템플릿-식별자}/custom/custom.css
 
 **1. 레이아웃 JSON 정의** (사용자):
 
-```html
-<card title="{{user.name}}" onClick="navigate:/users/:id"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "name": "Card",
@@ -605,66 +563,6 @@ export function initTemplate(): void {
 
 ---
 
-## 레이아웃 편집기 스펙(editor-spec.json)의 스타일 컨트롤
-
-레이아웃 편집기 속성 모달의 스타일 컨트롤은 `editor-spec.json` 의 `controls` 에서
-정의한다. 코어 편집기는 위젯 UI 와 적용/역해석 메커니즘(recipeEngine)만 제공하고,
-**어떤 코드를 생성할지는 컨트롤의 `apply` 선언이 정한다**(스타일 시스템 비종속, 원칙 4.8).
-`apply` 종류는 `classToken`(클래스 토큰), `styleProp`(인라인 style), `cssVar`, `propValue`.
-
-### 색/크기/배경 컨트롤은 템플릿 스타일 라이브러리 대응을 apply 로 선언한다
-
-색상(글자색/배경색)·크기(가로/세로)·배경 컨트롤은 **그 템플릿이 사용하는 스타일
-라이브러리 표현**으로 적용·역해석되도록 `apply` 를 선언해야 한다.
-
-- **토큰형 라이브러리(Tailwind)**: 색 컨트롤을 `classToken` 으로 선언한다.
-  - 프리셋 색은 `options` 에 고정 토큰(`apply.tokens`)으로 — 예 `text-gray-900`.
-    프리셋 토큰은 라이트·다크 모두 동작한다(편집기 다크 탭이 `dark:` prefix 부여).
-  - 자유 색(컬러 피커/HEX)은 control-level `apply.tokenTemplate`(예 `text-[{value}]`)로.
-  - 각 `options` 항목에 `swatch`(표시용 HEX) 를 주면 색 위젯이 토큰 스와치를 렌더한다.
-- **인라인/CSS 변수 라이브러리**: `styleProp`/`cssVar` 로 선언(다크 표현 한계 명시).
-
-#### 자유값(임의 색/크기)의 다크 한계
-
-Tailwind 는 빌드 시 safelist 에 없는 임의값 클래스(`dark:text-[#hex]`)를 CSS 에 넣지
-못한다. 따라서 **자유값(직접 입력한 HEX/임의 px)은 라이트 전용**이다. 편집기 다크 탭에서는
-자유 입력칸이 비활성화되고 "패널 프리셋 색을 고르면 다크에도 적용됩니다" 안내가 표시된다
-(프리셋 토큰만 다크 적용). 프리셋 토큰의 `dark:` 변형은 빌드에 포함되도록 safelist 에
-보장한다 — `sirsoft-admin_basic` 은 `scripts/extract-safelist.cjs` 가 editor-spec 의
-`apply.tokens` 에서 자동 도출, `sirsoft-basic` 은 `src/styles/safelist.txt` 에 명시.
-
-### 다크 모드 표현 선언(darkMode)과 편집기 프리뷰 격리
-
-편집기 프리뷰는 어드민 환경이 다크 테마(`html.dark`)여도 라이트/다크를 독립적으로
-보여줘야 한다. 이를 위해 템플릿은 editor-spec 최상위에 `darkMode` 를 선언한다:
-
-```json
-"darkMode": {
-  "strategy": "ancestor-class",
-  "ancestorSelector": ".dark",
-  "previewIsolation": {
-    "rewriteSelector": ".dark",
-    "replaceWith": ".g7le-preview-dark",
-    "flattenLayers": true
-  }
-}
-```
-
-코어 CSS 서빙 API(`/api/admin/templates/{id}/editor/component-styles.css`)가 편집기 진입
-시에만 이 선언대로 CSS 의 다크 조상 셀렉터(`rewriteSelector`)를 프리뷰 전용 마커
-(`replaceWith`)로 치환해 서빙한다. 일반 사용자 페이지 CSS 는 원본 그대로다
-(사용자 페이지 무영향). `strategy: "none"` 또는 미선언이면 편집기 다크 탭이 비노출된다.
-
-`flattenLayers` 는 CSS cascade-layer(`@layer`)를 쓰는 라이브러리(Tailwind v4 등)
-전용 옵트인이다. 편집기 CSS 가 어드민 호스트 CSS 와 같은 `@layer` 이름을 공유하면
-cross-build 레이어 우선순위 충돌로 프리뷰 다크 규칙이 적용되지 않을 수 있는데,
-`true` 로 두면 서빙 시 편집기 CSS 의 `@layer` 래퍼를 평탄화(unlayered)해 프리뷰
-규칙이 호스트 레이어드 규칙을 이기게 한다. `@layer` 비사용 라이브러리(Bootstrap 등)는
-미선언/`false`. `rewriteSelector` 도 라이브러리에 맞게 선언한다(예 Bootstrap
-`[data-bs-theme=dark]`) — 코어는 선언값을 그대로 치환할 뿐 특정 라이브러리를 가정하지 않는다.
-
----
-
 ## 관련 문서
 
 - [컴포넌트 개발 규칙](./components.md)
@@ -674,4 +572,4 @@ cross-build 레이어 우선순위 충돌로 프리뷰 다크 규칙이 적용�
 - [본인인증 모달 UI 표준 (engine-v1.46.0+)](./identity-verification-ui.md)
 - [본인인증 인터셉터 API 레퍼런스](./identity-guard-interceptor.md)
 - [외부 템플릿 IDV launcher 등록](../extension/template-idv-bootstrap.md)
-- [프론트엔드 가이드 인덱스](./README.md)
+- [프론트엔드 가이드 인덱스](./index.md)

@@ -1,5 +1,4 @@
 {
-    "comment": "학습용 사용자 베이스 레이아웃 — 헤더 + 콘텐츠 슬롯만 있는 최소 골격이다",
     "version": "1.0.0",
     "layout_name": "_user_base",
     "meta": {
@@ -22,7 +21,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "border-b border-gray-200 px-4 py-3 flex-between"
+                        "className": "border-b border-gray-200 px-4 py-3 flex items-center justify-between"
                     },
                     "children": [
                         {
@@ -57,7 +56,8 @@
                             "id": "main_content",
                             "type": "basic",
                             "name": "Div",
-                            "slot": "content"
+                            "slot": "content",
+                            "children": []
                         }
                     ]
                 },
@@ -67,7 +67,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "empty-state-cell border-t border-gray-200 text-sm text-gray-500"
+                        "className": "border-t border-gray-200 px-4 py-4 text-center text-sm text-gray-500"
                     },
                     "children": [
                         {

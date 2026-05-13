@@ -9,19 +9,17 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 /**
- * `core.language_packs.activated` / `deactivated` 액션 훅을 받아 DB JSON 다국어
+ * `core.language_packs.after_activate` / `after_deactivate` 액션 훅을 받아 DB JSON 다국어
  * 컬럼을 동기화하는 thin Listener (G7 표준 HookManager::doAction → addAction 메커니즘).
  *
  * 영속/도메인 책임은 모두 LanguagePackTranslationRepository 에 위임. 본 클래스는 seed 파일
  * 로딩 + Repository 호출 + 감사 로그 라우팅만 수행합니다.
  *
- * 정책 (계획서 §6.6, §9.4) — 보존 판정은 운영자 수정의 실제 기록 형식인 dot-path
- * 항목(`"{컬럼}.{로케일}"`, HasUserOverrides updating 이벤트가 기록)을 기준으로 한다:
+ * 정책 (계획서 §6.6, §9.4):
  *  - Case A: 기존 row 의 다국어 JSON 에 해당 locale 키 부재 → 추가
- *  - Case B: locale 키 존재 + user_overrides 에 `컬럼.로케일` 등록 → 건너뜀 (사용자 수정 보존)
- *  - Case C: locale 키 존재 + 해당 dot-path 미등록 → 시드 값으로 덮어쓰기
- *    (컬럼 전체 항목 `"subject"` 등은 시더 재실행 보호 선언이라 팩 병합을 막지 않는다)
- *  - 비활성화/제거 시: user_overrides 에 `컬럼.로케일` 등록된 locale 은 JSON 에서 제거하지 않음
+ *  - Case B: locale 키 존재 + user_overrides 에 컬럼 등록 → 건너뜀 (사용자 수정 보존)
+ *  - Case C: locale 키 존재 + user_overrides 미등록 → 시드 값으로 덮어쓰기
+ *  - 비활성화/제거 시: user_overrides 등록 locale 은 JSON 에서 제거하지 않음
  */
 // audit:allow listener-must-implement-hooklistenerinterface reason: LanguagePackServiceProvider 가 HookManager::addAction 으로 직접 등록하는 명시 등록 패턴 (auto-discovery 대상 아님)
 class SyncDatabaseTranslations
@@ -46,6 +44,7 @@ class SyncDatabaseTranslations
             'roles',
             'menus',
             'notifications',
+            'identity_messages',
             'manifest',
         ]);
 
@@ -70,7 +69,6 @@ class SyncDatabaseTranslations
     /**
      * 언어팩 디렉토리의 seed/{entity}.json 묶음을 로드합니다.
      *
-     * @param  LanguagePack  $pack  seed 를 읽을 언어팩
      * @param  array<int, string>  $entities  로드할 엔티티 이름 목록
      * @return array<string, array<string, mixed>> 엔티티별 seed 데이터 (없으면 미포함)
      */
@@ -90,8 +88,7 @@ class SyncDatabaseTranslations
     /**
      * 단일 seed 파일을 로드합니다.
      *
-     * @param  LanguagePack  $pack  seed 를 읽을 언어팩
-     * @param  string  $entity  엔티티 이름 (permissions/roles/menus/notifications/manifest)
+     * @param  string  $entity  엔티티 이름 (permissions/roles/menus/notifications/identity_messages/manifest)
      * @return array<string, mixed>|null seed 데이터 또는 null
      */
     private function loadSeed(LanguagePack $pack, string $entity): ?array
@@ -109,9 +106,8 @@ class SyncDatabaseTranslations
      * Repository 가 누적한 감사 항목을 language_pack 채널 로그로 라우팅합니다.
      *
      * @param  string  $action  최상위 동작 (activated/deactivated)
-     * @param  LanguagePack  $pack  대상 언어팩
      * @param  array<int, array<string, mixed>>  $audit  Repository 가 반환한 감사 항목 배열
-     * @return void 반환값 없음
+     * @return void
      */
     private function emitAudit(string $action, LanguagePack $pack, array $audit): void
     {

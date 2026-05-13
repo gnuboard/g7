@@ -42,7 +42,7 @@ return [
     'ids' => [
         'required' => 'Please select pages to process.',
         'array' => 'The page list format is invalid.',
-        'min' => 'Please select at least :min page.',
+        'min' => 'Please select at least :min page(s).',
         'integer' => 'Page ID must be an integer.',
         'exists' => 'Some selected pages do not exist.',
     ],
@@ -57,14 +57,6 @@ return [
     // search validation messages
     'search' => [
         'max' => 'The search query must not exceed :max characters.',
-    ],
-
-    // user-friendly attribute names shown in validation errors
-    'attributes' => [
-        'search' => 'search query',
-        'temp_key' => 'temporary attachment key',
-        'title' => 'page title',
-        'content' => 'page content',
     ],
 
     // search_field validation messages
@@ -100,7 +92,6 @@ return [
             'file' => 'The file format is invalid.',
             'max' => 'The file size must not exceed :maxKB.',
             'mimes' => 'The file type is not allowed.',
-            'mimetypes' => 'The file type is not allowed.',
         ],
         'order' => [
             'required' => 'Order information is required.',

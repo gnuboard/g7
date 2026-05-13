@@ -2,14 +2,8 @@
 
 namespace Modules\Sirsoft\Board\Tests\Feature\Seo;
 
-use App\Enums\ExtensionStatus;
 use App\Extension\TemplateManager;
-use App\Models\Module;
-use App\Models\Permission;
-use App\Models\Plugin;
-use App\Models\Role;
 use App\Seo\SeoCacheManager;
-use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
@@ -35,37 +29,27 @@ class PostSeoOgImageRenderingTest extends ModuleTestCase
 
         // 의존성 모듈 (sirsoft-ecommerce / sirsoft-page) 을 active 상태로 등록 — 템플릿 의존 만족용
         // (전체 install 은 비용 크므로 Module DB 행만 직접 셋업)
-        // 버전은 번들 매니페스트 실버전으로 등록한다. sirsoft-basic 템플릿은 의존성 제약
-        // (예: sirsoft-ecommerce >=1.0.2) 을 두므로, 하드코딩 버전은 확장 버전 bump 시 stale 되어
-        // installTemplate() 이 "버전이 맞지 않습니다" 로 실패 → 활성 user 템플릿 부재 →
-        // SEO 라우트 미해석 → og:image 미출력으로 이어진다. updateOrCreate 로 기존 행의
-        // stale 버전까지 매니페스트 값으로 교정한다(트랜잭션 롤백으로 격리).
         foreach ([
             ['sirsoft-ecommerce', 'sirsoft', '이커머스', 'Ecommerce'],
             ['sirsoft-page', 'sirsoft', '페이지', 'Page'],
         ] as [$id, $vendor, $ko, $en]) {
-            $manifestVersion = json_decode(
-                (string) @file_get_contents(base_path("modules/_bundled/{$id}/module.json")),
-                true
-            )['version'] ?? '1.0.0';
-
-            Module::updateOrCreate(
+            \App\Models\Module::firstOrCreate(
                 ['identifier' => $id],
                 [
                     'vendor' => $vendor,
                     'name' => ['ko' => $ko, 'en' => $en],
-                    'status' => ExtensionStatus::Active->value,
-                    'version' => $manifestVersion,
+                    'status' => \App\Enums\ExtensionStatus::Active->value,
+                    'version' => '1.0.0',
                     'config' => [],
                 ]
             );
         }
-        Plugin::firstOrCreate(
+        \App\Models\Plugin::firstOrCreate(
             ['identifier' => 'sirsoft-daum_postcode'],
             [
                 'vendor' => 'sirsoft',
                 'name' => ['ko' => '다음 우편번호', 'en' => 'Daum Postcode'],
-                'status' => ExtensionStatus::Active->value,
+                'status' => \App\Enums\ExtensionStatus::Active->value,
                 'version' => '1.0.0',
                 'config' => [],
             ]
@@ -73,23 +57,14 @@ class PostSeoOgImageRenderingTest extends ModuleTestCase
 
         // 템플릿 활성화
         $tm = app(TemplateManager::class);
-        try {
-            $tm->installTemplate('sirsoft-basic');
-        } catch (\Throwable) {
-        }
-        try {
-            $tm->activateTemplate('sirsoft-basic');
-        } catch (\Throwable) {
-        }
+        try { $tm->installTemplate('sirsoft-basic'); } catch (\Throwable) {}
+        try { $tm->activateTemplate('sirsoft-basic'); } catch (\Throwable) {}
 
         // SEO 캐시 격리
-        try {
-            app(SeoCacheManager::class)->clearAll();
-        } catch (\Throwable) {
-        }
+        try { app(SeoCacheManager::class)->clearAll(); } catch (\Throwable) {}
 
         // Http facade redirect — DataSourceResolver 가 호출하는 외부 HTTP 를 같은 process 의 internal kernel 로
-        Http::fake(function (Request $request) {
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
             $url = $request->url();
             $path = parse_url($url, PHP_URL_PATH);
             $query = parse_url($url, PHP_URL_QUERY);
@@ -116,11 +91,11 @@ class PostSeoOgImageRenderingTest extends ModuleTestCase
         ]);
 
         // guest role 에 board posts read 권한 부여 — 봇/비로그인이 게시글 SEO 받을 수 있도록
-        $readPerm = Permission::firstOrCreate(
+        $readPerm = \App\Models\Permission::firstOrCreate(
             ['identifier' => "sirsoft-board.{$board->slug}.posts.read"],
             ['name' => ['ko' => '게시글 조회', 'en' => 'Read Posts'], 'type' => 'user']
         );
-        Role::where('identifier', 'guest')->first()->permissions()->syncWithoutDetaching([$readPerm->id]);
+        \App\Models\Role::where('identifier', 'guest')->first()->permissions()->syncWithoutDetaching([$readPerm->id]);
 
         $post = Post::create([
             'board_id' => $board->id,

@@ -2,10 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
-use App\Support\Query\BoundedCount;
-use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 
 /**
@@ -18,56 +15,24 @@ interface ProductRepositoryInterface
      *
      * @param  int  $id  상품 ID
      * @param  bool  $includeInactive  비활성 옵션 포함 여부
-     * @return Product|null 상품 모델 또는 null
+     * @return Product|null
      */
     public function findWithOptions(int $id, bool $includeInactive = false): ?Product;
-
-    /**
-     * 상품이 1건이라도 존재하는지 확인합니다. (A2 base 통화 변경 가드)
-     *
-     * 소프트삭제된 상품도 과거 base 로 생성된 이력이므로 포함(withTrashed)해 판정한다.
-     *
-     * @return bool 1건이라도 존재하면 true
-     */
-    public function existsAny(): bool;
-
-    /**
-     * Sitemap 용으로 전시 중인 상품을 스트리밍 조회합니다.
-     *
-     * 전체 적재를 피하기 위해 id 기준으로 청크 단위 지연 조회합니다.
-     *
-     * @param  int  $chunkSize  청크 크기
-     * @return iterable<Product> 전시 중인 상품 순회자 (id, updated_at 만 조회)
-     */
-    public function streamVisibleForSitemap(int $chunkSize = 500): iterable;
 
     /**
      * 필터링된 상품 목록 조회 (페이지네이션)
      *
      * @param  array  $filters  필터 조건
      * @param  int  $perPage  페이지당 개수
-     * @return LengthAwarePaginator 페이지네이션된 상품 목록
+     * @return LengthAwarePaginator
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
-
-    /**
-     * 여러 상품의 옵션을 상품 ID 로 묶어 한 번에 조회합니다 (비활성 옵션 포함).
-     *
-     * 목록에서 펼친 행들의 옵션을 가져오기 위한 배치 조회입니다. 권한 스코프를 통과하지 못했거나
-     * 존재하지 않는 상품 ID 는 결과에서 빠지며, 반환된 `product_ids` 를 요청 배열과 대조하면
-     * 어떤 ID 가 제외됐는지 알 수 있습니다.
-     *
-     * @param  array<int, int|string>  $productIds  조회할 상품 ID 목록
-     * @return array{product_ids: array<int, int>, options: \Illuminate\Support\Collection|array<int, mixed>}
-     *                                                                                                        스코프를 통과한 상품 ID(요청 순서 유지) 와 상품 ID 로 그룹핑된 옵션
-     */
-    public function getOptionsGroupedByProductIds(array $productIds): array;
 
     /**
      * 상품 생성
      *
      * @param  array  $data  상품 데이터
-     * @return Product 생성된 상품 모델
+     * @return Product
      */
     public function create(array $data): Product;
 
@@ -76,7 +41,7 @@ interface ProductRepositoryInterface
      *
      * @param  Product  $product  상품 모델
      * @param  array  $data  수정 데이터
-     * @return Product 수정된 상품 모델
+     * @return Product
      */
     public function update(Product $product, array $data): Product;
 
@@ -84,25 +49,9 @@ interface ProductRepositoryInterface
      * 상품 삭제 (소프트 삭제)
      *
      * @param  Product  $product  상품 모델
-     * @return bool 삭제 성공 여부
+     * @return bool
      */
     public function delete(Product $product): bool;
-
-    /**
-     * 상품 완전 삭제 (SoftDeletes 무시, 물리 삭제)
-     *
-     * @param  Product  $product  상품 모델
-     * @return bool 삭제 성공 여부
-     */
-    public function forceDelete(Product $product): bool;
-
-    /**
-     * 상품 ID 배열로 활동 로그용 스냅샷(toArray)을 일괄 조회합니다.
-     *
-     * @param  array  $ids  상품 ID 배열
-     * @return array<int, array<string, mixed>> ID를 키로 하는 상품 스냅샷 맵
-     */
-    public function getSnapshotsByIds(array $ids): array;
 
     /**
      * 상품 일괄 상태 변경
@@ -110,7 +59,7 @@ interface ProductRepositoryInterface
      * @param  array  $ids  상품 ID 배열
      * @param  string  $field  필드명 (sales_status, display_status)
      * @param  string  $value  변경 값
-     * @return int 변경된 개수
+     * @return int  변경된 개수
      */
     public function bulkUpdateStatus(array $ids, string $field, string $value): int;
 
@@ -119,11 +68,11 @@ interface ProductRepositoryInterface
      *
      * @param  array  $ids  상품 ID 배열
      * @param  string  $method  변경 방식 (increase, decrease, set)
-     * @param  float  $value  변경 값 (소수 통화 대응)
+     * @param  int  $value  변경 값
      * @param  string  $unit  단위 (won, percent)
-     * @return int 변경된 개수
+     * @return int  변경된 개수
      */
-    public function bulkUpdatePrice(array $ids, string $method, float $value, string $unit): int;
+    public function bulkUpdatePrice(array $ids, string $method, int $value, string $unit): int;
 
     /**
      * 상품 일괄 재고 변경
@@ -131,16 +80,16 @@ interface ProductRepositoryInterface
      * @param  array  $ids  상품 ID 배열
      * @param  string  $method  변경 방식 (increase, decrease, set)
      * @param  int  $value  변경 값
-     * @return int 변경된 개수
+     * @return int  변경된 개수
      */
     public function bulkUpdateStock(array $ids, string $method, int $value): int;
 
     /**
      * 상품 코드 중복 확인
      *
-     * @param  string  $productCode  상품 코드
-     * @param  int|null  $excludeId  제외할 상품 ID
-     * @return bool 중복이면 true
+     * @param string $productCode 상품 코드
+     * @param int|null $excludeId 제외할 상품 ID
+     * @return bool
      */
     public function existsByProductCode(string $productCode, ?int $excludeId = null): bool;
 
@@ -152,41 +101,34 @@ interface ProductRepositoryInterface
     public function getStatistics(): array;
 
     /**
-     * 상품 통계 캐시를 무효화합니다.
-     *
-     * 상품이 바뀌면 통계도 곧바로 달라져야 합니다.
-     */
-    public function forgetStatisticsCache(): void;
-
-    /**
      * 상품 코드로 상품 조회
      *
-     * @param  string  $productCode  상품 코드
-     * @return Product|null 상품 모델 또는 null
+     * @param string $productCode 상품 코드
+     * @return Product|null
      */
     public function findByProductCode(string $productCode): ?Product;
 
     /**
      * 모든 관계를 포함하여 상품 조회 (폼 상세용)
      *
-     * @param  int  $id  상품 ID
-     * @return Product|null 상품 모델 또는 null
+     * @param int $id 상품 ID
+     * @return Product|null
      */
     public function findWithAllRelations(int $id): ?Product;
 
     /**
      * ID로 상품 조회
      *
-     * @param  int  $id  상품 ID
-     * @return Product|null 상품 모델 또는 null
+     * @param int $id 상품 ID
+     * @return Product|null
      */
     public function find(int $id): ?Product;
 
     /**
      * 상품 다중 필드 일괄 업데이트
      *
-     * @param  array  $ids  상품 ID 배열
-     * @param  array  $fields  업데이트할 필드와 값
+     * @param array $ids 상품 ID 배열
+     * @param array $fields 업데이트할 필드와 값
      * @return int 업데이트된 개수
      */
     public function bulkUpdateFields(array $ids, array $fields): int;
@@ -197,54 +139,43 @@ interface ProductRepositoryInterface
      * 전시상태 visible, 판매상태 on_sale/coming_soon 필터를 적용하고
      * sales 정렬 시 OrderOption 판매량 집계 서브쿼리를 사용합니다.
      *
-     * @param  array  $filters  필터 조건
-     * @param  int  $perPage  페이지당 개수
-     * @return LengthAwarePaginator 페이지네이션된 공개 상품 목록
+     * @param array $filters 필터 조건
+     * @param int $perPage 페이지당 개수
+     * @return LengthAwarePaginator
      */
     public function getPublicList(array $filters, int $perPage = 20): LengthAwarePaginator;
 
     /**
      * 인기 상품 조회 (최근 30일 판매량 기준)
      *
-     * @param  int  $limit  조회 개수
-     * @return Collection 인기 상품 컬렉션
+     * @param int $limit 조회 개수
+     * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getPopularProducts(int $limit = 10): Collection;
+    public function getPopularProducts(int $limit = 10): \Illuminate\Database\Eloquent\Collection;
 
     /**
      * 신상품 조회 (최신 등록순)
      *
-     * @param  int  $limit  조회 개수
-     * @return Collection 신상품 컬렉션
+     * @param int $limit 조회 개수
+     * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getNewProducts(int $limit = 10): Collection;
+    public function getNewProducts(int $limit = 10): \Illuminate\Database\Eloquent\Collection;
 
     /**
      * ID 목록으로 상품 조회
      *
-     * @param  array  $ids  상품 ID 배열
-     * @return Collection 상품 컬렉션
+     * @param array $ids 상품 ID 배열
+     * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function findByIds(array $ids): Collection;
-
-    /**
-     * ID 목록으로 상품을 관계와 함께 조회해 ID 키 맵으로 반환합니다.
-     *
-     * 항목마다 `find()` 를 부르는 루프를 없애기 위한 일괄 진입점입니다.
-     *
-     * @param  array<int, int>  $ids  상품 ID 배열
-     * @param  array<int, string>  $relations  함께 적재할 관계
-     * @return Collection<int, Product> 상품 ID 키 맵
-     */
-    public function findByIdsWithRelationsKeyed(array $ids, array $relations = []): Collection;
+    public function findByIds(array $ids): \Illuminate\Database\Eloquent\Collection;
 
     /**
      * ID 목록으로 상품을 조회하고 ID 키 맵으로 반환합니다 (bulk activity log lookup).
      *
      * @param  array<int, int>  $ids  상품 ID 목록
-     * @return Collection<int, Product> id => Product 매핑
+     * @return \Illuminate\Database\Eloquent\Collection<int, Product> id => Product 매핑
      */
-    public function findByIdsKeyed(array $ids): Collection;
+    public function findByIdsKeyed(array $ids): \Illuminate\Database\Eloquent\Collection;
 
     /**
      * 상품의 stock_quantity 컬럼만 갱신합니다 (옵션 재고 합계 동기화 전용).
@@ -258,41 +189,32 @@ interface ProductRepositoryInterface
     /**
      * 키워드로 공개 상품을 검색합니다.
      *
-     * @param  string  $keyword  검색 키워드
-     * @param  string  $orderBy  정렬 컬럼
-     * @param  string  $direction  정렬 방향 (asc, desc)
-     * @param  int|null  $categoryId  카테고리 필터 (null이면 전체)
-     * @param  int  $offset  오프셋
-     * @param  int  $limit  조회할 최대 항목 수
-     * @return array{total: int, items: Collection}
+     * @param string $keyword 검색 키워드
+     * @param string $orderBy 정렬 컬럼
+     * @param string $direction 정렬 방향 (asc, desc)
+     * @param int|null $categoryId 카테고리 필터 (null이면 전체)
+     * @param int $offset 오프셋
+     * @param int $limit 조회할 최대 항목 수
+     * @return array{total: int, items: \Illuminate\Database\Eloquent\Collection}
      */
-    public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', ?int $categoryId = null, int $offset = 0, int $limit = 10): BoundedPage;
+    public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', ?int $categoryId = null, int $offset = 0, int $limit = 10): array;
 
     /**
      * 키워드와 일치하는 공개 상품 수를 조회합니다.
      *
-     * @param  string  $keyword  검색 키워드
-     * @param  int|null  $categoryId  카테고리 필터 (null이면 전체)
-     * @return BoundedCount 일치하는 상품 수 (정확도 포함)
+     * @param string $keyword 검색 키워드
+     * @param int|null $categoryId 카테고리 필터 (null이면 전체)
+     * @return int 일치하는 상품 수
      */
-    public function countByKeyword(string $keyword, ?int $categoryId = null): BoundedCount;
+    public function countByKeyword(string $keyword, ?int $categoryId = null): int;
 
     /**
      * 상품 재고를 옵션 재고 합계와 동기화
      *
      * Product.stock_quantity = SUM(ProductOption.stock_quantity) 규칙 적용
      *
-     * @param  int  $productId  상품 ID
+     * @param int $productId 상품 ID
      * @return bool 성공 여부
      */
     public function syncStockFromOptions(int $productId): bool;
-
-    /**
-     * 상품과 그 옵션의 활동 로그를 합쳐 페이지네이션으로 조회
-     *
-     * @param  Product  $product  대상 상품
-     * @param  array  $filters  조회 필터 (per_page, sort_order + 확장이 훅으로 추가한 필드)
-     * @return LengthAwarePaginator 활동 로그 페이지네이터
-     */
-    public function getActivityLogsForProduct(Product $product, array $filters = []): LengthAwarePaginator;
 }

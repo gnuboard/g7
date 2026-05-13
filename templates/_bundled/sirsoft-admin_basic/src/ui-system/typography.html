@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Typography - 그누보드7 Admin Design Guide</title>
+  <link rel="stylesheet" href="../../dist/css/components.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    .preview-section {
+      margin-bottom: 3rem;
+    }
+    .preview-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #111827;
+    }
+    .dark .preview-title {
+      color: #f9fafb;
+    }
+    .preview-subtitle {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+      color: #374151;
+    }
+    .dark .preview-subtitle {
+      color: #d1d5db;
+    }
+    .preview-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+    .preview-breadcrumb a {
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .preview-breadcrumb a:hover {
+      color: #3b82f6;
+    }
+    .dark .preview-breadcrumb a {
+      color: #9ca3af;
+    }
+    .dark .preview-breadcrumb a:hover {
+      color: #60a5fa;
+    }
+    .preview-breadcrumb span {
+      color: #9ca3af;
+    }
+    .dark .preview-breadcrumb span {
+      color: #6b7280;
+    }
+
+    /* Type Scale Table */
+    .preview-type-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.5rem;
+    }
+    .preview-type-table th,
+    .preview-type-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .dark .preview-type-table th,
+    .dark .preview-type-table td {
+      border-bottom-color: #374151;
+    }
+    .preview-type-table th {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #6b7280;
+      background: #f9fafb;
+    }
+    .dark .preview-type-table th {
+      color: #9ca3af;
+      background: #1f2937;
+    }
+    .preview-type-table td {
+      color: #111827;
+    }
+    .dark .preview-type-table td {
+      color: #f9fafb;
+    }
+    .preview-type-table .preview-class-name {
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+      font-size: 0.875rem;
+      color: #6366f1;
+    }
+    .dark .preview-type-table .preview-class-name {
+      color: #818cf8;
+    }
+    .preview-type-table .preview-spec {
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+    .dark .preview-type-table .preview-spec {
+      color: #9ca3af;
+    }
+
+    /* Component Typography Card */
+    .preview-typo-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .dark .preview-typo-card {
+      background: #1f2937;
+      border-color: #374151;
+    }
+    .preview-typo-label {
+      font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+      font-size: 0.75rem;
+      color: #6366f1;
+      margin-bottom: 0.5rem;
+    }
+    .dark .preview-typo-label {
+      color: #818cf8;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <!-- Dark Mode Toggle -->
+  <div class="fixed top-4 right-4 z-50">
+    <button id="darkModeToggle" class="btn btn-secondary">
+      <i class="fas fa-moon dark:hidden"></i>
+      <i class="fas fa-sun hidden dark:inline"></i>
+      <span class="dark:hidden">다크모드</span>
+      <span class="hidden dark:inline">라이트모드</span>
+    </button>
+  </div>
+
+  <div class="max-w-7xl mx-auto p-8">
+    <div class="preview-breadcrumb">
+      <a href="index.html"><i class="fas fa-home"></i></a>
+      <span>/</span>
+      <span class="text-gray-900 dark:text-white">Typography</span>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">Typography</h1>
+
+    <!-- Type Scale -->
+    <section class="preview-section">
+      <h2 class="preview-title">1. Type Scale</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Tailwind CSS 폰트 크기 스케일</p>
+
+      <table class="preview-type-table">
+        <thead>
+          <tr>
+            <th>클래스</th>
+            <th>크기</th>
+            <th>샘플</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="preview-class-name">.text-3xl</span></td>
+            <td><span class="preview-spec">30px / 1.875rem</span></td>
+            <td><span style="font-size: 30px;">Typography</span></td>
+          </tr>
+          <tr>
+            <td><span class="preview-class-name">.text-2xl</span></td>
+            <td><span class="preview-spec">24px / 1.5rem</span></td>
+            <td><span style="font-size: 24px;">Typography</span></td>
+          </tr>
+          <tr>
+            <td><span class="preview-class-name">.text-xl</span></td>
+            <td><span class="preview-spec">20px / 1.25rem</span></td>
+            <td><span style="font-size: 20px;">Typography</span></td>
+          </tr>
+          <tr>
+            <td><span class="preview-class-name">.text-lg</span></td>
+            <td><span class="preview-spec">18px / 1.125rem</span></td>
+            <td><span style="font-size: 18px;">Typography</span></td>
+          </tr>
+          <tr>
+            <td><span class="preview-class-name">.text-base</span></td>
+            <td><span class="preview-spec">16px / 1rem</span></td>
+            <td><span style="font-size: 16px;">Typography</span></td>
+          </tr>
+          <tr>
+            <td><span class="preview-class-name">.text-sm</span></td>
+            <td><span class="preview-spec">14px / 0.875rem</span></td>
+            <td><span style="font-size: 14px;">Typography</span></td>
+          </tr>
+          <tr>
+            <td><span class="preview-class-name">.text-xs</span></td>
+            <td><span class="preview-spec">12px / 0.75rem</span></td>
+            <td><span style="font-size: 12px;">Typography</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Font Weight -->
+    <section class="preview-section">
+      <h2 class="preview-title">2. Font Weight</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Tailwind CSS 폰트 굵기</p>
+
+      <table class="preview-type-table">
+        <thead>
+          <tr>
+            <th>클래스</th>
+            <th>값</th>
+            <th>샘플</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="preview-class-name">.font-normal</span></td>
+            <td><span class="preview-spec">400</span></td>
+            <td><span style="font-weight: 400; font-size: 18px;">Typography</span></td>
+          </tr>
+          <tr>
+            <td><span class="preview-class-name">.font-medium</span></td>
+            <td><span class="preview-spec">500</span></td>
+            <td><span style="font-weight: 500; font-size: 18px;">Typography</span></td>
+          </tr>
+          <tr>
+            <td><span class="preview-class-name">.font-semibold</span></td>
+            <td><span class="preview-spec">600</span></td>
+            <td><span style="font-weight: 600; font-size: 18px;">Typography</span></td>
+          </tr>
+          <tr>
+            <td><span class="preview-class-name">.font-bold</span></td>
+            <td><span class="preview-spec">700</span></td>
+            <td><span style="font-weight: 700; font-size: 18px;">Typography</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Component Typography -->
+    <section class="preview-section">
+      <h2 class="preview-title">3. Component Typography</h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">컴포넌트별 타이포그래피 클래스 (ui-system.css 스타일 적용)</p>
+
+      <!-- Page -->
+      <h3 class="preview-subtitle">Page</h3>
+      <div class="preview-typo-card">
+        <div class="preview-typo-label">.page-title</div>
+        <h1 class="page-title">페이지 제목</h1>
+      </div>
+      <div class="preview-typo-card">
+        <div class="preview-typo-label">.page-description</div>
+        <p class="page-description">페이지에 대한 설명 텍스트입니다.</p>
+      </div>
+
+      <!-- Card -->
+      <h3 class="preview-subtitle" style="margin-top: 1.5rem;">Card</h3>
+      <div class="preview-typo-card">
+        <div class="preview-typo-label">.card-title</div>
+        <h3 class="card-title">카드 제목</h3>
+      </div>
+      <div class="preview-typo-card">
+        <div class="preview-typo-label">.card-description</div>
+        <p class="card-description">카드에 대한 설명 텍스트입니다.</p>
+      </div>
+
+      <!-- Modal -->
+      <h3 class="preview-subtitle" style="margin-top: 1.5rem;">Modal</h3>
+      <div class="preview-typo-card">
+        <div class="preview-typo-label">.modal-title</div>
+        <h3 class="modal-title">모달 제목</h3>
+      </div>
+      <div class="preview-typo-card">
+        <div class="preview-typo-label">.modal-description</div>
+        <p class="modal-description">모달에 대한 설명 텍스트입니다.</p>
+      </div>
+
+      <!-- Form -->
+      <h3 class="preview-subtitle" style="margin-top: 1.5rem;">Form</h3>
+      <div class="preview-typo-card">
+        <div class="preview-typo-label">.form-label</div>
+        <label class="form-label">폼 레이블</label>
+      </div>
+      <div class="preview-typo-card">
+        <div class="preview-typo-label">.form-hint</div>
+        <p class="form-hint">폼 필드에 대한 힌트 텍스트입니다.</p>
+      </div>
+
+      <!-- Toast -->
+      <h3 class="preview-subtitle" style="margin-top: 1.5rem;">Toast</h3>
+      <div class="preview-typo-card">
+        <div class="preview-typo-label">.toast-message</div>
+        <span class="toast-message">토스트 메시지입니다.</span>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/preview.js"></script>
+</body>
+</html>

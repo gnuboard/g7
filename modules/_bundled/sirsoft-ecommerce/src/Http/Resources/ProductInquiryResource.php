@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
-use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 
 /**
  * 상품 1:1 문의 리소스
@@ -30,7 +29,7 @@ class ProductInquiryResource extends BaseApiResource
             'user' => $this->whenLoaded('user', fn () => $this->user ? [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
-                'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
+                'email' => $this->user->email,
             ] : null),
 
             // 상품 정보
@@ -75,7 +74,7 @@ class ProductInquiryResource extends BaseApiResource
 
         $locale = app()->getLocale();
 
-        return LocalizedText::pick($snapshot, $locale);
+        return $snapshot[$locale] ?? $snapshot[config('app.fallback_locale', 'ko')] ?? array_values($snapshot)[0] ?? '';
     }
 
     /**

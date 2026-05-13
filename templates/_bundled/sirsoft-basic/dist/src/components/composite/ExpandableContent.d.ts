@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 export interface ExpandableContentProps {
     /**
      * 접힌 상태의 최대 높이 (px)
@@ -22,14 +21,6 @@ export interface ExpandableContentProps {
      * children 렌더링
      */
     children?: React.ReactNode;
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-    id?: string;
-    /**
-       * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-       */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * ExpandableContent 컴포넌트

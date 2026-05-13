@@ -5,32 +5,23 @@ namespace Modules\Sirsoft\Board;
 use App\Extension\AbstractModule;
 use App\Models\Role;
 use App\Seo\Concerns\LocalizesSeoValues;
-use App\Services\AttachmentService;
-use App\Support\SiteUrl;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Schema;
-use Modules\Sirsoft\Board\Database\Seeders\BoardReactionTypeSeeder;
 use Modules\Sirsoft\Board\Database\Seeders\BoardTypeSeeder;
 use Modules\Sirsoft\Board\Listeners\ActivityLogDescriptionResolver;
 use Modules\Sirsoft\Board\Listeners\BoardActivityLogListener;
-use Modules\Sirsoft\Board\Listeners\BoardCommentsCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\BoardNotificationChannelListener;
 use Modules\Sirsoft\Board\Listeners\BoardNotificationDataListener;
+use Modules\Sirsoft\Board\Listeners\BoardCommentsCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\BoardPostsCountSyncListener;
-use Modules\Sirsoft\Board\Listeners\Ckeditor5ReferenceSourcesListener;
 use Modules\Sirsoft\Board\Listeners\CommentReplySyncListener;
 use Modules\Sirsoft\Board\Listeners\EcommerceInquiryHookListener;
 use Modules\Sirsoft\Board\Listeners\PostAttachmentCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\PostCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\PostReplySyncListener;
-use Modules\Sirsoft\Board\Listeners\PrivacyRetentionHandlerListener;
 use Modules\Sirsoft\Board\Listeners\SearchPostsListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardSettingsCacheListener;
 use Modules\Sirsoft\Board\Listeners\UserNotificationSettingsListener;
-use Modules\Sirsoft\Board\Listeners\UserReactionInfoListener;
-use Modules\Sirsoft\Board\Listeners\UserScrapInfoListener;
-use Modules\Sirsoft\Board\Models\Board;
 
 class Module extends AbstractModule
 {
@@ -48,52 +39,15 @@ class Module extends AbstractModule
     public function uninstall(): bool
     {
         // 게시판별 동적 역할 정리 (sirsoft-board.*.manager, sirsoft-board.*.step)
-        // chunkById(키셋 순회) 필수 — each() 는 OFFSET 기반 청크(기본 1000건)라
-        // 콜백이 순회 대상을 삭제하면 다음 페이지의 OFFSET 이 줄어든 결과 집합을 지나쳐
-        // 1000건을 넘는 역할이 그대로 남는다.
         Role::where('extension_type', 'module')
             ->where('extension_identifier', 'sirsoft-board')
-            ->chunkById(100, function ($roles) {
-                foreach ($roles as $role) {
-                    $role->permissions()->detach();
-                    $role->users()->detach();
-                    $role->delete();
-                }
+            ->each(function (Role $role) {
+                $role->permissions()->detach();
+                $role->users()->detach();
+                $role->delete();
             });
 
-        // 반응 유형 아이콘 첨부 정리 — source_identifier 가 붙은 첨부는 코어 고아 정리
-        // 대상이 아니므로(정리 대상은 source_identifier 가 NULL 인 행뿐) 여기서 지우지
-        // 않으면 모듈을 지운 뒤에도 파일과 attachments 행이 남는다.
-        app(AttachmentService::class)->deleteBySourceIdentifier('sirsoft-board');
-
         return parent::uninstall();
-    }
-
-    /**
-     * 모듈 스케줄 목록 반환
-     *
-     * 대시보드 게시물 현황 집계를 매시간 실행합니다.
-     *
-     * @return array<int, array<string, string>> 스케줄 정의 목록
-     */
-    public function getSchedules(): array
-    {
-        return [
-            [
-                'command' => 'sirsoft-board:aggregate-stats',
-                'schedule' => 'hourly',
-                'description' => '대시보드 게시물 현황 집계',
-            ],
-            [
-                'command' => 'sirsoft-board:prune-attachments --scheduled',
-                'schedule' => 'daily',
-                'description' => '방치된 임시 첨부 정리 + 보존기간 경과 삭제 첨부 영구 정리',
-                // 임시 첨부 정리 파트는 상시 동작해야 하므로 스케줄 자체는 항상 등록한다.
-                // 사용자 파일을 실제로 파기하는 영구 정리 파트만 커맨드 내부에서 게이트한다
-                // (attachment_settings.purge_enabled, false 폴백).
-                'enabled_config' => null,
-            ],
-        ];
     }
 
     /**
@@ -106,7 +60,6 @@ class Module extends AbstractModule
      * 모듈 레벨 권한만 정의:
      * - sirsoft-board.boards.* (게시판 관리)
      * - sirsoft-board.reports.* (신고 관리)
-     * - sirsoft-board.scraps.* (전 회원 스크랩 조회·삭제)
      */
     public function getPermissions(): array
     {
@@ -228,7 +181,7 @@ class Module extends AbstractModule
                         ],
                     ],
                 ],
-                // 본인인증 정책 관리 권한 (type: admin) — 환경설정 「본인인증 정책」 탭의 조회·추가·수정·삭제 축
+                // 본인인증 정책 관리 권한 (type: admin)
                 [
                     'identifier' => 'identity.policies',
                     'name' => [
@@ -265,33 +218,6 @@ class Module extends AbstractModule
                             ],
                             'type' => 'admin',
                             'roles' => ['admin'],
-                        ],
-                    ],
-                ],
-                // 대시보드 조회 권한 (type: admin)
-                [
-                    'identifier' => 'dashboard',
-                    'name' => [
-                        'ko' => '게시판 대시보드',
-                        'en' => 'Board Dashboard',
-                    ],
-                    'description' => [
-                        'ko' => '게시판 대시보드 조회 권한',
-                        'en' => 'Board dashboard view permissions',
-                    ],
-                    'permissions' => [
-                        [
-                            'action' => 'view',
-                            'name' => [
-                                'ko' => '대시보드 조회',
-                                'en' => 'View Dashboard',
-                            ],
-                            'description' => [
-                                'ko' => '게시판 대시보드(현황/추세/최신글/미처리 신고) 조회',
-                                'en' => 'View board dashboard (overview, trend, recent posts, pending reports)',
-                            ],
-                            'type' => 'admin',
-                            'roles' => ['admin', 'manager'],
                         ],
                     ],
                 ],
@@ -337,89 +263,6 @@ class Module extends AbstractModule
                         ],
                     ],
                 ],
-                [
-                    'identifier' => 'scraps',
-                    'resource_route_key' => 'scrap',
-                    'owner_key' => 'user_id',
-                    'name' => [
-                        'ko' => '게시글 스크랩 관리',
-                        'en' => 'Scrap Management',
-                    ],
-                    'description' => [
-                        'ko' => '전 회원 게시글 스크랩 조회·삭제 권한',
-                        'en' => 'View and delete post scraps across all members',
-                    ],
-                    'permissions' => [
-                        [
-                            'action' => 'view',
-                            'name' => [
-                                'ko' => '스크랩 조회',
-                                'en' => 'View Scraps',
-                            ],
-                            'description' => [
-                                'ko' => '전 회원 스크랩 목록 조회',
-                                'en' => 'View scrap list across all members',
-                            ],
-                            'type' => 'admin',
-                            'roles' => ['admin', 'manager'],
-                        ],
-                        [
-                            'action' => 'manage',
-                            'name' => [
-                                'ko' => '스크랩 삭제',
-                                'en' => 'Delete Scraps',
-                            ],
-                            'description' => [
-                                'ko' => '회원 스크랩 개별·일괄 삭제',
-                                'en' => 'Delete member scraps individually or in bulk',
-                            ],
-                            'type' => 'admin',
-                            'roles' => ['admin'],
-                        ],
-                    ],
-                ],
-                // 반응 관리 권한 (type: admin) — 스크랩과 동형
-                [
-                    'identifier' => 'reactions',
-                    'resource_route_key' => 'reaction',
-                    'owner_key' => 'user_id',
-                    'name' => [
-                        'ko' => '게시글 반응 관리',
-                        'en' => 'Reaction Management',
-                    ],
-                    'description' => [
-                        'ko' => '전 회원 게시글·댓글 반응 조회·삭제 권한',
-                        'en' => 'View and delete post/comment reactions across all members',
-                    ],
-                    'permissions' => [
-                        [
-                            'action' => 'view',
-                            'name' => [
-                                'ko' => '반응 조회',
-                                'en' => 'View Reactions',
-                            ],
-                            'description' => [
-                                'ko' => '전 회원 반응 목록 조회',
-                                'en' => 'View reaction list across all members',
-                            ],
-                            'type' => 'admin',
-                            'roles' => ['admin', 'manager'],
-                        ],
-                        [
-                            'action' => 'manage',
-                            'name' => [
-                                'ko' => '반응 삭제',
-                                'en' => 'Delete Reactions',
-                            ],
-                            'description' => [
-                                'ko' => '회원 반응 개별·일괄 삭제',
-                                'en' => 'Delete member reactions individually or in bulk',
-                            ],
-                            'type' => 'admin',
-                            'roles' => ['admin'],
-                        ],
-                    ],
-                ],
             ],
         ];
     }
@@ -447,14 +290,14 @@ class Module extends AbstractModule
      */
     public function getDynamicPermissionIdentifiers(): array
     {
-        if (! Schema::hasTable('boards')) {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('boards')) {
             return [];
         }
 
         $actions = array_keys((array) config('sirsoft-board.board_permission_definitions', []));
         $module = $this->getIdentifier();
         $ids = [];
-        foreach (Board::query()->select('slug')->get() as $board) {
+        foreach (\Modules\Sirsoft\Board\Models\Board::query()->select('slug')->get() as $board) {
             $category = $module.'.'.$board->slug;
             $ids[] = $category;
             foreach ($actions as $action) {
@@ -474,13 +317,13 @@ class Module extends AbstractModule
      */
     public function getDynamicRoleIdentifiers(): array
     {
-        if (! Schema::hasTable('boards')) {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('boards')) {
             return [];
         }
 
         $module = $this->getIdentifier();
         $ids = [];
-        foreach (Board::query()->select('slug')->get() as $board) {
+        foreach (\Modules\Sirsoft\Board\Models\Board::query()->select('slug')->get() as $board) {
             $ids[] = $module.'.'.$board->slug.'.manager';
             $ids[] = $module.'.'.$board->slug.'.step';
         }
@@ -495,12 +338,12 @@ class Module extends AbstractModule
      */
     public function getDynamicMenuSlugs(): array
     {
-        if (! Schema::hasTable('boards')) {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('boards')) {
             return [];
         }
 
         $slugs = [];
-        foreach (Board::query()->select('slug')->get() as $board) {
+        foreach (\Modules\Sirsoft\Board\Models\Board::query()->select('slug')->get() as $board) {
             $slugs[] = 'board-'.$board->slug;
         }
 
@@ -511,8 +354,7 @@ class Module extends AbstractModule
      * 모듈 설치 시 실행할 시더 목록 반환
      *
      * BoardTypeSeeder: 기본 게시판 유형(basic, gallery, card) 생성
-     * BoardReactionTypeSeeder: 기본 반응 유형(추천·비추천) 생성 — 빠지면 새로 설치한 사이트의
-     *   게시판에 반응 버튼이 나오지 않는다(게시판 기본 설정의 사용할 반응 유형이 가리킬 행이 없다)
+     * InstallSeeder: 기본 메일 템플릿 5종 생성
      *
      * 그 외 시더(DatabaseSeeder, BoardSampleSeeder, PostSampleSeeder, ReportSampleSeeder)는
      * 테스트용 더미 데이터 시더이므로 설치 시 실행하지 않습니다.
@@ -525,7 +367,6 @@ class Module extends AbstractModule
     {
         return [
             BoardTypeSeeder::class,
-            BoardReactionTypeSeeder::class,
         ];
     }
 
@@ -550,10 +391,6 @@ class Module extends AbstractModule
             CommentReplySyncListener::class,
             BoardPostsCountSyncListener::class,
             BoardCommentsCountSyncListener::class,
-            Ckeditor5ReferenceSourcesListener::class,
-            UserScrapInfoListener::class,
-            UserReactionInfoListener::class,
-            PrivacyRetentionHandlerListener::class,
         ];
     }
 
@@ -640,8 +477,7 @@ class Module extends AbstractModule
             // 상대 경로(/api/...) 는 url() 로 절대 URL 변환 — Facebook/Threads/Slack 모두 절대 URL 필수.
             $thumbnailRaw = (string) (data_get($post, 'thumbnail') ?? '');
             $image = $thumbnailRaw !== ''
-                // 보안: 요청 Host 가 아니라 사이트 주소 — 봇 화면은 캐시되어 모든 크롤러·미리보기에 나간다.
-                ? (str_starts_with($thumbnailRaw, 'http') ? $thumbnailRaw : SiteUrl::absolute($thumbnailRaw))
+                ? (str_starts_with($thumbnailRaw, 'http') ? $thumbnailRaw : url($thumbnailRaw))
                 : '';
 
             return array_filter([
@@ -695,7 +531,7 @@ class Module extends AbstractModule
         // 썸네일 URL — thumbnail 키 우선 + 절대 URL 변환
         $thumbnailRaw = (string) (data_get($post, 'thumbnail') ?? '');
         if ($thumbnailRaw !== '') {
-            $schema['image'] = str_starts_with($thumbnailRaw, 'http') ? $thumbnailRaw : SiteUrl::absolute($thumbnailRaw);
+            $schema['image'] = str_starts_with($thumbnailRaw, 'http') ? $thumbnailRaw : url($thumbnailRaw);
         }
 
         $publishedAt = (string) ($post['created_at'] ?? '');
@@ -724,50 +560,6 @@ class Module extends AbstractModule
         }
 
         return $schema;
-    }
-
-    /**
-     * OG 기본값 키별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
-     *
-     * seoOgDefaults() 가 resolve 해 반환하는 평문값이 **어느 게시글 데이터에서 왔는지**를 편집기
-     * [검색엔진] 탭이 "대표 이미지"·"게시글 제목" 같은 연결 칩으로 보여주고 교체할 수 있도록,
-     * 키별 데이터 경로(표현식)와 사용자용 라벨을 제공합니다. 단순 1:1 경로 키만 선언합니다.
-     *
-     * @param  string  $pageType  페이지 타입
-     * @return array<string, array{expr: string, label: array<string, string>}> 키별 데이터 경로 메타
-     */
-    public function seoOgDefaultMeta(string $pageType): array
-    {
-        // label 은 번역 키 — 번들 언어팩(ja 등)이 같은 키를 번역하면 추가 언어에 자동 대응(편집기가 __() 해석).
-        if ($pageType === 'post') {
-            return [
-                'image' => ['expr' => '{{post.data.thumbnail}}', 'label' => 'sirsoft-board::seo.auto_value.post_image'],
-                'image_alt' => ['expr' => '{{post.data.subject}}', 'label' => 'sirsoft-board::seo.auto_value.post_title'],
-            ];
-        }
-
-        return [];
-    }
-
-    /**
-     * 구조화 데이터 속성별 데이터 출처(연결 칩) 메타 선언 — 편집기 전용
-     *
-     * seoStructuredData() 의 Article 스키마를 점 경로 키로 평탄화한 기준으로 선언합니다. 파생값
-     * (description=strip_tags·datePublished·author.* 등)은 단순 경로가 아니라 제외합니다(평문 폴백).
-     *
-     * @param  string  $pageType  페이지 타입
-     * @return array<string, array{expr: string, label: array<string, string>}> 점 경로 키별 데이터 경로 메타
-     */
-    public function seoStructuredDataMeta(string $pageType): array
-    {
-        if ($pageType !== 'post') {
-            return [];
-        }
-
-        return [
-            'headline' => ['expr' => '{{post.data.subject}}', 'label' => 'sirsoft-board::seo.auto_value.post_title'],
-            'image' => ['expr' => '{{post.data.thumbnail}}', 'label' => 'sirsoft-board::seo.auto_value.post_image'],
-        ];
     }
 
     /**
@@ -827,28 +619,6 @@ class Module extends AbstractModule
                         'order' => 3,
                         'permission' => 'sirsoft-board.reports.view',
                     ],
-                    [
-                        'name' => [
-                            'ko' => '스크랩 관리',
-                            'en' => 'Scrap Management',
-                        ],
-                        'slug' => 'sirsoft-board-scraps',
-                        'url' => '/admin/boards/scraps',
-                        'icon' => 'fas fa-bookmark',
-                        'order' => 4,
-                        'permission' => 'sirsoft-board.scraps.view',
-                    ],
-                    [
-                        'name' => [
-                            'ko' => '반응 관리',
-                            'en' => 'Reaction Management',
-                        ],
-                        'slug' => 'sirsoft-board-reactions',
-                        'url' => '/admin/boards/reactions',
-                        'icon' => 'fas fa-thumbs-up',
-                        'order' => 5,
-                        'permission' => 'sirsoft-board.reactions.view',
-                    ],
                 ],
             ],
         ];
@@ -882,19 +652,6 @@ class Module extends AbstractModule
                 'key' => 'sirsoft-board.post.blind',
                 'scope' => 'hook',
                 'target' => 'sirsoft-board.post.before_blind',
-                'purpose' => 'sensitive_action',
-                'grace_minutes' => 5,
-                'enabled' => false,
-                'applies_to' => 'admin',
-                'fail_mode' => 'block',
-            ],
-            // 게시글 일괄 처리 (관리자 민감 작업) — 삭제·블라인드·복구 공통.
-            // 항목별 before_delete/before_blind 가 아니라 일괄 훅 하나를 대상으로 삼는다:
-            // 루프 중간에 428 이 터지면 앞 항목만 처리된 상태로 끝나기 때문이다.
-            [
-                'key' => 'sirsoft-board.post.bulk_action',
-                'scope' => 'hook',
-                'target' => 'sirsoft-board.post.before_bulk_action',
                 'purpose' => 'sensitive_action',
                 'grace_minutes' => 5,
                 'enabled' => false,
@@ -1023,73 +780,6 @@ class Module extends AbstractModule
     }
 
     /**
-     * 성능 계측 프로파일 정의 (`g7:bench`).
-     *
-     * 게시글 목록의 `columns` 는 `PostRepository::paginate()` 가 select 하는 컬럼 집합입니다
-     * (본문 미리보기용 `SUBSTRING` 표현식은 지연 조인의 outer 에서만 적용되고 계측 대상인
-     * 건너뛰기 비용과 무관하므로 제외). 게시글 목록은 화면이 게시판 하나를 조회하므로 필터
-     * 없이 재면 인덱스 선택이 달라져 화면에서 일어나는 일과 다른 것을 재게 됩니다.
-     *
-     * @return array<string, array<string, mixed>> 프로파일 키 → 정의
-     */
-    public function getBenchmarkProfiles(): array
-    {
-        return [
-            'board_posts' => [
-                'type' => 'list',
-                'label' => '게시글 목록',
-                'table' => 'board_posts',
-                'columns' => [
-                    'id', 'board_id', 'user_id', 'parent_id', 'category',
-                    'title', 'author_name', 'content_mode',
-                    'is_notice', 'is_secret', 'status', 'depth',
-                    'view_count', 'comments_count', 'replies_count', 'attachments_count',
-                    'trigger_type', 'ip_address', 'created_at', 'updated_at', 'deleted_at',
-                ],
-                'order' => [['created_at', 'desc'], ['id', 'desc']],
-                // 실제 목록 쿼리(PostRepository::buildSortedPostList)는 공지와 답글을 빼고
-                // 원글만 페이지네이션한다. 필터를 board_id 만 걸면 등치 사슬이 is_notice 에서
-                // 끊겨 옵티마이저가 다른 인덱스를 골라, 제품이 실행하지 않는 실행 계획을 재게 된다.
-                'filters' => ['board_id' => 1, 'is_notice' => 0, 'parent_id' => null],
-                'seed_overrides' => ['board_id' => 1, 'is_notice' => 0, 'parent_id' => null],
-                'soft_delete' => true,
-            ],
-            'board_posts_by_view_count' => [
-                'type' => 'list',
-                'label' => '게시글 목록 (조회순)',
-                'table' => 'board_posts',
-                'columns' => [
-                    'id', 'board_id', 'user_id', 'parent_id', 'category',
-                    'title', 'author_name', 'content_mode',
-                    'is_notice', 'is_secret', 'status', 'depth',
-                    'view_count', 'comments_count', 'replies_count', 'attachments_count',
-                    'trigger_type', 'ip_address', 'created_at', 'updated_at', 'deleted_at',
-                ],
-                // 조회수 정렬은 화면에서 실제로 도달 가능한 경로다 — 게시판 설정
-                // `order_by='view_count'` 와 목록 URL `?sort_by=view_count` 둘 다 있고,
-                // 저장소 정렬 화이트리스트에도 들어 있다. 작성일 정렬과 같은 술어에
-                // 정렬 축만 다르므로 별도 프로파일로 재야 인덱스 커버리지가 판정된다.
-                'order' => [['view_count', 'desc'], ['id', 'desc']],
-                'filters' => ['board_id' => 1, 'is_notice' => 0, 'parent_id' => null],
-                'seed_overrides' => ['board_id' => 1, 'is_notice' => 0, 'parent_id' => null],
-                'soft_delete' => true,
-            ],
-            // 댓글은 계측 프로파일을 두지 않는다. 페이지네이션되는 댓글 목록은 회원 본인 댓글
-            // 목록뿐이고(CommentRepository), 그 쿼리에는 회원 스코프 · 삭제 게시글 제외
-            // (whereExists 서브쿼리) · 비활성 게시판 제외가 무조건 붙는다. 선언형 필터로
-            // 재현할 수 없는 술어라, 맨 테이블 스캔을 재면 어느 화면도 내지 않는 수치가 된다.
-            'reports' => [
-                'type' => 'list',
-                'label' => '신고 목록',
-                'table' => 'boards_reports',
-                'columns' => ['*'],
-                'order' => [['created_at', 'desc'], ['id', 'desc']],
-                'soft_delete' => true,
-            ],
-        ];
-    }
-
-    /**
      * 새 댓글 알림 정의.
      */
     private function newCommentDefinition(): array
@@ -1097,7 +787,6 @@ class Module extends AbstractModule
         return [
             'type' => 'new_comment',
             'hook_prefix' => 'sirsoft-board',
-            'audience' => 'customer',
             'name' => ['ko' => '새 댓글 알림', 'en' => 'New Comment Notification'],
             'description' => ['ko' => '게시글에 새 댓글이 작성되면 게시글 작성자에게 발송', 'en' => 'Sent to post author when a new comment is posted'],
             'channels' => ['mail', 'database'],
@@ -1152,7 +841,6 @@ class Module extends AbstractModule
         return [
             'type' => 'reply_comment',
             'hook_prefix' => 'sirsoft-board',
-            'audience' => 'customer',
             'name' => ['ko' => '대댓글 알림', 'en' => 'Reply Comment Notification'],
             'description' => ['ko' => '댓글에 대댓글이 작성되면 댓글 작성자에게 발송', 'en' => 'Sent to comment author when a reply is posted'],
             'channels' => ['mail', 'database'],
@@ -1207,7 +895,6 @@ class Module extends AbstractModule
         return [
             'type' => 'post_reply',
             'hook_prefix' => 'sirsoft-board',
-            'audience' => 'customer',
             'name' => ['ko' => '답변글 알림', 'en' => 'Post Reply Notification'],
             'description' => ['ko' => '게시글에 답변글이 작성되면 원글 작성자에게 발송', 'en' => 'Sent to original post author when a reply post is created'],
             'channels' => ['mail', 'database'],
@@ -1258,7 +945,6 @@ class Module extends AbstractModule
         return [
             'type' => 'post_action',
             'hook_prefix' => 'sirsoft-board',
-            'audience' => 'customer',
             'name' => ['ko' => '게시글/댓글 처리 알림', 'en' => 'Content Action Notification'],
             'description' => ['ko' => '게시글/댓글 블라인드/삭제/복원 시 작성자에게 발송', 'en' => 'Sent to author on blind/delete/restore actions'],
             'channels' => ['mail', 'database'],
@@ -1276,14 +962,14 @@ class Module extends AbstractModule
             'templates' => [
                 [
                     'channel' => 'mail',
-                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
+                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author']],
                     'subject' => [
-                        'ko' => '[{board_name}] \'{post_title}\' {target_type} {action_type} 처리 안내',
+                        'ko' => '[{board_name}] \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다',
                         'en' => '[{board_name}] Your {target_type} "{post_title}" has been {action_type}',
                     ],
                     'body' => [
                         'ko' => '<h1>{name}님, 안녕하세요.</h1>'
-                            .'<p><strong>{board_name}</strong> 게시판의 "<strong>{post_title}</strong>" {target_type}에 대해 관리자가 <strong>{action_type}</strong> 처리를 했습니다.</p>'
+                            .'<p><strong>{board_name}</strong> 게시판의 "<strong>{post_title}</strong>" {target_type}이(가) 관리자에 의해 <strong>{action_type}</strong> 처리되었습니다.</p>'
                             .'<p>문의사항이 있으시면 관리자에게 연락해 주세요.</p>'
                             .$this->notificationButton('게시글 보기', '{post_url}')
                             .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
@@ -1296,9 +982,9 @@ class Module extends AbstractModule
                 ],
                 [
                     'channel' => 'database',
-                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
-                    'subject' => ['ko' => '{target_type} 처리 안내', 'en' => 'Your {target_type} has been actioned'],
-                    'body' => ['ko' => '\'{board_name}\'의 \'{post_title}\' {target_type}에 대해 {action_type} 처리를 했습니다.', 'en' => 'Your {target_type} \'{post_title}\' in \'{board_name}\' has been {action_type}.'],
+                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author']],
+                    'subject' => ['ko' => '{target_type}이(가) 처리되었습니다', 'en' => 'Your {target_type} has been actioned'],
+                    'body' => ['ko' => '\'{board_name}\'의 \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다.', 'en' => 'Your {target_type} \'{post_title}\' in \'{board_name}\' has been {action_type}.'],
                     'click_url' => '{post_url}',
                 ],
             ],
@@ -1313,7 +999,6 @@ class Module extends AbstractModule
         return [
             'type' => 'new_post_admin',
             'hook_prefix' => 'sirsoft-board',
-            'audience' => 'staff',
             'name' => ['ko' => '새 게시글 관리자 알림', 'en' => 'New Post Admin Notification'],
             'description' => ['ko' => '새 게시글 작성 시 관리자에게 발송', 'en' => 'Sent to admin when a new post is created'],
             'channels' => ['mail', 'database'],
@@ -1367,7 +1052,6 @@ class Module extends AbstractModule
         return [
             'type' => 'report_received_admin',
             'hook_prefix' => 'sirsoft-board',
-            'audience' => 'staff',
             'name' => ['ko' => '신고 접수 관리자 알림', 'en' => 'Report Received Admin Notification'],
             'description' => ['ko' => '신고 접수 시 관리자에게 발송', 'en' => 'Sent to admin when a report is received'],
             'channels' => ['mail', 'database'],
@@ -1385,12 +1069,7 @@ class Module extends AbstractModule
             'templates' => [
                 [
                     'channel' => 'mail',
-                    'recipients' => [
-                        // 그 게시판의 관리자 — 게시판마다 역할이 동적으로 생겨 이름을 열거할 수 없다.
-                        ['type' => 'related_user', 'relation' => 'board_managers', 'exclude_trigger_user' => true],
-                        // 신고 처리 대기열을 소유하는 사이트 운영자.
-                        ['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true],
-                    ],
+                    'recipients' => [['type' => 'permission', 'value' => 'sirsoft-board.reports.manage', 'exclude_trigger_user' => true]],
                     'subject' => [
                         'ko' => '[{board_name}] "{post_title}"에 대한 신고가 접수되었습니다',
                         'en' => '[{board_name}] A new report has been received for "{post_title}"',
@@ -1410,12 +1089,7 @@ class Module extends AbstractModule
                 ],
                 [
                     'channel' => 'database',
-                    'recipients' => [
-                        // 그 게시판의 관리자 — 게시판마다 역할이 동적으로 생겨 이름을 열거할 수 없다.
-                        ['type' => 'related_user', 'relation' => 'board_managers', 'exclude_trigger_user' => true],
-                        // 신고 처리 대기열을 소유하는 사이트 운영자.
-                        ['type' => 'role', 'value' => 'admin', 'exclude_trigger_user' => true],
-                    ],
+                    'recipients' => [['type' => 'permission', 'value' => 'sirsoft-board.reports.manage', 'exclude_trigger_user' => true]],
                     'subject' => ['ko' => '신고가 접수되었습니다', 'en' => 'New report received'],
                     'body' => ['ko' => '\'{board_name}\'의 {target_type} \'{post_title}\'에 대한 신고({reason_type})가 접수되었습니다.', 'en' => 'A report ({reason_type}) on {target_type} \'{post_title}\' in \'{board_name}\' has been received.'],
                     'click_url' => '{report_url}',
@@ -1432,7 +1106,6 @@ class Module extends AbstractModule
         return [
             'type' => 'report_action',
             'hook_prefix' => 'sirsoft-board',
-            'audience' => 'customer',
             'name' => ['ko' => '신고 처리 결과 알림', 'en' => 'Report Action Notification'],
             'description' => ['ko' => '신고 처리 완료 시 게시글 작성자에게 발송', 'en' => 'Sent to post author when a report action is taken'],
             'channels' => ['mail', 'database'],
@@ -1450,14 +1123,14 @@ class Module extends AbstractModule
             'templates' => [
                 [
                     'channel' => 'mail',
-                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
+                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author']],
                     'subject' => [
-                        'ko' => '[{board_name}] \'{post_title}\' {target_type} {action_type} 처리 안내',
+                        'ko' => '[{board_name}] \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다',
                         'en' => '[{board_name}] Your {target_type} "{post_title}" has been {action_type}',
                     ],
                     'body' => [
                         'ko' => '<h1>{name}님, 안녕하세요.</h1>'
-                            .'<p><strong>{board_name}</strong> 게시판의 "<strong>{post_title}</strong>" {target_type}에 대해 신고 처리로 <strong>{action_type}</strong> 조치가 이루어졌습니다.</p>'
+                            .'<p><strong>{board_name}</strong> 게시판의 "<strong>{post_title}</strong>" {target_type}이(가) 신고 처리에 의해 <strong>{action_type}</strong> 처리되었습니다.</p>'
                             .'<p>문의사항이 있으시면 관리자에게 연락해 주세요.</p>'
                             .$this->notificationButton('게시글 보기', '{post_url}')
                             .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
@@ -1470,9 +1143,9 @@ class Module extends AbstractModule
                 ],
                 [
                     'channel' => 'database',
-                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author', 'exclude_trigger_user' => true]],
+                    'recipients' => [['type' => 'related_user', 'relation' => 'post_author']],
                     'subject' => ['ko' => '신고 처리 결과 안내', 'en' => 'Report action result'],
-                    'body' => ['ko' => '\'{board_name}\'의 \'{post_title}\' {target_type}에 대해 {action_type} 처리를 했습니다.', 'en' => 'Your {target_type} \'{post_title}\' in \'{board_name}\' has been {action_type}.'],
+                    'body' => ['ko' => '\'{board_name}\'의 \'{post_title}\' {target_type}이(가) {action_type} 처리되었습니다.', 'en' => 'Your {target_type} \'{post_title}\' in \'{board_name}\' has been {action_type}.'],
                     'click_url' => '{post_url}',
                 ],
             ],

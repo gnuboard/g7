@@ -1,0 +1,14 @@
+{
+  "core": {
+    "errors": {
+      "template_not_found": "No active template found",
+      "layout_load_failed": "Failed to load layout",
+      "layout_load_failed_with_id": "Failed to load layout ({layoutId})",
+      "component_load_failed": "Failed to load component",
+      "component_load_failed_with_name": "Failed to load component ({componentName})",
+      "translation_load_failed": "Failed to load translation file",
+      "translation_load_failed_with_locale": "Failed to load {locale} translation file",
+      "template_init_error": "An error occurred while initializing the template engine"
+    }
+  }
+}

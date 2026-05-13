@@ -78,13 +78,14 @@ class ValidLayoutStructure implements ValidationRule
             return false;
         }
 
-        // extends 가 있는 경우 (상속 레이아웃) - components·slots 는 선택이다.
-        //
-        // LayoutService::mergeLayouts 가 자식의 components·slots 를 `?? []` 로 읽으므로, 둘 다 없으면
-        // 부모 구조를 그대로 물려받고 meta·state 만 갈아끼운다 — 번들 admin 템플릿의 언어팩 화면
-        // 4종이 이 형태로 출하 중이다. 종전에는 여기서 필수로 요구해 그 정상 마크업을 거부했고
-        // (편집기 저장·이관 양쪽), 설치 경로가 이 규칙을 안 돌린 덕에 출하만 무사했다.
-        if (! isset($data['extends'])) {
+        // extends가 있는 경우 (상속 레이아웃) - components나 slots 중 하나는 있어야 함
+        if (isset($data['extends'])) {
+            if (! isset($data['components']) && ! isset($data['slots'])) {
+                $fail(__('validation.layout.components_or_slots_required'));
+
+                return false;
+            }
+        } else {
             // extends가 없는 경우 (base 레이아웃) - components 필수
             if (! isset($data['components'])) {
                 $fail(__('validation.layout.required_field_missing', ['field' => 'components']));
@@ -171,13 +172,8 @@ class ValidLayoutStructure implements ValidationRule
             return false;
         }
 
-        // type 필드 검증 — basic/composite/layout 외에 extension_point 도 정상 노드 타입이다.
-        // extension_point 노드(예: `user_global_overlay`, `identity_provider_ui:provider`)는
-        // 호스트 레이아웃에 선언되는 확장 주입 지점으로, type="extension_point" + name(슬롯명) +
-        // default/children 구조를 가진다. 이를 허용하지 않으면 extension_point 를 포함한 레이아웃
-        // (`_user_base` 등)을 편집기에서 저장할 수 없다(`components[N].children[0].type`
-        // 422). ValidLayoutExtensionStructure 가 이미 동일하게 extension_point 를 예외 허용한다.
-        if (! in_array($component['type'], ['basic', 'composite', 'layout', 'extension_point'], true)) {
+        // type 필드 검증
+        if (! in_array($component['type'], ['basic', 'composite', 'layout'])) {
             $fail(__('validation.layout.component_type_invalid', ['index' => $index]));
 
             return false;

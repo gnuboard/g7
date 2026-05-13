@@ -24,18 +24,6 @@ class ExpressionEvaluator
      */
     private array $seoOverrides = [];
 
-    /**
-     * 번역 면제 바인딩 접두사 (`{{raw:expr}}`)
-     *
-     * 프론트엔드 `rawMarkers.ts` 의 RAW_PREFIX 와 동일해야 합니다.
-     */
-    private const RAW_PREFIX = 'raw:';
-
-    /**
-     * 평가기를 생성합니다.
-     *
-     * 파이프는 화면 쪽과 같은 이름·같은 순서로 풀어야 하므로 전용 레지스트리를 함께 만든다.
-     */
     public function __construct()
     {
         $this->pipeRegistry = new PipeRegistry;
@@ -55,7 +43,6 @@ class ExpressionEvaluator
      * 템플릿 번역 사전을 설정합니다.
      *
      * @param  array  $translations  번역 사전 (dot notation 접근 가능)
-     * @return void 없음
      */
     public function setTranslations(array $translations): void
     {
@@ -70,7 +57,6 @@ class ExpressionEvaluator
      * 와일드카드("*")를 통해 동적 접근 시 기본값을 반환할 수 있습니다.
      *
      * @param  array  $overrides  오버라이드 정의 (예: {"_local": {"collapsedReplies": {"*": false}}})
-     * @return void 없음
      */
     public function setSeoOverrides(array $overrides): void
     {
@@ -97,14 +83,8 @@ class ExpressionEvaluator
     public function evaluateRaw(string $expression, array $context): mixed
     {
         // 단일 {{expr}} 패턴인 경우 원본 값 반환
-        $trimmed = trim($expression);
-        if ($this->isSingleBinding($trimmed)) {
-            $expr = trim(substr($trimmed, 2, -2));
-
-            // raw: 접두사 제거 — 남겨 두면 콜론이 식의 일부로 파싱돼 평가가 실패한다.
-            if (str_starts_with($expr, self::RAW_PREFIX)) {
-                $expr = trim(substr($expr, strlen(self::RAW_PREFIX)));
-            }
+        if (preg_match('/^\{\{(.+?)\}\}$/', trim($expression), $matches)) {
+            $expr = trim($matches[1]);
 
             // 파이프 표현식: 원본 값을 파이프로 변환 후 반환
             if (PipeRegistry::hasPipes($expr)) {
@@ -121,14 +101,6 @@ class ExpressionEvaluator
                 return $value;
             }
 
-            // 비교·논리 연산은 참/거짓 값으로 돌려준다.
-            // `resolveToValue()` 는 경로/리터럴 해석기라 `(a ?? 'text') === 'html'` 같은
-            // 비교식을 null 로 되돌린다. 그 null 이 확장 주입 props 의 기본값으로 흘러들면
-            // (예: `isHtml ?? true`) 레이아웃이 선언한 판정이 통째로 뒤집힌다.
-            if ($this->isBooleanExpression($expr)) {
-                return $this->coerceBooleanString($this->evaluate($trimmed, $context));
-            }
-
             // 연산자/함수 호출/리터럴이 포함된 표현식은 resolveToValue로 처리
             if (str_contains($expr, '??') || str_contains($expr, '?') || preg_match('/[\w$]+\s*\(/', $expr)
                 || str_starts_with($expr, '{') || str_contains($expr, '...')) {
@@ -140,105 +112,6 @@ class ExpressionEvaluator
 
         // 복합 표현식은 문자열로 반환
         return $this->evaluate($expression, $context);
-    }
-
-    /**
-     * 표현식이 비교·논리 연산인지 판정합니다.
-     *
-     * 삼항(`? :`)과 화살표 함수(`=>`)는 결과가 참/거짓이 아니므로 제외합니다
-     * (`??` 와 `?.` 은 삼항이 아니라 제외 대상에서 먼저 걷어냅니다).
-     *
-     * @param  string  $expr  `{{}}` 를 벗겨낸 표현식
-     * @return bool 비교·논리 연산이면 true
-     */
-    private function isBooleanExpression(string $expr): bool
-    {
-        $normalized = str_replace(['??', '?.'], '', $expr);
-
-        if (str_contains($normalized, '=>') || str_contains($normalized, '?')) {
-            return false;
-        }
-
-        if (str_starts_with(trim($expr), '!')) {
-            return true;
-        }
-
-        return preg_match('/(===|!==|==|!=|>=|<=|>|<|&&|\|\|)/', $normalized) === 1;
-    }
-
-    /**
-     * 참/거짓 문자열을 bool 로 되돌립니다.
-     *
-     * `||` 처럼 피연산자 값을 그대로 돌려주는 연산도 있으므로, 참/거짓 문자열이
-     * 아니면 원본 문자열을 유지합니다.
-     *
-     * @param  string  $value  평가 결과 문자열
-     * @return mixed bool 또는 원본 문자열
-     */
-    private function coerceBooleanString(string $value): mixed
-    {
-        return match ($value) {
-            'true' => true,
-            'false' => false,
-            default => $value,
-        };
-    }
-
-    /**
-     * 평가 결과 문자열의 truthy 여부를 판정합니다.
-     *
-     * 논리 연산자(`||`, `&&`)의 단락 평가 기준입니다.
-     *
-     * @param  string  $value  평가 결과 문자열
-     * @return bool truthy 이면 true
-     */
-    private function isTruthyValue(string $value): bool
-    {
-        return $value !== '' && $value !== 'false' && $value !== '0';
-    }
-
-    /**
-     * 표현식이 단일 {{expr}} 바인딩 하나로만 구성되는지 판정합니다.
-     *
-     * `{{a}} - {{b}}` 처럼 바인딩이 둘 이상이면 false 를 반환해야 합니다.
-     * 정규식 `/^\{\{(.+?)\}\}$/` 는 양끝 앵커 때문에 이런 다중 바인딩도 매치되어
-     * 내부가 `a}} - {{b` 로 잘못 해석되므로, 중괄호 깊이를 직접 추적합니다.
-     * 객체 리터럴(`{{ {outer: {inner: 'v'}} }}`)처럼 내부에 `}}` 가 등장하는
-     * 경우까지 정확히 구분하기 위함입니다.
-     *
-     * @param  string  $trimmed  앞뒤 공백이 제거된 표현식
-     * @return bool 단일 바인딩이면 true
-     */
-    private function isSingleBinding(string $trimmed): bool
-    {
-        $length = strlen($trimmed);
-
-        if ($length < 5 || ! str_starts_with($trimmed, '{{') || ! str_ends_with($trimmed, '}}')) {
-            return false;
-        }
-
-        // 여는 `{{` 를 깊이 2 로 두고 스캔 — 마지막 문자 이전에 깊이가 0 이 되면 바인딩이 둘 이상
-        $depth = 2;
-        for ($i = 2; $i < $length; $i++) {
-            $char = $trimmed[$i];
-
-            if ($char === '{') {
-                $depth++;
-
-                continue;
-            }
-
-            if ($char !== '}') {
-                continue;
-            }
-
-            $depth--;
-            if ($depth === 0) {
-                return $i === $length - 1;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -283,7 +156,6 @@ class ExpressionEvaluator
         // 표현식으로 재귀 해석
         return $this->resolvePath($fallback, $context);
     }
-
     /**
      * SEO 메타 표현식을 컨텍스트와 함께 평가하여 최종 문자열을 반환합니다.
      *
@@ -300,20 +172,9 @@ class ExpressionEvaluator
             return $this->resolveTranslation($expression, $context);
         }
 
-        // raw: 접두사(번역 면제 바인딩)를 벗기고 후처리 대상에서 제외한다.
-        // React 는 `{{raw:expr}}` 의 접두사를 떼고 평가한 뒤 결과의 `$t:` 토큰을
-        // 번역하지 않는다(rawMarkers). 여기서 접두사를 그대로 두면 콜론이 식의
-        // 일부로 파싱되어 평가가 실패하고, 봇 화면에서만 값이 사라진다.
-        $rawExempt = false;
-
         // {{binding | pipe}} 패턴 치환 (파이프 표현식 지원)
-        $result = (string) preg_replace_callback('/\{\{(.+?)\}\}/', function ($matches) use ($context, &$rawExempt) {
+        $result = (string) preg_replace_callback('/\{\{(.+?)\}\}/', function ($matches) use ($context) {
             $expr = trim($matches[1]);
-
-            if (str_starts_with($expr, self::RAW_PREFIX)) {
-                $rawExempt = true;
-                $expr = trim(substr($expr, strlen(self::RAW_PREFIX)));
-            }
 
             // 파이프 분리: expr | pipe1 | pipe2(arg)
             if (PipeRegistry::hasPipes($expr)) {
@@ -334,9 +195,8 @@ class ExpressionEvaluator
         }, $expression);
 
         // 인라인 $t:key 토큰 해석 ({{}} 외부 텍스트 내 $t:key|param=value 패턴)
-        // raw: 바인딩 결과는 번역 면제 — React 와 동일하게 토큰을 그대로 둔다.
-        if (! $rawExempt && str_contains($result, '$t:')) {
-            $result = preg_replace_callback('/\$t:(?:defer:)?([\w.\-]+(?:\|[\w.\-]+=[\w.\-{}]+)*)/', function ($matches) use ($context) {
+        if (str_contains($result, '$t:')) {
+            $result = preg_replace_callback('/\$t:([\w.\-]+(?:\|[\w.\-]+=[\w.\-{}]+)*)/', function ($matches) use ($context) {
                 return $this->resolveTranslation('$t:'.$matches[1], $context);
             }, $result);
         }
@@ -353,21 +213,13 @@ class ExpressionEvaluator
     /**
      * $t: 번역 키를 해석합니다.
      *
-     * `$t:defer:key` 형태(프론트엔드에서 렌더 시점까지 해석을 미루는 표기)도
-     * 동일한 키로 취급합니다 — SEO는 서버에서 한 번에 해석하므로 지연 개념이
-     * 없고, `defer:` 를 키에 포함시키면 사전 조회가 실패해 빈 문자열이 됩니다.
-     *
-     * @param  string  $expression  번역 표현식 ($t:key, $t:defer:key 또는 $t:key|param=value)
+     * @param  string  $expression  번역 표현식 ($t:key 또는 $t:key|param=value)
      * @param  array  $context  데이터 컨텍스트 (파라미터 값의 {{}} 표현식 해석용)
      * @return string 번역된 문자열
      */
     private function resolveTranslation(string $expression, array $context = []): string
     {
         $key = substr($expression, 3);
-
-        if (str_starts_with($key, 'defer:')) {
-            $key = substr($key, 6);
-        }
 
         // 파라미터 분리: $t:key|param1=value1|param2=value2
         $params = [];
@@ -395,7 +247,6 @@ class ExpressionEvaluator
         if (! empty($this->translations)) {
             $translated = Arr::get($this->translations, $key);
             if ($translated !== null && is_string($translated)) {
-                $translated = $this->pluralVariant($key, $translated, $params);
                 // 파라미터 치환: :param 또는 {{param}} → value
                 // 템플릿 번역은 {{param}} 형식, Laravel 번역은 :param 형식
                 foreach ($params as $paramKey => $paramValue) {
@@ -419,70 +270,6 @@ class ExpressionEvaluator
         }
 
         return $translated;
-    }
-
-    /**
-     * `count` 인자의 수로 복수형 변형(`키_one` 등)을 고릅니다 — 브라우저 번역 엔진(engine-v1.78.7)과 같은 규칙.
-     *
-     * 현재 로케일의 CLDR 복수 범주(zero·one·two·few·many·other)를 구해 `키_{범주}` 가 사전에 있으면 그 문구를,
-     * 없거나 범주가 other 면 기본 키 문구를 쓴다. `count` 는 숫자 표기(`1`·`-2`·`1.5`)일 때만 수로 본다.
-     *
-     * @param  string  $key  기본 번역 키
-     * @param  string  $base  기본 키 문구
-     * @param  array<string, string>  $params  해석된 번역 인자
-     * @return string 고른 문구
-     */
-    private function pluralVariant(string $key, string $base, array $params): string
-    {
-        $raw = isset($params['count']) ? trim((string) $params['count']) : '';
-
-        if ($raw === '' || preg_match('/^-?\d+(\.\d+)?$/', $raw) !== 1) {
-            return $base;
-        }
-
-        $category = self::pluralCategory(app()->getLocale(), $raw + 0);
-
-        if ($category === 'other') {
-            return $base;
-        }
-
-        $variant = Arr::get($this->translations, $key.'_'.$category);
-
-        return is_string($variant) ? $variant : $base;
-    }
-
-    /**
-     * 로케일의 CLDR 복수 범주를 구합니다.
-     *
-     * intl 확장이 있으면 ICU 복수 규칙(`Intl.PluralRules` 와 같은 데이터)으로 구하고, 없으면 범주가 other 뿐인
-     * 언어(ko·ja·zh 등)는 other, 그 밖은 1 이면 one 으로 근사한다.
-     *
-     * @param  string  $locale  로케일
-     * @param  int|float  $count  수
-     * @return string 복수 범주
-     */
-    private static function pluralCategory(string $locale, int|float $count): string
-    {
-        if (class_exists(\MessageFormatter::class)) {
-            $category = \MessageFormatter::formatMessage(
-                $locale,
-                '{n, plural, zero{zero} one{one} two{two} few{few} many{many} other{other}}',
-                ['n' => $count],
-            );
-
-            if (is_string($category) && $category !== '') {
-                return $category;
-            }
-        }
-
-        $language = strtolower(explode('-', str_replace('_', '-', $locale))[0]);
-
-        if (in_array($language, ['ko', 'ja', 'zh', 'th', 'vi', 'id', 'ms', 'lo', 'my', 'km'], true)) {
-            return 'other';
-        }
-
-        // CLDR one 은 정수부 절대값 1(소수 없음) — Intl.PluralRules('en').select(-1) 도 one 이다.
-        return abs($count) == 1 && is_int($count) ? 'one' : 'other';
     }
 
     /**
@@ -599,31 +386,36 @@ class ExpressionEvaluator
         }
 
         // 2. 논리 OR: a || b
-        // JS 시맨틱 — boolean이 아니라 "첫 truthy 피연산자"를 반환한다.
-        // ({{query?.q || ''}} 같은 표현식이 값 대신 'true'가 되는 것을 방지)
         if (str_contains($expr, '||')) {
             $parts = $this->splitOutsideBrackets($expr, '||');
             if (count($parts) === 2) {
                 $leftVal = $this->evaluateExpression(trim($parts[0]), $context);
-                if ($this->isTruthyValue($leftVal)) {
-                    return $leftVal;
+                if ($leftVal !== '' && $leftVal !== 'false' && $leftVal !== '0') {
+                    return 'true';
+                }
+                $rightVal = $this->evaluateExpression(trim($parts[1]), $context);
+                if ($rightVal !== '' && $rightVal !== 'false' && $rightVal !== '0') {
+                    return 'true';
                 }
 
-                return $this->evaluateExpression(trim($parts[1]), $context);
+                return 'false';
             }
         }
 
         // 3. 논리 AND: a && b
-        // JS 시맨틱 — 좌변이 falsy면 좌변을, 아니면 우변을 반환한다.
         if (str_contains($expr, '&&')) {
             $parts = $this->splitOutsideBrackets($expr, '&&');
             if (count($parts) === 2) {
                 $leftVal = $this->evaluateExpression(trim($parts[0]), $context);
-                if (! $this->isTruthyValue($leftVal)) {
-                    return $leftVal;
+                if ($leftVal === '' || $leftVal === 'false' || $leftVal === '0') {
+                    return 'false';
+                }
+                $rightVal = $this->evaluateExpression(trim($parts[1]), $context);
+                if ($rightVal === '' || $rightVal === 'false' || $rightVal === '0') {
+                    return 'false';
                 }
 
-                return $this->evaluateExpression(trim($parts[1]), $context);
+                return 'true';
             }
         }
 
@@ -2141,11 +1933,7 @@ class ExpressionEvaluator
             'parseFloat' => is_numeric($value) ? (float) $value : null,
             'isNaN' => ! is_numeric($value),
             'isFinite' => is_numeric($value) && is_finite((float) $value),
-            // 자바스크립트 `encodeURIComponent` 는 `!*'()` 를 남기는데 `rawurlencode` 는 인코딩한다 —
-            // 같은 식이 봇 화면에서만 다른 주소가 되지 않도록 그 다섯 글자를 되돌린다.
-            'encodeURIComponent' => is_string($value)
-                ? strtr(rawurlencode($value), ['%21' => '!', '%2A' => '*', '%27' => "'", '%28' => '(', '%29' => ')'])
-                : '',
+            'encodeURIComponent' => is_string($value) ? rawurlencode($value) : '',
             'decodeURIComponent' => is_string($value) ? rawurldecode($value) : '',
             '$t' => $this->evaluateTranslationFunction($argsStr, $context),
             '$localized' => $this->evaluateLocalizedFunction($value, $context),
@@ -2624,11 +2412,6 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.find 구현
-     *
-     * @param  array  $values  대상 배열
-     * @param  array  $callback  콜백 정의 (params·body)
-     * @param  array  $context  평가 컨텍스트
-     * @return mixed 조건을 처음 만족한 값 (없으면 null)
      */
     private function arrayFind(array $values, array $callback, array $context): mixed
     {
@@ -2643,11 +2426,6 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.findIndex 구현
-     *
-     * @param  array  $values  대상 배열
-     * @param  array  $callback  콜백 정의 (params·body)
-     * @param  array  $context  평가 컨텍스트
-     * @return int 조건을 처음 만족한 자리 (없으면 -1)
      */
     private function arrayFindIndex(array $values, array $callback, array $context): int
     {
@@ -2662,11 +2440,6 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.some 구현
-     *
-     * @param  array  $values  대상 배열
-     * @param  array  $callback  콜백 정의 (params·body)
-     * @param  array  $context  평가 컨텍스트
-     * @return bool 하나라도 만족하면 true
      */
     private function arraySome(array $values, array $callback, array $context): bool
     {
@@ -2681,11 +2454,6 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.every 구현
-     *
-     * @param  array  $values  대상 배열
-     * @param  array  $callback  콜백 정의 (params·body)
-     * @param  array  $context  평가 컨텍스트
-     * @return bool 모두 만족하면 true
      */
     private function arrayEvery(array $values, array $callback, array $context): bool
     {
@@ -2700,12 +2468,6 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.reduce 구현
-     *
-     * @param  array  $values  대상 배열
-     * @param  array  $callback  콜백 정의 (params·body)
-     * @param  mixed  $initialValue  누적 시작값
-     * @param  array  $context  평가 컨텍스트
-     * @return mixed 누적 결과
      */
     private function arrayReduce(array $values, array $callback, mixed $initialValue, array $context): mixed
     {
@@ -2730,11 +2492,6 @@ class ExpressionEvaluator
 
     /**
      * Array.prototype.sort (콜백 비교) 구현
-     *
-     * @param  array  $values  대상 배열
-     * @param  array  $callback  콜백 정의 (params·body)
-     * @param  array  $context  평가 컨텍스트
-     * @return array 정렬된 배열
      */
     private function arraySort(array $values, array $callback, array $context): array
     {

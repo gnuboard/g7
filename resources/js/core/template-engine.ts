@@ -24,17 +24,10 @@ import { DataSourceManager } from './template-engine/DataSourceManager';
 import { ModalDataSourceWrapper } from './template-engine/ModalDataSourceWrapper';
 import { ParentContextProvider } from './template-engine/ParentContextProvider';
 import { TemplateNotFoundError } from './template-engine/TemplateEngineError';
-import { mergeLocalInitSlot } from './template-engine/localInitSlot';
-import { ErrorDisplay } from './template-engine/ErrorDisplay';
 import { TemplateApp, initTemplateApp } from './TemplateApp';
 import { createLogger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { initializeG7CoreGlobals, initDevToolsAPI } from './template-engine/G7CoreGlobals';
-import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
-import { loadScriptWithRetry } from './template-engine/networkResilience';
-// LayoutEditorChrome 은 정적 import 하지 않는다 — 편집기는 별도 lazy 번들
-// (layout-editor.min.js)로 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
-// @since engine-v1.51.0
 
 const logger = createLogger('TemplateEngine');
 
@@ -146,14 +139,6 @@ let debugMode = false;
  * renderTemplate 완료 후 순차적으로 적용됨
  */
 const pendingDataUpdates: Array<{ data: Record<string, any>; options?: UpdateOptions }> = [];
-
-/**
- * 엔진 밖의 화면(오류 화면)이 루트 컨테이너를 차지해 React 루트를 내려놓은 상태인지 (engine-v1.79.0)
- *
- * 켜져 있는 동안 도착한 데이터 업데이트는 그릴 화면이 없으므로 버린다 — 큐에 남기면 다음 화면 렌더 뒤에
- * 떠난 화면의 `_local` 이 새 화면에 흘러든다. 다음 `renderTemplate` 이 시작하면 끈다.
- */
-let rootReleased = false;
 
 /**
  * 템플릿 메타데이터 로드
@@ -382,88 +367,10 @@ async function initTemplateEngine(options: InitOptions): Promise<void> {
 }
 
 /**
- * 편집기 lazy 번들(layout-editor.min.js) 로드 후 LayoutEditorChrome 컴포넌트 반환.
- *
- * @since engine-v1.51.0
- *
- * 편집기는 메인 코어 번들에서 분리되어 `/admin/layout-editor/*` 진입 시에만 로드된다.
- * 이미 로드돼 있으면 즉시 반환(멱등), 아니면 `<script>` 를 주입하고 로드 완료를 대기한다.
- * 동시 다중 호출은 in-flight promise 로 병합해 중복 주입을 막는다.
- *
- * 주입은 `loadScriptWithRetry` 에 위임한다 — 종전에는 이 경로만 재시도 계층이 없어,
- * 일시적 네트워크 유실 한 번에 편집기가 통째로 열리지 않았다. 다른 모든 자산 경로
- * (레이아웃 스크립트·확장 번들·CSS)가 이미 이 로더를 쓰므로 편집기만 예외일 이유가 없다.
- *
- * 실패 문구에는 번들 경로를 싣지 않는다. 사용자가 고칠 수 있는 정보가 아니고,
- * 내부 배치 구조를 화면에 노출한다. 경로는 콘솔 로그로만 남긴다.
- *
- * @returns LayoutEditorChrome React 컴포넌트
- * @throws {Error} 스크립트 로드 실패 또는 컴포넌트 미노출 시
- */
-let layoutEditorLoadPromise: Promise<any> | null = null;
-
-/** 편집기 번들 `<script>` element id */
-const LAYOUT_EDITOR_SCRIPT_ID = 'g7-layout-editor-bundle';
-
-function loadLayoutEditorBundle(): Promise<any> {
-  const g7 = (window as any).G7Core;
-
-  // 이미 로드됨 — 즉시 반환 (멱등)
-  if (g7?.__LayoutEditorChrome) {
-    return Promise.resolve(g7.__LayoutEditorChrome);
-  }
-
-  // 진행 중인 로드가 있으면 재사용 (중복 주입 방지)
-  if (layoutEditorLoadPromise) {
-    return layoutEditorLoadPromise;
-  }
-
-  layoutEditorLoadPromise = (async () => {
-    // 번들 URL — blade 가 주입한 버전 포함 URL 우선, 폴백은 표준 경로
-    const src =
-      (window as any).G7Config?.coreEditorAsset || '/build/core/layout-editor.min.js';
-
-    // 앞선 시도가 남긴 element 제거 — 남겨두면 IIFE 가 두 번 실행된다
-    document.getElementById(LAYOUT_EDITOR_SCRIPT_ID)?.remove();
-
-    // 편집기 엔트리가 컴포넌트 노출 직후 호출하는 준비 완료 콜백 (주입 전에 등록)
-    (window as any).G7Core = (window as any).G7Core || {};
-    (window as any).G7Core.__onChromeReady = () => {
-      /* 노출 시점 통지 — 실제 대기는 script load 이벤트가 담당한다 */
-    };
-
-    try {
-      await loadScriptWithRetry(
-        src,
-        { id: LAYOUT_EDITOR_SCRIPT_ID },
-        { label: 'layout-editor bundle' }
-      );
-    } catch (error) {
-      layoutEditorLoadPromise = null; // 재시도 가능하도록 초기화
-      logger.error(`편집기 번들 로드 실패 (${src})`, error);
-
-      throw new Error(ErrorDisplay.text('core.errors.layout_editor_bundle_failed'));
-    }
-
-    const chrome = (window as any).G7Core?.__LayoutEditorChrome;
-
-    if (!chrome) {
-      layoutEditorLoadPromise = null;
-      logger.error(`편집기 번들 로드됨 — 그러나 __LayoutEditorChrome 미노출 (${src})`);
-
-      throw new Error(ErrorDisplay.text('core.errors.layout_editor_init_failed'));
-    }
-
-    return chrome;
-  })();
-
-  return layoutEditorLoadPromise;
-}
-
-/**
  * 템플릿 렌더링
  *
  * 레이아웃 JSON을 기반으로 React 컴포넌트를 렌더링합니다.
+ * 편집 모드(URL에 mode=edit 파라미터 존재)인 경우 WysiwygEditor로 래핑하여 렌더링합니다.
  *
  * @param options - 렌더링 옵션
  * @throws {Error} 초기화되지 않은 경우 또는 렌더링 실패 시
@@ -492,14 +399,6 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
       throw new Error(`컨테이너를 찾을 수 없습니다: #${options.containerId}`);
     }
 
-    // 오류 화면이 비켜 준 컨테이너에 다시 그린다 — 오류 화면 DOM 을 걷고 새 루트를 만든다 (engine-v1.79.0)
-    if (rootReleased) {
-      rootReleased = false;
-      if (!state.reactRoot) {
-        container.replaceChildren();
-      }
-    }
-
     // 전역 변수 생성
     const globalVariables = createGlobalVariables();
 
@@ -521,66 +420,14 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
       state.reactRoot = ReactDOM.createRoot(container);
     }
 
-    // 레이아웃 편집기 모드 분기
-    // URL 이 `/admin/layout-editor/:identifier` 패턴이면 LayoutEditorChrome 을
-    // 같은 state.reactRoot + 같은 코어 컨텍스트 래퍼 안에서 렌더한다.
-    // 별도 createRoot / 별도 DOM 컨테이너 / 별도 컨텍스트 트리 일체 금지.
-    if (typeof window !== 'undefined') {
-      const editorMode = checkLayoutEditorMode(window.location.pathname);
-      if (editorMode) {
-        logger.log('레이아웃 편집기 모드 진입', editorMode);
+    // 편집 모드 감지 (URL 쿼리 파라미터 확인)
+    const isEditMode = checkEditMode();
+    logger.log('편집 모드:', isEditMode);
 
-        // 편집기 lazy 번들 로드 (layout-editor.min.js) — 진입 시에만 로드
-        let LayoutEditorChrome: any;
-        try {
-          LayoutEditorChrome = await loadLayoutEditorBundle();
-        } catch (loadError) {
-          logger.error('레이아웃 편집기 번들 로드 실패', loadError);
-          // 오류 화면이 컨테이너를 덮기 전에 React 루트를 내려놓는다 — SPA 로 들어왔으면 살아 있는 루트 위에
-          // 덮이게 된다 (engine-v1.79.0, O-K2-2 와 같은 규칙)
-          releaseTemplateRoot();
-          // 컨테이너에 직접 에러 화면 렌더 (CSS 의존성 없는 인라인 스타일)
-          ErrorDisplay.render(options.containerId, {
-            // 문구는 화면 언어를 따른다(ErrorDisplay 내장 문구) — 편집기 화면이 뜨지 않은 상태라 번역 파일에 기대지 않는다.
-            title: ErrorDisplay.text('core.errors.layout_editor_load_failed'),
-            message:
-              loadError instanceof Error
-                ? loadError.message
-                : ErrorDisplay.text('core.errors.layout_editor_bundle_failed'),
-            icon: 'fas fa-triangle-exclamation',
-            showStack: false,
-            showReloadButton: true,
-            debug: debugMode,
-          });
-          return;
-        }
-
-        const chrome = React.createElement(LayoutEditorChrome, {
-          templateIdentifier: editorMode.templateIdentifier,
-          initialLocale: state.locale,
-        });
-        state.reactRoot.render(
-          React.createElement(
-            TranslationProvider,
-            {
-              translationEngine: state.translationEngine!,
-              translationContext: state.translationContext,
-              children: React.createElement(
-                TransitionProvider,
-                {
-                  children: React.createElement(
-                    ResponsiveProvider,
-                    {
-                      children: React.createElement(SlotProvider, { children: chrome }),
-                    }
-                  ),
-                }
-              ),
-            } as any
-          )
-        );
-        return;
-      }
+    // 편집 모드인 경우 WysiwygEditor로 렌더링
+    if (isEditMode) {
+      await renderWithWysiwygEditor(options);
+      return;
     }
 
     // 레이아웃 JSON의 components 배열 가져오기
@@ -749,15 +596,16 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
   try {
     logger.log('템플릿 데이터 업데이트 시작', Object.keys(data));
 
+    // 편집 모드일 때는 일반 렌더링 업데이트 건너뛰기
+    // WysiwygEditor가 자체적으로 상태를 관리하므로 updateTemplateData가 간섭하면 안 됨
+    if (checkEditMode()) {
+      logger.log('편집 모드에서는 updateTemplateData를 건너뜁니다.');
+      return;
+    }
+
     // 초기화 확인
     if (!state.isInitialized) {
       throw new Error('템플릿 엔진이 초기화되지 않았습니다.');
-    }
-
-    // 오류 화면이 루트를 차지한 동안의 업데이트는 그릴 화면이 없다 — 큐에 남기지 않는다 (engine-v1.79.0)
-    if (rootReleased) {
-      logger.log('React 루트 반납 상태 - 데이터 업데이트 버림:', Object.keys(data));
-      return;
     }
 
     // 렌더링 확인 - React가 준비되지 않았으면 큐에 저장
@@ -777,20 +625,11 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
       ...(data._global || {}),
     };
 
-    // _localInit도 얕은 스프레드로 교체하면 안 됨 (engine-v1.52.2)
-    // progressive 데이터소스가 둘 이상이면 각자 독립적으로 updateTemplateData를 호출하는데,
-    // 소비부(DynamicRenderer의 useEffect)는 React commit 이후에 실행된다.
-    // 두 호출이 같은 commit 사이에 들어오면 나중 payload가 슬롯을 통째로 교체하여
-    // 먼저 도착한 소스의 initLocal이 한 번도 관측되지 않고 사라진다.
-    // → 아직 관측되지 않은(unconsumed) 슬롯만 누적 병합한다. 상세: localInitSlot.ts
-    const mergedLocalInit = mergeLocalInitSlot(state.currentDataContext._localInit, data._localInit);
-
     state.currentDataContext = {
       ...globalVariables,           // 전역 변수 (낮은 우선순위)
       ...state.currentDataContext,  // 기존 데이터
       ...data,                       // 새 데이터 (높은 우선순위)
       _global: mergedGlobalState,   // _global은 명시적으로 깊은 병합된 값 사용
-      _localInit: mergedLocalInit,  // _localInit은 소비 전이면 누적 병합된 값 사용
     };
 
     // _local 및 _computed는 _global의 값을 canonical source로 동기화
@@ -801,23 +640,6 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
     }
     if (mergedGlobalState._computed !== undefined) {
       state.currentDataContext._computed = mergedGlobalState._computed;
-    }
-
-    // 레이아웃 편집기 모드 — 재렌더 금지 (renderTemplate 의 편집기 분기와 대칭).
-    //
-    // 편집기 모드에서 `TemplateApp.init` 은 `renderTemplate({ layoutJson: { components: [] } })`
-    // 으로 부르고, renderTemplate 의 편집기 분기가 그 빈 배열 대신 LayoutEditorChrome 을
-    // 같은 reactRoot 에 렌더한다. 그래서 `state.currentLayoutJson.components` 는 **빈 배열**이다.
-    // 여기서 그대로 재렌더하면 같은 루트에 빈 트리를 커밋해 편집기를 통째로 제거한다 — 화면이
-    // 백지가 되고 예외도 콘솔 오류도 남지 않는다.
-    //
-    // renderTemplate 의 편집기 분기는 비동기(`loadLayoutEditorBundle`)라, 부팅 중 도착한
-    // setGlobalState 한 번이 그 커밋 뒤에 실행되면 발현하는 **경합**이다(간헐 재현).
-    // 데이터 병합은 위에서 이미 끝났으므로 여기서는 렌더만 건너뛴다 — 편집기 트리는
-    // 자기 상태를 스스로 관리하고 currentLayoutJson 에 의존하지 않는다.
-    if (typeof window !== 'undefined' && checkLayoutEditorMode(window.location.pathname)) {
-      logger.log('레이아웃 편집기 모드 — 재렌더 건너뜀 (편집기 트리 보존)');
-      return;
     }
 
     const components = state.currentLayoutJson.components || [];
@@ -966,36 +788,6 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
 }
 
 /**
- * React 루트만 내려놓습니다 — 엔진 밖의 화면이 루트 컨테이너를 덮어쓰기 직전에 부릅니다.
- *
- * 오류 화면(ErrorDisplay)은 컨테이너를 `innerHTML` 로 바꾼다. 루트를 그대로 두면 React 가 지워진 노드를
- * 계속 들고 있다가 다음 커밋(토스트 갱신 등)에서 `insertBefore`/`removeChild` NotFoundError 를 내고,
- * 렌더 오류 경계가 다시 그리기를 반복해 콘솔 오류가 수백 건 쌓인다(7.1.0 실측 O-K2-2 — 제한 관리자가
- * 403 화면으로 SPA 이동할 때 198건 + React #185). 레지스트리·번역·디스패처·현재 레이아웃 등 엔진 상태는
- * 그대로 두며, 대기 중인 업데이트는 버리고, 다음 `renderTemplate` 이 새 루트를 만든다.
- *
- * @returns void
- * @since engine-v1.79.0
- */
-function releaseTemplateRoot(): void {
-  pendingDataUpdates.length = 0;
-
-  if (!state.reactRoot) {
-    return;
-  }
-
-  rootReleased = true;
-
-  try {
-    state.reactRoot.unmount();
-  } catch (error) {
-    logger.warn('React Root 반납 중 오류', error);
-  }
-
-  state.reactRoot = null;
-}
-
-/**
  * 템플릿 정리
  *
  * React Root를 언마운트하고 모든 상태를 초기화합니다.
@@ -1010,9 +802,6 @@ function destroyTemplate(): void {
       state.reactRoot.unmount();
       state.reactRoot = null;
     }
-
-    // 루트 반납 표식도 거둔다 — 남기면 재초기화 뒤 첫 렌더 전 업데이트가 큐 대신 버려진다 (engine-v1.79.0)
-    rootReleased = false;
 
     // 상태 초기화
     state.templateId = null;
@@ -1056,6 +845,125 @@ function getState(): Readonly<TemplateEngineState> {
  */
 function getActionDispatcher(): ActionDispatcher | null {
   return state.actionDispatcher;
+}
+
+// ============================================================================
+// 위지윅 편집 모드 관련 함수
+// ============================================================================
+
+/**
+ * URL 쿼리 파라미터에서 편집 모드 여부를 확인합니다.
+ *
+ * @returns boolean 편집 모드 여부
+ */
+function checkEditMode(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode');
+  const template = params.get('template');
+
+  // mode=edit 파라미터와 template 파라미터가 모두 있어야 편집 모드
+  return mode === 'edit' && !!template;
+}
+
+/**
+ * URL 쿼리 파라미터에서 템플릿 ID를 가져옵니다.
+ *
+ * @returns string | null 템플릿 ID
+ */
+function getTemplateIdFromUrl(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  return params.get('template');
+}
+
+/**
+ * 위지윅 편집기로 렌더링합니다.
+ * 편집 모드일 때 WysiwygEditor를 동적으로 import하여 렌더링합니다.
+ *
+ * @param options - 렌더링 옵션
+ */
+async function renderWithWysiwygEditor(options: RenderOptions): Promise<void> {
+  logger.log('위지윅 편집기 렌더링 시작');
+
+  try {
+    // WysiwygEditor 동적 import
+    const { WysiwygEditor } = await import('./template-engine/wysiwyg');
+
+    // URL에서 템플릿 ID 추출
+    const templateId = getTemplateIdFromUrl() || state.templateId || 'unknown';
+
+    // 편집 모드 닫기 핸들러 (mode 파라미터 제거)
+    const handleClose = () => {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('mode');
+      params.delete('template');
+
+      const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+      window.location.href = newUrl;
+    };
+
+    // 저장 완료 핸들러
+    const handleSaveComplete = (layoutData: any) => {
+      logger.log('레이아웃 저장 완료:', layoutData);
+      // TODO: API 호출로 레이아웃 저장
+    };
+
+    logger.log('WysiwygEditor 렌더링', { templateId, layoutName: options.layoutJson?.layout_name });
+
+    // WysiwygEditor 렌더링
+    state.reactRoot!.render(
+      React.createElement(
+        TranslationProvider,
+        {
+          translationEngine: state.translationEngine!,
+          translationContext: state.translationContext,
+        },
+        React.createElement(WysiwygEditor, {
+          layoutData: options.layoutJson,
+          templateId,
+          onClose: handleClose,
+          onSaveComplete: handleSaveComplete,
+          initialEditMode: 'visual',
+          readOnly: false,
+        })
+      )
+    );
+
+    logger.log('위지윅 편집기 렌더링 완료');
+  } catch (error) {
+    logger.error('위지윅 편집기 로드 실패:', error);
+
+    // 편집기 로드 실패 시 에러 메시지 표시
+    state.reactRoot!.render(
+      React.createElement('div', {
+        className: 'flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900',
+      },
+        React.createElement('div', {
+          className: 'text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg',
+        },
+          React.createElement('h1', {
+            className: 'text-xl font-bold text-red-600 dark:text-red-400 mb-4',
+          }, '위지윅 편집기 로드 실패'),
+          React.createElement('p', {
+            className: 'text-gray-600 dark:text-gray-400 mb-4',
+          }, '편집기를 불러오는 중 오류가 발생했습니다.'),
+          React.createElement('button', {
+            className: 'px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700',
+            onClick: () => window.location.reload(),
+          }, '새로고침')
+        )
+      )
+    );
+
+    throw error;
+  }
 }
 
 /**
@@ -1110,13 +1018,10 @@ export {
   renderTemplate,
   updateTemplateData,
   destroyTemplate,
-  releaseTemplateRoot,
   getState,
   getActionDispatcher,
   LayoutLoader,
   DataSourceManager,
-  // @since engine-v1.51.0 편집기 lazy 번들 로더 (테스트/진단용 노출)
-  loadLayoutEditorBundle,
 };
 
 export type {

@@ -25,21 +25,7 @@ class DatabaseFulltextEngineTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->engine = new DatabaseFulltextEngine;
-
-        // 픽스처 테이블(test_table)은 실존하지 않으므로 인덱스 카탈로그를 시드해
-        // MATCH 조립 경로를 검증한다 — 시드하지 않으면 인덱스 부재 게이트(#103)가
-        // LIKE 로 내려 보내 조립 단언이 무의미해진다.
-        DatabaseFulltextEngine::primeFulltextIndexCatalog([
-            'test_table' => [['name']],
-        ]);
-    }
-
-    protected function tearDown(): void
-    {
-        DatabaseFulltextEngine::forgetFulltextIndexCatalog();
-
-        parent::tearDown();
+        $this->engine = new DatabaseFulltextEngine();
     }
 
     /**
@@ -47,7 +33,7 @@ class DatabaseFulltextEngineTest extends TestCase
      */
     public function test_update_is_noop(): void
     {
-        $models = new Collection;
+        $models = new Collection();
 
         // 예외 없이 정상 실행되어야 함
         $this->engine->update($models);
@@ -59,7 +45,7 @@ class DatabaseFulltextEngineTest extends TestCase
      */
     public function test_delete_is_noop(): void
     {
-        $models = new Collection;
+        $models = new Collection();
 
         $this->engine->delete($models);
         $this->assertTrue(true);
@@ -176,7 +162,7 @@ class DatabaseFulltextEngineTest extends TestCase
      */
     public function test_search_returns_empty_for_non_fulltext_searchable_model(): void
     {
-        $model = new NonFulltextModel;
+        $model = new NonFulltextModel();
         $builder = new Builder($model, '검색어');
 
         $results = $this->engine->search($builder);
@@ -329,110 +315,6 @@ class DatabaseFulltextEngineTest extends TestCase
         // 예외 없이 정상 스킵되어야 함
         DatabaseFulltextEngine::addFulltextIndex('non_existent_table', 'ft_test', 'name');
         $this->assertTrue(true);
-    }
-
-    /**
-     * sanitizeBooleanModeKeyword()가 BOOLEAN MODE 연산자를 제거하고 phrase로 변환하는지 테스트합니다.
-     */
-    public function test_sanitize_boolean_mode_keyword_wraps_tokens_in_phrases(): void
-    {
-        $this->assertSame('"셔츠"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('셔츠'));
-        $this->assertSame('"shirt"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('shirt'));
-        // 다중 토큰 → 각각 phrase
-        $this->assertSame('"셔츠" "면"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('셔츠 면'));
-    }
-
-    /**
-     * sanitizeBooleanModeKeyword()가 각 BOOLEAN MODE 연산자를 제거하는지 테스트합니다.
-     */
-    public function test_sanitize_boolean_mode_keyword_strips_operators(): void
-    {
-        // 연산자가 제거되고 남은 토큰만 phrase 로 묶임
-        $this->assertSame('"상품"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('+상품'));
-        $this->assertSame('"바지"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('-바지'));
-        $this->assertSame('"상품"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('상품)'));
-        $this->assertSame('"셔츠"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('(셔츠'));
-        $this->assertSame('"키워드"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('~키워드'));
-        $this->assertSame('"상품"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('상품*'));
-        $this->assertSame('"셔츠"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('"셔츠'));
-        $this->assertSame('"user"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('@user'));
-        // <script> → 연산자/태그 제거 후 'script'
-        $this->assertSame('"script"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('<script>'));
-    }
-
-    /**
-     * sanitizeBooleanModeKeyword()가 연산자만 입력 시 빈 문자열을 반환하는지 테스트합니다.
-     */
-    public function test_sanitize_boolean_mode_keyword_returns_empty_for_operators_only(): void
-    {
-        $this->assertSame('', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('< >'));
-        $this->assertSame('', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('+-~*'));
-        $this->assertSame('', DatabaseFulltextEngine::sanitizeBooleanModeKeyword('   '));
-        $this->assertSame('', DatabaseFulltextEngine::sanitizeBooleanModeKeyword(''));
-    }
-
-    /**
-     * sanitizeBooleanModeKeyword()가 제어문자를 제거하는지 테스트합니다.
-     */
-    public function test_sanitize_boolean_mode_keyword_removes_control_chars(): void
-    {
-        $this->assertSame('"셔츠"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword("셔츠\x00"));
-        $this->assertSame('"a" "b"', DatabaseFulltextEngine::sanitizeBooleanModeKeyword("a\tb"));
-    }
-
-    /**
-     * whereFulltext()가 특수문자 입력 시 정제된 안전한 phrase를 바인딩하는지 테스트합니다.
-     */
-    public function test_where_fulltext_binds_sanitized_keyword(): void
-    {
-        $driver = DB::getDriverName();
-
-        if (! in_array($driver, ['mysql', 'mariadb'])) {
-            $this->markTestSkipped('FULLTEXT 미지원 DBMS');
-        }
-
-        $model = $this->createSearchableModel();
-        $query = $model->newQuery();
-
-        DatabaseFulltextEngine::whereFulltext($query, 'name', '<script>');
-
-        $sql = $query->toSql();
-        $this->assertStringContainsString('MATCH(`name`) AGAINST(? IN BOOLEAN MODE)', $sql);
-        // 원본 특수문자가 아닌 정제된 phrase 가 바인딩
-        $this->assertContains('"script"', $query->getBindings());
-    }
-
-    /**
-     * whereFulltext()가 연산자만 입력 시 항상 거짓인 조건으로 빈 결과를 만드는지 테스트합니다.
-     *
-     * 조건이 어떤 문자열로 렌더되는지(`1 = 0` / `0 = 1`)는 빌더 구현 사항이므로 단언하지
-     * 않는다. 여기서 고정할 것은 **매칭을 시도하지 않고(AGAINST 없음) 결과가 비어야 한다**
-     * 는 동작이다. 리터럴을 박아 두면 빈 whereIn 처럼 동등한 구현으로 바꿀 때 깨진다.
-     */
-    public function test_where_fulltext_uses_false_condition_for_operators_only(): void
-    {
-        $driver = DB::getDriverName();
-
-        if (! in_array($driver, ['mysql', 'mariadb'])) {
-            $this->markTestSkipped('FULLTEXT 미지원 DBMS');
-        }
-
-        $model = $this->createSearchableModel();
-        $query = $model->newQuery();
-
-        DatabaseFulltextEngine::whereFulltext($query, 'name', '< >');
-
-        $sql = $query->toSql();
-
-        // 매칭을 시도하지 않는다
-        $this->assertStringNotContainsString('AGAINST', $sql);
-        // 조건이 아예 없으면 전체 행이 나온다 — 조건은 반드시 붙어야 한다
-        $this->assertStringContainsString('where', strtolower($sql));
-        // 그 조건은 어떤 행도 통과시키지 않는 상수 거짓이어야 한다.
-        // `1 = 0`(raw)과 `0 = 1`(빈 whereIn) 은 같은 뜻이므로 둘 다 허용한다.
-        $this->assertMatchesRegularExpression('/\b(?:1\s*=\s*0|0\s*=\s*1)\b/', $sql);
-        // 상수 거짓 조건에는 바인딩이 없다 (사용자 입력이 새어 들어가지 않았다는 뜻)
-        $this->assertSame([], $query->getBindings());
     }
 
     /**

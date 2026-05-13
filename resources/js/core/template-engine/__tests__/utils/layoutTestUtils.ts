@@ -65,8 +65,6 @@ export interface LayoutJson {
   components?: ComponentDefinition[];
   // 모달 정의
   modals?: ComponentDefinition[];
-  // 재사용 액션 정의 (actionRef 로 참조)
-  named_actions?: Record<string, any>;
   // 데이터 소스
   data_sources?: Array<{
     id: string;
@@ -582,26 +580,13 @@ export function createLayoutTest(
       state._global = { ...state._global, ...updates };
     });
 
-    // 레이아웃 최상위 named_actions 등록 (engine-v1.19.0+)
-    // 미등록 시 actionRef 가 해석되지 않아 named_actions 를 쓰는 레이아웃은
-    // 렌더링 테스트에서 액션이 통째로 무반응이 된다 (경고만 남고 실패하지 않는다).
-    if (layoutJson.named_actions) {
-      actionDispatcher.setNamedActions?.(layoutJson.named_actions);
-    }
-
     // 글로벌 fetch 모킹
     cleanupFetch = setupGlobalFetchMock(mockApiRegistry);
 
     // G7Core 글로벌 객체 모킹
     (window as any).G7Core = {
       state: {
-        // 운영과 같은 모양으로 돌려준다 — `G7Core.state.get()` 의 반환값이 **곧 `_global` 의 내용물**이고
-        // (`TemplateApp.getGlobalState()` → `{...globalState}`), `_local` 은 그 안의 한 키다.
-        // 종전 `{ _global, _local }` 모양은 engine-v1.70.0 이 `._global` 접미를 떼기 전의 계약이라,
-        // ActionDispatcher 의 stale-closure 방어가 `_global` 자리에 `{_global,_local}` 을 통째로
-        // 꽂아 액션 params 안의 `{{_global.*}}` 가 전부 undefined 로 평가됐다.
-        // 정본: `resources/js/core/devtools/DiagnosticEngine.ts:65` 「반환값이 곧 _global 이다 — ._global 을 덧붙이지 말 것」.
-        get: () => ({ ...state._global, _local: state._local }),
+        get: () => ({ _global: state._global, _local: state._local }),
         set: (updates: any) => { state._global = { ...state._global, ...updates }; },
         getLocal: () => state._local,
         setLocal: (updates: any) => { state._local = { ...state._local, ...updates }; },

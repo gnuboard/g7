@@ -21,7 +21,6 @@ import { Input } from '../basic/Input';
 import { Textarea } from '../basic/Textarea';
 import { H3 } from '../basic/H3';
 import { Label } from '../basic/Label';
-import type { EditorAttrs } from '../../types';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -44,14 +43,6 @@ interface RichTextEditorProps {
   disabled?: boolean;
   /** 추가 CSS 클래스 */
   className?: string;
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-/**
-   * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-   */
-  editorAttrs?: EditorAttrs;
 }
 
 type FormatType =
@@ -105,8 +96,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   minHeight = '300px',
   disabled = false,
   className = '',
-  id,
-  editorAttrs,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState(initialValue);
@@ -122,13 +111,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   }, [initialValue]);
 
-  // 값 변경 — 사용자가 내용을 바꿀 때만 onChange 를 부른다. 종전에는 useEffect([content, onChange]) 로 불러
-  // 마운트와 콜백이 바뀌는 리렌더마다 불렸고, 편집기가 이 칸을 원시값 콜백(event: "onChange")으로 적으면
-  // 사용자 조작 없이도 동작이 실행됐다(사례 26, 7.1.0 O-I2F-4).
-  const updateContent = (next: string) => {
-    setContent(next);
-    onChange?.(next);
-  };
+  // 값 변경 시 콜백 호출
+  useEffect(() => {
+    if (onChange) {
+      onChange(content);
+    }
+  }, [content, onChange]);
 
   // 포맷 적용 (실제 구현 시 에디터 API 사용)
   const applyFormat = (format: FormatType) => {
@@ -197,7 +185,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   ];
 
   return (
-    <Div className={`border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden ${className}`} id={id} {...editorAttrs}>
+    <Div className={`border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden ${className}`}>
       {/* 툴바 */}
       <Div className="flex flex-wrap items-center gap-1 p-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {/* 텍스트 포맷 */}
@@ -288,17 +276,17 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       {showCodeView ? (
         <Textarea
           value={content}
-          onChange={(e) => updateContent(e.target.value)}
+          onChange={(e) => setContent(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full p-4 bg-gray-900 dark:bg-gray-900 text-gray-100 dark:text-gray-100 font-mono text-sm focus:outline-none resize-none"
+          className="w-full p-4 bg-gray-900 text-gray-100 font-mono text-sm focus:outline-none resize-none"
           style={{ minHeight }}
         />
       ) : (
         <Div
           ref={editorRef}
           contentEditable={!disabled}
-          onInput={(e) => updateContent(e.currentTarget.innerHTML)}
+          onInput={(e) => setContent(e.currentTarget.innerHTML)}
           className="p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none prose dark:prose-invert max-w-none"
           style={{ minHeight }}
           data-placeholder={placeholder}
@@ -336,7 +324,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
               <Button
                 type="button"
                 onClick={insertLink}
-                className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 {t('editor.link_modal.insert')}
               </Button>

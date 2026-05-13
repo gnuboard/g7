@@ -2,42 +2,28 @@
 
 namespace Modules\Sirsoft\Board\Services;
 
-use App\Contracts\Extension\CacheInterface;
-use App\Contracts\Extension\StorageInterface;
-use App\Contracts\Repositories\MenuRepositoryInterface;
-use App\Contracts\Repositories\RoleRepositoryInterface;
-use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
-use App\Exceptions\PermissionEscalationException;
 use App\Extension\HookManager;
+use App\Contracts\Extension\CacheInterface;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\PermissionHelper;
 use App\Models\Menu;
 use App\Models\Role;
 use App\Models\User;
-use App\Repositories\Concerns\ResolvesSortSpec;
 use App\Services\MenuService;
 use App\Services\RoleService;
-use App\Support\PermissionEscalationGuard;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Board\Exceptions\BulkApplyAbortedException;
 use Modules\Sirsoft\Board\Exceptions\MenuAlreadyExistsException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Modules\Sirsoft\Board\Http\Requests\Admin\BulkApplySettingsRequest;
-use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Models\Board;
-use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
-use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 게시판 관리 서비스 클래스
@@ -48,27 +34,6 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class BoardService
 {
     use ClearsTemplateCaches;
-    use FormatsBoardDate;
-    use ResolvesSortSpec;
-
-    /**
-     * 관리자 게시판 목록 정렬 허용 컬럼 화이트리스트
-     *
-     * IndexBoardRequest 의 sort_by in: 목록과 동일해야 한다 (화면 ⊆ 게이트 ⊆ 저장소).
-     * `name` 은 JSON 다국어 컬럼이라 제외한다.
-     *
-     * @var array<int, string>
-     */
-    private const BOARD_SORT_COLUMNS = [
-        'id',
-        'slug',
-        'type',
-        'is_active',
-        'posts_count',
-        'comments_count',
-        'created_at',
-        'updated_at',
-    ];
 
     /**
      * BoardService 생성자
@@ -80,11 +45,6 @@ class BoardService
      * @param  BoardPermissionService  $permissionService  게시판 권한 서비스
      * @param  MenuService  $menuService  메뉴 서비스
      * @param  RoleService  $roleService  역할 서비스
-     * @param  CacheInterface  $cache  캐시 드라이버
-     * @param  MenuRepositoryInterface  $menuRepository  코어 메뉴 리포지토리 (메뉴 조회용)
-     * @param  StorageInterface  $storage  스토리지 드라이버
-     * @param  RoleRepositoryInterface  $roleRepository  코어 역할 리포지토리 (게시판별 역할 동기화용)
-     * @param  UserRepositoryInterface  $userRepository  코어 사용자 리포지토리 (통계·UUID 변환용)
      */
     public function __construct(
         private BoardRepositoryInterface $boardRepository,
@@ -94,18 +54,14 @@ class BoardService
         private BoardPermissionService $permissionService,
         private MenuService $menuService,
         private RoleService $roleService,
-        private CacheInterface $cache,
-        private MenuRepositoryInterface $menuRepository,
-        private StorageInterface $storage,
-        private RoleRepositoryInterface $roleRepository,
-        private UserRepositoryInterface $userRepository
+        private CacheInterface $cache
     ) {}
 
     /**
      * 게시판 목록을 조회합니다.
      *
      * @param  array  $filters  필터 조건
-     * @return LengthAwarePaginator 결과 값
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getBoards(array $filters = [])
     {
@@ -133,21 +89,13 @@ class BoardService
             });
         }
 
-        // 정렬 — 요청 유래 값은 닫힌 집합으로만 해석 (미허용 컬럼은 기본값 fallback: 이중 방어)
-        [$sortSpec] = $this->resolveSortSpec(
-            $filters,
-            self::BOARD_SORT_COLUMNS,
-            'created_at',
-        );
-        $query->orderBy($sortSpec['column'], $sortSpec['direction']);
+        // 정렬
+        $sortBy = $filters['sort_by'] ?? 'created_at';
+        $sortOrder = $filters['sort_order'] ?? 'desc';
+        $query->orderBy($sortBy, $sortOrder);
 
-        // 비고유 컬럼 동률 구간에서도 전순서 보장 (페이지 경계 중복/누락 방지 규정)
-        $query->orderBy('id', 'desc');
-
-        // 페이지네이션 (1~999 클램프 — 게이트 우회 내부 호출 대비 이중 방어)
-        // 상한 999 는 IndexBoardRequest 와 동일해야 한다: 게시판은 운영자 등록
-        // 설정성 테이블이라 전체 목록 셀렉트 소비처(999/200)가 이 값을 쓴다.
-        $perPage = min(max((int) ($filters['per_page'] ?? 20), 1), 999);
+        // 페이지네이션
+        $perPage = $filters['per_page'] ?? 20;
 
         return $query->paginate($perPage);
     }
@@ -156,9 +104,8 @@ class BoardService
      * ID로 게시판을 조회합니다.
      *
      * @param  int  $id  게시판 ID
-     * @return Board 게시판 모델
      *
-     * @throws ModelNotFoundException
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
     public function getBoard(int $id): Board
     {
@@ -196,59 +143,13 @@ class BoardService
      *
      * @param  string  $orderBy  정렬 기준 (기본: created_at)
      * @param  string  $orderDirection  정렬 방향 (기본: desc)
-     * @return Collection 활성 게시판 컬렉션
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getActiveBoards(
         string $orderBy = 'created_at',
         string $orderDirection = 'desc'
-    ): Collection {
+    ): \Illuminate\Database\Eloquent\Collection {
         return $this->boardRepository->getActiveBoardsOrdered($orderBy, $orderDirection);
-    }
-
-    /**
-     * 활성 게시판 중 호출자가 열람할 수 있는 게시판만 조회합니다.
-     *
-     * 게시판 디렉토리(전체 게시판 목록 + 내장 최근글)처럼 비로그인에게도 열리는
-     * 응답에 사용합니다 — 최근글·인기글·인기게시판과 동일한 열람 권한 기준
-     * (sirsoft-board.{slug}.posts.read)을 호출자 시점에 적용해, 디렉토리 경로가
-     * 비공개 게시판·글 제목의 우회 노출로가 되지 않게 합니다.
-     *
-     * @param  string  $orderBy  정렬 기준 컬럼
-     * @param  string  $orderDirection  정렬 방향
-     * @return Collection 호출자가 열람 가능한 활성 게시판 컬렉션
-     */
-    public function getReadableActiveBoards(
-        string $orderBy = 'created_at',
-        string $orderDirection = 'desc'
-    ): Collection {
-        $user = Auth::user();
-
-        return $this->getActiveBoards($orderBy, $orderDirection)
-            ->filter(fn ($board) => PermissionHelper::check("sirsoft-board.{$board->slug}.posts.read", $user))
-            ->values();
-    }
-
-    /**
-     * 활성 게시판 중 호출자가 읽을 수 없는 게시판의 ID 목록을 반환합니다.
-     *
-     * 여러 게시판을 가로지르는 사용자 활동 목록(공개 프로필의 작성글, 내가 댓글 단 글)은
-     * 게시판별 읽기 권한을 거치지 않아, 게시판 목록에서는 401/403 인 회원전용 게시판의 글이
-     * 제목·본문 미리보기째 나가던 결함(KVE-2026-2371 동반)을 막는 데 씁니다. 저장소는 이 ID 를
-     * 쿼리 단계에서 제외해 페이지 건수와 실제 행이 어긋나지 않게 합니다.
-     * 판정 기준은 최근글·통합검색과 같은 `sirsoft-board.{slug}.posts.read` 입니다.
-     *
-     * @return array<int, int> 호출자가 읽을 수 없는 활성 게시판 ID 배열 (비로그인은 guest 기준)
-     */
-    public function getUnreadableActiveBoardIds(): array
-    {
-        $user = Auth::user();
-
-        return $this->boardRepository->getActiveBoardsList()
-            ->reject(fn ($board) => PermissionHelper::check("sirsoft-board.{$board->slug}.posts.read", $user))
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->values()
-            ->all();
     }
 
     /**
@@ -256,9 +157,9 @@ class BoardService
      *
      * id, name, slug만 조회하며 posts COUNT 쿼리를 실행하지 않습니다.
      *
-     * @return Collection 활성 게시판 컬렉션
+     * @return \Illuminate\Database\Eloquent\Collection 활성 게시판 컬렉션
      */
-    public function getActiveBoardsForMenu(): Collection
+    public function getActiveBoardsForMenu(): \Illuminate\Database\Eloquent\Collection
     {
         return $this->boardRepository->getActiveBoardsForMenu();
     }
@@ -267,7 +168,7 @@ class BoardService
      * 인기 게시판 목록을 조회합니다 (게시글 수 기준).
      *
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>> 결과 배열
+     * @return array<int, array<string, mixed>>
      */
     public function getPopularBoards(int $limit): array
     {
@@ -291,7 +192,7 @@ class BoardService
     /**
      * 게시판 통계를 캐시와 함께 조회합니다.
      *
-     * @return array{users: int, boards: int, posts: int, comments: int} 결과 배열
+     * @return array{users: int, boards: int, posts: int, comments: int}
      */
     public function getCachedStats(): array
     {
@@ -301,9 +202,7 @@ class BoardService
             $boardStats = $this->getActiveBoardStats();
 
             return [
-                // 사용자와 무관한 공용 캐시라 조회 스코프를 끄고 센다 — 스코프를 건 숫자가 캐시에
-                // 앉으면 다른 방문자에게 처음 채운 사람 기준 회원 수가 나간다.
-                'users' => $this->userRepository->getStatistics(applyPermissionScope: false)['total_users'],
+                'users' => User::count(),
                 'boards' => $boardStats['boards'],
                 'posts' => $boardStats['posts'],
                 'comments' => $boardStats['comments'],
@@ -315,118 +214,65 @@ class BoardService
      * 최근 게시글을 캐시와 함께 조회합니다.
      *
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>> 결과 배열
+     * @return array<int, array<string, mixed>>
      */
     public function getCachedRecentPosts(int $limit): array
     {
         $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
 
-        // 캐시는 사용자와 무관한 안전집합(발행 + 활성 게시판)으로만 채운다.
-        // 비밀글은 제목 공개 정책(2026-02-04)에 따라 제목을 포함한다(본문 미포함 — 사용자 무관 데이터).
-        // 게시판별 열람 권한은 캐시에 담지 않고 응답 시점에 호출자 기준으로 적용해,
-        // 고권한 사용자의 결과가 캐시를 오염시켜 저권한 사용자에게 새는 것을 막는다.
-        // 게시판 이름은 언어별 값이라 캐시를 언어마다 나눈다 — 키에 언어가 없으면 먼저 채운 언어의 이름이
-        // 다른 언어 화면에 그대로 나갔다(2026-10-07 실측: 한국어 화면에 영어 게시판 이름·「10 minutes ago」).
-        $locale = app()->getLocale();
-        $posts = $this->cache->remember(
-            "recent_posts_{$limit}_{$locale}",
+        return $this->cache->remember(
+            "recent_posts_{$limit}",
             fn () => $this->getRecentPosts($limit),
             $ttl,
             tags: ['board-posts']
         );
-
-        return $this->refreshCachedPostTimes($this->filterItemsByBoardReadPermission($posts, 'board_slug'));
     }
 
     /**
      * 인기 게시글을 캐시와 함께 조회합니다.
      *
-     * 캐시 키에 locale 을 포함합니다 — 게시판 이름·작성자 상태 문구가 언어별 값이다.
+     * 캐시 키에 locale을 포함하지 않습니다 (쿼리 결과는 locale에 무관).
      *
      * @param  string  $period  기간 (today, week, month, year)
      * @param  int  $limit  조회 개수
-     * @return array 캐시된 인기글 목록
+     * @return array
      */
     public function getCachedPopularPosts(string $period = 'week', int $limit = 20): array
     {
         $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
 
-        // 캐시는 안전집합(비밀글 제외 + 발행 + 활성 게시판)으로만 채우고, 게시판별
-        // 열람 권한은 응답 시점에 호출자 기준으로 적용한다(캐시 오염 회피).
-        // 키의 v2 는 작성자 이메일을 담던 이전 캐시를 업데이트 직후부터 다시 읽지 않기 위한 것이다 —
-        // 모듈 업데이트는 이 캐시를 비우지 않으므로 키를 그대로 두면 TTL 동안 옛 값이 응답된다.
-        // 게시판 이름·작성자 상태 문구가 언어별 값이라 언어마다 나눈다(최근 게시글과 같은 이유).
-        $locale = app()->getLocale();
-        $posts = $this->cache->remember(
-            "popular_posts_v2_{$period}_{$limit}_{$locale}",
+        return $this->cache->remember(
+            "popular_posts_{$period}_{$limit}",
             fn () => $this->getPopularPosts($period, $limit),
             $ttl,
             tags: ['board-posts']
         );
-
-        return $this->refreshCachedPostTimes($this->filterItemsByBoardReadPermission($posts, 'board_slug'));
     }
 
     /**
      * 인기 게시판을 캐시와 함께 조회합니다.
      *
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>> 결과 배열
+     * @return array<int, array<string, mixed>>
      */
     public function getCachedPopularBoards(int $limit): array
     {
         $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
 
-        // 캐시는 활성 게시판 전체로 채우고, 게시판별 열람 권한은 응답 시점에
-        // 호출자 기준으로 적용한다(캐시 오염 회피 — 저권한 사용자에게 고권한 결과가 새지 않도록).
-        // 게시판 이름·설명이 언어별 값이라 언어마다 나눈다.
-        $locale = app()->getLocale();
-        $boards = $this->cache->remember(
-            "popular_boards_{$limit}_{$locale}",
+        return $this->cache->remember(
+            "popular_boards_{$limit}",
             fn () => $this->getPopularBoards($limit),
             $ttl,
             tags: ['board-list']
         );
-
-        return $this->filterItemsByBoardReadPermission($boards, 'slug');
-    }
-
-    /**
-     * 캐시에서 꺼낸 게시글 목록의 날짜 표기와 New 배지를 지금 기준으로 다시 계산합니다.
-     *
-     * 목록은 모든 방문자가 공유하는 캐시라, 채운 시점의 「n분 전」·New·시간대가 그대로 굳어
-     * 몇 시간 뒤에도 「방금」으로 보이거나 표시 기간이 지난 글에 New 가 남았다(2026-10-07 실측).
-     * 저장소가 함께 담아 둔 원본 작성 시각(`_created_at`)으로 다시 계산하고 그 원본은 응답에서 뺀다.
-     *
-     * @param  array<int, array<string, mixed>>  $items  캐시에서 꺼낸 게시글 배열
-     * @return array<int, array<string, mixed>> 날짜 표기·New 를 다시 계산한 배열
-     */
-    private function refreshCachedPostTimes(array $items): array
-    {
-        $format = g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard');
-        $newHours = g7_module_settings('sirsoft-board', 'basic_defaults.new_display_hours', 24);
-
-        return array_map(function (array $item) use ($format, $newHours) {
-            $raw = $item['_created_at'] ?? null;
-            unset($item['_created_at']);
-
-            if ($raw) {
-                $createdAt = Carbon::parse($raw);
-                $item['created_at'] = $this->formatCreatedAt($createdAt);
-                $item['created_at_formatted'] = $this->formatCreatedAtFormat($createdAt, $format);
-                $item['is_new'] = $createdAt->diffInHours(now()) < $newHours;
-            }
-
-            return $item;
-        }, $items);
     }
 
     /**
      * 메뉴용 게시판 목록을 캐시와 함께 조회합니다.
      *
-     * @return Collection 활성 게시판 컬렉션
+     * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getCachedActiveBoardsForMenu(): Collection
+    public function getCachedActiveBoardsForMenu(): \Illuminate\Database\Eloquent\Collection
     {
         $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
 
@@ -469,51 +315,8 @@ class BoardService
         $permissions = $data['permissions'] ?? [];
         $boardManagerIds = $data['board_manager_ids'] ?? null;
         $boardStepIds = $data['board_step_ids'] ?? null;
-        $addToMenu = (bool) ($data['add_to_menu'] ?? false);
-        unset($data['permissions'], $data['board_manager_ids'], $data['board_step_ids'], $data['add_to_menu']);
+        unset($data['permissions'], $data['board_manager_ids'], $data['board_step_ids']);
 
-        // 게시판·역할·권한·담당자 지정을 한 트랜잭션으로 묶는다 — 권한 설정이나 담당자 지정이 권한
-        // 상한에 걸려 거부되면 그 앞에서 만든 게시판·역할·권한까지 함께 되돌려야 반쪽 게시판이
-        // 남지 않는다.
-        $board = DB::transaction(function () use ($data, $permissions, $boardManagerIds, $boardStepIds) {
-            return $this->createBoardWithRolesAndPermissions($data, $permissions, $boardManagerIds, $boardStepIds);
-        });
-
-        // After 훅 - 후처리, 알림, 캐시 등
-        HookManager::doAction('sirsoft-board.board.after_create', $board, $data);
-
-        // 관리자 메뉴 추가 토글 (선택). 메뉴는 부수 기능이므로 실패해도 게시판 생성은 롤백하지 않음.
-        if ($addToMenu) {
-            $this->tryAddToAdminMenu($board);
-        }
-
-        // 캐시 클리어
-        $this->clearBoardCaches($board->slug, $board->id);
-
-        // 게시판 생성 성공 로그 (info 레벨)
-        Log::info('Board created successfully', [
-            'board_id' => $board->id,
-            'slug' => $board->slug,
-            'type' => $board->type,
-            'user_id' => Auth::id(),
-        ]);
-
-        return $board;
-    }
-
-    /**
-     * 게시판 행과 게시판별 역할·권한을 만들고 담당자를 지정합니다 (createBoard 트랜잭션 본문).
-     *
-     * @param  array  $data  게시판 행 데이터 (permissions·담당자 필드 분리 후)
-     * @param  array  $permissions  요청 권한 설정
-     * @param  array|null  $boardManagerIds  게시판 관리자 UUID 목록 (null 이면 미지정)
-     * @param  array|null  $boardStepIds  게시판 스텝 UUID 목록 (null 이면 미지정)
-     * @return Board 생성된 게시판
-     *
-     * @throws PermissionEscalationException 권한 설정·담당자 지정이 액터의 권한 부여 상한을 넘을 때
-     */
-    private function createBoardWithRolesAndPermissions(array $data, array $permissions, ?array $boardManagerIds, ?array $boardStepIds): Board
-    {
         // 게시판 생성
         $board = $this->boardRepository->create($data);
 
@@ -563,8 +366,21 @@ class BoardService
         if ($boardStepIds !== null) {
             $syncData['board_step_ids'] = $boardStepIds;
         }
-        // 새 게시판 — 생성자 본인 한 명만 관리자로 두는 것은 상한 밖 위임 관리자에게도 허용된다(K4F-2)
-        $this->syncBoardRoleUsers($board, $syncData, isNewBoard: true);
+        $this->syncBoardRoleUsers($board, $syncData);
+
+        // After 훅 - 후처리, 알림, 캐시 등
+        HookManager::doAction('sirsoft-board.board.after_create', $board, $data);
+
+        // 캐시 클리어
+        $this->clearBoardCaches($board->slug, $board->id);
+
+        // 게시판 생성 성공 로그 (info 레벨)
+        Log::info('Board created successfully', [
+            'board_id' => $board->id,
+            'slug' => $board->slug,
+            'type' => $board->type,
+            'user_id' => Auth::id(),
+        ]);
 
         return $board;
     }
@@ -593,10 +409,6 @@ class BoardService
         // 필터 훅 - 데이터 변형
         $data = HookManager::applyFilters('sirsoft-board.board.filter_update_data', $data, $board);
 
-        // 관리자 메뉴 토글 분리 (DB 컬럼 아님). null = 미전송(변경 없음)
-        $addToMenu = array_key_exists('add_to_menu', $data) ? (bool) $data['add_to_menu'] : null;
-        unset($data['add_to_menu']);
-
         // 수정자 정보 추가
         $data['updated_by'] = Auth::id();
 
@@ -607,49 +419,34 @@ class BoardService
             ];
         }
 
-        // 게시판 행·권한 매핑·역할명·담당자를 한 트랜잭션으로 묶는다 — 권한 설정이나 담당자 지정이
-        // 권한 상한에 걸리면 같은 요청의 다른 변경(이름·설정)까지 되돌려 부분 저장을 남기지 않는다.
-        $updatedBoard = DB::transaction(function () use ($id, $data) {
-            // 게시판 수정
-            $updatedBoard = $this->boardRepository->update($id, $data);
+        // 게시판 수정
+        $updatedBoard = $this->boardRepository->update($id, $data);
 
-            // 권한 업데이트 (permissions 테이블은 유지, role_permissions만 동기화)
-            if (isset($data['permissions']) && is_array($data['permissions'])) {
-                try {
-                    $this->permissionService->updateBoardPermissions($updatedBoard, $data['permissions']);
-                    HookManager::doAction('sirsoft-board.permissions.after_update', $updatedBoard);
-                } catch (PermissionEscalationException $e) {
-                    // 상한 위반은 삼키지 않는다 — 삼키면 거부된 요청이 200 으로 끝나고 이름 등 다른
-                    // 변경은 저장된다.
-                    throw $e;
-                } catch (\Exception $e) {
-                    Log::error('게시판 권한 업데이트 실패', [
-                        'board_id' => $updatedBoard->id,
-                        'slug' => $updatedBoard->slug,
-                        'error' => $e->getMessage(),
-                    ]);
-                    // 권한 업데이트 실패 시에도 게시판 수정은 완료된 상태
-                }
+        // 권한 업데이트 (permissions 테이블은 유지, role_permissions만 동기화)
+        if (isset($data['permissions']) && is_array($data['permissions'])) {
+            try {
+                $this->permissionService->updateBoardPermissions($updatedBoard, $data['permissions']);
+                HookManager::doAction('sirsoft-board.permissions.after_update', $updatedBoard);
+            } catch (\Exception $e) {
+                Log::error('게시판 권한 업데이트 실패', [
+                    'board_id' => $updatedBoard->id,
+                    'slug' => $updatedBoard->slug,
+                    'error' => $e->getMessage(),
+                ]);
+                // 권한 업데이트 실패 시에도 게시판 수정은 완료된 상태
             }
+        }
 
-            // 게시판 이름 변경 시 연관 역할명 동기화
-            if (isset($data['name'])) {
-                $this->syncBoardRoleNames($updatedBoard);
-            }
+        // 게시판 이름 변경 시 연관 역할명 동기화
+        if (isset($data['name'])) {
+            $this->syncBoardRoleNames($updatedBoard);
+        }
 
-            // 게시판 관리자/스텝 사용자 역할 동기화
-            $this->syncBoardRoleUsers($updatedBoard, $data);
-
-            return $updatedBoard;
-        });
+        // 게시판 관리자/스텝 사용자 역할 동기화
+        $this->syncBoardRoleUsers($updatedBoard, $data);
 
         // After 훅 - 후처리, 알림, 캐시 등
         HookManager::doAction('sirsoft-board.board.after_update', $updatedBoard, $data, $snapshot);
-
-        // 관리자 메뉴 토글 적용 (변화분만 반영). 미전송이면 무동작.
-        if ($addToMenu !== null) {
-            $this->syncAdminMenu($updatedBoard, $addToMenu);
-        }
 
         // 캐시 클리어
         $this->clearBoardCaches($updatedBoard->slug, $updatedBoard->id);
@@ -664,7 +461,6 @@ class BoardService
      *
      * @param  int  $id  게시판 ID
      * @param  bool  $forceDelete  사용되지 않음 (하드 딜리트만 지원)
-     * @return void 반환값 없음
      */
     public function deleteBoard(int $id, bool $forceDelete = false): void
     {
@@ -681,26 +477,13 @@ class BoardService
         // 그누보드7 규정: DB CASCADE 금지 → 어플리케이션에서 명시적 삭제
         DB::transaction(function () use ($board) {
             // 1. 첨부파일 스토리지 일괄 삭제 (물리 파일)
-            // 첨부파일 저장 경로: attachments/{slug}/...
-            $this->deleteAttachmentFiles($board->slug);
+            // 첨부파일 저장 경로: board/{board_id}/
+            $this->deleteAttachmentFiles($board->id);
 
-            // 2. 연관 데이터 영구 삭제 (board_id 기준)
-            // 게시판을 영구 삭제하므로 하위 게시글·댓글·첨부 DB 레코드도 함께 영구 삭제한다
-            // (소프트 삭제 시 게시판이 사라진 뒤 접근 불가한 고아 데이터로 잔존)
-            $this->attachmentRepository->forceDeleteByBoardId($board->id);
-            $this->commentRepository->forceDeleteByBoardId($board->id);
-
-            // 2-1. 훅: 삭제될 글 ID 목록을 연동 확장에 통지 (이커머스 문의 피벗 정리 등)
-            // withTrashed 전체를 1,000건 chunk 당 1회씩 다회 발화한다 — 리스너는 멱등 의무.
-            // 트랜잭션 내부 발화라 게시판 삭제와 원자적이다. per-post after_delete 훅을
-            // 재사용하지 않는 이유: 글마다 모델 로드 N회 + 소프트/하드 삭제 의미 불일치.
-            // 셋째 인자는 글 모델 타입(다형 참조 type) — 구독 확장이 게시판 클래스 이름을
-            // 스스로 적지 않고 이 값으로 자기 다형 참조를 가려 지운다.
-            $this->postRepository->eachIdChunkByBoardId($board->id, 1000, function (array $postIds) use ($board) {
-                HookManager::doAction('sirsoft-board.board.posts.before_force_delete', $board, $postIds, Post::class);
-            });
-
-            $this->postRepository->forceDeleteByBoardId($board->id);
+            // 2. 연관 데이터 소프트 삭제 (board_id 기준)
+            $this->attachmentRepository->softDeleteByBoardId($board->id);
+            $this->commentRepository->softDeleteByBoardId($board->id);
+            $this->postRepository->softDeleteByBoardId($board->id);
 
             // 3. 게시판 권한 삭제 (그누보드7 규정: detach 후 삭제)
             $this->permissionService->removeBoardPermissions($board);
@@ -711,13 +494,13 @@ class BoardService
             HookManager::doAction('sirsoft-board.roles.after_delete', $board->slug);
 
             // 5. 등록된 메뉴 제거 (addToAdminMenu()로 등록된 경우에만)
-            $menu = $this->menuRepository->findByUrl('/admin/board/'.$board->slug);
+            $menu = Menu::where('url', '/admin/board/'.$board->slug)->first();
             if ($menu) {
                 $this->menuService->deleteMenu($menu);
             }
 
             // 6. 게시판 영구 삭제
-            $this->boardRepository->forceDelete($board->id);
+            $board->forceDelete();
         });
 
         Log::info('Board deleted', [
@@ -778,89 +561,27 @@ class BoardService
             }, $nameValue);
         }
 
-        // 역할/관계 파생 필드 보강
-        // toArray() 는 DB 컬럼만 반환하므로, 폼이 필요로 하는 다음 필드가 누락된다:
-        //  - board_manager_ids / board_managers / board_step_ids / board_steps (역할 기반)
-        //  - permissions (권한 accessor 기반)
-        // 이를 채우지 않으면 복제 폼 저장 시 board_manager_ids 누락으로 422,
-        // permissions 부재로 권한 미복사가 발생한다.
-        $originalSlug = $originalBoard->slug;
-
-        // 1) 관리자/스텝 역할 데이터 — BoardResource 와 동일 산출 구조 재사용 (SSoT)
-        $roleData = BoardResource::getBoardRoleData("sirsoft-board.{$originalSlug}");
-        $copyData['board_manager_ids'] = $roleData['board_manager_ids'];
-        $copyData['board_managers'] = $roleData['board_managers'];
-        $copyData['board_step_ids'] = $roleData['board_step_ids'];
-        $copyData['board_steps'] = $roleData['board_steps'];
-
-        // 2) 권한 정보 — 옛 slug 스코프(manager/step) identifier 는 제거하여 교차 게시판 누수 차단.
-        //    새 게시판의 manager/step 역할은 생성 시 injectBoardRolesToPermissions 가 자동 주입한다.
-        //    비-스코프 역할(member 등)은 그대로 보존된다.
-        $copyData['permissions'] = $this->stripBoardScopeRoles(
-            $originalBoard->permissions ?? [],
-            $originalSlug
-        );
-
-        // 3) 관리자 메뉴 등록 토글 — 폼 Toggle(add_to_menu) 초기값.
-        //    toArray() 에는 없는 파생 필드이므로, 누락 시 Toggle 이 undefined 로 초기화되어
-        //    저장 시 boolean 검증에 걸린다(422). 원본 게시판의 메뉴 등록 상태를 승계한다.
-        $copyData['add_to_menu'] = $this->isInAdminMenu($originalBoard);
-
-        // After 훅 - 복사 데이터 필터 (보강된 5필드를 리스너가 참조/변형할 수 있도록 보강 이후 호출)
+        // After 훅 - 복사 데이터 필터
         $copyData = HookManager::applyFilters('sirsoft-board.board.filter_copy_data', $copyData, $originalBoard);
 
         return $copyData;
     }
 
     /**
-     * 권한 배열에서 특정 게시판 스코프(manager/step) 역할 identifier 를 제거합니다.
-     *
-     * 복제 시 원본 게시판의 `sirsoft-board.{slug}.manager` / `.step` 역할이
-     * 새 게시판 권한에 attach 되어 발생하는 교차 게시판 권한 누수를 차단합니다.
-     * (attachRoles 가 전역 whereIn 조회라 board 스코프가 적용되지 않음)
-     *
-     * 새 게시판의 manager/step 역할은 생성 시 injectBoardRolesToPermissions 가
-     * 자동 주입하므로 복원되며, 비-스코프 역할(member 등)은 그대로 보존됩니다.
-     *
-     * @param  array  $permissions  권한 배열 (키: permission_key, 값: [role_identifiers] or null)
-     * @param  string  $slug  제거 대상 게시판 slug
-     * @return array 스코프 역할이 제거된 권한 배열
-     */
-    private function stripBoardScopeRoles(array $permissions, string $slug): array
-    {
-        $scopedRoles = [
-            "sirsoft-board.{$slug}.manager",
-            "sirsoft-board.{$slug}.step",
-        ];
-
-        foreach ($permissions as $key => $roles) {
-            if (! is_array($roles)) {
-                // null(전체 허용) 또는 단일 값은 그대로 둔다
-                continue;
-            }
-
-            $filtered = array_values(array_diff($roles, $scopedRoles));
-            $permissions[$key] = $filtered;
-        }
-
-        return $permissions;
-    }
-
-    /**
      * 게시판별 관리자/스텝 역할을 생성합니다.
      *
      * @param  Board  $board  대상 게시판
-     * @return array{manager: Role, step: Role} 생성된 역할 배열
+     * @return array{manager: \App\Models\Role, step: \App\Models\Role} 생성된 역할 배열
      */
     private function createBoardRoles(Board $board): array
     {
         $boardNameKo = $board->name['ko'] ?? $board->name['en'] ?? $board->slug;
         $boardNameEn = $board->name['en'] ?? $board->name['ko'] ?? $board->slug;
 
-        // 중복 방어: 이전 삭제 실패 등으로 role이 남아있을 수 있음 (기존 role 은 갱신 없이 재사용 — firstOrCreate 동형)
-        $managerRole = $this->roleRepository->findByIdentifier("sirsoft-board.{$board->slug}.manager")
-            ?? $this->roleRepository->create([
-                'identifier' => "sirsoft-board.{$board->slug}.manager",
+        // 중복 방어: 이전 삭제 실패 등으로 role이 남아있을 수 있음
+        $managerRole = Role::firstOrCreate(
+            ['identifier' => "sirsoft-board.{$board->slug}.manager"],
+            [
                 'name' => [
                     'ko' => "{$boardNameKo} 게시판 관리자",
                     'en' => "{$boardNameEn} Board Manager",
@@ -871,11 +592,12 @@ class BoardService
                 ],
                 'extension_type' => ExtensionOwnerType::Module,
                 'extension_identifier' => 'sirsoft-board',
-            ]);
+            ]
+        );
 
-        $stepRole = $this->roleRepository->findByIdentifier("sirsoft-board.{$board->slug}.step")
-            ?? $this->roleRepository->create([
-                'identifier' => "sirsoft-board.{$board->slug}.step",
+        $stepRole = Role::firstOrCreate(
+            ['identifier' => "sirsoft-board.{$board->slug}.step"],
+            [
                 'name' => [
                     'ko' => "{$boardNameKo} 게시판 스텝",
                     'en' => "{$boardNameEn} Board Step",
@@ -886,7 +608,8 @@ class BoardService
                 ],
                 'extension_type' => ExtensionOwnerType::Module,
                 'extension_identifier' => 'sirsoft-board',
-            ]);
+            ]
+        );
 
         return ['manager' => $managerRole, 'step' => $stepRole];
     }
@@ -895,7 +618,6 @@ class BoardService
      * 게시판별 관리자/스텝 역할을 삭제합니다.
      *
      * @param  Board  $board  대상 게시판
-     * @return void 반환값 없음
      */
     private function deleteBoardRoles(Board $board): void
     {
@@ -904,16 +626,13 @@ class BoardService
             "sirsoft-board.{$board->slug}.step",
         ];
 
-        foreach ($roleIdentifiers as $identifier) {
-            $role = $this->roleRepository->findByIdentifier($identifier);
-            if (! $role) {
-                continue;
-            }
+        $roles = Role::whereIn('identifier', $roleIdentifiers)->get();
 
+        foreach ($roles as $role) {
             // 그누보드7 규정: detach 후 삭제
-            $this->roleRepository->detachAllPermissions($role);
+            $role->permissions()->detach();
             $role->users()->detach();
-            $this->roleRepository->delete($role);
+            $role->delete();
         }
     }
 
@@ -921,7 +640,6 @@ class BoardService
      * 게시판명 변경 시 연관 역할(관리자/스텝)의 이름을 동기화합니다.
      *
      * @param  Board  $board  수정된 게시판
-     * @return void 반환값 없음
      */
     private function syncBoardRoleNames(Board $board): void
     {
@@ -952,99 +670,31 @@ class BoardService
         ];
 
         foreach ($roleUpdates as $identifier => $attributes) {
-            $role = $this->roleRepository->findByIdentifier($identifier);
-            if ($role) {
-                $this->roleRepository->update($role, $attributes);
-            }
+            Role::where('identifier', $identifier)->update($attributes);
         }
-    }
-
-    /**
-     * 현재 액터가 새로 만들 게시판에 관리자·스텝을 지정할 수 있는지 미리 판정합니다 (생성·복사 폼용).
-     *
-     * 새 게시판의 관리자 역할은 그 게시판 권한 전부를 담는다. 담당자 지정은 그 권한을 액터가 모두
-     * 가져야 통과하므로(syncBoardRoleUsers → PermissionEscalationGuard), 생성 직후 액터가 권한을 갖는
-     * 길은 「권한마다 붙는 역할(기본 ACL·복사 원본 ACL)에 액터의 역할이 있다」뿐이다. 이를 만족하지
-     * 않는 위임 관리자도 새 게시판에는 본인 한 명을 관리자로 둘 수 있으므로(syncBoardRoleUsers 의
-     * 생성자 본인 예외), 폼은 이 판정이 거짓이어도 본인을 관리자로 채우고(복사는 원본 명단 대신, 스텝은
-     * 비움) `_meta.can_assign_board_members=false` 로 다른 담당자를 지정할 수 없음만 알린다 — 화면은 이
-     * 값으로 담당자 칸을 잠그고 이유를 보인다(7.1.0 전수 실측 O-K4-3, K4F-2).
-     *
-     * @param  array<string, mixed>  $permissionRoles  권한 키 => 역할 식별자 목록 (설정 기본값 또는 복사 원본 ACL, 프론트 형식 `{roles:[…]}` 도 받음)
-     * @return bool 지정할 수 있으면 true
-     */
-    public function canAssignBoardMembersOnNewBoard(array $permissionRoles): bool
-    {
-        $actor = Auth::user();
-        if (! $actor instanceof User) {
-            return false;
-        }
-        if ($actor->isSuperAdmin()) {
-            return true;
-        }
-
-        $actorRoles = $actor->roles()->pluck('identifier')->all();
-        if ($actorRoles === []) {
-            return false;
-        }
-
-        foreach (array_keys(config('sirsoft-board.board_permission_definitions', [])) as $key) {
-            $roles = $permissionRoles[$key] ?? $permissionRoles[str_replace('.', '_', $key)] ?? [];
-            if (is_array($roles) && array_key_exists('roles', $roles)) {
-                $roles = $roles['roles'] ?? [];
-            }
-            $roles = is_array($roles) ? $roles : [$roles];
-
-            if (array_intersect($actorRoles, $roles) === []) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
      * 게시판 관리자/스텝 역할에 사용자를 동기화합니다.
      *
-     * 게시판 관리자·스텝 역할에 회원을 넣고 빼는 것은 그 역할이 가진 게시판 권한(admin.manage·
-     * 비밀글 열람 등)을 통째로 주고 빼는 것이라, 회원 역할 배정과 같은 상한을 받는다 — 그 권한을
-     * 가진 액터(슈퍼관리자·그 게시판의 기존 관리자)만 담당자를 바꿀 수 있다. 이 검사가 없어 게시판
-     * 수정 권한만 가진 위임 관리자가 자기를 담당자로 넣어 그 게시판의 관리 권한을 얻던 경로가
-     * 게시판 권한 저장(KVE-2026-2367)의 두 번째 우회로였다. 명단이 바뀌지 않으면 검사하지 않는다
-     * — 게시판 수정 화면은 저장할 때마다 현재 명단을 그대로 다시 보낸다.
-     *
-     * 예외 하나: 같은 요청에서 **새로 만든 게시판**의 관리자 명단이 생성자 본인 한 명뿐이면 상한을 보지 않는다.
-     * 새로 만드는 게시판의 관리자가 되는 것은 기존 게시판에 대한 권한 상승이 아니고, 이것이 없으면 기본 ACL
-     * 밖의 위임 관리자는 게시판 생성 권한이 있어도 게시판을 만들 수 없었다(7.1.0 실측 K4F-2, 결정
-     * 2026-10-08). 다른 회원을 함께 넣거나 스텝을 지정하면 종전대로 상한을 받는다.
-     *
      * @param  Board  $board  대상 게시판
      * @param  array  $data  요청 데이터 (board_manager_ids, board_step_ids 포함)
-     * @param  bool  $isNewBoard  같은 요청에서 방금 만든 게시판인지 (createBoard 경로만 true)
-     * @return void 반환값 없음
-     *
-     * @throws PermissionEscalationException 명단 변경이 액터의 권한 부여 상한을 넘을 때
      */
-    private function syncBoardRoleUsers(Board $board, array $data, bool $isNewBoard = false): void
+    private function syncBoardRoleUsers(Board $board, array $data): void
     {
         $roleMap = [
             'board_manager_ids' => "sirsoft-board.{$board->slug}.manager",
             'board_step_ids' => "sirsoft-board.{$board->slug}.step",
         ];
-        // 새 게시판은 스텝을 먼저 판정한다 — 관리자(본인)를 먼저 넣으면 그 관리자 역할 덕에 같은 요청의 스텝 지정이
-        // 상한을 통과해, 「본인 한 명만 관리자」 예외가 다른 회원 지정으로 번진다
-        if ($isNewBoard) {
-            $roleMap = array_reverse($roleMap, true);
-        }
 
         foreach ($roleMap as $dataKey => $roleIdentifier) {
             if (! array_key_exists($dataKey, $data)) {
                 continue;
             }
 
-            $role = $this->roleRepository->findByIdentifier($roleIdentifier);
+            $role = Role::where('identifier', $roleIdentifier)->first();
             if (! $role) {
-                Log::warning('게시판 역할을 찾을 수 없습니다.', [
+                Log::warning("게시판 역할을 찾을 수 없습니다.", [
                     'board_slug' => $board->slug,
                     'role_identifier' => $roleIdentifier,
                 ]);
@@ -1053,33 +703,7 @@ class BoardService
             }
 
             $userUuids = $data[$dataKey] ?? [];
-            $userIds = $this->userRepository->getIdsByUuids($userUuids);
-
-            $currentIds = $role->users()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
-            $targetIds = array_map('intval', $userIds);
-            if (array_diff($targetIds, $currentIds) === [] && array_diff($currentIds, $targetIds) === []) {
-                continue;
-            }
-
-            // 같은 요청에서 방금 만든 게시판 권한이 액터에게 붙었을 수 있다(게시판 생성 시 기본 ACL) —
-            // 요청 시작 때 읽어 둔 권한이 아니라 지금 저장된 권한으로 판정한다.
-            $actor = Auth::user();
-            if ($actor instanceof User) {
-                $actor->flushPermissionCaches();
-                $actor->unsetRelation('roles');
-            }
-
-            // 새 게시판의 관리자를 생성자 본인 한 명으로만 두는 경우는 상승이 아니다 — 상한을 보지 않는다
-            $isCreatorSelfManager = $isNewBoard
-                && $dataKey === 'board_manager_ids'
-                && $actor instanceof User
-                && $currentIds === []
-                && $targetIds === [(int) $actor->id];
-
-            if (! $isCreatorSelfManager) {
-                app(PermissionEscalationGuard::class)->assertRoleAssignmentWithinActorCeiling([$role->id]);
-            }
-
+            $userIds = User::whereIn('uuid', $userUuids)->pluck('id')->toArray();
             $role->users()->sync($userIds);
         }
     }
@@ -1089,7 +713,7 @@ class BoardService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int|null  $id  게시판 ID
-     * @return void 반환값 없음
+     * @return void
      */
     private function clearBoardCaches(string $slug, ?int $id = null): void
     {
@@ -1115,7 +739,7 @@ class BoardService
     /**
      * 전체 게시판 캐시를 무효화합니다 (외부 호출용).
      *
-     * @return void 반환값 없음
+     * @return void
      */
     public function clearAllBoardCaches(): void
     {
@@ -1149,7 +773,7 @@ class BoardService
     /**
      * 활성 게시판의 통계를 조회합니다 (게시판 수, 게시글 수, 댓글 수).
      *
-     * @return array{boards: int, posts: int, comments: int} 결과 배열
+     * @return array{boards: int, posts: int, comments: int}
      */
     public function getActiveBoardStats(): array
     {
@@ -1166,7 +790,7 @@ class BoardService
      * 최근 게시글을 조회합니다. (UNION)
      *
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>> 결과 배열
+     * @return array<int, array<string, mixed>>
      */
     public function getRecentPosts(int $limit): array
     {
@@ -1178,7 +802,7 @@ class BoardService
      *
      * @param  string  $period  기간 (today, week, month, all)
      * @param  int  $limit  조회 개수
-     * @return array 인기글 목록
+     * @return array
      */
     public function getPopularPosts(string $period = 'week', int $limit = 20): array
     {
@@ -1192,7 +816,7 @@ class BoardService
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>> 결과 배열
+     * @return array<int, array<string, mixed>>
      */
     public function getBoardRecentPosts(string $slug, int $limit): array
     {
@@ -1204,7 +828,7 @@ class BoardService
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $limit  조회 개수
-     * @return array<int, array<string, mixed>> 결과 배열
+     * @return array<int, array<string, mixed>>
      */
     public function getBoardRecentPostsById(int $boardId, int $limit): array
     {
@@ -1231,22 +855,19 @@ class BoardService
         $menuUrl = '/admin/board/'.$board->slug;
 
         // 중복 체크: 동일한 URL의 메뉴가 이미 존재하는지 확인
-        $existingMenu = $this->menuRepository->findByUrl($menuUrl);
+        $existingMenu = Menu::where('url', $menuUrl)->first();
 
         if ($existingMenu) {
             throw new MenuAlreadyExistsException(__('sirsoft-board::messages.boards.menu_already_exists'));
         }
 
-        // 부모 메뉴("게시판 관리", slug=sirsoft-board) 하위로 등록. 부모 미존재 시 최상위(null)로 폴백.
-        $parentMenu = $this->menuRepository->findBySlug('sirsoft-board');
-
         // 메뉴 데이터 준비
         $menuData = [
-            'name' => $this->buildMenuName($board),  // 다국어 필드 (게시판명 + "게시판" 접미사)
+            'name' => $board->name,  // 다국어 필드
             'slug' => 'board-'.$board->slug,
             'url' => $menuUrl,
             'icon' => 'fas fa-clipboard-list',
-            'parent_id' => $parentMenu?->id,
+            'parent_id' => null,
             'is_active' => true,
             'extension_type' => ExtensionOwnerType::Module,
             'extension_identifier' => 'sirsoft-board',
@@ -1264,123 +885,6 @@ class BoardService
         return $menu;
     }
 
-    /**
-     * 게시판이 관리자 메뉴에 등록되어 있는지 확인합니다.
-     *
-     * 메뉴 식별은 URL(/admin/board/{slug}) 기준입니다.
-     *
-     * @param  Board  $board  대상 게시판
-     * @return bool 등록 여부
-     */
-    public function isInAdminMenu(Board $board): bool
-    {
-        return $this->menuRepository->findBySlug('board-'.$board->slug) !== null;
-    }
-
-    /**
-     * 게시판을 관리자 메뉴에서 제거합니다.
-     *
-     * 등록된 메뉴가 없으면 무동작입니다. 메뉴 식별은 URL(/admin/board/{slug}) 기준입니다.
-     *
-     * @param  int  $id  게시판 ID
-     * @return bool 제거 성공 여부 (제거할 메뉴가 없으면 false)
-     *
-     * @throws ModelNotFoundException 게시판을 찾을 수 없을 때
-     */
-    public function removeFromAdminMenu(int $id): bool
-    {
-        // Before Hook: 메뉴 제거 전
-        HookManager::doAction('sirsoft-board.board.before_remove_from_menu', $id);
-
-        $board = $this->getBoard($id);
-
-        $menu = $this->menuRepository->findBySlug('board-'.$board->slug);
-
-        if (! $menu) {
-            return false;
-        }
-
-        // 메뉴 삭제 (코어 MenuService 사용 - 코어 수정 없음)
-        $this->menuService->deleteMenu($menu);
-
-        // After Hook: 메뉴 제거 후 (활동 로그용)
-        HookManager::doAction('sirsoft-board.board.after_remove_from_menu', $menu, $board);
-
-        return true;
-    }
-
-    /**
-     * 관리자 메뉴에 표시할 다국어 메뉴명을 생성합니다 (게시판명 + "게시판" 접미사).
-     *
-     * 예: {"ko":"공지사항","en":"Notice"} → {"ko":"공지사항 게시판","en":"Notice Board"}
-     *
-     * @param  Board  $board  대상 게시판
-     * @return array<string, string> 로케일별 메뉴명
-     */
-    private function buildMenuName(Board $board): array
-    {
-        $names = is_array($board->name) ? $board->name : [config('app.locale', 'ko') => (string) $board->name];
-
-        $result = [];
-        foreach ($names as $locale => $value) {
-            if ($value === null || $value === '') {
-                $result[$locale] = $value;
-
-                continue;
-            }
-            $suffix = __('sirsoft-board::messages.boards.menu_name_suffix', [], $locale);
-            $result[$locale] = trim($value.' '.$suffix);
-        }
-
-        return $result;
-    }
-
-    /**
-     * 관리자 메뉴 등록 상태를 토글 값에 맞춰 동기화합니다 (변화분만 반영).
-     *
-     * @param  Board  $board  대상 게시판
-     * @param  bool  $shouldBeInMenu  메뉴에 표시해야 하는지 여부
-     * @return void 반환값 없음
-     */
-    private function syncAdminMenu(Board $board, bool $shouldBeInMenu): void
-    {
-        $isInMenu = $this->menuRepository->findBySlug('board-'.$board->slug) !== null;
-
-        if ($shouldBeInMenu && ! $isInMenu) {
-            $this->tryAddToAdminMenu($board);
-        } elseif (! $shouldBeInMenu && $isInMenu) {
-            $this->removeFromAdminMenu($board->id);
-        }
-    }
-
-    /**
-     * 관리자 메뉴 추가를 시도합니다 (실패해도 게시판 생성/수정 본체는 롤백하지 않음).
-     *
-     * 동일 URL 메뉴가 이미 존재하면 조용히 스킵합니다. 메뉴는 부수 편의 기능이므로
-     * 메뉴 단계의 실패가 게시판 작업 전체를 실패시키지 않도록 방어적으로 처리합니다.
-     *
-     * @param  Board  $board  대상 게시판
-     * @return void 반환값 없음
-     */
-    private function tryAddToAdminMenu(Board $board): void
-    {
-        try {
-            $this->addToAdminMenu($board->id);
-        } catch (MenuAlreadyExistsException $e) {
-            // 이미 등록된 동일 게시판 메뉴 - 스킵
-            Log::info('Admin menu already exists, skipped', [
-                'board_id' => $board->id,
-                'slug' => $board->slug,
-            ]);
-        } catch (\Exception $e) {
-            Log::warning('Admin menu registration failed, skipped', [
-                'board_id' => $board->id,
-                'slug' => $board->slug,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
     // =========================================================================
     // 통합 검색 메서드
     // =========================================================================
@@ -1388,10 +892,10 @@ class BoardService
     /**
      * 활성화된 게시판 목록을 조회합니다 (통합 검색용).
      *
-     * @param  string|null  $slug  특정 게시판 슬러그 (null이면 전체)
-     * @return Collection 활성 게시판 컬렉션
+     * @param string|null $slug 특정 게시판 슬러그 (null이면 전체)
+     * @return \Illuminate\Database\Eloquent\Collection 활성 게시판 컬렉션
      */
-    public function getActiveBoardsForSearch(?string $slug = null): Collection
+    public function getActiveBoardsForSearch(?string $slug = null): \Illuminate\Database\Eloquent\Collection
     {
         return $this->boardRepository->getActiveBoards($slug);
     }
@@ -1399,47 +903,16 @@ class BoardService
     /**
      * 필터용 전체 활성 게시판 목록을 배열로 반환합니다.
      *
-     * $user 가 전달되면 그 사용자가 읽기 권한(posts.read)을 가진 게시판만 남긴다.
-     * 통합 검색 필터 드롭다운(available_boards)이 열람 불가 게시판까지 노출하지 않도록,
-     * 검색 결과 필터와 동일한 게이트를 목록 구성에도 적용한다.
-     *
-     * @param  User|null  $user  기준 사용자 (null 이면 현재 인증 사용자 또는 guest)
      * @return array<int, array{slug: string, name: string}> 활성 게시판 목록
      */
-    public function getActiveBoardsListForFilter(?User $user = null): array
+    public function getActiveBoardsListForFilter(): array
     {
         return $this->boardRepository->getActiveBoardsList()
-            ->filter(fn ($board) => PermissionHelper::check("sirsoft-board.{$board->slug}.posts.read", $user))
             ->map(fn ($board) => [
                 'slug' => $board->slug,
                 'name' => $board->getLocalizedName(),
             ])
-            ->values()
             ->toArray();
-    }
-
-    /**
-     * 공개 목록의 각 항목을 호출자 읽기 권한(posts.read) 기준으로 필터링합니다.
-     *
-     * 공개 엔드포인트(최근/인기 게시글·인기 게시판)의 전역 캐시는 사용자와 무관하게
-     * 안전집합으로만 채워지므로, 게시판별 열람 권한은 캐시가 아니라 응답 시점에
-     * 현재 호출자 기준으로 적용한다. 고권한 사용자의 결과가 캐시에 남아 저권한/비회원
-     * 사용자에게 새는 것을 막는다.
-     *
-     * @param  array<int, array<string, mixed>>  $items  캐시된 목록
-     * @param  string  $slugKey  각 항목에서 게시판 슬러그를 담은 키
-     * @return array<int, array<string, mixed>> 읽기 권한을 통과한 항목만 남긴 목록
-     */
-    private function filterItemsByBoardReadPermission(array $items, string $slugKey): array
-    {
-        $user = Auth::user();
-
-        return array_values(array_filter($items, function ($item) use ($slugKey, $user) {
-            $slug = $item[$slugKey] ?? null;
-
-            return $slug !== null
-                && PermissionHelper::check("sirsoft-board.{$slug}.posts.read", $user);
-        }));
     }
 
     /**
@@ -1449,18 +922,11 @@ class BoardService
      * 권한 관련 필드(default_board_permissions)는 권한 서비스를 통해 별도 처리합니다.
      * overrideValues가 제공된 경우 DB에 저장된 기본값 대신 해당 값을 사용합니다.
      *
-     * 컬럼 업데이트와 권한 적용을 단일 트랜잭션으로 처리하여, 한 지점이라도
-     * 실패하면 전체 변경을 롤백합니다(원자적 처리, 부분 적용 방지). 첫 실패에서
-     * 즉시 중단하고 BulkApplyAbortedException 을 던지며, 캐시 무효화·성공 훅은
-     * 트랜잭션이 성공한 뒤에만 실행합니다.
-     *
-     * @param  array<string>  $fields  적용할 필드 목록
-     * @param  bool  $applyAll  전체 게시판 적용 여부
-     * @param  array<int>  $boardIds  특정 게시판 ID 목록 (applyAll=false일 때 사용)
-     * @param  array<string, mixed>  $overrideValues  저장 없이 직접 적용할 값 (비어있으면 DB 기본값 사용)
+     * @param array<string> $fields 적용할 필드 목록
+     * @param bool $applyAll 전체 게시판 적용 여부
+     * @param array<int> $boardIds 특정 게시판 ID 목록 (applyAll=false일 때 사용)
+     * @param array<string, mixed> $overrideValues 저장 없이 직접 적용할 값 (비어있으면 DB 기본값 사용)
      * @return int 업데이트된 게시판 수
-     *
-     * @throws BulkApplyAbortedException 일괄 적용 중 한 지점이라도 실패한 경우 (전체 롤백됨)
      */
     public function bulkApplySettings(array $fields, bool $applyAll, array $boardIds = [], array $overrideValues = []): int
     {
@@ -1485,15 +951,18 @@ class BoardService
             }
         }
 
+        $updatedCount = 0;
+
+        // boards 테이블 컬럼 일괄 업데이트
+        if (! empty($updateData)) {
+            $updatedCount = $this->boardRepository->bulkUpdate($updateData, $applyAll, $boardIds);
+        }
+
         // 권한 필드 처리 (개별 권한 키: manager, posts.read, admin.manage 등)
         $selectedPermissionKeys = array_values(array_filter(
             $fields,
             fn (string $f) => str_contains($f, '.') || in_array($f, $permissionFields, true)
         ));
-
-        // 권한 적용 대상 게시판 조회 (순번 식별 및 총 대상 수 계산)
-        $boards = collect();
-        $selectedPermissions = [];
         if (! empty($selectedPermissionKeys) && isset($basicDefaults['default_board_permissions'])) {
             $allDefaultPermissions = $basicDefaults['default_board_permissions'];
 
@@ -1503,199 +972,42 @@ class BoardService
                 array_flip($selectedPermissionKeys)
             );
 
+            // 대상 게시판 조회
             $query = $this->boardRepository->query();
             if (! $applyAll && ! empty($boardIds)) {
                 $query->whereIn('id', $boardIds);
             }
             $boards = $query->get();
+
+            foreach ($boards as $board) {
+                try {
+                    $this->permissionService->updateBoardPermissions(
+                        $board,
+                        $this->convertPermissionsFormat($selectedPermissions, $board->slug),
+                        array_keys($selectedPermissions)
+                    );
+                } catch (\Exception $e) {
+                    Log::warning('게시판 권한 일괄 적용 실패', [
+                        'board_id' => $board->id,
+                        'slug' => $board->slug,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // 권한만 적용한 경우에도 카운트 반영
+            if (empty($updateData)) {
+                $updatedCount = $boards->count();
+            }
         }
 
-        $total = $boards->count();
-
-        try {
-            $updatedCount = DB::transaction(function () use ($updateData, $applyAll, $boardIds, $boards, $selectedPermissions, $total) {
-                $count = 0;
-
-                // boards 테이블 컬럼 일괄 업데이트 (단일 DML — 실패 시 게시판 특정 불가)
-                if (! empty($updateData)) {
-                    try {
-                        $count = $this->boardRepository->bulkUpdate($updateData, $applyAll, $boardIds);
-                    } catch (\Throwable $e) {
-                        throw BulkApplyAbortedException::forColumns($total, $e);
-                    }
-                }
-
-                // 권한 적용 루프 (첫 실패에서 즉시 중단 → 전체 롤백)
-                if (! empty($selectedPermissions)) {
-                    foreach ($boards as $index => $board) {
-                        try {
-                            $this->permissionService->updateBoardPermissions(
-                                $board,
-                                $this->convertPermissionsFormat($selectedPermissions, $board->slug),
-                                array_keys($selectedPermissions)
-                            );
-                        } catch (BulkApplyAbortedException|PermissionEscalationException $e) {
-                            // 상한 위반은 「일괄 적용 중단」 으로 감싸지 않는다 — 감싸면 거부가 200 응답의
-                            // 롤백 안내로 바뀌어 권한 거부로 보이지 않는다. 트랜잭션은 그대로 되돌린다.
-                            throw $e;
-                        } catch (\Throwable $e) {
-                            throw BulkApplyAbortedException::forBoard($board, $index, $total, $e);
-                        }
-                    }
-
-                    // 권한만 적용한 경우에도 카운트 반영
-                    if (empty($updateData)) {
-                        $count = $total;
-                    }
-                }
-
-                return $count;
-            });
-        } catch (BulkApplyAbortedException $e) {
-            // 전체 롤백 완료 — 추적용 로그 + aborted 훅 발화 후 재throw
-            Log::warning('게시판 환경설정 일괄 적용 중단 (전체 롤백)', [
-                'failed_board' => $e->boardInfo(),
-                'failed_at' => $e->failedAt,
-                'total' => $e->total,
-                'fields' => $fields,
-                'error' => $e->getPrevious()?->getMessage(),
-            ]);
-
-            // 훅 인자는 큐 직렬화(HookArgumentSerializer)를 거치므로 Exception 객체는 전달 불가
-            // (Model/Enum/Collection/스칼라/배열만 보존). 따라서 중단 정보를 배열로 전달한다.
-            HookManager::doAction('sirsoft-board.settings.after_bulk_apply_aborted', $fields, $e->toLogContext());
-
-            throw $e;
-        }
-
-        // 캐시 초기화 (boards:list 및 파생 태그 일괄 무효화) — 성공 후에만
+        // 캐시 초기화 (boards:list 및 파생 태그 일괄 무효화)
         $this->clearAllBoardCaches();
 
-        // After 훅 — 성공 후에만
+        // After 훅
         HookManager::doAction('sirsoft-board.settings.after_bulk_apply', $fields, $updatedCount);
 
         return $updatedCount;
-    }
-
-    /**
-     * 여러 게시판의 관리자·스텝에 회원을 한꺼번에 더하거나 뺍니다 (환경설정 「관리자·스텝 일괄 지정」).
-     *
-     * 게시판마다 지금 명단(역할 `sirsoft-board.{slug}.{manager|step}` 의 회원)에 합집합·차집합을
-     * 적용한 **새 전체 명단**을 게시판 폼 저장과 같은 `syncBoardRoleUsers()` 로 넘긴다 — 역할 멤버십과
-     * 권한 상한 판정이 단건 저장과 같아진다. 정적 경로라 미들웨어의 범위 검사가 빠지므로 범위 밖
-     * 게시판은 건너뛰고(skipped: scope), 관리자가 0명이 되는 게시판도 건너뛴다(skipped: last_manager —
-     * 게시판 폼의 「관리자 최소 1명」 규칙과 같다). 「모든 게시판」(applyAll) 이면 액터가 그 게시판 역할을 줄 수
-     * 없는 게시판(권한 부여 상한 위반)도 그 게시판만 건너뛴다(skipped: not_grantable) — 하나 때문에 요청 전체를
-     * 403 으로 거절하지 않는다(7.1.0 실측 O-K3T-7, 결정 2026-10-08). 게시판 역할 행이 없는(데이터 손상) 게시판은
-     * skipped: role_missing 으로 건너뛴다(결정 2026-10-09). 건너뛴 게시판의 명단은 그대로이므로 권한
-     * 상승은 여전히 막힌다. 운영자가 직접 고른 게시판은 고른 대로 처리하거나 거절해야 하므로 종전처럼 403 이다.
-     * 전체를 한 트랜잭션으로 묶어 그 밖의 실패는 모두 되돌린다. 바꿀 것이 없는 게시판(「제거」 인데 그 회원이 없거나
-     * 「추가」 인데 이미 있는 게시판)은 unchanged_count 로 따로 센다 — 변경·제외·변화 없음의 합이 대상 게시판 수다
-     * (7.1.0 실측 G1a 관측, 결정 2026-10-08).
-     *
-     * @param  bool  $applyAll  전체 게시판 대상 여부
-     * @param  array<int, int>  $boardIds  대상 게시판 ID (applyAll=false 일 때)
-     * @param  array<int, string>  $userUuids  더하거나 뺄 회원 UUID
-     * @param  string  $memberType  'manager' | 'step'
-     * @param  string  $mode  'add' | 'remove'
-     * @return array{updated_count: int, skipped_count: int, unchanged_count: int, skipped: array<int, array{board_id: int, reason: string, board_name: string}>} 처리 결과
-     *
-     * @throws PermissionEscalationException 고른 게시판 중 액터가 부여할 수 없는 게시판 역할을 바꾸려 할 때 (전체 롤백)
-     */
-    public function bulkUpdateBoardMembers(bool $applyAll, array $boardIds, array $userUuids, string $memberType, string $mode): array
-    {
-        HookManager::doAction('sirsoft-board.board.before_bulk_members', $applyAll, $boardIds, $userUuids, $memberType, $mode);
-
-        $query = $this->boardRepository->query();
-        if (! $applyAll) {
-            $query->whereIn('id', array_map('intval', $boardIds));
-        }
-        $boards = $query->get();
-
-        $skipped = [];
-        $permitted = PermissionHelper::filterByScope($boards, 'sirsoft-board.boards.update');
-        $permittedIds = array_map(static fn (Board $b): int => (int) $b->id, $permitted);
-        foreach ($boards as $board) {
-            if (! in_array((int) $board->id, $permittedIds, true)) {
-                // 이름을 함께 싣는다 — 범위 밖 게시판은 화면의 게시판 선택지에 없어 번호만 보이게 된다
-                $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'scope', 'board_name' => $board->getLocalizedName()];
-            }
-        }
-
-        $dataKey = $memberType === 'manager' ? 'board_manager_ids' : 'board_step_ids';
-        $userUuids = array_values(array_unique($userUuids));
-
-        $unchangedCount = 0;
-        $updatedBoards = DB::transaction(function () use ($applyAll, $permitted, $memberType, $mode, $dataKey, $userUuids, &$skipped, &$unchangedCount) {
-            $updated = [];
-            foreach ($permitted as $board) {
-                $role = $this->roleRepository->findByIdentifier("sirsoft-board.{$board->slug}.{$memberType}");
-
-                // 역할 행이 없으면(데이터 손상) 명단을 바꿀 수 없다 — 「변경」 으로 세지 않고, 운영자가 서버 로그를 보지 않아도
-                // 알 수 있게 제외 사유 role_missing 으로 결과에 싣는다(7.1.0 실측, 결정 2026-10-09)
-                if (! $role) {
-                    Log::warning('게시판 역할을 찾을 수 없어 일괄 지정에서 건너뜁니다.', [
-                        'board_slug' => $board->slug,
-                        'member_type' => $memberType,
-                    ]);
-                    $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'role_missing', 'board_name' => $board->getLocalizedName()];
-
-                    continue;
-                }
-
-                $current = $role->users()->pluck('users.uuid')->all();
-
-                $next = $mode === 'add'
-                    ? array_values(array_unique(array_merge($current, $userUuids)))
-                    : array_values(array_diff($current, $userUuids));
-
-                if ($memberType === 'manager' && $next === []) {
-                    $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'last_manager', 'board_name' => $board->getLocalizedName()];
-
-                    continue;
-                }
-
-                if (array_diff($next, $current) === [] && array_diff($current, $next) === []) {
-                    // 바꿀 것이 없다 — 「변화 없음」 으로 센다
-                    $unchangedCount++;
-
-                    continue;
-                }
-
-                if (! $applyAll) {
-                    $this->syncBoardRoleUsers($board, [$dataKey => $next]);
-                    $updated[] = $board;
-
-                    continue;
-                }
-
-                // 「모든 게시판」 — 상한 판정은 명단을 바꾸기 전에 끝나지만, 저장점으로 감싸 그 게시판의 변경만 확실히 되돌린다
-                try {
-                    DB::transaction(fn () => $this->syncBoardRoleUsers($board, [$dataKey => $next]));
-                    $updated[] = $board;
-                } catch (PermissionEscalationException $e) {
-                    $skipped[] = ['board_id' => (int) $board->id, 'reason' => 'not_grantable', 'board_name' => $board->getLocalizedName()];
-                }
-            }
-
-            return $updated;
-        });
-
-        // 캐시 초기화 — 성공 후에만
-        foreach ($updatedBoards as $board) {
-            $this->clearBoardCaches($board->slug, $board->id);
-        }
-
-        $result = [
-            'updated_count' => count($updatedBoards),
-            'skipped_count' => count($skipped),
-            'unchanged_count' => $unchangedCount,
-            'skipped' => $skipped,
-        ];
-
-        HookManager::doAction('sirsoft-board.board.after_bulk_members', array_map(static fn (Board $b): int => (int) $b->id, $updatedBoards), $userUuids, $memberType, $mode, $result);
-
-        return $result;
     }
 
     /**
@@ -1705,8 +1017,8 @@ class BoardService
      * 'key.name' → 'key_name' 형식의 프론트엔드 키로 변환합니다.
      * (Manager/Step 자동주입 없음 — 일괄적용 시 해당 게시판의 manager/step 역할을 건드리지 않음)
      *
-     * @param  array<string, array<string>>  $defaultPermissions  환경설정 권한 기본값
-     * @param  string  $slug  게시판 슬러그
+     * @param array<string, array<string>> $defaultPermissions 환경설정 권한 기본값
+     * @param string $slug 게시판 슬러그
      * @return array<string, array{roles: array<string>}> 변환된 권한 배열
      */
     private function convertPermissionsFormat(array $defaultPermissions, string $slug): array
@@ -1723,22 +1035,20 @@ class BoardService
     /**
      * 게시판 첨부파일 디렉토리를 스토리지에서 일괄 삭제합니다.
      *
-     * 첨부파일 저장 경로는 슬러그 기준입니다 (AttachmentService::upload):
-     *  - 최종: {slug}/{Y/m/d}/{filename}
-     *  - 임시: {slug}/temp/{tempKey}/{filename}
-     * 따라서 StorageInterface::deleteDirectory('attachments', '{slug}') 로
-     * 해당 게시판의 최종·임시 첨부 파일을 한 번에 삭제합니다.
+     * 첨부파일 저장 경로: {board_id}/...
+     * StorageInterface::deleteDirectory('attachments', '{board_id}') 로 일괄 삭제합니다.
      *
-     * @param  string  $slug  게시판 슬러그
-     * @return void 반환값 없음
+     * @param  int  $boardId  게시판 ID
      */
-    private function deleteAttachmentFiles(string $slug): void
+    private function deleteAttachmentFiles(int $boardId): void
     {
         try {
-            $this->storage->deleteDirectory('attachments', $slug);
+            /** @var \App\Contracts\Extension\StorageInterface $storage */
+            $storage = app(\App\Contracts\Extension\StorageInterface::class);
+            $storage->deleteDirectory('attachments', (string) $boardId);
         } catch (\Exception $e) {
             Log::warning('게시판 첨부파일 스토리지 삭제 실패 (계속 진행)', [
-                'slug' => $slug,
+                'board_id' => $boardId,
                 'error' => $e->getMessage(),
             ]);
         }

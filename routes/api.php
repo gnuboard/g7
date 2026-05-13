@@ -1,73 +1,42 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\ActivityLogController as AdminActivityLogController;
-use App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController;
-use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
-// Admin Controllers
-use App\Http\Controllers\Api\Admin\AdminTemplateLayoutAttachmentController;
-use App\Http\Controllers\Api\Admin\Analytics\ArchiveRunController as AdminAnalyticsArchiveRunController;
-use App\Http\Controllers\Api\Admin\Analytics\CloudRangeController as AdminAnalyticsCloudRangeController;
-use App\Http\Controllers\Api\Admin\Analytics\DataController as AdminAnalyticsDataController;
-use App\Http\Controllers\Api\Admin\Analytics\DiagnosticsController as AdminAnalyticsDiagnosticsController;
-use App\Http\Controllers\Api\Admin\Analytics\OptOutController as AdminAnalyticsOptOutController;
-use App\Http\Controllers\Api\Admin\Analytics\OverviewController as AdminAnalyticsOverviewController;
-use App\Http\Controllers\Api\Admin\Analytics\PrivacyController as AdminAnalyticsPrivacyController;
-use App\Http\Controllers\Api\Admin\Analytics\RealtimeController as AdminAnalyticsRealtimeController;
-use App\Http\Controllers\Api\Admin\Analytics\ReportController as AdminAnalyticsReportController;
-use App\Http\Controllers\Api\Admin\Analytics\SettingsController as AdminAnalyticsSettingsController;
-use App\Http\Controllers\Api\Admin\Analytics\VisitorController as AdminAnalyticsVisitorController;
 use App\Http\Controllers\Api\Admin\AttachmentController as AdminAttachmentController;
 use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
-use App\Http\Controllers\Api\Admin\BroadcastCatalogController;
+// Admin Controllers
 use App\Http\Controllers\Api\Admin\CoreUpdateController as AdminCoreUpdateController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\ExtensionRecoveryController as AdminExtensionRecoveryController;
-use App\Http\Controllers\Api\Admin\GeoIpController as AdminGeoIpController;
-use App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController;
-use App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController;
-use App\Http\Controllers\Api\Admin\Identity\AdminIdentityProviderController;
-use App\Http\Controllers\Api\Admin\LanguagePackController as AdminLanguagePackController;
 use App\Http\Controllers\Api\Admin\LayoutController as AdminLayoutController;
-use App\Http\Controllers\Api\Admin\LayoutExtensionController as AdminLayoutExtensionController;
 use App\Http\Controllers\Api\Admin\LicenseController as AdminLicenseController;
-use App\Http\Controllers\Api\Admin\MemberNotificationController as AdminMemberNotificationController;
 use App\Http\Controllers\Api\Admin\MenuController as AdminMenuController;
+use App\Http\Controllers\Api\Admin\LanguagePackController as AdminLanguagePackController;
 use App\Http\Controllers\Api\Admin\ModuleController as AdminModuleController;
-// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Admin\NotificationChannelController as AdminNotificationChannelController;
 use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
-// Identity Verification
 use App\Http\Controllers\Api\Admin\NotificationDefinitionController as AdminNotificationDefinitionController;
 use App\Http\Controllers\Api\Admin\NotificationLogController as AdminNotificationLogController;
 use App\Http\Controllers\Api\Admin\NotificationTemplateController as AdminNotificationTemplateController;
 use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
-// Public Controllers
 use App\Http\Controllers\Api\Admin\PluginController as AdminPluginController;
 use App\Http\Controllers\Api\Admin\PluginSettingsController as AdminPluginSettingsController;
-use App\Http\Controllers\Api\Admin\PrivacyManualRunController as AdminPrivacyManualRunController;
-use App\Http\Controllers\Api\Admin\PrivacyTargetController as AdminPrivacyTargetController;
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\ScheduleController as AdminScheduleController;
-use App\Http\Controllers\Api\Admin\SeoBotPreviewController;
 use App\Http\Controllers\Api\Admin\SeoCacheController as AdminSeoCacheController;
-use App\Http\Controllers\Api\Admin\SeoCandidateController;
-use App\Http\Controllers\Api\Admin\SeoOgPreviewController;
+use App\Http\Controllers\Api\Admin\GeoIpController as AdminGeoIpController;
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
-use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
+// Auth Controllers (Authenticated Users)
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
 use App\Http\Controllers\Api\Auth\ProfileController as UserProfileController;
+// Identity Verification
 use App\Http\Controllers\Api\Identity\IdentityVerificationController;
-use App\Http\Controllers\Api\Public\AnalyticsCollectController;
-use App\Http\Controllers\Api\Public\AnalyticsSummaryController;
-use App\Http\Controllers\Api\Public\AssetProbeController;
-use App\Http\Controllers\Api\Public\ConsentController;
+// Public Controllers
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
 use App\Http\Controllers\Api\Public\PublicAttachmentController;
-use App\Http\Controllers\Api\Public\PublicExtensionIconController;
 use App\Http\Controllers\Api\Public\PublicLayoutController;
 use App\Http\Controllers\Api\Public\PublicModuleController;
 use App\Http\Controllers\Api\Public\PublicPluginController;
@@ -75,7 +44,6 @@ use App\Http\Controllers\Api\Public\PublicProfileController;
 use App\Http\Controllers\Api\Public\PublicSearchController;
 use App\Http\Controllers\Api\Public\PublicTemplateController;
 use App\Http\Middleware\RefreshTokenExpiration;
-use App\Models\IdentityVerificationLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -91,138 +59,57 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// 공개 API 라우트 (인증 불필요)
-// 속도 제한은 서버가 요청마다 계산·캐시하는 데이터 응답(템플릿 라우트·설정·다국어·컴포넌트·편집기 스펙,
-// 레이아웃)에만 건다 — 미인증 요청 폭주가 서버 캐시·연산을 소진시키는 경로다 (KVE-2026-2336).
-// JS/CSS 번들·정적 자산·아이콘·첨부 파일은 제한하지 않는다: 캐시를 늘리지 않는 파일 서빙이고,
-// 프록시 뒤에서 전 방문자가 IP 하나로 보일 때 여기가 막히면 화면 전체가 뜨지 않는다.
-// 접두사(public_ext)는 필수 — 접두사 없는 throttle 은 비로그인 키를 다른 접두사 없는 라우트와 공유한다.
-// 회귀 가드: tests/Feature/Api/Public/PublicTemplateCacheAmplificationTest.php
-$publicDataThrottle = 'throttle:'.config('auth.throttle.public').',public_ext';
-
-Route::group([], function () use ($publicDataThrottle) {
-    // 방문자 통계 수집 비콘 — 브라우저가 페이지 이동·내려받기·외부 링크를 알려 온다.
-    // optional.sanctum 을 두는 이유: 토큰이 있으면 회원·관리자 방문으로 가르고, 없으면
-    // 비회원으로 센다. 응답은 언제나 204 이므로 스로틀에 걸려도 화면에 영향이 없다.
-    Route::post('analytics/collect', [AnalyticsCollectController::class, 'store'])
-        ->middleware(['throttle:120,1,analytics_collect', 'optional.sanctum'])
-        ->name('api.public.analytics.collect');
-
-    // 방문자 동의 스냅샷 — 코어 동의 런타임이 `_global.consent` 를 채운다. 운영자가 고른 동의 제공자에게
-    // 묻으므로 브라우저는 동의를 관리하는 확장의 경로를 몰라도 된다. 회원 동의는 회원 번호로 찾으므로 optional.sanctum.
-    Route::get('consent', [ConsentController::class, 'show'])
-        ->middleware(['throttle:60,1,consent', 'optional.sanctum'])
-        ->name('api.public.consent');
-
-    // 사용자 화면 방문자 카운터가 읽는 요약 — 오늘·어제·최대·전체 네 숫자뿐이다.
-    // 로그인 없이 누구나 부르므로 스로틀을 걸고, 응답은 컨트롤러가 짧게 캐시한다.
-    Route::get('analytics/summary', [AnalyticsSummaryController::class, 'index'])
-        ->middleware('throttle:60,1,analytics_summary')
-        ->name('api.public.analytics.summary');
-
+// 공개 API 라우트 (인증 불필요, 속도 제한 없음)
+Route::group([], function () {
     // 템플릿 라우트 정보 조회
-    Route::prefix('templates')->group(function () use ($publicDataThrottle) {
-        // 아래 dual* 매크로는 확장자 형태와 확장자 없는 형태를 동시에 등록한다.
-        // 정적 최적화 블록(location ~* \.(js|css|json)$)이 있는 서버에서 동적 응답이
-        // nginx 에 가로채이지 않도록 하기 위함. 상세: App\Support\Routing\DualExtensionRoute
-        Route::dualSuffix('{identifier}/routes', 'json', [PublicTemplateController::class, 'getRoutes'])
-            ->middleware($publicDataThrottle)
-            ->name('api.public.templates.routes');
+    Route::prefix('templates')->group(function () {
+        Route::get('{identifier}/routes.json', [PublicTemplateController::class, 'getRoutes'])->name('api.public.templates.routes');
 
         // 템플릿 설정 파일 서빙 (error_config 등)
-        Route::dualSuffix('{identifier}/config', 'json', [PublicTemplateController::class, 'serveConfig'])
-            ->middleware($publicDataThrottle)
-            ->name('api.public.templates.config');
+        Route::get('{identifier}/config.json', [PublicTemplateController::class, 'serveConfig'])->name('api.public.templates.config');
 
-        // 레이아웃 편집기 스펙 조회
-        Route::get('{identifier}/editor-spec', [PublicTemplateController::class, 'serveEditorSpec'])
-            ->middleware($publicDataThrottle)
-            ->name('api.public.templates.editor_spec');
-
-        // 템플릿 정적 파일 서빙 (확장자 없는 형태는 ?file= 로 경로 수신)
-        Route::dualAsset('assets/{identifier}', [PublicTemplateController::class, 'serveAsset'])
+        // 템플릿 정적 파일 서빙
+        Route::get('assets/{identifier}/{path}', [PublicTemplateController::class, 'serveAsset'])
+            ->where('path', '.*')
             ->name('api.public.templates.assets');
 
         // 컴포넌트 정의 파일 서빙
-        Route::dualSuffix('{identifier}/components', 'json', [PublicTemplateController::class, 'serveComponents'])
-            ->middleware($publicDataThrottle)
+        Route::get('{identifier}/components.json', [PublicTemplateController::class, 'serveComponents'])
             ->name('api.public.templates.components');
 
         // 다국어 파일 서빙
-        Route::dualSuffix('{identifier}/lang/{locale}', 'json', [PublicTemplateController::class, 'serveLanguage'])
+        Route::get('{identifier}/lang/{locale}.json', [PublicTemplateController::class, 'serveLanguage'])
             ->where('locale', '[a-z]{2}(-[A-Z]{2})?')
-            ->middleware($publicDataThrottle)
             ->name('api.public.templates.language');
-
-        // 레이아웃 첨부 이미지 파일 서빙 — 발행된 배경 이미지는
-        // 일반 방문자에게도 로드되어야 하므로 인증 불필요. 첨부는 비공개 디스크에 있어
-        // 직접 URL 이 없으므로 본 라우트가 캐싱 헤더와 함께 스트림한다. serveFile 이
-        // 첨부가 경로의 템플릿 소속인지 검증한다.
-        Route::get('{identifier}/layout-attachments/{attachment}/file', [PublicTemplateController::class, 'serveFile'])
-            ->where('attachment', '[0-9]+')
-            ->name('api.public.templates.layout-attachment-file');
     });
 
     // 레이아웃 서빙 API (Optional Sanctum 인증 - 토큰 있으면 인증, 없으면 guest)
     Route::prefix('layouts')
-        ->middleware(['optional.sanctum', $publicDataThrottle])
+        ->middleware('optional.sanctum')
         ->group(function () {
             // 레이아웃 미리보기 서빙 (토큰 기반, 인증 불필요)
             // 주의: 일반 레이아웃 서빙보다 먼저 정의 (preview가 templateIdentifier로 매칭되는 것 방지)
-            Route::dualSuffix('preview/{token}', 'json', [LayoutPreviewController::class, 'serve'])
+            Route::get('preview/{token}.json', [LayoutPreviewController::class, 'serve'])
                 ->where('token', '[a-f0-9\-]{36}')
                 ->name('api.public.layouts.preview.serve');
 
-            // 주의: dualSuffix 는 확장자 형태를 먼저 등록한다. layoutName 정규식이 `.` 를
-            // 포함해 greedy 하므로, 확장자 없는 형태가 먼저 등록되면 `.json` 요청까지 삼킨다.
-            Route::dualSuffix('{templateIdentifier}/{layoutName}', 'json', [PublicLayoutController::class, 'serve'])
+            Route::get('{templateIdentifier}/{layoutName}.json', [PublicLayoutController::class, 'serve'])
                 ->where('layoutName', '[a-zA-Z0-9_/\.-]+')
                 ->name('api.public.layouts.serve');
         });
 
     // 모듈 에셋 서빙 API
-    Route::prefix('modules')->group(function () use ($publicDataThrottle) {
-        // 활성 모듈 프론트엔드 IIFE/CSS 병합 번들 (개별 assets 라우트보다 위에 명시 등록)
-        // 접미사가 js/css 를 구분하므로 제거 불가 — 세그먼트로 내린다 (bundle/js, bundle/css).
-        Route::dualSuffixSegment('bundle', 'js', [PublicModuleController::class, 'serveBundleJs'])
-            ->name('api.public.modules.bundle.js');
-        Route::dualSuffixSegment('bundle', 'css', [PublicModuleController::class, 'serveBundleCss'])
-            ->name('api.public.modules.bundle.css');
-
-        Route::dualAsset('assets/{identifier}', [PublicModuleController::class, 'serveAsset'])
+    Route::prefix('modules')->group(function () {
+        Route::get('assets/{identifier}/{path}', [PublicModuleController::class, 'serveAsset'])
+            ->where('path', '.*')
             ->name('api.public.modules.assets');
-
-        // 레이아웃 편집기 스펙 조회
-        Route::get('{identifier}/editor-spec', [PublicModuleController::class, 'serveEditorSpec'])
-            ->middleware($publicDataThrottle)
-            ->name('api.public.modules.editor_spec');
-
-        // 컴포넌트 정의 파일 서빙 (module:build 산출물)
-        Route::dualSuffix('{identifier}/components', 'json', [PublicModuleController::class, 'serveComponents'])
-            ->middleware($publicDataThrottle)
-            ->name('api.public.modules.components');
     });
 
     // 플러그인 에셋 서빙 API
-    Route::prefix('plugins')->group(function () use ($publicDataThrottle) {
-        // 활성 플러그인 프론트엔드 IIFE/CSS 병합 번들 (개별 assets 라우트보다 위에 명시 등록)
-        Route::dualSuffixSegment('bundle', 'js', [PublicPluginController::class, 'serveBundleJs'])
-            ->name('api.public.plugins.bundle.js');
-        Route::dualSuffixSegment('bundle', 'css', [PublicPluginController::class, 'serveBundleCss'])
-            ->name('api.public.plugins.bundle.css');
-
-        Route::dualAsset('assets/{identifier}', [PublicPluginController::class, 'serveAsset'])
+    Route::prefix('plugins')->group(function () {
+        Route::get('assets/{identifier}/{path}', [PublicPluginController::class, 'serveAsset'])
+            ->where('path', '.*')
             ->name('api.public.plugins.assets');
-
-        // 레이아웃 편집기 스펙 조회
-        Route::get('{identifier}/editor-spec', [PublicPluginController::class, 'serveEditorSpec'])
-            ->middleware($publicDataThrottle)
-            ->name('api.public.plugins.editor_spec');
-
-        // 컴포넌트 정의 파일 서빙 (plugin:build 산출물)
-        Route::dualSuffix('{identifier}/components', 'json', [PublicPluginController::class, 'serveComponents'])
-            ->middleware($publicDataThrottle)
-            ->name('api.public.plugins.components');
     });
 
     // 사용자 공개 프로필 API
@@ -237,36 +124,16 @@ Route::group([], function () use ($publicDataThrottle) {
     // 활성 로케일 목록 — 언어팩 설치/활성화 직후 셀렉터 즉시 갱신용
     Route::get('locales/active', [PublicLocaleController::class, 'active'])
         ->name('api.public.locales.active');
-
-    // 확장 아이콘 서빙 — 미설치 번들 확장도 대상이라 DB 상태·인증을 보지 않는다.
-    // 관리자 API 는 Bearer 토큰이라 <img src> 가 부를 수 없어 공개 lane 이다.
-    // 응답은 <img> 전용(nosniff + SVG CSP). 규격 위반 아이콘은 404 → 화면은 유형 글리프.
-    Route::get('extensions/{type}/{identifier}/icon', [PublicExtensionIconController::class, 'show'])
-        ->where('type', 'module|plugin|template|language-pack')
-        ->name('api.public.extensions.icon');
-
-    // 자산 URL 모드 감지 프로브 — 정적 최적화 블록이 확장자 붙은 동적 응답을
-    // 가로채는지 쌍으로 판정한다. 매크로 자기적용(확장자 형태 + 대조군).
-    // DB 미접근·무인증·no-store. 상세: App\Http\Controllers\Api\Public\AssetProbeController
-    Route::dualSuffix('system/asset-probe', 'js', [AssetProbeController::class, 'probe'])
-        ->name('api.public.system.asset-probe');
 });
 
 // 브로드캐스팅 인증 (Sanctum 토큰 사용)
 Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (Request $request) {
-    // 웹소켓 사용 OFF 시 채널 인증 거부 (전 계층 SSoT — 공개#50).
-    // 변경 1(reverb.key 무력화)을 우회한 직접 연결 시도까지 차단한다.
-    // broadcasting.default 는 applyWebsocketConfig 와 동일 SSoT.
-    if (config('broadcasting.default') === 'null') {
-        abort(403);
-    }
-
     return Broadcast::auth($request);
 })->name('api.broadcasting.auth');
 
 // 본인인증 (IdentityVerification) 공개 엔드포인트
 // challenge 라우트 파라미터를 IdentityVerificationLog 모델로 자동 resolve — PermissionMiddleware 의 owner_key='user_id' scope 매칭 표준 메커니즘 활용
-Route::model('challenge', IdentityVerificationLog::class);
+Route::model('challenge', \App\Models\IdentityVerificationLog::class);
 Route::prefix('identity')->group(function () {
     Route::get('providers', [IdentityVerificationController::class, 'providers'])
         ->name('api.identity.providers.index');
@@ -281,36 +148,26 @@ Route::prefix('identity')->group(function () {
     // Challenge 요청 / 검증 / 취소는 로그인 상태와 비로그인 상태(Mode B 가입) 모두 허용 — guest 역할에 IDV 권한 부여
     // verify/cancel 은 로그인 사용자에 한해 PermissionMiddleware 의 scope=self 가드가 challenge.user_id 일치 여부 자동 검증
     // request 한도는 정상 회원가입 흐름(모달 만료 후 재전송 / 같은 NAT IP 게스트 다회 가입 시도)을 차단하지 않도록
-    // verify(10) 보다 넉넉히 두고 cancel/show(30) 와 동일 수준 적용.
-    // throttle 의 세 번째 인자(접두사)는 필수다 — 접두사 없는 `throttle:N,1` 은 비로그인 키를 `sha1(domain|ip)`
-    // 하나로 만들어 경로와 무관하게 **모든** 접두사 없는 throttle 라우트와 횟수를 공유한다(`api/user/*` 600/분 등).
-    // 그래서 화면 로드가 올린 횟수가 verify(10)의 상한을 앞질러 넘겨 인증번호 확인이 429 로 막혔다
-    // (2단계 인증 E2E 직렬 실행에서 403 대신 429 로 재현). 라우트마다 자기 접두사를 둬 각자 자기 횟수만 센다 —
-    // 회귀 가드: tests/Feature/Identity/IdentityVerifyThrottleIsolationTest.php
-    Route::middleware(['throttle:30,1,identity_request', 'optional.sanctum', 'permission:user,core.identity.request'])
+    // verify(10) 보다 넉넉히 두고 cancel/show(30) 와 동일 수준 적용 — 게스트 IP 단일 키 공유 환경 대응
+    Route::middleware(['throttle:30,1', 'optional.sanctum', 'permission:user,core.identity.request'])
         ->post('challenges', [IdentityVerificationController::class, 'request'])
         ->name('api.identity.challenges.request');
 
-    Route::middleware(['throttle:10,1,identity_verify', 'optional.sanctum', 'permission:user,core.identity.verify'])
+    Route::middleware(['throttle:10,1', 'optional.sanctum', 'permission:user,core.identity.verify'])
         ->post('challenges/{challenge}/verify', [IdentityVerificationController::class, 'verify'])
         ->name('api.identity.challenges.verify');
 
-    // 링크 방식 확인 결과 받아 가기 — 시작 화면이 링크를 연 쪽의 확인을 2~3초 간격으로 묻는다. 비밀값이 자격이다.
-    Route::middleware(['throttle:60,1,identity_claim', 'optional.sanctum', 'permission:user,core.identity.verify'])
-        ->post('challenges/{challenge}/claim', [IdentityVerificationController::class, 'claim'])
-        ->name('api.identity.challenges.claim');
-
-    Route::middleware(['throttle:30,1,identity_cancel', 'optional.sanctum', 'permission:user,core.identity.cancel'])
+    Route::middleware(['throttle:30,1', 'optional.sanctum', 'permission:user,core.identity.cancel'])
         ->post('challenges/{challenge}/cancel', [IdentityVerificationController::class, 'cancel'])
         ->name('api.identity.challenges.cancel');
 
     // 비동기 검증 인프라 (engine-v1.46.0+) — Stripe Identity / 토스인증 push / 외부 redirect 콜백 지원
     // 폴링 엔드포인트는 권한 가드 없음 (공개 안전 필드만 노출 — Service::getStatus 참조)
-    Route::middleware(['throttle:30,1,identity_show', 'optional.sanctum'])
+    Route::middleware(['throttle:30,1', 'optional.sanctum'])
         ->get('challenges/{challenge}', [IdentityVerificationController::class, 'show'])
         ->name('api.identity.challenges.show');
 
-    Route::middleware(['throttle:30,1,identity_callback', 'optional.sanctum'])
+    Route::middleware(['throttle:30,1', 'optional.sanctum'])
         ->post('callback/{providerId}', [IdentityVerificationController::class, 'callback'])
         ->name('api.identity.callback');
 });
@@ -322,19 +179,6 @@ Route::prefix('auth')->group(function () {
     // 로그인 라우트 (세션 생성 필요)
     Route::middleware(['throttle:auth-login', 'start.api.session'])->group(function () {
         Route::post('login', [UserAuthController::class, 'login'])->name('api.auth.login');
-        // 2단계 인증 확인 — 비밀번호 단계가 돌려준 challenge 로만 로그인이 완료된다.
-        // 로그인과 같은 제한을 적용해 코드 대입 시도를 함께 억제한다.
-        Route::post('login/two-factor', [UserAuthController::class, 'verifyTwoFactor'])
-            ->name('api.auth.login.two-factor');
-        // 인증번호 재발송 — 기존 challenge 를 취소하고 새로 발행한다.
-        Route::post('login/two-factor/resend', [UserAuthController::class, 'resendTwoFactor'])
-            ->name('api.auth.login.two-factor.resend');
-        // 비밀번호 변경 단계 — 만료·관리자 지정 비밀번호는 로그인이 돌려준 변경 단계 식별자와 새 비밀번호로만
-        // 로그인이 완료된다(연기는 '다음에 변경 허용' 모드의 만료만). 로그인과 같은 제한을 적용한다.
-        Route::post('login/password-change', [UserAuthController::class, 'completePasswordChange'])
-            ->name('api.auth.login.password-change');
-        Route::post('login/password-change/postpone', [UserAuthController::class, 'postponePasswordChange'])
-            ->name('api.auth.login.password-change.postpone');
     });
 
     // 공개 인증 라우트 (세션 불필요)
@@ -349,12 +193,8 @@ Route::prefix('auth')->group(function () {
     Route::post('validate-reset-token', [UserAuthController::class, 'validateResetToken'])->name('api.auth.validate-reset-token');
 
     // 일반 사용자 인증 (인증 필요 - 공용 경로)
-    // 본인 정보 조회(헤더·라우트 인증 판정이 부른다)는 비활성 상태 회원이라도 역할의 내 정보 조회 권한으로 허용한다
-    // — 마이페이지가 계정 상태 배지·안내를 그릴 수 있어야 한다(결정 2026-10-07). 쓰기는 상태로 막는다.
-    Route::get('user', [UserAuthController::class, 'user'])
-        ->middleware(['auth:sanctum', 'check.user_status:core.profile.read'])
-        ->name('api.auth.user');
     Route::middleware(['auth:sanctum', 'check.user_status'])->group(function () {
+        Route::get('user', [UserAuthController::class, 'user'])->name('api.auth.user');
         Route::post('logout', [UserAuthController::class, 'logout'])->middleware('start.api.session')->name('api.auth.logout');
     });
 
@@ -363,20 +203,6 @@ Route::prefix('auth')->group(function () {
         Route::post('login', [AdminAuthController::class, 'login'])
             ->middleware(['throttle:auth-login', 'start.api.session'])
             ->name('api.auth.admin.login');
-        // 관리자 2단계 인증 확인·재발송 — 사용자 경로와 같은 제한을 적용한다.
-        Route::post('login/two-factor', [AdminAuthController::class, 'verifyTwoFactor'])
-            ->middleware(['throttle:auth-login', 'start.api.session'])
-            ->name('api.auth.admin.login.two-factor');
-        Route::post('login/two-factor/resend', [AdminAuthController::class, 'resendTwoFactor'])
-            ->middleware(['throttle:auth-login', 'start.api.session'])
-            ->name('api.auth.admin.login.two-factor.resend');
-        // 관리자 비밀번호 변경 단계 — 사용자 경로와 같은 제한. 식별자는 발급 경로에 묶여 교차 사용이 422 다.
-        Route::post('login/password-change', [AdminAuthController::class, 'completePasswordChange'])
-            ->middleware(['throttle:auth-login', 'start.api.session'])
-            ->name('api.auth.admin.login.password-change');
-        Route::post('login/password-change/postpone', [AdminAuthController::class, 'postponePasswordChange'])
-            ->middleware(['throttle:auth-login', 'start.api.session'])
-            ->name('api.auth.admin.login.password-change.postpone');
     });
 });
 
@@ -441,12 +267,8 @@ Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'thr
 });
 
 // 마이페이지 API (/api/me) - 프로필 관리용 단축 엔드포인트
-// 본인 정보 조회만 비활성 상태 회원에게도 역할의 내 정보 조회 권한(core.profile.read)으로 연다 — 계정 상태 배지·안내를
-// 마이페이지에 그리기 위함(결정 2026-10-07). 미들웨어 순서는 아래 묶음과 같게 둔다.
-Route::get('me', [UserProfileController::class, 'show'])
-    ->middleware(['auth:sanctum', 'check.user_status:core.profile.read', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class])
-    ->name('api.me.show');
 Route::prefix('me')->middleware(['auth:sanctum', 'check.user_status', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class])->group(function () {
+    Route::get('/', [UserProfileController::class, 'show'])->name('api.me.show');
     Route::put('/', [UserProfileController::class, 'update'])->name('api.me.update');
     Route::delete('/', [UserProfileController::class, 'destroy'])->name('api.me.destroy');
     Route::post('avatar', [UserProfileController::class, 'uploadAvatar'])->name('api.me.avatar.upload');
@@ -460,10 +282,8 @@ Route::get('attachment/{hash}', [PublicAttachmentController::class, 'download'])
     ->where('hash', '[a-zA-Z0-9]{12}')
     ->name('api.attachment.download');
 
-// 통합 검색 API (공개 — Bearer 토큰이 있으면 회원으로 해석해 게시판별 열람 권한을
-// 검색 결과·available_boards 에 반영한다. 미들웨어가 없으면 $request->user() 가
-// 항상 null 이라 인증 회원도 guest 수준으로 필터된다.)
-Route::get('search', [PublicSearchController::class, 'search'])->middleware('optional.sanctum')->name('api.search');
+// 통합 검색 API (공개)
+Route::get('search', [PublicSearchController::class, 'search'])->name('api.search');
 
 // 관리자 API (인증 + 관리자 권한 필요, 속도 제한 적용)
 Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin', 'throttle:'.config('auth.throttle.admin')])->group(function () {
@@ -476,36 +296,73 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
     // IDV 관리자 라우트 (identity 정책/로그/프로바이더)
     Route::prefix('identity')->group(function () {
-        Route::get('providers', [AdminIdentityProviderController::class, 'index'])
+        Route::get('providers', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityProviderController::class, 'index'])
             ->middleware('permission:admin,core.admin.identity.providers.read')
             ->name('api.admin.identity.providers.index');
 
-        Route::get('logs', [AdminIdentityLogController::class, 'index'])
+        Route::get('logs', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController::class, 'index'])
             ->middleware('permission:admin,core.admin.identity.logs.read')
             ->name('api.admin.identity.logs.index');
 
-        Route::post('logs/purge', [AdminIdentityLogController::class, 'purge'])
+        Route::post('logs/purge', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityLogController::class, 'purge'])
             ->middleware('permission:admin,core.admin.identity.logs.purge')
             ->name('api.admin.identity.logs.purge');
 
         Route::prefix('policies')->group(function () {
-            Route::get('/', [AdminIdentityPolicyController::class, 'index'])
+            Route::get('/', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'index'])
                 ->middleware('permission:admin,core.admin.identity.policies.read')
                 ->name('api.admin.identity.policies.index');
-            Route::post('/', [AdminIdentityPolicyController::class, 'store'])
+            Route::post('/', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'store'])
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.store');
-            Route::put('{id}', [AdminIdentityPolicyController::class, 'update'])
+            Route::put('{id}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'update'])
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.update');
-            Route::delete('{id}', [AdminIdentityPolicyController::class, 'destroy'])
+            Route::delete('{id}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'destroy'])
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.destroy');
-            Route::post('{id}/reset-field', [AdminIdentityPolicyController::class, 'resetField'])
+            Route::post('{id}/reset-field', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityPolicyController::class, 'resetField'])
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.reset-field');
         });
 
+        // IDV 메시지 정의/템플릿 관리
+        Route::prefix('messages')->group(function () {
+            Route::get('definitions', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'index'])
+                ->middleware('permission:admin,core.admin.identity.messages.read')
+                ->name('api.admin.identity.messages.definitions.index');
+            Route::post('definitions', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'store'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.definitions.store');
+            Route::get('definitions/{definition}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'show'])
+                ->middleware('permission:admin,core.admin.identity.messages.read')
+                ->name('api.admin.identity.messages.definitions.show');
+            Route::patch('definitions/{definition}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'update'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.definitions.update');
+            Route::delete('definitions/{definition}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'destroy'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.definitions.destroy');
+            Route::patch('definitions/{definition}/toggle-active', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'toggleActive'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.definitions.toggle-active');
+            Route::post('definitions/{definition}/reset', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController::class, 'reset'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.definitions.reset');
+
+            Route::patch('templates/{template}', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'update'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.templates.update');
+            Route::patch('templates/{template}/toggle-active', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'toggleActive'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.templates.toggle-active');
+            Route::post('templates/{template}/reset', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'reset'])
+                ->middleware('permission:admin,core.admin.identity.messages.update')
+                ->name('api.admin.identity.messages.templates.reset');
+            Route::post('templates/preview', [\App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController::class, 'preview'])
+                ->middleware('permission:admin,core.admin.identity.messages.read')
+                ->name('api.admin.identity.messages.templates.preview');
+        });
     });
 
     // 관리자 알림
@@ -539,17 +396,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->middleware('permission:admin,core.dashboard.read')
             ->name('api.admin.dashboard.stats');
         Route::get('resources', [AdminDashboardController::class, 'resources'])
-            ->middleware('permission:admin,core.dashboard.resources')
+            ->middleware('permission:admin,core.dashboard.read')
             ->name('api.admin.dashboard.resources');
         Route::get('activities', [AdminDashboardController::class, 'activities'])
             ->middleware('permission:admin,core.dashboard.activities')
             ->name('api.admin.dashboard.activities');
         Route::get('alerts', [AdminDashboardController::class, 'alerts'])
-            ->middleware('permission:admin,core.dashboard.alerts')
+            ->middleware('permission:admin,core.dashboard.read')
             ->name('api.admin.dashboard.alerts');
-        Route::get('recent-notifications', [AdminDashboardController::class, 'recentNotifications'])
-            ->middleware('permission:admin,core.notification-logs.read')
-            ->name('api.admin.dashboard.recent-notifications');
     });
 
     // 코어 라이선스
@@ -670,76 +524,17 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
     // 확장 호환성 복구/조회/dismiss (코어 버전 비호환 자동 비활성화 → 원클릭 복구)
     Route::prefix('extensions')->group(function () {
-        // 조회는 세 종류 중 하나의 활성화 권한이면 열리고, 컨트롤러가 권한 없는 종류를 비운다.
         Route::get('auto-deactivated', [AdminExtensionRecoveryController::class, 'autoDeactivated'])
-            ->middleware('permission:admin,core.plugins.activate|core.modules.activate|core.templates.activate,false')
+            ->middleware('permission:admin,core.plugins.activate')
             ->name('api.admin.extensions.auto-deactivated');
-        // 복구·닫기는 그 확장 종류의 활성화 권한(core.{type}s.activate)을 요구한다.
         Route::post('{type}/{identifier}/recover', [AdminExtensionRecoveryController::class, 'recover'])
             ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.{type}s.activate')
+            ->middleware('permission:admin,core.plugins.activate')
             ->name('api.admin.extensions.recover');
         Route::post('{type}/{identifier}/dismiss', [AdminExtensionRecoveryController::class, 'dismiss'])
             ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.{type}s.activate')
+            ->middleware('permission:admin,core.plugins.activate')
             ->name('api.admin.extensions.dismiss');
-
-        // 사용자 추가 에셋(`custom/`) 관리 — 모듈·플러그인·템플릿 공통.
-        //
-        // 타입별로 나누면 같은 검증·문서·테스트가 세 벌로 갈리고, 그중 하나만 약해지면
-        // 그 경로가 조용한 우회로가 된다. 권한도 하나(`core.extensions.custom_assets.manage`)다 —
-        // 쪼개면 운영자가 셋을 다 부여해야 하고 "모듈 CSS 는 되는데 템플릿 CSS 는 안 되는"
-        // 상태가 실질적 의미 없이 생긴다.
-        //
-        // 레이아웃 편집 권한과는 분리한다: 여기서 올린 스크립트는 그 레이아웃 한 장이 아니라
-        // 사이트 전 화면에서 실행되므로, 레이아웃을 고칠 수 있다는 것이 곧 그 권한이 될 수 없다.
-        Route::get('{type}/{identifier}/custom-assets', [AdminExtensionCustomAssetController::class, 'index'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.index');
-        Route::get('{type}/{identifier}/custom-assets/content', [AdminExtensionCustomAssetController::class, 'show'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.show');
-        Route::put('{type}/{identifier}/custom-assets/content', [AdminExtensionCustomAssetController::class, 'store'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.store');
-        Route::post('{type}/{identifier}/custom-assets/upload', [AdminExtensionCustomAssetController::class, 'upload'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.upload');
-        Route::post('{type}/{identifier}/custom-assets/rename', [AdminExtensionCustomAssetController::class, 'rename'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.rename');
-        Route::get('{type}/{identifier}/custom-assets/search', [AdminExtensionCustomAssetController::class, 'search'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.search');
-        Route::delete('{type}/{identifier}/custom-assets', [AdminExtensionCustomAssetController::class, 'destroy'])
-            ->where('type', 'plugin|module|template')
-            ->middleware('permission:admin,core.extensions.custom_assets.manage')
-            ->name('api.admin.extensions.custom-assets.destroy');
-    });
-
-    // 개인정보 조치 대상 목록 (#636) — 설정 화면 「대상 N건」 옆 「더보기」 모달이 부른다.
-    // 보유기간 명단의 권한은 대상 공급자가 선언한 「설정 읽기 + 도메인 읽기」를 컨트롤러가 요청 시점에
-    // 검사한다 — 확장 핸들러는 필터 훅으로 동적으로 붙으므로 라우트가 그 권한을 정적으로 알 수 없다.
-    // 휴면 명단은 권한이 고정(설정 읽기 + 회원 읽기)이라 라우트에 건다. 적용 범위(전체만 명단 허용)는
-    // 두 경로 모두 컨트롤러가 본다.
-    Route::prefix('privacy')->group(function () {
-        Route::get('retention-targets/{handler}', [AdminPrivacyTargetController::class, 'retention'])->name('api.admin.privacy.retention-targets');
-        Route::get('dormant-targets/{stage}', [AdminPrivacyTargetController::class, 'dormant'])->middleware('permission:admin,core.settings.read|core.users.read')->name('api.admin.privacy.dormant-targets');
-        // 비밀번호 만료 대상 명단 (#736) — 휴면 명단과 같은 권한(설정 읽기 + 회원 읽기). 보안 탭이 같은 명단 창을 쓴다.
-        Route::get('password-expiry-targets/{stage}', [AdminPrivacyTargetController::class, 'passwordExpiry'])->middleware('permission:admin,core.settings.read|core.users.read')->name('api.admin.privacy.password-expiry-targets');
-
-        // 관리자 직권 실행 (#636 후속) — 카드의 「지금 실행」. 대상(보유기간 핸들러·휴면 단계·확장 조치)은
-        // 수집기가 키로 찾고, 실행 권한(설정 수정 + 도메인 수정, 전체 범위)은 대상이 선언해 컨트롤러가
-        // 요청 시점에 검사한다. 접수는 큐에 넣고 202 로 끝나며 결과는 상태 조회가 돌려준다.
-        Route::get('manual-runs', [AdminPrivacyManualRunController::class, 'index'])->name('api.admin.privacy.manual-runs.index');
-        Route::get('manual-runs/{target}/preview', [AdminPrivacyManualRunController::class, 'preview'])->where('target', '[A-Za-z0-9:._-]+')->name('api.admin.privacy.manual-runs.preview');
-        Route::post('manual-runs/{target}', [AdminPrivacyManualRunController::class, 'store'])->where('target', '[A-Za-z0-9:._-]+')->name('api.admin.privacy.manual-runs.store');
     });
 
     // 환경설정 관리
@@ -747,16 +542,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('/', [AdminSettingsController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.index');
         Route::post('/', [AdminSettingsController::class, 'store'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.store');
         Route::get('system-info', [AdminSettingsController::class, 'systemInfo'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.system-info');
-        // 읽기 전용 진단 (#124). 값 편집 엔드포인트는 두지 않는다 — 편집은 .env 전용.
-        // `{key}` 와일드카드보다 먼저 등록해야 그 라우트에 흡수되지 않는다.
-        Route::get('trusted-proxy', [AdminSettingsController::class, 'trustedProxy'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.trusted-proxy');
-        // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구 (#651). 상태는 `{key}` 와일드카드보다 먼저.
-        Route::get('static-cache', [AdminSettingsController::class, 'staticCacheStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.static-cache');
-        Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');
-        // 개인정보 보유기간·휴면 dry-run 건수 — 읽기 전용이라 settings.read 로 충분하다.
-        Route::get('privacy-preview', [AdminSettingsController::class, 'privacyPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.privacy-preview');
-        // 비밀번호 만료 사전 안내·만료 처리 대상 건수 (#736) — 읽기 전용. `{key}` 와일드카드보다 먼저.
-        Route::get('password-expiry-preview', [AdminSettingsController::class, 'passwordExpiryPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.password-expiry-preview');
         Route::get('app-key', [AdminSettingsController::class, 'getAppKey'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.app-key');
         Route::post('regenerate-app-key', [AdminSettingsController::class, 'regenerateAppKey'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.regenerate-app-key');
         Route::post('clear-cache', [AdminSettingsController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.clear-cache');
@@ -766,7 +551,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('restore', [AdminSettingsController::class, 'restore'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.restore');
         Route::post('test-mail', [AdminSettingsController::class, 'testMail'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-mail');
         Route::post('test-driver', [AdminSettingsController::class, 'testDriverConnection'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-driver');
-        Route::post('test-outbound-proxy', [AdminSettingsController::class, 'testOutboundProxy'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.test-outbound-proxy');
         Route::post('geoip/update', [AdminGeoIpController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.geoip.update');
         Route::get('{key}', [AdminSettingsController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.show');
         Route::put('{key}', [AdminSettingsController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.update');
@@ -774,9 +558,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
     // 코어 업데이트
     Route::prefix('core-update')->group(function () {
-        // 확인은 버전 정보를 읽기만 한다 — 정보 탭을 볼 수 있는 조회 권한으로 연다(제품 결정 2026-10-09).
         Route::post('check', [AdminCoreUpdateController::class, 'checkForUpdates'])
-            ->middleware('permission:admin,core.settings.read')
+            ->middleware('permission:admin,core.settings.update')
             ->name('api.admin.core-update.check');
         Route::get('changelog', [AdminCoreUpdateController::class, 'changelog'])
             ->middleware('permission:admin,core.settings.read')
@@ -787,12 +570,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     Route::prefix('menus')->group(function () {
         Route::get('/', [AdminMenuController::class, 'index'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.index');
         Route::get('hierarchy', [AdminMenuController::class, 'hierarchy'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.hierarchy');
-        // 사이드바 = 「내가 접근 가능한 메뉴」 조회. 메뉴 관리 권한(core.menus.read)을 요구하지 않고
-        // 그룹의 admin 미들웨어만 둔다 — 응답은 컨트롤러가 내 역할에 지정된 메뉴로 좁힌다(roles/active 와 같은 구조).
-        Route::get('active', [AdminMenuController::class, 'active'])->name('api.admin.menus.active');
+        Route::get('active', [AdminMenuController::class, 'active'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.active');
         Route::post('/', [AdminMenuController::class, 'store'])->middleware('permission:admin,core.menus.create')->name('api.admin.menus.store');
         Route::put('order', [AdminMenuController::class, 'updateOrder'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.update-order');
-        Route::patch('bulk-roles', [AdminMenuController::class, 'bulkUpdateRoles'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.bulk-roles');
         Route::get('extension/{type}/{identifier}', [AdminMenuController::class, 'getByExtension'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.by-extension');
         Route::get('{menu}', [AdminMenuController::class, 'show'])->middleware('permission:admin,core.menus.read')->name('api.admin.menus.show');
         Route::put('{menu}', [AdminMenuController::class, 'update'])->middleware('permission:admin,core.menus.update')->name('api.admin.menus.update');
@@ -849,12 +629,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('search', [AdminUserController::class, 'search'])->middleware('permission:admin,core.users.read')->name('api.admin.users.search');
         Route::post('check-email', [AdminUserController::class, 'checkEmail'])->middleware('permission:admin,core.users.read')->name('api.admin.users.check-email');
         Route::patch('bulk-status', [AdminUserController::class, 'bulkUpdateStatus'])->middleware('permission:admin,core.users.update')->name('api.admin.users.bulk-status');
-        Route::patch('bulk-roles', [AdminUserController::class, 'bulkUpdateRoles'])->middleware('permission:admin,core.users.update')->name('api.admin.users.bulk-roles');
         Route::get('{user}', [AdminUserController::class, 'show'])->middleware('permission:admin,core.users.read')->name('api.admin.users.show');
         Route::put('{user}', [AdminUserController::class, 'update'])->middleware('permission:admin,core.users.update')->name('api.admin.users.update');
         Route::delete('{user}', [AdminUserController::class, 'destroy'])->middleware('permission:admin,core.users.delete')->name('api.admin.users.destroy');
-        // 계정 잠금 해제 — 영구 잠금(무한대) 계정의 유일한 복구 경로
-        Route::post('{user}/unlock', [AdminUserController::class, 'unlock'])->middleware('permission:admin,core.users.update')->name('api.admin.users.unlock');
     });
 
     // 스케줄 관리
@@ -879,18 +656,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('clear-cache', [AdminSeoCacheController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.clear-cache');
         Route::post('warmup', [AdminSeoCacheController::class, 'warmup'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.warmup');
         Route::post('sitemap/regenerate', [AdminSeoCacheController::class, 'regenerateSitemap'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.sitemap.regenerate');
-        Route::get('sitemap/status', [AdminSeoCacheController::class, 'sitemapStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.sitemap.status');
         Route::get('cached-urls', [AdminSeoCacheController::class, 'cachedUrls'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.cached-urls');
     });
 
     // 알림 정의 관리
     Route::prefix('notification-definitions')->group(function () {
         Route::get('/', [AdminNotificationDefinitionController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.notification-definitions.index');
-        // 본인인증 정책별 문구 추가·삭제 (category=identity, 운영자 추가 정의만 삭제 가능)
-        Route::post('/', [AdminNotificationDefinitionController::class, 'store'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.store');
         Route::get('{definition}', [AdminNotificationDefinitionController::class, 'show'])->middleware('permission:admin,core.settings.read')->name('api.admin.notification-definitions.show');
         Route::put('{definition}', [AdminNotificationDefinitionController::class, 'update'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.update');
-        Route::delete('{definition}', [AdminNotificationDefinitionController::class, 'destroy'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.destroy');
         Route::patch('{definition}/toggle-active', [AdminNotificationDefinitionController::class, 'toggleActive'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.toggle-active');
         Route::post('{definition}/reset', [AdminNotificationDefinitionController::class, 'reset'])->middleware('permission:admin,core.settings.update')->name('api.admin.notification-definitions.reset');
     });
@@ -906,14 +679,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     // 알림 채널 관리
     Route::get('notification-channels', [AdminNotificationChannelController::class, 'index'])->middleware('permission:admin,core.settings.read')->name('api.admin.notification-channels.index');
 
-    // 회원 알림함 (in-app 수신함) — 발송 이력(무엇을 보냈나)과 다른 축이다.
-    // `bulk-delete` 는 `{id}` 보다 먼저 선언해야 "bulk-delete" 가 uuid 로 잡히지 않는다.
-    Route::prefix('member-notifications')->group(function () {
-        Route::get('/', [AdminMemberNotificationController::class, 'index'])->middleware('permission:admin,core.member-notifications.read')->name('api.admin.member-notifications.index');
-        Route::post('bulk-delete', [AdminMemberNotificationController::class, 'bulkDestroy'])->middleware('permission:admin,core.member-notifications.delete')->name('api.admin.member-notifications.bulk-destroy');
-        Route::delete('{id}', [AdminMemberNotificationController::class, 'destroy'])->middleware('permission:admin,core.member-notifications.delete')->name('api.admin.member-notifications.destroy');
-    });
-
     // 알림 발송 이력
     Route::prefix('notification-logs')->group(function () {
         Route::get('/', [AdminNotificationLogController::class, 'index'])->middleware('permission:admin,core.notification-logs.read')->name('api.admin.notification-logs.index');
@@ -922,64 +687,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
     });
 
     Route::prefix('templates')->group(function () {
-        // 레이아웃 편집기 자산 서빙 — 활성/비활성 무관
-        // 권한 `core.templates.layouts.edit` 가드.
-        // {templateName} 동적 라우트보다 위에 두어 매칭 우선순위 확보.
-        Route::get('{identifier}/editor-assets', [AdminTemplateAssetController::class, 'getEditorAssets'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-assets');
-        Route::dualSuffix('{identifier}/editor/components', 'json', [AdminTemplateAssetController::class, 'serveComponents'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-components');
-        Route::dualSuffix('{identifier}/editor/routes', 'json', [AdminTemplateAssetController::class, 'serveRoutes'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-routes');
-        Route::dualSuffix('{identifier}/editor/editor-spec', 'json', [AdminTemplateAssetController::class, 'serveEditorSpec'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-spec');
-        Route::dualSuffix('{identifier}/editor/lang/{locale}', 'json', [AdminTemplateAssetController::class, 'serveLanguage'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-lang');
-        // 표시 권한 후보 — 코어 + 활성 확장 권한 (속성 모달 표시 권한 TagInput).
-        // 편집 권한 가드 하에서만 노출(전역 G7Config 상시 노출 회피).
-        Route::dualSuffix('{identifier}/editor/permission-candidates', 'json', [AdminTemplateAssetController::class, 'servePermissionCandidates'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-permission-candidates');
-        // 편집기 프리뷰 전용 CSS — 다크 셀렉터를 프리뷰 마커(.g7le-preview-dark)로 치환해 서빙
-        // 관리자 admin 의 html.dark 조상과 독립적으로 프리뷰 라이트/다크 격리.
-        // URI 가 `components` 가 아니라 `component-styles` 인 이유: 확장자를 떼면
-        // `editor/components.json` 의 확장자 없는 형태와 충돌한다.
-        Route::dualSuffix('{identifier}/editor/component-styles', 'css', [AdminTemplateAssetController::class, 'serveEditorCss'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-css');
-
-        // 페이지 설정 모달 — SEO 후보/미리보기 + 브로드캐스트 카탈로그.
-        // 전부 편집 권한 가드 하 편집기 전용. {templateName} 동적 라우트보다 위에 둠.
-        Route::dualSuffix('{identifier}/editor/seo-candidates', 'json', [SeoCandidateController::class, 'index'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-seo-candidates');
-        Route::post('{identifier}/editor/seo-og-preview', [SeoOgPreviewController::class, 'show'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-seo-og-preview');
-        Route::post('{identifier}/editor/seo-bot-preview', [SeoBotPreviewController::class, 'show'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-seo-bot-preview');
-        Route::dualSuffix('{identifier}/editor/broadcast-catalog', 'json', [BroadcastCatalogController::class, 'index'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.editor-broadcast-catalog');
-
-        // 레이아웃 첨부 파일 (배경 이미지 등). 권한 core.templates.layouts.edit.
-        Route::get('{identifier}/layout-attachments', [AdminTemplateLayoutAttachmentController::class, 'index'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.layout-attachments.index');
-        Route::post('{identifier}/layout-attachments', [AdminTemplateLayoutAttachmentController::class, 'store'])
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.layout-attachments.store');
-        Route::delete('layout-attachments/{attachment}', [AdminTemplateLayoutAttachmentController::class, 'destroy'])
-            ->where('attachment', '[0-9]+')
-            ->middleware('permission:admin,core.templates.layouts.edit')
-            ->name('api.admin.templates.layout-attachments.destroy');
-
         Route::get('/', [AdminTemplateController::class, 'index'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.index');
         Route::get('{templateName}', [AdminTemplateController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.show');
         Route::get('{templateName}/install-preview', [AdminTemplateController::class, 'installPreview'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.install-preview');
@@ -1001,12 +708,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 레이아웃 관리
         Route::get('{templateName}/layouts', [AdminLayoutController::class, 'index'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.index');
 
-        // 레이아웃 파일 생성 — 이름은 FormRequest 가 세그먼트 규칙으로 검증한다(경로 파라미터가 아니다)
-        Route::post('{templateName}/layouts', [AdminLayoutController::class, 'store'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.store');
-
-        // 레이아웃 파일명·본문 검색 ({name} 범용보다 먼저 — 안 그러면 'search' 가 레이아웃 이름으로 잡힌다)
-        Route::get('{templateName}/layouts/search', [AdminLayoutController::class, 'search'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.search');
-
         // 레이아웃 버전 관리 (show보다 먼저 등록 — {name}의 / 허용으로 인한 라우트 충돌 방지)
         Route::get('{templateName}/layouts/{name}/versions', [AdminLayoutController::class, 'versions'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.versions.index')->where('name', '[a-zA-Z0-9_/\.\-]+');
         Route::get('{templateName}/layouts/{name}/versions/{version}', [AdminLayoutController::class, 'showVersion'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.versions.show')->where('name', '[a-zA-Z0-9_/\.\-]+');
@@ -1015,120 +716,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 레이아웃 미리보기
         Route::post('{templateName}/layouts/{name}/preview', [AdminLayoutController::class, 'storePreview'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.preview.store')->where('name', '[a-zA-Z0-9_/\.\-]+');
 
-        // 레이아웃 마크업(.g7.html) 변환 — 저장 없음, 코드 편집기 JSON 뷰 갱신용 (권한 read)
-        Route::post('{templateName}/layouts/{name}/markup-compile', [AdminLayoutController::class, 'compileMarkup'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.markup-compile')->where('name', '[a-zA-Z0-9_/\.\-]+');
-
-        // 레이아웃 이름변경 (범용 {name} 보다 먼저 — 'x/rename' 이 레이아웃 이름으로 잡히지 않게)
-        Route::patch('{templateName}/layouts/{name}/rename', [AdminLayoutController::class, 'rename'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.rename')->where('name', '[a-zA-Z0-9_/\.\-]+');
-
         // 레이아웃 CRUD (범용 {name} 라우트 — 가장 마지막에 등록)
         Route::get('{templateName}/layouts/{name}', [AdminLayoutController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.show')->where('name', '[a-zA-Z0-9_/\.\-]+');
         Route::put('{templateName}/layouts/{name}', [AdminLayoutController::class, 'update'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.update')->where('name', '[a-zA-Z0-9_/\.\-]+');
-        Route::delete('{templateName}/layouts/{name}', [AdminLayoutController::class, 'destroy'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.destroy')->where('name', '[a-zA-Z0-9_/\.\-]+');
-
-        // 레이아웃 확장 관리 (별도 prefix — 일반 레이아웃 {name} 정규식 충돌 회피)
-        Route::get('{templateName}/layout-extensions', [AdminLayoutExtensionController::class, 'index'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.index');
-
-        // 레이아웃 확장 버전 관리 (show 보다 먼저 등록)
-        Route::get('{templateName}/layout-extensions/{extensionId}/versions', [AdminLayoutExtensionController::class, 'versions'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.versions.index')->whereNumber('extensionId');
-        Route::get('{templateName}/layout-extensions/{extensionId}/versions/{version}', [AdminLayoutExtensionController::class, 'showVersion'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.versions.show')->whereNumber('extensionId')->whereNumber('version');
-        Route::post('{templateName}/layout-extensions/{extensionId}/versions/{versionId}/restore', [AdminLayoutExtensionController::class, 'restoreVersion'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layout-extensions.versions.restore')->whereNumber('extensionId')->whereNumber('versionId');
-
-        // 레이아웃 확장 미리보기
-        Route::post('{templateName}/layout-extensions/{extensionId}/preview', [AdminLayoutExtensionController::class, 'storePreview'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.preview.store')->whereNumber('extensionId');
-
-        // 레이아웃 확장 마크업(.g7.html) 변환 — 저장 없음 (권한 read)
-        Route::post('{templateName}/layout-extensions/{extensionId}/markup-compile', [AdminLayoutExtensionController::class, 'compileMarkup'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.markup-compile')->whereNumber('extensionId');
-
-        // 레이아웃 확장 CRUD (범용 {extensionId} 라우트 — 마지막에 등록)
-        Route::get('{templateName}/layout-extensions/{extensionId}', [AdminLayoutExtensionController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layout-extensions.show')->whereNumber('extensionId');
-        Route::put('{templateName}/layout-extensions/{extensionId}', [AdminLayoutExtensionController::class, 'update'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layout-extensions.update')->whereNumber('extensionId');
-
-        // 커스텀 다국어 키 관리
-        Route::get('{templateName}/custom-translations', [AdminTemplateCustomTranslationController::class, 'index'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.index');
-        Route::post('{templateName}/custom-translations', [AdminTemplateCustomTranslationController::class, 'store'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.store');
-        // 일괄 삭제 (body: ids[]) — {id} 라우트보다 먼저 등록 (id 없는 경로)
-        Route::delete('{templateName}/custom-translations', [AdminTemplateCustomTranslationController::class, 'bulkDestroy'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.bulk-destroy');
-        Route::put('{templateName}/custom-translations/{id}', [AdminTemplateCustomTranslationController::class, 'update'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.update')->whereNumber('id');
-        Route::delete('{templateName}/custom-translations/{id}', [AdminTemplateCustomTranslationController::class, 'destroy'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.custom-translations.destroy')->whereNumber('id');
-    });
-
-    /*
-    | 방문자 통계 관리자 API
-    |
-    | 권한 셋으로 갈린다 — read 는 숫자를 보는 것, update 는 설정·집계·삭제처럼 상태를
-    | 바꾸는 것, privacy 는 개별 방문자를 들여다보는 것이다. 한 화면 안에서도 갈린다:
-    | 현재 접속자 목록은 read 로 보이되 그 IP 는 privacy 가 있어야 채워진다.
-    */
-    Route::prefix('analytics')->group(function () {
-        // 조회 (read)
-        // 집계 표를 읽는 조회는 권한 확인 뒤 오래된 집계를 다시 계산하고 응답에 신선도를 싣는다
-        // (`analytics.archive_on_view`). 원장을 직접 읽는 실시간·방문자·유입 주소에는 붙이지 않는다.
-        Route::get('overview', [AdminAnalyticsOverviewController::class, 'index'])
-            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.overview');
-        Route::get('series', [AdminAnalyticsReportController::class, 'series'])
-            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.series');
-        Route::get('patterns', [AdminAnalyticsReportController::class, 'patterns'])
-            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.patterns');
-        Route::get('bots', [AdminAnalyticsReportController::class, 'bots'])
-            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.bots');
-        Route::get('realtime', [AdminAnalyticsRealtimeController::class, 'index'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.realtime');
-        Route::get('diagnostics', [AdminAnalyticsDiagnosticsController::class, 'index'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.diagnostics');
-        Route::get('collect-failures', [AdminAnalyticsDiagnosticsController::class, 'failures'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.collect-failures');
-        Route::get('archive-runs', [AdminAnalyticsArchiveRunController::class, 'index'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.archive-runs.index');
-        Route::get('archive-runs/{run}', [AdminAnalyticsArchiveRunController::class, 'show'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.archive-runs.show')->whereNumber('run');
-        Route::get('data', [AdminAnalyticsDataController::class, 'show'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.data.show');
-
-        // 상태 변경 (update)
-        Route::post('archive-runs', [AdminAnalyticsArchiveRunController::class, 'store'])
-            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.archive-runs.store');
-        Route::get('settings', [AdminAnalyticsSettingsController::class, 'show'])
-            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.settings.show');
-        Route::put('settings', [AdminAnalyticsSettingsController::class, 'update'])
-            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.settings.update');
-        Route::get('opt-out', [AdminAnalyticsOptOutController::class, 'show'])
-            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.opt-out.show');
-        Route::post('opt-out', [AdminAnalyticsOptOutController::class, 'store'])
-            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.opt-out.store');
-        Route::delete('opt-out', [AdminAnalyticsOptOutController::class, 'destroy'])
-            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.opt-out.destroy');
-        Route::delete('data', [AdminAnalyticsDataController::class, 'destroy'])
-            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.data.destroy');
-        Route::post('privacy/anonymize', [AdminAnalyticsPrivacyController::class, 'anonymize'])
-            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.privacy.anonymize');
-        Route::post('cloud-ranges/refresh', [AdminAnalyticsCloudRangeController::class, 'refresh'])
-            ->middleware('permission:admin,core.analytics.update')->name('api.admin.analytics.cloud-ranges.refresh');
-
-        // 개별 방문자 열람 (privacy)
-        // 목록 → 단건 두 걸음이다. 단건은 방문자 키를 경로에 받으므로 목록보다 뒤에 둔다.
-        Route::get('visitors', [AdminAnalyticsVisitorController::class, 'index'])
-            ->middleware('permission:admin,core.analytics.privacy')->name('api.admin.analytics.visitors.index');
-        Route::get('visitors/{visitorKey}', [AdminAnalyticsVisitorController::class, 'show'])
-            ->middleware('permission:admin,core.analytics.privacy')->name('api.admin.analytics.visitors.show');
-        Route::get('privacy/subjects', [AdminAnalyticsPrivacyController::class, 'subjects'])
-            ->middleware('permission:admin,core.analytics.privacy')->name('api.admin.analytics.privacy.subjects');
-        Route::post('privacy/subjects/export', [AdminAnalyticsPrivacyController::class, 'export'])
-            ->middleware('permission:admin,core.analytics.privacy')->name('api.admin.analytics.privacy.subjects.export');
-        Route::delete('privacy/subjects', [AdminAnalyticsPrivacyController::class, 'deleteSubject'])
-            ->middleware('permission:admin,core.analytics.privacy')->name('api.admin.analytics.privacy.subjects.destroy');
-
-        // 유입처 한 곳의 전체 유입 주소. 집계표에는 호스트까지만 쌓여 이 한 갈래만 원장을 직접 읽는다.
-        Route::get('referrer-urls', [AdminAnalyticsReportController::class, 'referrerUrls'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.referrer-urls');
-
-        // 리포트는 차원 이름을 경로로 받는다 — 고정 경로들보다 뒤에 등록해야 가로채지 않는다.
-        Route::get('registered', [AdminAnalyticsReportController::class, 'registered'])
-            ->middleware('permission:admin,core.analytics.read')->name('api.admin.analytics.registered');
-        // 한 항목의 날짜별 추이 — `reports/{report}` 보다 앞에 둔다.
-        Route::get('reports/{report}/series', [AdminAnalyticsReportController::class, 'rowSeries'])
-            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.reports.series');
-        Route::get('reports/{report}', [AdminAnalyticsReportController::class, 'show'])
-            ->middleware(['permission:admin,core.analytics.read', 'analytics.archive_on_view'])->name('api.admin.analytics.reports.show');
     });
 });

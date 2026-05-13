@@ -9,8 +9,6 @@ use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\ActivityLog;
 use App\Models\IdentityVerificationLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -23,15 +21,6 @@ class CoreActivityLogListenerIdentityTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * 본인인증 요청 훅이 활동 로그를 남긴다.
-     *
-     * @scenario policy_stage=activity_log, verification_progress=issued
-     *
-     * @effects after_request_hook_creates_activity_log
-     *
-     * @return void 반환값 없음
-     */
     public function test_after_request_hook_creates_activity_log(): void
     {
         $challenge = new VerificationChallenge(
@@ -61,15 +50,6 @@ class CoreActivityLogListenerIdentityTest extends TestCase
         $this->assertStringContainsString('g7:core.mail', json_encode($latest->properties));
     }
 
-    /**
-     * 검증 성공 훅이 검증 활동 로그를 남긴다.
-     *
-     * @scenario policy_stage=activity_log, verification_progress=verified
-     *
-     * @effects after_verify_success_creates_verify_activity_log
-     *
-     * @return void 반환값 없음
-     */
     public function test_after_verify_success_creates_verify_activity_log(): void
     {
         $result = new VerificationResult(
@@ -79,7 +59,7 @@ class CoreActivityLogListenerIdentityTest extends TestCase
             verifiedAt: now(),
         );
         $log = IdentityVerificationLog::create([
-            'id' => (string) Str::uuid(),
+            'id' => (string) \Illuminate\Support\Str::uuid(),
             'provider_id' => 'g7:core.mail',
             'purpose' => 'sensitive_action',
             'channel' => 'email',
@@ -95,15 +75,6 @@ class CoreActivityLogListenerIdentityTest extends TestCase
         ]);
     }
 
-    /**
-     * 검증 실패 훅이 실패 활동 로그를 남긴다.
-     *
-     * @scenario policy_stage=activity_log, verification_progress=failed
-     *
-     * @effects after_verify_failure_creates_failed_activity_log
-     *
-     * @return void 반환값 없음
-     */
     public function test_after_verify_failure_creates_failed_activity_log(): void
     {
         $result = new VerificationResult(
@@ -115,7 +86,7 @@ class CoreActivityLogListenerIdentityTest extends TestCase
             failureReason: 'Wrong code',
         );
         $log = IdentityVerificationLog::create([
-            'id' => (string) Str::uuid(),
+            'id' => (string) \Illuminate\Support\Str::uuid(),
             'provider_id' => 'g7:core.mail',
             'purpose' => 'sensitive_action',
             'channel' => 'email',
@@ -131,19 +102,10 @@ class CoreActivityLogListenerIdentityTest extends TestCase
         ]);
     }
 
-    /**
-     * 인증 만료 훅이 만료 활동 로그를 남긴다.
-     *
-     * @scenario policy_stage=activity_log, verification_progress=expired
-     *
-     * @effects challenge_expired_hook_creates_expired_activity_log
-     *
-     * @return void 반환값 없음
-     */
     public function test_challenge_expired_hook_creates_expired_activity_log(): void
     {
         $log = IdentityVerificationLog::create([
-            'id' => (string) Str::uuid(),
+            'id' => (string) \Illuminate\Support\Str::uuid(),
             'provider_id' => 'g7:core.mail',
             'purpose' => 'password_reset',
             'channel' => 'email',
@@ -167,7 +129,7 @@ class CoreActivityLogListenerIdentityTest extends TestCase
      * `ActivityLog::getActionLabelAttribute` 5단계 fallback 중 마지막 단계(raw 문자열)에
      * 도달하면 안 된다.
      *
-     * @return iterable<string, array{string}> 액션 키
+     * @return iterable<string, array{string}>
      */
     public static function provideIdentityActionKeys(): iterable
     {
@@ -180,16 +142,8 @@ class CoreActivityLogListenerIdentityTest extends TestCase
     }
 
     /**
-     * 본인인증 활동 로그의 액션 이름이 한국어로 해석된다.
-     *
-     * @scenario policy_stage=activity_log, verification_progress=verified
-     *
-     * @effects identity_action_label_resolves_in_ko
-     *
-     * @param  string  $action  액션 키
-     * @return void 반환값 없음
+     * @dataProvider provideIdentityActionKeys
      */
-    #[DataProvider('provideIdentityActionKeys')]
     public function test_identity_action_label_resolves_in_ko(string $action): void
     {
         app()->setLocale('ko');
@@ -202,16 +156,8 @@ class CoreActivityLogListenerIdentityTest extends TestCase
     }
 
     /**
-     * 본인인증 활동 로그의 액션 이름이 영어로 해석된다.
-     *
-     * @scenario policy_stage=activity_log, verification_progress=failed
-     *
-     * @effects identity_action_label_resolves_in_en
-     *
-     * @param  string  $action  액션 키
-     * @return void 반환값 없음
+     * @dataProvider provideIdentityActionKeys
      */
-    #[DataProvider('provideIdentityActionKeys')]
     public function test_identity_action_label_resolves_in_en(string $action): void
     {
         app()->setLocale('en');

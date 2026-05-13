@@ -4,7 +4,6 @@ namespace App\ActivityLog\Traits;
 
 use App\Enums\ActivityLogType;
 use App\Extension\ExtensionManager;
-use App\Support\IpAccessMatcher;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -13,10 +12,7 @@ use Illuminate\Support\Facades\Log;
  * Service 훅이 관리자/사용자/시스템 등 다양한 컨텍스트에서 호출될 수 있으므로
  * 요청 경로를 기반으로 log_type을 동적으로 결정합니다.
  *
- * - 관리자 영역 경로 → ActivityLogType::Admin — 코어 관리자 API(`api/admin/*`)뿐 아니라 확장 관리자 API
- *   (`api/{modules|plugins}/{id}/admin/*`)·관리자 로그인 API(`api/auth/admin/*`)·관리자 셸(`admin/*`)까지.
- *   판정은 IP 제한의 관리자 영역 정의(`IpAccessMatcher::isAdminArea`)를 그대로 쓴다 — 기준을 두 벌 두면
- *   확장 관리자 동작(예: 인증 앱 강제 해제)이 「사용자」로 남는다(7.1.0 실측 O-B2).
+ * - /api/admin/* 경로 → ActivityLogType::Admin
  * - 그 외 HTTP 요청 → ActivityLogType::User
  * - CLI/스케줄러(request 없음) → ActivityLogType::System
  */
@@ -32,7 +28,7 @@ trait ResolvesActivityLogType
         $request = request();
 
         if ($request && $request->path() !== '/') {
-            return IpAccessMatcher::isAdminArea($request->path())
+            return $request->is('api/admin/*')
                 ? ActivityLogType::Admin
                 : ActivityLogType::User;
         }
@@ -48,9 +44,8 @@ trait ResolvesActivityLogType
      * properties.extension_origin 에 자동 주입합니다 (loggable 미지정 케이스의
      * action 라벨 namespace fallback 용).
      *
-     * @param  string  $action  액션명 (예: 'user.create')
-     * @param  array  $context  Monolog context 배열
-     * @return void 반환값 없음
+     * @param string $action 액션명 (예: 'user.create')
+     * @param array $context Monolog context 배열
      */
     protected function logActivity(string $action, array $context): void
     {
@@ -63,13 +58,9 @@ trait ResolvesActivityLogType
             $context['properties'] = $properties;
         }
 
-        // 활동 로그는 부수 기록이다 — 실패해도 그것을 유발한 요청(결제 콜백 등)까지
-        // 죽여서는 안 된다. 채널 해석 실패는 Exception 이 아니라 Error 로 오므로
-        // (\Log::channel() 이 null 을 반환하면 "->info() on null" = \Error)
-        // Throwable 로 받아야 가드가 실제로 동작한다.
         try {
             Log::channel('activity')->info($action, $context);
-        } catch (\Throwable $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to record activity log', [
                 'action' => $action,
                 'error' => $e->getMessage(),

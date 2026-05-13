@@ -1,4 +1,3 @@
-// e2e:allow base_unit 환산 공식(÷base_unit) 변경. 환산 정확성은 단위 테스트로 검증, 다통화 표시 회귀는 product-option-multicurrency-readonly.spec.ts 가 구조적으로 차단.
 /**
  * 가격 관련 핸들러
  *
@@ -18,29 +17,6 @@ interface Currency {
     code: string;
     exchange_rate: number;
     symbol?: string;
-    is_default?: boolean;
-    base_unit?: number;
-}
-
-/**
- * base_unit 미설정 통화의 폴백 (소액 통화만 묶음 단위). 백엔드 CurrencyConversionService 와 동일.
- */
-const BASE_UNIT_FALLBACK: Record<string, number> = {
-    KRW: 1000,
-    JPY: 100,
-};
-
-/**
- * 기본 통화의 base_unit(환율 분모)을 통화 목록에서 해석합니다.
- *
- * @param currencies 통화 목록
- * @param defaultCurrency 기본 통화 코드
- * @returns base_unit (최소 1)
- */
-function resolveDefaultBaseUnit(currencies: Currency[], defaultCurrency: string): number {
-    const base = currencies.find((c) => c.code === defaultCurrency);
-    const unit = base?.base_unit ?? BASE_UNIT_FALLBACK[defaultCurrency] ?? 1;
-    return Math.max(1, unit);
 }
 
 interface ProductOption {
@@ -59,19 +35,17 @@ interface ActionWithParams {
 /**
  * 환율 기반 가격을 계산합니다.
  *
- * @param basePrice 기준 통화 가격
+ * @param basePrice 기준 가격 (KRW)
  * @param exchangeRate 환율
  * @param roundingMethod 반올림 방법 ('round', 'ceil', 'floor')
- * @param baseUnit 기본 통화 base_unit (환율 분모)
  * @returns 변환된 가격
  */
 function calculateCurrencyPrice(
     basePrice: number,
     exchangeRate: number,
-    roundingMethod: string,
-    baseUnit: number
+    roundingMethod: string
 ): number {
-    const converted = (basePrice / baseUnit) * exchangeRate;
+    const converted = (basePrice / 1000) * exchangeRate;
 
     switch (roundingMethod) {
         case 'ceil':
@@ -117,10 +91,7 @@ export function updatePriceHandler(
     const state = G7Core.state.getLocal() || {};
     const currencyData = context.datasources?.currencies?.data || {};
     const currencies = currencyData?.list || [];
-    // 통화를 못 박지 않는다 — 응답에 기본 통화가 없으면 is_default 통화로 해석한다.
-    const defaultCurrency = currencyData?.default_currency
-        || currencies.find((c: any) => c?.is_default)?.code
-        || '';
+    const defaultCurrency = currencyData?.default_currency || 'KRW';
     const roundingMethod = currencyData?.rounding_method || 'round';
 
     const newPrices = { ...(state.form?.multi_currency_prices || {}) };
@@ -131,11 +102,10 @@ export function updatePriceHandler(
 
     // 기준 통화 변경 시 다른 통화 자동 계산
     if (autoFill && currency === defaultCurrency) {
-        const baseUnit = resolveDefaultBaseUnit(currencies, defaultCurrency);
         currencies.forEach((curr: Currency) => {
             if (curr.code !== defaultCurrency) {
                 const exchangeRate = curr.exchange_rate ?? 1;
-                const convertedValue = calculateCurrencyPrice(value, exchangeRate, roundingMethod, baseUnit);
+                const convertedValue = calculateCurrencyPrice(value, exchangeRate, roundingMethod);
 
                 newPrices[curr.code] = {
                     ...(newPrices[curr.code] || {}),

@@ -22,8 +22,7 @@ class AdjustmentResult
      * @param  array  $adjustedItems  변경된 아이템 정보 [{order_option_id, cancel_quantity, cancel_amount}]
      * @param  array  $orderUpdates  주문 테이블 업데이트 데이터
      * @param  array  $optionUpdates  옵션 테이블 업데이트 데이터 [{order_option_id => [...]}]
-     * @param  array<int, array{base: int, extra: int}>  $shippingShares  재계산 입력 행별 배송비 몫 [order_option_id => {base, extra}].
-     *                                                                    빈 배열이면 배송 행을 쓰지 않는다(전체취소·배분 불가) — S-Q26-b
+     * @param  array  $shippingUpdates  배송 테이블 업데이트 데이터 [{order_shipping_id => [...]}]
      * @param  array  $originalSnapshot  재계산 전 주문 금액 스냅샷
      * @param  array  $recalculatedSnapshot  재계산 후 주문 금액 스냅샷
      * @param  array  $restoredCouponIssueIds  복원 대상 쿠폰 발급 ID 배열
@@ -39,8 +38,6 @@ class AdjustmentResult
      * @param  array|null  $mcRecalculatedSnapshot  재계산 다통화 스냅샷 {mc_subtotal_amount, mc_total_paid_amount}
      * @param  array  $originalCoupons  원 주문 쿠폰 상세 [{name, target_type, discount_amount}]
      * @param  array  $recalculatedCoupons  재계산 쿠폰 상세 [{name, target_type, discount_amount}]
-     * @param  array  $refundFormatted  환불 총액·잔액의 base 포맷 문자열 + 결제 통화 포함 다통화 포맷 {base, mc}
-     * @param  array  $substitutedItems  교환 옵션 치환 근거 [{order_option_id, quantity, product_option_id, unit_price, new_unit_price, line_key, option_label}]
      */
     public function __construct(
         public float $refundAmount = 0,
@@ -53,7 +50,7 @@ class AdjustmentResult
         public array $adjustedItems = [],
         public array $orderUpdates = [],
         public array $optionUpdates = [],
-        public array $shippingShares = [],
+        public array $shippingUpdates = [],
         public array $originalSnapshot = [],
         public array $recalculatedSnapshot = [],
         public array $restoredCouponIssueIds = [],
@@ -69,17 +66,12 @@ class AdjustmentResult
         public ?array $mcRecalculatedSnapshot = null,
         public array $originalCoupons = [],
         public array $recalculatedCoupons = [],
-        // 환불 총액·잔액의 base 통화 포맷 문자열 + 결제 통화 포함 다통화 포맷(취소 모달 표기용).
-        public array $refundFormatted = [],
-        // 교환 옵션 치환(패스 B) 근거 — 표시 스냅샷의 "교환 후" 열이 어느 상품을 무엇으로 바꿔 계산했는가.
-        // [{order_option_id, quantity, product_option_id|null, unit_price, new_unit_price, line_key, option_label}]
-        public array $substitutedItems = [],
     ) {}
 
     /**
      * 추가결제가 필요한지 여부를 반환합니다.
      *
-     * @return bool 추가결제 필요 여부 (환불액이 음수면 true)
+     * @return bool
      */
     public function requiresAdditionalPayment(): bool
     {
@@ -87,60 +79,27 @@ class AdjustmentResult
     }
 
     /**
-     * 부분취소로 인해 고객이 추가 결제해야 하는(=환불액 음수) 상황인지 반환합니다.
-     *
-     * 취소 계산기의 환불액(refundAmount/refundPointsAmount)은 그대로 두고,
-     * "실제 결제가 발생한 주문에서만" 추가결제 필요 여부로 차단을 판정합니다.
-     * 실결제 0원(미입금·운영자 0원 결제완료)은 환불/추가청구 개념이 없어 차단하지 않습니다.
+     * 재계산 결제금액이 원 결제금액을 초과하여 취소가 불가능한지 판별합니다.
      *
      * 부분취소 시 쿠폰 조건 미달(최소 주문금액 등)로 할인이 소멸하면
-     * 재계산 결제금액이 원 결제금액보다 높아질 수 있으며, 이때 실결제 주문이라면
-     * 고객에게 추가 결제를 요구해야 하므로 취소를 차단합니다.
+     * 재계산 결제금액이 원 결제금액보다 높아질 수 있습니다.
      *
      * @return bool 취소 차단 여부
      */
     public function isCancelBlocked(): bool
     {
-        // 교환의 표시 스냅샷(옵션 치환 2-패스)은 고가 옵션만큼 "교환 후" 열이 커진다. 그 차이는
-        // `ExchangeAdjustment::getAdditionalCharges()` 가 이미 청구로 다루므로 여기서 차단하지 않는다 —
-        // 스냅샷 차로 판정하면 고가 교환이 전부 "취소 불가" 로 잠긴다.
-        if ($this->substitutedItems !== []) {
-            return false;
-        }
+        $originalTotal = ($this->originalSnapshot['total_paid_amount'] ?? 0)
+            + ($this->originalSnapshot['total_points_used_amount'] ?? 0);
+        $recalculatedTotal = ($this->recalculatedSnapshot['total_paid_amount'] ?? 0)
+            + ($this->recalculatedSnapshot['total_points_used_amount'] ?? 0);
 
-        // 실결제 0원(미입금·운영자 0원 결제완료) → 환불/추가청구 개념 없음 → 무조건 허용
-        if (! $this->hasActualPayment()) {
-            return false;
-        }
-
-        // 실결제 주문: (원결제 + 원포인트) 대비 (재계산결제 + 재계산포인트) 가 커지면 추가결제 필요 → 차단.
-        $originalTotal = ((float) ($this->originalSnapshot['total_paid_amount'] ?? 0))
-            + ((float) ($this->originalSnapshot['total_points_used_amount'] ?? 0));
-        $recalculatedTotal = ((float) ($this->recalculatedSnapshot['total_paid_amount'] ?? 0))
-            + ((float) ($this->recalculatedSnapshot['total_points_used_amount'] ?? 0));
-
-        // 반올림 오차(decimal·소수통화) 허용 — 정수 KRW 에는 영향 없음.
-        return ($recalculatedTotal - $originalTotal) > 0.01;
-    }
-
-    /**
-     * 실제 결제가 발생한 주문인지 반환합니다.
-     *
-     * 스냅샷에 실려온 실결제 신호(payment_status === PAID 또는 실사용 금액 합 > 0)를 읽습니다.
-     * 운영자가 order_status 만 강제로 결제완료로 바꾼 0원 주문과,
-     * 실제 입금/결제가 완료된 주문을 구분하기 위한 게이트입니다.
-     *
-     * @return bool 실결제 발생 여부
-     */
-    public function hasActualPayment(): bool
-    {
-        return (bool) ($this->originalSnapshot['has_actual_payment'] ?? false);
+        return $recalculatedTotal > $originalTotal;
     }
 
     /**
      * 추가결제 필요 금액을 반환합니다.
      *
-     * @return float 추가결제 필요 금액 (없으면 0)
+     * @return float
      */
     public function getAdditionalPaymentAmount(): float
     {
@@ -150,7 +109,7 @@ class AdjustmentResult
     /**
      * 총 환불금액(PG + 마일리지)을 반환합니다.
      *
-     * @return float 총 환불금액 (PG 환불액 + 마일리지 환불액)
+     * @return float
      */
     public function getTotalRefundAmount(): float
     {
@@ -160,7 +119,7 @@ class AdjustmentResult
     /**
      * 미리보기 응답용 배열을 반환합니다.
      *
-     * @return array 미리보기 응답 배열
+     * @return array
      */
     public function toPreviewArray(): array
     {
@@ -177,8 +136,6 @@ class AdjustmentResult
             'remaining_pg_balance' => $this->remainingPgBalance,
             'remaining_points_balance' => $this->remainingPointsBalance,
             'refund_total' => max(0, $this->refundAmount) + $this->refundPointsAmount,
-            // base 통화 포맷(primary) + 결제 통화 포함 다통화 포맷(secondary 병기). 취소 모달 환불 표기 SSoT.
-            'refund_formatted' => $this->refundFormatted,
             'restored_coupons' => $this->restoredCoupons,
             'shipping_details' => $this->shippingDetails,
             'mc_refund_amount' => $this->mcRefundAmount,
@@ -190,8 +147,6 @@ class AdjustmentResult
             'mc_recalculated_snapshot' => $this->mcRecalculatedSnapshot,
             'original_coupons' => $this->originalCoupons,
             'recalculated_coupons' => $this->recalculatedCoupons,
-            // 교환만 채워진다 — "교환 후" 열의 근거 행(상품별 old→new). 다른 유형은 빈 배열.
-            'substituted_items' => $this->substitutedItems,
             'cancel_blocked' => $this->isCancelBlocked(),
             'cancel_blocked_reason' => $this->isCancelBlocked()
                 ? __('sirsoft-ecommerce::exceptions.cancel_refund_negative')

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\Admin\Identity;
 
-use App\Enums\PermissionType;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Identity\AdminIdentityLogIndexRequest;
 use App\Http\Requests\Identity\AdminIdentityLogPurgeRequest;
@@ -46,7 +45,7 @@ class AdminIdentityLogController extends AdminBaseController
 
         $paginated = $this->logService->search($filters, (int) ($validated['per_page'] ?? 20));
 
-        return $this->success('common.success', [
+        return $this->success('messages.success', [
             'data' => IdentityLogResource::collection(collect($paginated->items()))->resolve(),
             'pagination' => [
                 'current_page' => $paginated->currentPage(),
@@ -60,7 +59,7 @@ class AdminIdentityLogController extends AdminBaseController
             'abilities' => [
                 'can_purge' => $request->user()?->hasPermission(
                     'core.admin.identity.logs.purge',
-                    PermissionType::Admin,
+                    \App\Enums\PermissionType::Admin,
                 ) ?? false,
             ],
         ]);
@@ -77,7 +76,7 @@ class AdminIdentityLogController extends AdminBaseController
         $days = (int) ($request->validated()['older_than_days'] ?? 180);
         $count = $this->logService->purge($days);
 
-        return $this->success('common.success', [
+        return $this->success('messages.success', [
             'purged_count' => $count,
             'older_than_days' => $days,
         ]);

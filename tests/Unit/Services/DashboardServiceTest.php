@@ -4,17 +4,9 @@ namespace Tests\Unit\Services;
 
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
-use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\ActivityLogRepositoryInterface;
-use App\Contracts\Repositories\LanguagePackRepositoryInterface;
-use App\Contracts\Repositories\NotificationLogRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
-use App\Enums\ActivityLogType;
-use App\Enums\NotificationLogStatus;
-use App\Models\ActivityLog;
-use App\Models\NotificationLog;
 use App\Services\DashboardService;
-use App\Services\LanguagePackService;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
@@ -37,19 +29,6 @@ class DashboardServiceTest extends TestCase
 
     private $pluginManager;
 
-    private $notificationLogRepository;
-
-    private $templateManager;
-
-    private $languagePackRepository;
-
-    private $languagePackService;
-
-    /**
-     * 대시보드 서비스의 의존성을 모두 mock 으로 주입해 서비스를 만듭니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -58,32 +37,17 @@ class DashboardServiceTest extends TestCase
         $this->activityLogRepository = Mockery::mock(ActivityLogRepositoryInterface::class);
         $this->moduleManager = Mockery::mock(ModuleManagerInterface::class);
         $this->pluginManager = Mockery::mock(PluginManagerInterface::class);
-        $this->notificationLogRepository = Mockery::mock(NotificationLogRepositoryInterface::class);
-        $this->templateManager = Mockery::mock(TemplateManagerInterface::class);
-        $this->languagePackRepository = Mockery::mock(LanguagePackRepositoryInterface::class);
-        $this->languagePackService = Mockery::mock(LanguagePackService::class);
 
         $this->service = new DashboardService(
             $this->userRepository,
             $this->activityLogRepository,
             $this->moduleManager,
-            $this->pluginManager,
-            $this->notificationLogRepository,
-            $this->templateManager,
-            $this->languagePackRepository,
-            $this->languagePackService
+            $this->pluginManager
         );
-
-        // getStats() 가 항상 호출하는 템플릿/언어팩 의존성의 기본 mock (개별 테스트에서 재정의 가능).
-        $this->mockTemplatesAndPacks();
     }
 
     /**
      * 기본 사용자 통계 mock을 설정합니다.
-     *
-     * @param  int  $totalUsers  전체 회원 수
-     * @param  int  $usersThisMonth  이번 달 가입 회원 수
-     * @return void 반환값 없음
      */
     private function mockUserStatistics(int $totalUsers = 100, int $usersThisMonth = 10): void
     {
@@ -98,10 +62,6 @@ class DashboardServiceTest extends TestCase
 
     /**
      * 기본 모듈 mock을 설정합니다.
-     *
-     * @param  array  $all  전체 모듈 목록
-     * @param  array  $active  활성 모듈 목록
-     * @return void 반환값 없음
      */
     private function mockModules(array $all = [], array $active = []): void
     {
@@ -111,10 +71,6 @@ class DashboardServiceTest extends TestCase
 
     /**
      * 기본 플러그인 mock을 설정합니다.
-     *
-     * @param  array  $all  전체 플러그인 목록
-     * @param  array  $active  활성 플러그인 목록
-     * @return void 반환값 없음
      */
     private function mockPlugins(array $all = [], array $active = []): void
     {
@@ -122,46 +78,10 @@ class DashboardServiceTest extends TestCase
         $this->pluginManager->shouldReceive('getActivePlugins')->andReturn($active);
     }
 
-    /**
-     * 템플릿/언어팩 mock을 설정합니다.
-     *
-     * @param  array  $allTemplates  전체 템플릿 목록
-     * @param  array<string, bool>  $activeByType  타입별 활성 여부 (admin/user)
-     * @param  int  $activePacks  활성 언어팩 수
-     * @param  int  $uninstalledBundledPacks  미설치 번들 언어팩 수
-     * @return void 반환값 없음
-     */
-    private function mockTemplatesAndPacks(
-        array $allTemplates = [],
-        array $activeByType = ['admin' => false, 'user' => false],
-        int $activePacks = 0,
-        int $uninstalledBundledPacks = 0,
-    ): void {
-        // byDefault() — setUp 의 기본 mock 을 개별 테스트가 재호출로 덮어쓸 수 있게 한다.
-        $this->templateManager->shouldReceive('getAllTemplates')->andReturn($allTemplates)->byDefault();
-        foreach (['admin', 'user'] as $type) {
-            $this->templateManager->shouldReceive('getActiveTemplate')->with($type)
-                ->andReturn(($activeByType[$type] ?? false) ? ['identifier' => "tpl-{$type}"] : null)->byDefault();
-        }
-        $this->languagePackRepository->shouldReceive('getActivePacks')
-            ->andReturn(new EloquentCollection(array_fill(0, $activePacks, (object) [])))->byDefault();
-        $this->languagePackService->shouldReceive('getUninstalledBundledPacks')
-            ->andReturn(collect(array_fill(0, $uninstalledBundledPacks, (object) [])))->byDefault();
-    }
-
     // ========================================================================
     // getStats 테스트
     // ========================================================================
 
-    /**
-     * 대시보드 통계가 회원·모듈·플러그인·템플릿·언어팩·시스템 상태 키를 모두 담는다.
-     *
-     * @scenario case=get_stats_returns_correct_structure
-     *
-     * @effects get_stats_returns_correct_structure
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_stats_returns_correct_structure(): void
     {
         $this->mockUserStatistics(100, 90);
@@ -179,69 +99,9 @@ class DashboardServiceTest extends TestCase
         $this->assertArrayHasKey('total_users', $stats);
         $this->assertArrayHasKey('installed_modules', $stats);
         $this->assertArrayHasKey('active_plugins', $stats);
-        $this->assertArrayHasKey('installed_templates', $stats);
-        $this->assertArrayHasKey('language_packs', $stats);
         $this->assertArrayHasKey('system_status', $stats);
     }
 
-    /**
-     * 설치·활성 템플릿 수를 센다.
-     *
-     * @scenario case=get_stats_returns_template_counts
-     *
-     * @effects get_stats_returns_template_counts
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_stats_returns_template_counts(): void
-    {
-        $this->mockUserStatistics();
-        $this->mockModules();
-        $this->mockPlugins();
-        // 전체 템플릿 2개, admin/user 둘 다 활성 → 2/2
-        $this->mockTemplatesAndPacks(
-            allTemplates: [['identifier' => 'a'], ['identifier' => 'b']],
-            activeByType: ['admin' => true, 'user' => true],
-        );
-
-        $stats = $this->service->getStats();
-
-        $this->assertSame(2, $stats['installed_templates']['total']);
-        $this->assertSame(2, $stats['installed_templates']['active']);
-    }
-
-    /**
-     * 활성 언어팩과 미설치 번들 언어팩 수를 센다.
-     *
-     * @scenario case=get_stats_returns_language_pack_counts
-     *
-     * @effects get_stats_returns_language_pack_counts
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_stats_returns_language_pack_counts(): void
-    {
-        $this->mockUserStatistics();
-        $this->mockModules();
-        $this->mockPlugins();
-        // 활성 14, 미설치 번들 4 → 활성 14 / 전체 18
-        $this->mockTemplatesAndPacks(activePacks: 14, uninstalledBundledPacks: 4);
-
-        $stats = $this->service->getStats();
-
-        $this->assertSame(14, $stats['language_packs']['active']);
-        $this->assertSame(18, $stats['language_packs']['total']);
-    }
-
-    /**
-     * 이번 달 가입자로 전월 대비 증가율을 계산한다.
-     *
-     * @scenario case=get_stats_calculates_change_percent_correctly_when_increased
-     *
-     * @effects get_stats_calculates_change_percent_correctly_when_increased
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_stats_calculates_change_percent_correctly_when_increased(): void
     {
         // 전체 100명, 이번달 20명 가입 → 전월 80명 대비 25% 증가
@@ -255,15 +115,6 @@ class DashboardServiceTest extends TestCase
         $this->assertEquals('up', $stats['total_users']['trend']);
     }
 
-    /**
-     * 신규 가입자가 있으면 상승 추세로 표시한다.
-     *
-     * @scenario case=get_stats_shows_up_trend_when_new_users_exist
-     *
-     * @effects get_stats_shows_up_trend_when_new_users_exist
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_stats_shows_up_trend_when_new_users_exist(): void
     {
         // 전체 80명, 이번달 10명 가입
@@ -277,15 +128,6 @@ class DashboardServiceTest extends TestCase
         $this->assertEquals('+10', $stats['total_users']['change_display']);
     }
 
-    /**
-     * 신규 가입자가 없어도 증가율 0 으로 안전하게 계산한다.
-     *
-     * @scenario case=get_stats_handles_zero_new_users
-     *
-     * @effects get_stats_handles_zero_new_users
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_stats_handles_zero_new_users(): void
     {
         // 이번달 신규 가입자 0명일 때
@@ -300,15 +142,6 @@ class DashboardServiceTest extends TestCase
         $this->assertEquals('up', $stats['total_users']['trend']);
     }
 
-    /**
-     * 설치·활성 모듈 수를 센다.
-     *
-     * @scenario case=get_stats_returns_module_counts
-     *
-     * @effects get_stats_returns_module_counts
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_stats_returns_module_counts(): void
     {
         $this->mockUserStatistics(50, 50);
@@ -324,15 +157,6 @@ class DashboardServiceTest extends TestCase
         $this->assertEquals(2, $stats['installed_modules']['active']);
     }
 
-    /**
-     * 설치·활성 플러그인 수를 센다.
-     *
-     * @scenario case=get_stats_returns_plugin_counts
-     *
-     * @effects get_stats_returns_plugin_counts
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_stats_returns_plugin_counts(): void
     {
         $this->mockUserStatistics(50, 50);
@@ -367,10 +191,6 @@ class DashboardServiceTest extends TestCase
             $this->activityLogRepository,
             $this->moduleManager,
             $this->pluginManager,
-            $this->notificationLogRepository,
-            $this->templateManager,
-            $this->languagePackRepository,
-            $this->languagePackService,
         ])->makePartial()->shouldAllowMockingProtectedMethods();
 
         // CPU 조회 모킹 (실제 시스템 명령 호출 방지)
@@ -398,15 +218,6 @@ class DashboardServiceTest extends TestCase
         return $service;
     }
 
-    /**
-     * 시스템 자원 응답이 CPU·메모리·디스크 키를 담는다.
-     *
-     * @scenario case=get_system_resources_returns_correct_structure
-     *
-     * @effects get_system_resources_returns_correct_structure
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_system_resources_returns_correct_structure(): void
     {
         $service = $this->createMockedResourceService();
@@ -417,15 +228,6 @@ class DashboardServiceTest extends TestCase
         $this->assertArrayHasKey('disk', $resources);
     }
 
-    /**
-     * CPU 사용률이 0~100 범위의 수치로 나온다.
-     *
-     * @scenario case=get_system_resources_returns_valid_cpu_data
-     *
-     * @effects get_system_resources_returns_valid_cpu_data
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_system_resources_returns_valid_cpu_data(): void
     {
         $service = $this->createMockedResourceService();
@@ -437,15 +239,6 @@ class DashboardServiceTest extends TestCase
         $this->assertLessThanOrEqual(100, $resources['cpu']['percentage']);
     }
 
-    /**
-     * 메모리 사용량이 전체·사용·비율을 담는다.
-     *
-     * @scenario case=get_system_resources_returns_valid_memory_data
-     *
-     * @effects get_system_resources_returns_valid_memory_data
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_system_resources_returns_valid_memory_data(): void
     {
         $service = $this->createMockedResourceService();
@@ -457,15 +250,6 @@ class DashboardServiceTest extends TestCase
         $this->assertArrayHasKey('color', $resources['memory']);
     }
 
-    /**
-     * 디스크 사용량이 전체·사용·비율을 담는다.
-     *
-     * @scenario case=get_system_resources_returns_valid_disk_data
-     *
-     * @effects get_system_resources_returns_valid_disk_data
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_system_resources_returns_valid_disk_data(): void
     {
         $service = $this->createMockedResourceService();
@@ -477,160 +261,10 @@ class DashboardServiceTest extends TestCase
         $this->assertArrayHasKey('color', $resources['disk']);
     }
 
-    /**
-     * probe 1개가 예외를 던지고 나머지는 정상값을 반환하는 부분 모킹 서비스를 생성합니다 (공개#40).
-     *
-     * @param  string  $throwingProbe  예외를 던질 probe 메서드명 (getCpuUsage|getMemoryUsage|getDiskUsage)
-     * @return DashboardService 부분 모킹 서비스
-     */
-    private function createPartiallyFailingResourceService(string $throwingProbe): DashboardService
-    {
-        $service = Mockery::mock(DashboardService::class, [
-            $this->userRepository,
-            $this->activityLogRepository,
-            $this->moduleManager,
-            $this->pluginManager,
-            $this->notificationLogRepository,
-            $this->templateManager,
-            $this->languagePackRepository,
-            $this->languagePackService,
-        ])->makePartial()->shouldAllowMockingProtectedMethods();
-
-        $normal = [
-            'getCpuUsage' => ['percentage' => 45, 'color' => 'green'],
-            'getMemoryUsage' => ['percentage' => 60, 'used' => '8.5 GB', 'total' => '16 GB', 'color' => 'blue'],
-            'getDiskUsage' => ['percentage' => 75, 'used' => '300 GB', 'total' => '500 GB', 'color' => 'yellow'],
-        ];
-
-        foreach ($normal as $probe => $value) {
-            if ($probe === $throwingProbe) {
-                $service->shouldReceive($probe)->andThrow(new \ErrorException('open_basedir restriction in effect'));
-            } else {
-                $service->shouldReceive($probe)->andReturn($value);
-            }
-        }
-
-        return $service;
-    }
-
-    /**
-     * CPU 측정이 실패해도 나머지 자원 값은 정상으로 나온다.
-     *
-     * @scenario case=get_system_resources_isolates_failing_cpu_probe
-     *
-     * @effects get_system_resources_isolates_failing_cpu_probe
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_system_resources_isolates_failing_cpu_probe(): void
-    {
-        $service = $this->createPartiallyFailingResourceService('getCpuUsage');
-
-        $resources = $service->getSystemResources();
-
-        // cpu 는 폴백, 나머지는 정상값 — 예외 비전파.
-        $this->assertSame(0, $resources['cpu']['percentage']);
-        $this->assertSame('gray', $resources['cpu']['color']);
-        $this->assertSame(60, $resources['memory']['percentage']);
-        $this->assertSame(75, $resources['disk']['percentage']);
-    }
-
-    /**
-     * 메모리 측정이 실패해도 나머지 자원 값은 정상으로 나온다.
-     *
-     * @scenario case=get_system_resources_isolates_failing_memory_probe
-     *
-     * @effects get_system_resources_isolates_failing_memory_probe
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_system_resources_isolates_failing_memory_probe(): void
-    {
-        $service = $this->createPartiallyFailingResourceService('getMemoryUsage');
-
-        $resources = $service->getSystemResources();
-
-        $this->assertSame(0, $resources['memory']['percentage']);
-        $this->assertSame('gray', $resources['memory']['color']);
-        $this->assertSame(__('common.unknown'), $resources['memory']['used']);
-        $this->assertSame(__('common.unknown'), $resources['memory']['total']);
-        $this->assertSame(45, $resources['cpu']['percentage']);
-        $this->assertSame(75, $resources['disk']['percentage']);
-    }
-
-    /**
-     * 디스크 측정이 실패해도 나머지 자원 값은 정상으로 나온다.
-     *
-     * @scenario case=get_system_resources_isolates_failing_disk_probe
-     *
-     * @effects get_system_resources_isolates_failing_disk_probe
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_system_resources_isolates_failing_disk_probe(): void
-    {
-        $service = $this->createPartiallyFailingResourceService('getDiskUsage');
-
-        $resources = $service->getSystemResources();
-
-        $this->assertSame(0, $resources['disk']['percentage']);
-        $this->assertSame('gray', $resources['disk']['color']);
-        $this->assertSame(__('common.unknown'), $resources['disk']['used']);
-        $this->assertSame(45, $resources['cpu']['percentage']);
-        $this->assertSame(60, $resources['memory']['percentage']);
-    }
-
-    /**
-     * 모든 측정이 실패하면 기본값 구조를 돌려준다.
-     *
-     * @scenario case=get_system_resources_all_probes_fail_returns_fallback_structure
-     *
-     * @effects get_system_resources_all_probes_fail_returns_fallback_structure
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_system_resources_all_probes_fail_returns_fallback_structure(): void
-    {
-        $service = Mockery::mock(DashboardService::class, [
-            $this->userRepository,
-            $this->activityLogRepository,
-            $this->moduleManager,
-            $this->pluginManager,
-            $this->notificationLogRepository,
-            $this->templateManager,
-            $this->languagePackRepository,
-            $this->languagePackService,
-        ])->makePartial()->shouldAllowMockingProtectedMethods();
-
-        foreach (['getCpuUsage', 'getMemoryUsage', 'getDiskUsage'] as $probe) {
-            $service->shouldReceive($probe)->andThrow(new \ErrorException('open_basedir'));
-        }
-
-        $resources = $service->getSystemResources();
-
-        // 키 구조 유지 + 폴백값 — 예외 비전파.
-        $this->assertArrayHasKey('cpu', $resources);
-        $this->assertArrayHasKey('memory', $resources);
-        $this->assertArrayHasKey('disk', $resources);
-        $this->assertSame('gray', $resources['cpu']['color']);
-        $this->assertSame('gray', $resources['memory']['color']);
-        $this->assertSame('gray', $resources['disk']['color']);
-        $this->assertSame(0, $resources['cpu']['percentage']);
-    }
-
     // ========================================================================
     // getRecentActivities 테스트
     // ========================================================================
 
-    /**
-     * 최근 활동이 배열로 나온다.
-     *
-     * @scenario case=get_recent_activities_returns_array
-     *
-     * @effects get_recent_activities_returns_array
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_recent_activities_returns_array(): void
     {
         $this->activityLogRepository->shouldReceive('getRecent')
@@ -642,19 +276,10 @@ class DashboardServiceTest extends TestCase
         $this->assertIsArray($activities);
     }
 
-    /**
-     * 회원 가입 활동을 표시 형식으로 바꾼다.
-     *
-     * @scenario case=get_recent_activities_formats_user_registration
-     *
-     * @effects get_recent_activities_formats_user_registration
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_recent_activities_formats_user_registration(): void
     {
-        $mockLog = Mockery::mock(ActivityLog::class)->makePartial();
-        $mockLog->shouldReceive('getAttribute')->with('log_type')->andReturn(ActivityLogType::User);
+        $mockLog = Mockery::mock(\App\Models\ActivityLog::class)->makePartial();
+        $mockLog->shouldReceive('getAttribute')->with('log_type')->andReturn(\App\Enums\ActivityLogType::User);
         $mockLog->shouldReceive('getAttribute')->with('action')->andReturn('register');
         $mockLog->shouldReceive('getAttribute')->with('localized_description')->andReturn('테스트 유저가 가입했습니다');
         $mockLog->shouldReceive('getAttribute')->with('actor_name')->andReturn('Test User');
@@ -677,15 +302,6 @@ class DashboardServiceTest extends TestCase
     // getSystemAlerts 테스트
     // ========================================================================
 
-    /**
-     * 시스템 알림이 배열로 나온다.
-     *
-     * @scenario case=get_system_alerts_returns_array
-     *
-     * @effects get_system_alerts_returns_array
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_system_alerts_returns_array(): void
     {
         $alerts = $this->service->getSystemAlerts();
@@ -693,15 +309,6 @@ class DashboardServiceTest extends TestCase
         $this->assertIsArray($alerts);
     }
 
-    /**
-     * 시스템 알림 항목이 필수 필드를 담는다.
-     *
-     * @scenario case=get_system_alerts_items_have_required_fields
-     *
-     * @effects get_system_alerts_items_have_required_fields
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_system_alerts_items_have_required_fields(): void
     {
         $alerts = $this->service->getSystemAlerts();
@@ -718,15 +325,6 @@ class DashboardServiceTest extends TestCase
         }
     }
 
-    /**
-     * 시스템 알림 유형이 허용된 값만 쓴다.
-     *
-     * @scenario case=get_system_alerts_returns_valid_types
-     *
-     * @effects get_system_alerts_returns_valid_types
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_system_alerts_returns_valid_types(): void
     {
         $alerts = $this->service->getSystemAlerts();
@@ -738,15 +336,6 @@ class DashboardServiceTest extends TestCase
         }
     }
 
-    /**
-     * 리스너가 없으면 빈 알림 목록을 돌려준다.
-     *
-     * @scenario case=get_system_alerts_returns_empty_when_no_listeners
-     *
-     * @effects get_system_alerts_returns_empty_when_no_listeners
-     *
-     * @return void 반환값 없음
-     */
     public function test_get_system_alerts_returns_empty_when_no_listeners(): void
     {
         $alerts = $this->service->getSystemAlerts();
@@ -754,51 +343,6 @@ class DashboardServiceTest extends TestCase
         $this->assertIsArray($alerts);
     }
 
-    /**
-     * 최근 알림 로그를 카드 표시 필드로 바꾸고, 현재 사용자를 스코프 기준으로 넘긴다.
-     *
-     * @scenario case=get_recent_notification_logs_maps_display_fields
-     *
-     * @effects get_recent_notification_logs_maps_display_fields
-     *
-     * @return void 반환값 없음
-     */
-    public function test_get_recent_notification_logs_maps_display_fields(): void
-    {
-        $log = new NotificationLog([
-            'channel' => 'mail',
-            'notification_type' => 'order_confirmed',
-            'recipient_name' => '홍길동',
-            'recipient_identifier' => 'test@example.com',
-            'subject' => '주문이 확인되었습니다',
-            'status' => NotificationLogStatus::Sent,
-            'sent_at' => now(),
-        ]);
-        $log->id = 1;
-        $log->setRelation('recipientUser', null);
-
-        // 인증 사용자가 없으면 스코프 대상도 없다 — 서비스는 현재 사용자를 스코프 기준으로 넘긴다.
-        $this->notificationLogRepository
-            ->shouldReceive('getRecent')
-            ->once()
-            ->with(5, null)
-            ->andReturn(new EloquentCollection([$log]));
-
-        $result = $this->service->getRecentNotificationLogs(5);
-
-        $this->assertCount(1, $result);
-        $this->assertSame(1, $result[0]['id']);
-        $this->assertSame('order_confirmed', $result[0]['type']);
-        $this->assertSame('mail', $result[0]['channel']);
-        $this->assertSame('홍길동', $result[0]['recipient']);
-        $this->assertSame('sent', $result[0]['status']);
-    }
-
-    /**
-     * Mockery 기대값을 정리합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         Mockery::close();

@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Extension;
 
-interface ModuleInterface extends CacheableExtensionInterface
+interface ModuleInterface
 {
     /**
      * 모듈명 반환 (표시용)

@@ -5,7 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
-use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
+use Modules\Sirsoft\Board\Models\Report;
 
 /**
  * 신고 상태 변경 요청 폼 검증
@@ -13,11 +13,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 class UpdateStatusRequest extends FormRequest
 {
     /**
-     * 사용자가 이 요청을 수행할 권한이 있는지 확인합니다.
-     *
-     * 권한 체크는 라우트의 permission 미들웨어에서 수행합니다.
-     *
-     * @return bool 항상 true (권한은 미들웨어에서 검증)
+     * 사용자가 이 요청을 수행할 권한이 있는지 확인
      */
     public function authorize(): bool
     {
@@ -37,14 +33,14 @@ class UpdateStatusRequest extends FormRequest
                 'string',
                 Rule::in(ReportStatus::values()),
                 function ($attribute, $value, $fail) {
-                    // 현재 신고 조회 (라우트 파라미터명은 {report} — Repository Interface 경유)
-                    $report = app(ReportRepositoryInterface::class)->find((int) $this->route('report'));
+                    // 현재 신고 조회
+                    $report = Report::find($this->route('id'));
 
                     if (! $report) {
                         return; // 404는 컨트롤러에서 처리
                     }
 
-                    // Enum의 전환 규칙 메서드 사용 (deleted 등 최종 상태는 전환 불가 → 422)
+                    // Enum의 전환 규칙 메서드 사용
                     if (! $report->status->canTransitionTo($value)) {
                         $fail(__('sirsoft-board::validation.report.invalid_status_transition'));
                     }
@@ -76,8 +72,8 @@ class UpdateStatusRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'status' => __('sirsoft-board::validation.attributes.report.status'),
-            'process_note' => __('sirsoft-board::validation.attributes.report.process_note'),
+            'status' => __('sirsoft-board::attributes.report.status'),
+            'process_note' => __('sirsoft-board::attributes.report.process_note'),
         ];
     }
 }

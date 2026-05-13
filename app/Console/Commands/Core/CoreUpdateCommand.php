@@ -3,43 +3,32 @@
 namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
-use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Exceptions\UpgradeHandoffException;
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\CoreBackupHelper;
-use App\Extension\Helpers\FilePermissionHelper;
-use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
-use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorMode;
 use App\Services\CoreUpdateService;
-use App\Support\ComposerInstallInfo;
-use App\Support\ConfigCacheHelper;
-use App\Support\HookCacheFreshProcess;
-use App\Support\PackageManifestCacheHelper;
-use App\Support\RouteCacheHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class CoreUpdateCommand extends Command
 {
     use BundledExtensionUpdatePrompt;
-    use ClearsTemplateCaches;
     use HasUnifiedConfirm;
 
     protected $signature = 'core:update
         {--force : 버전 비교 없이 강제 업데이트}
         {--no-backup : 백업 생성 건너뛰기}
-        {--prune : 코어가 제거한 파일 정리 + targets 전체 덮어쓰기(기존 방식). 미지정 시 코어가 실제 변경/추가한 파일만 적용하고 나머지는 보존}
         {--no-maintenance : 유지보수 모드 활성화 건너뛰기}
         {--local : 로컬 코드베이스를 업데이트 소스로 사용 (GitHub 스킵)}
         {--source= : 수동 업데이트용 소스 디렉토리 경로 (GitHub 다운로드 대신 지정 디렉토리 사용)}
         {--zip= : 수동 업데이트용 ZIP 파일 경로 (GitHub 다운로드 대신 지정 ZIP 추출 사용)}
-        {--vendor-mode=auto : vendor 설치 모드 (auto|composer|bundled)}
-        {--rebuild-search-index : 번들 확장 일괄 업데이트 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
+        {--vendor-mode=auto : vendor 설치 모드 (auto|composer|bundled)}';
 
     protected $description = '그누보드7 코어를 최신 버전으로 업데이트합니다';
 
@@ -304,16 +293,12 @@ class CoreUpdateCommand extends Command
             // Step 11/12 의 restoreOwnership 이 항목별 정확 복원하도록 전달한다.
             // 사용자 데이터 영역(storage/app/{modules,plugins,attachments,public,settings})
             // 은 본 스냅샷 대상이 아니며 chown 자체가 빠지므로 시드/업로드 owner 가 보존된다.
-            //
-            // 이번 실행이 방금 만든 격리 디렉토리(core_{ts})는 제외한다 — 스냅샷은 그 디렉토리가
-            // 생긴 뒤에 찍히므로, 제외하지 않으면 sudo 가 root 로 만든 추출본이 "원본" 으로
-            // 기록되고 복원이 잔존물을 다시 root 로 되돌린다(7.0.0~7.0.9 실사례).
             $detailedOwnershipSnapshot = $service->snapshotOwnershipDetailed([
                 'storage/logs',
                 'storage/framework',
                 'storage/app/core_pending',
                 'bootstrap/cache',
-            ], excludes: [$service->resolveStagingRoot($pendingPath)]);
+            ]);
             if (! empty($detailedOwnershipSnapshot)) {
                 $log('항목별 정확 스냅샷 수집: '.count($detailedOwnershipSnapshot).'개 항목 (PHP-FPM 쓰기 영역)');
             }
@@ -322,22 +307,6 @@ class CoreUpdateCommand extends Command
             $vendorMode = VendorMode::fromStringOrAuto((string) $this->option('vendor-mode'));
             $composerSkipped = $vendorMode !== VendorMode::Bundled
                 && $service->isComposerUnchangedForCore($pendingPath);
-
-            // 운영 vendor 에 개발용(require-dev) 패키지가 섞여 있는지 알린다. 그대로 두면
-            // 이전 설치본이 만든 패키지 매니페스트가 새 vendor 와 어긋나 이후 부팅이 깨지고,
-            // 그 사실은 오류 메시지 어디에도 "dev 설치본" 으로 드러나지 않는다.
-            $devPackages = ComposerInstallInfo::devPackageNames(base_path('vendor'));
-            if ($devPackages !== []) {
-                $devCount = count($devPackages);
-                $devSample = implode(', ', array_slice($devPackages, 0, 5)).($devCount > 5 ? ' …' : '');
-                if ($composerSkipped) {
-                    $this->warn("운영 vendor 에 개발용 패키지 {$devCount}개 감지 — composer.json/lock 변경이 없어 vendor 를 재설치하지 않으므로 그대로 남습니다. 업데이트 후 'composer install --no-dev --optimize-autoloader' 실행을 권장합니다.");
-                    $log("운영 vendor 개발용 패키지 {$devCount}개 잔존 (composer 스킵): {$devSample}");
-                } else {
-                    $this->line("운영 vendor 에 개발용 패키지 {$devCount}개 감지 — 이번 업데이트가 --no-dev vendor 로 교체합니다.");
-                    $log("운영 vendor 개발용 패키지 {$devCount}개 감지 — --no-dev vendor 로 교체: {$devSample}");
-                }
-            }
 
             if ($composerSkipped) {
                 $bar->setMessage('Composer 의존성 변경 없음 — 스킵');
@@ -373,12 +342,6 @@ class CoreUpdateCommand extends Command
             //
             // `--no-backup` 모드면 backupPath 가 null 이므로 manifest 생성을 스킵 — 롤백
             // 자체가 불가능한 모드이므로 기존 동작 유지.
-            // 증분 적용(3-way) 대상 목록. 백업 있음 + --prune 미지정 시에만 산출.
-            // null 로 남으면(백업 부재 또는 --prune) applyUpdate 가 전체 덮어쓰기로 회귀.
-            $applyList = null;
-            $applyStats = null;
-            $prune = (bool) $this->option('prune');
-
             if ($backupPath !== null) {
                 $bar->setMessage('신규 파일 manifest 생성 중...');
                 $log('신규 파일 manifest 생성 시작');
@@ -404,51 +367,15 @@ class CoreUpdateCommand extends Command
                         'error' => $manifestError->getMessage(),
                     ]);
                 }
-
-                // ── 증분 적용 대상 산출 (3-way) ──
-                // --prune 이면 전체 덮어쓰기이므로 산출 자체를 스킵.
-                if (! $prune) {
-                    try {
-                        $applyStats = CoreBackupHelper::computeApplyList(
-                            $backupPath,
-                            $pendingPath,
-                            (array) config('app.update.targets', []),
-                            (array) config('app.update.protected_paths', []),
-                            (array) config('app.update.excludes', []),
-                        );
-                        $applyList = $applyStats['apply'];
-                        $log(sprintf(
-                            '증분 적용 대상 산출 완료 (added=%d, changed=%d, total=%d)',
-                            $applyStats['added_count'],
-                            $applyStats['changed_count'],
-                            count($applyList),
-                        ));
-                    } catch (\Throwable $applyError) {
-                        // 산출 실패 시 안전하게 전체 덮어쓰기로 회귀 (applyList=null 유지)
-                        $applyList = null;
-                        $applyStats = null;
-                        $log("증분 적용 대상 산출 실패 (전체 덮어쓰기로 회귀): {$applyError->getMessage()}");
-                        Log::warning('코어 업데이트: 증분 적용 대상 산출 실패', [
-                            'error' => $applyError->getMessage(),
-                        ]);
-                    }
-                }
             }
 
             // ── Step 7: 파일 적용 ──
             $bar->setMessage(__('settings.core_update.step_apply'));
             $bar->advance();
+            $log('코어 파일 덮어쓰기 시작');
 
-            if ($prune) {
-                $log('코어 파일 덮어쓰기 시작 (--prune: 전체 덮어쓰기 + orphan 정리)');
-            } elseif ($applyList !== null) {
-                $log(sprintf('코어 파일 적용 시작 (증분: 코어 변경분 %d건만 적용, 나머지 보존)', count($applyList)));
-            } else {
-                $log('코어 파일 덮어쓰기 시작 (백업 부재 — 전체 덮어쓰기로 회귀)');
-            }
-
-            $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList);
-            $log('코어 파일 적용 완료');
+            $service->applyUpdate($pendingPath, $onProgress);
+            $log('코어 파일 덮어쓰기 완료');
 
             // ── Step 8: vendor 디렉토리 복사 (_pending → 운영) ──
             if ($composerSkipped) {
@@ -530,16 +457,6 @@ class CoreUpdateCommand extends Command
             $service->updateVersionInEnv($toVersion);
             $service->clearAllCaches();
 
-            // 상주 큐 워커는 부팅이 한 번뿐이라 옛 코드를 물고 있다 — 캐시가 새 코드 기준으로
-            // 정리된 직후 재시작 신호를 보낸다.
-            $service->signalQueueRestart();
-            $log('큐 워커 재시작 신호 전송 (queue:restart)');
-
-            // 코어 업데이트 후 프론트엔드가 새 lang/routes/layout 자원으로 fetch 하도록
-            // `ext.cache_version` bump. 코어 lang JSON 변경이 프론트엔드 캐시에
-            // 반영되지 않는 회귀를 차단한다 (core-frontend-i18n-infrastructure 계획서).
-            $this->incrementExtensionCacheVersion();
-
             // sudo 실행 시 composer 등 외부 프로세스가 root 로 생성한 파일의 소유권을
             // 백업 직후 수집한 원본 스냅샷 기준으로 복원 (각 경로 고유 소유자 유지).
             // detailedSnapshot 동시 전달 — PHP-FPM 쓰기 영역의 owner/group/perms 를 항목별
@@ -547,12 +464,6 @@ class CoreUpdateCommand extends Command
             $service->restoreOwnership($ownershipSnapshot, $onProgress, $detailedOwnershipSnapshot);
             $this->surfacePermissionWarnings($service, $log);
             $log('업데이트 경로 소유권 복원 완료');
-
-            // 소유권 복원 완료 후 · 유지보수 해제 전에 `public/storage` symlink 를 방어 복구한다.
-            // `--prune` 이 릴리즈 소스에 없는 symlink 를 orphan 으로 삭제했거나(#43) 손상된
-            // 경우에도, 첫 요청부터 `/storage/...` 가 200 을 반환하도록 링크를 재생성한다.
-            StorageLinkHelper::ensurePublicStorageLink();
-            $log('public/storage symlink 확인/복구 완료');
 
             $service->cleanupPending($pendingPath);
 
@@ -565,22 +476,6 @@ class CoreUpdateCommand extends Command
                 $maintenanceEnabled = false;
             }
 
-            // 모든 파일(코어 config/lang/vendor)이 안착한 뒤 config 캐시를 재생성한다.
-            // clearAllCaches() 는 흐름 중간에서 stale 캐시를 비우기만 하므로, 여기서
-            // 재생성하지 않으면 업데이트 후 config:cache 가 비활성 상태로 남아 이후 모든
-            // 요청이 config 파일을 재파싱한다(성능 손실). ConfigCacheHelper 는 설치 미완료
-            // 상태를 가드하고 실패를 안전하게 흡수한다.
-            ConfigCacheHelper::rebuild();
-
-            // 라우트 캐시도 같은 이유로 되살린다. 코어 업데이트는 routes/*.php 와 vendor 를
-            // 교체하므로 흐름 중간에 비우는 것이 맞지만, 비운 채로 끝내면 이후 모든 요청이
-            // 라우트를 다시 등록한다. 재생성은 파일이 전부 안착한 이 지점에서만 안전하다.
-            RouteCacheHelper::rebuild();
-
-            // 훅 캐시는 새 프로세스에서 한 번 더 굽는다 — 이 프로세스는 이전 코드로 부팅해, 업데이트 시작 때
-            // 훅 캐시가 없던 사이트에서는 이전 리스너 구독으로 구워졌을 수 있다(#138 후속).
-            $this->rebuildHookCacheInFreshProcess($log);
-
             $log('정리 완료');
 
             $bar->finish();
@@ -591,9 +486,6 @@ class CoreUpdateCommand extends Command
 
             $this->info("그누보드7 코어가 {$toVersion} 버전으로 업데이트되었습니다!");
             $this->newLine();
-
-            // ── 파일 적용 방식 요약 (부수의무: 설명의무) ──
-            $this->summarizeApplyMode($prune, $applyList, $applyStats);
 
             // _bundled 확장 일괄 업데이트 프롬프트 (번들에 신버전이 있을 때만 표시).
             //
@@ -610,10 +502,6 @@ class CoreUpdateCommand extends Command
             );
 
             if (($promptResult['success'] ?? 0) > 0) {
-                // 일괄 업데이트는 이 (이전 코드) 프로세스에서 확장마다 훅 캐시를 재생성해, 위에서 새 프로세스로
-                // 구운 캐시를 이전 리스너 구독으로 덮어쓸 수 있다 — 소유권 복원 전에 새 프로세스로 다시 굽는다.
-                $this->rebuildHookCacheInFreshProcess($log);
-
                 $this->newLine();
                 $this->info('일괄 업데이트로 생성된 파일의 소유권을 복원하는 중...');
                 // 일괄 확장 update 가 sudo 컨텍스트에서 root 로 만들 수 있는 PHP-FPM 쓰기
@@ -625,14 +513,6 @@ class CoreUpdateCommand extends Command
                 $this->surfacePermissionWarnings($service, $log);
                 $log('일괄 확장 업데이트 후 소유권 재복원 완료');
             }
-
-            // fallback(spawn 실패)로 부모가 upgrade step 을 직접 실행한 경우, 부모가 만든
-            // upgrade 로그가 root 로 남는다 — 모든 로그 쓰기가 끝난 이 시점에 정합한다.
-            $this->restoreUpgradeLogOwnership();
-            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
-            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
-            // 전면 500 차단 (7.0.9→7.0.10 실사례)
-            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::SUCCESS;
 
@@ -668,25 +548,10 @@ class CoreUpdateCommand extends Command
             try {
                 $service->updateVersionInEnv($toVersion);
                 $service->clearAllCaches();
-                // 핸드오프는 정상 종료 경로의 훅 캐시 재굽기를 지나지 않는다 — 파일은 이미 toVersion 이므로
-                // 새 코드로 부팅하는 새 프로세스에서 굽는다(#138 후속).
-                $this->rebuildHookCacheInFreshProcess($log);
-                // 핸드오프로 멈춰도 파일은 이미 toVersion 이므로 워커는 새 코드로 재기동해야 한다.
-                $service->signalQueueRestart();
-                $log('큐 워커 재시작 신호 전송 (queue:restart)');
-                // 핸드오프 cleanup 에서도 프론트엔드 캐시 버전 bump — 사용자가 resume 명령
-                // (execute-upgrade-steps) 을 실행하기 전이라도 이미 toVersion 으로 반영된
-                // 코어 lang/routes/layout 자원이 프론트엔드 캐시 stale 로 가려지지 않도록.
-                $this->incrementExtensionCacheVersion();
                 // Stage 4 — handoff cleanup 도 detailed snapshot 으로 정확 복원
                 $service->restoreOwnership($ownershipSnapshot, $onProgress, $detailedOwnershipSnapshot);
                 $this->surfacePermissionWarnings($service, $log);
                 $log('핸드오프 cleanup 완료 (버전 toVersion 고정 + 캐시 clear + 소유권 복원)');
-
-                // 핸드오프 시에도 파일은 이미 toVersion 으로 반영돼 `public/storage` symlink 가
-                // 삭제/손상됐을 수 있으므로 유지보수 해제 전에 동일하게 방어 복구한다(#43).
-                StorageLinkHelper::ensurePublicStorageLink();
-                $log('public/storage symlink 확인/복구 완료 (핸드오프)');
 
                 if (! empty($pendingPath)) {
                     $service->cleanupPending($pendingPath);
@@ -712,7 +577,7 @@ class CoreUpdateCommand extends Command
             $this->line("  사유: {$e->reason}");
             $this->newLine();
             $this->info('나머지 스텝을 적용하려면 아래 명령을 실행하세요 (재다운로드 없이 스텝만 실행):');
-            $this->surfaceResumeCommandWithPermissionGuidance($resumeCommand);
+            $this->line("  {$resumeCommand}");
             $this->newLine();
             $this->warn('⚠ 위 명령을 실행하지 않으면 버전 표시는 최신이지만 일부 스텝이 미실행 상태로 남습니다.');
             $this->newLine();
@@ -721,12 +586,6 @@ class CoreUpdateCommand extends Command
                 $this->line("백업이 유지되었습니다: {$backupPath}");
                 $this->newLine();
             }
-
-            $this->restoreUpgradeLogOwnership();
-            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
-            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
-            // 전면 500 차단 (7.0.9→7.0.10 실사례)
-            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
             return Command::SUCCESS;
 
@@ -821,12 +680,6 @@ class CoreUpdateCommand extends Command
                 }
             }
 
-            $this->restoreUpgradeLogOwnership();
-            // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
-            // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
-            // 전면 500 차단 (7.0.9→7.0.10 실사례)
-            app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
-
             return Command::FAILURE;
         }
     }
@@ -850,9 +703,9 @@ class CoreUpdateCommand extends Command
      * @param  string  $toVersion  대상 버전
      * @param  bool  $force  동일 버전 강제 실행 여부
      * @param  \Closure  $log  로그 엔트리 수집 콜백
-     * @return bool spawn 성공 여부 (false 면 fallback 실행 필요)
+     * @return bool  spawn 성공 여부 (false 면 fallback 실행 필요)
      *
-     * @throws UpgradeHandoffException 자식이 핸드오프 신호를 보낸 경우
+     * @throws UpgradeHandoffException  자식이 핸드오프 신호를 보낸 경우
      */
     private function spawnUpgradeStepsProcess(string $fromVersion, string $toVersion, bool $force, \Closure $log): bool
     {
@@ -916,33 +769,6 @@ class CoreUpdateCommand extends Command
             'G7_UPDATE_IN_PROGRESS' => '1',
         ]);
 
-        // spawn 직전 config 캐시 제거. 자식은 새 프로세스라 `bootstrap/cache/config.php` 가 있으면
-        // 그 캐시로 부팅하는데, 그 캐시는 이전 버전 설치본이 만든 것이다(설치 마법사·설정 저장·
-        // 확장 업데이트). 캐시 부팅에서는 `.env` 도 읽지 않고 위 `$env` 의 APP_VERSION 오버라이드도
-        // config 에 반영되지 않으며, 신버전 `config/app.php` 가 추가한 update 목록(쓰기 권한
-        // 디렉토리 등)도 자식에게 보이지 않는다 (7.0.9→7.0.10 실사례: stale 가드 오판 +
-        // `public/build/ext` 권한 정상화 누락). 부모의 메모리 config 는 영향받지 않고, 캐시는
-        // Step 11 의 `ConfigCacheHelper::rebuild()` 가 모든 파일이 안착한 뒤 다시 만든다.
-        ConfigCacheHelper::clear();
-
-        // 같은 이유로 패키지 매니페스트(bootstrap/cache/packages.php · services.php)도 비운다.
-        // vendor 는 Step 6/8 에서 이미 교체됐지만 두 파일은 Step 11 clearAllCaches 까지 이전
-        // 설치본의 것이 남고, Laravel 은 packages.php 가 "없을 때만" 다시 만든다. 이전 설치본이
-        // dev composer(require-dev 전이 의존성 laravel/mcp 의 McpServiceProvider 포함)로 깔렸다면
-        // 자식은 새 vendor 에 없는 provider 를 new 하다 부팅 단계에서 죽는다 (7.0.9→7.0.10 실사례).
-        // 부모 메모리의 매니페스트는 영향받지 않고, Step 11 이 package:discover 로 다시 만든다.
-        //
-        // 지우지 못한 파일(권한·소유권 불일치)은 로그에 남긴다. 그 상태면 자식의 자가 치유도 같은
-        // 권한으로 실패하므로 증상은 이전 설치본 provider 의 「Class not found」 그대로이고, 이 기록이
-        // 권한이 원인이라는 유일한 흔적이다.
-        $remainingManifests = PackageManifestCacheHelper::clear();
-        if ($remainingManifests !== []) {
-            $manifestWarning = 'spawn 직전 패키지 매니페스트 삭제 실패 — 자식이 이전 설치본의 provider 목록으로 부팅할 수 있습니다 (권한·소유권 확인): '
-                .implode(', ', $remainingManifests);
-            $log($manifestWarning);
-            $this->warn($manifestWarning);
-        }
-
         $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
         if (! is_resource($process)) {
             return $this->failSpawnWithMode(
@@ -960,7 +786,6 @@ class CoreUpdateCommand extends Command
         // 페이로드만 보관한다 (각각 UpgradeHandoffException 재구성 / silent skip 가드용).
         $handoffPayload = null;
         $stepsExecuted = null;
-        $stepsDiscovered = null;
         while (! feof($pipes[1])) {
             $line = fgets($pipes[1]);
             if ($line !== false) {
@@ -992,13 +817,7 @@ class CoreUpdateCommand extends Command
                     $decoded = json_decode($json, true);
                     if (is_array($decoded) && isset($decoded['count']) && is_int($decoded['count']) && $decoded['count'] >= 0) {
                         $stepsExecuted = $decoded['count'];
-                        // discovered 는 신버전 자식만 발행하는 필드. 구버전 자식(필드 부재)은
-                        // null 로 남아 handleSpawnExit 가 기존(레거시) 판정 경로를 탄다.
-                        if (isset($decoded['discovered']) && is_int($decoded['discovered']) && $decoded['discovered'] >= 0) {
-                            $stepsDiscovered = $decoded['discovered'];
-                        }
-                        $log('[spawn] 실행된 step 수: '.$stepsExecuted
-                            .($stepsDiscovered !== null ? " (발견 {$stepsDiscovered})" : ''));
+                        $log('[spawn] 실행된 step 수: '.$stepsExecuted);
 
                         continue;
                     }
@@ -1013,50 +832,6 @@ class CoreUpdateCommand extends Command
         fclose($pipes[2]);
         $exitCode = proc_close($process);
 
-        return $this->handleSpawnExit(
-            $exitCode,
-            $handoffPayload,
-            $stepsExecuted,
-            $stepsDiscovered,
-            $fromVersion,
-            $toVersion,
-            $log,
-        );
-    }
-
-    /**
-     * spawn 자식 종료 후 exit code · 신호를 해석해 성공/실패/핸드오프를 판정합니다.
-     *
-     * 판정 규칙 (exit=0 경우):
-     *  - `[STEPS_EXECUTED]` 신호 미수신 (`$stepsExecuted === null`) → fail-fast.
-     *    이전 버전 자식 (신호 미발행) 또는 silent skip 의심.
-     *  - executed=0 인데 **discovered>0** → fail-fast. 범위 내에 스텝 파일이 실제로
-     *    존재하는데 자식이 하나도 실행하지 못함 (gnuboard/g7#28 silent skip — 케이스 A).
-     *  - executed=0 이고 **discovered=0** → 정상 통과. 해당 from~to 범위에 스텝 파일이
-     *    애초에 없는 릴리즈 (예: 데이터/설정 변경 없는 패치). from<to 여도 실패 아님 (케이스 B).
-     *  - discovered 신호 부재 (`null`, 구버전 자식) + executed=0 + from<to → 레거시 판정 유지
-     *    (fail-fast). 신버전 자식은 항상 discovered 를 발행하므로 이 경로는 구버전 자식 한정.
-     *
-     * @param  int  $exitCode  자식 프로세스 종료 코드
-     * @param  array|null  $handoffPayload  파싱된 [HANDOFF] 페이로드 (없으면 null)
-     * @param  int|null  $stepsExecuted  실행된 스텝 수 ([STEPS_EXECUTED] 미수신 시 null)
-     * @param  int|null  $stepsDiscovered  범위 내 발견된 스텝 파일 수 (구버전 자식은 null)
-     * @param  string  $fromVersion  업그레이드 시작 버전
-     * @param  string  $toVersion  업그레이드 대상 버전
-     * @param  \Closure  $log  로그 수집 콜백
-     * @return bool spawn 성공 여부 (mode=fallback 실패 시 false — 호출자 in-process fallback)
-     *
-     * @throws UpgradeHandoffException 핸드오프 수신 또는 mode=abort 실패 시
-     */
-    private function handleSpawnExit(
-        int $exitCode,
-        ?array $handoffPayload,
-        ?int $stepsExecuted,
-        ?int $stepsDiscovered,
-        string $fromVersion,
-        string $toVersion,
-        \Closure $log,
-    ): bool {
         if ($exitCode === UpgradeHandoffException::EXIT_CODE && $handoffPayload !== null) {
             $log("spawn 핸드오프 종료 (exit={$exitCode})");
 
@@ -1071,7 +846,9 @@ class CoreUpdateCommand extends Command
         }
 
         if ($exitCode === 0) {
-            // 신호 미수신 — 이전 버전 자식 (신호 미발행) 또는 silent skip 의심. fail-fast.
+            // silent skip 가드 — 자식이 [STEPS_EXECUTED] 신호를 발행하지 않거나, step 0건
+            // 실행한 채 exit=0 으로 종료한 경우. 이전 버전 자식 (beta.5 이전 디스크) 또는
+            // 자식이 비정상 종료 직전 silent skip 한 상태로 추정. fail-fast 모드 가드 적용.
             if ($stepsExecuted === null) {
                 return $this->failSpawnWithMode(
                     'spawn 자식이 [STEPS_EXECUTED] 신호 미발행 — 이전 버전 자식 또는 silent skip 의심',
@@ -1081,27 +858,9 @@ class CoreUpdateCommand extends Command
                 );
             }
 
-            // executed=0 + discovered=0 → 범위 내 스텝 파일 부재. 정상 통과 (케이스 B).
-            // 스텝이 필요 없는 릴리즈(데이터/설정 변경 없음)를 실패로 오판하지 않는다.
-            if ($stepsExecuted === 0 && $stepsDiscovered === 0) {
-                $log("spawn 완료 (exit=0, 실행할 스텝 없음 — 범위 내 스텝 파일 부재, from={$fromVersion} to={$toVersion})");
-
-                return true;
-            }
-
-            // executed=0 + (discovered>0 또는 discovered 신호 부재) + from<to → fail-fast.
-            // discovered>0: 스텝 파일이 있는데 자식이 실행 못함 (gnuboard/g7#28 케이스 A).
-            // discovered=null: 구버전 자식 (discovered 미발행) — 레거시 판정 유지.
-            if ($stepsExecuted === 0
-                && $stepsDiscovered !== 0
-                && version_compare($fromVersion, $toVersion, '<')) {
+            if ($stepsExecuted === 0 && version_compare($fromVersion, $toVersion, '<')) {
                 return $this->failSpawnWithMode(
-                    sprintf(
-                        'spawn 자식 exit=0 이지만 step 0건 실행 — 의도된 동작이 아님 (from=%s to=%s%s)',
-                        $fromVersion,
-                        $toVersion,
-                        $stepsDiscovered !== null ? ", 발견 {$stepsDiscovered}건" : '',
-                    ),
+                    sprintf('spawn 자식 exit=0 이지만 step 0건 실행 — 의도된 동작이 아님 (from=%s to=%s)', $fromVersion, $toVersion),
                     $log,
                     $fromVersion,
                     $toVersion,
@@ -1134,9 +893,9 @@ class CoreUpdateCommand extends Command
      * @param  \Closure  $log  로그 엔트리 수집 콜백
      * @param  string  $fromVersion  업그레이드 시작 버전 (handoff afterVersion / resumeCommand 구성)
      * @param  string  $toVersion  업그레이드 대상 버전 (resumeCommand 구성)
-     * @return false fallback 모드일 때만 반환. abort 모드는 throw 후 미반환.
+     * @return false  fallback 모드일 때만 반환. abort 모드는 throw 후 미반환.
      *
-     * @throws UpgradeHandoffException mode=abort 일 때
+     * @throws UpgradeHandoffException  mode=abort 일 때
      */
     private function failSpawnWithMode(string $reason, \Closure $log, string $fromVersion, string $toVersion): bool
     {
@@ -1175,7 +934,6 @@ class CoreUpdateCommand extends Command
      *  - `resumeCommand`: null 허용. string 일 때 길이 < 1000 + shell metacharacter(`;&|`$()<>`) 부재
      *
      * @param  mixed  $payload  json_decode 결과
-     * @return bool 네 키가 모두 규격에 맞으면 true
      */
     private function isValidHandoffPayload($payload): bool
     {
@@ -1216,49 +974,12 @@ class CoreUpdateCommand extends Command
     }
 
     /**
-     * 파일 적용 방식(증분/prune/fallback)과 통계를 사용자에게 요약 출력합니다.
-     *
-     * @param  bool  $prune  --prune 지정 여부
-     * @param  array<int, string>|null  $applyList  증분 적용 대상 목록 (null 이면 전체 덮어쓰기)
-     * @param  array{apply:array<int,string>, added_count:int, changed_count:int, has_symlink:bool}|null  $applyStats  computeApplyList 산출 통계
-     * @return void 반환값 없음
-     */
-    private function summarizeApplyMode(bool $prune, ?array $applyList, ?array $applyStats): void
-    {
-        if ($prune) {
-            $this->line(__('settings.core_update.apply_mode_prune'));
-            $this->newLine();
-
-            return;
-        }
-
-        if ($applyList === null) {
-            // 백업 부재 또는 산출 실패 → 전체 덮어쓰기로 회귀
-            $this->warn(__('settings.core_update.apply_mode_fallback'));
-            $this->newLine();
-
-            return;
-        }
-
-        // 증분 모드
-        $added = $applyStats['added_count'] ?? 0;
-        $changed = $applyStats['changed_count'] ?? 0;
-        $this->line(__('settings.core_update.apply_mode_incremental', [
-            'added' => $added,
-            'changed' => $changed,
-        ]));
-        $this->line(__('settings.core_update.apply_mode_incremental_prune_hint'));
-        $this->newLine();
-    }
-
-    /**
      * 업데이트 로그를 파일로 저장합니다.
      *
      * @param  array  $entries  로그 엔트리 목록
      * @param  string  $fromVersion  시작 버전
      * @param  string  $toVersion  종료 버전
      * @param  bool  $success  성공 여부
-     * @return void 반환값 없음
      */
     private function saveUpdateLog(array $entries, string $fromVersion, string $toVersion, bool $success): void
     {
@@ -1279,67 +1000,8 @@ class CoreUpdateCommand extends Command
         $content = $header."\n".implode("\n", $entries)."\n";
 
         file_put_contents($logPath, $content);
-        // sudo 업데이트가 로그 파일을 root 소유로 만들면 이후 www-data 의 tinker/로그 쓰기가
-        // 거부된다. 부모(storage/logs) 소유권을 상속한다(멱등, sudo 없으면 silent no-op).
-        FilePermissionHelper::inheritOwnershipFromParent($logPath);
 
         Log::info("코어 업데이트 로그 저장: {$logPath}");
-    }
-
-    /**
-     * 훅 캐시를 새 프로세스에서 다시 굽고, 실패하면 운영자에게 수동 명령을 안내합니다.
-     *
-     * 이 프로세스는 이전 코드로 부팅했으므로 여기서 구운 훅 캐시는 이전 리스너 구독을 담을 수 있다.
-     * 새 프로세스는 디스크의 새 코드로 부팅한다. 실패해도 업데이트는 되돌리지 않는다(#138 후속).
-     *
-     * @param  \Closure  $log  업데이트 로그 기록 콜백
-     * @return void 반환값 없음
-     */
-    private function rebuildHookCacheInFreshProcess(\Closure $log): void
-    {
-        $hookCache = HookCacheFreshProcess::run(['hooks:cache']);
-        if ($hookCache['ok']) {
-            $log('훅 캐시 재생성 완료 (새 프로세스)');
-
-            return;
-        }
-
-        $message = '훅 캐시를 새 프로세스로 다시 굽지 못했습니다 — 업데이트 뒤 `php artisan hooks:cache` 를 실행하세요: '.$hookCache['output'];
-        $log($message);
-        $this->warn($message);
-    }
-
-    /**
-     * 코어 업데이트(부모 프로세스)가 생성한 upgrade 로그 파일의 소유권을 부모(storage/logs)
-     * 로 정합합니다 — **spawn 실패로 부모가 upgrade step 을 in-process 로 직접 실행한 경우** 대비.
-     *
-     * upgrade 로그(`upgrade-YYYY-MM-DD.log`)를 만드는 주체는 두 갈래다:
-     *  - spawn 성공: 자식(ExecuteUpgradeStepsCommand)이 로그 생성 → 자식이 자기 종료 직전 정합
-     *  - spawn 실패(fallback): 부모가 runUpgradeSteps + reloadCoreConfigAndResync 를 직접 실행
-     *    하여 부모 프로세스가 upgrade 로그를 root 로 생성 → **부모가** 정합해야 한다.
-     *
-     * sudo 업데이트는 root 로 실행되어 로그를 root 소유로 만들고, 이후 www-data(php-fpm) 의
-     * module:update upgrade step 이 같은 날짜 로그에 append 하지 못해 Permission denied 로
-     * 실패한다. 본 메서드를 코어 업데이트의 모든 로그 쓰기가 끝난 종료 시점(각 return 직전)에
-     * 호출한다. **본 메서드 자체는 로그를 쓰지 않는다**(쓰면 다시 root 가 됨). silent no-op 멱등.
-     *
-     * @return void 반환값 없음
-     */
-    private function restoreUpgradeLogOwnership(): void
-    {
-        $logsDir = storage_path('logs');
-        if (! is_dir($logsDir)) {
-            return;
-        }
-
-        // 코어('upgrade-*.log') + 확장('extension-upgrade-*.log') 두 채널의 daily 로그를 모두
-        // 정합한다. glob 'upgrade-*.log' 는 'extension-' 접두사 파일을 매칭하지 못하므로
-        // 두 패턴을 각각 순회한다.
-        foreach (['upgrade-*.log', 'extension-upgrade-*.log'] as $pattern) {
-            foreach (glob($logsDir.DIRECTORY_SEPARATOR.$pattern) ?: [] as $logFile) {
-                FilePermissionHelper::inheritOwnershipFromParent($logFile);
-            }
-        }
     }
 
     /**
@@ -1348,9 +1010,6 @@ class CoreUpdateCommand extends Command
      * 공유 호스팅에서 FTP 사용자(파일 소유자)와 SSH 사용자, 또는 SSH 사용자와
      * www-data 가 다른 경우 권한 거부가 발생할 수 있습니다. 차단하지는 않고
      * 사용자가 직접 판단하도록 경고만 출력합니다.
-     *
-     * @param  \Closure  $log  내부 로그 누적 콜백
-     * @return void 반환값 없음
      */
     private function warnIfFileOwnerMismatch(\Closure $log): void
     {
@@ -1393,100 +1052,6 @@ class CoreUpdateCommand extends Command
     }
 
     /**
-     * 업그레이드 스텝 재실행 명령을 실행 사용자 권한에 맞는 안내와 함께 출력합니다.
-     *
-     * 배경: sudo(root) 로 `core:update` 를 실행하면 업그레이드 스텝 spawn 자식이 root 로
-     * 돌아가고, 그 자식이 실패(proc_open 미지원 · 비정상 종료 · silent skip)하면 스텝이
-     * 미실행 상태로 남아 운영자에게 재실행을 안내한다. 이때 운영자가 안내받은 명령을 그대로
-     * root 로 재실행하면 스텝이 만드는 파일·캐시가 root 소유로 생성되어, 이후 웹서버
-     * (php-fpm www-data 등) 요청이 그 경로에 쓰기 실패한다.
-     *
-     * 실행 환경을 4가지로 분기해 안내한다:
-     *  1. non-root (일반 SSH 사용자 = 파일 소유자) 또는 posix 미지원(Windows 등)
-     *     → 명령만 그대로 안내 (권한 분기 불필요, 공유 호스팅 = 웹서버·PHP·실행 유저 동일 포함).
-     *  2. root 실행 + 웹서버 계정 식별 가능 + 실행 사용자와 다름
-     *     → `sudo -u {webUser}` 로 재실행 안내 + root 그대로 실행 시 위험 경고.
-     *  3. root 실행 + 웹서버 계정을 root 로 추정 (root 로 서비스하는 비표준/컨테이너 구성)
-     *     → 권한 문제 없으므로 명령만 그대로 안내.
-     *  4. root 실행 + 웹서버 계정 식별 불가 (스냅샷/추정 실패)
-     *     → 명령 그대로 안내하되 "웹서버 계정으로 실행" 일반 경고 (계정명 미상).
-     *
-     * @param  string  $resumeCommand  재실행할 `core:execute-upgrade-steps` 명령
-     * @return void 반환값 없음
-     */
-    private function surfaceResumeCommandWithPermissionGuidance(string $resumeCommand): void
-    {
-        [$mode, $webUser] = $this->classifyResumeExecutionContext();
-
-        $this->renderResumeGuidance($resumeCommand, $mode, $webUser);
-    }
-
-    /**
-     * 실행 환경 모드에 따라 재실행 명령과 권한 안내를 콘솔에 출력합니다.
-     *
-     * `classifyResumeExecutionContext()` 판정 결과를 입력으로 받아 출력만 담당한다 —
-     * posix/파일시스템 상태에 의존하지 않으므로 4가지 모드 전부 결정적으로 테스트 가능하다.
-     *
-     * @param  string  $resumeCommand  재실행할 `core:execute-upgrade-steps` 명령
-     * @param  string  $mode  `classifyResumeExecutionContext()` 가 반환한 실행 환경 모드
-     * @param  string|null  $webUser  웹서버 계정명 (`root_web_known` 일 때만 유효)
-     * @return void 반환값 없음
-     */
-    private function renderResumeGuidance(string $resumeCommand, string $mode, ?string $webUser): void
-    {
-        // 케이스 1·3: 권한 분기 불필요 — 명령만 그대로 안내.
-        //  - non_root: 일반 SSH 사용자 / 공유 호스팅(웹서버=PHP=실행 유저 동일) / posix 미지원
-        //  - root_web_symmetric: root 로 서비스하는 구성 → 재실행도 root 로 무해
-        if ($mode === 'non_root' || $mode === 'root_web_symmetric') {
-            $this->line("  {$resumeCommand}");
-
-            return;
-        }
-
-        // 케이스 2: root 실행 + 웹서버 계정 식별 → 웹서버 권한 재실행 안내.
-        if ($mode === 'root_web_known' && $webUser !== null) {
-            $this->line("  sudo -u {$webUser} {$resumeCommand}");
-            $this->newLine();
-            $this->warn('⚠ 현재 sudo(root) 로 실행 중입니다. 위 명령을 root 로 그대로 실행하면 업그레이드');
-            $this->warn("  스텝이 생성하는 파일이 root 소유가 되어 이후 웹서버({$webUser}) 요청이 쓰기 실패할 수");
-            $this->warn("  있습니다. 반드시 웹서버 계정({$webUser})으로 재실행하세요.");
-
-            return;
-        }
-
-        // 케이스 4: root 실행 + 웹서버 계정 식별 불가 — 계정명 미상 상태의 일반 경고.
-        $this->line("  sudo -u <웹서버계정> {$resumeCommand}");
-        $this->newLine();
-        $this->warn('⚠ 현재 sudo(root) 로 실행 중입니다. 웹서버 계정을 자동으로 식별하지 못했습니다.');
-        $this->warn('  위 명령을 root 로 그대로 실행하면 업그레이드 스텝이 생성하는 파일이 root 소유가 되어');
-        $this->warn('  이후 웹서버(php-fpm) 요청이 쓰기 실패할 수 있습니다. 웹서버 계정(예: www-data,');
-        $this->warn('  nginx, apache)을 확인해 그 계정으로 재실행하세요.');
-    }
-
-    /**
-     * 재실행 안내의 실행 환경을 분류합니다.
-     *
-     * 반환하는 모드:
-     *  - `non_root`           : posix 미지원 또는 현재 유효 사용자가 root 가 아님
-     *                           (일반 SSH 사용자 = 파일 소유자, 공유 호스팅 대칭 구성 포함).
-     *  - `root_web_known`     : root 실행 + 웹서버 계정 식별 성공 + 실행 사용자(root)와 다름.
-     *  - `root_web_symmetric` : root 실행 + 웹서버 계정이 root 로 추정됨 (root 서비스 구성).
-     *  - `root_web_unknown`   : root 실행 + 웹서버 계정 추정 실패 (스냅샷/추정 불가).
-     *
-     * 판정은 `FilePermissionHelper::describeWebServerAccount()` 가 소유한다 — 정적 게시 상태·게시
-     * 명령(`ext-static:*`)의 root 경고와 같은 4분기를 공유하기 위해 옮겼다(#651 C1). 이 메서드는
-     * 그 결과를 종전 반환 형태(`[모드, 계정명]`)로 바꿔 주는 위임만 한다.
-     *
-     * @return array{0: string, 1: string|null} [모드, 웹서버 계정명 또는 null]
-     */
-    private function classifyResumeExecutionContext(): array
-    {
-        $account = FilePermissionHelper::describeWebServerAccount();
-
-        return [$account['mode'], $account['name']];
-    }
-
-    /**
      * `restoreOwnership()` 직후 누적된 권한 정상화 실패 경고를 콘솔/로그에 즉시 노출합니다.
      *
      * 운영자가 sudo 환경 결함(파일시스템 ACL, immutable 비트, NFS 권한 거부 등) 으로
@@ -1494,9 +1059,9 @@ class CoreUpdateCommand extends Command
      * 본 메서드 호출 후 service 의 `lastPermissionWarnings` 가 다음 호출 시 초기화되므로
      * 매 `restoreOwnership` 직후 1회 호출 패턴이 정합.
      *
-     * @param  CoreUpdateService  $service  코어 업데이트 서비스 (누적된 권한 경고 보유)
+     * @param  CoreUpdateService  $service
      * @param  callable  $log  내부 로그 누적 콜백 (`saveUpdateLog` 입력용)
-     * @return void 반환값 없음
+     * @return void
      */
     private function surfacePermissionWarnings(CoreUpdateService $service, callable $log): void
     {

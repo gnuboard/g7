@@ -76,8 +76,7 @@ class ExtensionStatusCacheTest extends TestCase
         $this->cache->put('ext.modules.active_identifiers', ['mod-a']);
         $this->cache->put('ext.modules.installed_identifiers', ['mod-a']);
 
-        $stub = new class
-        {
+        $stub = new class {
             use CachesModuleStatus;
         };
         $stub::invalidateModuleStatusCache();
@@ -114,8 +113,7 @@ class ExtensionStatusCacheTest extends TestCase
         $this->cache->put('ext.plugins.active_identifiers', ['plugin-a']);
         $this->cache->put('ext.plugins.installed_identifiers', ['plugin-a']);
 
-        $stub = new class
-        {
+        $stub = new class {
             use CachesPluginStatus;
         };
         $stub::invalidatePluginStatusCache();
@@ -158,8 +156,7 @@ class ExtensionStatusCacheTest extends TestCase
         $this->cache->put('ext.templates.active_identifiers_user', ['t-user']);
         $this->cache->put('ext.templates.installed_identifiers', ['t-a']);
 
-        $stub = new class
-        {
+        $stub = new class {
             use CachesTemplateStatus;
         };
         $stub::invalidateTemplateStatusCache();
@@ -182,8 +179,7 @@ class ExtensionStatusCacheTest extends TestCase
     {
         $this->cache->put('ext.cache_version', 1000);
 
-        $stub = new class
-        {
+        $stub = new class {
             use ClearsTemplateCaches {
                 incrementExtensionCacheVersion as public callIncrement;
             }
@@ -199,27 +195,14 @@ class ExtensionStatusCacheTest extends TestCase
     }
 
     /**
-     * A-4-3: 미설정(키 부재) 시 0 대신 새 유효 버전을 재생성·저장·반환.
-     *
-     * 회귀 가드 (버그 ②): `cache:clear` 로 키 소실 시 0 을 반환하면 자원 URL 이
-     * `?v=0` 으로 수렴해 immutable 에셋이 stale 고착된다. 키가 없으면 새 `time()`
-     * 버전을 생성·저장·반환해야 한다.
+     * A-4-3: 미설정 시 0 반환.
      */
     #[Test]
-    public function a_4_3_get_extension_cache_version_regenerates_when_unset(): void
+    public function a_4_3_get_extension_cache_version_returns_zero_when_unset(): void
     {
         $this->cache->forget('ext.cache_version');
 
-        $before = time();
-        $version = ClearsTemplateCaches::getExtensionCacheVersion();
-
-        // 0 이 아닌 유효한 타임스탬프 (기존 결함이면 0 → 실패)
-        $this->assertGreaterThanOrEqual($before, $version);
-        $this->assertLessThanOrEqual(time(), $version);
-
-        // 저장되어 다음 호출이 같은 값 반환
-        $this->assertSame($version, ClearsTemplateCaches::getExtensionCacheVersion());
-        $this->assertSame($version, (int) $this->cache->get('ext.cache_version'));
+        $this->assertSame(0, ClearsTemplateCaches::getExtensionCacheVersion());
     }
 
     // ========================================================================
@@ -262,8 +245,7 @@ class ExtensionStatusCacheTest extends TestCase
     {
         $this->cache->put('ext.modules.active_identifiers', ['mod-a', 'mod-b']);
 
-        $stub = new class
-        {
+        $stub = new class {
             use CachesModuleStatus;
         };
         $stub::invalidateModuleStatusCache();
@@ -280,8 +262,7 @@ class ExtensionStatusCacheTest extends TestCase
         $this->cache->put('ext.modules.active_identifiers', ['mod-a']);
         $this->cache->put('ext.modules.installed_identifiers', ['mod-a', 'mod-b']);
 
-        $stub = new class
-        {
+        $stub = new class {
             use CachesModuleStatus;
         };
         $stub::invalidateModuleStatusCache();
@@ -302,8 +283,7 @@ class ExtensionStatusCacheTest extends TestCase
         $this->assertSame([], $this->cache->get('ext.modules.active_identifiers'));
 
         // 모듈 설치/활성화 시 invalidateModuleStatusCache 호출로 확실히 갱신
-        $stub = new class
-        {
+        $stub = new class {
             use CachesModuleStatus;
         };
         $stub::invalidateModuleStatusCache();
@@ -333,8 +313,7 @@ class ExtensionStatusCacheTest extends TestCase
     #[Test]
     public function a_2_4_plugin_lifecycle_invalidates_cache(): void
     {
-        $stub = new class
-        {
+        $stub = new class {
             use CachesPluginStatus;
         };
 
@@ -383,8 +362,7 @@ class ExtensionStatusCacheTest extends TestCase
     {
         $this->cache->put('ext.cache_version', 1000);
 
-        $stub = new class
-        {
+        $stub = new class {
             use ClearsTemplateCaches {
                 incrementExtensionCacheVersion as public callIncrement;
             }
@@ -402,8 +380,7 @@ class ExtensionStatusCacheTest extends TestCase
     #[Test]
     public function a_4_3_lifecycle_increments_each_step(): void
     {
-        $stub = new class
-        {
+        $stub = new class {
             use ClearsTemplateCaches {
                 incrementExtensionCacheVersion as public callIncrement;
             }

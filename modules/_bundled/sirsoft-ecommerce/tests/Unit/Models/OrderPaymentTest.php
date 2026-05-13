@@ -12,12 +12,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
  * OrderPayment 모델 테스트
- *
- * 축 요약(마커 아님 — 평문): method_kind=extension, capability_declared=declared,
- * capability=refund_method. 요약을 시나리오 축 마커로 적으면 파서가 쉼표로만 축을 분리하므로 `×`
- * 표기는 실재하지 않는 조합 1건으로 집계된다(커버리지를 부풀리는 방향).
- *
- * 효과 요약(마커 아님 — 평문): extension_id_persisted_as_is, builtin_capability_unchanged, refund_method_is_pg.
  */
 class OrderPaymentTest extends ModuleTestCase
 {
@@ -45,34 +39,13 @@ class OrderPaymentTest extends ModuleTestCase
         $this->assertEquals($order->id, $payment->order->id);
     }
 
-    /**
-     * @effects builtin_capability_unchanged
-     */
-    public function test_order_payment_method_is_stored_as_plain_string(): void
+    public function test_order_payment_casts_method_to_enum(): void
     {
-        // payment_method 는 enum 캐스트를 두지 않는다 (#475) — PG 플러그인이 등록하는
-        // 확장 결제수단(예: nhnkcp_naverpay)은 enum case 가 없어 캐스트가 ValueError 를 던지기 때문.
-        // 능력 질의는 모델의 능력 메서드가 PaymentMethodResolver 에 위임해 답한다.
         $order = OrderFactory::new()->create();
         $payment = OrderPaymentFactory::new()->forOrder($order)->card()->create();
 
-        $this->assertSame(PaymentMethodEnum::CARD->value, $payment->fresh()->payment_method);
-        $this->assertTrue($payment->isCardPayment());
-    }
-
-    /**
-     * @effects extension_id_persisted_as_is
-     */
-    public function test_order_payment_accepts_extension_payment_method_id(): void
-    {
-        // 확장 결제수단 ID 를 1급 시민으로 저장할 수 있어야 한다 (캐스트가 있으면 ValueError).
-        $order = OrderFactory::new()->create();
-        $payment = OrderPaymentFactory::new()->forOrder($order)->create([
-            'payment_method' => 'nhnkcp_naverpay',
-            'pg_provider' => 'nhnkcp',
-        ]);
-
-        $this->assertSame('nhnkcp_naverpay', $payment->fresh()->payment_method);
+        $this->assertInstanceOf(PaymentMethodEnum::class, $payment->payment_method);
+        $this->assertEquals(PaymentMethodEnum::CARD, $payment->payment_method);
     }
 
     public function test_order_payment_casts_status_to_enum(): void
@@ -91,7 +64,7 @@ class OrderPaymentTest extends ModuleTestCase
             'card_name' => '신한카드',
         ]);
 
-        $this->assertTrue($payment->isCardPayment());
+        $this->assertEquals(PaymentMethodEnum::CARD, $payment->payment_method);
         $this->assertEquals('신한카드', $payment->card_name);
     }
 
@@ -100,7 +73,7 @@ class OrderPaymentTest extends ModuleTestCase
         $order = OrderFactory::new()->create();
         $payment = OrderPaymentFactory::new()->forOrder($order)->virtualAccount()->create();
 
-        $this->assertTrue($payment->isVirtualAccount());
+        $this->assertEquals(PaymentMethodEnum::VBANK, $payment->payment_method);
         $this->assertNotNull($payment->vbank_name);
         $this->assertNotNull($payment->vbank_number);
     }
@@ -140,40 +113,5 @@ class OrderPaymentTest extends ModuleTestCase
 
         $this->assertEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
         $this->assertNull($payment->paid_at);
-    }
-
-    public function test_cancellable_amount_uses_payment_currency_cumulative_when_cross_currency(): void
-    {
-        // base JPY 주문을 KRW 로 결제: paid_amount_local 은 결제 통화(KRW 4750), 누적 취소도
-        // 결제 통화로 비교해야 한다. mc_cancelled_amount[KRW]=1000 이면 잔여 = 4750-1000 = 3750.
-        $order = OrderFactory::new()->create();
-        $payment = OrderPaymentFactory::new()->forOrder($order)->create([
-            'currency' => 'KRW',
-            'paid_amount_local' => 4750,
-            'paid_amount_base' => 500,
-            // base 누적(cancelled_amount)은 JPY 100 이지만 결제 통화 비교에는 쓰지 않는다.
-            'cancelled_amount' => 100,
-            'mc_cancelled_amount' => ['JPY' => 100, 'KRW' => 1000],
-        ]);
-
-        $this->assertSame(1000.0, $payment->cancelledLocalAmount());
-        // 3750 = 4750(KRW) - 1000(KRW). base cancelled(100)으로 빼면 4650 이 되는 회귀를 차단.
-        $this->assertSame(3750.0, $payment->getCancellableAmount());
-    }
-
-    public function test_cancellable_amount_falls_back_to_base_cancelled_for_legacy_payment(): void
-    {
-        // mc_cancelled_amount 가 없는(레거시) 결제는 base 누적 cancelled_amount 로 폴백한다.
-        $order = OrderFactory::new()->create();
-        $payment = OrderPaymentFactory::new()->forOrder($order)->create([
-            'currency' => 'KRW',
-            'paid_amount_local' => 50000,
-            'paid_amount_base' => 50000,
-            'cancelled_amount' => 20000,
-            'mc_cancelled_amount' => null,
-        ]);
-
-        $this->assertSame(20000.0, $payment->cancelledLocalAmount());
-        $this->assertSame(30000.0, $payment->getCancellableAmount());
     }
 }

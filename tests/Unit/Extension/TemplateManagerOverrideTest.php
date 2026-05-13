@@ -5,7 +5,6 @@ namespace Tests\Unit\Extension;
 use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Extension\TemplateManager;
-use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,11 +20,6 @@ class TemplateManagerOverrideTest extends TestCase
 
     private string $testTemplatePath;
 
-    /**
-     * TemplateManager 인스턴스와 테스트용 템플릿 경로를 준비합니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -36,11 +30,6 @@ class TemplateManagerOverrideTest extends TestCase
         $this->testTemplatePath = base_path('templates/test-admin');
     }
 
-    /**
-     * 테스트가 만든 템플릿 디렉터리를 지웁니다.
-     *
-     * @return void 반환값 없음
-     */
     protected function tearDown(): void
     {
         // 테스트 템플릿 디렉토리 정리
@@ -53,13 +42,11 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 테스트용 템플릿 구조 생성
-     *
-     * @return void 반환값 없음
      */
     private function createTestTemplateStructure(): void
     {
         // 기본 디렉토리 생성
-        File::makeDirectory($this->testTemplatePath.'/layouts/overrides/sirsoft-sample', 0755, true);
+        File::makeDirectory($this->testTemplatePath . '/layouts/overrides/sirsoft-sample', 0755, true);
 
         // template.json 생성
         $templateJson = [
@@ -70,7 +57,7 @@ class TemplateManagerOverrideTest extends TestCase
             'type' => 'admin',
             'description' => ['ko' => '테스트용 템플릿', 'en' => 'Test template'],
         ];
-        File::put($this->testTemplatePath.'/template.json', json_encode($templateJson, JSON_PRETTY_PRINT));
+        File::put($this->testTemplatePath . '/template.json', json_encode($templateJson, JSON_PRETTY_PRINT));
 
         // 기본 레이아웃 생성
         $baseLayout = [
@@ -78,7 +65,7 @@ class TemplateManagerOverrideTest extends TestCase
             'meta' => ['title' => 'Admin Base'],
             'components' => [['component' => 'Container', 'children' => []]],
         ];
-        File::put($this->testTemplatePath.'/layouts/_admin_base.json', json_encode($baseLayout, JSON_PRETTY_PRINT));
+        File::put($this->testTemplatePath . '/layouts/_admin_base.json', json_encode($baseLayout, JSON_PRETTY_PRINT));
 
         // 오버라이드 레이아웃 생성
         $overrideLayout = [
@@ -91,19 +78,13 @@ class TemplateManagerOverrideTest extends TestCase
             ],
         ];
         File::put(
-            $this->testTemplatePath.'/layouts/overrides/sirsoft-sample/admin_index.json',
+            $this->testTemplatePath . '/layouts/overrides/sirsoft-sample/admin_index.json',
             json_encode($overrideLayout, JSON_PRETTY_PRINT)
         );
     }
 
     /**
      * 오버라이드 레이아웃 등록 테스트
-     *
-     * @scenario step=register
-     *
-     * @effects override_file_registered_as_template_source
-     *
-     * @return void 반환값 없음
      */
     public function test_register_layout_overrides(): void
     {
@@ -142,12 +123,6 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 레이아웃 content 추출 테스트
-     *
-     * @scenario step=content_extract
-     *
-     * @effects content_excludes_layout_meta_fields
-     *
-     * @return void 반환값 없음
      */
     public function test_extract_layout_content(): void
     {
@@ -176,17 +151,11 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 레이아웃 이름 생성 테스트
-     *
-     * @scenario step=name_resolution
-     *
-     * @effects override_name_prefixed_with_module_identifier
-     *
-     * @return void 반환값 없음
      */
     public function test_generate_override_layout_name(): void
     {
-        $basePath = $this->testTemplatePath.'/layouts/overrides/sirsoft-sample';
-        $filePath = $basePath.'/admin_index.json';
+        $basePath = $this->testTemplatePath . '/layouts/overrides/sirsoft-sample';
+        $filePath = $basePath . '/admin_index.json';
 
         // Windows/Unix 경로 정규화
         $normalizedBasePath = str_replace('/', DIRECTORY_SEPARATOR, $basePath);
@@ -203,19 +172,13 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 중첩된 경로의 오버라이드 레이아웃 이름 생성 테스트
-     *
-     * @scenario step=name_resolution
-     *
-     * @effects nested_path_segments_joined_with_underscore
-     *
-     * @return void 반환값 없음
      */
     public function test_generate_override_layout_name_with_nested_path(): void
     {
-        $basePath = $this->testTemplatePath.'/layouts/overrides/sirsoft-sample';
-        File::makeDirectory($basePath.'/products', 0755, true);
+        $basePath = $this->testTemplatePath . '/layouts/overrides/sirsoft-sample';
+        File::makeDirectory($basePath . '/products', 0755, true);
 
-        $filePath = $basePath.'/products/list.json';
+        $filePath = $basePath . '/products/list.json';
 
         // Windows/Unix 경로 정규화
         $normalizedBasePath = str_replace('/', DIRECTORY_SEPARATOR, $basePath);
@@ -232,23 +195,17 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 파일 스캔 테스트
-     *
-     * @scenario step=scan
-     *
-     * @effects override_files_scanned_recursively
-     *
-     * @return void 반환값 없음
      */
     public function test_scan_override_layout_files(): void
     {
         // 디렉토리 구조 생성
-        $overridesPath = $this->testTemplatePath.'/layouts/overrides/sirsoft-sample';
-        File::makeDirectory($overridesPath.'/nested', 0755, true);
+        $overridesPath = $this->testTemplatePath . '/layouts/overrides/sirsoft-sample';
+        File::makeDirectory($overridesPath . '/nested', 0755, true);
 
         $testLayout = ['slots' => []];
-        File::put($overridesPath.'/index.json', json_encode($testLayout));
-        File::put($overridesPath.'/edit.json', json_encode($testLayout));
-        File::put($overridesPath.'/nested/detail.json', json_encode($testLayout));
+        File::put($overridesPath . '/index.json', json_encode($testLayout));
+        File::put($overridesPath . '/edit.json', json_encode($testLayout));
+        File::put($overridesPath . '/nested/detail.json', json_encode($testLayout));
 
         $reflection = new \ReflectionClass($this->templateManager);
         $method = $reflection->getMethod('scanLayoutFilesRecursively');
@@ -261,12 +218,6 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 캐시 무효화 테스트
-     *
-     * @scenario step=cache
-     *
-     * @effects override_layout_cache_invalidated
-     *
-     * @return void 반환값 없음
      */
     public function test_invalidate_override_layout_caches(): void
     {
@@ -307,12 +258,6 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * source_type이 template으로 설정되는지 테스트
-     *
-     * @scenario step=register
-     *
-     * @effects override_source_type_is_template
-     *
-     * @return void 반환값 없음
      */
     public function test_override_source_type_is_template(): void
     {
@@ -341,18 +286,12 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 여러 모듈의 오버라이드 등록 테스트
-     *
-     * @scenario step=register
-     *
-     * @effects overrides_for_each_module_registered
-     *
-     * @return void 반환값 없음
      */
     public function test_register_overrides_for_multiple_modules(): void
     {
         // 두 모듈의 오버라이드 디렉토리 생성
-        $module1Path = $this->testTemplatePath.'/layouts/overrides/sirsoft-module1';
-        $module2Path = $this->testTemplatePath.'/layouts/overrides/sirsoft-module2';
+        $module1Path = $this->testTemplatePath . '/layouts/overrides/sirsoft-module1';
+        $module2Path = $this->testTemplatePath . '/layouts/overrides/sirsoft-module2';
         File::makeDirectory($module1Path, 0755, true);
         File::makeDirectory($module2Path, 0755, true);
 
@@ -364,13 +303,13 @@ class TemplateManagerOverrideTest extends TestCase
             'version' => '1.0.0',
             'type' => 'admin',
         ];
-        File::put($this->testTemplatePath.'/template.json', json_encode($templateJson));
+        File::put($this->testTemplatePath . '/template.json', json_encode($templateJson));
 
         // 각 모듈의 오버라이드 레이아웃 생성
         $layout1 = ['layout_name' => 'sirsoft-module1_admin_index', 'slots' => []];
         $layout2 = ['layout_name' => 'sirsoft-module2_admin_index', 'slots' => []];
-        File::put($module1Path.'/admin_index.json', json_encode($layout1));
-        File::put($module2Path.'/admin_index.json', json_encode($layout2));
+        File::put($module1Path . '/admin_index.json', json_encode($layout1));
+        File::put($module2Path . '/admin_index.json', json_encode($layout2));
 
         // 템플릿 로드
         $this->templateManager->loadTemplates();
@@ -403,12 +342,6 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * updateOrCreate로 중복 오버라이드 방지 테스트
-     *
-     * @scenario step=register
-     *
-     * @effects reregistration_updates_single_row
-     *
-     * @return void 반환값 없음
      */
     public function test_prevent_duplicate_override_registration(): void
     {
@@ -467,17 +400,11 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 오버라이드 디렉토리가 없는 경우 테스트
-     *
-     * @scenario step=register
-     *
-     * @effects missing_overrides_directory_is_noop
-     *
-     * @return void 반환값 없음
      */
     public function test_handles_missing_overrides_directory(): void
     {
         // 기본 템플릿 구조만 생성 (overrides 없음)
-        File::makeDirectory($this->testTemplatePath.'/layouts', 0755, true);
+        File::makeDirectory($this->testTemplatePath . '/layouts', 0755, true);
 
         $templateJson = [
             'identifier' => 'test-admin',
@@ -486,7 +413,7 @@ class TemplateManagerOverrideTest extends TestCase
             'version' => '1.0.0',
             'type' => 'admin',
         ];
-        File::put($this->testTemplatePath.'/template.json', json_encode($templateJson));
+        File::put($this->testTemplatePath . '/template.json', json_encode($templateJson));
 
         $this->templateManager->loadTemplates();
 
@@ -517,12 +444,6 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * incrementExtensionCacheVersion 메서드가 캐시 버전을 증가시키는지 테스트
-     *
-     * @scenario step=cache
-     *
-     * @effects extension_cache_version_bumped
-     *
-     * @return void 반환값 없음
      */
     public function test_increment_extension_cache_version(): void
     {
@@ -544,12 +465,6 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * getExtensionCacheVersion 정적 메서드 테스트
-     *
-     * @scenario step=cache
-     *
-     * @effects extension_cache_version_read
-     *
-     * @return void 반환값 없음
      */
     public function test_get_extension_cache_version(): void
     {
@@ -557,52 +472,25 @@ class TemplateManagerOverrideTest extends TestCase
         Cache::put('g7:core:ext.cache_version', $expectedVersion);
 
         // ClearsTemplateCaches trait의 정적 메서드 호출
-        $version = ClearsTemplateCaches::getExtensionCacheVersion();
+        $version = \App\Extension\Traits\ClearsTemplateCaches::getExtensionCacheVersion();
 
         $this->assertEquals($expectedVersion, $version);
     }
 
     /**
-     * 캐시 버전 키가 없으면 새 버전을 재생성해 반환
-     *
-     * 종전 계약은 "미설정 시 0 반환" 이었으나, 0 은 캐시 무효화를 붕괴시킨다 — 번들 URL 의
-     * `?v=0` 이 갱신되지 않아 브라우저가 낡은 확장 번들을 계속 쓴다. 키 부재는 캐시
-     * 플러시·TTL 만료로 언제든 발생하므로, 그것을 정상 상태로 보지 않고 그 자리에서
-     * 유효 버전을 재생성해 저장하도록 바뀌었다.
-     *
-     * @scenario step=cache
-     *
-     * @effects missing_cache_version_regenerated
-     *
-     * @return void 반환값 없음
+     * 캐시 버전이 설정되지 않은 경우 0 반환
      */
-    public function test_get_extension_cache_version_regenerates_when_not_set(): void
+    public function test_get_extension_cache_version_returns_zero_when_not_set(): void
     {
         Cache::forget('g7:core:ext.cache_version');
 
-        $beforeTime = time();
-        $version = ClearsTemplateCaches::getExtensionCacheVersion();
-        $afterTime = time();
+        $version = \App\Extension\Traits\ClearsTemplateCaches::getExtensionCacheVersion();
 
-        $this->assertGreaterThan(0, $version, '키 부재 시 0 을 반환하면 캐시 무효화가 붕괴합니다.');
-        $this->assertGreaterThanOrEqual($beforeTime, $version);
-        $this->assertLessThanOrEqual($afterTime, $version);
-
-        $this->assertEquals(
-            $version,
-            Cache::get('g7:core:ext.cache_version'),
-            '생성한 버전은 캐시에 저장되어 다음 조회에서 재사용되어야 합니다.'
-        );
+        $this->assertEquals(0, $version);
     }
 
     /**
      * layout_name 변경 시 이전 이름의 고아 레코드가 삭제되는지 테스트
-     *
-     * @scenario step=orphan_cleanup
-     *
-     * @effects renamed_override_orphan_removed
-     *
-     * @return void 반환값 없음
      */
     public function test_cleanup_orphan_override_when_layout_name_changes(): void
     {
@@ -626,9 +514,6 @@ class TemplateManagerOverrideTest extends TestCase
             'content' => ['slots' => []],
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
-            // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
-            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
-            'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
         // registerLayoutOverrides 실행 (파일에는 sirsoft-sample_admin_index만 존재)
@@ -652,12 +537,6 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 다른 템플릿의 오버라이드는 정리하지 않는지 테스트
-     *
-     * @scenario step=orphan_cleanup
-     *
-     * @effects other_template_overrides_preserved
-     *
-     * @return void 반환값 없음
      */
     public function test_cleanup_does_not_affect_other_template_overrides(): void
     {
@@ -699,12 +578,6 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * overrides 디렉토리 삭제 시 기존 override가 모두 정리되는지 테스트
-     *
-     * @scenario step=orphan_cleanup
-     *
-     * @effects all_file_overrides_removed_when_directory_gone
-     *
-     * @return void 반환값 없음
      */
     public function test_cleanup_all_overrides_when_directory_removed(): void
     {
@@ -725,9 +598,6 @@ class TemplateManagerOverrideTest extends TestCase
             'content' => ['slots' => []],
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
-            // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
-            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
-            'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
         TemplateLayout::create([
@@ -736,9 +606,6 @@ class TemplateManagerOverrideTest extends TestCase
             'content' => ['slots' => []],
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
-            // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
-            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
-            'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
         // overrides 디렉토리가 없는 상태에서 registerLayoutOverrides 실행
@@ -758,12 +625,6 @@ class TemplateManagerOverrideTest extends TestCase
 
     /**
      * 고아 레코드 정리 시 관련 캐시도 삭제되는지 테스트
-     *
-     * @scenario step=orphan_cleanup
-     *
-     * @effects orphan_cleanup_clears_layout_cache
-     *
-     * @return void 반환값 없음
      */
     public function test_cleanup_orphan_overrides_also_clears_cache(): void
     {
@@ -786,9 +647,6 @@ class TemplateManagerOverrideTest extends TestCase
             'content' => ['slots' => []],
             'source_type' => LayoutSourceType::Template,
             'source_identifier' => 'test-admin',
-            // 파일에서 등록된 오버라이드 행은 원본 해시를 표식으로 갖는다 (7.0.x 행은 마이그레이션이 채운다) —
-            // 해시 없는 행은 편집기 「새 파일」 로 만든 레이아웃이라 고아 정리 대상이 아니다 (#703).
-            'original_content_hash' => hash('sha256', '{"slots":[]}'),
         ]);
 
         // 캐시 설정

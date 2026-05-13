@@ -1,0 +1,312 @@
+/**
+ * G7 Admin Template - Design Guide
+ * Colors - 색상 관련 스타일
+ */
+
+@layer components {
+  /* ========================================
+   * TEXT COLORS
+   * ======================================== */
+
+  /* Text Colors */
+  .text-primary {
+    @apply text-gray-900;
+    @apply dark:text-white;
+  }
+  .text-secondary {
+    @apply text-gray-600;
+    @apply dark:text-gray-400;
+  }
+  .text-muted {
+    @apply text-gray-500;
+    @apply dark:text-gray-500;
+  }
+  .text-tertiary {
+    @apply text-xs text-gray-500;
+    @apply dark:text-gray-500;
+  }
+  .text-label {
+    @apply text-sm text-gray-600;
+    @apply dark:text-gray-400;
+  }
+  .text-label-subtle {
+    @apply text-sm text-gray-500;
+    @apply dark:text-gray-400;
+  }
+  .text-heading {
+    @apply text-sm font-medium text-gray-900;
+    @apply dark:text-white;
+  }
+
+  /* Icon Colors */
+  .icon-muted {
+    @apply text-gray-400;
+    @apply dark:text-gray-500;
+  }
+
+  /* ========================================
+   * SEMANTIC BACKGROUND COLORS
+   * ======================================== */
+
+  /* Success - 성공, 완료, 활성화 */
+  .bg-success {
+    @apply bg-green-100;
+    @apply dark:bg-green-900;
+  }
+  .bg-success-light {
+    @apply bg-green-50;
+    @apply dark:bg-green-900/20;
+  }
+  .bg-success-solid {
+    @apply bg-green-600;
+    @apply dark:bg-green-500;
+  }
+
+  /* Error/Danger - 오류, 위험, 삭제 */
+  .bg-error {
+    @apply bg-red-100;
+    @apply dark:bg-red-900;
+  }
+  .bg-error-light {
+    @apply bg-red-50;
+    @apply dark:bg-red-900/20;
+  }
+  .bg-error-solid {
+    @apply bg-red-600;
+    @apply dark:bg-red-500;
+  }
+
+  /* Warning - 경고, 주의 */
+  .bg-warning {
+    @apply bg-yellow-100;
+    @apply dark:bg-yellow-900;
+  }
+  .bg-warning-light {
+    @apply bg-yellow-50;
+    @apply dark:bg-yellow-900/20;
+  }
+  .bg-warning-solid {
+    @apply bg-yellow-600;
+    @apply dark:bg-yellow-500;
+  }
+
+  /* Info - 정보, 안내 */
+  .bg-info {
+    @apply bg-blue-100;
+    @apply dark:bg-blue-900;
+  }
+  .bg-info-light {
+    @apply bg-blue-50;
+    @apply dark:bg-blue-900/20;
+  }
+  .bg-info-solid {
+    @apply bg-blue-600;
+    @apply dark:bg-blue-500;
+  }
+
+  /* Ready - 배송준비 (cyan) */
+  .bg-ready {
+    @apply bg-cyan-100;
+    @apply dark:bg-cyan-900;
+  }
+  .bg-ready-light {
+    @apply bg-cyan-50;
+    @apply dark:bg-cyan-900/20;
+  }
+  .bg-ready-solid {
+    @apply bg-cyan-600;
+    @apply dark:bg-cyan-400;
+  }
+
+  /* Progress - 배송중 (indigo) */
+  .bg-progress {
+    @apply bg-indigo-100;
+    @apply dark:bg-indigo-900;
+  }
+  .bg-progress-light {
+    @apply bg-indigo-50;
+    @apply dark:bg-indigo-900/20;
+  }
+  .bg-progress-solid {
+    @apply bg-indigo-600;
+    @apply dark:bg-indigo-400;
+  }
+
+  /* Complete - 배송완료 (pink) */
+  .bg-complete {
+    @apply bg-pink-100;
+    @apply dark:bg-pink-900;
+  }
+  .bg-complete-light {
+    @apply bg-pink-50;
+    @apply dark:bg-pink-900/20;
+  }
+  .bg-complete-solid {
+    @apply bg-pink-600;
+    @apply dark:bg-pink-400;
+  }
+
+  /* Hold - 비활성, 대기 (gray) */
+  .bg-hold {
+    @apply bg-gray-100;
+    @apply dark:bg-gray-800;
+  }
+  .bg-hold-light {
+    @apply bg-gray-50;
+    @apply dark:bg-gray-800/50;
+  }
+  .bg-hold-solid {
+    @apply bg-gray-500;
+    @apply dark:bg-gray-400;
+  }
+
+  /* ========================================
+   * SEMANTIC TEXT COLORS
+   * ======================================== */
+
+  .text-success {
+    @apply text-green-600;
+    @apply dark:text-green-400;
+  }
+
+  .text-error {
+    @apply text-red-600;
+    @apply dark:text-red-400;
+  }
+
+  .text-warning {
+    @apply text-yellow-600;
+    @apply dark:text-yellow-400;
+  }
+
+  .text-info {
+    @apply text-blue-600;
+    @apply dark:text-blue-400;
+  }
+
+  /* Ready - 배송준비 (cyan) */
+  .text-ready {
+    @apply text-cyan-600;
+    @apply dark:text-cyan-400;
+  }
+
+  /* Progress - 배송중 (indigo) */
+  .text-progress {
+    @apply text-indigo-600;
+    @apply dark:text-indigo-400;
+  }
+
+  /* Complete - 배송완료 (pink) */
+  .text-complete {
+    @apply text-pink-600;
+    @apply dark:text-pink-400;
+  }
+
+  /* Hold - 비활성, 대기 (gray) */
+  .text-hold {
+    @apply text-gray-500;
+    @apply dark:text-gray-400;
+  }
+
+  /* Semantic Text Colors - Light variants (solid 배경 위 텍스트용) */
+  .text-success-light {
+    @apply text-white;
+    @apply dark:text-green-900;
+  }
+  .text-error-light {
+    @apply text-white;
+    @apply dark:text-red-900;
+  }
+  .text-warning-light {
+    @apply text-white;
+    @apply dark:text-yellow-900;
+  }
+  .text-info-light {
+    @apply text-white;
+    @apply dark:text-blue-900;
+  }
+  .text-ready-light {
+    @apply text-white;
+    @apply dark:text-cyan-900;
+  }
+  .text-progress-light {
+    @apply text-white;
+    @apply dark:text-indigo-900;
+  }
+  .text-complete-light {
+    @apply text-white;
+    @apply dark:text-pink-900;
+  }
+  .text-hold-light {
+    @apply text-white;
+    @apply dark:text-gray-900;
+  }
+
+  /* ========================================
+   * SEMANTIC BORDER COLORS
+   * ======================================== */
+
+  .border-success {
+    @apply border-green-200;
+    @apply dark:border-green-800;
+  }
+
+  .border-error {
+    @apply border-red-200;
+    @apply dark:border-red-800;
+  }
+
+  .border-warning {
+    @apply border-yellow-200;
+    @apply dark:border-yellow-800;
+  }
+
+  .border-info {
+    @apply border-blue-200;
+    @apply dark:border-blue-800;
+  }
+
+  .border-ready {
+    @apply border-cyan-200;
+    @apply dark:border-cyan-800;
+  }
+
+  .border-progress {
+    @apply border-indigo-200;
+    @apply dark:border-indigo-800;
+  }
+
+  .border-complete {
+    @apply border-pink-200;
+    @apply dark:border-pink-800;
+  }
+
+  .border-hold {
+    @apply border-gray-300;
+    @apply dark:border-gray-600;
+  }
+
+  /* ========================================
+   * SEMANTIC BUTTONS
+   * ======================================== */
+
+  .btn-success {
+    @apply bg-green-600 text-white hover:bg-green-700;
+    @apply dark:bg-green-500 dark:hover:bg-green-600;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700;
+    @apply dark:bg-red-500 dark:hover:bg-red-600;
+  }
+
+  .btn-warning {
+    @apply bg-yellow-600 text-white hover:bg-yellow-700;
+    @apply dark:bg-yellow-500 dark:hover:bg-yellow-600;
+  }
+
+  .btn-info {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+    @apply dark:bg-blue-500 dark:hover:bg-blue-600;
+  }
+}

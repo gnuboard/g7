@@ -3,97 +3,15 @@
  *
  * troubleshooting-components.md, troubleshooting-components-*.md에 기록된 사례의 회귀 테스트입니다.
  *
- * @see 트러블슈팅 가이드 troubleshooting-components.md
- * @see 트러블슈팅 가이드 troubleshooting-components-datagrid.md
- * @see 트러블슈팅 가이드 troubleshooting-components-form.md
- * @see 트러블슈팅 가이드 troubleshooting-components-misc.md
+ * @see docs/frontend/troubleshooting-components.md
+ * @see docs/frontend/troubleshooting-components-datagrid.md
+ * @see docs/frontend/troubleshooting-components-form.md
+ * @see docs/frontend/troubleshooting-components-misc.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Logger } from '../../utils/Logger';
 import { hasExplicitSetStateForField } from '../FormContext';
-import { responsiveManager } from '../ResponsiveManager';
-import { hasPipes } from '../PipeRegistry';
-import { DataBindingEngine } from '../DataBindingEngine';
-import { deepMergeState } from '../DynamicRenderer';
-
-describe('트러블슈팅 회귀 테스트 - flex 압착(shrink)', () => {
-  /**
-   * 사례: 텍스트가 길어질수록 형제 버튼이 좁아지는데 오버플로 검사로는 안 잡힘
-   *
-   * 해결책이 `responsive.mobile`(0~767) 로 좁힌 2행 레이아웃에 의존한다.
-   * `portable`(0~1023) 이면 태블릿에서 불필요하게 줄바꿈된다.
-   * 여기서는 그 전제인 스코프 경계와 우선순위를 고정한다.
-   *
-   * @see 트러블슈팅 가이드 troubleshooting-components-misc.md "flex 압착(shrink) 관련 이슈"
-   */
-  describe('[사례 1] responsive 스코프 경계 — mobile(0~767) vs portable(0~1023)', () => {
-    it('mobile 은 767px 까지만 매칭되고 768px 부터는 미적용', () => {
-      const responsive = { mobile: { props: { className: 'flex-wrap' } } };
-
-      expect(responsiveManager.getMatchingKey(responsive, 320)).toBe('mobile');
-      expect(responsiveManager.getMatchingKey(responsive, 390)).toBe('mobile');
-      expect(responsiveManager.getMatchingKey(responsive, 767)).toBe('mobile');
-      // 768px 부터 태블릿 — 한 줄 유지 (버튼 261px + 21자 제목 323px = 584px < 735px)
-      expect(responsiveManager.getMatchingKey(responsive, 768)).toBeNull();
-      expect(responsiveManager.getMatchingKey(responsive, 1280)).toBeNull();
-    });
-
-    it('portable 은 1023px 까지 매칭되어 태블릿도 포함한다', () => {
-      const responsive = { portable: { props: { className: 'flex-wrap' } } };
-
-      expect(responsiveManager.getMatchingKey(responsive, 767)).toBe('portable');
-      expect(responsiveManager.getMatchingKey(responsive, 768)).toBe('portable');
-      expect(responsiveManager.getMatchingKey(responsive, 1023)).toBe('portable');
-      expect(responsiveManager.getMatchingKey(responsive, 1024)).toBeNull();
-    });
-
-    /**
-     * 사례: 안내 문구는 "페이지로 이동" 인데 실제로는 팝업이 열림 (경계 폭 1px)
-     *
-     * 확장이 화면 폭으로 동작을 고를 때 엔진과 같은 값을 읽어야 문구와 동작이 일치한다.
-     * 엔진이 `window.innerWidth` 를 본다는 전제가 깨지면(예: matchMedia 로 교체) 규정을 따른
-     * 모든 확장이 경계 폭에서 동시에 어긋나므로, 그 전제를 여기서 고정한다.
-     *
-     * 배경: 내부 트러블슈팅 사례 「확장 코드의 화면 폭 판정 관련 이슈」
-     * @see docs/frontend/responsive-layout.md "확장 코드에서 같은 경계를 판정할 때"
-     */
-    it('엔진은 window.innerWidth 로 현재 폭을 정한다 (matchMedia 아님)', () => {
-      vi.useFakeTimers();
-      const matchMedia = vi.fn(() => ({ matches: false }));
-      vi.stubGlobal('matchMedia', matchMedia);
-      const original = window.innerWidth;
-
-      try {
-        Object.defineProperty(window, 'innerWidth', { value: 1023, configurable: true });
-        // resize 를 태워 현재 폭을 다시 읽게 한다 (debounce 150ms)
-        window.dispatchEvent(new Event('resize'));
-        vi.advanceTimersByTime(200);
-
-        expect(responsiveManager.getWidth()).toBe(1023);
-        expect(responsiveManager.matches('portable')).toBe(true);
-        expect(matchMedia).not.toHaveBeenCalled();
-      } finally {
-        Object.defineProperty(window, 'innerWidth', { value: original, configurable: true });
-        window.dispatchEvent(new Event('resize'));
-        vi.advanceTimersByTime(200);
-        vi.unstubAllGlobals();
-        vi.useRealTimers();
-      }
-    });
-
-    it('mobile 과 portable 이 함께 정의되면 좁은 범위(mobile)가 우선한다', () => {
-      const responsive = {
-        portable: { props: { className: 'portable-wins' } },
-        mobile: { props: { className: 'mobile-wins' } },
-      };
-
-      expect(responsiveManager.getMatchingKey(responsive, 390)).toBe('mobile');
-      // 태블릿 구간에서는 mobile 이 매칭되지 않으므로 portable 로 폴백
-      expect(responsiveManager.getMatchingKey(responsive, 900)).toBe('portable');
-    });
-  });
-});
 
 describe('트러블슈팅 회귀 테스트 - DataGrid 컴포넌트', () => {
   beforeEach(() => {
@@ -165,35 +83,6 @@ describe('트러블슈팅 회귀 테스트 - DataGrid 컴포넌트', () => {
 
       expect(Array.isArray(correctConfig.actions)).toBe(true);
       expect(correctConfig.actions[0].type).toBe('selectionChange');
-    });
-  });
-
-  describe('[사례 4] expandContext 객체 리터럴 fallback(|| {})이 단일 바인딩 정규식을 깨뜨림', () => {
-    /**
-     * 증상: expandContext 표현식에 `|| {}` 가 있으면 확장 영역이 항상 빈 값
-     *      (예: 데이터가 있어도 "연결 거래 없음" 고정)
-     * 원인: renderExpandContent 의 단일 바인딩 판별 정규식 /^\{\{([^}]+)\}\}$/ 은
-     *      `}` 를 허용하지 않아 `{{... || {} }}` 가 매칭 실패 → 평가 없이 원본 문자열 전달
-     * 해결: expandContext 값에서 객체 리터럴 fallback 제거 (`{{_local.x}}` 형태)
-     */
-    // renderExpandContent 의 단일 바인딩 판별 정규식 (G7CoreGlobals.ts 와 동일)
-    const SINGLE_BINDING_RE = /^\{\{([^}]+)\}\}$/;
-
-    it('객체 리터럴 fallback(|| {})이 있는 expandContext 표현식은 단일 바인딩으로 인식되지 않는다', () => {
-      const broken = '{{_local.linkedTransactions || {} }}';
-      // 내부 `}` 때문에 정규식 매칭 실패 → 평가되지 못하고 문자열로 전달되는 버그 조건
-      expect(SINGLE_BINDING_RE.test(broken)).toBe(false);
-    });
-
-    it('fallback 없는 단일 바인딩 표현식은 정상 매칭되어 평가된다', () => {
-      const fixed = '{{_local.linkedTransactions}}';
-      expect(SINGLE_BINDING_RE.test(fixed)).toBe(true);
-      expect(fixed.match(SINGLE_BINDING_RE)?.[1].trim()).toBe('_local.linkedTransactions');
-    });
-
-    it('배열 fallback(?? [])은 `}` 가 없어 정상 매칭된다 (객체 fallback 만 함정)', () => {
-      const arrayFallback = '{{_local.items ?? []}}';
-      expect(SINGLE_BINDING_RE.test(arrayFallback)).toBe(true);
     });
   });
 
@@ -844,135 +733,6 @@ describe('트러블슈팅 회귀 테스트 - Form 자동 바인딩 bindingType �
       expect(calcIsCheckedBinding('checkable', true, 'checkbox')).toBe(true);
     });
   });
-
-  /**
-   * [사례 5] 저장값이 null 이면 체크박스가 빈 문자열을 전송한다
-   *
-   * troubleshooting-components-form.md 사례 6 회귀 가드.
-   *
-   * bindingType: 'checked' 로 등록된 Checkbox 라도 현재 값이 boolean 이 아니면
-   * isCheckedBinding 이 false 가 되어 value 바인딩 분기로 떨어지고,
-   * 거기서 `currentValue ?? ''` 로 빈 문자열이 만들어진다.
-   * 그 빈 문자열이 서버에서 null 로 저장되면 기본값(false)을 덮어 영구 고착된다.
-   */
-  describe('[사례 5] 저장값이 boolean 이 아니면 value 바인딩으로 떨어져 빈 문자열이 된다', () => {
-    /** DynamicRenderer 의 value 바인딩 분기와 동일 (`effectiveValue = currentValue ?? ''`) */
-    const calcValueBindingValue = (currentValue: any): any => currentValue ?? '';
-
-    it('null 이면 Checkbox(checked) 여도 checked 바인딩이 아니다', () => {
-      expect(calcIsCheckedBinding('checked', null)).toBe(false);
-    });
-
-    it('undefined 여도 checked 바인딩이 아니다 (미저장 키)', () => {
-      expect(calcIsCheckedBinding('checked', undefined)).toBe(false);
-    });
-
-    it('null 이 value 바인딩으로 가면 빈 문자열이 전송된다 (고착의 시작점)', () => {
-      expect(calcValueBindingValue(null)).toBe('');
-      expect(calcValueBindingValue(undefined)).toBe('');
-    });
-
-    it('boolean 이면 정상적으로 checked 바인딩된다 (false 도 포함)', () => {
-      expect(calcIsCheckedBinding('checked', true)).toBe(true);
-      expect(calcIsCheckedBinding('checked', false)).toBe(true);
-    });
-
-    it('레이아웃이 !! 로 boolean 을 강제하면 null 이어도 checked 바인딩이 성립한다', () => {
-      // 해결책: props.checked = "{{!!_local.form?.x}}" → 항상 boolean
-      const coerced = !!(null as any);
-      expect(typeof coerced).toBe('boolean');
-      expect(calcIsCheckedBinding('checked', coerced)).toBe(true);
-    });
-
-    it('$event.target.checked 는 항상 boolean 이므로 change 액션은 boolean 만 기록한다', () => {
-      // 해결책: change 액션이 setState 로 $event.target.checked 를 직접 쓴다
-      const eventChecked: boolean = true;
-      expect(typeof eventChecked).toBe('boolean');
-      expect(calcIsCheckedBinding('checked', eventChecked)).toBe(true);
-    });
-  });
-
-  /**
-   * [사례 6] initLocal 로는 null 고착을 막을 수 없다
-   *
-   * troubleshooting-components-form.md 사례 6 의 "initLocal 로는 막을 수 없다" 근거.
-   * deepMergeState 는 source 의 null 을 그대로 반영하므로, 레이아웃이 선언한
-   * boolean 기본값이 API 응답의 null 에 덮인다.
-   */
-  describe('[사례 6] deepMergeState 는 source 의 null 로 기본값을 덮는다', () => {
-    it('deep 병합에서 null 이 boolean 기본값(false)을 덮는다', () => {
-      const layoutDefaults = { form: { method_card: false, method_samsungpay: false } };
-      const apiResponse = { form: { method_card: true, method_samsungpay: null } };
-
-      const merged = deepMergeState(layoutDefaults, apiResponse);
-
-      expect(merged.form.method_card).toBe(true);
-      // 기본값 false 가 남지 않고 null 로 덮인다 → 이것이 고착의 원인
-      expect(merged.form.method_samsungpay).toBeNull();
-      expect(typeof merged.form.method_samsungpay).not.toBe('boolean');
-    });
-
-    it('shallow 병합(기본값)은 form 객체를 통째로 교체하므로 기본값이 아예 남지 않는다', () => {
-      const prev = { form: { method_card: false, method_samsungpay: false } };
-      const initData = { form: { method_card: true, method_samsungpay: null } };
-
-      // DynamicRenderer 의 shallow 분기: { ...prev, ...initDataWithoutMeta }
-      const merged = { ...prev, ...initData };
-
-      expect(merged.form).toEqual({ method_card: true, method_samsungpay: null });
-      expect(merged.form.method_samsungpay).toBeNull();
-    });
-  });
-
-  /**
-   * [사례 7] 자동바인딩 value 쓰기 경로는 e.target.value 를 무변환 저장한다
-   *
-   * troubleshooting-components-form.md 사례 8 회귀 가드 (공개 #97).
-   *
-   * bindingType 미지정(RadioGroup/Select)은 value 바인딩으로 떨어지는데,
-   * 그 쓰기 경로(autoOnChange)는 `eventOrValue?.target?.value !== undefined ?
-   * eventOrValue.target.value : eventOrValue` 로 DOM 문자열을 그대로 저장한다.
-   * DOM 라디오의 value 는 항상 문자열이므로 boolean 필드가 이 경로로 묶이면
-   * 클릭 순간 "true"/"false" 문자열이 되어 서버 boolean 규칙에서 422 가 된다.
-   * 표시 계층은 String === String 느슨 비교가 구제하므로 저장 시점에야 드러난다.
-   */
-  describe('[사례 7] 자동바인딩 value 쓰기 경로의 boolean 문자열화 (공개 #97)', () => {
-    /** DynamicRenderer 의 value 바인딩 autoOnChange 값 추출과 동일 */
-    const calcAutoOnChangeNewValue = (eventOrValue: any): any =>
-      eventOrValue?.target?.value !== undefined ? eventOrValue.target.value : eventOrValue;
-
-    it('라디오 change 이벤트의 e.target.value 는 문자열 그대로 저장된다 (무변환)', () => {
-      // DOM 라디오는 value 를 항상 문자열로 보고한다
-      const domEvent = { target: { value: 'false', name: 'is_combinable', type: 'radio' } };
-
-      const stored = calcAutoOnChangeNewValue(domEvent);
-
-      expect(stored).toBe('false');
-      expect(typeof stored).not.toBe('boolean'); // 이것이 서버 422 의 시작점
-    });
-
-    it('boolean 미지정 컴포넌트(RadioGroup)는 boolean 값도 value 바인딩이라 쓰기 경로가 이 함정을 탄다', () => {
-      // 표시(사례 3)는 value 바인딩으로 구제되지만, 쓰기는 문자열화된다
-      expect(calcIsCheckedBinding(undefined, true)).toBe(false); // value 바인딩 확정
-    });
-
-    it('해결: change 액션의 === "true" 캐스팅은 항상 boolean 을 기록한다', () => {
-      // 레이아웃: "form.is_combinable": "{{$event.target.value === 'true'}}"
-      const castYes = 'true' === 'true';
-      const castNo = ('false' as string) === 'true';
-
-      expect(castYes).toBe(true);
-      expect(castNo).toBe(false);
-      expect(typeof castYes).toBe('boolean');
-      expect(typeof castNo).toBe('boolean');
-    });
-
-    it('해결: 표시 바인딩 String(boolean) 은 옵션 문자열 값과 정확히 매칭된다', () => {
-      // 레이아웃: value: "{{String(_local.form?.is_combinable ?? true)}}"
-      expect(String(true)).toBe('true');
-      expect(String(false)).toBe('false');
-    });
-  });
 });
 
 describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
@@ -1009,7 +769,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
     });
 
     it('외부 SlotProvider가 모든 컴포넌트에 슬롯 컨텍스트를 제공해야 함', () => {
-      // _admin_base.g7.html은 여러 루트 컴포넌트(사이드바, 헤더, 콘텐츠 슬롯)를 가짐
+      // _admin_base.json은 여러 루트 컴포넌트(사이드바, 헤더, 콘텐츠 슬롯)를 가짐
       // isRootRenderer=true는 index===0(첫 컴포넌트)에만 적용됨
       // 외부 SlotProvider가 없으면 index>0 컴포넌트(콘텐츠 영역)에서 슬롯 시스템 미동작
 
@@ -1151,7 +911,7 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
     }
 
     it('_fromBase: true 컴포넌트는 페이지 전환 시 stable key → 보존', () => {
-      // _admin_base.g7.html의 최상위 4개 컴포넌트 시뮬레이션
+      // _admin_base.json의 최상위 4개 컴포넌트 시뮬레이션
       const baseComponents = [
         { id: 'global_toast', _fromBase: true },
         { id: 'page_transition_indicator', _fromBase: true },
@@ -1325,133 +1085,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
     });
   });
 
-  describe('[슬롯 사례 5] slot 컴포넌트 포함 페이지 새로고침 시 React Hook 규칙 위반', () => {
-    /**
-     * 증상: 상품관리/주문관리/쿠폰관리 등 _partial_filter_section.g7.html을 사용하는 페이지에서
-     *       새로고침으로 직접 진입 시 "컴포넌트 로드 실패" 배너 (React error #300 / hook count mismatch)
-     *       navigate 진입 시에는 정상 동작
-     *
-     * 근본 원인: DynamicRenderer.tsx의 getBlurWrapperClasses useMemo가 early return 뒤에 위치
-     *   → slot 속성이 있는 컴포넌트는 early return으로 useMemo 미호출
-     *   → slot 속성이 없는 상위 컴포넌트는 useMemo 호출
-     *   → 렌더 사이클 간 hook 호출 개수 불일치 → React "Rendered fewer hooks" 에러
-     *
-     * 해결: useMemo를 early return(slot context 검사) 이전으로 이동
-     *   Rules of Hooks: Hook은 컴포넌트 함수 최상위에서 매 렌더마다 같은 순서로 호출
-     */
-
-    /**
-     * DynamicRenderer 렌더 로직 시뮬레이션
-     *
-     * @param hasSlotAttr slot 속성 유무
-     * @param slotContextEnabled globalSlotContextForRender.isEnabled 여부
-     * @param hookOrder hook 호출 순서 추적용 배열 (side-effect)
-     * @returns early return 여부
-     */
-    function simulateRenderBadOrder(
-      hasSlotAttr: boolean,
-      slotContextEnabled: boolean,
-      hookOrder: string[]
-    ): { returned: 'early' | 'normal' } {
-      // ❌ 잘못된 구조: early return이 useMemo보다 앞에 있음
-      if (hasSlotAttr && slotContextEnabled) {
-        // useMemo 미호출 → hook count 감소
-        return { returned: 'early' };
-      }
-      // useMemo 호출 시뮬레이션
-      hookOrder.push('useMemo:getBlurWrapperClasses');
-      return { returned: 'normal' };
-    }
-
-    function simulateRenderGoodOrder(
-      hasSlotAttr: boolean,
-      slotContextEnabled: boolean,
-      hookOrder: string[]
-    ): { returned: 'early' | 'normal' } {
-      // ✅ 올바른 구조: useMemo가 early return보다 앞
-      hookOrder.push('useMemo:getBlurWrapperClasses');
-      if (hasSlotAttr && slotContextEnabled) {
-        return { returned: 'early' };
-      }
-      return { returned: 'normal' };
-    }
-
-    it('잘못된 구조: slot 유/무 컴포넌트 간 hook 호출 개수 불일치', () => {
-      // 상위 Div: slot 없음 → useMemo 호출 (hook count 1)
-      const parentHooks: string[] = [];
-      const parent = simulateRenderBadOrder(false, true, parentHooks);
-
-      // 자식 Div: slot 속성 있음 → early return → useMemo 미호출 (hook count 0)
-      const childHooks: string[] = [];
-      const child = simulateRenderBadOrder(true, true, childHooks);
-
-      expect(parent.returned).toBe('normal');
-      expect(child.returned).toBe('early');
-
-      // 같은 컴포넌트 함수인데 hook 호출 개수가 다름 → React Rules of Hooks 위반
-      expect(parentHooks.length).not.toBe(childHooks.length);
-      expect(parentHooks.length).toBe(1);
-      expect(childHooks.length).toBe(0);
-    });
-
-    it('올바른 구조: slot 유/무 컴포넌트 모두 hook 호출 개수 일정', () => {
-      // 상위 Div: slot 없음 → useMemo 호출 → 정상 렌더
-      const parentHooks: string[] = [];
-      const parent = simulateRenderGoodOrder(false, true, parentHooks);
-
-      // 자식 Div: slot 속성 있음 → useMemo 호출 → early return
-      const childHooks: string[] = [];
-      const child = simulateRenderGoodOrder(true, true, childHooks);
-
-      expect(parent.returned).toBe('normal');
-      expect(child.returned).toBe('early');
-
-      // 양쪽 모두 hook count 동일 → Rules of Hooks 준수
-      expect(parentHooks.length).toBe(childHooks.length);
-      expect(parentHooks.length).toBe(1);
-      expect(childHooks.length).toBe(1);
-    });
-
-    it('slot context 비활성 시에도 hook 호출 순서 일관성 유지', () => {
-      // slotContext.isEnabled = false → early return 미발생
-      const hooks1: string[] = [];
-      simulateRenderGoodOrder(true, false, hooks1);
-
-      const hooks2: string[] = [];
-      simulateRenderGoodOrder(false, false, hooks2);
-
-      // 두 경로 모두 useMemo 호출
-      expect(hooks1).toEqual(['useMemo:getBlurWrapperClasses']);
-      expect(hooks2).toEqual(['useMemo:getBlurWrapperClasses']);
-    });
-
-    it('새로고침(초기 마운트) vs navigate(재렌더) 시 hook 카운트 동일', () => {
-      // 초기 마운트 시 hook count 기록
-      const initialHooks: string[] = [];
-      simulateRenderGoodOrder(true, true, initialHooks);
-
-      // 리렌더 시 hook count 기록
-      const rerenderHooks: string[] = [];
-      simulateRenderGoodOrder(true, true, rerenderHooks);
-
-      // 두 렌더 사이 hook count 동일해야 React가 안정적으로 동작
-      expect(initialHooks.length).toBe(rerenderHooks.length);
-    });
-
-    it('머지 방어 가이드: DynamicRenderer의 useMemo는 모든 early return보다 앞에 위치해야 함', () => {
-      // DynamicRenderer.tsx 소스에서 getBlurWrapperClasses useMemo 위치 검증
-      // Rules of Hooks: "Hooks must be called at the top level"
-      //
-      // 자동 머지 시 feat 측 useMemo 블록이 main 측 early return 블록 뒤로 밀릴 수 있음
-      // → 코드 리뷰 시 반드시 hook 위치 검증
-      const sourceStructure = {
-        hookLine: 3738,     // getBlurWrapperClasses useMemo 시작 라인 (가변 — 대략)
-        earlyReturnLine: 3806, // globalSlotContextForRender return null 라인 (가변 — 대략)
-      };
-      expect(sourceStructure.hookLine).toBeLessThan(sourceStructure.earlyReturnLine);
-    });
-  });
-
   describe('[사례 7-1] cellChildren 표현식 결과 $t: 키가 번역되지 않고 그대로 노출', () => {
     /**
      * 증상: DataGrid cellChildren에서 삼항 연산자 결과 $t: 키가 번역되지 않음
@@ -1596,58 +1229,6 @@ describe('트러블슈팅 회귀 테스트 - 렌더링 구조', () => {
       expect(results.length).toBeLessThanOrEqual(3);
       // cancelled 플래그가 동작함을 확인
       expect(cancelled).toBe(true);
-    });
-  });
-});
-
-describe('트러블슈팅 회귀 테스트 - DataGrid cellChildren 파이프', () => {
-  /**
-   * 사례: cellChildren 단일 바인딩의 파이프가 적용되지 않아 셀이 비어 보임
-   *
-   * 단일 바인딩 판정 후 `|` 가 복잡 표현식 문자로 분류되어 evaluateExpression 으로
-   * 라우팅되면 안 된다. engine-v1.59.0 의 안전 평가기는 비트 연산자를 거부하므로
-   * raw 파이프가 흘러들면 예외가 된다(종전엔 조용한 비트 OR 오답이었다). 라우팅 판정 자체를 고정한다.
-   *
-   * 배경: 내부 트러블슈팅 사례 「DataGrid cellChildren 파이프 이슈」
-   * @see resources/js/core/template-engine/__tests__/renderItemChildren-pipe.test.ts (렌더 결과 검증)
-   */
-  describe('[사례 1] 파이프 판정이 복잡 표현식 판정보다 먼저 적용된다', () => {
-    it('파이프 표현식은 hasPipes 로 먼저 걸러진다 (인자 유무 무관)', () => {
-      expect(hasPipes("row.created_at | datetime('YYYY-MM-DD HH:mm')")).toBe(true);
-      expect(hasPipes('row.price | number')).toBe(true);
-      expect(hasPipes('row.code | uppercase | truncate(2)')).toBe(true);
-    });
-
-    it('논리 OR 와 따옴표 안의 | 는 파이프로 오인되지 않는다', () => {
-      expect(hasPipes("row.name || '-'")).toBe(false);
-      // 다국어 파라미터 구분자는 문자열 리터럴 내부이므로 파이프가 아니다
-      expect(hasPipes("row.flag ? '$t:common.badge|count=1' : ''")).toBe(false);
-    });
-
-    it('파이프를 evaluateExpression 으로 보내면 거부된다 (라우팅 판정 고정)', () => {
-      const engine = new DataBindingEngine();
-      // engine-v1.59.0: 표현식은 화이트리스트 AST 평가기로 실행되며 비트 연산자(`|`)를
-      // 거부한다. 종전 `new Function` 기반에서는 인자 없는 파이프가 비트 OR 로 조용히
-      // 0 이 되고 인자 있는 파이프는 예외였다 — 이제 둘 다 명확히 예외로 거부된다.
-      // (파이프는 hasPipes 로 먼저 분리되어야 하며 evaluateExpression 에 raw 로 오면 안 됨)
-      expect(() =>
-        engine.evaluateExpression('row.code | uppercase', { row: { code: 'abc' } })
-      ).toThrow();
-      expect(() =>
-        engine.evaluateExpression("row.created_at | datetime('YYYY-MM-DD')", {
-          row: { created_at: '2024-01-15T14:30:00' },
-        })
-      ).toThrow();
-    });
-
-    it('파이프 표현식은 resolveBindings 경로에서 서식이 적용된다', () => {
-      const engine = new DataBindingEngine();
-      expect(engine.resolveBindings('{{row.code | uppercase}}', { row: { code: 'abc' } })).toBe('ABC');
-      expect(
-        engine.resolveBindings("{{row.created_at | datetime('YYYY-MM-DD HH:mm')}}", {
-          row: { created_at: '2024-01-15T14:30:00' },
-        })
-      ).toBe('2024-01-15 14:30');
     });
   });
 });

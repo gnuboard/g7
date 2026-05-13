@@ -2,14 +2,11 @@
 
 namespace Modules\Sirsoft\Board\Models;
 
-use App\Helpers\InlineMediaPolicy;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 /**
@@ -33,9 +30,9 @@ use Illuminate\Support\Str;
  * @property int $order
  * @property array|null $meta
  * @property int|null $created_by
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property Carbon|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read string $download_url
  * @property-read string|null $preview_url
  * @property-read bool $is_image
@@ -80,13 +77,10 @@ class Attachment extends Model
         'order',
         'meta',
         'created_by',
-        'trigger_type',
     ];
 
     /**
      * 속성 캐스팅
-     *
-     * @return array
      */
     protected function casts(): array
     {
@@ -103,8 +97,6 @@ class Attachment extends Model
 
     /**
      * 모델 부트 메서드
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -133,8 +125,6 @@ class Attachment extends Model
 
     /**
      * 게시판과의 관계를 정의합니다.
-     *
-     * @return BelongsTo 게시판 관계
      */
     public function board(): BelongsTo
     {
@@ -143,8 +133,6 @@ class Attachment extends Model
 
     /**
      * 게시글과의 관계를 정의합니다.
-     *
-     * @return BelongsTo 게시글 관계
      */
     public function post(): BelongsTo
     {
@@ -153,8 +141,6 @@ class Attachment extends Model
 
     /**
      * 업로더와의 관계를 정의합니다.
-     *
-     * @return BelongsTo 업로더 사용자 관계
      */
     public function creator(): BelongsTo
     {
@@ -172,8 +158,6 @@ class Attachment extends Model
             ? $this->board->slug
             : Board::find($this->board_id)?->slug;
 
-        // route() 생성은 빈 슬러그(미해석 board)에서 예외가 되므로 문자열 조립을 유지한다
-        // — 빈 슬러그 허용은 AttachmentPreviewUrlTest 가 고정한 기존 계약이다.
         return '/api/modules/sirsoft-board/boards/'.$boardSlug.'/attachment/'.$this->hash;
     }
 
@@ -192,58 +176,17 @@ class Attachment extends Model
             ? $this->board->slug
             : Board::find($this->board_id)?->slug;
 
-        return $this->previewUrlForSlug((string) $boardSlug);
+        return '/api/modules/sirsoft-board/boards/'.$boardSlug.'/attachment/'.$this->hash.'/preview';
     }
 
     /**
-     * 슬러그가 이미 해석된 컨텍스트의 미리보기 URL 조립 단일 지점.
+     * 이미지 여부 확인
      *
-     * 목록 직렬화(PostResource)처럼 slug 를 라우트/관계에서 이미 알고 있어
-     * Board::find() 재조회(N+1)를 피해야 하는 호출측이 사용합니다.
-     *
-     * 브라우저 <img src> 는 Authorization 헤더를 실을 수 없으므로, 비밀글·삭제글
-     * 첨부를 열람 권한자 화면에 표시할 때는 한시 서명 URL 을 발급한다($signed).
-     * 서명 URL 은 게이트를 통과한 응답 직렬화 시점에만 발급되고(PostResource),
-     * 서빙 엔드포인트가 유효 서명을 허용한다 — 무서명 게이트는 종전과 동일.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  bool  $signed  한시 서명 URL 발급 여부 (비밀글·삭제글 <img> 렌더용)
-     * @return string 미리보기 URL
-     */
-    public function previewUrlForSlug(string $slug, bool $signed = false): string
-    {
-        if ($signed) {
-            return URL::temporarySignedRoute(
-                'api.modules.sirsoft-board.boards.attachment.preview',
-                now()->addMinutes(self::SIGNED_PREVIEW_TTL_MINUTES),
-                ['slug' => $slug, 'hash' => $this->hash],
-                absolute: false
-            );
-        }
-
-        // route() 생성은 빈 슬러그(미해석 board)에서 예외가 되므로 문자열 조립을 유지한다
-        // — 빈 슬러그 허용은 AttachmentPreviewUrlTest 가 고정한 기존 계약이다.
-        return '/api/modules/sirsoft-board/boards/'.$slug.'/attachment/'.$this->hash.'/preview';
-    }
-
-    /**
-     * 서명 preview URL 의 유효 시간(분).
-     *
-     * 상세 화면이 열려 있는 동안 썸네일이 유지될 만큼 길고,
-     * URL 유출 시 노출 창을 좁힐 만큼 짧은 값.
-     */
-    public const SIGNED_PREVIEW_TTL_MINUTES = 30;
-
-    /**
-     * 인라인 표시 가능한 이미지 여부 확인
-     *
-     * 스크립트를 품을 수 있는 SVG 는 이미지가 아닌 파일로 취급한다 (InlineMediaPolicy — KVE-2026-2366).
-     *
-     * @return bool 래스터 이미지 여부
+     * @return bool 이미지 여부
      */
     public function getIsImageAttribute(): bool
     {
-        return InlineMediaPolicy::isInlineImage($this->mime_type);
+        return str_starts_with($this->mime_type, 'image/');
     }
 
     /**

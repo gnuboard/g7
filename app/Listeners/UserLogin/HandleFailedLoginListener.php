@@ -17,11 +17,6 @@ use App\Extension\HookManager;
  */
 class HandleFailedLoginListener implements HookListenerInterface
 {
-    /**
-     * 리스너를 생성합니다.
-     *
-     * @param  UserRepositoryInterface  $userRepository  로그인 시도 추적 컬럼을 갱신할 사용자 저장소
-     */
     public function __construct(
         private UserRepositoryInterface $userRepository,
     ) {}
@@ -33,11 +28,8 @@ class HandleFailedLoginListener implements HookListenerInterface
      */
     public static function getSubscribedHooks(): array
     {
-        // sync: 실패 횟수와 잠금은 그 요청 안에서 바로 반영돼야 한다. 큐로 미루면 기본 설치
-        // (QUEUE_CONNECTION=database)에서 워커가 없거나 밀린 동안 실패가 하나도 세지지 않아
-        // 잠금이 걸리지 않고, 워커가 있어도 처리 지연 동안 들어온 무차별 대입을 막지 못한다.
         return [
-            'core.auth.login_failed' => ['method' => 'handleFailed', 'priority' => 10, 'sync' => true],
+            'core.auth.login_failed' => ['method' => 'handleFailed', 'priority' => 10],
         ];
     }
 
@@ -45,7 +37,6 @@ class HandleFailedLoginListener implements HookListenerInterface
      * 기본 핸들러 — 사용하지 않음.
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
-     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -56,8 +47,7 @@ class HandleFailedLoginListener implements HookListenerInterface
      * 로그인 실패 시 카운트 증가 및 임계 도달 시 잠금 처리.
      *
      * @param  string  $email  실패한 로그인 이메일
-     * @param  array  $context  IP/UA/시각 등 부가 정보
-     * @return void 반환값 없음
+     * @param  array   $context  IP/UA/시각 등 부가 정보
      */
     public function handleFailed(string $email, array $context = []): void
     {
@@ -71,15 +61,7 @@ class HandleFailedLoginListener implements HookListenerInterface
             return;
         }
 
-        $lockoutMinutes = (int) HookManager::applyFilters(
-            'core.auth.lockout_minutes',
-            (int) g7_core_settings('security.login_lockout_time', 5),
-            $user
-        );
-
-        // 실패는 차단 시간 안에서만 연속으로 센다 — 직전 실패가 그보다 오래됐으면 1 부터 다시.
-        // 차단 시간 0(= 무기한 잠금)은 운영자가 가장 엄격한 정책을 고른 것이라 기간 없이 누적한다.
-        $newCount = $this->userRepository->incrementFailedAttempts($user, $lockoutMinutes);
+        $newCount = $this->userRepository->incrementFailedAttempts($user);
 
         $maxAttempts = (int) HookManager::applyFilters(
             'core.auth.max_login_attempts',
@@ -91,14 +73,18 @@ class HandleFailedLoginListener implements HookListenerInterface
             return;
         }
 
-        // 잠금 시간 0(= 무한대) 은 영구 잠금이라 해제 시각이 null 이다.
+        $lockoutMinutes = (int) HookManager::applyFilters(
+            'core.auth.lockout_minutes',
+            (int) g7_core_settings('security.login_lockout_time', 5),
+            $user
+        );
+
         $lockedUntil = $this->userRepository->lockAccount($user, $lockoutMinutes);
 
         HookManager::doAction('core.auth.account_locked', $user, array_merge($context, [
             'attempts' => $newCount,
             'locked_until' => $lockedUntil,
             'lockout_minutes' => $lockoutMinutes,
-            'permanent' => $lockedUntil === null,
         ]));
     }
 }

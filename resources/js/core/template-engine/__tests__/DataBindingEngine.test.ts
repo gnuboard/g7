@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { DataBindingEngine, DataBindingError } from '../DataBindingEngine';
 
 describe('DataBindingEngine', () => {
@@ -566,101 +566,17 @@ describe('DataBindingEngine', () => {
       expect(result).toBe('');
     });
 
-    it('$locale 없고 앱도 미초기화면 ko 기본값 사용', () => {
+    it('$locale 없으면 ko 기본값 사용', () => {
       const context = {
         _global: {
           selectedModule: {
             name: { ko: '게시판 모듈', en: 'Board Module' },
           },
         },
-        // $locale 없음 — window.__templateApp 도 없는 순수 환경
+        // $locale 없음
       };
       const result = engine.evaluateExpression('$localized(_global.selectedModule.name)', context);
       expect(result).toBe('게시판 모듈');
-    });
-
-    /**
-     * ActionDispatcher 경로($locale 미주입)에서의 로케일 회수.
-     *
-     * `init_actions` / `actions` 로 실행되는 표현식의 data context 는 `$locale` 을 담지
-     * 않는다(ActionDispatcher 가 빌드하는 컨텍스트라 렌더 컨텍스트와 다르다). 이때
-     * `$localized` 가 `'ko'` 로 하드코딩 폴백하면, en/ja 로케일에서도 한국어 값이 나온다.
-     *
-     * `$t` 는 engine-v1.38.2 에서 동일 함정을 `window.__templateApp.getConfig()` 회수로
-     * 이미 해결했다. `$localized` 도 같은 회수 경로를 공유해야 한다.
-     *
-     * 회귀 배경(#459): 헤더 배송국가 셀렉터가 `init_actions` 파생이라, 서버가 en/ja 이름을
-     * 내려줘도 화면에는 늘 한국어 국가명이 표시됐다.
-     */
-    describe('$locale 미주입 시 window.__templateApp 로케일 회수 (ActionDispatcher 경로)', () => {
-      const name = { ko: '대한민국', en: 'South Korea', ja: '大韓民国' };
-
-      afterEach(() => {
-        delete (window as any).__templateApp;
-      });
-
-      it('앱 로케일이 en 이면 en 값을 반환한다', () => {
-        (window as any).__templateApp = {
-          getConfig: () => ({ templateId: 'sirsoft-admin_basic', locale: 'en' }),
-        };
-        // $locale 없음 — ActionDispatcher 컨텍스트 모사
-        const result = engine.evaluateExpression('$localized(_global.country.name)', {
-          _global: { country: { name } },
-        });
-        expect(result).toBe('South Korea');
-      });
-
-      it('앱 로케일이 ja 이면 ja 값을 반환한다', () => {
-        (window as any).__templateApp = {
-          getConfig: () => ({ templateId: 'sirsoft-basic', locale: 'ja' }),
-        };
-        const result = engine.evaluateExpression('$localized(_global.country.name)', {
-          _global: { country: { name } },
-        });
-        expect(result).toBe('大韓民国');
-      });
-
-      it('컨텍스트의 $locale 이 앱 설정보다 우선한다', () => {
-        (window as any).__templateApp = {
-          getConfig: () => ({ templateId: 'sirsoft-basic', locale: 'ja' }),
-        };
-        const result = engine.evaluateExpression('$localized(_global.country.name)', {
-          _global: { country: { name } },
-          $locale: 'en',
-        });
-        expect(result).toBe('South Korea');
-      });
-
-      it('map() 콜백 안에서도 회수된 로케일이 적용된다 (파생 목록 생성 패턴)', () => {
-        (window as any).__templateApp = {
-          getConfig: () => ({ templateId: 'sirsoft-admin_basic', locale: 'en' }),
-        };
-        const result = engine.evaluateExpression(
-          '(_global.countries ?? []).map(c => ({ code: c.code, name: $localized(c.name) }))',
-          {
-            _global: {
-              countries: [
-                { code: 'KR', name },
-                { code: 'US', name: { ko: '미국', en: 'United States', ja: 'アメリカ' } },
-              ],
-            },
-          }
-        );
-        expect(result).toEqual([
-          { code: 'KR', name: 'South Korea' },
-          { code: 'US', name: 'United States' },
-        ]);
-      });
-
-      it('앱 설정에 locale 이 없으면 ko 로 폴백한다', () => {
-        (window as any).__templateApp = {
-          getConfig: () => ({ templateId: 'sirsoft-basic' }),
-        };
-        const result = engine.evaluateExpression('$localized(_global.country.name)', {
-          _global: { country: { name } },
-        });
-        expect(result).toBe('대한민국');
-      });
     });
 
     it('resolveBindings에서 $localized 사용', () => {
@@ -862,8 +778,8 @@ describe('DataBindingEngine', () => {
    * 회귀 테스트 (Regression Tests)
    *
    * 트러블슈팅 가이드에 기록된 버그 사례들의 재발 방지를 위한 테스트
-   * @see 트러블슈팅 가이드 troubleshooting-cache.md
-   * @see 트러블슈팅 가이드 troubleshooting-state-setstate.md
+   * @see docs/frontend/troubleshooting-cache.md
+   * @see docs/frontend/troubleshooting-state-setstate.md
    */
   describe('Regression Tests', () => {
     describe('[TS-CACHE-1~4] skipCache 옵션 검증', () => {
@@ -1290,90 +1206,6 @@ describe('DataBindingEngine', () => {
         expect(engine.resolve('users[0].profile.addresses[0].city', context)).toBe('Seoul');
         expect(engine.resolve('users[0].profile.addresses[1].zip', context)).toBe('67890');
       });
-    });
-  });
-
-  /**
-   * 공개 #121 회귀 — 정규식 lookbehind 제거 (engine-v1.60.6).
-   *
-   * lookbehind(`(?<!`)는 ES2018 이지만 WebKit 은 Safari 16.4 에서야 구현했다.
-   * 정규식 **리터럴**은 파싱 단계에서 검증되므로 그 문법을 모르는 엔진은 번들을
-   * 한 줄도 실행하지 못한다 — iOS 15 대 전 기기에서 사이트가 통째로 뜨지 않았다.
-   *
-   * 교체 시 유일한 위험 지점은 `extractVariablesFromExpression` 의 캡처 인덱스다.
-   * 선행 구분자를 소비하도록 바꿨으므로 식별자는 match[1] 이 아니라 match[2] 에 있다.
-   * 이 한 줄을 빠뜨리면 구분자 문자가 변수명으로 수집되어 표현식 평가가 조용히 깨진다.
-   *
-   * @effects core_source_has_no_lookbehind, variable_extraction_contract_unchanged
-   */
-  describe('lookbehind 제거 회귀 (engine-v1.60.6, 공개 #121)', () => {
-    /**
-     * private 메서드를 테스트에서 직접 호출한다.
-     * 캡처 인덱스 회귀는 공개 API 결과만으로는 드러나지 않는다.
-     *
-     * @param expr 표현식
-     * @return {string[]} 추출된 변수명
-     */
-    const extract = (expr: string): string[] =>
-      (engine as any).extractVariablesFromExpression(expr);
-
-    it('인접 매치가 손실되지 않는다 (선행 구분자 소비의 부작용 없음)', () => {
-      expect(extract('a.b.c d.e f')).toEqual(['a', 'd', 'f']);
-      expect(extract('x+y+z')).toEqual(['x', 'y', 'z']);
-      expect(extract('p,q,r')).toEqual(['p', 'q', 'r']);
-    });
-
-    it('문두 식별자가 누락되지 않는다 (^ 분기)', () => {
-      expect(extract('x + y')).toEqual(['x', 'y']);
-      expect(extract('item')).toEqual(['item']);
-    });
-
-    it('구분자 문자가 변수명에 섞이지 않는다 (match[2] 회귀 가드)', () => {
-      const vars = extract("a + b, c ? d : e && f || g === 'x'");
-      for (const v of vars) {
-        expect(v).toMatch(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/);
-      }
-      // 문자열 리터럴 내부는 이 메서드가 걸러내지 않는다(호출부가 이미 토큰화한 뒤 넘긴다).
-      // 교체 전 lookbehind 판정과 동일한 결과다 — 계약 불변.
-      expect(vars).toEqual(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'x']);
-    });
-
-    it('프로퍼티 접근 뒤 식별자는 최상위 변수로 수집하지 않는다', () => {
-      expect(extract('obj.a.b.c')).toEqual(['obj']);
-      expect(extract('item?.id')).toEqual(['item']);
-      expect(extract('.leading')).toEqual([]);
-      expect(extract('1abc')).toEqual([]);
-    });
-
-    it('공개 API — 인접 식별자를 쓰는 표현식이 정상 평가된다', () => {
-      const context = { a: 1, b: 2, c: 3 };
-      expect(engine.evaluateExpression('a+b+c', context)).toBe(6);
-      expect(engine.evaluateExpression('a + b * c', context)).toBe(7);
-    });
-
-    it('공개 API — 컨텍스트에 없는 변수는 여전히 undefined 로 가려진다', () => {
-      // 캡처 인덱스가 어긋나면 실제 변수명이 수집되지 않아 ReferenceError 가 된다
-      expect(() => engine.evaluateExpression('missingVar', {})).not.toThrow();
-      expect(engine.evaluateExpression('missingVar ?? "fallback"', {})).toBe('fallback');
-      expect(engine.evaluateExpression('x || y || "none"', {})).toBe('none');
-    });
-
-    it('$t: 처리 계약이 불변이다 (따옴표 유무 분기)', () => {
-      expect(engine.evaluateExpression('_global.msg || $t:common.error', { _global: {} }))
-        .toBe('$t:common.error');
-      expect(engine.evaluateExpression('flag ? $t:a.b : $t:c.d', { flag: false }))
-        .toBe('$t:c.d');
-      expect(engine.evaluateExpression('$t:x', {})).toBe('$t:x');
-    });
-
-    it('소스에 lookbehind 가 남아 있지 않다', async () => {
-      const fs = await import('node:fs');
-      const path = await import('node:path');
-      const src = fs.readFileSync(
-        path.resolve(__dirname, '..', 'DataBindingEngine.ts'),
-        'utf8'
-      );
-      expect(src.match(/\(\?<[!=]/g)).toBeNull();
     });
   });
 

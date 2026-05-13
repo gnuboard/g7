@@ -78,7 +78,7 @@ describe('Card', () => {
 
   it('style prop이 적용됨', () => {
     const { container } = render(<Card style={{ marginTop: '20px' }} />);
-    const card = container.querySelector('.card-clickable');
+    const card = container.querySelector('.bg-white');
     expect(card).toHaveStyle({ marginTop: '20px' });
   });
 });

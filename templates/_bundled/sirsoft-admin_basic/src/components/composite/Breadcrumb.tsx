@@ -5,13 +5,6 @@ import { A } from '../basic/A';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
-import type { EditorAttrs } from '../../types';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
 
 export interface BreadcrumbItem {
   label: string;
@@ -26,12 +19,6 @@ export interface BreadcrumbProps {
   homeHref?: string;
   maxItems?: number;
   className?: string;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -65,8 +52,6 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   homeHref = '/',
   maxItems,
   className = '',
-  id,
-  editorAttrs,
 }) => {
   // Home 아이템 생성
   const homeItem: BreadcrumbItem = {
@@ -91,8 +76,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   return (
     <Nav
       className={`flex items-center space-x-2 text-sm ${className}`}
-      aria-label={tOr('common.breadcrumb', 'Breadcrumb')}
-      id={id} {...editorAttrs}
+      aria-label="Breadcrumb"
     >
       <Div className="flex items-center space-x-2">
         {displayItems.map((item, index) => {

@@ -1,0 +1,651 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "Mileage/Deposit Settings - Deposit Tab Content"
+  },
+  "id": "tab_content_deposit",
+  "type": "basic",
+  "name": "Div",
+  "condition": "{{_local.activeTab === 'deposit'}}",
+  "props": {
+    "className": "space-y-6"
+  },
+  "children": [
+    {
+      "id": "deposit_basic_settings_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "id": "deposit_basic_settings_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "id": "deposit_basic_settings_title",
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.basic_settings.title"
+            }
+          ]
+        },
+        {
+          "id": "deposit_basic_settings_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-0"
+          },
+          "children": [
+            {
+              "id": "field_use_deposit",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-4 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.basic_settings.use_deposit"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-label-subtle mt-0.5"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.basic_settings.use_deposit_description"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "{{_local.deposit_enabled !== false ? 'toggle active' : 'toggle'}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "deposit_enabled": "{{_local.deposit_enabled === false}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "toggle-track"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "toggle-handle"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_use_charge",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-4 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.basic_settings.use_charge"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-label-subtle mt-0.5"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.basic_settings.use_charge_description"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "{{_local.charge_enabled !== false ? 'toggle active' : 'toggle'}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "charge_enabled": "{{_local.charge_enabled === false}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "toggle-track"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "toggle-handle"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_refund_to_deposit",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.basic_settings.refund_to_deposit"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-label-subtle mt-0.5"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.basic_settings.refund_to_deposit_description"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "{{_local.refund_to_deposit_enabled !== false ? 'toggle active' : 'toggle'}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "refund_to_deposit_enabled": "{{_local.refund_to_deposit_enabled === false}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "toggle-track"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "toggle-handle"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deposit_charge_refund_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card"
+      },
+      "children": [
+        {
+          "id": "charge_refund_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-header"
+          },
+          "children": [
+            {
+              "id": "charge_refund_title",
+              "type": "basic",
+              "name": "H3",
+              "props": {
+                "className": "card-title"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.title"
+            },
+            {
+              "id": "charge_refund_description",
+              "type": "basic",
+              "name": "P",
+              "props": {
+                "className": "card-description"
+              },
+              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.description"
+            }
+          ]
+        },
+        {
+          "id": "charge_refund_content",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "space-y-6"
+          },
+          "children": [
+            {
+              "id": "charge_amount_fields",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "id": "field_min_charge_amount",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "form-group"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.min_charge_amount"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "min_charge_amount",
+                            "value": "10000",
+                            "className": "input flex-1"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "KRW"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "form-hint mt-1"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.min_charge_hint"
+                    }
+                  ]
+                },
+                {
+                  "id": "field_max_charge_amount",
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "form-group"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Label",
+                      "props": {
+                        "className": "form-label"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.max_charge_amount"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Input",
+                          "props": {
+                            "type": "number",
+                            "name": "max_charge_amount",
+                            "value": "1000000",
+                            "className": "input flex-1"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-sm text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "KRW"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "form-hint mt-1"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.max_charge_hint"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_charge_bonus",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "py-4 border-b border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center justify-between mb-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-heading"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.charge_bonus"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "text-label-subtle mt-0.5"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.charge_bonus_description"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "{{_local.charge_bonus_enabled !== false ? 'toggle active' : 'toggle'}}"
+                      },
+                      "actions": [
+                        {
+                          "type": "click",
+                          "handler": "setState",
+                          "params": {
+                            "target": "_local",
+                            "charge_bonus_enabled": "{{_local.charge_bonus_enabled === false}}"
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "toggle-track"
+                          }
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "toggle-handle"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700"
+                  },
+                  "children": [
+                    {
+                      "id": "field_bonus_threshold",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "form-group"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "form-label"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.bonus_threshold"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "number",
+                                "name": "bonus_threshold",
+                                "value": "100000",
+                                "className": "input flex-1"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                              },
+                              "text": "KRW $t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.bonus_threshold_suffix"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "id": "field_bonus_rate",
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "form-group"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "form-label"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.bonus_rate"
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Input",
+                              "props": {
+                                "type": "number",
+                                "name": "bonus_rate",
+                                "value": "5",
+                                "className": "input flex-1"
+                              }
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Span",
+                              "props": {
+                                "className": "text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.bonus_rate_suffix"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "field_allow_refund",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center justify-between py-4"
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-heading"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.allow_refund"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "text-label-subtle mt-0.5"
+                      },
+                      "text": "$t:sirsoft-ecommerce.admin.mileage_deposit_settings.deposit.charge_refund_settings.allow_refund_description"
+                    }
+                  ]
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "{{_local.allow_refund !== false ? 'toggle active' : 'toggle'}}"
+                  },
+                  "actions": [
+                    {
+                      "type": "click",
+                      "handler": "setState",
+                      "params": {
+                        "target": "_local",
+                        "allow_refund": "{{_local.allow_refund === false}}"
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "toggle-track"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "toggle-handle"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

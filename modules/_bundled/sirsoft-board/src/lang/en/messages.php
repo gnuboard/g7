@@ -13,17 +13,13 @@ return [
         'already_exists' => 'Board slug already exists.',
         'has_posts' => 'Cannot delete board with posts.',
         'fetch_success' => 'Board information retrieved.',
-        'fetch_failed' => 'Failed to retrieve boards.',
         'create_success' => 'Board has been created.',
         'update_success' => 'Board has been updated.',
         'delete_success' => 'Board has been deleted.',
         'copy_success' => 'Board has been copied.',
-        'bulk_members_success' => 'Updated member lists of :count board. (:skipped skipped, :unchanged unchanged)|Updated member lists of :count boards. (:skipped skipped, :unchanged unchanged)',
-        'bulk_members_failed' => 'Failed to assign board managers/staff in bulk.',
         'config_retrieved' => 'Board configuration retrieved.',
         'types_retrieved' => 'Board types retrieved.',
         'form_data_retrieved' => 'Board form data retrieved.',
-        'form_data_failed' => 'Failed to retrieve board form data.',
         'copy_data_retrieved' => 'Board copy data retrieved.',
         'create_failed' => 'Failed to create board.',
         'update_failed' => 'Failed to update board.',
@@ -33,7 +29,6 @@ return [
         'menu_added_success' => 'Added to admin menu.',
         'menu_add_failed' => 'Failed to add to menu.',
         'menu_already_exists' => 'Menu already exists.',
-        'menu_name_suffix' => 'Board',
         'module_not_found' => 'Board module not found.',
         'error_404' => 'Board not found: :slug',
     ],
@@ -46,7 +41,6 @@ return [
         'secret_password_incorrect' => 'Secret post password is incorrect.',
         // Secret post filtering messages
         'secret_post_content' => 'This is a secret post. Please enter the password to view the content.',
-        'secret_post_title' => 'Secret post',
         'deleted_post_title' => 'Deleted post',
         'deleted_post_content' => 'This post has been deleted.',
         'blinded_post_content' => 'This post has been blinded by administrator.',
@@ -77,7 +71,6 @@ return [
         'delete_failed' => 'Failed to delete post.',
         'blind_success' => 'Post has been blinded.',
         'blind_failed' => 'Failed to blind post.',
-        'blind_deleted_not_allowed' => 'A deleted post cannot be blinded. Restore it first, then blind it.',
         'restore_success' => 'Post has been restored.',
         'restore_failed' => 'Failed to restore post.',
         'blinded_post_access_denied' => 'This post has been blinded.',
@@ -87,7 +80,6 @@ return [
         'guest_write_not_allowed' => 'Guest posting is not allowed on this board.',
         'file_upload_not_allowed' => 'File upload is not allowed on this board.',
         'guest_upload_not_allowed' => 'Guest file upload is not allowed on this board.',
-        'secret_post_not_allowed' => 'Secret posts are not available on this board.',
         'modify_permission_denied' => 'You do not have permission to modify this post.',
         'delete_permission_denied' => 'You do not have permission to delete this post.',
         'error_404' => 'Post not found.',
@@ -114,77 +106,14 @@ return [
         'delete_forbidden' => 'You do not have permission to delete this comment.',
         'blind_success' => 'Comment has been blinded.',
         'blind_failed' => 'Failed to blind comment.',
-        'blind_deleted_not_allowed' => 'A deleted comment cannot be blinded. Restore it first, then blind it.',
-        'restore_parent_deleted' => 'The post this comment belongs to is deleted. Restore the post first.',
         'restore_success' => 'Comment has been restored.',
         'restore_failed' => 'Failed to restore comment.',
         'blinded_comment_content' => 'This comment has been hidden according to the community guidelines.',
-        'deleted_comment_content' => 'This comment has been deleted.',
-        // Guest comment password verification
-        'not_guest_comment' => 'This is not a guest comment.',
-        'invalid_password' => 'The password does not match.',
-        'password_verified' => 'Password verified.',
-        'verify_password_failed' => 'Failed to verify the password.',
-        // Comment availability
-        'post_blinded' => 'You cannot comment on a blinded post.',
-        'post_deleted' => 'You cannot comment on a deleted post.',
-        'post_secret' => 'You cannot comment on a secret post you are not allowed to view.',
-    ],
-
-    // Reaction (recommend/not recommend) messages
-    'reaction' => [
-        'list_success' => 'Reaction types have been retrieved.',
-        'add_success' => 'Your reaction has been added.',
-        'change_success' => 'Your reaction has been changed.',
-        'remove_success' => 'Your reaction has been removed.',
-        'failed' => 'Failed to process the reaction.',
-        'disabled' => 'Reactions are disabled for this board.',
-        'inactive_type' => 'This reaction type is not available on this board.',
-        'self_post' => 'You cannot react to your own post.',
-        'secret_denied' => 'You cannot react to a secret post you are not allowed to view.',
-        'login_required' => 'You need to sign in to use this feature.',
-        'target_unavailable' => 'You cannot react to a deleted or hidden target.',
-        'self_comment' => 'You cannot react to your own comment.',
-        'retrieved' => 'Reactions retrieved successfully.',
-        'retrieve_failed' => 'Failed to retrieve reactions.',
-        'removed' => 'The reaction has been removed.',
-        'bulk_removed' => ':count reaction has been removed.|:count reactions have been removed.',
-        'not_found' => 'Reaction not found.',
-        'delete_failed' => 'Failed to remove the reaction.',
-        'admin' => [
-            'retrieved' => 'Reactions retrieved successfully.',
-            'retrieve_failed' => 'Failed to retrieve reactions.',
-            'removed' => 'The reaction has been deleted.',
-            'bulk_removed' => ':count reaction has been deleted.|:count reactions have been deleted.',
-            'bulk_delete_failed' => 'Failed to delete reactions in bulk.',
-            'permission_denied' => 'You do not have permission to manage reactions.',
-        ],
-    ],
-
-    'reaction_type' => [
-        'in_use' => 'This type has :count reaction and cannot be deleted (:name). You can only deactivate it.|This type has :count reactions and cannot be deleted (:name). You can only deactivate it.',
-        'code_taken' => 'This code is already in use.',
-        'icon_upload_success' => 'The icon has been uploaded.',
-        'icon_upload_failed' => 'Failed to upload the icon.',
-        'icon_deleted' => 'The icon has been deleted.',
-        'icon_delete_failed' => 'Failed to delete the icon.',
-        'icon_not_found' => 'Icon not found.',
-    ],
-
-    'report' => [
-        'my_retrieved' => 'Your reports have been retrieved.',
-        'my_retrieve_failed' => 'Failed to retrieve your reports.',
-        'cancelled' => 'The report has been cancelled.',
-        'cancel_failed' => 'Failed to cancel the report.',
-        'cancel_not_allowed' => 'Reports can only be cancelled while pending (current: :status).',
-        'log_not_found' => 'Report not found.',
     ],
 
     // Additional comment messages
     'comments' => [
         'comments_disabled' => 'Comments are disabled for this board.',
-        'index_success' => 'Comments retrieved.',
-        'index_failed' => 'Failed to retrieve comments.',
     ],
 
     // Attachment operation messages
@@ -222,7 +151,6 @@ return [
         'posts_delete_denied' => 'You do not have permission to delete posts.',
         'posts_manage_others_denied' => 'You do not have permission to manage others\' posts.',
         'posts_secret_read_denied' => 'You do not have permission to view secret posts.',
-        'notice_denied' => 'You do not have permission to mark posts as notice.',
 
         // Comment permissions
         'comments_read_denied' => 'You do not have permission to view comments.',
@@ -275,14 +203,12 @@ return [
     // Exception messages
     'errors' => [
         'table_creation_failed' => 'Failed to create board table (:table): :error',
-        'category_in_use' => 'Category :category is in use by :count post.|Category :category is in use by :count posts.',
+        'category_in_use' => 'Category :category is in use by :count post(s).',
         'board_not_found' => 'Board not found.',
-        'attachment_limit_exceeded' => 'You can attach up to :limit file. (requested: :attempted)|You can attach up to :limit files. (requested: :attempted)',
         'post_not_found' => 'Post not found.',
         'permission_denied' => 'Permission denied.',
         'validation_failed' => 'Validation failed.',
         'duplicate_report' => 'You have already reported this content.',
-        'operation_failed' => 'An error occurred while processing the operation.',
     ],
 
     // Warning messages
@@ -304,8 +230,8 @@ return [
         'status_updated' => 'Report status has been updated.',
         'status_update_failed' => 'Failed to update report status.',
         'bulk_status_updated' => 'Selected reports status has been updated.',
-        'bulk_status_updated_with_count' => 'Changed :count report to :status.|Changed :count reports to :status.',
-        'manual_blind_restored_notice' => ':count manually blinded item was also restored.|:count manually blinded items were also restored.',
+        'bulk_status_updated_with_count' => 'Changed :count report(s) to :status.',
+        'manual_blind_restored_notice' => ':count manually blinded content(s) were also restored.',
         'bulk_status_update_failed' => 'Failed to update bulk status.',
         'bulk_status_change_blocked' => 'Some reports cannot be changed to the selected status.',
         'delete_failed' => 'Failed to delete report.',
@@ -336,48 +262,8 @@ return [
         'blind_by_report' => 'Blinded by report processing',
         'blind_by_auto_hide' => 'Automatically blinded due to accumulated reports.',
         // Modal notice messages
-        'blinded_will_be_public' => '{count} blinded item will be made public.|{count} blinded items will be made public.',
+        'blinded_will_be_public' => '{count} blinded content(s) will be made public.',
         'already_reported' => 'You have already reported this content.',
-    ],
-
-    // Scrap (bookmark) messages
-    'scrap' => [
-        'added' => 'Post scrapped.',
-        'removed' => 'Scrap removed.',
-        'toggle_failed' => 'Failed to process scrap.',
-        'retrieved' => 'Scrap list retrieved.',
-        'retrieve_failed' => 'Failed to retrieve scrap list.',
-        'delete_failed' => 'Failed to delete scrap.',
-        'not_found' => 'Scrap not found.',
-        'scrap_disabled' => 'Scrap is disabled for this board.',
-        'post_not_found' => 'Post not found.',
-        'bulk_removed' => ':count scrap removed.|:count scraps removed.',
-        'admin' => [
-            'retrieved' => 'Scrap list retrieved.',
-            'retrieve_failed' => 'Failed to retrieve scrap list.',
-            'removed' => 'Scrap deleted.',
-            'bulk_removed' => ':count scrap deleted.|:count scraps deleted.',
-            'bulk_delete_failed' => 'Failed to delete scraps in bulk.',
-            'permission_denied' => 'You do not have permission to manage scraps.',
-        ],
-    ],
-
-    // Post bulk action messages
-    'posts_bulk' => [
-        'delete_success' => ':count post deleted. (:skipped skipped)|:count posts deleted. (:skipped skipped)',
-        'blind_success' => ':count post blinded. (:skipped skipped)|:count posts blinded. (:skipped skipped)',
-        'restore_success' => ':count post restored. (:skipped skipped)|:count posts restored. (:skipped skipped)',
-        'action_failed' => 'Failed to process posts in bulk.',
-        // Reasons for skipped items — shown per post in the bulk result dialog
-        'skip_reasons' => [
-            'already_deleted' => 'Already deleted',
-            'has_replies' => 'Has replies (the reply deletion policy blocks deleting it)',
-            'already_blinded' => 'Already blinded',
-            'already_published' => 'Already published',
-            'not_found' => 'Post not found in this board',
-            'unknown_action' => 'Unknown action',
-            'error' => 'An error occurred while processing',
-        ],
     ],
 
     // Board type management messages
@@ -387,7 +273,7 @@ return [
         'updated' => 'Board type has been updated.',
         'deleted' => 'Board type has been deleted.',
         'not_found' => 'Board type not found.',
-        'delete_in_use' => 'Cannot delete board type in use by :count board.|Cannot delete board type in use by :count boards.',
+        'delete_in_use' => 'Cannot delete board type in use by :count board(s).',
         'delete_is_default' => 'Cannot delete the default board type.',
     ],
 
@@ -397,24 +283,6 @@ return [
         'fetch_failed' => 'Failed to fetch user activities.',
         'stats_success' => 'Activity statistics fetched successfully.',
         'stats_failed' => 'Failed to fetch activity statistics.',
-    ],
-
-    // Board settings messages
-    //
-    // Referenced by BoardSettingsController via ResponseHelper::moduleSuccess/moduleError.
-    // If these exist only in the frontend language pack, __() cannot resolve them and the raw
-    // key leaks into the API response message.
-    'settings' => [
-        'fetch_success' => 'Settings loaded successfully.',
-        'fetch_failed' => 'Failed to load settings.',
-        'save_success' => 'Settings saved successfully.',
-        'save_failed' => 'Failed to save settings.',
-        'save_error' => 'An error occurred while saving settings.',
-        'bulk_apply_success' => 'Settings applied to :count board.|Settings applied to :count boards.',
-        'bulk_apply_aborted' => 'An error occurred during bulk apply. All changes have been rolled back.',
-        'bulk_apply_failed' => 'Failed to bulk apply settings.',
-        'clear_cache_success' => 'Settings cache cleared successfully.',
-        'clear_cache_error' => 'An error occurred while clearing settings cache.',
     ],
 
     // Table related messages
@@ -428,8 +296,6 @@ return [
     // Common
     'common' => [
         'guest' => 'Guest',
-        // Display name when the processor is the system (automated)
-        'system' => 'System',
         'status' => [
             'published' => 'Published',
             'blinded' => 'Blinded',
@@ -439,83 +305,8 @@ return [
             'auto' => 'Auto',
             'manual' => 'Manual',
         ],
-        // Display convention for FormatsBoardDate — shared across post/comment lists, dashboard captions.
-        // Counted phrases are read with trans_choice: singular|plural.
-        'relative_time' => [
-            'just_now' => 'just now',
-            'minutes_ago' => ':count minute ago|:count minutes ago',
-            'hours_ago' => ':count hour ago|:count hours ago',
-            'days_ago' => ':count day ago|:count days ago',
-            'months_ago' => ':count month ago|:count months ago',
-            'years_ago' => ':count year ago|:count years ago',
-        ],
     ],
     'inquiry' => [
         'default_title' => 'Product Inquiry',
-        // 이커머스 문의 연동 훅(sirsoft-ecommerce.inquiry.*)에 답할 때 게시판이 던지는 실패 사유
-        'board_changed' => 'The board configuration has changed and the post could not be found. Please contact the administrator.',
-        'update_failed' => 'Failed to update inquiry.',
-        'delete_failed' => 'Failed to delete inquiry.',
-        'reply_not_found' => 'Reply not found.',
-        'reply_update_failed' => 'Failed to update reply.',
-        'reply_delete_failed' => 'Failed to delete reply.',
-    ],
-    // 개인정보 보유기간 처리 (이슈 #636) — 코어 보유기간 커맨드·미리보기가 핸들러 이름으로 쓴다
-    'privacy_retention' => [
-        'target_columns' => [
-            'title' => 'Title',
-            'author' => 'Author',
-            'board' => 'Board · Type',
-            'created_at' => 'Written on',
-        ],
-        'target_kinds' => [
-            'post' => 'Post',
-            'comment' => 'Comment',
-        ],
-        'handlers' => [
-            'ip' => 'Board author IP addresses',
-            'guest' => 'Board guest author information',
-        ],
-    ],
-    'dashboard' => [
-        'fetch_success' => 'Dashboard data retrieved successfully.',
-    ],
-    // Relation names for the "related user" recipient rule — shown on the notification settings screen instead of keys.
-    'notification_relations' => [
-        'post_author' => 'Post author',
-        'parent_comment_author' => 'Parent comment author',
-        'original_post_author' => 'Original post author',
-        'board_managers' => 'Board managers',
-    ],
-    // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification. Missing keys fall back to the declared string.
-    'notification_variables' => [
-        'common' => [
-            'name' => 'Recipient name',
-            'app_name' => 'Site name',
-            'board_name' => 'Board name',
-            'post_title' => 'Post title',
-            'comment_author' => 'Comment author',
-            'comment_content' => 'Comment content (200 characters)',
-            'post_url' => 'Post URL',
-            'site_url' => 'Site URL',
-            'action_type' => 'Action type (blind/delete/restore)',
-            'target_type' => 'Action target (post/comment)',
-            'post_author' => 'Post author',
-            'reason_type' => 'Report reason',
-            'report_url' => 'Report management page URL',
-        ],
-        'by_type' => [
-            'reply_comment' => [
-                'comment_author' => 'Reply author',
-                'comment_content' => 'Reply content (200 characters)',
-            ],
-            'new_post_admin' => [
-                'name' => 'Recipient name (administrator)',
-            ],
-            'report_received_admin' => [
-                'post_title' => 'Title of the reported post',
-                'target_type' => 'Reported item type (post/comment)',
-            ],
-        ],
     ],
 ];

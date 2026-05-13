@@ -3,22 +3,18 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
-use App\Support\OutboundUrlValidator;
-use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\DTO\AppliedPromotions;
 use Modules\Sirsoft\Ecommerce\DTO\AppliedShippingPolicy;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationInput;
 use Modules\Sirsoft\Ecommerce\DTO\CalculationItem;
+use Modules\Sirsoft\Ecommerce\DTO\SnapshotProduct;
+use Modules\Sirsoft\Ecommerce\DTO\SnapshotProductOption;
 use Modules\Sirsoft\Ecommerce\DTO\CouponApplication;
 use Modules\Sirsoft\Ecommerce\DTO\ItemCalculation;
 use Modules\Sirsoft\Ecommerce\DTO\MultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
 use Modules\Sirsoft\Ecommerce\DTO\PromotionsSummary;
 use Modules\Sirsoft\Ecommerce\DTO\ShippingAddress;
-use Modules\Sirsoft\Ecommerce\DTO\SnapshotProduct;
-use Modules\Sirsoft\Ecommerce\DTO\SnapshotProductOption;
 use Modules\Sirsoft\Ecommerce\DTO\Summary;
 use Modules\Sirsoft\Ecommerce\DTO\ValidationError;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
@@ -26,21 +22,13 @@ use Modules\Sirsoft\Ecommerce\Enums\CouponDiscountType;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetScope;
 use Modules\Sirsoft\Ecommerce\Enums\CouponTargetType;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingApiHttpMethod;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingApiResponseType;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingFeeTaxPolicy;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicyCountrySetting;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesAdditionalOptions;
-use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
-use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 
 /**
  * 주문 계산 서비스
@@ -79,31 +67,16 @@ use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 class OrderCalculationService
 {
     /**
-     * 이번 계산에서 외부 배송비 API 대신 기본 배송비를 쓴 정책 (B9)
-     *
-     * @var array<int, array{policy_id: int, country_code: string, reason: string}>
-     */
-    protected array $shippingApiFallbacks = [];
-
-    use ResolvesAdditionalOptions;
-
-    /**
      * @param  CurrencyConversionService  $currencyService  통화 변환 서비스
      * @param  ProductOptionRepositoryInterface  $productOptionRepository  상품 옵션 Repository
      * @param  CouponIssueRepositoryInterface  $couponIssueRepository  쿠폰 발급 Repository
      * @param  ShippingPolicyRepositoryInterface  $shippingPolicyRepository  배송정책 Repository
-     * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
-     * @param  ProductAdditionalOptionValueRepositoryInterface  $additionalOptionValueRepository  추가옵션 선택지 Repository
-     * @param  ShippingPolicyResolver  $shippingPolicyResolver  주문 항목에 적용할 배송정책 해석기
      */
     public function __construct(
         protected CurrencyConversionService $currencyService,
         protected ProductOptionRepositoryInterface $productOptionRepository,
         protected CouponIssueRepositoryInterface $couponIssueRepository,
         protected ShippingPolicyRepositoryInterface $shippingPolicyRepository,
-        protected EcommerceSettingsService $settingsService,
-        protected ProductAdditionalOptionValueRepositoryInterface $additionalOptionValueRepository,
-        protected ShippingPolicyResolver $shippingPolicyResolver,
     ) {}
 
     /**
@@ -114,9 +87,6 @@ class OrderCalculationService
      */
     public function calculate(CalculationInput $input): OrderCalculationResult
     {
-        // 이번 계산의 외부 배송비 API 폴백 기록을 비운다(B9) — 서비스 인스턴스가 재사용돼도 앞 계산의 기록이 섞이지 않게.
-        $this->shippingApiFallbacks = [];
-
         // 아이템 데이터 준비 (상품/옵션 정보 로드 또는 스냅샷 사용)
         $preparedItems = $this->prepareItems($input->items, $input);
 
@@ -132,44 +102,6 @@ class OrderCalculationService
         $itemCouponIssues = $this->loadCoupons($itemCouponIds);
 
         $validationErrors = [];
-
-        // 쿠폰 조합 가능 여부 검증 (is_combinable) — 전체 슬롯 통합 1회 (A15/MP06)
-        // 슬롯별 독립 검증은 "상품별(false) 1개 + 주문(true) 1개" 같은 슬롯 교차 조합을
-        // 각 슬롯 count=1 이라 놓친다. 적용 대상 전체 쿠폰을 한 집합으로 모아 1회 검증한다.
-        // 스냅샷 모드(환불 재계산)에서도 동일 검증한다(2026-06-19 확정).
-        $allAppliedCoupons = $this->collectAllCouponsForCombination($coupons, $itemCouponIssues);
-        $combinationViolations = $this->findNonCombinableViolations($allAppliedCoupons);
-        foreach ($combinationViolations as $violationIssue) {
-            $validationErrors[] = ValidationError::notCombinable($violationIssue->coupon->id);
-        }
-        // 위반(중복불가) 쿠폰은 할인 적용에서 제외 — 에러만 담고 할인은 먹는 모순 방지 (소프트 표면화/MP06).
-        // 적용 입력(주문/배송/상품 슬롯 + itemCoupons 매핑)에서 위반 발급ID 를 미리 걸러낸다.
-        // 단, 스냅샷 모드(환불 재계산)는 이미 확정된 주문이 실제로 적용한 쿠폰을 그대로 재현해야 하므로
-        // 제외하지 않는다(검증 오류는 위에서 동일하게 표면화). 위반 조합은 주문 확정 시점 422 하드 차단으로
-        // 애초에 확정될 수 없으므로 정상 흐름에서 스냅샷에 위반 조합이 존재하지 않는다.
-        $combinationSnapshotMode = $input->metadata['snapshot_mode'] ?? false;
-        if (! empty($combinationViolations) && ! $combinationSnapshotMode) {
-            $excludedCouponIssueIds = array_map(fn ($issue) => $issue->id, $combinationViolations);
-            $coupons = array_values(array_filter(
-                $coupons,
-                fn ($issue) => ! in_array($issue->id, $excludedCouponIssueIds, true)
-            ));
-            $itemCouponIssues = array_values(array_filter(
-                $itemCouponIssues,
-                fn ($issue) => ! in_array($issue->id, $excludedCouponIssueIds, true)
-            ));
-            $filteredItemCoupons = [];
-            foreach ($input->itemCoupons as $optionId => $issueIds) {
-                $kept = array_values(array_filter(
-                    (array) $issueIds,
-                    fn ($issueId) => ! in_array((int) $issueId, $excludedCouponIssueIds, true)
-                ));
-                if (! empty($kept)) {
-                    $filteredItemCoupons[$optionId] = $kept;
-                }
-            }
-            $input->itemCoupons = $filteredItemCoupons;
-        }
 
         // 단계 1: 옵션별 판매금액 계산
         // Before: 단가/수량 조작 가능 (회원등급 할인, 프로모션 단가 등)
@@ -257,8 +189,7 @@ class OrderCalculationService
         [$shippingAfterDiscount, $shippingPromotions, $shippingErrors] = $this->applyShippingCoupon(
             $shippingCalculation,
             $shippingCoupons,
-            $input,
-            $itemsAfterProductDiscount
+            $input
         );
         // After: 배송비 할인 결과 수정 가능
         $shippingAfterDiscount = HookManager::applyFilters(
@@ -333,8 +264,7 @@ class OrderCalculationService
         $pointsPerItem = $this->calculatePointsEarning(
             $preparedItems,
             $itemsAfterOrderDiscount,
-            $pointsUsageResult,
-            $input
+            $pointsUsageResult
         );
         $pointsPerItem = HookManager::applyFilters(
             'sirsoft-ecommerce.calculation.after_points_earning',
@@ -417,10 +347,6 @@ class OrderCalculationService
                 $snapshotProduct = new SnapshotProduct($item->productSnapshot, $shippingPolicyId);
                 $snapshotOption = new SnapshotProductOption($item->optionSnapshot, $snapshotProduct->selling_price);
 
-                // 스냅샷 모드(환불 재계산): 주문 시점 동결된 추가옵션 스냅샷을 그대로 사용
-                $additionalSnapshot = $item->additionalOptionsSnapshot ?? [];
-                $additionalTotal = $this->sumAdditionalOptionsSnapshot($additionalSnapshot);
-
                 $preparedItems[] = [
                     'cart_id' => $item->cartId,
                     'product_id' => $item->productId,
@@ -429,8 +355,6 @@ class OrderCalculationService
                     'product' => $snapshotProduct,
                     'product_option' => $snapshotOption,
                     'unit_price' => $snapshotOption->getSellingPrice(),
-                    'additional_options_total' => $additionalTotal,
-                    'additional_options_snapshot' => $additionalSnapshot,
                     '_snapshot_mode' => true,
                 ];
 
@@ -447,12 +371,6 @@ class OrderCalculationService
                 continue;
             }
 
-            // 추가옵션: value_id 기준 서버 재조회 (클라 가격 신뢰 금지)
-            [$additionalTotal, $additionalSnapshot] = $this->resolveAdditionalOptions(
-                $item->productId,
-                $item->additionalOptionSelections ?? []
-            );
-
             $preparedItems[] = [
                 'cart_id' => $item->cartId,
                 'product_id' => $item->productId,
@@ -461,8 +379,6 @@ class OrderCalculationService
                 'product' => $productOption->product,
                 'product_option' => $productOption,
                 'unit_price' => $productOption->getSellingPrice(),
-                'additional_options_total' => $additionalTotal,
-                'additional_options_snapshot' => $additionalSnapshot,
             ];
         }
 
@@ -510,36 +426,9 @@ class OrderCalculationService
         $subtotals = [];
 
         foreach ($preparedItems as $item) {
-            // 안B: unit_price 는 원옵션가 유지, 추가옵션은 단위 합계로 분리 보유.
-            // subtotal = (원옵션가 + 추가옵션 단위 합계) × 수량 (D6)
-            $additionalTotal = (int) ($item['additional_options_total'] ?? 0);
-            $subtotal = ($item['unit_price'] + $additionalTotal) * $item['quantity'];
-            $optionId = $item['product_option_id'];
-
-            // 같은 상품옵션이 여러 아이템으로 올 수 있다 — 대입하지 말고 누적한다.
-            //
-            // 한 주문에 같은 상품옵션이 여러 행으로 남는 것은 정상이다: 교환·반품의 수량 분할,
-            // per-line 상태 분할, 같은 옵션 재구매가 모두 그렇게 만든다. 재계산은 살아 있는
-            // 주문행을 그대로 아이템으로 넘기므로 같은 `product_option_id` 가 두 번 온다.
-            //
-            // 종전에는 여기서 대입해 뒤 행이 앞 행을 덮어썼다. 그러면 두 행 중 하나가 통째로
-            // 사라져 **그 행을 빼도 합계가 그대로**이고, 환불 미리보기의 차액이 0이 되어
-            // 정당한 환불이 막혔다(S3-D4 · 실측: 텀블러 28,000 한 행 증발).
-            //
-            // 키 구조(`[product_option_id => …]`)는 그대로 둔다 — 쿠폰 안분·마일리지·과세 분류·
-            // 배송정책 그룹이 이 키로 결과를 되찾는다. 이미 취소·교환으로 닫힌 행은 호출자
-            // (`OrderAdjustmentService::buildRecalcInput()`)가 아이템에서 빼고 넘기므로,
-            // 누적이 닫힌 행까지 더해 과다 계상하는 일은 없다.
-            if (isset($subtotals[$optionId])) {
-                $subtotals[$optionId]['quantity'] += $item['quantity'];
-                $subtotals[$optionId]['subtotal'] += $subtotal;
-
-                continue;
-            }
-
-            $subtotals[$optionId] = [
+            $subtotal = $item['unit_price'] * $item['quantity'];
+            $subtotals[$item['product_option_id']] = [
                 'unit_price' => $item['unit_price'],
-                'additional_options_total' => $additionalTotal,
                 'quantity' => $item['quantity'],
                 'subtotal' => $subtotal,
             ];
@@ -593,10 +482,6 @@ class OrderCalculationService
         $snapshotMode = $input->metadata['snapshot_mode'] ?? false;
         $couponSnapshots = $input->metadata['coupon_snapshots'] ?? [];
 
-        // per_user_limit: 이번 주문에서 동일 coupon_id 적용 누적 (축2 — 주문 내 중복).
-        // 상품별 슬롯(itemCoupons)·주문레벨 상품 슬롯에서 공유한다 (U13b/MP06).
-        $couponUsageCount = [];
-
         // 상품별 쿠폰 적용 (itemCoupons)
         if (! empty($itemCoupons) && ! empty($itemCouponIssues)) {
             // 쿠폰 발급 ID를 키로 하는 맵 생성
@@ -616,32 +501,16 @@ class OrderCalculationService
                     $coupon = $couponIssue->coupon;
                     $snapshot = $couponSnapshots[$couponIssueId] ?? null;
 
-                    // 상품 쿠폰 min_order_amount: 적용 대상 옵션 소계 기준 (U13b/MP06)
-                    $applicableSubtotal = (int) (
-                        $discountedItems[$optionId]['discounted_subtotal']
-                        ?? $discountedItems[$optionId]['subtotal']
-                        ?? 0
-                    );
-
                     // 쿠폰 검증
                     $error = $this->validateCoupon(
                         $couponIssue,
                         $itemSubtotals,
                         $preparedItems,
                         $snapshotMode,
-                        (int) ($snapshot['min_order_amount'] ?? 0),
-                        $applicableSubtotal
+                        (int) ($snapshot['min_order_amount'] ?? 0)
                     );
                     if ($error !== null) {
                         $validationErrors[] = $error;
-
-                        continue;
-                    }
-
-                    // 사용자별 사용 한도 검증 (per_user_limit 축1+축2 — U13b/MP06)
-                    $limitError = $this->checkPerUserLimit($couponIssue, $input, $snapshotMode, $couponUsageCount);
-                    if ($limitError !== null) {
-                        $validationErrors[] = $limitError;
 
                         continue;
                     }
@@ -657,7 +526,7 @@ class OrderCalculationService
                         ? ($discountedItems[$optionId]['quantity'] ?? 1)
                         : 1;
 
-                    $discount = $this->calculateCouponDiscount($coupon, $currentSubtotal, $this->couponSnapshotForLine($snapshot, $optionId), $itemQuantity);
+                    $discount = $this->calculateCouponDiscount($coupon, $currentSubtotal, $snapshot, $itemQuantity);
 
                     $discountedItems[$optionId]['coupon_discount'] = ($discountedItems[$optionId]['coupon_discount'] ?? 0) + $discount;
                     $discountedItems[$optionId]['discounted_subtotal'] = $currentSubtotal - $discount;
@@ -689,13 +558,18 @@ class OrderCalculationService
         }
 
         // 기존 로직: 주문 레벨 상품 쿠폰 적용 (target_scope에 따라 적용)
-        // is_combinable 검증은 calculate() 에서 전체 슬롯 통합 1회로 이동(A15/MP06).
         if (! empty($coupons)) {
+            // 쿠폰 조합 가능 여부 검증 (is_combinable)
+            $combinationErrors = $this->validateCouponCombination($coupons);
+            if (! empty($combinationErrors)) {
+                return [$discountedItems, $appliedPromotions, $combinationErrors];
+            }
+
             foreach ($coupons as $couponIssue) {
                 $coupon = $couponIssue->coupon;
                 $snapshot = $couponSnapshots[$couponIssue->id] ?? null;
 
-                // 쿠폰 검증 (주문레벨 상품쿠폰: 전체 합계 기준 유지 — override 미전달)
+                // 쿠폰 검증
                 $error = $this->validateCoupon(
                     $couponIssue,
                     $itemSubtotals,
@@ -705,14 +579,6 @@ class OrderCalculationService
                 );
                 if ($error !== null) {
                     $validationErrors[] = $error;
-
-                    continue;
-                }
-
-                // 사용자별 사용 한도 검증 (per_user_limit 축1+축2 — U13b/MP06)
-                $limitError = $this->checkPerUserLimit($couponIssue, $input, $snapshotMode, $couponUsageCount);
-                if ($limitError !== null) {
-                    $validationErrors[] = $limitError;
 
                     continue;
                 }
@@ -748,7 +614,7 @@ class OrderCalculationService
                     // 상품금액 쿠폰 정액할인: 수량만큼 할인
                     $itemQuantity = $discountedItems[$optionId]['quantity'] ?? 1;
 
-                    $discount = $this->calculateCouponDiscount($coupon, $originalSubtotal, $this->couponSnapshotForLine($snapshot, $optionId), $itemQuantity);
+                    $discount = $this->calculateCouponDiscount($coupon, $originalSubtotal, $snapshot, $itemQuantity);
 
                     $totalDiscount += $discount;
                     $appliedItems[] = [
@@ -819,26 +685,11 @@ class OrderCalculationService
      * @param  array  $preparedItems  준비된 아이템 배열
      * @param  array  $discountedItems  할인 후 아이템 배열 (주문쿠폰 적용 후)
      * @param  array  $pointsUsageResult  마일리지 사용 결과 (points_by_option 포함)
-     * @param  CalculationInput|null  $input  계산 입력 (재계산 시 주문 시점 절사 기준 복원용)
      * @return array 옵션별 마일리지 배열 [product_option_id => points]
      */
-    protected function calculatePointsEarning(array $preparedItems, array $discountedItems, array $pointsUsageResult = [], ?CalculationInput $input = null): array
+    protected function calculatePointsEarning(array $preparedItems, array $discountedItems, array $pointsUsageResult = []): array
     {
         $pointsPerItem = [];
-
-        // 적립 절사 기준. 재계산(부분취소·추가결제)은 주문 스냅샷을 우선한다 — 설정을 다시 읽으면
-        // 운영자가 이후에 바꾼 절사 기준이 과거 주문에 소급 적용돼, 취소하지 않은 잔여분의
-        // 적립액이 취소 처리만으로 달라진다.
-        $rounding = $input?->mileagePolicySnapshot !== null
-            ? MileageRounding::fromOrderSnapshot($input->mileagePolicySnapshot)
-            : MileageRounding::normalize($this->resolveMileageCurrencyRule($input));
-
-        // 같은 상품옵션 라인이 여럿이면(상태·클레임 분할 뒤 재계산) 결과는 키 하나로 합쳐진다. 정액 적립은
-        // 키 전체 수량에 곱해야 한다 — 라인 수량을 키에 대입하면 마지막 라인 수량만 남는다(S-Q26-c).
-        $keyQuantity = [];
-        foreach ($preparedItems as $item) {
-            $keyQuantity[$item['product_option_id']] = ($keyQuantity[$item['product_option_id']] ?? 0) + (int) $item['quantity'];
-        }
 
         foreach ($preparedItems as $item) {
             $optionId = $item['product_option_id'];
@@ -853,66 +704,25 @@ class OrderCalculationService
             // 마일리지 사용 안분액 차감
             $pointsUsedShare = $pointsUsageResult['points_by_option'][$optionId] ?? 0;
 
-            // 마일리지 기능 비활성 시 주문 시점 적립 "계산" 자체를 수행하지 않는다 (전부 0).
-            // mileage_value/mileage_type 은 상품 옵션(상품 등록 당시) 속성이므로,
-            // 전역 OFF 면 상품옵션 명시 적립률·기본 적립률 모두 계산 대상에서 제외된다 (정책 확정).
-            if (! (bool) $this->settingsService->getSetting('mileage.enabled', false)) {
-                $pointsPerItem[$optionId] = 0;
-
-                continue;
-            }
-
             // 적립 대상 금액 계산 (상품쿠폰 할인 후 금액 - 주문쿠폰 안분 - 마일리지 안분)
             $earnableAmount = max(0, $baseAmount - $orderDiscountShare - $pointsUsedShare);
 
             // 옵션별 마일리지 설정이 있는 경우 활용
             if ($option->mileage_value !== null && $option->mileage_type !== null) {
                 if ($option->mileage_type === 'fixed') {
-                    // 정액 적립: mileage_value를 그대로 사용 (키 전체 수량 곱)
-                    $pointsPerItem[$optionId] = MileageRounding::apply($option->mileage_value * $keyQuantity[$optionId], $rounding);
+                    // 정액 적립: mileage_value를 그대로 사용 (수량 곱)
+                    $pointsPerItem[$optionId] = (int) floor($option->mileage_value * $item['quantity']);
                 } else {
                     // 정률 적립: earnableAmount 기준으로 계산
-                    $pointsPerItem[$optionId] = MileageRounding::apply($earnableAmount * $option->mileage_value / 100, $rounding);
+                    $pointsPerItem[$optionId] = (int) floor($earnableAmount * $option->mileage_value / 100);
                 }
             } else {
-                // 기본 마일리지 적립율 (설정값, 기본 1%)
-                $defaultRate = (float) $this->settingsService->getSetting('mileage.default_earn_rate', 1);
-                $pointsPerItem[$optionId] = MileageRounding::apply($earnableAmount * $defaultRate / 100, $rounding);
+                // 기본 마일리지 적립율 1%
+                $pointsPerItem[$optionId] = (int) floor($earnableAmount * 0.01);
             }
         }
 
         return $pointsPerItem;
-    }
-
-    /**
-     * 적립 절사 기준을 담은 통화별 마일리지 규칙을 조회합니다.
-     *
-     * 마일리지는 표시통화가 아니라 기준통화(base_currency)로 적립·정산되므로, 규칙도
-     * 기준통화 기준으로 고른다. 스냅샷 모드에서는 주문 시점 기준통화를, 신규 주문에서는
-     * 현재 기본 통화를 쓴다. 해당 통화 규칙이 없으면 첫 행(기본 통화 규칙)으로 폴백한다 —
-     * `UserMileageService::currencyRule()` 과 같은 해석 규칙이다.
-     *
-     * @param  CalculationInput|null  $input  계산 입력
-     * @return array|null 통화별 마일리지 규칙 (없으면 null → 절사 기본값 적용)
-     */
-    protected function resolveMileageCurrencyRule(?CalculationInput $input): ?array
-    {
-        $rules = (array) $this->settingsService->getSetting('mileage.currency_rules', []);
-
-        if ($rules === []) {
-            return null;
-        }
-
-        $currency = $input->metadata['currency_snapshot']['base_currency']
-            ?? $this->currencyService->getDefaultCurrency();
-
-        foreach ($rules as $rule) {
-            if (is_array($rule) && ($rule['currency_code'] ?? null) === $currency) {
-                return $rule;
-            }
-        }
-
-        return is_array($rules[0] ?? null) ? $rules[0] : null;
     }
 
     /**
@@ -935,114 +745,13 @@ class OrderCalculationService
 
             $isTaxable = $product->tax_status === ProductTaxStatus::TAXABLE;
 
-            // 세율은 상품별로 다를 수 있다. 스냅샷 모드에서는 주문 시점 세율이 그대로 쓰여
-            // 관리자가 이후 상품 세율을 바꿔도 기존 주문의 부가세가 소급 변경되지 않는다.
-            $taxRate = $isTaxable
-                ? (float) ($product->tax_rate ?? VatCalculator::DEFAULT_RATE)
-                : null;
-            $taxableAmount = $isTaxable ? $amount : 0;
-
             $classification[$optionId] = [
-                'taxable_amount' => $taxableAmount,
+                'taxable_amount' => $isTaxable ? $amount : 0,
                 'tax_free_amount' => $isTaxable ? 0 : $amount,
-                'tax_rate' => $taxRate,
-                'vat_amount' => VatCalculator::fromTaxableAmount((int) $taxableAmount, $taxRate),
             ];
         }
 
         return $classification;
-    }
-
-    /**
-     * 배송비 할인을 반영한 실질 배송비를 반환합니다.
-     *
-     * @param  array  $paymentCalculation  결제금액 계산 결과
-     * @return int 할인 후 배송비 (0 이상)
-     */
-    protected function resolveNetShippingFee(array $paymentCalculation): int
-    {
-        $totalShipping = (int) ($paymentCalculation['total_shipping'] ?? 0);
-        $shippingDiscount = (int) ($paymentCalculation['shipping_discount'] ?? 0);
-
-        return max(0, $totalShipping - $shippingDiscount);
-    }
-
-    /**
-     * 단계 2-c: 배송비를 과세/면세로 분류합니다.
-     *
-     * 부가가치세법 제14조는 주된 재화에 부수되는 용역이 주된 재화의 과세/면세를 따른다고 정할 뿐,
-     * 과세·면세 상품이 혼합된 장바구니의 배송비 안분에 관한 명문 규정은 없다.
-     * 상점의 세무 판단에 따라 3가지 정책 중 선택한다.
-     *
-     * 상품 분류(classifyTaxStatus)와 달리 이 메서드는 배송비 할인이 확정된 뒤에 호출되어야 한다.
-     *
-     * @param  int  $netShippingFee  할인 후 배송비
-     * @param  int  $productTaxable  상품 과세금액 합계
-     * @param  int  $productTaxFree  상품 면세금액 합계
-     * @return array{taxable_amount: int, tax_free_amount: int} 배송비 과세/면세 분류
-     */
-    protected function classifyShippingFeeTaxStatus(
-        int $netShippingFee,
-        int $productTaxable,
-        int $productTaxFree,
-    ): array {
-        if ($netShippingFee <= 0) {
-            return ['taxable_amount' => 0, 'tax_free_amount' => 0];
-        }
-
-        $policy = $this->resolveShippingFeeTaxPolicy();
-        $productTotal = $productTaxable + $productTaxFree;
-
-        // 상품 금액이 전부 0 이면 안분 기준이 없다 — 전액 과세로 처리한다.
-        if ($productTotal <= 0) {
-            return ['taxable_amount' => $netShippingFee, 'tax_free_amount' => 0];
-        }
-
-        return match ($policy) {
-            ShippingFeeTaxPolicy::TAXABLE => [
-                'taxable_amount' => $netShippingFee,
-                'tax_free_amount' => 0,
-            ],
-            ShippingFeeTaxPolicy::FOLLOW_MAIN_ITEM => $productTaxable >= $productTaxFree
-                ? ['taxable_amount' => $netShippingFee, 'tax_free_amount' => 0]
-                : ['taxable_amount' => 0, 'tax_free_amount' => $netShippingFee],
-            ShippingFeeTaxPolicy::PROPORTIONAL => $this->apportionShippingFeeTax(
-                $netShippingFee,
-                $productTaxable,
-                $productTotal,
-            ),
-        };
-    }
-
-    /**
-     * 배송비를 과세상품 비율만큼 안분합니다.
-     *
-     * 면세분을 반올림해 산출한 뒤 잔차를 과세 쪽에 귀속시켜 합계를 보존한다.
-     *
-     * @param  int  $netShippingFee  할인 후 배송비
-     * @param  int  $productTaxable  상품 과세금액 합계
-     * @param  int  $productTotal  상품 총액 (과세 + 면세)
-     * @return array{taxable_amount: int, tax_free_amount: int} 안분 결과
-     */
-    protected function apportionShippingFeeTax(int $netShippingFee, int $productTaxable, int $productTotal): array
-    {
-        $taxableShipping = (int) round($netShippingFee * $productTaxable / $productTotal);
-        $taxableShipping = max(0, min($taxableShipping, $netShippingFee));
-
-        return [
-            'taxable_amount' => $taxableShipping,
-            'tax_free_amount' => $netShippingFee - $taxableShipping,
-        ];
-    }
-
-    /**
-     * 배송비 과세 정책을 조회합니다.
-     *
-     * @return ShippingFeeTaxPolicy 배송비 과세 정책
-     */
-    protected function resolveShippingFeeTaxPolicy(): ShippingFeeTaxPolicy
-    {
-        return app(EcommerceSettingsService::class)->getShippingFeeTaxPolicy();
     }
 
     /**
@@ -1073,11 +782,6 @@ class OrderCalculationService
 
             // 배송정책이 삭제되었거나 조회 불가한 경우 배송비 0으로 처리
             if (! $policy) {
-                Log::warning('배송정책을 조회할 수 없어 배송비를 0원으로 처리했습니다', [
-                    'policy_id' => $policyId,
-                    'country_code' => $countryCode,
-                ]);
-
                 foreach ($groupItems as $item) {
                     $shippingResults[$item['product_option_id']] = new AppliedShippingPolicy(
                         policyId: $policyId,
@@ -1097,11 +801,6 @@ class OrderCalculationService
 
             if (! $countrySetting) {
                 // 해당 국가 설정이 없으면 배송비 0으로 처리
-                Log::warning('국가별 배송 설정이 없어 배송비를 0원으로 처리했습니다', [
-                    'policy_id' => $policyId,
-                    'country_code' => $countryCode,
-                ]);
-
                 foreach ($groupItems as $item) {
                     $shippingResults[$item['product_option_id']] = new AppliedShippingPolicy(
                         policyId: $policyId,
@@ -1120,7 +819,7 @@ class OrderCalculationService
             $baseShippingTotal += $shippingFee;
 
             // 추가 배송비(도서산간) 계산 - KR 전용
-            $extraShippingFee = $this->calculateExtraShippingFee($countrySetting, $countryCode, $zipcode, $group);
+            $extraShippingFee = $this->calculateExtraShippingFee($countrySetting, $countryCode, $zipcode, $group['total_quantity']);
             $extraShippingTotal += $extraShippingFee;
 
             // 배송비를 그룹 내 아이템들에게 안분
@@ -1148,7 +847,7 @@ class OrderCalculationService
                         'custom_shipping_name' => $countrySetting->custom_shipping_name,
                         'currency_code' => $countrySetting->currency_code,
                         'charge_policy' => $countrySetting->charge_policy->value,
-                        'base_fee' => (int) round((float) $countrySetting->base_fee),
+                        'base_fee' => (int) $countrySetting->base_fee,
                         'free_threshold' => $countrySetting->free_threshold ? (int) $countrySetting->free_threshold : null,
                         'ranges' => $countrySetting->ranges,
                         'extra_fee_enabled' => $countrySetting->extra_fee_enabled,
@@ -1176,10 +875,10 @@ class OrderCalculationService
      * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
      * @param  string  $countryCode  수신자 국가코드
      * @param  string|null  $zipcode  우편번호
-     * @param  array  $group  그룹 정보 (total_amount, total_quantity, total_weight, total_volume)
+     * @param  int  $quantity  그룹 합계 수량
      * @return int 추가 배송비
      */
-    public function calculateExtraShippingFee(ShippingPolicyCountrySetting $countrySetting, string $countryCode, ?string $zipcode, array $group): int
+    protected function calculateExtraShippingFee(ShippingPolicyCountrySetting $countrySetting, string $countryCode, ?string $zipcode, int $quantity): int
     {
         // 도서산간 추가배송비는 KR 전용
         if ($countryCode !== 'KR') {
@@ -1197,10 +896,15 @@ class OrderCalculationService
             return 0;
         }
 
-        // per_* 정책에서 extra_fee_multiply가 true면 배송 단위 수만큼 중복 부과
-        // (기본 배송비와 동일한 단위 수를 사용해야 "단위당" 의미가 어긋나지 않는다)
+        // per_* 정책에서 extra_fee_multiply가 true면 건수만큼 중복 부과
         if ($countrySetting->extra_fee_multiply && $this->isPerUnitPolicy($countrySetting)) {
-            return $extraFee * $this->resolveChargeUnits($countrySetting, $group);
+            $unitValue = $countrySetting->ranges['unit_value'] ?? 1;
+            if ($unitValue <= 0) {
+                $unitValue = 1;
+            }
+            $units = (int) ceil($quantity / $unitValue);
+
+            return $extraFee * $units;
         }
 
         // 기본: 1회만 부과
@@ -1215,7 +919,13 @@ class OrderCalculationService
      */
     protected function isPerUnitPolicy(ShippingPolicyCountrySetting $countrySetting): bool
     {
-        return in_array($countrySetting->charge_policy, ChargePolicyEnum::perUnitPolicies(), true);
+        return in_array($countrySetting->charge_policy, [
+            ChargePolicyEnum::PER_QUANTITY,
+            ChargePolicyEnum::PER_WEIGHT,
+            ChargePolicyEnum::PER_VOLUME,
+            ChargePolicyEnum::PER_VOLUME_WEIGHT,
+            ChargePolicyEnum::PER_AMOUNT,
+        ]);
     }
 
     /**
@@ -1258,7 +968,7 @@ class OrderCalculationService
         $baseShippingFee = $this->calculateCountryShippingFee($countrySetting, $standaloneGroup);
 
         // 추가 배송비 계산 (도서산간 - KR 전용)
-        $extraShippingFee = $this->calculateExtraShippingFee($countrySetting, $countryCode, $zipcode, $standaloneGroup);
+        $extraShippingFee = $this->calculateExtraShippingFee($countrySetting, $countryCode, $zipcode, $targetItem['quantity']);
 
         return $baseShippingFee + $extraShippingFee;
     }
@@ -1269,15 +979,10 @@ class OrderCalculationService
      * @param  array  $shippingCalculation  배송비 계산 결과
      * @param  array  $coupons  배송비쿠폰 목록
      * @param  CalculationInput|null  $input  계산 입력 (스냅샷 모드 메타데이터 포함)
-     * @param  array  $discountedItems  상품할인 후 아이템 배열 (최소 주문금액 판정 기준 — 상품소계)
      * @return array [배송비 할인 후 결과, AppliedPromotions, ValidationError[]]
      */
-    protected function applyShippingCoupon(
-        array $shippingCalculation,
-        array $coupons,
-        ?CalculationInput $input = null,
-        array $discountedItems = []
-    ): array {
+    protected function applyShippingCoupon(array $shippingCalculation, array $coupons, ?CalculationInput $input = null): array
+    {
         $shippingResult = $shippingCalculation;
         $appliedPromotions = new AppliedPromotions;
         $validationErrors = [];
@@ -1292,28 +997,20 @@ class OrderCalculationService
         // 할인 대상은 총 배송비 (기본 + 추가)
         $totalShipping = $shippingCalculation['total_shipping'];
 
-        // 최소 주문금액 판정 기준은 상품소계 — 주문쿠폰(applyShippingCoupon 다음 단계)과 같다.
-        // 배송비 총액과 비교하면 최소금액이 배송비보다 큰 쿠폰은 어떤 주문에도 적용되지 않는다.
-        // 할인 상한만 배송비 총액이 유지한다(calculateCouponDiscount 의 base).
-        $totalOrderAmount = 0;
-        foreach ($discountedItems as $item) {
-            $totalOrderAmount += $item['discounted_subtotal'] ?? $item['subtotal'] ?? 0;
-        }
-
         foreach ($coupons as $couponIssue) {
             $coupon = $couponIssue->coupon;
             $snapshot = $couponSnapshots[$couponIssue->id] ?? null;
 
-            // 최소 주문금액 검증 (스냅샷 모드에서는 스냅샷 규칙 사용)
+            // 최소 주문금액 검증은 배송비 쿠폰에서는 배송비 기준으로 체크
             $minAmount = $snapshotMode && $snapshot
                 ? (int) ($snapshot['min_order_amount'] ?? 0)
                 : (int) $coupon->min_order_amount;
 
-            if ($minAmount > 0 && $totalOrderAmount < $minAmount) {
+            if ($minAmount > 0 && $totalShipping < $minAmount) {
                 $validationErrors[] = ValidationError::minAmountNotMet(
                     $coupon->id,
                     $minAmount,
-                    $totalOrderAmount
+                    $totalShipping
                 );
 
                 continue;
@@ -1508,22 +1205,7 @@ class OrderCalculationService
     /**
      * 최종 결과를 빌드합니다.
      *
-     * @param  array  $preparedItems  준비된 아이템 배열 [{product_id, product_option_id, quantity, unit_price, …}]
-     * @param  array  $itemSubtotals  옵션별 소계 {옵션ID => {subtotal, …}}
-     * @param  array  $itemsAfterProductDiscount  상품 할인 반영 결과 {옵션ID => {coupon_discount, …}}
-     * @param  array  $itemsAfterOrderDiscount  주문 할인 안분 결과 {옵션ID => {order_discount_share, …}}
-     * @param  array  $pointsPerItem  옵션별 적립 예정 마일리지 {옵션ID => 적립액}
-     * @param  array  $taxClassification  옵션별 과세·면세 분류 {옵션ID => {taxable_amount, tax_free_amount}}
-     * @param  array  $shippingResult  배송비 산정 결과 {shipping_by_option, …}
-     * @param  array  $pointsUsageResult  마일리지 사용 결과 {points_by_option, final_amount, …}
-     * @param  array  $paymentCalculation  결제금액 계산 결과 (합계·차감 내역)
-     * @param  AppliedPromotions  $productPromotions  적용된 상품 프로모션
-     * @param  AppliedPromotions  $orderPromotions  적용된 주문 프로모션
-     * @param  AppliedPromotions  $shippingPromotions  적용된 배송비 프로모션
-     * @param  int  $totalPointsEarning  총 적립 예정 마일리지
-     * @param  array  $validationErrors  검증 오류 목록
      * @param  CalculationInput  $input  계산 입력 데이터 (paymentCurrency 접근용)
-     * @return OrderCalculationResult 반환값
      */
     protected function buildFinalResult(
         array $preparedItems,
@@ -1555,7 +1237,6 @@ class OrderCalculationService
                 productOptionId: $optionId,
                 quantity: $item['quantity'],
                 unitPrice: $item['unit_price'],
-                additionalOptionsTotal: (int) ($item['additional_options_total'] ?? 0),
                 subtotal: $itemSubtotals[$optionId]['subtotal'] ?? 0,
                 productCouponDiscountAmount: $itemsAfterProductDiscount[$optionId]['coupon_discount'] ?? 0,
                 codeDiscountAmount: 0,
@@ -1569,7 +1250,6 @@ class OrderCalculationService
                 appliedPromotions: $promotionsByOption[$optionId] ?? null,
                 productName: $item['product']->getLocalizedName(),
                 optionName: $item['product_option']->getLocalizedOptionName(),
-                additionalOptionsSnapshot: $item['additional_options_snapshot'] ?? [],
             );
 
             $items[] = $itemCalc;
@@ -1583,24 +1263,6 @@ class OrderCalculationService
             $totalTaxFree += $tax['tax_free_amount'];
         }
 
-        // 부가세는 옵션별 부가세의 합 — 세율이 섞인 주문에서는 이것만이 정확하다
-        // (전체 과세표준에 단일 세율을 적용하면 면세·영세·다른 세율 상품이 섞였을 때 어긋난다)
-        $totalVat = VatCalculator::sumFromClassification($taxClassification);
-
-        // 배송비 과세 분류 — 상품 분류(단계 2-b)와 달리 할인 후 최종 배송비가 확정된 이 시점에서만
-        // 계산할 수 있다. 옵션별 taxable_amount 는 상품분만 담으므로 배송비는 Summary 에만 합산한다.
-        $shippingTax = $this->classifyShippingFeeTaxStatus(
-            $this->resolveNetShippingFee($paymentCalculation),
-            $totalTaxable,
-            $totalTaxFree,
-        );
-        $totalTaxable += $shippingTax['taxable_amount'];
-        $totalTaxFree += $shippingTax['tax_free_amount'];
-
-        // 배송비 과세분에 내재된 부가세도 합산 — 배송비는 옵션별 세율이 없으므로 기본 세율을 적용한다
-        // (과세표준(taxableAmount)에 배송비가 포함되므로 부가세도 같은 기준을 따라야 정합)
-        $totalVat += VatCalculator::fromTaxableAmount($shippingTax['taxable_amount']);
-
         $summary = new Summary(
             subtotal: $paymentCalculation['subtotal'],
             productCouponDiscount: $paymentCalculation['coupon_discount'],
@@ -1613,7 +1275,6 @@ class OrderCalculationService
             shippingDiscount: $paymentCalculation['shipping_discount'],
             taxableAmount: $totalTaxable,
             taxFreeAmount: $totalTaxFree,
-            vatAmount: $totalVat,
             pointsEarning: $totalPointsEarning,
             pointsUsed: $pointsUsageResult['actual_points'],
             paymentAmount: $paymentCalculation['payment_amount'],
@@ -1644,46 +1305,11 @@ class OrderCalculationService
             summary: $summary,
             promotions: $promotionsSummary,
             validationErrors: $validationErrors,
-            // 외부 배송비 API 가 실패해 기본 배송비로 계산한 정책(B9) — 주문 생성이 order_meta 로 남긴다.
-            metadata: $this->shippingApiFallbacks === [] ? [] : ['shipping_fee_fallback' => $this->shippingApiFallbacks],
         );
     }
 
     /**
-     * 직전 계산에서 외부 배송비 API 대신 기본 배송비를 쓴 정책 목록을 반환합니다. (B9)
-     *
-     * @return array<int, array{policy_id: int, country_code: string, reason: string}> 폴백 기록
-     */
-    public function shippingApiFallbacks(): array
-    {
-        return $this->shippingApiFallbacks;
-    }
-
-    /**
-     * 외부 배송비 API 폴백을 기록합니다. (B9)
-     *
-     * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
-     * @param  string  $reason  폴백 사유 (no_endpoint · http_error · unparsable · exception)
-     * @return int 기본 배송비
-     */
-    protected function fallbackShippingFee(ShippingPolicyCountrySetting $countrySetting, string $reason): int
-    {
-        $this->shippingApiFallbacks[] = [
-            'policy_id' => (int) $countrySetting->shipping_policy_id,
-            'country_code' => (string) $countrySetting->country_code,
-            'reason' => $reason,
-        ];
-
-        return (int) round((float) $countrySetting->base_fee);
-    }
-
-    /**
      * 아이템의 최종 금액을 계산합니다.
-     *
-     * @param  int  $optionId  상품 옵션 ID
-     * @param  array  $discountedItems  할인 안분까지 끝난 아이템 배열 {옵션ID => {subtotal, coupon_discount, order_discount_share}}
-     * @param  array  $pointsUsageResult  마일리지 사용 결과 {points_by_option, …}
-     * @return int 반환값
      */
     protected function calculateItemFinalAmount(int $optionId, array $discountedItems, array $pointsUsageResult): int
     {
@@ -1706,7 +1332,6 @@ class OrderCalculationService
     {
         $amounts = [
             'unit_price' => $item->unitPrice,
-            'additional_options_total' => $item->additionalOptionsTotal,
             'subtotal' => $item->subtotal,
             'product_coupon_discount_amount' => $item->productCouponDiscountAmount,
             'code_discount_amount' => $item->codeDiscountAmount,
@@ -1761,16 +1386,13 @@ class OrderCalculationService
      * @param  array  $preparedItems  준비된 아이템 배열
      * @param  bool  $snapshotMode  스냅샷 모드 여부
      * @param  int  $snapshotMinOrderAmount  스냅샷의 최소 주문금액
-     * @param  int|null  $applicableAmountOverride  최소 주문금액 판정에 쓸 적용 대상 금액 (null 이면 이 쿠폰의 대상 합계)
-     * @return ?ValidationError 반환값
      */
     protected function validateCoupon(
         CouponIssue $couponIssue,
         array $itemSubtotals,
         array $preparedItems,
         bool $snapshotMode = false,
-        int $snapshotMinOrderAmount = 0,
-        ?int $applicableAmountOverride = null
+        int $snapshotMinOrderAmount = 0
     ): ?ValidationError {
         $coupon = $couponIssue->coupon;
 
@@ -1797,17 +1419,14 @@ class OrderCalculationService
         }
 
         // 최소 주문금액 검증 (스냅샷 모드: 스냅샷 값 사용)
-        // 상품 쿠폰(itemCoupons, optionId별 1:1 적용)은 적용 대상 옵션 소계 기준으로 검증한다
-        // ($applicableAmountOverride). null 이면 기존 전체 합계 기준(주문/배송비 쿠폰 — U13b/MP06).
         $minAmount = $snapshotMode ? $snapshotMinOrderAmount : (int) $coupon->min_order_amount;
         if ($minAmount > 0) {
-            $amount = $applicableAmountOverride
-                ?? array_sum(array_column($itemSubtotals, 'subtotal'));
-            if ($amount < $minAmount) {
+            $totalAmount = array_sum(array_column($itemSubtotals, 'subtotal'));
+            if ($totalAmount < $minAmount) {
                 return ValidationError::minAmountNotMet(
                     $coupon->id,
                     $minAmount,
-                    $amount
+                    $totalAmount
                 );
             }
         }
@@ -1823,112 +1442,19 @@ class OrderCalculationService
      */
     protected function validateCouponCombination(array $coupons): array
     {
-        $errors = [];
-        foreach ($this->findNonCombinableViolations($coupons) as $couponIssue) {
-            $errors[] = ValidationError::notCombinable($couponIssue->coupon->id);
-        }
-
-        return $errors;
-    }
-
-    /**
-     * 조합 불가(is_combinable=false) 위반 쿠폰 발급건을 찾습니다. (A15/MP06)
-     *
-     * 적용 전체 쿠폰이 2개 이상이고 그중 is_combinable=false 쿠폰이 있으면, 그 false 쿠폰들이
-     * 위반 대상이다(다른 어떤 쿠폰과도 함께 적용 불가). 쿠폰이 1개뿐이면 위반 없음.
-     *
-     * @param  CouponIssue[]  $coupons  적용 대상 전체 쿠폰(슬롯 통합)
-     * @return CouponIssue[] issueId 기준 중복 제거된 위반 쿠폰 발급건
-     */
-    protected function findNonCombinableViolations(array $coupons): array
-    {
-        // 동일 발급 ID 중복 제거 (슬롯 교차 시 같은 issueId 가 양쪽에 등장 가능 — A15/MP06)
-        $unique = [];
-        foreach ($coupons as $couponIssue) {
-            $unique[$couponIssue->id] = $couponIssue;
-        }
-
-        if (count($unique) <= 1) {
+        if (count($coupons) <= 1) {
             return [];
         }
 
-        $violations = [];
-        foreach ($unique as $couponIssue) {
-            if (! $couponIssue->coupon->is_combinable) {
-                $violations[$couponIssue->id] = $couponIssue;
+        $errors = [];
+        foreach ($coupons as $couponIssue) {
+            $coupon = $couponIssue->coupon;
+            if (! $coupon->is_combinable) {
+                $errors[] = ValidationError::notCombinable($coupon->id);
             }
         }
 
-        return array_values($violations);
-    }
-
-    /**
-     * 사용자별 쿠폰 사용 한도(per_user_limit)를 검증합니다. (U13b/MP06)
-     *
-     * 축1=과거 사용(used_at IS NOT NULL, 동일 사용자·쿠폰) + 축2=주문 내 동일 쿠폰 다중 라인.
-     * 두 축 합 + 이번 적용 1건이 한도를 초과하면 검증 오류를 반환한다.
-     * 스냅샷 모드(환불 재계산)는 이미 확정된 쿠폰이므로 검증하지 않는다.
-     * per_user_limit = 0 은 무제한이다.
-     *
-     * @param  CouponIssue  $couponIssue  쿠폰 발급 내역
-     * @param  CalculationInput  $input  계산 입력 (userId 보유)
-     * @param  bool  $snapshotMode  스냅샷(환불 재계산) 모드 여부
-     * @param  array<int, int>  $couponUsageCount  coupon_id => 이번 주문 적용 누적 (참조 갱신)
-     * @return ValidationError|null 한도 초과 시 오류, 통과 시 null
-     */
-    protected function checkPerUserLimit(
-        CouponIssue $couponIssue,
-        CalculationInput $input,
-        bool $snapshotMode,
-        array &$couponUsageCount
-    ): ?ValidationError {
-        $coupon = $couponIssue->coupon;
-        $limit = (int) $coupon->per_user_limit;
-
-        // 스냅샷 모드 또는 무제한(0)이면 검증 없이 누적만 갱신
-        if ($snapshotMode || $limit <= 0) {
-            $couponUsageCount[$coupon->id] = ($couponUsageCount[$coupon->id] ?? 0) + 1;
-
-            return null;
-        }
-
-        // 축1: 과거 사용 완료 건수 (회원만 — 비회원은 0)
-        $priorUsed = ($input->userId !== null)
-            ? $this->couponIssueRepository->getUserUsedCountForCoupon($input->userId, $coupon->id)
-            : 0;
-
-        // 축2: 이번 주문 내 동일 쿠폰 적용 누적
-        $current = $couponUsageCount[$coupon->id] ?? 0;
-
-        if ($priorUsed + $current + 1 > $limit) {
-            return ValidationError::perUserLimitExceeded(
-                $coupon->id,
-                $limit,
-                $priorUsed + $current
-            );
-        }
-
-        $couponUsageCount[$coupon->id] = $current + 1;
-
-        return null;
-    }
-
-    /**
-     * 조합 검증 대상 전체 쿠폰을 수집합니다. (4개 슬롯 통합, 중복 발급건 제거)
-     *
-     * @param  CouponIssue[]  $coupons  주문/배송/상품(PRODUCT_AMOUNT) 슬롯 쿠폰
-     * @param  CouponIssue[]  $itemCouponIssues  상품별(itemCoupons) 슬롯 쿠폰
-     * @return CouponIssue[] issueId 기준 중복 제거된 전체 적용 쿠폰
-     */
-    protected function collectAllCouponsForCombination(array $coupons, array $itemCouponIssues): array
-    {
-        $merged = array_merge(array_values($coupons), array_values($itemCouponIssues));
-        $byId = [];
-        foreach ($merged as $issue) {
-            $byId[$issue->id] = $issue;
-        }
-
-        return array_values($byId);
+        return $errors;
     }
 
     /**
@@ -1939,7 +1465,6 @@ class OrderCalculationService
      * @param  Coupon  $coupon  쿠폰
      * @param  int  $amount  적용 대상 금액
      * @param  array|null  $snapshotOverride  스냅샷 오버라이드 [discount_type, discount_value, max_discount_amount]
-     * @param  int  $quantity  정액 할인에 곱할 수량 (상품금액 쿠폰의 줄 수량)
      * @return int 할인액
      */
     protected function calculateCouponDiscount(Coupon $coupon, int $amount, ?array $snapshotOverride = null, int $quantity = 1): int
@@ -1962,29 +1487,6 @@ class OrderCalculationService
         }
 
         return min($discount, $amount);
-    }
-
-    /**
-     * 라인별 상한 오버라이드가 있으면 그 라인의 쿠폰 스냅샷으로 바꿉니다.
-     *
-     * 환불 재계산의 옵션 치환(교환 후 열, `OrderAdjustmentService::applySubstitutions()`)은 한 주문 행을
-     * 원 라인과 치환 라인으로 가른다. 정률+상한 쿠폰은 라인마다 `min(정률, 상한)` 이라 갈린 두 라인에
-     * 상한이 두 번 걸리므로, 치환 쪽이 수량 비례로 나눈 상한을 `max_discount_amount_by_line[라인키]` 로
-     * 싣는다. 그 키가 없으면(주문 생성·일반 재계산 전부) 스냅샷은 그대로다.
-     *
-     * @param  array|null  $snapshot  쿠폰 스냅샷 오버라이드
-     * @param  int|string  $optionId  라인 키 (product_option_id 또는 치환 라인의 음수 키)
-     * @return array|null 라인용 스냅샷
-     */
-    protected function couponSnapshotForLine(?array $snapshot, int|string $optionId): ?array
-    {
-        if ($snapshot === null || ! isset($snapshot['max_discount_amount_by_line'][$optionId])) {
-            return $snapshot;
-        }
-
-        $snapshot['max_discount_amount'] = (int) $snapshot['max_discount_amount_by_line'][$optionId];
-
-        return $snapshot;
     }
 
     /**
@@ -2052,34 +1554,16 @@ class OrderCalculationService
         $groups = [];
         $shippingPolicySnapshots = $input?->shippingPolicySnapshots ?? [];
 
-        // 같은 상품옵션 라인 수 — 키 금액을 라인에 나눌 때 마지막 라인을 가린다(S-Q26-c)
-        $keyLineCount = [];
-        foreach ($preparedItems as $item) {
-            $keyLineCount[$item['product_option_id']] = ($keyLineCount[$item['product_option_id']] ?? 0) + 1;
-        }
-        $keySeen = [];
-        $keyAllocated = [];
-
         foreach ($preparedItems as $item) {
             $product = $item['product'];
-            $isSnapshotMode = ! empty($item['_snapshot_mode']);
             $policyId = $product->shipping_policy_id;
-
-            // 통상 모드에서 상품에 정책이 없으면(shipping_policy_id=null) 기본 배송정책으로 폴백한다.
-            // 폴백된 기본정책 ID 로 그룹화되어, 주문 생성 시 그 기본정책 전체가 스냅샷에 동결되고
-            // (delivery_policy_snapshot) 환불 재계산은 동결된 스냅샷 기준으로 동작한다.
-            // 스냅샷 모드는 주문 시점 동결된 policy_id(폴백 결과 포함)를 그대로 사용한다.
-            $fallbackPolicy = null;
-            if (! $policyId && ! $isSnapshotMode) {
-                $fallbackPolicy = $this->shippingPolicyResolver->getDefaultPolicy();
-                $policyId = $fallbackPolicy?->id;
-            }
 
             if (! $policyId) {
                 continue;
             }
 
             $optionId = $item['product_option_id'];
+            $isSnapshotMode = ! empty($item['_snapshot_mode']);
 
             if (! isset($groups[$policyId])) {
                 $policy = null;
@@ -2090,12 +1574,6 @@ class OrderCalculationService
                     $policySnapshotData = $shippingPolicySnapshots[$optionId];
                     $policy = $this->buildSnapshotShippingPolicy($policyId, $policySnapshotData);
                     $snapshotCountrySetting = $this->buildSnapshotCountrySetting($policySnapshotData);
-                } elseif ($fallbackPolicy !== null) {
-                    // 통상 모드 + 기본정책 폴백: 해석된 기본 배송정책 사용
-                    $policy = $fallbackPolicy;
-                    if (! $policy->relationLoaded('countrySettings')) {
-                        $policy->load('countrySettings');
-                    }
                 } else {
                     // 통상 모드: DB에서 배송정책 로드
                     $policy = $product->shippingPolicy;
@@ -2119,25 +1597,9 @@ class OrderCalculationService
                 $groups[$policyId]['_snapshot_country_setting'] = $this->buildSnapshotCountrySetting($shippingPolicySnapshots[$optionId]);
             }
 
-            // 같은 상품옵션 라인이 둘이면 discountedItems 는 키 합계라, 라인마다 그대로 더하면 그룹 금액이 두 배가
-            // 되어 조건부무료 기준을 잘못 넘긴다(S-Q26-c 엔진 측). 키 금액을 라인 소계 비중으로 나누고 마지막 라인이
-            // 나머지를 받는다. 체크아웃은 키당 한 라인이라 첫 분기(종전과 같음)만 탄다.
-            $keyAmount = (int) ($discountedItems[$optionId]['discounted_subtotal']
+            $amount = $discountedItems[$optionId]['discounted_subtotal']
                 ?? $discountedItems[$optionId]['subtotal']
-                ?? 0);
-            $keySeen[$optionId] = ($keySeen[$optionId] ?? 0) + 1;
-            if ($keyLineCount[$optionId] === 1) {
-                $amount = $keyAmount;
-            } elseif ($keySeen[$optionId] === $keyLineCount[$optionId]) {
-                $amount = $keyAmount - ($keyAllocated[$optionId] ?? 0);
-            } else {
-                $keySubtotal = (int) ($discountedItems[$optionId]['subtotal'] ?? 0);
-                $lineSubtotal = ((int) $item['unit_price'] + (int) ($item['additional_options_total'] ?? 0)) * (int) $item['quantity'];
-                $amount = $keySubtotal > 0
-                    ? intdiv($keyAmount * $lineSubtotal, $keySubtotal)
-                    : intdiv($keyAmount, $keyLineCount[$optionId]);
-                $keyAllocated[$optionId] = ($keyAllocated[$optionId] ?? 0) + $amount;
-            }
+                ?? 0;
 
             $productOption = $item['product_option'];
             $itemWeight = (float) ($productOption->weight ?? 0) * $item['quantity'];
@@ -2191,15 +1653,11 @@ class OrderCalculationService
     /**
      * 국가별 설정에 따라 배송비를 계산합니다.
      *
-     * 부과정책 14종의 분기가 이 메서드 한 곳에 있다. 클레임 배송비의 '원 배송정책 기준' 모드도
-     * 같은 분기를 타야 하므로(`ClaimShippingFeeService`) public 이다 — 두 벌로 두면 정책이
-     * 늘어날 때 한쪽만 갱신되어 주문 배송비와 클레임 배송비가 조용히 갈린다.
-     *
      * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
      * @param  array  $group  그룹 정보 (total_amount, total_quantity, total_weight, total_volume)
      * @return int 배송비
      */
-    public function calculateCountryShippingFee(ShippingPolicyCountrySetting $countrySetting, array &$group): int
+    protected function calculateCountryShippingFee(ShippingPolicyCountrySetting $countrySetting, array &$group): int
     {
         // 스냅샷 모드: 원 주문 시 계산된 배송비를 직접 사용 (플러그인 훅 미호출)
         // → 플러그인 ON/OFF 무관하게 환불 정확성 보장
@@ -2227,183 +1685,70 @@ class OrderCalculationService
         $groupWeight = $group['total_weight'] ?? 0.0;
         $groupVolume = $group['total_volume'] ?? 0.0;
 
-        // 단위 환산은 이 지점 한 곳에서만 수행한다.
-        // 상품 옵션은 g / cm³ 로 저장되고, 배송정책 구간·단위값은 kg / L 로 입력받는다.
+        // 부피무게 계산 (부피 / 부피무게 계수, 기본값 6000)
         $volumeWeightDivisor = $countrySetting->ranges['volume_weight_divisor'] ?? 6000;
-        $weightKg = $groupWeight / 1000;
-        $volumeLiter = $groupVolume / 1000;
-        // 부피무게(kg) = 부피(cm³) / 부피무게 계수 (기본 6000)
-        $volumetricWeightKg = $volumeWeightDivisor > 0 ? $groupVolume / $volumeWeightDivisor : 0.0;
-        $chargeableWeightKg = max($weightKg, $volumetricWeightKg);
+        $volumeWeight = $volumeWeightDivisor > 0 ? $groupVolume / $volumeWeightDivisor : 0.0;
+        $chargeableWeight = max($groupWeight, $volumeWeight);
 
         return match ($countrySetting->charge_policy) {
             ChargePolicyEnum::FREE => 0,
-            ChargePolicyEnum::FIXED => (int) round((float) $countrySetting->base_fee),
-            ChargePolicyEnum::CONDITIONAL_FREE => $groupTotal >= $countrySetting->free_threshold ? 0 : (int) round((float) $countrySetting->base_fee),
-            ChargePolicyEnum::RANGE_AMOUNT => $this->calculateRangeFee($countrySetting->ranges, $groupTotal, $countrySetting),
-            ChargePolicyEnum::RANGE_QUANTITY => $this->calculateRangeFee($countrySetting->ranges, $groupQuantity, $countrySetting),
-            ChargePolicyEnum::RANGE_WEIGHT => $this->calculateRangeFee($countrySetting->ranges, $weightKg, $countrySetting),
-            ChargePolicyEnum::RANGE_VOLUME => $this->calculateRangeFee($countrySetting->ranges, $volumeLiter, $countrySetting),
-            ChargePolicyEnum::RANGE_VOLUME_WEIGHT => $this->calculateRangeFee($countrySetting->ranges, $chargeableWeightKg, $countrySetting),
+            ChargePolicyEnum::FIXED => (int) $countrySetting->base_fee,
+            ChargePolicyEnum::CONDITIONAL_FREE => $groupTotal >= $countrySetting->free_threshold ? 0 : (int) $countrySetting->base_fee,
+            ChargePolicyEnum::RANGE_AMOUNT => $this->calculateRangeFee($countrySetting->ranges, $groupTotal),
+            ChargePolicyEnum::RANGE_QUANTITY => $this->calculateRangeFee($countrySetting->ranges, $groupQuantity),
+            ChargePolicyEnum::RANGE_WEIGHT => $this->calculateRangeFee($countrySetting->ranges, (int) ($groupWeight * 1000)), // kg → g 변환
+            ChargePolicyEnum::RANGE_VOLUME => $this->calculateRangeFee($countrySetting->ranges, (int) $groupVolume),
+            ChargePolicyEnum::RANGE_VOLUME_WEIGHT => $this->calculateRangeFee($countrySetting->ranges, (int) ($chargeableWeight * 1000)),
             ChargePolicyEnum::PER_QUANTITY => $this->calculatePerUnitFee($countrySetting->base_fee, $groupQuantity, $countrySetting->ranges['unit_value'] ?? 1),
-            ChargePolicyEnum::PER_WEIGHT => $this->calculatePerUnitFee($countrySetting->base_fee, $weightKg, $countrySetting->ranges['unit_value'] ?? 0.5),
-            ChargePolicyEnum::PER_VOLUME => $this->calculatePerUnitFee($countrySetting->base_fee, $volumeLiter, $countrySetting->ranges['unit_value'] ?? 1),
-            ChargePolicyEnum::PER_VOLUME_WEIGHT => $this->calculatePerUnitFee($countrySetting->base_fee, $chargeableWeightKg, $countrySetting->ranges['unit_value'] ?? 0.5),
+            ChargePolicyEnum::PER_WEIGHT => $this->calculatePerUnitFee($countrySetting->base_fee, $groupWeight, $countrySetting->ranges['unit_value'] ?? 0.5),
+            ChargePolicyEnum::PER_VOLUME => $this->calculatePerUnitFee($countrySetting->base_fee, $groupVolume, $countrySetting->ranges['unit_value'] ?? 1000),
+            ChargePolicyEnum::PER_VOLUME_WEIGHT => $this->calculatePerUnitFee($countrySetting->base_fee, $chargeableWeight, $countrySetting->ranges['unit_value'] ?? 0.5),
             ChargePolicyEnum::PER_AMOUNT => $this->calculatePerUnitFee($countrySetting->base_fee, $groupTotal, $countrySetting->ranges['unit_value'] ?? 10000),
             ChargePolicyEnum::API => $this->calculateApiShippingFee($countrySetting, $group),
-            default => (int) round((float) $countrySetting->base_fee),
+            default => (int) $countrySetting->base_fee,
         };
     }
 
     /**
-     * 구간별 배송비를 계산합니다 (상한 포함 사다리 매칭).
-     *
-     * 구간을 상한 오름차순(무제한 구간을 마지막)으로 정렬한 뒤, 값이 상한 이하인 첫 구간의
-     * 배송비를 반환합니다. 시작값(min)은 화면 표시용이며 매칭에 사용하지 않습니다. 이 방식은
-     * 상한 포함형(max+1=다음 min)과 반개형(max=다음 min) 어느 형태로 저장된 데이터에서도
-     * 간극 없이 동작합니다.
+     * 구간별 배송비를 계산합니다.
      *
      * @param  array|null  $ranges  구간 설정
-     * @param  int|float  $value  비교 값 (금액·수량·kg·L)
-     * @param  ShippingPolicyCountrySetting|null  $countrySetting  로그 맥락용 국가별 설정
+     * @param  int  $value  비교 값 (금액 또는 수량)
      * @return int 배송비
      */
-    protected function calculateRangeFee(?array $ranges, int|float $value, ?ShippingPolicyCountrySetting $countrySetting = null): int
+    protected function calculateRangeFee(?array $ranges, int $value): int
     {
-        $tiers = is_array($ranges) ? ($ranges['tiers'] ?? []) : [];
-
-        if (! is_array($tiers) || count($tiers) === 0) {
-            $this->logZeroShippingFallback(
-                '구간별 배송비 구간(tiers)이 비어 있어 배송비를 0원으로 처리했습니다',
-                $countrySetting,
-                ['value' => $value]
-            );
-
+        if (empty($ranges) || empty($ranges['tiers'])) {
             return 0;
         }
 
-        // 상한 오름차순 정렬 (무제한 구간은 항상 마지막)
-        $sortedTiers = array_values($tiers);
-        usort($sortedTiers, function ($a, $b) {
-            $aMax = $this->resolveTierMax($a);
-            $bMax = $this->resolveTierMax($b);
+        foreach ($ranges['tiers'] as $tier) {
+            $min = $tier['min'] ?? 0;
+            $max = $tier['max'] ?? PHP_INT_MAX;
 
-            if ($aMax === null && $bMax === null) {
-                return 0;
-            }
-            if ($aMax === null) {
-                return 1;
-            }
-            if ($bMax === null) {
-                return -1;
-            }
-
-            return $aMax <=> $bMax;
-        });
-
-        foreach ($sortedTiers as $tier) {
-            $max = $this->resolveTierMax($tier);
-
-            if ($max === null || (float) $value <= $max) {
-                return (int) round((float) ($tier['fee'] ?? 0));
+            if ($value >= $min && ($max === null || $value < $max)) {
+                return (int) ($tier['fee'] ?? 0);
             }
         }
-
-        // 마지막 구간의 max 가 null 이면 도달하지 않는 경로 (저장 시점 검증이 1차 방어)
-        $this->logZeroShippingFallback(
-            '구간별 배송비에서 매칭되는 구간을 찾지 못해 0원으로 처리했습니다',
-            $countrySetting,
-            ['value' => $value]
-        );
 
         return 0;
     }
 
     /**
-     * 구간의 상한값을 정규화합니다 (무제한이면 null).
-     *
-     * @param  array  $tier  구간 정의
-     * @return float|null 상한값 (무제한이면 null)
-     */
-    protected function resolveTierMax(array $tier): ?float
-    {
-        $max = $tier['max'] ?? null;
-
-        if ($max === null || $max === '') {
-            return null;
-        }
-
-        return (float) $max;
-    }
-
-    /**
-     * 배송비 0원 폴백을 경고 로그로 남깁니다.
-     *
-     * 설정 오류로 인한 무음 0원(무료배송)은 화면상 정상 주문과 구분되지 않으므로
-     * 운영자가 사후에 원인을 추적할 수 있도록 맥락을 남깁니다.
-     *
-     * @param  string  $message  로그 메시지
-     * @param  ShippingPolicyCountrySetting|null  $countrySetting  국가별 설정
-     * @param  array  $context  추가 맥락
-     * @return void 반환값 없음
-     */
-    protected function logZeroShippingFallback(string $message, ?ShippingPolicyCountrySetting $countrySetting, array $context = []): void
-    {
-        Log::warning($message, array_merge([
-            'policy_id' => $countrySetting?->shipping_policy_id,
-            'country_code' => $countrySetting?->country_code,
-            'charge_policy' => $countrySetting?->charge_policy?->value,
-        ], $context));
-    }
-
-    /**
      * 단위당 배송비를 계산합니다.
      *
-     * @param  int|float|string  $baseFee  기본 배송비 (decimal 캐스트로 문자열이 올 수 있음)
-     * @param  int|float  $value  계산 기준 값 (수량, kg, L, 금액 등)
+     * @param  int|float  $baseFee  기본 배송비
+     * @param  int|float  $value  계산 기준 값 (수량, 무게, 부피, 금액 등)
      * @param  int|float  $unitValue  단위 값
      * @return int 배송비
      */
-    protected function calculatePerUnitFee(int|float|string $baseFee, int|float $value, int|float $unitValue): int
+    protected function calculatePerUnitFee(int|float $baseFee, int|float $value, int|float $unitValue): int
     {
         if ($unitValue <= 0) {
             $unitValue = 1;
         }
 
-        return (int) round(ceil($value / $unitValue) * (float) $baseFee);
-    }
-
-    /**
-     * per_* 정책에서 부과 단위 수를 계산합니다 (기본 배송비와 도서산간 곱의 공통 기준).
-     *
-     * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
-     * @param  array  $group  그룹 정보 (total_amount, total_quantity, total_weight, total_volume)
-     * @return int 부과 단위 수
-     */
-    protected function resolveChargeUnits(ShippingPolicyCountrySetting $countrySetting, array $group): int
-    {
-        $groupWeight = (float) ($group['total_weight'] ?? 0.0);
-        $groupVolume = (float) ($group['total_volume'] ?? 0.0);
-        $volumeWeightDivisor = $countrySetting->ranges['volume_weight_divisor'] ?? 6000;
-
-        $weightKg = $groupWeight / 1000;
-        $volumeLiter = $groupVolume / 1000;
-        $volumetricWeightKg = $volumeWeightDivisor > 0 ? $groupVolume / $volumeWeightDivisor : 0.0;
-
-        [$value, $defaultUnitValue] = match ($countrySetting->charge_policy) {
-            ChargePolicyEnum::PER_WEIGHT => [$weightKg, 0.5],
-            ChargePolicyEnum::PER_VOLUME => [$volumeLiter, 1],
-            ChargePolicyEnum::PER_VOLUME_WEIGHT => [max($weightKg, $volumetricWeightKg), 0.5],
-            ChargePolicyEnum::PER_AMOUNT => [(float) ($group['total_amount'] ?? 0), 10000],
-            default => [(float) ($group['total_quantity'] ?? 0), 1],
-        };
-
-        $unitValue = $countrySetting->ranges['unit_value'] ?? $defaultUnitValue;
-        if ($unitValue <= 0) {
-            $unitValue = 1;
-        }
-
-        return max(0, (int) ceil($value / $unitValue));
+        return (int) ceil($value / $unitValue) * (int) $baseFee;
     }
 
     /**
@@ -2415,293 +1760,60 @@ class OrderCalculationService
      */
     protected function calculateApiShippingFee(ShippingPolicyCountrySetting $countrySetting, array $group): int
     {
+        // API 엔드포인트가 설정되어 있지 않으면 기본 배송비 반환
         $apiEndpoint = $countrySetting->api_endpoint;
-
-        // 엔드포인트 미설정 시 기본 배송비 폴백
         if (empty($apiEndpoint)) {
-            return $this->fallbackShippingFee($countrySetting, 'no_endpoint');
+            return (int) $countrySetting->base_fee;
         }
 
         try {
-            $config = is_array($countrySetting->api_config) ? $countrySetting->api_config : [];
-
-            $requestData = $this->buildApiRequestData($countrySetting, $group, $config);
-            $response = $this->dispatchApiRequest($apiEndpoint, $requestData, $config);
-
-            if ($response === null || ! $response->successful()) {
-                return $this->fallbackShippingFee($countrySetting, 'http_error');
-            }
-
-            $fee = $this->extractFeeFromApiResponse($response, $countrySetting, $config);
-
-            return $fee ?? $this->fallbackShippingFee($countrySetting, 'unparsable');
-        } catch (\Throwable $e) {
-            // 예외 발생 시 기본 배송비 반환 (토큰 등 민감값은 로그에 남기지 않음)
-            Log::warning('API 배송비 계산 실패', [
+            // 그룹 정보를 API에 전달할 데이터로 변환
+            $requestData = [
                 'policy_id' => $countrySetting->shipping_policy_id,
                 'country_code' => $countrySetting->country_code,
-                'http_method' => $countrySetting->api_config['http_method'] ?? 'POST',
-                'auth_type' => $countrySetting->api_config['auth_type'] ?? 'none',
-                'error' => $e->getMessage(),
-            ]);
+                'items' => array_map(fn ($item) => [
+                    'product_option_id' => $item['product_option_id'],
+                    'quantity' => $item['quantity'],
+                    'subtotal' => $item['subtotal'],
+                    'weight' => $item['weight'] ?? 0,
+                    'volume' => $item['volume'] ?? 0,
+                ], $group['items'] ?? []),
+                'group_total' => $group['total_amount'] ?? 0,
+                'total_quantity' => $group['total_quantity'] ?? 0,
+            ];
 
-            return $this->fallbackShippingFee($countrySetting, 'exception');
-        }
-    }
-
-    /**
-     * 외부 배송비 계산 API 요청 데이터를 구성합니다 (후보 필터 + 외부 키 매핑 적용).
-     *
-     * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
-     * @param  array  $group  그룹 정보
-     * @param  array  $config  api_config 설정
-     * @return array<string, mixed> 전송할 요청 데이터
-     */
-    protected function buildApiRequestData(ShippingPolicyCountrySetting $countrySetting, array $group, array $config): array
-    {
-        $requestData = [
-            'policy_id' => $countrySetting->shipping_policy_id,
-            'country_code' => $countrySetting->country_code,
-            'items' => array_map(fn ($item) => [
-                'product_option_id' => $item['product_option_id'],
-                'quantity' => $item['quantity'],
-                'subtotal' => $item['subtotal'],
-                'weight' => $item['weight'] ?? 0,
-                'volume' => $item['volume'] ?? 0,
-            ], $group['items'] ?? []),
-            'group_total' => $group['total_amount'] ?? 0,
-            'total_quantity' => $group['total_quantity'] ?? 0,
-        ];
-
-        // 전송 필드가 지정된 경우 후보만 포함 (silent drop 차단 — 후보 SSoT 검증 완료)
-        if (! empty($countrySetting->api_request_fields)) {
-            $filteredData = [];
-            foreach ($countrySetting->api_request_fields as $field) {
-                if (array_key_exists($field, $requestData)) {
-                    $filteredData[$field] = $requestData[$field];
+            // API 전송필드가 지정된 경우 해당 필드만 포함
+            if (! empty($countrySetting->api_request_fields)) {
+                $filteredData = [];
+                foreach ($countrySetting->api_request_fields as $field) {
+                    if (isset($requestData[$field])) {
+                        $filteredData[$field] = $requestData[$field];
+                    }
                 }
+                $requestData = $filteredData;
             }
-            $requestData = $filteredData;
-        }
 
-        // 외부 키 매핑(field_map) 적용 — 우리 키를 외부 API 가 요구하는 키 이름으로 리네임
-        $fieldMap = $config['field_map'] ?? [];
-        if (is_array($fieldMap) && ! empty($fieldMap)) {
-            $mapped = [];
-            foreach ($requestData as $key => $value) {
-                $externalKey = ! empty($fieldMap[$key]) ? $fieldMap[$key] : $key;
-                $mapped[$externalKey] = $value;
+            $response = \Illuminate\Support\Facades\Http::timeout(10)
+                ->post($apiEndpoint, $requestData);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $feeField = $countrySetting->api_response_fee_field ?? 'shipping_fee';
+
+                return (int) ($data[$feeField] ?? $countrySetting->base_fee);
             }
-            $requestData = $mapped;
-        }
 
-        return $requestData;
-    }
-
-    /**
-     * 설정에 따라 HTTP 메서드/인증 헤더를 적용해 외부 API 를 호출합니다.
-     *
-     * GET 은 query string(bracket 표기 자동 직렬화), POST 는 JSON body 로 전송합니다.
-     *
-     * @param  string  $endpoint  API 엔드포인트 URL
-     * @param  array  $requestData  전송 데이터
-     * @param  array  $config  api_config 설정
-     * @return Response|null 응답 (실패 시 null)
-     */
-    protected function dispatchApiRequest(string $endpoint, array $requestData, array $config): ?Response
-    {
-        // 이 호출은 공개 체크아웃 트래픽으로도 유발되므로, 저장된 엔드포인트가 내부망을
-        // 가리키면 요청 자체를 보내지 않는다. 저장 시점 검증(FormRequest) 도입 이전에
-        // 기록된 값이나 DB 직접 수정으로 들어온 값을 여기서 막는다.
-        if (! $this->isEndpointAllowed($endpoint)) {
-            Log::warning('배송비 계산 API 엔드포인트가 내부 네트워크를 가리켜 호출을 차단했습니다', [
-                'host' => parse_url($endpoint, PHP_URL_HOST),
-            ]);
-
-            return null;
-        }
-
-        $request = Http::timeout(10)->withoutRedirecting();
-
-        // 인증 헤더 부착
-        $authType = $config['auth_type'] ?? ShippingApiAuthType::NONE->value;
-        $token = $config['auth_token'] ?? null;
-
-        if ($authType === ShippingApiAuthType::BEARER->value && ! empty($token)) {
-            $request = $request->withToken($token);
-        } elseif ($authType === ShippingApiAuthType::CUSTOM_HEADER->value
-            && ! empty($token) && ! empty($config['auth_header_name'])) {
-            $request = $request->withHeaders([$config['auth_header_name'] => $token]);
-        }
-
-        $method = strtoupper($config['http_method'] ?? ShippingApiHttpMethod::POST->value);
-
-        // GET 은 query string(items 배열은 bracket 표기로 자동 직렬화), POST 는 JSON body
-        return $method === ShippingApiHttpMethod::GET->value
-            ? $request->get($endpoint, $requestData)
-            : $request->post($endpoint, $requestData);
-    }
-
-    /**
-     * 배송비 계산 API 엔드포인트가 호출 가능한 주소인지 판정합니다.
-     *
-     * 사설 IP·localhost 등 내부 네트워크 주소는 기본 차단합니다. 사내 서버를 배송비 API 로
-     * 쓰는 운영 환경을 위해 관리자 환경설정의 `security.allow_internal_outbound_urls` 로
-     * 허용할 수 있으며, 그 경우에도 userinfo 위장·비 HTTP scheme 은 계속 거부합니다.
-     *
-     * @param  string  $endpoint  API 엔드포인트 URL
-     * @return bool 호출을 허용하면 true
-     */
-    protected function isEndpointAllowed(string $endpoint): bool
-    {
-        $options = ['schemes' => ['http', 'https']];
-
-        if ((bool) g7_core_settings('security.allow_internal_outbound_urls', false)) {
-            return OutboundUrlValidator::isStructurallySafeUrl($endpoint, $options);
-        }
-
-        return OutboundUrlValidator::isPublicHttpUrl($endpoint, $options);
-    }
-
-    /**
-     * 외부 API 응답에서 배송비 값을 추출합니다 (응답 형식별 분기).
-     *
-     * - json: response_path 점표기 중첩 경로로 추출
-     * - text: 본문에서 숫자/소수점만 남겨 캐스팅 (통화기호·콤마 제거)
-     *
-     * @param  Response  $response  API 응답
-     * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
-     * @param  array  $config  api_config 설정
-     * @return int|null 추출된 배송비 (추출 실패 시 null)
-     */
-    protected function extractFeeFromApiResponse($response, ShippingPolicyCountrySetting $countrySetting, array $config): ?int
-    {
-        $responseType = $config['response_type'] ?? ShippingApiResponseType::JSON->value;
-
-        if ($responseType === ShippingApiResponseType::TEXT->value) {
-            // 텍스트 응답: 숫자/소수점/부호만 남겨 추출 ("₩3,000" → 3000)
-            $cleaned = preg_replace('/[^0-9.\-]/', '', $response->body());
-
-            return is_numeric($cleaned) ? $this->normalizeApiFee((int) $cleaned, $countrySetting) : null;
-        }
-
-        // JSON 응답: response_path 점표기 중첩 경로 추출 (없으면 기존 api_response_fee_field 폴백)
-        $path = $config['response_path']
-            ?? $countrySetting->api_response_fee_field
-            ?? 'shipping_fee';
-
-        $value = data_get($response->json(), $path);
-
-        return is_numeric($value) ? $this->normalizeApiFee((int) $value, $countrySetting) : null;
-    }
-
-    /**
-     * 외부 API 가 돌려준 배송비를 검증합니다.
-     *
-     * 음수 배송비는 주문 총액을 깎아 금전 손실로 이어지므로 추출 실패로 처리해
-     * 기본 배송비 폴백 경로에 태웁니다.
-     *
-     * @param  int  $fee  추출된 배송비
-     * @param  ShippingPolicyCountrySetting  $countrySetting  국가별 설정
-     * @return int|null 검증을 통과한 배송비 (음수면 null)
-     */
-    protected function normalizeApiFee(int $fee, ShippingPolicyCountrySetting $countrySetting): ?int
-    {
-        if ($fee < 0) {
-            Log::warning('배송비 계산 API 가 음수 배송비를 반환해 기본 배송비로 폴백합니다', [
+            // API 호출 실패 시 기본 배송비 반환
+            return (int) $countrySetting->base_fee;
+        } catch (\Exception $e) {
+            // 예외 발생 시 기본 배송비 반환
+            \Illuminate\Support\Facades\Log::warning('API 배송비 계산 실패', [
                 'policy_id' => $countrySetting->shipping_policy_id,
                 'country_code' => $countrySetting->country_code,
-                'fee' => $fee,
+                'error' => $e->getMessage(),
             ]);
 
-            return null;
-        }
-
-        return $fee;
-    }
-
-    /**
-     * 관리자 입력 설정으로 배송비 계산 API 를 1회 테스트 호출합니다.
-     *
-     * 요청 미리보기 + 응답(상태/본문 일부) + 추출 배송비를 반환합니다. 응답 본문은 길이를
-     * 제한하며, 인증 토큰은 반환값에 노출하지 않습니다.
-     *
-     * @param  string  $endpoint  API 엔드포인트
-     * @param  array  $config  api_config 설정 (auth_token 평문 허용 — 호출에만 사용, 미반환)
-     * @param  array|null  $requestFields  api_request_fields
-     * @param  array  $sample  샘플 데이터 (group_total/total_quantity/country_code)
-     * @return array<string, mixed> 테스트 결과
-     */
-    public function testApiCall(string $endpoint, array $config, ?array $requestFields, array $sample = []): array
-    {
-
-        // transient country setting (DB 저장 없음) — 계산 헬퍼 재사용
-        $countrySetting = new ShippingPolicyCountrySetting([
-            'shipping_policy_id' => 0,
-            'country_code' => $sample['country_code'] ?? 'KR',
-            'api_endpoint' => $endpoint,
-            'api_request_fields' => $requestFields,
-            'base_fee' => 0,
-        ]);
-
-        // 현 정책 기준 더미 그룹 (관리자 샘플 값으로 일부 덮어쓰기)
-        $group = [
-            'items' => [
-                ['product_option_id' => 0, 'quantity' => 1, 'subtotal' => $sample['group_total'] ?? 10000, 'weight' => 1, 'volume' => 1],
-            ],
-            'total_amount' => $sample['group_total'] ?? 10000,
-            'total_quantity' => $sample['total_quantity'] ?? 1,
-        ];
-
-        $requestData = $this->buildApiRequestData($countrySetting, $group, $config);
-        $method = strtoupper($config['http_method'] ?? ShippingApiHttpMethod::POST->value);
-
-        // 요청 미리보기는 성공/실패와 무관하게 항상 반환 (진단 목적)
-        $requestPreview = [
-            'method' => $method,
-            'endpoint' => $endpoint,
-            'data' => $requestData,
-            'body' => json_encode($requestData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
-        ];
-
-        try {
-            $response = $this->dispatchApiRequest($endpoint, $requestData, $config);
-
-            if ($response === null) {
-                return [
-                    'ok' => false,
-                    'reason' => 'no_response',
-                    'request' => $requestPreview,
-                ];
-            }
-
-            $extracted = $this->extractFeeFromApiResponse($response, $countrySetting, $config);
-
-            return [
-                // HTTP 응답을 받았으면 ok=true (응답 자체는 도달). 추출 성공 여부는 extracted_fee 로 구분.
-                'ok' => $response->successful(),
-                'http_ok' => $response->successful(),
-                'request' => $requestPreview,
-                'response' => [
-                    'status' => $response->status(),
-                    // 응답 본문은 4KB 로 제한 (과대 응답 방어). 성공/실패 무관하게 항상 노출.
-                    'body' => mb_substr($response->body(), 0, 4096),
-                ],
-                'extracted_fee' => $extracted,
-                // 화면이 통화 단위를 이어 붙이지 않도록 포맷 문자열을 함께 내보낸다 —
-                // 배송비는 기본 통화 기준이므로 원화를 못 박으면 그 상점에서 단위만 틀린다.
-                'extracted_fee_formatted' => $extracted !== null
-                    ? ecommerce_format_price((float) $extracted, $countrySetting->currency_code ?? null)
-                    : null,
-            ];
-        } catch (\Throwable $e) {
-            // 연결 실패·타임아웃 등 — 요청 미리보기 + 에러 메시지를 함께 반환 (진단)
-            return [
-                'ok' => false,
-                'reason' => 'request_failed',
-                'error' => $e->getMessage(),
-                'request' => $requestPreview,
-            ];
+            return (int) $countrySetting->base_fee;
         }
     }
 
@@ -2714,7 +1826,6 @@ class OrderCalculationService
      */
     protected function apportionShippingFee(array $items, int $totalFee): array
     {
-        // 결과는 상품옵션 키로 모은다 — 같은 키 라인이 둘이면 몫을 더한다(대입하면 앞 라인 몫이 사라진다, S-Q26-c).
         if (empty($items) || $totalFee <= 0) {
             $result = [];
             foreach ($items as $item) {
@@ -2734,7 +1845,7 @@ class OrderCalculationService
             foreach ($items as $index => $item) {
                 $isLast = ($index === count($items) - 1);
                 $result[$item['product_option_id']] = [
-                    'amount' => ($result[$item['product_option_id']]['amount'] ?? 0) + ($isLast ? ($totalFee - $allocated) : $share),
+                    'amount' => $isLast ? ($totalFee - $allocated) : $share,
                 ];
                 $allocated += $share;
             }
@@ -2757,7 +1868,7 @@ class OrderCalculationService
                 $allocated += $share;
             }
 
-            $result[$item['product_option_id']] = ['amount' => ($result[$item['product_option_id']]['amount'] ?? 0) + $share];
+            $result[$item['product_option_id']] = ['amount' => $share];
         }
 
         return $result;
@@ -2922,14 +2033,10 @@ class OrderCalculationService
     /**
      * 스냅샷의 policy_snapshot 데이터에서 ShippingPolicyCountrySetting 모델을 생성합니다.
      *
-     * 클레임 배송비의 '원 배송정책 기준' 모드가 주문 시점 정책을 복원할 때도 쓰므로 public 이다.
-     * 이 재구성물에는 `api_endpoint` / `api_config` 가 없다 — 스냅샷 페이로드가 그 둘을 담지
-     * 않기 때문이며, 그래서 재계산 경로의 `api` 부과정책은 외부 호출 없이 `base_fee` 로 떨어진다.
-     *
      * @param  array  $snapshotData  AppliedShippingPolicy 직렬화 데이터
      * @return ShippingPolicyCountrySetting|null 스냅샷 기반 국가별 설정
      */
-    public function buildSnapshotCountrySetting(array $snapshotData): ?ShippingPolicyCountrySetting
+    protected function buildSnapshotCountrySetting(array $snapshotData): ?ShippingPolicyCountrySetting
     {
         $policySnapshot = $snapshotData['policy_snapshot'] ?? null;
 

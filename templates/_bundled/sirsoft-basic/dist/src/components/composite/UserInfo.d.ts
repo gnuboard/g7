@@ -1,5 +1,4 @@
 import { default as React } from 'react';
-import { EditorAttrs } from '../../types';
 /**
  * 메뉴 항목 설정 인터페이스
  */
@@ -30,7 +29,7 @@ export interface AuthorInfo {
     /** 아바타 URL */
     avatar?: string;
     /** 사용자 상태 */
-    status?: 'active' | 'inactive' | 'blocked' | 'withdrawn' | 'dormant' | 'pending_verification';
+    status?: 'active' | 'inactive' | 'blocked' | 'withdrawn';
     /** 비회원 여부 */
     is_guest?: boolean;
 }
@@ -107,14 +106,6 @@ export interface UserInfoProps {
     hideMenuItems?: string[];
     /** 기본 메뉴에 추가할 항목 */
     appendMenuItems?: MenuItemConfig[];
-    /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-    id?: string;
-    /**
-       * 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)
-       */
-    editorAttrs?: EditorAttrs;
 }
 /**
  * UserInfo 컴포넌트

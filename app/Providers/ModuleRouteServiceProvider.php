@@ -2,10 +2,9 @@
 
 namespace App\Providers;
 
+use App\Enums\ExtensionStatus;
 use App\Extension\ExtensionManager;
-use App\Extension\Testing\ExtensionTestAllowlist;
-use App\Extension\Traits\CachesModuleStatus;
-use App\Support\InstallerContext;
+use App\Models\Module;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -13,8 +12,6 @@ use Illuminate\Support\Facades\Schema;
 
 class ModuleRouteServiceProvider extends ServiceProvider
 {
-    use CachesModuleStatus;
-
     /**
      * The path to the "home" route for your application.
      *
@@ -54,12 +51,7 @@ class ModuleRouteServiceProvider extends ServiceProvider
 
         // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 쿼리 제거).
         // 인스톨러 이전 환경에서는 기존 체크 경로로 폴백.
-        //
-        // 단, 마이그레이션 계열 명령 실행 중에는 INSTALLER_COMPLETED=true 라도 테이블이
-        // 아직 없을 수 있으므로(빈 DB 새 서버에 .env 복사 후 migrate 전) fast-path 를
-        // 무력화하고 hasTable 검증 경로로 진입한다. 빈 DB 면 여기서 early return 하여
-        // 아래 무방비 pluck 이 table not found 로 부팅을 깨뜨리는 것을 막는다.
-        if (! config('app.installer_completed') || InstallerContext::isSchemaMutatingCommand()) {
+        if (! config('app.installer_completed')) {
             try {
                 if (! Schema::hasTable('modules')) {
                     return;
@@ -75,22 +67,16 @@ class ModuleRouteServiceProvider extends ServiceProvider
             }
         }
 
-        // 활성화된 모듈 identifier 목록 가져오기.
-        // 같은 목록을 ModuleManager·ModuleServiceProvider 가 이미 캐시(TTL 기본 하루)해 두므로
-        // 여기서 다시 조회하지 않고 그 캐시를 공유한다. 상태 변경 시 무효화도 같이 따라온다.
-        $activeModuleIdentifiers = self::getActiveModuleIdentifiers();
+        // 활성화된 모듈 identifier 목록 가져오기
+        $activeModuleIdentifiers = Module::where('status', ExtensionStatus::Active->value)
+            ->pluck('identifier')
+            ->toArray();
 
         $modules = File::directories($modulesPath);
-        $allowlistActive = ExtensionTestAllowlist::isActive();
 
         foreach ($modules as $module) {
             $moduleName = basename($module);
             $moduleFile = $module.'/module.php';
-
-            // 테스트 환경 확장 격리: allowlist 밖 모듈의 라우트 등록 차단
-            if ($allowlistActive && ! ExtensionTestAllowlist::isAllowed('module', $moduleName)) {
-                continue;
-            }
 
             // 활성화된 모듈만 라우트 로드
             if (! in_array($moduleName, $activeModuleIdentifiers)) {

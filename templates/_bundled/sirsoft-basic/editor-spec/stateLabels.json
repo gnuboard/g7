@@ -1,9 +1,0 @@
-[
-  { "key": "currentUser", "scope": "_global", "label_key": "$t:editor.state_label.current_user" },
-  { "key": "currentUser.name", "scope": "_global", "label_key": "$t:editor.state_label.current_user_name" },
-  { "key": "currentUser.email", "scope": "_global", "label_key": "$t:editor.state_label.current_user_email" },
-  { "key": "currentUser.id", "scope": "_global", "label_key": "$t:editor.state_label.current_user_id" },
-  { "key": "settings.general.site_name", "scope": "_global", "label_key": "$t:editor.state_label.site_name" },
-  { "key": "site.name", "scope": "_global", "label_key": "$t:editor.state_label.site_name" },
-  { "key": "q", "scope": "query", "label_key": "$t:editor.state_label.query_q" }
-]

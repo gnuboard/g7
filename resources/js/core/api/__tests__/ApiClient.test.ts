@@ -5,23 +5,10 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import ApiClient, { createApiClient, getApiClient } from '../ApiClient';
 import axios from 'axios';
-import { IdentityGuardInterceptor } from '../../identity/IdentityGuardInterceptor';
 
 // Axios 모킹
 vi.mock('axios');
 const mockedAxios = axios as any;
-
-// IdentityGuardInterceptor 모킹 (428 중앙 처리 검증용)
-vi.mock('../../identity/IdentityGuardInterceptor', () => ({
-  IdentityGuardInterceptor: {
-    isIdentityRequired: vi.fn(),
-    handle: vi.fn(),
-  },
-}));
-const mockedGuard = IdentityGuardInterceptor as unknown as {
-  isIdentityRequired: ReturnType<typeof vi.fn>;
-  handle: ReturnType<typeof vi.fn>;
-};
 
 describe('ApiClient', () => {
   let apiClient: ApiClient;
@@ -97,28 +84,6 @@ describe('ApiClient', () => {
 
     it('토큰이 없으면 null을 반환해야 함', () => {
       expect(apiClient.getToken()).toBeNull();
-    });
-
-    it('문자열이 아닌 토큰은 저장하지 않아야 함', () => {
-      // localStorage 는 무엇을 넣든 문자열로 바꾼다 — undefined 를 넘기면 "undefined" 라는
-      // truthy 문자열이 남아 이후 모든 요청이 Bearer undefined 로 나가고 401 로 튕긴다.
-      apiClient.setToken(undefined as unknown as string);
-
-      expect(localStorage.getItem('auth_token')).toBeNull();
-      expect(apiClient.getToken()).toBeNull();
-    });
-
-    it('빈 문자열 토큰도 저장하지 않아야 함', () => {
-      apiClient.setToken('');
-
-      expect(localStorage.getItem('auth_token')).toBeNull();
-    });
-
-    it('기존 토큰이 있어도 잘못된 값으로 덮어쓰지 않아야 함', () => {
-      apiClient.setToken('valid-token');
-      apiClient.setToken(null as unknown as string);
-
-      expect(apiClient.getToken()).toBe('valid-token');
     });
   });
 
@@ -198,177 +163,6 @@ describe('ApiClient', () => {
       const client1 = getApiClient();
       const client2 = getApiClient();
       expect(client1).toBe(client2);
-    });
-  });
-
-  describe('428 본인인증 중앙 처리 (IDV)', () => {
-    /**
-     * response 인터셉터의 onRejected 콜백을 캡처해 직접 호출하기 위한 헬퍼.
-     * axios.create 가 use(onFulfilled, onRejected) 로 받은 onRejected 를 보관한다.
-     */
-    function buildClientCapturingRejected(): { onRejected: (e: any) => Promise<any> } {
-      let captured: ((e: any) => Promise<any>) | null = null;
-      mockedAxios.create.mockReturnValue({
-        interceptors: {
-          request: { use: vi.fn(() => 0) },
-          response: {
-            use: vi.fn((_onFulfilled: any, onRejected: any) => {
-              captured = onRejected;
-              return 0;
-            }),
-          },
-        },
-        get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn(),
-      });
-      new ApiClient();
-      return { onRejected: captured! };
-    }
-
-    const idv428Error = {
-      config: { url: '/api/x', headers: { Authorization: 'Bearer t' }, data: JSON.stringify({ a: 1 }) },
-      response: {
-        status: 428,
-        data: { error_code: 'identity_verification_required', verification: { return_request: { method: 'POST', url: '/api/x' } } },
-      },
-    };
-
-    it('428 응답을 IdentityGuardInterceptor 로 인터셉트하고 verify 성공 시 재실행 응답을 반환한다', async () => {
-      mockedGuard.isIdentityRequired.mockReturnValue(true);
-      mockedGuard.handle.mockResolvedValue({
-        ok: true, status: 200, json: async () => ({ success: true, data: { confirmed: true } }),
-      } as any);
-
-      const { onRejected } = buildClientCapturingRejected();
-      const result = await onRejected(idv428Error);
-
-      expect(mockedGuard.handle).toHaveBeenCalledOnce();
-      expect(result.status).toBe(200);
-      expect(result.data).toEqual({ success: true, data: { confirmed: true } });
-    });
-
-    it('428 인데 사용자가 본인인증을 취소(handle=null)하면 원 에러를 그대로 전파한다', async () => {
-      mockedGuard.isIdentityRequired.mockReturnValue(true);
-      mockedGuard.handle.mockResolvedValue(null);
-
-      const { onRejected } = buildClientCapturingRejected();
-      await expect(onRejected(idv428Error)).rejects.toBe(idv428Error);
-    });
-
-    it('428 이 아니면 IdentityGuard 를 호출하지 않고 일반 에러로 전파한다', async () => {
-      mockedGuard.isIdentityRequired.mockReturnValue(false);
-
-      const { onRejected } = buildClientCapturingRejected();
-      const err422 = { config: { url: '/api/y' }, response: { status: 422, data: { message: 'invalid' } } };
-      await expect(onRejected(err422)).rejects.toBe(err422);
-      expect(mockedGuard.handle).not.toHaveBeenCalled();
-    });
-
-    /**
-     * 신규(engine-v1.51.0) — axios(G7Core.api) 호출 경로도 config.identity_target 을 launcher 로 전달.
-     * apiCall(handleApiCall, native fetch) 경로와 동일하게 모든 API 호출 방식에서 IDV target 지원.
-     */
-    it('config.identity_target 을 IdentityGuardInterceptor.handle 의 target 인자로 전달한다', async () => {
-      mockedGuard.isIdentityRequired.mockReturnValue(true);
-      mockedGuard.handle.mockResolvedValue({
-        ok: true, status: 200, json: async () => ({ success: true }),
-      } as any);
-
-      const errWithTarget = {
-        config: {
-          url: '/api/orders',
-          headers: {},
-          data: JSON.stringify({ a: 1 }),
-          identity_target: { email: 'guest@example.com', phone: '01099998888' },
-        },
-        response: {
-          status: 428,
-          data: { error_code: 'identity_verification_required', verification: { return_request: { method: 'POST', url: '/api/orders' } } },
-        },
-      };
-
-      const { onRejected } = buildClientCapturingRejected();
-      await onRejected(errWithTarget);
-
-      expect(mockedGuard.handle).toHaveBeenCalledWith(
-        errWithTarget.response.data,
-        expect.any(Object),
-        { email: 'guest@example.com', phone: '01099998888' },
-      );
-    });
-  });
-
-  // @scenario consumer=product, disk_setting=fake_cdn, e2e=drivers_tab_card, hook=unregistered, override=follow_core, row_state=new_remote_row
-  // @effects cross_origin_asset_request_omits_session_token
-  describe('교차 출처 요청의 인증 헤더 차단', () => {
-    /**
-     * 요청 인터셉터를 캡처해 임의 config 로 실행합니다.
-     *
-     * @returns 캡처된 요청 인터셉터
-     */
-    function buildClientCapturingRequest(): (config: any) => any {
-      let captured: ((config: any) => any) | null = null;
-      mockedAxios.create.mockReturnValue({
-        interceptors: {
-          request: {
-            use: vi.fn((onFulfilled: any) => {
-              captured = onFulfilled;
-              return 0;
-            }),
-          },
-          response: { use: vi.fn(() => 0) },
-        },
-        get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), delete: vi.fn(),
-      });
-      new ApiClient();
-      return captured!;
-    }
-
-    beforeEach(() => {
-      localStorage.setItem('auth_token', 'secret-token');
-    });
-
-    it('동일 출처 상대 경로에는 Authorization 을 첨부한다', () => {
-      const onRequest = buildClientCapturingRequest();
-
-      const config = onRequest({ url: '/api/attachments/abc', headers: {}, baseURL: '/api' });
-
-      expect(config.headers.Authorization).toBe('Bearer secret-token');
-    });
-
-    it('동일 출처 절대 URL 에는 Authorization 을 첨부한다', () => {
-      const onRequest = buildClientCapturingRequest();
-
-      const config = onRequest({
-        url: `${window.location.origin}/api/attachments/abc`,
-        headers: {},
-        baseURL: '/api',
-      });
-
-      expect(config.headers.Authorization).toBe('Bearer secret-token');
-    });
-
-    it('교차 출처 절대 URL(공개 자산 CDN)에는 Authorization 을 첨부하지 않는다', () => {
-      const onRequest = buildClientCapturingRequest();
-
-      const config = onRequest({
-        url: 'https://cdn.example.com/bucket/products/a.png',
-        headers: {},
-        baseURL: '/api',
-      });
-
-      expect(config.headers.Authorization).toBeUndefined();
-    });
-
-    it('프로토콜 상대 URL(//cdn) 도 교차 출처면 Authorization 을 첨부하지 않는다', () => {
-      const onRequest = buildClientCapturingRequest();
-
-      const config = onRequest({
-        url: '//cdn.example.com/bucket/products/a.png',
-        headers: {},
-        baseURL: '/api',
-      });
-
-      expect(config.headers.Authorization).toBeUndefined();
     });
   });
 });

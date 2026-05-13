@@ -1,1099 +1,927 @@
 {
-    "comment": "상품 폼 — 활동로그 구획(수정 진입에만 선다). 이 상품에 언제 누가 무엇을 바꿨는지 남는다.\n  기록이 많아 쪽 나눔·정렬을 서버에 맡기므로, 화면에서 값을 바꾸면 목록을 다시 받는다.\n  넓은 화면은 표, 좁은 화면은 카드로 같은 내용을 두 벌 세운다.",
-    "meta": {
-        "is_partial": true,
-        "description": "Product Form - Activity Log Section (Edit Mode Only)"
-    },
+  "meta": {
+    "is_partial": true,
+    "description": "Product Form - Activity Log Section (Edit Mode Only)"
+  },
+  "id": "section_activity_log",
+  "type": "basic",
+  "name": "Section",
+  "if": "{{!!route?.itemCode}}",
+  "props": {
     "id": "activity_log",
-    "type": "basic",
-    "name": "Div",
-    "props": {
-        "className": "admin-card-accordion"
-    },
-    "children": [
+    "className": "scroll-mt-32"
+  },
+  "children": [
+    {
+      "id": "activity_log_card",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "className": "card-accordion mb-6"
+      },
+      "children": [
         {
-            "type": "basic",
-            "name": "Div",
-            "actions": [
+          "id": "activity_log_header",
+          "type": "basic",
+          "name": "Div",
+          "props": {
+            "className": "card-accordion-header"
+          },
+          "actions": [
+            {
+              "type": "click",
+              "handler": "setState",
+              "params": { "target": "local", "ui.activityLogExpanded": "{{!_local.ui.activityLogExpanded}}" }
+            }
+          ],
+          "children": [
+            {
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex items-center gap-2"
+              },
+              "children": [
                 {
-                    "comment": "구획 접기/펼치기",
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.activityLogExpanded": "{{!_local.ui.activityLogExpanded}}"
-                    }
+                  "type": "basic",
+                  "name": "Icon",
+                  "props": {
+                    "name": "history",
+                    "className": "w-5 h-5 text-gray-500 dark:text-gray-400"
+                  }
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "props": {
+                    "className": "card-accordion-title"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.sections.activity_log"
+                },
+                {
+                  "type": "basic",
+                  "name": "Span",
+                  "if": "{{activity_logs.data?.meta?.total}}",
+                  "props": {
+                    "className": "ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full"
+                  },
+                  "text": "{{activity_logs.data?.meta?.total}}"
                 }
-            ],
-            "props": {
-                "className": "card-header"
+              ]
             },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                        "name": "history",
-                        "className": "text-gray-500 dark:text-gray-400"
-                    }
-                },
-                {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                        "className": "card-title"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.product.sections.activity_log"
-                },
-                {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{activity_logs.data?.meta?.total}}",
-                    "props": {
-                        "className": "ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full"
-                    },
-                    "text": "{{activity_logs.data?.meta?.total}}"
-                },
-                {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                        "name": "chevron-down",
-                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.activityLogExpanded !== false ? 'rotate-180' : ''}}"
-                    }
-                }
-            ]
+            {
+              "type": "basic",
+              "name": "Icon",
+              "props": {
+                "name": "chevron-down",
+                "className": "card-accordion-icon transition-transform duration-200 {{_local.ui.activityLogExpanded !== false ? 'rotate-180' : ''}}"
+              }
+            }
+          ]
         },
         {
-            "id": "activity_log_body",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{_local.ui.activityLogExpanded !== false}}",
-            "props": {
-                "className": "row-stack"
-            },
-            "children": [
-                {
-                    "id": "activity_log_filters",
-                    "type": "basic",
-                    "name": "Div",
-                    "responsive": {
-                        "portable": {
-                            "props": {
-                                "className": "row-stack p-4 border-b border-gray-200 dark:border-gray-700"
-                            }
-                        }
-                    },
-                    "props": {
-                        "className": "flex-between flex-wrap gap-4 p-4 border-b border-gray-200 dark:border-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "text-label-subtle"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.product.activity_log.total_count|count={{activity_logs.data?.meta?.total ?? 0}}"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "responsive": {
-                                "portable": {
-                                    "props": {
-                                        "className": "row-stack w-full"
-                                    }
-                                }
-                            },
-                            "props": {
-                                "className": "flex-center gap-4"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "responsive": {
-                                        "portable": {
-                                            "props": {
-                                                "className": "flex-center gap-2 w-full"
-                                            }
-                                        }
-                                    },
-                                    "props": {
-                                        "className": "flex-center gap-2"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Label",
-                                            "props": {
-                                                "className": "text-label whitespace-nowrap"
-                                            },
-                                            "text": "$t:sirsoft-ecommerce.admin.product.activity_log.sort_order"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Select",
-                                            "responsive": {
-                                                "portable": {
-                                                    "props": {
-                                                        "className": "flex-1"
-                                                    }
-                                                }
-                                            },
-                                            "actions": [
-                                                {
-                                                    "comment": "정렬은 화면에서 뒤집지 않고 서버에서 다시 받는다 — 지금 쪽에 실린 것만 뒤집으면 앞뒤 쪽의 기록이 뒤섞인다",
-                                                    "type": "change",
-                                                    "handler": "sequence",
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "ui.activityLogSort": "{{$event.target.value}}"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "refetchDataSource",
-                                                            "params": {
-                                                                "dataSourceId": "activity_logs"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ],
-                                            "props": {
-                                                "name": "activity_log_sort",
-                                                "value": "{{_local.ui.activityLogSort ?? 'desc'}}",
-                                                "className": "w-32",
-                                                "options": [
-                                                    {
-                                                        "value": "desc",
-                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.latest"
-                                                    },
-                                                    {
-                                                        "value": "asc",
-                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.oldest"
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "responsive": {
-                                        "portable": {
-                                            "props": {
-                                                "className": "flex-center gap-2 w-full"
-                                            }
-                                        }
-                                    },
-                                    "props": {
-                                        "className": "flex-center gap-2"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Label",
-                                            "props": {
-                                                "className": "text-label whitespace-nowrap"
-                                            },
-                                            "text": "$t:sirsoft-ecommerce.admin.product.activity_log.per_page"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Select",
-                                            "responsive": {
-                                                "portable": {
-                                                    "props": {
-                                                        "className": "flex-1"
-                                                    }
-                                                }
-                                            },
-                                            "actions": [
-                                                {
-                                                    "comment": "한 쪽에 담을 건수. 쪽 크기가 달라지면 현재 쪽 번호는 뜻을 잃으므로 1쪽으로 되돌린 뒤 다시 받는다",
-                                                    "type": "change",
-                                                    "handler": "sequence",
-                                                    "actions": [
-                                                        {
-                                                            "handler": "setState",
-                                                            "params": {
-                                                                "target": "local",
-                                                                "ui.activityLogPerPage": "{{Number($event.target.value)}}",
-                                                                "ui.logsPage": 1
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "refetchDataSource",
-                                                            "params": {
-                                                                "dataSourceId": "activity_logs"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ],
-                                            "props": {
-                                                "name": "activity_log_per_page",
-                                                "value": "{{_local.ui.activityLogPerPage ?? 10}}",
-                                                "className": "w-20",
-                                                "options": [
-                                                    {
-                                                        "value": 10,
-                                                        "label": "10"
-                                                    },
-                                                    {
-                                                        "value": 20,
-                                                        "label": "20"
-                                                    },
-                                                    {
-                                                        "value": 50,
-                                                        "label": "50"
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "activity_log_table_pc",
-                    "type": "basic",
-                    "name": "Div",
-                    "responsive": {
-                        "portable": {
-                            "if": "{{false}}"
-                        }
-                    },
-                    "props": {
-                        "className": "overflow-x-auto"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Table",
-                            "props": {
-                                "className": "w-full"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Thead",
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Tr",
-                                            "props": {
-                                                "className": "border-b border-gray-200 dark:border-gray-700"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Th",
-                                                    "props": {
-                                                        "className": "text-table-header px-4 py-3 text-left w-44"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.activity_log.columns.datetime"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Th",
-                                                    "props": {
-                                                        "className": "text-table-header px-4 py-3 text-left w-36"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.activity_log.columns.actor"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Th",
-                                                    "props": {
-                                                        "className": "text-table-header px-4 py-3 text-left"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.activity_log.columns.description"
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Tbody",
-                                    "props": {
-                                        "className": "divider-list"
-                                    },
-                                    "children": [
-                                        {
-                                            "id": "activity_log_row_{{logIdx}}",
-                                            "type": "basic",
-                                            "name": "Tr",
-                                            "iteration": {
-                                                "source": "{{activity_logs?.data?.data ?? []}}",
-                                                "item_var": "log",
-                                                "index_var": "logIdx"
-                                            },
-                                            "props": {
-                                                "className": "hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800/50"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Td",
-                                                    "props": {
-                                                        "className": "px-4 py-3 text-label-subtle whitespace-nowrap"
-                                                    },
-                                                    "text": "{{log.created_at}}"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Td",
-                                                    "props": {
-                                                        "className": "px-4 py-3 whitespace-nowrap"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "composite",
-                                                            "name": "ActionMenu",
-                                                            "if": "{{!!log.user?.uuid}}",
-                                                            "actions": [
-                                                                {
-                                                                    "comment": "기록을 남긴 사람이 회원일 때만 이름이 메뉴가 된다 — 고르면 회원 상세를 새 창으로 연다(편집 중이던 상품 폼을 잃지 않기 위해서다)",
-                                                                    "event": "onItemClick",
-                                                                    "handler": "switch",
-                                                                    "cases": {
-                                                                        "view_member": {
-                                                                            "handler": "openWindow",
-                                                                            "params": {
-                                                                                "path": "/admin/users/{{log.user.uuid}}"
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            ],
-                                                            "props": {
-                                                                "position": "left",
-                                                                "items": [
-                                                                    {
-                                                                        "id": "view_member",
-                                                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member",
-                                                                        "iconName": "user"
-                                                                    }
-                                                                ]
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "props": {
-                                                                        "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Div",
-                                                                            "props": {
-                                                                                "className": "flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center"
-                                                                            },
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
-                                                                                    },
-                                                                                    "text": "{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}"
-                                                                                }
-                                                                            ]
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "props": {
-                                                                                "className": "text-primary text-sm"
-                                                                            },
-                                                                            "text": "{{log.actor_name ?? ''}}"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "if": "{{!log.user?.uuid}}",
-                                                            "props": {
-                                                                "className": "flex-center gap-2"
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "props": {
-                                                                        "className": "flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "props": {
-                                                                                "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
-                                                                            },
-                                                                            "text": "S"
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "props": {
-                                                                        "className": "text-primary text-sm"
-                                                                    },
-                                                                    "text": "{{log.actor_name ?? '$t:sirsoft-ecommerce.admin.product.activity_log.system'}}"
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Td",
-                                                    "props": {
-                                                        "className": "px-4 py-3 text-body"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "text": "{{log.localized_description ?? ''}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "if": "{{log.changes && log.changes.length > 0}}",
-                                                            "props": {
-                                                                "className": "toggle-group mt-2"
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "props": {
-                                                                        "className": "text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-4"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "props": {
-                                                                                "className": "flex-1"
-                                                                            },
-                                                                            "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.field"
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "props": {
-                                                                                "className": "w-28 text-center"
-                                                                            },
-                                                                            "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.before"
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "props": {
-                                                                                "className": "w-28 text-center"
-                                                                            },
-                                                                            "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.after"
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "iteration": {
-                                                                        "source": "{{log.changes ?? []}}",
-                                                                        "item_var": "change",
-                                                                        "index_var": "changeIdx"
-                                                                    },
-                                                                    "props": {
-                                                                        "className": "px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "props": {
-                                                                                "className": "flex-1 font-medium text-gray-700 dark:text-gray-300"
-                                                                            },
-                                                                            "text": "{{change.label ?? change.field}}"
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "props": {
-                                                                                "className": "w-28 text-center text-red-600 dark:text-red-400"
-                                                                            },
-                                                                            "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "props": {
-                                                                                "className": "w-28 text-center text-green-600 dark:text-green-400"
-                                                                            },
-                                                                            "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "if": "{{log.bulk_changes && log.bulk_changes.length > 0}}",
-                                                            "props": {
-                                                                "className": "mt-2 space-y-2"
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "iteration": {
-                                                                        "source": "{{log.bulk_changes ?? []}}",
-                                                                        "item_var": "group",
-                                                                        "index_var": "groupIdx"
-                                                                    },
-                                                                    "props": {
-                                                                        "className": "toggle-group"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Div",
-                                                                            "props": {
-                                                                                "className": "text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-4"
-                                                                            },
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "font-semibold text-gray-700 dark:text-gray-300 mr-auto"
-                                                                                    },
-                                                                                    "text": "ID: {{group.model_id}}"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "w-28 text-center"
-                                                                                    },
-                                                                                    "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.before"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "w-28 text-center"
-                                                                                    },
-                                                                                    "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.after"
-                                                                                }
-                                                                            ]
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Div",
-                                                                            "iteration": {
-                                                                                "source": "{{group.changes ?? []}}",
-                                                                                "item_var": "change",
-                                                                                "index_var": "changeIdx"
-                                                                            },
-                                                                            "props": {
-                                                                                "className": "px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700"
-                                                                            },
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "flex-1 font-medium text-gray-700 dark:text-gray-300"
-                                                                                    },
-                                                                                    "text": "{{change.label ?? change.field}}"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "w-28 text-center text-red-600 dark:text-red-400"
-                                                                                    },
-                                                                                    "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "w-28 text-center text-green-600 dark:text-green-400"
-                                                                                    },
-                                                                                    "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "id": "activity_log_empty",
-                                            "type": "basic",
-                                            "name": "Tr",
-                                            "if": "{{(activity_logs.data?.data ?? []).length === 0}}",
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Td",
-                                                    "props": {
-                                                        "colSpan": 3,
-                                                        "className": "px-4 py-12 text-center text-gray-500 dark:text-gray-400"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Icon",
-                                                            "props": {
-                                                                "name": "clipboard-list",
-                                                                "className": "text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"
-                                                            }
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "P",
-                                                            "text": "$t:sirsoft-ecommerce.admin.product.activity_log.empty"
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "activity_log_cards_mobile",
-                    "type": "basic",
-                    "name": "Div",
-                    "responsive": {
-                        "desktop": {
-                            "if": "{{false}}"
-                        }
-                    },
-                    "props": {
-                        "className": "divider-list"
-                    },
-                    "children": [
-                        {
-                            "id": "activity_log_card_item_{{logIdx}}",
-                            "type": "basic",
-                            "name": "Div",
-                            "iteration": {
-                                "source": "{{activity_logs?.data?.data ?? []}}",
-                                "item_var": "log",
-                                "index_var": "logIdx"
-                            },
-                            "props": {
-                                "className": "p-4"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex-between mb-2"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "props": {
-                                                "className": "flex-center gap-2"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "composite",
-                                                    "name": "ActionMenu",
-                                                    "if": "{{!!log.user?.uuid}}",
-                                                    "actions": [
-                                                        {
-                                                            "comment": "좁은 화면 카드에서도 같다 — 회원 상세를 새 창으로 연다",
-                                                            "event": "onItemClick",
-                                                            "handler": "switch",
-                                                            "cases": {
-                                                                "view_member": {
-                                                                    "handler": "openWindow",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{log.user.uuid}}"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    ],
-                                                    "props": {
-                                                        "position": "left",
-                                                        "items": [
-                                                            {
-                                                                "id": "view_member",
-                                                                "label": "$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member",
-                                                                "iconName": "user"
-                                                            }
-                                                        ]
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "props": {
-                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "props": {
-                                                                        "className": "flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Span",
-                                                                            "props": {
-                                                                                "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
-                                                                            },
-                                                                            "text": "{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}"
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "props": {
-                                                                        "className": "text-heading"
-                                                                    },
-                                                                    "text": "{{log.actor_name ?? ''}}"
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "if": "{{!log.user?.uuid}}",
-                                                    "props": {
-                                                        "className": "flex-center gap-2"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "props": {
-                                                                "className": "flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center"
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Span",
-                                                                    "props": {
-                                                                        "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
-                                                                    },
-                                                                    "text": "S"
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "text-heading"
-                                                            },
-                                                            "text": "{{log.actor_name ?? '$t:sirsoft-ecommerce.admin.product.activity_log.system'}}"
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-tertiary"
-                                            },
-                                            "text": "{{log.created_at}}"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "text-body mb-2"
-                                    },
-                                    "text": "{{log.localized_description ?? ''}}"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{log.changes && log.changes.length > 0}}",
-                                    "props": {
-                                        "className": "toggle-group"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "props": {
-                                                "className": "text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-3"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "flex-1"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.field"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "w-20 text-center"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.before"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "w-20 text-center"
-                                                    },
-                                                    "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.after"
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "iteration": {
-                                                "source": "{{log.changes ?? []}}",
-                                                "item_var": "change",
-                                                "index_var": "changeIdx"
-                                            },
-                                            "props": {
-                                                "className": "px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "flex-1 font-medium text-gray-700 dark:text-gray-300"
-                                                    },
-                                                    "text": "{{change.label ?? change.field}}"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "w-20 text-center text-red-600 dark:text-red-400"
-                                                    },
-                                                    "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Span",
-                                                    "props": {
-                                                        "className": "w-20 text-center text-green-600 dark:text-green-400"
-                                                    },
-                                                    "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{log.bulk_changes && log.bulk_changes.length > 0}}",
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Div",
-                                            "iteration": {
-                                                "source": "{{log.bulk_changes ?? []}}",
-                                                "item_var": "group",
-                                                "index_var": "groupIdx"
-                                            },
-                                            "props": {
-                                                "className": "toggle-group"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "props": {
-                                                        "className": "text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-3"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "font-semibold text-gray-700 dark:text-gray-300 mr-auto"
-                                                            },
-                                                            "text": "ID: {{group.model_id}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "w-20 text-center"
-                                                            },
-                                                            "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.before"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "w-20 text-center"
-                                                            },
-                                                            "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.after"
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "iteration": {
-                                                        "source": "{{group.changes ?? []}}",
-                                                        "item_var": "change",
-                                                        "index_var": "changeIdx"
-                                                    },
-                                                    "props": {
-                                                        "className": "px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "flex-1 font-medium text-gray-700 dark:text-gray-300"
-                                                            },
-                                                            "text": "{{change.label ?? change.field}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "w-20 text-center text-red-600 dark:text-red-400"
-                                                            },
-                                                            "text": "{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Span",
-                                                            "props": {
-                                                                "className": "w-20 text-center text-green-600 dark:text-green-400"
-                                                            },
-                                                            "text": "{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "id": "activity_log_empty_mobile",
-                            "type": "basic",
-                            "name": "Div",
-                            "if": "{{(activity_logs.data?.data ?? []).length === 0}}",
-                            "props": {
-                                "className": "p-8 text-center text-gray-500 dark:text-gray-400"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                        "name": "clipboard-list",
-                                        "className": "text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "text": "$t:sirsoft-ecommerce.admin.product.activity_log.empty"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "activity_log_pagination",
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex justify-center p-4"
-                    },
-                    "children": [
-                        {
-                            "type": "composite",
-                            "name": "Pagination",
-                            "actions": [
-                                {
-                                    "comment": "쪽 넘김 — 쪽 번호를 폼 상태에 담으면 데이터소스가 그 값을 읽어 다시 받는다",
-                                    "event": "onPageChange",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "ui.logsPage": "{{$args[0]}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "activity_logs"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "currentPage": "{{activity_logs.data?.meta?.current_page ?? 1}}",
-                                "totalPages": "{{activity_logs.data?.meta?.last_page ?? null}}",
-                                "hasMorePages": "{{activity_logs.data?.meta?.has_more_pages ?? false}}",
-                                "showFirstLast": true
-                            }
-                        }
-                    ]
+          "id": "activity_log_body",
+          "type": "basic",
+          "name": "Div",
+          "if": "{{_local.ui.activityLogExpanded !== false}}",
+          "props": {
+            "className": "card-accordion-body"
+          },
+          "children": [
+            {
+              "id": "activity_log_filters",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex flex-wrap items-center justify-between gap-4 p-4 border-b border-gray-200 dark:border-gray-700"
+              },
+              "responsive": {
+                "portable": {
+                  "props": {
+                    "className": "flex flex-col gap-3 p-4 border-b border-gray-200 dark:border-gray-700"
+                  }
                 }
-            ]
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                  },
+                  "text": "$t:sirsoft-ecommerce.admin.product.activity_log.total_count|count={{activity_logs.data?.meta?.total ?? 0}}"
+                },
+                {
+                  "type": "basic",
+                  "name": "Div",
+                  "props": {
+                    "className": "flex items-center gap-4"
+                  },
+                  "responsive": {
+                    "portable": {
+                      "props": {
+                        "className": "flex flex-col gap-3 w-full"
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "flex items-center gap-2 w-full"
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.product.activity_log.sort_order"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Select",
+                          "props": {
+                            "name": "activity_log_sort",
+                            "value": "{{_local.ui.activityLogSort ?? 'desc'}}",
+                            "options": [
+                              { "value": "desc", "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.latest" },
+                              { "value": "asc", "label": "$t:sirsoft-ecommerce.admin.product.activity_log.sort.oldest" }
+                            ],
+                            "className": "w-32"
+                          },
+                          "responsive": {
+                            "portable": {
+                              "props": {
+                                "className": "flex-1"
+                              }
+                            }
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "sequence",
+                              "params": {
+                                "actions": [
+                                  {
+                                    "handler": "setState",
+                                    "params": { "target": "local", "ui.activityLogSort": "{{$event.target.value}}" }
+                                  },
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "activity_logs" }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center gap-2"
+                      },
+                      "responsive": {
+                        "portable": {
+                          "props": {
+                            "className": "flex items-center gap-2 w-full"
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Label",
+                          "props": {
+                            "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                          },
+                          "text": "$t:sirsoft-ecommerce.admin.product.activity_log.per_page"
+                        },
+                        {
+                          "type": "composite",
+                          "name": "Select",
+                          "props": {
+                            "name": "activity_log_per_page",
+                            "value": "{{_local.ui.activityLogPerPage ?? 10}}",
+                            "options": [
+                              { "value": 10, "label": "10" },
+                              { "value": 20, "label": "20" },
+                              { "value": 50, "label": "50" }
+                            ],
+                            "className": "w-20"
+                          },
+                          "responsive": {
+                            "portable": {
+                              "props": {
+                                "className": "flex-1"
+                              }
+                            }
+                          },
+                          "actions": [
+                            {
+                              "type": "change",
+                              "handler": "sequence",
+                              "params": {
+                                "actions": [
+                                  {
+                                    "handler": "setState",
+                                    "params": { "target": "local", "ui.activityLogPerPage": "{{Number($event.target.value)}}", "ui.logsPage": 1 }
+                                  },
+                                  {
+                                    "handler": "refetchDataSource",
+                                    "params": { "dataSourceId": "activity_logs" }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "activity_log_table_pc",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "overflow-x-auto"
+              },
+              "responsive": {
+                "portable": {
+                  "if": "{{false}}"
+                }
+              },
+              "children": [
+                {
+                  "type": "basic",
+                  "name": "Table",
+                  "props": {
+                    "className": "w-full"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Thead",
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Tr",
+                          "props": {
+                            "className": "border-b border-gray-200 dark:border-gray-700"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "props": {
+                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-44"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.product.activity_log.columns.datetime"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "props": {
+                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-36"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.product.activity_log.columns.actor"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Th",
+                              "props": {
+                                "className": "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                              },
+                              "text": "$t:sirsoft-ecommerce.admin.product.activity_log.columns.description"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Tbody",
+                      "props": {
+                        "className": "divide-y divide-gray-200 dark:divide-gray-700"
+                      },
+                      "children": [
+                        {
+                          "id": "activity_log_row",
+                          "type": "basic",
+                          "name": "Tr",
+                          "iteration": {
+                            "source": "{{activity_logs?.data?.data ?? []}}",
+                            "item_var": "log",
+                            "index_var": "logIdx"
+                          },
+                          "props": {
+                            "className": "hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800/50"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "props": {
+                                "className": "px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                              },
+                              "text": "{{log.created_at}}"
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "props": {
+                                "className": "px-4 py-3 whitespace-nowrap"
+                              },
+                              "children": [
+                                {
+                                  "type": "composite",
+                                  "name": "ActionMenu",
+                                  "if": "{{!!log.user?.uuid}}",
+                                  "props": {
+                                    "position": "left",
+                                    "items": [
+                                      {
+                                        "id": "view_member",
+                                        "label": "$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member",
+                                        "iconName": "user"
+                                      }
+                                    ]
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Div",
+                                      "props": {
+                                        "className": "flex items-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Div",
+                                          "props": {
+                                            "className": "w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center"
+                                          },
+                                          "children": [
+                                            {
+                                              "type": "basic",
+                                              "name": "Span",
+                                              "props": {
+                                                "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
+                                              },
+                                              "text": "{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-sm text-gray-900 dark:text-white"
+                                          },
+                                          "text": "{{log.actor_name ?? ''}}"
+                                        }
+                                      ]
+                                    }
+                                  ],
+                                  "actions": [
+                                    {
+                                      "event": "onItemClick",
+                                      "handler": "switch",
+                                      "value": "{{$args[0]}}",
+                                      "cases": {
+                                        "view_member": {
+                                          "handler": "openWindow",
+                                          "params": {
+                                            "path": "/admin/users/{{log.user.uuid}}"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "if": "{{!log.user?.uuid}}",
+                                  "props": {
+                                    "className": "flex items-center gap-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Div",
+                                      "props": {
+                                        "className": "w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
+                                          },
+                                          "text": "S"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm text-gray-900 dark:text-white"
+                                      },
+                                      "text": "{{log.actor_name ?? '$t:sirsoft-ecommerce.admin.product.activity_log.system'}}"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "props": {
+                                "className": "px-4 py-3 text-sm text-gray-700 dark:text-gray-300"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "text": "{{log.localized_description ?? ''}}"
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "if": "{{log.changes && log.changes.length > 0}}",
+                                  "props": {
+                                    "className": "mt-2 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Div",
+                                      "props": {
+                                        "className": "bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 flex gap-4"
+                                      },
+                                      "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "flex-1" }, "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.field" },
+                                        { "type": "basic", "name": "Span", "props": { "className": "w-28 text-center" }, "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.before" },
+                                        { "type": "basic", "name": "Span", "props": { "className": "w-28 text-center" }, "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.after" }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Div",
+                                      "iteration": {
+                                        "source": "{{log.changes ?? []}}",
+                                        "item_var": "change",
+                                        "index_var": "changeIdx"
+                                      },
+                                      "props": {
+                                        "className": "px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700"
+                                      },
+                                      "children": [
+                                        { "type": "basic", "name": "Span", "props": { "className": "flex-1 font-medium text-gray-700 dark:text-gray-300" }, "text": "{{change.label ?? change.field}}" },
+                                        { "type": "basic", "name": "Span", "props": { "className": "w-28 text-center text-red-600 dark:text-red-400" }, "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}" },
+                                        { "type": "basic", "name": "Span", "props": { "className": "w-28 text-center text-green-600 dark:text-green-400" }, "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}" }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "if": "{{log.bulk_changes && log.bulk_changes.length > 0}}",
+                                  "props": {
+                                    "className": "mt-2 space-y-2"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Div",
+                                      "iteration": {
+                                        "source": "{{log.bulk_changes ?? []}}",
+                                        "item_var": "group",
+                                        "index_var": "groupIdx"
+                                      },
+                                      "props": {
+                                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Div",
+                                          "props": {
+                                            "className": "bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 flex gap-4"
+                                          },
+                                          "children": [
+                                            { "type": "basic", "name": "Span", "props": { "className": "font-semibold text-gray-700 dark:text-gray-300 mr-auto" }, "text": "ID: {{group.model_id}}" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "w-28 text-center" }, "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.before" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "w-28 text-center" }, "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.after" }
+                                          ]
+                                        },
+                                        {
+                                          "type": "basic",
+                                          "name": "Div",
+                                          "iteration": {
+                                            "source": "{{group.changes ?? []}}",
+                                            "item_var": "change",
+                                            "index_var": "changeIdx"
+                                          },
+                                          "props": {
+                                            "className": "px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700"
+                                          },
+                                          "children": [
+                                            { "type": "basic", "name": "Span", "props": { "className": "flex-1 font-medium text-gray-700 dark:text-gray-300" }, "text": "{{change.label ?? change.field}}" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "w-28 text-center text-red-600 dark:text-red-400" }, "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}" },
+                                            { "type": "basic", "name": "Span", "props": { "className": "w-28 text-center text-green-600 dark:text-green-400" }, "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}" }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "id": "activity_log_empty",
+                          "type": "basic",
+                          "name": "Tr",
+                          "if": "{{(activity_logs.data?.data ?? []).length === 0}}",
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Td",
+                              "props": {
+                                "colSpan": 3,
+                                "className": "px-4 py-12 text-center text-gray-500 dark:text-gray-400"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Icon",
+                                  "props": {
+                                    "name": "clipboard-list",
+                                    "className": "w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600"
+                                  }
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "P",
+                                  "text": "$t:sirsoft-ecommerce.admin.product.activity_log.empty"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "activity_log_cards_mobile",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "divide-y divide-gray-200 dark:divide-gray-700"
+              },
+              "responsive": {
+                "desktop": {
+                  "if": "{{false}}"
+                }
+              },
+              "children": [
+                {
+                  "id": "activity_log_card_item",
+                  "type": "basic",
+                  "name": "Div",
+                  "iteration": {
+                    "source": "{{activity_logs?.data?.data ?? []}}",
+                    "item_var": "log",
+                    "index_var": "logIdx"
+                  },
+                  "props": {
+                    "className": "p-4"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "props": {
+                        "className": "flex items-center justify-between mb-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "flex items-center gap-2"
+                          },
+                          "children": [
+                            {
+                              "type": "composite",
+                              "name": "ActionMenu",
+                              "if": "{{!!log.user?.uuid}}",
+                              "props": {
+                                "position": "left",
+                                "items": [
+                                  {
+                                    "id": "view_member",
+                                    "label": "$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member",
+                                    "iconName": "user"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "flex items-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Div",
+                                      "props": {
+                                        "className": "w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "basic",
+                                          "name": "Span",
+                                          "props": {
+                                            "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
+                                          },
+                                          "text": "{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                      },
+                                      "text": "{{log.actor_name ?? ''}}"
+                                    }
+                                  ]
+                                }
+                              ],
+                              "actions": [
+                                {
+                                  "event": "onItemClick",
+                                  "handler": "switch",
+                                  "value": "{{$args[0]}}",
+                                  "cases": {
+                                    "view_member": {
+                                      "handler": "openWindow",
+                                      "params": {
+                                        "path": "/admin/users/{{log.user.uuid}}"
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "if": "{{!log.user?.uuid}}",
+                              "props": {
+                                "className": "flex items-center gap-2"
+                              },
+                              "children": [
+                                {
+                                  "type": "basic",
+                                  "name": "Div",
+                                  "props": {
+                                    "className": "w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "basic",
+                                      "name": "Span",
+                                      "props": {
+                                        "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
+                                      },
+                                      "text": "S"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "basic",
+                                  "name": "Span",
+                                  "props": {
+                                    "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                  },
+                                  "text": "{{log.actor_name ?? '$t:sirsoft-ecommerce.admin.product.activity_log.system'}}"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Span",
+                          "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                          },
+                          "text": "{{log.created_at}}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "props": {
+                        "className": "text-sm text-gray-700 dark:text-gray-300 mb-2"
+                      },
+                      "text": "{{log.localized_description ?? ''}}"
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{log.changes && log.changes.length > 0}}",
+                      "props": {
+                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "props": {
+                            "className": "bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 flex gap-3"
+                          },
+                          "children": [
+                            { "type": "basic", "name": "Span", "props": { "className": "flex-1" }, "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.field" },
+                            { "type": "basic", "name": "Span", "props": { "className": "w-20 text-center" }, "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.before" },
+                            { "type": "basic", "name": "Span", "props": { "className": "w-20 text-center" }, "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.after" }
+                          ]
+                        },
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "iteration": {
+                            "source": "{{log.changes ?? []}}",
+                            "item_var": "change",
+                            "index_var": "changeIdx"
+                          },
+                          "props": {
+                            "className": "px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700"
+                          },
+                          "children": [
+                            { "type": "basic", "name": "Span", "props": { "className": "flex-1 font-medium text-gray-700 dark:text-gray-300" }, "text": "{{change.label ?? change.field}}" },
+                            { "type": "basic", "name": "Span", "props": { "className": "w-20 text-center text-red-600 dark:text-red-400" }, "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}" },
+                            { "type": "basic", "name": "Span", "props": { "className": "w-20 text-center text-green-600 dark:text-green-400" }, "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}" }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "basic",
+                      "name": "Div",
+                      "if": "{{log.bulk_changes && log.bulk_changes.length > 0}}",
+                      "props": {
+                        "className": "space-y-2"
+                      },
+                      "children": [
+                        {
+                          "type": "basic",
+                          "name": "Div",
+                          "iteration": {
+                            "source": "{{log.bulk_changes ?? []}}",
+                            "item_var": "group",
+                            "index_var": "groupIdx"
+                          },
+                          "props": {
+                            "className": "border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                          },
+                          "children": [
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "props": {
+                                "className": "bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 flex gap-3"
+                              },
+                              "children": [
+                                { "type": "basic", "name": "Span", "props": { "className": "font-semibold text-gray-700 dark:text-gray-300 mr-auto" }, "text": "ID: {{group.model_id}}" },
+                                { "type": "basic", "name": "Span", "props": { "className": "w-20 text-center" }, "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.before" },
+                                { "type": "basic", "name": "Span", "props": { "className": "w-20 text-center" }, "text": "$t:sirsoft-ecommerce.admin.product.activity_log.changes.after" }
+                              ]
+                            },
+                            {
+                              "type": "basic",
+                              "name": "Div",
+                              "iteration": {
+                                "source": "{{group.changes ?? []}}",
+                                "item_var": "change",
+                                "index_var": "changeIdx"
+                              },
+                              "props": {
+                                "className": "px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700"
+                              },
+                              "children": [
+                                { "type": "basic", "name": "Span", "props": { "className": "flex-1 font-medium text-gray-700 dark:text-gray-300" }, "text": "{{change.label ?? change.field}}" },
+                                { "type": "basic", "name": "Span", "props": { "className": "w-20 text-center text-red-600 dark:text-red-400" }, "text": "{{change.old_label ?? change.old?.[_global.locale] ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}" },
+                                { "type": "basic", "name": "Span", "props": { "className": "w-20 text-center text-green-600 dark:text-green-400" }, "text": "{{change.new_label ?? change.new?.[_global.locale] ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}" }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "activity_log_empty_mobile",
+                  "type": "basic",
+                  "name": "Div",
+                  "if": "{{(activity_logs.data?.data ?? []).length === 0}}",
+                  "props": {
+                    "className": "p-8 text-center text-gray-500 dark:text-gray-400"
+                  },
+                  "children": [
+                    {
+                      "type": "basic",
+                      "name": "Icon",
+                      "props": {
+                        "name": "clipboard-list",
+                        "className": "w-8 h-8 mx-auto mb-2 text-gray-300 dark:text-gray-600"
+                      }
+                    },
+                    {
+                      "type": "basic",
+                      "name": "P",
+                      "text": "$t:sirsoft-ecommerce.admin.product.activity_log.empty"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "activity_log_pagination",
+              "type": "basic",
+              "name": "Div",
+              "props": {
+                "className": "flex justify-center p-4 border-t border-gray-200 dark:border-gray-700"
+              },
+              "children": [
+                {
+                  "type": "composite",
+                  "name": "Pagination",
+                  "props": {
+                    "currentPage": "{{activity_logs.data?.meta?.current_page ?? 1}}",
+                    "totalPages": "{{activity_logs.data?.meta?.last_page ?? 1}}",
+                    "showFirstLast": true
+                  },
+                  "actions": [
+                    {
+                      "event": "onPageChange",
+                      "handler": "sequence",
+                      "params": {
+                        "actions": [
+                          {
+                            "handler": "setState",
+                            "params": {
+                              "target": "local",
+                              "ui.logsPage": "{{$args[0]}}"
+                            }
+                          },
+                          {
+                            "handler": "refetchDataSource",
+                            "params": {
+                              "dataSourceId": "activity_logs"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
-    ]
+      ]
+    }
+  ]
 }

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * G7 인스톨러 - 롤백 함수 모음
  *
@@ -9,8 +8,8 @@
 /**
  * 중단된 작업을 롤백합니다.
  *
- * @param  string  $taskId  롤백할 작업 식별자
- * @param  array  $state  현재 설치 상태
+ * @param string $taskId 롤백할 작업 식별자
+ * @param array $state 현재 설치 상태
  * @return array ['success' => bool, 'message' => string] 롤백 결과
  */
 function rollbackTask(string $taskId, array $state): array
@@ -26,7 +25,7 @@ function rollbackTask(string $taskId, array $state): array
             case 'complete_flag':
                 return rollbackCompleteFlag();
 
-                // 롤백 불필요한 작업들 (새로 생성하면 되는 것들)
+            // 롤백 불필요한 작업들 (새로 생성하면 되는 것들)
             case 'composer_check':
             case 'composer_install':
             case 'env_create':
@@ -39,7 +38,7 @@ function rollbackTask(string $taskId, array $state): array
                     'message' => lang('rollback_not_needed_recreatable'),
                 ];
 
-                // 롤백 불필요한 확장 작업 (재설치/재활성화 시 덮어쓰기 가능)
+            // 롤백 불필요한 확장 작업 (재설치/재활성화 시 덮어쓰기 가능)
             case 'template_install':
             case 'template_activate':
             case 'module_install':
@@ -56,15 +55,14 @@ function rollbackTask(string $taskId, array $state): array
             default:
                 return [
                     'success' => false,
-                    'message' => lang('rollback_unknown_task', ['task' => $taskId]),
+                    'message' => lang('rollback_unknown_task', ['task' => $taskId])
                 ];
         }
     } catch (Exception $e) {
         addLog(lang('rollback_error', ['task' => $taskId, 'error' => $e->getMessage()]));
-
         return [
             'success' => false,
-            'message' => lang('rollback_exception', ['error' => $e->getMessage()]),
+            'message' => lang('rollback_exception', ['error' => $e->getMessage()])
         ];
     }
 }
@@ -72,14 +70,14 @@ function rollbackTask(string $taskId, array $state): array
 /**
  * 마이그레이션 롤백을 실행합니다 (migrate:rollback --force)
  *
- * @param  string|null  $logPrefix  로그 접두사 (null이면 lang('log_prefix_rollback') 사용)
+ * @param string|null $logPrefix 로그 접두사 (null이면 lang('log_prefix_rollback') 사용)
  * @return array ['success' => bool, 'message' => string, 'output' => array]
  */
 function executeMigrateRollback(?string $logPrefix = null): array
 {
     $logPrefix = $logPrefix ?? lang('log_prefix_rollback');
     try {
-        addLog("{$logPrefix} ".lang('rollback_migrate_start'));
+        addLog("{$logPrefix} " . lang('rollback_migrate_start'));
 
         $output = [];
         $returnCode = 0;
@@ -92,7 +90,7 @@ function executeMigrateRollback(?string $logPrefix = null): array
 
         exec($command, $output, $returnCode);
 
-        addLog("{$logPrefix} ".lang('rollback_migrate_result', ['result' => implode("\n", $output)]));
+        addLog("{$logPrefix} " . lang('rollback_migrate_result', ['result' => implode("\n", $output)]));
 
         if ($returnCode === 0) {
             return [
@@ -102,7 +100,7 @@ function executeMigrateRollback(?string $logPrefix = null): array
             ];
         }
 
-        addLog("{$logPrefix} ".lang('rollback_migrate_failed_code', ['code' => $returnCode]));
+        addLog("{$logPrefix} " . lang('rollback_migrate_failed_code', ['code' => $returnCode]));
 
         return [
             'success' => false,
@@ -131,24 +129,16 @@ function rollbackDbMigrate(): array
 /**
  * 시드 데이터 TRUNCATE를 실행합니다 (PDO 세션 내 FOREIGN_KEY_CHECKS 제어)
  *
- * @param  array  $config  DB 연결 설정
- * @param  bool  $force  true: 무조건 TRUNCATE, false: 미완료 시에만 TRUNCATE
- * @param  string|null  $logPrefix  로그 접두사 (null이면 lang('log_prefix_rollback') 사용)
+ * @param array $config DB 연결 설정
+ * @param bool $force true: 무조건 TRUNCATE, false: 미완료 시에만 TRUNCATE
+ * @param string|null $logPrefix 로그 접두사 (null이면 lang('log_prefix_rollback') 사용)
  * @return array ['success' => bool, 'message' => string]
  */
 function executeSeedTruncate(array $config, bool $force = false, ?string $logPrefix = null): array
 {
-    // state.config 에는 DB 비밀번호가 기록되지 않으므로(이슈 #465) runtime.php 에서 복원한다.
-    // 호출자(rollbackDbSeed / forceRollbackDbSeed) 가 state['config'] 를 그대로 넘기므로
-    // 각 호출자 대신 함수 진입부 1곳에서 처리한다. 롤백은 env_update 이후에만 발생하여
-    // runtime.php 가 항상 존재하며, 부재 시 헬퍼가 원본 config 를 그대로 반환한다.
-    require_once __DIR__.'/../includes/installer-runtime.php';
-    $config = hydrateDbSecretsFromRuntime($config);
-
     $logPrefix = $logPrefix ?? lang('log_prefix_rollback');
     if (empty($config['db_write_host']) || empty($config['db_write_database'])) {
-        addLog("{$logPrefix} ".lang('rollback_seed_no_config'));
-
+        addLog("{$logPrefix} " . lang('rollback_seed_no_config'));
         return ['success' => true, 'message' => lang('rollback_seed_no_config')];
     }
 
@@ -156,8 +146,7 @@ function executeSeedTruncate(array $config, bool $force = false, ?string $logPre
     foreach (['db_write_host', 'db_write_port', 'db_write_database'] as $field) {
         $val = (string) ($config[$field] ?? '');
         if ($val !== '' && preg_match('/[;=\0\r\n]/', $val)) {
-            addLog("{$logPrefix} ".lang('rollback_seed_no_config'));
-
+            addLog("{$logPrefix} " . lang('rollback_seed_no_config'));
             return ['success' => true, 'message' => lang('rollback_seed_no_config')];
         }
     }
@@ -175,19 +164,18 @@ function executeSeedTruncate(array $config, bool $force = false, ?string $logPre
         ]);
 
         // 강제 모드가 아니면 완료 여부 확인
-        if (! $force) {
+        if (!$force) {
             $stmt = $pdo->query("SHOW TABLES LIKE 'roles'");
             if ($stmt->rowCount() > 0) {
-                $count = $pdo->query('SELECT COUNT(*) FROM roles')->fetchColumn();
+                $count = $pdo->query("SELECT COUNT(*) FROM roles")->fetchColumn();
                 if ($count > 0) {
-                    addLog("{$logPrefix} ".lang('rollback_seed_already_done'));
-
+                    addLog("{$logPrefix} " . lang('rollback_seed_already_done'));
                     return ['success' => true, 'message' => lang('rollback_seed_already_done')];
                 }
             }
-            addLog("{$logPrefix} ".lang('rollback_seed_interrupted'));
+            addLog("{$logPrefix} " . lang('rollback_seed_interrupted'));
         } else {
-            addLog("{$logPrefix} ".lang('rollback_seed_force_truncate'));
+            addLog("{$logPrefix} " . lang('rollback_seed_force_truncate'));
         }
 
         $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
@@ -196,9 +184,9 @@ function executeSeedTruncate(array $config, bool $force = false, ?string $logPre
         foreach ($tables as $table) {
             try {
                 $pdo->exec("TRUNCATE TABLE `{$table}`");
-                addLog("{$logPrefix} ".lang('rollback_table_truncated', ['table' => $table]));
+                addLog("{$logPrefix} " . lang('rollback_table_truncated', ['table' => $table]));
             } catch (PDOException $e) {
-                addLog("{$logPrefix} ".lang('rollback_table_truncate_skipped', ['table' => $table, 'error' => $e->getMessage()]));
+                addLog("{$logPrefix} " . lang('rollback_table_truncate_skipped', ['table' => $table, 'error' => $e->getMessage()]));
             }
         }
 
@@ -209,8 +197,7 @@ function executeSeedTruncate(array $config, bool $force = false, ?string $logPre
         if ($force) {
             return ['success' => false, 'message' => lang('rollback_db_connection_failed', ['error' => $e->getMessage()])];
         }
-        addLog("{$logPrefix} ".lang('rollback_db_connection_failed_skip'));
-
+        addLog("{$logPrefix} " . lang('rollback_db_connection_failed_skip'));
         return ['success' => true, 'message' => lang('rollback_db_connection_failed_skip')];
     }
 }
@@ -218,7 +205,7 @@ function executeSeedTruncate(array $config, bool $force = false, ?string $logPre
 /**
  * db_seed 작업 롤백: 중단된 경우에만 TRUNCATE
  *
- * @param  array  $state  현재 설치 상태
+ * @param array $state 현재 설치 상태
  * @return array ['success' => bool, 'message' => string]
  */
 function rollbackDbSeed(array $state): array
@@ -243,7 +230,7 @@ function forceRollbackDbMigrate(): array
 /**
  * db_seed 작업 강제 롤백 (설정으로 돌아갈 때 사용)
  *
- * @param  array  $state  현재 설치 상태
+ * @param array $state 현재 설치 상태
  * @return array ['success' => bool, 'message' => string]
  */
 function forceRollbackDbSeed(array $state): array
@@ -265,10 +252,10 @@ function forceRollbackDbSeed(array $state): array
 function rollbackCompleteFlag(): array
 {
     try {
-        require_once __DIR__.'/../includes/installer-runtime.php';
+        require_once __DIR__ . '/../includes/installer-runtime.php';
 
-        $envPath = BASE_PATH.'/.env';
-        $installedFlagPath = BASE_PATH.'/storage/app/g7_installed';
+        $envPath = BASE_PATH . '/.env';
+        $installedFlagPath = BASE_PATH . '/storage/app/g7_installed';
 
         $results = [];
 
@@ -302,12 +289,12 @@ function rollbackCompleteFlag(): array
 
         return [
             'success' => true,
-            'message' => lang('rollback_complete_flag_removed', ['details' => implode(', ', $results)]),
+            'message' => lang('rollback_complete_flag_removed', ['details' => implode(', ', $results)])
         ];
     } catch (Exception $e) {
         return [
             'success' => false,
-            'message' => lang('rollback_complete_flag_error', ['error' => $e->getMessage()]),
+            'message' => lang('rollback_complete_flag_error', ['error' => $e->getMessage()])
         ];
     }
 }
@@ -319,13 +306,13 @@ function rollbackCompleteFlag(): array
  * 이는 인스톨러가 프로젝트 구조에 필수적인 파일/디렉토리를
  * 실수로 삭제하는 것을 방지합니다.
  *
- * @param  string  $dir  삭제할 디렉토리 경로
- * @param  bool  $removeDir  true이면 디렉토리 자체도 삭제 (기본: false, 내용만 삭제)
+ * @param string $dir 삭제할 디렉토리 경로
+ * @param bool $removeDir true이면 디렉토리 자체도 삭제 (기본: false, 내용만 삭제)
  * @return bool 삭제 성공 여부
  */
 function deleteDirectory(string $dir, bool $removeDir = false): bool
 {
-    if (! is_dir($dir)) {
+    if (!is_dir($dir)) {
         return false;
     }
 
@@ -336,7 +323,7 @@ function deleteDirectory(string $dir, bool $removeDir = false): bool
     $hasPreservedFiles = false;
 
     foreach ($items as $item) {
-        $path = $dir.DIRECTORY_SEPARATOR.$item;
+        $path = $dir . DIRECTORY_SEPARATOR . $item;
 
         if (is_dir($path)) {
             deleteDirectory($path, true);
@@ -344,7 +331,6 @@ function deleteDirectory(string $dir, bool $removeDir = false): bool
             // 보존 대상 파일은 건너뛰기
             if (in_array($item, $preserveFiles, true)) {
                 $hasPreservedFiles = true;
-
                 continue;
             }
             @unlink($path);
@@ -352,7 +338,7 @@ function deleteDirectory(string $dir, bool $removeDir = false): bool
     }
 
     // 보존 파일이 남아있거나 removeDir이 false이면 디렉토리 유지
-    if ($hasPreservedFiles || ! $removeDir) {
+    if ($hasPreservedFiles || !$removeDir) {
         return true;
     }
 
@@ -362,16 +348,15 @@ function deleteDirectory(string $dir, bool $removeDir = false): bool
 /**
  * 현재 진행 중인 작업을 롤백합니다. (abort.php에서 사용)
  *
- * @param  array  $state  현재 설치 상태
+ * @param array $state 현재 설치 상태
  * @return array ['success' => bool, 'message' => string, 'task' => string|null]
  */
 function rollbackCurrentTask(array $state): array
 {
     $currentTask = $state['current_task'] ?? null;
 
-    if (! $currentTask) {
+    if (!$currentTask) {
         addLog(lang('rollback_no_current_task'));
-
         return [
             'success' => true,
             'message' => lang('rollback_no_current_task'),
@@ -381,7 +366,6 @@ function rollbackCurrentTask(array $state): array
 
     if (in_array($currentTask, $state['completed_tasks'] ?? [])) {
         addLog(lang('rollback_task_already_completed', ['task' => $currentTask]));
-
         return [
             'success' => true,
             'message' => lang('rollback_task_already_completed', ['task' => $currentTask]),
@@ -394,7 +378,6 @@ function rollbackCurrentTask(array $state): array
 
     if ($rollbackResult['success']) {
         addLog(lang('abort_rollback_success', ['message' => $rollbackResult['message']]));
-
         return [
             'success' => true,
             'message' => lang('abort_rollback_success', ['message' => $rollbackResult['message']]),
@@ -402,7 +385,6 @@ function rollbackCurrentTask(array $state): array
         ];
     } else {
         addLog(lang('abort_rollback_failed', ['message' => $rollbackResult['message']]));
-
         return [
             'success' => false,
             'message' => lang('failed_rollback_failed', ['message' => $rollbackResult['message']]),
@@ -414,9 +396,9 @@ function rollbackCurrentTask(array $state): array
 /**
  * 완료된 작업들을 역순으로 롤백합니다. (reset-state.php에서 사용)
  *
- * @param  array  $completedTasks  완료된 작업 목록
- * @param  array  $rollbackableTasks  롤백 가능한 작업 목록
- * @param  array  $state  현재 설치 상태
+ * @param array $completedTasks 완료된 작업 목록
+ * @param array $rollbackableTasks 롤백 가능한 작업 목록
+ * @param array $state 현재 설치 상태
  * @return array ['results' => array, 'errors' => array]
  */
 function rollbackCompletedTasks(array $completedTasks, array $rollbackableTasks, array $state): array
@@ -426,7 +408,6 @@ function rollbackCompletedTasks(array $completedTasks, array $rollbackableTasks,
 
     if (empty($completedTasks)) {
         addLog(lang('rollback_no_completed_tasks'));
-
         return ['results' => $results, 'errors' => $errors];
     }
 
@@ -438,7 +419,6 @@ function rollbackCompletedTasks(array $completedTasks, array $rollbackableTasks,
 
     if (empty($tasksToRollback)) {
         addLog(lang('rollback_no_matching_tasks'));
-
         return ['results' => $results, 'errors' => $errors];
     }
 
@@ -456,10 +436,10 @@ function rollbackCompletedTasks(array $completedTasks, array $rollbackableTasks,
         }
 
         if ($result['success']) {
-            $results[] = $taskId.': '.$result['message'];
+            $results[] = $taskId . ': ' . $result['message'];
             addLog(lang('rollback_task_success', ['task' => $taskId]));
         } else {
-            $errors[] = $taskId.': '.$result['message'];
+            $errors[] = $taskId . ': ' . $result['message'];
             addLog(lang('rollback_task_failed', ['task' => $taskId, 'error' => $result['message']]));
         }
     }
@@ -470,8 +450,8 @@ function rollbackCompletedTasks(array $completedTasks, array $rollbackableTasks,
 /**
  * 실패한 작업에 대한 수동 명령어를 생성합니다.
  *
- * @param  string  $taskId  작업 ID
- * @param  string|null  $target  대상 (확장 식별자)
+ * @param string $taskId 작업 ID
+ * @param string|null $target 대상 (확장 식별자)
  * @return array 수동 명령어 배열
  */
 function getManualCommands(string $taskId, ?string $target = null): array
@@ -482,10 +462,7 @@ function getManualCommands(string $taskId, ?string $target = null): array
 
     switch ($taskId) {
         case 'composer_install':
-            // --no-dev 는 마법사가 실제로 실행하는 명령(task-runner.php)과 같아야 한다. 이 안내를
-            // 옵션 없이 따라 하면 개발용(require-dev) 패키지가 섞인 vendor 가 만들어지고, 그 상태는
-            // 이후 코어 업데이트가 vendor 를 교체할 때 이전 패키지 매니페스트와 어긋나 부팅을 깨뜨린다.
-            $commands[] = "{$composer} install --no-interaction --no-dev --prefer-dist --optimize-autoloader";
+            $commands[] = "{$composer} install --no-interaction --prefer-dist --optimize-autoloader";
             break;
 
         case 'env_create':
@@ -553,7 +530,7 @@ function getManualCommands(string $taskId, ?string $target = null): array
             break;
 
         case 'create_settings_json':
-            $commands[] = '# '.lang('manual_cmd_settings_json');
+            $commands[] = '# ' . lang('manual_cmd_settings_json');
             break;
 
         case 'cache_clear':

@@ -5,17 +5,13 @@ namespace Modules\Sirsoft\Board\Http\Controllers\Admin;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Modules\Sirsoft\Board\Exceptions\CommentDepthExceededException;
-use Modules\Sirsoft\Board\Exceptions\CommentParentDeletedException;
-use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
-use Modules\Sirsoft\Board\Exceptions\PostNotCommentableException;
 use Modules\Sirsoft\Board\Http\Requests\BlindCommentRequest;
-use Modules\Sirsoft\Board\Http\Requests\RestoreCommentRequest;
 use Modules\Sirsoft\Board\Http\Requests\StoreCommentRequest;
 use Modules\Sirsoft\Board\Http\Requests\UpdateCommentRequest;
 use Modules\Sirsoft\Board\Http\Resources\CommentResource;
-use Modules\Sirsoft\Board\Services\BoardService;
+use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
@@ -32,11 +28,9 @@ class CommentController extends AdminBaseController
      * CommentController 생성자
      *
      * @param  CommentService  $commentService  댓글 서비스
-     * @param  BoardService  $boardService  게시판 서비스
      */
     public function __construct(
-        private CommentService $commentService,
-        private BoardService $boardService
+        private CommentService $commentService
     ) {
         parent::__construct();
     }
@@ -57,16 +51,15 @@ class CommentController extends AdminBaseController
 
         // 비회원 댓글은 admin.manage 권한 필요
         if ($commentUserId === null) {
-            return $this->forbidden('sirsoft-board::messages.permission.denied');
+            return $this->forbidden('sirsoft-board::messages.permissions.access_denied');
         }
 
-        // admin.comments.write 권한이 있고 본인 댓글이면 수정/삭제 가능 — 종전 'admin.write' 는 config 에 없는 권한이라
-        // 작성자 본인도 manage 가 없으면 자기 댓글을 고치지 못했다
-        if ($this->checkBoardPermission($slug, 'admin.comments.write') && $this->isCommentOwner($commentUserId)) {
+        // admin.write 권한이 있고 본인 댓글이면 수정/삭제 가능
+        if ($this->checkBoardPermission($slug, 'admin.write') && $this->isCommentOwner($commentUserId)) {
             return null;
         }
 
-        return $this->forbidden('sirsoft-board::messages.permission.denied');
+        return $this->forbidden('sirsoft-board::messages.permissions.access_denied');
     }
 
     /**
@@ -91,11 +84,7 @@ class CommentController extends AdminBaseController
     public function store(StoreCommentRequest $request, string $slug, int $postId): JsonResponse
     {
         try {
-            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
-
-            if (! $board) {
-                return $this->notFound('sirsoft-board::messages.boards.not_found');
-            }
+            $board = Board::where('slug', $slug)->firstOrFail();
 
             if (! $board->use_comment) {
                 return $this->error('sirsoft-board::messages.comments.comments_disabled', 403);
@@ -115,12 +104,6 @@ class CommentController extends AdminBaseController
             );
         } catch (ModelNotFoundException) {
             return $this->notFound('sirsoft-board::messages.boards.not_found');
-        } catch (CommentDepthExceededException $e) {
-            // 요청 단계 검증을 우회해 Service 관문에 걸린 경우 — 사용자 입력 문제이므로 422
-            return $this->error($e->getMessageKey(), 422, null, $e->getMessageParams());
-        } catch (PostNotCommentableException $e) {
-            // 블라인드·삭제된 게시글 — 서버 오류가 아니라 게시글 상태 문제이므로 422 + 사유 전달
-            return $this->error($e->getMessageKey(), 422, null, $e->getMessageParams());
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.comment.create_failed', 500, $e->getMessage());
         }
@@ -138,26 +121,22 @@ class CommentController extends AdminBaseController
     public function update(UpdateCommentRequest $request, string $slug, int $postId, int $id): JsonResponse
     {
         try {
-            // 경로의 게시글에 속한 댓글만 조회 (교차 게시글 접근 차단)
-            $comment = $this->commentService->getComment($slug, $id, $postId);
+            // 댓글 조회
+            $comment = $this->commentService->getComment($slug, $id);
 
             // 권한 체크: 본인 댓글 또는 admin.manage
             if ($response = $this->authorizeCommentModification($slug, $comment->user_id)) {
                 return $response;
             }
 
-            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
-
-            if (! $board) {
-                return $this->notFound('sirsoft-board::messages.boards.not_found');
-            }
+            $board = Board::where('slug', $slug)->firstOrFail();
 
             if (! $board->use_comment) {
                 return $this->error('sirsoft-board::messages.comments.comments_disabled', 403);
             }
 
             $data = $request->validated();
-            $updatedComment = $this->commentService->updateComment($slug, $id, $data, $postId);
+            $updatedComment = $this->commentService->updateComment($slug, $id, $data);
 
             return $this->successWithResource(
                 'sirsoft-board::messages.comment.update_success',
@@ -181,25 +160,21 @@ class CommentController extends AdminBaseController
     public function destroy(string $slug, int $postId, int $id): JsonResponse
     {
         try {
-            // 경로의 게시글에 속한 댓글만 조회 (교차 게시글 접근 차단)
-            $comment = $this->commentService->getComment($slug, $id, $postId);
+            // 댓글 조회
+            $comment = $this->commentService->getComment($slug, $id);
 
             // 권한 체크: 본인 댓글 또는 admin.manage
             if ($response = $this->authorizeCommentModification($slug, $comment->user_id)) {
                 return $response;
             }
 
-            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
-
-            if (! $board) {
-                return $this->notFound('sirsoft-board::messages.boards.not_found');
-            }
+            $board = Board::where('slug', $slug)->firstOrFail();
 
             if (! $board->use_comment) {
                 return $this->error('sirsoft-board::messages.comments.comments_disabled', 403);
             }
 
-            $this->commentService->deleteComment($slug, $id, 'admin', $postId);
+            $this->commentService->deleteComment($slug, $id, 'admin');
 
             return $this->success('sirsoft-board::messages.comment.delete_success');
         } catch (ModelNotFoundException) {
@@ -221,11 +196,7 @@ class CommentController extends AdminBaseController
     public function blind(BlindCommentRequest $request, string $slug, int $postId, int $id): JsonResponse
     {
         try {
-            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
-
-            if (! $board) {
-                return $this->notFound('sirsoft-board::messages.boards.not_found');
-            }
+            $board = Board::where('slug', $slug)->firstOrFail();
 
             if (! $board->use_comment) {
                 return $this->error('sirsoft-board::messages.comments.comments_disabled', 403);
@@ -234,15 +205,12 @@ class CommentController extends AdminBaseController
             $validated = $request->validated();
             $reason = $validated['reason'] ?? '';
 
-            $comment = $this->commentService->blindComment($slug, $id, $reason, null, $postId);
+            $comment = $this->commentService->blindComment($slug, $id, $reason);
 
             return $this->successWithResource(
                 'sirsoft-board::messages.comment.blind_success',
                 new CommentResource($comment)
             );
-        } catch (DeletedContentBlindException $e) {
-            // 삭제된 댓글 — 블라인드하면 삭제가 풀린다. 지금 상태와 충돌하므로 409, 먼저 복구하라고 안내한다
-            return $this->error($e->getMessageKey(), 409);
         } catch (ModelNotFoundException) {
             return $this->notFound('sirsoft-board::messages.comment.not_found');
         } catch (\Exception $e) {
@@ -253,35 +221,28 @@ class CommentController extends AdminBaseController
     /**
      * 블라인드된 댓글을 복원합니다.
      *
-     * @param  RestoreCommentRequest  $request  댓글 복원 요청
+     * @param  Request  $request  HTTP 요청 객체
      * @param  string  $slug  게시판 slug
      * @param  int  $postId  게시글 ID
      * @param  int  $id  댓글 ID
      * @return JsonResponse 댓글 복원 결과 응답
      */
-    public function restore(RestoreCommentRequest $request, string $slug, int $postId, int $id): JsonResponse
+    public function restore(Request $request, string $slug, int $postId, int $id): JsonResponse
     {
         try {
-            $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
-
-            if (! $board) {
-                return $this->notFound('sirsoft-board::messages.boards.not_found');
-            }
+            $board = Board::where('slug', $slug)->firstOrFail();
 
             if (! $board->use_comment) {
                 return $this->error('sirsoft-board::messages.comments.comments_disabled', 403);
             }
 
-            $reason = $request->validated()['reason'] ?? null;
-            $comment = $this->commentService->restoreComment($slug, $id, $reason, null, $postId);
+            $reason = $request->input('reason');
+            $comment = $this->commentService->restoreComment($slug, $id, $reason);
 
             return $this->successWithResource(
                 'sirsoft-board::messages.comment.restore_success',
                 new CommentResource($comment)
             );
-        } catch (CommentParentDeletedException $e) {
-            // 원글이 삭제된 상태 — 댓글만 살리면 고아 댓글이 된다. 409 로 원글 복구를 먼저 안내한다
-            return $this->error($e->getMessageKey(), 409);
         } catch (ModelNotFoundException) {
             return $this->notFound('sirsoft-board::messages.comment.not_found');
         } catch (\Exception $e) {

@@ -9,11 +9,6 @@
  * - GET  ?action=get    : 현재 설치 상태 조회 (action 생략 시 기본값)
  * - POST ?action=reset  : 설치 상태 초기화 (Step 3로 이동)
  * - POST ?action=abort  : 설치 중단 (현재 작업만 롤백)
- * - POST ?action=reclaim: 복구 토큰으로 설치 소유권 되찾기 (세션 유실 후 재개)
- *
- * reset/abort/reclaim 은 상태변경이라 CSRF 토큰을, reset/abort 는 설치 소유 세션을 요구한다.
- * get 은 폴링 경로라 게이트를 두지 않는다 — 완료 직전까지 1초 간격으로 불리며, 여기에 게이트를
- * 두면 정상 설치가 "진행 중"에 고착되는 자가 차단 회귀가 난다 (KVE-2026-1056).
  */
 
 /**
@@ -39,7 +34,6 @@ class StateManagementApi
                 'get' => $this->getState(),
                 'reset' => $this->resetState(),
                 'abort' => $this->abortInstallation(),
-                'reclaim' => $this->reclaimOwnership(),
                 default => $this->error400('Invalid action parameter'),
             };
         } catch (Exception $e) {
@@ -69,7 +63,7 @@ class StateManagementApi
         // GET 메서드만 허용
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
             http_response_code(405);
-            echo installer_json_encode([
+            echo json_encode([
                 'error' => 'Method Not Allowed',
                 'message' => lang('error_get_method_required'),
             ], JSON_UNESCAPED_UNICODE);
@@ -79,7 +73,7 @@ class StateManagementApi
         // state.json 파일 실제 존재 여부 (getInstallationState는 부재 시 DEFAULT_INSTALLATION_STATE를 반환하므로
         // isset($state['installation_status']) 로는 "기본 상태"와 "실제 파일 상태"를 구분할 수 없다)
         $stateFileExists = file_exists(STATE_PATH);
-        $installedFlagPath = BASE_PATH.'/storage/app/g7_installed';
+        $installedFlagPath = BASE_PATH . '/storage/app/g7_installed';
 
         // 현재 설치 상태 조회
         $state = getInstallationState();
@@ -87,7 +81,7 @@ class StateManagementApi
         // installation_status 값을 status로 매핑
         $status = 'pending';
 
-        if (! $stateFileExists && file_exists($installedFlagPath)) {
+        if (!$stateFileExists && file_exists($installedFlagPath)) {
             // state.json 삭제 + g7_installed 플래그 존재 → 설치 완료 후 정리된 상태
             // 폴링이 완료 시점을 놓치면 이후 주기에서 이 분기로 completed 전환
             $status = 'completed';
@@ -144,23 +138,7 @@ class StateManagementApi
         ];
 
         // JSON 응답 반환
-        //
-        // 최종 안전망 (gnuboard/g7#62): $response 의 로그·경로에 invalid UTF-8 바이트가
-        // 섞이면 표준 json_encode 는 false 를 반환하고, echo false = 빈 본문(HTTP 200) 이 되어
-        // 프론트 폴링(res.json())이 "Unexpected end of JSON input" 으로 폭주한다.
-        //
-        // installer_json_encode 는 값을 정규화하고 substitute 를 적용하며,
-        // 실패하더라도 파싱 가능한 오류 JSON 을 돌려주므로 빈 본문이 나갈 수 없다.
-        //
-        // 폴백에도 `status`/`logs`/`log_total` 을 실어 보낸다. 프론트 PollingMonitor 는
-        // `state.status` 로 진행/완료/실패를 판정하므로, 그 키가 없는 응답은 파싱은 되지만
-        // 아무 전이도 일으키지 못해 화면이 조용히 멈춘 것처럼 보인다(파싱 실패 카운터도
-        // 걸리지 않는다). 도달 확률과 무관하게 소비자 계약을 폴백에서도 유지한다.
-        echo installer_json_encode(
-            $response,
-            JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT,
-            ['status' => $status, 'logs' => [], 'log_total' => $logTotal]
-        );
+        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     }
 
     /**
@@ -176,18 +154,15 @@ class StateManagementApi
         // POST 메서드만 허용
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => false,
                 'message' => 'Only POST method is allowed',
             ], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
-        // 현재 상태 조회 + 설치 소유권·요청 검증
+        // 현재 상태 조회
         $state = getInstallationState();
-        installer_require_owner($state);
-        installer_require_csrf();
-        $generation = (int) ($state['generation'] ?? 0);
 
         // 항상 Step 4 (확장 선택)로 이동
         $targetStep = 4;
@@ -211,14 +186,11 @@ class StateManagementApi
         $state['manual_commands'] = null;
         $state['last_updated'] = gmdate('Y-m-d\TH:i:s\Z');
 
-        // 보존되는 config 에서 비밀 제거 (이슈 #465) — 초기화 후 무기한 잔존 가능하므로
-        // 평문이 남지 않아야 한다. 비밀번호는 runtime.php 에 있고, 재설치 시 Step 3
-        // 재입력 또는 runtime 폴백으로 복원된다.
-        $state = redactInstallationStateSecrets($state);
+        // 상태 저장
+        $saved = saveInstallationState($state);
 
-        // 상태 저장 — 읽은 뒤 다른 상태변경이 먼저 커밋됐으면 덮어쓰지 않는다 (CAS).
-        if (! saveInstallationStateCas($state, $generation)) {
-            installer_json_error(409, 'state_conflict', lang('error_state_conflict'));
+        if (!$saved) {
+            throw new Exception(lang('state_save_failed'));
         }
 
         addLog(lang('state_reset_completed', ['step' => $targetStep]));
@@ -226,7 +198,7 @@ class StateManagementApi
         // 성공 응답
         http_response_code(200);
 
-        echo installer_json_encode([
+        echo json_encode([
             'success' => true,
             'message' => lang('state_reset_completed', ['step' => $targetStep]),
             'target_step' => $targetStep,
@@ -245,19 +217,17 @@ class StateManagementApi
         // POST 메서드만 허용
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('api_method_not_allowed'),
             ]);
             exit;
         }
 
-        // 설치 상태 가져오기 + 설치 소유권·요청 검증 (pagehide sendBeacon 은 본문 csrf_token 으로 온다)
-        $state = getInstallationState();
-        installer_require_owner($state);
-        installer_require_csrf();
-
         addLog(lang('abort_api_requested'));
+
+        // 설치 상태 가져오기
+        $state = getInstallationState();
 
         // 디버그: 현재 state 상태 로깅
         addLog(lang('abort_api_current_status', ['status' => $state['installation_status'] ?? 'null']));
@@ -267,7 +237,7 @@ class StateManagementApi
         // 설치가 이미 완료된 경우
         if (isset($state['installation_status']) && $state['installation_status'] === 'completed') {
             addLog(lang('abort_api_already_completed'));
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('abort_api_already_completed'),
             ]);
@@ -277,7 +247,7 @@ class StateManagementApi
         // 이미 중단된 경우 - 멱등성 보장 (재진입 시 400 에러 방지)
         if (isset($state['installation_status']) && $state['installation_status'] === 'aborted') {
             addLog(lang('abort_api_already_aborted'));
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => true,
                 'message' => lang('abort_api_already_aborted'),
             ]);
@@ -287,7 +257,7 @@ class StateManagementApi
         // 설치가 진행 중이 아닌 경우
         if (! isset($state['installation_status']) || $state['installation_status'] !== 'running') {
             addLog(lang('abort_api_not_running', ['status' => $state['installation_status'] ?? 'null']));
-            echo installer_json_encode([
+            echo json_encode([
                 'success' => false,
                 'message' => lang('abort_api_not_running', ['status' => $state['installation_status'] ?? 'null']),
             ]);
@@ -302,36 +272,25 @@ class StateManagementApi
 
         // 설치 상태를 'aborted'로 변경
         addLog(lang('abort_api_status_change'));
-        $applyAbort = static function (array $state) use ($rollbackResult): array {
-            $state['installation_status'] = 'aborted';
-            // current_step은 5를 유지 (중단된 화면을 보여주기 위해 - Step 5 = Installation)
-            $state['current_task'] = null;
-            // completed_tasks는 유지 (이미 완료된 작업은 롤백하지 않음)
-            $state['aborted_at'] = date('Y-m-d H:i:s');
-            $state['abort_reason'] = 'User requested';
+        $state['installation_status'] = 'aborted';
+        // current_step은 5를 유지 (중단된 화면을 보여주기 위해 - Step 5 = Installation)
+        $state['current_task'] = null;
+        // completed_tasks는 유지 (이미 완료된 작업은 롤백하지 않음)
+        $state['aborted_at'] = date('Y-m-d H:i:s');
+        $state['abort_reason'] = 'User requested';
 
-            // 롤백 실패 정보 저장 (새로고침 후에도 표시용)
-            if (isset($rollbackResult['success']) && ! $rollbackResult['success']) {
-                $state['rollback_failure'] = [
-                    'task' => $rollbackResult['task'] ?? null,
-                    'message' => $rollbackResult['message'] ?? null,
-                    'message_key' => 'failed_rollback_manual_cleanup',
-                    'detail_key' => 'failed_rollback_manual_cleanup_detail',
-                ];
-            }
-            // 세션도 Step 5를 유지 (중단 화면 표시)
-
-            // 중단 상태는 무기한 잔존 가능 — 보존되는 config 에서 비밀 제거 (이슈 #465)
-            return redactInstallationStateSecrets($state);
-        };
-
-        // 중단 신호는 유실되면 안 된다 — CAS 충돌 시 최신 state 에 다시 적용해 재시도한다.
-        // 세대가 올라가므로 중단된 계획의 서명은 무효가 되고, 재개는 install-process 재서명을 거친다.
-        $saveResult = saveInstallationStateCas($applyAbort($state), (int) ($state['generation'] ?? 0));
-        for ($attempt = 0; ! $saveResult && $attempt < 2; $attempt++) {
-            $fresh = getInstallationState();
-            $saveResult = saveInstallationStateCas($applyAbort($fresh), (int) ($fresh['generation'] ?? 0));
+        // 롤백 실패 정보 저장 (새로고침 후에도 표시용)
+        if (isset($rollbackResult['success']) && !$rollbackResult['success']) {
+            $state['rollback_failure'] = [
+                'task' => $rollbackResult['task'] ?? null,
+                'message' => $rollbackResult['message'] ?? null,
+                'message_key' => 'failed_rollback_manual_cleanup',
+                'detail_key' => 'failed_rollback_manual_cleanup_detail',
+            ];
         }
+        // 세션도 Step 5를 유지 (중단 화면 표시)
+
+        $saveResult = saveInstallationState($state);
         addLog(lang('abort_api_save_result', ['result' => $saveResult ? 'success' : 'failed']));
 
         // 저장 후 실제 state.json 확인
@@ -341,73 +300,10 @@ class StateManagementApi
         addLog(lang('abort_installation_stopped'));
 
         // 성공 응답 (리다이렉트 없음 - 현재 Step 5 유지)
-        echo installer_json_encode([
+        echo json_encode([
             'success' => true,
             'message' => lang('abort_installation_stopped'),
         ]);
-    }
-
-    /**
-     * POST ?action=reclaim
-     * 복구 토큰으로 설치 소유권 되찾기
-     *
-     * 브라우저 재시작 등으로 소유 세션이 사라졌을 때, Step 3 통과 시 소유자 화면에 노출된 복구 토큰으로
-     * 현재 세션에 소유권을 재발급한다. 사용한 토큰은 즉시 회전하고, 실패는 집계해 잠근다.
-     */
-    private function reclaimOwnership(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo installer_json_encode([
-                'success' => false,
-                'message' => lang('api_method_not_allowed'),
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-
-        installer_require_csrf();
-
-        $state = getInstallationState();
-
-        if (! installer_state_is_claimed($state) || isInstallationCompleted()) {
-            installer_json_error(400, 'recovery_unavailable', lang('error_recovery_unavailable'));
-        }
-
-        if (! installer_session_is_owner($state)) {
-            if (installer_reclaim_is_locked()) {
-                installer_json_error(429, 'recovery_rate_limited', lang('error_recovery_rate_limited'));
-            }
-
-            $input = installer_request_json_body();
-            if (! installer_recovery_token_matches($state, (string) ($input['recovery_token'] ?? $_POST['recovery_token'] ?? ''))) {
-                installer_reclaim_record_failure();
-                addLog(lang('log_ownership_reclaim_failed'));
-                installer_json_error(403, 'recovery_token_invalid', lang('error_recovery_token_invalid'));
-            }
-
-            // 세션 고정 방지 — 소유권을 얹기 전에 세션 ID 를 새로 발급한다.
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_regenerate_id(true);
-            }
-
-            $generation = (int) ($state['generation'] ?? 0);
-            $state = installer_reclaim_owner($state);
-
-            if (! saveInstallationStateCas($state, $generation)) {
-                installer_json_error(409, 'state_conflict', lang('error_state_conflict'));
-            }
-
-            installer_reclaim_reset_throttle();
-            addLog(lang('log_ownership_reclaimed'));
-        }
-
-        // 재개 화면으로 — 세션 step 을 state 의 진행 단계로 맞춘다.
-        $_SESSION['installer_current_step'] = (int) ($state['current_step'] ?? 0);
-
-        echo installer_json_encode([
-            'success' => true,
-            'message' => lang('recovery_success'),
-        ], JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -416,7 +312,7 @@ class StateManagementApi
     private function error400(string $message): void
     {
         http_response_code(400);
-        echo installer_json_encode([
+        echo json_encode([
             'success' => false,
             'error' => 'Bad Request',
             'message' => $message,
@@ -438,7 +334,7 @@ class StateManagementApi
 
         // 에러 응답
         http_response_code(500);
-        echo installer_json_encode([
+        echo json_encode([
             'success' => false,
             'error' => 'Internal Server Error',
             'message' => $e->getMessage(),
@@ -456,21 +352,9 @@ require_once __DIR__.'/../includes/config.php';
 require_once __DIR__.'/../includes/session.php';
 require_once __DIR__.'/../includes/functions.php';
 require_once __DIR__.'/../includes/installer-state.php';
-require_once __DIR__.'/../includes/installer-ownership.php';
 
 // 롤백 함수 로드 (reset, abort 액션에서 필요)
 require_once __DIR__.'/rollback-functions.php';
-
-// 설치 완료 후 진입 차단 (KVE-2026-1056)
-// finalize 전용 가드 — `.env` 의 INSTALLER_COMPLETED=true 단독으로만 차단한다.
-// 일반 가드(installer_guard_or_410)는 `g7_installed` 락 파일도 차단 사유로 삼는데,
-// 그 락 파일은 마지막 task `complete_flag` 가 먼저 생성한다. 그 직후에도 본 엔드포인트의
-// action=get 폴링(1초 간격)이 계속되어 `completed` 상태를 받아야 완료 화면으로 전환되므로,
-// 락 파일 기준으로 차단하면 정상 설치가 "진행 중"에 고착되는 자가 차단 회귀가 발생한다.
-// 완전 완료 신호인 `.env` 플래그를 기준으로 삼아 get/reset/abort 를
-// 일괄 차단하면서 폴링 구간은 비파괴로 통과시킨다.
-require_once __DIR__.'/_guard.php';
-installer_guard_finalize_or_410();
 
 // 다국어 로드
 $currentLang = getCurrentLanguage();

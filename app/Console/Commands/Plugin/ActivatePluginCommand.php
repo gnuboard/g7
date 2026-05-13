@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Plugin;
 
-use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\PluginManager;
@@ -11,8 +10,6 @@ use Illuminate\Support\Facades\Log;
 
 class ActivatePluginCommand extends Command
 {
-    use RendersLayoutSyncResult;
-
     /**
      * The name and signature of the console command.
      */
@@ -25,9 +22,6 @@ class ActivatePluginCommand extends Command
 
     /**
      * 플러그인 관리자 및 리포지토리
-     *
-     * @param  PluginManager  $pluginManager  플러그인 활성화를 수행하는 매니저
-     * @param  PluginRepositoryInterface  $pluginRepository  설치 기록 조회 리포지토리
      */
     public function __construct(
         private PluginManager $pluginManager,
@@ -38,8 +32,6 @@ class ActivatePluginCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int 종료 코드
      */
     public function handle(): int
     {
@@ -97,8 +89,7 @@ class ActivatePluginCommand extends Command
 
             if ($result['success']) {
                 $this->info('✅ '.__('plugins.commands.activate.success', ['plugin' => $identifier]));
-                $this->info('   - '.trans_choice('plugins.commands.activate.layouts_registered', (int) ($result['layouts_registered'] ?? 0)));
-                $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
+                $this->info('   - '.__('plugins.commands.activate.layouts_registered', ['count' => $result['layouts_registered']]));
                 Log::info(__('plugins.commands.activate.success', ['plugin' => $identifier]));
 
                 return Command::SUCCESS;

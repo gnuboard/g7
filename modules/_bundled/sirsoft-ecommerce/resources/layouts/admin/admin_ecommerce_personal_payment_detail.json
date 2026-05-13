@@ -1,35 +1,32 @@
 {
-    "comment": "개인결제 상세 (운영자) — 결제요청 한 건의 진행 상태와 처리 이력을 본다. 아직 데이터소스를 붙이지\n  않아 화면 값이 예시로 박혀 있는 골격 단계이고, 배선은 개인결제 목록 화면과 같은 API 를 쓴다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_personal_payment_detail",
+    "permissions": [],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.personal_payment_detail.title",
         "description": "$t:sirsoft-ecommerce.admin.personal_payment_detail.title"
     },
-    "initLocal": {
+    "state": {
         "logSortBy": "latest",
         "logPerPage": 10,
         "logExpanded": true
     },
-    "permissions": [
-        "sirsoft-ecommerce.orders.read"
-    ],
     "slots": {
         "content": [
             {
                 "id": "personal_payment_detail_content",
                 "type": "basic",
                 "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                },
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "admin-page-content-compact"
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900 min-h-screen"
                         }
                     }
-                },
-                "props": {
-                    "className": "admin-page-content"
                 },
                 "children": [
                     {
@@ -37,7 +34,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-start justify-between gap-4 mb-6"
+                            "className": "flex items-start justify-between gap-4 mb-6"
                         },
                         "children": [
                             {
@@ -57,7 +54,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center flex-wrap gap-2 text-sm text-secondary"
+                                            "className": "flex flex-wrap items-center gap-2 text-sm text-secondary"
                                         },
                                         "children": [
                                             {
@@ -124,7 +121,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 flex-shrink-0"
+                                    "className": "flex items-center gap-2 flex-shrink-0"
                                 },
                                 "children": [
                                     {
@@ -150,7 +147,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-primary bg-red-600 dark:bg-red-700 hover:bg-red-700"
+                                            "className": "btn btn-primary bg-red-600 hover:bg-red-700"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.delete"
                                     }
@@ -163,7 +160,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "card mb-6"
                         },
                         "children": [
                             {
@@ -171,7 +168,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-start justify-between mb-4"
+                                    "className": "flex items-start justify-between mb-4"
                                 },
                                 "children": [
                                     {
@@ -225,7 +222,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "flex items-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -250,7 +247,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "flex items-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -267,7 +264,7 @@
                                                         "props": {
                                                             "className": "text-heading"
                                                         },
-                                                        "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay"
+                                                        "text": "카카오페이"
                                                     }
                                                 ]
                                             },
@@ -275,7 +272,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "flex items-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -309,7 +306,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "flex items-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -334,7 +331,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "flex items-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -362,7 +359,7 @@
                                         "name": "A",
                                         "props": {
                                             "href": "#",
-                                            "className": "flex-center text-sm text-blue-600 dark:text-blue-400 hover:underline gap-1"
+                                            "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                                         },
                                         "children": [
                                             {
@@ -370,7 +367,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "file-text",
-                                                    "className": "text-base"
+                                                    "className": "w-4 h-4"
                                                 }
                                             },
                                             {
@@ -387,7 +384,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "alert-warning"
+                                    "className": "mt-4 flex items-center gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 px-4 py-3 rounded-lg"
                                 },
                                 "children": [
                                     {
@@ -395,14 +392,14 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "clock",
-                                            "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                            "className": "w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-warning-soft"
+                                            "className": "text-sm text-yellow-700 dark:text-yellow-300"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.status_message.pending"
                                     }
@@ -415,7 +412,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "grid-2col-responsive mb-6"
+                            "className": "grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"
                         },
                         "children": [
                             {
@@ -423,14 +420,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "card"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2 mb-4"
+                                            "className": "flex items-center gap-2 mb-4"
                                         },
                                         "children": [
                                             {
@@ -438,7 +435,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "user",
-                                                    "className": "text-xl icon-muted"
+                                                    "className": "w-5 h-5 icon-muted"
                                                 }
                                             },
                                             {
@@ -455,7 +452,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-2col"
+                                            "className": "grid grid-cols-2 gap-4"
                                         },
                                         "children": [
                                             {
@@ -496,7 +493,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-1"
+                                                            "className": "flex items-center gap-1"
                                                         },
                                                         "children": [
                                                             {
@@ -513,7 +510,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "external-link",
-                                                                    "className": "text-xs text-blue-600 dark:text-blue-400"
+                                                                    "className": "w-3 h-3 text-blue-600 dark:text-blue-400"
                                                                 }
                                                             }
                                                         ]
@@ -573,14 +570,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "card"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2 mb-4"
+                                            "className": "flex items-center gap-2 mb-4"
                                         },
                                         "children": [
                                             {
@@ -588,7 +585,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "globe",
-                                                    "className": "text-xl icon-muted"
+                                                    "className": "w-5 h-5 icon-muted"
                                                 }
                                             },
                                             {
@@ -605,7 +602,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-2col"
+                                            "className": "grid grid-cols-2 gap-4"
                                         },
                                         "children": [
                                             {
@@ -646,7 +643,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-1"
+                                                            "className": "flex items-center gap-1"
                                                         },
                                                         "children": [
                                                             {
@@ -663,7 +660,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "external-link",
-                                                                    "className": "text-xs text-blue-600 dark:text-blue-400"
+                                                                    "className": "w-3 h-3 text-blue-600 dark:text-blue-400"
                                                                 }
                                                             }
                                                         ]
@@ -725,7 +722,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "grid-2col-responsive mb-6"
+                            "className": "grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"
                         },
                         "children": [
                             {
@@ -733,14 +730,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "card"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2 mb-4"
+                                            "className": "flex items-center gap-2 mb-4"
                                         },
                                         "children": [
                                             {
@@ -748,7 +745,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "link",
-                                                    "className": "text-xl icon-muted"
+                                                    "className": "w-5 h-5 icon-muted"
                                                 }
                                             },
                                             {
@@ -765,7 +762,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "flex items-center gap-2"
                                         },
                                         "children": [
                                             {
@@ -773,7 +770,7 @@
                                                 "name": "Input",
                                                 "props": {
                                                     "type": "text",
-                                                    "className": "input-readonly flex-1",
+                                                    "className": "input flex-1",
                                                     "value": "https://pay.example.com/pp-jk1789mno123pqr456",
                                                     "readOnly": true
                                                 }
@@ -792,7 +789,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "copy",
-                                                            "className": "text-xl"
+                                                            "className": "w-5 h-5"
                                                         }
                                                     }
                                                 ]
@@ -801,8 +798,6 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
-                                                    "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open",
-                                                    "title": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open",
                                                     "type": "button",
                                                     "className": "btn btn-primary btn-icon"
                                                 },
@@ -812,7 +807,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "external-link",
-                                                            "className": "text-xl"
+                                                            "className": "w-5 h-5"
                                                         }
                                                     }
                                                 ]
@@ -826,21 +821,21 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "card"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-between mb-4"
+                                            "className": "flex items-center justify-between mb-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "flex items-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -848,7 +843,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "file-text",
-                                                            "className": "text-xl icon-muted"
+                                                            "className": "w-5 h-5 icon-muted"
                                                         }
                                                     },
                                                     {
@@ -866,15 +861,15 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "flex-center text-sm text-blue-600 dark:text-blue-400 hover:underline gap-1"
+                                                    "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "pen",
-                                                            "className": "text-base"
+                                                            "name": "edit-2",
+                                                            "className": "w-4 h-4"
                                                         }
                                                     },
                                                     {
@@ -903,7 +898,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card"
+                            "className": "card"
                         },
                         "children": [
                             {
@@ -911,14 +906,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-between cursor-pointer"
+                                    "className": "flex items-center justify-between cursor-pointer"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-3"
+                                            "className": "flex items-center gap-3"
                                         },
                                         "children": [
                                             {
@@ -926,7 +921,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "calendar",
-                                                    "className": "text-xl icon-muted"
+                                                    "className": "w-5 h-5 icon-muted"
                                                 }
                                             },
                                             {
@@ -952,7 +947,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "chevron-down",
-                                            "className": "text-xl text-gray-400 dark:text-gray-500"
+                                            "className": "w-5 h-5 text-gray-400 dark:text-gray-500"
                                         }
                                     }
                                 ]
@@ -970,14 +965,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center flex-wrap justify-end gap-3 mb-4"
+                                            "className": "flex flex-wrap items-center justify-end gap-3 mb-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "flex items-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -989,7 +984,7 @@
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort:"
                                                     },
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Select",
                                                         "props": {
                                                             "className": "w-40",
@@ -1012,7 +1007,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "flex items-center gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1024,7 +1019,7 @@
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.per_page:"
                                                     },
                                                     {
-                                                        "type": "basic",
+                                                        "type": "composite",
                                                         "name": "Select",
                                                         "props": {
                                                             "className": "w-20",
@@ -1053,15 +1048,15 @@
                                         "id": "log_table_desktop",
                                         "type": "basic",
                                         "name": "Div",
+                                        "props": {
+                                            "className": "table-container table-desktop overflow-x-auto"
+                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
                                                     "className": "hidden"
                                                 }
                                             }
-                                        },
-                                        "props": {
-                                            "className": "table-container table-desktop overflow-x-auto"
                                         },
                                         "children": [
                                             {
@@ -1208,15 +1203,15 @@
                                         "id": "log_cards_mobile",
                                         "type": "basic",
                                         "name": "Div",
+                                        "props": {
+                                            "className": "hidden"
+                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "row-stack"
+                                                    "className": "space-y-3"
                                                 }
                                             }
-                                        },
-                                        "props": {
-                                            "className": "hidden"
                                         },
                                         "children": [
                                             {
@@ -1352,14 +1347,13 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center justify-center gap-1 mt-4 pt-4"
+                                            "className": "flex items-center justify-center gap-1 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
-                                                    "aria-label": "$t:common.first_page",
                                                     "type": "button",
                                                     "className": "btn btn-icon",
                                                     "disabled": true
@@ -1369,8 +1363,8 @@
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "angles-left",
-                                                            "className": "text-base"
+                                                            "name": "chevrons-left",
+                                                            "className": "w-4 h-4"
                                                         }
                                                     }
                                                 ]
@@ -1379,7 +1373,6 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
-                                                    "aria-label": "$t:common.prev_page",
                                                     "type": "button",
                                                     "className": "btn btn-icon",
                                                     "disabled": true
@@ -1390,7 +1383,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "chevron-left",
-                                                            "className": "text-base"
+                                                            "className": "w-4 h-4"
                                                         }
                                                     }
                                                 ]
@@ -1400,7 +1393,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "flex-center w-8 h-8 justify-center rounded-md text-sm font-medium bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                                                    "className": "w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                                                 },
                                                 "text": "1"
                                             },
@@ -1408,7 +1401,6 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
-                                                    "aria-label": "$t:common.next_page",
                                                     "type": "button",
                                                     "className": "btn btn-icon"
                                                 },
@@ -1418,7 +1410,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "chevron-right",
-                                                            "className": "text-base"
+                                                            "className": "w-4 h-4"
                                                         }
                                                     }
                                                 ]
@@ -1427,7 +1419,6 @@
                                                 "type": "basic",
                                                 "name": "Button",
                                                 "props": {
-                                                    "aria-label": "$t:common.last_page",
                                                     "type": "button",
                                                     "className": "btn btn-icon"
                                                 },
@@ -1436,8 +1427,8 @@
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "angles-right",
-                                                            "className": "text-base"
+                                                            "name": "chevrons-right",
+                                                            "className": "w-4 h-4"
                                                         }
                                                     }
                                                 ]

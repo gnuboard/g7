@@ -1,22 +1,18 @@
 <?php
 
 use App\Http\Controllers\Api\Public\SitemapController;
-use App\Seo\TemplateRouteResolver;
-use App\Support\StaticExtensionPattern;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // 개발용 라우트 - 디버그 모드 + 관리자 인증 필수
 Route::get('/dev', function () {
     // 1. 디버그 모드 확인
-    if (! config('app.debug')) {
+    if (!config('app.debug')) {
         abort(404);
     }
 
     // 2. 관리자 인증 확인 (세션 기반 - stateful 미들웨어로 로그인 시 세션 생성)
-    $user = Auth::guard('web')->user();
-    if (! $user || ! $user->is_super) {
+    $user = \Illuminate\Support\Facades\Auth::guard('web')->user();
+    if (!$user || !$user->is_super) {
         abort(403, '관리자 권한이 필요합니다.');
     }
 
@@ -25,45 +21,20 @@ Route::get('/dev', function () {
 
 // Admin 라우트 - admin 템플릿 의존성 검증
 Route::prefix('admin')
-    ->middleware(['canonical.host', 'template.dependencies:admin'])
+    ->middleware('template.dependencies:admin')
     ->group(function () {
-        Route::get('/{any?}', function (Request $request) {
-            // 미등록 경로는 SPA 셸 본문 + HTTP 404 (soft 404 방지 — 공개#47).
-            // 본문은 그대로라 클라이언트가 404 레이아웃을 렌더하고, 봇은 404 색인 제외.
-            $path = '/'.ltrim($request->getPathInfo(), '/');
-            if (! app(TemplateRouteResolver::class)->routeExists($path, 'admin')) {
-                return response(view('admin'), 404);
-            }
-
+        Route::get('/{any?}', function () {
             return view('admin');
-        })->where('any', StaticExtensionPattern::catchAllExclusion());
+        })->where('any', '(?!.*\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)).*');
     });
 
 // Sitemap XML 라우트
-// 자식 경로는 SitemapFileStore::childUrl() 이 sitemapindex 의 <loc> 에 기록하는 값과 일치해야 한다.
-// gzip 여부는 manifest 가 결정하므로 .xml / .xml.gz 를 같은 액션에서 처리한다.
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('web.sitemap');
-Route::get('/sitemap-{n}.xml', [SitemapController::class, 'child'])->whereNumber('n')->name('web.sitemap.child');
-Route::get('/sitemap-{n}.xml.gz', [SitemapController::class, 'child'])->whereNumber('n')->name('web.sitemap.child.gz');
 
-// User 라우트 - user 템플릿 의존성 검증 + SEO 봇 감지 + 방문자 통계
-// 순서가 계약이다: 봇 기록은 SEO 앞에 둬야 그 봇 판정과 캐시 상태를 함께 읽을 수 있고,
-// 서버 폴백은 SEO 뒤에 둬야 봇으로 판정된 요청을 사람 방문으로 세지 않는다.
-Route::middleware(['canonical.host', 'template.dependencies:user', 'analytics.bots', 'seo', 'analytics.fallback'])
+// User 라우트 - user 템플릿 의존성 검증 + SEO 봇 감지
+Route::middleware(['template.dependencies:user', 'seo'])
     ->group(function () {
-        // `where('any', ...)` 의 예약 프리픽스는 전수 제외한다 — catch-all 이 GET 을 먼저
-        // 삼키면 그 뒤에 등록된 라우트가 도달 불가가 되는데, 예외도 404 도 아닌 **SPA 셸 200**
-        // 이라 요청한 쪽은 무엇이 잘못됐는지 알 방법이 없다. `_boost`(DevTools) 가 실제로 이렇게
-        // 가려져 있었고, "우연히 안전" 한 상태를 게이트 대신 의지하게 만들었다(공개#128).
-        // `modules` 는 향후 모듈이 web GET 라우트를 소유할 때 같은 일이 반복되지 않도록 미리
-        // 비워 둔다. `admin` catch-all(위)은 `admin/` 스코프 한정이라 대상이 아니다.
-        Route::get('/{any?}', function (Request $request) {
-            // 미등록 경로는 SPA 셸 본문 + HTTP 404 (soft 404 방지 — 공개#47).
-            $path = '/'.ltrim($request->getPathInfo(), '/');
-            if (! app(TemplateRouteResolver::class)->routeExists($path, 'user')) {
-                return response(view('app'), 404);
-            }
-
+        Route::get('/{any?}', function () {
             return view('app');
-        })->where('any', '(?!admin)(?!api)(?!plugins)(?!_boost)(?!modules)'.StaticExtensionPattern::catchAllExclusion());
+        })->where('any', '(?!admin)(?!api)(?!plugins)(?!.*\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)).*');
     });

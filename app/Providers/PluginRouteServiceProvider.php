@@ -3,9 +3,6 @@
 namespace App\Providers;
 
 use App\Extension\ExtensionManager;
-use App\Extension\Testing\ExtensionTestAllowlist;
-use App\Extension\Traits\CachesPluginStatus;
-use App\Support\InstallerContext;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -13,8 +10,6 @@ use Illuminate\Support\Facades\Schema;
 
 class PluginRouteServiceProvider extends ServiceProvider
 {
-    use CachesPluginStatus;
-
     /**
      * The path to the "home" route for your application.
      *
@@ -36,8 +31,6 @@ class PluginRouteServiceProvider extends ServiceProvider
 
     /**
      * 플러그인의 라우트 파일들을 로드합니다.
-     *
-     * 활성화된 플러그인만 라우트를 등록합니다.
      */
     protected function loadPluginRoutes(): void
     {
@@ -54,12 +47,7 @@ class PluginRouteServiceProvider extends ServiceProvider
 
         // 설치 완료 상태에서는 Schema introspection 을 건너뜀 (매 요청 쿼리 제거).
         // 인스톨러 이전 환경에서는 기존 체크 경로로 폴백.
-        //
-        // 단, 마이그레이션 계열 명령 실행 중에는 INSTALLER_COMPLETED=true 라도 테이블이
-        // 아직 없을 수 있으므로(빈 DB 새 서버에 .env 복사 후 migrate 전) fast-path 를
-        // 무력화하고 hasTable 검증 경로로 진입한다. 빈 DB 면 여기서 early return 하여
-        // 이후 플러그인 부팅/상태 조회가 table not found 로 부팅을 깨뜨리는 것을 막는다.
-        if (! config('app.installer_completed') || InstallerContext::isSchemaMutatingCommand()) {
+        if (! config('app.installer_completed')) {
             try {
                 if (! Schema::hasTable('plugins')) {
                     return;
@@ -70,29 +58,11 @@ class PluginRouteServiceProvider extends ServiceProvider
             }
         }
 
-        // 활성화된 플러그인 identifier 목록 가져오기.
-        // 같은 목록을 PluginManager·PluginServiceProvider 가 이미 캐시(TTL 기본 하루)해 두므로
-        // 여기서 다시 조회하지 않고 그 캐시를 공유한다. 상태 변경 시 무효화도 같이 따라온다.
-        $activePluginIdentifiers = self::getActivePluginIdentifiers();
-
         $plugins = File::directories($pluginsPath);
-        $allowlistActive = ExtensionTestAllowlist::isActive();
 
         foreach ($plugins as $plugin) {
             $pluginName = basename($plugin);
             $pluginFile = $plugin.'/plugin.php';
-
-            // 테스트 환경 확장 격리: allowlist 밖 플러그인의 라우트 등록 차단
-            if ($allowlistActive && ! ExtensionTestAllowlist::isAllowed('plugin', $pluginName)) {
-                continue;
-            }
-
-            // 활성화된 플러그인만 라우트 로드 (모듈과 동일 기준).
-            // 이 게이트가 없으면 비활성 플러그인의 API 가 계속 호출 가능해, 화면·메뉴만
-            // 사라지고 기능은 살아 있는 상태가 된다.
-            if (! in_array($pluginName, $activePluginIdentifiers)) {
-                continue;
-            }
 
             // 플러그인 파일이 존재하는지 확인
             if (! File::exists($pluginFile)) {

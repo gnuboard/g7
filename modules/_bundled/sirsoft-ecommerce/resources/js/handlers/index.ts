@@ -7,9 +7,9 @@
 // 기존 핸들러
 import { updateProductFieldHandler } from './updateProductField';
 import { updateOptionFieldHandler } from './updateOptionField';
+import { buildProductColumnsHandler } from './buildProductColumns';
+import { buildOptionColumnsHandler } from './buildOptionColumns';
 import { calculateCurrencyPricesHandler } from './calculateCurrencyPrices';
-import { initPreferredCurrencyHandler } from './initPreferredCurrency';
-import { initPreferredShippingCountryHandler } from './initPreferredShippingCountry';
 import { setDateRangeHandler } from './setDateRange';
 import { setDefaultOptionHandler } from './setDefaultOption';
 import {
@@ -22,12 +22,6 @@ import {
 import { generateCopyProductCodeHandler } from './generateCopyProductCode';
 import { copyProductHandler } from './copyProduct';
 
-// 목록 확장 행 옵션 지연 로딩
-import {
-    loadExpandedOptionsHandler,
-    retryExpandedOptionsHandler,
-} from './expandedOptionsHandlers';
-
 // 카테고리 관련 핸들러
 import {
     selectCategoryHandler,
@@ -36,6 +30,7 @@ import {
     removeCategoryFromSelectionHandler,
     getCategoryBreadcrumbHandler,
     validateCategoryPathHandler,
+    initCategoryInfosFromProductHandler,
 } from './categoryHandlers';
 
 // 브랜드 관련 핸들러
@@ -67,15 +62,14 @@ import {
     updateAdditionalOptionHandler,
     removeAdditionalOptionHandler,
     reorderAdditionalOptionsHandler,
-    clearAdditionalOptionsHandler,
-    addAdditionalOptionValueHandler,
-    updateAdditionalOptionValueHandler,
-    removeAdditionalOptionValueHandler,
 } from './optionHandlers';
 
 // 이미지 관련 핸들러
 import {
+    uploadImagesHandler,
     setThumbnailHandler,
+    confirmDeleteImageHandler,
+    deleteImageHandler,
     reorderImagesHandler,
 } from './imageHandlers';
 
@@ -114,6 +108,8 @@ import {
     openLabelPeriodModalHandler,
     saveLabelPeriodHandler,
     removeLabelPeriodHandler,
+    updateActivityLogSortHandler,
+    updateActivityLogPerPageHandler,
     setDefaultShippingPolicyHandler,
     setLabelDatePresetHandler,
     toggleDefaultShippingPolicyHandler,
@@ -138,9 +134,11 @@ import {
 
 // 상품옵션 추가 핸들러
 import {
+    toggleAutoMultiCurrencyHandler,
     setDefaultOptionHandler as setDefaultOptionHandler2,
     addOptionRowHandler,
     updateFormOptionFieldHandler,
+    updateFormOptionCurrencyFieldHandler,
     recalculateOptionPriceAdjustmentsHandler,
 } from './productOptionHandlers';
 
@@ -154,55 +152,20 @@ import {
 import {
     buildOrderColumnsHandler,
     toggleArrayValueHandler,
+    toggleVisibleFilterHandler,
     syncOrderSelectionHandler,
+    handleOrderRowActionHandler,
+    processOrderBulkActionHandler,
     buildOrderBulkConfirmDataHandler,
     executeOrderBulkActionHandler,
+    downloadOrderExcelHandler,
     saveVisibleColumnsHandler,
     loadVisibleColumnsHandler,
     loadVisibleFiltersHandler,
 } from './orderHandlers';
 
-// 관리자 클레임 목록 핸들러 (S8b)
-import {
-    buildClaimBulkConfirmDataHandler,
-    executeClaimBulkActionHandler,
-    openClaimCompleteModalHandler,
-    toggleClaimCompleteStockHandler,
-    toggleClaimCompleteStockAllHandler,
-    setClaimCompleteRefundRequestHandler,
-    executeClaimCompletionHandler,
-    clearClaimCompleteTimersHandler,
-    openClaimDetailCompleteHandler,
-    syncClaimItemSelectionHandler,
-    openClaimItemQuantityConfirmHandler,
-    updateClaimItemQuantityHandler,
-    updateClaimBulkTrackingHandler,
-    executeClaimItemBulkStatusHandler,
-    executeClaimStatusTransitionHandler,
-    storeClaimRefundRequestHandler,
-    refreshClaimAttachmentsHandler,
-    clearClaimImagesHandler,
-    selectClaimItemBulkStatusHandler,
-    selectClaimItemTrackingDirectionHandler,
-    openClaimItemTrackingOnlyHandler,
-    deliverClaimTrackingHandler,
-    openClaimExchangeModeConfirmHandler,
-    setClaimExchangeModeHandler,
-    openClaimWithdrawOnBehalfHandler,
-    withdrawClaimOnBehalfHandler,
-    openClaimRequestEditHandler,
-    updateClaimRequestOnBehalfHandler,
-    restoreClaimStockHandler,
-    toggleClaimCompleteUnreturnedHandler,
-    setClaimCompleteUnreturnedReasonHandler,
-    saveClaimAdminMemoHandler,
-    saveClaimAmountsHandler,
-    openClaimRefundExecuteHandler,
-    executeClaimRefundHandler,
-    formatRefundInputTotalHandler,
-} from './claimHandlers';
-
 // 상품 목록 핸들러
+import { handleProductRowActionHandler } from './productListHandlers';
 
 // 주문 상세 핸들러
 import {
@@ -213,12 +176,7 @@ import {
     processOrderDetailBulkChangeHandler,
     saveAdminMemoHandler,
     updateChangeQuantityHandler,
-    openConfirmDepositModalHandler,
-    confirmDepositHandler,
 } from './orderDetailHandlers';
-
-// 수동 결제 처리 확인 창 핸들러 (Q13 — 재고 차감·사용 마일리지 차감·결제금액 기록)
-import { setManualPaidOptionHandler } from './manualPaidEffectsHandlers';
 
 // 주문 취소 핸들러 (관리자)
 import {
@@ -228,68 +186,26 @@ import {
     executeCancelOrderHandler,
     clearCancelOrderTimers,
 } from './cancelOrderHandlers';
-import {
-    clearAdminClaimRequestTimersHandler,
-    openAdminClaimRequestHandler,
-    setAdminClaimRequestFieldHandler,
-    setAdminClaimRequestRowHandler,
-    submitAdminClaimRequestHandler,
-} from './adminClaimRequestHandlers';
 
-// 주문 상품 선택 핸들러 (회원/비회원 주문상세 공용 — 클레임 신청 진입이 쓴다)
+// 주문 취소 핸들러 (사용자)
 import {
     toggleItemSelectionHandler,
     toggleSelectAllItemsHandler,
-} from './orderItemSelectionHandlers';
+    initUserCancelItemsHandler,
+    toggleUserCancelItemHandler,
+    toggleUserCancelSelectAllHandler,
+    updateUserCancelQuantityHandler,
+    estimateUserRefundHandler,
+    changeUserRefundPriorityHandler,
+    executeUserCancelOrderHandler,
+    clearUserCancelOrderTimers,
+} from './userCancelOrderHandlers';
 
 // 구매확정 핸들러 (사용자)
 import { confirmOrderOptionHandler } from './userConfirmOrderHandlers';
 
-// 배송지 변경 핸들러 (회원/비회원 공용)
-import { changeShippingAddressHandler } from './userChangeShippingAddressHandlers';
-
 // 리뷰 작성 핸들러 (사용자)
 import { submitReviewHandler } from './userReviewHandlers';
-
-// 클레임 신청서 작성 핸들러 (회원/비회원 공용)
-import {
-    initClaimApplyHandler,
-    toggleClaimItemHandler,
-    toggleClaimSelectAllHandler,
-    updateClaimQuantityHandler,
-    setClaimReasonHandler,
-    setClaimChargeMethodHandler,
-    setClaimPaymentMethodHandler,
-    startClaimRedeliveryEditHandler,
-    applyClaimRedeliveryHandler,
-    resetClaimRedeliveryHandler,
-    openClaimChangeProductHandler,
-    setClaimChangeProductModeHandler,
-    applyClaimChangeProductHandler,
-    estimateClaimHandler,
-    submitClaimHandler,
-    clearClaimApplyTimers,
-    claimApplyOrderMissingHandler,
-    initClaimEditHandler,
-    saveClaimEditHandler,
-    changeClaimRefundPriorityHandler,
-    setClaimRefundAccountFieldHandler,
-    toggleClaimComparisonHandler,
-} from './claimApplyHandlers';
-
-// 클레임 첨부 이미지 핸들러 (회원/비회원 공용)
-import {
-    setClaimImageFilesHandler,
-    removeClaimImageHandler,
-} from './claimImageHandlers';
-
-// 클레임 신청내역 핸들러 (회원/비회원 공용) — 철회 · 미수납 추가결제
-import {
-    openClaimWithdrawHandler,
-    closeClaimWithdrawHandler,
-    withdrawClaimHandler,
-    payClaimOutstandingHandler,
-} from './claimListHandlers';
 
 // 배송정책 폼 핸들러
 import {
@@ -310,23 +226,8 @@ import {
     addApiRequestFieldHandler,
     updateApiRequestFieldHandler,
     removeApiRequestFieldHandler,
-    toggleApiRequestFieldHandler,
-    updateApiConfigFieldHandler,
-    updateApiFieldMapHandler,
-    testShippingApiHandler,
     updateExtraFeeFieldHandler,
 } from './shippingPolicyFormHandlers';
-
-// 파일 내려받기·다국어 태그 편집 창 (관리자 템플릿 핸들러에 기대지 않도록 모듈이 소유)
-import { downloadFileHandler } from './downloadFile';
-import {
-    updateMultilingualTagValueHandler,
-    cancelMultilingualTagHandler,
-    saveMultilingualTagHandler,
-} from './multilingualTagHandlers';
-
-// 회원 목록 확장 필터 값 조립 (관리자 템플릿 핸들러에 기대지 않도록 모듈이 소유)
-import { setUserFilterExtHandler } from './userListFilterExtHandlers';
 
 // URL 상태 복원 핸들러
 import { initCategoryFromUrlHandler } from './initCategoryFromUrl';
@@ -347,9 +248,9 @@ export const handlerMap = {
     // ===== 기존 핸들러 =====
     updateProductField: updateProductFieldHandler,
     updateOptionField: updateOptionFieldHandler,
+    buildProductColumns: buildProductColumnsHandler,
+    buildOptionColumns: buildOptionColumnsHandler,
     calculateCurrencyPrices: calculateCurrencyPricesHandler,
-    initPreferredCurrency: initPreferredCurrencyHandler,
-    initPreferredShippingCountry: initPreferredShippingCountryHandler,
     setDateRange: setDateRangeHandler,
     setDefaultOption: setDefaultOptionHandler,
     // 옵션 선택 관련 핸들러
@@ -358,9 +259,6 @@ export const handlerMap = {
     toggleAllOptionsInRow: toggleAllOptionsInRowHandler,
     getProductOptionStates: getProductOptionStatesHandler,
     syncProductSelection: syncProductSelectionHandler,
-    // 목록 확장 행 옵션 지연 로딩
-    loadExpandedOptions: loadExpandedOptionsHandler,
-    retryExpandedOptions: retryExpandedOptionsHandler,
     // 상품 폼 모달 관련 핸들러
     generateCopyProductCode: generateCopyProductCodeHandler,
     copyProduct: copyProductHandler,
@@ -372,6 +270,7 @@ export const handlerMap = {
     removeCategoryFromSelection: removeCategoryFromSelectionHandler,
     getCategoryBreadcrumb: getCategoryBreadcrumbHandler,
     validateCategoryPath: validateCategoryPathHandler,
+    initCategoryInfosFromProduct: initCategoryInfosFromProductHandler,
 
     // ===== 브랜드 관련 =====
     getBrandName: getBrandNameHandler,
@@ -397,18 +296,12 @@ export const handlerMap = {
     updateAdditionalOption: updateAdditionalOptionHandler,
     removeAdditionalOption: removeAdditionalOptionHandler,
     reorderAdditionalOptions: reorderAdditionalOptionsHandler,
-    clearAdditionalOptions: clearAdditionalOptionsHandler,
-    addAdditionalOptionValue: addAdditionalOptionValueHandler,
-    updateAdditionalOptionValue: updateAdditionalOptionValueHandler,
-    removeAdditionalOptionValue: removeAdditionalOptionValueHandler,
-
-    // ===== 다국어 태그 편집 창 (상품 옵션값) =====
-    updateMultilingualTagValue: updateMultilingualTagValueHandler,
-    cancelMultilingualTag: cancelMultilingualTagHandler,
-    saveMultilingualTag: saveMultilingualTagHandler,
 
     // ===== 이미지 관련 =====
+    uploadImages: uploadImagesHandler,
     setThumbnail: setThumbnailHandler,
+    confirmDeleteImage: confirmDeleteImageHandler,
+    deleteImage: deleteImageHandler,
     reorderImages: reorderImagesHandler,
 
     // ===== 상세설명 관련 =====
@@ -441,6 +334,8 @@ export const handlerMap = {
     openLabelPeriodModal: openLabelPeriodModalHandler,
     saveLabelPeriod: saveLabelPeriodHandler,
     removeLabelPeriod: removeLabelPeriodHandler,
+    updateActivityLogSort: updateActivityLogSortHandler,
+    updateActivityLogPerPage: updateActivityLogPerPageHandler,
     setDefaultShippingPolicy: setDefaultShippingPolicyHandler,
     setLabelDatePreset: setLabelDatePresetHandler,
     toggleDefaultShippingPolicy: toggleDefaultShippingPolicyHandler,
@@ -459,9 +354,11 @@ export const handlerMap = {
     addDescriptionLocale: addDescriptionLocaleHandler,
 
     // ===== 상품옵션 추가 =====
+    toggleAutoMultiCurrency: toggleAutoMultiCurrencyHandler,
     setDefaultOptionFromGrid: setDefaultOptionHandler2,
     addOptionRow: addOptionRowHandler,
     updateFormOptionField: updateFormOptionFieldHandler,
+    updateFormOptionCurrencyField: updateFormOptionCurrencyFieldHandler,
     recalculateOptionPriceAdjustments: recalculateOptionPriceAdjustmentsHandler,
 
     // ===== 통합 일괄 업데이트 =====
@@ -471,53 +368,19 @@ export const handlerMap = {
     // ===== 주문관리 =====
     buildOrderColumns: buildOrderColumnsHandler,
     toggleArrayValue: toggleArrayValueHandler,
+    toggleVisibleFilter: toggleVisibleFilterHandler,
     syncOrderSelection: syncOrderSelectionHandler,
+    handleOrderRowAction: handleOrderRowActionHandler,
+    processOrderBulkAction: processOrderBulkActionHandler,
     buildOrderBulkConfirmData: buildOrderBulkConfirmDataHandler,
     executeOrderBulkAction: executeOrderBulkActionHandler,
-    downloadFile: downloadFileHandler,
+    downloadOrderExcel: downloadOrderExcelHandler,
     saveVisibleColumns: saveVisibleColumnsHandler,
     loadVisibleColumns: loadVisibleColumnsHandler,
     loadVisibleFilters: loadVisibleFiltersHandler,
 
-    // ===== 관리자 클레임 목록 (S8b) =====
-    buildClaimBulkConfirmData: buildClaimBulkConfirmDataHandler,
-    executeClaimBulkAction: executeClaimBulkActionHandler,
-    openClaimCompleteModal: openClaimCompleteModalHandler,
-    toggleClaimCompleteStock: toggleClaimCompleteStockHandler,
-    toggleClaimCompleteStockAll: toggleClaimCompleteStockAllHandler,
-    setClaimCompleteRefundRequest: setClaimCompleteRefundRequestHandler,
-    executeClaimCompletion: executeClaimCompletionHandler,
-    clearClaimCompleteTimers: clearClaimCompleteTimersHandler,
-    openClaimDetailComplete: openClaimDetailCompleteHandler,
-    syncClaimItemSelection: syncClaimItemSelectionHandler,
-    openClaimItemQuantityConfirm: openClaimItemQuantityConfirmHandler,
-    updateClaimItemQuantity: updateClaimItemQuantityHandler,
-    updateClaimBulkTracking: updateClaimBulkTrackingHandler,
-    executeClaimItemBulkStatus: executeClaimItemBulkStatusHandler,
-    executeClaimStatusTransition: executeClaimStatusTransitionHandler,
-    storeClaimRefundRequest: storeClaimRefundRequestHandler,
-    refreshClaimAttachments: refreshClaimAttachmentsHandler,
-    clearClaimImages: clearClaimImagesHandler,
-    selectClaimItemBulkStatus: selectClaimItemBulkStatusHandler,
-    selectClaimItemTrackingDirection: selectClaimItemTrackingDirectionHandler,
-    openClaimItemTrackingOnly: openClaimItemTrackingOnlyHandler,
-    deliverClaimTracking: deliverClaimTrackingHandler,
-    openClaimExchangeModeConfirm: openClaimExchangeModeConfirmHandler,
-    setClaimExchangeMode: setClaimExchangeModeHandler,
-    openClaimWithdrawOnBehalf: openClaimWithdrawOnBehalfHandler,
-    withdrawClaimOnBehalf: withdrawClaimOnBehalfHandler,
-    openClaimRequestEdit: openClaimRequestEditHandler,
-    updateClaimRequestOnBehalf: updateClaimRequestOnBehalfHandler,
-    restoreClaimStock: restoreClaimStockHandler,
-    toggleClaimCompleteUnreturned: toggleClaimCompleteUnreturnedHandler,
-    setClaimCompleteUnreturnedReason: setClaimCompleteUnreturnedReasonHandler,
-    saveClaimAdminMemo: saveClaimAdminMemoHandler,
-    saveClaimAmounts: saveClaimAmountsHandler,
-    openClaimRefundExecute: openClaimRefundExecuteHandler,
-    executeClaimRefund: executeClaimRefundHandler,
-    formatRefundInputTotal: formatRefundInputTotalHandler,
-
     // ===== 상품 목록 =====
+    handleProductRowAction: handleProductRowActionHandler,
 
     // ===== 주문 상세 =====
     initOrderDetailForm: initOrderDetailFormHandler,
@@ -527,9 +390,6 @@ export const handlerMap = {
     processOrderDetailBulkChange: processOrderDetailBulkChangeHandler,
     saveAdminMemo: saveAdminMemoHandler,
     updateChangeQuantity: updateChangeQuantityHandler,
-    setManualPaidOption: setManualPaidOptionHandler,
-    openConfirmDepositModal: openConfirmDepositModalHandler,
-    confirmDeposit: confirmDepositHandler,
 
     // ===== 배송정책 폼 =====
     initShippingPolicyForm: initShippingPolicyFormHandler,
@@ -549,10 +409,6 @@ export const handlerMap = {
     addApiRequestField: addApiRequestFieldHandler,
     updateApiRequestField: updateApiRequestFieldHandler,
     removeApiRequestField: removeApiRequestFieldHandler,
-    toggleApiRequestField: toggleApiRequestFieldHandler,
-    updateApiConfigField: updateApiConfigFieldHandler,
-    updateApiFieldMap: updateApiFieldMapHandler,
-    testShippingApi: testShippingApiHandler,
     updateExtraFeeField: updateExtraFeeFieldHandler,
 
     // ===== 주문 취소 (관리자) =====
@@ -561,65 +417,26 @@ export const handlerMap = {
     changeRefundPriority: changeRefundPriorityHandler,
     executeCancelOrder: executeCancelOrderHandler,
     clearCancelOrderTimers: clearCancelOrderTimers,
-    // 관리자 직권 접수 (§3-11) — 주문 상세 선택 바 [교환 접수]·[반품 접수]
-    clearAdminClaimRequestTimers: clearAdminClaimRequestTimersHandler,
-    openAdminClaimRequest: openAdminClaimRequestHandler,
-    setAdminClaimRequestField: setAdminClaimRequestFieldHandler,
-    setAdminClaimRequestRow: setAdminClaimRequestRowHandler,
-    submitAdminClaimRequest: submitAdminClaimRequestHandler,
 
     // ===== 주문 상품 선택 (사용자) =====
     toggleItemSelection: toggleItemSelectionHandler,
     toggleSelectAllItems: toggleSelectAllItemsHandler,
 
+    // ===== 주문 취소 (사용자) =====
+    initUserCancelItems: initUserCancelItemsHandler,
+    toggleUserCancelItem: toggleUserCancelItemHandler,
+    toggleUserCancelSelectAll: toggleUserCancelSelectAllHandler,
+    updateUserCancelQuantity: updateUserCancelQuantityHandler,
+    estimateUserRefund: estimateUserRefundHandler,
+    changeUserRefundPriority: changeUserRefundPriorityHandler,
+    executeUserCancelOrder: executeUserCancelOrderHandler,
+    clearUserCancelOrderTimers: clearUserCancelOrderTimers,
+
     // ===== 구매확정 (사용자) =====
     confirmOrderOption: confirmOrderOptionHandler,
 
-    // ===== 배송지 변경 (회원/비회원 공용) =====
-    changeShippingAddress: changeShippingAddressHandler,
-
     // ===== 리뷰 작성 (사용자) =====
     submitReview: submitReviewHandler,
-
-    // ===== 클레임 신청서 작성 (회원/비회원 공용) =====
-    initClaimApply: initClaimApplyHandler,
-    toggleClaimItem: toggleClaimItemHandler,
-    toggleClaimSelectAll: toggleClaimSelectAllHandler,
-    updateClaimQuantity: updateClaimQuantityHandler,
-    setClaimReason: setClaimReasonHandler,
-    setClaimChargeMethod: setClaimChargeMethodHandler,
-    setClaimPaymentMethod: setClaimPaymentMethodHandler,
-    startClaimRedeliveryEdit: startClaimRedeliveryEditHandler,
-    applyClaimRedelivery: applyClaimRedeliveryHandler,
-    resetClaimRedelivery: resetClaimRedeliveryHandler,
-    openClaimChangeProduct: openClaimChangeProductHandler,
-    setClaimChangeProductMode: setClaimChangeProductModeHandler,
-    applyClaimChangeProduct: applyClaimChangeProductHandler,
-    estimateClaim: estimateClaimHandler,
-    submitClaim: submitClaimHandler,
-    clearClaimApplyTimers: clearClaimApplyTimers,
-    // 주문금액 비교 섹션(#599 후속) — 환불 우선순위 전환(미리보기 재호출) · 접기/펼치기
-    changeClaimRefundPriority: changeClaimRefundPriorityHandler,
-    setClaimRefundAccountField: setClaimRefundAccountFieldHandler,
-    toggleClaimComparison: toggleClaimComparisonHandler,
-
-    // ===== 클레임 신청서 수정 (회원/비회원 공용 — 작성 셸의 edit 모드) =====
-    claimApplyOrderMissing: claimApplyOrderMissingHandler,
-    initClaimEdit: initClaimEditHandler,
-    saveClaimEdit: saveClaimEditHandler,
-
-    // ===== 클레임 첨부 이미지 (회원/비회원 공용) =====
-    setClaimImageFiles: setClaimImageFilesHandler,
-    removeClaimImage: removeClaimImageHandler,
-
-    // ===== 클레임 신청내역 (회원/비회원 공용) =====
-    openClaimWithdraw: openClaimWithdrawHandler,
-    closeClaimWithdraw: closeClaimWithdrawHandler,
-    withdrawClaim: withdrawClaimHandler,
-    payClaimOutstanding: payClaimOutstandingHandler,
-
-    // ===== 회원 목록 확장 필터 (관리자 회원 목록 필터 확장점) =====
-    setUserFilterExt: setUserFilterExtHandler,
 
     // ===== URL 상태 복원 =====
     initCategoryFromUrl: initCategoryFromUrlHandler,

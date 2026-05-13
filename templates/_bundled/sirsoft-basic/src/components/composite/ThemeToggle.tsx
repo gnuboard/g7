@@ -4,14 +4,6 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Span } from '../basic/Span';
-import type { EditorAttrs } from '../../types';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
 
 /**
  * 테마 모드 타입
@@ -32,10 +24,6 @@ export interface ThemeToggleProps {
   lightText?: string;
   /** 다크 모드 텍스트 (다국어 키 사용 권장) */
   darkText?: string;
-  /** DOM id 속성 (레이아웃 편집기 코어 일괄 ID) */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -102,16 +90,10 @@ const getInitialTheme = (): ThemeMode => {
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   onThemeChange,
   className = '',
-  autoText: autoTextProp,
-  lightText: lightTextProp,
-  darkText: darkTextProp,
-  id,
-  editorAttrs,
+  autoText = 'System',
+  lightText = 'Light',
+  darkText = 'Dark',
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
-  const autoText = autoTextProp ?? tOr('common.theme.auto', 'System');
-  const lightText = lightTextProp ?? tOr('common.theme.light', 'Light');
-  const darkText = darkTextProp ?? tOr('common.theme.dark', 'Dark');
   // 초기 테마를 즉시 로드하고 적용
   const initialTheme = getInitialTheme();
   const [currentMode, setCurrentMode] = useState<ThemeMode>(initialTheme);
@@ -175,15 +157,12 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
   };
 
   return (
-    <Div ref={menuRef} className={`relative ${className}`} id={id} {...editorAttrs}>
+    <Div ref={menuRef} className={`relative ${className}`}>
       {/* 테마 토글 버튼 */}
       <Button
         onClick={() => setShowMenu(!showMenu)}
         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
-        // 언어와 무관하게 「Toggle theme」 이던 이름을 번역한다(7.1.0 J D-J5). 번역이 없을 때의 대체 문구는
-        // 다른 기본 문구와 같이 영어다(컴포넌트 다국어 규칙 — 한국어 기본값 금지)
-        aria-label={tOr('common.theme_select', 'Theme')}
-        aria-expanded={showMenu}
+        aria-label="Toggle theme"
       >
         <Icon
           name={getCurrentIcon()}

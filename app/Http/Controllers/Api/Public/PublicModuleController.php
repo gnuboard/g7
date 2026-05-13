@@ -3,10 +3,7 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
-use App\Http\Controllers\Concerns\ServesExtensionBundles;
-use App\Http\Controllers\Concerns\ServesRewritableCssAssets;
 use App\Http\Requests\Public\Module\ServeModuleAssetRequest;
-use App\Services\ExtensionBundleService;
 use App\Services\ModuleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -19,49 +16,10 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class PublicModuleController extends PublicBaseController
 {
-    use ServesExtensionBundles;
-    use ServesRewritableCssAssets;
-
-    /**
-     * 공개 모듈 컨트롤러를 만든다.
-     *
-     * @param  ModuleService  $moduleService  모듈 조회·자산 경로 서비스
-     * @param  ExtensionBundleService  $bundleService  확장 번들(IIFE/CSS) 서빙 서비스
-     */
     public function __construct(
-        private readonly ModuleService $moduleService,
-        private readonly ExtensionBundleService $bundleService
+        private readonly ModuleService $moduleService
     ) {
         parent::__construct();
-    }
-
-    /**
-     * 활성 모듈 프론트엔드 IIFE 병합 번들(JS)을 서빙합니다.
-     *
-     * 병합 파일을 fileResponse 로 서빙한다(ETag/304/환경별 Cache-Control 재사용).
-     * 디스크 캐시가 실패하면 메모리 병합 결과로 200 을 낸다(캐시는 최적화일 뿐이다).
-     * 선언한 산출물이 소실·판독 불가면 503, 존재하되 비었으면(또는 선언 0) 빈 200 —
-     * 판정은 ServesExtensionBundles::bundleResponse() 단일 지점.
-     *
-     * @return BinaryFileResponse|Response 병합 JS 파일 응답 또는 빈 응답
-     */
-    public function serveBundleJs(): BinaryFileResponse|Response
-    {
-        $this->logApiUsage('modules.bundle', ['kind' => 'js']);
-
-        return $this->bundleResponse($this->bundleService, 'module', 'js', 'text/javascript');
-    }
-
-    /**
-     * 활성 모듈 프론트엔드 병합 번들(CSS)을 서빙합니다.
-     *
-     * @return BinaryFileResponse|Response 병합 CSS 파일 응답 또는 빈 응답
-     */
-    public function serveBundleCss(): BinaryFileResponse|Response
-    {
-        $this->logApiUsage('modules.bundle', ['kind' => 'css']);
-
-        return $this->bundleResponse($this->bundleService, 'module', 'css', 'text/css');
     }
 
     /**
@@ -69,16 +27,14 @@ class PublicModuleController extends PublicBaseController
      *
      * @param  ServeModuleAssetRequest  $request  검증된 요청 (경로, 확장자 검증 완료)
      * @param  string  $identifier  모듈 식별자 (vendor-module 형식)
-     * @return BinaryFileResponse|JsonResponse|Response 파일 응답 또는 에러 응답
+     * @param  string  $path  에셋 경로 (dist/js/module.iife.js 등)
+     * @return BinaryFileResponse|JsonResponse|Response
      */
     public function serveAsset(
         ServeModuleAssetRequest $request,
-        string $identifier
+        string $identifier,
+        string $path
     ): BinaryFileResponse|JsonResponse|Response {
-        // 파일 경로는 FormRequest 에서 받는다 — 확장자 모드는 `{path}` 라우트 세그먼트,
-        // 확장자 없는 모드는 `?file=` 쿼리로 오며 prepareForValidation() 이 이를 흡수한다.
-        $path = (string) $request->validated('path');
-
         // FormRequest에서 이미 보안 검증 완료
         // API 사용량 기록
         $this->logApiUsage('modules.assets', ['identifier' => $identifier, 'path' => $path]);
@@ -97,71 +53,6 @@ class PublicModuleController extends PublicBaseController
         }
 
         // 파일 반환 (ETag 및 환경별 캐싱 헤더 포함, 1년 캐시)
-        return $this->rewritableAssetResponse(
-            $result['filePath'],
-            $result['mimeType'],
-            'modules',
-            $identifier,
-            $path,
-            31536000
-        );
-    }
-
-    /**
-     * 모듈 편집기 스펙 조회 — editor-spec.json 반환
-     *
-     * 활성 모듈만 대상으로 하며, 설치본만 읽어(배포 원본 폴백 없음)
-     * 템플릿 serveEditorSpec 과 동일한 응답 형태(`data.spec`)로 반환한다.
-     * 비활성/미존재 모듈은 404. 파일 미작성은 spec=null 정상 응답.
-     *
-     * @param  string  $identifier  모듈 식별자 (vendor-module 형식)
-     * @return JsonResponse 편집기 스펙 응답
-     */
-    public function serveEditorSpec(string $identifier): JsonResponse
-    {
-        $this->logApiUsage('modules.editor_spec', ['identifier' => $identifier]);
-
-        $result = $this->moduleService->getEditorSpec($identifier);
-
-        if (! $result['success']) {
-            return $this->notFound(__('modules.errors.not_found', ['module' => $identifier]));
-        }
-
-        $message = $result['spec'] === null
-            ? __('templates.messages.editor_spec_empty')
-            : __('templates.messages.editor_spec_retrieved');
-
-        return $this->success($message, [
-            'identifier' => $identifier,
-            'spec' => $result['spec'],
-        ]);
-    }
-
-    /**
-     * 모듈 컴포넌트 정의 파일 서빙 — components.json 반환
-     *
-     * 설치본만 읽으며, 설치본에 없으면(구버전 모듈 등) 배포 원본을 대신 읽지 않고 빈 components 로
-     * 응답한다(무손실 보존 디그레이드).
-     *
-     * 코어 프론트엔드에는 이 엔드포인트의 호출자가 없다. 런타임 ComponentRegistry 와
-     * 편집기는 `/api/templates/{id}/components.json` 만 fetch 하고(ComponentRegistry.ts:250,
-     * LayoutEditorChrome.tsx:226), 확장 UI 는 매니페스트가 아니라 `extension_point` 로
-     * 주입된다. 네임스페이스 병합 로직도 존재하지 않는다. 확장이 자체 소비하거나 제3자가
-     * 읽는 공개 표면으로만 남아 있으므로, 여기에 소비자가 생기면 그때 서술을 갱신한다.
-     *
-     * @param  string  $identifier  모듈 식별자
-     * @return JsonResponse|Response 컴포넌트 정의 응답 (If-None-Match 일치 시 304)
-     */
-    public function serveComponents(string $identifier): JsonResponse|Response
-    {
-        $this->logApiUsage('modules.components', ['identifier' => $identifier]);
-
-        $result = $this->moduleService->getComponents($identifier);
-
-        if (! $result['success']) {
-            return $this->notFound(__('modules.errors.not_found', ['module' => $identifier]));
-        }
-
-        return $this->cachedJsonResponse($result['components'] ?? new \stdClass, 3600);
+        return $this->fileResponse($result['filePath'], $result['mimeType'], 31536000);
     }
 }

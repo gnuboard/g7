@@ -6,14 +6,6 @@ import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
 import { Img } from '../basic/Img';
 import { IconName } from '../basic/IconTypes';
-import type { EditorAttrs } from '../../types';
-
-// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
-const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
-  return typeof translated === 'string' && translated !== key ? translated : fallback;
-};
 
 export interface EmptyStateAction {
   label: string;
@@ -30,12 +22,6 @@ export interface EmptyStateProps {
   illustrationAlt?: string;
   actions?: EmptyStateAction[];
   className?: string;
-  /**
-   * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
-   */
-  id?: string;
-  /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
-  editorAttrs?: EditorAttrs;
 }
 
 /**
@@ -66,14 +52,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   description,
   iconName,
   illustrationSrc,
-  illustrationAlt: illustrationAltProp,
+  illustrationAlt = 'Empty state illustration',
   actions = [],
   className = '',
-  id,
-  editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
-  const illustrationAlt = illustrationAltProp ?? tOr('common.empty_illustration', 'Empty state illustration');
   // 버튼 variant별 스타일 매핑
   const variantClassMap: Record<'primary' | 'secondary' | 'danger' | 'ghost', string> = {
     primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
@@ -87,7 +69,6 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       className={`flex flex-col items-center justify-center p-8 text-center ${className}`}
       role="status"
       aria-live="polite"
-      id={id} {...editorAttrs}
     >
       {/* Icon 또는 Illustration */}
       {illustrationSrc ? (
@@ -97,13 +78,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           className="w-48 h-48 mb-6 object-contain"
         />
       ) : iconName ? (
-        // 아이콘은 글꼴 아이콘이라 크기가 글자 크기를 따른다 — 너비·높이만 주면 칸만 커지고
-        // 글리프는 기본 글자 크기로 칸 위쪽에 놓인다. 원이 크기·가운데 정렬을 맡고 아이콘은
-        // 글자 크기로 키운다.
-        <Div className="mb-6 w-20 h-20 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+        <Div className="mb-6 p-4 rounded-full bg-gray-100 dark:bg-gray-700">
           <Icon
             name={iconName}
-            className="text-4xl leading-none text-gray-400 dark:text-gray-500"
+            className="w-12 h-12 text-gray-400 dark:text-gray-500"
           />
         </Div>
       ) : null}

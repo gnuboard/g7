@@ -24,20 +24,6 @@
 
 API를 호출합니다. **주의: `api`가 아닌 `apiCall`을 사용해야 합니다.**
 
-```html
-<on type="click">
-  <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
-    <success>
-      <close-modal/>
-      <toast type="success" message="$t:common.success"/>
-    </success>
-    <body ids="{{_global.selectedIds}}" status="active"/>
-  </api-call>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "type": "click",
@@ -64,65 +50,19 @@ API를 호출합니다. **주의: `api`가 아닌 `apiCall`을 사용해야 합�
 |------|------|--------|------|
 | `auth_required` | boolean | false | true이면 Bearer 토큰을 Authorization 헤더에 포함 (401 에러 발생 시 로그인 페이지 리다이렉트) |
 | `auth_mode` | string | "required" | 인증 모드: `"required"` (토큰 없으면 에러), `"optional"` (토큰 있으면 포함, 없어도 진행) |
-| `identity_target` | object | — | 본인인증(IDV) 대상. 이 apiCall이 HTTP 428(본인인증 필요)을 받으면 인증 코드/링크를 보낼 `{ email?, phone? }` 을 흐름이 직접 선언 (engine-v1.51.0+) |
 
 ```text
-중요: auth_required, auth_mode, identity_target은 params 안이 아닌 액션 정의 최상위에 선언해야 합니다.
+중요: auth_required, auth_mode는 params 안이 아닌 액션 정의 최상위에 선언해야 합니다.
 ```
-
-#### identity_target 사용 예시
-
-본인인증 정책이 켜진 상태에서 비로그인(게스트) 사용자가 호출하는 API는, 인증 코드를 보낼 대상(이메일·전화)을 화면 입력값에서 선언해야 합니다. 서버는 428을 던지는 시점에 사용자가 방금 화면에 입력한 값을 알 수 없으므로, 대상 수집은 레이아웃의 책임입니다.
-
-```html
-<on type="click">
-  <api-call target="/api/modules/sirsoft-ecommerce/user/orders" auth_mode="optional" method="POST">
-    <body/>
-    <field name="identity_target">
-      <field name="email" value="{{_local.orderer?.email || ''}}"/>
-      <field name="phone" value="{{_local.orderer?.phone || _local.shipping?.recipient_phone || ''}}"/>
-    </field>
-  </api-call>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
-```json
-{
-  "handler": "apiCall",
-  "target": "/api/modules/sirsoft-ecommerce/user/orders",
-  "auth_mode": "optional",
-  "identity_target": {
-    "email": "{{_local.orderer?.email || ''}}",
-    "phone": "{{_local.orderer?.phone || _local.shipping?.recipient_phone || ''}}"
-  },
-  "params": { "method": "POST", "body": { } }
-}
-```
-
-- `email` / `phone` 둘 중 하나만 있어도 충분합니다 (서버가 둘 다 허용).
-- 우선순위는 표현식 자체가 결정합니다 (예: 주문자 정보 우선 → 수취인 정보 폴백).
-- 표현식은 `|| ''` fallback으로 빈 문자열을 보장합니다 (undefined 방지).
-- 로그인 사용자는 빈 값이어도 서버가 세션에서 대상을 도출하므로 무방합니다.
-- `G7Core.api`(axios) 직접 호출 경로에서는 호출 config에 `identity_target` 을 실어 동일하게 동작합니다.
 
 #### auth_mode 사용 예시
 
 비회원도 접근 가능하지만, 로그인 시 추가 기능을 제공하는 API:
 
-```html
-<on type="click">
-  <api-call target="/api/modules/sirsoft-ecommerce/cart" auth_mode="optional" method="GET"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "handler": "apiCall",
-  "target": "/api/modules/sirsoft-ecommerce/cart",
+  "target": "/api/cart",
   "auth_mode": "optional",
   "params": { "method": "GET" }
 }
@@ -166,16 +106,6 @@ API를 호출합니다. **주의: `api`가 아닌 `apiCall`을 사용해야 합�
 `contentType: "multipart/form-data"`를 지정하면 `body`가 자동으로 `FormData`로 변환됩니다.
 `Content-Type` 헤더는 설정하지 않으며 (브라우저가 boundary를 포함하여 자동 설정), File/Blob 객체는 원본 그대로 전송됩니다.
 
-```html
-<on type="click">
-  <api-call :auth_required="true" target="/api/admin/modules/manual-install" method="POST" contentType="multipart/form-data">
-    <body file="{{_global.moduleUploadFile}}" source="file_upload"/>
-  </api-call>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "handler": "apiCall",
@@ -214,16 +144,6 @@ API를 호출합니다. **주의: `api`가 아닌 `apiCall`을 사용해야 합�
 ### apiCall body에서 조건부 필드 제외 (undefined 패턴)
 
 드라이버/모드 선택에 따라 **특정 필드만 전송**해야 하는 경우, `undefined`를 반환하는 삼항 표현식을 사용합니다. `JSON.stringify()`는 값이 `undefined`인 키를 자동으로 제거합니다.
-
-```html
-<on type="click">
-  <api-call target="/api/admin/settings/test-mail" method="POST">
-    <body mailer="{{_local.form?.mail?.mailer || 'smtp'}}" from_address="{{_local.form?.mail?.from_address || ''}}" host="{{_local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.host ?? '') : undefined}}" mailgun_domain="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_domain ?? '') : undefined}}"/>
-  </api-call>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -279,18 +199,6 @@ API를 호출합니다. **주의: `api`가 아닌 `apiCall`을 사용해야 합�
 
 레이아웃에 `globalHeaders`가 정의되어 있으면, `apiCall` 핸들러도 해당 패턴에 매칭되는 API에 헤더를 자동으로 포함합니다.
 
-앞은 레이아웃 최상위 선언, 뒤는 그 패턴에 걸려 `X-Cart-Key` 헤더가 자동으로 실리는 `apiCall` 핸들러다.
-
-```html
-<global-headers>
-  <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}"/>
-</global-headers>
-
-<on type="click"><api-call target="/api/modules/sirsoft-ecommerce/cart/add" method="POST"><body productId="{{item.id}}"/></api-call></on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 // 레이아웃 최상위
 {
@@ -311,18 +219,6 @@ API를 호출합니다. **주의: `api`가 아닌 `apiCall`을 사용해야 합�
 ```
 
 **헤더 우선순위**: `params.headers` > `globalHeaders`
-
-```html
-<on type="click">
-  <api-call target="/api/modules/sirsoft-ecommerce/cart" method="GET">
-    <field name="headers">
-      <field name="X-Cart-Key" value="custom-key"/>
-    </field>
-  </api-call>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -355,29 +251,6 @@ setState 핸들러의 `params`에 `merge` 속성을 지정하여 상태 병합 �
 | `"shallow"` | 최상위 키만 덮어쓰기 (1단계) | 프리셋 적용, 필터 초기화 |
 | `"replace"` | 기존 상태 완전 무시, 새 값으로 교체 | 폼 초기화, 서버 데이터로 전체 교체 |
 
-앞은 `replace` 모드(기존 `_local` 을 payload 로 완전 교체), 뒤는 `shallow` 모드(최상위 키만 덮어쓰기)다.
-
-```html
-<on type="click">
-  <set-state target="local" merge="replace">
-    <field name="formData">
-      <field name="name" value=""/>
-      <field name="price" :value="0"/>
-    </field>
-  </set-state>
-</on>
-<on type="click">
-  <set-state target="local" merge="shallow">
-    <field name="filter">
-      <field name="searchField" value="all"/>
-      <field name="status" value="all"/>
-    </field>
-  </set-state>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 // replace 모드: 기존 _local을 완전히 payload로 교체
 {
@@ -404,14 +277,6 @@ setState 핸들러의 `params`에 `merge` 속성을 지정하여 상태 병합 �
 
 ### 전역 상태 변경 (target: "global")
 
-```html
-<on type="change">
-  <set-state target="global" selectedIds="{{$args[0]}}" searchQuery="{{$event.target.value}}"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "type": "change",
@@ -425,14 +290,6 @@ setState 핸들러의 `params`에 `merge` 속성을 지정하여 상태 병합 �
 ```
 
 ### 로컬 상태 변경 (target: "local" 또는 생략)
-
-```html
-<on type="change">
-  <set-state :isExpanded="true"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -449,14 +306,6 @@ setState 핸들러의 `params`에 `merge` 속성을 지정하여 상태 병합 �
 > **버전**: engine-v1.14.0+
 
 `isolatedState` 속성이 정의된 컴포넌트 내에서만 동작합니다. 해당 영역의 상태 변경 시 전체 레이아웃이 아닌 격리된 영역만 리렌더링됩니다.
-
-```html
-<on type="click">
-  <set-state target="isolated" selectedId="{{item.id}}" :currentStep="2"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -480,26 +329,9 @@ isolatedState가 있는 컴포넌트 내에서 호출 시 → 격리된 상태�
 
 #### 레이아웃 정의 예시
 
-```html
-<div>
-  <isolated-state scope-id="category-selector">
-    <field name="selectedCategories" :value="[null,null,null,null]"/>
-    <field name="currentStep" :value="1"/>
-  </isolated-state>
-  <button label="다음 단계">
-    <on type="click">
-      <set-state target="isolated" currentStep="{{_isolated.currentStep + 1}}"/>
-    </on>
-  </button>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
-  "type": "basic",
-  "name": "Div",
+  "type": "Div",
   "isolatedState": {
     "selectedCategories": [null, null, null, null],
     "currentStep": 1
@@ -509,18 +341,15 @@ isolatedState가 있는 컴포넌트 내에서 호출 시 → 격리된 상태�
     {
       "type": "basic",
       "name": "Button",
-      "actions": [
-        {
-          "type": "click",
+      "props": {
+        "label": "다음 단계",
+        "onClick": {
           "handler": "setState",
           "params": {
             "target": "isolated",
             "currentStep": "{{_isolated.currentStep + 1}}"
           }
         }
-      ],
-      "props": {
-        "label": "다음 단계"
       }
     }
   ]
@@ -536,22 +365,6 @@ isolatedState가 있는 컴포넌트 내에서 호출 시 → 격리된 상태�
 | `isolated` | `_isolated` | 격리된 영역만 | 빈번한 인터랙션 (카테고리 선택, 드래그) |
 
 ### 주요 사용 패턴
-
-순서대로 체크박스 선택 ID 저장 · 검색어 입력 시 상태 저장 · 토글 상태 변경이다.
-
-```html
-<on type="change">
-  <set-state target="global" selectedIds="{{$args[0]}}"/>
-</on>
-<on type="change">
-  <set-state searchQuery="{{$event.target.value}}"/>
-</on>
-<on type="click">
-  <set-state isExpanded="{{!_local.isExpanded}}"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 // 체크박스 선택 ID 저장
@@ -610,14 +423,6 @@ isolatedState가 있는 컴포넌트 내에서 호출 시 → 격리된 상태�
 
 특정 데이터 소스를 다시 fetch합니다.
 
-```html
-<on type="click">
-  <refetch-data-source dataSourceId="modules"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "handler": "refetchDataSource",
@@ -639,14 +444,6 @@ isolatedState가 있는 컴포넌트 내에서 호출 시 → 격리된 상태�
 > **버전**: engine-v1.4.0+
 
 `sync: true`를 사용하면 React의 `startTransition` 없이 즉시 동기적으로 렌더링합니다.
-
-```html
-<on type="click">
-  <refetch-data-source dataSourceId="admin_menu" :sync="true"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -701,22 +498,10 @@ refetch 시 상태를 임시로 오버라이드하여 데이터소스 파라미�
 
 데이터 소스를 직접 업데이트합니다. API 응답을 사용하여 데이터 소스를 갱신할 때 사용합니다. `refetchDataSource`와 달리 추가 API 요청 없이 즉시 데이터를 업데이트합니다.
 
-```html
-<on type="click">
-  <api-call target="/api/modules/sirsoft-ecommerce/checkout" method="PUT" body="{{_local.checkout}}">
-    <success>
-      <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
-    </success>
-  </api-call>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "handler": "apiCall",
-  "target": "/api/modules/sirsoft-ecommerce/checkout",
+  "target": "/api/checkout",
   "params": { "method": "PUT", "body": "{{_local.checkout}}" },
   "onSuccess": [
     {
@@ -747,19 +532,6 @@ refetch 시 상태를 임시로 오버라이드하여 데이터소스 파라미�
 ### 사용 예시
 
 **PUT API 응답으로 데이터 소스 갱신** (추가 GET 요청 없이):
-
-```html
-<on type="click">
-  <api-call target="/api/modules/sirsoft-ecommerce/checkout" method="PUT" body="{{_local.checkout}}">
-    <success>
-      <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
-      <toast type="success" message="$t:common.saved"/>
-    </success>
-  </api-call>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -794,14 +566,6 @@ refetch 시 상태를 임시로 오버라이드하여 데이터소스 파라미�
 
 기존 데이터 소스에 새 데이터를 병합합니다. 무한스크롤 구현에 유용합니다.
 
-```html
-<on type="click">
-  <append-data-source dataSourceId="templates" dataPath="data" newData="{{response.data}}"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "handler": "appendDataSource",
@@ -822,27 +586,6 @@ refetch 시 상태를 임시로 오버라이드하여 데이터소스 파라미�
 | `newData` | array | ✅ | - | 병합할 새 데이터 배열 |
 
 ### 무한스크롤 예시
-
-```html
-<on type="scroll">
-  <sequence :debounce="200">
-    <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; _global.infiniteScroll.hasMore &amp;&amp; !_global.infiniteScroll.isLoadingMore}}">
-      <case when="true">
-        <set-state target="global" :infiniteScroll.isLoadingMore="true"/>
-        <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/items" method="GET">
-          <success>
-            <append-data-source dataSourceId="items" dataPath="data" newData="{{response.data}}"/>
-            <set-state target="global" infiniteScroll.currentPage="{{_global.infiniteScroll.currentPage + 1}}" infiniteScroll.hasMore="{{(response.data?.length ?? 0) >= 20}}" :infiniteScroll.isLoadingMore="false"/>
-          </success>
-          <query page="{{_global.infiniteScroll.currentPage + 1}}" :per_page="20"/>
-        </api-call>
-      </case>
-    </switch>
-  </sequence>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -869,7 +612,7 @@ refetch 시 상태를 임시로 오버라이드하여 데이터소스 파라미�
             {
               "handler": "apiCall",
               "auth_required": true,
-              "target": "/api/modules/sirsoft-ecommerce/items",
+              "target": "/api/items",
               "params": {
                 "method": "GET",
                 "query": {
@@ -924,14 +667,6 @@ scroll 이벤트에서 `$event.target`으로 접근 가능한 속성:
 
 컴포넌트를 강제로 리마운트합니다.
 
-```html
-<on type="click">
-  <remount componentId="template_card_grid"/>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "handler": "remount",
@@ -969,25 +704,6 @@ HTML5 네이티브 D&D가 아닌 @dnd-kit 기반으로 동작하며, DynamicRend
 | `indexVar` | string | ❌ | `"$index"` | 인덱스 컨텍스트 변수명 |
 
 ### 기본 사용 예시
-
-```html
-<div>
-  <sortable source="{{_local.form.additional_options}}" item-key="id" strategy="verticalList" handle="[data-drag-handle]"/>
-  <item-template>
-    <div class="flex items-center gap-2 p-2 border rounded">
-      <div :data-drag-handle="true" class="cursor-grab">
-        <icon name="fa-grip-vertical"/>
-      </div>
-      <span textContent="{{$item.name}}"/>
-    </div>
-  </item-template>
-  <on event="onSortEnd">
-    <set-state target="local" form.additional_options="{{$sortedItems}}"/>
-  </on>
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1047,15 +763,6 @@ HTML5 네이티브 D&D가 아닌 @dnd-kit 기반으로 동작하며, DynamicRend
 `handle` 속성을 지정하면 해당 CSS 선택자를 가진 요소만 드래그 가능합니다.
 `data-drag-handle` 속성이 있는 요소에 DynamicRenderer가 자동으로 드래그 리스너를 바인딩합니다.
 
-```html
-<div>
-  <sortable source="{{_local.form.items}}" handle="[data-drag-handle]"/>
-  본문
-</div>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "sortable": {
@@ -1090,24 +797,6 @@ API 호출 등의 액션 후에 후속 액션을 실행할 수 있습니다.
 
 `onSuccess`와 `onError`는 **단일 액션 또는 배열**을 지원합니다.
 
-```html
-<on type="click">
-  <api-call target="/api/admin/users/bulk-status" method="PATCH">
-    <success>
-      <close-modal/>
-      <set-state target="global" :selectedIds="[]"/>
-      <navigate path="/admin/users" :mergeQuery="true">
-        <query/>
-      </navigate>
-      <toast type="success" message="$t:admin.users.modals.bulk_activate_success"/>
-    </success>
-    <body ids="{{_global.selectedIds}}" status="active"/>
-  </api-call>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "type": "click",
@@ -1137,8 +826,6 @@ API 호출 등의 액션 후에 후속 액션을 실행할 수 있습니다.
 | `{{error.status}}` | HTTP 상태 코드 |
 | `{{error.data}}` | API 응답 전체 (success, message, errors 포함) |
 | `{{error.data.errors}}` | errors 객체 (추가 에러 정보) |
-
-> **레이아웃 바인딩에서는 `{{error.data}}` 를 쓰지 않는다.** 엔진 `ErrorContext` 에 `data`(전체 응답 본문)와 `errors`(필드별 에러)가 함께 있지만, 레이아웃은 `{{error.errors}}` 만 사용한다 — 정적 검사가 차단한다(번들 코퍼스 실사용: `error.data` **0건** / `error.errors` **120건**). 위 표는 컨텍스트에 어떤 키가 있는지를 설명할 뿐 레이아웃 작성 권장 경로가 아니다.
 
 ---
 
@@ -1195,16 +882,12 @@ ResponseHelper를 사용하는 모든 API는 다음 구조를 따릅니다:
 | onError | `error.data.errors` | - | errors 객체 |
 | onError | `error.data.errors.필드명` | - | 특정 에러 필드 |
 
-> 위 `error.data*` 행은 **핸들러 컨텍스트에 어떤 키가 들어오는지**를 설명하는 표이지 소스 경로가 아니다.
-> 레이아웃 바인딩에서는 `{{error.data}}` 계열을 쓰지 않는다 — `{{error.errors}}` 만 쓴다
-> (정적 검사가 차단한다).
-
 ### API 데이터 바인딩 체크리스트
 
 ```
 □ API 응답 구조를 실제로 확인했는가? (추측 금지)
 □ ResponseHelper의 success/error 반환 구조를 이해했는가?
-□ 레이아웃 바인딩은 error.errors 를 쓰는가? (error.data.* 는 금지 — audit 차단)
+□ 중첩된 객체 경로가 정확한가? (예: error.data.errors.field)
 □ 배열 vs 객체 구분이 명확한가?
 □ Optional Chaining(?.)을 적절히 사용했는가?
 ```
@@ -1216,8 +899,8 @@ ResponseHelper를 사용하는 모든 API는 다음 구조를 따릅니다:
 "deactivateWarningData": "{{error.response}}"
 "deactivateWarningData": "{{error.dependent_templates}}"
 
-// ✅ 올바른 예: 실제 구조 확인 후 사용 (레이아웃 작성에서는 error.errors 를 쓴다 — 위 금지 주석 참조)
-"deactivateWarningData": "{{error.errors}}"
+// ✅ 올바른 예: 실제 구조 확인 후 사용
+"deactivateWarningData": "{{error.data}}"
 // 모달에서: {{_global.deactivateWarningData.errors.dependent_templates}}
 ```
 
@@ -1254,26 +937,6 @@ onError 있음?
 ```
 
 ### 기본 사용법
-
-```html
-<on type="click">
-  <api-call :auth_required="true" target="/api/admin/users/{{id}}" method="DELETE">
-    <fail>
-      <toast type="error" message="{{error.message}}"/>
-    </fail>
-    <error-handling>
-      <on-code code="403">
-        <open-modal target="permission_denied_modal"/>
-      </on-code>
-      <on-code code="404">
-        <toast type="warning" message="$t:errors.user_not_found"/>
-      </on-code>
-    </error-handling>
-  </api-call>
-</on>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

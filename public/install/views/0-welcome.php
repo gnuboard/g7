@@ -50,8 +50,6 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         echo lang('storage_not_exists');
                     } elseif ($storageResult['error_type'] === 'ownership_mismatch') {
                         echo lang('storage_ownership_mismatch');
-                    } elseif ($storageResult['error_type'] === 'windows_readonly') {
-                        echo lang('storage_windows_readonly');
                     } elseif ($storageResult['error_type'] === 'not_writable') {
                         echo lang('storage_not_writable');
                     } else {
@@ -71,8 +69,6 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         'web_user' => $storageResult['web_server_user'] ?? 'www-data',
                         'permissions' => $storageResult['permissions'] ?? '?',
                     ]);
-                } elseif ($storageResult['error_type'] === 'windows_readonly') {
-                    echo lang('storage_windows_readonly_message');
                 } elseif ($storageResult['error_type'] === 'not_writable') {
                     echo lang('storage_not_writable_message');
                 } else {
@@ -133,17 +129,8 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                     </div>
                     <p class="fix-guide-hint" style="margin-top: 0.75rem;"><?= lang('ownership_mismatch_hint', ['owner' => htmlspecialchars($owner), 'web_user' => htmlspecialchars($webUser)]) ?></p>
-                <?php elseif (in_array($storageResult['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues', 'windows_readonly'])): ?>
+                <?php elseif (in_array($storageResult['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues'])): ?>
                     <?php if (isWindows()): ?>
-                        <?php if ($storageResult['error_type'] === 'windows_readonly'): ?>
-                            <!-- Windows ReadOnly 속성: ACL 이 아니라 파일 속성이라 icacls 로 해소되지 않는다 -->
-                            <p class="fix-guide-label"><?= lang('permission_readonly_fix_guide') ?></p>
-                            <div class="code-box">
-                                <pre class="fix-command"><?= htmlspecialchars(getPermissionFixCommand($storagePath, 'windows_readonly')) ?></pre>
-                                <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
-                            </div>
-                            <p class="fix-guide-hint"><?= lang('permission_readonly_hint') ?></p>
-                        <?php endif; ?>
                         <!-- Windows: icacls 명령어 안내 -->
                         <p class="fix-guide-label"><?= lang('permission_fix_guide') ?></p>
                         <div class="code-box">
@@ -181,28 +168,6 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
             </div>
         </div>
         <?php endif; ?>
-
-        <!-- 세션 쿠키 차단 경고 배너 (round-trip 검증 실패 시 JS 가 표시) -->
-        <div id="session-cookie-blocked-banner"
-             class="alert alert-warning"
-             role="alert"
-             style="display:none;margin-bottom:1rem;">
-            <div class="alert-header" style="display:flex;justify-content:space-between;align-items:center;">
-                <strong><?= lang('session_cookie_blocked_title') ?></strong>
-                <button type="button"
-                        onclick="document.getElementById('session-cookie-blocked-banner').style.display='none';"
-                        class="btn-close"
-                        aria-label="<?= lang('session_cookie_blocked_dismiss') ?>"
-                        style="background:transparent;border:0;cursor:pointer;font-size:1.25rem;">×</button>
-            </div>
-            <p><?= lang('session_cookie_blocked_description') ?></p>
-            <ol>
-                <li><?= lang('session_cookie_blocked_remedy_1') ?></li>
-                <li><?= lang('session_cookie_blocked_remedy_2') ?></li>
-                <li><?= lang('session_cookie_blocked_remedy_3') ?></li>
-            </ol>
-            <p style="font-size:0.85rem;opacity:0.75;"><?= lang('session_cookie_blocked_technical_detail') ?></p>
-        </div>
 
         <!-- 언어 선택 및 다음 버튼 폼 -->
         <form method="POST" id="language-form">
@@ -332,41 +297,4 @@ function copyWelcomeCommand(btn) {
         setTimeout(function() { btn.textContent = originalText; }, 2000);
     });
 }
-
-/**
- * 세션 쿠키 round-trip 사전 진단
- *
- * Step 0 진입 시 1회 실행. set 으로 세션에 nonce 저장 → verify 로 같은 세션의
- * nonce 복원 여부 확인. 실패 시 경고 배너 표시 (설치 진행은 차단하지 않음).
- *
- * `installation_status` 가 `not_started` 일 때만 검증 — 이미 설치 진행 중인
- * 화면 새로고침 시 nonce 가 verify 단계에서 소비되면 후속 검증이 영향 받지
- * 않도록.
- */
-document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        const baseUrl = window.INSTALLER_BASE_URL || '/install';
-        const setResp = await fetch(baseUrl + '/api/session-probe.php?action=set', {
-            credentials: 'same-origin',
-            cache: 'no-store',
-        });
-        if (!setResp.ok) return;
-
-        const verifyResp = await fetch(baseUrl + '/api/session-probe.php?action=verify', {
-            credentials: 'same-origin',
-            cache: 'no-store',
-        });
-        if (!verifyResp.ok) return;
-
-        const verifyData = await verifyResp.json();
-        if (verifyData && verifyData.matched === false) {
-            const banner = document.getElementById('session-cookie-blocked-banner');
-            if (banner) {
-                banner.style.display = '';
-            }
-        }
-    } catch (e) {
-        // 네트워크 오류 / endpoint 미존재 — silent (Step 0 진행 자체에는 영향 없음)
-    }
-});
 </script>

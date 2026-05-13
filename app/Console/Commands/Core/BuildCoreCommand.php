@@ -2,15 +2,12 @@
 
 namespace App\Console\Commands\Core;
 
-use App\Extension\Traits\ClearsTemplateCaches;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
 class BuildCoreCommand extends Command
 {
-    use ClearsTemplateCaches;
-
     /**
      * The name and signature of the console command.
      */
@@ -85,151 +82,26 @@ class BuildCoreCommand extends Command
      */
     private function buildEngineOnly(string $projectPath, bool $watchMode, bool $productionMode): int
     {
-        // 감시 모드: 엔진 번들 + 편집기 번들(layout-editor.min.js)을 각각 vite --watch 로
-        // 병렬 감시한다. (기존 dev 서버는 코어 lib 를 빌드하지 않으므로 사용 불가)
+        $buildCommand = ['npm', 'run'];
+
         if ($watchMode) {
-            $this->info('👀 파일 감시 모드로 코어 빌드 시작 (템플릿 엔진 + 레이아웃 편집기 + DevTools + 개발 대시보드 CSS)');
+            // build:core는 watch 모드가 없으므로 dev 사용
+            $buildCommand[] = 'dev';
+            $this->info('👀 파일 감시 모드로 코어 빌드 시작 (템플릿 엔진)');
             $this->line('   Ctrl+C로 종료할 수 있습니다.');
-
-            return $this->runWatchBundles($projectPath);
+        } else {
+            $buildCommand[] = 'build:core';
+            $this->info('🔨 코어 빌드 시작 (템플릿 엔진)'.($productionMode ? ' (프로덕션)' : ''));
         }
 
-        // 3개 번들을 npm 스크립트로 순차 호출하므로 빌드 환경변수를 세 곳 모두에 주입한다.
-        $buildEnv = $this->buildEnv($productionMode);
+        $result = $this->runNpmCommand($buildCommand, $projectPath, ! $watchMode);
 
-        // ── 1) 템플릿 엔진 번들 (편집기 코드 제외) ──────────────────────────────
-        $this->info('🔨 코어 빌드 시작 (템플릿 엔진)'.($productionMode ? ' (프로덕션)' : ''));
-        $engineResult = $this->runNpmCommand(['npm', 'run', 'build:core'], $projectPath, true, $buildEnv);
-
-        if ($engineResult !== Command::SUCCESS) {
-            return $engineResult;
+        if ($result === Command::SUCCESS && ! $watchMode) {
+            $this->info('✅ 코어 빌드 완료 (템플릿 엔진)');
+            $this->showEngineBuildResults($projectPath);
         }
 
-        // ── 2) 레이아웃 편집기 번들 (lazy, /admin/layout-editor/* 진입 시 로드) ──
-        $this->info('🔨 코어 빌드 시작 (레이아웃 편집기)'.($productionMode ? ' (프로덕션)' : ''));
-        $editorResult = $this->runNpmCommand(['npm', 'run', 'build:core-editor'], $projectPath, true, $buildEnv);
-
-        if ($editorResult !== Command::SUCCESS) {
-            $this->error('❌ 레이아웃 편집기 번들 빌드 실패');
-
-            return $editorResult;
-        }
-
-        // ── 3) DevTools 번들 (lazy, 디버그 모드에서만 로드) ──
-        $this->info('🔨 코어 빌드 시작 (DevTools)'.($productionMode ? ' (프로덕션)' : ''));
-        $devtoolsResult = $this->runNpmCommand(['npm', 'run', 'build:core-devtools'], $projectPath, true, $buildEnv);
-
-        if ($devtoolsResult !== Command::SUCCESS) {
-            $this->error('❌ DevTools 번들 빌드 실패');
-
-            return $devtoolsResult;
-        }
-
-        // ── 4) 개발 대시보드 CSS (자체 제공 — 종전 Tailwind Play CDN 대체) ──
-        $this->info('🔨 코어 빌드 시작 (개발 대시보드 CSS)'.($productionMode ? ' (프로덕션)' : ''));
-        $dashboardResult = $this->runNpmCommand(['npm', 'run', 'build:core-devdashboard'], $projectPath, true, $buildEnv);
-
-        if ($dashboardResult !== Command::SUCCESS) {
-            $this->error('❌ 개발 대시보드 CSS 빌드 실패');
-
-            return $dashboardResult;
-        }
-
-        $this->pruneStaleSourceMaps($productionMode);
-
-        $this->info('✅ 코어 빌드 완료 (템플릿 엔진 + 레이아웃 편집기 + DevTools + 개발 대시보드 CSS)');
-        $this->showEngineBuildResults($projectPath);
-        $this->incrementExtensionCacheVersion();
-
-        return Command::SUCCESS;
-    }
-
-    /**
-     * 프로덕션 빌드 후 `public/build/core/` 에 남은 소스맵을 제거합니다.
-     *
-     * 프로덕션 빌드는 `G7_BUILD_SOURCEMAP=0` 으로 맵을 **만들지 않을 뿐**, 이전 개발 빌드가
-     * 남긴 맵을 지우지는 않는다. 그 디렉토리는 웹루트라 남아 있는 맵은 웹서버가 그대로
-     * 서빙하고, 맵에는 원본 코드 전문(`sourcesContent`)이 담긴다 — 확장자 화이트리스트가
-     * 막아 주는 확장 에셋과 달리 이 경로는 정적 서빙이라 통과한다.
-     *
-     * 종전에는 루트 `npm run build` 의 `emptyOutDir` 이 디렉토리를 통째로 비우면서 이 맵들을
-     * 함께 지웠다. 그 동작은 서빙 중인 코어 번들·게시본까지 지우는 결함이라 껐으므로(#122),
-     * 소스맵 정리 책임을 빌드 커맨드가 명시적으로 넘겨받는다.
-     *
-     * @param  bool  $productionMode  프로덕션 빌드 여부
-     */
-    private function pruneStaleSourceMaps(bool $productionMode): void
-    {
-        if (! $productionMode) {
-            // 로컬 빌드는 디버깅을 위해 맵을 의도적으로 생성한다 — 지우면 그 목적이 사라진다.
-            return;
-        }
-
-        $removed = [];
-
-        foreach (glob(public_path('build/core').DIRECTORY_SEPARATOR.'*.map') ?: [] as $map) {
-            if (@unlink($map)) {
-                $removed[] = basename($map);
-
-                continue;
-            }
-
-            $this->warn('   ⚠️  소스맵 삭제 실패 (수동 제거 필요): '.$map);
-        }
-
-        if ($removed !== []) {
-            $this->line('   🧹 잔존 소스맵 제거: '.implode(', ', $removed));
-        }
-    }
-
-    /**
-     * 감시 모드에서 엔진 번들 + 편집기 번들을 병렬로 vite --watch 실행합니다.
-     *
-     * @param  string  $projectPath  프로젝트 경로
-     * @return int 명령 실행 결과 코드
-     */
-    private function runWatchBundles(string $projectPath): int
-    {
-        // 엔진 + 편집기 + DevTools + 개발 대시보드 CSS 를 각각 vite --watch 로 병렬 감시.
-        // 1회 빌드가 굽는 산출물과 같은 집합이어야 한다 — 한쪽만 빠지면 감시 모드에서
-        // 그 산출물만 조용히 stale 해진다.
-        $bundles = [
-            'engine' => ['npm', 'run', 'build:core-watch'],
-            'editor' => ['npm', 'run', 'build:core-editor-watch'],
-            'devtools' => ['npm', 'run', 'build:core-devtools-watch'],
-            'dashboard' => ['npm', 'run', 'build:core-devdashboard-watch'],
-        ];
-
-        /** @var array<string, Process> $processes */
-        $processes = [];
-
-        foreach ($bundles as $label => $command) {
-            if (PHP_OS_FAMILY === 'Windows') {
-                $command = array_merge(['cmd', '/c'], $command);
-            }
-
-            $process = new Process($command);
-            $process->setWorkingDirectory($projectPath);
-            $process->setTimeout(null);
-            $process->start(function ($type, $buffer) use ($label) {
-                $this->output->write("[{$label}] ".$buffer);
-            });
-
-            $processes[$label] = $process;
-        }
-
-        // 하나라도 실행 중이면 계속 대기 (Ctrl+C 로 종료)
-        do {
-            $anyRunning = false;
-            foreach ($processes as $process) {
-                if ($process->isRunning()) {
-                    $anyRunning = true;
-                }
-            }
-            usleep(100000); // 100ms
-        } while ($anyRunning);
-
-        return Command::SUCCESS;
+        return $result;
     }
 
     /**
@@ -253,19 +125,11 @@ class BuildCoreCommand extends Command
             $this->info('🔨 코어 빌드 시작 (전체)'.($productionMode ? ' (프로덕션)' : ''));
         }
 
-        // 감시 모드에는 소스맵 억제를 주입하지 않는다 — 개발 중 디버깅 필요
-        $result = $this->runNpmCommand(
-            $buildCommand,
-            $projectPath,
-            ! $watchMode,
-            $watchMode ? [] : $this->buildEnv($productionMode)
-        );
+        $result = $this->runNpmCommand($buildCommand, $projectPath, ! $watchMode);
 
         if ($result === Command::SUCCESS && ! $watchMode) {
-            $this->pruneStaleSourceMaps($productionMode);
             $this->info('✅ 코어 빌드 완료 (전체)');
             $this->showFullBuildResults($projectPath);
-            $this->incrementExtensionCacheVersion();
         }
 
         return $result;
@@ -286,25 +150,22 @@ class BuildCoreCommand extends Command
 
         $this->line('   빌드 결과:');
 
-        // template-engine.min.js 확인 (일반 페이지 초기 로드 = 이 번들만)
+        // template-engine.min.js 확인
         $engineFile = $corePath.'/template-engine.min.js';
         if (file_exists($engineFile)) {
             $fileSize = number_format(filesize($engineFile) / 1024, 2);
             $this->line("   - template-engine.min.js ({$fileSize} KB)");
         }
 
-        // layout-editor.min.js 확인 (편집기 lazy 번들, /admin/layout-editor/* 진입 시 로드)
-        $editorFile = $corePath.'/layout-editor.min.js';
-        if (file_exists($editorFile)) {
-            $fileSize = number_format(filesize($editorFile) / 1024, 2);
-            $this->line("   - layout-editor.min.js ({$fileSize} KB, lazy)");
-        }
-
-        // devtools.min.js 확인 (DevTools lazy 번들, 디버그 모드에서만 로드)
-        $devtoolsFile = $corePath.'/devtools.min.js';
-        if (file_exists($devtoolsFile)) {
-            $fileSize = number_format(filesize($devtoolsFile) / 1024, 2);
-            $this->line("   - devtools.min.js ({$fileSize} KB, lazy/debug)");
+        // lang 파일 확인
+        $langPath = $corePath.'/lang';
+        if (is_dir($langPath)) {
+            $langFiles = glob($langPath.'/*.json');
+            foreach ($langFiles as $langFile) {
+                $fileName = 'lang/'.basename($langFile);
+                $fileSize = number_format(filesize($langFile) / 1024, 2);
+                $this->line("   - {$fileName} ({$fileSize} KB)");
+            }
         }
     }
 
@@ -375,29 +236,14 @@ class BuildCoreCommand extends Command
     }
 
     /**
-     * 빌드 프로세스에 주입할 환경변수를 구성합니다.
-     *
-     * 프로덕션 빌드에서는 소스맵을 생성하지 않습니다. 배포 산출물에 원본 코드가
-     * 포함되는 것을 막기 위함이며, 각 vite config 가 이 값을 읽습니다.
-     *
-     * @param  bool  $productionMode  프로덕션 빌드 여부
-     * @return array<string, string> Process 에 주입할 환경변수
-     */
-    private function buildEnv(bool $productionMode): array
-    {
-        return $productionMode ? ['G7_BUILD_SOURCEMAP' => '0'] : [];
-    }
-
-    /**
      * npm 명령 실행
      *
      * @param  array  $command  실행할 명령
      * @param  string  $cwd  작업 디렉토리
      * @param  bool  $waitForCompletion  완료 대기 여부
-     * @param  array<string, string>  $env  추가로 주입할 환경변수 (부모 환경에 병합됨)
      * @return int 명령 실행 결과 코드
      */
-    private function runNpmCommand(array $command, string $cwd, bool $waitForCompletion = true, array $env = []): int
+    private function runNpmCommand(array $command, string $cwd, bool $waitForCompletion = true): int
     {
         // Windows 환경에서는 cmd /c 사용
         if (PHP_OS_FAMILY === 'Windows') {
@@ -406,11 +252,6 @@ class BuildCoreCommand extends Command
 
         $process = new Process($command);
         $process->setWorkingDirectory($cwd);
-
-        // Symfony Process 는 지정한 env 를 부모 환경에 병합하므로(PATH 등 유지) 추가분만 넘긴다.
-        if ($env !== []) {
-            $process->setEnv($env);
-        }
         $process->setTimeout(null); // 타임아웃 없음
 
         if ($waitForCompletion) {

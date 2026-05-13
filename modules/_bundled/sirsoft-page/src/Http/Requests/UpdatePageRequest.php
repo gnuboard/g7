@@ -6,7 +6,6 @@ use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Modules\Sirsoft\Page\Http\Requests\Concerns\ValidatesTempKey;
 use Modules\Sirsoft\Page\Models\Page;
 
 /**
@@ -14,12 +13,8 @@ use Modules\Sirsoft\Page\Models\Page;
  */
 class UpdatePageRequest extends FormRequest
 {
-    use ValidatesTempKey;
-
     /**
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
-     *
-     * @return bool 항상 true (권한은 미들웨어 체인에서 검증)
      */
     public function authorize(): bool
     {
@@ -50,7 +45,7 @@ class UpdatePageRequest extends FormRequest
             'seo_meta.title' => ['nullable', 'string', 'max:255'],
             'seo_meta.description' => ['nullable', 'string', 'max:500'],
             'seo_meta.keywords' => ['nullable', 'string', 'max:500'],
-            'temp_key' => $this->tempKeyRules(),
+            'temp_key' => ['nullable', 'string', 'max:64'],
         ];
     }
 
@@ -69,20 +64,5 @@ class UpdatePageRequest extends FormRequest
             'content_mode.in' => __('sirsoft-page::validation.content_mode.in'),
             'published.boolean' => __('sirsoft-page::validation.published.boolean'),
         ];
-    }
-
-    /**
-     * 검증 오류에 사용할 사용자 친화적 필드명
-     *
-     * @return array<string, string> 필드명 → 표시 이름
-     */
-    public function attributes(): array
-    {
-        return array_merge([
-            // 다국어 제목·본문 — 코어 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다.
-            // 없으면 칸 이름 없이 「한국어(ko) 값은 필수입니다」만 나왔다(2026-10-07 실측)
-            'title' => __('sirsoft-page::validation.attributes.title'),
-            'content' => __('sirsoft-page::validation.attributes.content'),
-        ], $this->tempKeyAttributes());
     }
 }

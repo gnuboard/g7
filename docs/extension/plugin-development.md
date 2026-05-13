@@ -1,6 +1,6 @@
 # 플러그인 개발 가이드
 
-> **관련 문서**: [README.md](README.md) | [extension-manager.md](extension-manager.md) | [hooks.md](hooks.md)
+> **관련 문서**: [index.md](index.md) | [extension-manager.md](extension-manager.md) | [hooks.md](hooks.md)
 
 ---
 
@@ -207,27 +207,8 @@ class Plugin implements PluginInterface
 | `getGithubUrl()` | `?string` | `github_url` | `null` |
 | `getAssets()` | `array` | `assets` | `[]` |
 | `getAssetLoadingConfig()` | `array` | `loading` | strategy: global, priority: 100 |
-| `getIcon()` | `?string` | `icon` | `null` |
 
 > **`license` 필드**: `plugin.json`에 `"license": "MIT"` 등의 라이선스 정보를 포함합니다. `getLicense()` 메서드로 값을 읽으며, API 리소스의 `license` 필드로 노출됩니다. 또한 각 플러그인 루트에 `LICENSE` 파일을 포함하여 라이선스 전문을 제공해야 합니다.
-
-### icon 필드 (선택)
-
-패키지에 아이콘을 담으면 관리자 확장 관리 화면과 설치 마법사에 그 그림이 나옵니다.
-보통은 파일만 두면 되고(`assets/icon.svg`), 다른 경로를 쓸 때만 `icon` 을 적습니다.
-
-```json
-{
-  "icon": "assets/brand/mark.svg"
-}
-```
-
-`getIcon()` 은 **적힌 값만** 돌려줍니다 — 경로가 올바른지, 그림이 규격에 맞는지는 코어가
-따로 판정합니다. 선언이 없으면 `null` 이고 파일 관례로 해석됩니다.
-
-규격(정사각·100KB 이하·스크립트 없는 SVG)과 언어팩 합성 규칙은
-[확장 아이콘](extension-icons.md)에 있습니다. 아이콘을 넣지 않아도 되며, 그때는 종류별
-기본 그림으로 표시됩니다.
 
 ### hidden 필드 (선택)
 
@@ -259,10 +240,6 @@ class Plugin implements PluginInterface
 | `getDynamicRoleIdentifiers()` | `[]` | 런타임 생성 역할 식별자 — stale cleanup 보존 대상 |
 | `getDependencies()` | `[]` | 의존하는 모듈/플러그인 목록 |
 | `getHookListeners()` | `[]` | 훅 리스너 클래스 목록 |
-| `getMiddleware()` | `[]` | 확장 미들웨어 선언 (self-gate targets) — `{class, groups, timing?, targets}` ([middleware.md](../backend/middleware.md)) |
-| `getBenchmarkProfiles()` | `[]` | 성능 계측 대상 선언 (`g7:bench` 가 수집) — 목록/화면/쓰기/배치 4축 ([benchmark.md](../backend/benchmark.md)) |
-| `getAnalyticsGoals()` | `[]` | 방문자 통계 전환(목표) 선언 — 선언된 목표만 기록된다 ([analytics-extension-points.md](analytics-extension-points.md)) |
-| `getAnalyticsDimensions()` | `[]` | 방문자 통계 분류 기준(dimension) 선언 — 선언된 분류 기준의 값만 원장·집계에 남는다 ([analytics-extension-points.md](analytics-extension-points.md)) |
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 플러그인은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `PluginManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
 > **동적 식별자 보존 규칙**: `Permission::updateOrCreate()` / `Role::firstOrCreate()` 등으로 런타임에 생성한 엔티티는 업데이트 시 `cleanupStalePluginEntries` 에 의해 "정적 정의에 없는 고아 레코드" 로 판정되어 삭제될 위험이 있습니다. 이를 방지하려면 동적 식별자 목록을 위 3개 훅에서 반환하세요 — 정적 정의 + 동적 식별자가 병합된 expected 목록을 기준으로 판정되어 보존됩니다. 상세는 [extension-update-system.md](extension-update-system.md) 참조.
@@ -310,14 +287,6 @@ class Plugin implements PluginInterface
 
 ---
 
-## 화면 컴포넌트 제공
-
-플러그인도 모듈과 같은 방식으로 자기 화면 컴포넌트를 제공한다. 소스는 `resources/js/components/{basic,composite,layout}/`, 이름은 `{플러그인식별자}.{이름}`(마크업 태그에 식별자 프리픽스 필수), 등록은 플러그인 번들이 스스로 한다.
-
-플러그인은 **다른 확장의 컴포넌트를 대체할 수 없다** — 그 권한은 템플릿 전용이다. 자기 컴포넌트의 특정 템플릿 전용 판본은 `resources/js/components/for/{템플릿식별자}/` 에 둔다.
-
-규약 전문: **[extension-components.md](extension-components.md)**
-
 ## 플러그인 디렉토리 구조
 
 ```text
@@ -325,10 +294,7 @@ plugins/_bundled/sirsoft-payment/
 ├── plugin.json                  # 메타데이터 (이름, 버전, 설명 등 SSoT)
 ├── plugin.php                    # PluginInterface 구현 (루트)
 ├── LICENSE                      # 라이선스 전문 (MIT)
-├── composer.json                 # PSR-4 오토로딩 + 외부 패키지 의존성 (Git 추적)
-├── composer.lock                 # Composer 락 파일 (Git 추적 — vendor-bundle.json 의 composer_lock_sha256 가 이 파일을 검증)
-├── vendor-bundle.json            # 번들 메타파일: SHA256, 패키지 목록 (Git 추적)
-├── vendor-bundle.zip             # 압축된 vendor 디렉토리 (Git 추적)
+├── composer.json                 # PSR-4 오토로딩 + 외부 패키지 의존성
 ├── vendor/                      # Composer 의존성 (자동 생성, gitignore 대상)
 ├── upgrades/                    # 버전 업그레이드 스텝 (AbstractUpgradeStep 상속 — g7_version >= 7.0.0-beta.5 플러그인 의무)
 │   ├── Upgrade_1_1_0.php        # 1.1.0 버전 업그레이드 스텝 (extends AbstractUpgradeStep)
@@ -352,8 +318,7 @@ plugins/_bundled/sirsoft-payment/
 │   │   └── en.json
 │   └── layouts/                 # 레이아웃 파일
 │       └── admin/               # 관리자 레이아웃 (admin 템플릿 등록)
-│           ├── plugin_settings.g7.html  # 설정 페이지 레이아웃 (소스 SSoT)
-│           └── plugin_settings.json     # 짝 런타임 계약 (AbstractPlugin 이 직접 읽음 — 디스크 상주 필수)
+│           └── plugin_settings.json  # 설정 페이지 레이아웃
 ├── src/
 │   ├── Listeners/              # 이벤트(훅)를 처리하는 리스너
 │   └── Providers/              # 서비스 컨테이너에 기능을 등록하는 프로바이더
@@ -376,61 +341,10 @@ plugins/_bundled/sirsoft-payment/
 | `database/migrations/` | 플러그인 마이그레이션 파일 |
 | `database/seeders/` | 플러그인 시더 파일 |
 | `resources/lang/` | 다국어 JSON 파일 (ko.json, en.json) |
-| `resources/layouts/admin/` | 설정 페이지 레이아웃 — `plugin_settings.g7.html`(소스 SSoT) + 짝 `plugin_settings.json`(런타임 계약) |
+| `resources/layouts/admin/` | 관리자 레이아웃 JSON 파일 (plugin_settings.json - 설정 페이지 전용) |
 | `src/Listeners/` | 훅 이벤트 리스너 클래스 |
 | `src/Providers/` | 서비스 프로바이더 클래스 |
 | `tests/` | 테스트 파일 (Feature/Unit) |
-
----
-
-> 결제·본인인증처럼 외부로 복귀·콜백 주소를 보내거나 결과 화면으로 리다이렉트하는 플러그인은 그 주소를 `url()`·`redirect('/x')` 가 아니라 `SiteUrl::absolute()` 로 만든다 — [routing.md 「절대 URL 은 사이트 주소로 만든다」](../backend/routing.md#절대-url-은-사이트-주소로-만든다).
-
-## 서비스 프로바이더 작성
-
-모든 플러그인 ServiceProvider 는 `App\Extension\BasePluginServiceProvider` 를 상속한다. Laravel 기본 `ServiceProvider` 를 직접 상속하면 Repository / Storage / Cache 자동 바인딩과 다국어 로드를 직접 구현해야 하며, 글로벌 컨테이너 바인딩 누수 결함의 위험이 발생한다.
-
-### 표준 구조
-
-```php
-namespace Plugins\Vendor\Foo\Providers;
-
-use App\Extension\BasePluginServiceProvider;
-use Plugins\Vendor\Foo\Repositories\FooRepository;
-use Plugins\Vendor\Foo\Repositories\FooRepositoryInterface;
-use Plugins\Vendor\Foo\Services\FooService;
-
-class FooPluginServiceProvider extends BasePluginServiceProvider
-{
-    /** 플러그인 식별자 (manifest 와 일치) */
-    protected string $pluginIdentifier = 'vendor-foo';
-
-    /** Repository 인터페이스 ↔ 구현체 매핑 */
-    protected array $repositories = [
-        FooRepositoryInterface::class => FooRepository::class,
-    ];
-
-    /** CacheInterface 가 필요한 서비스 (contextual binding) */
-    protected array $cacheServices = [
-        FooService::class,
-    ];
-
-    /** StorageInterface 가 필요한 서비스 (contextual binding) */
-    protected array $storageServices = [
-        // FooFileService::class,
-    ];
-}
-```
-
-`register()` / `boot()` 오버라이드가 필요한 경우 `parent::register()` / `parent::boot()` 를 먼저 호출한 뒤 추가 로직을 작성한다.
-
-### 금지 사항
-
-- **글로벌 `CacheInterface` / `StorageInterface` 바인딩 재정의 금지** — `$this->app->singleton(CacheInterface::class, ...)` 또는 `app()->bind(StorageInterface::class, ...)` 는 코어/타 확장 도메인을 누수시킨다. 자동 검증이 자동 차단한다.
-- **인라인 contextual binding 복제 금지** — `$this->app->when([X::class])->needs(StorageInterface::class)->give(...)` 패턴을 직접 작성하지 말고 `$storageServices` 배열에 등록한다.
-- **Listener 의 동적 인스턴스 생성에서 `app(CacheInterface::class)` 직접 호출 금지** — `app()->makeWith(MyService::class, [...])` 로 컨테이너 해석에 위임해야 contextual binding 이 적용된다.
-- **HTTP Kernel 미들웨어 그룹 직접 조작 금지** — SP `boot()` 에서 `HttpKernel::append/prepend/pushMiddlewareToGroup()` / `aliasMiddleware()`, 또는 라우트 파일에서 자기 `Http\Middleware\` FQCN 을 `->middleware(Foo::class)` 로 부착하지 않는다. 대신 `Plugin::getMiddleware()` 로 미들웨어와 부착 대상(targets)을 선언하면 코어 self-gate 게이트가 요청 시점에 실행한다. 자동 검증이 자동 차단한다. 상세: [docs/backend/middleware.md "확장 미들웨어 선언 (self-gate)"](../backend/middleware.md#확장-미들웨어-선언-self-gate).
-
-상세: [cache-driver.md `## 확장에서 cache 바인딩`](cache-driver.md)
 
 ---
 
@@ -614,15 +528,16 @@ public function getHooks(): array
 {
     return [
         [
-            'name' => 'gnuboard7-hello_plugin.log.written',
+            'name' => 'sirsoft-daum_postcode.address.selected',
             'type' => 'action',
             'description' => [
-                'ko' => 'Hello 플러그인이 로그 파일에 기록을 남긴 직후 실행되는 액션 훅',
-                'en' => 'Action hook executed right after Hello Plugin writes a log entry',
+                'ko' => '주소 선택 완료 시 실행되는 액션 훅',
+                'en' => 'Action hook executed when address selection is complete',
             ],
             'parameters' => [
-                'message' => 'string - 기록된 메시지',
-                'context' => 'array - 기록 시점의 부가 컨텍스트',
+                'zonecode' => 'string - 우편번호',
+                'address' => 'string - 기본 주소',
+                'roadAddress' => 'string - 도로명 주소',
             ],
         ],
     ];
@@ -633,25 +548,19 @@ public function getHooks(): array
 
 ## 설정 레이아웃 파일 시스템
 
-플러그인 설정 UI는 레이아웃 소스(`plugin_settings.g7.html`)으로 정의하고, 그 짝 JSON(`plugin_settings.json`)이 런타임 계약이 됩니다. `AbstractPlugin`의 `getSettingsLayout()` 메서드가 그 JSON 경로를 반환하며, 파일이 존재하면 자동으로 설정 UI를 제공합니다.
+플러그인 설정 UI는 JSON 레이아웃 파일을 통해 정의합니다. `AbstractPlugin`의 `getSettingsLayout()` 메서드가 레이아웃 파일 경로를 반환하며, 파일이 존재하면 자동으로 설정 UI를 제공합니다.
 
 ### 핵심 원칙
 
 ```text
-필수: 설정 UI는 resources/layouts/admin/plugin_settings.g7.html 로 작성 (PHP 코드에 하드코딩 금지)
-필수: 짝 plugin_settings.json 을 함께 둔다 — AbstractPlugin::getSettingsLayout() 이 그 경로를 직접 읽으므로
-      DB 설치 레이아웃과 달리 .json 이 디스크에 있어야 한다
+필수: 설정 UI는 resources/layouts/settings.json으로 정의 (PHP 코드에 하드코딩 금지)
+필수: resources/layouts/admin/plugin_settings.json 파일로 레이아웃 정의
 ✅ 필수: 템플릿 오버라이드 우선순위 준수
 ```
 
 ### 레이아웃 파일 경로
 
-소스 파일: `plugins/{identifier}/resources/layouts/admin/plugin_settings.g7.html`
-런타임 계약(짝): `plugins/{identifier}/resources/layouts/admin/plugin_settings.json`
-
-마크업 문법은 [layout-markup.md](../frontend/layout-markup.md), 산출 JSON 의 키 계약은 [layout-json.md](../frontend/layout-json.md) 를 따른다.
-
-`getSettingsLayout()` 은 DB 설치 레이아웃과 달리 파일을 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다.
+기본 경로: `plugins/{identifier}/resources/layouts/admin/plugin_settings.json`
 
 ```php
 // AbstractPlugin 기본 구현
@@ -680,12 +589,6 @@ public function hasSettings(): bool
 ### 레이아웃 JSON 구조 (간소화 버전)
 
 `schema`만 정의하면 설정 UI가 자동 생성됩니다:
-
-```html
-<meta title="$t:settings.page_title" description="$t:settings.page_description"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -737,12 +640,6 @@ public function hasSettings(): bool
 
 레이아웃에서 `$t:` 접두사를 사용하여 플러그인 다국어 파일을 참조합니다:
 
-```html
-<div label="$t:settings.display_mode.label"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
   "label": "$t:settings.display_mode.label"
@@ -775,20 +672,6 @@ public function hasSettings(): bool
 ```
 
 **자동 바인딩 패턴 (권장)**:
-
-```html
-<slot name="content">
-  <div data-ref="settings_container" data-key="form" data-track-changes>
-    <input name="popup_width" type="number"/>
-    <select name="display_mode">
-      <option value="popup">popup</option>
-      <option value="layer">layer</option>
-    </select>
-  </div>
-</slot>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -877,17 +760,10 @@ plugins/sirsoft-daum_postcode/
     │   └── en.json
     └── layouts/
         └── admin/
-            ├── plugin_settings.g7.html
             └── plugin_settings.json
 ```
 
-**plugin_settings.g7.html (소스 SSoT — 아래 JSON 은 이 파일의 컴파일 결과이자 런타임 계약):**
-
-```html
-<meta title="$t:settings.page_title" description="$t:settings.page_description"/>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+**plugin_settings.json:**
 
 ```json
 {
@@ -1044,136 +920,53 @@ public function getPermissions(): array
 
 ## 플러그인 원칙
 
-### 확장 간 협력 원칙
-
-플러그인이 다른 모듈·플러그인과 함께 동작해야 할 때는 [코어와 확장의 책임 경계](README.md#코어와-확장의-책임-경계)를 따릅니다. 확장끼리는 **훅**으로 협력하고, 다른 확장을 **이름으로** 참조한다면 그 확장을 매니페스트에 선언합니다 — 없으면 동작할 수 없으면 `dependencies`, 있으면 연동되고 없어도 동작하면 `integrations` 입니다.
+### 플러그인 격리 원칙
 
 ```text
-✅ 협력은 훅으로 — 코어가 소유한 계약 훅, 또는 상대 확장이 소유하고 문서화한 훅 키를 구독·호출
-✅ 다른 확장을 이름으로 참조(식별자·네임스페이스·API 경로·번역 키·레이아웃 조각의 target_layout)하면 dependencies 또는 integrations 에 선언
-❌ 선언하지 않은 확장의 클래스 import · API 경로 호출 · 번역 키 사용 · 그 확장 화면에 조각 끼우기
+필수: 플러그인은 모듈에만 의존 (플러그인 간 직접 의존 금지)
+✅ 필수: 다른 플러그인과는 API로만 상호작용
 ```
 
-훅 키가 확장 사이의 계약입니다. 상대 확장이 설치되지 않았거나 다른 확장으로 대체된 사이트에서도 훅은 발화하지 않을 뿐 깨지지 않습니다. 반면 선언 없이 상대의 클래스·API 경로를 직접 쓰면 그 사이트에서 플러그인이 조용히 다르게 동작합니다.
-
-### 원칙
+### 5대 원칙
 
 #### 1. 격리성 (Isolation)
 
-다른 확장의 내부 구현(클래스·테이블·API 경로)에 기대지 않습니다. 상대가 내보내는 훅을 구독합니다.
+플러그인 간 직접 의존 금지
 
 ```php
-// ❌ DON'T: 선언하지 않은 다른 확장의 클래스·API 경로를 직접 사용
-use Plugins\Vendor\SampleReport\Services\ReportService;
+// ❌ DON'T: 다른 플러그인 직접 참조
+use Plugins\Other\Analytics\Service\AnalyticsService;
 
-$response = Http::get('/api/plugins/vendor-sample_report/reports');
-
-// ✅ DO: 상대 확장이 문서화한 훅을 구독한다
-class ReportSyncListener implements HookListenerInterface
-{
-    /**
-     * 구독할 훅 목록을 반환합니다.
-     *
-     * @return array<string, array<string, mixed>> 훅 키 → 구독 옵션
-     */
-    public static function getSubscribedHooks(): array
-    {
-        return [
-            // 상대 확장(vendor-sample_report)이 소유·문서화한 Action 훅
-            'vendor-sample_report.report.after_generate' => [
-                'method' => 'handleReportGenerated',
-                'priority' => 10,
-            ],
-        ];
-    }
-
-    /**
-     * 리포트가 생성되면 이 플러그인의 요약을 갱신합니다.
-     *
-     * @param  mixed  ...$args  훅이 넘긴 인자 (상대 확장 문서의 페이로드 규격)
-     * @return void
-     */
-    public function handleReportGenerated(...$args): void
-    {
-        // 이 플러그인 자신의 서비스로 처리
-    }
-}
+// ✅ DO: API를 통한 통신
+$response = Http::get('/api/analytics/data');
 ```
 
 #### 2. 의존성 (Dependency)
 
-다른 확장을 이름으로 참조한다면(식별자·네임스페이스·API 경로·번역 키) 그 확장을 `plugin.json` 의 `dependencies` 에 선언합니다. 모듈과 플러그인 모두 선언할 수 있고, 선언한 확장이 활성화되어 있지 않으면 설치가 막힙니다.
-
-```json
-{
-    "dependencies": {
-        "modules": {
-            "vendor-sample_shop": ">=1.0.0"
-        },
-        "plugins": {
-            "vendor-sample_report": ">=2.0.0"
-        }
-    }
-}
-```
-
-선언하지 않고 협력만 하려면 이름 대신 훅 키만 씁니다 — 상대가 없는 사이트에서는 구독한 훅이 발화하지 않을 뿐입니다.
-
-**선택 연동 (`integrations`)** — 상대 확장이 없어도 동작하지만 있으면 기능이 이어지는 경우(예: 쇼핑몰·게시판이 있으면 그 알림 설정 화면에
-탭을 끼우는 알림 플러그인)는 `integrations` 에 선언합니다. 설치를 막지 않고, 관리자 확장 상세의 「함께 쓰면 연동되는 확장」과 확장 문서의
-의존 관계 절에 드러나 결합이 추적됩니다. 레이아웃 조각(`resources/extensions/*`)이 다른 확장의 화면을 `target_layout` 으로 지목하는 것도
-이름 참조이므로 둘 중 하나에 선언해야 합니다 — 대상 화면이 없는 설치에서 코어는 그 조각을 건너뛸 뿐 오류를 내지 않으므로, 선언이 없으면
-결합을 아무도 모릅니다.
-
-```json
-{
-    "integrations": {
-        "modules": ["vendor-sample_shop", "vendor-sample_board"],
-        "plugins": [],
-        "templates": []
-    }
-}
-```
-
-객체 형식(`{"vendor-sample_shop": "주문 알림 탭"}`)도 받으며 키를 식별자로 씁니다. 정적 검사 `extension-undeclared-extension-reference` 는
-`dependencies` 에도 `integrations` 에도 없는 확장 참조를 오류로 봅니다.
-
-#### 3. 훅 계약 (Hook Contract)
-
-다른 확장의 데이터를 바꾸거나 결과에 값을 보태야 하면 상대가 연 **필터 훅**에 답합니다. 반대로 다른 확장이 내 플러그인에 끼어들 자리가 필요하면 내가 훅을 열고 키·인자·반환값을 문서로 공개합니다. 코어가 소유한 계약 훅(`core.*`)은 어느 확장이든 선언 없이 구독할 수 있습니다.
+모듈에만 의존 가능
 
 ```php
-// 상대 확장이 연 필터 훅에 값을 보탠다 (Filter 훅은 'type' => 'filter' 필수)
-public static function getSubscribedHooks(): array
+public function getDependencies(): array
 {
     return [
-        'vendor-sample_shop.order.filter_summary_rows' => [
-            'method' => 'addSummaryRow',
-            'priority' => 10,
-            'type' => 'filter',
-        ],
+        // ✅ 모듈 의존성만 허용
+        'sirsoft-ecommerce' => '>=1.0.0',
+
+        // ❌ 다른 플러그인 의존성 금지
+        // 'other-payment' => '>=1.0.0',
     ];
 }
-
-/**
- * 주문 요약에 이 플러그인의 행을 더합니다.
- *
- * @param  array<int, array<string, mixed>>  $rows  현재 요약 행
- * @return array<int, array<string, mixed>> 행을 더한 요약
- */
-public function addSummaryRow(array $rows): array
-{
-    $rows[] = ['label' => __('vendor-sample_plugin::summary.label'), 'value' => 0];
-
-    return $rows;
-}
-
-// 내 플러그인이 다른 확장에 협력 지점을 연다 — 키·인자·반환값을 문서에 공개한다
-$rows = HookManager::applyFilters('vendor-sample_plugin.export.filter_rows', $rows, $context);
-HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 ```
 
-훅 키 명명·Action/Filter 구분·리스너 등록은 [hooks.md](hooks.md) 를 참조하세요.
+#### 3. API 통신 (API Communication)
+
+다른 플러그인과는 API로만 상호작용
+
+```php
+// 플러그인 간 통신은 HTTP API 사용
+$response = Http::withToken($token)
+    ->get('/api/plugins/analytics/report');
+```
 
 #### 4. Lazy Loading
 
@@ -1193,77 +986,23 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 // 변경 시에만 캐시 갱신
 ```
 
-#### 6. 레이아웃 소유와 라우트 네임스페이스 (Layout Ownership)
+#### 6. 레이아웃 제한 (Layout Restriction)
 
-플러그인도 자기 화면(완전한 레이아웃)을 가질 수 있습니다. 다만 그 화면의 라우트는
-플러그인 네임스페이스 안에 선언해야 합니다.
+플러그인은 모듈과 달리 완전한 레이아웃을 등록할 수 없습니다.
 
 ```text
-필수: 플러그인이 소유하는 화면의 라우트는 plugins/{identifier}/ 아래에 선언
-   예) "*/admin/plugins/sirsoft-gdpr/consent-log"
-필수: 다른 확장이 소유한 화면에 UI 를 끼워 넣을 때는 layout_extensions(확장 지점/Overlay) 사용
+필수: 페이지 레이아웃은 모듈만 등록 가능 (플러그인은 layout_extensions만 사용)
+허용: admin/plugin_settings.json (환경설정 UI) — 유일한 완전 레이아웃
+✅ 필수: 설정 외 UI 확장은 layout_extensions(확장 지점/Overlay)로만 가능
 ```
-
-라우트 네임스페이스를 지키지 않으면, 같은 경로를 소유한 모듈/템플릿과 어느 쪽이 이기는지가
-설치 순서에 좌우됩니다. 화면이 조용히 다른 것으로 바뀌고, 어느 확장 때문인지 화면만 봐서는
-알 수 없습니다. 자동 검증이 이 위반을 차단합니다.
 
 | 방식 | 모듈 | 플러그인 |
 |------|------|---------|
-| 자기 네임스페이스 화면 (`plugins/{id}/...`) | 해당 없음 | 가능 |
-| 임의 경로 페이지 레이아웃 (`admin/users` 등) | 가능 | 금지 (경로 침범) |
+| 임의 페이지 레이아웃 (admin/user) | 가능 | 금지 |
 | admin/plugin_settings.json (환경설정) | 가능 | 가능 |
 | layout_extensions (확장 지점) | 가능 | 가능 |
 
 ---
-
-### 전역 상태 공개 계약 (state_contracts)
-
-전역 상태(`_global`)는 모든 확장과 템플릿이 함께 씁니다. 다른 확장이 **읽으라고** 내놓는 전역 값은 매니페스트 `state_contracts` 에
-이름·모양·쓰기 허용 주체를 선언합니다. 선언하지 않은 전역 키는 그 확장의 내부 값이라 다른 확장이 기대면 안 됩니다.
-
-```json
-{
-    "state_contracts": {
-        "preferredCurrency": {
-            "description": { "ko": "방문자가 고른 표시 통화 코드", "en": "Display currency chosen by the visitor" },
-            "schema": { "type": "string" },
-            "writers": ["@template"]
-        }
-    }
-}
-```
-
-| 필드 | 의미 |
-| --- | --- |
-| `description` | 다국어 설명 |
-| `schema` | 값 모양(JSON Schema 일부) |
-| `writers` | 소유자 말고 쓸 수 있는 주체. `@template` 은 활성 템플릿, 빈 배열이면 소유자만 쓴다 |
-
-- 코어가 예약한 이름(`consent`·`identityChallenge`·`currentUser`·`settings`·`plugins`·`modules`·`appConfig`)은 선언할 수 없고,
-  다른 활성 확장이 이미 선언한 이름도 선언할 수 없습니다 — 설치·활성화가 막히고 메시지에 소유자가 나옵니다.
-- 브라우저에서는 `G7Core.stateContracts.get(name)` · `list()` · `ownerOf(name)` 로 읽습니다(읽기 전용).
-- 코어의 `plugins`·`modules` 저장소에는 **자기 식별자 하위만** 씁니다(`plugins.{내 식별자}`). 통째로 다시 쓰면 그 사이 다른 확장이 바꾼
-  값을 되돌립니다.
-- 정적 검사 `state-contract-write-ownership` 이 남의 계약 키에 허용 없이 쓰는 레이아웃을 막습니다. 남의 화면에 끼우는 조각의 전역 키
-  규칙은 [레이아웃 확장 — 조각의 전역 상태 키 접두 규칙](layout-extensions.md#조각의-전역-상태-키-접두-규칙)입니다.
-
-### 코어 비공개 내부를 쓰지 않는다
-
-확장의 브라우저 코드는 코어의 **공개 API** 만 씁니다. 엔진 내부 구조는 예고 없이 바뀌고, 그때 확장은 오류 없이 조용히 다르게 동작합니다.
-
-| 쓰지 않는다 | 대신 |
-| --- | --- |
-| `window.__templateApp` | `G7Core.state.get()` · `getLocal()` · `subscribe()`(해제 함수를 돌려준다), `G7Core.locale.change()` |
-| `window.__g7ActionContext` · `__g7LayoutContextStack` | 핸들러가 받는 액션 컨텍스트 인자, `G7Core.state.getLocal()` |
-| `localStorage.getItem('auth_token')` 후 직접 Bearer 를 붙인 `fetch('/api/…')` | `G7Core.api.get/post(url, data, config)` — 토큰 부착, 갱신, 401 처리를 코어가 맡는다 |
-| `window.fetch = …` 로 남의 응답 고치기 | 서버 훅(예: 쇼핑몰 `checkout.filter_payment_methods_for_currency`)이나 레이아웃 조각의 데이터소스 |
-| `history.pushState = …` 로 화면 이동 엿보기 | 레이아웃 조각, `G7Core.state.subscribe()` |
-| 주소 문자열 정규식(`/^\/shop\/…/`)으로 화면 판정 | 상태 계약(예: 기본 템플릿 `_global.shopBase`) |
-
-정적 검사 `extension-private-core-internals` 가 번들 확장의 `resources/js` 와 템플릿 `src` 에서 위 패턴을 막습니다. 템플릿 자기
-컴포넌트가 원본을 호출하는 래퍼처럼 정당한 예외는 같은 줄 또는 바로 위 주석 줄에
-`audit:allow extension-private-core-internals reason: <사유>` 를 남깁니다.
 
 ## 플러그인 Artisan 커맨드
 
@@ -1464,18 +1203,6 @@ public function seoVariables(): array
 
 레이아웃 JSON의 `meta.seo.extensions`에 플러그인을 선언합니다.
 
-```html
-<meta>
-  <seo page_type="checkout">
-    <extensions>
-      <item type="plugin" id="sirsoft-payment"/>
-    </extensions>
-  </seo>
-</meta>
-```
-
-> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
-
 ```json
 {
     "meta": {
@@ -1596,7 +1323,7 @@ G7Core.state.setLocal(
 
 ## 관련 문서
 
-- [README.md](README.md) - 확장 시스템 전체 개요
+- [index.md](index.md) - 확장 시스템 전체 개요
 - [extension-manager.md](extension-manager.md) - Composer 오토로드 관리
 - [hooks.md](hooks.md) - 훅 시스템 및 리스너 구현
 - [활동 로그 시스템](../backend/activity-log.md) - 활동 로그 Listener, Per-Item Bulk 로깅 규칙

@@ -29,29 +29,21 @@ describe('IdentityGuardInterceptor', () => {
   });
 
   describe('isIdentityRequired', () => {
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('returns true for 428 + identity_verification_required error_code', () => {
       const body = { success: false, error_code: 'identity_verification_required', message: 'x' };
       expect(IdentityGuardInterceptor.isIdentityRequired(428, body)).toBe(true);
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('returns false for non-428 status', () => {
       expect(
         IdentityGuardInterceptor.isIdentityRequired(403, { error_code: 'identity_verification_required' }),
       ).toBe(false);
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('returns false when error_code differs', () => {
       expect(IdentityGuardInterceptor.isIdentityRequired(428, { error_code: 'other' })).toBe(false);
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('returns false for non-object body', () => {
       expect(IdentityGuardInterceptor.isIdentityRequired(428, null)).toBe(false);
     });
@@ -75,24 +67,18 @@ describe('IdentityGuardInterceptor', () => {
       },
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('returns null when launcher resolves cancelled', async () => {
       IdentityGuardInterceptor.setLauncher(async () => ({ status: 'cancelled' }));
       const result = await IdentityGuardInterceptor.handle(makeResponse());
       expect(result).toBeNull();
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('returns null when launcher resolves failed', async () => {
       IdentityGuardInterceptor.setLauncher(async () => ({ status: 'failed', failureCode: 'INVALID_CODE' }));
       const result = await IdentityGuardInterceptor.handle(makeResponse());
       expect(result).toBeNull();
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('replays return_request and appends verification_token query when verified', async () => {
       const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
       vi.stubGlobal('fetch', fetchMock);
@@ -108,8 +94,6 @@ describe('IdentityGuardInterceptor', () => {
       expect((fetchMock.mock.calls[0][1] as RequestInit).method).toBe('PUT');
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('preserves existing query string when appending verification_token', async () => {
       const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
       vi.stubGlobal('fetch', fetchMock);
@@ -131,8 +115,6 @@ describe('IdentityGuardInterceptor', () => {
      * 422 (필수 필드 누락) 를 반환했음. 회원가입 등 모든 POST/PUT 흐름이 IDV 통과 후
      * 자동 재실행에서 깨졌음.
      */
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('replays request preserving original body and headers when verified', async () => {
       const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
       vi.stubGlobal('fetch', fetchMock);
@@ -171,8 +153,6 @@ describe('IdentityGuardInterceptor', () => {
       expect(sentInit.credentials).toBe('include');
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('returns null when return_request is missing even on verified', async () => {
       IdentityGuardInterceptor.setLauncher(async () => ({ status: 'verified', token: 'tok-1' }));
       const response = makeResponse({ return_request: null });
@@ -180,72 +160,15 @@ describe('IdentityGuardInterceptor', () => {
       const result = await IdentityGuardInterceptor.handle(response);
       expect(result).toBeNull();
     });
-
-    /**
-     * 신규(engine-v1.51.0) — 흐름이 선언한 인증 대상(target)이 launcher payload 에 병합되어야 함.
-     * 비회원 주문 등 비로그인 흐름의 핵심 — 서버 428 payload 에는 target 이 없고 흐름이 선언한다.
-     */
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
-    it('merges declared target into launcher payload (email + phone)', async () => {
-      let receivedPayload: any = null;
-      IdentityGuardInterceptor.setLauncher(async (payload) => {
-        receivedPayload = payload;
-        return { status: 'cancelled' };
-      });
-
-      await IdentityGuardInterceptor.handle(makeResponse(), undefined, {
-        email: 'guest@example.com',
-        phone: '01012345678',
-      });
-
-      expect(receivedPayload?.target).toEqual({
-        email: 'guest@example.com',
-        phone: '01012345678',
-      });
-    });
-
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
-    it('does not merge target when both email and phone are empty', async () => {
-      let receivedPayload: any = null;
-      IdentityGuardInterceptor.setLauncher(async (payload) => {
-        receivedPayload = payload;
-        return { status: 'cancelled' };
-      });
-
-      await IdentityGuardInterceptor.handle(makeResponse(), undefined, { email: '', phone: '' });
-
-      // 빈 target 은 병합하지 않음 — 로그인 사용자는 서버 세션이 도출
-      expect(receivedPayload?.target).toBeUndefined();
-    });
-
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
-    it('omits target entirely when not provided (backward compatible)', async () => {
-      let receivedPayload: any = null;
-      IdentityGuardInterceptor.setLauncher(async (payload) => {
-        receivedPayload = payload;
-        return { status: 'cancelled' };
-      });
-
-      await IdentityGuardInterceptor.handle(makeResponse());
-
-      expect(receivedPayload?.target).toBeUndefined();
-    });
   });
 
   describe('createDeferred / resolveDeferred', () => {
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('createDeferred returns a Promise that resolves via resolveDeferred', async () => {
       const promise = IdentityGuardInterceptor.createDeferred();
       IdentityGuardInterceptor.resolveDeferred({ status: 'verified', token: 'tok' });
       await expect(promise).resolves.toEqual({ status: 'verified', token: 'tok' });
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('createDeferred while another deferred is pending cancels the previous one', async () => {
       const first = IdentityGuardInterceptor.createDeferred();
       const second = IdentityGuardInterceptor.createDeferred();
@@ -256,8 +179,6 @@ describe('IdentityGuardInterceptor', () => {
       await expect(second).resolves.toEqual({ status: 'verified', token: 'second-tok' });
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('resolveDeferred without active resolver only logs (does not throw)', () => {
       expect(() =>
         IdentityGuardInterceptor.resolveDeferred({ status: 'cancelled' }),
@@ -265,62 +186,7 @@ describe('IdentityGuardInterceptor', () => {
     });
   });
 
-  /**
-   * 도메인 안내 표출 신호 (engine-v1.50.0) — 부가 목적(성인인증 등) 실패 시 provider 가
-   * 고유 안내를 표출했음을 표시하면, 코어 toast 핸들러가 동일 사이클의 generic IDV 가드
-   * 토스트("본인 확인이 필요합니다") 1건을 skip 한다. 일반 본인인증 실패는 무영향.
-   */
-  describe('markDomainNoticeShown / consumeDomainNoticeShown', () => {
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
-    it('기본값은 false — 신호 미설정 시 consume 은 false', () => {
-      expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(false);
-    });
-
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
-    it('mark 후 consume 은 1회만 true (소비 후 해제)', () => {
-      IdentityGuardInterceptor.markDomainNoticeShown();
-      expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(true);
-      // 1회 소비 후에는 다시 false — 다음 토스트는 정상 표출
-      expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(false);
-    });
-
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
-    it('handle() 진입 시 이전 사이클의 미소비 신호를 정리한다 (stale skip 방지)', async () => {
-      // 이전 사이클에서 신호만 set 되고 가드 토스트가 없어 미소비로 남은 상황
-      IdentityGuardInterceptor.markDomainNoticeShown();
-
-      // 새 challenge 진입 — handle() 이 flag 를 정리해야 함
-      IdentityGuardInterceptor.setLauncher(async () => ({ status: 'cancelled' }));
-      await IdentityGuardInterceptor.handle({
-        success: false,
-        error_code: 'identity_verification_required',
-        message: 'verify',
-        verification: {
-          policy_key: 'k',
-          purpose: 'sensitive_action',
-          return_request: { method: 'POST', url: '/api/x' },
-        },
-      });
-
-      // 정리되어 false 여야 함
-      expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(false);
-    });
-
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
-    it('reset() 이 신호를 해제한다', () => {
-      IdentityGuardInterceptor.markDomainNoticeShown();
-      IdentityGuardInterceptor.reset();
-      expect(IdentityGuardInterceptor.consumeDomainNoticeShown()).toBe(false);
-    });
-  });
-
   describe('redirectExternally', () => {
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('writes stash to sessionStorage and assigns window.location.href', () => {
       // window.location.href 할당 모킹 (jsdom)
       const hrefSetter = vi.fn();
@@ -355,8 +221,6 @@ describe('IdentityGuardInterceptor', () => {
       expect(hrefSetter).toHaveBeenCalledWith('https://provider.example.com/auth?ch=abc');
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('returns failed result if redirect_url is missing', async () => {
       const result = await IdentityGuardInterceptor.redirectExternally({
         policy_key: 'k',
@@ -370,8 +234,6 @@ describe('IdentityGuardInterceptor', () => {
   });
 
   describe('defaultLauncher (launcher 미등록 폴백)', () => {
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('handle() 가 launcher 없으면 defaultLauncher 를 사용해 G7Core.dispatch 로 navigate 한다', async () => {
       const dispatchMock = vi.fn(async () => undefined);
       (window as any).G7Core = { dispatch: dispatchMock };
@@ -404,7 +266,7 @@ describe('IdentityGuardInterceptor', () => {
         expect.objectContaining({
           handler: 'navigate',
           params: expect.objectContaining({
-            path: expect.stringContaining('/identity/challenge?return_url='),
+            path: expect.stringContaining('/identity/challenge?return='),
           }),
         }),
       );
@@ -412,8 +274,6 @@ describe('IdentityGuardInterceptor', () => {
       delete (window as any).G7Core;
     });
 
-    // @scenario host_header=canonical, sink=front_identity_retry
-    // @effects identity_guard_existing_flow_preserved
     it('G7Core 미초기화 시 console.error 로 알리고 failed 로 강등', async () => {
       delete (window as any).G7Core;
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

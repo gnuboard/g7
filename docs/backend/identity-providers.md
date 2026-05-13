@@ -92,48 +92,6 @@ final class SmsIdentityProvider implements VerificationProviderInterface
 
 **target 식별자 규약**: SMS 라면 E.164 정규화된 휴대폰번호, 이메일이라면 소문자, 외부 ID 라면 안정 식별자. 핵심은 challenge 시작과 verify 후 listener 가 같은 식별자를 SHA256 한다는 일관성입니다.
 
-## 3.1 VerificationChallenge DTO 필드 규약
-
-`requestChallenge()` 가 반환하는 `VerificationChallenge` DTO 는 프론트 launcher 가 모달 상태 초기화에 그대로 사용합니다. 모든 필드는 named arguments 로 호출하며, 향후 코어가 신규 필드를 추가해도 기본값으로 자동 처리되도록 named args 패턴을 유지합니다.
-
-| 필드 | 타입 | 의미 |
-| --- | --- | --- |
-| `id` | string | challenge UUID |
-| `providerId` | string | provider 식별자 |
-| `purpose` | string | signup / password_reset / self_update / sensitive_action / login / 확장 정의 |
-| `channel` | string | email / sms / ipin / 확장 채널 |
-| `targetHash` | string | SHA256(식별자) |
-| `expiresAt` | CarbonInterface | 만료 시각 |
-| `renderHint` | string | text_code / link / external_redirect |
-| `redirectUrl` | ?string | external_redirect 분기 시 외부 URL |
-| `publicPayload` | array | 프론트 노출용 공개 페이로드 (민감정보 제외) |
-| `metadata` | array | 서버 내부 참조용 |
-| `maxAttempts` | int (기본 0) | 허용 최대 시도 횟수. 0 은 무제한(popup/SDK 형 provider 의 기본) |
-
-`maxAttempts` 는 `toArray()` 출력의 `max_attempts` 키로 노출되어 `ChallengeResource` 응답에 그대로 전달됩니다. 프론트 launcher 는 이 값으로 모달의 "남은 시도 횟수" UI 를 초기화합니다.
-
-**코어 mail provider 패턴**:
-
-```php
-return new VerificationChallenge(
-    id: $log->id,
-    providerId: self::ID,
-    // ... 기존 필드
-    maxAttempts: $maxAttempts,  // config('settings.identity.max_attempts', 5)
-);
-```
-
-**popup/SDK 형 provider 패턴** (KG이니시스 등):
-
-```php
-return new VerificationChallenge(
-    id: $challengeId,
-    providerId: self::PROVIDER_ID,
-    // ... 기존 필드
-    // maxAttempts 미전달 시 DTO 기본값 0 (무제한)
-);
-```
-
 ## 4. verification_token 생성 방법
 
 외부 SDK 가 자체 토큰(거래번호 등)을 주더라도 **절대 그대로 client 에 전달하지 마세요**. 우리 인프라용 토큰을 별도로 생성합니다:
@@ -210,12 +168,7 @@ public static function providerMatrix(): array
 | `target_hash` 를 raw 식별자로 저장 | 반드시 SHA256(lower(식별자)) 로 PII 보호 |
 | `verify()` 성공 시 `consumed_at = now()` 자동 set | 다운스트림 listener (가입/비번리셋 등) 가 사용 시점에 set |
 | provider 가 listener 책임을 가져가서 직접 사용자 생성 | provider 는 verify 만 담당. 사용자 생성/세션은 도메인 service |
-| `purpose` 를 정책 purpose 와 다르게 임의 부여 | 정책-provider purpose 일치 (`signup`, `password_reset`, `sensitive_action`, `self_update`, `login`) |
-| 콜백·브리지·제공자 전송 주소를 `url()`·`route()`·요청 Host 로 생성 | `SiteUrl::absolute()` — 사이트 주소 기준 |
-
-### 콜백·브리지·제공자 전송 주소는 `SiteUrl`
-
-제공자에게 넘기는 복귀·콜백 주소, 결과를 창 밖으로 전달하는 브리지 화면의 대상 출처(`postMessage` targetOrigin), 메일 링크는 모두 `App\Support\SiteUrl` 로 사이트 주소 기준으로 만든다. `url()`·`route()` 는 요청 Host 를 따르므로 Host 를 바꿔 보낸 요청에서 시작한 인증은 결과와 `verification_token` 을 그 호스트로 넘기게 된다. 프런트에 내려주는 출처(`siteOrigin`)도 서버가 `SiteUrl::origin()` 으로 정해 주고, 클라이언트는 받은 메시지의 `origin` 을 그 값과 비교한다. 상세: [routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다).
+| `purpose` 를 정책 purpose 와 다르게 임의 부여 | 정책-provider purpose 일치 (`signup`, `password_reset`, `sensitive_action`, `self_update`) |
 
 ## 8. 관련 코드 진입점
 
@@ -231,7 +184,6 @@ public static function providerMatrix(): array
 ## 9. 관련 문서
 
 - [identity-policies.md](identity-policies.md) — 정책 시스템 전체 흐름
-- [routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다) — 콜백·링크 주소 생성 규칙
-- [identity-messages.md](identity-messages.md) — 본인인증 알림 (메일 provider 발송 문구 — 알림 정의 category=identity)
+- [identity-messages.md](identity-messages.md) — 메시지 템플릿 (provider 발송 콘텐츠)
 - [../frontend/identity-verification-ui.md](../frontend/identity-verification-ui.md) — 프론트엔드 launcher/모달 UI
 - [../extension/module-identity-settings.md](../extension/module-identity-settings.md) — 모듈/플러그인 IDV 정책 등록
