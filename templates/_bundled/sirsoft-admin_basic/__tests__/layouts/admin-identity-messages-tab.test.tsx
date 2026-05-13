@@ -215,6 +215,64 @@ describe('IDV 메시지 정의 탭 — 알림 템플릿 패리티 (#297)', () =>
         });
     });
 
+    describe('권한 가드 — 조회 권한 사용자가 편집/Toggle/Reset/삭제 액션 미실행 (#361)', () => {
+        // 본인인증 메시지 API 는 별도 권한 `core.admin.identity.messages.update` 를 사용한다.
+        // settingsAbilities(_global) 는 `core.settings.update` 기반이므로 IDV 메시지 가드로 부적절.
+        // IDV 메시지 가드 SSoT 는 컬렉션/per-item abilities 가 발행하는
+        // identityMessages?.data?.abilities (컬렉션) 와 def.abilities (per-item) 이다.
+
+        it('"정의 추가" Button — 컬렉션 abilities.can_create 가드 (조회 권한 사용자에서 disabled)', () => {
+            const addBtns = collectNodes(tabPartial, (n) =>
+                n.name === 'Button' && (n.children ?? []).some((c: any) => c.text === '$t:admin.settings.identity.messages.btn_add_definition')
+            );
+            expect(addBtns.length).toBe(1);
+            const disabledExpr = addBtns[0].props?.disabled;
+            expect(disabledExpr, '"정의 추가" Button에 disabled 가드 누락').toBeTruthy();
+            expect(disabledExpr).toContain('identityMessages?.data?.abilities?.can_create');
+        });
+
+        it('Toggle — disabled 에 def.abilities?.can_update 가드 (조회 권한 사용자가 활성 토글 클릭 불가)', () => {
+            const toggles = collectNodes(tabPartial, (n) => n.name === 'Toggle');
+            expect(toggles.length).toBeGreaterThan(0);
+            const disabledExpr = toggles[0].props?.disabled;
+            expect(disabledExpr, 'Toggle 에 disabled 가드 누락 (조회 권한 사용자가 PATCH 호출 가능)').toBeTruthy();
+            expect(disabledExpr).toContain('def.abilities?.can_update');
+        });
+
+        it('편집 Button — disabled 에 def.abilities?.can_update 가드 (조회 권한 사용자가 편집 모달 미오픈)', () => {
+            const editBtns = collectNodes(tabPartial, (n) =>
+                n.name === 'Button' && n.text === '$t:admin.settings.identity.messages.edit'
+            );
+            expect(editBtns.length).toBeGreaterThan(0);
+            const disabledExpr = editBtns[0].props?.disabled;
+            expect(disabledExpr, '편집 Button 에 disabled 가드 누락').toBeTruthy();
+            expect(disabledExpr).toContain('def.abilities?.can_update');
+        });
+
+        it('기본값 복원 Button — disabled 에 def.abilities?.can_update 가드', () => {
+            const resetBtns = collectNodes(tabPartial, (n) =>
+                n.name === 'Button' && n.text === '$t:admin.settings.identity.messages.btn_reset'
+            );
+            expect(resetBtns.length).toBe(1);
+            const disabledExpr = resetBtns[0].props?.disabled;
+            expect(disabledExpr, '기본값 복원 Button 에 disabled 가드 누락').toBeTruthy();
+            expect(disabledExpr).toContain('def.abilities?.can_update');
+        });
+
+        it('편집/복원 Button className — disabled 시 시각 표시 (opacity-50 + cursor-not-allowed)', () => {
+            const guardedButtons = collectNodes(tabPartial, (n) => {
+                if (n.name !== 'Button') return false;
+                return n.text === '$t:admin.settings.identity.messages.edit'
+                    || n.text === '$t:admin.settings.identity.messages.btn_reset'
+                    || (n.children ?? []).some((c: any) => c.text === '$t:admin.settings.identity.messages.btn_add_definition');
+            });
+            guardedButtons.forEach((btn) => {
+                expect(btn.props?.className ?? '').toMatch(/disabled:opacity-50/);
+                expect(btn.props?.className ?? '').toMatch(/disabled:cursor-not-allowed/);
+            });
+        });
+    });
+
     describe('상위 레이아웃 통합', () => {
         it('admin_settings.json data_sources 에 identityMessages 페이지네이션 params + adminIdentityPolicies 정의', () => {
             const idMsgs = adminSettings.data_sources.find((d: any) => d.id === 'identityMessages');
