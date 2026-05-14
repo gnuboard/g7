@@ -109,20 +109,35 @@ class ExecuteUpgradeStepsCommand extends Command
             ]);
         }
 
+        // 코어 업데이트 spawn 자식 감지.
+        //
+        // CoreUpdateCommand::spawnUpgradeStepsProcess 가 자식에 `G7_UPDATE_IN_PROGRESS=1` env 를
+        // 전달한다 (beta.3 부터 존재). 이 시그널은 자식이 부모의 `core:update` 컨텍스트에서
+        // 실행 중임을 의미한다. 부모는 본인이 사전(Step 9 migration + resync) + 사후
+        // (Step 11 version-env + cache-clear + bundled prompt) 단계를 모두 책임지므로 자식은
+        // 5단계 모두 스킵해야 한다.
+        //
+        // 구버전 부모(예: beta.5)는 신버전 자식이 도입한 `--skip-*` 옵션을 모른다. 옵션 부재
+        // 시 자식이 사후 단계를 실행하면 (특히 bundled prompt) non-interactive 환경에서
+        // `Aborted.` exit=1 회귀 발생 (882deb9b0 사각지대). env 시그널이 옵션 부재를 보완.
+        //
+        // 단독 호출 (운영자 수동) 시엔 env 미설정 → 모든 단계 정상 진행.
+        $isSpawnChild = getenv('G7_UPDATE_IN_PROGRESS') === '1';
+
         // 사전 단계 (단독 실행 안전성 보장).
         //
         // CoreUpdateCommand 가 spawn 호출 시엔 부모 Step 9 (CoreUpdateCommand.php:408-409) 에서
         // 이미 동일 단계를 실행했으므로 --skip-migrations / --skip-resync 로 중복 회피.
         // 운영자 단독 호출 시 옵션 미전달 → 기본값으로 두 단계 자동 수행 →
         // migration / permission / menu / seeder 누락 차단.
-        if (! $this->option('skip-migrations')) {
+        if (! $this->option('skip-migrations') && ! $isSpawnChild) {
             $this->info('마이그레이션 실행');
             $service->runMigrations();
         } else {
             $this->info('[spawn] 마이그레이션 스킵 — 부모가 이미 실행');
         }
 
-        if (! $this->option('skip-resync')) {
+        if (! $this->option('skip-resync') && ! $isSpawnChild) {
             $this->info('코어 config 재로드 및 권한/메뉴/시더 동기화');
             $service->reloadCoreConfigAndResync();
         } else {
@@ -194,21 +209,21 @@ class ExecuteUpgradeStepsCommand extends Command
         // --skip-version-env / --skip-cache-clear / --skip-bundled-updates 로 중복 회피.
         // 단독 실행 시엔 옵션 미전달 → 기본값으로 3단계 자동 수행 → gnuboard/g7#34 의 운영자 수동 절차
         // (sed APP_VERSION + cache:clear + module/plugin/template:update --force --source=bundled) 통합.
-        if (! $this->option('skip-version-env')) {
+        if (! $this->option('skip-version-env') && ! $isSpawnChild) {
             $this->info(".env APP_VERSION={$to} 갱신");
             $service->updateVersionInEnv($to);
         } else {
             $this->info('[spawn] .env APP_VERSION 갱신 스킵 — 부모가 처리');
         }
 
-        if (! $this->option('skip-cache-clear')) {
+        if (! $this->option('skip-cache-clear') && ! $isSpawnChild) {
             $this->info('캐시 정리 (config/route/view/services/packages)');
             $service->clearAllCaches();
         } else {
             $this->info('[spawn] 캐시 정리 스킵 — 부모가 처리');
         }
 
-        if (! $this->option('skip-bundled-updates')) {
+        if (! $this->option('skip-bundled-updates') && ! $isSpawnChild) {
             $this->info('번들 확장 일괄 업데이트 (모듈/플러그인/템플릿/언어팩)');
             $this->runBundledExtensionUpdatePrompt(
                 app(ModuleManager::class),
