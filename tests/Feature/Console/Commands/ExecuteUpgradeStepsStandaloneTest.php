@@ -181,6 +181,97 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         $this->assertSame(0, $exitCode);
     }
 
+    public function test_spawn_child_env_bypasses_all_pre_and_post_steps_without_skip_options(): void
+    {
+        // 구버전 부모(beta.5) 가 신버전 자식(beta.6+) 을 spawn 할 때 `--skip-*` 옵션을 모르므로
+        // 전달하지 않지만, `G7_UPDATE_IN_PROGRESS=1` env 는 beta.3+ 부모부터 항상 설정한다.
+        // 자식은 env 시그널만으로 본인이 spawn 컨텍스트임을 감지하여 5단계 모두 자동 스킵해야
+        // 한다 (옵션 부재 + non-interactive 환경에서 prompt 호출로 인한 Aborted exit=1 회귀 차단).
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldNotReceive('runMigrations');
+        $service->shouldNotReceive('reloadCoreConfigAndResync');
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldNotReceive('updateVersionInEnv');
+        $service->shouldNotReceive('clearAllCaches');
+        $service->shouldNotReceive('collectBundledExtensionUpdates');
+        $langPack->shouldNotReceive('collectBundledLangPackUpdates');
+
+        $originalEnv = getenv('G7_UPDATE_IN_PROGRESS');
+        putenv('G7_UPDATE_IN_PROGRESS=1');
+
+        try {
+            $exitCode = $this->runCommand([]);
+            $this->assertSame(0, $exitCode);
+        } finally {
+            if ($originalEnv === false) {
+                putenv('G7_UPDATE_IN_PROGRESS');
+            } else {
+                putenv('G7_UPDATE_IN_PROGRESS='.$originalEnv);
+            }
+        }
+    }
+
+    public function test_spawn_child_env_skips_even_when_force_is_set(): void
+    {
+        // env=1 + --force 동시 적용 시에도 사후 단계 모두 스킵. force 는 자식이 실행하는 step
+        // 자체의 동일 버전 강제 플래그로만 사용되며, env 시그널이 우선한다 (부모가 force 든
+        // 아니든 부모가 5단계를 책임진다는 계약 보존).
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldNotReceive('runMigrations');
+        $service->shouldNotReceive('reloadCoreConfigAndResync');
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldNotReceive('updateVersionInEnv');
+        $service->shouldNotReceive('clearAllCaches');
+        $service->shouldNotReceive('collectBundledExtensionUpdates');
+        $langPack->shouldNotReceive('collectBundledLangPackUpdates');
+
+        $originalEnv = getenv('G7_UPDATE_IN_PROGRESS');
+        putenv('G7_UPDATE_IN_PROGRESS=1');
+
+        try {
+            $exitCode = $this->runCommand(['--force' => true]);
+            $this->assertSame(0, $exitCode);
+        } finally {
+            if ($originalEnv === false) {
+                putenv('G7_UPDATE_IN_PROGRESS');
+            } else {
+                putenv('G7_UPDATE_IN_PROGRESS='.$originalEnv);
+            }
+        }
+    }
+
+    public function test_standalone_invocation_without_env_still_runs_all_steps(): void
+    {
+        // env 미설정 (운영자 수동 호출) 시 기존 단독 실행 계약 보존 — 5단계 모두 실행.
+        // env 가드 도입이 단독 실행 경로에 회귀를 일으키지 않음을 확인.
+        [$service, $module, $plugin, $template, $langPack] = $this->bindMocks();
+
+        $service->shouldReceive('runMigrations')->once();
+        $service->shouldReceive('reloadCoreConfigAndResync')->once();
+        $service->shouldReceive('runUpgradeSteps')->once();
+        $service->shouldReceive('updateVersionInEnv')->once();
+        $service->shouldReceive('clearAllCaches')->once();
+        $service->shouldReceive('collectBundledExtensionUpdates')->once()->andReturn([
+            'modules' => [], 'plugins' => [], 'templates' => [],
+        ]);
+        $langPack->shouldReceive('collectBundledLangPackUpdates')->once()->andReturn([]);
+
+        // env 가 설정되지 않은 상태임을 명시적으로 보장.
+        $originalEnv = getenv('G7_UPDATE_IN_PROGRESS');
+        putenv('G7_UPDATE_IN_PROGRESS');
+
+        try {
+            $exitCode = $this->runCommand([]);
+            $this->assertSame(0, $exitCode);
+        } finally {
+            if ($originalEnv !== false) {
+                putenv('G7_UPDATE_IN_PROGRESS='.$originalEnv);
+            }
+        }
+    }
+
     public function test_spawn_passes_all_five_skip_options_to_child(): void
     {
         // 부모 CoreUpdateCommand::spawnUpgradeStepsProcess 가 자식 command 배열에
