@@ -17,6 +17,7 @@
 - 인스톨러 Step 3 의 PHP CLI 및 Composer 절대경로 검증이 공유 호스팅 환경(시놀로지 DSM 등 `open_basedir` 가 시스템 binary 영역을 차단하는 환경)과 Windows 환경에서 정상 경로임에도 거부되던 결함 수정. 셸 인자 escape 와 메타문자 차단은 유지하고, 파일 시스템 권한에 의존하던 사전 검사를 실제 실행 결과로 판정하도록 변경합니다. Windows 의 백슬래시 경로 구분자도 정상 입력으로 인식됩니다 (단, `C:\Program Files\...` 같은 공백 포함 디렉토리는 공백 없는 경로 또는 8.3 short path 사용 권장).
 - 코어 운영 단계의 composer 바이너리 자동 인식이 같은 `open_basedir` 환경에서 실패하여 모듈/플러그인 설치 시 vendor-bundle 모드만 사용 가능하던 결함 수정. composer 가 정상 설치되어 PATH 에 존재하는 환경에서도 인식되도록 검출 로직을 개선했습니다.
 - 멀티 PHP 버전 환경(시놀로지 DSM Web Station, cPanel/Plesk multi-PHP 등) 에서 Composer 를 특정 PHP 인터프리터로 실행하려는 "PHP 절대경로 + Composer 절대경로" 공백 분리 입력 형식이 거부되던 결함 수정. 입력을 두 토큰으로 분리한 뒤 각 토큰을 개별 escape 처리하여 안전을 유지하면서 멀티 PHP 운영 시나리오를 지원합니다.
+- 인스톨러 세션 쿠키가 일부 환경(비표준 포트 + dynamic DNS 도메인 + 브라우저 추적 보호 등) 에서 브라우저에 의해 차단되어 첫 화면 "설치하기" 클릭이 동작하지 않고 새로고침처럼 보이던 결함을 보완. 세션 쿠키 SameSite 정책을 Strict → Lax 로 완화하여 차단 케이스 자체를 줄이고, Step 0 진입 시 쿠키 round-trip 사전 진단을 수행하여 차단이 감지되면 사용자에게 회피 방법(다른 브라우저 / 쿠키 차단 해제 / IP·localhost 접속) 을 명시 안내합니다.
 
 ### Added
 
