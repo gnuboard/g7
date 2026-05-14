@@ -14,30 +14,44 @@ description: |
   본 매니페스트는 5개 누락 단계를 자식 기본값에 포함시키고, 부모 spawn 호출 시엔
   5개 `--skip-*` 옵션으로 중복 회피하는 cross product 의 회귀 가드.
 
+  추가 가드 (2026-05-14): 구버전 부모(beta.5 이하) 가 신버전 자식(beta.6+) 을 spawn 할 때
+  `--skip-*` 5개 옵션은 모르지만 `G7_UPDATE_IN_PROGRESS=1` env 는 beta.3+ 부모부터
+  항상 설정한다. 자식은 env 시그널만으로도 spawn 컨텍스트를 감지하여 5단계 모두 스킵해야
+  한다 (옵션 부재 + non-interactive 환경에서 prompt 호출로 인한 Aborted exit=1 회귀 차단).
+
   구성:
     1. 5개 사전·사후 단계 각각의 단독 호출 / `--skip-*` 옵션 분기 검증.
     2. 부모 `CoreUpdateCommand::spawnUpgradeStepsProcess` 가 자식 command 배열에
        5개 옵션을 모두 전달하는지 (escapeshellarg 후 commandLine 문자열 검증).
     3. `runUpgradeSteps` 본 임무는 항상 호출 (옵션 무관).
     4. 5개 옵션을 모두 전달한 경우 CoreUpdateCommand spawn 시나리오 등가 — 사전·사후 미수행.
+    5. `G7_UPDATE_IN_PROGRESS=1` env 만으로도 5단계 모두 스킵 (구버전 부모 V-1 안전 가드).
 
 axes:
-  invocation_origin: [standalone_operator, parent_spawn]                  # 누가 호출했는가
+  invocation_origin: [standalone_operator, parent_spawn_with_skip_options, parent_spawn_env_only]  # 누가 호출했는가
   skip_migrations: [present, absent]
   skip_resync: [present, absent]
   skip_version_env: [present, absent]
   skip_cache_clear: [present, absent]
   skip_bundled_updates: [present, absent]
+  spawn_env_flag: [present, absent]                                        # G7_UPDATE_IN_PROGRESS=1 시그널
   force_flag: [present, absent]                                            # bundled prompt 우회 여부
   bundled_updates_count: [zero, modules_only, plugins_only, templates_only, lang_packs_only, mixed]
   from_to_relation: [from_lt_to, from_eq_to_forced]                       # version_compare 분기
 
 exclusions:
-  - { invocation_origin: parent_spawn, skip_migrations: absent, reason: "부모 spawn 시엔 5개 옵션 모두 전달 — 일부 절단 시뮬은 인위적 비현실 분기" }
-  - { invocation_origin: parent_spawn, skip_resync: absent, reason: "동일 — 부모 spawn 시 5개 옵션 일괄 전달" }
-  - { invocation_origin: parent_spawn, skip_version_env: absent, reason: "동일" }
-  - { invocation_origin: parent_spawn, skip_cache_clear: absent, reason: "동일" }
-  - { invocation_origin: parent_spawn, skip_bundled_updates: absent, reason: "동일" }
+  - { invocation_origin: parent_spawn_with_skip_options, skip_migrations: absent, reason: "부모(beta.6+) spawn 시엔 5개 옵션 모두 전달 — 일부 절단 시뮬은 인위적 비현실 분기" }
+  - { invocation_origin: parent_spawn_with_skip_options, skip_resync: absent, reason: "동일 — 부모 spawn 시 5개 옵션 일괄 전달" }
+  - { invocation_origin: parent_spawn_with_skip_options, skip_version_env: absent, reason: "동일" }
+  - { invocation_origin: parent_spawn_with_skip_options, skip_cache_clear: absent, reason: "동일" }
+  - { invocation_origin: parent_spawn_with_skip_options, skip_bundled_updates: absent, reason: "동일" }
+  - { invocation_origin: parent_spawn_env_only, skip_migrations: present, reason: "구버전 부모(beta.5) 는 5개 옵션을 모르므로 전달하지 않음 — 본 분기는 env 가드 단독 효과 검증" }
+  - { invocation_origin: parent_spawn_env_only, skip_resync: present, reason: "동일" }
+  - { invocation_origin: parent_spawn_env_only, skip_version_env: present, reason: "동일" }
+  - { invocation_origin: parent_spawn_env_only, skip_cache_clear: present, reason: "동일" }
+  - { invocation_origin: parent_spawn_env_only, skip_bundled_updates: present, reason: "동일" }
+  - { invocation_origin: parent_spawn_env_only, spawn_env_flag: absent, reason: "정의상 env_only 분기는 env=1 필수" }
+  - { invocation_origin: standalone_operator, spawn_env_flag: present, reason: "운영자 수동 호출은 env 미설정 — env 설정 시는 parent_spawn 분기로 분류" }
   - { invocation_origin: standalone_operator, bundled_updates_count: zero, skip_bundled_updates: absent, force_flag: absent, reason: "0건 + 옵션 미사용 + force 미사용 시 prompt 발동되나 본 매트릭스의 회귀 대상은 옵션 분기뿐" }
 
 effects:
@@ -63,6 +77,14 @@ effects:
   - CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_bundled_updates_to_command_array
   # §5 운영자 안내문 (resumeCommand) 호환성 — 옵션 없이도 기본값으로 안전 실행
   - resume_command_without_skip_options_invokes_all_five_pre_and_post_steps_safely
+  # §6 구버전 부모 V-1 안전 가드 (env 시그널 단독)
+  - ExecuteUpgradeStepsCommand_skips_runMigrations_when_spawn_env_flag_present_without_skip_options
+  - ExecuteUpgradeStepsCommand_skips_reloadCoreConfigAndResync_when_spawn_env_flag_present_without_skip_options
+  - ExecuteUpgradeStepsCommand_skips_updateVersionInEnv_when_spawn_env_flag_present_without_skip_options
+  - ExecuteUpgradeStepsCommand_skips_clearAllCaches_when_spawn_env_flag_present_without_skip_options
+  - ExecuteUpgradeStepsCommand_skips_bundled_updates_when_spawn_env_flag_present_without_skip_options
+  - ExecuteUpgradeStepsCommand_env_guard_dominates_over_force_flag_for_post_steps
+  - ExecuteUpgradeStepsCommand_standalone_invocation_without_env_runs_all_five_steps_intact
 
 test_files:
   - tests/Feature/Console/Commands/ExecuteUpgradeStepsStandaloneTest.php
