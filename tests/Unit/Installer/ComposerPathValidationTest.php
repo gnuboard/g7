@@ -40,7 +40,22 @@ class ComposerPathValidationTest extends TestCase
             define('CHECK_CONFIGURATION_LIBRARY', true);
         }
 
-        require_once dirname(__DIR__, 3) . '/public/install/api/check-configuration.php';
+        // BASE_PATH 가 다른 테스트 인프라에 의해 정의되지 않은 경우, 프로젝트 루트로
+        // 정의해 인접 테스트(DeleteDirectoryTest/InstallerWindowsCommandsTest)의
+        // `require_once BASE_PATH . '/public/install/...'` 패턴이 깨지지 않도록 함.
+        $projectRoot = dirname(__DIR__, 3);
+        if (! defined('BASE_PATH')) {
+            define('BASE_PATH', $projectRoot);
+        }
+        if (! defined('STATE_PATH')) {
+            define('STATE_PATH', BASE_PATH . '/storage/installer-state.json');
+        }
+
+        require_once $projectRoot . '/public/install/api/check-configuration.php';
+        // applyInstallerComposerEnvVars() 는 functions.php 에 정의. stat 가드 완화 회복
+        // 이후 시스템 기본 'composer' 또는 정상 절대경로 입력이 exec 단계까지 도달하면서
+        // 이 함수를 호출하므로 사전 로드 필요.
+        require_once $projectRoot . '/public/install/includes/functions.php';
         self::$loaded = true;
     }
 
