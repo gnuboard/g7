@@ -11,7 +11,11 @@ if (session_status() === PHP_SESSION_NONE) {
     // 세션 설정
     ini_set('session.cookie_httponly', '1');
     ini_set('session.use_strict_mode', '1');
-    ini_set('session.cookie_samesite', 'Strict');
+    // SameSite=Lax — top-level navigation 의 동일 사이트 POST 에 쿠키 동반 전송.
+    // CSRF 방어는 별도 csrf_token 검증이 담당하므로 Strict 대신 Lax 로 완화하여
+    // 비표준 포트 / dynamic DNS 도메인 / 일부 브라우저 정책 조합에서 PHPSESSID
+    // 가 차단되어 Step 0 무한 루프에 빠지던 회귀를 차단.
+    ini_set('session.cookie_samesite', 'Lax');
 
     // HTTPS 환경에서는 secure 쿠키 사용
     if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {

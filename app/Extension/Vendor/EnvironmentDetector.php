@@ -98,12 +98,13 @@ class EnvironmentDetector
         }
 
         // composer.phar 폴백
+        // @is_file 로 open_basedir warning 억제 (BASE_PATH/getcwd 가 화이트리스트 밖일 가능성)
         $pharCandidates = [
             base_path('composer.phar'),
             getcwd().DIRECTORY_SEPARATOR.'composer.phar',
         ];
         foreach ($pharCandidates as $phar) {
-            if (is_file($phar)) {
+            if (@is_file($phar)) {
                 return $this->cachedComposerBinary = $phar;
             }
         }
@@ -275,6 +276,11 @@ class EnvironmentDetector
 
     /**
      * PATH 환경변수에서 composer 검색.
+     *
+     * stat (is_file) 은 open_basedir 같은 PHP 런타임 제약 환경에서 false negative
+     * 를 일으키므로 보조 신호로만 쓴다. stat 통과 후보가 있으면 우선 반환하고,
+     * 그렇지 않은 경우 메타문자 없는 첫 후보를 반환해 canExecuteComposer 의
+     * proc_open 결과로 최종 판정한다.
      */
     private function searchComposerInPath(): ?string
     {
@@ -289,20 +295,35 @@ class EnvironmentDetector
             ? ['composer.bat', 'composer.exe', 'composer.phar', 'composer']
             : ['composer', 'composer.phar'];
 
+        $fallback = null;
+
         foreach ($paths as $dir) {
             foreach ($names as $name) {
                 $candidate = rtrim($dir, '/\\').DIRECTORY_SEPARATOR.$name;
-                if (is_file($candidate)) {
+
+                // stat 통과 후보가 있으면 우선 반환 (가장 신뢰도 높음)
+                if (@is_file($candidate)) {
                     return $candidate;
+                }
+
+                // stat 실패 후보는 첫 번째만 fallback 으로 보관.
+                // open_basedir 환경에서는 정상 binary 도 is_file false 가 되므로
+                // proc_open 결과로 최종 판정할 기회를 남긴다.
+                if ($fallback === null) {
+                    $fallback = $candidate;
                 }
             }
         }
 
-        return null;
+        return $fallback;
     }
 
     /**
      * 후보 경로가 실행 가능한 파일인지 확인.
+     *
+     * stat (is_file) 의존을 제거해 open_basedir 환경의 false negative 를 피한다.
+     * 단일 토큰의 셸 메타문자만 차단하고, 실제 실행 가능 여부는 canExecuteComposer
+     * 의 proc_open 결과로 최종 판정한다.
      */
     private function isExecutableCandidate(?string $candidate): bool
     {
@@ -310,11 +331,18 @@ class EnvironmentDetector
             return false;
         }
 
-        // 공백 포함 시 전체 커맨드로 간주 — 파일 존재 검사 스킵
+        // 공백 포함 시 전체 커맨드로 간주 — 외부 신뢰된 config/.env 값을 그대로 사용.
+        // buildComposerCommand 의 공백 분기와 동일한 신뢰 모델 (운영자 자기 책임 영역).
         if (str_contains($candidate, ' ')) {
             return true;
         }
 
-        return is_file($candidate);
+        // 셸 메타문자 + 제어문자 차단. 백슬래시는 Windows 경로 구분자이므로 차단 대상 아님 —
+        // 셸 인젝션 차단은 호출자의 escapeshellarg/buildComposerCommand 가 담당.
+        if (preg_match('/[;`$|<>"\'&\x00-\x1F]/', $candidate)) {
+            return false;
+        }
+
+        return true;
     }
 }
