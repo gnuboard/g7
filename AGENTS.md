@@ -380,8 +380,19 @@ Keep a Changelog 표준:
 | API 변경 (엔드포인트, 파라미터) | 테스트 건수/파일명 |
 | 기존 기능의 버그 수정 | 리팩토링 세부사항 |
 | 성능 개선 (체감 가능한 것) | 내부 규정/문서 변경 |
-| Breaking Change | 이슈 번호 |
+| Breaking Change | 내부 작업 이슈 번호 단독 (예: `refs #347`) |
 | 엔진 버전 참조 (engine-v1.X.Y) | 코드 패턴 설명 |
+| **공개 제보자 attribution** (`(#N @login 님께서 제보해주셨습니다.)`) | — |
+| **KISA 등 공식 보안 채널** (`(KISA 측에서 제보해주셨습니다 — KVE-XXXX-XXXXX)`) | — |
+
+### 공개 제보자 attribution
+
+공개 저장소(GitHub) 이슈로 제보·건의된 항목이 출시 CHANGELOG 에 반영되면, 항목 끝에 공개 이슈 번호와 제보자 GitHub 핸들 멘션을 부착합니다.
+
+- 형식: `- (본문) (#N @login 님께서 제보해주셨습니다.)` 또는 `... 건의해주셨습니다.`
+- 톤: 버그 리포트는 "제보", 제안형 개선 요청은 "건의"
+- 다중 매칭: `(#A @x, #B @y 님께서 제보해주셨습니다.)` / 혼재: `(#A @x 님께서 제보해주시고, #B @y 님께서 건의해주셨습니다.)`
+- KISA 등 공식 보안 채널: GitHub 멘션 없이 텍스트 "KISA 측에서" + 공개 가능한 식별자만
 
 ### 신규 기능의 버그 수정 제외 규칙
 
@@ -787,6 +798,7 @@ php artisan plugin:build sirsoft-payment --active       # 활성 디렉토리에
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행
+php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]  # 업그레이드 스텝 단독 실행 (HANDOFF 안내/수동 복구용 — 사전·사후 단계 자동 수행)
 
 # 모듈
 php artisan module:list

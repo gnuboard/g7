@@ -193,7 +193,7 @@ class ValidationApi
             }
 
             // 에러 로깅
-            logInstallationError(lang('error_db_connection_failed'), $e);
+            logInstallationError(lang('error_db_connection_failed', ['error' => $e->getMessage()]), $e);
 
             // 에러 응답 (200 OK + success: false)
             echo json_encode([
@@ -779,6 +779,55 @@ class ValidationApi
     }
 
     /**
+     * 셸 인자로 전달하기 안전한 단일 토큰인지 검증.
+     *
+     * 셸 메타문자(공백·따옴표·리다이렉션·세미콜론·백틱·$()·| 등) 와 제어문자(NUL/CR/LF 등)
+     * 가 없어야 함. 백슬래시(`\`) 는 Windows 경로 구분자이므로 차단 대상이 아니다 —
+     * 셸 인젝션 차단은 호출자의 escapeshellarg 가 담당 (Windows 는 큰따옴표 wrapping,
+     * Unix 는 작은따옴표 wrapping).
+     *
+     * 파일 시스템 stat 은 호출하지 않는다 — open_basedir 등 PHP 런타임 제약
+     * 환경에서 정상 절대경로가 false negative 로 거부되는 회귀를 피하기 위함.
+     * 실제 실행 가능 여부는 exec/proc_open 결과로 최종 판정.
+     */
+    private function isInstallerSafePathArg(string $path): bool
+    {
+        if ($path === '') {
+            return false;
+        }
+
+        return !preg_match('/[\s;`$|<>"\'&\x00-\x1F]/', $path);
+    }
+
+    /**
+     * 공백 분리 입력을 두 토큰(PHP 인터프리터 + Composer 바이너리) 으로 분해.
+     *
+     * 멀티 PHP 버전 환경(시놀로지 DSM Web Station, cPanel/Plesk multi-PHP) 에서
+     * `composer` 를 특정 PHP 로 실행하려는 운영 의도를 지원한다.
+     * 두 토큰 모두 isInstallerSafePathArg 통과해야 정상 입력으로 인정.
+     *
+     * @return array{php: string, composer: string}|null  분해 실패 시 null
+     */
+    private function splitPhpComposerTokens(string $path): ?array
+    {
+        if (!str_contains($path, ' ')) {
+            return null;
+        }
+
+        $tokens = preg_split('/\s+/', trim($path), 2);
+        if (!is_array($tokens) || count($tokens) !== 2) {
+            return null;
+        }
+
+        [$php, $composer] = $tokens;
+        if ($php === '' || $composer === '') {
+            return null;
+        }
+
+        return ['php' => $php, 'composer' => $composer];
+    }
+
+    /**
      * PHP 바이너리 경로 유효성 검증 헬퍼
      *
      * @param string $path PHP 바이너리 경로
@@ -790,9 +839,10 @@ class ValidationApi
             return ['valid' => false, 'version' => null, 'message' => lang('error_php_path_empty')];
         }
 
-        // 'php' 기본값이 아니면 반드시 실제 실행 가능한 단일 파일 경로여야 함
-        // (사용자 입력을 그대로 shell 에 전달하던 경로 차단)
-        if ($path !== 'php' && (!is_file($path) || !is_executable($path))) {
+        // 'php' 기본값이 아니면 셸 메타문자 차단. 파일 존재/실행 가능 검사는
+        // open_basedir 같은 PHP 런타임 제약 환경의 false negative 를 피하기 위해
+        // 생략하고, exec 결과로 최종 판정한다.
+        if ($path !== 'php' && !$this->isInstallerSafePathArg($path)) {
             return ['valid' => false, 'version' => null, 'message' => lang('error_php_exec_failed', ['path' => $path])];
         }
 
@@ -837,10 +887,49 @@ class ValidationApi
         // 빈 문자열이면 시스템 기본 composer 사용
         $effectivePath = $composerPath ?: 'composer';
 
-        // 보안: 입력값을 "전체 실행 명령어" 로 허용하던 공백 분기 제거.
-        // 시스템 기본('composer') 가 아니면 반드시 실행 가능한 단일 파일 경로여야 하며,
-        // 모든 분기에서 escapeshellarg 를 강제한다.
-        if ($effectivePath !== 'composer' && (!is_file($effectivePath) || !is_executable($effectivePath))) {
+        // 공백 분리 입력은 "PHP 절대경로 + Composer 절대경로" 의 멀티 PHP 운영 패턴.
+        // 두 토큰으로 분해 후 각 토큰별 메타문자 차단 + 각각 escapeshellarg 적용한다.
+        // 옛 raw shell 전달(escape 없는 분기) 은 복원하지 않음.
+        if ($effectivePath !== 'composer' && str_contains($effectivePath, ' ')) {
+            $tokens = $this->splitPhpComposerTokens($effectivePath);
+            if ($tokens === null
+                || !$this->isInstallerSafePathArg($tokens['php'])
+                || !$this->isInstallerSafePathArg($tokens['composer'])
+            ) {
+                return [
+                    'valid' => false,
+                    'version' => null,
+                    'message' => lang('error_composer_exec_failed', ['path' => $effectivePath]),
+                ];
+            }
+
+            $command = escapeshellarg($tokens['php']) . ' ' . escapeshellarg($tokens['composer']) . ' --version 2>&1';
+
+            $output = [];
+            $returnCode = -1;
+            applyInstallerComposerEnvVars();
+            exec($command, $output, $returnCode);
+
+            if ($returnCode !== 0) {
+                return ['valid' => false, 'version' => null, 'message' => lang('error_composer_exec_failed', ['path' => $effectivePath])];
+            }
+
+            $outputStr = implode("\n", $output);
+            if (preg_match('/Composer\s+(?:version\s+)?(\d+\.\d+\.\d+)/', $outputStr, $matches)) {
+                $version = $matches[1];
+                return [
+                    'valid' => true,
+                    'version' => $version,
+                    'message' => lang('success_composer_version', ['path' => $effectivePath, 'version' => $version]),
+                ];
+            }
+
+            return ['valid' => false, 'version' => null, 'message' => lang('error_composer_version_parse_failed')];
+        }
+
+        // 단일 토큰 — 시스템 기본('composer') 가 아니면 셸 메타문자 차단.
+        // 파일 존재/실행 가능 검사는 open_basedir 환경의 false negative 회피를 위해 생략.
+        if ($effectivePath !== 'composer' && !$this->isInstallerSafePathArg($effectivePath)) {
             return [
                 'valid' => false,
                 'version' => null,
@@ -850,8 +939,8 @@ class ValidationApi
 
         // .phar 파일이면 PHP 바이너리와 결합
         if (str_ends_with($effectivePath, '.phar')) {
-            // phpPath 도 동일한 가드 — 'php' 기본값이 아니면 실행 가능 파일이어야 함
-            if ($phpPath !== 'php' && (!is_file($phpPath) || !is_executable($phpPath))) {
+            // phpPath 도 동일한 가드 — 'php' 기본값이 아니면 메타문자 없는 단일 토큰이어야 함
+            if ($phpPath !== 'php' && !$this->isInstallerSafePathArg($phpPath)) {
                 return [
                     'valid' => false,
                     'version' => null,

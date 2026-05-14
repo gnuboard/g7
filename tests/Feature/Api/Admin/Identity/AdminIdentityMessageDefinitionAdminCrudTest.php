@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\Admin\Identity;
 use App\Models\IdentityMessageDefinition;
 use App\Models\IdentityMessageTemplate;
 use App\Models\IdentityPolicy;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\IdentityMessageDefinitionSeeder;
@@ -269,5 +270,69 @@ class AdminIdentityMessageDefinitionAdminCrudTest extends TestCase
             ->deleteJson('/api/admin/identity/messages/definitions/999999');
 
         $response->assertStatus(404);
+    }
+
+    /**
+     * 컬렉션 응답에 can_create abilities 키가 발행된다 (운영자/슈퍼관리자).
+     *
+     * 회귀 (#361): 컬렉션 abilityMap 이 can_update 만 발행하던 시기에는
+     * 레이아웃의 "정의 추가" 버튼이 `abilities?.can_create !== true` 가드로
+     * 항상 disabled 되었다. 컬렉션 abilityMap 보강 검증.
+     */
+    public function test_collection_publishes_can_create_ability(): void
+    {
+        $response = $this->authRequest()
+            ->getJson('/api/admin/identity/messages/definitions');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.abilities.can_create', true);
+        $response->assertJsonPath('data.abilities.can_update', true);
+    }
+
+    /**
+     * 조회 권한(`*.read`)만 부여된 사용자는 컬렉션 abilities + per-item abilities 가
+     * 모두 false 로 발행되어, 프론트에서 편집/Toggle/Reset/삭제/정의 추가 액션을
+     * 잠가야 한다.
+     *
+     * 회귀 (#361): 레이아웃이 abilities 가드 없이 항상 버튼을 노출하던 결함.
+     */
+    public function test_read_only_user_receives_falsey_abilities(): void
+    {
+        $readPermission = Permission::where('identifier', 'core.admin.identity.messages.read')->firstOrFail();
+        $viewerRole = Role::create([
+            'identifier' => 'idv-msg-viewer',
+            'name' => ['ko' => 'IDV 메시지 조회 전용', 'en' => 'IDV Message Viewer'],
+            'description' => ['ko' => '본인인증 메시지 조회 전용', 'en' => 'IDV Message read-only'],
+            'is_system' => false,
+        ]);
+        $viewerRole->permissions()->attach($readPermission->id);
+
+        $viewer = User::factory()->create(['is_super' => false]);
+        $viewer->roles()->attach($viewerRole->id, [
+            'assigned_at' => now(),
+            'assigned_by' => null,
+        ]);
+        $viewerToken = $viewer->createToken('viewer-token')->plainTextToken;
+
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer '.$viewerToken,
+            'Accept' => 'application/json',
+        ])->getJson('/api/admin/identity/messages/definitions');
+
+        $response->assertStatus(200);
+
+        // 컬렉션 abilities — 정의 추가 가드용
+        $response->assertJsonPath('data.abilities.can_create', false);
+        $response->assertJsonPath('data.abilities.can_update', false);
+
+        // per-item abilities — 편집/Toggle/Reset/삭제 가드용
+        $rows = $response->json('data.data');
+        $this->assertNotEmpty($rows);
+        foreach ($rows as $row) {
+            $this->assertSame(false, $row['abilities']['can_update'] ?? null,
+                "Read-only user must not receive can_update=true (def {$row['provider_id']}/{$row['scope_value']})");
+            $this->assertSame(false, $row['abilities']['can_delete'] ?? null,
+                "Read-only user must not receive can_delete=true (def {$row['provider_id']}/{$row['scope_value']})");
+        }
     }
 }

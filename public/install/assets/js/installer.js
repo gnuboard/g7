@@ -385,7 +385,7 @@
         // 6. HTTPS 카드
         const httpsStatusClass = data.https.enabled ? 'status-pass' : 'status-warning';
         html += renderSingleItemCard(
-            lang('https_enabled'),
+            lang('https'),
             httpsStatusClass,
             data.https.enabled ? lang('enabled') : lang('not_enabled'),
             '',

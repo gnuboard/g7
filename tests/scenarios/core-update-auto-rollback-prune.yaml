@@ -1,0 +1,114 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 코어 자동 롤백 신규 파일 prune + beta.6 사후 보완 + hotfix 단발성 prefix 도입의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+
+feature: 코어 자동 롤백 시 신 버전 신규 파일 prune + beta.6 사후 보완 + hotfix 단발성 prefix
+
+description: |
+  7.0.0-beta.5 이전의 코어 자동 롤백은 backup → 활성 overlay 복사 방식으로만 동작
+  하여, 신 버전이 활성 디렉토리에 새로 추가한 파일은 백업에 없으므로 삭제되지 않고
+  잔존했다. 결과적으로 `bootstrap/providers.php` 는 백업본(구버전) 으로 되돌아가지만
+  디스크에는 신 ServiceProvider 파일이 잔존하여 `BindingResolutionException` 등
+  부팅 부정합이 발생.
+
+  본 매니페스트는 7.0.0-beta.6 의 다음 4가지 결함 보정 메커니즘의 cross product 회귀
+  가드:
+
+    1. Step 6.5 (manifest 생성) — applyUpdate 직전 신 버전 신규 파일 목록을 백업
+       디렉토리에 manifest 로 기록
+    2. restoreFromBackup 확장 — manifest 가 있으면 복사 직후 prune 수행
+    3. beta.5 사용자의 사후 보완 — Upgrade_7_0_0_beta_6 DataMigration 이 백업 디렉토리에
+       manifest 를 사후 작성 + 잔존 ServiceProvider 진단 로그
+    4. hotfix:rollback-stale-files — 운영자용 진단/회복 도구 (단발성 prefix `hotfix:*`)
+
+axes:
+  rollback_origin: [step7_fatal, step8_fatal, step9_fatal, step10_fatal, no_backup_mode]
+  manifest_state: [present, absent, corrupted]
+  protected_path_overlap: [no_overlap, in_manifest_only, in_active_only, both]
+  symlink_state: [valid, broken, target_missing, windows_no_privilege]
+  user_added_files: [none, root_level, nested, in_protected_path]
+  user_modified_files: [none, single, multiple]
+  active_dir_state: [pristine_new, mixed_with_user, partially_pruned]
+  dir_emptiness_after_prune: [empty, has_user_file, has_orphan_dir]
+  hotfix_command_mode: [diagnose, prune_with_confirm, prune_reject, explicit_backup, missing_backup]
+  upgrade_path: [step6_5_normal, beta5_to_beta6_backfill, multi_version_chain]
+  audit_allow_inline: [present, absent]
+
+exclusions:
+  - { manifest_state: absent, rollback_origin: step7_fatal, reason: "Step 6.5 가 정상 동작했으면 manifest 가 항상 존재 — absent 는 beta.5 사용자 시나리오" }
+  - { rollback_origin: no_backup_mode, manifest_state: present, reason: "--no-backup 모드는 백업 자체가 부재이므로 manifest 도 부재" }
+  - { upgrade_path: step6_5_normal, manifest_state: absent, reason: "Step 6.5 정상 동작 시 manifest 부재 불가" }
+  - { symlink_state: windows_no_privilege, rollback_origin: step10_fatal, reason: "Windows symlink 제약은 OS 레벨 — 롤백 단계와 무관" }
+
+effects:
+  # §1 Step 6.5 (manifest 생성)
+  - writeNewFilesManifest_identifies_new_files_in_pending_only
+  - writeNewFilesManifest_identifies_new_dirs
+  - writeNewFilesManifest_excludes_protected_paths
+  - writeNewFilesManifest_excludes_pattern_matches_in_excludes
+  - writeNewFilesManifest_writes_to_backup_path_with_schema_v1
+  - writeNewFilesManifest_sorts_new_files_lexicographic_ascending
+  - writeNewFilesManifest_emits_six_top_level_keys
+  - core_update_command_step_6_5_invoked_after_backup_before_apply
+  - core_update_command_step_6_5_skipped_when_no_backup_option
+
+  # §2 restoreFromBackup 확장 + pruneNewFiles
+  - pruneNewFiles_removes_new_files_listed_in_manifest
+  - pruneNewFiles_keeps_dirs_with_user_files
+  - pruneNewFiles_respects_protected_paths_double_guard
+  - pruneNewFiles_skips_symlinks_unconditionally
+  - pruneNewFiles_returns_noop_when_manifest_absent
+  - pruneNewFiles_handles_corrupted_manifest_gracefully
+  - pruneNewFiles_skips_missing_files_gracefully
+  - pruneNewFiles_removes_empty_dirs_in_depth_reverse_order
+  - restoreFromBackup_invokes_prune_when_manifest_exists
+  - restoreFromBackup_skips_prune_when_manifest_absent
+  - restoreFromBackup_logs_prune_result
+  - rollback_catch_block_calls_clearAllCaches_after_restore
+  - user_added_files_preserved_on_rollback
+  - user_modified_files_restored_to_backup_version
+  - multi_version_chain_prunes_all_new_files
+
+  # §3 beta.6 사후 보완
+  - backfill_manifest_writes_to_latest_backup_when_absent
+  - backfill_manifest_noop_when_already_present
+  - backfill_manifest_skips_when_backup_dir_absent
+  - backfill_manifest_schema_compatible_with_pruneNewFiles
+  - backfill_manifest_swallows_exceptions
+  - log_stale_providers_writes_diagnostic_log_when_mismatch
+  - log_stale_providers_silent_when_no_mismatch
+  - log_stale_providers_does_not_auto_delete_files
+  - log_stale_providers_swallows_exceptions
+  - upgrade_step_beta_6_extends_abstract_upgrade_step
+
+  # §4 hotfix:rollback-stale-files
+  - hotfix_command_diagnose_mode_outputs_candidates_without_pruning
+  - hotfix_command_prune_with_confirmation_removes_marker_file
+  - hotfix_command_prune_with_rejection_keeps_files
+  - hotfix_command_missing_backup_dir_completes_safely
+  - hotfix_command_explicit_backup_option_uses_specified_path
+  - hotfix_command_explicit_backup_invalid_path_errors
+  - hotfix_command_missing_manifest_falls_back_to_conservative_mode
+  - hotfix_command_writes_log_after_prune
+
+  # §5 단발성 prefix 자동 제도화 (audit 룰 + dev-dashboard)
+  - hotfix_command_must_have_context_doc_passes_for_valid_command
+  - hotfix_command_must_have_context_doc_violates_when_description_missing
+  - hotfix_command_must_document_deprecation_passes_with_permanent_tag
+  - hotfix_command_must_document_deprecation_violates_without_policy
+  - check_dev_dashboard_commands_auto_excludes_hotfix_prefix
+
+test_files:
+  - tests/Unit/Extension/CoreBackupHelperPruneTest.php
+  - tests/Feature/Upgrade/AutoRollbackPruneTest.php
+  - tests/Feature/Upgrade/Beta6BackfillManifestTest.php
+  - tests/Feature/Console/Hotfix/RollbackStaleFilesCommandTest.php
+
+# 본 매니페스트의 axes cross product 는 수천 케이스이나, 실제 회귀 가드는 test_files 의
+# 통과 테스트들이 SSoT — 매니페스트는 매트릭스 SSoT 역할.
+#
+# 잔존 결함 / 본 매트릭스 범위 외:
+#   - beta.5 → beta.6 부모 catch 시점의 즉시 자동 prune: 부모 (beta.5) 가 Step 6.5 를
+#     모르므로 manifest 부재 → 즉시 prune 불가. beta.6 DataMigration 의 사후 작성 +
+#     hotfix 커맨드가 fallback. CHANGELOG / 릴리스 노트 명시.
+#   - DB 마이그레이션 down 자동 호출: 본 계획서 범위 외 (별도 이슈)
+#   - 운영자의 활성 디렉토리 수정 상태에서 core:update 진입 시 사전 경고 UX: 별도 이슈
+#   - hotfix:* prefix 의 누적 알림 (Stop 훅): 본 계획서 범위 외 별도 이슈 — §7.4.D

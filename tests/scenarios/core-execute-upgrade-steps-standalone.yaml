@@ -1,0 +1,77 @@
+# audit:allow test-scenario-coverage reason: 본 매니페스트는 `core:execute-upgrade-steps` 단독 실행 안전화 (사전 2단계 + 사후 3단계 자동 수행 + 5개 --skip-* 옵션) 의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+
+feature: core:execute-upgrade-steps 단독 실행 안전화 (사전·사후 단계 자동 수행 + 5개 --skip-* 옵션)
+
+description: |
+  공개 이슈 [gnuboard/g7#34](https://github.com/gnuboard/g7/issues/34) (beta.3 → beta.4 우회 절차) 의 운영자 안내문이
+  11단계의 수동 명령 (rsync → composer dump-autoload → cache:clear →
+  core:execute-upgrade-steps → migrate --force → reloadCoreConfigAndResync via tinker →
+  sed APP_VERSION → cache:clear → module/plugin/template:update --force --source=bundled)
+  을 요구했던 근본 원인은 `core:execute-upgrade-steps` 가 단독 호출 시
+  부모 `CoreUpdateCommand` 가 수행하던 Step 9 (Migration + Resync), Step 11
+  (.env 버전 + 캐시 정리), 번들 확장 일괄 업데이트 prompt 를 모두 누락한 것.
+
+  본 매니페스트는 5개 누락 단계를 자식 기본값에 포함시키고, 부모 spawn 호출 시엔
+  5개 `--skip-*` 옵션으로 중복 회피하는 cross product 의 회귀 가드.
+
+  구성:
+    1. 5개 사전·사후 단계 각각의 단독 호출 / `--skip-*` 옵션 분기 검증.
+    2. 부모 `CoreUpdateCommand::spawnUpgradeStepsProcess` 가 자식 command 배열에
+       5개 옵션을 모두 전달하는지 (escapeshellarg 후 commandLine 문자열 검증).
+    3. `runUpgradeSteps` 본 임무는 항상 호출 (옵션 무관).
+    4. 5개 옵션을 모두 전달한 경우 CoreUpdateCommand spawn 시나리오 등가 — 사전·사후 미수행.
+
+axes:
+  invocation_origin: [standalone_operator, parent_spawn]                  # 누가 호출했는가
+  skip_migrations: [present, absent]
+  skip_resync: [present, absent]
+  skip_version_env: [present, absent]
+  skip_cache_clear: [present, absent]
+  skip_bundled_updates: [present, absent]
+  force_flag: [present, absent]                                            # bundled prompt 우회 여부
+  bundled_updates_count: [zero, modules_only, plugins_only, templates_only, lang_packs_only, mixed]
+  from_to_relation: [from_lt_to, from_eq_to_forced]                       # version_compare 분기
+
+exclusions:
+  - { invocation_origin: parent_spawn, skip_migrations: absent, reason: "부모 spawn 시엔 5개 옵션 모두 전달 — 일부 절단 시뮬은 인위적 비현실 분기" }
+  - { invocation_origin: parent_spawn, skip_resync: absent, reason: "동일 — 부모 spawn 시 5개 옵션 일괄 전달" }
+  - { invocation_origin: parent_spawn, skip_version_env: absent, reason: "동일" }
+  - { invocation_origin: parent_spawn, skip_cache_clear: absent, reason: "동일" }
+  - { invocation_origin: parent_spawn, skip_bundled_updates: absent, reason: "동일" }
+  - { invocation_origin: standalone_operator, bundled_updates_count: zero, skip_bundled_updates: absent, force_flag: absent, reason: "0건 + 옵션 미사용 + force 미사용 시 prompt 발동되나 본 매트릭스의 회귀 대상은 옵션 분기뿐" }
+
+effects:
+  # §1 사전 단계 자동 수행
+  - ExecuteUpgradeStepsCommand_invokes_runMigrations_by_default
+  - ExecuteUpgradeStepsCommand_skips_runMigrations_when_skip_migrations_present
+  - ExecuteUpgradeStepsCommand_invokes_reloadCoreConfigAndResync_by_default
+  - ExecuteUpgradeStepsCommand_skips_reloadCoreConfigAndResync_when_skip_resync_present
+  # §2 사후 단계 자동 수행
+  - ExecuteUpgradeStepsCommand_invokes_updateVersionInEnv_with_to_version_by_default
+  - ExecuteUpgradeStepsCommand_skips_updateVersionInEnv_when_skip_version_env_present
+  - ExecuteUpgradeStepsCommand_invokes_clearAllCaches_by_default
+  - ExecuteUpgradeStepsCommand_skips_clearAllCaches_when_skip_cache_clear_present
+  - ExecuteUpgradeStepsCommand_invokes_runBundledExtensionUpdatePrompt_by_default
+  - ExecuteUpgradeStepsCommand_skips_bundled_updates_when_skip_bundled_updates_present
+  # §3 본 임무 (runUpgradeSteps) 는 옵션 무관 항상 호출
+  - ExecuteUpgradeStepsCommand_always_invokes_runUpgradeSteps_regardless_of_skip_options
+  # §4 부모 spawn 5개 옵션 전달
+  - CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_migrations_to_command_array
+  - CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_resync_to_command_array
+  - CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_version_env_to_command_array
+  - CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_cache_clear_to_command_array
+  - CoreUpdateCommand_spawnUpgradeStepsProcess_appends_skip_bundled_updates_to_command_array
+  # §5 운영자 안내문 (resumeCommand) 호환성 — 옵션 없이도 기본값으로 안전 실행
+  - resume_command_without_skip_options_invokes_all_five_pre_and_post_steps_safely
+
+test_files:
+  - tests/Feature/Console/Commands/ExecuteUpgradeStepsStandaloneTest.php
+  - tests/Feature/Console/Commands/ExecuteUpgradeStepsCommandHandoffTest.php
+
+# 본 매트릭스의 cross product 는 수백 케이스이나, 실제 회귀 가드는 test_files 의
+# 통과 테스트가 SSoT — 매니페스트는 매트릭스 SSoT 역할.
+#
+# 의도적 제외:
+#   - maintenance 모드 자동 제어 (down/up) : 단독 실행 시 운영자가 직접 제어. 매트릭스 대상 아님.
+#   - ownership snapshot / cleanupPending / deleteBackup : 단독 실행 컨텍스트에 해당 자원 자체가 없음.
+#   - composer 재실행 : 디스크 코어 파일은 이미 신버전 적용된 상태가 단독 실행의 전제.

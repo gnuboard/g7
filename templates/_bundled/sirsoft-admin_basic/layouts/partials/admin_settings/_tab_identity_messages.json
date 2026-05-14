@@ -366,7 +366,8 @@
                               "name": "Toggle",
                               "props": {
                                 "size": "sm",
-                                "checked": "{{def.is_active}}"
+                                "checked": "{{def.is_active}}",
+                                "disabled": "{{!(def.abilities?.can_update ?? false)}}"
                               },
                               "actions": [
                                 {
@@ -391,7 +392,8 @@
                               "name": "Button",
                               "props": {
                                 "type": "button",
-                                "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors"
+                                "disabled": "{{!(def.abilities?.can_update ?? false)}}",
+                                "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
                               },
                               "text": "$t:admin.settings.identity.messages.edit",
                               "actions": [
@@ -436,7 +438,8 @@
                               "if": "{{!def.is_default}}",
                               "props": {
                                 "type": "button",
-                                "className": "text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors"
+                                "disabled": "{{!(def.abilities?.can_update ?? false)}}",
+                                "className": "text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                               },
                               "text": "$t:admin.settings.identity.messages.btn_reset",
                               "actions": [

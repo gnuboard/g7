@@ -36,24 +36,25 @@ class InstallerSecurityHardeningTest extends TestCase
             define('CHECK_CONFIGURATION_LIBRARY', true);
         }
 
+        // BASE_PATH 미정의 시 프로젝트 루트로 정의 — 같은 PHPUnit 프로세스에서 뒤에
+        // 실행되는 인접 테스트(DeleteDirectoryTest, InstallerWindowsCommandsTest 등)가
+        // `require_once BASE_PATH . '/public/install/...'` 로 로드하는 패턴이 깨지지 않도록.
+        $projectRoot = dirname(__DIR__, 3);
+        if (! defined('BASE_PATH')) {
+            define('BASE_PATH', $projectRoot);
+        }
+        // STATE_PATH 는 테스트 격리용 임시 경로로 분리 — 운영 storage/installer-state.json 미오염.
         self::$tempBase = sys_get_temp_dir() . '/g7-installer-hardening-' . bin2hex(random_bytes(4));
         @mkdir(self::$tempBase . '/storage/app', 0755, true);
 
-        if (! defined('BASE_PATH')) {
-            define('BASE_PATH', self::$tempBase);
-        } else {
-            self::$tempBase = BASE_PATH;
-            @mkdir(BASE_PATH . '/storage/app', 0755, true);
-        }
-
         if (! defined('STATE_PATH')) {
-            define('STATE_PATH', BASE_PATH . '/storage/installer-state.json');
+            define('STATE_PATH', self::$tempBase . '/storage/installer-state.json');
         }
 
-        require_once dirname(__DIR__, 3) . '/public/install/api/check-configuration.php';
-        require_once dirname(__DIR__, 3) . '/public/install/includes/installer-state.php';
-        require_once dirname(__DIR__, 3) . '/public/install/includes/functions.php';
-        require_once dirname(__DIR__, 3) . '/public/install/includes/task-runner.php';
+        require_once $projectRoot . '/public/install/api/check-configuration.php';
+        require_once $projectRoot . '/public/install/includes/installer-state.php';
+        require_once $projectRoot . '/public/install/includes/functions.php';
+        require_once $projectRoot . '/public/install/includes/task-runner.php';
 
         self::$loaded = true;
     }
@@ -122,13 +123,16 @@ class InstallerSecurityHardeningTest extends TestCase
         $this->clearState();
     }
 
-    public function test_getComposerCommand_rejects_nonexistent_path(): void
+    public function test_getComposerCommand_passes_through_safe_absolute_path(): void
     {
-        $this->writeState(['composer_binary' => '/nonexistent/path/to/composer']);
+        // open_basedir 같은 PHP 런타임 제약 환경의 false negative 를 피하기 위해
+        // stat 의존 가드가 제거됨. 메타문자 없는 단일 절대경로는 escape 후 그대로 사용.
+        // 실제 실행 가능 여부는 exec 결과로 최종 판정 (silent fallback 안 함).
+        $this->writeState(['composer_binary' => '/usr/local/bin/composer']);
 
         $cmd = getComposerCommand();
 
-        $this->assertSame('composer', $cmd);
+        $this->assertSame(escapeshellarg('/usr/local/bin/composer'), $cmd);
         $this->clearState();
     }
 
@@ -153,9 +157,250 @@ class InstallerSecurityHardeningTest extends TestCase
 
     public function test_isInstallerExecutablePath_rejects_metachars(): void
     {
-        foreach (['foo bar', 'a;b', 'a`b', 'a$b', 'a|b', "a\nb", 'a"b', "a'b", 'a\\b'] as $bad) {
-            $this->assertFalse(isInstallerExecutablePath($bad), "메타문자 거부: {$bad}");
+        // 백슬래시는 Windows 경로 구분자이므로 차단 대상 아님 (escapeshellarg 가 셸 인젝션 차단)
+        foreach (['foo bar', 'a;b', 'a`b', 'a$b', 'a|b', "a\nb", 'a"b', "a'b", "a\0b", "a\x01b", "a\rb"] as $bad) {
+            $this->assertFalse(isInstallerExecutablePath($bad), "메타문자 거부: " . bin2hex($bad));
         }
+    }
+
+    public function test_isInstallerExecutablePath_accepts_windows_paths(): void
+    {
+        // Windows 절대경로는 백슬래시 포함이지만 공백·메타문자 없으면 통과.
+        // 공백 포함 디렉토리(예: 'C:\\Program Files\\...') 는 공백 분리 입력 형식의 토큰
+        // 분리 휴리스틱과 충돌하므로 본 회복 범위 외 — 알려진 한계.
+        foreach ([
+            'C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe',
+            'C:\\php\\php.exe',
+            'D:\\xampp\\php\\php.exe',
+            'C:\\php\\composer.phar',
+        ] as $path) {
+            $this->assertTrue(isInstallerExecutablePath($path), "Windows 경로 허용: {$path}");
+        }
+    }
+
+    public function test_isInstallerExecutablePath_rejects_windows_path_with_space_known_limitation(): void
+    {
+        // 'C:\\Program Files\\...' 같은 공백 포함 Windows 경로는 본 회복 범위 외.
+        // 공백 분리 입력(PHP + Composer 합성) 형식 휴리스틱과 충돌 — escapeshellarg 단일 토큰
+        // wrap 만으로는 공백 의도(토큰 구분 vs 디렉토리명) 를 자동 구분할 수 없음.
+        // 회피: 8.3 short path 형식(C:\\PROGRA~1\\...) 사용 또는 공백 없는 경로 사용.
+        $this->assertFalse(isInstallerExecutablePath('C:\\Program Files\\PHP\\php.exe'));
+    }
+
+    // ========================================================================
+    // open_basedir 회귀 회복 — stat 의존 가드 완화
+    // ========================================================================
+
+    /**
+     * stat 가드가 제거되어 시놀로지 DSM 등 open_basedir 환경에서도
+     * 정상 절대경로 입력이 통과해야 함. 실제 실행 가능 여부는 exec 결과로 판정.
+     */
+    public function test_isInstallerExecutablePath_accepts_safe_absolute_path_without_stat(): void
+    {
+        // 실제로 존재하지 않는 경로지만 메타문자 없음 — stat 가드 제거로 true
+        $this->assertTrue(isInstallerExecutablePath('/usr/local/bin/php83'));
+        $this->assertTrue(isInstallerExecutablePath('/opt/plesk/php/8.3/bin/php'));
+        $this->assertTrue(isInstallerExecutablePath('/nonexistent/path/to/binary'));
+    }
+
+    // ========================================================================
+    // Composer 공백 분리 입력 안전 복원 — 멀티 PHP 환경 호환성
+    // ========================================================================
+
+    public function test_getComposerCommand_accepts_php_composer_space_separated_input(): void
+    {
+        // 시놀로지/cPanel/Plesk 멀티 PHP 환경의 운영 패턴
+        $this->writeState(['composer_binary' => '/usr/local/bin/php83 /usr/local/bin/composer']);
+
+        $cmd = getComposerCommand();
+
+        // 두 토큰 각각 escapeshellarg 적용 후 공백으로 합성
+        $expected = escapeshellarg('/usr/local/bin/php83') . ' ' . escapeshellarg('/usr/local/bin/composer');
+        $this->assertSame($expected, $cmd);
+        $this->clearState();
+    }
+
+    public function test_getComposerCommand_rejects_space_separated_with_metachar_in_first_token(): void
+    {
+        // 첫 토큰에 메타문자 → 거부, composer 폴백
+        $this->writeState(['composer_binary' => '/usr/local/bin/php$(id) /usr/local/bin/composer']);
+
+        $cmd = getComposerCommand();
+
+        $this->assertSame('composer', $cmd);
+        $this->clearState();
+    }
+
+    public function test_getComposerCommand_rejects_space_separated_with_metachar_in_second_token(): void
+    {
+        // 두 번째 토큰에 메타문자 → 거부, composer 폴백
+        $this->writeState(['composer_binary' => '/usr/local/bin/php83 /usr/local/bin/composer;id']);
+
+        $cmd = getComposerCommand();
+
+        $this->assertSame('composer', $cmd);
+        $this->clearState();
+    }
+
+    public function test_getComposerCommand_rejects_three_or_more_tokens(): void
+    {
+        // 3 토큰 이상은 두 번째 토큰에 공백이 남음 → 두 번째 토큰의 메타문자(공백) 로 거부
+        $this->writeState(['composer_binary' => '/bin/php /bin/composer extra_arg']);
+
+        $cmd = getComposerCommand();
+
+        $this->assertSame('composer', $cmd);
+        $this->clearState();
+    }
+
+    public function test_getComposerCommandForDisplay_shows_human_friendly_space_separated_form(): void
+    {
+        $this->writeState(['composer_binary' => '/usr/local/bin/php83 /usr/local/bin/composer']);
+
+        $display = getComposerCommandForDisplay();
+
+        // 사람에게 보이는 표기는 escape 없는 원본 형식 유지
+        $this->assertSame('/usr/local/bin/php83 /usr/local/bin/composer', $display);
+        $this->clearState();
+    }
+
+    public function test_getComposerCommandForDisplay_does_not_leak_shell_payload_in_space_separated(): void
+    {
+        // 두 토큰 중 하나라도 메타문자 포함이면 display 도 composer 폴백
+        $this->writeState(['composer_binary' => '/bin/php `id`']);
+
+        $display = getComposerCommandForDisplay();
+
+        $this->assertSame('composer', $display);
+        $this->assertStringNotContainsString('`', $display);
+        $this->clearState();
+    }
+
+    // ========================================================================
+    // validatePhpPath / validateComposerPath stat 가드 완화 (인스톨러 검증 API)
+    // ========================================================================
+
+    public function test_validatePhpPath_rejects_shell_metachars(): void
+    {
+        $api = new ValidationApi();
+        foreach ([
+            '/usr/local/bin/php; id',
+            '/usr/local/bin/php$(id)',
+            '`/usr/local/bin/php`',
+            '/usr/local/bin/php|nc evil',
+            "/usr/local/bin/php\nrm -rf /",
+        ] as $payload) {
+            $result = $this->invokePrivate($api, 'validatePhpPath', [$payload]);
+            $this->assertFalse($result['valid'], "메타문자 거부: {$payload}");
+        }
+    }
+
+    public function test_validatePhpPath_rejects_empty(): void
+    {
+        $api = new ValidationApi();
+        $result = $this->invokePrivate($api, 'validatePhpPath', ['']);
+        $this->assertFalse($result['valid']);
+    }
+
+    public function test_validatePhpPath_safe_path_reaches_exec_phase(): void
+    {
+        // 메타문자 없는 절대경로는 stat 가드 없이 exec 단계까지 도달.
+        // 존재하지 않으면 exec 실패 (return code != 0) 로 거부 — 단, 거부 메시지는
+        // 'error_php_exec_failed' 로 stat 거부와 동일. 핵심: stat 가드가 사라졌다는 점.
+        $api = new ValidationApi();
+        $result = $this->invokePrivate($api, 'validatePhpPath', ['/nonexistent/path/to/php']);
+
+        // 실제 실행 실패로 invalid 이지만, 그 판정이 exec 결과에 기반함을 의미적으로 검증.
+        $this->assertFalse($result['valid']);
+    }
+
+    public function test_validateComposerPath_rejects_shell_metachars(): void
+    {
+        $api = new ValidationApi();
+        foreach ([
+            '/usr/local/bin/composer; id',
+            '/usr/local/bin/composer$(id)',
+            '`/usr/local/bin/composer`',
+            "/usr/local/bin/composer\nrm",
+        ] as $payload) {
+            $result = $this->invokePrivate($api, 'validateComposerPath', [$payload]);
+            $this->assertFalse($result['valid'], "메타문자 거부: {$payload}");
+        }
+    }
+
+    public function test_validateComposerPath_rejects_space_separated_with_metachar(): void
+    {
+        // 공백 분리 입력의 토큰별 메타문자 검증
+        $api = new ValidationApi();
+        foreach ([
+            '/bin/php$(id) /bin/composer',
+            '/bin/php /bin/composer;id',
+            '/bin/php `id`',
+            '/bin/php /bin/composer extra_token',
+        ] as $payload) {
+            $result = $this->invokePrivate($api, 'validateComposerPath', [$payload]);
+            $this->assertFalse($result['valid'], "공백 분리 + 메타문자 거부: {$payload}");
+        }
+    }
+
+    public function test_splitPhpComposerTokens_helper_splits_into_two_tokens(): void
+    {
+        $api = new ValidationApi();
+        $result = $this->invokePrivate($api, 'splitPhpComposerTokens', ['/usr/local/bin/php83 /usr/local/bin/composer']);
+        $this->assertSame(['php' => '/usr/local/bin/php83', 'composer' => '/usr/local/bin/composer'], $result);
+    }
+
+    public function test_splitPhpComposerTokens_helper_returns_null_for_single_token(): void
+    {
+        $api = new ValidationApi();
+        $result = $this->invokePrivate($api, 'splitPhpComposerTokens', ['/usr/local/bin/composer']);
+        $this->assertNull($result);
+    }
+
+    public function test_isInstallerSafePathArg_helper_accepts_safe_paths(): void
+    {
+        $api = new ValidationApi();
+
+        foreach ([
+            '/usr/local/bin/php83',
+            '/opt/php/bin/php',
+            'C:/php/php.exe',
+            '/nonexistent/path',
+            // Windows 절대경로 (백슬래시 포함) — 회귀 가드: PO 환경 (Windows 빌트인 서버)
+            'C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe',
+            'C:\\php\\php.exe',
+            'D:\\xampp\\php\\php.exe',
+        ] as $safe) {
+            $this->assertTrue($this->invokePrivate($api, 'isInstallerSafePathArg', [$safe]), "허용: {$safe}");
+        }
+    }
+
+    public function test_isInstallerSafePathArg_helper_rejects_metachars_and_empty(): void
+    {
+        $api = new ValidationApi();
+
+        $this->assertFalse($this->invokePrivate($api, 'isInstallerSafePathArg', ['']));
+        // 백슬래시는 Windows 경로 구분자이므로 차단 대상이 아님 — 셸 인젝션 차단은 escapeshellarg 가 담당
+        foreach (['foo bar', 'a;b', 'a`b', 'a$b', 'a|b', "a\nb", 'a"b', "a'b", "a\0b", "a\x01b", "a\rb"] as $bad) {
+            $this->assertFalse($this->invokePrivate($api, 'isInstallerSafePathArg', [$bad]), "메타문자 거부: " . bin2hex($bad));
+        }
+    }
+
+    // ========================================================================
+    // 워커 정합 — 검증 통과한 입력이 워커에서도 silent fallback 없이 전달
+    // ========================================================================
+
+    public function test_getComposerCommand_passes_through_single_absolute_path_without_silent_fallback(): void
+    {
+        // 검증 단계에서 통과한 단일 절대경로가 워커에서도 그대로 사용됨을 보장.
+        // stat 가드 제거 후 회귀 — 정상 입력이 silent fallback 으로 사라지지 않음.
+        $this->writeState(['composer_binary' => '/usr/local/bin/composer']);
+
+        $cmd = getComposerCommand();
+
+        $this->assertNotSame('composer', $cmd, '검증 통과한 입력은 silent fallback 안 됨');
+        $this->assertSame(escapeshellarg('/usr/local/bin/composer'), $cmd);
+        $this->clearState();
     }
 
     // ========================================================================

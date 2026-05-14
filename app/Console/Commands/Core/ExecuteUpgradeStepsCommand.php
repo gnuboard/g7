@@ -2,7 +2,12 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Exceptions\UpgradeHandoffException;
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
+use App\Extension\TemplateManager;
 use App\Services\CoreUpdateService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -18,15 +23,28 @@ use Illuminate\Support\Facades\Log;
  * 업그레이드는 beta.1 의 CoreUpdateCommand 가 본 커맨드를 알지 못하므로 spawn
  * 효과를 받지 못한다(경로 A) — 이 경우 upgrade step 파일 내부 로컬 로직으로
  * 후처리를 수행해야 한다. 상세는 docs/extension/upgrade-step-guide.md 참조.
+ *
+ * 단독 실행 안전성: 운영자가 HANDOFF 안내문 또는 수동 복구 목적으로 직접 호출하면
+ * 기본값으로 부모 CoreUpdateCommand 가 처리하던 사전(Migration + Resync) 및
+ * 사후(.env 버전 + 캐시 정리 + 번들 확장 일괄 업데이트) 단계를 자동 수행한다.
+ * CoreUpdateCommand spawn 호출 시엔 `--skip-*` 옵션 5개로 중복 회피.
  */
 class ExecuteUpgradeStepsCommand extends Command
 {
+    use BundledExtensionUpdatePrompt;
+    use HasUnifiedConfirm;
+
     protected $signature = 'core:execute-upgrade-steps
         {--from= : 시작 버전}
         {--to= : 대상 버전}
-        {--force : 동일 버전 강제 실행}';
+        {--force : 동일 버전 강제 실행 + 번들 확장 일괄 업데이트 prompt 스킵}
+        {--skip-migrations : 마이그레이션 실행 생략 (CoreUpdateCommand spawn 시 부모 Step 9 가 이미 실행)}
+        {--skip-resync : 코어 config 재로드 및 권한/메뉴/시더 동기화 생략 (동일 사유)}
+        {--skip-version-env : .env APP_VERSION 갱신 생략 (부모 Step 11 가 처리)}
+        {--skip-cache-clear : 캐시 정리 생략 (부모 Step 11 가 처리)}
+        {--skip-bundled-updates : 번들 확장 일괄 업데이트 생략 (부모가 prompt 로 처리)}';
 
-    protected $description = '코어 업그레이드 스텝을 별도 프로세스에서 실행합니다 (CoreUpdateCommand 내부용)';
+    protected $description = '코어 업그레이드 스텝을 별도 프로세스에서 실행합니다. 단독 실행 시 사전/사후 단계를 자동 수행합니다.';
 
     /**
      * 커맨드를 실행합니다.
@@ -91,6 +109,26 @@ class ExecuteUpgradeStepsCommand extends Command
             ]);
         }
 
+        // 사전 단계 (단독 실행 안전성 보장).
+        //
+        // CoreUpdateCommand 가 spawn 호출 시엔 부모 Step 9 (CoreUpdateCommand.php:408-409) 에서
+        // 이미 동일 단계를 실행했으므로 --skip-migrations / --skip-resync 로 중복 회피.
+        // 운영자 단독 호출 시 옵션 미전달 → 기본값으로 두 단계 자동 수행 →
+        // migration / permission / menu / seeder 누락 차단.
+        if (! $this->option('skip-migrations')) {
+            $this->info('마이그레이션 실행');
+            $service->runMigrations();
+        } else {
+            $this->info('[spawn] 마이그레이션 스킵 — 부모가 이미 실행');
+        }
+
+        if (! $this->option('skip-resync')) {
+            $this->info('코어 config 재로드 및 권한/메뉴/시더 동기화');
+            $service->reloadCoreConfigAndResync();
+        } else {
+            $this->info('[spawn] resync 스킵 — 부모가 이미 실행');
+        }
+
         $stepsExecuted = 0;
 
         try {
@@ -148,6 +186,39 @@ class ExecuteUpgradeStepsCommand extends Command
             'fromVersion' => $from,
             'toVersion' => $to,
         ], JSON_UNESCAPED_UNICODE));
+
+        // 사후 단계 (단독 실행 안전성 보장).
+        //
+        // CoreUpdateCommand spawn 시엔 부모 Step 11 (CoreUpdateCommand.php:457-458) 및
+        // 번들 확장 일괄 업데이트 prompt (라인 497-515) 가 자식 종료 후 실행하므로
+        // --skip-version-env / --skip-cache-clear / --skip-bundled-updates 로 중복 회피.
+        // 단독 실행 시엔 옵션 미전달 → 기본값으로 3단계 자동 수행 → gnuboard/g7#34 의 운영자 수동 절차
+        // (sed APP_VERSION + cache:clear + module/plugin/template:update --force --source=bundled) 통합.
+        if (! $this->option('skip-version-env')) {
+            $this->info(".env APP_VERSION={$to} 갱신");
+            $service->updateVersionInEnv($to);
+        } else {
+            $this->info('[spawn] .env APP_VERSION 갱신 스킵 — 부모가 처리');
+        }
+
+        if (! $this->option('skip-cache-clear')) {
+            $this->info('캐시 정리 (config/route/view/services/packages)');
+            $service->clearAllCaches();
+        } else {
+            $this->info('[spawn] 캐시 정리 스킵 — 부모가 처리');
+        }
+
+        if (! $this->option('skip-bundled-updates')) {
+            $this->info('번들 확장 일괄 업데이트 (모듈/플러그인/템플릿/언어팩)');
+            $this->runBundledExtensionUpdatePrompt(
+                app(ModuleManager::class),
+                app(PluginManager::class),
+                app(TemplateManager::class),
+                $force,
+            );
+        } else {
+            $this->info('[spawn] 번들 확장 일괄 업데이트 스킵 — 부모가 처리');
+        }
 
         return self::SUCCESS;
     }

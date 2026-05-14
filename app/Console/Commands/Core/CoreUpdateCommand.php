@@ -331,6 +331,44 @@ class CoreUpdateCommand extends Command
                 }
             }
 
+            // ── Step 6.5: 신 버전 신규 파일 manifest 생성 ──
+            //
+            // applyUpdate 직전 시점에 백업 디렉토리(= 활성 디렉토리의 사전 스냅샷) 와
+            // _pending(= 신 버전 소스) 을 비교해 신 버전이 추가하는 파일/디렉토리 목록을
+            // `_new_files_manifest.json` 으로 백업 디렉토리에 기록한다. 자동 롤백 시
+            // `restoreFromBackup()` 이 본 manifest 를 참조해 활성 디렉토리에서 정확히 그
+            // 항목만 prune. 사용자가 활성 디렉토리에 직접 추가한 파일은 백업에 포함되어
+            // 있으므로 manifest 에서 제외되어 보존된다.
+            //
+            // `--no-backup` 모드면 backupPath 가 null 이므로 manifest 생성을 스킵 — 롤백
+            // 자체가 불가능한 모드이므로 기존 동작 유지.
+            if ($backupPath !== null) {
+                $bar->setMessage('신규 파일 manifest 생성 중...');
+                $log('신규 파일 manifest 생성 시작');
+                try {
+                    $manifestStats = CoreBackupHelper::writeNewFilesManifest(
+                        $backupPath,
+                        $pendingPath,
+                        (array) config('app.update.targets', []),
+                        (array) config('app.update.protected_paths', []),
+                        (array) config('app.update.excludes', []),
+                        $fromVersion,
+                        $toVersion,
+                    );
+                    $log(sprintf(
+                        '신규 파일 manifest 작성 완료 (files=%d, dirs=%d)',
+                        $manifestStats['new_files_count'],
+                        $manifestStats['new_dirs_count'],
+                    ));
+                } catch (\Throwable $manifestError) {
+                    // manifest 작성 실패는 fatal 이 아님 — 롤백 시 기존 overlay 만 수행 (기존 동작)
+                    $log("신규 파일 manifest 작성 실패 (계속 진행): {$manifestError->getMessage()}");
+                    Log::warning('코어 업데이트: manifest 작성 실패', [
+                        'error' => $manifestError->getMessage(),
+                    ]);
+                }
+            }
+
             // ── Step 7: 파일 적용 ──
             $bar->setMessage(__('settings.core_update.step_apply'));
             $bar->advance();
@@ -581,6 +619,17 @@ class CoreUpdateCommand extends Command
                     $log("백업 복원 실패: {$restoreError->getMessage()}");
                     $this->error("백업 복원 실패: {$restoreError->getMessage()}");
                 }
+
+                // 롤백 직후 캐시 자동 정리 — 신 코드가 `bootstrap/cache/*.php` 에 cache 된 채로
+                // 남아 부팅 실패하는 회귀 차단. 운영자의 수동 `php artisan optimize:clear` 단계 제거.
+                // 캐시 정리 실패는 fatal 아님 — warning 후 진행.
+                try {
+                    $service->clearAllCaches();
+                    $log('롤백 후 캐시 정리 완료');
+                } catch (\Throwable $cacheError) {
+                    $log("롤백 후 캐시 정리 실패 (계속 진행): {$cacheError->getMessage()}");
+                    $this->warn("캐시 정리 실패 — 부팅 후 'php artisan optimize:clear' 수동 실행 필요: {$cacheError->getMessage()}");
+                }
             }
 
             // _pending 정리 (실패 시에도)
@@ -682,6 +731,17 @@ class CoreUpdateCommand extends Command
         if ($force) {
             $command[] = '--force';
         }
+        // 부모는 이미 Step 9 (runMigrations + reloadCoreConfigAndResync, 라인 408-409),
+        // Step 11 (updateVersionInEnv + clearAllCaches, 라인 457-458), 번들 확장 일괄 업데이트
+        // prompt (라인 497-515) 를 자식 종료 후 실행하므로 자식 내부 중복 회피. 단독 실행 시
+        // (운영자 직접 호출) 옵션이 전달되지 않아 자식 기본값(5단계 모두 포함) 발동 →
+        // gnuboard/g7#34 의 운영자 수동 절차(migrate / resync / .env sed / cache:clear / module:update --source=bundled)
+        // 가 단일 명령으로 통합되어 단독 안전성 보장.
+        $command[] = '--skip-migrations';
+        $command[] = '--skip-resync';
+        $command[] = '--skip-version-env';
+        $command[] = '--skip-cache-clear';
+        $command[] = '--skip-bundled-updates';
 
         $commandLine = implode(' ', array_map('escapeshellarg', $command)).' 2>&1';
 

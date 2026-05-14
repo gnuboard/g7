@@ -1,6 +1,6 @@
 {
   "name": "sirsoft-admin_basic",
-  "version": "1.0.0-beta.5",
+  "version": "1.0.0-beta.6",
   "description": "Gnuboard7 Basic Admin Template Components",
   "type": "module",
   "main": "dist/components.js",

@@ -122,6 +122,7 @@ php artisan migrate:rollback
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--force] [--no-backup] [--no-maintenance] [--vendor-mode=auto|composer|bundled]
+php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용 — 단독 호출 시 migration·resync·.env·캐시·번들 확장 일괄 업데이트 자동 수행. CoreUpdateCommand 내부 spawn 은 --skip-* 5개 옵션 자동 전달)
 
 # 모듈
 php artisan module:list
@@ -173,6 +174,19 @@ php artisan extension:composer-install          # 모든 모듈+플러그인
 # 오토로드
 php artisan extension:update-autoload
 ```
+
+### 단발성 결함 보정 (hotfix)
+
+`hotfix:*` prefix 는 특정 버전의 결함 회복을 위해 신설되는 단발성 도구를 위한 표준 prefix 다. `core:*` (영구 운영 도구) 와 명확히 구분되며 dev-dashboard 자동 노출 면제 대상이다.
+
+```bash
+# 코어 자동 롤백 후 활성 디렉토리에 잔존한 신 파일 진단/정리 (7.0.0-beta.6 신설)
+php artisan hotfix:rollback-stale-files                              # 진단 모드 (실제 삭제 없음)
+php artisan hotfix:rollback-stale-files --prune                      # 정리 (확인 프롬프트 동반)
+php artisan hotfix:rollback-stale-files --backup=<경로>              # 특정 백업 디렉토리 지정
+```
+
+진단 결과 / 정리 로그는 `storage/logs/hotfix_rollback_stale_files_<timestamp>.log` 에 기록.
 
 ### Vendor 번들 Artisan (공유 호스팅용 vendor/ 선탑재)
 
@@ -239,6 +253,7 @@ php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행
+php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용)
 
 # CLI (Artisan 커맨드)
 php artisan module:check-updates [identifier?]                   # 모듈 업데이트 확인

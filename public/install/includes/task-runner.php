@@ -140,22 +140,54 @@ if (!function_exists('getPhpBinary')) {
 
 if (!function_exists('isInstallerExecutablePath')) {
     /**
-     * 인스톨러가 exec 에 전달하기 안전한 단일 실행 파일 경로인지 검증한다.
+     * 인스톨러가 exec 에 전달하기 안전한 단일 토큰 경로인지 검증한다.
      *
      * - 빈 문자열은 호출자가 시스템 기본값을 쓰겠다는 신호이므로 별도 처리.
      * - 공백/세미콜론/백틱/`$` 등 셸 메타문자가 포함된 입력은 거부.
-     * - 실제로 존재하고 실행 가능한 파일이어야 함.
+     * - 파일 존재/실행 가능 검사는 open_basedir 같은 PHP 런타임 제약 환경의
+     *   false negative 를 피하기 위해 생략. 실제 실행 가능 여부는 exec 결과로 판정.
      */
     function isInstallerExecutablePath(string $path): bool
     {
         if ($path === '') {
             return false;
         }
-        // 셸 메타문자 차단 — 공백·따옴표·리다이렉션·세미콜론·백틱·$()·| 등
-        if (preg_match('/[\s;`$|<>"\'\\\\&]/', $path)) {
+        // 셸 메타문자 + 제어문자 차단. 백슬래시는 Windows 경로 구분자이므로 차단 대상 아님 —
+        // 셸 인젝션 차단은 호출자의 escapeshellarg 가 담당.
+        if (preg_match('/[\s;`$|<>"\'&\x00-\x1F]/', $path)) {
             return false;
         }
-        return is_file($path) && is_executable($path);
+        return true;
+    }
+}
+
+if (!function_exists('splitInstallerPhpComposerTokens')) {
+    /**
+     * 공백 분리 입력을 "PHP 인터프리터 절대경로 + Composer 바이너리 절대경로" 두 토큰으로 분해.
+     *
+     * 멀티 PHP 버전 환경(시놀로지 DSM Web Station, cPanel/Plesk multi-PHP) 의
+     * 운영 의도를 지원한다. 두 토큰 모두 isInstallerExecutablePath 통과해야
+     * 정상 입력으로 간주.
+     *
+     * @return array{php: string, composer: string}|null  분해 실패 시 null
+     */
+    function splitInstallerPhpComposerTokens(string $path): ?array
+    {
+        if (!str_contains($path, ' ')) {
+            return null;
+        }
+
+        $tokens = preg_split('/\s+/', trim($path), 2);
+        if (!is_array($tokens) || count($tokens) !== 2) {
+            return null;
+        }
+
+        [$php, $composer] = $tokens;
+        if ($php === '' || $composer === '') {
+            return null;
+        }
+
+        return ['php' => $php, 'composer' => $composer];
     }
 }
 
@@ -167,6 +199,19 @@ if (!function_exists('getComposerCommand')) {
 
         if ($composerBinary === '') {
             return 'composer';
+        }
+
+        // 공백 분리 입력 — 두 토큰으로 분해 후 각각 검증/escape.
+        // 멀티 PHP 환경에서 특정 PHP 인터프리터로 composer 를 실행하려는 운영 의도 지원.
+        if (str_contains($composerBinary, ' ')) {
+            $tokens = splitInstallerPhpComposerTokens($composerBinary);
+            if ($tokens === null
+                || !isInstallerExecutablePath($tokens['php'])
+                || !isInstallerExecutablePath($tokens['composer'])
+            ) {
+                return 'composer';
+            }
+            return escapeshellarg($tokens['php']) . ' ' . escapeshellarg($tokens['composer']);
         }
 
         // 검증 실패 시 시스템 기본 'composer' 로 폴백 — 설치 흐름은 유지하되
@@ -193,7 +238,23 @@ if (!function_exists('getComposerCommandForDisplay')) {
         $state = getInstallationState();
         $composerBinary = (string) ($state['config']['composer_binary'] ?? '');
 
-        if ($composerBinary === '' || !isInstallerExecutablePath($composerBinary)) {
+        if ($composerBinary === '') {
+            return 'composer';
+        }
+
+        // 공백 분리 입력 — 토큰 검증 통과 시 사람 친화적 표기로 그대로 노출.
+        if (str_contains($composerBinary, ' ')) {
+            $tokens = splitInstallerPhpComposerTokens($composerBinary);
+            if ($tokens === null
+                || !isInstallerExecutablePath($tokens['php'])
+                || !isInstallerExecutablePath($tokens['composer'])
+            ) {
+                return 'composer';
+            }
+            return $tokens['php'] . ' ' . $tokens['composer'];
+        }
+
+        if (!isInstallerExecutablePath($composerBinary)) {
             return 'composer';
         }
 
