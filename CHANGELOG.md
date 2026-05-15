@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [7.0.0-beta.7] - 2026-05-15
+
+### Fixed
+
+- 인스톨러 설치 완료 후 `.env` 에 DB 자격증명과 `APP_KEY` 가 기록되지 않고 `storage/installer/runtime.php` 에 평문으로 잔존하던 결함을 수정. 운영 동작은 정상이었으나 자격증명이 정상적인 위치로 옮겨지지 않고 임시 파일에 보존되는 상태였습니다.
+- beta.4~beta.6 출시본에서 위 결함으로 인해 자격증명이 잔존한 환경을 beta.7 업그레이드 시 자동으로 감지하여 `.env` 로 머지하고 임시 파일을 정리하도록 업그레이드 스텝을 추가했습니다. `.env` 의 `INSTALLER_COMPLETED` 마커가 이미 설정된 정합 이상 케이스는 자동 정리 대상에서 제외하고 운영자 수동 검토를 안내합니다.
+
 ## [7.0.0-beta.6] - 2026-05-14
 
 ### Fixed
