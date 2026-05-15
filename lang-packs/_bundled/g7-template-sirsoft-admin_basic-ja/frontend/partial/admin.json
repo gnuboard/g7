@@ -1838,7 +1838,12 @@
       "manual_update_title": "手動アップデート (ZIP 拡張未インストール環境)",
       "manual_update_desc": "サーバーに PHP zip 拡張または unzip コマンドがない場合、GitHub からリリース ZIP を直接ダウンロードしてアップデートできます。",
       "manual_update_step1": "# 1. GitHub リリースページから ZIP をダウンロード後、サーバーで圧縮解除",
-      "manual_update_step2": "# 2. 圧縮解除されたパスを指定してアップデートを実行"
+      "manual_update_step2": "# 2. 圧縮解除されたパスを指定してアップデートを実行",
+      "update_guide_cmd_comment": "# 管理者権限での実行を推奨します (Linux/macOS)",
+      "update_guide_cmd": "$ sudo php artisan core:update",
+      "manual_update_cmd": "$ sudo php artisan core:update --source=/path/to/extracted",
+      "upgrade_guide_link_desc": "運用環境別の権限·ユーザーグループ別の詳細な手順はアップグレードガイドを参照してください。",
+      "upgrade_guide_link_label": "アップグレードガイド全体を表示"
     },
     "modals": {
       "password_confirm_title": "パスワード確認",

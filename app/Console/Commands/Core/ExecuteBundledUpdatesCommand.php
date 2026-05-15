@@ -174,4 +174,5 @@ class ExecuteBundledUpdatesCommand extends Command
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
+
 }
