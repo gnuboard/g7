@@ -83,25 +83,90 @@ try {
     // ServeCommand 의 mtime watcher 가 다중 재시작을 일으키지 않는다.
     // atomic rename 대신 file_put_contents 를 사용하여 부모 디렉토리(프로젝트 루트)
     // 쓰기 권한 요구를 회피 — 기존 인스톨러 권한 안내 (chmod 664 .env + chgrp) 만으로 충분.
+    $envExistedBeforeWrite = is_file($envPath);
+    $envPermsBeforeWrite = $envExistedBeforeWrite ? (fileperms($envPath) & 0777) : null;
+    $envOwnerBeforeWrite = $envExistedBeforeWrite ? @fileowner($envPath) : null;
+    $envGroupBeforeWrite = $envExistedBeforeWrite ? @filegroup($envPath) : null;
+
     if (@file_put_contents($envPath, $envContent, LOCK_EX) === false) {
-        error_log('[finalize-env] failed to write .env');
+        $lastError = error_get_last();
+        error_log(sprintf(
+            '[finalize-env] file_put_contents FAILED: path=%s, last_error=%s',
+            $envPath,
+            $lastError['message'] ?? 'unknown',
+        ));
         return;
     }
 
-    @chmod($envPath, 0600);
+    // chmod 시도/결과를 명시 기록 — silent fail 로 운영자 분석 차단되던 회귀 (이슈 #371) 방지.
+    // 호출 사용자가 파일 소유자가 아니면 POSIX 상 chmod 가 실패하며, @ suppress 로 인해
+    // 운영자가 인지하지 못한 채로 .env 권한이 인스톨러 안내 단계 (예: 0664) 그대로 잔존한다.
+    $chmodResult = @chmod($envPath, 0600);
+    $envPermsAfter = fileperms($envPath) & 0777;
+    $envOwnerAfter = @fileowner($envPath);
+    $envGroupAfter = @filegroup($envPath);
+
+    $currentEuid = function_exists('posix_geteuid') ? posix_geteuid() : null;
+    $currentEuser = ($currentEuid !== null && function_exists('posix_getpwuid'))
+        ? (posix_getpwuid($currentEuid)['name'] ?? (string) $currentEuid)
+        : 'unknown';
+
+    if ($chmodResult === false) {
+        $lastError = error_get_last();
+        error_log(sprintf(
+            '[finalize-env] chmod(0600) FAILED: path=%s, actual_perms=%s, file_owner_uid=%s, '
+            .'process_euser=%s, process_euid=%s, last_error=%s. '
+            .'원인 추정: 현재 프로세스가 .env 의 소유자가 아니어서 POSIX chmod 권한 부족. '
+            .'운영자 권장 조치: chown {process_euser}:{webgroup} .env 후 chmod 600 .env, '
+            .'또는 chgrp {webgroup} .env && chmod 640 .env 절충안 적용.',
+            $envPath,
+            decoct($envPermsAfter),
+            $envOwnerAfter === false ? 'unknown' : (string) $envOwnerAfter,
+            $currentEuser,
+            $currentEuid === null ? 'n/a' : (string) $currentEuid,
+            $lastError['message'] ?? 'unknown',
+        ));
+    } else {
+        error_log(sprintf(
+            '[finalize-env] chmod(0600) success: path=%s, perms=%s→%s, owner_uid=%s, group_gid=%s, process_euser=%s',
+            $envPath,
+            $envPermsBeforeWrite === null ? 'new' : decoct($envPermsBeforeWrite),
+            decoct($envPermsAfter),
+            $envOwnerAfter === false ? 'unknown' : (string) $envOwnerAfter,
+            $envGroupAfter === false ? 'unknown' : (string) $envGroupAfter,
+            $currentEuser,
+        ));
+    }
 
     // runtime.php 삭제 — Provider 가 다음 부팅부터 no-op
-    deleteInstallerRuntime();
+    if (! deleteInstallerRuntime()) {
+        error_log(sprintf(
+            '[finalize-env] deleteInstallerRuntime FAILED: path=%s, last_error=%s. '
+            .'runtime.php 잔존 — InstallerRuntimeServiceProvider 폴백 동작 유지되나 평문 자격증명 보안 우려.',
+            INSTALLER_RUNTIME_PATH,
+            (error_get_last()['message'] ?? 'unknown'),
+        ));
+    } else {
+        error_log('[finalize-env] runtime.php 삭제 완료');
+    }
 
     // state.json 삭제 — setInstallationCompleteSSE 가 본 단계로 위임함
     // (finalize 가 generateEnvContent() 호출 시 state.config 가 필요했기 때문)
     if (defined('DELETE_INSTALLER_AFTER_COMPLETE') && DELETE_INSTALLER_AFTER_COMPLETE) {
         $stateFilePath = BASE_PATH . '/storage/installer-state.json';
         if (is_file($stateFilePath)) {
-            @unlink($stateFilePath);
+            if (@unlink($stateFilePath) === false) {
+                error_log(sprintf(
+                    '[finalize-env] state.json unlink FAILED: path=%s, last_error=%s',
+                    $stateFilePath,
+                    (error_get_last()['message'] ?? 'unknown'),
+                ));
+            } else {
+                error_log('[finalize-env] state.json 삭제 완료');
+            }
         }
     }
 } catch (\Throwable $e) {
     // 예외 시 runtime.php 보존 → Provider 가 계속 config 주입 → 앱 정상 동작.
-    error_log('[finalize-env] unexpected exception: ' . $e->getMessage());
+    error_log('[finalize-env] unexpected exception: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
 }

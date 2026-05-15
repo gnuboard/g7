@@ -326,21 +326,55 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
 
         // 신규 생성 .env — 웹 서버 컨텍스트 추정 + 안전한 기본 권한 적용
         $webContext = $this->detectWebServerContext($basePath);
+        $processUser = $this->describeProcessUser();
+
+        $context->logger->info(sprintf(
+            '[7.0.0-beta.7] .env 신규 생성 시작 — 프로세스 사용자=%s, 웹 서버 컨텍스트 추정: uid=%s, gid=%s',
+            $processUser,
+            $webContext['uid'] !== null ? (string) $webContext['uid'] : 'unknown',
+            $webContext['gid'] !== null ? (string) $webContext['gid'] : 'unknown',
+        ));
 
         if ($webContext['uid'] !== null) {
             $this->tryChown($envPath, $webContext['uid'], $context);
+        } else {
+            $context->logger->info('[7.0.0-beta.7] chown 시도 skip — 웹 서버 사용자 추정 실패 (bootstrap/cache, storage/logs 모두 신호 없음)');
         }
         if ($webContext['gid'] !== null) {
             $this->tryChgrp($envPath, $webContext['gid'], $context);
+        } else {
+            $context->logger->info('[7.0.0-beta.7] chgrp 시도 skip — 웹 서버 그룹 추정 실패');
         }
 
-        @chmod($envPath, self::DEFAULT_ENV_PERMISSIONS);
+        $chmodResult = @chmod($envPath, self::DEFAULT_ENV_PERMISSIONS);
+        $actualMode = fileperms($envPath) & 0777;
+
+        if ($chmodResult === false) {
+            $lastError = error_get_last();
+            $context->logger->warning(sprintf(
+                '[7.0.0-beta.7] chmod(.env, %s) FAILED — 실제 권한: %s, 프로세스=%s, last_error=%s. '
+                .'운영자 수동 보정: chmod %s %s',
+                decoct(self::DEFAULT_ENV_PERMISSIONS),
+                decoct($actualMode),
+                $processUser,
+                $lastError['message'] ?? 'unknown',
+                decoct(self::DEFAULT_ENV_PERMISSIONS),
+                $envPath,
+            ));
+        } else {
+            $context->logger->info(sprintf(
+                '[7.0.0-beta.7] chmod(.env, %s) 성공 — 실제 권한: %s, 프로세스=%s',
+                decoct(self::DEFAULT_ENV_PERMISSIONS),
+                decoct($actualMode),
+                $processUser,
+            ));
+        }
 
         $context->logger->info(sprintf(
-            '[7.0.0-beta.7] .env 신규 생성 — 권한 %s, uid=%s, gid=%s 적용 (웹 서버 컨텍스트 추정)',
-            decoct(self::DEFAULT_ENV_PERMISSIONS),
-            $webContext['uid'] !== null ? (string) $webContext['uid'] : 'skip',
-            $webContext['gid'] !== null ? (string) $webContext['gid'] : 'skip',
+            '[7.0.0-beta.7] .env 신규 생성 완료 — 최종 mode=%s, owner_uid=%s, group_gid=%s',
+            decoct($actualMode),
+            (string) (@fileowner($envPath) ?: 'unknown'),
+            (string) (@filegroup($envPath) ?: 'unknown'),
         ));
     }
 
@@ -351,8 +385,22 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
      */
     private function restoreFileStat(string $path, array $stat, UpgradeContext $context): void
     {
+        $processUser = $this->describeProcessUser();
+
         if ($stat['mode'] !== null) {
-            @chmod($path, $stat['mode']);
+            $chmodResult = @chmod($path, $stat['mode']);
+            $actualMode = fileperms($path) & 0777;
+            if ($chmodResult === false) {
+                $lastError = error_get_last();
+                $context->logger->warning(sprintf(
+                    '[7.0.0-beta.7] chmod(%s, %s) FAILED — 실제 권한: %s, 프로세스=%s, last_error=%s',
+                    basename($path),
+                    decoct($stat['mode']),
+                    decoct($actualMode),
+                    $processUser,
+                    $lastError['message'] ?? 'unknown',
+                ));
+            }
         }
         if ($stat['uid'] !== null) {
             $this->tryChown($path, $stat['uid'], $context);
@@ -362,11 +410,29 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
         }
 
         $context->logger->info(sprintf(
-            '[7.0.0-beta.7] .env 기존 권한 보존 — mode=%s, uid=%s, gid=%s',
+            '[7.0.0-beta.7] .env 기존 권한 보존 시도 — 요청 mode=%s, uid=%s, gid=%s / 실제 mode=%s, uid=%s, gid=%s, 프로세스=%s',
             $stat['mode'] !== null ? decoct($stat['mode']) : 'unchanged',
             $stat['uid'] !== null ? (string) $stat['uid'] : 'unchanged',
             $stat['gid'] !== null ? (string) $stat['gid'] : 'unchanged',
+            decoct(fileperms($path) & 0777),
+            (string) (@fileowner($path) ?: 'unknown'),
+            (string) (@filegroup($path) ?: 'unknown'),
+            $processUser,
         ));
+    }
+
+    /**
+     * 현재 프로세스 사용자 ("name(uid)") 를 문자열로 반환 — 로그 가독성용.
+     */
+    private function describeProcessUser(): string
+    {
+        if (! function_exists('posix_geteuid')) {
+            return 'unknown(no-posix)';
+        }
+        $euid = posix_geteuid();
+        $name = function_exists('posix_getpwuid') ? (posix_getpwuid($euid)['name'] ?? null) : null;
+
+        return ($name ?? 'uid') . '(' . $euid . ')';
     }
 
     /**
@@ -420,39 +486,79 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
     }
 
     /**
-     * chown 시도 (실패 시 silent — root 권한 부재 환경 흔함).
+     * chown 시도. 시도/성공/실패 모두 로그에 명시.
      */
     private function tryChown(string $path, int $uid, UpgradeContext $context): void
     {
         if (! function_exists('chown')) {
+            $context->logger->info('[7.0.0-beta.7] chown skip — chown() 함수 사용 불가 (PHP 빌드 옵션)');
+
             return;
         }
-        if (@chown($path, $uid) === false) {
+        $beforeUid = @fileowner($path);
+        $result = @chown($path, $uid);
+        $afterUid = @fileowner($path);
+
+        if ($result === false) {
+            $lastError = error_get_last();
             $context->logger->info(sprintf(
-                '[7.0.0-beta.7] chown(%s, uid=%d) 실패 — root 권한 부재 가능. 운영자 수동 보정: sudo chown %d %s',
+                '[7.0.0-beta.7] chown(%s, uid=%d) FAILED — before=%s, after=%s, 프로세스=%s, last_error=%s. '
+                .'원인 추정: 비-root 사용자는 다른 사용자로 chown 불가. 운영자 수동 보정: sudo chown %d %s',
                 basename($path),
                 $uid,
+                $beforeUid === false ? 'unknown' : (string) $beforeUid,
+                $afterUid === false ? 'unknown' : (string) $afterUid,
+                $this->describeProcessUser(),
+                $lastError['message'] ?? 'unknown',
                 $uid,
                 $path,
+            ));
+        } else {
+            $context->logger->info(sprintf(
+                '[7.0.0-beta.7] chown(%s, uid=%d) 성공 — before=%s → after=%s',
+                basename($path),
+                $uid,
+                $beforeUid === false ? 'unknown' : (string) $beforeUid,
+                $afterUid === false ? 'unknown' : (string) $afterUid,
             ));
         }
     }
 
     /**
-     * chgrp 시도 (실패 시 silent).
+     * chgrp 시도. 시도/성공/실패 모두 로그에 명시.
      */
     private function tryChgrp(string $path, int $gid, UpgradeContext $context): void
     {
         if (! function_exists('chgrp')) {
+            $context->logger->info('[7.0.0-beta.7] chgrp skip — chgrp() 함수 사용 불가');
+
             return;
         }
-        if (@chgrp($path, $gid) === false) {
+        $beforeGid = @filegroup($path);
+        $result = @chgrp($path, $gid);
+        $afterGid = @filegroup($path);
+
+        if ($result === false) {
+            $lastError = error_get_last();
             $context->logger->info(sprintf(
-                '[7.0.0-beta.7] chgrp(%s, gid=%d) 실패 — 운영자 수동 보정: sudo chgrp %d %s',
+                '[7.0.0-beta.7] chgrp(%s, gid=%d) FAILED — before=%s, after=%s, 프로세스=%s, last_error=%s. '
+                .'운영자 수동 보정: sudo chgrp %d %s',
                 basename($path),
                 $gid,
+                $beforeGid === false ? 'unknown' : (string) $beforeGid,
+                $afterGid === false ? 'unknown' : (string) $afterGid,
+                $this->describeProcessUser(),
+                $lastError['message'] ?? 'unknown',
                 $gid,
                 $path,
+            ));
+        } else {
+            $context->logger->info(sprintf(
+                '[7.0.0-beta.7] chgrp(%s, gid=%d) 성공 — before=%s → after=%s',
+                basename($path),
+                $gid,
+                $beforeGid === false ? 'unknown' : (string) $beforeGid,
+                $afterGid === false ? 'unknown' : (string) $afterGid,
             ));
         }
     }
