@@ -2471,6 +2471,103 @@
         }
       },
       {
+        "name": "StatCardGrid",
+        "type": "composite",
+        "description": "Responsive grid of StatCards driven by a `stats` array. Used for dashboard headers (e.g. gb7-restapi request-log stats).",
+        "path": "src/components/composite/StatCardGrid.tsx",
+        "props": {
+          "stats": {
+            "type": "array",
+            "required": true,
+            "description": "Array of StatCard props (value, label, iconName, trend, change, changeLabel)"
+          },
+          "columns": {
+            "type": "number",
+            "required": false,
+            "default": 4,
+            "description": "Default lg-breakpoint column count"
+          },
+          "gap": {
+            "type": "number",
+            "required": false,
+            "default": 4,
+            "description": "Tailwind gap value"
+          },
+          "responsiveColumns": {
+            "type": "object",
+            "required": false,
+            "description": "Per-breakpoint overrides: { sm, md, lg, xl }"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": ""
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false
+          }
+        }
+      },
+      {
+        "name": "OneTimeSecretPanel",
+        "type": "composite",
+        "description": "Display a one-shot plaintext secret (API key, webhook signing secret) with reveal/copy/acknowledge UX. The secret is hidden behind a click, copyable to clipboard, and the panel collapses on acknowledgement so the value disappears from the DOM.",
+        "path": "src/components/composite/OneTimeSecretPanel.tsx",
+        "props": {
+          "value": {
+            "type": "string",
+            "required": true,
+            "description": "The plaintext secret. Should come from the API response that minted it; never bind to anything that re-renders after acknowledgement."
+          },
+          "title": {
+            "type": "string",
+            "required": false,
+            "description": "Heading text"
+          },
+          "warning": {
+            "type": "string",
+            "required": false,
+            "description": "Warning paragraph above the secret"
+          },
+          "copyButtonLabel": {
+            "type": "string",
+            "required": false,
+            "default": "Copy to clipboard"
+          },
+          "revealButtonLabel": {
+            "type": "string",
+            "required": false,
+            "default": "Reveal"
+          },
+          "acknowledgeLabel": {
+            "type": "string",
+            "required": false,
+            "default": "I have saved this secret"
+          },
+          "afterAcknowledge": {
+            "type": "object",
+            "required": false,
+            "description": "{ redirect?: string, dispatch?: { handler: string, ... } }"
+          },
+          "initiallyHidden": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "Whether the secret starts hidden behind a Reveal click (recommended)"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "default": ""
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false
+          }
+        }
+      },
+      {
         "name": "StatCard",
         "type": "composite",
         "description": "Statistics card with value, label, and trend indicator",
