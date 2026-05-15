@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.0-beta.7] - 2026-05-15
+
+### Changed
+
+- 환경설정 > 정보 > 업데이트 확인 모달의 자동 업데이트 명령어 안내를 `sudo php artisan core:update` 권장 형태로 변경. 권한이 일치하지 않는 환경에서의 실행 실패를 사용자가 사전에 회피할 수 있도록 보강합니다. (#30 @yks118 님께서 건의해주셨습니다.)
+- 위 모달 하단에 "전체 업그레이드 가이드 보기" 외부 링크를 추가하여 코어 `INSTALL.md` 의 "업그레이드" 섹션으로 연결합니다.
+
 ## [1.0.0-beta.6] - 2026-05-14
 
 ### Fixed

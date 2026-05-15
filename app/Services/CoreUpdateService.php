@@ -95,7 +95,7 @@ class CoreUpdateService
 
         $log = function (string $level, string $message) use ($logger): void {
             if ($logger === null) {
-                Log::$level($message);
+                Log::channel('upgrade')->$level($message);
 
                 return;
             }
@@ -109,7 +109,7 @@ class CoreUpdateService
 
                 return;
             }
-            Log::$level($message);
+            Log::channel('upgrade')->$level($message);
         };
 
         $log('info', sprintf(
@@ -336,7 +336,7 @@ class CoreUpdateService
                 File::put($cachePath, $content);
             }
         } catch (\Exception $e) {
-            Log::warning('원격 CHANGELOG 캐시 실패', ['error' => $e->getMessage()]);
+            Log::channel('upgrade')->warning('원격 CHANGELOG 캐시 실패', ['error' => $e->getMessage()]);
         }
     }
 
@@ -404,7 +404,7 @@ class CoreUpdateService
                     ->connectTimeout(5)
                     ->get($apiUrl);
             } catch (ConnectionException $e) {
-                Log::warning(__('settings.core_update.log_api_call_failed'), [
+                Log::channel('upgrade')->warning(__('settings.core_update.log_api_call_failed'), [
                     'url' => $apiUrl,
                     'error' => $e->getMessage(),
                 ]);
@@ -417,7 +417,7 @@ class CoreUpdateService
             $apiMessage = is_array($data) && isset($data['message']) ? $data['message'] : '';
 
             if ($statusCode === 401 || $statusCode === 403) {
-                Log::warning(__('settings.core_update.log_auth_failed'), [
+                Log::channel('upgrade')->warning(__('settings.core_update.log_auth_failed'), [
                     'url' => $apiUrl,
                     'status' => $statusCode,
                     'has_token' => $token !== '',
@@ -436,7 +436,7 @@ class CoreUpdateService
 
                 if ($repoExists) {
                     // 저장소는 존재하지만 릴리스가 없음
-                    Log::info(__('settings.core_update.log_not_found'), [
+                    Log::channel('upgrade')->info(__('settings.core_update.log_not_found'), [
                         'url' => $apiUrl,
                         'reason' => 'no_releases',
                     ]);
@@ -445,7 +445,7 @@ class CoreUpdateService
                 }
 
                 // 저장소 자체를 찾을 수 없음
-                Log::warning(__('settings.core_update.log_not_found'), [
+                Log::channel('upgrade')->warning(__('settings.core_update.log_not_found'), [
                     'url' => $apiUrl,
                     'has_token' => $token !== '',
                     'api_message' => $apiMessage,
@@ -458,7 +458,7 @@ class CoreUpdateService
             }
 
             if ($statusCode !== 200) {
-                Log::warning(__('settings.core_update.log_unexpected_status'), [
+                Log::channel('upgrade')->warning(__('settings.core_update.log_unexpected_status'), [
                     'url' => $apiUrl,
                     'status' => $statusCode,
                     'api_message' => $apiMessage,
@@ -473,7 +473,7 @@ class CoreUpdateService
 
             return ['version' => null, 'error' => __('settings.core_update.no_releases_found')];
         } catch (\Exception $e) {
-            Log::error(__('settings.core_update.log_version_check_error'), ['error' => $e->getMessage()]);
+            Log::channel('upgrade')->error(__('settings.core_update.log_version_check_error'), ['error' => $e->getMessage()]);
 
             return ['version' => null, 'error' => __('settings.core_update.github_api_failed')];
         }
@@ -971,7 +971,7 @@ class CoreUpdateService
             }
 
             $dest = base_path($name);
-            Log::warning('[core-update] targets allowlist 누락 신규 항목 자동 적용', [
+            Log::channel('upgrade')->warning('[core-update] targets allowlist 누락 신규 항목 자동 적용', [
                 'name' => $name,
                 'reason' => 'parent process targets list did not include this path; falling back to source auto-discovery',
             ]);
@@ -1113,7 +1113,7 @@ class CoreUpdateService
         }
 
         if (md5_file($pendingJson) !== md5_file($baseJson)) {
-            Log::info('코어 업데이트: composer.json 변경 감지');
+            Log::channel('upgrade')->info('코어 업데이트: composer.json 변경 감지');
 
             return false;
         }
@@ -1123,20 +1123,20 @@ class CoreUpdateService
         $baseLockExists = file_exists($baseLock);
 
         if ($pendingLockExists !== $baseLockExists) {
-            Log::info('코어 업데이트: composer.lock 존재 여부 불일치');
+            Log::channel('upgrade')->info('코어 업데이트: composer.lock 존재 여부 불일치');
 
             return false;
         }
 
         if ($pendingLockExists && $baseLockExists) {
             if (md5_file($pendingLock) !== md5_file($baseLock)) {
-                Log::info('코어 업데이트: composer.lock 변경 감지');
+                Log::channel('upgrade')->info('코어 업데이트: composer.lock 변경 감지');
 
                 return false;
             }
         }
 
-        Log::info('코어 업데이트: composer 의존성 변경 없음 — 스킵 가능');
+        Log::channel('upgrade')->info('코어 업데이트: composer 의존성 변경 없음 — 스킵 가능');
 
         return true;
     }
@@ -1238,7 +1238,7 @@ class CoreUpdateService
         fclose($pipes[2]);
         $exitCode = proc_close($process);
 
-        Log::info('코어 업데이트: composer install 완료', [
+        Log::channel('upgrade')->info('코어 업데이트: composer install 완료', [
             'working_dir' => $workingDir,
             'exit_code' => $exitCode,
             'output' => $output,
@@ -1410,7 +1410,7 @@ class CoreUpdateService
             $definedRoleIdentifiers,
         );
 
-        Log::info('코어 역할/권한 동기화 완료', [
+        Log::channel('upgrade')->info('코어 역할/권한 동기화 완료', [
             'stale_permissions_deleted' => $deletedPerms,
             'stale_roles_deleted' => $deletedRoles,
         ]);
@@ -1447,7 +1447,7 @@ class CoreUpdateService
             $currentSlugs,
         );
 
-        Log::info('코어 메뉴 동기화 완료', ['stale_deleted' => $deleted]);
+        Log::channel('upgrade')->info('코어 메뉴 동기화 완료', ['stale_deleted' => $deleted]);
     }
 
     /**
@@ -1486,14 +1486,14 @@ class CoreUpdateService
     {
         $path = config_path('core.php');
         if (! File::exists($path)) {
-            Log::warning('reloadCoreConfigAndResync: config/core.php 미존재 — 스킵');
+            Log::channel('upgrade')->warning('reloadCoreConfigAndResync: config/core.php 미존재 — 스킵');
 
             return;
         }
 
         $fresh = require $path;
         if (! is_array($fresh)) {
-            Log::warning('reloadCoreConfigAndResync: config/core.php 반환값이 배열이 아님 — 스킵');
+            Log::channel('upgrade')->warning('reloadCoreConfigAndResync: config/core.php 반환값이 배열이 아님 — 스킵');
 
             return;
         }
@@ -1503,13 +1503,13 @@ class CoreUpdateService
         try {
             $this->syncCoreRolesAndPermissions();
         } catch (\Throwable $e) {
-            Log::warning('reloadCoreConfigAndResync: 권한 재동기화 실패', ['error' => $e->getMessage()]);
+            Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 권한 재동기화 실패', ['error' => $e->getMessage()]);
         }
 
         try {
             $this->syncCoreMenus();
         } catch (\Throwable $e) {
-            Log::warning('reloadCoreConfigAndResync: 메뉴 재동기화 실패', ['error' => $e->getMessage()]);
+            Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 메뉴 재동기화 실패', ['error' => $e->getMessage()]);
         }
 
         try {
@@ -1517,7 +1517,7 @@ class CoreUpdateService
                 (new NotificationDefinitionSeeder())->run();
             }
         } catch (\Throwable $e) {
-            Log::warning('reloadCoreConfigAndResync: 알림 정의 재시딩 실패', ['error' => $e->getMessage()]);
+            Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 알림 정의 재시딩 실패', ['error' => $e->getMessage()]);
         }
 
         try {
@@ -1525,7 +1525,7 @@ class CoreUpdateService
                 (new IdentityPolicySeeder())->run();
             }
         } catch (\Throwable $e) {
-            Log::warning('reloadCoreConfigAndResync: IDV 정책 재시딩 실패', ['error' => $e->getMessage()]);
+            Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 정책 재시딩 실패', ['error' => $e->getMessage()]);
         }
 
         try {
@@ -1533,7 +1533,7 @@ class CoreUpdateService
                 (new IdentityMessageDefinitionSeeder())->run();
             }
         } catch (\Throwable $e) {
-            Log::warning('reloadCoreConfigAndResync: IDV 메시지 정의 재시딩 실패', ['error' => $e->getMessage()]);
+            Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 메시지 정의 재시딩 실패', ['error' => $e->getMessage()]);
         }
     }
 
@@ -1584,7 +1584,7 @@ class CoreUpdateService
                 );
             }
 
-            Log::warning($message.' — fallback 모드. upgrade step 안에서 신규 메서드 호출 시 fatal 가능.');
+            Log::channel('upgrade')->warning($message.' — fallback 모드. upgrade step 안에서 신규 메서드 호출 시 fatal 가능.');
         }
 
         $upgradesPath = base_path('upgrades');
@@ -1653,7 +1653,7 @@ class CoreUpdateService
 
         foreach ($steps as $version => $step) {
             $onStep?->__invoke($version);
-            Log::info("코어 업그레이드 스텝 실행: {$version}");
+            Log::channel('upgrade')->info("코어 업그레이드 스텝 실행: {$version}");
             $step->run($context->withCurrentStep($version));
         }
     }
@@ -1715,7 +1715,7 @@ class CoreUpdateService
             '--refresh' => 15,
         ]);
 
-        Log::info('코어 업데이트: 유지보수 모드 활성화', ['secret' => $secret]);
+        Log::channel('upgrade')->info('코어 업데이트: 유지보수 모드 활성화', ['secret' => $secret]);
 
         return $secret;
     }
@@ -1726,7 +1726,7 @@ class CoreUpdateService
     public function disableMaintenanceMode(): void
     {
         Artisan::call('up');
-        Log::info('코어 업데이트: 유지보수 모드 비활성화');
+        Log::channel('upgrade')->info('코어 업데이트: 유지보수 모드 비활성화');
     }
 
     /**
@@ -2017,7 +2017,7 @@ class CoreUpdateService
         }
 
         if ($truncated) {
-            Log::warning('snapshotOwnershipDetailed: 50000 항목 초과 — 첫 50000 항목만 스냅샷', [
+            Log::channel('upgrade')->warning('snapshotOwnershipDetailed: 50000 항목 초과 — 첫 50000 항목만 스냅샷', [
                 'collected' => count($snapshot),
                 'paths' => $paths,
             ]);
@@ -2167,7 +2167,7 @@ class CoreUpdateService
             $report = FilePermissionHelper::chownRecursiveDetailed($path, $owner, $group, respectPreservationMarker: true);
 
             if ($report['changed'] > 0) {
-                Log::info('코어 업데이트: 소유권 복원', [
+                Log::channel('upgrade')->info('코어 업데이트: 소유권 복원', [
                     'target' => $target,
                     'owner' => $owner,
                     'group' => $group,
@@ -2226,14 +2226,14 @@ class CoreUpdateService
         }
 
         if ($groupWritableChanged > 0) {
-            Log::info('코어 업데이트: 그룹 쓰기 권한 정상화', [
+            Log::channel('upgrade')->info('코어 업데이트: 그룹 쓰기 권한 정상화', [
                 'targets' => $groupWritableTargets,
                 'changed_entries' => $groupWritableChanged,
             ]);
         }
 
         if ($restoredCount > 0) {
-            Log::info('코어 업데이트: 소유권 복원 완료', [
+            Log::channel('upgrade')->info('코어 업데이트: 소유권 복원 완료', [
                 'restored_entries_total' => $restoredCount,
                 'targets' => $targets,
             ]);
@@ -2335,7 +2335,7 @@ class CoreUpdateService
         }
 
         if ($changed > 0) {
-            Log::info('코어 업데이트: 항목별 정확 복원 완료', [
+            Log::channel('upgrade')->info('코어 업데이트: 항목별 정확 복원 완료', [
                 'snapshot_items' => count($detailedSnapshot),
                 'changed_attributes' => $changed,
             ]);
@@ -2348,7 +2348,7 @@ class CoreUpdateService
                 'failed' => $failed,
                 'failed_paths' => $failedPaths,
             ];
-            Log::warning('코어 업데이트: 항목별 복원 부분 실패', [
+            Log::channel('upgrade')->warning('코어 업데이트: 항목별 복원 부분 실패', [
                 'failed_count' => $failed,
                 'first_failed' => $failedPaths[0] ?? null,
             ]);
@@ -2389,7 +2389,7 @@ class CoreUpdateService
 
         File::put($reportPath, $content);
 
-        Log::error('코어 업데이트 실패', [
+        Log::channel('upgrade')->error('코어 업데이트 실패', [
             'from' => $fromVersion,
             'to' => $toVersion,
             'error' => $exception->getMessage(),

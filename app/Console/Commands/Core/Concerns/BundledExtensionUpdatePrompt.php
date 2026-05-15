@@ -459,4 +459,5 @@ trait BundledExtensionUpdatePrompt
             'has_updates' => true,
         ];
     }
+
 }

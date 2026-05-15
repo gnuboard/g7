@@ -138,6 +138,13 @@ return [
     'recommendation_env_permission' => 'Set .env file permissions to 644 (chmod 644 .env)',
     'recommendation_https' => 'Use HTTPS in production environment',
 
+    // .env permission hardening hint (Step 5 completion screen, shown when not 0600)
+    'env_hardening_hint_title' => '.env Permission Hardening (Optional)',
+    'env_hardening_hint_current_status' => 'Current .env permission is %s (owner: %s). The most secure permission is 0600 (owner read/write only). To apply additional hardening, run the appropriate command below with sudo based on your environment.',
+    'env_hardening_hint_option_strict' => 'CLI user = web server user (single-user environment)',
+    'env_hardening_hint_option_group' => 'CLI user ≠ web server user (self-hosted server, etc. — group-readable compromise)',
+    'env_hardening_hint_note' => 'Verify your environment before running. Applying the wrong permission may prevent the web server from reading .env and cause the site to stop responding.',
+
     // Step 5: Complete
     'installation_info' => 'Installation Information',
     'installation_complete_message' => 'Gnuboard7 has been successfully installed!',

@@ -57,8 +57,14 @@ class InstallerGuardTest extends TestCase
 
     private function cleanup(): void
     {
-        @unlink(BASE_PATH . '/storage/app/g7_installed');
-        @unlink(BASE_PATH . '/.env');
+        $lock = BASE_PATH . '/storage/app/g7_installed';
+        if (is_file($lock)) {
+            @unlink($lock);
+        }
+        $env = BASE_PATH . '/.env';
+        if (is_file($env)) {
+            @unlink($env);
+        }
     }
 
     public function test_no_signals_means_not_completed(): void
@@ -114,5 +120,66 @@ class InstallerGuardTest extends TestCase
         file_put_contents(BASE_PATH . '/.env', 'INSTALLER_COMPLETED=true' . "\n");
 
         $this->assertTrue(installer_is_completed());
+    }
+
+    // ------------------------------------------------------------------------
+    // finalize 전용 가드 — installer_finalize_is_completed()
+    //
+    // 일반 가드와 달리 g7_installed 락 파일은 차단 사유에서 제외되어야 한다
+    // (complete_flag task 가 락 파일을 먼저 생성한 직후 finalize 가 호출되는
+    //  설계상의 호출 순서 때문 — 이슈 #371 자가 차단 회귀 가드).
+    // ------------------------------------------------------------------------
+
+    public function test_finalize_guard_passes_with_lock_only(): void
+    {
+        // 정상 1회차 finalize 시나리오: 락 파일은 존재하나 .env 머지 아직 안 됨
+        file_put_contents(BASE_PATH . '/storage/app/g7_installed', '');
+
+        $this->assertFalse(
+            installer_finalize_is_completed(),
+            'g7_installed 락 파일 단독 존재 시 finalize 차단되면 자가 차단 회귀 (이슈 #371)'
+        );
+    }
+
+    public function test_finalize_guard_passes_with_no_env_file(): void
+    {
+        // .env 자체가 없는 신규 설치 시나리오
+        $this->assertFalse(installer_finalize_is_completed());
+    }
+
+    public function test_finalize_guard_blocks_when_env_completed_true(): void
+    {
+        // 이미 finalize 된 상태 — 멱등 차단
+        file_put_contents(BASE_PATH . '/.env', "APP_ENV=local\nINSTALLER_COMPLETED=true\n");
+
+        $this->assertTrue(installer_finalize_is_completed());
+    }
+
+    public function test_finalize_guard_blocks_with_lock_and_env_completed(): void
+    {
+        // 락 + .env true 동시 존재 → 차단 (멱등)
+        file_put_contents(BASE_PATH . '/storage/app/g7_installed', '');
+        file_put_contents(BASE_PATH . '/.env', 'INSTALLER_COMPLETED=true' . "\n");
+
+        $this->assertTrue(installer_finalize_is_completed());
+    }
+
+    public function test_finalize_guard_passes_when_env_completed_false(): void
+    {
+        file_put_contents(BASE_PATH . '/.env', "INSTALLER_COMPLETED=false\n");
+
+        $this->assertFalse(installer_finalize_is_completed());
+    }
+
+    public function test_finalize_guard_accepts_quoted_and_alt_truthy_values(): void
+    {
+        file_put_contents(BASE_PATH . '/.env', 'INSTALLER_COMPLETED="true"' . "\n");
+        $this->assertTrue(installer_finalize_is_completed());
+
+        file_put_contents(BASE_PATH . '/.env', 'INSTALLER_COMPLETED=1' . "\n");
+        $this->assertTrue(installer_finalize_is_completed());
+
+        file_put_contents(BASE_PATH . '/.env', 'INSTALLER_COMPLETED=yes' . "\n");
+        $this->assertTrue(installer_finalize_is_completed());
     }
 }

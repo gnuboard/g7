@@ -79,3 +79,65 @@ if (!function_exists('installer_guard_or_410')) {
         exit;
     }
 }
+
+if (!function_exists('installer_finalize_is_completed')) {
+    /**
+     * finalize-env.php 전용 멱등 차단 신호.
+     *
+     * 본 함수는 `.env` 의 `INSTALLER_COMPLETED=true` 단독으로만 차단을 판정한다.
+     * `storage/app/g7_installed` 락 파일은 finalize 호출 직전 단계인
+     * `complete_flag` task 가 먼저 생성하므로 차단 사유에서 제외한다.
+     */
+    function installer_finalize_is_completed(): bool
+    {
+        $basePath = installer_resolve_base_path();
+        $envFile = $basePath . '/.env';
+
+        if (!is_file($envFile)) {
+            return false;
+        }
+
+        $env = @parse_ini_file($envFile, false, INI_SCANNER_RAW);
+        if (!is_array($env)) {
+            return false;
+        }
+
+        $flag = strtolower(trim((string) ($env['INSTALLER_COMPLETED'] ?? '')));
+        $flag = trim($flag, "\"'");
+
+        return in_array($flag, ['true', '1', 'yes'], true);
+    }
+}
+
+if (!function_exists('installer_guard_finalize_or_410')) {
+    /**
+     * finalize-env.php 전용 진입 가드.
+     *
+     * 차단 조건: `.env` 의 `INSTALLER_COMPLETED=true` 단독. `g7_installed` 락 파일
+     * 존재는 차단 사유가 아니다 — complete_flag task 가 락 파일을 먼저 만든 직후
+     * 본 엔드포인트가 호출되어 `.env` 머지를 수행해야 하기 때문이다.
+     *
+     * RCE 공격 표면이 없는 finalize 전용으로 한정 — 일반 인스톨러 엔드포인트는
+     * 계속 `installer_guard_or_410()` 을 사용한다.
+     */
+    function installer_guard_finalize_or_410(): void
+    {
+        if (!installer_finalize_is_completed()) {
+            return;
+        }
+
+        if (!headers_sent()) {
+            http_response_code(410);
+            header('Content-Type: application/json; charset=utf-8');
+            header('X-Installer: disabled');
+            header('Cache-Control: no-store');
+        }
+
+        echo json_encode([
+            'success' => false,
+            'message' => 'Finalize already completed.',
+        ], JSON_UNESCAPED_UNICODE);
+
+        exit;
+    }
+}

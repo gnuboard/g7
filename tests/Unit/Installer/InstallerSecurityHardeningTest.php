@@ -73,9 +73,13 @@ class InstallerSecurityHardeningTest extends TestCase
      */
     protected function tearDown(): void
     {
-        @unlink(STATE_PATH);
+        if (is_file(STATE_PATH)) {
+            @unlink(STATE_PATH);
+        }
         $projectStateFile = dirname(__DIR__, 3) . '/storage/installer-state.json';
-        @unlink($projectStateFile);
+        if (is_file($projectStateFile)) {
+            @unlink($projectStateFile);
+        }
         parent::tearDown();
     }
 
@@ -366,7 +370,7 @@ class InstallerSecurityHardeningTest extends TestCase
             '/opt/php/bin/php',
             'C:/php/php.exe',
             '/nonexistent/path',
-            // Windows 절대경로 (백슬래시 포함) — 회귀 가드: PO 환경 (Windows 빌트인 서버)
+            // Windows 절대경로 (백슬래시 포함) — 회귀 가드: Windows 빌트인 서버 환경
             'C:\\laragon\\bin\\php\\php-8.3.26-Win32-vs16-x64\\php.exe',
             'C:\\php\\php.exe',
             'D:\\xampp\\php\\php.exe',

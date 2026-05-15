@@ -4,7 +4,14 @@
  * 세션 관리 및 CSRF 토큰 처리
  *
  * 그누보드7 웹 인스톨러의 세션 관리와 CSRF 보호 기능을 제공합니다.
+ *
+ * installer-state.php 를 require 하여 addLog() 함수를 사용 가능하게 한다.
+ * index.php 및 일부 API 엔드포인트가 본 파일을 installer-state.php 보다 먼저
+ * require 하기 때문에, 본 파일 안에서 addLog 호출이 필요한 경우를 위해
+ * 명시적으로 의존성을 선언한다 (이슈 #371).
  */
+
+require_once __DIR__ . '/installer-state.php';
 
 // 세션이 이미 시작되지 않았으면 시작
 if (session_status() === PHP_SESSION_NONE) {
@@ -39,7 +46,9 @@ if (session_status() === PHP_SESSION_NONE) {
 
                 if (json_last_error() === JSON_ERROR_NONE && isset($state['g7_locale'])) {
                     $detectedLang = $state['g7_locale'];
-                    error_log("[세션 초기화] state.json에서 언어 복원: {$detectedLang}");
+                    $msg = "[세션 초기화] state.json에서 언어 복원: {$detectedLang}";
+                    error_log($msg);
+                    addLog($msg);
                 }
             }
         }
@@ -51,15 +60,21 @@ if (session_status() === PHP_SESSION_NONE) {
 
             if ($browserLang !== null) {
                 $detectedLang = $browserLang;
-                error_log("[세션 초기화] 브라우저에서 언어 감지: {$browserLang}");
+                $msg = "[세션 초기화] 브라우저에서 언어 감지: {$browserLang}";
+                error_log($msg);
+                addLog($msg);
             }
         }
 
         // 3. 최종 기본값
         $_SESSION['g7_locale'] = $detectedLang ?? 'ko';
-        error_log("[세션 초기화] 최종 설정 언어: {$_SESSION['g7_locale']}");
+        $msg = "[세션 초기화] 최종 설정 언어: {$_SESSION['g7_locale']}";
+        error_log($msg);
+        addLog($msg);
     } else {
-        error_log("[세션 초기화] g7_locale 이미 존재: {$_SESSION['g7_locale']}");
+        $msg = "[세션 초기화] g7_locale 이미 존재: {$_SESSION['g7_locale']}";
+        error_log($msg);
+        addLog($msg);
     }
 }
 
