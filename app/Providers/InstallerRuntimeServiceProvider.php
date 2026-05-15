@@ -147,6 +147,18 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
     {
         $this->debugLog('recover: enter');
 
+        // beta.7 한시 가드 — 본 보정은 beta.4~6 finalize 결함 환경의 회귀 차단 전용.
+        // 디스크 config/app.php 의 'version' 값을 라인 매칭으로 추출 (메모리/env 무관)
+        // 하여 정확히 beta.7 로 업그레이드 중인 경우에만 발화. 메모리 config('app.version')
+        // 은 부모 stale ENV 의 APP_VERSION 을 따라가므로 신뢰할 수 없음.
+        $coreVersion = $this->readCoreVersionFromDisk();
+        $this->debugLog('recover: disk core version=' . var_export($coreVersion, true));
+        if ($coreVersion !== '7.0.0-beta.7') {
+            $this->debugLog('recover: not beta.7 — return (한시 보정)');
+
+            return;
+        }
+
         $envPath = base_path('.env');
 
         if (! is_file($envPath)) {
@@ -311,6 +323,37 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         } catch (\Throwable $e) {
             $this->debugLog('recover: DB::purge(mysql) failed (non-fatal): ' . $e->getMessage());
         }
+    }
+
+    /**
+     * 디스크 `config/app.php` 의 `'version' => ...` 라인을 정규식 매칭으로 추출.
+     *
+     * 메모리 config('app.version') 은 부모 stale ENV 의 APP_VERSION 을 따르므로
+     * 본 fix 의 자기 활성화 가드로 사용 불가. 디스크 SSoT (config/app.php) 직접 읽기로
+     * 코어 업그레이드 시점의 실제 적용 버전 확보.
+     *
+     * @return string|null 추출 실패 시 null
+     */
+    private function readCoreVersionFromDisk(): ?string
+    {
+        $configPath = base_path('config/app.php');
+        if (! is_file($configPath)) {
+            return null;
+        }
+        $content = @file_get_contents($configPath);
+        if ($content === false) {
+            return null;
+        }
+        // 'version' => env('APP_VERSION', '7.0.0-beta.7'),
+        if (preg_match("/'version'\s*=>\s*env\(\s*'APP_VERSION'\s*,\s*'([^']+)'\s*\)/", $content, $m)) {
+            return $m[1];
+        }
+        // fallback: 'version' => '7.0.0-beta.7',
+        if (preg_match("/'version'\s*=>\s*'([^']+)'/", $content, $m)) {
+            return $m[1];
+        }
+
+        return null;
     }
 
     /**
