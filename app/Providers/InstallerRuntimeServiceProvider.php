@@ -155,10 +155,12 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
             return;
         }
 
-        $parsed = @parse_ini_file($envPath, false, INI_SCANNER_RAW);
+        // parse_ini_file 은 .env 가 PHP INI 와 100% 호환되지 않는 케이스 (예약어 값,
+        // 일부 특수문자) 에서 실패 가능. 라인 단위 직접 파싱으로 호환성 함정 회피.
+        $parsed = $this->parseEnvFile($envPath);
 
-        if (! is_array($parsed)) {
-            $this->debugLog('recover: parse_ini_file failed — return');
+        if (! is_array($parsed) || $parsed === []) {
+            $this->debugLog('recover: parseEnvFile returned empty/null — return');
 
             return;
         }
@@ -234,6 +236,53 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         }
 
         $this->debugDump('recover-after-apply');
+    }
+
+    /**
+     * .env 파일을 라인 단위로 직접 파싱하여 key=>value 배열 반환.
+     *
+     * parse_ini_file 의 PHP INI 호환성 함정을 회피하기 위해 자체 파싱:
+     *   - 빈 줄 / `#` 또는 `;` 로 시작하는 주석 줄 무시
+     *   - 첫 `=` 기준으로 key/value 분할 (값에 `=` 포함 가능: APP_KEY=base64:...= 등)
+     *   - 외곽 인용부호 (single/double) 제거 — unwrapEnvValue 사용
+     *   - 키 이름은 [A-Za-z_][A-Za-z0-9_]* 만 인정
+     *
+     * @return array<string, string>
+     */
+    private function parseEnvFile(string $envPath): array
+    {
+        $content = @file_get_contents($envPath);
+        if ($content === false) {
+            return [];
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $content);
+        if ($lines === false) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($lines as $line) {
+            $trimmed = ltrim($line);
+            if ($trimmed === '' || $trimmed[0] === '#' || $trimmed[0] === ';') {
+                continue;
+            }
+            $eqPos = strpos($trimmed, '=');
+            if ($eqPos === false || $eqPos === 0) {
+                continue;
+            }
+            $key = rtrim(substr($trimmed, 0, $eqPos));
+            if (! preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $key)) {
+                continue;
+            }
+            $value = substr($trimmed, $eqPos + 1);
+            // 줄 끝의 행간 공백 제거 (인용된 값은 인용부호 안의 내용 보존)
+            $value = rtrim($value, " \t");
+            $value = $this->unwrapEnvValue($value);
+            $result[$key] = $value;
+        }
+
+        return $result;
     }
 
     private function unwrapEnvValue(string $value): string
