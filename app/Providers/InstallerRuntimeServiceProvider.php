@@ -27,73 +27,17 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      */
     public const RUNTIME_PATH_RELATIVE = 'storage/installer/runtime.php';
 
-    /**
-     * [DEBUG #371] 추후 제거 — process ENV / Config 상태를 로그에 남기는 임시 헬퍼.
-     */
-    private function debugLog(string $message): void
-    {
-        @file_put_contents(
-            base_path('storage/logs/issue-371-debug.log'),
-            sprintf("[%s] [pid=%d] %s\n", date('Y-m-d H:i:s'), getmypid(), $message),
-            FILE_APPEND | LOCK_EX,
-        );
-    }
-
-    /**
-     * [DEBUG #371] 추후 제거 — process ENV 의 DB_* / APP_KEY / INSTALLER_COMPLETED dump.
-     */
-    private function debugDump(string $tag): void
-    {
-        $keys = [
-            'APP_ENV', 'APP_VERSION', 'INSTALLER_COMPLETED',
-            'DB_WRITE_HOST', 'DB_WRITE_USERNAME', 'DB_WRITE_PASSWORD', 'DB_WRITE_DATABASE',
-            'DB_READ_HOST', 'DB_READ_USERNAME', 'DB_READ_PASSWORD', 'DB_READ_DATABASE',
-        ];
-        $parts = [];
-        foreach ($keys as $key) {
-            $getenvVal = getenv($key);
-            $envVal = $_ENV[$key] ?? null;
-            $serverVal = $_SERVER[$key] ?? null;
-            $parts[] = sprintf(
-                '%s={getenv=%s, $_ENV=%s, $_SERVER=%s}',
-                $key,
-                $getenvVal === false ? '<unset>' : $this->maskValue($key, $getenvVal),
-                $envVal === null ? '<unset>' : $this->maskValue($key, (string) $envVal),
-                $serverVal === null ? '<unset>' : $this->maskValue($key, (string) $serverVal),
-            );
-        }
-        $this->debugLog($tag . ' | ' . implode(' | ', $parts));
-    }
-
-    /**
-     * [DEBUG #371] 추후 제거 — 비밀번호 마스킹.
-     */
-    private function maskValue(string $key, string $value): string
-    {
-        if (str_contains($key, 'PASSWORD')) {
-            return $value === '' ? "''" : ('***len=' . strlen($value));
-        }
-
-        return "'" . $value . "'";
-    }
-
     public function register(): void
     {
-        // [DEBUG #371] register() 진입 — 추후 제거
-        $this->debugDump('register-enter');
-
         // testing 환경은 .env.testing 의 DB/APP_KEY 가 SSoT 이며,
         // 인스톨러 runtime 파일이 존재하더라도 그 값으로 덮어쓰면
         // 프로덕션 DB(g7_2 등) 가 테스트 대상이 되어 RefreshDatabase 가
         // 프로덕션 데이터를 파괴할 수 있다. 테스트 환경에서는 무조건 skip.
         if ($this->app->environment('testing')) {
-            $this->debugLog('register: testing env skip');
-
             return;
         }
 
         $runtimePath = base_path(self::RUNTIME_PATH_RELATIVE);
-        $this->debugLog('register: runtime.php exists=' . (is_file($runtimePath) ? '1' : '0') . ' path=' . $runtimePath);
 
         if (! is_file($runtimePath)) {
             // beta.7 한시 보정 — 이미 finalize 완료된 환경의 stale process ENV 회귀 차단.
@@ -141,44 +85,33 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         $runtime = @include $runtimePath;
 
         if (! is_array($runtime)) {
-            $this->debugLog('register: runtime.php exists but not array — skip');
-
             return;
         }
 
-        $this->debugLog('register: runtime.php exists + valid → applying Config injection');
         $this->applyDatabaseConfig($runtime);
         $this->applyAppKey($runtime);
-        $this->debugDump('register-after-runtime-config-injection');
     }
 
     /**
      * beta.7 한시 보정 — 디스크 .env 가 정합이고 process ENV 가 stale 일 때만 갱신.
      *
-     * 트리거 조건이 매우 보수적이라 정상 환경 부팅 비용은 .env 의 parse_ini_file 1회 + 키 4~5개
+     * 트리거 조건이 매우 보수적이라 정상 환경 부팅 비용은 .env 의 parseEnvFile 1회 + 키 4~5개
      * 비교. 손상 환경에서만 putenv/$_ENV/$_SERVER 갱신이 일어남.
      */
     private function recoverStaleProcessEnvFromDiskEnv(): void
     {
-        $this->debugLog('recover: enter');
-
         // beta.7 한시 가드 — 본 보정은 beta.4~6 finalize 결함 환경의 회귀 차단 전용.
         // 디스크 config/app.php 의 'version' 값을 라인 매칭으로 추출 (메모리/env 무관)
         // 하여 정확히 beta.7 로 업그레이드 중인 경우에만 발화. 메모리 config('app.version')
         // 은 부모 stale ENV 의 APP_VERSION 을 따라가므로 신뢰할 수 없음.
         $coreVersion = $this->readCoreVersionFromDisk();
-        $this->debugLog('recover: disk core version=' . var_export($coreVersion, true));
         if ($coreVersion !== '7.0.0-beta.7') {
-            $this->debugLog('recover: not beta.7 — return (한시 보정)');
-
             return;
         }
 
         $envPath = base_path('.env');
 
         if (! is_file($envPath)) {
-            $this->debugLog('recover: .env file missing — return');
-
             return;
         }
 
@@ -187,35 +120,20 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         $parsed = $this->parseEnvFile($envPath);
 
         if (! is_array($parsed) || $parsed === []) {
-            $this->debugLog('recover: parseEnvFile returned empty/null — return');
-
             return;
         }
-
-        $this->debugLog(sprintf(
-            'recover: parsed .env keys=%d, has_db_write_username=%s, has_installer_completed=%s',
-            count($parsed),
-            isset($parsed['DB_WRITE_USERNAME']) ? '1' : '0',
-            isset($parsed['INSTALLER_COMPLETED']) ? '1' : '0',
-        ));
 
         // 조건 (3): INSTALLER_COMPLETED 가 truthy 여야 함 (finalize 완료 신호)
         $completedFlagRaw = (string) ($parsed['INSTALLER_COMPLETED'] ?? '');
         $completedFlag = strtolower(trim($completedFlagRaw, " \t\"'"));
-        $this->debugLog(sprintf('recover: INSTALLER_COMPLETED raw=%s normalized=%s', var_export($completedFlagRaw, true), var_export($completedFlag, true)));
         if (! in_array($completedFlag, ['true', '1', 'yes'], true)) {
-            $this->debugLog('recover: guard(3) INSTALLER_COMPLETED not truthy — return');
-
             return;
         }
 
         // 조건 (4-a): .env 의 DB_WRITE_USERNAME 이 정합 (root 아님 + 비어있지 않음)
         $diskUsernameRaw = (string) ($parsed['DB_WRITE_USERNAME'] ?? '');
         $diskUsername = $this->unwrapEnvValue($diskUsernameRaw);
-        $this->debugLog(sprintf('recover: disk DB_WRITE_USERNAME raw=%s unwrapped=%s', var_export($diskUsernameRaw, true), var_export($diskUsername, true)));
         if ($diskUsername === '' || $diskUsername === 'root') {
-            $this->debugLog('recover: guard(4-a) disk DB_WRITE_USERNAME is empty/root — return');
-
             return;
         }
 
@@ -227,26 +145,11 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         $envUsername = (string) getenv('DB_WRITE_USERNAME');
         $envUsernameSE = (string) ($_ENV['DB_WRITE_USERNAME'] ?? '');
         $serverUsernameSE = (string) ($_SERVER['DB_WRITE_USERNAME'] ?? '');
-        $this->debugLog(sprintf(
-            'recover: process ENV DB_WRITE_USERNAME getenv=%s, $_ENV=%s, $_SERVER=%s',
-            var_export($envUsername, true),
-            var_export($envUsernameSE, true),
-            var_export($serverUsernameSE, true),
-        ));
-        $hasHealthySignal = false;
         foreach ([$envUsername, $envUsernameSE, $serverUsernameSE] as $candidate) {
             if ($candidate !== '' && $candidate !== 'root') {
-                $hasHealthySignal = true;
-                break;
+                return;
             }
         }
-        if ($hasHealthySignal) {
-            $this->debugLog('recover: guard(4-b) at least one of getenv/$_ENV/$_SERVER is already healthy — return');
-
-            return;
-        }
-
-        $this->debugLog('recover: all guards passed — applying putenv for refreshable keys');
 
         // 4개 조건 모두 만족 — process ENV 갱신
         $refreshableKeys = [
@@ -257,34 +160,18 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
 
         foreach ($refreshableKeys as $key) {
             if (! array_key_exists($key, $parsed)) {
-                $this->debugLog(sprintf('recover: skip key=%s (not in parsed .env)', $key));
                 continue;
             }
             $value = $this->unwrapEnvValue((string) $parsed[$key]);
-            $putenvResult = putenv($key.'='.$value);
+            putenv($key.'='.$value);
             $_ENV[$key] = $value;
             $_SERVER[$key] = $value;
-            $this->debugLog(sprintf(
-                'recover: applied key=%s value=%s putenv_ok=%s, getenv_after=%s',
-                $key,
-                $this->maskValue($key, $value),
-                $putenvResult ? '1' : '0',
-                $this->maskValue($key, (string) getenv($key)),
-            ));
         }
 
         // Laravel Config 도 동기 갱신 — register() 시점에 LoadConfiguration 이 이미 실행되어
         // process ENV 만 갱신해도 config('database.connections.mysql.*') 가 stale 값
-        // (root) 으로 캐시된 상태이기 때문에 직접 덮어써야 한다 (PO 디버그 로그에서 확인:
-        // recover-after-apply 시점에 process ENV 는 'jjh' 인데 config 는 'root' 였음).
+        // (root) 으로 캐시된 상태이기 때문에 직접 덮어써야 한다.
         $this->applyConfigFromParsedEnv($parsed);
-
-        $this->debugDump('recover-after-apply');
-        $this->debugLog(sprintf(
-            'recover-after-apply: config.write.username=%s, config.read.username=%s',
-            var_export(\config('database.connections.mysql.write.username'), true),
-            var_export(\config('database.connections.mysql.read.username'), true),
-        ));
     }
 
     /**
@@ -298,45 +185,45 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
     {
         $writeHost = $parsed['DB_WRITE_HOST'] ?? null;
         if ($writeHost !== null && $writeHost !== '') {
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.write.host', [$writeHost]);
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.write.port', $parsed['DB_WRITE_PORT'] ?? '3306');
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.write.database', $parsed['DB_WRITE_DATABASE'] ?? '');
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.write.username', $parsed['DB_WRITE_USERNAME'] ?? '');
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.write.password', $parsed['DB_WRITE_PASSWORD'] ?? '');
+            Config::set('database.connections.mysql.write.host', [$writeHost]);
+            Config::set('database.connections.mysql.write.port', $parsed['DB_WRITE_PORT'] ?? '3306');
+            Config::set('database.connections.mysql.write.database', $parsed['DB_WRITE_DATABASE'] ?? '');
+            Config::set('database.connections.mysql.write.username', $parsed['DB_WRITE_USERNAME'] ?? '');
+            Config::set('database.connections.mysql.write.password', $parsed['DB_WRITE_PASSWORD'] ?? '');
         }
 
         $readHost = $parsed['DB_READ_HOST'] ?? null;
         if ($readHost !== null && $readHost !== '') {
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.host', [$readHost]);
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.port', $parsed['DB_READ_PORT'] ?? '3306');
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.database', $parsed['DB_READ_DATABASE'] ?? '');
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.username', $parsed['DB_READ_USERNAME'] ?? '');
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.password', $parsed['DB_READ_PASSWORD'] ?? '');
+            Config::set('database.connections.mysql.read.host', [$readHost]);
+            Config::set('database.connections.mysql.read.port', $parsed['DB_READ_PORT'] ?? '3306');
+            Config::set('database.connections.mysql.read.database', $parsed['DB_READ_DATABASE'] ?? '');
+            Config::set('database.connections.mysql.read.username', $parsed['DB_READ_USERNAME'] ?? '');
+            Config::set('database.connections.mysql.read.password', $parsed['DB_READ_PASSWORD'] ?? '');
         } elseif ($writeHost !== null && $writeHost !== '') {
             // read 가 별도 지정되지 않은 경우 write 값으로 동기화 (단일 DB 시나리오)
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.host', [$writeHost]);
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.port', $parsed['DB_WRITE_PORT'] ?? '3306');
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.database', $parsed['DB_WRITE_DATABASE'] ?? '');
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.username', $parsed['DB_WRITE_USERNAME'] ?? '');
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.password', $parsed['DB_WRITE_PASSWORD'] ?? '');
+            Config::set('database.connections.mysql.read.host', [$writeHost]);
+            Config::set('database.connections.mysql.read.port', $parsed['DB_WRITE_PORT'] ?? '3306');
+            Config::set('database.connections.mysql.read.database', $parsed['DB_WRITE_DATABASE'] ?? '');
+            Config::set('database.connections.mysql.read.username', $parsed['DB_WRITE_USERNAME'] ?? '');
+            Config::set('database.connections.mysql.read.password', $parsed['DB_WRITE_PASSWORD'] ?? '');
         }
 
         if (isset($parsed['DB_PREFIX'])) {
-            \Illuminate\Support\Facades\Config::set('database.connections.mysql.prefix', $parsed['DB_PREFIX']);
+            Config::set('database.connections.mysql.prefix', $parsed['DB_PREFIX']);
         }
 
         $appKey = $parsed['APP_KEY'] ?? null;
         if (is_string($appKey) && $appKey !== '') {
-            \Illuminate\Support\Facades\Config::set('app.key', $appKey);
+            Config::set('app.key', $appKey);
         }
 
         // 기존 connection 인스턴스의 stale credential 캐시 폐기 — 다음 DB::connection() 호출 시
-        // 새 Config 로 재인스턴스화되도록 강제. PO 로그상 config.write.username 이 root 로
-        // 남아 있던 회귀의 부속 원인 가능성 (DB Manager 의 connection 캐시).
+        // 새 Config 로 재인스턴스화되도록 강제. config.write.username 이 stale root 로
+        // 남아 있던 회귀의 부속 원인 차단 (DB Manager 의 connection 캐시).
         try {
             \Illuminate\Support\Facades\DB::purge('mysql');
         } catch (\Throwable $e) {
-            $this->debugLog('recover: DB::purge(mysql) failed (non-fatal): ' . $e->getMessage());
+            // non-fatal — Config 만 갱신된 상태로도 다음 connection 시 정합 값 사용
         }
     }
 
@@ -345,79 +232,47 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      * 하위 root 소유 디렉토리/파일을 정상 owner/group 으로 chown.
      *
      * 본 PR 의 recover 가 발화하면서 부수적으로 만들 수 있는 root 권한 캐시 디렉토리를
-     * 자식 자체의 부팅 시점에 자동 청소한다. 자식 1 (FinalizeOrphanedInstallerRuntime)
-     * 의 normalizeCachePermissions 는 그 자식 안에서 1회만 실행되어 자식 2~N 의
-     * 부수효과를 못 잡으므로, 본 메서드가 부팅 단계의 ServiceProvider 에서 매번 자동
-     * 발화하여 그 한계를 보완.
+     * 자식 자체의 부팅 시점에 자동 청소한다. 안전망 역할 — recover 가 정상 발화하여
+     * loadModules 가 정상 권한 캐시를 생성하면 본 메서드는 found=0 으로 no-op.
      *
-     * 가드 (호출자가 이미 보장):
-     *   - runtime.php 부재 (= 이미 finalize 완료)
-     *   - 디스크 config/app.php version === '7.0.0-beta.7' (recover 진입 직전 가드와 동일)
-     *
-     * 본 메서드 내부 가드:
+     * 가드:
+     *   - 디스크 config/app.php version === '7.0.0-beta.7' (recover 와 동일)
      *   - posix_geteuid() === 0 (root 권한 자식만 — 운영자 의도 권한 보존)
      *   - cache/data 자신이 정합 owner/group (chown 기준값 추정)
      */
     private function normalizeRootOwnedCacheDirs(): void
     {
-        $this->debugLog('normalizeRootOwnedCacheDirs: enter');
-
         // beta.7 한정 — recover 와 동일 가드
         $coreVersion = $this->readCoreVersionFromDisk();
-        $this->debugLog('normalizeRootOwnedCacheDirs: disk core version=' . var_export($coreVersion, true));
         if ($coreVersion !== '7.0.0-beta.7') {
-            $this->debugLog('normalizeRootOwnedCacheDirs: not beta.7 — return');
-
             return;
         }
 
         if (! function_exists('posix_geteuid') || ! function_exists('chown') || ! function_exists('chgrp')) {
-            $this->debugLog('normalizeRootOwnedCacheDirs: posix/chown/chgrp 미지원 — return');
-
             return;
         }
 
         // root 권한 프로세스만 (PHP-FPM 워커는 www-data → euid != 0 → skip)
-        $euid = posix_geteuid();
-        $this->debugLog('normalizeRootOwnedCacheDirs: euid=' . $euid);
-        if ($euid !== 0) {
-            $this->debugLog('normalizeRootOwnedCacheDirs: not root (euid != 0) — return');
-
+        if (posix_geteuid() !== 0) {
             return;
         }
 
         $cacheRoot = base_path('storage/framework/cache/data');
-        $this->debugLog('normalizeRootOwnedCacheDirs: cacheRoot=' . $cacheRoot . ' is_dir=' . (is_dir($cacheRoot) ? '1' : '0'));
         if (! is_dir($cacheRoot)) {
-            $this->debugLog('normalizeRootOwnedCacheDirs: cacheRoot 부재 — return');
-
             return;
         }
 
         // 정상 owner/group 추정 (cache/data 자신이 SSoT)
         $targetUid = @fileowner($cacheRoot);
         $targetGid = @filegroup($cacheRoot);
-        $this->debugLog(sprintf(
-            'normalizeRootOwnedCacheDirs: cacheRoot owner uid=%s gid=%s',
-            var_export($targetUid, true),
-            var_export($targetGid, true),
-        ));
         if (! is_int($targetUid) || ! is_int($targetGid) || $targetUid === 0) {
             // cache/data 자신이 root 소유면 추정 실패 — bootstrap/cache fallback
             $bootstrapCache = base_path('bootstrap/cache');
-            $this->debugLog('normalizeRootOwnedCacheDirs: fallback bootstrap/cache is_dir=' . (is_dir($bootstrapCache) ? '1' : '0'));
             if (is_dir($bootstrapCache)) {
                 $targetUid = @fileowner($bootstrapCache);
                 $targetGid = @filegroup($bootstrapCache);
-                $this->debugLog(sprintf(
-                    'normalizeRootOwnedCacheDirs: bootstrap/cache owner uid=%s gid=%s',
-                    var_export($targetUid, true),
-                    var_export($targetGid, true),
-                ));
             }
             if (! is_int($targetUid) || ! is_int($targetGid) || $targetUid === 0) {
-                $this->debugLog('normalizeRootOwnedCacheDirs: targetUid/Gid 추정 실패 — return');
-
                 return;
             }
         }
@@ -425,57 +280,22 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         // 1depth 만 빠르게 점검 — root 소유 디렉토리 발견 시 재귀 chown
         $handle = @opendir($cacheRoot);
         if ($handle === false) {
-            $this->debugLog('normalizeRootOwnedCacheDirs: opendir 실패 — return');
-
             return;
         }
-        $found = 0;
-        $changed = 0;
-        $considered = 0;
-        $skipped = 0;
         while (($name = readdir($handle)) !== false) {
             if ($name === '.' || $name === '..') {
                 continue;
             }
-            $considered++;
             $path = $cacheRoot.DIRECTORY_SEPARATOR.$name;
             $uid = @fileowner($path);
             $gid = @filegroup($path);
             if ($uid !== 0 && $gid !== 0) {
-                $skipped++;
                 continue;
             }
-            $found++;
-            $this->debugLog(sprintf(
-                'normalizeRootOwnedCacheDirs: root-owned entry detected name=%s uid=%s gid=%s — chown recursive',
-                $name,
-                var_export($uid, true),
-                var_export($gid, true),
-            ));
-            // 재귀 chown
-            $ok = $this->chownRecursive($path, $targetUid, $targetGid);
-            $this->debugLog(sprintf(
-                'normalizeRootOwnedCacheDirs: chown result name=%s ok=%s after_uid=%s after_gid=%s',
-                $name,
-                $ok ? '1' : '0',
-                var_export(@fileowner($path), true),
-                var_export(@filegroup($path), true),
-            ));
-            if ($ok) {
-                $changed++;
-            }
+            // root 소유 항목만 보정 — 사용자가 의도해서 만든 다른 소유자는 보존
+            $this->chownRecursive($path, $targetUid, $targetGid);
         }
         closedir($handle);
-
-        $this->debugLog(sprintf(
-            'normalizeRootOwnedCacheDirs exit — considered=%d found=%d changed=%d skipped=%d (targetUid=%d targetGid=%d)',
-            $considered,
-            $found,
-            $changed,
-            $skipped,
-            $targetUid,
-            $targetGid,
-        ));
     }
 
     /**
@@ -489,7 +309,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         if (! is_dir($path) || is_link($path)) {
             return $ok;
         }
-        $iter = @new \RecursiveIteratorIterator(
+        $iter = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST,
         );

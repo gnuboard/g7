@@ -165,9 +165,7 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
         //
         // 정상 운영 디렉토리 (storage/, bootstrap/cache 등) 의 소유자/그룹을 기준으로
         // storage/framework/cache/data/ 하위의 root 소유 항목만 일괄 chown.
-        $this->debugIssue371DumpCacheDir($basePath, 'before-normalize');
         $this->normalizeCachePermissions($basePath, $context);
-        $this->debugIssue371DumpCacheDir($basePath, 'after-normalize');
 
         $context->logger->info(
             '[7.0.0-beta.7] 잔존 runtime.php 자동 finalize 완료 — .env 머지 + runtime.php 삭제 + state.json 정리'
@@ -187,47 +185,25 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
      */
     private function normalizeCachePermissions(string $basePath, UpgradeContext $context): void
     {
-        // [DEBUG #371] 추후 제거 — 캐시 권한 보정 진입
-        $this->debugIssue371Log('normalizeCachePermissions enter');
-
         if (! function_exists('chown') || ! function_exists('posix_geteuid')) {
-            $this->debugIssue371Log('normalizeCachePermissions: chown/posix_geteuid 미지원 — return');
-
             return;
         }
 
-        $this->debugIssue371Log(sprintf(
-            'normalizeCachePermissions: process uid=%d euid=%d',
-            function_exists('posix_getuid') ? posix_getuid() : -1,
-            posix_geteuid(),
-        ));
-
         $cacheRoot = $basePath.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'framework'.DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.'data';
-        $this->debugIssue371Log('normalizeCachePermissions: cacheRoot=' . $cacheRoot . ' is_dir=' . (is_dir($cacheRoot) ? '1' : '0'));
         if (! is_dir($cacheRoot)) {
-            $this->debugIssue371Log('normalizeCachePermissions: cacheRoot 부재 — return');
-
             return;
         }
 
         // 정상 owner/group 추정
         [$targetUid, $targetGid] = $this->inferCacheOwnership($basePath, $cacheRoot);
-        $this->debugIssue371Log(sprintf(
-            'normalizeCachePermissions: inferred targetUid=%s targetGid=%s',
-            var_export($targetUid, true),
-            var_export($targetGid, true),
-        ));
         if ($targetUid === null || $targetGid === null) {
             $context->logger->info('[7.0.0-beta.7] 캐시 권한 보정 skip — 정상 owner/group 추정 실패');
-            $this->debugIssue371Log('normalizeCachePermissions: 추정 실패 — return');
 
             return;
         }
 
         $changed = 0;
         $failed = 0;
-        $skipped = 0;
-        $considered = 0;
         $iter = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($cacheRoot, \FilesystemIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::CHILD_FIRST,
@@ -235,37 +211,18 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
         foreach ($iter as $entry) {
             /** @var \SplFileInfo $entry */
             $path = $entry->getPathname();
-            $considered++;
             $currentUid = @fileowner($path);
             $currentGid = @filegroup($path);
             // 이미 정상이면 skip
             if ($currentUid === $targetUid && $currentGid === $targetGid) {
-                $skipped++;
                 continue;
             }
             // root (uid=0) 소유 항목만 보정 — 사용자가 의도해서 만든 다른 소유자는 보존
             if ($currentUid !== 0 && $currentGid !== 0) {
-                $this->debugIssue371Log(sprintf(
-                    'normalizeCachePermissions: skip non-root uid=%s gid=%s path=%s',
-                    var_export($currentUid, true),
-                    var_export($currentGid, true),
-                    $path,
-                ));
-                $skipped++;
                 continue;
             }
             $okOwner = @chown($path, $targetUid);
             $okGroup = @chgrp($path, $targetGid);
-            $this->debugIssue371Log(sprintf(
-                'normalizeCachePermissions: chown/chgrp path=%s before_uid=%s before_gid=%s ok_owner=%s ok_group=%s after_uid=%s after_gid=%s',
-                $path,
-                var_export($currentUid, true),
-                var_export($currentGid, true),
-                $okOwner ? '1' : '0',
-                $okGroup ? '1' : '0',
-                var_export(@fileowner($path), true),
-                var_export(@filegroup($path), true),
-            ));
             if ($okOwner && $okGroup) {
                 $changed++;
             } else {
@@ -280,13 +237,6 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
             $targetUid,
             $targetGid,
         ));
-        $this->debugIssue371Log(sprintf(
-            'normalizeCachePermissions exit — considered=%d changed=%d failed=%d skipped=%d',
-            $considered,
-            $changed,
-            $failed,
-            $skipped,
-        ));
     }
 
     /**
@@ -299,15 +249,7 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
         // 1순위: cache/data 자신의 owner/group (chown 대상 자식이 root 라도 부모는 정상값일 가능성)
         $uid = @fileowner($cacheRoot);
         $gid = @filegroup($cacheRoot);
-        $this->debugIssue371Log(sprintf(
-            'inferCacheOwnership: cacheRoot(%s) uid=%s gid=%s',
-            $cacheRoot,
-            var_export($uid, true),
-            var_export($gid, true),
-        ));
         if (is_int($uid) && $uid !== 0 && is_int($gid)) {
-            $this->debugIssue371Log('inferCacheOwnership: use cacheRoot owner');
-
             return [$uid, $gid];
         }
 
@@ -316,20 +258,10 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
         if (is_dir($bootstrapCache)) {
             $uid = @fileowner($bootstrapCache);
             $gid = @filegroup($bootstrapCache);
-            $this->debugIssue371Log(sprintf(
-                'inferCacheOwnership: bootstrap/cache(%s) uid=%s gid=%s',
-                $bootstrapCache,
-                var_export($uid, true),
-                var_export($gid, true),
-            ));
             if (is_int($uid) && $uid !== 0 && is_int($gid)) {
-                $this->debugIssue371Log('inferCacheOwnership: use bootstrap/cache owner');
-
                 return [$uid, $gid];
             }
         }
-
-        $this->debugIssue371Log('inferCacheOwnership: all sources failed — return [null, null]');
 
         // 3순위 fallback 없음
         return [null, null];
@@ -453,13 +385,8 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
      */
     private function refreshProcessEnvFromRuntime(array $runtime): void
     {
-        // [DEBUG #371] 마이그레이션 process ENV 갱신 진입 — 추후 제거
-        $this->debugIssue371Log('refreshProcessEnvFromRuntime enter');
-
         $write = $runtime['db']['write'] ?? null;
         if (! is_array($write)) {
-            $this->debugIssue371Log('refreshProcessEnvFromRuntime: runtime.db.write missing/invalid — return');
-
             return;
         }
         $read = $runtime['db']['read'] ?? $write;
@@ -499,85 +426,10 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
                 continue;
             }
 
-            $putenvResult = putenv($key.'='.$stringValue);
+            putenv($key.'='.$stringValue);
             $_ENV[$key] = $stringValue;
             $_SERVER[$key] = $stringValue;
-
-            // [DEBUG #371] 추후 제거
-            $maskedValue = str_contains($key, 'PASSWORD')
-                ? ($stringValue === '' ? "''" : '***len=' . strlen($stringValue))
-                : "'" . $stringValue . "'";
-            $this->debugIssue371Log(sprintf(
-                'refreshProcessEnvFromRuntime applied key=%s value=%s putenv_ok=%s getenv_after=%s',
-                $key,
-                $maskedValue,
-                $putenvResult ? '1' : '0',
-                str_contains($key, 'PASSWORD')
-                    ? '***'
-                    : "'" . (string) getenv($key) . "'",
-            ));
         }
-
-        // [DEBUG #371] 마이그레이션 ENV 갱신 종료 — 추후 제거
-        $this->debugIssue371Log('refreshProcessEnvFromRuntime exit');
-    }
-
-    /**
-     * [DEBUG #371] 추후 제거 — 마이그레이션 진단 로그.
-     */
-    private function debugIssue371Log(string $message): void
-    {
-        @file_put_contents(
-            base_path('storage/logs/issue-371-debug.log'),
-            sprintf("[%s] [pid=%d] [finalize-migration] %s\n", date('Y-m-d H:i:s'), getmypid(), $message),
-            FILE_APPEND | LOCK_EX,
-        );
-    }
-
-    /**
-     * [DEBUG #371] 추후 제거 — storage/framework/cache/data/ 의 1depth 항목 owner/group/perms dump.
-     */
-    private function debugIssue371DumpCacheDir(string $basePath, string $tag): void
-    {
-        $cacheRoot = $basePath.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'framework'.DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.'data';
-        if (! is_dir($cacheRoot)) {
-            $this->debugIssue371Log(sprintf('dumpCacheDir(%s): cacheRoot 부재', $tag));
-
-            return;
-        }
-        $rootUid = @fileowner($cacheRoot);
-        $rootGid = @filegroup($cacheRoot);
-        $rootPerms = @fileperms($cacheRoot);
-        $entries = [];
-        $handle = @opendir($cacheRoot);
-        if ($handle === false) {
-            $this->debugIssue371Log(sprintf('dumpCacheDir(%s): opendir 실패', $tag));
-
-            return;
-        }
-        while (($name = readdir($handle)) !== false) {
-            if ($name === '.' || $name === '..') {
-                continue;
-            }
-            $path = $cacheRoot.DIRECTORY_SEPARATOR.$name;
-            $entries[] = sprintf(
-                '%s{uid=%s,gid=%s,perms=%s,is_dir=%s}',
-                $name,
-                var_export(@fileowner($path), true),
-                var_export(@filegroup($path), true),
-                $rootPerms !== false ? decoct(@fileperms($path) & 0777) : '?',
-                is_dir($path) ? '1' : '0',
-            );
-        }
-        closedir($handle);
-        $this->debugIssue371Log(sprintf(
-            'dumpCacheDir(%s): cacheRoot uid=%s gid=%s perms=%s | children=[%s]',
-            $tag,
-            var_export($rootUid, true),
-            var_export($rootGid, true),
-            $rootPerms !== false ? decoct($rootPerms & 0777) : '?',
-            implode(', ', $entries),
-        ));
     }
 
     private function escapeEnvValue(string $value): string

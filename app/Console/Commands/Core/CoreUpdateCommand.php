@@ -447,9 +447,6 @@ class CoreUpdateCommand extends Command
             }
             $log('업그레이드 스텝 완료');
 
-            // [DEBUG #371] 부모의 process ENV / Config dump — 추후 제거
-            $this->debugIssue371Dump('CoreUpdateCommand after-upgrade-steps before-step11');
-
             $this->newLine();
             $bar->display();
 
@@ -497,8 +494,6 @@ class CoreUpdateCommand extends Command
             // bootstrap/cache/autoload-extensions.php, {modules|plugins|templates}/{id}/vendor,
             // storage/app/* 등이 sudo 컨텍스트에서 root 로 오염될 수 있다.
             // 실제 업데이트가 수행된 경우 restoreOwnership 을 한 번 더 호출해 재복원한다.
-            // [DEBUG #371] 번들 일괄 업데이트 prompt 진입 직전 — 추후 제거
-            $this->debugIssue371Dump('CoreUpdateCommand before-runBundledExtensionUpdatePrompt');
             $promptResult = $this->runBundledExtensionUpdatePrompt(
                 app(ModuleManager::class),
                 app(PluginManager::class),
@@ -1094,53 +1089,5 @@ class CoreUpdateCommand extends Command
         $this->newLine();
 
         $log(sprintf('권한 정상화 실패 %d 건 — 운영자 수동 복구 필요', count($warnings)));
-    }
-
-    /**
-     * [DEBUG #371] 추후 제거 — 부모 프로세스의 process ENV / Config dump.
-     */
-    private function debugIssue371Dump(string $tag): void
-    {
-        $keys = [
-            'APP_ENV', 'APP_VERSION', 'INSTALLER_COMPLETED',
-            'DB_WRITE_HOST', 'DB_WRITE_USERNAME', 'DB_WRITE_PASSWORD', 'DB_WRITE_DATABASE',
-            'DB_READ_HOST', 'DB_READ_USERNAME', 'DB_READ_PASSWORD', 'DB_READ_DATABASE',
-        ];
-        $envParts = [];
-        foreach ($keys as $key) {
-            $getenvVal = getenv($key);
-            $envVal = $_ENV[$key] ?? null;
-            $serverVal = $_SERVER[$key] ?? null;
-            $masked = function (?string $v) use ($key): string {
-                if ($v === null) {
-                    return '<unset>';
-                }
-                if (str_contains($key, 'PASSWORD')) {
-                    return $v === '' ? "''" : '***len=' . strlen($v);
-                }
-
-                return "'" . $v . "'";
-            };
-            $envParts[] = sprintf(
-                '%s={getenv=%s,$_ENV=%s,$_SERVER=%s}',
-                $key,
-                $masked($getenvVal === false ? null : $getenvVal),
-                $masked($envVal === null ? null : (string) $envVal),
-                $masked($serverVal === null ? null : (string) $serverVal),
-            );
-        }
-        $configParts = [];
-        try {
-            $configParts[] = 'config.db.write.username=' . var_export(config('database.connections.mysql.write.username'), true);
-            $configParts[] = 'config.db.read.username=' . var_export(config('database.connections.mysql.read.username'), true);
-        } catch (\Throwable $e) {
-            $configParts[] = 'config read FAILED: ' . $e->getMessage();
-        }
-
-        @file_put_contents(
-            base_path('storage/logs/issue-371-debug.log'),
-            sprintf("[%s] [pid=%d] [parent-update] %s | %s || %s\n", date('Y-m-d H:i:s'), getmypid(), $tag, implode(' | ', $envParts), implode(' | ', $configParts)),
-            FILE_APPEND | LOCK_EX,
-        );
     }
 }

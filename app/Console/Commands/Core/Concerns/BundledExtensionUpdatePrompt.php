@@ -320,9 +320,6 @@ trait BundledExtensionUpdatePrompt
             // ENV 합집합 (G7_UPDATE_IN_PROGRESS 등 핵심 플래그 자식에 전달)
             $env = array_merge(getenv(), $_ENV);
 
-            // [DEBUG #371] spawn child 2 에 전달하는 ENV 의 DB_* 키 dump — 추후 제거
-            $this->debugIssue371SpawnEnv('BundledExtensionUpdatePrompt::executeViaSpawn before-proc_open', $env);
-
             $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
             if (! is_resource($process)) {
                 return null;
@@ -463,36 +460,4 @@ trait BundledExtensionUpdatePrompt
         ];
     }
 
-    /**
-     * [DEBUG #371] 추후 제거 — spawn child 에 전달하는 ENV 의 DB_* 키만 dump.
-     *
-     * @param  array<string, mixed>  $env
-     */
-    private function debugIssue371SpawnEnv(string $tag, array $env): void
-    {
-        $keys = [
-            'APP_ENV', 'APP_VERSION', 'INSTALLER_COMPLETED',
-            'DB_WRITE_HOST', 'DB_WRITE_USERNAME', 'DB_WRITE_PASSWORD', 'DB_WRITE_DATABASE',
-            'DB_READ_HOST', 'DB_READ_USERNAME', 'DB_READ_PASSWORD', 'DB_READ_DATABASE',
-        ];
-        $parts = [];
-        foreach ($keys as $key) {
-            if (! array_key_exists($key, $env)) {
-                $parts[] = $key . '=<unset>';
-                continue;
-            }
-            $value = (string) $env[$key];
-            if (str_contains($key, 'PASSWORD')) {
-                $parts[] = $key . '=' . ($value === '' ? "''" : '***len=' . strlen($value));
-            } else {
-                $parts[] = $key . "='" . $value . "'";
-            }
-        }
-
-        @file_put_contents(
-            base_path('storage/logs/issue-371-debug.log'),
-            sprintf("[%s] [pid=%d] [bundle-prompt] %s | %s\n", date('Y-m-d H:i:s'), getmypid(), $tag, implode(' | ', $parts)),
-            FILE_APPEND | LOCK_EX,
-        );
-    }
 }
