@@ -309,7 +309,7 @@ class InstallerRuntimeServiceProviderTest extends TestCase
         $_ENV['DB_READ_USERNAME'] = 'root';
         $_ENV['DB_READ_PASSWORD'] = '';
         // $_SERVER 도 stale — bootstrap/app.php 의 Env::disablePutenv() 환경에서는
-        // Dotenv 가 $_ENV/$_SERVER 만 채우므로 셋 다 stale 인 PO 실서버 케이스 재현
+        // Dotenv 가 $_ENV/$_SERVER 만 채우므로 셋 다 stale 인 실서버 케이스 재현
         $_SERVER['DB_WRITE_USERNAME'] = 'root';
         $_SERVER['DB_WRITE_PASSWORD'] = '';
         $_SERVER['DB_READ_USERNAME'] = 'root';
