@@ -71,8 +71,11 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
     // finalize-env.php 는 chmod 시도를 수행하지 않으므로 인스톨러 안내 단계의 권한
     // (예: 0664 + chgrp www-data) 이 그대로 유지됨. 운영자가 추가로 0600 적용을
     // 원할 수 있도록 현재 권한이 0600 미만 (그룹/기타 비트가 있음) 이면 명령 예시 노출.
+    //
+    // OS 가드: chmod/chgrp 는 POSIX 권한 모델 (Linux/macOS/BSD) 에서 동작.
+    // Windows 만 명령이 무의미하므로 Windows 만 비노출.
     $envPath = BASE_PATH . '/.env';
-    if (is_file($envPath)) {
+    if (PHP_OS_FAMILY !== 'Windows' && is_file($envPath)) {
         $envPerms = fileperms($envPath) & 0777;
         if ($envPerms !== 0600) {
             $envOwnerUid = @fileowner($envPath);
