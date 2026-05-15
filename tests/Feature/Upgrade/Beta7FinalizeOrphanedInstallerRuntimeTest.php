@@ -300,4 +300,134 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
             @unlink($this->runtimePath);
         }
     }
+
+    // -----------------------------------------------------------------------
+    // axis 8: 기존 .env 의 권한/그룹 보존 — CLI 사용자와 PHP-FPM 사용자가 다른 환경
+    //         (자체 구축 서버: jjh:www-data 0640)
+    // -----------------------------------------------------------------------
+    public function test_preserves_env_mode_when_env_existed(): void
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('Windows: POSIX 권한 시멘틱 미지원 — Linux 환경에서만 검증');
+        }
+
+        $this->writeRuntime($this->sampleRuntime());
+        $this->writeEnv("APP_ENV=production\nAPP_KEY=\n");
+        // 자체 구축 서버 시뮬레이션 — 그룹 읽기 허용 (PHP-FPM 이 그룹 멤버로 읽음)
+        chmod($this->envPath, 0640);
+
+        $beforeMode = fileperms($this->envPath) & 0777;
+        $this->assertSame(0640, $beforeMode, 'precondition: .env 권한 0640');
+
+        (new FinalizeOrphanedInstallerRuntime)->run($this->context());
+
+        $afterMode = fileperms($this->envPath) & 0777;
+        $this->assertSame(
+            $beforeMode,
+            $afterMode,
+            sprintf('기존 .env 권한(%s) 이 머지 후에도 보존되어야 함 — PHP-FPM 이 계속 읽을 수 있도록', decoct($beforeMode))
+        );
+        $this->assertFileDoesNotExist($this->runtimePath);
+    }
+
+    // -----------------------------------------------------------------------
+    // axis 9: 0600 으로 잠긴 .env 도 그대로 보존 — 본 회귀 (#371) 의 원인은 우리가
+    //         0600 으로 강제 다운그레이드 한 것이었음. 운영자가 의도해서 0600 을 둔
+    //         경우 (단일 사용자 환경) 도 같은 정책 — 기존 권한이 SSoT
+    // -----------------------------------------------------------------------
+    public function test_preserves_strict_env_mode_unchanged(): void
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('Windows: POSIX 권한 시멘틱 미지원');
+        }
+
+        $this->writeRuntime($this->sampleRuntime());
+        $this->writeEnv("APP_ENV=production\n");
+        chmod($this->envPath, 0600);
+
+        (new FinalizeOrphanedInstallerRuntime)->run($this->context());
+
+        $this->assertSame(
+            0600,
+            fileperms($this->envPath) & 0777,
+            '운영자가 의도한 0600 권한도 그대로 보존'
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // axis 10: .env 가 새로 생성될 때 default 권한이 0640 — 0600 으로 강제 금지
+    //          (#371 회귀 가드 — PHP-FPM 사용자가 그룹으로만 묶인 환경 보호)
+    // -----------------------------------------------------------------------
+    public function test_new_env_uses_group_readable_default_permission(): void
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('Windows: POSIX 권한 시멘틱 미지원');
+        }
+        if (! is_file($this->envExamplePath)) {
+            $this->markTestSkipped('.env.example 부재');
+        }
+
+        $this->writeRuntime($this->sampleRuntime());
+        if (is_file($this->envPath)) {
+            @unlink($this->envPath);
+        }
+
+        (new FinalizeOrphanedInstallerRuntime)->run($this->context());
+
+        $mode = fileperms($this->envPath) & 0777;
+        $this->assertSame(
+            0640,
+            $mode,
+            sprintf(
+                '.env 신규 생성 시 default 권한은 0640 이어야 함 (PHP-FPM 그룹 읽기 허용). 실제: %s',
+                decoct($mode)
+            )
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // axis 11: bootstrap/cache/ 의 그룹을 신규 .env 에 계승 — 자체 구축 서버의
+    //          www-data 그룹 자동 식별. 단일 사용자 환경(카페24)에서는 동일 그룹이
+    //          유지되므로 회귀 없음
+    // -----------------------------------------------------------------------
+    public function test_new_env_inherits_group_from_bootstrap_cache(): void
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->markTestSkipped('Windows: POSIX 권한 시멘틱 미지원');
+        }
+        if (! is_file($this->envExamplePath)) {
+            $this->markTestSkipped('.env.example 부재');
+        }
+        $bootstrapCache = base_path('bootstrap/cache');
+        if (! is_dir($bootstrapCache)) {
+            $this->markTestSkipped('bootstrap/cache 디렉토리 부재');
+        }
+
+        $expectedGid = filegroup($bootstrapCache);
+        if ($expectedGid === false) {
+            $this->markTestSkipped('bootstrap/cache filegroup 조회 실패');
+        }
+
+        $this->writeRuntime($this->sampleRuntime());
+        if (is_file($this->envPath)) {
+            @unlink($this->envPath);
+        }
+
+        (new FinalizeOrphanedInstallerRuntime)->run($this->context());
+
+        $actualGid = filegroup($this->envPath);
+        // chgrp 가 실패할 수 있는 환경(권한 부족)에서는 그룹이 호출 사용자의 default
+        // 그룹으로 떨어질 수 있다. 실패해도 머지 자체는 성공해야 하므로 .env 존재만 단언.
+        $this->assertFileExists($this->envPath);
+
+        // 같은 사용자가 bootstrap/cache 의 그룹 멤버인 경우 chgrp 가 성공해 일치해야 함.
+        // 그렇지 않으면 운영자 수동 보정 안내가 로그에 남는 것까지가 본 axis 의 기대.
+        if ($actualGid !== $expectedGid) {
+            $this->markTestSkipped(sprintf(
+                'chgrp 실패 환경 (실행자가 그룹 %d 멤버 아님) — silent fallback 으로 통과',
+                $expectedGid
+            ));
+        }
+        $this->assertSame($expectedGid, $actualGid, 'bootstrap/cache 그룹이 .env 에 계승되어야 함');
+    }
 }

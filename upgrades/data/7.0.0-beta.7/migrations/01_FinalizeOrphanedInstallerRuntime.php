@@ -44,6 +44,15 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
 
     private const STATE_JSON_RELATIVE = 'storage/installer-state.json';
 
+    /**
+     * `.env` 가 새로 생성될 때 적용할 기본 권한 (소유자 rw + 그룹 r).
+     *
+     * 0600 은 PHP-FPM 사용자(www-data) 가 CLI 사용자(jjh/root) 와 다른 운영 환경에서
+     * 읽기 차단을 일으키므로 사용 금지. 0640 은 그룹 멤버에게만 읽기 허용 — 그룹을
+     * 웹 서버 그룹으로 맞추면 비밀번호 노출 없이 웹 서버가 읽기 가능.
+     */
+    private const DEFAULT_ENV_PERMISSIONS = 0640;
+
     public function name(): string
     {
         return 'FinalizeOrphanedInstallerRuntime';
@@ -102,6 +111,12 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
             return;
         }
 
+        // 머지 *전에* .env 의 기존 권한/소유자/그룹 스냅샷을 떠둔다 — 머지 후 그대로 복원해
+        // CLI 실행 사용자(jjh/root) 와 PHP-FPM 사용자(www-data) 가 다른 환경에서도
+        // PHP-FPM 이 계속 .env 를 읽을 수 있도록 한다.
+        $envExisted = is_file($envPath);
+        $preservedStat = $envExisted ? $this->snapshotFileStat($envPath) : null;
+
         $merged = $this->mergeRuntimeIntoEnv($envBase, $runtime);
 
         if (@file_put_contents($envPath, $merged, LOCK_EX) === false) {
@@ -110,7 +125,7 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
             return;
         }
 
-        @chmod($envPath, 0600);
+        $this->applyEnvPermissions($envPath, $preservedStat, $basePath, $context);
 
         @unlink($runtimePath);
 
@@ -249,5 +264,196 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
         }
 
         return $replaced;
+    }
+
+    // ---------------------------------------------------------------------
+    // 권한·소유자·그룹 자동 조정 — 코어/인스톨러 헬퍼 비의존 (V-1 안전 격리)
+    // ---------------------------------------------------------------------
+
+    /**
+     * 파일의 권한/소유자/그룹을 스냅샷.
+     *
+     * @return array{mode:int|null, uid:int|null, gid:int|null}|null 파일 부재/stat 실패 시 null
+     */
+    private function snapshotFileStat(string $path): ?array
+    {
+        if (! is_file($path)) {
+            return null;
+        }
+        $perms = @fileperms($path);
+        $uid = @fileowner($path);
+        $gid = @filegroup($path);
+
+        if ($perms === false && $uid === false && $gid === false) {
+            return null;
+        }
+
+        return [
+            'mode' => $perms === false ? null : ($perms & 0777),
+            'uid' => $uid === false ? null : $uid,
+            'gid' => $gid === false ? null : $gid,
+        ];
+    }
+
+    /**
+     * 머지된 .env 에 적절한 권한·소유자·그룹을 적용.
+     *
+     * 정책:
+     *   1. 기존 .env 가 있었으면 스냅샷 그대로 복원 — 운영자가 의도해서 설정한 권한 보존
+     *      (PHP-FPM 사용자가 그룹으로 묶여 있는 자체 구축 환경 / 단일 사용자 카페24 환경
+     *      모두 자동 보존)
+     *   2. 신규 생성된 경우 → 웹 서버 컨텍스트 (소유자/그룹) 를 추정하여 적용
+     *      - 추정: bootstrap/cache/ 의 소유자/그룹 (PHP-FPM 이 쓰는 영역)
+     *      - 권한: 0640 (소유자 rw + 그룹 r) — 비밀번호 노출 차단 + 웹 서버 그룹 읽기 허용
+     *
+     * 모든 chown/chgrp/chmod 호출은 실패해도 진행 (운영자가 수동 보정 가능하도록 로그 안내).
+     *
+     * @param  array{mode:int|null, uid:int|null, gid:int|null}|null  $preservedStat
+     *         머지 직전 .env 가 존재했다면 그 stat. 부재였으면 null.
+     */
+    private function applyEnvPermissions(
+        string $envPath,
+        ?array $preservedStat,
+        string $basePath,
+        UpgradeContext $context,
+    ): void {
+        if ($preservedStat !== null) {
+            // 기존 .env 의 권한/소유자/그룹 복원
+            $this->restoreFileStat($envPath, $preservedStat, $context);
+
+            return;
+        }
+
+        // 신규 생성 .env — 웹 서버 컨텍스트 추정 + 안전한 기본 권한 적용
+        $webContext = $this->detectWebServerContext($basePath);
+
+        if ($webContext['uid'] !== null) {
+            $this->tryChown($envPath, $webContext['uid'], $context);
+        }
+        if ($webContext['gid'] !== null) {
+            $this->tryChgrp($envPath, $webContext['gid'], $context);
+        }
+
+        @chmod($envPath, self::DEFAULT_ENV_PERMISSIONS);
+
+        $context->logger->info(sprintf(
+            '[7.0.0-beta.7] .env 신규 생성 — 권한 %s, uid=%s, gid=%s 적용 (웹 서버 컨텍스트 추정)',
+            decoct(self::DEFAULT_ENV_PERMISSIONS),
+            $webContext['uid'] !== null ? (string) $webContext['uid'] : 'skip',
+            $webContext['gid'] !== null ? (string) $webContext['gid'] : 'skip',
+        ));
+    }
+
+    /**
+     * 스냅샷 stat 을 파일에 그대로 복원.
+     *
+     * 우선순위: chmod → chown → chgrp. chown 은 root 권한 필요할 수 있어 실패 흔함 — 실패해도 진행.
+     */
+    private function restoreFileStat(string $path, array $stat, UpgradeContext $context): void
+    {
+        if ($stat['mode'] !== null) {
+            @chmod($path, $stat['mode']);
+        }
+        if ($stat['uid'] !== null) {
+            $this->tryChown($path, $stat['uid'], $context);
+        }
+        if ($stat['gid'] !== null) {
+            $this->tryChgrp($path, $stat['gid'], $context);
+        }
+
+        $context->logger->info(sprintf(
+            '[7.0.0-beta.7] .env 기존 권한 보존 — mode=%s, uid=%s, gid=%s',
+            $stat['mode'] !== null ? decoct($stat['mode']) : 'unchanged',
+            $stat['uid'] !== null ? (string) $stat['uid'] : 'unchanged',
+            $stat['gid'] !== null ? (string) $stat['gid'] : 'unchanged',
+        ));
+    }
+
+    /**
+     * 웹 서버 컨텍스트 (PHP-FPM/Apache 가 쓰는 사용자/그룹) 를 디스크 신호로 추정.
+     *
+     * `getWebServerUser()` 같은 인스톨러 헬퍼 (현재 PHP 프로세스 = web user 가정) 는
+     * CLI 컨텍스트에서 동작하지 않으므로 사용 금지. 대신 PHP-FPM 이 실제로 *쓴 파일*
+     * 의 소유자/그룹을 신호로 사용.
+     *
+     * 우선순위:
+     *   1. bootstrap/cache/*.php (services.php / packages.php) — Laravel 부팅 시 PHP-FPM
+     *      이 직접 쓰는 파일. 가장 신뢰도 높음
+     *   2. bootstrap/cache/ 디렉토리 자체
+     *   3. storage/logs/ 디렉토리 (PHP-FPM 의 또 다른 쓰기 영역)
+     *   4. 모두 실패 시 null — 호출자가 chown/chgrp skip
+     *
+     * @return array{uid:int|null, gid:int|null}
+     */
+    private function detectWebServerContext(string $basePath): array
+    {
+        $candidates = [
+            $basePath.DIRECTORY_SEPARATOR.'bootstrap/cache/services.php',
+            $basePath.DIRECTORY_SEPARATOR.'bootstrap/cache/packages.php',
+            $basePath.DIRECTORY_SEPARATOR.'bootstrap/cache',
+            $basePath.DIRECTORY_SEPARATOR.'storage/logs',
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (! file_exists($candidate)) {
+                continue;
+            }
+            $uid = @fileowner($candidate);
+            $gid = @filegroup($candidate);
+            if ($uid === false && $gid === false) {
+                continue;
+            }
+
+            // root (uid=0) 단독 신호는 회피 — sudo 로 캐시가 생성된 환경일 수 있음.
+            // 그룹은 root 라도 사용 가능 (그룹이 web user group 인 경우 흔함).
+            if ($uid === 0 && $gid !== false && $gid !== 0) {
+                return ['uid' => null, 'gid' => $gid];
+            }
+
+            return [
+                'uid' => $uid === false ? null : $uid,
+                'gid' => $gid === false ? null : $gid,
+            ];
+        }
+
+        return ['uid' => null, 'gid' => null];
+    }
+
+    /**
+     * chown 시도 (실패 시 silent — root 권한 부재 환경 흔함).
+     */
+    private function tryChown(string $path, int $uid, UpgradeContext $context): void
+    {
+        if (! function_exists('chown')) {
+            return;
+        }
+        if (@chown($path, $uid) === false) {
+            $context->logger->info(sprintf(
+                '[7.0.0-beta.7] chown(%s, uid=%d) 실패 — root 권한 부재 가능. 운영자 수동 보정: sudo chown %d %s',
+                basename($path),
+                $uid,
+                $uid,
+                $path,
+            ));
+        }
+    }
+
+    /**
+     * chgrp 시도 (실패 시 silent).
+     */
+    private function tryChgrp(string $path, int $gid, UpgradeContext $context): void
+    {
+        if (! function_exists('chgrp')) {
+            return;
+        }
+        if (@chgrp($path, $gid) === false) {
+            $context->logger->info(sprintf(
+                '[7.0.0-beta.7] chgrp(%s, gid=%d) 실패 — 운영자 수동 보정: sudo chgrp %d %s',
+                basename($path),
+                $gid,
+                $gid,
+                $path,
+            ));
+        }
     }
 }
