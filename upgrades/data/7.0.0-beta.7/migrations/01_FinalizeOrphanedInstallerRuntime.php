@@ -279,8 +279,13 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
      */
     private function refreshProcessEnvFromRuntime(array $runtime): void
     {
+        // [DEBUG #371] 마이그레이션 process ENV 갱신 진입 — 추후 제거
+        $this->debugIssue371Log('refreshProcessEnvFromRuntime enter');
+
         $write = $runtime['db']['write'] ?? null;
         if (! is_array($write)) {
+            $this->debugIssue371Log('refreshProcessEnvFromRuntime: runtime.db.write missing/invalid — return');
+
             return;
         }
         $read = $runtime['db']['read'] ?? $write;
@@ -320,10 +325,39 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
                 continue;
             }
 
-            putenv($key.'='.$stringValue);
+            $putenvResult = putenv($key.'='.$stringValue);
             $_ENV[$key] = $stringValue;
             $_SERVER[$key] = $stringValue;
+
+            // [DEBUG #371] 추후 제거
+            $maskedValue = str_contains($key, 'PASSWORD')
+                ? ($stringValue === '' ? "''" : '***len=' . strlen($stringValue))
+                : "'" . $stringValue . "'";
+            $this->debugIssue371Log(sprintf(
+                'refreshProcessEnvFromRuntime applied key=%s value=%s putenv_ok=%s getenv_after=%s',
+                $key,
+                $maskedValue,
+                $putenvResult ? '1' : '0',
+                str_contains($key, 'PASSWORD')
+                    ? '***'
+                    : "'" . (string) getenv($key) . "'",
+            ));
         }
+
+        // [DEBUG #371] 마이그레이션 ENV 갱신 종료 — 추후 제거
+        $this->debugIssue371Log('refreshProcessEnvFromRuntime exit');
+    }
+
+    /**
+     * [DEBUG #371] 추후 제거 — 마이그레이션 진단 로그.
+     */
+    private function debugIssue371Log(string $message): void
+    {
+        @file_put_contents(
+            base_path('storage/logs/issue-371-debug.log'),
+            sprintf("[%s] [pid=%d] [finalize-migration] %s\n", date('Y-m-d H:i:s'), getmypid(), $message),
+            FILE_APPEND | LOCK_EX,
+        );
     }
 
     private function escapeEnvValue(string $value): string

@@ -51,6 +51,9 @@ class ExecuteBundledUpdatesCommand extends Command
 
     public function handle(): int
     {
+        // [DEBUG #371] 자식 2 handle 진입 시점 dump — 추후 제거
+        $this->debugIssue371Dump('ExecuteBundledUpdatesCommand::handle enter');
+
         $manifestPath = (string) $this->option('manifest');
         if ($manifestPath === '' || ! File::isFile($manifestPath)) {
             $this->error('--manifest 옵션이 필수이며 존재하는 파일이어야 합니다.');
@@ -133,6 +136,8 @@ class ExecuteBundledUpdatesCommand extends Command
                 continue;
             }
             $this->line("→ [템플릿] {$id} ({$strategy})");
+            // [DEBUG #371] 템플릿 update 직전 — 추후 제거
+            $this->debugIssue371Dump("before template update id={$id}");
             try {
                 $templateManager->updateTemplate($id, true, null, $strategy, 'bundled');
                 $success++;
@@ -149,6 +154,8 @@ class ExecuteBundledUpdatesCommand extends Command
                 continue;
             }
             $this->line("→ [언어팩] {$id}");
+            // [DEBUG #371] 언어팩 update 직전 — 추후 제거
+            $this->debugIssue371Dump("before lang_pack update id={$id}");
             try {
                 $pack = $langPackService->findByIdentifier($id);
                 if (! $pack) {
@@ -173,5 +180,53 @@ class ExecuteBundledUpdatesCommand extends Command
         ], JSON_UNESCAPED_UNICODE));
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * [DEBUG #371] 추후 제거 — 자식 2 의 process ENV / Config dump.
+     */
+    private function debugIssue371Dump(string $tag): void
+    {
+        $keys = [
+            'APP_ENV', 'APP_VERSION', 'INSTALLER_COMPLETED',
+            'DB_WRITE_HOST', 'DB_WRITE_USERNAME', 'DB_WRITE_PASSWORD', 'DB_WRITE_DATABASE',
+            'DB_READ_HOST', 'DB_READ_USERNAME', 'DB_READ_PASSWORD', 'DB_READ_DATABASE',
+        ];
+        $envParts = [];
+        foreach ($keys as $key) {
+            $getenvVal = getenv($key);
+            $envVal = $_ENV[$key] ?? null;
+            $serverVal = $_SERVER[$key] ?? null;
+            $masked = function (?string $v) use ($key): string {
+                if ($v === null) {
+                    return '<unset>';
+                }
+                if (str_contains($key, 'PASSWORD')) {
+                    return $v === '' ? "''" : '***len=' . strlen($v);
+                }
+
+                return "'" . $v . "'";
+            };
+            $envParts[] = sprintf(
+                '%s={getenv=%s,$_ENV=%s,$_SERVER=%s}',
+                $key,
+                $masked($getenvVal === false ? null : $getenvVal),
+                $masked($envVal === null ? null : (string) $envVal),
+                $masked($serverVal === null ? null : (string) $serverVal),
+            );
+        }
+        $configParts = [];
+        try {
+            $configParts[] = 'config.db.write.username=' . var_export(config('database.connections.mysql.write.username'), true);
+            $configParts[] = 'config.db.read.username=' . var_export(config('database.connections.mysql.read.username'), true);
+        } catch (\Throwable $e) {
+            $configParts[] = 'config read FAILED: ' . $e->getMessage();
+        }
+
+        @file_put_contents(
+            base_path('storage/logs/issue-371-debug.log'),
+            sprintf("[%s] [pid=%d] [bundle-exec] %s | %s || %s\n", date('Y-m-d H:i:s'), getmypid(), $tag, implode(' | ', $envParts), implode(' | ', $configParts)),
+            FILE_APPEND | LOCK_EX,
+        );
     }
 }

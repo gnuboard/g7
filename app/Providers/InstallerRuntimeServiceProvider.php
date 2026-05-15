@@ -27,17 +27,73 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      */
     public const RUNTIME_PATH_RELATIVE = 'storage/installer/runtime.php';
 
+    /**
+     * [DEBUG #371] 추후 제거 — process ENV / Config 상태를 로그에 남기는 임시 헬퍼.
+     */
+    private function debugLog(string $message): void
+    {
+        @file_put_contents(
+            base_path('storage/logs/issue-371-debug.log'),
+            sprintf("[%s] [pid=%d] %s\n", date('Y-m-d H:i:s'), getmypid(), $message),
+            FILE_APPEND | LOCK_EX,
+        );
+    }
+
+    /**
+     * [DEBUG #371] 추후 제거 — process ENV 의 DB_* / APP_KEY / INSTALLER_COMPLETED dump.
+     */
+    private function debugDump(string $tag): void
+    {
+        $keys = [
+            'APP_ENV', 'APP_VERSION', 'INSTALLER_COMPLETED',
+            'DB_WRITE_HOST', 'DB_WRITE_USERNAME', 'DB_WRITE_PASSWORD', 'DB_WRITE_DATABASE',
+            'DB_READ_HOST', 'DB_READ_USERNAME', 'DB_READ_PASSWORD', 'DB_READ_DATABASE',
+        ];
+        $parts = [];
+        foreach ($keys as $key) {
+            $getenvVal = getenv($key);
+            $envVal = $_ENV[$key] ?? null;
+            $serverVal = $_SERVER[$key] ?? null;
+            $parts[] = sprintf(
+                '%s={getenv=%s, $_ENV=%s, $_SERVER=%s}',
+                $key,
+                $getenvVal === false ? '<unset>' : $this->maskValue($key, $getenvVal),
+                $envVal === null ? '<unset>' : $this->maskValue($key, (string) $envVal),
+                $serverVal === null ? '<unset>' : $this->maskValue($key, (string) $serverVal),
+            );
+        }
+        $this->debugLog($tag . ' | ' . implode(' | ', $parts));
+    }
+
+    /**
+     * [DEBUG #371] 추후 제거 — 비밀번호 마스킹.
+     */
+    private function maskValue(string $key, string $value): string
+    {
+        if (str_contains($key, 'PASSWORD')) {
+            return $value === '' ? "''" : ('***len=' . strlen($value));
+        }
+
+        return "'" . $value . "'";
+    }
+
     public function register(): void
     {
+        // [DEBUG #371] register() 진입 — 추후 제거
+        $this->debugDump('register-enter');
+
         // testing 환경은 .env.testing 의 DB/APP_KEY 가 SSoT 이며,
         // 인스톨러 runtime 파일이 존재하더라도 그 값으로 덮어쓰면
         // 프로덕션 DB(g7_2 등) 가 테스트 대상이 되어 RefreshDatabase 가
         // 프로덕션 데이터를 파괴할 수 있다. 테스트 환경에서는 무조건 skip.
         if ($this->app->environment('testing')) {
+            $this->debugLog('register: testing env skip');
+
             return;
         }
 
         $runtimePath = base_path(self::RUNTIME_PATH_RELATIVE);
+        $this->debugLog('register: runtime.php exists=' . (is_file($runtimePath) ? '1' : '0') . ' path=' . $runtimePath);
 
         if (! is_file($runtimePath)) {
             // beta.7 한시 보정 — 이미 finalize 완료된 환경의 stale process ENV 회귀 차단.
@@ -70,11 +126,15 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         $runtime = @include $runtimePath;
 
         if (! is_array($runtime)) {
+            $this->debugLog('register: runtime.php exists but not array — skip');
+
             return;
         }
 
+        $this->debugLog('register: runtime.php exists + valid → applying Config injection');
         $this->applyDatabaseConfig($runtime);
         $this->applyAppKey($runtime);
+        $this->debugDump('register-after-runtime-config-injection');
     }
 
     /**
@@ -85,35 +145,68 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      */
     private function recoverStaleProcessEnvFromDiskEnv(): void
     {
+        $this->debugLog('recover: enter');
+
         $envPath = base_path('.env');
 
         if (! is_file($envPath)) {
+            $this->debugLog('recover: .env file missing — return');
+
             return;
         }
 
         $parsed = @parse_ini_file($envPath, false, INI_SCANNER_RAW);
 
         if (! is_array($parsed)) {
+            $this->debugLog('recover: parse_ini_file failed — return');
+
             return;
         }
 
+        $this->debugLog(sprintf(
+            'recover: parsed .env keys=%d, has_db_write_username=%s, has_installer_completed=%s',
+            count($parsed),
+            isset($parsed['DB_WRITE_USERNAME']) ? '1' : '0',
+            isset($parsed['INSTALLER_COMPLETED']) ? '1' : '0',
+        ));
+
         // 조건 (3): INSTALLER_COMPLETED 가 truthy 여야 함 (finalize 완료 신호)
-        $completedFlag = strtolower(trim((string) ($parsed['INSTALLER_COMPLETED'] ?? ''), " \t\"'"));
+        $completedFlagRaw = (string) ($parsed['INSTALLER_COMPLETED'] ?? '');
+        $completedFlag = strtolower(trim($completedFlagRaw, " \t\"'"));
+        $this->debugLog(sprintf('recover: INSTALLER_COMPLETED raw=%s normalized=%s', var_export($completedFlagRaw, true), var_export($completedFlag, true)));
         if (! in_array($completedFlag, ['true', '1', 'yes'], true)) {
+            $this->debugLog('recover: guard(3) INSTALLER_COMPLETED not truthy — return');
+
             return;
         }
 
         // 조건 (4-a): .env 의 DB_WRITE_USERNAME 이 정합 (root 아님 + 비어있지 않음)
-        $diskUsername = $this->unwrapEnvValue((string) ($parsed['DB_WRITE_USERNAME'] ?? ''));
+        $diskUsernameRaw = (string) ($parsed['DB_WRITE_USERNAME'] ?? '');
+        $diskUsername = $this->unwrapEnvValue($diskUsernameRaw);
+        $this->debugLog(sprintf('recover: disk DB_WRITE_USERNAME raw=%s unwrapped=%s', var_export($diskUsernameRaw, true), var_export($diskUsername, true)));
         if ($diskUsername === '' || $diskUsername === 'root') {
+            $this->debugLog('recover: guard(4-a) disk DB_WRITE_USERNAME is empty/root — return');
+
             return;
         }
 
         // 조건 (4-b): process ENV 의 DB_WRITE_USERNAME 이 stale (root 또는 빈 값)
         $envUsername = (string) getenv('DB_WRITE_USERNAME');
+        $envUsernameSE = $_ENV['DB_WRITE_USERNAME'] ?? null;
+        $serverUsernameSE = $_SERVER['DB_WRITE_USERNAME'] ?? null;
+        $this->debugLog(sprintf(
+            'recover: process ENV DB_WRITE_USERNAME getenv=%s, $_ENV=%s, $_SERVER=%s',
+            var_export($envUsername, true),
+            var_export($envUsernameSE, true),
+            var_export($serverUsernameSE, true),
+        ));
         if ($envUsername !== '' && $envUsername !== 'root') {
+            $this->debugLog('recover: guard(4-b) process ENV DB_WRITE_USERNAME is already healthy — return');
+
             return;
         }
+
+        $this->debugLog('recover: all guards passed — applying putenv for refreshable keys');
 
         // 4개 조건 모두 만족 — process ENV 갱신
         $refreshableKeys = [
@@ -124,13 +217,23 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
 
         foreach ($refreshableKeys as $key) {
             if (! array_key_exists($key, $parsed)) {
+                $this->debugLog(sprintf('recover: skip key=%s (not in parsed .env)', $key));
                 continue;
             }
             $value = $this->unwrapEnvValue((string) $parsed[$key]);
-            putenv($key.'='.$value);
+            $putenvResult = putenv($key.'='.$value);
             $_ENV[$key] = $value;
             $_SERVER[$key] = $value;
+            $this->debugLog(sprintf(
+                'recover: applied key=%s value=%s putenv_ok=%s, getenv_after=%s',
+                $key,
+                $this->maskValue($key, $value),
+                $putenvResult ? '1' : '0',
+                $this->maskValue($key, (string) getenv($key)),
+            ));
         }
+
+        $this->debugDump('recover-after-apply');
     }
 
     private function unwrapEnvValue(string $value): string
