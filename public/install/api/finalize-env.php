@@ -83,11 +83,14 @@ try {
     // ServeCommand 의 mtime watcher 가 다중 재시작을 일으키지 않는다.
     // atomic rename 대신 file_put_contents 를 사용하여 부모 디렉토리(프로젝트 루트)
     // 쓰기 권한 요구를 회피 — 기존 인스톨러 권한 안내 (chmod 664 .env + chgrp) 만으로 충분.
-    $envExistedBeforeWrite = is_file($envPath);
-    $envPermsBeforeWrite = $envExistedBeforeWrite ? (fileperms($envPath) & 0777) : null;
-    $envOwnerBeforeWrite = $envExistedBeforeWrite ? @fileowner($envPath) : null;
-    $envGroupBeforeWrite = $envExistedBeforeWrite ? @filegroup($envPath) : null;
-
+    //
+    // 권한 정책 (#371): finalize-env.php 는 chmod 0600 시도를 수행하지 않는다.
+    // PHP-FPM(www-data) 가 .env 소유자(예: jjh) 와 다른 자체 구축 환경에서는 POSIX 상
+    // chmod 가 거부되며, 또한 인스톨러가 임의로 0600 으로 깎으면 운영자가 의도해서
+    // 설정한 0664/0640 권한이 손상된다. file_put_contents 는 기존 inode 의 권한을
+    // 변경하지 않으므로, 인스톨러 안내 단계의 권한 (chgrp www-data + chmod 664) 이
+    // 그대로 유지된다. 추가 보안 강화는 Step 6 완료 화면 안내 + INSTALL.md 운영
+    // 가이드에 위임.
     if (@file_put_contents($envPath, $envContent, LOCK_EX) === false) {
         $lastError = error_get_last();
         addLog(sprintf(
@@ -98,10 +101,7 @@ try {
         return;
     }
 
-    // chmod 시도/결과를 명시 기록 — silent fail 로 운영자 분석 차단되던 회귀 (이슈 #371) 방지.
-    // 호출 사용자가 파일 소유자가 아니면 POSIX 상 chmod 가 실패하며, @ suppress 로 인해
-    // 운영자가 인지하지 못한 채로 .env 권한이 인스톨러 안내 단계 (예: 0664) 그대로 잔존한다.
-    $chmodResult = @chmod($envPath, 0600);
+    // 머지 후 권한·소유자·그룹 상태를 명시 기록 — 운영자 사후 검증용
     $envPermsAfter = fileperms($envPath) & 0777;
     $envOwnerAfter = @fileowner($envPath);
     $envGroupAfter = @filegroup($envPath);
@@ -111,32 +111,14 @@ try {
         ? (posix_getpwuid($currentEuid)['name'] ?? (string) $currentEuid)
         : 'unknown';
 
-    if ($chmodResult === false) {
-        $lastError = error_get_last();
-        addLog(sprintf(
-            '[finalize-env] chmod(0600) FAILED: path=%s, actual_perms=%s, file_owner_uid=%s, '
-            .'process_euser=%s, process_euid=%s, last_error=%s. '
-            .'원인 추정: 현재 프로세스가 .env 의 소유자가 아니어서 POSIX chmod 권한 부족. '
-            .'운영자 권장 조치: chown {process_euser}:{webgroup} .env 후 chmod 600 .env, '
-            .'또는 chgrp {webgroup} .env && chmod 640 .env 절충안 적용.',
-            $envPath,
-            decoct($envPermsAfter),
-            $envOwnerAfter === false ? 'unknown' : (string) $envOwnerAfter,
-            $currentEuser,
-            $currentEuid === null ? 'n/a' : (string) $currentEuid,
-            $lastError['message'] ?? 'unknown',
-        ));
-    } else {
-        addLog(sprintf(
-            '[finalize-env] chmod(0600) success: path=%s, perms=%s→%s, owner_uid=%s, group_gid=%s, process_euser=%s',
-            $envPath,
-            $envPermsBeforeWrite === null ? 'new' : decoct($envPermsBeforeWrite),
-            decoct($envPermsAfter),
-            $envOwnerAfter === false ? 'unknown' : (string) $envOwnerAfter,
-            $envGroupAfter === false ? 'unknown' : (string) $envGroupAfter,
-            $currentEuser,
-        ));
-    }
+    addLog(sprintf(
+        '[finalize-env] .env 머지 완료 (chmod 시도 안 함, 기존 권한 보존): path=%s, perms=%s, owner_uid=%s, group_gid=%s, process_euser=%s',
+        $envPath,
+        decoct($envPermsAfter),
+        $envOwnerAfter === false ? 'unknown' : (string) $envOwnerAfter,
+        $envGroupAfter === false ? 'unknown' : (string) $envGroupAfter,
+        $currentEuser,
+    ));
 
     // runtime.php 삭제 — Provider 가 다음 부팅부터 no-op
     if (! deleteInstallerRuntime()) {
