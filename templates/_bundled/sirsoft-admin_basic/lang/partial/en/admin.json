@@ -1834,7 +1834,12 @@
       "manual_update_title": "Manual Update (No ZIP Extension)",
       "manual_update_desc": "If PHP zip extension or unzip command is not available on your server, you can download the release ZIP from GitHub and update manually.",
       "manual_update_step1": "# 1. Download ZIP from GitHub releases page and extract on server",
-      "manual_update_step2": "# 2. Run update with the extracted path"
+      "manual_update_step2": "# 2. Run update with the extracted path",
+      "update_guide_cmd_comment": "# Run with administrator privileges (Linux/macOS)",
+      "update_guide_cmd": "$ sudo php artisan core:update",
+      "manual_update_cmd": "$ sudo php artisan core:update --source=/path/to/extracted",
+      "upgrade_guide_link_desc": "See the upgrade guide for permission notes and per-version paths.",
+      "upgrade_guide_link_label": "Open the full upgrade guide"
     },
     "modals": {
       "password_confirm_title": "Password Confirmation",

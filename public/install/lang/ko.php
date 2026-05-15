@@ -138,6 +138,13 @@ return [
     'recommendation_env_permission' => '.env 파일 권한을 644로 설정하세요 (chmod 644 .env)',
     'recommendation_https' => '프로덕션 환경에서는 반드시 HTTPS를 사용하세요',
 
+    // .env 권한 보안 강화 안내 (Step 5 완료 화면, 0600 미적용 시 조건부 노출)
+    'env_hardening_hint_title' => '.env 권한 보안 강화 (선택)',
+    'env_hardening_hint_current_status' => '현재 .env 권한은 %s 입니다 (소유자: %s). 가장 안전한 권한은 0600 (소유자만 읽기·쓰기) 이며, 다음 두 명령 중 환경에 맞는 쪽을 sudo 로 실행하여 추가 보안 강화를 적용할 수 있습니다.',
+    'env_hardening_hint_option_strict' => '명령줄 사용자 = 웹 서버 사용자 (단일 사용자 환경)',
+    'env_hardening_hint_option_group' => '명령줄 사용자 ≠ 웹 서버 사용자 (자체 구축 서버 등 — 그룹 읽기 허용 절충안)',
+    'env_hardening_hint_note' => '명령 실행 전 환경을 확인하세요. 잘못된 권한 적용 시 웹 서버가 .env 를 읽지 못해 사이트가 응답하지 않을 수 있습니다.',
+
     // Step 5: 완료
     'installation_info' => '설치 정보',
     'installation_complete_message' => '그누보드7이 성공적으로 설치되었습니다!',

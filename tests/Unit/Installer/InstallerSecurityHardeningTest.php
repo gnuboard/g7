@@ -73,9 +73,13 @@ class InstallerSecurityHardeningTest extends TestCase
      */
     protected function tearDown(): void
     {
-        @unlink(STATE_PATH);
+        if (is_file(STATE_PATH)) {
+            @unlink(STATE_PATH);
+        }
         $projectStateFile = dirname(__DIR__, 3) . '/storage/installer-state.json';
-        @unlink($projectStateFile);
+        if (is_file($projectStateFile)) {
+            @unlink($projectStateFile);
+        }
         parent::tearDown();
     }
 
