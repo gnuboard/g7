@@ -29,6 +29,9 @@ axes:
   cli_vs_phpfpm_user: [same_user, different_user_phpfpm_group_member, different_user_no_group_link]
   env_preexisting_mode: [absent, 0600_strict, 0640_group_readable, 0664_group_writable]
   bootstrap_cache_owner_group: [phpfpm_user, root_with_phpfpm_group, missing]
+  # 이슈 #371 — 부모 프로세스 stale ENV 가 spawn 자식에 전파되어
+  # Access denied 가 발생하던 회귀 차단 axis (한시적 보정 — beta.8 이후 트리거 안 됨)
+  parent_process_env_state: [matches_runtime, stale_from_env_example_root, stale_partial]
 
 exclusions:
   - { runtime_state: absent, env_state: example_only, finalize_call: success, reason: "runtime 부재 시 finalize 는 멱등적 no-op" }
@@ -121,12 +124,18 @@ effects:
   - upgrade_step_skips_chown_when_lacking_root_privilege_silent_with_log_hint
   - upgrade_step_skips_uid_when_bootstrap_cache_owner_is_root_to_avoid_root_owned_env
   - upgrade_step_inherits_group_only_when_bootstrap_cache_owner_is_root_but_group_is_not
+  # 이슈 #371 — 부모 프로세스 process ENV 도 머지된 자격증명으로 갱신하여 spawn 자식 전파 보장
+  - upgrade_step_refreshes_parent_process_env_with_merged_db_write_credentials
+  - upgrade_step_refreshes_parent_process_env_with_merged_db_read_credentials
+  - upgrade_step_skips_env_refresh_when_runtime_credential_keys_are_missing
+  - upgrade_step_does_not_overwrite_app_key_env_when_runtime_value_lacks_base64_prefix
 
 test_files:
   - tests/Unit/Providers/InstallerRuntimeServiceProviderTest.php
   - tests/Unit/Installer/InstallerRuntimeHelperTest.php
   - tests/Unit/Installer/InstallerGuardTest.php
   - tests/Feature/Console/Core/FinalizeOrphanedInstallerRuntimeTest.php
+  - tests/Feature/Upgrade/Beta7FinalizeOrphanedInstallerRuntimeTest.php
 
 manual_verification:
   - scenario: A_artisan_serve
