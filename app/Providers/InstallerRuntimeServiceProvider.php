@@ -192,18 +192,29 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
             return;
         }
 
-        // 조건 (4-b): process ENV 의 DB_WRITE_USERNAME 이 stale (root 또는 빈 값)
+        // 조건 (4-b): process ENV 의 DB_WRITE_USERNAME 이 stale (root 또는 빈 값).
+        //
+        // bootstrap/app.php 의 Env::disablePutenv() 로 인해 getenv 가 빈 값일 수 있으므로,
+        // getenv / $_ENV / $_SERVER 셋 중 어느 하나라도 정합 (root 아님 + 빈 값 아님) 이면
+        // 정상 환경으로 판정하여 보정 skip. 셋 다 stale (root 또는 빈) 일 때만 진입.
         $envUsername = (string) getenv('DB_WRITE_USERNAME');
-        $envUsernameSE = $_ENV['DB_WRITE_USERNAME'] ?? null;
-        $serverUsernameSE = $_SERVER['DB_WRITE_USERNAME'] ?? null;
+        $envUsernameSE = (string) ($_ENV['DB_WRITE_USERNAME'] ?? '');
+        $serverUsernameSE = (string) ($_SERVER['DB_WRITE_USERNAME'] ?? '');
         $this->debugLog(sprintf(
             'recover: process ENV DB_WRITE_USERNAME getenv=%s, $_ENV=%s, $_SERVER=%s',
             var_export($envUsername, true),
             var_export($envUsernameSE, true),
             var_export($serverUsernameSE, true),
         ));
-        if ($envUsername !== '' && $envUsername !== 'root') {
-            $this->debugLog('recover: guard(4-b) process ENV DB_WRITE_USERNAME is already healthy — return');
+        $hasHealthySignal = false;
+        foreach ([$envUsername, $envUsernameSE, $serverUsernameSE] as $candidate) {
+            if ($candidate !== '' && $candidate !== 'root') {
+                $hasHealthySignal = true;
+                break;
+            }
+        }
+        if ($hasHealthySignal) {
+            $this->debugLog('recover: guard(4-b) at least one of getenv/$_ENV/$_SERVER is already healthy — return');
 
             return;
         }
@@ -235,7 +246,71 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
             ));
         }
 
+        // Laravel Config 도 동기 갱신 — register() 시점에 LoadConfiguration 이 이미 실행되어
+        // process ENV 만 갱신해도 config('database.connections.mysql.*') 가 stale 값
+        // (root) 으로 캐시된 상태이기 때문에 직접 덮어써야 한다 (PO 디버그 로그에서 확인:
+        // recover-after-apply 시점에 process ENV 는 'jjh' 인데 config 는 'root' 였음).
+        $this->applyConfigFromParsedEnv($parsed);
+
         $this->debugDump('recover-after-apply');
+        $this->debugLog(sprintf(
+            'recover-after-apply: config.write.username=%s, config.read.username=%s',
+            var_export(\config('database.connections.mysql.write.username'), true),
+            var_export(\config('database.connections.mysql.read.username'), true),
+        ));
+    }
+
+    /**
+     * recover 분기 — 파싱된 .env 의 DB_* / APP_KEY / DB_PREFIX 를 Laravel Config 에 적용.
+     *
+     * 기존 `applyDatabaseConfig` 와 동등한 키 경로 / 구조 (`database.connections.mysql.{read,write}.*`).
+     *
+     * @param  array<string, string>  $parsed
+     */
+    private function applyConfigFromParsedEnv(array $parsed): void
+    {
+        $writeHost = $parsed['DB_WRITE_HOST'] ?? null;
+        if ($writeHost !== null && $writeHost !== '') {
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.write.host', [$writeHost]);
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.write.port', $parsed['DB_WRITE_PORT'] ?? '3306');
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.write.database', $parsed['DB_WRITE_DATABASE'] ?? '');
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.write.username', $parsed['DB_WRITE_USERNAME'] ?? '');
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.write.password', $parsed['DB_WRITE_PASSWORD'] ?? '');
+        }
+
+        $readHost = $parsed['DB_READ_HOST'] ?? null;
+        if ($readHost !== null && $readHost !== '') {
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.host', [$readHost]);
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.port', $parsed['DB_READ_PORT'] ?? '3306');
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.database', $parsed['DB_READ_DATABASE'] ?? '');
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.username', $parsed['DB_READ_USERNAME'] ?? '');
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.password', $parsed['DB_READ_PASSWORD'] ?? '');
+        } elseif ($writeHost !== null && $writeHost !== '') {
+            // read 가 별도 지정되지 않은 경우 write 값으로 동기화 (단일 DB 시나리오)
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.host', [$writeHost]);
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.port', $parsed['DB_WRITE_PORT'] ?? '3306');
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.database', $parsed['DB_WRITE_DATABASE'] ?? '');
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.username', $parsed['DB_WRITE_USERNAME'] ?? '');
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.read.password', $parsed['DB_WRITE_PASSWORD'] ?? '');
+        }
+
+        if (isset($parsed['DB_PREFIX'])) {
+            \Illuminate\Support\Facades\Config::set('database.connections.mysql.prefix', $parsed['DB_PREFIX']);
+        }
+
+        $appKey = $parsed['APP_KEY'] ?? null;
+        if (is_string($appKey) && $appKey !== '') {
+            \Illuminate\Support\Facades\Config::set('app.key', $appKey);
+        }
+
+        // 기존 connection 인스턴스의 stale credential 캐시 폐기 — 다음 DB::connection() 호출 시
+        // 새 Config 로 재인스턴스화되도록 강제. PO 로그상 config.write.username 이 root 로
+        // 남아 있던 회귀의 부속 원인 가능성 (DB Manager 의 connection 캐시).
+        try {
+            \Illuminate\Support\Facades\DB::purge('mysql');
+        } catch (\Throwable $e) {
+            $this->debugLog('recover: DB::purge(mysql) failed (non-fatal): ' . $e->getMessage());
+        }
     }
 
     /**
