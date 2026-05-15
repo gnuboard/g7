@@ -1838,7 +1838,12 @@
       "manual_update_title": "수동 업데이트 (ZIP 확장 미설치 환경)",
       "manual_update_desc": "서버에 PHP zip 확장이나 unzip 명령어가 없는 경우, GitHub에서 릴리스 ZIP을 직접 다운로드하여 업데이트할 수 있습니다.",
       "manual_update_step1": "# 1. GitHub 릴리스 페이지에서 ZIP 다운로드 후 서버에 압축 해제",
-      "manual_update_step2": "# 2. 압축 해제된 경로를 지정하여 업데이트 실행"
+      "manual_update_step2": "# 2. 압축 해제된 경로를 지정하여 업데이트 실행",
+      "update_guide_cmd_comment": "# 관리자 권한으로 실행 권장 (Linux/macOS)",
+      "update_guide_cmd": "$ sudo php artisan core:update",
+      "manual_update_cmd": "$ sudo php artisan core:update --source=/path/to/extracted",
+      "upgrade_guide_link_desc": "운영 환경별 권한/사용자군별 자세한 절차는 업그레이드 가이드를 참고하세요.",
+      "upgrade_guide_link_label": "전체 업그레이드 가이드 보기"
     },
     "modals": {
       "password_confirm_title": "비밀번호 확인",
