@@ -25,6 +25,10 @@ axes:
   g7_installed_lock_state: [absent, present_before_finalize]
   finalize_guard_signal: [lock_only, env_completed_true_only, lock_and_env_completed_true, neither]
   orphaned_recovery_path: [none, upgrade_step_auto_finalize, upgrade_step_warn_manual_review]
+  # 이슈 #371 — 웹 서버 사용자/그룹 정합 axis (Upgrade Step 의 권한 조정)
+  cli_vs_phpfpm_user: [same_user, different_user_phpfpm_group_member, different_user_no_group_link]
+  env_preexisting_mode: [absent, 0600_strict, 0640_group_readable, 0664_group_writable]
+  bootstrap_cache_owner_group: [phpfpm_user, root_with_phpfpm_group, missing]
 
 exclusions:
   - { runtime_state: absent, env_state: example_only, finalize_call: success, reason: "runtime 부재 시 finalize 는 멱등적 no-op" }
@@ -108,6 +112,15 @@ effects:
   - upgrade_step_logs_skip_when_runtime_php_returns_non_array_format_mismatch
   - upgrade_step_deletes_state_json_after_merge_when_DELETE_INSTALLER_AFTER_COMPLETE_set
   - upgrade_step_preserves_state_json_when_DELETE_INSTALLER_AFTER_COMPLETE_unset
+  # 이슈 #371 — 웹 서버 권한 자동 조정
+  - upgrade_step_preserves_existing_env_mode_uid_gid_when_env_existed_before_merge
+  - upgrade_step_preserves_strict_0600_env_mode_when_owner_intent_present
+  - upgrade_step_uses_0640_default_permission_for_newly_created_env_not_0600
+  - upgrade_step_detects_web_server_group_from_bootstrap_cache_for_new_env
+  - upgrade_step_falls_back_to_storage_logs_when_bootstrap_cache_absent
+  - upgrade_step_skips_chown_when_lacking_root_privilege_silent_with_log_hint
+  - upgrade_step_skips_uid_when_bootstrap_cache_owner_is_root_to_avoid_root_owned_env
+  - upgrade_step_inherits_group_only_when_bootstrap_cache_owner_is_root_but_group_is_not
 
 test_files:
   - tests/Unit/Providers/InstallerRuntimeServiceProviderTest.php
