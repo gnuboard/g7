@@ -67,6 +67,55 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
         . '<strong>' . htmlspecialchars($coreVersion) . '</strong>'
         . '</p>';
 
+    // .env 권한 권장 강화 안내 — 0600 이 아니면 조건부 노출 (#371)
+    // finalize-env.php 는 chmod 시도를 수행하지 않으므로 인스톨러 안내 단계의 권한
+    // (예: 0664 + chgrp www-data) 이 그대로 유지됨. 운영자가 추가로 0600 적용을
+    // 원할 수 있도록 현재 권한이 0600 미만 (그룹/기타 비트가 있음) 이면 명령 예시 노출.
+    //
+    // OS 가드: chmod/chgrp 는 POSIX 권한 모델 (Linux/macOS/BSD) 에서 동작.
+    // Windows 만 명령이 무의미하므로 Windows 만 비노출.
+    $envPath = BASE_PATH . '/.env';
+    if (PHP_OS_FAMILY !== 'Windows' && is_file($envPath)) {
+        $envPerms = fileperms($envPath) & 0777;
+        if ($envPerms !== 0600) {
+            $envOwnerUid = @fileowner($envPath);
+            $envOwnerName = ($envOwnerUid !== false && function_exists('posix_getpwuid'))
+                ? (posix_getpwuid($envOwnerUid)['name'] ?? (string) $envOwnerUid)
+                : 'owner';
+            $webGroupName = function_exists('posix_getegid') && function_exists('posix_getgrgid')
+                ? (posix_getgrgid(posix_getegid())['name'] ?? 'www-data')
+                : 'www-data';
+
+            $hardeningCommandSameOwner = sprintf('chmod 600 %s', htmlspecialchars($envPath));
+            $hardeningCommandDifferentOwner = sprintf(
+                'sudo chgrp %s %s && sudo chmod 640 %s',
+                htmlspecialchars($webGroupName),
+                htmlspecialchars($envPath),
+                htmlspecialchars($envPath)
+            );
+
+            $completionExtra .= '<div class="env-hardening-hint">'
+                . '<p class="env-hardening-hint-title">' . htmlspecialchars(lang('env_hardening_hint_title')) . '</p>'
+                . '<p class="env-hardening-hint-status">'
+                . sprintf(
+                    htmlspecialchars(lang('env_hardening_hint_current_status')),
+                    decoct($envPerms),
+                    htmlspecialchars($envOwnerName)
+                )
+                . '</p>'
+                . '<p class="env-hardening-hint-option">'
+                . htmlspecialchars(lang('env_hardening_hint_option_strict'))
+                . '</p>'
+                . '<div class="code-box"><pre>' . $hardeningCommandSameOwner . '</pre></div>'
+                . '<p class="env-hardening-hint-option">'
+                . htmlspecialchars(lang('env_hardening_hint_option_group'))
+                . '</p>'
+                . '<div class="code-box"><pre>' . $hardeningCommandDifferentOwner . '</pre></div>'
+                . '<p class="env-hardening-hint-note">' . htmlspecialchars(lang('env_hardening_hint_note')) . '</p>'
+                . '</div>';
+        }
+    }
+
     echo renderInstallResultSection('completion', 'success', 'installation_completed', 'installation_complete_message', $completionButtons, $completionExtra);
     ?>
 
