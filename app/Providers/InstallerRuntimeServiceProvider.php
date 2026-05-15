@@ -360,37 +360,64 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      */
     private function normalizeRootOwnedCacheDirs(): void
     {
+        $this->debugLog('normalizeRootOwnedCacheDirs: enter');
+
         // beta.7 한정 — recover 와 동일 가드
         $coreVersion = $this->readCoreVersionFromDisk();
+        $this->debugLog('normalizeRootOwnedCacheDirs: disk core version=' . var_export($coreVersion, true));
         if ($coreVersion !== '7.0.0-beta.7') {
+            $this->debugLog('normalizeRootOwnedCacheDirs: not beta.7 — return');
+
             return;
         }
 
         if (! function_exists('posix_geteuid') || ! function_exists('chown') || ! function_exists('chgrp')) {
+            $this->debugLog('normalizeRootOwnedCacheDirs: posix/chown/chgrp 미지원 — return');
+
             return;
         }
 
         // root 권한 프로세스만 (PHP-FPM 워커는 www-data → euid != 0 → skip)
-        if (posix_geteuid() !== 0) {
+        $euid = posix_geteuid();
+        $this->debugLog('normalizeRootOwnedCacheDirs: euid=' . $euid);
+        if ($euid !== 0) {
+            $this->debugLog('normalizeRootOwnedCacheDirs: not root (euid != 0) — return');
+
             return;
         }
 
         $cacheRoot = base_path('storage/framework/cache/data');
+        $this->debugLog('normalizeRootOwnedCacheDirs: cacheRoot=' . $cacheRoot . ' is_dir=' . (is_dir($cacheRoot) ? '1' : '0'));
         if (! is_dir($cacheRoot)) {
+            $this->debugLog('normalizeRootOwnedCacheDirs: cacheRoot 부재 — return');
+
             return;
         }
 
         // 정상 owner/group 추정 (cache/data 자신이 SSoT)
         $targetUid = @fileowner($cacheRoot);
         $targetGid = @filegroup($cacheRoot);
+        $this->debugLog(sprintf(
+            'normalizeRootOwnedCacheDirs: cacheRoot owner uid=%s gid=%s',
+            var_export($targetUid, true),
+            var_export($targetGid, true),
+        ));
         if (! is_int($targetUid) || ! is_int($targetGid) || $targetUid === 0) {
             // cache/data 자신이 root 소유면 추정 실패 — bootstrap/cache fallback
             $bootstrapCache = base_path('bootstrap/cache');
+            $this->debugLog('normalizeRootOwnedCacheDirs: fallback bootstrap/cache is_dir=' . (is_dir($bootstrapCache) ? '1' : '0'));
             if (is_dir($bootstrapCache)) {
                 $targetUid = @fileowner($bootstrapCache);
                 $targetGid = @filegroup($bootstrapCache);
+                $this->debugLog(sprintf(
+                    'normalizeRootOwnedCacheDirs: bootstrap/cache owner uid=%s gid=%s',
+                    var_export($targetUid, true),
+                    var_export($targetGid, true),
+                ));
             }
             if (! is_int($targetUid) || ! is_int($targetGid) || $targetUid === 0) {
+                $this->debugLog('normalizeRootOwnedCacheDirs: targetUid/Gid 추정 실패 — return');
+
                 return;
             }
         }
@@ -398,37 +425,57 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         // 1depth 만 빠르게 점검 — root 소유 디렉토리 발견 시 재귀 chown
         $handle = @opendir($cacheRoot);
         if ($handle === false) {
+            $this->debugLog('normalizeRootOwnedCacheDirs: opendir 실패 — return');
+
             return;
         }
         $found = 0;
         $changed = 0;
+        $considered = 0;
+        $skipped = 0;
         while (($name = readdir($handle)) !== false) {
             if ($name === '.' || $name === '..') {
                 continue;
             }
+            $considered++;
             $path = $cacheRoot.DIRECTORY_SEPARATOR.$name;
             $uid = @fileowner($path);
             $gid = @filegroup($path);
             if ($uid !== 0 && $gid !== 0) {
+                $skipped++;
                 continue;
             }
             $found++;
+            $this->debugLog(sprintf(
+                'normalizeRootOwnedCacheDirs: root-owned entry detected name=%s uid=%s gid=%s — chown recursive',
+                $name,
+                var_export($uid, true),
+                var_export($gid, true),
+            ));
             // 재귀 chown
-            if ($this->chownRecursive($path, $targetUid, $targetGid)) {
+            $ok = $this->chownRecursive($path, $targetUid, $targetGid);
+            $this->debugLog(sprintf(
+                'normalizeRootOwnedCacheDirs: chown result name=%s ok=%s after_uid=%s after_gid=%s',
+                $name,
+                $ok ? '1' : '0',
+                var_export(@fileowner($path), true),
+                var_export(@filegroup($path), true),
+            ));
+            if ($ok) {
                 $changed++;
             }
         }
         closedir($handle);
 
-        if ($found > 0) {
-            $this->debugLog(sprintf(
-                'normalizeRootOwnedCacheDirs: found=%d changed=%d (targetUid=%d targetGid=%d)',
-                $found,
-                $changed,
-                $targetUid,
-                $targetGid,
-            ));
-        }
+        $this->debugLog(sprintf(
+            'normalizeRootOwnedCacheDirs exit — considered=%d found=%d changed=%d skipped=%d (targetUid=%d targetGid=%d)',
+            $considered,
+            $found,
+            $changed,
+            $skipped,
+            $targetUid,
+            $targetGid,
+        ));
     }
 
     /**
