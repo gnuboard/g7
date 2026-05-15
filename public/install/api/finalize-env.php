@@ -72,7 +72,7 @@ try {
     $envBase = generateEnvContent();
 
     if ($envBase === null) {
-        error_log('[finalize-env] generateEnvContent() returned null — .env.example missing');
+        addLog('[finalize-env] generateEnvContent() returned null — .env.example missing');
         return;
     }
 
@@ -90,7 +90,7 @@ try {
 
     if (@file_put_contents($envPath, $envContent, LOCK_EX) === false) {
         $lastError = error_get_last();
-        error_log(sprintf(
+        addLog(sprintf(
             '[finalize-env] file_put_contents FAILED: path=%s, last_error=%s',
             $envPath,
             $lastError['message'] ?? 'unknown',
@@ -113,7 +113,7 @@ try {
 
     if ($chmodResult === false) {
         $lastError = error_get_last();
-        error_log(sprintf(
+        addLog(sprintf(
             '[finalize-env] chmod(0600) FAILED: path=%s, actual_perms=%s, file_owner_uid=%s, '
             .'process_euser=%s, process_euid=%s, last_error=%s. '
             .'원인 추정: 현재 프로세스가 .env 의 소유자가 아니어서 POSIX chmod 권한 부족. '
@@ -127,7 +127,7 @@ try {
             $lastError['message'] ?? 'unknown',
         ));
     } else {
-        error_log(sprintf(
+        addLog(sprintf(
             '[finalize-env] chmod(0600) success: path=%s, perms=%s→%s, owner_uid=%s, group_gid=%s, process_euser=%s',
             $envPath,
             $envPermsBeforeWrite === null ? 'new' : decoct($envPermsBeforeWrite),
@@ -140,14 +140,14 @@ try {
 
     // runtime.php 삭제 — Provider 가 다음 부팅부터 no-op
     if (! deleteInstallerRuntime()) {
-        error_log(sprintf(
+        addLog(sprintf(
             '[finalize-env] deleteInstallerRuntime FAILED: path=%s, last_error=%s. '
             .'runtime.php 잔존 — InstallerRuntimeServiceProvider 폴백 동작 유지되나 평문 자격증명 보안 우려.',
             INSTALLER_RUNTIME_PATH,
             (error_get_last()['message'] ?? 'unknown'),
         ));
     } else {
-        error_log('[finalize-env] runtime.php 삭제 완료');
+        addLog('[finalize-env] runtime.php 삭제 완료');
     }
 
     // state.json 삭제 — setInstallationCompleteSSE 가 본 단계로 위임함
@@ -156,17 +156,17 @@ try {
         $stateFilePath = BASE_PATH . '/storage/installer-state.json';
         if (is_file($stateFilePath)) {
             if (@unlink($stateFilePath) === false) {
-                error_log(sprintf(
+                addLog(sprintf(
                     '[finalize-env] state.json unlink FAILED: path=%s, last_error=%s',
                     $stateFilePath,
                     (error_get_last()['message'] ?? 'unknown'),
                 ));
             } else {
-                error_log('[finalize-env] state.json 삭제 완료');
+                addLog('[finalize-env] state.json 삭제 완료');
             }
         }
     }
 } catch (\Throwable $e) {
     // 예외 시 runtime.php 보존 → Provider 가 계속 config 주입 → 앱 정상 동작.
-    error_log('[finalize-env] unexpected exception: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+    addLog('[finalize-env] unexpected exception: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
 }

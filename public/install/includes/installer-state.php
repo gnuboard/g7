@@ -42,7 +42,9 @@ function getInstallationState(): array
 
     // 파일 읽기 권한 체크
     if (!is_readable(STATE_PATH)) {
-        error_log("State file is not readable: " . STATE_PATH);
+        $msg = "[installer-state] State file is not readable: " . STATE_PATH;
+        error_log($msg);
+        addLog($msg);
         return $defaultState;
     }
 
@@ -51,7 +53,9 @@ function getInstallationState(): array
 
     // 파일 읽기 실패 시 기본 상태 반환
     if ($content === false) {
-        error_log("Failed to read state file: " . STATE_PATH);
+        $msg = "[installer-state] Failed to read state file: " . STATE_PATH;
+        error_log($msg);
+        addLog($msg);
         return $defaultState;
     }
 
@@ -61,7 +65,9 @@ function getInstallationState(): array
     if (json_last_error() !== JSON_ERROR_NONE) {
         $contentLen = strlen($content);
         $preview = substr($content, 0, 200);
-        error_log("Failed to parse state file JSON (length={$contentLen}): " . json_last_error_msg() . " / preview: " . $preview);
+        $msg = "[installer-state] Failed to parse state file JSON (length={$contentLen}): " . json_last_error_msg() . " / preview: " . $preview;
+        error_log($msg);
+        addLog($msg);
         return $defaultState;
     }
 
@@ -79,13 +85,17 @@ function saveInstallationState(array $state): bool
     // storage 디렉토리 존재 여부 확인 (생성하지 않음)
     $storageDir = BASE_PATH . '/storage';
     if (!is_dir($storageDir)) {
-        error_log("Storage directory does not exist: {$storageDir}");
+        $msg = "[installer-state] Storage directory does not exist: {$storageDir}";
+        error_log($msg);
+        addLog($msg);
         return false;
     }
 
     // 디렉토리 쓰기 권한 확인
     if (!is_writable($storageDir)) {
-        error_log("Storage directory is not writable: {$storageDir}");
+        $msg = "[installer-state] Storage directory is not writable: {$storageDir}";
+        error_log($msg);
+        addLog($msg);
         return false;
     }
 
@@ -96,7 +106,9 @@ function saveInstallationState(array $state): bool
     $content = json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
     if ($content === false) {
-        error_log("Failed to encode state as JSON: " . json_last_error_msg());
+        $msg = "[installer-state] Failed to encode state as JSON: " . json_last_error_msg();
+        error_log($msg);
+        addLog($msg);
         return false;
     }
 
@@ -107,7 +119,9 @@ function saveInstallationState(array $state): bool
 
     $result = @file_put_contents($tmpPath, $content, LOCK_EX);
     if ($result === false || $result !== strlen($content)) {
-        error_log("Failed to write state tmp file: " . $tmpPath);
+        $msg = "[installer-state] Failed to write state tmp file: " . $tmpPath;
+        error_log($msg);
+        addLog($msg);
         @unlink($tmpPath);
         return false;
     }
@@ -115,7 +129,9 @@ function saveInstallationState(array $state): bool
     @chmod($tmpPath, 0664);
 
     if (!@rename($tmpPath, STATE_PATH)) {
-        error_log("Failed to rename state tmp file: " . $tmpPath . ' → ' . STATE_PATH);
+        $msg = "[installer-state] Failed to rename state tmp file: " . $tmpPath . ' → ' . STATE_PATH;
+        error_log($msg);
+        addLog($msg);
         @unlink($tmpPath);
         return false;
     }
@@ -379,13 +395,17 @@ function addLogBatch(array $messages): bool
     if (!is_dir($logDir)) {
         $created = @mkdir($logDir, 0775, true);
         if (!$created) {
-            error_log("Failed to create log directory: {$logDir}");
+            $msg = "[addLogBatch] Failed to create log directory: {$logDir}";
+            error_log($msg);
+            addLog($msg); // 재귀 가드가 차단하므로 안전 — error_log fallback 만 수행
             return false;
         }
     }
 
     if (!is_writable($logDir)) {
-        error_log("Log directory is not writable: {$logDir}");
+        $msg = "[addLogBatch] Log directory is not writable: {$logDir}";
+        error_log($msg);
+        addLog($msg); // 재귀 가드가 차단
         return false;
     }
 
@@ -412,7 +432,9 @@ function addLogBatch(array $messages): bool
 
     $handle = @fopen($logFile, 'a');
     if ($handle === false) {
-        error_log("Failed to open log file: {$logFile}");
+        $msg = "[addLogBatch] Failed to open log file: {$logFile}";
+        error_log($msg);
+        addLog($msg); // 재귀 가드가 차단
         return false;
     }
     flock($handle, LOCK_EX);
@@ -426,6 +448,36 @@ function addLogBatch(array $messages): bool
 
 function addLog(string $message): bool
 {
+    // 무한 재귀 가드 — addLog 내부 폴백 경로에서 자기 자신을 다시 호출하면 안 된다.
+    // installer-state.php / session.php / finalize-env.php 등에서 error_log 와 addLog 를
+    // 병행 호출하는 경우, addLog 내부의 인프라 실패 폴백 (storage 쓰기 실패 등) 시
+    // 호출자가 다시 addLog 를 부르면 같은 인프라가 다시 실패하여 무한 재귀가 발생할 수 있다.
+    static $inAddLog = false;
+    if ($inAddLog) {
+        // 재진입: installation.log 시도 skip, PHP error_log 만 호출하고 즉시 종료
+        error_log("[addLog reentrant] " . $message);
+        return false;
+    }
+    $inAddLog = true;
+
+    try {
+        return _addLogInternal($message);
+    } finally {
+        $inAddLog = false;
+    }
+}
+
+/**
+ * addLog 의 실제 구현 — 무한 재귀 가드를 거친 후 호출된다.
+ *
+ * 본 함수 안에서는 절대 addLog() 를 호출하지 말 것 (무한 재귀 위험).
+ * 내부 폴백은 error_log() 만 사용.
+ *
+ * @param  string  $message  기록할 메시지
+ * @return bool 성공 여부
+ */
+function _addLogInternal(string $message): bool
+{
     $logDir = BASE_PATH . '/storage/logs';
     $logFile = $logDir . '/installation.log';
 
@@ -433,14 +485,18 @@ function addLog(string $message): bool
     if (!is_dir($logDir)) {
         $created = @mkdir($logDir, 0775, true);
         if (!$created) {
-            error_log("Failed to create log directory: {$logDir} (storage 권한 확인 필요)");
+            $msg = "[addLog] Failed to create log directory: {$logDir} (storage 권한 확인 필요)";
+            error_log($msg);
+            addLog($msg); // 재귀 가드가 차단 (본 함수는 이미 가드 안)
             return false;
         }
     }
 
     // 로그 디렉토리 쓰기 권한 확인
     if (!is_writable($logDir)) {
-        error_log("Log directory is not writable: {$logDir}");
+        $msg = "[addLog] Log directory is not writable: {$logDir}";
+        error_log($msg);
+        addLog($msg); // 재귀 가드가 차단
         return false;
     }
 
@@ -471,7 +527,9 @@ function addLog(string $message): bool
     // 파일 핸들 열기 (append 모드)
     $handle = @fopen($logFile, 'a');
     if ($handle === false) {
-        error_log("Failed to open log file: {$logFile}");
+        $msg = "[addLog] Failed to open log file: {$logFile}";
+        error_log($msg);
+        addLog($msg); // 재귀 가드가 차단
         return false;
     }
 
@@ -492,7 +550,9 @@ function addLog(string $message): bool
     clearstatcache(true, $logFile);
 
     if ($result === false) {
-        error_log("Failed to write log file: {$logFile}");
+        $msg = "[addLog] Failed to write log file: {$logFile}";
+        error_log($msg);
+        addLog($msg); // 재귀 가드가 차단
         return false;
     }
 
