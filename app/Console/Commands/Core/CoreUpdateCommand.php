@@ -447,22 +447,6 @@ class CoreUpdateCommand extends Command
             }
             $log('업그레이드 스텝 완료');
 
-            // 부모 프로세스의 process ENV 동기화 — 이슈 #371 후속 회귀 가드.
-            //
-            // spawn 자식 1 (core:execute-upgrade-steps) 이 FinalizeOrphanedInstallerRuntime
-            // 으로 .env 머지 + 자체 process ENV 갱신을 수행했더라도, 자식 종료 후 부모로
-            // 돌아오면 자식의 putenv 효과는 사라지고 부모의 ENV 는 부팅 시점의 stale 값
-            // (.env.example fallback: DB_WRITE_USERNAME=root 등) 그대로 유지된다. 다음
-            // 단계의 spawn 자식 2 (번들 일괄 업데이트) 가 부모의 stale ENV 를 상속받아
-            // CoreServiceProvider::isDatabaseConnectionValid() 가드가 root 를 감지 → 확장
-            // 로딩 skip + ERROR 로그 → 번들 일괄 업데이트 전체 실패.
-            //
-            // 디스크의 .env 는 이미 자식 1 이 정합 상태로 만들어두었으므로, 부모도 디스크에서
-            // 다시 읽어 자신의 ENV 를 갱신한다. 정상 .env 환경에서는 같은 값으로의 멱등
-            // 재기록이라 부작용 없음.
-            $service->refreshProcessEnvFromEnvFile();
-            $log('부모 프로세스 ENV .env 기반 재동기화 완료 (#371 후속 회귀 가드)');
-
             $this->newLine();
             $bar->display();
 
