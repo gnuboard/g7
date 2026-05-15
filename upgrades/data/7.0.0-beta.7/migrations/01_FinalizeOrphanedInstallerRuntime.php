@@ -156,9 +156,115 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
             }
         }
 
+        // 본 PR 부수효과 정리 — beta.7 업그레이드 도중 자식 spawn 프로세스 (root 권한)
+        // 가 부팅하면서 InstallerRuntimeServiceProvider 의 recover 가 발화 → Config
+        // 보정 → CoreServiceProvider DB 가드 통과 → loadModules() → CachesModuleStatus
+        // 의 캐시 쓰기 흐름이 진행되어, storage/framework/cache/data/<hash>/ 디렉토리가
+        // root:root 권한으로 생성됨. 이후 일반 PHP-FPM 워커(www-data 그룹)가 그
+        // 디렉토리에 캐시 파일 쓰기 시도 시 Permission denied → 사이트 500 회귀.
+        //
+        // 정상 운영 디렉토리 (storage/, bootstrap/cache 등) 의 소유자/그룹을 기준으로
+        // storage/framework/cache/data/ 하위의 root 소유 항목만 일괄 chown.
+        $this->normalizeCachePermissions($basePath, $context);
+
         $context->logger->info(
             '[7.0.0-beta.7] 잔존 runtime.php 자동 finalize 완료 — .env 머지 + runtime.php 삭제 + state.json 정리'
         );
+    }
+
+    /**
+     * beta.7 업그레이드 부수효과 보정 — storage/framework/cache/data/ 하위의 root 소유
+     * 디렉토리/파일을 정상 소유자로 chown.
+     *
+     * 정상 소유자/그룹 결정:
+     *   - 1순위: storage/framework/cache/data/ 자신의 owner/group (이미 정상값을 보유)
+     *   - 2순위: bootstrap/cache/ 의 owner/group
+     *   - 3순위: 그 외 — skip (안전한 fallback 없으면 강제 변경 안 함)
+     *
+     * @param  string  $basePath  프로젝트 base path
+     */
+    private function normalizeCachePermissions(string $basePath, UpgradeContext $context): void
+    {
+        if (! function_exists('chown') || ! function_exists('posix_geteuid')) {
+            return;
+        }
+
+        $cacheRoot = $basePath.DIRECTORY_SEPARATOR.'storage'.DIRECTORY_SEPARATOR.'framework'.DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.'data';
+        if (! is_dir($cacheRoot)) {
+            return;
+        }
+
+        // 정상 owner/group 추정
+        [$targetUid, $targetGid] = $this->inferCacheOwnership($basePath, $cacheRoot);
+        if ($targetUid === null || $targetGid === null) {
+            $context->logger->info('[7.0.0-beta.7] 캐시 권한 보정 skip — 정상 owner/group 추정 실패');
+
+            return;
+        }
+
+        $changed = 0;
+        $failed = 0;
+        $iter = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($cacheRoot, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+        foreach ($iter as $entry) {
+            /** @var \SplFileInfo $entry */
+            $path = $entry->getPathname();
+            $currentUid = @fileowner($path);
+            $currentGid = @filegroup($path);
+            // 이미 정상이면 skip
+            if ($currentUid === $targetUid && $currentGid === $targetGid) {
+                continue;
+            }
+            // root (uid=0) 소유 항목만 보정 — 사용자가 의도해서 만든 다른 소유자는 보존
+            if ($currentUid !== 0 && $currentGid !== 0) {
+                continue;
+            }
+            $okOwner = @chown($path, $targetUid);
+            $okGroup = @chgrp($path, $targetGid);
+            if ($okOwner && $okGroup) {
+                $changed++;
+            } else {
+                $failed++;
+            }
+        }
+
+        $context->logger->info(sprintf(
+            '[7.0.0-beta.7] 캐시 권한 보정 완료 — root 소유 항목 changed=%d failed=%d (uid=%d gid=%d)',
+            $changed,
+            $failed,
+            $targetUid,
+            $targetGid,
+        ));
+    }
+
+    /**
+     * 캐시 디렉토리의 정상 owner/group 추정.
+     *
+     * @return array{0:int|null, 1:int|null}
+     */
+    private function inferCacheOwnership(string $basePath, string $cacheRoot): array
+    {
+        // 1순위: cache/data 자신의 owner/group (chown 대상 자식이 root 라도 부모는 정상값일 가능성)
+        $uid = @fileowner($cacheRoot);
+        $gid = @filegroup($cacheRoot);
+        if (is_int($uid) && $uid !== 0 && is_int($gid)) {
+            return [$uid, $gid];
+        }
+
+        // 2순위: bootstrap/cache
+        $bootstrapCache = $basePath.DIRECTORY_SEPARATOR.'bootstrap'.DIRECTORY_SEPARATOR.'cache';
+        if (is_dir($bootstrapCache)) {
+            $uid = @fileowner($bootstrapCache);
+            $gid = @filegroup($bootstrapCache);
+            if (is_int($uid) && $uid !== 0 && is_int($gid)) {
+                return [$uid, $gid];
+            }
+        }
+
+        // 3순위 fallback 없음
+        return [null, null];
     }
 
     /**
