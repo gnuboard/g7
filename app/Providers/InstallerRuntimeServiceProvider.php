@@ -120,6 +120,21 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
             // 정상 환경에서는 (4) 의 process ENV stale 시그니처가 false 이므로 보정 미발동.
             $this->recoverStaleProcessEnvFromDiskEnv();
 
+            // 본 PR 부수효과 정리 — beta.7 업그레이드 흐름의 모든 root 권한 자식 spawn
+            // 부팅마다 자동으로 storage/framework/cache/data/ 하위 root 소유 디렉토리를
+            // 즉시 chown. 자식 1 (FinalizeOrphanedInstallerRuntime) 종료 후에 자식 2~N
+            // (번들 update / 후속 자식들) 이 root 권한으로 캐시 쓰기를 트리거하더라도
+            // 그 자식 자체의 ServiceProvider 부팅 시점에 본 보정이 발화하여 정리.
+            //
+            // 가드:
+            //   (1) runtime.php 부재 (이미 finalize 완료 — 본 분기에 도달)
+            //   (2) 디스크 config/app.php 의 version === '7.0.0-beta.7' (recover 와 동일 가드)
+            //   (3) posix_geteuid() === 0 (root 권한 자식만)
+            //
+            // 정상 환경(beta.3 / beta.8+) 또는 PHP-FPM 워커(www-data 권한) 는 (2) 또는 (3)
+            // 가드로 자동 비활성화.
+            $this->normalizeRootOwnedCacheDirs();
+
             return;
         }
 
@@ -323,6 +338,121 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         } catch (\Throwable $e) {
             $this->debugLog('recover: DB::purge(mysql) failed (non-fatal): ' . $e->getMessage());
         }
+    }
+
+    /**
+     * beta.7 업그레이드 자식 spawn 부팅마다 자동 발동 — storage/framework/cache/data/
+     * 하위 root 소유 디렉토리/파일을 정상 owner/group 으로 chown.
+     *
+     * 본 PR 의 recover 가 발화하면서 부수적으로 만들 수 있는 root 권한 캐시 디렉토리를
+     * 자식 자체의 부팅 시점에 자동 청소한다. 자식 1 (FinalizeOrphanedInstallerRuntime)
+     * 의 normalizeCachePermissions 는 그 자식 안에서 1회만 실행되어 자식 2~N 의
+     * 부수효과를 못 잡으므로, 본 메서드가 부팅 단계의 ServiceProvider 에서 매번 자동
+     * 발화하여 그 한계를 보완.
+     *
+     * 가드 (호출자가 이미 보장):
+     *   - runtime.php 부재 (= 이미 finalize 완료)
+     *   - 디스크 config/app.php version === '7.0.0-beta.7' (recover 진입 직전 가드와 동일)
+     *
+     * 본 메서드 내부 가드:
+     *   - posix_geteuid() === 0 (root 권한 자식만 — 운영자 의도 권한 보존)
+     *   - cache/data 자신이 정합 owner/group (chown 기준값 추정)
+     */
+    private function normalizeRootOwnedCacheDirs(): void
+    {
+        // beta.7 한정 — recover 와 동일 가드
+        $coreVersion = $this->readCoreVersionFromDisk();
+        if ($coreVersion !== '7.0.0-beta.7') {
+            return;
+        }
+
+        if (! function_exists('posix_geteuid') || ! function_exists('chown') || ! function_exists('chgrp')) {
+            return;
+        }
+
+        // root 권한 프로세스만 (PHP-FPM 워커는 www-data → euid != 0 → skip)
+        if (posix_geteuid() !== 0) {
+            return;
+        }
+
+        $cacheRoot = base_path('storage/framework/cache/data');
+        if (! is_dir($cacheRoot)) {
+            return;
+        }
+
+        // 정상 owner/group 추정 (cache/data 자신이 SSoT)
+        $targetUid = @fileowner($cacheRoot);
+        $targetGid = @filegroup($cacheRoot);
+        if (! is_int($targetUid) || ! is_int($targetGid) || $targetUid === 0) {
+            // cache/data 자신이 root 소유면 추정 실패 — bootstrap/cache fallback
+            $bootstrapCache = base_path('bootstrap/cache');
+            if (is_dir($bootstrapCache)) {
+                $targetUid = @fileowner($bootstrapCache);
+                $targetGid = @filegroup($bootstrapCache);
+            }
+            if (! is_int($targetUid) || ! is_int($targetGid) || $targetUid === 0) {
+                return;
+            }
+        }
+
+        // 1depth 만 빠르게 점검 — root 소유 디렉토리 발견 시 재귀 chown
+        $handle = @opendir($cacheRoot);
+        if ($handle === false) {
+            return;
+        }
+        $found = 0;
+        $changed = 0;
+        while (($name = readdir($handle)) !== false) {
+            if ($name === '.' || $name === '..') {
+                continue;
+            }
+            $path = $cacheRoot.DIRECTORY_SEPARATOR.$name;
+            $uid = @fileowner($path);
+            $gid = @filegroup($path);
+            if ($uid !== 0 && $gid !== 0) {
+                continue;
+            }
+            $found++;
+            // 재귀 chown
+            if ($this->chownRecursive($path, $targetUid, $targetGid)) {
+                $changed++;
+            }
+        }
+        closedir($handle);
+
+        if ($found > 0) {
+            $this->debugLog(sprintf(
+                'normalizeRootOwnedCacheDirs: found=%d changed=%d (targetUid=%d targetGid=%d)',
+                $found,
+                $changed,
+                $targetUid,
+                $targetGid,
+            ));
+        }
+    }
+
+    /**
+     * 디렉토리/파일을 재귀적으로 chown + chgrp.
+     *
+     * @return bool 모든 항목 성공 시 true
+     */
+    private function chownRecursive(string $path, int $uid, int $gid): bool
+    {
+        $ok = @chown($path, $uid) && @chgrp($path, $gid);
+        if (! is_dir($path) || is_link($path)) {
+            return $ok;
+        }
+        $iter = @new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+        foreach ($iter as $entry) {
+            /** @var \SplFileInfo $entry */
+            $childPath = $entry->getPathname();
+            $ok = (@chown($childPath, $uid) && @chgrp($childPath, $gid)) && $ok;
+        }
+
+        return $ok;
     }
 
     /**
