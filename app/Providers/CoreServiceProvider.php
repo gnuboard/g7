@@ -300,9 +300,14 @@ class CoreServiceProvider extends ServiceProvider
             return;
         }
 
+        // [DEBUG #371] boot() DB 가드 진입 직전 — 추후 제거
+        $this->debugIssue371Dump('CoreServiceProvider::boot before-db-guard');
+
         // DB 연결 유효성 검증 (root 사용자 접속 방지)
         if (! $this->isDatabaseConnectionValid()) {
             Log::error('Database connection invalid: using root user or missing credentials. Skipping extension loading.');
+            // [DEBUG #371] 가드 트리거 시점 추가 dump — 추후 제거
+            $this->debugIssue371Dump('CoreServiceProvider::boot db-guard-triggered');
 
             return;
         }
@@ -414,6 +419,16 @@ class CoreServiceProvider extends ServiceProvider
 
             // read/write 분리 설정인 경우 read 설정 확인
             $username = $config['username'] ?? null;
+            $readUsername = $config['read']['username'] ?? null;
+            $writeUsername = $config['write']['username'] ?? null;
+
+            // [DEBUG #371] DB 가드 직전 Config dump — 추후 제거
+            $this->debugIssue371Log(sprintf(
+                'isDatabaseConnectionValid: config.username=%s, read.username=%s, write.username=%s',
+                var_export($username, true),
+                var_export($readUsername, true),
+                var_export($writeUsername, true),
+            ));
 
             // read 설정이 배열로 있는 경우
             if (isset($config['read']['username'])) {
@@ -422,15 +437,74 @@ class CoreServiceProvider extends ServiceProvider
 
             // root 사용자 또는 빈 username인 경우 무효
             if (empty($username) || $username === 'root') {
+                $this->debugIssue371Log(sprintf('isDatabaseConnectionValid: FAIL username=%s', var_export($username, true)));
+
                 return false;
             }
+
+            $this->debugIssue371Log(sprintf('isDatabaseConnectionValid: PASS username=%s', var_export($username, true)));
 
             return true;
         } catch (\Throwable $e) {
             Log::error('Database configuration check failed: '.$e->getMessage());
+            $this->debugIssue371Log('isDatabaseConnectionValid: EXCEPTION '.$e->getMessage());
 
             return false;
         }
+    }
+
+    /**
+     * [DEBUG #371] 추후 제거 — process ENV / DB Config / .env 파일 상태 dump.
+     */
+    private function debugIssue371Dump(string $tag): void
+    {
+        $keys = [
+            'APP_ENV', 'APP_VERSION', 'INSTALLER_COMPLETED',
+            'DB_WRITE_HOST', 'DB_WRITE_USERNAME', 'DB_WRITE_PASSWORD', 'DB_WRITE_DATABASE',
+            'DB_READ_HOST', 'DB_READ_USERNAME', 'DB_READ_PASSWORD', 'DB_READ_DATABASE',
+        ];
+        $envParts = [];
+        foreach ($keys as $key) {
+            $getenvVal = getenv($key);
+            $envVal = $_ENV[$key] ?? null;
+            $serverVal = $_SERVER[$key] ?? null;
+            $envParts[] = sprintf(
+                '%s={getenv=%s,$_ENV=%s,$_SERVER=%s}',
+                $key,
+                $getenvVal === false ? '<unset>' : $this->maskIssue371Value($key, $getenvVal),
+                $envVal === null ? '<unset>' : $this->maskIssue371Value($key, (string) $envVal),
+                $serverVal === null ? '<unset>' : $this->maskIssue371Value($key, (string) $serverVal),
+            );
+        }
+
+        // Laravel Config 값도 dump (이미 채워졌다면)
+        $configParts = [];
+        try {
+            $configParts[] = 'config.db.mysql.write.username=' . var_export(config('database.connections.mysql.write.username'), true);
+            $configParts[] = 'config.db.mysql.read.username=' . var_export(config('database.connections.mysql.read.username'), true);
+        } catch (\Throwable $e) {
+            $configParts[] = 'config read FAILED: ' . $e->getMessage();
+        }
+
+        $this->debugIssue371Log($tag . ' | ' . implode(' | ', $envParts) . ' || ' . implode(' | ', $configParts));
+    }
+
+    private function debugIssue371Log(string $message): void
+    {
+        @file_put_contents(
+            base_path('storage/logs/issue-371-debug.log'),
+            sprintf("[%s] [pid=%d] [core-sp] %s\n", date('Y-m-d H:i:s'), getmypid(), $message),
+            FILE_APPEND | LOCK_EX,
+        );
+    }
+
+    private function maskIssue371Value(string $key, string $value): string
+    {
+        if (str_contains($key, 'PASSWORD')) {
+            return $value === '' ? "''" : ('***len=' . strlen($value));
+        }
+
+        return "'" . $value . "'";
     }
 
     /**
