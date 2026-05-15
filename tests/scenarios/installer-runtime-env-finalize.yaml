@@ -21,11 +21,17 @@ axes:
   env_state: [example_only, partially_filled, fully_finalized]
   finalize_call: [success, browser_aborted, retry_after_failure]
   rollback_trigger: [none, mid_install, post_finalize]
+  # 이슈 #371 — finalize 가드 자가 차단 회귀 axis
+  g7_installed_lock_state: [absent, present_before_finalize]
+  finalize_guard_signal: [lock_only, env_completed_true_only, lock_and_env_completed_true, neither]
+  orphaned_recovery_path: [none, upgrade_step_auto_finalize, upgrade_step_warn_manual_review]
 
 exclusions:
   - { runtime_state: absent, env_state: example_only, finalize_call: success, reason: "runtime 부재 시 finalize 는 멱등적 no-op" }
   - { runtime_state: present_corrupted, finalize_call: success, reason: "손상된 runtime 은 머지 미수행, runtime 보존" }
   - { rollback_trigger: post_finalize, runtime_state: present_with_db_and_key, reason: "finalize 후 rollback 시점에는 runtime.php 가 이미 삭제된 상태" }
+  - { g7_installed_lock_state: present_before_finalize, finalize_guard_signal: lock_only, finalize_call: success, reason: "이슈 #371 회귀 가드 — 락 단독 시 finalize 통과해야 함 (자가 차단 금지)" }
+  - { orphaned_recovery_path: upgrade_step_warn_manual_review, env_state: fully_finalized, runtime_state: absent, reason: "정상 finalize 완료 환경은 warn 경로 자체가 트리거되지 않음" }
 
 effects:
   - install_step5_sse_does_not_modify_env_file
@@ -88,10 +94,26 @@ effects:
   - rollback_complete_flag_removes_g7_installed_marker_when_present
   - artisan_serve_workers_restart_at_most_once_after_completion_ui_shown
   - non_serve_environments_observe_zero_extra_restart
+  # 이슈 #371 — finalize 가드 자가 차단 회귀 차단 + 잔존 환경 자동 복구
+  - finalize_guard_passes_when_only_g7_installed_lock_is_present
+  - finalize_guard_passes_when_env_lacks_installer_completed_flag
+  - finalize_guard_blocks_when_env_has_installer_completed_true_idempotent
+  - finalize_guard_blocks_when_env_has_installer_completed_true_with_quoted_value
+  - finalize_guard_accepts_alternative_truthy_values_1_and_yes
+  - upgrade_step_auto_finalizes_orphaned_runtime_when_env_not_marked_completed
+  - upgrade_step_skips_when_runtime_php_is_absent_idempotent_noop
+  - upgrade_step_warns_when_env_marked_completed_but_runtime_php_still_exists_no_auto_delete
+  - upgrade_step_falls_back_to_env_example_when_env_file_is_absent
+  - upgrade_step_preserves_runtime_php_when_env_write_fails_safe_fallback
+  - upgrade_step_logs_skip_when_runtime_php_returns_non_array_format_mismatch
+  - upgrade_step_deletes_state_json_after_merge_when_DELETE_INSTALLER_AFTER_COMPLETE_set
+  - upgrade_step_preserves_state_json_when_DELETE_INSTALLER_AFTER_COMPLETE_unset
 
 test_files:
   - tests/Unit/Providers/InstallerRuntimeServiceProviderTest.php
   - tests/Unit/Installer/InstallerRuntimeHelperTest.php
+  - tests/Unit/Installer/InstallerGuardTest.php
+  - tests/Feature/Console/Core/FinalizeOrphanedInstallerRuntimeTest.php
 
 manual_verification:
   - scenario: A_artisan_serve

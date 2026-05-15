@@ -22,7 +22,11 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/installer-runtime.php';
 require_once __DIR__ . '/../includes/installer-state.php';
 require_once __DIR__ . '/_guard.php';
-installer_guard_or_410();
+// finalize 전용 가드 — `.env` 의 INSTALLER_COMPLETED=true 단독으로만 차단한다.
+// 일반 인스톨러 엔드포인트의 `installer_guard_or_410()` 은 `g7_installed` 락 파일도
+// 차단 사유로 삼는데, 그 락 파일은 finalize 호출 직전 단계의 complete_flag task 가
+// 먼저 생성하므로 자가 차단 회귀가 발생한다 (이슈 #371).
+installer_guard_finalize_or_410();
 
 // ---------------------------------------------------------------------------
 // 1. 응답을 즉시 송출하여 브라우저가 완료 UI 를 유지할 수 있게 한다.
