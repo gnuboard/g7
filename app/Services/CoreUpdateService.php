@@ -1683,6 +1683,102 @@ class CoreUpdateService
     }
 
     /**
+     * 디스크의 .env 파일을 다시 읽어 부모 프로세스의 process ENV
+     * (getenv / $_ENV / $_SERVER) 를 정합한 값으로 갱신합니다 (이슈 #371 후속 회귀 가드).
+     *
+     * 배경:
+     *   beta.4~6 손상 환경에서 beta.7 업그레이드 시 spawn 자식 1 (core:execute-upgrade-steps)
+     *   이 FinalizeOrphanedInstallerRuntime 으로 .env 머지 + runtime.php 삭제 + 자체
+     *   process ENV 갱신을 수행한다. 그러나 자식 1 종료 후 부모로 돌아오면 자식의
+     *   putenv 효과는 사라지고 부모의 ENV 는 부팅 시점에 stale .env 의 값
+     *   (.env.example fallback: DB_WRITE_USERNAME=root) 그대로 유지된다.
+     *
+     *   그 직후 부모가 spawn 자식 2 (core:execute-bundled-updates) 를 띄울 때
+     *   array_merge(getenv(), $_ENV) 를 자식 2 에 전파하므로, 자식 2 의
+     *   CoreServiceProvider::isDatabaseConnectionValid() 가드가 root 를 감지하여
+     *   확장 로딩을 skip 하고 ERROR 로그를 출력한다 → 번들 일괄 업데이트 전체 실패.
+     *
+     *   본 메서드는 부모가 자식 2 spawn 직전에 호출되어, 디스크의 .env (자식 1 이
+     *   이미 머지 완료한 상태) 를 다시 읽어 부모 자신의 ENV 를 정상 자격증명으로
+     *   갱신한다. 정상 .env 환경 (beta.3, beta.8+) 에서는 같은 값으로의 멱등
+     *   재기록이라 부작용 없음.
+     *
+     * 안전 정책:
+     *   - .env 부재 시 silent no-op (예외 안 던짐)
+     *   - parse_ini_file 실패 시 silent no-op (.env 손상 시 부모 ENV 보존)
+     *   - DB_* / APP_KEY / APP_VERSION / INSTALLER_COMPLETED / DB_PREFIX 등
+     *     코어 부팅과 직결된 ENV 키만 갱신 (운영자 커스텀 ENV 보호)
+     */
+    public function refreshProcessEnvFromEnvFile(): void
+    {
+        $envPath = base_path('.env');
+
+        if (! is_file($envPath)) {
+            return;
+        }
+
+        $parsed = @parse_ini_file($envPath, false, INI_SCANNER_RAW);
+
+        if (! is_array($parsed)) {
+            return;
+        }
+
+        $refreshableKeys = [
+            'DB_WRITE_HOST',
+            'DB_WRITE_PORT',
+            'DB_WRITE_DATABASE',
+            'DB_WRITE_USERNAME',
+            'DB_WRITE_PASSWORD',
+            'DB_READ_HOST',
+            'DB_READ_PORT',
+            'DB_READ_DATABASE',
+            'DB_READ_USERNAME',
+            'DB_READ_PASSWORD',
+            'DB_PREFIX',
+            'APP_KEY',
+            'APP_VERSION',
+            'INSTALLER_COMPLETED',
+        ];
+
+        foreach ($refreshableKeys as $key) {
+            if (! array_key_exists($key, $parsed)) {
+                continue;
+            }
+
+            // parse_ini_file 의 INI_SCANNER_RAW 는 인용부호를 보존하므로 직접 unwrap.
+            $value = (string) $parsed[$key];
+            $value = $this->unwrapEnvValue($value);
+
+            putenv($key.'='.$value);
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+        }
+    }
+
+    /**
+     * .env 값의 외곽 인용부호를 제거합니다 (parse_ini_file INI_SCANNER_RAW 보조).
+     *
+     * 예: `"pass with spaces"` → `pass with spaces`
+     *     `'single'` → `single`
+     *     `unquoted` → `unquoted`
+     */
+    private function unwrapEnvValue(string $value): string
+    {
+        $length = strlen($value);
+
+        if ($length >= 2) {
+            $first = $value[0];
+            $last = $value[$length - 1];
+
+            if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
+                return substr($value, 1, $length - 2);
+            }
+        }
+
+        return $value;
+    }
+
+    /**
      * 백업에서 코어 파일을 복원합니다.
      *
      * @param  string  $backupPath  백업 경로
