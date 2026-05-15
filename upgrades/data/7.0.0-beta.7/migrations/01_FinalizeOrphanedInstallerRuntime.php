@@ -127,6 +127,26 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
 
         $this->applyEnvPermissions($envPath, $preservedStat, $basePath, $context);
 
+        // 부모 프로세스의 process ENV 도 머지된 자격증명으로 갱신 (이슈 #371 후속 회귀 차단)
+        //
+        // 배경: beta.4~6 손상 환경에서는 .env 가 .env.example 그대로 (DB_WRITE_USERNAME=root,
+        // DB_WRITE_PASSWORD= 등) 이고 자격증명은 runtime.php 에 잔존. 부모 프로세스 부팅
+        // 시점에 Dotenv 가 stale .env 의 값을 process ENV (getenv() / $_ENV / $_SERVER)
+        // 에 적재한 상태이며, Config 메모리만 InstallerRuntimeServiceProvider 가 정상값으로
+        // 주입해두었기 때문에 부모 자체는 정상 동작한다.
+        //
+        // 이 시점에 본 마이그레이션이 .env 머지 + runtime.php 삭제를 수행해도 부모의 process
+        // ENV 는 stale 한 채 유지된다. 그 직후 BundledExtensionUpdatePrompt 의 번들 일괄
+        // 업데이트가 proc_open 으로 spawn 자식을 띄울 때 5번째 인자에 array_merge(getenv(),
+        // $_ENV) 를 전달하므로 자식이 stale 값(root / 빈 비밀번호)을 그대로 상속받는다.
+        // 자식의 Laravel 부팅 시 Dotenv::createImmutable() 은 이미 채워진 ENV 를 덮어쓰지
+        // 않으므로 자식이 머지된 .env 의 정상 값을 보지 못하고 root@localhost (using
+        // password: YES — 환경에 따라 다른 stale 비밀번호) 로 DB 연결 시도 → Access denied.
+        //
+        // beta.8 이후 정상 .env 환경에서는 부팅 시점부터 process ENV 가 올바르므로 본
+        // 보정 로직이 트리거되어도 동일 값으로 재기록되는 멱등 동작이며 부작용이 없다.
+        $this->refreshProcessEnvFromRuntime($runtime);
+
         @unlink($runtimePath);
 
         if (defined('DELETE_INSTALLER_AFTER_COMPLETE') && DELETE_INSTALLER_AFTER_COMPLETE) {
@@ -238,6 +258,72 @@ final class FinalizeOrphanedInstallerRuntime implements DataMigration
         }
 
         return $envContent;
+    }
+
+    /**
+     * 부모 프로세스의 process ENV 를 runtime 자격증명으로 갱신.
+     *
+     * getenv() / $_ENV / $_SERVER 3곳 모두 갱신 — proc_open 의 ENV 합집합 전파와
+     * Dotenv::createImmutable() 의 덮어쓰기 차단 정책 모두에 대응.
+     *
+     * 트리거 가드는 호출자에서 이미 보장됨:
+     *   - runtime.php 부재 (beta.3 정상 환경 포함) → runInternal 진입 직후 return
+     *   - .env 의 INSTALLER_COMPLETED=true (이미 finalize 완료) → 별도 return
+     *   - 따라서 본 메서드 도달 = beta.4~6 손상 환경의 머지 성공 분기
+     *
+     * 본 메서드 자체도 빈 값 가드: runtime 의 username/password 키가 부재하거나
+     * 빈 문자열이면 그 키에 대한 ENV 갱신을 skip 하여 정상 ENV 를 빈 값으로
+     * 덮어쓰는 회귀를 차단.
+     *
+     * @param  array<string, mixed>  $runtime
+     */
+    private function refreshProcessEnvFromRuntime(array $runtime): void
+    {
+        $write = $runtime['db']['write'] ?? null;
+        if (! is_array($write)) {
+            return;
+        }
+        $read = $runtime['db']['read'] ?? $write;
+        if (! is_array($read)) {
+            $read = $write;
+        }
+
+        $pairs = [
+            'DB_WRITE_HOST' => $write['host'] ?? null,
+            'DB_WRITE_PORT' => $write['port'] ?? null,
+            'DB_WRITE_DATABASE' => $write['database'] ?? null,
+            'DB_WRITE_USERNAME' => $write['username'] ?? null,
+            'DB_WRITE_PASSWORD' => $write['password'] ?? null,
+            'DB_READ_HOST' => $read['host'] ?? null,
+            'DB_READ_PORT' => $read['port'] ?? null,
+            'DB_READ_DATABASE' => $read['database'] ?? null,
+            'DB_READ_USERNAME' => $read['username'] ?? null,
+            'DB_READ_PASSWORD' => $read['password'] ?? null,
+        ];
+
+        if (isset($runtime['db']['prefix'])) {
+            $pairs['DB_PREFIX'] = (string) $runtime['db']['prefix'];
+        }
+        $appKey = $runtime['app']['key'] ?? null;
+        if (is_string($appKey) && str_starts_with($appKey, 'base64:')) {
+            $pairs['APP_KEY'] = $appKey;
+        }
+
+        foreach ($pairs as $key => $value) {
+            // null / 빈 문자열은 skip — 정상 ENV 를 빈 값으로 덮어쓰는 회귀 차단
+            // (단, 비밀번호는 의도적으로 빈 문자열일 수 있으므로 password 만 예외 허용)
+            if ($value === null) {
+                continue;
+            }
+            $stringValue = (string) $value;
+            if ($stringValue === '' && ! in_array($key, ['DB_WRITE_PASSWORD', 'DB_READ_PASSWORD', 'DB_PREFIX'], true)) {
+                continue;
+            }
+
+            putenv($key.'='.$stringValue);
+            $_ENV[$key] = $stringValue;
+            $_SERVER[$key] = $stringValue;
+        }
     }
 
     private function escapeEnvValue(string $value): string

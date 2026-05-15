@@ -41,6 +41,19 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
 
     private bool $originalRuntimeDirExisted = false;
 
+    /**
+     * @var array<string, string|null> axis 12 가 putenv / $_ENV / $_SERVER 를
+     *      덮어쓰므로 후속 테스트 / 다음 테스트 파일의 DB 자격증명이 오염되지
+     *      않도록 tearDown 에서 복원할 ENV 키별 원본 스냅샷.
+     */
+    private array $originalEnvSnapshot = [];
+
+    private const ENV_KEYS_FOR_SNAPSHOT = [
+        'DB_WRITE_HOST', 'DB_WRITE_PORT', 'DB_WRITE_DATABASE', 'DB_WRITE_USERNAME', 'DB_WRITE_PASSWORD',
+        'DB_READ_HOST', 'DB_READ_PORT', 'DB_READ_DATABASE', 'DB_READ_USERNAME', 'DB_READ_PASSWORD',
+        'DB_PREFIX', 'APP_KEY',
+    ];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -61,6 +74,13 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
         }
 
         $this->originalRuntimeDirExisted = is_dir(dirname($this->runtimePath));
+
+        // process ENV 원본 스냅샷 — axis 12 가 putenv() 로 자격증명을 갱신하므로
+        // tearDown 에서 정확히 원본 상태로 복원 (다음 테스트 / 파일 오염 차단)
+        foreach (self::ENV_KEYS_FOR_SNAPSHOT as $key) {
+            $value = getenv($key);
+            $this->originalEnvSnapshot[$key] = $value === false ? null : $value;
+        }
 
         // installer-state.php 등의 DELETE_INSTALLER_AFTER_COMPLETE 상수가 다른 테스트로
         // 이미 정의되어 있을 수 있다. 본 테스트는 그 상수를 신뢰하지 않고 명시 시나리오마다
@@ -93,6 +113,19 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
         // 본 테스트가 생성한 runtime 디렉토리 정리 (원래 없었을 때만)
         if (! $this->originalRuntimeDirExisted && is_dir(dirname($this->runtimePath))) {
             @rmdir(dirname($this->runtimePath));
+        }
+
+        // process ENV 복원 — axis 12 가 putenv() 로 자격증명을 갱신했어도
+        // 다음 테스트 / 파일이 정확히 setUp 직전 상태에서 시작하도록 보장.
+        foreach ($this->originalEnvSnapshot as $key => $value) {
+            if ($value === null) {
+                putenv($key);
+                unset($_ENV[$key], $_SERVER[$key]);
+            } else {
+                putenv($key.'='.$value);
+                $_ENV[$key] = $value;
+                $_SERVER[$key] = $value;
+            }
         }
 
         parent::tearDown();
@@ -429,5 +462,84 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
             ));
         }
         $this->assertSame($expectedGid, $actualGid, 'bootstrap/cache 그룹이 .env 에 계승되어야 함');
+    }
+
+    // -----------------------------------------------------------------------
+    // axis 12: 머지 후 부모 프로세스의 process ENV (getenv() / $_ENV / $_SERVER)
+    //          도 신규 자격증명으로 갱신되어야 함.
+    //
+    //   배경 (이슈 #371 후속 회귀):
+    //   beta.4~6 손상 환경에서는 .env 가 .env.example 그대로 (DB_WRITE_USERNAME=root,
+    //   DB_WRITE_PASSWORD= 등) 이고 자격증명은 runtime.php 에 잔존. 부모 프로세스 부팅
+    //   시점에 Dotenv 가 stale .env 의 ENV (DB_WRITE_USERNAME=root) 를 process ENV
+    //   에 적재. 마이그레이션이 .env 머지 + runtime.php 삭제 를 수행해도 process ENV
+    //   는 그대로. 이후 번들 일괄 업데이트 spawn 자식 (BundledExtensionUpdatePrompt 의
+    //   proc_open 5번째 인자 $env = array_merge(getenv(), $_ENV)) 이 부모 stale ENV
+    //   를 그대로 상속받고, Dotenv::createImmutable() 가 이미 채워진 ENV 를 덮어쓰지
+    //   않으므로 자식이 stale root/패스워드YES 로 DB 연결 시도 → Access denied.
+    //
+    //   본 axis 는 마이그레이션 종료 시점에 getenv()/$_ENV/$_SERVER 가 머지된 신규
+    //   자격증명을 반영하는지 검증한다. 한시적 보정 — beta.8 이후 환경에서는 .env 가
+    //   이미 정상이므로 트리거 안 됨.
+    // -----------------------------------------------------------------------
+    public function test_refreshes_process_env_with_merged_credentials(): void
+    {
+        // .env.example 잔존 상태 시뮬레이션 (DB_WRITE_USERNAME=root, DB_WRITE_PASSWORD=)
+        $this->writeEnv(
+            "APP_ENV=production\n"
+            ."DB_WRITE_USERNAME=root\n"
+            ."DB_WRITE_PASSWORD=\n"
+            ."DB_WRITE_DATABASE=laravel\n"
+            ."DB_READ_USERNAME=root\n"
+            ."DB_READ_PASSWORD=\n"
+            ."DB_READ_DATABASE=laravel\n"
+        );
+        // 부모 프로세스 ENV 가 stale .env 값으로 채워진 상태 시뮬레이션
+        putenv('DB_WRITE_USERNAME=root');
+        putenv('DB_WRITE_PASSWORD=');
+        putenv('DB_WRITE_DATABASE=laravel');
+        putenv('DB_READ_USERNAME=root');
+        putenv('DB_READ_PASSWORD=');
+        putenv('DB_READ_DATABASE=laravel');
+        $_ENV['DB_WRITE_USERNAME'] = 'root';
+        $_ENV['DB_WRITE_PASSWORD'] = '';
+        $_ENV['DB_WRITE_DATABASE'] = 'laravel';
+        $_ENV['DB_READ_USERNAME'] = 'root';
+        $_ENV['DB_READ_PASSWORD'] = '';
+        $_ENV['DB_READ_DATABASE'] = 'laravel';
+
+        $this->writeRuntime($this->sampleRuntime());
+
+        (new FinalizeOrphanedInstallerRuntime)->run($this->context());
+
+        // 디스크 .env 머지는 기존 axis 1 에서 검증 — 본 axis 는 process ENV 검증
+        $this->assertSame(
+            'test_user',
+            getenv('DB_WRITE_USERNAME'),
+            'getenv(DB_WRITE_USERNAME) 이 runtime 의 신규 자격증명으로 갱신되어야 함'
+        );
+        $this->assertSame(
+            'test_pass_42',
+            getenv('DB_WRITE_PASSWORD'),
+            'getenv(DB_WRITE_PASSWORD) 이 runtime 의 신규 비밀번호로 갱신되어야 함'
+        );
+        $this->assertSame(
+            'g7_test_db',
+            getenv('DB_WRITE_DATABASE'),
+            'getenv(DB_WRITE_DATABASE) 이 runtime 의 신규 DB 이름으로 갱신되어야 함'
+        );
+        $this->assertSame(
+            'test_user',
+            $_ENV['DB_WRITE_USERNAME'] ?? null,
+            '$_ENV[DB_WRITE_USERNAME] 이 갱신되어야 함 — proc_open ENV 합집합 전파용'
+        );
+        $this->assertSame(
+            'test_pass_42',
+            $_ENV['DB_WRITE_PASSWORD'] ?? null,
+            '$_ENV[DB_WRITE_PASSWORD] 도 함께 갱신'
+        );
+        // READ 도 동일 정책 — runtime.read 미지정 시 write 값으로 동기화
+        $this->assertSame('test_user', getenv('DB_READ_USERNAME'));
+        $this->assertSame('test_pass_42', getenv('DB_READ_PASSWORD'));
     }
 }
