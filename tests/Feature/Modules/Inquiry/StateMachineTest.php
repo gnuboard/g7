@@ -102,4 +102,27 @@ class StateMachineTest extends TestCase
             $this->assertNotNull($inquiry->canceled_at);
         }
     }
+
+    public function test_invalid_transition_throws(): void
+    {
+        $sm = app(InquiryStateMachine::class);
+        $inquiry = $this->makeInquiry(['status' => 'received']);
+
+        $this->expectException(\Modules\Sirsoft\Inquiry\Exceptions\InvalidStateTransitionException::class);
+        $sm->transition($inquiry, TransitionEvent::AcceptAndPay);
+    }
+
+    public function test_cannot_transition_from_terminal_states(): void
+    {
+        $sm = app(InquiryStateMachine::class);
+        foreach (['completed', 'canceled'] as $terminal) {
+            $inquiry = $this->makeInquiry(['status' => $terminal]);
+            try {
+                $sm->transition($inquiry, TransitionEvent::IssueQuote);
+                $this->fail("Expected exception from terminal state {$terminal}");
+            } catch (\Modules\Sirsoft\Inquiry\Exceptions\InvalidStateTransitionException $e) {
+                $this->assertSame(422, $e->getCode());
+            }
+        }
+    }
 }
