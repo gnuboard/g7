@@ -1,0 +1,17 @@
+{
+    "name": "modules/sirsoft-inquiry",
+    "description": "Inquiry module for Gnuboard7",
+    "type": "library",
+    "version": "1.0.0-alpha.1",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Modules\\Sirsoft\\Inquiry\\": "src/",
+            "Modules\\Sirsoft\\Inquiry\\Database\\Seeders\\": "database/seeders/",
+            "Modules\\Sirsoft\\Inquiry\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "require": {
+        "php": "^8.2"
+    }
+}
