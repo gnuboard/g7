@@ -21,6 +21,8 @@ Route::prefix('inquiries')
             ->name('attachments.inquiry-body');
         Route::post('/{inquiry}/messages/attachments', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryAttachmentController::class, 'uploadMessage'])
             ->name('attachments.message');
+        Route::post('/{inquiry}/quotes/{quote}/accept', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryQuoteController::class, 'accept'])->name('quotes.accept');
+        Route::post('/{inquiry}/quotes/{quote}/reject', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryQuoteController::class, 'reject'])->name('quotes.reject');
     });
 
 Route::middleware(['auth:sanctum', 'throttle:600,1'])
