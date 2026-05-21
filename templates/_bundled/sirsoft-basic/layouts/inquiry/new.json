@@ -1,0 +1,160 @@
+{
+  "version": "1.0.0",
+  "layout_name": "inquiry/new",
+  "permissions": ["auth"],
+  "extends": "_user_base",
+  "meta": {
+    "seo": {
+      "enabled": true,
+      "page_type": "default",
+      "vars": { "site_name": "$core_settings:general.site_name" }
+    }
+  },
+  "init_actions": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "form": { "title": "", "content": "", "category": "", "budget_range": "", "desired_due_at": "" },
+        "submitting": false,
+        "errorMessage": ""
+      }
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "type": "layout",
+        "name": "Container",
+        "props": { "className": "py-8 max-w-2xl mx-auto" },
+        "children": [
+          {
+            "type": "basic",
+            "name": "H1",
+            "props": { "className": "text-2xl font-bold text-gray-900 dark:text-white mb-6" },
+            "text": "새 제작의뢰"
+          },
+          {
+            "type": "basic",
+            "name": "Div",
+            "props": { "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 space-y-4" },
+            "children": [
+              {
+                "type": "basic", "name": "Div",
+                "children": [
+                  { "type": "basic", "name": "Label", "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" }, "text": "제목" },
+                  { "type": "basic", "name": "Input",
+                    "props": {
+                      "type": "text",
+                      "value": "{{_local.form?.title ?? ''}}",
+                      "placeholder": "예: 홈페이지 리뉴얼 의뢰",
+                      "className": "input w-full"
+                    },
+                    "actions": [
+                      { "event": "onChange", "type": "change", "handler": "setState",
+                        "params": { "target": "local", "form": { "title": "{{$event.target.value}}" } } }
+                    ] }
+                ]
+              },
+              {
+                "type": "basic", "name": "Div",
+                "children": [
+                  { "type": "basic", "name": "Label", "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" }, "text": "본문" },
+                  { "type": "basic", "name": "Textarea",
+                    "props": {
+                      "value": "{{_local.form?.content ?? ''}}",
+                      "rows": 8,
+                      "placeholder": "프로젝트 개요, 요구사항, 참고 자료 등을 자유롭게 작성해 주세요.",
+                      "className": "input w-full"
+                    },
+                    "actions": [
+                      { "event": "onChange", "type": "change", "handler": "setState",
+                        "params": { "target": "local", "form": { "content": "{{$event.target.value}}" } } }
+                    ] }
+                ]
+              },
+              {
+                "type": "basic", "name": "Div",
+                "props": { "className": "grid grid-cols-1 md:grid-cols-2 gap-4" },
+                "children": [
+                  {
+                    "type": "basic", "name": "Div",
+                    "children": [
+                      { "type": "basic", "name": "Label", "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" }, "text": "예산 범위 (선택)" },
+                      { "type": "basic", "name": "Input",
+                        "props": { "type": "text", "value": "{{_local.form?.budget_range ?? ''}}", "placeholder": "예: 300-500만원", "className": "input w-full" },
+                        "actions": [
+                          { "event": "onChange", "type": "change", "handler": "setState",
+                            "params": { "target": "local", "form": { "budget_range": "{{$event.target.value}}" } } }
+                        ] }
+                    ]
+                  },
+                  {
+                    "type": "basic", "name": "Div",
+                    "children": [
+                      { "type": "basic", "name": "Label", "props": { "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" }, "text": "희망 완료일 (선택)" },
+                      { "type": "basic", "name": "Input",
+                        "props": { "type": "date", "value": "{{_local.form?.desired_due_at ?? ''}}", "className": "input w-full" },
+                        "actions": [
+                          { "event": "onChange", "type": "change", "handler": "setState",
+                            "params": { "target": "local", "form": { "desired_due_at": "{{$event.target.value}}" } } }
+                        ] }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "basic", "name": "Div",
+                "if": "{{_local.errorMessage}}",
+                "props": { "className": "text-sm text-red-500" },
+                "text": "{{_local.errorMessage}}"
+              },
+              {
+                "type": "basic", "name": "Div",
+                "props": { "className": "flex justify-end gap-3 pt-2" },
+                "children": [
+                  { "type": "basic", "name": "A",
+                    "props": { "href": "/inquiry", "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700" },
+                    "text": "취소" },
+                  { "type": "basic", "name": "Button",
+                    "props": {
+                      "type": "button",
+                      "disabled": "{{_local.submitting || !_local.form?.title || !_local.form?.content}}",
+                      "className": "px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "text": "{{_local.submitting ? '제출 중…' : '의뢰 제출'}}",
+                    "actions": [
+                      {
+                        "event": "onClick", "type": "click", "handler": "sequence",
+                        "actions": [
+                          { "handler": "setState", "params": { "target": "local", "submitting": true, "errorMessage": "" } },
+                          {
+                            "handler": "apiCall",
+                            "target": "/api/modules/sirsoft-inquiry/inquiries",
+                            "auth_required": true,
+                            "params": {
+                              "method": "POST",
+                              "body": "{{_local.form}}"
+                            },
+                            "onSuccess": [
+                              { "handler": "toast", "params": { "type": "success", "message": "의뢰가 접수되었습니다." } },
+                              { "handler": "navigate", "params": { "path": "/inquiry/{{response.data.uuid}}" } }
+                            ],
+                            "onError": [
+                              { "handler": "setState", "params": { "target": "local", "submitting": false, "errorMessage": "{{error.message}}" } },
+                              { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
