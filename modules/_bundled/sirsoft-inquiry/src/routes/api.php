@@ -36,4 +36,6 @@ Route::prefix('admin')
     ->group(function () {
         Route::get('/inquiries', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryController::class, 'index'])->name('inquiries.index');
         Route::get('/inquiries/{inquiry}', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryController::class, 'show'])->name('inquiries.show');
+        Route::post('/inquiries/{inquiry}/quotes', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryQuoteController::class, 'issue'])->name('inquiries.quotes.issue');
+        Route::post('/inquiries/{inquiry}/quotes/{quote}/revoke', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryQuoteController::class, 'revoke'])->name('inquiries.quotes.revoke');
     });
