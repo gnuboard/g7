@@ -17,4 +17,14 @@ class InquiryServiceProvider extends BaseModuleServiceProvider
     protected array $cacheServices = [];
 
     protected array $storageServices = [];
+
+    public function register(): void
+    {
+        parent::register();
+
+        $this->mergeConfigFrom(
+            $this->getProviderPath() . '/../../config/inquiry.php',
+            'inquiry'
+        );
+    }
 }
