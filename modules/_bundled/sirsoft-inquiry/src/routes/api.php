@@ -17,4 +17,15 @@ Route::prefix('inquiries')
         Route::post('/{inquiry}/cancel', [InquiryController::class, 'cancel'])->name('cancel');
         Route::get('/{inquiry}/messages', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryMessageController::class, 'index'])->name('messages.index');
         Route::post('/{inquiry}/messages', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryMessageController::class, 'store'])->name('messages.store');
+        Route::post('/{inquiry}/attachments', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryAttachmentController::class, 'uploadInquiryBody'])
+            ->name('attachments.inquiry-body');
+        Route::post('/{inquiry}/messages/attachments', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryAttachmentController::class, 'uploadMessage'])
+            ->name('attachments.message');
+    });
+
+Route::middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('inquiry-attachments.')
+    ->group(function () {
+        Route::get('/attachments/{attachment}', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryAttachmentController::class, 'download'])
+            ->name('download');
     });
