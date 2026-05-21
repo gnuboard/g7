@@ -1,0 +1,158 @@
+{
+  "version": "1.0.0",
+  "layout_name": "inquiry/show",
+  "permissions": ["auth"],
+  "extends": "_user_base",
+  "meta": {
+    "seo": {
+      "enabled": true,
+      "page_type": "default",
+      "vars": { "site_name": "$core_settings:general.site_name" }
+    }
+  },
+  "data_sources": [
+    {
+      "id": "inquiry",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-inquiry/inquiries/{{route.uuid}}",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_mode": "required"
+    },
+    {
+      "id": "messages",
+      "type": "api",
+      "endpoint": "/api/modules/sirsoft-inquiry/inquiries/{{route.uuid}}/messages",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_mode": "required"
+    }
+  ],
+  "slots": {
+    "content": [
+      {
+        "type": "layout", "name": "Container",
+        "props": { "className": "py-8 max-w-5xl mx-auto space-y-6" },
+        "children": [
+          {
+            "type": "basic", "name": "Div",
+            "props": { "className": "flex items-center justify-between gap-3" },
+            "children": [
+              {
+                "type": "basic", "name": "A",
+                "props": { "href": "/inquiry", "className": "text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" },
+                "text": "← 의뢰 목록"
+              },
+              {
+                "type": "basic", "name": "Button",
+                "if": "{{inquiry.data?.abilities?.cancel}}",
+                "props": { "className": "px-3 py-1.5 text-sm border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20" },
+                "text": "의뢰 취소",
+                "actions": [
+                  { "event": "onClick", "type": "click", "handler": "openModal", "target": "inquiry_cancel_modal" }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "composite", "name": "InquiryStatusBar",
+            "props": { "status": "{{inquiry.data?.status ?? 'received'}}" }
+          },
+          {
+            "type": "basic", "name": "Div",
+            "props": { "className": "grid grid-cols-1 lg:grid-cols-3 gap-6" },
+            "children": [
+              {
+                "type": "basic", "name": "Div",
+                "props": { "className": "lg:col-span-1 space-y-4" },
+                "children": [
+                  {
+                    "type": "basic", "name": "Div",
+                    "props": { "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-3" },
+                    "children": [
+                      { "type": "basic", "name": "H2", "props": { "className": "text-lg font-bold text-gray-900 dark:text-white" }, "text": "{{inquiry.data?.title ?? ''}}" },
+                      { "type": "basic", "name": "P", "props": { "className": "text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap" }, "text": "{{inquiry.data?.content ?? ''}}" },
+                      {
+                        "type": "basic", "name": "Div",
+                        "props": { "className": "pt-2 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 gap-2 text-xs text-gray-500 dark:text-gray-400" },
+                        "children": [
+                          { "type": "basic", "name": "Div", "text": "분류" },
+                          { "type": "basic", "name": "Div", "props": { "className": "text-right" }, "text": "{{inquiry.data?.category ?? '-'}}" },
+                          { "type": "basic", "name": "Div", "text": "예산" },
+                          { "type": "basic", "name": "Div", "props": { "className": "text-right" }, "text": "{{inquiry.data?.budget_range ?? '-'}}" },
+                          { "type": "basic", "name": "Div", "text": "희망 완료일" },
+                          { "type": "basic", "name": "Div", "props": { "className": "text-right" }, "text": "{{inquiry.data?.desired_due_at ?? '-'}}" }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "basic", "name": "Div",
+                    "if": "{{(inquiry.data?.quotes ?? []).length > 0}}",
+                    "props": { "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5" },
+                    "children": [
+                      { "type": "basic", "name": "H3", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mb-2" }, "text": "견적 이력" },
+                      {
+                        "type": "for",
+                        "items": "{{inquiry.data?.quotes ?? []}}",
+                        "as": "quote",
+                        "render": {
+                          "type": "basic", "name": "Div",
+                          "props": { "className": "py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0 text-sm text-gray-700 dark:text-gray-300" },
+                          "children": [
+                            { "type": "basic", "name": "Div", "text": "회차 #{{$item.version}} · 상태 {{$item.status}} · {{$item.total_amount}}원" }
+                          ]
+                        }
+                      },
+                      { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-400 mt-2" }, "text": "견적 수락/결제는 향후 업데이트에서 활성화됩니다." }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "basic", "name": "Div",
+                "props": { "className": "lg:col-span-2 h-[600px]" },
+                "children": [
+                  {
+                    "type": "composite", "name": "InquiryMessageThread",
+                    "props": {
+                      "messages": "{{messages.data ?? []}}",
+                      "myRole": "client",
+                      "submitting": "{{_local.messageSubmitting ?? false}}",
+                      "className": "h-full"
+                    },
+                    "actions": [
+                      {
+                        "event": "onSend", "type": "send", "handler": "sequence",
+                        "actions": [
+                          { "handler": "setState", "params": { "target": "local", "messageSubmitting": true } },
+                          {
+                            "handler": "apiCall",
+                            "target": "/api/modules/sirsoft-inquiry/inquiries/{{route.uuid}}/messages",
+                            "auth_required": true,
+                            "params": { "method": "POST", "body": { "body": "{{$event}}" } },
+                            "onSuccess": [
+                              { "handler": "setState", "params": { "target": "local", "messageSubmitting": false } },
+                              { "handler": "refetchDataSource", "params": { "dataSourceId": "messages" } }
+                            ],
+                            "onError": [
+                              { "handler": "setState", "params": { "target": "local", "messageSubmitting": false } },
+                              { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "modals": [
+    { "partial": "inquiry/partials/_modal_inquiry_cancel.json" }
+  ]
+}
