@@ -40,4 +40,7 @@ Route::prefix('admin')
         Route::get('/inquiries/{inquiry}', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryController::class, 'show'])->name('inquiries.show');
         Route::post('/inquiries/{inquiry}/quotes', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryQuoteController::class, 'issue'])->name('inquiries.quotes.issue');
         Route::post('/inquiries/{inquiry}/quotes/{quote}/revoke', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryQuoteController::class, 'revoke'])->name('inquiries.quotes.revoke');
+        Route::post('/inquiries/{inquiry}/mark-paid-offline', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryActionController::class, 'markPaidOffline']);
+        Route::post('/inquiries/{inquiry}/complete', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryActionController::class, 'complete']);
+        Route::post('/inquiries/{inquiry}/cancel', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryActionController::class, 'cancel']);
     });

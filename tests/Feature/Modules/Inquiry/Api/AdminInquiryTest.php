@@ -133,4 +133,42 @@ class AdminInquiryTest extends TestCase
         $this->getJson('/api/modules/sirsoft-inquiry/admin/inquiries')
             ->assertForbidden();
     }
+
+    public function test_mark_paid_offline_transitions_to_in_progress(): void
+    {
+        $client = User::factory()->create();
+        $inquiry = Inquiry::create(['uuid' => (string) Str::uuid(), 'user_id' => $client->id, 'title' => 'X', 'content' => 'Y', 'status' => 'quoted', 'quoted_at' => now()]);
+        $inquiry->quotes()->create(['version' => 1, 'total_amount' => 1000000, 'currency' => 'KRW', 'status' => 'issued', 'issued_at' => now()]);
+
+        Sanctum::actingAs($this->makeOperator());
+
+        $this->postJson("/api/modules/sirsoft-inquiry/admin/inquiries/{$inquiry->uuid}/mark-paid-offline")
+            ->assertOk();
+        $this->assertSame('in_progress', $inquiry->fresh()->status->value);
+    }
+
+    public function test_mark_completed_from_in_progress(): void
+    {
+        $client = User::factory()->create();
+        $inquiry = Inquiry::create(['uuid' => (string) Str::uuid(), 'user_id' => $client->id, 'title' => 'X', 'content' => 'Y', 'status' => 'in_progress', 'started_at' => now(), 'payment_id' => 'p1']);
+
+        Sanctum::actingAs($this->makeOperator());
+        $this->postJson("/api/modules/sirsoft-inquiry/admin/inquiries/{$inquiry->uuid}/complete")
+            ->assertOk();
+        $this->assertSame('completed', $inquiry->fresh()->status->value);
+    }
+
+    public function test_admin_cancel_marks_canceled_by_operator(): void
+    {
+        $client = User::factory()->create();
+        $inquiry = Inquiry::create(['uuid' => (string) Str::uuid(), 'user_id' => $client->id, 'title' => 'X', 'content' => 'Y', 'status' => 'received']);
+
+        Sanctum::actingAs($this->makeOperator());
+        $this->postJson("/api/modules/sirsoft-inquiry/admin/inquiries/{$inquiry->uuid}/cancel")
+            ->assertOk();
+        $this->assertSame('canceled', $inquiry->fresh()->status->value);
+
+        $sys = $inquiry->fresh()->messages()->where('sender_role', 'system')->latest()->first();
+        $this->assertSame('inquiry::system.message.canceled_by_operator', $sys->meta['key']);
+    }
 }
