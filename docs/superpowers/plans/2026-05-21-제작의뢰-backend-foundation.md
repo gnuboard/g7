@@ -83,28 +83,46 @@ tests/Feature/Modules/Inquiry/
 
 ---
 
-## 사전 확인 (작업 전 1회)
+## 사전 확인 (작업 전 1회) — 2026-05-21 보정
 
-- [ ] **Pre-1: 모듈 마이그레이션 등록 방식 확인**
+> **모듈 시스템 패턴 (확정)** — 이 plan 작성 후 실제 코드를 다시 확인하여 다음 사실들을 확인했다. 본 plan의 모든 task는 이 패턴을 전제로 한다.
+>
+> - **`BaseModuleServiceProvider::register()` 가 자동 처리**: `$repositories` 배열의 모든 interface→impl 바인딩, `$storageServices` / `$cacheServices` 의 컨텍스트 바인딩. 자식은 배열만 정의.
+> - **`BaseModuleServiceProvider::boot()` 가 자동 처리**: `loadModuleMigrations()` (실제로는 빈 메서드 — `php artisan migrate` 와 분리) + `loadModuleTranslations()` (`{module}/src/lang` 에서 자동 로드).
+> - **모듈 마이그레이션은 `ModuleManager::runMigrations()` 가 실행** — `php artisan module:install <id>` / `module:activate <id>` 명령으로 트리거. `php artisan migrate` 로는 모듈 마이그레이션이 실행되지 않음.
+> - **모듈 인식**: `_bundled` 디렉터리에 원본을 두고, install 명령이 `modules/<id>/` 로 활성화시키며 `bootstrap/cache/autoload-extensions.php` 가 갱신됨. PSR-4 autoload는 install 명령이 처리.
+> - **다국어 자동 로드 경로**: `modules/_bundled/<id>/src/lang/{locale}/<file>.php` → 키 prefix `<id>::file.key` (예: `inquiry::system.status.received`).
+>
+> 따라서 본 plan의 Task 2(`InquiryServiceProvider`)에서 `boot()` 메서드를 재정의하지 않으며, `loadMigrationsFrom` / `loadTranslationsFrom` 직접 호출도 제외한다. config 머지가 필요하면 `register()` 안에서 한다.
 
-board 모듈의 `BaseModuleServiceProvider` 가 `boot()` 안에서 어떻게 마이그레이션과 config·정책을 로드하는지 확인하여 동일 패턴을 따른다. 확인 명령:
-
-```bash
-grep -n "loadMigrations\|mergeConfig\|Gate::policy" \
-  app/Extension/BaseModuleServiceProvider.php \
-  modules/_bundled/sirsoft-board/src/Providers/BoardServiceProvider.php
-```
-
-발견된 패턴(특히 `loadMigrationsFrom` 호출 시점, repository binding 배열 키)을 본 plan의 ServiceProvider 코드에 그대로 반영한다. 본 plan은 board 모듈 패턴이 동일하다고 가정하고 작성됨 — 다르면 해당 task에서 보정.
-
-- [ ] **Pre-2: 테스트 실행 명령 확인**
+- [ ] **Pre-1: BaseModuleServiceProvider / ModuleManager 패턴 재확인 (참고 자료 읽기)**
 
 ```bash
-php artisan test --filter="Modules\\\\Inquiry" 2>&1 | head -20
-# 또는 ./vendor/bin/pest tests/Feature/Modules/Inquiry
+sed -n '50,90p' app/Extension/BaseModuleServiceProvider.php
+sed -n '155,170p' app/Extension/BaseModuleServiceProvider.php
+grep -n "runMigrations" app/Extension/ModuleManager.php 2>/dev/null | head -5
 ```
 
-성공 또는 "No tests found" 출력이 정상. 환경에 따라 어느 쪽을 쓸지 결정하여 이후 모든 task의 테스트 실행 명령에 적용.
+기대: parent `register()` 와 `boot()` 가 모든 공통 처리를 한다는 사실 확인.
+
+- [ ] **Pre-2: 테스트 환경(.env.testing) 준비**
+
+```bash
+test -f .env.testing || cp .env.testing.example .env.testing
+grep "^APP_KEY=" .env.testing | grep -v "APP_KEY=$" >/dev/null || php artisan key:generate --env=testing
+php artisan test --filter=NothingMatchesThisTest 2>&1 | tail -5
+```
+
+기대: 마지막 명령은 "No tests executed" 같은 깨끗한 결과(에러 아님). `.env.testing` 키 정상.
+
+- [ ] **Pre-3: `module:install` / `module:activate` 흐름 확인**
+
+```bash
+php artisan module:list 2>&1 | head -10
+php artisan list 2>&1 | grep -E "module:(install|activate|uninstall|composer)" | head -10
+```
+
+기대: board/page/ecommerce 등 기존 모듈이 보임. install/activate 명령 존재 확인.
 
 ---
 
@@ -231,6 +249,8 @@ php artisan test --filter=ModuleBootstrapTest 2>&1 | tail -10
 
 - [ ] **Step 3: ServiceProvider 작성**
 
+`BaseModuleServiceProvider` 가 마이그레이션·번역 로드, repository binding을 모두 자동 처리하므로 `boot()` / `register()` 재정의 불필요. 자식은 배열만 정의. **config 머지가 필요하면 `register()` 안에서 처리** (Task 3에서 추가):
+
 ```php
 <?php
 
@@ -242,33 +262,37 @@ class InquiryServiceProvider extends BaseModuleServiceProvider
 {
     protected string $moduleIdentifier = 'sirsoft-inquiry';
 
-    protected array $repositories = [
-        // Task 25 에서 채움
-    ];
+    /**
+     * Repository 인터페이스 → 구현체 매핑.
+     * Task 16-19 에서 채워짐.
+     */
+    protected array $repositories = [];
 
     protected array $cacheServices = [];
     protected array $storageServices = [];
-
-    public function boot(): void
-    {
-        parent::boot();
-
-        $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
-        $this->mergeConfigFrom(__DIR__ . '/../../config/inquiry.php', 'inquiry');
-        $this->loadTranslationsFrom(__DIR__ . '/../lang', 'inquiry');
-    }
 }
 ```
 
-- [ ] **Step 4: 모듈 시스템에 ServiceProvider 등록**
+- [ ] **Step 4: 모듈 등록 (ModuleManager 통한 install 흐름)**
 
-board 모듈이 `module.json` 또는 별도 manifest로 ServiceProvider를 노출하는 방식을 확인하여 동일하게 등록. 일반적으로 `module.json`의 `service_provider` 필드 또는 `config/app.php` 의 `providers` 배열. **확인 명령**:
+ServiceProvider를 `config/app.php` 의 `providers` 에 직접 추가하지 않는다. 대신 ModuleManager가 활성화 시점에 자동 등록한다. 이번 step에서는 모듈이 _bundled 디렉터리에서 인식되도록 install 흐름을 실행:
 
 ```bash
-grep -rn "BoardServiceProvider" config/ modules/_bundled/sirsoft-board/module.json 2>/dev/null
+php artisan module:list 2>&1 | grep sirsoft-inquiry
+# 없으면 install:
+php artisan module:install sirsoft-inquiry 2>&1 | tail -10
+php artisan module:activate sirsoft-inquiry 2>&1 | tail -5
+php artisan module:list 2>&1 | grep sirsoft-inquiry
 ```
 
-발견된 위치에 `Modules\Sirsoft\Inquiry\Providers\InquiryServiceProvider` 추가.
+기대: 마지막 명령에 sirsoft-inquiry 가 activated 상태로 출력.
+
+`module:install` 실패 시 board 모듈의 활성화 패턴을 비교해 누락된 파일(예: `module.php`)을 보강:
+
+```bash
+ls modules/_bundled/sirsoft-board/module.php modules/sirsoft-board/module.php 2>&1
+# 필요 시 동일 구조로 modules/_bundled/sirsoft-inquiry/module.php 생성
+```
 
 - [ ] **Step 5: 테스트 실행 (성공 확인)**
 
@@ -336,7 +360,23 @@ return [
 ];
 ```
 
-- [ ] **Step 2: config 로드 검증 테스트 추가**
+- [ ] **Step 2: ServiceProvider의 register() 안에서 config 머지**
+
+`InquiryServiceProvider` 에 `register()` 메서드를 추가해 `parent::register()` 호출 + config 머지:
+
+```php
+public function register(): void
+{
+    parent::register();
+
+    $this->mergeConfigFrom(
+        $this->getProviderPath() . '/../../config/inquiry.php',
+        'inquiry'
+    );
+}
+```
+
+- [ ] **Step 3: config 로드 검증 테스트 추가**
 
 `ModuleBootstrapTest::test_config_is_merged()`:
 
@@ -348,7 +388,7 @@ public function test_config_is_merged(): void
 }
 ```
 
-- [ ] **Step 3: 테스트 실행**
+- [ ] **Step 4: 테스트 실행**
 
 ```bash
 php artisan test --filter=ModuleBootstrapTest 2>&1 | tail -10
@@ -356,10 +396,12 @@ php artisan test --filter=ModuleBootstrapTest 2>&1 | tail -10
 
 기대: 모든 테스트 PASS.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add modules/_bundled/sirsoft-inquiry/config/inquiry.php tests/Feature/Modules/Inquiry/ModuleBootstrapTest.php
+git add modules/_bundled/sirsoft-inquiry/config/inquiry.php \
+        modules/_bundled/sirsoft-inquiry/src/Providers/InquiryServiceProvider.php \
+        tests/Feature/Modules/Inquiry/ModuleBootstrapTest.php
 git commit -m "feat(inquiry): add module config (attachment/quote/permissions)"
 ```
 
@@ -2896,9 +2938,33 @@ git diff --stat $(git log --oneline | grep "feat(inquiry): scaffold module skele
 
 ## 부록 A — 자주 발생할 수 있는 문제
 
-**모듈 마이그레이션이 자동으로 잡히지 않을 때**
-- `php artisan migrate:fresh` 만으로 모듈 마이그레이션이 실행 안 되면 `loadMigrationsFrom()` 호출 누락 또는 ServiceProvider 미등록.
-- `php artisan migrate --path=...` 로 명시 경로 지정해서 우회 가능. ServiceProvider 등록 후 path 없이도 자동 발견되는지 재확인.
+**모듈 마이그레이션 실행 절차 (Task 5-9, 25 공통)**
+
+이 프로젝트의 모듈 마이그레이션은 `php artisan migrate` 가 자동으로 잡지 않는다. `ModuleManager::runMigrations()` 가 `module:install` / `module:activate` / `module:update` 시점에 실행한다. 따라서 본 plan Task 5-9 의 "마이그레이션 실행 검증" 단계는 다음 패턴 중 환경에 맞는 것을 사용한다:
+
+```bash
+# 패턴 A — 매 마이그레이션 추가마다 재설치 (idempotent하다면)
+php artisan module:uninstall sirsoft-inquiry 2>&1 | tail -3
+php artisan module:install sirsoft-inquiry 2>&1 | tail -3
+php artisan module:activate sirsoft-inquiry 2>&1 | tail -3
+
+# 패턴 B — 마이그레이션 작성 시점엔 syntax 만 검증, 실제 실행은 Task 9에서 한 번에
+php -l modules/_bundled/sirsoft-inquiry/database/migrations/<file>.php
+# Task 9 끝에서 한 번에 install/activate
+
+# 패턴 C — module:update 가 새 마이그레이션을 감지한다면
+php artisan module:update sirsoft-inquiry 2>&1 | tail -5
+
+# 테이블 존재 검증
+php artisan tinker --execute="dump(\Schema::hasTable('inquiries'));"
+```
+
+implementer는 Pre-3에서 발견한 실제 명령 패턴(`module:list` 출력 / `module:update` 존재 여부)에 따라 위 중 하나를 선택한다. Task 5의 첫 마이그레이션 검증에서 선택한 패턴을 Task 6-9, 25 에서 일관 적용.
+
+**모듈 인식 자체가 안 될 때**
+- `bootstrap/cache/autoload-extensions.php` 갱신 누락 가능. `php artisan module:composer-install sirsoft-inquiry` 또는 `composer dump-autoload` 실행.
+- `modules/_bundled/sirsoft-inquiry/module.json` 의 `identifier` 와 디렉터리명이 일치해야 함.
+- board 모듈에 `module.php` 같은 부가 manifest가 있는지 비교: `ls modules/_bundled/sirsoft-board/module.php`. 있으면 동일 구조로 inquiry에도 추가.
 
 **Spatie/Permission 미사용 환경**
 - 권한 부여 메서드가 다를 수 있음. `$user->permissions()->attach($id)` 같은 패턴. `InquiryPolicy::isOperator()` 안의 `$user->can(...)` 가 동작하는지가 핵심 — 작동하면 권한 시스템에 상관없이 통과.
@@ -2908,3 +2974,13 @@ git diff --stat $(git log --oneline | grep "feat(inquiry): scaffold module skele
 
 **`Illuminate\Support\Str::uuid()` import**
 - 테스트에서 `\Str::uuid()` 사용 시 helper 미등록. `use Illuminate\Support\Str;` 후 `Str::uuid()` 또는 `(string) Str::uuid()` 사용.
+
+## 부록 B — Plan vs 코드 불일치 처리 가이드 (implementer/reviewer 공통)
+
+본 plan 작성 후 `BaseModuleServiceProvider` / `ModuleManager` 패턴을 재검증하여 다음 사실을 plan 본문에 반영했다:
+
+1. ServiceProvider는 `boot()`/`register()` 재정의 불필요 (Task 2). config 머지가 필요할 때만 `register()` 안에서 처리 (Task 3).
+2. 마이그레이션 실행은 `module:install`/`activate` 흐름. `php artisan migrate --path=...` 사용 금지.
+3. 다국어는 자동 로드(`{module}/src/lang`). `loadTranslationsFrom` 직접 호출 금지.
+
+spec reviewer / code reviewer 는 위 3가지를 plan 의 정답으로 간주하고, plan 본문의 옛 코드 블록 중 위와 충돌하는 부분이 발견되면 본 부록 B 를 따른다.
