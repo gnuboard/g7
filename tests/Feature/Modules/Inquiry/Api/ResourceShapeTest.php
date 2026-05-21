@@ -65,4 +65,32 @@ class ResourceShapeTest extends TestCase
         $this->assertSame(1234, $array['size']);
         $this->assertStringContainsString("/api/modules/sirsoft-inquiry/attachments/{$att->id}", $array['download_url']);
     }
+
+    public function test_quote_resource_shape(): void
+    {
+        $inquiry = $this->makeInquiry();
+        $quote = $inquiry->quotes()->create([
+            'version' => 1,
+            'total_amount' => 1000000,
+            'tax_amount' => 0,
+            'currency' => 'KRW',
+            'status' => 'issued',
+            'issued_at' => now(),
+        ]);
+        $quote->items()->create([
+            'position' => 1,
+            'name' => '메인 페이지 디자인',
+            'qty' => 1,
+            'unit_price' => 1000000,
+            'amount' => 1000000,
+        ]);
+
+        $array = (new \Modules\Sirsoft\Inquiry\Http\Resources\InquiryQuoteResource($quote->load('items')))->resolve();
+
+        $this->assertSame(1, $array['version']);
+        $this->assertSame('issued', $array['status']);
+        $this->assertSame('1000000', (string) $array['total_amount']);
+        $this->assertCount(1, $array['items']);
+        $this->assertSame('메인 페이지 디자인', $array['items'][0]['name']);
+    }
 }
