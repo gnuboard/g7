@@ -58,5 +58,15 @@ class InquiryServiceProvider extends BaseModuleServiceProvider
             \Modules\Sirsoft\Inquiry\Models\Inquiry::class,
             \Modules\Sirsoft\Inquiry\Policies\InquiryPolicy::class,
         );
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \Modules\Sirsoft\Inquiry\Console\Commands\ExpireQuotesCommand::class,
+            ]);
+        }
+
+        $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule) {
+            $schedule->command('inquiry:expire-quotes')->daily();
+        });
     }
 }
