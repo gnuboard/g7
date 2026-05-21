@@ -89,6 +89,8 @@ export { default as InquiryCard } from './InquiryCard';
 export type { InquiryCardProps } from './InquiryCard';
 export { default as InquiryMessageThread } from './InquiryMessageThread';
 export type { InquiryMessageThreadProps, InquiryMessage } from './InquiryMessageThread';
+export { default as QuoteCard } from './QuoteCard';
+export type { QuoteCardProps, QuoteItem } from './QuoteCard';
 
 /**
  * 컴포넌트 등록 맵
@@ -172,6 +174,7 @@ export const compositeComponents = {
   InquiryStatusBar: () => import('./InquiryStatusBar'),
   InquiryCard: () => import('./InquiryCard'),
   InquiryMessageThread: () => import('./InquiryMessageThread'),
+  QuoteCard: () => import('./QuoteCard'),
 };
 
 /**
