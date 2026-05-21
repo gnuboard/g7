@@ -93,4 +93,24 @@ class ResourceShapeTest extends TestCase
         $this->assertCount(1, $array['items']);
         $this->assertSame('메인 페이지 디자인', $array['items'][0]['name']);
     }
+
+    public function test_inquiry_resource_shape_for_owner(): void
+    {
+        $inquiry = $this->makeInquiry(); // makeInquiry() always uses $user
+        $inquiry->load(['quotes.items', 'attachments']);
+
+        $request = \Illuminate\Http\Request::create('/');
+        $request->setUserResolver(fn () => $inquiry->user); // owner
+
+        $array = (new \Modules\Sirsoft\Inquiry\Http\Resources\InquiryResource($inquiry))->toArray($request);
+
+        $this->assertSame($inquiry->uuid, $array['uuid']);
+        $this->assertSame('received', $array['status']);
+        $this->assertTrue($array['is_owner']);
+        $this->assertIsArray($array['abilities']);
+        $this->assertTrue($array['abilities']['update']);
+        $this->assertTrue($array['abilities']['cancel']);
+        $this->assertArrayHasKey('quotes', $array);
+        $this->assertArrayHasKey('attachments', $array);
+    }
 }
