@@ -76,23 +76,26 @@ trait CachesModuleStatus
     /**
      * DB 연결 + 테이블 존재 여부를 확인합니다 (인스톨러 안전성).
      *
-     * 설치 완료 상태(`config('app.installer_completed')`)일 때는 테이블 존재를
-     * 전제로 하여 `Schema::hasTable()` 호출을 건너뜁니다. 인스톨러 이전 환경이나
-     * 테스트에서는 기존 체크 경로로 폴백합니다.
+     * 항상 실제 테이블 존재 여부를 확인합니다.
+     * 결과는 정적 캐시에 저장되어 같은 요청 내에서 중복 Schema 조회를 방지합니다.
+     * (신규 서버 배포 시 INSTALLER_COMPLETED=true 상태에서 마이그레이션 전 실행되는 경우 대응)
      */
     private static function isExtensionTableReady(string $table): bool
     {
-        if (config('app.installer_completed')) {
-            return true;
+        static $cache = [];
+
+        if (isset($cache[$table])) {
+            return $cache[$table];
         }
 
         try {
             DB::connection()->getPdo();
-
-            return Schema::hasTable($table);
+            $cache[$table] = Schema::hasTable($table);
         } catch (\Throwable $e) {
-            return false;
+            $cache[$table] = false;
         }
+
+        return $cache[$table];
     }
 
     /**

@@ -74,22 +74,28 @@ trait CachesPluginStatus
     }
 
     /**
-     * 설치 완료 상태에서는 `Schema::hasTable()` 호출을 건너뜁니다.
-     * 인스톨러 이전 환경이나 테스트에서는 기존 체크 경로로 폴백합니다.
+     * DB 연결 + 테이블 존재 여부를 확인합니다 (인스톨러 안전성).
+     *
+     * 항상 실제 테이블 존재 여부를 확인합니다.
+     * 결과는 정적 캐시에 저장되어 같은 요청 내에서 중복 Schema 조회를 방지합니다.
+     * (신규 서버 배포 시 INSTALLER_COMPLETED=true 상태에서 마이그레이션 전 실행되는 경우 대응)
      */
     private static function isPluginTableReady(): bool
     {
-        if (config('app.installer_completed')) {
-            return true;
+        static $cache = null;
+
+        if ($cache !== null) {
+            return $cache;
         }
 
         try {
             DB::connection()->getPdo();
-
-            return Schema::hasTable('plugins');
+            $cache = Schema::hasTable('plugins');
         } catch (\Throwable $e) {
-            return false;
+            $cache = false;
         }
+
+        return $cache;
     }
 
     private static function resolvePluginStatusCache(): CacheInterface

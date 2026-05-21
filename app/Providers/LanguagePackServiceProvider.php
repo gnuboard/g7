@@ -478,10 +478,8 @@ class LanguagePackServiceProvider extends ServiceProvider
             return false;
         }
 
-        if (config('app.installer_completed') === true) {
-            return true;
-        }
-
+        // 항상 테이블 존재 여부를 확인합니다 (installer_completed 여부와 무관).
+        // 신규 서버 배포 시 INSTALLER_COMPLETED=true 상태에서 마이그레이션 전 실행되는 경우 대응.
         try {
             return Schema::hasTable('language_packs');
         } catch (QueryException $e) {
