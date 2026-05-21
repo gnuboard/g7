@@ -1,0 +1,29 @@
+{
+    "version": "1.0.0",
+    "routes": [
+        {
+            "path": "*/admin/inquiry",
+            "layout": "admin_inquiry_index",
+            "auth_required": true,
+            "meta": {
+                "title": "제작의뢰 관리"
+            }
+        },
+        {
+            "path": "*/admin/inquiry/:uuid",
+            "layout": "admin_inquiry_detail",
+            "auth_required": true,
+            "meta": {
+                "title": "제작의뢰 상세"
+            }
+        },
+        {
+            "path": "*/admin/inquiry/:uuid/quote/new",
+            "layout": "admin_inquiry_quote_form",
+            "auth_required": true,
+            "meta": {
+                "title": "견적 발행"
+            }
+        }
+    ]
+}
