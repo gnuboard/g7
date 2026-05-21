@@ -1,0 +1,561 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin/admin_inquiry_index",
+    "permissions": [
+        "admin"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "제작 의뢰 목록",
+        "description": "제작 의뢰 전체 목록 관리"
+    },
+    "state": {
+        "searchQuery": ""
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "inquiries"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchQuery": "{{query.q || ''}}"
+                }
+            }
+        }
+    ],
+    "data_sources": [
+        {
+            "id": "inquiries",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-inquiry/admin/inquiries",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || '15'}}",
+                "status": "{{query.status || ''}}",
+                "q": "{{query.q || ''}}",
+                "sort_by": "{{query.sort_by || 'received_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "500": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "422": {
+                    "handler": "toast",
+                    "params": {
+                        "type": "error",
+                        "message": "{{error.message}}"
+                    }
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "inquiry_index_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "제작 의뢰 목록",
+                            "description": "접수된 제작 의뢰를 검토하고 처리합니다."
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/inquiry",
+                                            "mergeQuery": false
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "search_filter_area",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "filter_row",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-row gap-3 items-center flex-wrap"
+                                },
+                                "children": [
+                                    {
+                                        "id": "status_filter",
+                                        "type": "composite",
+                                        "name": "Select",
+                                        "props": {
+                                            "value": "{{query.status || ''}}",
+                                            "className": "w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                            "options": [
+                                                {
+                                                    "label": "전체 상태",
+                                                    "value": ""
+                                                },
+                                                {
+                                                    "label": "접수됨",
+                                                    "value": "received"
+                                                },
+                                                {
+                                                    "label": "견적 발행됨",
+                                                    "value": "quoted"
+                                                },
+                                                {
+                                                    "label": "진행 중",
+                                                    "value": "in_progress"
+                                                },
+                                                {
+                                                    "label": "완료",
+                                                    "value": "completed"
+                                                },
+                                                {
+                                                    "label": "취소됨",
+                                                    "value": "canceled"
+                                                }
+                                            ]
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/inquiry",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "status": "{{$event.target.value}}",
+                                                        "page": 1
+                                                    },
+                                                    "transition_overlay_target": "inquiries_data_grid__body"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_input",
+                                        "type": "basic",
+                                        "name": "Input",
+                                        "props": {
+                                            "type": "text",
+                                            "placeholder": "제목 또는 의뢰자 이메일로 검색...",
+                                            "value": "{{_local.searchQuery || ''}}",
+                                            "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "searchQuery": "{{$event.target.value}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "keypress",
+                                                "key": "Enter",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/inquiry",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "q": "{{$event.target.value}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "search_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "flex items-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white font-medium hover:bg-gray-900 dark:hover:bg-gray-600 text-sm"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/inquiry",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "q": "{{_local.searchQuery || ''}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "search",
+                                                    "className": "w-4 h-4"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "검색"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "reset_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "props": {
+                                            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/inquiry",
+                                                    "mergeQuery": false
+                                                }
+                                            }
+                                        ],
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "초기화"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex justify-end items-center gap-3 mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "composite",
+                                "name": "Select",
+                                "props": {
+                                    "name": "sort",
+                                    "className": "w-40",
+                                    "value": "{{(query.sort_by || 'received_at') + '_' + (query.sort_order || 'desc')}}",
+                                    "options": [
+                                        {
+                                            "label": "최신 접수순",
+                                            "value": "received_at_desc"
+                                        },
+                                        {
+                                            "label": "오래된 접수순",
+                                            "value": "received_at_asc"
+                                        },
+                                        {
+                                            "label": "최근 수정순",
+                                            "value": "updated_at_desc"
+                                        }
+                                    ]
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/inquiry",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                "page": 1
+                                            },
+                                            "transition_overlay_target": "inquiries_data_grid__body"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "composite",
+                                "name": "Select",
+                                "props": {
+                                    "name": "per_page",
+                                    "className": "w-36",
+                                    "value": "{{query.per_page || '15'}}",
+                                    "options": [
+                                        {
+                                            "label": "15개씩",
+                                            "value": "15"
+                                        },
+                                        {
+                                            "label": "30개씩",
+                                            "value": "30"
+                                        },
+                                        {
+                                            "label": "50개씩",
+                                            "value": "50"
+                                        }
+                                    ]
+                                },
+                                "actions": [
+                                    {
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/inquiry",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "per_page": "{{$event.target.value}}",
+                                                "page": 1
+                                            },
+                                            "transition_overlay_target": "inquiries_data_grid__body"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "inquiries_data_grid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "blur_until_loaded": true,
+                        "props": {
+                            "columns": [
+                                {
+                                    "field": "uuid",
+                                    "header": "UUID",
+                                    "sortable": false,
+                                    "required": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer text-xs font-mono"
+                                            },
+                                            "text": "{{row.uuid?.substring(0, 8)}}…",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/inquiry/{{row.uuid}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "title",
+                                    "header": "제목",
+                                    "sortable": false,
+                                    "required": true,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                            },
+                                            "text": "{{row.title}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/inquiry/{{row.uuid}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "user",
+                                    "header": "의뢰자",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col gap-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "font-medium text-gray-900 dark:text-white text-sm"
+                                                    },
+                                                    "text": "{{row.user?.name ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{row.user?.email ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "status",
+                                    "header": "상태",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{row.status === 'received' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : row.status === 'quoted' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : row.status === 'in_progress' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : row.status === 'completed' ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                            },
+                                            "text": "{{row.status === 'received' ? '접수됨' : row.status === 'quoted' ? '견적 발행됨' : row.status === 'in_progress' ? '진행 중' : row.status === 'completed' ? '완료' : row.status === 'canceled' ? '취소됨' : row.status}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "category",
+                                    "header": "분류",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{row.category ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "received_at",
+                                    "header": "접수일",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{row.received_at ?? row.created_at}}"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "data": "{{inquiries?.data?.data}}",
+                            "sortable": false,
+                            "pagination": true,
+                            "alwaysShowPagination": true,
+                            "pageSize": 15,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{inquiries?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{inquiries?.data?.pagination?.last_page ?? 1}}",
+                            "selectable": false,
+                            "responsiveBreakpoint": 768,
+                            "showFirstLast": true,
+                            "emptyMessage": "조회된 의뢰가 없습니다."
+                        },
+                        "actions": [
+                            {
+                                "event": "onPageChange",
+                                "type": "change",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/inquiry",
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    },
+                                    "transition_overlay_target": "inquiries_data_grid__body"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "pagination_info",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-4 text-sm text-gray-600 dark:text-gray-400 text-center"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "전체 {{inquiries?.data?.pagination?.total ?? 0}}건 중 {{inquiries?.data?.pagination?.from ?? 0}}–{{inquiries?.data?.pagination?.to ?? 0}}건 표시"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
