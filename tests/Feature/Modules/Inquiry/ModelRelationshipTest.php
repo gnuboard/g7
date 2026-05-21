@@ -92,4 +92,19 @@ class ModelRelationshipTest extends TestCase
         $this->assertSame($msg->id, $att->message->id);
         $this->assertSame(1, $msg->attachments()->count());
     }
+
+    public function test_repository_find_and_create(): void
+    {
+        $repo = app(\Modules\Sirsoft\Inquiry\Repositories\Contracts\InquiryRepositoryInterface::class);
+        $user = User::factory()->create();
+        $inquiry = $repo->create([
+            'uuid' => (string) \Str::uuid(),
+            'user_id' => $user->id,
+            'title' => '리뉴얼',
+            'content' => '본문',
+            'status' => 'received',
+        ]);
+        $found = $repo->findByUuidOrFail($inquiry->uuid);
+        $this->assertTrue($found->is($inquiry));
+    }
 }

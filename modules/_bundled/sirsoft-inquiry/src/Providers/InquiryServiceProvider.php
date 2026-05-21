@@ -12,7 +12,10 @@ class InquiryServiceProvider extends BaseModuleServiceProvider
      * Repository 인터페이스 → 구현체 매핑.
      * Task 16-19 에서 채워짐.
      */
-    protected array $repositories = [];
+    protected array $repositories = [
+        \Modules\Sirsoft\Inquiry\Repositories\Contracts\InquiryRepositoryInterface::class
+            => \Modules\Sirsoft\Inquiry\Repositories\InquiryRepository::class,
+    ];
 
     protected array $cacheServices = [];
 
