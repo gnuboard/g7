@@ -135,4 +135,25 @@ class ModelRelationshipTest extends TestCase
         ]);
         $this->assertSame(2, $q2->version);
     }
+
+    public function test_message_repository_append_and_system(): void
+    {
+        $repo = app(\Modules\Sirsoft\Inquiry\Repositories\Contracts\InquiryMessageRepositoryInterface::class);
+        $inquiryRepo = app(\Modules\Sirsoft\Inquiry\Repositories\Contracts\InquiryRepositoryInterface::class);
+        $user = User::factory()->create();
+        $inquiry = $inquiryRepo->create([
+            'uuid' => (string) \Str::uuid(),
+            'user_id' => $user->id,
+            'title' => 'X', 'content' => 'Y', 'status' => 'received',
+        ]);
+
+        $msg = $repo->append($inquiry, $user->id, \Modules\Sirsoft\Inquiry\Enums\SenderRole::Client, '안녕하세요');
+        $this->assertSame('client', $msg->sender_role->value);
+
+        $sys = $repo->appendSystem($inquiry, 'inquiry::system.message.quote_issued', ['version' => 1, 'total' => '1,000,000']);
+        $this->assertSame('system', $sys->sender_role->value);
+        $this->assertNull($sys->body);
+        $this->assertSame('inquiry::system.message.quote_issued', $sys->meta['key']);
+        $this->assertSame(1, $sys->meta['params']['version']);
+    }
 }
