@@ -19,6 +19,8 @@ class InquiryServiceProvider extends BaseModuleServiceProvider
             => \Modules\Sirsoft\Inquiry\Repositories\InquiryQuoteRepository::class,
         \Modules\Sirsoft\Inquiry\Repositories\Contracts\InquiryMessageRepositoryInterface::class
             => \Modules\Sirsoft\Inquiry\Repositories\InquiryMessageRepository::class,
+        \Modules\Sirsoft\Inquiry\Repositories\Contracts\InquiryAttachmentRepositoryInterface::class
+            => \Modules\Sirsoft\Inquiry\Repositories\InquiryAttachmentRepository::class,
     ];
 
     protected array $cacheServices = [];
