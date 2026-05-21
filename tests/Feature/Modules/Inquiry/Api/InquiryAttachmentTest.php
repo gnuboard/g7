@@ -131,4 +131,45 @@ class InquiryAttachmentTest extends TestCase
             ['file' => UploadedFile::fake()->create('a.pdf', 1, 'application/pdf')]
         )->assertForbidden();
     }
+
+    public function test_download_returns_file_for_owner(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create();
+        $inquiry = Inquiry::create([
+            'uuid' => (string) Str::uuid(), 'user_id' => $user->id,
+            'title' => 'X', 'content' => 'Y', 'status' => 'received',
+        ]);
+        Sanctum::actingAs($user);
+        $upload = $this->postJson(
+            "/api/modules/sirsoft-inquiry/inquiries/{$inquiry->uuid}/attachments",
+            ['file' => UploadedFile::fake()->create('plan.pdf', 100, 'application/pdf')]
+        );
+        $attId = $upload->json('data.id');
+
+        $res = $this->get("/api/modules/sirsoft-inquiry/attachments/{$attId}");
+        $res->assertOk();
+        $res->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_download_forbidden_for_strangers(): void
+    {
+        Storage::fake('local');
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $inquiry = Inquiry::create([
+            'uuid' => (string) Str::uuid(), 'user_id' => $owner->id,
+            'title' => 'X', 'content' => 'Y', 'status' => 'received',
+        ]);
+        Sanctum::actingAs($owner);
+        $upload = $this->postJson(
+            "/api/modules/sirsoft-inquiry/inquiries/{$inquiry->uuid}/attachments",
+            ['file' => UploadedFile::fake()->create('plan.pdf', 100, 'application/pdf')]
+        );
+        $attId = $upload->json('data.id');
+
+        Sanctum::actingAs($other);
+        $this->get("/api/modules/sirsoft-inquiry/attachments/{$attId}")
+            ->assertForbidden();
+    }
 }
