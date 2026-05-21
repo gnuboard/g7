@@ -4,14 +4,20 @@ namespace Modules\Sirsoft\Inquiry\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Modules\Sirsoft\Inquiry\Enums\TransitionEvent;
+use Modules\Sirsoft\Inquiry\Http\Requests\StoreInquiryRequest;
+use Modules\Sirsoft\Inquiry\Http\Requests\UpdateInquiryRequest;
 use Modules\Sirsoft\Inquiry\Http\Resources\InquiryResource;
 use Modules\Sirsoft\Inquiry\Models\Inquiry;
 use Modules\Sirsoft\Inquiry\Repositories\Contracts\InquiryRepositoryInterface;
+use Modules\Sirsoft\Inquiry\Services\InquiryStateMachine;
 
 class InquiryController extends Controller
 {
     public function __construct(
         private readonly InquiryRepositoryInterface $inquiries,
+        private readonly InquiryStateMachine $stateMachine,
     ) {}
 
     public function index(Request $request)
@@ -31,5 +37,43 @@ class InquiryController extends Controller
         $inquiry->load(['quotes.items', 'attachments']);
 
         return new InquiryResource($inquiry);
+    }
+
+    public function store(StoreInquiryRequest $request)
+    {
+        $inquiry = $this->inquiries->create([
+            'uuid' => (string) Str::uuid(),
+            'user_id' => $request->user()->id,
+            'title' => $request->string('title'),
+            'content' => $request->string('content'),
+            'category' => $request->input('category'),
+            'budget_range' => $request->input('budget_range'),
+            'desired_due_at' => $request->input('desired_due_at'),
+            'status' => 'received',
+        ]);
+
+        return (new InquiryResource($inquiry->load(['quotes.items', 'attachments'])))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    public function update(UpdateInquiryRequest $request, Inquiry $inquiry)
+    {
+        $this->inquiries->update($inquiry, $request->validated());
+        return new InquiryResource($inquiry->fresh()->load(['quotes.items', 'attachments']));
+    }
+
+    public function cancel(Request $request, Inquiry $inquiry)
+    {
+        $this->authorize('cancel', $inquiry);
+
+        $this->stateMachine->transition(
+            $inquiry,
+            TransitionEvent::Cancel,
+            actorUserId: $request->user()->id,
+            payload: ['actor' => 'client'],
+        );
+
+        return new InquiryResource($inquiry->fresh()->load(['quotes.items', 'attachments']));
     }
 }
