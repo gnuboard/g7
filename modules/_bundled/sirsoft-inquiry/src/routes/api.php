@@ -29,3 +29,11 @@ Route::middleware(['auth:sanctum', 'throttle:600,1'])
         Route::get('/attachments/{attachment}', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryAttachmentController::class, 'download'])
             ->name('download');
     });
+
+Route::prefix('admin')
+    ->middleware(['auth:sanctum', 'throttle:600,1'])
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/inquiries', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryController::class, 'index'])->name('inquiries.index');
+        Route::get('/inquiries/{inquiry}', [\Modules\Sirsoft\Inquiry\Http\Controllers\Admin\InquiryController::class, 'show'])->name('inquiries.show');
+    });
