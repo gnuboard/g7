@@ -7,6 +7,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Inquiry\Enums\InquiryStatus;
 use Modules\Sirsoft\Inquiry\Models\Inquiry;
+use Modules\Sirsoft\Inquiry\Models\InquiryAttachment;
+use Modules\Sirsoft\Inquiry\Models\InquiryMessage;
 use Modules\Sirsoft\Inquiry\Models\InquiryQuote;
 use Modules\Sirsoft\Inquiry\Models\InquiryQuoteItem;
 use Tests\TestCase;
@@ -60,5 +62,34 @@ class ModelRelationshipTest extends TestCase
 
         $this->assertSame(1, $quote->items()->count());
         $this->assertSame($inquiry->id, $quote->inquiry->id);
+    }
+
+    public function test_message_and_attachment(): void
+    {
+        $user = User::factory()->create();
+        $inquiry = Inquiry::create([
+            'uuid' => (string) Str::uuid(),
+            'user_id' => $user->id,
+            'title' => 'X', 'content' => 'Y',
+            'status' => 'received',
+        ]);
+        $msg = $inquiry->messages()->create([
+            'sender_user_id' => $user->id,
+            'sender_role' => 'client',
+            'body' => '안녕하세요',
+        ]);
+        $att = $inquiry->attachments()->create([
+            'message_id' => $msg->id,
+            'uploader_user_id' => $user->id,
+            'disk' => 'local',
+            'path' => 'inquiries/test.pdf',
+            'original_name' => 'test.pdf',
+            'mime' => 'application/pdf',
+            'size' => 1234,
+        ]);
+
+        $this->assertSame('client', $msg->sender_role->value);
+        $this->assertSame($msg->id, $att->message->id);
+        $this->assertSame(1, $msg->attachments()->count());
     }
 }
