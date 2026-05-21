@@ -107,4 +107,32 @@ class ModelRelationshipTest extends TestCase
         $found = $repo->findByUuidOrFail($inquiry->uuid);
         $this->assertTrue($found->is($inquiry));
     }
+
+    public function test_quote_repository_issue_creates_versioned_quote(): void
+    {
+        $repo = app(\Modules\Sirsoft\Inquiry\Repositories\Contracts\InquiryQuoteRepositoryInterface::class);
+        $inquiryRepo = app(\Modules\Sirsoft\Inquiry\Repositories\Contracts\InquiryRepositoryInterface::class);
+        $user = User::factory()->create();
+        $inquiry = $inquiryRepo->create([
+            'uuid' => (string) \Str::uuid(),
+            'user_id' => $user->id,
+            'title' => 'X', 'content' => 'Y', 'status' => 'received',
+        ]);
+
+        $q1 = $repo->issue($inquiry, ['total_amount' => 1000000, 'tax_amount' => 0], [
+            ['name' => 'A', 'qty' => 1, 'unit_price' => 1000000, 'amount' => 1000000],
+        ]);
+        $this->assertSame(1, $q1->version);
+        $this->assertSame('issued', $q1->status->value);
+        $this->assertSame(1, $q1->items()->count());
+
+        $expired = $repo->expireActiveQuotes($inquiry);
+        $this->assertSame(1, $expired);
+        $this->assertSame('expired', $q1->fresh()->status->value);
+
+        $q2 = $repo->issue($inquiry, ['total_amount' => 1200000], [
+            ['name' => 'A', 'qty' => 1, 'unit_price' => 1200000, 'amount' => 1200000],
+        ]);
+        $this->assertSame(2, $q2->version);
+    }
 }
