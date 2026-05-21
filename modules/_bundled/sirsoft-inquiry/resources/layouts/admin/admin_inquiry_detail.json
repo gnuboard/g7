@@ -1,0 +1,770 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin/admin_inquiry_detail",
+    "permissions": [
+        "admin"
+    ],
+    "extends": "_admin_base",
+    "meta": {
+        "title": "제작 의뢰 상세",
+        "description": "제작 의뢰 상세 내용 및 메시지 관리"
+    },
+    "transition_overlay": {
+        "wait_for": [
+            "inquiry"
+        ]
+    },
+    "data_sources": [
+        {
+            "id": "inquiry",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-inquiry/admin/inquiries/{{route.uuid}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "loading_strategy": "progressive",
+            "errorHandling": {
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "403": {
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        },
+                        {
+                            "handler": "navigateBack"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "messages",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-inquiry/inquiries/{{route.uuid}}/messages",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "loading_strategy": "progressive"
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "inquiry_detail_wrapper",
+                "type": "basic",
+                "name": "Div",
+                "blur_until_loaded": true,
+                "props": {
+                    "className": "p-6 bg-gray-50 dark:bg-gray-900"
+                },
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "p-4 bg-gray-50 dark:bg-gray-900"
+                        }
+                    }
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "{{inquiry?.data?.title ?? '제작 의뢰 상세'}}",
+                            "description": "의뢰 UUID: {{route.uuid}}"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/inquiry/{{route.uuid}}",
+                                            "mergeQuery": false
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "className": "w-5 h-5"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "back_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/inquiry"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "arrow-left",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "목록으로"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "status_and_actions_bar",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-wrap items-center gap-3"
+                        },
+                        "children": [
+                            {
+                                "id": "status_badge",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "{{inquiry?.data?.status === 'received' ? 'inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : inquiry?.data?.status === 'quoted' ? 'inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : inquiry?.data?.status === 'in_progress' ? 'inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : inquiry?.data?.status === 'completed' ? 'inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                },
+                                "text": "{{inquiry?.data?.status === 'received' ? '접수됨' : inquiry?.data?.status === 'quoted' ? '견적 발행됨' : inquiry?.data?.status === 'in_progress' ? '진행 중' : inquiry?.data?.status === 'completed' ? '완료' : inquiry?.data?.status === 'canceled' ? '취소됨' : inquiry?.data?.status ?? '-'}}"
+                            },
+                            {
+                                "id": "action_spacer",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-1"
+                                }
+                            },
+                            {
+                                "id": "btn_issue_quote",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{inquiry?.data?.status === 'received'}}",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/inquiry/{{route.uuid}}/quote/new"
+                                        }
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "file-invoice-dollar",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "견적 발행"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "btn_revoke_quote",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{inquiry?.data?.status === 'quoted' && !inquiry?.data?.accepted_quote_id}}",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium transition-colors text-sm"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "quoteRevokeId": "{{inquiry?.data?.quotes?.find(q => q.status === 'issued')?.id}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "quote_revoke_modal"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "undo",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "견적 철회"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "btn_mark_paid",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{inquiry?.data?.status === 'quoted'}}",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium transition-colors text-sm"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "mark_paid_offline_modal"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "check-circle",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "결제 수동 확인"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "btn_complete",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{inquiry?.data?.status === 'in_progress'}}",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors text-sm"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "inquiry_complete_modal"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "check-double",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "완료 처리"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "btn_cancel",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{inquiry?.data?.status !== 'completed' && inquiry?.data?.status !== 'canceled'}}",
+                                "props": {
+                                    "className": "flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors text-sm"
+                                },
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "inquiry_cancel_operator_modal"
+                                    }
+                                ],
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "ban",
+                                            "className": "w-4 h-4"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "취소"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "content_columns",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                        },
+                        "children": [
+                            {
+                                "id": "left_column",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "space-y-4"
+                                },
+                                "children": [
+                                    {
+                                        "id": "inquiry_body_card",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                                },
+                                                "text": "의뢰 내용"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "grid grid-cols-2 gap-x-4 gap-y-2 text-sm"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "제목"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "{{inquiry?.data?.title ?? '-'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "분류"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "{{inquiry?.data?.category ?? '-'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "예산"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "{{inquiry?.data?.budget_range ?? '-'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "희망 완료일"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "{{inquiry?.data?.desired_due_at ?? '-'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "의뢰자"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex flex-col"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "{{inquiry?.data?.user?.name ?? '-'}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "{{inquiry?.data?.user?.email ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-700 dark:text-gray-300"
+                                                        },
+                                                        "text": "접수일"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-900 dark:text-white"
+                                                        },
+                                                        "text": "{{inquiry?.data?.received_at ?? inquiry?.data?.created_at ?? '-'}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "pt-3 border-t border-gray-200 dark:border-gray-700"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap"
+                                                        },
+                                                        "text": "{{inquiry?.data?.content ?? ''}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "quotes_history_card",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{(inquiry?.data?.quotes ?? []).length > 0}}",
+                                        "props": {
+                                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 space-y-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H3",
+                                                "props": {
+                                                    "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                                },
+                                                "text": "견적 내역"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "space-y-3"
+                                                },
+                                                "iteration": {
+                                                    "source": "inquiry?.data?.quotes ?? []",
+                                                    "item_var": "quote"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2 text-sm"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex items-center justify-between"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "font-medium text-gray-900 dark:text-white"
+                                                                        },
+                                                                        "text": "견적 v{{quote.version}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "{{quote.status === 'issued' ? 'px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : quote.status === 'accepted' ? 'px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : quote.status === 'rejected' ? 'px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}"
+                                                                        },
+                                                                        "text": "{{quote.status === 'issued' ? '발행됨' : quote.status === 'accepted' ? '수락됨' : quote.status === 'rejected' ? '거절됨' : quote.status === 'revoked' ? '철회됨' : quote.status}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "grid grid-cols-2 gap-x-4 gap-y-1 text-xs"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                                        },
+                                                                        "text": "합계"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "font-semibold text-gray-900 dark:text-white"
+                                                                        },
+                                                                        "text": "{{(quote.total_amount ?? 0).toLocaleString()}}원"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                                        },
+                                                                        "text": "유효 기간"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-gray-700 dark:text-gray-300"
+                                                                        },
+                                                                        "text": "{{quote.valid_until ?? '-'}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{quote.note}}",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 italic"
+                                                                },
+                                                                "text": "{{quote.note}}"
+                                                            },
+                                                            {
+                                                                "id": "quote_items_list",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{(quote.items ?? []).length > 0}}",
+                                                                "props": {
+                                                                    "className": "pt-2 border-t border-gray-100 dark:border-gray-700 space-y-1"
+                                                                },
+                                                                "iteration": {
+                                                                    "source": "quote.items ?? []",
+                                                                    "item_var": "qitem"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex items-center justify-between text-xs text-gray-700 dark:text-gray-300"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "text": "{{qitem.name}} × {{qitem.qty}}"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "text": "{{((qitem.qty ?? 1) * (qitem.unit_price ?? 0)).toLocaleString()}}원"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "right_column",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "h-[600px]"
+                                },
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "InquiryMessageThread",
+                                        "props": {
+                                            "messages": "{{messages?.data ?? []}}",
+                                            "myRole": "operator",
+                                            "submitting": "{{_local.messageSubmitting ?? false}}",
+                                            "className": "h-full"
+                                        },
+                                        "actions": [
+                                            {
+                                                "event": "onSend",
+                                                "type": "send",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "messageSubmitting": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/modules/sirsoft-inquiry/inquiries/{{route.uuid}}/messages",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "POST",
+                                                            "body": {
+                                                                "body": "{{$event}}"
+                                                            }
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "messageSubmitting": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "messages"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "messageSubmitting": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "partial": "admin/partials/admin_inquiry_detail/_modal_quote_revoke.json"
+        },
+        {
+            "partial": "admin/partials/admin_inquiry_detail/_modal_mark_paid_offline.json"
+        },
+        {
+            "partial": "admin/partials/admin_inquiry_detail/_modal_inquiry_complete.json"
+        },
+        {
+            "partial": "admin/partials/admin_inquiry_detail/_modal_inquiry_cancel_operator.json"
+        }
+    ]
+}
