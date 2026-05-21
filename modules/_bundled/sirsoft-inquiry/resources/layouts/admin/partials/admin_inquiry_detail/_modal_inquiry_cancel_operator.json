@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "운영자 의뢰 취소 확인 모달"
+  },
+  "id": "inquiry_cancel_operator_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": {
+    "id": "inquiry_cancel_operator_modal",
+    "title": "의뢰 취소",
+    "icon": "alert-triangle",
+    "iconClassName": "text-red-500",
+    "size": "sm"
+  },
+  "children": [
+    {
+      "type": "basic", "name": "Div",
+      "props": { "className": "space-y-4" },
+      "children": [
+        {
+          "type": "basic", "name": "P",
+          "props": { "className": "text-gray-600 dark:text-gray-400" },
+          "text": "이 의뢰를 운영자 권한으로 취소하시겠습니까?"
+        },
+        {
+          "type": "basic", "name": "Div",
+          "props": { "className": "flex justify-end gap-3" },
+          "children": [
+            {
+              "type": "basic", "name": "Button",
+              "props": { "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700" },
+              "text": "닫기",
+              "actions": [
+                { "event": "onClick", "type": "click", "handler": "closeModal" }
+              ]
+            },
+            {
+              "type": "basic", "name": "Button",
+              "props": {
+                "disabled": "{{_local.cancelOperatorSubmitting}}",
+                "className": "px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50"
+              },
+              "text": "{{_local.cancelOperatorSubmitting ? '처리 중…' : '의뢰 취소'}}",
+              "actions": [
+                {
+                  "event": "onClick", "type": "click", "handler": "sequence",
+                  "actions": [
+                    { "handler": "setState", "params": { "target": "local", "cancelOperatorSubmitting": true } },
+                    {
+                      "handler": "apiCall",
+                      "target": "/api/modules/sirsoft-inquiry/admin/inquiries/{{route.uuid}}/cancel",
+                      "auth_required": true,
+                      "params": { "method": "POST" },
+                      "onSuccess": [
+                        { "handler": "setState", "params": { "target": "local", "cancelOperatorSubmitting": false } },
+                        { "handler": "toast", "params": { "type": "success", "message": "의뢰가 취소되었습니다." } },
+                        { "handler": "closeModal" },
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "inquiry" } },
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "messages" } }
+                      ],
+                      "onError": [
+                        { "handler": "setState", "params": { "target": "local", "cancelOperatorSubmitting": false } },
+                        { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
