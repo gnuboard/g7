@@ -35,6 +35,19 @@ class InquiryServiceProvider extends BaseModuleServiceProvider
             $this->getProviderPath() . '/../../config/inquiry.php',
             'inquiry'
         );
+
+        // Best-effort ecommerce integration: listen to Order::saved() if the module is present.
+        if (class_exists('\Modules\Sirsoft\Ecommerce\Models\Order')) {
+            \Modules\Sirsoft\Ecommerce\Models\Order::saved(function ($order) {
+                $status = $order->order_status instanceof \BackedEnum
+                    ? $order->order_status->value
+                    : (string) ($order->order_status ?? '');
+                if (in_array($status, ['payment_complete', 'confirmed'], true)) {
+                    $this->app->make(\Modules\Sirsoft\Inquiry\Listeners\HandleOrderPaid::class)
+                        ->handle((object) ['order' => $order]);
+                }
+            });
+        }
     }
 
     public function boot(): void
