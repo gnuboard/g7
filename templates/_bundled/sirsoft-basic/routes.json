@@ -76,6 +76,22 @@
       }
     },
     {
+      "path": "/board/theme",
+      "layout": "board/themes_index",
+      "auth_required": false,
+      "meta": {
+        "title": "테마"
+      }
+    },
+    {
+      "path": "/board/theme/:id",
+      "layout": "board/themes_show",
+      "auth_required": false,
+      "meta": {
+        "title": "테마 상세"
+      }
+    },
+    {
       "path": "/board/:slug",
       "layout": "board/index",
       "auth_required": false,
@@ -106,6 +122,26 @@
       "meta": {
         "title": "$t:user.board.edit_title"
       }
+    },
+
+    {
+      "_comment": "=== 제작의뢰 ===",
+      "path": "/inquiry",
+      "layout": "inquiry/index",
+      "auth": true,
+      "meta": { "title": "내 제작의뢰" }
+    },
+    {
+      "path": "/inquiry/new",
+      "layout": "inquiry/new",
+      "auth": true,
+      "meta": { "title": "새 제작의뢰" }
+    },
+    {
+      "path": "/inquiry/:uuid",
+      "layout": "inquiry/show",
+      "auth": true,
+      "meta": { "title": "제작의뢰 상세" }
     },
 
     {
