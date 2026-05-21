@@ -49,4 +49,15 @@ class EnumsTest extends TestCase
             'cancel',
         ], $events);
     }
+
+    public function test_invalid_transition_exception_carries_info(): void
+    {
+        $ex = new \Modules\Sirsoft\Inquiry\Exceptions\InvalidStateTransitionException(
+            \Modules\Sirsoft\Inquiry\Enums\InquiryStatus::Received,
+            \Modules\Sirsoft\Inquiry\Enums\TransitionEvent::AcceptAndPay
+        );
+        $this->assertStringContainsString("received", $ex->getMessage());
+        $this->assertStringContainsString("accept_and_pay", $ex->getMessage());
+        $this->assertSame(422, $ex->getCode());
+    }
 }
