@@ -36,4 +36,14 @@ class InquiryServiceProvider extends BaseModuleServiceProvider
             'inquiry'
         );
     }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        \Illuminate\Support\Facades\Gate::policy(
+            \Modules\Sirsoft\Inquiry\Models\Inquiry::class,
+            \Modules\Sirsoft\Inquiry\Policies\InquiryPolicy::class,
+        );
+    }
 }
