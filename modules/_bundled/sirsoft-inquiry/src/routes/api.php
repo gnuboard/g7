@@ -15,4 +15,6 @@ Route::prefix('inquiries')
         Route::get('/{inquiry}', [InquiryController::class, 'show'])->name('show');
         Route::patch('/{inquiry}', [InquiryController::class, 'update'])->name('update');
         Route::post('/{inquiry}/cancel', [InquiryController::class, 'cancel'])->name('cancel');
+        Route::get('/{inquiry}/messages', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryMessageController::class, 'index'])->name('messages.index');
+        Route::post('/{inquiry}/messages', [\Modules\Sirsoft\Inquiry\Http\Controllers\User\InquiryMessageController::class, 'store'])->name('messages.store');
     });
