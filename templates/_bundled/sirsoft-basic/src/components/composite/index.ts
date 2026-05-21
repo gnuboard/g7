@@ -85,6 +85,8 @@ export type { ThemeDetailContentProps } from './ThemeDetailContent';
 // 제작의뢰 (sirsoft-inquiry) 전용
 export { default as InquiryStatusBar } from './InquiryStatusBar';
 export type { InquiryStatusBarProps } from './InquiryStatusBar';
+export { default as InquiryCard } from './InquiryCard';
+export type { InquiryCardProps } from './InquiryCard';
 
 /**
  * 컴포넌트 등록 맵
@@ -166,6 +168,7 @@ export const compositeComponents = {
 
   // 제작의뢰 (sirsoft-inquiry) 전용
   InquiryStatusBar: () => import('./InquiryStatusBar'),
+  InquiryCard: () => import('./InquiryCard'),
 };
 
 /**
