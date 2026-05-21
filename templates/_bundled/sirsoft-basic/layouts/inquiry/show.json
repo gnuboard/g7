@@ -89,22 +89,68 @@
                   {
                     "type": "basic", "name": "Div",
                     "if": "{{(inquiry.data?.quotes ?? []).length > 0}}",
-                    "props": { "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5" },
+                    "props": { "className": "space-y-3" },
                     "children": [
-                      { "type": "basic", "name": "H3", "props": { "className": "text-sm font-semibold text-gray-900 dark:text-white mb-2" }, "text": "견적 이력" },
                       {
                         "type": "for",
                         "items": "{{inquiry.data?.quotes ?? []}}",
                         "as": "quote",
                         "render": {
-                          "type": "basic", "name": "Div",
-                          "props": { "className": "py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0 text-sm text-gray-700 dark:text-gray-300" },
-                          "children": [
-                            { "type": "basic", "name": "Div", "text": "회차 #{{$item.version}} · 상태 {{$item.status}} · {{$item.total_amount}}원" }
+                          "type": "composite",
+                          "name": "QuoteCard",
+                          "props": {
+                            "version": "{{$item.version}}",
+                            "status": "{{$item.status}}",
+                            "totalAmount": "{{$item.total_amount}}",
+                            "taxAmount": "{{$item.tax_amount}}",
+                            "currency": "{{$item.currency}}",
+                            "validUntil": "{{$item.valid_until}}",
+                            "note": "{{$item.note}}",
+                            "items": "{{$item.items ?? []}}",
+                            "canAccept": "{{inquiry.data?.abilities?.acceptQuote && $item.status === 'issued'}}",
+                            "canReject": "{{inquiry.data?.abilities?.rejectQuote && $item.status === 'issued'}}",
+                            "submitting": "{{_local.acceptSubmitting ?? false}}"
+                          },
+                          "actions": [
+                            {
+                              "event": "onAccept", "type": "accept", "handler": "sequence",
+                              "actions": [
+                                { "handler": "setState", "params": { "target": "local", "acceptSubmitting": true } },
+                                {
+                                  "handler": "apiCall",
+                                  "target": "/api/modules/sirsoft-inquiry/inquiries/{{route.uuid}}/quotes/{{$item.id}}/accept",
+                                  "auth_required": true,
+                                  "params": { "method": "POST" },
+                                  "onSuccess": [
+                                    { "handler": "setState", "params": { "target": "local", "acceptSubmitting": false } },
+                                    {
+                                      "if": "{{response.data.redirect_url}}",
+                                      "handler": "navigate",
+                                      "params": { "path": "{{response.data.redirect_url}}" }
+                                    },
+                                    {
+                                      "if": "{{response.data.message}}",
+                                      "handler": "toast",
+                                      "params": { "type": "info", "message": "{{response.data.message}}" }
+                                    }
+                                  ],
+                                  "onError": [
+                                    { "handler": "setState", "params": { "target": "local", "acceptSubmitting": false } },
+                                    { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "event": "onReject", "type": "reject", "handler": "sequence",
+                              "actions": [
+                                { "handler": "setState", "params": { "target": "global", "quoteRejectId": "{{$item.id}}" } },
+                                { "handler": "openModal", "target": "quote_reject_modal" }
+                              ]
+                            }
                           ]
                         }
-                      },
-                      { "type": "basic", "name": "P", "props": { "className": "text-xs text-gray-400 mt-2" }, "text": "견적 수락/결제는 향후 업데이트에서 활성화됩니다." }
+                      }
                     ]
                   }
                 ]
@@ -153,6 +199,7 @@
     ]
   },
   "modals": [
-    { "partial": "inquiry/partials/_modal_inquiry_cancel.json" }
+    { "partial": "inquiry/partials/_modal_inquiry_cancel.json" },
+    { "partial": "inquiry/partials/_modal_quote_reject.json" }
   ]
 }

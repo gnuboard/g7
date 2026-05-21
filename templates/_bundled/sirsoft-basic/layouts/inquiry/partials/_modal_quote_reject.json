@@ -1,0 +1,59 @@
+{
+  "meta": { "is_partial": true, "description": "견적 거절 확인" },
+  "id": "quote_reject_modal",
+  "type": "composite",
+  "name": "Modal",
+  "props": { "id": "quote_reject_modal", "title": "견적 거절", "icon": "x-octagon", "iconClassName": "text-red-500", "size": "sm" },
+  "children": [
+    {
+      "type": "basic", "name": "Div",
+      "props": { "className": "space-y-4" },
+      "children": [
+        {
+          "type": "basic", "name": "P",
+          "props": { "className": "text-gray-600 dark:text-gray-400" },
+          "text": "이 견적을 거절하시겠습니까? 운영자가 새로운 견적을 발행하면 다시 검토할 수 있습니다."
+        },
+        {
+          "type": "basic", "name": "Div",
+          "props": { "className": "flex justify-end gap-3" },
+          "children": [
+            { "type": "basic", "name": "Button",
+              "props": { "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700" },
+              "text": "닫기",
+              "actions": [{ "event": "onClick", "type": "click", "handler": "closeModal" }] },
+            { "type": "basic", "name": "Button",
+              "props": { "disabled": "{{_local.rejectSubmitting}}", "className": "px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50" },
+              "text": "{{_local.rejectSubmitting ? '처리 중…' : '견적 거절'}}",
+              "actions": [
+                {
+                  "event": "onClick", "type": "click", "handler": "sequence",
+                  "actions": [
+                    { "handler": "setState", "params": { "target": "local", "rejectSubmitting": true } },
+                    {
+                      "handler": "apiCall",
+                      "target": "/api/modules/sirsoft-inquiry/inquiries/{{route.uuid}}/quotes/{{_global.quoteRejectId}}/reject",
+                      "auth_required": true,
+                      "params": { "method": "POST" },
+                      "onSuccess": [
+                        { "handler": "setState", "params": { "target": "local", "rejectSubmitting": false } },
+                        { "handler": "toast", "params": { "type": "success", "message": "견적을 거절했습니다." } },
+                        { "handler": "closeModal" },
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "inquiry" } },
+                        { "handler": "refetchDataSource", "params": { "dataSourceId": "messages" } }
+                      ],
+                      "onError": [
+                        { "handler": "setState", "params": { "target": "local", "rejectSubmitting": false } },
+                        { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
