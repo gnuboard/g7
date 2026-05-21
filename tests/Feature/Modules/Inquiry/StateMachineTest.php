@@ -49,4 +49,57 @@ class StateMachineTest extends TestCase
             $e->from === InquiryStatus::Received && $e->to === InquiryStatus::Quoted
         );
     }
+
+    public function test_revoke_quote_back_to_received(): void
+    {
+        $sm = app(InquiryStateMachine::class);
+        $inquiry = $this->makeInquiry(['status' => 'quoted', 'quoted_at' => now()]);
+        $sm->transition($inquiry, TransitionEvent::RevokeQuote, 1, ['quote_version' => 1]);
+        $this->assertSame(InquiryStatus::Received, $inquiry->refresh()->status);
+    }
+
+    public function test_reject_quote_back_to_received(): void
+    {
+        $sm = app(InquiryStateMachine::class);
+        $inquiry = $this->makeInquiry(['status' => 'quoted', 'quoted_at' => now()]);
+        $sm->transition($inquiry, TransitionEvent::RejectQuote, 1, ['quote_version' => 1]);
+        $this->assertSame(InquiryStatus::Received, $inquiry->refresh()->status);
+    }
+
+    public function test_accept_and_pay_to_in_progress(): void
+    {
+        $sm = app(InquiryStateMachine::class);
+        $inquiry = $this->makeInquiry(['status' => 'quoted', 'quoted_at' => now()]);
+        $sm->transition($inquiry, TransitionEvent::AcceptAndPay, null, ['order_uuid' => 'order-xyz']);
+        $this->assertSame(InquiryStatus::InProgress, $inquiry->refresh()->status);
+        $this->assertNotNull($inquiry->started_at);
+    }
+
+    public function test_mark_paid_offline_to_in_progress(): void
+    {
+        $sm = app(InquiryStateMachine::class);
+        $inquiry = $this->makeInquiry(['status' => 'quoted', 'quoted_at' => now()]);
+        $sm->transition($inquiry, TransitionEvent::MarkPaidOffline, 1);
+        $this->assertSame(InquiryStatus::InProgress, $inquiry->refresh()->status);
+    }
+
+    public function test_mark_completed_from_in_progress(): void
+    {
+        $sm = app(InquiryStateMachine::class);
+        $inquiry = $this->makeInquiry(['status' => 'in_progress', 'started_at' => now()]);
+        $sm->transition($inquiry, TransitionEvent::MarkCompleted, 1);
+        $this->assertSame(InquiryStatus::Completed, $inquiry->refresh()->status);
+        $this->assertNotNull($inquiry->completed_at);
+    }
+
+    public function test_cancel_from_any_active_state(): void
+    {
+        $sm = app(InquiryStateMachine::class);
+        foreach (['received', 'quoted', 'in_progress'] as $from) {
+            $inquiry = $this->makeInquiry(['status' => $from]);
+            $sm->transition($inquiry, TransitionEvent::Cancel, 1, ['actor' => 'client']);
+            $this->assertSame(InquiryStatus::Canceled, $inquiry->refresh()->status, "from {$from}");
+            $this->assertNotNull($inquiry->canceled_at);
+        }
+    }
 }

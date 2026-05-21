@@ -25,6 +25,42 @@ class InquiryStateMachine
                 'systemKey' => 'inquiry::system.message.quote_issued',
                 'timestampColumn' => 'quoted_at',
             ],
+            TransitionEvent::RevokeQuote->value => [
+                'from' => [InquiryStatus::Quoted],
+                'to' => InquiryStatus::Received,
+                'systemKey' => 'inquiry::system.message.quote_revoked',
+                'timestampColumn' => null,
+            ],
+            TransitionEvent::RejectQuote->value => [
+                'from' => [InquiryStatus::Quoted],
+                'to' => InquiryStatus::Received,
+                'systemKey' => 'inquiry::system.message.quote_rejected',
+                'timestampColumn' => null,
+            ],
+            TransitionEvent::AcceptAndPay->value => [
+                'from' => [InquiryStatus::Quoted],
+                'to' => InquiryStatus::InProgress,
+                'systemKey' => 'inquiry::system.message.payment_confirmed',
+                'timestampColumn' => 'started_at',
+            ],
+            TransitionEvent::MarkPaidOffline->value => [
+                'from' => [InquiryStatus::Quoted],
+                'to' => InquiryStatus::InProgress,
+                'systemKey' => 'inquiry::system.message.payment_confirmed_offline',
+                'timestampColumn' => 'started_at',
+            ],
+            TransitionEvent::MarkCompleted->value => [
+                'from' => [InquiryStatus::InProgress],
+                'to' => InquiryStatus::Completed,
+                'systemKey' => 'inquiry::system.message.completed',
+                'timestampColumn' => 'completed_at',
+            ],
+            TransitionEvent::Cancel->value => [
+                'from' => [InquiryStatus::Received, InquiryStatus::Quoted, InquiryStatus::InProgress],
+                'to' => InquiryStatus::Canceled,
+                'systemKey' => 'inquiry::system.message.canceled_by_client', // payload['actor']로 분기는 systemMessageParams에서
+                'timestampColumn' => 'canceled_at',
+            ],
         ];
     }
 
@@ -40,7 +76,12 @@ class InquiryStateMachine
         $from = $inquiry->status;
         $to = $rule['to'];
 
-        DB::transaction(function () use ($inquiry, $rule, $to, $payload) {
+        $systemKey = $rule['systemKey'];
+        if ($event === TransitionEvent::Cancel && ($payload['actor'] ?? null) === 'operator') {
+            $systemKey = 'inquiry::system.message.canceled_by_operator';
+        }
+
+        DB::transaction(function () use ($inquiry, $rule, $to, $payload, $systemKey) {
             $inquiry->status = $to->value;
             if ($rule['timestampColumn']) {
                 $inquiry->{$rule['timestampColumn']} = now();
@@ -48,7 +89,7 @@ class InquiryStateMachine
             $inquiry->save();
 
             $params = $this->systemMessageParams($payload);
-            $this->messages->appendSystem($inquiry, $rule['systemKey'], $params);
+            $this->messages->appendSystem($inquiry, $systemKey, $params);
         });
 
         InquiryStatusTransitioned::dispatch($inquiry, $from, $to, $event, $actorUserId);
