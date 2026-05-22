@@ -68,5 +68,32 @@ class InquiryServiceProvider extends BaseModuleServiceProvider
         $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule) {
             $schedule->command('inquiry:expire-quotes')->daily();
         });
+
+        // 채널 필터 등록
+        $this->app->make(\Modules\Sirsoft\Inquiry\Listeners\InquiryNotificationChannelListener::class)->register();
+
+        // 이벤트 listener 등록
+        \Illuminate\Support\Facades\Event::listen(
+            \Modules\Sirsoft\Inquiry\Events\InquiryStatusTransitioned::class,
+            \Modules\Sirsoft\Inquiry\Listeners\DispatchInquiryStatusNotifications::class . '@handle'
+        );
+        \Illuminate\Support\Facades\Event::listen(
+            \Modules\Sirsoft\Inquiry\Events\InquiryMessagePosted::class,
+            \Modules\Sirsoft\Inquiry\Listeners\DispatchInquiryMessageNotification::class . '@handle'
+        );
+
+        // 권한 시드 (런타임 보장 — DB 있을 때만 실행)
+        $this->app->booted(function () {
+            if (\Schema::hasTable('permissions')) {
+                \App\Models\Permission::firstOrCreate(
+                    ['identifier' => 'inquiry.notify'],
+                    ['name' => 'Inquiry Notify']
+                );
+                \App\Models\Permission::firstOrCreate(
+                    ['identifier' => 'inquiry.manage'],
+                    ['name' => 'Inquiry Manage']
+                );
+            }
+        });
     }
 }
