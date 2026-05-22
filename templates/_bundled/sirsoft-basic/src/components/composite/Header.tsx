@@ -413,6 +413,10 @@ const Header: React.FC<HeaderProps> = ({
                         <Icon name="heart" className="inline w-4 h-4 mr-2" />
                         {t('mypage.tabs.wishlist')}
                       </Button>
+                      <Button onClick={() => { navigate('/inquiry'); setShowUserMenu(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                        <Icon name="file-text" className="inline w-4 h-4 mr-2" />
+                        제작의뢰
+                      </Button>
                     </Div>
 
                     {/* 언어 선택 (availableLocales가 있을 때만 표시) */}

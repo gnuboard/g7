@@ -221,6 +221,7 @@
                 {
                     "comment": "=== 모바일 헤더 (툴바) - 데스크톱에서 숨김 ===",
                     "id": "mobile_header",
+                    "if": "{{!_global.hideDefaultHeader}}",
                     "type": "basic",
                     "name": "Div",
                     "props": {
@@ -288,17 +289,6 @@
                                 "className": "flex items-center gap-1"
                             },
                             "children": [
-                                {
-                                    "comment": "다크모드 전환",
-                                    "id": "mobile_theme_btn",
-                                    "type": "composite",
-                                    "name": "ThemeToggle",
-                                    "props": {
-                                        "autoText": "$t:common.theme.auto",
-                                        "lightText": "$t:common.theme.light",
-                                        "darkText": "$t:common.theme.dark"
-                                    }
-                                },
                                 {
                                     "comment": "알림센터 드롭다운 — 모바일 (PC와 동일 순서: 알림 → 장바구니)",
                                     "id": "mobile_notification_center",
@@ -965,6 +955,52 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "text": "$t:mypage.tabs.wishlist"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "제작의뢰",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{_global.currentUser?.uuid}}",
+                                                    "props": {
+                                                        "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "mobileMenuOpen": false,
+                                                                        "mobileUserMenuOpen": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/inquiry"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "file-text",
+                                                                "className": "w-4 h-4"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "제작의뢰"
                                                         }
                                                     ]
                                                 },
@@ -1665,6 +1701,7 @@
                 {
                     "comment": "=== 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 ===",
                     "id": "desktop_header",
+                    "if": "{{!_global.hideDefaultHeader}}",
                     "type": "composite",
                     "name": "Header",
                     "props": {
@@ -1925,6 +1962,7 @@
                 {
                     "comment": "=== 푸터 (Footer 컴포넌트) ===",
                     "id": "footer",
+                    "if": "{{!_global.hideDefaultFooter}}",
                     "type": "composite",
                     "name": "Footer",
                     "props": {
