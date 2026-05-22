@@ -62,11 +62,13 @@ class InquiryServiceProvider extends BaseModuleServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 \Modules\Sirsoft\Inquiry\Console\Commands\ExpireQuotesCommand::class,
+                \Modules\Sirsoft\Inquiry\Console\Commands\CleanupOrphanAttachmentsCommand::class,
             ]);
         }
 
         $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule) {
             $schedule->command('inquiry:expire-quotes')->daily();
+            $schedule->command('inquiry:cleanup-orphan-attachments')->hourly();
         });
 
         // 채널 필터 등록
