@@ -128,19 +128,19 @@
       "_comment": "=== 제작의뢰 ===",
       "path": "/inquiry",
       "layout": "inquiry/index",
-      "auth": true,
+      "auth_required": true,
       "meta": { "title": "내 제작의뢰" }
     },
     {
       "path": "/inquiry/new",
       "layout": "inquiry/new",
-      "auth": true,
+      "auth_required": true,
       "meta": { "title": "새 제작의뢰" }
     },
     {
       "path": "/inquiry/:uuid",
       "layout": "inquiry/show",
-      "auth": true,
+      "auth_required": true,
       "meta": { "title": "제작의뢰 상세" }
     },
 

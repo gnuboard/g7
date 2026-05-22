@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "layout_name": "inquiry/index",
-  "permissions": ["auth"],
+  "permissions": [],
   "extends": "_user_base",
   "meta": {
     "seo": {
