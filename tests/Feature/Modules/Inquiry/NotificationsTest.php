@@ -84,4 +84,17 @@ class NotificationsTest extends TestCase
         $this->assertSame($inquiry->uuid, $payload['inquiry_uuid']);
         $this->assertSame('inquiry_received', $payload['type']);
     }
+
+    public function test_quote_issued_renders(): void
+    {
+        $client = User::factory()->create();
+        $inquiry = Inquiry::create(['uuid' => (string) Str::uuid(), 'user_id' => $client->id, 'title' => 'X', 'content' => 'Y', 'status' => 'quoted']);
+
+        $n = new \Modules\Sirsoft\Inquiry\Notifications\QuoteIssued($inquiry, ['version' => 2, 'total' => 1500000]);
+        $mail = $n->toMail($client);
+        $this->assertStringContainsString('견적', $mail->subject);
+        $payload = $n->toArray($client);
+        $this->assertSame('quote_issued', $payload['type']);
+        $this->assertSame(2, $payload['params']['version']);
+    }
 }
