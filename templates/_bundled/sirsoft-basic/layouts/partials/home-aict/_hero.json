@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "S1 Hero — 4슬라이드 자동 슬라이더 (7초) + 카피 + 컨트롤 + CTA 카드 3."
+  },
+  "type": "composite",
+  "name": "HeroCarousel",
+  "props": {
+    "intervalMs": 7000,
+    "title": "그누보드5 리빌더 전용",
+    "subtitle": "오프셋 테마",
+    "description": "덜어내야 할 것을 아는 디자인과, 단단히 남겨야 할 것을 아는 코드<br>오프셋은 그 사이의 균형을 설계합니다.",
+    "slides": [
+      { "image": "{{_global.aictAssetBase}}/popup/slide1.png", "alt": "메인 슬라이드 1" },
+      { "image": "{{_global.aictAssetBase}}/popup/slide2.png", "alt": "메인 슬라이드 2" },
+      { "image": "{{_global.aictAssetBase}}/popup/slide3.jpg", "alt": "메인 슬라이드 3" },
+      { "image": "{{_global.aictAssetBase}}/popup/slide4.jpg", "alt": "메인 슬라이드 4" }
+    ],
+    "ctaCards": [
+      { "label": "테마 둘러보기", "href": "/board/theme", "variant": "building" },
+      { "label": "세팅 제작의뢰", "href": "/inquiry/new", "variant": "lab" },
+      { "label": "오프셋 테마 소개", "href": "#", "variant": "intro" }
+    ]
+  }
+}

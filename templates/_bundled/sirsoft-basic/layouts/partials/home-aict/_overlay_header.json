@@ -1,0 +1,42 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "AICT/Offset Theme 메인 페이지 전용 오버레이 헤더. scrollY > 60 시 is-solid 토글, hero 위 absolute overlay."
+  },
+  "type": "composite",
+  "name": "OverlayHeader",
+  "props": {
+    "logoLabel": "Offset Theme",
+    "logoHref": "/",
+    "thresholdPx": 60,
+    "menu": [
+      {
+        "label": "소개",
+        "href": "#"
+      },
+      {
+        "label": "테마",
+        "href": "/board/theme"
+      },
+      {
+        "label": "제작의뢰",
+        "href": "/inquiry"
+      },
+      {
+        "label": "가격",
+        "href": "#"
+      },
+      {
+        "label": "문의",
+        "href": "#"
+      }
+    ],
+    "loginHref": "/login",
+    "loginLabel": "로그인",
+    "menuButtonAriaLabel": "전체 메뉴",
+    "currentUser": "{{_global.currentUser}}",
+    "myHref": "/mypage",
+    "myLabel": "MY",
+    "logoutLabel": "로그아웃"
+  }
+}

@@ -10,6 +10,17 @@
       "vars": { "site_name": "$core_settings:general.site_name" }
     }
   },
+  "init_actions": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "global",
+        "aictAssetBase": "/api/templates/assets/sirsoft-basic/assets/images/aict",
+        "hideDefaultHeader": true,
+        "hideDefaultFooter": true
+      }
+    }
+  ],
   "data_sources": [
     {
       "id": "inquiry",
@@ -31,9 +42,15 @@
   "slots": {
     "content": [
       {
-        "type": "layout", "name": "Container",
-        "props": { "className": "py-8 max-w-5xl mx-auto space-y-6" },
+        "type": "basic",
+        "name": "Div",
+        "props": { "className": "aict-home" },
         "children": [
+          { "partial": "partials/theme-aict/_subpage_header.json" },
+          {
+            "type": "layout", "name": "Container",
+            "props": { "className": "py-8 max-w-5xl mx-auto space-y-6" },
+            "children": [
           {
             "type": "basic", "name": "Div",
             "props": { "className": "flex items-center justify-between gap-3" },
@@ -194,6 +211,9 @@
               }
             ]
           }
+            ]
+          },
+          { "partial": "partials/home-aict/_aict_footer.json" }
         ]
       }
     ]

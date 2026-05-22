@@ -14,6 +14,15 @@
     {
       "handler": "setState",
       "params": {
+        "target": "global",
+        "aictAssetBase": "/api/templates/assets/sirsoft-basic/assets/images/aict",
+        "hideDefaultHeader": true,
+        "hideDefaultFooter": true
+      }
+    },
+    {
+      "handler": "setState",
+      "params": {
         "target": "local",
         "form": { "title": "", "content": "", "category": "", "budget_range": "", "desired_due_at": "" },
         "submitting": false,
@@ -24,10 +33,16 @@
   "slots": {
     "content": [
       {
-        "type": "layout",
-        "name": "Container",
-        "props": { "className": "py-8 max-w-2xl mx-auto" },
+        "type": "basic",
+        "name": "Div",
+        "props": { "className": "aict-home" },
         "children": [
+          { "partial": "partials/theme-aict/_subpage_header.json" },
+          {
+            "type": "layout",
+            "name": "Container",
+            "props": { "className": "py-8 max-w-2xl mx-auto" },
+            "children": [
           {
             "type": "basic",
             "name": "H1",
@@ -153,6 +168,9 @@
               }
             ]
           }
+            ]
+          },
+          { "partial": "partials/home-aict/_aict_footer.json" }
         ]
       }
     ]

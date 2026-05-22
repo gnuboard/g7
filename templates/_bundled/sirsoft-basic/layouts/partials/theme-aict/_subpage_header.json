@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "is_partial": true,
+    "description": "테마 게시판 리스트/상세 등 hero 없는 서브 페이지용 헤더. type-subpage(흰 배경 + 검은 글자) 강제 — 스크롤 토글 비활성."
+  },
+  "type": "composite",
+  "name": "OverlayHeader",
+  "props": {
+    "variant": "subpage",
+    "logoLabel": "Offset Theme",
+    "logoHref": "/",
+    "menu": [
+      {
+        "label": "소개",
+        "href": "#"
+      },
+      {
+        "label": "테마",
+        "href": "/board/theme",
+        "active": true
+      },
+      {
+        "label": "제작의뢰",
+        "href": "/inquiry"
+      },
+      {
+        "label": "가격",
+        "href": "#"
+      },
+      {
+        "label": "문의",
+        "href": "#"
+      }
+    ],
+    "loginHref": "/login",
+    "loginLabel": "로그인",
+    "menuButtonAriaLabel": "전체 메뉴",
+    "currentUser": "{{_global.currentUser}}",
+    "myHref": "/mypage",
+    "myLabel": "MY",
+    "logoutLabel": "로그아웃"
+  }
+}

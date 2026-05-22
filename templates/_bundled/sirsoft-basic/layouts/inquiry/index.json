@@ -10,6 +10,17 @@
       "vars": { "site_name": "$core_settings:general.site_name" }
     }
   },
+  "init_actions": [
+    {
+      "handler": "setState",
+      "params": {
+        "target": "global",
+        "aictAssetBase": "/api/templates/assets/sirsoft-basic/assets/images/aict",
+        "hideDefaultHeader": true,
+        "hideDefaultFooter": true
+      }
+    }
+  ],
   "data_sources": [
     {
       "id": "inquiries",
@@ -23,10 +34,16 @@
   "slots": {
     "content": [
       {
-        "type": "layout",
-        "name": "Container",
-        "props": { "className": "py-8 max-w-3xl mx-auto" },
+        "type": "basic",
+        "name": "Div",
+        "props": { "className": "aict-home" },
         "children": [
+          { "partial": "partials/theme-aict/_subpage_header.json" },
+          {
+            "type": "layout",
+            "name": "Container",
+            "props": { "className": "py-8 max-w-3xl mx-auto" },
+            "children": [
           {
             "type": "basic",
             "name": "Div",
@@ -79,6 +96,9 @@
             "props": { "className": "text-center text-gray-500 dark:text-gray-400 py-12" },
             "text": "등록한 의뢰가 없습니다. 첫 의뢰를 작성해 보세요."
           }
+            ]
+          },
+          { "partial": "partials/home-aict/_aict_footer.json" }
         ]
       }
     ]
