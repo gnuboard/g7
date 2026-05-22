@@ -39,16 +39,51 @@
         "children": [
           { "partial": "partials/theme-aict/_subpage_header.json" },
           {
+            "type": "basic",
+            "name": "Section",
+            "props": { "className": "page-hero", "aria-label": "페이지 헤더" },
+            "children": [
+              {
+                "type": "basic",
+                "name": "Div",
+                "props": { "className": "aict-layout page-hero__inner" },
+                "children": [
+                  {
+                    "type": "basic",
+                    "name": "Nav",
+                    "props": { "className": "breadcrumb", "aria-label": "현재 위치" },
+                    "children": [
+                      {
+                        "type": "basic",
+                        "name": "Ol",
+                        "props": { "className": "breadcrumb__list" },
+                        "children": [
+                          { "type": "basic", "name": "Li", "props": { "className": "breadcrumb__item" }, "children": [ { "type": "basic", "name": "A", "props": { "href": "/" }, "text": "홈" } ] },
+                          { "type": "basic", "name": "Li", "props": { "className": "breadcrumb__item" }, "children": [ { "type": "basic", "name": "A", "props": { "href": "/inquiry" }, "text": "제작의뢰" } ] },
+                          { "type": "basic", "name": "Li", "props": { "className": "breadcrumb__item is-current", "aria-current": "page" }, "text": "새 의뢰 작성" }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": { "className": "page-hero__head" },
+                    "children": [
+                      { "type": "basic", "name": "Span", "props": { "className": "eyebrow" }, "text": "New Inquiry" },
+                      { "type": "basic", "name": "H2", "props": { "className": "page-hero__title" }, "text": "새 제작의뢰" },
+                      { "type": "basic", "name": "P", "props": { "className": "page-hero__lead" }, "text": "원하시는 작업의 범위·일정·예산을 자세히 알려주시면 운영자가 검토 후 견적을 보내드립니다." }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "type": "layout",
             "name": "Container",
             "props": { "className": "py-8 max-w-2xl mx-auto" },
             "children": [
-          {
-            "type": "basic",
-            "name": "H1",
-            "props": { "className": "text-2xl font-bold text-gray-900 dark:text-white mb-6" },
-            "text": "새 제작의뢰"
-          },
           {
             "type": "basic",
             "name": "Div",
