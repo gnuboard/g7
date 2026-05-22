@@ -52,6 +52,14 @@ class InquiryController extends Controller
             'status' => 'received',
         ]);
 
+        // 운영자 그룹에 신규 의뢰 알림
+        $operators = \App\Models\User::whereHas('roles.permissions', function ($q) {
+            $q->where('identifier', config('inquiry.permissions.notify', 'inquiry.notify'));
+        })->get();
+        if ($operators->isNotEmpty()) {
+            \Illuminate\Support\Facades\Notification::send($operators, new \Modules\Sirsoft\Inquiry\Notifications\InquiryReceivedToOperators($inquiry));
+        }
+
         return (new InquiryResource($inquiry->load(['quotes.items', 'attachments'])))
             ->response()
             ->setStatusCode(201);
