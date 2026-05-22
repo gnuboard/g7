@@ -97,4 +97,21 @@ class NotificationsTest extends TestCase
         $this->assertSame('quote_issued', $payload['type']);
         $this->assertSame(2, $payload['params']['version']);
     }
+
+    public function test_payment_confirmed_renders(): void
+    {
+        $client = User::factory()->create();
+        $inquiry = Inquiry::create(['uuid' => (string) Str::uuid(), 'user_id' => $client->id, 'title' => 'X', 'content' => 'Y', 'status' => 'in_progress']);
+        $n = new \Modules\Sirsoft\Inquiry\Notifications\PaymentConfirmed($inquiry, ['order' => 'order-uuid']);
+        $this->assertSame('payment_confirmed', $n->toArray($client)['type']);
+    }
+
+    public function test_canceled_by_operator_uses_operator_line(): void
+    {
+        $client = User::factory()->create();
+        $inquiry = Inquiry::create(['uuid' => (string) Str::uuid(), 'user_id' => $client->id, 'title' => 'X', 'content' => 'Y', 'status' => 'canceled']);
+        $n = new \Modules\Sirsoft\Inquiry\Notifications\InquiryCanceled($inquiry, ['actor' => 'operator']);
+        $mail = $n->toMail($client);
+        $this->assertStringContainsString('운영자', $mail->subject . ' ' . implode(' ', $mail->introLines ?? []));
+    }
 }
