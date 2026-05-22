@@ -114,4 +114,59 @@ class NotificationsTest extends TestCase
         $mail = $n->toMail($client);
         $this->assertStringContainsString('운영자', $mail->subject . ' ' . implode(' ', $mail->introLines ?? []));
     }
+
+    public function test_quote_issued_notification_sent_on_transition(): void
+    {
+        Notification::fake();
+        $client = User::factory()->create();
+        $inquiry = Inquiry::create(['uuid' => (string) Str::uuid(), 'user_id' => $client->id, 'title' => 'X', 'content' => 'Y', 'status' => 'received']);
+
+        $sm = app(\Modules\Sirsoft\Inquiry\Services\InquiryStateMachine::class);
+        $inquiry->quotes()->create(['version' => 1, 'total_amount' => 1000000, 'currency' => 'KRW', 'status' => 'issued', 'issued_at' => now()]);
+        $sm->transition(
+            $inquiry,
+            \Modules\Sirsoft\Inquiry\Enums\TransitionEvent::IssueQuote,
+            actorUserId: $client->id,
+            payload: ['quote_version' => 1, 'quote_total' => 1000000],
+        );
+
+        Notification::assertSentTo([$client], \Modules\Sirsoft\Inquiry\Notifications\QuoteIssued::class);
+    }
+
+    public function test_new_message_notification_sent_to_operators_on_client_message(): void
+    {
+        Notification::fake();
+        $client = User::factory()->create();
+        $operator = User::factory()->create();
+
+        // 운영자에게 inquiry.notify 권한 부여 — PolicyTest 패턴 참고
+        $perm = \App\Models\Permission::firstOrCreate(['identifier' => 'inquiry.notify'], ['name' => 'Inquiry Notify']);
+        $role = \App\Models\Role::firstOrCreate(['identifier' => 'inquiry-notify-test'], ['name' => 'Inquiry Notify']);
+        $role->permissions()->syncWithoutDetaching([$perm->id => ['granted_at' => now()]]);
+        $operator->roles()->syncWithoutDetaching([$role->id => ['assigned_at' => now()]]);
+
+        $inquiry = Inquiry::create(['uuid' => (string) Str::uuid(), 'user_id' => $client->id, 'title' => 'X', 'content' => 'Y', 'status' => 'received']);
+        $msg = $inquiry->messages()->create(['sender_user_id' => $client->id, 'sender_role' => 'client', 'body' => '안녕하세요']);
+        \Modules\Sirsoft\Inquiry\Events\InquiryMessagePosted::dispatch($msg);
+
+        Notification::assertSentTo([$operator], \Modules\Sirsoft\Inquiry\Notifications\NewMessageNotification::class);
+    }
+
+    public function test_canceled_by_operator_notification_to_client_only(): void
+    {
+        Notification::fake();
+        $client = User::factory()->create();
+        $operator = User::factory()->create();
+        $inquiry = Inquiry::create(['uuid' => (string) Str::uuid(), 'user_id' => $client->id, 'title' => 'X', 'content' => 'Y', 'status' => 'received']);
+
+        $sm = app(\Modules\Sirsoft\Inquiry\Services\InquiryStateMachine::class);
+        $sm->transition(
+            $inquiry,
+            \Modules\Sirsoft\Inquiry\Enums\TransitionEvent::Cancel,
+            actorUserId: $operator->id,
+            payload: ['actor' => 'operator'],
+        );
+
+        Notification::assertSentTo([$client], \Modules\Sirsoft\Inquiry\Notifications\InquiryCanceled::class);
+    }
 }
