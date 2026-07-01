@@ -26,7 +26,7 @@ trait CalculatesJsonContentDiff
      * 트리밍 후 변경 영역이 이 값을 넘으면 O(n·m) DP 를 회피하고 라인 집합 차집합으로
      * 근사한다(비정상적으로 큰 변경에서만 발동, 인접 버전 비교는 해당 없음).
      */
-    private const int DIFF_MAX_LINES = 4000;
+    private const DIFF_MAX_LINES = 4000;
 
     /**
      * JSON content 변경사항 카운트 계산 (라인 단위 LCS)
